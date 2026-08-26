@@ -20,7 +20,7 @@ bool rectanglesIntersect(const QRect &left, const QRect &right) {
 bool belongsToScope(const LogicalWindowSnapshot &window,
                     const DesktopScopeSnapshot &scope) {
   const bool workspaceMatches =
-      window.onAllWorkspaces || window.workspaceId == scope.workspaceId;
+      window.onAllWorkspaces || window.workspaceIds.contains(scope.workspaceId);
   const bool activityMatches = window.activityIds.isEmpty() ||
                                window.activityIds.contains(scope.activityId);
   return workspaceMatches && activityMatches && !window.minimized &&

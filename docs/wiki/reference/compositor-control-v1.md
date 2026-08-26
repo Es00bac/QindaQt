@@ -40,6 +40,7 @@ keyboard docking.
 | `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
 | `Outputs` | None | Ordered outputs with name, logical frame, scale, numeric refresh rate in mHz, semantic transform, and internal flag |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
+| `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
 | `Containers` | None | Observable bridge and process-local Hybrid container IDs, actual decimal-string revisions, and explicit authority |
 | `DockWindows` | Two window IDs, orientation, position, ratio | Atomically creates and tiles one bridge-owned two-member container at revision 1 |
 | `ReleaseContainer` | Container ID | Restores and terminates one bridge-owned container |
@@ -84,6 +85,87 @@ policy. `stackIndex` is the window's absolute zero-based index in
 `Workspace::stackingOrder()`, ordered bottom to top, or `-1` if a managed
 window is momentarily absent from that list. Window activation, stacking, and
 either skip flag invalidate `Windows` through `WindowsChanged()`.
+
+## Shell visibility snapshot
+
+`ShellVisibilitySnapshot` is a separate read-only inventory for panel hiding.
+It samples outputs, user windows, workspace, and activity into one immutable
+generation; clients must not combine the older independent `Windows` and
+`Outputs` reads. A successful payload has this schema:
+
+```json
+{
+  "status": "ok",
+  "schemaVersion": 1,
+  "epoch": "3d975df8-3ee6-4cc5-bf64-3d46cab972d0",
+  "revision": "7",
+  "scope": {"workspaceId": "workspace-1", "activityId": "activity-1"},
+  "outputs": [
+    {"id": "DP-1", "geometry": {"x": 0, "y": 0, "width": 1920, "height": 1080}, "scale": 1.0}
+  ],
+  "windows": [
+    {
+      "id": "6bbdbb45-18d7-4f32-a850-0ca467706f62",
+      "outputId": "DP-1",
+      "frameGeometry": {"x": 40, "y": 60, "width": 900, "height": 700},
+      "workspaceIds": ["workspace-1"],
+      "onAllWorkspaces": false,
+      "activityIds": [],
+      "active": true,
+      "maximized": false,
+      "minimized": false,
+      "hidden": false
+    }
+  ]
+}
+```
+
+Output IDs are KWin stable output names. Window IDs are KWin internal UUIDs,
+workspace IDs are stable virtual-desktop IDs, and an empty `activityIds` array
+means all activities. `onAllWorkspaces: true` requires an empty `workspaceIds`
+array. When Activities is unavailable, `scope.activityId` is the canonical
+KWin null UUID `00000000-0000-0000-0000-000000000000`, never empty.
+
+Output geometry is KWin's exact integral desktop-logical geometry, matching the
+Qt screen boundary. Fractional window frames are conservatively aligned
+outward (floor origin, ceil far edge), so a subpixel overlap cannot disappear.
+Schema 1 is bounded to 4 MiB, 64 outputs, 4,096 windows, 256 workspace or
+activity memberships per window, 512 UTF-16 code units per identifier, and
+output scales in `(0, 16]`. A non-finite, overflowing, malformed, duplicate,
+over-limit, unknown-output, outside-output, or internally inconsistent admitted
+value rejects the complete candidate. The compositor retains the prior valid
+generation and emits no invalidation; it never publishes a selectively pruned
+user-window inventory.
+
+Visibility admission deliberately differs from Hybrid topology admission.
+Ordinary managed normal, dialog, and utility windows participate, including
+eligible transients. Desktop, dock/layer-shell, splash, tooltip, menu, popup,
+internal, deleted, and unmanaged surfaces do not. `hidden` combines KWin's
+ordinary hidden state and Show Desktop hiding; `minimized` remains separate.
+`maximized` means both native axes or QindaQt whole-container maximize, not
+quick-tiled or partially maximized.
+
+The first valid generation has revision `"1"`; zero is never a successful
+revision. Revision advances exactly once when canonical state changes and is
+unchanged for reordered/equivalent input. `epoch` is a fresh UUID for each
+plugin/service instance. Clients bind `(unique D-Bus owner, epoch, revision)`
+and reject replies from an older owner or epoch, because revision restarts with
+the compositor. Before any valid generation, the method returns
+`status: "unavailable"`, schema 1, the current epoch, revision `"0"`, and a
+stable failure object; that reply is not policy input.
+
+`ShellVisibilityChanged()` is a coalesced no-argument invalidation hint.
+Clients mark their cache dirty and reread the complete snapshot; they never
+reconstruct state from signal order.
+
+The production shell binds the invalidation and method call to the current
+unique D-Bus owner rather than the replaceable well-known name. It accepts only
+one coherent `(owner, epoch, revision)` lineage, uses fixed-leading debounce
+with one in-flight read, and switches to all-visible panel policy on service
+loss, unavailable/malformed data, timeout, revision regression/collision, or
+exact Qt-output mismatch. Forward gaps are accepted because every payload is a
+complete generation and invalidations may coalesce. Recovery requires a later
+complete valid generation; no partial inventory is retained as policy input.
 
 ## Development input seam
 
@@ -181,11 +263,13 @@ under `snapshot`. These reads do not make `Submit`, `DockWindows`, or
   transaction; process-local Hybrid commits do not emit it;
 - `WindowsChanged()` covers manageable-window membership, captions, frames,
   minimized/active/task/switcher state, stacking order, and ownership;
-- `OutputsChanged()` follows KWin output-set changes; and
+- `OutputsChanged()` follows KWin output-set changes;
 - `InputCapabilitiesChanged()` follows input-device inventory/lifecycle
-  changes.
+  changes; and
+- `ShellVisibilityChanged()` coalesces relevant output, admitted-window,
+  workspace, activity, and Hybrid group-maximize changes.
 
-All four signals are declared in XML and advertised by
+All five signals are declared in XML and advertised by
 `Capabilities.events`. Inventory signals are invalidation hints: clients read
 the corresponding snapshot again rather than reconstructing state from signal
 order.

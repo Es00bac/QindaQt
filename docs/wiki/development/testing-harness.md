@@ -119,12 +119,12 @@ or profile editing UI.
 
 ## Current shell and panel-surface proof
 
-Pure panel planning, editor transactions, visibility policy, and backend-neutral
-surface reconciliation are selected with:
+Pure panel planning, editor transactions, visibility policy, owner-bound client,
+orchestration, and backend-neutral surface reconciliation are selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.(shell-layout|shell-customization|shell-visibility|shell-surface)-' \
+  -R '^qindaqt\.(shell-layout|shell-customization|shell-visibility|shell-orchestration|shell-surface)-' \
   --output-on-failure
 ```
 
@@ -136,16 +136,21 @@ reservation, malformed inventories, checked coordinate boundaries, and the
 Release builds and 2/2 under focused UndefinedBehaviorSanitizer
 instrumentation.
 
-The five customization tests cover panel and applet commands, immutable
+The customization tests cover panel and applet commands, immutable
 manifest-catalog placement decisions, exclusive coordinator lease handoff,
 optimistic revisions and exhaustion headroom, all-output failure atomicity,
 preview commit/cancel, durable plus provisional undo/redo, read-only editor
-status, and side-effect-free command evaluation. The three visibility tests
-cover all hide modes, workspace/activity filtering, actual panel-surface
-overlap, spanning/maximized windows, reveal/hold priority, reservation intent,
-negative coordinates, and fail-closed batch validation. The two surface tests
-cover exact anchor/margin/zone planning and prior-set retention across backend
-failures. All twelve are toolkit-neutral or fake-backend proofs.
+status, and side-effect-free command evaluation. Visibility tests cover every
+hide mode, scope filtering, wire bounds, producer/consumer round trips,
+owner/epoch/revision state, actual surface overlap, and fail-closed batch
+validation. Client tests cover debounce, timeout/backoff, stale replies,
+service loss, and exact unique-owner read/signal handoff on a private
+`dbus-daemon`. Orchestration tests cover output-generation equality, profile
+surface bijections, interaction leases, safe-visible planning, and policy-to-
+surface translation. Surface tests cover exact anchor/margin/zone planning,
+persistent in-place transitions, dismissal liveness, and prior-set retention
+across backend failures. These are toolkit-neutral, fake-backend, or isolated
+private-D-Bus proofs.
 
 The production Wayland surface matrix is selected with:
 
@@ -182,9 +187,11 @@ three resolutions. `shell.surface-protocol-trace` separately exercises stream
 fragmentation, bounded line/chunk/capture rejection, pending-versus-committed
 state, multiple configure selection and ordering, null/unmapped attaches, and
 object-ID reuse/destroy ambiguity. Relevant malformed or over-bounded input
-fails closed. Rendered settings drop targets, live window-state inventory,
-automatic hide animation/publication, partial panels, and heterogeneous
-multi-output surface publication remain unclaimed.
+fails closed. Rendered settings drop targets, live automatic-hide protocol
+transitions and animation, partial panels, and heterogeneous multi-output
+surface publication remain unclaimed. The production code consumes live
+window-state inventory, but this initial nested matrix predates that transition
+and is not evidence for it.
 
 ## Current notification foundation proof
 

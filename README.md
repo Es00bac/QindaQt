@@ -12,7 +12,8 @@ This repository currently contains the executable foundation for the desktop:
 - versioned desktop-profile and theme formats;
 - five built-in palettes, including the mist-and-sage Qinda macOS decoration
   theme;
-- a Qt Quick shell preview and a production LayerShellQt panel process;
+- a Qt Quick shell preview and a production LayerShellQt panel process with
+  owner-bound compositor visibility and safe-visible recovery;
 - transactional panel/applet editing, window-aware visibility policy, and an
   installable freedesktop notification-host foundation;
 - isolated nested-session and resolution-scenario tooling;

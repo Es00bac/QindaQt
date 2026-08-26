@@ -4,17 +4,40 @@
 #include "../common/catalogpaths.h"
 #include "runtimepanelwindowfactory.h"
 
-#include "qindaqt/profiles/profile_types.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
+#include "qindaqt/shell_orchestration/output_inventory_matcher.h"
+#include "qindaqt/shell_orchestration/panel_interaction_store.h"
+#include "qindaqt/shell_orchestration/panel_runtime_plan_assembler.h"
+#include "qindaqt/shell_orchestration/panel_visibility_inventory_assembler.h"
 #include "qindaqt/shell_surface/layer_shell_surface_backend.h"
+#include "qindaqt/shell_surface/panel_surface_configuration_planner.h"
 #include "qindaqt/shell_surface/panel_surface_controller.h"
 #include "qindaqt/shell_surface/qt_output_inventory.h"
+#include "qindaqt/shell_visibility_client/compositor_visibility_client.h"
+#include "qindaqt/shell_visibility_client/qt_compositor_visibility_transport.h"
 
 #include <QCoreApplication>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QTextStream>
+
+#include <utility>
+
+namespace {
+
+QVector<QindaQt::ShellLayout::LogicalOutput> logicalOutputs(
+    const QindaQt::ShellVisibility::CompositorVisibilitySnapshot &snapshot)
+{
+    QVector<QindaQt::ShellLayout::LogicalOutput> result;
+    result.reserve(snapshot.outputs.size());
+    for (const auto &output : snapshot.outputs) {
+        result.append({output.id, output.geometry, output.scale});
+    }
+    return result;
+}
+
+} // namespace
 
 namespace QindaQt::Shell {
 
@@ -120,8 +143,32 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
+    m_visibilityTransport = std::make_unique<
+        ShellVisibilityClient::QtCompositorVisibilityTransport>();
+    m_visibilityClient = std::make_unique<
+        ShellVisibilityClient::CompositorVisibilityClient>(*m_visibilityTransport);
+    m_interactions = std::make_unique<ShellOrchestration::PanelInteractionStore>();
+    connect(m_visibilityClient.get(),
+            &ShellVisibilityClient::CompositorVisibilityClient::stateChanged,
+            this, &ShellRuntimeApplication::scheduleOutputReconcile);
+    connect(m_interactions.get(),
+            &ShellOrchestration::PanelInteractionStore::interactionsChanged,
+            this, &ShellRuntimeApplication::scheduleOutputReconcile);
+
+    if (!m_visibilityClient->start(error)) {
+        m_interactions.reset();
+        m_visibilityClient.reset();
+        m_visibilityTransport.reset();
+        m_controller.reset();
+        m_backend.reset();
+        m_windowFactory.reset();
+        return false;
+    }
 
     if (!reconcileSurfaces(error)) {
+        m_interactions.reset();
+        m_visibilityClient.reset();
+        m_visibilityTransport.reset();
         m_controller.reset();
         m_backend.reset();
         m_windowFactory.reset();
@@ -137,7 +184,6 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
     });
     connect(&m_application, &QGuiApplication::screenRemoved, this,
             [this](QScreen *) { scheduleOutputReconcile(); });
-    reportDeferredHideModes();
     return true;
 }
 
@@ -155,8 +201,29 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
         return false;
     }
 
-    const auto layout = ShellLayout::PanelLayoutSolver::solve(
-        m_profiles.profiles().at(profileIndex).panels, inventory.outputs);
+    const auto &profile = m_profiles.profiles().at(profileIndex);
+    QVector<ShellLayout::LogicalOutput> selectedOutputs = inventory.outputs;
+    const ShellVisibility::CompositorVisibilitySnapshot *visibilitySnapshot = nullptr;
+    if (m_visibilityClient && !m_visibilityClient->safeVisibleRequired() &&
+        m_visibilityClient->snapshot()) {
+        const auto compositorOutputs = logicalOutputs(*m_visibilityClient->snapshot());
+        const auto outputMatch = ShellOrchestration::OutputInventoryMatcher::match(
+            compositorOutputs, inventory.outputs);
+        if (outputMatch.ok()) {
+            selectedOutputs = compositorOutputs;
+            visibilitySnapshot = &*m_visibilityClient->snapshot();
+        } else {
+            // AGENT-GUARD: Qt and compositor output generations can cross
+            // during hotplug. A mixed generation is never evaluated; keeping
+            // every panel visible is the fail-safe policy until they converge.
+            qWarning().noquote()
+                << "QindaQt shell is using safe-visible output fallback:"
+                << outputMatch.message;
+        }
+    }
+
+    const auto layout = ShellLayout::PanelLayoutSolver::solve(profile.panels,
+                                                               selectedOutputs);
     if (!layout.ok()) {
         *error = layout.error.message;
         return false;
@@ -165,7 +232,48 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
         *error = QStringLiteral("panel surface controller is not initialized");
         return false;
     }
-    const auto result = m_controller->reconcile(layout);
+    const auto basePlan = ShellSurface::PanelSurfaceConfigurationPlanner::plan(layout);
+    if (!basePlan.ok()) {
+        *error = basePlan.error.message;
+        return false;
+    }
+    if (!m_interactions) {
+        *error = QStringLiteral("panel interaction store is not initialized");
+        return false;
+    }
+    QVector<ShellVisibility::PanelSurfaceIdentity> identities;
+    identities.reserve(basePlan.surfaces.size());
+    for (const auto &surface : basePlan.surfaces) {
+        identities.append({surface.identity.panelId, surface.identity.outputId});
+    }
+    QString interactionError;
+    if (!m_interactions->setIdentities(identities, &interactionError)) {
+        *error = std::move(interactionError);
+        return false;
+    }
+
+    ShellOrchestration::PanelRuntimeAssemblyResult runtime;
+    if (visibilitySnapshot != nullptr) {
+        const auto visibility =
+            ShellOrchestration::PanelVisibilityInventoryAssembler::assemble(
+                profile, layout, *visibilitySnapshot, m_interactions->snapshot());
+        if (visibility.ok()) {
+            runtime = ShellOrchestration::PanelRuntimePlanAssembler::fromEvaluation(
+                basePlan, visibility.evaluation);
+        } else {
+            qWarning().noquote()
+                << "QindaQt shell rejected live visibility and kept panels visible:"
+                << visibility.error.message;
+            runtime = ShellOrchestration::PanelRuntimePlanAssembler::safeVisible(basePlan);
+        }
+    } else {
+        runtime = ShellOrchestration::PanelRuntimePlanAssembler::safeVisible(basePlan);
+    }
+    if (!runtime.ok()) {
+        *error = runtime.error.message;
+        return false;
+    }
+    const auto result = m_controller->reconcilePlan(std::move(runtime.plan));
     if (!result.ok()) {
         *error = result.message;
         return false;
@@ -188,24 +296,6 @@ void ShellRuntimeApplication::attachOutputSignals(QScreen *screen)
 void ShellRuntimeApplication::scheduleOutputReconcile()
 {
     m_outputDebounce.start();
-}
-
-void ShellRuntimeApplication::reportDeferredHideModes() const
-{
-    const int profileIndex = m_profiles.currentIndex();
-    if (profileIndex < 0 ||
-        static_cast<qsizetype>(profileIndex) >= m_profiles.profiles().size()) {
-        return;
-    }
-    for (const auto &panel : m_profiles.profiles().at(profileIndex).panels) {
-        if (panel.hideMode != Profiles::HideMode::Never) {
-            qWarning().noquote()
-                << QStringLiteral("Panel '%1' requests hide mode '%2'; this first production"
-                                  " surface slice keeps it visible until the live visibility"
-                                  " adapter lands")
-                       .arg(panel.id, Profiles::toString(panel.hideMode));
-        }
-    }
 }
 
 } // namespace QindaQt::Shell

@@ -89,7 +89,9 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         PRIVATE
             qindaqt_profiles
             QindaQt::ShellLayout
+            QindaQt::ShellOrchestration
             QindaQt::ShellSurface
+            QindaQt::ShellVisibilityClient
             qindaqt_themes
             Qt6::Core
             Qt6::Gui

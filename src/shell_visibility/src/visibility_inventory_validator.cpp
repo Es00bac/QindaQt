@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "visibility_inventory_validator_p.h"
 
+#include "qindaqt/shell_visibility_protocol/wire_limits.h"
+
 #include <QHash>
 #include <QSet>
 #include <QStringView>
 
 #include <limits>
+#include <cmath>
 #include <utility>
 
 namespace QindaQt::ShellVisibility::Private {
@@ -123,6 +126,13 @@ validateOutputs(const QVector<LogicalOutputSnapshot> &outputs,
                          .arg(output.id),
                      {}, {}, output.id);
     }
+    if (!std::isfinite(output.scale) || output.scale <= 0.0 ||
+        output.scale > ShellVisibilityProtocol::WireLimits::MaxOutputScale) {
+      return failure(PanelVisibilityErrorCode::InvalidOutputScale,
+                     QStringLiteral("output '%1' has invalid scale metadata")
+                         .arg(output.id),
+                     {}, {}, output.id);
+    }
     geometries->insert(output.id, output.geometry);
   }
   return {};
@@ -186,15 +196,26 @@ validatePanels(const QVector<PanelVisibilitySnapshot> &panels,
 }
 
 PanelVisibilityError validateWindowScope(const LogicalWindowSnapshot &window) {
-  if ((window.onAllWorkspaces && !window.workspaceId.isEmpty()) ||
-      (!window.onAllWorkspaces && !validIdentifier(window.workspaceId))) {
+  if ((window.onAllWorkspaces && !window.workspaceIds.isEmpty()) ||
+      (!window.onAllWorkspaces && window.workspaceIds.isEmpty())) {
     return failure(
         PanelVisibilityErrorCode::InvalidWindowScope,
         QStringLiteral(
-            "window '%1' must use exactly one workspace or the canonical "
+            "window '%1' must use one or more workspaces or the canonical "
             "all-workspaces form")
             .arg(window.id),
         {}, window.id, window.outputId);
+  }
+  QSet<QString> workspaces;
+  for (const QString &workspaceId : window.workspaceIds) {
+    if (!validIdentifier(workspaceId) || workspaces.contains(workspaceId)) {
+      return failure(
+          PanelVisibilityErrorCode::InvalidWindowScope,
+          QStringLiteral("window '%1' has an invalid or duplicate workspace")
+              .arg(window.id),
+          {}, window.id, window.outputId);
+    }
+    workspaces.insert(workspaceId);
   }
   QSet<QString> activities;
   for (const QString &activityId : window.activityIds) {

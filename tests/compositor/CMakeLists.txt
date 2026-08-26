@@ -11,6 +11,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(QINDAQT_BUILD_KWIN_PLUGIN OFF CACHE BOOL
         "Build only the compositor bridge in standalone tests" FORCE)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../src/core" core)
+    add_subdirectory(
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell_visibility_protocol"
+        shell_visibility_protocol
+    )
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../src/compositor" compositor)
 endif()
 
@@ -35,6 +39,8 @@ target_link_libraries(
         Qt6::Test
 )
 add_test(NAME compositor.transaction-bridge COMMAND qindaqt_compositor_bridge_tests)
+
+include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")
 
 qt_add_executable(
     qindaqt_layout_geometry_tests

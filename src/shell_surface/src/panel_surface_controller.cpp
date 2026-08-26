@@ -33,17 +33,39 @@ PanelSurfaceController::~PanelSurfaceController() = default;
 PanelSurfaceControllerResult PanelSurfaceController::reconcile(
     const ShellLayout::PanelLayoutResult &layout)
 {
-    PanelSurfacePlan candidate = PanelSurfaceConfigurationPlanner::plan(layout);
+    return reconcilePlan(PanelSurfaceConfigurationPlanner::plan(layout));
+}
+
+PanelSurfaceControllerResult PanelSurfaceController::reconcilePlan(
+    PanelSurfacePlan candidate)
+{
     if (!candidate.ok()) {
         return failure(PanelSurfaceControllerErrorCode::PlanningFailed, m_revision,
                        candidate.error.message);
     }
-    if (m_published && m_published->isLive() && candidate == m_plan) {
+    const bool publishedSetIsLive = m_published && m_published->isLive();
+    if (publishedSetIsLive && candidate == m_plan) {
         return {PanelSurfaceControllerErrorCode::None, m_revision, false, {}};
     }
     if (m_revision == std::numeric_limits<quint64>::max()) {
         return failure(PanelSurfaceControllerErrorCode::RevisionExhausted, m_revision,
                        QStringLiteral("panel surface revision is exhausted"));
+    }
+
+    if (publishedSetIsLive) {
+        const auto reconfigured = m_published->reconfigure(candidate.surfaces);
+        if (reconfigured.code == PublishedSurfaceReconfigureCode::Applied) {
+            m_plan = std::move(candidate);
+            ++m_revision;
+            return {PanelSurfaceControllerErrorCode::None, m_revision, true, {}};
+        }
+        if (reconfigured.code == PublishedSurfaceReconfigureCode::Failed) {
+            return failure(
+                PanelSurfaceControllerErrorCode::BackendReconfigureFailed, m_revision,
+                diagnosticOr(reconfigured.message,
+                             QStringLiteral("panel surface backend could not reconfigure"
+                                            " the live layout")));
+        }
     }
 
     QString diagnostic;

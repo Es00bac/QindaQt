@@ -12,8 +12,8 @@ One evaluation contains:
 - logical output identifiers and rectangles;
 - each expanded `(panelId, outputId)` surface rectangle, hide mode, and
   reservation policy;
-- application-window frame rectangles, compositor-assigned output, active,
-  maximized, minimized, and hidden state;
+- application-window frame rectangles, compositor-assigned output, every
+  virtual desktop, activities, active, maximized, minimized, and hidden state;
 - the current workspace and activity; and
 - optional per-surface reveal and visibility-hold requests.
 
@@ -26,8 +26,9 @@ supported state.
 ## Hide modes
 
 Only non-minimized, non-hidden application windows on the current workspace
-and activity participate. An all-workspaces window and a window with no
-activity list participate in every matching evaluation.
+and activity participate. Windows may belong to multiple virtual desktops. An
+all-workspaces window and a window with no activity list participate in every
+matching evaluation.
 
 | Mode | Hidden when |
 | --- | --- |
@@ -58,12 +59,28 @@ visible `reserve-when-visible` panel requests `Reserve`; hidden panels and
 leaving atomic mapping, animation, and layer-shell exclusive-zone changes to a
 shell controller.
 
-## Current integration boundary
+## Production integration
 
-The value policy and adversarial tests are implemented. Live input assembly is
-not yet wired: a compositor-side adapter must copy one window/output/scope
-generation, and the shell must add solved surface rectangles plus reveal/hold
-state. The shell controller must then evaluate once and publish visibility and
-reservation changes as one replacement surface set. Until that adapter lands,
-`qindaqt-shell` deliberately keeps non-`never` panels visible and reports the
-fallback rather than pretending that automatic hiding is active.
+The KWin plugin publishes one bounded, revisioned output/window/scope snapshot
+through `Compositor1`. The shell client subscribes to the exact D-Bus unique
+owner before exposing it, coalesces invalidations, permits one request in
+flight, rejects stale owner/epoch/revision replies, and uses bounded timeout and
+retry delays. Service loss, malformed/unavailable data, revision regressions or
+collisions, and output-generation races immediately select the safe-visible
+policy. Forward revision gaps are valid because invalidations are coalesced and
+every payload is a complete snapshot.
+
+For an accepted generation, `shell_orchestration` requires an exact bijection
+between compositor outputs, the solved layout, Qt screens, profile panel
+expansion, and interaction identities. It then evaluates once and publishes
+mapping plus reservation as one controller revision. Eligible visibility-only
+changes are applied to existing layer windows in place, preserving QML and
+applet state; a static role/layout change still uses complete-set replacement.
+
+Reveal and visibility-hold state uses independent move-only leases so one menu,
+pointer region, shortcut, or animation cannot clear another producer's intent.
+The store and runtime path are active, but production edge sensors, pointer
+containment, menu leases, hide animation, and shortcut producers remain to be
+wired. Consequently the compositor-driven `dodge-*`, `maximized`, and
+`intelligent` decisions are implemented, while the user-reveal path required
+for a usable `always` panel is not yet qualified.

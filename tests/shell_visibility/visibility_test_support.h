@@ -29,7 +29,7 @@ window(QString id = QStringLiteral("window"),
   snapshot.id = std::move(id);
   snapshot.outputId = std::move(outputId);
   snapshot.frameGeometry = geometry;
-  snapshot.workspaceId = QStringLiteral("workspace-1");
+  snapshot.workspaceIds = {QStringLiteral("workspace-1")};
   snapshot.activityIds = {QStringLiteral("activity-a")};
   return snapshot;
 }

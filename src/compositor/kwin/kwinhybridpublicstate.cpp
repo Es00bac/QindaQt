@@ -2,6 +2,7 @@
 #include "kwinhybridsession.h"
 
 #include "hybridinteractionruntime.h"
+#include "hybridcontainerplacement.h"
 #include "hybridshortcutmanager.h"
 #include "kwinchromemanager.h"
 #include "kwinhybridgroupstacking.h"
@@ -27,6 +28,12 @@ quint64 KWinHybridSession::topologyRevision() const noexcept
 qsizetype KWinHybridSession::containerCount() const noexcept
 {
     return m_runtime ? m_runtime->topology().containerIds().size() : 0;
+}
+
+bool KWinHybridSession::isContainerMaximized(
+    const QString &containerId) const noexcept
+{
+    return m_placement && m_placement->isMaximized(containerId);
 }
 
 QJsonObject KWinHybridSession::diagnostics() const

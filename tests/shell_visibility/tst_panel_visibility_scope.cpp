@@ -25,14 +25,15 @@ void PanelVisibilityScopeTest::
     windowsMustBelongToTheCurrentWorkspaceAndActivity() {
   auto snapshot = inventory(Profiles::HideMode::DodgeAll);
   auto candidate = window();
-  candidate.workspaceId = QStringLiteral("workspace-2");
+  candidate.workspaceIds = {QStringLiteral("workspace-2")};
   snapshot.windows = {candidate};
 
   auto result = PanelVisibilityPolicy::evaluate(snapshot);
   QVERIFY(result.ok());
   QCOMPARE(result.decisions[0].visibility, PanelVisibility::Visible);
 
-  snapshot.windows[0].workspaceId = QStringLiteral("workspace-1");
+  snapshot.windows[0].workspaceIds = {QStringLiteral("workspace-2"),
+                                      QStringLiteral("workspace-1")};
   snapshot.windows[0].activityIds = {QStringLiteral("activity-b")};
   result = PanelVisibilityPolicy::evaluate(snapshot);
   QVERIFY(result.ok());
@@ -49,7 +50,7 @@ void PanelVisibilityScopeTest::allWorkspaceAndAllActivityWindowsAreRelevant() {
   auto snapshot = inventory(Profiles::HideMode::DodgeAll);
   auto omnipresent = window();
   omnipresent.onAllWorkspaces = true;
-  omnipresent.workspaceId.clear();
+  omnipresent.workspaceIds.clear();
   omnipresent.activityIds.clear();
   snapshot.windows = {omnipresent};
 

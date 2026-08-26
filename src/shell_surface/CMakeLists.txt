@@ -11,6 +11,7 @@ target_sources(
         src/layer_shell_surface_backend.cpp
         src/panel_surface_configuration_planner.cpp
         src/panel_surface_controller.cpp
+        src/panel_surface_runtime_planner.cpp
         src/qt_output_inventory.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -21,6 +22,7 @@ target_sources(
             include/qindaqt/shell_surface/panel_surface_configuration.h
             include/qindaqt/shell_surface/panel_surface_configuration_planner.h
             include/qindaqt/shell_surface/panel_surface_controller.h
+            include/qindaqt/shell_surface/panel_surface_runtime_planner.h
             include/qindaqt/shell_surface/panel_window_factory.h
             include/qindaqt/shell_surface/qt_output_inventory.h
 )

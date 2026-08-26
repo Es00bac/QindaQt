@@ -20,6 +20,15 @@ class LayerShellSurfaceBackend;
 class PanelSurfaceController;
 }
 
+namespace QindaQt::ShellOrchestration {
+class PanelInteractionStore;
+}
+
+namespace QindaQt::ShellVisibilityClient {
+class CompositorVisibilityClient;
+class QtCompositorVisibilityTransport;
+}
+
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
@@ -40,7 +49,6 @@ private:
     [[nodiscard]] bool reconcileSurfaces(QString *error);
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
-    void reportDeferredHideModes() const;
 
     QGuiApplication &m_application;
     Profiles::ProfileCatalog m_profiles;
@@ -49,6 +57,11 @@ private:
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;
     std::unique_ptr<ShellSurface::PanelSurfaceController> m_controller;
+    std::unique_ptr<ShellVisibilityClient::QtCompositorVisibilityTransport>
+        m_visibilityTransport;
+    std::unique_ptr<ShellVisibilityClient::CompositorVisibilityClient>
+        m_visibilityClient;
+    std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
     QTimer m_outputDebounce;
 };
 

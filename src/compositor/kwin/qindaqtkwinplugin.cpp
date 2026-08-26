@@ -6,6 +6,7 @@
 #include "kwininputadapter.h"
 #include "kwinhybridsession.h"
 #include "kwinsceneadapter.h"
+#include "kwinshellvisibilitypublisher.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
 #include "mutationcontrol.h"
@@ -35,6 +36,7 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
     : m_mutationsEnabled(mutationsEnabledForCurrentSession())
     , m_bus(QDBusConnection::sessionBus())
     , m_registry(std::make_unique<ManagedWindowRegistry>())
+    , m_shellVisibility(std::make_unique<KWinShellVisibilityPublisher>(*m_registry))
     , m_inputAdapter(std::make_unique<KWinInputAdapter>(KWin::input()))
     // AGENT-GUARD: Never construct a production-session injector. A null
     // provider makes the process-level absence explicit in addition to the
@@ -46,10 +48,17 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
     , m_sceneAdapter(std::make_unique<KWinSceneAdapter>(*m_registry))
     , m_bridge(std::make_unique<ContainerControlBridge>(*m_sceneAdapter))
     , m_endpoint(std::make_unique<KWinControlEndpoint>(
-          *m_bridge, *m_registry, *m_inputAdapter, m_mutationsEnabled,
+          *m_bridge, *m_registry, *m_inputAdapter, *m_shellVisibility,
+          m_mutationsEnabled,
           m_developmentInputInjector.get()))
 {
     m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
+    m_shellVisibility->setHybridMaximizedProvider([this](const QString &containerId) {
+        return m_hybridSession
+            && m_hybridSession->isContainerMaximized(containerId);
+    });
+    connect(m_hybridSession.get(), &KWinHybridSession::shellVisibilityStateChanged,
+            m_shellVisibility.get(), &KWinShellVisibilityPublisher::invalidate);
     m_endpoint->setHybridDiagnosticsProvider([this] {
         return m_hybridSession
             ? m_hybridSession->diagnostics()

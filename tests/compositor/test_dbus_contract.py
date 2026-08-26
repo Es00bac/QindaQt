@@ -14,6 +14,7 @@ EXPECTED_METHODS = {
     "Windows",
     "Outputs",
     "InputCapabilities",
+    "ShellVisibilitySnapshot",
     "Containers",
     "DockWindows",
     "ReleaseContainer",
@@ -27,6 +28,7 @@ EXPECTED_SIGNALS = {
     "WindowsChanged",
     "OutputsChanged",
     "InputCapabilitiesChanged",
+    "ShellVisibilityChanged",
 }
 
 
@@ -102,6 +104,30 @@ def validate_descriptor(path: Path) -> None:
             f"expected {expected_reinitialize_arguments}, "
             f"got {reinitialize_arguments}"
         )
+
+    visibility = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == "ShellVisibilitySnapshot"
+    )
+    visibility_arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in visibility.findall("arg")
+    ]
+    expected_visibility_arguments = [("snapshotJson", "ay", "out")]
+    if visibility_arguments != expected_visibility_arguments:
+        raise ValueError(
+            "ShellVisibilitySnapshot signature drift: "
+            f"expected {expected_visibility_arguments}, got {visibility_arguments}"
+        )
+
+    visibility_changed = next(
+        element
+        for element in interface.findall("signal")
+        if element.get("name") == "ShellVisibilityChanged"
+    )
+    if visibility_changed.findall("arg"):
+        raise ValueError("ShellVisibilityChanged must remain a no-argument hint")
 
 
 def validate_service_metadata(path: Path) -> None:

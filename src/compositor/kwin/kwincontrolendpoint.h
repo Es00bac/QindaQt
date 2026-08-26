@@ -20,6 +20,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 class ManagedWindowRegistry;
 class KWinInputAdapter;
+class KWinShellVisibilityPublisher;
 
 class KWinControlEndpoint final : public QObject
 {
@@ -36,6 +37,7 @@ public:
     KWinControlEndpoint(ContainerControlBridge &bridge,
                         ManagedWindowRegistry &registry,
                         KWinInputAdapter &inputAdapter,
+                        KWinShellVisibilityPublisher &shellVisibility,
                         bool mutationsEnabled,
                         DevelopmentInputSink *developmentInputSink = nullptr,
                         QObject *parent = nullptr);
@@ -63,6 +65,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray Windows() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Outputs() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray InputCapabilities() const;
+    Q_SCRIPTABLE [[nodiscard]] QByteArray ShellVisibilitySnapshot() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Containers() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray DockWindows(const QString &targetWindowId,
                                                       const QString &incomingWindowId,
@@ -80,11 +83,13 @@ Q_SIGNALS:
     Q_SCRIPTABLE void WindowsChanged();
     Q_SCRIPTABLE void OutputsChanged();
     Q_SCRIPTABLE void InputCapabilitiesChanged();
+    Q_SCRIPTABLE void ShellVisibilityChanged();
 
 private:
     ContainerControlBridge &m_bridge;
     ManagedWindowRegistry &m_registry;
     KWinInputAdapter &m_inputAdapter;
+    KWinShellVisibilityPublisher &m_shellVisibility;
     ControlEndpoint *m_coreEndpoint = nullptr;
     HybridDiagnosticsProvider m_hybridDiagnostics;
     HybridContainersProvider m_hybridContainers;

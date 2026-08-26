@@ -9,6 +9,17 @@
 
 namespace QindaQt::ShellSurface {
 
+enum class PublishedSurfaceReconfigureCode {
+    Applied,
+    Unsupported,
+    Failed,
+};
+
+struct PublishedSurfaceReconfigureResult {
+    PublishedSurfaceReconfigureCode code = PublishedSurfaceReconfigureCode::Unsupported;
+    QString message;
+};
+
 class PublishedSurfaceSet {
 public:
     virtual ~PublishedSurfaceSet() = default;
@@ -18,6 +29,16 @@ public:
     // reusable, so identical-plan elision is permitted only while the entire
     // published set remains live.
     [[nodiscard]] virtual bool isLive() const noexcept = 0;
+
+    // A backend may apply mapping/reservation-only changes in place so QML and
+    // applet state survive visibility transitions. Unsupported changes fall
+    // back to replacement. Failed changes must roll back the published set.
+    [[nodiscard]] virtual PublishedSurfaceReconfigureResult reconfigure(
+        const QVector<PanelSurfaceConfiguration> &configurations)
+    {
+        Q_UNUSED(configurations)
+        return {};
+    }
 };
 
 class PreparedSurfaceSet {

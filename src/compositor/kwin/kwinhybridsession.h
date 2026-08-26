@@ -67,6 +67,7 @@ public:
     [[nodiscard]] bool inputFilterInstalled() const noexcept;
     [[nodiscard]] quint64 topologyRevision() const noexcept;
     [[nodiscard]] qsizetype containerCount() const noexcept;
+    [[nodiscard]] bool isContainerMaximized(const QString &containerId) const noexcept;
     [[nodiscard]] QJsonObject diagnostics() const;
     [[nodiscard]] QJsonArray publicContainers() const;
     [[nodiscard]] std::optional<QJsonObject>
@@ -75,6 +76,12 @@ public:
     // Idempotent. Restores every Hybrid-owned client before destroying scene,
     // chrome, input, and shortcut collaborators.
     void shutdown() noexcept;
+
+Q_SIGNALS:
+    // Group maximize is compositor-owned placement state and does not change a
+    // member Window::maximizeMode. Consumers of public window state must
+    // invalidate when this signal fires.
+    void shellVisibilityStateChanged();
 
 private:
     struct ActiveKeyboardContext final

@@ -20,6 +20,11 @@ struct PanelSurfaceIdentity {
     friend bool operator==(const PanelSurfaceIdentity &, const PanelSurfaceIdentity &) = default;
 };
 
+enum class PanelSurfaceMapping {
+    Mapped,
+    Unmapped,
+};
+
 enum class SurfaceAnchor : quint8 {
     Top = 0x1,
     Bottom = 0x2,
@@ -30,6 +35,8 @@ Q_DECLARE_FLAGS(SurfaceAnchors, SurfaceAnchor)
 
 struct PanelSurfaceConfiguration {
     PanelSurfaceIdentity identity;
+    QRect outputGeometry;
+    qreal outputScale = 1.0;
     QRect geometry;
     QSize desiredSize;
     QMargins margins;
@@ -39,7 +46,11 @@ struct PanelSurfaceConfiguration {
     Profiles::Edge exclusiveEdge = Profiles::Edge::Top;
     int exclusiveZone = -1;
     qsizetype placementOrder = 0;
+    // Eligibility is stable layout policy; carrier is recalculated from the
+    // currently mapped/reserving set whenever visibility changes.
+    bool reservesWorkArea = false;
     bool reservationCarrier = false;
+    PanelSurfaceMapping mapping = PanelSurfaceMapping::Mapped;
 
     friend bool operator==(const PanelSurfaceConfiguration &,
                            const PanelSurfaceConfiguration &) = default;

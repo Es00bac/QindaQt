@@ -144,6 +144,8 @@ std::optional<PanelSurfaceConfiguration> configurationFor(
 
     PanelSurfaceConfiguration result;
     result.identity = {surface.panelId, surface.outputId};
+    result.outputGeometry = output;
+    result.outputScale = state.output.scale;
     result.geometry = geometry;
     result.desiredSize = geometry.size();
     result.edge = surface.edge;
@@ -156,6 +158,7 @@ std::optional<PanelSurfaceConfiguration> configurationFor(
     // twice for stacked panels.
     result.exclusiveZone = reservationCarrier ? thickness : -1;
     result.placementOrder = placementOrder;
+    result.reservesWorkArea = surface.reservesWorkArea;
     result.reservationCarrier = reservationCarrier;
 
     switch (surface.edge) {

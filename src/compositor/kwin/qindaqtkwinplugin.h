@@ -18,6 +18,7 @@ class KWinDevelopmentInputInjector;
 class KWinInputAdapter;
 class KWinHybridSession;
 class KWinSceneAdapter;
+class KWinShellVisibilityPublisher;
 class ManagedWindowRegistry;
 
 class QindaQtKWinPlugin final : public KWin::Plugin
@@ -37,6 +38,7 @@ private:
     const bool m_mutationsEnabled;
     QDBusConnection m_bus;
     std::unique_ptr<ManagedWindowRegistry> m_registry;
+    std::unique_ptr<KWinShellVisibilityPublisher> m_shellVisibility;
     std::unique_ptr<KWinHybridSession> m_hybridSession;
     std::unique_ptr<KWinInputAdapter> m_inputAdapter;
     std::unique_ptr<KWinDevelopmentInputInjector> m_developmentInputInjector;

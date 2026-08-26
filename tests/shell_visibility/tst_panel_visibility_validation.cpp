@@ -167,7 +167,7 @@ void PanelVisibilityValidationTest::
 void PanelVisibilityValidationTest::rejectsMalformedWindowScopeAndState() {
   auto snapshot = inventory(Profiles::HideMode::Never);
   snapshot.windows = {window()};
-  snapshot.windows[0].workspaceId.clear();
+  snapshot.windows[0].workspaceIds.clear();
   auto result = PanelVisibilityPolicy::evaluate(snapshot);
   QCOMPARE(result.error.code, PanelVisibilityErrorCode::InvalidWindowScope);
   QVERIFY(result.decisions.isEmpty());
@@ -178,7 +178,13 @@ void PanelVisibilityValidationTest::rejectsMalformedWindowScopeAndState() {
   result = PanelVisibilityPolicy::evaluate(snapshot);
   QCOMPARE(result.error.code, PanelVisibilityErrorCode::InvalidWindowScope);
 
-  snapshot.windows[0].workspaceId.clear();
+  snapshot.windows[0].onAllWorkspaces = false;
+  snapshot.windows[0].workspaceIds = {QStringLiteral("workspace-1"),
+                                      QStringLiteral("workspace-1")};
+  result = PanelVisibilityPolicy::evaluate(snapshot);
+  QCOMPARE(result.error.code, PanelVisibilityErrorCode::InvalidWindowScope);
+
+  snapshot.windows[0].workspaceIds = {QStringLiteral("workspace-1")};
   snapshot.windows[0].activityIds = {QStringLiteral("activity-a"),
                                      QStringLiteral("activity-a")};
   result = PanelVisibilityPolicy::evaluate(snapshot);

@@ -2,6 +2,7 @@
 #include "kwincontrolendpoint.h"
 
 #include "kwininputadapter.h"
+#include "kwinshellvisibilitypublisher.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
 #include "qindaqt/compositor/containercontrolbridge.h"
@@ -38,6 +39,7 @@ QByteArray response(QString status, QString code = {}, QString message = {})
 KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
                                          ManagedWindowRegistry &registry,
                                          KWinInputAdapter &inputAdapter,
+                                         KWinShellVisibilityPublisher &shellVisibility,
                                          bool mutationsEnabled,
                                          DevelopmentInputSink *developmentInputSink,
                                          QObject *parent)
@@ -45,6 +47,7 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
     , m_bridge(bridge)
     , m_registry(registry)
     , m_inputAdapter(inputAdapter)
+    , m_shellVisibility(shellVisibility)
     , m_coreEndpoint(new ControlEndpoint(bridge, this))
     , m_developmentInput(mutationsEnabled, developmentInputSink)
     , m_mutationsEnabled(mutationsEnabled)
@@ -57,6 +60,8 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
             this, &KWinControlEndpoint::OutputsChanged);
     connect(&inputAdapter, &KWinInputAdapter::capabilitiesChanged,
             this, &KWinControlEndpoint::InputCapabilitiesChanged);
+    connect(&shellVisibility, &KWinShellVisibilityPublisher::snapshotChanged,
+            this, &KWinControlEndpoint::ShellVisibilityChanged);
 }
 
 void KWinControlEndpoint::setHybridDiagnosticsProvider(
@@ -85,6 +90,7 @@ QByteArray KWinControlEndpoint::Capabilities() const
     auto methods = capabilities.value(QStringLiteral("methods")).toArray();
     for (const auto &method : {QStringLiteral("Windows"), QStringLiteral("Outputs"),
                                QStringLiteral("InputCapabilities"),
+                               QStringLiteral("ShellVisibilitySnapshot"),
                                QStringLiteral("Containers"), QStringLiteral("DockWindows"),
                                QStringLiteral("ReleaseContainer"),
                                QStringLiteral("InjectTestInput"),
@@ -98,6 +104,7 @@ QByteArray KWinControlEndpoint::Capabilities() const
                               QStringLiteral("InputCapabilitiesChanged")}) {
         events.append(event);
     }
+    events.append(QStringLiteral("ShellVisibilityChanged"));
     capabilities.insert(QStringLiteral("events"), events);
     capabilities.insert(QStringLiteral("kwinAbi"), QStringLiteral(QINDAQT_KWIN_ABI_VERSION));
     capabilities.insert(QStringLiteral("mutationsEnabled"), m_mutationsEnabled);
@@ -132,6 +139,11 @@ QByteArray KWinControlEndpoint::Outputs() const
 QByteArray KWinControlEndpoint::InputCapabilities() const
 {
     return ControlCodec::compactJson(m_inputAdapter.capabilitiesJson());
+}
+
+QByteArray KWinControlEndpoint::ShellVisibilitySnapshot() const
+{
+    return m_shellVisibility.snapshotJson();
 }
 
 QByteArray KWinControlEndpoint::Containers() const

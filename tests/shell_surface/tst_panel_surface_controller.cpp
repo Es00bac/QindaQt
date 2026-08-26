@@ -2,6 +2,7 @@
 #include "surface_test_fixtures.h"
 
 #include "qindaqt/shell_surface/panel_surface_controller.h"
+#include "qindaqt/shell_surface/panel_surface_runtime_planner.h"
 
 #include <QHash>
 #include <QSet>
@@ -20,8 +21,11 @@ struct FakeBackendState {
     int nextGeneration = 0;
     int prepareAttempts = 0;
     int publishAttempts = 0;
+    int reconfigureAttempts = 0;
     bool failPrepare = false;
     bool failPublish = false;
+    bool failReconfigure = false;
+    bool supportReconfigure = false;
     QSet<int> dismissedGenerations;
 };
 
@@ -42,6 +46,21 @@ public:
     {
         return m_state->liveSets.contains(m_generation) &&
             !m_state->dismissedGenerations.contains(m_generation);
+    }
+
+    ShellSurface::PublishedSurfaceReconfigureResult reconfigure(
+        const QVector<ShellSurface::PanelSurfaceConfiguration> &configurations) override
+    {
+        ++m_state->reconfigureAttempts;
+        if (m_state->failReconfigure) {
+            return {ShellSurface::PublishedSurfaceReconfigureCode::Failed,
+                    QStringLiteral("injected reconfigure failure")};
+        }
+        if (!m_state->supportReconfigure) {
+            return {ShellSurface::PublishedSurfaceReconfigureCode::Unsupported, {}};
+        }
+        m_state->liveSets[m_generation] = configurations;
+        return {ShellSurface::PublishedSurfaceReconfigureCode::Applied, {}};
     }
 
 private:
@@ -120,6 +139,8 @@ private slots:
     void publishesAnInitialSetAndSkipsAnIdenticalPlan();
     void republishesAnIdenticalPlanAfterCompositorDismissal();
     void replacesTheWholePublishedSetAfterSuccessfulStaging();
+    void reconfiguresALiveSetWithoutReplacingItsWindows();
+    void preservesStateWhenLiveReconfigurationFails();
     void preservesStateWhenPlanningFails();
     void preservesStateWhenBackendPreparationFails();
     void preservesStateWhenBackendPublicationFails();
@@ -189,6 +210,62 @@ void PanelSurfaceControllerTests::replacesTheWholePublishedSetAfterSuccessfulSta
     QCOMPARE(backend.state->liveSets.size(), 1);
     QCOMPARE(backend.activeConfigurations().constFirst().geometry.height(), 48);
     QCOMPARE(controller.currentPlan().surfaces.constFirst().geometry.height(), 48);
+}
+
+void PanelSurfaceControllerTests::reconfiguresALiveSetWithoutReplacingItsWindows()
+{
+    using namespace ShellSurface::TestFixtures;
+    FakePanelSurfaceBackend backend;
+    ShellSurface::PanelSurfaceController controller(backend);
+    const auto layout = solve({panel(QStringLiteral("top"))});
+    QVERIFY(controller.reconcile(layout).ok());
+    backend.state->supportReconfigure = true;
+    const auto base = controller.currentPlan();
+    const auto runtime = ShellSurface::PanelSurfaceRuntimePlanner::apply(
+        base, {{{QStringLiteral("top"), QStringLiteral("main")},
+                ShellSurface::PanelSurfaceMapping::Unmapped, false}});
+    QVERIFY2(runtime.ok(), qPrintable(runtime.error.message));
+
+    const auto result = controller.reconcilePlan(runtime.plan);
+
+    QVERIFY2(result.ok(), qPrintable(result.message));
+    QVERIFY(result.changed);
+    QCOMPARE(result.revision, quint64(2));
+    QCOMPARE(backend.state->reconfigureAttempts, 1);
+    QCOMPARE(backend.state->prepareAttempts, 1);
+    QCOMPARE(backend.state->publishAttempts, 1);
+    QCOMPARE(backend.state->nextGeneration, 1);
+    QCOMPARE(backend.activeConfigurations().constFirst().mapping,
+             ShellSurface::PanelSurfaceMapping::Unmapped);
+    QCOMPARE(controller.currentPlan(), runtime.plan);
+}
+
+void PanelSurfaceControllerTests::preservesStateWhenLiveReconfigurationFails()
+{
+    using namespace ShellSurface::TestFixtures;
+    FakePanelSurfaceBackend backend;
+    ShellSurface::PanelSurfaceController controller(backend);
+    const auto layout = solve({panel(QStringLiteral("top"))});
+    QVERIFY(controller.reconcile(layout).ok());
+    const auto retainedPlan = controller.currentPlan();
+    const auto retainedConfigurations = backend.activeConfigurations();
+    backend.state->failReconfigure = true;
+    auto changed = retainedPlan;
+    changed.surfaces[0].mapping = ShellSurface::PanelSurfaceMapping::Unmapped;
+    changed.surfaces[0].reservationCarrier = false;
+    changed.surfaces[0].exclusiveZone = -1;
+
+    const auto result = controller.reconcilePlan(changed);
+
+    QVERIFY(!result.ok());
+    QCOMPARE(result.code,
+             ShellSurface::PanelSurfaceControllerErrorCode::BackendReconfigureFailed);
+    QCOMPARE(result.message, QStringLiteral("injected reconfigure failure"));
+    QCOMPARE(result.revision, quint64(1));
+    QCOMPARE(controller.currentPlan(), retainedPlan);
+    QCOMPARE(backend.activeConfigurations(), retainedConfigurations);
+    QCOMPARE(backend.state->prepareAttempts, 1);
+    QCOMPARE(backend.state->publishAttempts, 1);
 }
 
 void PanelSurfaceControllerTests::preservesStateWhenPlanningFails()

@@ -6,13 +6,16 @@
 
 #include <LayerShellQt/Window>
 
+#include <QEvent>
 #include <QGuiApplication>
 #include <QHash>
+#include <QPointer>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QSet>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -20,9 +23,36 @@
 namespace QindaQt::ShellSurface {
 namespace {
 
+struct SurfaceLiveness {
+    bool dismissed = false;
+};
+
+class SurfaceCloseObserver final : public QObject {
+public:
+    SurfaceCloseObserver(std::shared_ptr<SurfaceLiveness> liveness, QObject *parent)
+        : QObject(parent)
+        , m_liveness(std::move(liveness))
+    {
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event != nullptr && event->type() == QEvent::Close) {
+            m_liveness->dismissed = true;
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    std::shared_ptr<SurfaceLiveness> m_liveness;
+};
+
 struct StagedWindow {
     PanelSurfaceConfiguration configuration;
     std::unique_ptr<QQuickWindow> window;
+    QPointer<QScreen> screen;
+    std::shared_ptr<SurfaceLiveness> liveness;
 };
 
 void setError(QString *error, QString message)
@@ -93,6 +123,16 @@ bool validEdge(Profiles::Edge edge)
     return false;
 }
 
+bool validMapping(PanelSurfaceMapping mapping)
+{
+    switch (mapping) {
+    case PanelSurfaceMapping::Mapped:
+    case PanelSurfaceMapping::Unmapped:
+        return true;
+    }
+    return false;
+}
+
 LayerShellQt::Window::Anchors protocolAnchors(SurfaceAnchors anchors)
 {
     LayerShellQt::Window::Anchors result;
@@ -149,7 +189,12 @@ bool validateConfiguration(const PanelSurfaceConfiguration &configuration, QStri
                      .arg(configuration.identity.panelId));
         return false;
     }
-    if (!configuration.geometry.isValid() || !nonNegativeMargins(configuration.margins) ||
+    if (!validMapping(configuration.mapping) ||
+        !configuration.outputGeometry.isValid() ||
+        !configuration.outputGeometry.contains(configuration.geometry) ||
+        !std::isfinite(configuration.outputScale) || configuration.outputScale <= 0.0 ||
+        configuration.outputScale > 16.0 || !configuration.geometry.isValid() ||
+        !nonNegativeMargins(configuration.margins) ||
         !validDesiredSize(configuration)) {
         setError(error,
                  QStringLiteral("panel '%1' has invalid protocol geometry")
@@ -158,6 +203,9 @@ bool validateConfiguration(const PanelSurfaceConfiguration &configuration, QStri
     }
     if (configuration.exclusiveZone == 0 || configuration.exclusiveZone < -1 ||
         configuration.reservationCarrier != (configuration.exclusiveZone > 0) ||
+        (configuration.reservationCarrier && !configuration.reservesWorkArea) ||
+        (configuration.mapping == PanelSurfaceMapping::Unmapped &&
+         (configuration.reservationCarrier || configuration.exclusiveZone > 0)) ||
         !configuration.anchors.testFlag(surfaceEdgeAnchor(configuration.edge))) {
         setError(error,
                  QStringLiteral("panel '%1' has invalid exclusive-zone values")
@@ -171,6 +219,63 @@ bool validateConfiguration(const PanelSurfaceConfiguration &configuration, QStri
         return false;
     }
     return true;
+}
+
+bool screenMatchesConfiguration(QScreen *screen,
+                                const PanelSurfaceConfiguration &configuration,
+                                QString *error)
+{
+    if (screen == nullptr || screen->name() != configuration.identity.outputId ||
+        screen->geometry() != configuration.outputGeometry ||
+        screen->devicePixelRatio() != configuration.outputScale) {
+        setError(error,
+                 QStringLiteral("Qt output '%1' changed before panel preparation")
+                     .arg(configuration.identity.outputId));
+        return false;
+    }
+    return true;
+}
+
+bool hasSameStaticRole(const PanelSurfaceConfiguration &left,
+                       const PanelSurfaceConfiguration &right)
+{
+    // AGENT-NOTE: placementOrder is a staging concern and changes when the
+    // reservation carrier changes. Existing roles need no recreation merely
+    // to record the next replacement set's carrier-first publication order.
+    return left.identity == right.identity &&
+        left.outputGeometry == right.outputGeometry &&
+        left.outputScale == right.outputScale && left.geometry == right.geometry &&
+        left.desiredSize == right.desiredSize && left.anchors == right.anchors &&
+        left.edge == right.edge && left.layer == right.layer &&
+        left.exclusiveEdge == right.exclusiveEdge &&
+        left.reservesWorkArea == right.reservesWorkArea;
+}
+
+StagedWindow *findWindow(std::vector<StagedWindow> &windows,
+                         const PanelSurfaceIdentity &identity)
+{
+    const auto item = std::find_if(windows.begin(), windows.end(),
+                                   [&identity](const auto &candidate) {
+                                       return candidate.configuration.identity == identity;
+                                   });
+    return item == windows.end() ? nullptr : &*item;
+}
+
+bool applyRuntimeConfiguration(StagedWindow &entry,
+                               const PanelSurfaceConfiguration &configuration)
+{
+    auto *layerWindow = LayerShellQt::Window::get(entry.window.get());
+    if (layerWindow == nullptr) {
+        return false;
+    }
+    layerWindow->setMargins(configuration.margins);
+    layerWindow->setExclusiveZone(configuration.exclusiveZone);
+    if (configuration.mapping == PanelSurfaceMapping::Mapped) {
+        entry.window->show();
+        return entry.window->isVisible();
+    }
+    entry.window->hide();
+    return !entry.window->isVisible();
 }
 
 class PublishedLayerShellSurfaceSet final : public PublishedSurfaceSet {
@@ -192,11 +297,71 @@ public:
     bool isLive() const noexcept override
     {
         return std::all_of(m_windows.cbegin(), m_windows.cend(), [](const auto &entry) {
-            // LayerShellQt closes its QWindow after a compositor dismissal.
-            // The retained object is then intentionally treated as stale so
-            // an identical returned output/layout creates a fresh role.
-            return entry.window != nullptr && entry.window->isVisible();
+            // AGENT-GUARD: Intentional autohide only changes visibility. The
+            // closing signal below marks compositor dismissal separately, and
+            // exact QScreen state catches output removal/replacement.
+            if (entry.window == nullptr || entry.liveness == nullptr ||
+                entry.liveness->dismissed || entry.screen.isNull() ||
+                entry.window->screen() != entry.screen ||
+                !screenMatchesConfiguration(entry.screen,
+                                             entry.configuration, nullptr)) {
+                return false;
+            }
+            return entry.configuration.mapping == PanelSurfaceMapping::Mapped
+                ? entry.window->isVisible()
+                : !entry.window->isVisible();
         });
+    }
+
+    PublishedSurfaceReconfigureResult reconfigure(
+        const QVector<PanelSurfaceConfiguration> &configurations) override
+    {
+        if (configurations.size() != static_cast<qsizetype>(m_windows.size())) {
+            return {PublishedSurfaceReconfigureCode::Unsupported, {}};
+        }
+        QVector<PanelSurfaceConfiguration> previous;
+        previous.reserve(configurations.size());
+        QHash<QString, QSet<QString>> identities;
+        for (const auto &configuration : configurations) {
+            QString diagnostic;
+            if (!validateConfiguration(configuration, &diagnostic)) {
+                return {PublishedSurfaceReconfigureCode::Failed,
+                        std::move(diagnostic)};
+            }
+            auto &panelIds = identities[configuration.identity.outputId];
+            if (panelIds.contains(configuration.identity.panelId)) {
+                return {PublishedSurfaceReconfigureCode::Failed,
+                        QStringLiteral("live panel reconfiguration contains a duplicate")};
+            }
+            panelIds.insert(configuration.identity.panelId);
+            auto *entry = findWindow(m_windows, configuration.identity);
+            if (entry == nullptr ||
+                !hasSameStaticRole(entry->configuration, configuration)) {
+                return {PublishedSurfaceReconfigureCode::Unsupported, {}};
+            }
+            if (!screenMatchesConfiguration(entry->screen, configuration, &diagnostic)) {
+                return {PublishedSurfaceReconfigureCode::Failed,
+                        std::move(diagnostic)};
+            }
+            previous.append(entry->configuration);
+        }
+
+        for (const auto &configuration : configurations) {
+            auto *entry = findWindow(m_windows, configuration.identity);
+            if (entry == nullptr || !applyRuntimeConfiguration(*entry, configuration)) {
+                for (const auto &rollback : previous) {
+                    if (auto *rollbackEntry = findWindow(m_windows, rollback.identity)) {
+                        applyRuntimeConfiguration(*rollbackEntry, rollback);
+                    }
+                }
+                return {PublishedSurfaceReconfigureCode::Failed,
+                        QStringLiteral("a live panel rejected its visibility transition")};
+            }
+        }
+        for (const auto &configuration : configurations) {
+            findWindow(m_windows, configuration.identity)->configuration = configuration;
+        }
+        return {PublishedSurfaceReconfigureCode::Applied, {}};
     }
 
 private:
@@ -218,6 +383,9 @@ public:
         }
 
         for (auto &entry : m_windows) {
+            if (entry.configuration.mapping == PanelSurfaceMapping::Unmapped) {
+                continue;
+            }
             entry.window->show();
             if (!entry.window->isVisible()) {
                 for (auto &rollback : m_windows) {
@@ -289,6 +457,10 @@ std::unique_ptr<PreparedSurfaceSet> LayerShellSurfaceBackend::prepare(
             setError(error, std::move(diagnostic));
             return nullptr;
         }
+        if (!screenMatchesConfiguration(screen, configuration, &diagnostic)) {
+            setError(error, std::move(diagnostic));
+            return nullptr;
+        }
         auto window = m_factory.createWindow(configuration, &diagnostic);
         if (!window) {
             setError(error,
@@ -332,7 +504,14 @@ std::unique_ptr<PreparedSurfaceSet> LayerShellSurfaceBackend::prepare(
         layerWindow->setLayer(*protocolLayer(configuration.layer));
         layerWindow->setExclusiveEdge(protocolEdge(configuration.exclusiveEdge));
         layerWindow->setExclusiveZone(configuration.exclusiveZone);
-        staged.push_back({configuration, std::move(window)});
+        if (!screenMatchesConfiguration(screen, configuration, &diagnostic)) {
+            setError(error, std::move(diagnostic));
+            return nullptr;
+        }
+        auto liveness = std::make_shared<SurfaceLiveness>();
+        window->installEventFilter(new SurfaceCloseObserver(liveness, window.get()));
+        staged.push_back({configuration, std::move(window), screen,
+                          std::move(liveness)});
     }
     return std::make_unique<PreparedLayerShellSurfaceSet>(std::move(staged));
 }

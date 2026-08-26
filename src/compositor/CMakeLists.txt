@@ -10,6 +10,7 @@ target_sources(
         src/controlcodec.cpp
         src/controlendpoint.cpp
         src/operationexecutor.cpp
+        src/shellvisibilitysnapshot.cpp
     PUBLIC
         FILE_SET public_headers
         TYPE HEADERS
@@ -21,10 +22,14 @@ target_sources(
             include/qindaqt/compositor/controllimits.h
             include/qindaqt/compositor/controltypes.h
             include/qindaqt/compositor/sceneadapter.h
+            include/qindaqt/compositor/shellvisibilitysnapshot.h
 )
 
 target_compile_features(qindaqt_compositor_bridge PUBLIC cxx_std_20)
-target_link_libraries(qindaqt_compositor_bridge PUBLIC QindaQt::Core Qt6::Core)
+target_link_libraries(
+    qindaqt_compositor_bridge
+    PUBLIC QindaQt::Core QindaQt::ShellVisibilityProtocol Qt6::Core
+)
 set_target_properties(
     qindaqt_compositor_bridge
     PROPERTIES
@@ -178,6 +183,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         SOURCES
             kwin/kwincontrolendpoint.cpp
             kwin/kwincontrolendpoint.h
+            kwin/kwinshellvisibilitypublisher.cpp
+            kwin/kwinshellvisibilitypublisher.h
             kwin/kwininteractiontargetresolver.cpp
             kwin/kwininteractiontargetresolver.h
             kwin/hybriddocktargetrouting.cpp
@@ -268,6 +275,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/mutationcontrol.h
             kwin/qindaqtkwinplugin.cpp
             kwin/qindaqtkwinplugin.h
+            kwin/shellvisibilityrefreshscheduler.cpp
+            kwin/shellvisibilityrefreshscheduler.h
+            kwin/shellvisibilitywindowadmission.cpp
+            kwin/shellvisibilitywindowadmission.h
         INSTALL_NAMESPACE "kwin/plugins"
     )
     target_link_libraries(

@@ -8,6 +8,7 @@ add_subdirectory(hybrid)
 add_subdirectory(hybrid_constraints)
 add_subdirectory(hybrid_chrome)
 add_subdirectory(hybrid_input)
+add_subdirectory(shell_visibility_protocol)
 if(QINDAQT_BUILD_KWIN_PLUGIN)
     # The decoration is part of the binary KWin integration contract. Keeping
     # it behind the same option preserves the documented dependency-free
@@ -18,6 +19,7 @@ add_subdirectory(compositor)
 add_subdirectory(applets)
 add_subdirectory(shell_customization)
 add_subdirectory(shell_visibility)
+add_subdirectory(shell_visibility_client)
 add_subdirectory(applet_host)
 add_subdirectory(session)
 add_subdirectory(settings)
@@ -26,6 +28,7 @@ add_subdirectory(services/notification_host)
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     add_subdirectory(shell_surface)
+    add_subdirectory(shell_orchestration)
 endif()
 
 if(QINDAQT_BUILD_SHELL)

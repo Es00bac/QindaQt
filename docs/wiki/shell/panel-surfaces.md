@@ -12,11 +12,13 @@ dependency choice is recorded in
 
 1. load and select a validated profile and theme;
 2. inventory Qt Wayland outputs by non-empty, unique `QScreen::name()`;
-3. solve every profile panel through `shell_layout`;
-4. plan a complete backend-neutral surface set;
-5. create every QML window hidden and assign its layer-shell role; and
-6. publish the complete replacement set while retaining the prior set until
-   the new set is prepared.
+3. start the owner-bound compositor visibility client and select either one
+   coherent live generation or the all-visible fallback;
+4. require exact compositor/Qt output identity, logical geometry, and scale;
+5. solve every profile panel and visibility decision through pure modules;
+6. plan a complete backend-neutral surface set; and
+7. create hidden QML/layer roles for structural changes, or update mapping and
+   reservations in place when every static surface role is unchanged.
 
 An invalid catalog, output inventory, layout, window, or backend preparation
 prevents the candidate from replacing the visible set. Startup exits with a
@@ -37,7 +39,8 @@ rectangles, and work areas. `shell_surface` then owns:
   exclusive zone;
 - selection of one reservation carrier for each output edge;
 - deterministic placement order;
-- failure-aware controller revisions and backend reconciliation;
+- failure-aware controller revisions, in-place runtime transitions, and
+  complete-set structural reconciliation;
 - the GUI-thread-only Qt output inventory; and
 - the private LayerShellQt adapter.
 
@@ -76,6 +79,9 @@ surface identity; wildcard panels expand again from the new inventory. A
 compositor-dismissed layer window is treated as a stale published set even when
 the returned output produces an identical plan, so hotplug recovery creates
 fresh protocol roles instead of incorrectly eliding the reconciliation.
+Intentional autohide is tracked separately from a close event. The backend also
+rechecks the selected screen's identity, logical geometry, and device scale
+immediately before role preparation and every in-place transition.
 
 `QScreen::name()` is not yet a durable connector migration key. Display
 settings and Platform services will later own persistent aliases, lid/hotplug
@@ -85,14 +91,14 @@ display.
 
 ## Current visible scope
 
-This slice makes panels and docks real compositor-managed surfaces. It does not
-turn the preview applet chips into live applets. The pure
-[panel visibility policy](panel-visibility.md) now defines every hide mode and
-reservation decision, but its compositor inventory and live surface adapter
-are not wired. The runtime therefore still keeps non-`never` hide modes visible
-and logs that fallback. Global menu, notification presentation, live services,
-applet process hosting, and settings preview subscription remain acceptance
-work for the Shell/customization milestone.
+This slice makes panels and docks real compositor-managed surfaces and wires
+the compositor-driven [panel visibility policy](panel-visibility.md) into the
+production runtime. Safe-visible recovery is active, and visibility-only
+updates retain existing panel/QML objects. The preview applet chips are still
+not live applets; edge reveal/hold producers and hide animation also remain
+acceptance work. Global menu, notification presentation, live services, applet
+process hosting, and settings preview subscription remain in the
+Shell/customization milestone.
 
 The controller and planner have focused fake-backend tests for valid and
 adversarial layouts. Bounded per-role protocol evidence requires the exact
@@ -106,5 +112,6 @@ live; its separate final trace checks identity stability through teardown.
 Parser tests reject oversized input, invalid ordering, unmapped acknowledges,
 and role/backing-object reuse or destroy ambiguity. Maximized work-area
 reduction and restoration are observed separately; screenshots alone are not
-evidence for protocol state. Partial-panel and mixed-output live publication
-remain later matrix rows.
+evidence for protocol state. The existing matrix proves initial publication,
+not live automatic-hide transitions. Those transitions, partial panels, and
+heterogeneous multi-output publication remain later matrix rows.

@@ -6,17 +6,24 @@ add_library(QindaQt::ShellVisibility ALIAS qindaqt_shell_visibility)
 target_sources(
     qindaqt_shell_visibility
     PRIVATE
+        src/compositor_visibility_snapshot.cpp
+        src/compositor_visibility_state.cpp
         src/panel_visibility_policy.cpp
         src/visibility_inventory_validator.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/shell_visibility/compositor_visibility_snapshot.h
+            include/qindaqt/shell_visibility/compositor_visibility_state.h
             include/qindaqt/shell_visibility/panel_visibility_policy.h
             include/qindaqt/shell_visibility/panel_visibility_types.h
 )
 
-target_link_libraries(qindaqt_shell_visibility PUBLIC qindaqt_profiles Qt6::Core)
+target_link_libraries(
+    qindaqt_shell_visibility
+    PUBLIC qindaqt_profiles QindaQt::ShellVisibilityProtocol Qt6::Core
+)
 target_compile_features(qindaqt_shell_visibility PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_visibility PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_visibility)

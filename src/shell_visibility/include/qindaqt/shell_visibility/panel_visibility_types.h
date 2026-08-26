@@ -25,6 +25,7 @@ struct LogicalOutputSnapshot {
   // be negative or overlap another output for mirroring.
   QString id;
   QRect geometry;
+  qreal scale = 1.0;
 
   friend bool operator==(const LogicalOutputSnapshot &,
                          const LogicalOutputSnapshot &) = default;
@@ -54,9 +55,10 @@ struct LogicalWindowSnapshot {
   // window can still overlap a panel on another output through frameGeometry.
   QString outputId;
   QRect frameGeometry;
-  // When onAllWorkspaces is true, workspaceId must be empty. Otherwise it is
-  // the one workspace containing the window.
-  QString workspaceId;
+  // When onAllWorkspaces is true, workspaceIds must be empty. Otherwise this
+  // contains every workspace carrying the window; KWin permits a window on
+  // more than one virtual desktop without making it globally sticky.
+  QStringList workspaceIds;
   // An empty list means the window is present on every activity.
   QStringList activityIds;
   bool onAllWorkspaces = false;
@@ -143,6 +145,7 @@ enum class PanelVisibilityErrorCode {
   InvalidOutputId,
   DuplicateOutputId,
   InvalidOutputGeometry,
+  InvalidOutputScale,
   InvalidPanelIdentity,
   DuplicatePanelIdentity,
   UnknownPanelOutput,

@@ -61,10 +61,18 @@ opposite-edge anchoring convention; partial surfaces use explicit edge,
 alignment anchors, desired size, and margins derived from the solver rectangle.
 
 The controller validates and prepares a complete replacement set before
-publication and keeps the prior set alive until preparation succeeds. The
-Wayland protocol does not provide an atomic transaction spanning several layer
-surfaces, so this is failure atomic in QindaQt state but not a claim of
-single-frame compositor atomicity.
+publication and keeps the prior set alive until preparation succeeds. When
+surface identity and every static role value are unchanged, the published set
+may instead apply margins, exclusive zones, and mapped state in place. This
+preserves QML and applet instances across automatic-hide transitions. The
+backend prevalidates the complete candidate and rolls back synchronous Qt state
+if a transition fails. Structural changes continue to use replacement.
+
+The Wayland protocol does not provide an atomic transaction spanning several
+layer surfaces, so either path is failure atomic in QindaQt state but not a
+claim of single-frame compositor atomicity. A close event marks a retained role
+as compositor-dismissed; ordinary `hide()` does not. Exact screen identity,
+logical geometry, and scale are also liveness requirements.
 
 ## Consequences
 
@@ -77,9 +85,9 @@ single-frame compositor atomicity.
   services and require later qualification.
 - Layer and exclusive-zone correctness requires nested compositor evidence;
   screenshots alone cannot prove either property.
-- Window-aware hiding, applet execution, global menu, notifications, and live
-  settings publication remain separate shell slices rather than being embedded
-  in the surface adapter.
+- Window-aware policy and transport remain outside this adapter. Applet
+  execution, global menu, notification presentation, reveal animation, and
+  live settings publication remain separate shell slices.
 
 ## Alternatives considered
 

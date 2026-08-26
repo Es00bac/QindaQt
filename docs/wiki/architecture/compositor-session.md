@@ -95,6 +95,10 @@ The KWin plugin provides:
 - a registry of normal non-internal windows keyed by KWin's internal UUID;
 - ordered logical output inventory with stable transform names, exact scale,
   numeric mHz refresh, and change invalidation;
+- an independently admitted, bounded shell-visibility publisher that atomically
+  snapshots exact logical outputs, normal/dialog/utility user windows, current
+  workspace/activity, Hybrid whole-group maximize state, and a per-service
+  epoch behind one coalesced Compositor1 invalidation;
 - sanitized input-device capabilities and a non-consuming lifecycle-safe
   `InputEventSpy` with no key text/native scan codes/serials or public event
   stream;

@@ -19,6 +19,7 @@ enum class PanelSurfaceControllerErrorCode {
     PlanningFailed,
     BackendPrepareFailed,
     BackendPublishFailed,
+    BackendReconfigureFailed,
     RevisionExhausted,
 };
 
@@ -48,6 +49,11 @@ public:
 
     [[nodiscard]] PanelSurfaceControllerResult reconcile(
         const ShellLayout::PanelLayoutResult &layout);
+    // Accepts an already validated base/runtime plan so visibility and
+    // reservation can be replaced together without asking the controller to
+    // understand window policy.
+    [[nodiscard]] PanelSurfaceControllerResult reconcilePlan(
+        PanelSurfacePlan candidate);
 
     [[nodiscard]] quint64 revision() const noexcept;
     [[nodiscard]] const PanelSurfacePlan &currentPlan() const noexcept;

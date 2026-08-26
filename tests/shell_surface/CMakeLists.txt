@@ -35,3 +35,8 @@ qindaqt_add_shell_surface_test(
     tst_panel_surface_controller.cpp
     qindaqt.shell-surface-controller
 )
+qindaqt_add_shell_surface_test(
+    qindaqt_panel_surface_runtime_planner_tests
+    tst_panel_surface_runtime_planner.cpp
+    qindaqt.shell-surface-runtime-planner
+)

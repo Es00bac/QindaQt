@@ -176,7 +176,10 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             return m_sceneFactory->reflowContainer(container, frame);
         },
         [this](const QString &id) { return workArea(id); },
-        [this] { synchronizeChrome(); });
+        [this] {
+            synchronizeChrome();
+            Q_EMIT shellVisibilityStateChanged();
+        });
     m_interactionController = std::make_unique<HybridInput::InteractionController>(
         *m_targetResolver);
     m_chromePointerRouter = std::make_unique<HybridChromePointerRouter>(
