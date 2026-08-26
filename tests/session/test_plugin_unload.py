@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Any
 
 from hybrid_pointer_validation import validate_hybrid_unload_evidence
+from host_input_consent import (
+    HOST_UINPUT_CONSENT_ENV,
+    HOST_UINPUT_SKIP_CODE,
+    host_uinput_consent_error,
+)
 
 
 def isolated_environment(root: Path) -> dict[str, str]:
@@ -74,8 +79,15 @@ def parse_arguments() -> argparse.Namespace:
 
 def main() -> int:
     arguments = parse_arguments()
+    consent_error = host_uinput_consent_error(
+        arguments.expect_hybrid_pointer is not None, os.environ
+    )
+    if consent_error is not None:
+        print(consent_error, file=sys.stderr)
+        return HOST_UINPUT_SKIP_CODE
     with tempfile.TemporaryDirectory(prefix="qindaqt-plugin-unload-") as directory:
         environment = isolated_environment(Path(directory))
+        environment.pop(HOST_UINPUT_CONSENT_ENV, None)
         if arguments.expect_hybrid_pointer is not None:
             environment["QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD"] = "1"
             environment["QINDAQT_DOTOOL"] = str(arguments.expect_hybrid_pointer)

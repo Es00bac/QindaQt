@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellpreviewapplication.h"
 
+#include "../common/catalogpaths.h"
 #include "screenshotcapture.h"
 
 #include <QCoreApplication>
 #include <QDebug>
-#include <QDir>
 #include <QGuiApplication>
 #include <QQmlContext>
 #include <QQuickWindow>
-#include <QStandardPaths>
 #include <QTextStream>
 
 namespace QindaQt::Shell {
@@ -51,36 +50,16 @@ int ShellPreviewApplication::run()
     return m_application.exec();
 }
 
-QString ShellPreviewApplication::resolveDataDirectory(const QString &explicitPath,
-                                                      const char *environmentName,
-                                                      const char *sourcePath,
-                                                      const QString &installedSuffix) const
-{
-    if (!explicitPath.isEmpty()) {
-        return QDir::cleanPath(explicitPath);
-    }
-    const QString environmentPath = qEnvironmentVariable(environmentName);
-    if (!environmentPath.isEmpty()) {
-        return QDir::cleanPath(environmentPath);
-    }
-    if (QDir(QString::fromUtf8(sourcePath)).exists()) {
-        return QString::fromUtf8(sourcePath);
-    }
-    return QStandardPaths::locate(QStandardPaths::GenericDataLocation,
-                                  installedSuffix,
-                                  QStandardPaths::LocateDirectory);
-}
-
 bool ShellPreviewApplication::loadCatalogs(const PreviewOptions &options, QString *error)
 {
-    const QString profileDirectory = resolveDataDirectory(options.profileDirectory,
-                                                          "QINDAQT_PROFILE_DIR",
-                                                          QINDAQT_SOURCE_PROFILE_DIR,
-                                                          QStringLiteral("qindaqt/profiles"));
-    const QString themeDirectory = resolveDataDirectory(options.themeDirectory,
-                                                        "QINDAQT_THEME_DIR",
-                                                        QINDAQT_SOURCE_THEME_DIR,
-                                                        QStringLiteral("qindaqt/themes"));
+    const QString profileDirectory = resolveCatalogDataDirectory(options.profileDirectory,
+                                                                 "QINDAQT_PROFILE_DIR",
+                                                                 QINDAQT_SOURCE_PROFILE_DIR,
+                                                                 QStringLiteral("qindaqt/profiles"));
+    const QString themeDirectory = resolveCatalogDataDirectory(options.themeDirectory,
+                                                               "QINDAQT_THEME_DIR",
+                                                               QINDAQT_SOURCE_THEME_DIR,
+                                                               QStringLiteral("qindaqt/themes"));
     if (!m_profiles.loadDirectory(profileDirectory, error)) {
         return false;
     }

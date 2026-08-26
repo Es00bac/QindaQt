@@ -12,7 +12,10 @@ target_sources(
         src/layout_candidate_validator.cpp
         src/layout_edit_helpers.cpp
         src/layout_edit_mutation.cpp
+        src/layout_edit_preparation.cpp
+        src/layout_edit_request.cpp
         src/layout_editing_coordinator.cpp
+        src/layout_editing_evaluation.cpp
         src/layout_editing_repository.cpp
         src/panel_edit_mutation.cpp
     PUBLIC

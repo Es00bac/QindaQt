@@ -4,6 +4,8 @@ qt_add_executable(
     qindaqt-shell-preview
     app/captureenvironment.cpp
     app/captureenvironment.h
+    common/catalogpaths.cpp
+    common/catalogpaths.h
     app/main.cpp
     app/previewoptions.cpp
     app/previewoptions.h
@@ -24,7 +26,9 @@ qt_add_qml_module(
         qml/DesktopPreview.qml
         qml/Main.qml
         qml/MemberWindow.qml
+        qml/PanelAppletColumn.qml
         qml/PanelAppletRow.qml
+        qml/PanelContent.qml
         qml/PanelSurface.qml
         qml/PreviewControls.qml
         qml/WindowGroupPreview.qml
@@ -53,3 +57,54 @@ target_compile_definitions(
 qindaqt_enable_warnings(qindaqt-shell-preview)
 
 install(TARGETS qindaqt-shell-preview RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+if(QINDAQT_BUILD_PRODUCTION_SHELL)
+    qt_add_executable(
+        qindaqt-shell
+        common/catalogpaths.cpp
+        common/catalogpaths.h
+        runtime/main.cpp
+        runtime/runtimeoptions.cpp
+        runtime/runtimeoptions.h
+        runtime/runtimepanelwindowfactory.cpp
+        runtime/runtimepanelwindowfactory.h
+        runtime/shellruntimeapplication.cpp
+        runtime/shellruntimeapplication.h
+    )
+
+    qt_add_qml_module(
+        qindaqt-shell
+        URI QindaQt.Shell.Runtime
+        VERSION 1.0
+        QML_FILES
+            qml/AppletChip.qml
+            qml/PanelAppletColumn.qml
+            qml/PanelAppletRow.qml
+            qml/PanelContent.qml
+            qml/RuntimePanel.qml
+    )
+
+    target_link_libraries(
+        qindaqt-shell
+        PRIVATE
+            qindaqt_profiles
+            QindaQt::ShellLayout
+            QindaQt::ShellSurface
+            qindaqt_themes
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Qml
+            Qt6::Quick
+    )
+
+    target_compile_definitions(
+        qindaqt-shell
+        PRIVATE
+            QINDAQT_VERSION="${PROJECT_VERSION}"
+            QINDAQT_SOURCE_PROFILE_DIR="${PROJECT_SOURCE_DIR}/data/profiles"
+            QINDAQT_SOURCE_THEME_DIR="${PROJECT_SOURCE_DIR}/data/themes"
+    )
+
+    qindaqt_enable_warnings(qindaqt-shell)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()

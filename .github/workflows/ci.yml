@@ -39,31 +39,53 @@ jobs:
       - name: Enforce modular source shape
         run: ./tools/check-source-shape
 
+      - name: Install the pinned wiki toolchain
+        run: >-
+          python3 -m pip install --disable-pip-version-check
+          -r docs/requirements.txt
+
       - name: Validate project wiki and links
-        run: ./tools/validate-docs
+        run: |
+          ./tools/validate-docs
+          python3 -m mkdocs build --strict \
+            --site-dir "${RUNNER_TEMP}/qindaqt-wiki"
 
   core-build:
     name: Configure, build, and test the dependency-light core
     needs: repository-policy
     runs-on: ubuntu-24.04
+    container:
+      image: archlinux:base-devel
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: "6.11.*"
-          cache: true
-
       # AGENT-CONTRACT: Keep mandatory build dependencies explicit here. Do not
       # hide a missing dependency or failed target behind `|| true`; split future
       # compositor integration into a separately provisioned job instead.
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends cmake ninja-build
+          pacman -Syu --noconfirm --needed \
+            cmake \
+            extra-cmake-modules \
+            git \
+            kdecoration \
+            ninja \
+            python \
+            qt6-base \
+            qt6-declarative
+
+      - uses: actions/checkout@v4
+
+      - name: Record dependency versions
+        run: >-
+          pacman -Q cmake extra-cmake-modules kdecoration
+          qt6-base qt6-declarative
 
       - name: Configure
-        run: cmake -S . -B build/ci -G Ninja -DBUILD_TESTING=ON
+        run: >-
+          cmake -S . -B build/ci -G Ninja -DBUILD_TESTING=ON
+          -DQINDAQT_BUILD_KWIN_PLUGIN=OFF
+          -DQINDAQT_BUILD_PRODUCTION_SHELL=OFF
+          -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
 
       - name: Build
         run: cmake --build build/ci --parallel 2
@@ -76,4 +98,99 @@ jobs:
           --program ./build/ci/src/shell/qindaqt-shell-preview --smoke-test --execute
 
       - name: Test
-        run: ctest --test-dir build/ci --output-on-failure
+        run: ctest --test-dir build/ci --output-on-failure --no-tests=error
+
+  production-shell:
+    name: Build and prove production LayerShell panels
+    needs: repository-policy
+    runs-on: ubuntu-24.04
+    container:
+      image: archlinux:base-devel
+    timeout-minutes: 30
+    steps:
+      # AGENT-CONTRACT: This lane deliberately uses the current rolling KWin
+      # runtime with QindaQt's binary KWin plugin disabled. It proves the public
+      # layer-shell client boundary, not the separately pinned KWin 6.6.5 ABI.
+      - name: Install production shell and nested-session dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            cmake \
+            dbus \
+            extra-cmake-modules \
+            git \
+            kdecoration \
+            kwin \
+            layer-shell-qt \
+            libcap \
+            ninja \
+            python \
+            qt6-base \
+            qt6-declarative \
+            qt6-wayland \
+            xorg-xdpyinfo \
+            xorg-xwayland
+
+      # Arch gives kwin_wayland CAP_SYS_NICE as a file capability. GitHub's
+      # ordinary container bounding set intentionally excludes that
+      # capability, which makes execve fail with EPERM before KWin starts.
+      # This nested virtual-output lane does not need realtime scheduling, so
+      # remove only that packaged file capability inside the disposable job
+      # container instead of granting SYS_NICE to every following step.
+      - name: Make nested KWin executable in the restricted CI container
+        run: |
+          kwin_capability="$(getcap /usr/bin/kwin_wayland)"
+          case "$kwin_capability" in
+            "/usr/bin/kwin_wayland cap_sys_nice=ep")
+              setcap -r /usr/bin/kwin_wayland
+              ;;
+            "")
+              ;;
+            *)
+              echo "unexpected kwin_wayland file capabilities: $kwin_capability" >&2
+              exit 1
+              ;;
+          esac
+          test -z "$(getcap /usr/bin/kwin_wayland)"
+          kwin_wayland --version
+
+      - uses: actions/checkout@v4
+
+      - name: Record production shell stack
+        run: >-
+          pacman -Q dbus extra-cmake-modules kdecoration kwin
+          layer-shell-qt libcap qt6-base qt6-declarative qt6-wayland
+          xorg-xwayland
+
+      - name: Configure production shell without the binary KWin plugin
+        run: >-
+          cmake -S . -B build/ci-production -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=ON
+          -DQINDAQT_BUILD_KWIN_PLUGIN=OFF
+          -DQINDAQT_BUILD_SHELL=ON
+          -DQINDAQT_BUILD_PRODUCTION_SHELL=ON
+          -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF
+
+      - name: Build production shell and probes
+        run: cmake --build build/ci-production --parallel 2
+
+      - name: Test backend-neutral panel surfaces
+        run: |
+          ctest --test-dir build/ci-production \
+            -R '^qindaqt\.shell-surface-configuration$' \
+            --output-on-failure --no-tests=error
+          ctest --test-dir build/ci-production \
+            -R '^qindaqt\.shell-surface-controller$' \
+            --output-on-failure --no-tests=error
+
+      - name: Test production panels under nested KWin
+        run: |
+          ctest --test-dir build/ci-production \
+            -R '^shell\.production-surface\.1080p$' \
+            --output-on-failure --no-tests=error
+          ctest --test-dir build/ci-production \
+            -R '^shell\.production-surface\.wuxga$' \
+            --output-on-failure --no-tests=error
+          ctest --test-dir build/ci-production \
+            -R '^shell\.production-surface\.1440p$' \
+            --output-on-failure --no-tests=error

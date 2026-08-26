@@ -17,6 +17,8 @@ workflow. It changes with the code and is validated as part of the repository.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.
+- [Notification service](architecture/notifications-service.md) records the
+  bounded model, freedesktop adapter, and remaining presentation boundary.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Hybrid topology](architecture/hybrid-topology.md),
@@ -26,6 +28,11 @@ workflow. It changes with the code and is validated as part of the repository.
 - [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
   QindaQt, GNOME-, Unity-, MATE-, XFCE-, NeXTSTEP-, macOS-, Windows-inspired,
   and user-created workflows without separate shells.
+- [Production panel surfaces](shell/panel-surfaces.md) defines the real
+  LayerShellQt-backed panel runtime and its current qualification boundary.
+- [Panel visibility policy](shell/panel-visibility.md) defines window-aware
+  hiding, reveal/hold priority, and reservation intent without platform side
+  effects.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes

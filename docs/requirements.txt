@@ -1,0 +1,2 @@
+# Exact direct dependency for deterministic strict wiki validation in CI.
+mkdocs==1.6.1

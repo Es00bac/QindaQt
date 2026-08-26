@@ -18,14 +18,18 @@ tests, and the wiki page describing its contract.
 | `src/profiles` | Layout-profile schema, validation, migration, and built-in profile data | `core` only when shared value types are unavoidable |
 | `src/shell_layout` | Pure expansion, collision-free logical geometry planning, and per-output work areas | Public `profiles` values and Qt Core; never shell surfaces, compositor objects, or physical-pixel conversion |
 | `src/shell_customization` | Exclusive editor leases, retained immutable snapshots, manifest-aware mutations, preview/history policy, and atomic candidate validation | Public `profiles`, `applets`, and `shell_layout` values plus Qt Core; never applet execution, shell surfaces, persistence, or settings UI |
+| `src/shell_visibility` | Pure, batch-atomic window-aware panel visibility and reservation decisions | Public `profiles` values and Qt Core; never KWin objects, timers, QML, or layer-shell side effects |
+| `src/shell_surface` | Backend-neutral panel-surface planning and reconciliation, Qt output inventory, and the private LayerShellQt platform adapter | Public `profiles` and `shell_layout` values, Qt Gui/Quick, and LayerShellQt only in the adapter; never catalogs, applets, settings, or QML policy |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
 | `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/settings` | Schema-v1 settings values, layered resolution, optimistic transactions, change sets, and atomic persistence | Qt Core only; future service adapters consume this public model |
-| `src/shell` | Qt Quick presentation and controllers consuming public domain/profile/theme APIs | `core`, `profiles`, `themes`, and public service clients |
+| `src/shell` | Qt Quick presentation, production panel-window factory, and shell controllers consuming public values | `core`, `profiles`, `themes`, `shell_layout`, `shell_surface`, and public service clients; never LayerShellQt directly |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin registry, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid contracts, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
+| `src/services/notifications` | Bounded notification policy/model plus a separate freedesktop QtDBus adapter | Qt Core for the domain; QtDBus only in the protocol adapter; never QML or Plasma runtime |
+| `src/services/notification_host` | Resident D-Bus ownership and one-shot notification-expiry scheduling | Public notification model/adapter plus Qt Core/DBus; never popup UI, history persistence, sound, or session supervision |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
 | `tools` and `tests` | Isolated development harnesses, fixtures, integration scenarios, and verification | Public APIs; test-only hooks in test builds |
@@ -46,7 +50,10 @@ implemented; do not use placeholder modules to bypass a boundary.
   Hybrid revisions and value snapshots for read-only observation without
   becoming the interaction transport.
 - The shell depends on service clients, not service implementations. Platform
-  adapters never call QML objects.
+  adapters never call QML objects. In particular, the freedesktop notification
+  server is producer-facing; notification presentation requires a versioned
+  private resident-host adapter and public shell client rather than an
+  implementation-library link.
 - Applets and applications use the SDK and public IPC. They do not include shell
   private headers or assume a specific panel implementation.
 - Tests use public APIs first. Input-injection providers/devices, fake-device

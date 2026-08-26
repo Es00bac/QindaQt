@@ -27,10 +27,6 @@ public:
     int run();
 
 private:
-    [[nodiscard]] QString resolveDataDirectory(const QString &explicitPath,
-                                               const char *environmentName,
-                                               const char *sourcePath,
-                                               const QString &installedSuffix) const;
     [[nodiscard]] bool loadCatalogs(const PreviewOptions &options, QString *error);
     void printCatalog() const;
     [[nodiscard]] bool loadWindow(const PreviewOptions &options);

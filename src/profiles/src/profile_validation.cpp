@@ -402,11 +402,11 @@ ProfileValidationResult validateApplet(const AppletSpec &applet,
 
 ProfileValidationResult ProfileValidator::validate(const LayoutProfile &profile)
 {
-    if (profile.schemaVersion != QINDAQT_PROFILE_SCHEMA_VERSION) {
+    if (profile.schemaVersion != LayoutProfileSchemaVersion) {
         return failure(ProfileErrorCode::UnsupportedSchemaVersion,
                        QStringLiteral("/schemaVersion"),
                        QStringLiteral("schemaVersion must be exactly %1")
-                           .arg(QINDAQT_PROFILE_SCHEMA_VERSION));
+                           .arg(LayoutProfileSchemaVersion));
     }
     if (!isCanonicalIdentifier(profile.id)) {
         return failure(ProfileErrorCode::InvalidIdentifier,

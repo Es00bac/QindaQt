@@ -28,12 +28,6 @@ target_link_libraries(qindaqt_profiles PUBLIC Qt6::Core)
 target_compile_features(qindaqt_profiles PUBLIC cxx_std_20)
 qindaqt_enable_warnings(qindaqt_profiles)
 
-target_compile_definitions(
-    qindaqt_profiles
-    PUBLIC
-        QINDAQT_PROFILE_SCHEMA_VERSION=1
-)
-
 install(
     TARGETS qindaqt_profiles
     EXPORT QindaQtTargets

@@ -2,10 +2,11 @@
 #include "qindaqt/shell_customization/layout_editing_coordinator.h"
 
 #include "layout_candidate_validator_p.h"
-#include "layout_edit_mutation_p.h"
+#include "layout_edit_helpers_p.h"
+#include "layout_edit_preparation_p.h"
+#include "layout_edit_request_p.h"
 #include "layout_editing_repository_p.h"
 
-#include <limits>
 #include <utility>
 
 namespace QindaQt::ShellCustomization {
@@ -30,12 +31,6 @@ EditingError error(EditingErrorCode code, QString message)
     return {code, std::move(message), {}, {}};
 }
 
-bool sameProfile(const Profiles::LayoutProfile &first,
-                 const Profiles::LayoutProfile &second)
-{
-    return first.toJson() == second.toJson();
-}
-
 std::shared_ptr<const Profiles::LayoutProfile> profileAlias(
     const std::shared_ptr<const LayoutEditingSnapshot> &snapshot) noexcept
 {
@@ -57,13 +52,6 @@ public:
 private:
     bool &m_executing;
 };
-
-bool consumesReservedPreviewRevision(EditingCommandKind kind) noexcept
-{
-    return kind != EditingCommandKind::CommitPreview
-        && kind != EditingCommandKind::CancelPreview
-        && kind != EditingCommandKind::BeginPreview;
-}
 
 } // namespace
 
@@ -92,35 +80,13 @@ EditingResult LayoutEditingCoordinator::execute(const EditingCommand &command)
     }
     ExecutionGuard guard(session.executing);
 
-    if (!m_repository.isReady()) {
-        EditingError initialization = m_repository.initializationError();
-        initialization.code = EditingErrorCode::RepositoryNotReady;
-        return failure(kind, std::move(initialization), beforeRevision);
-    }
-    if (expectedRevision(command) != beforeRevision) {
-        return failure(kind,
-                       error(EditingErrorCode::StaleRevision,
-                             QStringLiteral("expected revision %1 but current revision is %2")
-                                 .arg(expectedRevision(command))
-                                 .arg(beforeRevision)),
-                       beforeRevision);
-    }
-
-    constexpr quint64 maximumRevision = std::numeric_limits<quint64>::max();
-    if (beforeRevision == maximumRevision
-        || (!session.preview.has_value()
-            && kind == EditingCommandKind::BeginPreview
-            && beforeRevision == maximumRevision - 1)
-        || (session.preview.has_value()
-            && consumesReservedPreviewRevision(kind)
-            && beforeRevision == maximumRevision - 1)) {
-        return failure(
-            kind,
-            error(EditingErrorCode::RevisionExhausted,
-                  session.preview.has_value()
-                      ? QStringLiteral("the final revision is reserved to commit or cancel the active preview")
-                      : QStringLiteral("layout editing revision is exhausted")),
-            beforeRevision);
+    if (auto preflightError = editingRequestError(m_repository.isReady(),
+                                                  m_repository.initializationError(),
+                                                  expectedRevision(command),
+                                                  beforeRevision,
+                                                  session.preview.has_value(),
+                                                  kind)) {
+        return failure(kind, std::move(*preflightError), beforeRevision);
     }
 
     switch (kind) {
@@ -168,23 +134,18 @@ EditingResult LayoutEditingCoordinator::executeEdit(const EditingCommand &comman
 {
     auto &session = *m_repository.m_session;
     const auto before = session.snapshot;
-    Profiles::LayoutProfile candidate = before->profile;
-    if (auto mutationError = LayoutEditMutation::apply(
-            candidate, command, session.placementValidator)) {
-        return failure(kind, std::move(*mutationError), beforeRevision);
-    }
-
-    CandidateValidation validation =
-        LayoutCandidateValidator::validate(candidate, m_repository.outputs());
+    CandidateValidation validation = LayoutEditPreparation::prepare(
+        before->profile,
+        command,
+        session.placementValidator,
+        m_repository.outputs());
     if (!validation.succeeded()) {
         return failure(kind, std::move(validation.error), beforeRevision);
     }
-    if (sameProfile(before->profile, validation.profile)) {
-        return failure(kind,
-                       error(EditingErrorCode::NoChange,
-                             QStringLiteral("layout editing command made no change")),
-                       beforeRevision);
-    }
+
+    const bool nextPreviewDirty = session.preview.has_value()
+        && !LayoutEditHelpers::sameProfile(*session.preview->baseProfile,
+                                           validation.profile);
 
     auto next = std::make_shared<const LayoutEditingSnapshot>(
         LayoutEditingSnapshot{std::move(validation.profile),
@@ -199,10 +160,12 @@ EditingResult LayoutEditingCoordinator::executeEdit(const EditingCommand &comman
     if (session.preview.has_value()) {
         session.preview->undo.append(before->profile);
         session.preview->redo.clear();
+        session.previewDirty = nextPreviewDirty;
     } else {
         session.undo.append(*session.committedProfile);
         session.redo.clear();
         session.committedProfile = std::move(nextCommitted);
+        session.previewDirty = false;
     }
 
     // AGENT-GUARD: Mutation, schema validation, compatibility checks, and the
@@ -232,6 +195,7 @@ EditingResult LayoutEditingCoordinator::beginPreview(EditingCommandKind kind,
                               true});
     session.preview = LayoutEditingRepository::SessionState::PreviewHistory{
         session.committedProfile, {}, {}};
+    session.previewDirty = false;
     m_repository.publish(std::move(next));
     return success(kind, beforeRevision, beforeRevision + 1);
 }
@@ -248,7 +212,8 @@ EditingResult LayoutEditingCoordinator::commitPreview(EditingCommandKind kind,
     }
 
     const auto before = session.snapshot;
-    const bool changed = !sameProfile(*session.preview->baseProfile, before->profile);
+    const bool changed = !LayoutEditHelpers::sameProfile(
+        *session.preview->baseProfile, before->profile);
     auto next = std::make_shared<const LayoutEditingSnapshot>(
         LayoutEditingSnapshot{before->profile,
                               before->layout,
@@ -265,6 +230,7 @@ EditingResult LayoutEditingCoordinator::commitPreview(EditingCommandKind kind,
         session.committedProfile = std::move(nextCommitted);
     }
     session.preview.reset();
+    session.previewDirty = false;
     m_repository.publish(std::move(next));
     return success(kind, beforeRevision, beforeRevision + 1);
 }
@@ -292,6 +258,7 @@ EditingResult LayoutEditingCoordinator::cancelPreview(EditingCommandKind kind,
                               beforeRevision + 1,
                               false});
     session.preview.reset();
+    session.previewDirty = false;
     m_repository.publish(std::move(next));
     return success(kind, beforeRevision, beforeRevision + 1);
 }
@@ -324,6 +291,9 @@ EditingResult LayoutEditingCoordinator::undo(EditingCommandKind kind,
                               std::move(validation.layout),
                               beforeRevision + 1,
                               session.preview.has_value()});
+    const bool nextPreviewDirty = session.preview.has_value()
+        && !LayoutEditHelpers::sameProfile(*session.preview->baseProfile,
+                                           next->profile);
     std::shared_ptr<const Profiles::LayoutProfile> nextCommitted;
     if (!session.preview.has_value()) {
         nextCommitted = profileAlias(next);
@@ -333,6 +303,7 @@ EditingResult LayoutEditingCoordinator::undo(EditingCommandKind kind,
     if (!session.preview.has_value()) {
         session.committedProfile = std::move(nextCommitted);
     }
+    session.previewDirty = nextPreviewDirty;
     m_repository.publish(std::move(next));
     return success(kind, beforeRevision, beforeRevision + 1);
 }
@@ -365,6 +336,9 @@ EditingResult LayoutEditingCoordinator::redo(EditingCommandKind kind,
                               std::move(validation.layout),
                               beforeRevision + 1,
                               session.preview.has_value()});
+    const bool nextPreviewDirty = session.preview.has_value()
+        && !LayoutEditHelpers::sameProfile(*session.preview->baseProfile,
+                                           next->profile);
     std::shared_ptr<const Profiles::LayoutProfile> nextCommitted;
     if (!session.preview.has_value()) {
         nextCommitted = profileAlias(next);
@@ -374,6 +348,7 @@ EditingResult LayoutEditingCoordinator::redo(EditingCommandKind kind,
     if (!session.preview.has_value()) {
         session.committedProfile = std::move(nextCommitted);
     }
+    session.previewDirty = nextPreviewDirty;
     m_repository.publish(std::move(next));
     return success(kind, beforeRevision, beforeRevision + 1);
 }

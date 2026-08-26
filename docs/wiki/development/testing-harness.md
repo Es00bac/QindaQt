@@ -5,6 +5,15 @@ QindaQt development must not modify or replace the developer's active desktop.
 directories and a private D-Bus session. A failed nested run can therefore be
 discarded without damaging the real session.
 
+Process and XDG isolation do **not** isolate Linux `uinput`: a `dotool` device
+may be admitted by the host compositor and can move, click, or type on the
+active desktop even when the nested KWin seat rejects it. Those two live input
+tests are therefore absent from default builds. Registering them requires
+`-DQINDAQT_ENABLE_HOST_UINPUT_TESTS=ON`; every invocation additionally requires
+the exact `QINDAQT_ALLOW_HOST_UINPUT` acknowledgement shown below. Use only a
+dedicated virtual seat or disposable machine. Ordinary local and CI test runs
+must leave the option off.
+
 ## Backend roles
 
 | Backend | Use |
@@ -53,6 +62,43 @@ option. Its CTest matrix decodes captures at 1920x1080, 1920x1200, and
 dump, panel geometry inspection, frame timing, and individual shell-service
 restart remain required harness capabilities as their components land.
 
+## Continuous integration lanes
+
+The GitHub workflow keeps dependency policy, the portable value layer, and the
+production Wayland client boundary in separate jobs:
+
+| Job | Configuration | Evidence |
+| --- | --- | --- |
+| Repository policy | Ubuntu, no product build | Scenario/tool syntax, source-shape limits, strict wiki build, and links |
+| Dependency-light core | Current Arch packages, `QINDAQT_BUILD_KWIN_PLUGIN=OFF`, `QINDAQT_BUILD_PRODUCTION_SHELL=OFF` | The complete registered bridge/value/service/preview suite plus an isolated preview smoke run |
+| Production shell | Current Arch packages, KWin plugin `OFF`, production shell `ON` | Both backend-neutral shell-surface tests and the 1080p, WUXGA, and 1440p nested-KWin layer-surface tests |
+
+Both build jobs fail on a missing test selection; neither uses a successful
+empty CTest invocation as evidence. The production job installs and records
+the resolved KWin, LayerShellQt, Qt Wayland, ECM, and KDecoration package
+versions before configuring. Its rolling environment is intentional for the
+public layer-shell client compatibility lane.
+
+Arch packages `/usr/bin/kwin_wayland` with the `cap_sys_nice=ep` file
+capability. An ordinary GitHub job container intentionally lacks `SYS_NICE` in
+its capability bounding set, so Linux rejects that executable before KWin can
+start. The disposable production-shell job accepts only that exact packaged
+capability (or an already-empty capability set), removes it inside the
+container, requires `getcap` to become empty, and smoke-runs
+`kwin_wayland --version`. It does not grant the job or runner `SYS_NICE`, and it
+does not alter the host installation. The nested virtual/QPainter matrix does
+not need realtime scheduling; consequently it is functional layer-shell
+evidence, not scheduler-latency or performance evidence. Do not copy this
+container-only workaround onto a developer or installed desktop.
+
+It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
+Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
+had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
+binary plugin instead of weakening or bypassing its exact CMake check. A full
+default-preset build against the coherent qualified stack in the repository
+`README.md` build instructions and the complete compositor selectors below
+remain the ABI qualification boundary.
+
 ## Current profile-contract proof
 
 The authoritative schema-v1 loader and typed validator are selected in any
@@ -71,31 +117,93 @@ passed 3/3 in both Debug and Release for this contract revision. That evidence
 qualifies the persistence boundary only; it does not claim live shell surfaces
 or profile editing UI.
 
-## Current shell value-layer proof
+## Current shell and panel-surface proof
 
-Pure panel planning and editing transactions are selected with:
+Pure panel planning, editor transactions, visibility policy, and backend-neutral
+surface reconciliation are selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.(shell-layout|shell-customization)-' \
+  -R '^qindaqt\.(shell-layout|shell-customization|shell-visibility|shell-surface)-' \
   --output-on-failure
 ```
 
-Both suites also have standalone entry points under `tests/shell_layout` and
-`tests/shell_customization`. The two layout tests cover deterministic wildcard
+The value modules also have standalone entry points under their corresponding
+`tests/shell_*` directories. The two layout tests cover deterministic wildcard
 expansion, every edge/alignment, cross-edge collision prevention, work-area
 reservation, malformed inventories, checked coordinate boundaries, and the
 1080p/WUXGA/1440p mixed-DPI logical matrix. They passed 2/2 in strict Debug and
 Release builds and 2/2 under focused UndefinedBehaviorSanitizer
 instrumentation.
 
-The four customization tests cover panel and applet commands, immutable
+The five customization tests cover panel and applet commands, immutable
 manifest-catalog placement decisions, exclusive coordinator lease handoff,
 optimistic revisions and exhaustion headroom, all-output failure atomicity,
-preview commit/cancel, and durable plus provisional undo/redo. They passed 4/4
-in strict Debug and Release builds. These are toolkit-neutral value-layer
-proofs; rendered drop targets, live panel surfaces, pointer/keyboard adapters,
-window-aware hiding, and output-hotplug session replacement remain unclaimed.
+preview commit/cancel, durable plus provisional undo/redo, read-only editor
+status, and side-effect-free command evaluation. The three visibility tests
+cover all hide modes, workspace/activity filtering, actual panel-surface
+overlap, spanning/maximized windows, reveal/hold priority, reservation intent,
+negative coordinates, and fail-closed batch validation. The two surface tests
+cover exact anchor/margin/zone planning and prior-set retention across backend
+failures. All twelve are toolkit-neutral or fake-backend proofs.
+
+The production Wayland surface matrix is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^shell\.production-surface\.(1080p|wuxga|1440p)$' \
+  --output-on-failure
+```
+
+Each row boots a disposable virtual KWin session without enabling compositor
+mutation APIs. A painted ordinary client first maximizes to the complete
+output. The production `qindaqt-shell` then maps exactly two real layer
+surfaces. The bounded client protocol parser associates every role with its
+unique backing `wl_surface` and explicit common `wl_output`. Layer, anchor,
+exclusive-edge/zone, and desired-size setters remain pending until that backing
+surface commits. Each compositor configure snapshots the then-committed role
+epoch; only a `configure -> acknowledge -> non-null buffer attach -> commit`
+chain can establish the active mapped epoch. The probe freezes that exact epoch
+while the reduced work area is observable, before shell teardown. Later or
+unacknowledged configures and uncommitted setters cannot backfill the proof.
+
+Both roles must request layer 2 when created. The top role's committed state
+must be layer 2, anchors 13, edge/zone 1/30, and desired size `(0, 30)`; the
+bottom shelf role must commit layer 2, anchors 6, edge/zone 2/54, and the
+profile's exact 52%-width desired size. Both mapped configure sizes are checked
+against the live output. The ordinary client must then maximize to the reduced
+work area and return to the complete output after shell exit. Qualified logical
+sizes are
+1920x1080 -> 1920x996 -> 1920x1080, 1920x1200 -> 1920x1116 -> 1920x1200, and
+2560x1440 -> 2560x1356 -> 2560x1440.
+
+This proves real top/bottom layer roles, work-area causality, and teardown at
+three resolutions. `shell.surface-protocol-trace` separately exercises stream
+fragmentation, bounded line/chunk/capture rejection, pending-versus-committed
+state, multiple configure selection and ordering, null/unmapped attaches, and
+object-ID reuse/destroy ambiguity. Relevant malformed or over-bounded input
+fails closed. Rendered settings drop targets, live window-state inventory,
+automatic hide animation/publication, partial panels, and heterogeneous
+multi-output surface publication remain unclaimed.
+
+## Current notification foundation proof
+
+The model and freedesktop adapter are selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(notifications|notification-host)-' \
+  --output-on-failure
+```
+
+The three model/adapter tests cover bounded submissions and replacement,
+lifetime-safe ID allocation, ownership, close, dismiss, expiry and action
+policy, immutable revisions, standard identity and signals, protocol errors,
+and two independent callers on a private D-Bus. Three host tests cover typed
+startup conflicts/failures, ownership rollback/release, deterministic
+deadline rearm/cancel/early-fire behavior, and the concrete one-shot QTimer.
+They do not claim session autostart/supervision, popup/history presentation,
+do-not-disturb, persistence, sound, or lock-screen policy.
 
 ## Current compositor proof
 
@@ -222,13 +330,23 @@ The focused suites cover:
 The live Hybrid workflows are selected with:
 
 ```sh
-ctest --test-dir build/dev \
+cmake -S . -B build/host-uinput -G Ninja \
+  -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=ON
+cmake --build build/host-uinput
+QINDAQT_ALLOW_HOST_UINPUT=I_UNDERSTAND_THIS_CAN_CONTROL_THE_HOST_DESKTOP \
+ctest --test-dir build/host-uinput \
   -R '^compositor\.hybrid-pointer-(nested|plugin-unload-restores-clients)$' \
   --output-on-failure
-ctest --test-dir build/dev \
+QINDAQT_ALLOW_HOST_UINPUT=I_UNDERSTAND_THIS_CAN_CONTROL_THE_HOST_DESKTOP \
+ctest --test-dir build/host-uinput \
   -R '^compositor\.hybrid-pointer-(nested|plugin-unload-restores-clients)$' \
   --repeat until-fail:10 --output-on-failure
 ```
+
+The CMake opt-in controls test registration. The per-invocation acknowledgement
+is checked before `dotool` or KWin starts; without it, CTest records the test as
+skipped with exit code 77. This double gate also protects an old build directory
+whose cache still has the dangerous option enabled.
 
 Both select three painted, independently owned Wayland probe windows; the
 unload workflow maps a fourth independent client as well. They require

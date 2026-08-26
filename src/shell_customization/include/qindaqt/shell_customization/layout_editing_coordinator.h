@@ -22,6 +22,11 @@ public:
     LayoutEditingCoordinator &operator=(LayoutEditingCoordinator &&) = delete;
 
     [[nodiscard]] EditingResult execute(const EditingCommand &command);
+    // Runs the same preflight, mutation, placement, profile-round-trip, and
+    // all-output layout checks as execute(), but publishes no snapshot and
+    // changes no revision or history. Acceptance remains valid only while the
+    // repository stays at EditingEvaluation::revision.
+    [[nodiscard]] EditingEvaluation evaluate(const EditingCommand &command) const;
     // The retained pointer survives later publications and lease handoff.
     // Preview-only edits deliberately do not change it. A null result means
     // the repository never initialized and therefore has no committed value.

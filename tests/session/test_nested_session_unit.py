@@ -8,6 +8,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from host_input_consent import (
+    HOST_UINPUT_CONSENT_ENV,
+    HOST_UINPUT_CONSENT_VALUE,
+    host_uinput_consent_error,
+)
 from hybrid_pointer_validation import (
     validate_hybrid_pointer_evidence,
     validate_hybrid_unload_evidence,
@@ -103,6 +108,27 @@ class VirtualSpecTests(unittest.TestCase):
         self.assertEqual(output_data["mode"]["width"], 1920)
         self.assertEqual(output_data["mode"]["height"], 1080)
         self.assertEqual(output_data["scale"], 1.25)
+
+
+class HostInputConsentTests(unittest.TestCase):
+    def test_non_host_input_workflow_needs_no_consent(self) -> None:
+        self.assertIsNone(host_uinput_consent_error(False, {}))
+
+    def test_missing_or_inexact_consent_blocks_host_input(self) -> None:
+        error = host_uinput_consent_error(True, {})
+        self.assertIsNotNone(error)
+        self.assertIn("move, click, and type", error)
+        self.assertIsNotNone(
+            host_uinput_consent_error(True, {HOST_UINPUT_CONSENT_ENV: "yes"})
+        )
+
+    def test_exact_per_invocation_consent_allows_host_input(self) -> None:
+        self.assertIsNone(
+            host_uinput_consent_error(
+                True,
+                {HOST_UINPUT_CONSENT_ENV: HOST_UINPUT_CONSENT_VALUE},
+            )
+        )
 
 
 class HybridPointerEvidenceTests(unittest.TestCase):

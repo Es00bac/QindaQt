@@ -22,6 +22,15 @@ struct LayoutEditingSnapshot final {
     bool previewActive = false;
 };
 
+struct LayoutEditingStatus final {
+    bool previewActive = false;
+    bool previewDirty = false;
+    bool canUndo = false;
+    bool canRedo = false;
+
+    bool operator==(const LayoutEditingStatus &) const = default;
+};
+
 class LayoutEditingCoordinator;
 
 // The repository owns immutable snapshots and the logical output inventory.
@@ -54,6 +63,9 @@ public:
     // A null result means initialization failed. Every non-null snapshot obeys
     // LayoutEditingSnapshot's normalized-profile/successful-solve invariant.
     [[nodiscard]] std::shared_ptr<const LayoutEditingSnapshot> snapshot() const noexcept;
+    // This value is a coherent read of repository-owned transaction state on
+    // the editor thread. Mutating the returned copy cannot affect the session.
+    [[nodiscard]] LayoutEditingStatus status() const noexcept;
     // The returned inventory is owned by the repository and valid until its
     // destruction. Output changes create a new editor session at this boundary.
     [[nodiscard]] const QVector<ShellLayout::LogicalOutput> &outputs() const noexcept;

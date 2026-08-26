@@ -70,6 +70,21 @@ std::shared_ptr<const LayoutEditingSnapshot> LayoutEditingRepository::snapshot()
     return m_session->snapshot;
 }
 
+LayoutEditingStatus LayoutEditingRepository::status() const noexcept
+{
+    const bool previewActive = m_session->preview.has_value();
+    const QVector<Profiles::LayoutProfile> &undo =
+        previewActive ? m_session->preview->undo : m_session->undo;
+    const QVector<Profiles::LayoutProfile> &redo =
+        previewActive ? m_session->preview->redo : m_session->redo;
+    return {
+        .previewActive = previewActive,
+        .previewDirty = previewActive && m_session->previewDirty,
+        .canUndo = !undo.isEmpty(),
+        .canRedo = !redo.isEmpty(),
+    };
+}
+
 const QVector<ShellLayout::LogicalOutput> &LayoutEditingRepository::outputs() const noexcept
 {
     return m_outputs;

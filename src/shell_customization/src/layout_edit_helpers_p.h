@@ -18,5 +18,7 @@ namespace QindaQt::ShellCustomization::LayoutEditHelpers {
                                     const QString &appletId) noexcept;
 [[nodiscard]] bool containsApplet(const Profiles::LayoutProfile &profile,
                                   const QString &appletId) noexcept;
+[[nodiscard]] bool sameProfile(const Profiles::LayoutProfile &first,
+                               const Profiles::LayoutProfile &second);
 
 } // namespace QindaQt::ShellCustomization::LayoutEditHelpers

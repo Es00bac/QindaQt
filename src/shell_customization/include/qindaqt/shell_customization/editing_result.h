@@ -51,4 +51,17 @@ struct EditingResult final {
     }
 };
 
+struct EditingEvaluation final {
+    EditingCommandKind kind = EditingCommandKind::AddPanel;
+    EditingError error;
+    quint64 revision = 0;
+
+    // Acceptance is provisional: executing the command still requires the
+    // repository to remain at revision. Evaluation never reserves a revision.
+    [[nodiscard]] bool accepted() const noexcept
+    {
+        return error.code == EditingErrorCode::None;
+    }
+};
+
 } // namespace QindaQt::ShellCustomization

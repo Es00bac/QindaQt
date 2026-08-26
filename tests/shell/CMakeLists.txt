@@ -34,3 +34,16 @@ set_tests_properties(
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
+
+if(TARGET qindaqt-shell)
+    add_test(
+        NAME qindaqt.shell-runtime-catalog
+        COMMAND $<TARGET_FILE:qindaqt-shell> --list
+    )
+    set_tests_properties(
+        qindaqt.shell-runtime-catalog
+        PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            PASS_REGULAR_EXPRESSION "Profiles:"
+    )
+endif()

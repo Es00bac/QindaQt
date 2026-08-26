@@ -34,6 +34,9 @@ struct LayoutEditingRepository::SessionState final {
     QVector<Profiles::LayoutProfile> undo;
     QVector<Profiles::LayoutProfile> redo;
     std::optional<PreviewHistory> preview;
+    // AGENT-GUARD: Update this before every preview snapshot publication and
+    // clear it when preview ends; status() is intentionally allocation-free.
+    bool previewDirty = false;
     // Retained separately because a failed initialization must not fabricate a
     // snapshot merely to preserve the caller's optimistic-revision boundary.
     quint64 initialRevision = 0;

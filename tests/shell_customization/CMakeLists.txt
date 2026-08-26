@@ -52,3 +52,8 @@ qindaqt_add_shell_customization_test(
     tst_coordinator_lease.cpp
     qindaqt.shell-customization-coordinator-lease
 )
+qindaqt_add_shell_customization_test(
+    qindaqt_editor_query_tests
+    tst_editor_queries.cpp
+    qindaqt.shell-customization-editor-queries
+)

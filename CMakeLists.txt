@@ -19,10 +19,26 @@ list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
 include(KDEInstallDirs6)
 
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
-option(QINDAQT_BUILD_SHELL "Build the interactive shell preview" ON)
+option(QINDAQT_BUILD_SHELL "Build QindaQt shell presentation and preview" ON)
+option(QINDAQT_BUILD_PRODUCTION_SHELL
+       "Build the LayerShellQt-backed production Wayland shell"
+       "${QINDAQT_BUILD_SHELL}")
 option(QINDAQT_BUILD_KWIN_PLUGIN
        "Require and build the release-matched KWin integration plugin" ON)
 option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat QindaQt warnings as errors" ON)
+option(QINDAQT_ENABLE_HOST_UINPUT_TESTS
+       "Register tests that may inject pointer/keyboard events into the host seat" OFF)
+
+if(QINDAQT_ENABLE_HOST_UINPUT_TESTS)
+    message(WARNING
+        "Host uinput tests are enabled. They can move, click, and type on the active "
+        "desktop; run them only on a dedicated virtual seat or disposable machine.")
+endif()
+
+if(QINDAQT_BUILD_PRODUCTION_SHELL AND NOT QINDAQT_BUILD_SHELL)
+    message(FATAL_ERROR
+        "QINDAQT_BUILD_PRODUCTION_SHELL requires QINDAQT_BUILD_SHELL")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(QindaQtCompiler)

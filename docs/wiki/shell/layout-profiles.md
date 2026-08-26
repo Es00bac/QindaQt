@@ -58,8 +58,8 @@ remapping without losing their logical panel graph.
 
 ## Implemented logical layout planning
 
-`src/shell_layout` now implements the pure geometry boundary between validated
-schema-v1 panel values and future platform surfaces. Given an ordered logical
+`src/shell_layout` implements the pure geometry boundary between validated
+schema-v1 panel values and platform surfaces. Given an ordered logical
 output inventory, the planner:
 
 - expands `output: "*"` once per output in inventory order while a named selector
@@ -79,8 +79,9 @@ output inventory, the planner:
 
 All input and result rectangles are desktop-logical coordinates. Output scale
 must be finite and positive, but the planner never multiplies coordinates or
-panel thickness by it; a later platform adapter performs the one required
-logical-to-buffer conversion. This prevents a 32-logical-pixel panel from
+panel thickness by it; Qt's Wayland platform performs the one required
+logical-to-buffer conversion after `shell_surface` passes the logical values
+through unchanged. This prevents a 32-logical-pixel panel from
 becoming 40 logical pixels merely because it is placed on a 125% output.
 Intermediate depths, offsets, extents, and inclusive rectangle endpoints use
 checked wide arithmetic. A valid rectangle ending exactly at `INT_MAX` is
@@ -100,6 +101,11 @@ Focused tests cover all edges and alignments, row depth, stacking and layer
 semantics, cross-edge corner ownership, arithmetic boundaries, 1920x1080,
 1920x1200 WUXGA, 2560x1440, and a negative-coordinate 1080p plus 125%-scaled
 1440p logical arrangement.
+
+The production conversion, reconciliation, LayerShellQt mapping, and current
+runtime limitations are specified in
+[Production panel surfaces](panel-surfaces.md). The preview QML geometry is a
+single-canvas visual fixture and is not part of this contract.
 
 ## Implemented editing transactions
 
@@ -127,6 +133,15 @@ Panel IDs and applet-instance IDs remain stable, applet-instance IDs are
 profile-global, and stale revisions, duplicate IDs, self-anchors, or unknown
 drop anchors are rejected before publication.
 
+The repository also exposes a copied transaction status containing preview
+activity/dirty state and the currently applicable undo/redo availability. The
+exclusive coordinator can evaluate a revision-bound command without publishing
+a snapshot or consuming history. Evaluation and execution share the same
+preflight, manifest-placement, strict profile round trip, complete output solve,
+and no-change checks. The settings canvas can therefore highlight only targets
+that the current revision would accept without duplicating placement policy;
+acceptance reserves nothing and must be discarded after any revision change.
+
 Applet creation and duplication, panel insertion, panel-orientation changes,
 and applet orientation/zone changes are checked against the copied manifest
 catalog. Top and bottom panels are horizontal; left and right panels are
@@ -148,10 +163,12 @@ This transaction layer adds no persistence fields; accepted values remain
 profile schema v1.
 
 This module does not load applet entry points, construct shell surfaces, render
-drop targets, persist user profiles, or provide the settings UI. The platform
-surface host, window-aware hiding, drag/keyboard adapters, live output-change
-policy, and first-class customization window remain outstanding parts of the
-Shell and customization milestone.
+drop targets, persist user profiles, or provide the settings UI. The production
+surface host consumes the same solver contract from its selected profile; it
+does not yet subscribe to provisional editor snapshots. Settings-service
+publication into that host, the live adapter for the implemented window-aware
+visibility policy, drag/keyboard presentation, and a first-class customization
+window remain outstanding parts of the Shell and customization milestone.
 
 ## Built-in workflow families
 

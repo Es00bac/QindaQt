@@ -49,4 +49,10 @@ bool containsApplet(const Profiles::LayoutProfile &profile,
     return false;
 }
 
+bool sameProfile(const Profiles::LayoutProfile &first,
+                 const Profiles::LayoutProfile &second)
+{
+    return first.toJson() == second.toJson();
+}
+
 } // namespace QindaQt::ShellCustomization::LayoutEditHelpers

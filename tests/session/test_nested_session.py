@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,11 @@ from pathlib import Path
 from typing import Any
 
 from hybrid_pointer_validation import validate_hybrid_pointer_evidence
+from host_input_consent import (
+    HOST_UINPUT_CONSENT_ENV,
+    HOST_UINPUT_SKIP_CODE,
+    host_uinput_consent_error,
+)
 from nested_session_scenario import (
     ScenarioCoverageError,
     VirtualOutputSpec,
@@ -150,6 +156,12 @@ def main() -> int:
     # probe extraction together here. Feature-specific evidence assertions
     # belong in small validation modules such as hybrid_pointer_validation.py.
     arguments = parse_arguments()
+    consent_error = host_uinput_consent_error(
+        arguments.expect_hybrid_pointer is not None, os.environ
+    )
+    if consent_error is not None:
+        print(consent_error, file=sys.stderr)
+        return HOST_UINPUT_SKIP_CODE
     try:
         spec = load_virtual_spec(arguments.scenario)
     except ScenarioCoverageError as error:
@@ -163,6 +175,7 @@ def main() -> int:
     )
     with tempfile.TemporaryDirectory(prefix="qindaqt-nested-test-") as directory:
         environment = isolated_environment(Path(directory))
+        environment.pop(HOST_UINPUT_CONSENT_ENV, None)
         write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
         if arguments.expect_plugin:
             environment["QINDAQT_EXPECT_COMPOSITOR_PLUGIN"] = "1"

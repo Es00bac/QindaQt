@@ -10,6 +10,8 @@
 
 namespace QindaQt::Profiles {
 
+inline constexpr int LayoutProfileSchemaVersion = 1;
+
 struct AppletSpec {
     QString id;
     QString plugin;
@@ -46,7 +48,7 @@ struct WorkflowSpec {
 
 class LayoutProfile final {
 public:
-    int schemaVersion = QINDAQT_PROFILE_SCHEMA_VERSION;
+    int schemaVersion = LayoutProfileSchemaVersion;
     QString id;
     QString name;
     QString description;

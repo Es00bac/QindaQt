@@ -25,9 +25,12 @@ nav:
       - Hybrid constraints: architecture/hybrid-constraints.md
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
+      - Notification service: architecture/notifications-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
       - Layout profiles: shell/layout-profiles.md
+      - Production panel surfaces: shell/panel-surfaces.md
+      - Panel visibility policy: shell/panel-visibility.md
   - Reference:
       - Compositor control 1.0: reference/compositor-control-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
@@ -48,3 +51,5 @@ nav:
       - "ADR-0004: Process-local Hybrid topology": adr/0004-process-local-hybrid-topology.md
       - "ADR-0005: Scene-resident Hybrid chrome": adr/0005-scene-resident-hybrid-chrome.md
       - "ADR-0006: Profile-global applet identity": adr/0006-profile-global-applet-identity.md
+      - "ADR-0007: Layer-shell panel surfaces": adr/0007-layer-shell-panel-surfaces.md
+      - "ADR-0008: Lean notification service": adr/0008-lean-notification-service.md

@@ -15,7 +15,10 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_SHARED_LIBS": "ON",
         "BUILD_TESTING": "ON",
+        "QINDAQT_BUILD_KWIN_PLUGIN": "ON",
         "QINDAQT_BUILD_SHELL": "ON",
+        "QINDAQT_BUILD_PRODUCTION_SHELL": "ON",
+        "QINDAQT_ENABLE_HOST_UINPUT_TESTS": "OFF",
         "QINDAQT_ENABLE_STRICT_WARNINGS": "ON"
       }
     },
@@ -28,7 +31,10 @@
         "CMAKE_BUILD_TYPE": "Release",
         "BUILD_SHARED_LIBS": "ON",
         "BUILD_TESTING": "ON",
+        "QINDAQT_BUILD_KWIN_PLUGIN": "ON",
         "QINDAQT_BUILD_SHELL": "ON",
+        "QINDAQT_BUILD_PRODUCTION_SHELL": "ON",
+        "QINDAQT_ENABLE_HOST_UINPUT_TESTS": "OFF",
         "QINDAQT_ENABLE_STRICT_WARNINGS": "ON"
       }
     }
