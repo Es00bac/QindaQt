@@ -6,6 +6,7 @@ Item {
 
     required property var panel
     required property var theme
+    property bool liveApplets: false
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -29,6 +30,7 @@ Item {
         zone: "start"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 
     PanelAppletRow {
@@ -40,6 +42,7 @@ Item {
         zone: "center"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 
     PanelAppletRow {
@@ -52,6 +55,7 @@ Item {
         zone: "end"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 
     PanelAppletColumn {
@@ -63,6 +67,7 @@ Item {
         zone: "start"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 
     PanelAppletColumn {
@@ -74,6 +79,7 @@ Item {
         zone: "center"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 
     PanelAppletColumn {
@@ -85,5 +91,6 @@ Item {
         zone: "end"
         panel: root.panel
         theme: root.theme
+        liveApplets: root.liveApplets
     }
 }

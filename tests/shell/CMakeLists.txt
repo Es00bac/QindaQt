@@ -44,6 +44,6 @@ if(TARGET qindaqt-shell)
         qindaqt.shell-runtime-catalog
         PROPERTIES
             ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
-            PASS_REGULAR_EXPRESSION "Profiles:"
+            PASS_REGULAR_EXPRESSION "clock - Clock"
     )
 endif()

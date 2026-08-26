@@ -14,6 +14,8 @@ This repository currently contains the executable foundation for the desktop:
   theme;
 - a Qt Quick shell preview and a production LayerShellQt panel process with
   owner-bound compositor visibility and safe-visible recovery;
+- manifest- and capability-policy-gated production applet resolution, with a
+  live locale-aware clock as the first audited built-in implementation;
 - transactional panel/applet editing, window-aware visibility policy, and an
   installable freedesktop notification-host foundation;
 - isolated nested-session and resolution-scenario tooling;
@@ -21,8 +23,8 @@ This repository currently contains the executable foundation for the desktop:
 
 The compositor, hybrid interaction milestone, and initial real panel surfaces
 are implemented. QindaQt is still under construction as a daily-use desktop:
-live applets, global menu, settings-center presentation, platform services,
-packaging, and physical-hardware qualification remain roadmap work.
+the remaining live applets, global menu, settings-center presentation, platform
+services, packaging, and physical-hardware qualification remain roadmap work.
 
 ## Build
 

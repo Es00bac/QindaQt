@@ -152,6 +152,20 @@ persistent in-place transitions, dismissal liveness, and prior-set retention
 across backend failures. These are toolkit-neutral, fake-backend, or isolated
 private-D-Bus proofs.
 
+Applet production-resolution policy is selected without opening a window with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.applet-runtime-resolution$' --output-on-failure
+```
+
+It proves exact manifest lookup, horizontal/vertical placement rejection,
+invalid-edge rejection, compiled implementation registration, typed unresolved
+states, grant filtering, and deny-default least authority. The QML cache build
+proves the live clock component is compilable; visual behavior and interaction
+require a separately isolated display test and are not claimed by this unit
+selector.
+
 The production Wayland surface matrix is selected with:
 
 ```sh

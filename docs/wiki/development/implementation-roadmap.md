@@ -40,6 +40,9 @@ The repository currently builds and tests:
 - a production `qindaqt-shell` process that turns solved panels into real
   LayerShellQt surfaces, with fail-closed replacement and live nested-KWin
   work-area proof at 1080p, WUXGA, and 1440p;
+- production applet resolution through validated manifests, placement and host
+  policy, a compiled implementation registry, and least-authority grants, plus
+  the first live built-in locale-aware clock;
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
   D-Bus adapter, and installable resident ownership/expiry host, currently
   without session autostart or popup/history UI;
@@ -55,9 +58,9 @@ readable public state, runtime decoration proof, member focus/transient policy,
 close/ungroup policy, lifecycle synchronization, and grouped plugin-unload
 restoration. Final qualification passed every gate recorded in the
 [testing harness](testing-harness.md), so Hybrid interaction is complete. This
-is not yet a daily-use desktop session: panel windows are real, but their
-applet chips remain visual fixtures rather than live audio, power, Bluetooth,
-menu, or clipboard integrations.
+is not yet a daily-use desktop session: panel windows and the clock are real,
+but audio, power, Bluetooth, menu, task, launcher, tray, and clipboard entries
+remain unavailable or visual fixtures rather than live integrations.
 
 ## Milestones
 
@@ -66,7 +69,7 @@ menu, or clipboard integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production layer surfaces, live visibility transport/orchestration, editor policy, and notification protocol foundation implemented; reveal UI and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production layer surfaces, live visibility transport/orchestration, editor policy, notification protocol foundation, gated applet runtime, and live clock implemented; reveal UI and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

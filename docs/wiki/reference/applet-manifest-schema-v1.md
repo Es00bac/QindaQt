@@ -48,6 +48,23 @@ Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
 API rule or a new manifest schema version.
 
+## Production resolution
+
+The production shell loads this catalog and the installed capability policy
+before it creates any panel window. Every profile instance then passes, in
+order, manifest lookup, zone/orientation compatibility, host selection,
+compiled built-in registration, and capability-policy evaluation. Failure at
+any gate produces typed runtime metadata and no grants. A manifest entry point
+is descriptive data and cannot add itself to the compiled registry.
+
+`qindaqt-shell` accepts `--applet-dir` and `--applet-policy`; the corresponding
+development overrides are `QINDAQT_APPLET_DIR` and `QINDAQT_APPLET_POLICY`.
+Invalid catalogs and policies fail shell startup rather than silently falling
+back. The selected profile's raw applet map is preserved and gains a `runtime`
+map containing `status`, `ready`, display name, entry point, host mode, granted
+capabilities, and a diagnostic. See [Applet runtime](../shell/applet-runtime.md)
+for the status machine and current implementation inventory.
+
 ## Editing-time placement enforcement
 
 One shell-customization repository copies and validates the manifest catalog at

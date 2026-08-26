@@ -9,5 +9,9 @@ namespace QindaQt::Shell {
                                                   const char *environmentName,
                                                   const char *sourcePath,
                                                   const QString &installedSuffix);
+[[nodiscard]] QString resolveCatalogDataFile(const QString &explicitPath,
+                                             const char *environmentName,
+                                             const char *sourcePath,
+                                             const QString &installedSuffix);
 
 } // namespace QindaQt::Shell

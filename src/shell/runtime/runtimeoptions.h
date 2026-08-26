@@ -14,6 +14,8 @@ struct RuntimeOptions {
     QString themeId;
     QString profileDirectory;
     QString themeDirectory;
+    QString appletDirectory;
+    QString appletPolicyFile;
     bool listOnly = false;
 };
 

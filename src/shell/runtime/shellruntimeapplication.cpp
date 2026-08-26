@@ -4,6 +4,7 @@
 #include "../common/catalogpaths.h"
 #include "runtimepanelwindowfactory.h"
 
+#include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -96,10 +97,25 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
                                                                "QINDAQT_THEME_DIR",
                                                                QINDAQT_SOURCE_THEME_DIR,
                                                                QStringLiteral("qindaqt/themes"));
+    const QString appletDirectory = resolveCatalogDataDirectory(
+        options.appletDirectory, "QINDAQT_APPLET_DIR", QINDAQT_SOURCE_APPLET_DIR,
+        QStringLiteral("qindaqt/applets"));
+    const QString appletPolicyFile = resolveCatalogDataFile(
+        options.appletPolicyFile, "QINDAQT_APPLET_POLICY",
+        QINDAQT_SOURCE_APPLET_POLICY,
+        QStringLiteral("qindaqt/applet-policy/default.json"));
     if (!m_profiles.loadDirectory(profileDirectory, error) ||
-        !m_themes.loadDirectory(themeDirectory, error)) {
+        !m_themes.loadDirectory(themeDirectory, error) ||
+        !m_applets.loadDirectory(appletDirectory, error)) {
         return false;
     }
+    const auto loadedPolicy =
+        AppletHost::CapabilityPolicyLoader::fromFile(appletPolicyFile);
+    if (!loadedPolicy.ok) {
+        *error = loadedPolicy.error;
+        return false;
+    }
+    m_appletPolicy = loadedPolicy.policy;
     if (!m_profiles.selectById(options.profileId)) {
         *error = QStringLiteral("Unknown profile: %1").arg(options.profileId);
         return false;
@@ -126,6 +142,10 @@ void ShellRuntimeApplication::printCatalog() const
     for (const auto &theme : m_themes.themes()) {
         output << "  " << theme.id << " - " << theme.name << '\n';
     }
+    output << "Applets:\n";
+    for (const auto &applet : m_applets.manifests()) {
+        output << "  " << applet.id << " - " << applet.name << '\n';
+    }
 }
 
 bool ShellRuntimeApplication::initializeRuntime(QString *error)
@@ -139,7 +159,8 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
     m_windowFactory =
-        std::make_unique<RuntimePanelWindowFactory>(m_engine, profile, m_themes.current());
+        std::make_unique<RuntimePanelWindowFactory>(
+            m_engine, profile, m_themes.current(), m_applets, m_appletPolicy);
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);

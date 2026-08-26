@@ -10,7 +10,8 @@ dependency choice is recorded in
 
 `qindaqt-shell` performs a fail-closed startup sequence:
 
-1. load and select a validated profile and theme;
+1. load and select a validated profile, theme, applet-manifest catalog, and
+   applet capability policy;
 2. inventory Qt Wayland outputs by non-empty, unique `QScreen::name()`;
 3. start the owner-bound compositor visibility client and select either one
    coherent live generation or the all-visible fallback;
@@ -44,11 +45,12 @@ rectangles, and work areas. `shell_surface` then owns:
 - the GUI-thread-only Qt output inventory; and
 - the private LayerShellQt adapter.
 
-The shell runtime owns profile/theme selection and its QML window factory.
-Runtime QML receives one panel and one theme and renders only the contents of
-the already-sized window. It cannot select a screen or recompute surface
-policy. Platform scale is metadata: Qt and the compositor perform the buffer
-conversion, while QindaQt passes the solver's logical size exactly once.
+The shell runtime owns profile/theme selection, applet resolution, and its QML
+window factory. Runtime QML receives one resolved panel and one theme and
+renders only the contents of the already-sized window. It cannot select a
+screen, recompute surface policy, or grant applet capabilities. Platform scale
+is metadata: Qt and the compositor perform the buffer conversion, while
+QindaQt passes the solver's logical size exactly once.
 
 ## Anchors and reservations
 
@@ -94,11 +96,13 @@ display.
 This slice makes panels and docks real compositor-managed surfaces and wires
 the compositor-driven [panel visibility policy](panel-visibility.md) into the
 production runtime. Safe-visible recovery is active, and visibility-only
-updates retain existing panel/QML objects. The preview applet chips are still
-not live applets; edge reveal/hold producers and hide animation also remain
-acceptance work. Global menu, notification presentation, live services, applet
-process hosting, and settings preview subscription remain in the
-Shell/customization milestone.
+updates retain existing panel/QML objects. Production panels resolve instances
+through the validated manifest and capability policy. The clock is the first
+live applet; unresolved instances remain visibly marked static representations.
+Preview applet chips remain deterministic visual fixtures. Edge reveal/hold
+producers and hide animation also remain acceptance work. Global menu,
+notification presentation, live services, applet process hosting, and settings
+preview subscription remain in the Shell/customization milestone.
 
 The controller and planner have focused fake-backend tests for valid and
 adversarial layouts. Bounded per-role protocol evidence requires the exact

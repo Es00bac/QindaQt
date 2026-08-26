@@ -3,6 +3,8 @@
 
 #include "runtimeoptions.h"
 
+#include "qindaqt/applet_host/capability_policy.h"
+#include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/profiles/profile_catalog.h"
 #include "qindaqt/themes/theme_catalog.h"
 
@@ -53,6 +55,8 @@ private:
     QGuiApplication &m_application;
     Profiles::ProfileCatalog m_profiles;
     Themes::ThemeCatalog m_themes;
+    Applets::ManifestCatalog m_applets;
+    AppletHost::CapabilityPolicy m_appletPolicy;
     QQmlEngine m_engine;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;

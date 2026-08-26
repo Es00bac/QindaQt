@@ -21,6 +21,7 @@ qt_add_qml_module(
     VERSION 1.0
     QML_FILES
         qml/AppletChip.qml
+        qml/ClockApplet.qml
         qml/ContainerTabStrip.qml
         qml/DecorationButtons.qml
         qml/DesktopPreview.qml
@@ -78,6 +79,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         VERSION 1.0
         QML_FILES
             qml/AppletChip.qml
+            qml/ClockApplet.qml
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml
             qml/PanelContent.qml
@@ -88,6 +90,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt-shell
         PRIVATE
             qindaqt_profiles
+            QindaQt::AppletRuntime
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface
@@ -105,6 +108,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QINDAQT_VERSION="${PROJECT_VERSION}"
             QINDAQT_SOURCE_PROFILE_DIR="${PROJECT_SOURCE_DIR}/data/profiles"
             QINDAQT_SOURCE_THEME_DIR="${PROJECT_SOURCE_DIR}/data/themes"
+            QINDAQT_SOURCE_APPLET_DIR="${PROJECT_SOURCE_DIR}/data/applets"
+            QINDAQT_SOURCE_APPLET_POLICY="${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
     )
 
     qindaqt_enable_warnings(qindaqt-shell)

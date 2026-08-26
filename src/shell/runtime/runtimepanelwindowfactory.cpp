@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtimepanelwindowfactory.h"
 
+#include "qindaqt/applet_runtime/applet_instance_resolver.h"
+#include "qindaqt/applet_runtime/builtin_applet_registry.h"
+#include "qindaqt/applets/manifest_catalog.h"
+
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickWindow>
@@ -26,12 +30,25 @@ QString componentErrors(const QQmlComponent &component)
 
 RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      const Profiles::LayoutProfile &profile,
-                                                     QVariantMap theme)
+                                                     QVariantMap theme,
+                                                     const Applets::ManifestCatalog &applets,
+                                                     const AppletHost::CapabilityPolicy &policy)
     : m_engine(engine)
     , m_theme(std::move(theme))
 {
+    const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
-        m_panels.insert(panel.id, panel.toVariantMap());
+        QVariantMap resolvedPanel = panel.toVariantMap();
+        QVariantList resolvedApplets;
+        resolvedApplets.reserve(panel.applets.size());
+        for (const auto &applet : panel.applets) {
+            resolvedApplets.append(
+                AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                    applet, panel.edge, applets, policy, registry)
+                    .toVariantMap());
+        }
+        resolvedPanel.insert(QStringLiteral("applets"), resolvedApplets);
+        m_panels.insert(panel.id, std::move(resolvedPanel));
     }
 }
 

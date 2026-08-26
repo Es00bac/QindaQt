@@ -41,10 +41,19 @@ capabilities or execute code. Plasma widget compatibility is not a goal.
 ## Implementation status
 
 Schema v1 parsing, normalization, API negotiation, validation, catalog loading,
-and the launcher, task-list, global-menu, status-tray, and clock manifests are
-implemented. Capability grants, sandboxed hosts, rendered applet surfaces, and
-platform-service mediation remain separate runtime slices. See the
-[manifest reference](../reference/applet-manifest-schema-v1.md).
+host selection, and capability-policy evaluation are implemented. The launcher,
+task-list, global-menu, status-tray, and clock manifests are data contracts; a
+manifest alone is never evidence of executable UI. Production resolution now
+also requires placement compatibility, accepted host mode, and an exact entry
+in a compiled audited-built-in registry before exposing any capability grants.
+
+Only the locale-aware clock currently satisfies that last gate and renders as
+live production QML. Other profile entries are retained with an explicit
+`missing-manifest` or `implementation-unavailable` status and visible warning
+marker instead of being reported as working. Sandboxed hosts and
+platform-service mediation remain later runtime slices. See the
+[manifest reference](../reference/applet-manifest-schema-v1.md) and
+[applet runtime](../shell/applet-runtime.md).
 
 ## Revisit when
 

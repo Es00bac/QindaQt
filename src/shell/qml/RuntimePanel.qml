@@ -17,5 +17,6 @@ Window {
         anchors.fill: parent
         panel: root.panel
         theme: root.theme
+        liveApplets: true
     }
 }

@@ -12,13 +12,23 @@
 class QQmlComponent;
 class QQmlEngine;
 
+namespace QindaQt::Applets {
+class ManifestCatalog;
+}
+
+namespace QindaQt::AppletHost {
+class CapabilityPolicy;
+}
+
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory final : public ShellSurface::PanelWindowFactory {
 public:
     RuntimePanelWindowFactory(QQmlEngine &engine,
                               const Profiles::LayoutProfile &profile,
-                              QVariantMap theme);
+                              QVariantMap theme,
+                              const Applets::ManifestCatalog &applets,
+                              const AppletHost::CapabilityPolicy &policy);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(

@@ -7,6 +7,7 @@ Row {
     required property var panel
     required property var theme
     required property string zone
+    property bool liveApplets: false
     spacing: 4
 
     function appletZone(applet) {
@@ -24,6 +25,7 @@ Row {
             height: root.height
             applet: modelData
             theme: root.theme
+            liveApplets: root.liveApplets
         }
     }
 }

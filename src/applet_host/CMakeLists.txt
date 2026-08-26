@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 qt_add_library(qindaqt_applet_host STATIC)
+add_library(QindaQt::AppletHost ALIAS qindaqt_applet_host)
 
 target_sources(
     qindaqt_applet_host

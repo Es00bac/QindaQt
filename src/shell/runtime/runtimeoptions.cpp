@@ -27,7 +27,14 @@ RuntimeOptionsResult parseRuntimeOptions(QCoreApplication &application)
         {QStringLiteral("theme-dir"),
          QStringLiteral("Read themes from this directory."),
          QStringLiteral("path")},
-        {QStringLiteral("list"), QStringLiteral("List validated profiles and themes, then exit.")},
+        {QStringLiteral("applet-dir"),
+         QStringLiteral("Read applet manifests from this directory."),
+         QStringLiteral("path")},
+        {QStringLiteral("applet-policy"),
+         QStringLiteral("Read the applet capability policy from this file."),
+         QStringLiteral("path")},
+        {QStringLiteral("list"),
+         QStringLiteral("List validated profiles, themes, and applets, then exit.")},
     });
     parser.process(application);
 
@@ -36,6 +43,8 @@ RuntimeOptionsResult parseRuntimeOptions(QCoreApplication &application)
     options.themeId = parser.value(QStringLiteral("theme"));
     options.profileDirectory = parser.value(QStringLiteral("profile-dir"));
     options.themeDirectory = parser.value(QStringLiteral("theme-dir"));
+    options.appletDirectory = parser.value(QStringLiteral("applet-dir"));
+    options.appletPolicyFile = parser.value(QStringLiteral("applet-policy"));
     options.listOnly = parser.isSet(QStringLiteral("list"));
     return {options, {}};
 }

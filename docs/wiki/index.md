@@ -33,6 +33,8 @@ workflow. It changes with the code and is validated as part of the repository.
 - [Panel visibility policy](shell/panel-visibility.md) defines window-aware
   hiding, reveal/hold priority, and reservation intent without platform side
   effects.
+- [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
+  compiled-implementation gates and records which built-ins are genuinely live.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
