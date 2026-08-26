@@ -53,6 +53,42 @@ option. Its CTest matrix decodes captures at 1920x1080, 1920x1200, and
 dump, panel geometry inspection, frame timing, and individual shell-service
 restart remain required harness capabilities as their components land.
 
+## Current profile-contract proof
+
+The authoritative schema-v1 loader and typed validator are selected in any
+complete build with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.profile-' --output-on-failure
+```
+
+The same three tests can be configured directly from `tests/profiles` when a
+later in-progress module makes the complete tree temporarily unbuildable. They
+cover built-in/catalog behavior, strict JSON syntax and field types, exact
+integer and range handling, global applet identity, deterministic structured
+errors, and lossless JSON-native settings values. The isolated profile suite
+passed 3/3 in both Debug and Release for this contract revision. That evidence
+qualifies the persistence boundary only; it does not claim live shell surfaces
+or profile editing UI.
+
+## Current shell-layout proof
+
+Pure panel planning is selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.shell-layout-' --output-on-failure
+```
+
+The suite also has a standalone entry point under `tests/shell_layout`.
+Its two tests cover deterministic wildcard expansion, every edge/alignment,
+cross-edge collision prevention, work-area reservation, malformed inventories,
+checked coordinate boundaries, and the
+1080p/WUXGA/1440p mixed-DPI logical matrix. They passed 2/2 in strict Debug and
+Release builds and 2/2 under focused UndefinedBehaviorSanitizer
+instrumentation. This is a toolkit-neutral value-layer proof; live panel
+surfaces, hide animations, physical-pixel conversion, and output hotplug remain
+unclaimed.
+
 ## Current compositor proof
 
 The focused live checks are:

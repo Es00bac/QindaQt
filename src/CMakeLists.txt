@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 add_subdirectory(profiles)
+add_subdirectory(shell_layout)
 add_subdirectory(themes)
 add_subdirectory(core)
 add_subdirectory(hybrid)
