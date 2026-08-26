@@ -60,6 +60,21 @@ public:
     {
         Q_EMIT snapshotInvalidated(owner, epoch, revision);
     }
+    void finish(const Operation &operation, quint64 before, quint64 after)
+    {
+        Q_EMIT operationFinished(
+            operation.token, operation.owner,
+            {{QStringLiteral("status"), QStringLiteral("applied")},
+             {QStringLiteral("revisionBefore"), before},
+             {QStringLiteral("revisionAfter"), after},
+             {QStringLiteral("notificationId"), operation.id}});
+    }
+    void reject(const Operation &operation, const QString &message)
+    {
+        Q_EMIT operationFailed(
+            operation.token, operation.owner,
+            QStringLiteral("org.freedesktop.DBus.Error.Failed"), message);
+    }
 
     QVector<Request> requests;
     QVector<Operation> operations;
@@ -85,6 +100,7 @@ NotificationPresentationModel::PresentationTiming presentationTiming()
     return {.lowUrgencyMilliseconds = 20,
             .normalUrgencyMilliseconds = 30,
             .criticalUrgencyMilliseconds = 40,
+            .operationErrorMilliseconds = 60,
             .maximumPopups = 3,
             .maximumHistory = 4};
 }
@@ -288,8 +304,11 @@ void NotificationPresentationModelTests::
     FakeTransport transport;
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
+    auto timing = presentationTiming();
+    timing.normalUrgencyMilliseconds = 120;
+    timing.operationErrorMilliseconds = 40;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, presentationTiming());
+        client, timing);
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.72");
     const QString epoch = QStringLiteral("99999999-9999-9999-9999-999999999999");
@@ -298,16 +317,45 @@ void NotificationPresentationModelTests::
     transport.reply(transport.requests[0],
                     wire(epoch, 1, {notification(4, QStringLiteral("Action"))}));
     QTRY_COMPARE_WITH_TIMEOUT(controller.activeModel()->rowCount(), 1, 100);
+    transport.changed(owner, epoch, 2);
+    QTRY_COMPARE_WITH_TIMEOUT(transport.requests.size(), 2, 100);
+    transport.reply(
+        transport.requests[1],
+        wire(epoch, 2, {notification(4, QStringLiteral("Action updated"))}));
+    QTRY_COMPARE_WITH_TIMEOUT(controller.popupCount(), 1, 100);
 
     QSignalSpy errors(&controller,
                       &NotificationPresentationModel::
                           NotificationPresentationController::operationError);
     QVERIFY(!controller.dismiss(99));
     QCOMPARE(errors.size(), 1);
+    QVERIFY(!controller.operationErrorText().isEmpty());
     QVERIFY(controller.invokeAction(4, QStringLiteral("open")));
+    QVERIFY(controller.operationBusy());
+    QVERIFY(controller.operationErrorText().isEmpty());
+    QCOMPARE(controller.popupCount(), 1);
     QCOMPARE(transport.operations.size(), 1);
     QCOMPARE(transport.operations[0].id, quint32(4));
     QCOMPARE(transport.operations[0].actionKey, QStringLiteral("open"));
+    QTest::qWait(130);
+    QCOMPARE(controller.popupCount(), 1);
+    transport.reject(transport.operations[0], QStringLiteral("injected rejection"));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.operationBusy(), 100);
+    QCOMPARE(controller.popupCount(), 1);
+    QCOMPARE(controller.operationErrorText(), QStringLiteral("injected rejection"));
+    QCOMPARE(errors.size(), 2);
+
+    // Rejection renews the card after the old deadline elapsed while pending,
+    // and bounded feedback clears without consuming the retry path.
+    QCOMPARE(controller.popupCount(), 1);
+    QTRY_VERIFY_WITH_TIMEOUT(controller.operationErrorText().isEmpty(), 100);
+
+    QVERIFY(controller.invokeAction(4, QStringLiteral("open")));
+    QCOMPARE(transport.operations.size(), 2);
+    transport.finish(transport.operations[1], 2, 3);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.operationBusy(), 100);
+    QCOMPARE(controller.popupCount(), 0);
+    QVERIFY(controller.operationErrorText().isEmpty());
 }
 
 QTEST_GUILESS_MAIN(NotificationPresentationModelTests)

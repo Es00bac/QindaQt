@@ -12,6 +12,7 @@ private slots:
     void preservesPreferredSizesAcrossReferenceOutputs_data();
     void preservesPreferredSizesAcrossReferenceOutputs();
     void clampsToHighDpiLogicalGeometry();
+    void plansHeaderOnlyFeedbackWithoutPopups();
     void rejectsOutputsThatCannotPresentUsableControls();
 };
 
@@ -51,6 +52,16 @@ void NotificationSurfaceLayoutTests::clampsToHighDpiLogicalGeometry()
     QVERIFY2(compact.ok(), qPrintable(compact.error));
     QCOMPARE(compact.layout->popupSize, QSize(384, 284));
     QCOMPARE(compact.layout->centerSize, QSize(384, 284));
+}
+
+void NotificationSurfaceLayoutTests::plansHeaderOnlyFeedbackWithoutPopups()
+{
+    const auto result = ShellSurface::NotificationSurfaceLayoutPlanner::plan(
+        {1'920, 1'080}, {0, 16, 16, 0}, {0, 16, 16, 0}, 0);
+    QVERIFY2(result.ok(), qPrintable(result.error));
+    QCOMPARE(result.layout->popupSize, QSize(400, 38));
+    QCOMPARE(result.layout->centerSize, QSize(440, 640));
+    QCOMPARE(result.layout->visiblePopupCount, 0);
 }
 
 void NotificationSurfaceLayoutTests::

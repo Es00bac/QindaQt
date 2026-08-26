@@ -53,11 +53,27 @@ notification content.
 | `ReleasePresenter()` | Clears the caller's presenter binding |
 
 Successful operation maps contain `status`, `revisionBefore`, `revisionAfter`,
-and `notificationId`. Invalid arguments/actions use the standard invalid-args
-error, missing IDs use `org.qindaqt.NotificationPresentation1.Error.NotFound`,
-capacity/reentrancy uses limits-exceeded, and internal model failures use the
-standard failed error. Access errors never reveal the current presenter or
-token.
+and `notificationId`. For a shell client, `revisionBefore` must be at least the
+accepted snapshot revision from which the operation was initiated, and
+`revisionAfter` must be at least `revisionBefore`. Dismiss and non-resident
+action results advance the revision. A resident action may return equal before
+and after revisions because invoking it does not remove or otherwise mutate the
+notification. Equal revisions are not a general relaxation: the client permits
+them only for an action whose target was resident in its initiating snapshot.
+
+Invalid arguments/actions use the standard invalid-args error, missing IDs use
+`org.qindaqt.NotificationPresentation1.Error.NotFound`, capacity/reentrancy uses
+limits-exceeded, and internal model failures use the standard failed error.
+Access errors never reveal the current presenter or token.
+
+The shell serializes operations. A valid reply is followed by a complete
+snapshot fetch. Timeout, malformed reply, and non-authorization remote failure
+also trigger a complete fetch because the client cannot infer whether the host
+mutated state before the failure became visible. If another snapshot request is
+already outstanding, one more fetch is forced afterward. Authorization failure
+discards the binding and requires a new `RegisterPresenter` exchange. Owner
+replacement changes the lineage before the interrupted request is reported,
+and late replies from the old unique owner or token have no effect.
 
 ## Snapshot map
 
@@ -96,9 +112,13 @@ client, Qt transport, descriptor token channel, and essential-process
 supervisor are implemented. The production shell now projects accepted client
 snapshots through a bounded active/popup/in-memory-history model into plain-text
 QML popup and center surfaces. This did not change the protocol schema or
-methods. Actions are rendered and forwarded with an empty activation token, so
-focus transfer is not promised and the host continues to advertise only
-`body`. Do-not-disturb, lock-screen redaction, persistent history, safe image
-loading, activation-token acquisition, visible async error handling, complete
-keyboard/accessibility proof, and child restart policy remain. The private
-object stays disabled in the installed standalone host.
+methods. Operations are serialized, results are checked against their initiating
+revision, uncertain outcomes force authoritative recovery, and owner changes
+reject the old operation without accepting its late reply. The presentation
+model keeps the originating popup until success and exposes bounded, plain-text
+busy/error feedback for eight seconds after rejection. Actions are rendered and
+forwarded with an empty activation token, so focus transfer is not promised and
+the host continues to advertise only `body`. Do-not-disturb, lock-screen
+redaction, persistent history, safe image loading, activation-token acquisition,
+complete keyboard/accessibility proof, and child restart policy remain. The
+private object stays disabled in the installed standalone host.

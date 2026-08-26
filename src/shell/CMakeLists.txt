@@ -85,6 +85,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/NotificationCard.qml
             qml/NotificationCenter.qml
             qml/NotificationListSection.qml
+            qml/NotificationOperationStatus.qml
             qml/NotificationPopupStack.qml
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml

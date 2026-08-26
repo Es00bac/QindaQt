@@ -117,13 +117,25 @@ The corresponding owner-bound asynchronous client is implemented as a separate
 library. It subscribes to the exact unique owner before authenticating, rejects
 late-owner replies and regressing or malformed snapshots, coalesces targeted
 invalidations, enforces request timeouts, retries with bounded backoff, and
-validates dismiss/action requests against its accepted snapshot. The production
-shell composes it only when a descriptor token was supplied. The adapter stays
-presentation-neutral; a separate presentation-model library projects only
-client public values into active, popup, and in-memory history models. QML
-consumes those public models, never the service implementation library. The
-first owner/epoch snapshot is baselined without replaying older items as new
-popups. Detailed UI behavior and limits are in
+validates dismiss/action requests against its accepted snapshot. Operations are
+serialized. Results must match the requested ID and initiating lineage;
+dismiss/non-resident results advance the revision, while only a resident action
+may preserve it. A timeout, malformed result, or non-authorization remote
+failure rejects visibly and forces an authoritative snapshot, including a
+second fetch when an older request was already in flight. Authorization loss
+restarts registration. Owner replacement publishes its new lineage before
+rejecting the interrupted operation, and stale old-owner replies are ignored.
+
+The production shell composes the client only when a descriptor token was
+supplied. The adapter stays presentation-neutral; a separate presentation-model
+library projects only client public values into active, popup, and in-memory
+history models. It pauses popup expiry during the one outstanding operation,
+removes the originating popup only on success, and retains plus renews it after
+rejection. Remote text is normalized and capped to 512 UTF-16 code units before
+the model exposes it, and the error clears after eight seconds. QML consumes
+those public models and status values, never the service implementation
+library. The first owner/epoch snapshot is baselined without replaying older
+items as new popups. Detailed UI behavior and limits are in
 [Notification presentation](../shell/notification-presentation.md).
 
 ## Resident host
@@ -153,8 +165,9 @@ environment, a persistent file, a signal, or diagnostics. A standalone host
 still receives no token, so its private object is absent. Reads accept one exact
 record and time out after two seconds. The default
 freedesktop capability remains `body`: the initial action controls do not yet
-provide activation tokens, visible asynchronous error recovery, or a qualified
-end-to-end keyboard/accessibility path.
+provide activation tokens or a qualified end-to-end keyboard/accessibility
+path. Busy and failure state are visible, but no live compositor/input run has
+yet qualified their focus or interaction behavior.
 
 ## Qualification and remaining work
 
@@ -182,25 +195,30 @@ rollback when the private object path cannot register.
 
 Client tests add deterministic owner changes, late replies, malformed and
 regressing snapshots, invalidation bursts, timeout/backoff, reauthentication,
-operation validation, and release. A second private-bus workflow runs the real
-Qt client transport against two successive resident hosts and proves targeted
-updates, action-token forwarding, loss, new-owner authentication, and new epoch
+operation validation, resident action results without a revision advance,
+uncertain-result authoritative recovery, serialized busy state, owner-change
+interruption, and release. A second private-bus workflow runs the real Qt client
+transport against two successive resident hosts and proves targeted updates,
+action-token forwarding, loss, new-owner authentication, and new epoch
 acceptance. Descriptor and supervisor tests prove bounded one-shot reads,
 secret-free arguments, two-child startup, coupled shutdown, and second-child
 rollback without opening a display.
 
 Presentation-model tests cover baseline-without-replay, new and replacement
 popups, urgency ordering, monotonic expiry, center-open suppression, popup and
-history caps, transient exclusion, and operation preflight. Pure logical-screen
-planning tests cover 1080p, WUXGA, 1440p, 200% scale, compact clamping, and
-minimum usable dimensions. Offscreen QML tests exercise active and popup
-delegates, literal plain-text rendering, and bounded action/Dismiss placement.
-No live/nested display or input test was run for these notification surfaces.
+history caps, transient exclusion, operation preflight, busy serialization,
+success-only removal, rejection retry preservation, and bounded error lifetime.
+Pure logical-screen planning tests cover 1080p, WUXGA, 1440p, 200% scale,
+compact clamping, a zero-popup 38-logical-pixel status surface, and minimum
+usable dimensions. Offscreen QML tests exercise active and popup delegates,
+literal plain-text body/error rendering, busy control disabling, and bounded
+action/Dismiss placement. No live/nested display or input test was run for
+these notification surfaces.
 
 The following are not yet implemented:
 
 - a production keyboard path to the center, full accessibility/focus proof,
-  visible operation errors, and do-not-disturb/inhibition policy;
+  and do-not-disturb/inhibition policy;
 - popup-safe icon/image loading and activation-token acquisition;
 - D-Bus activation and post-start child/bus-loss restart policy;
 - sound, persistent disk history, settings persistence, lock-screen redaction,

@@ -234,28 +234,34 @@ rearm/cancel/early-fire behavior, and the concrete one-shot QTimer.
 
 The pure presentation-client test covers exact-owner authentication, timeout
 and bounded retry, invalidation coalescing, late-reply rejection, revision and
-epoch policy, operation preflight, and release. A real private-D-Bus test runs
-the Qt client against successive host owners and verifies resynchronization and
-action activation-token forwarding. `qindaqt.session-supervisor` proves the
-secret is absent from child arguments, both descriptor consumers start, one
-child's exit tears down its sibling, and second-child startup failure rolls back
-the first. These tests open no display and inject no input.
+epoch policy, operation preflight and serialization, resident action success
+without a revision advance, timeout/malformed/remote-failure recovery,
+owner-change interruption, stale operation replies, and release. A real
+private-D-Bus test runs the Qt client against successive host owners and verifies
+resynchronization and action activation-token forwarding.
+`qindaqt.session-supervisor` proves the secret is absent from child arguments,
+both descriptor consumers start, one child's exit tears down its sibling, and
+second-child startup failure rolls back the first. These tests open no display
+and inject no input.
 
 `qindaqt.notification-presentation-model` covers first-snapshot baselining
 without popup replay, new/replacement ordering, monotonic expiry, center-open
-suppression, popup/history caps, transient exclusion, and operation preflight.
+suppression, popup/history caps, transient exclusion, operation preflight,
+success-only popup removal, retention and renewed expiry after rejection,
+serialized busy state, and eight-second production error lifetime.
 `qindaqt.notification-surface-layout` covers preferred sizes at 1080p, WUXGA,
 and 1440p; 200% logical geometry; compact clamping; and unusably small output
-rejection. `qindaqt.notification-surfaces-offscreen` instantiates the card,
-popup, active, and recent-center QML with the software renderer, verifies
-literal plain-text rendering, and keeps overflow actions plus Dismiss within a
-400-pixel card.
+rejection, including the zero-popup 38-logical-pixel status surface.
+`qindaqt.notification-surfaces-offscreen` instantiates the card, popup, active,
+and recent-center QML with the software renderer, verifies literal plain-text
+body/error rendering and busy control disabling, and keeps overflow actions
+plus Dismiss within a 400-pixel card.
 
 These presentation checks do not start a compositor or inject input. They are
 not evidence for real layer-role mapping, screen placement, visual baselines,
 focus transfer, keyboard navigation, assistive-technology behavior,
 multi-output migration, do-not-disturb, persistence, sound, lock-screen policy,
-or visible asynchronous operation errors.
+or live operation-result interaction.
 
 ## Current compositor proof
 

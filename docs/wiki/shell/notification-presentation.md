@@ -64,9 +64,31 @@ authenticated client and host.
 
 Action invocation currently supplies an empty activation token. The action may
 run, but focus transfer is not promised, and the host still advertises only the
-`body` freedesktop capability. Asynchronous operation errors and client-busy
-state do not yet have visible QML feedback; an optimistically hidden popup is
-not restored after a later rejection.
+`body` freedesktop capability.
+
+Only one dismiss or action request may be outstanding. While it is outstanding,
+the card controls are disabled and both notification surfaces may show a plain-
+text **Working…** status. Starting an operation pauses popup expiry. The popup is
+removed only after a valid success reply; a rejection retains the card, renews
+its complete urgency-specific display interval, and leaves its controls
+available for retry.
+
+The client accepts an operation result only when its exact fields and ID match,
+`revisionBefore` is no older than the snapshot that initiated the request, and
+`revisionAfter` does not regress. Dismissal and non-resident actions must advance
+the revision. A resident action may legitimately preserve it because the
+notification remains active. Timeout, malformed reply, and ordinary remote
+failure reject the operation and trigger an authoritative snapshot fetch. If a
+snapshot request is already in flight, the client marks it dirty and fetches
+again afterward so a reply predating the operation cannot become the final
+state. An authorization failure instead discards the binding and re-registers.
+
+An owner change publishes the new unavailable/authenticating lineage before it
+rejects the old-owner operation. Replies from the former owner or operation
+token are ignored. Presented remote errors are trimmed, replace NUL or malformed
+UTF-16 with safe replacement characters, and are capped at 512 UTF-16 code units
+including a truncation ellipsis. They render as plain text and clear after eight
+seconds or the next successful operation.
 
 ## Surfaces and entry points
 
@@ -74,8 +96,11 @@ Both windows currently use the primary output, top-right anchors, overlay
 layer, a 16-logical-pixel top/right margin, zero exclusive zone, on-demand
 keyboard interactivity, disabled activate-on-show, and separate
 `notification-popup` and `notification-center` scopes. Preferred sizes are
-400 logical pixels wide for popups and 440 by 640 for the center. A pure
-planner clamps both to the output's logical geometry, including a
+400 logical pixels wide for popups and 440 by 640 for the center. Popup height
+is a 38-logical-pixel header plus at most three 146-logical-pixel cards. The
+runtime keeps the 38-pixel header-only surface mapped while an operation is
+busy or rejected even when no popup card remains. A pure planner clamps both to
+the output's logical geometry, including a
 1920x1080 mode exposed by Qt as 960x540 at 200% scaling, and rejects geometry
 too small to retain usable controls.
 
@@ -90,11 +115,15 @@ assistive-technology verification remain required.
 
 Pure model tests cover baseline-without-replay, new and replacement popups,
 urgency ordering, monotonic expiry, center suppression, popup/history bounds,
-transient exclusion, and client operation preflight. Pure surface-layout tests
-cover 1080p, WUXGA, 1440p, 200% logical geometry, compact clamping, and minimum
-usable geometry. Offscreen QML tests instantiate cards, popup and center
-surfaces, exercise active and popup delegates, verify literal plain-text body
-rendering, and keep overflow plus Dismiss inside the card.
+transient exclusion, serialized operations, success-only removal, rejection
+retention and renewal, and bounded error lifetime. Client tests cover resident
+equal-revision success, advancing-operation validation, timeout/malformed/
+remote-error recovery, owner replacement, and stale replies. Pure surface-
+layout tests cover 1080p, WUXGA, 1440p, 200% logical geometry, compact clamping,
+the zero-popup 38-pixel status plan, and minimum usable geometry. Offscreen QML
+tests instantiate cards, popup and center surfaces, exercise active and popup
+delegates, verify literal plain-text body and operation-error rendering, disable
+controls while busy, and keep overflow plus Dismiss inside the card.
 
 This milestone did **not** run a live or nested compositor and did not inject
 input. The following remain unqualified or unimplemented:
@@ -104,8 +133,7 @@ input. The following remain unqualified or unimplemented:
 - multi-output placement policy, per-output histories, and output migration;
 - do-not-disturb/inhibition, lock-screen redaction, sound, and safe image/icon
   loading;
-- persistent history/settings, D-Bus activation, child/bus-loss restart, and
-  operation-error presentation;
+- persistent history/settings, D-Bus activation, and child/bus-loss restart;
 - activation-token acquisition, portal routing, inline reply, and vendor
   extensions; and
 - a persistent center entry point independent of a particular applet.

@@ -58,6 +58,17 @@ NotificationWindowController::NotificationWindowController(
                          &Services::NotificationPresentationModel::
                              NotificationPresentationController::centerOpenChanged,
                          &m_engine, [this] { updateVisibility(); });
+    m_operationBusyConnection =
+        QObject::connect(&m_presentation,
+                         &Services::NotificationPresentationModel::
+                             NotificationPresentationController::operationBusyChanged,
+                         &m_engine, [this] { updateVisibility(); });
+    m_operationErrorConnection =
+        QObject::connect(
+            &m_presentation,
+            &Services::NotificationPresentationModel::
+                NotificationPresentationController::operationErrorTextChanged,
+            &m_engine, [this] { updateVisibility(); });
 }
 
 NotificationWindowController::~NotificationWindowController()
@@ -66,6 +77,8 @@ NotificationWindowController::~NotificationWindowController()
     // shell teardown. Disconnect before invalidating the lambdas' `this`.
     QObject::disconnect(m_popupCountConnection);
     QObject::disconnect(m_centerOpenConnection);
+    QObject::disconnect(m_operationBusyConnection);
+    QObject::disconnect(m_operationErrorConnection);
     reset();
 }
 
@@ -212,7 +225,14 @@ void NotificationWindowController::updateVisibility()
         m_centerWindow->hide();
         return;
     }
-    if (popupCount > 0 && !m_presentation.centerOpen()) {
+    // AGENT-GUARD: operation feedback lives in the popup header. Keep the
+    // header-only surface mapped after a rejection or while an operation is
+    // pending, even when the originating notification is no longer in the
+    // popup model. The center presents the same status when it is open.
+    const bool hasPopupSurfaceContent =
+        popupCount > 0 || m_presentation.operationBusy() ||
+        !m_presentation.operationErrorText().isEmpty();
+    if (hasPopupSurfaceContent && !m_presentation.centerOpen()) {
         m_popupWindow->show();
     } else {
         m_popupWindow->hide();

@@ -7,6 +7,8 @@
 #include <QObject>
 #include <QTimer>
 
+#include <optional>
+
 namespace QindaQt::Services::NotificationPresentationClient {
 class NotificationPresentationClient;
 }
@@ -17,6 +19,7 @@ struct PresentationTiming final {
     int lowUrgencyMilliseconds = 4'000;
     int normalUrgencyMilliseconds = 6'000;
     int criticalUrgencyMilliseconds = 10'000;
+    int operationErrorMilliseconds = 8'000;
     qsizetype maximumPopups = 8;
     qsizetype maximumHistory = 100;
 
@@ -31,6 +34,9 @@ class NotificationPresentationController final : public QObject {
     Q_PROPERTY(bool centerOpen READ centerOpen WRITE setCenterOpen
                    NOTIFY centerOpenChanged)
     Q_PROPERTY(int popupCount READ popupCount NOTIFY popupCountChanged)
+    Q_PROPERTY(bool operationBusy READ operationBusy NOTIFY operationBusyChanged)
+    Q_PROPERTY(QString operationErrorText READ operationErrorText
+                   NOTIFY operationErrorTextChanged)
 
 public:
     // AGENT-CONTRACT: `client` is borrowed, must remain on this object's
@@ -45,6 +51,8 @@ public:
     [[nodiscard]] QAbstractItemModel *historyModel() noexcept;
     [[nodiscard]] bool centerOpen() const noexcept;
     [[nodiscard]] int popupCount() const noexcept;
+    [[nodiscard]] bool operationBusy() const noexcept;
+    [[nodiscard]] const QString &operationErrorText() const noexcept;
 
     void setCenterOpen(bool open);
     Q_INVOKABLE void toggleCenter();
@@ -57,6 +65,8 @@ public:
 Q_SIGNALS:
     void centerOpenChanged();
     void popupCountChanged();
+    void operationBusyChanged();
+    void operationErrorTextChanged();
     void operationError(const QString &message);
 
 private:
@@ -73,8 +83,10 @@ private:
     void expirePopups();
     void rearmPopupTimer();
     void removePopup(quint32 notificationId);
+    void renewPopup(quint32 notificationId);
     void addHistory(
         const NotificationPresentation::PresentationNotification &notification);
+    void setOperationError(QString message);
     [[nodiscard]] int popupDuration(quint32 urgency) const noexcept;
 
     NotificationPresentationClient::NotificationPresentationClient &m_client;
@@ -86,8 +98,11 @@ private:
     QVector<PopupEntry> m_popupEntries;
     QVector<NotificationListEntry> m_historyEntries;
     QTimer m_popupTimer;
+    QTimer m_operationErrorTimer;
     QElapsedTimer m_clock;
     QString m_epoch;
+    QString m_operationError;
+    std::optional<quint32> m_pendingOperationId;
     quint64 m_sequence = 0;
     bool m_baselined = false;
     bool m_centerOpen = false;

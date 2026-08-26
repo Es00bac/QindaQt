@@ -34,6 +34,7 @@ Window {
         }
 
         Button {
+            id: clearButton
             anchors.right: closeButton.left
             anchors.rightMargin: 6
             anchors.verticalCenter: titleText.verticalCenter
@@ -41,6 +42,16 @@ Window {
             enabled: historySection.count > 0
             focusPolicy: Qt.TabFocus
             onClicked: root.presentation.clearHistory()
+        }
+
+        NotificationOperationStatus {
+            anchors.left: titleText.right
+            anchors.leftMargin: 12
+            anchors.right: clearButton.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: titleText.verticalCenter
+            presentation: root.presentation
+            theme: root.theme
         }
 
         ToolButton {

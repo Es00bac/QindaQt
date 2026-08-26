@@ -107,9 +107,12 @@ in the Shell/customization milestone.
 Notification windows are separate nonexclusive overlay layer surfaces, not
 profile panels or reservation carriers. Their pure planner clamps preferred
 popup/center sizes to primary-output logical geometry, including a 200%-scaled
-1080p mode. Current placement is primary-output-only and top-right. The panel
-resolution matrix below does not prove notification mapping, placement, visual
-appearance, focus, or mixed-output migration; no live/nested notification
+1080p mode. A popup stack uses a 38-logical-pixel header and up to three
+146-logical-pixel cards. That header remains a valid mapped surface with zero
+cards while an operation is busy or its bounded error is visible. Current
+placement is primary-output-only and top-right. The panel resolution matrix
+below does not prove notification mapping, placement, visual appearance, focus,
+keyboard operation, or mixed-output migration; no live/nested notification
 surface run was performed for this slice. See
 [Notification presentation](notification-presentation.md).
 

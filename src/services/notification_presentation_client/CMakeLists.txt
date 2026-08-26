@@ -12,6 +12,9 @@ target_sources(
     qindaqt_notification_presentation_client
     PRIVATE
         src/notification_presentation_client.cpp
+        src/operation_lifecycle.cpp
+        src/operation_validation.cpp
+        src/operation_validation.h
         src/qt_notification_presentation_transport.cpp
     PUBLIC
         FILE_SET HEADERS

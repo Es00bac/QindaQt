@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
 
-#include "qindaqt/services/notification_presentation/wire_contract.h"
 #include "qindaqt/services/notification_presentation_client/presentation_transport.h"
 
-#include <QMetaType>
-#include <QSet>
-
 #include <algorithm>
-#include <limits>
 #include <utility>
 
 namespace QindaQt::Services::NotificationPresentationClient {
@@ -22,47 +17,6 @@ void setError(QString *error, QString message)
     if (error != nullptr) {
         *error = std::move(message);
     }
-}
-
-bool validBoundedText(const QString &value, qsizetype maximumBytes)
-{
-    if (value.isEmpty() || value.contains(QChar::Null) ||
-        value.toUtf8().size() > maximumBytes) {
-        return false;
-    }
-    for (qsizetype index = 0; index < value.size(); ++index) {
-        if (value.at(index).isHighSurrogate()) {
-            if (++index >= value.size() || !value.at(index).isLowSurrogate()) {
-                return false;
-            }
-        } else if (value.at(index).isLowSurrogate()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool validOperationResult(const QVariantMap &result, quint32 expectedId,
-                          quint64 *revisionAfter)
-{
-    static const QSet<QString> Keys = {
-        QStringLiteral("status"), QStringLiteral("revisionBefore"),
-        QStringLiteral("revisionAfter"), QStringLiteral("notificationId")};
-    if (QSet<QString>(result.keyBegin(), result.keyEnd()) != Keys ||
-        result.value(QStringLiteral("status")).metaType().id() != QMetaType::QString ||
-        result.value(QStringLiteral("status")).toString() != QLatin1String("applied") ||
-        result.value(QStringLiteral("revisionBefore")).metaType().id() !=
-            QMetaType::ULongLong ||
-        result.value(QStringLiteral("revisionAfter")).metaType().id() !=
-            QMetaType::ULongLong ||
-        result.value(QStringLiteral("notificationId")).metaType().id() !=
-            QMetaType::UInt ||
-        result.value(QStringLiteral("notificationId")).toUInt() != expectedId) {
-        return false;
-    }
-    const quint64 before = result.value(QStringLiteral("revisionBefore")).toULongLong();
-    *revisionAfter = result.value(QStringLiteral("revisionAfter")).toULongLong();
-    return *revisionAfter > before;
 }
 
 } // namespace
@@ -111,8 +65,10 @@ NotificationPresentationClient::NotificationPresentationClient(
         }
         const quint32 id = m_operation->notificationId;
         m_operation.reset();
+        Q_EMIT operationInFlightChanged();
         Q_EMIT operationRejected(id,
                                  QStringLiteral("notification operation timed out"));
+        scheduleOperationRecovery();
     });
     connect(&m_transport, &PresentationTransport::serviceOwnerChanged, this,
             &NotificationPresentationClient::handleOwnerChanged);
@@ -165,6 +121,7 @@ void NotificationPresentationClient::stop()
     m_requestTimeout.stop();
     m_operationTimeout.stop();
     m_request.reset();
+    const bool operationWasInFlight = m_operation.has_value();
     m_operation.reset();
     m_snapshot.reset();
     m_owner.clear();
@@ -175,6 +132,9 @@ void NotificationPresentationClient::stop()
     m_retryIndex = 0;
     m_state = ClientState::Unavailable;
     m_transport.stop();
+    if (operationWasInFlight) {
+        Q_EMIT operationInFlightChanged();
+    }
 }
 
 ClientState NotificationPresentationClient::state() const noexcept
@@ -212,6 +172,7 @@ void NotificationPresentationClient::handleOwnerChanged(const QString &uniqueOwn
     m_requestTimeout.stop();
     m_operationTimeout.stop();
     m_request.reset();
+    const std::optional<InFlightOperation> interruptedOperation = m_operation;
     m_operation.reset();
     m_snapshot.reset();
     m_authenticated = false;
@@ -221,10 +182,17 @@ void NotificationPresentationClient::handleOwnerChanged(const QString &uniqueOwn
     m_owner = uniqueOwner;
     if (m_owner.isEmpty()) {
         publish(ClientState::Unavailable);
-        return;
+    } else {
+        publish(ClientState::Authenticating);
+        scheduleRequest(0);
     }
-    publish(ClientState::Authenticating);
-    scheduleRequest(0);
+    if (interruptedOperation) {
+        // AGENT-GUARD: publish the new lineage before callbacks can retry.
+        Q_EMIT operationInFlightChanged();
+        Q_EMIT operationRejected(
+            interruptedOperation->notificationId,
+            QStringLiteral("notification service changed during operation"));
+    }
 }
 
 void NotificationPresentationClient::handleInvalidation(
@@ -366,123 +334,6 @@ void NotificationPresentationClient::requestNow()
     } else {
         m_transport.requestSnapshot(token, m_owner);
     }
-}
-
-bool NotificationPresentationClient::dismiss(quint32 id, QString *error)
-{
-    if (!validateOperation(id, nullptr, nullptr, error)) {
-        return false;
-    }
-    const quint64 token = nextToken();
-    if (token == 0) {
-        setError(error, QStringLiteral("notification operation token is exhausted"));
-        return false;
-    }
-    m_operation = InFlightOperation{token, m_owner, id};
-    m_operationTimeout.start(m_timing.requestTimeoutMilliseconds);
-    m_transport.dismiss(token, m_owner, id);
-    setError(error, {});
-    return true;
-}
-
-bool NotificationPresentationClient::invokeAction(
-    quint32 id, const QString &actionKey, const QString &activationToken,
-    QString *error)
-{
-    if (!validateOperation(id, &actionKey, &activationToken, error)) {
-        return false;
-    }
-    const quint64 token = nextToken();
-    if (token == 0) {
-        setError(error, QStringLiteral("notification operation token is exhausted"));
-        return false;
-    }
-    m_operation = InFlightOperation{token, m_owner, id};
-    m_operationTimeout.start(m_timing.requestTimeoutMilliseconds);
-    m_transport.invokeAction(token, m_owner, id, actionKey, activationToken);
-    setError(error, {});
-    return true;
-}
-
-bool NotificationPresentationClient::validateOperation(
-    quint32 id, const QString *actionKey, const QString *activationToken,
-    QString *error) const
-{
-    if (!m_started || m_state != ClientState::Ready || !m_authenticated ||
-        !m_snapshot || m_operation) {
-        setError(error, QStringLiteral("notification presenter is not ready"));
-        return false;
-    }
-    const auto item = std::find_if(
-        m_snapshot->notifications.cbegin(), m_snapshot->notifications.cend(),
-        [id](const auto &notification) { return notification.id == id; });
-    if (id == 0 || item == m_snapshot->notifications.cend()) {
-        setError(error, QStringLiteral("notification is not in the current snapshot"));
-        return false;
-    }
-    if (actionKey != nullptr) {
-        const auto action = std::find_if(
-            item->actions.cbegin(), item->actions.cend(),
-            [actionKey](const auto &candidate) { return candidate.key == *actionKey; });
-        if (action == item->actions.cend() || activationToken == nullptr ||
-            (!activationToken->isEmpty() &&
-             !validBoundedText(
-                 *activationToken,
-                 NotificationPresentation::WireContract::MaximumActivationTokenBytes))) {
-            setError(error, QStringLiteral("notification action request is invalid"));
-            return false;
-        }
-    }
-    return true;
-}
-
-void NotificationPresentationClient::handleOperationResult(
-    quint64 token, const QString &uniqueOwner, const QVariantMap &result)
-{
-    if (!m_started || !m_operation || token != m_operation->token ||
-        uniqueOwner != m_operation->owner || uniqueOwner != m_owner) {
-        return;
-    }
-    const quint32 id = m_operation->notificationId;
-    m_operation.reset();
-    m_operationTimeout.stop();
-    quint64 revisionAfter = 0;
-    if (!validOperationResult(result, id, &revisionAfter)) {
-        Q_EMIT operationRejected(
-            id, QStringLiteral("notification operation reply is invalid"));
-        return;
-    }
-    m_targetRevision = std::max(m_targetRevision, revisionAfter);
-    Q_EMIT operationSucceeded(id);
-    if (!m_request) {
-        scheduleRequest(0);
-    } else {
-        m_dirty = true;
-    }
-}
-
-void NotificationPresentationClient::handleOperationFailure(
-    quint64 token, const QString &uniqueOwner, const QString &errorName,
-    const QString &message)
-{
-    if (!m_started || !m_operation || token != m_operation->token ||
-        uniqueOwner != m_operation->owner || uniqueOwner != m_owner) {
-        return;
-    }
-    const quint32 id = m_operation->notificationId;
-    m_operation.reset();
-    m_operationTimeout.stop();
-    if (errorName == QLatin1String(AccessDenied)) {
-        m_authenticated = false;
-        m_snapshot.reset();
-        publish(ClientState::Authenticating,
-                QStringLiteral("notification presenter authorization was lost"));
-        scheduleRequest(0);
-    }
-    Q_EMIT operationRejected(
-        id, message.trimmed().isEmpty()
-                ? QStringLiteral("notification operation failed")
-                : message);
 }
 
 void NotificationPresentationClient::publish(ClientState state, QString error)

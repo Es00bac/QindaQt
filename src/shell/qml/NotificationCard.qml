@@ -139,11 +139,13 @@ Rectangle {
 
             Button {
                 id: primaryActionButton
+                objectName: "notificationPrimaryAction"
                 required property var modelData
                 readonly property var notificationAction:
                     root.actionAt(Number(modelData))
                 height: 30
                 width: 96
+                enabled: !Boolean(root.presentation.operationBusy)
                 text: String(notificationAction.label)
                 focusPolicy: Qt.TabFocus
                 Accessible.name: String(notificationAction.label)
@@ -167,6 +169,7 @@ Rectangle {
             height: 30
             width: 64
             visible: root.actionCount > root.primaryActionCount
+            enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("More")
             focusPolicy: Qt.TabFocus
             Accessible.name: qsTr("More notification actions")
@@ -186,6 +189,7 @@ Rectangle {
                             root.actionAt(Number(modelData) +
                                           root.primaryActionCount)
                         width: 240
+                        enabled: !Boolean(root.presentation.operationBusy)
                         text: String(notificationAction.label)
                         Accessible.name: String(notificationAction.label)
                         contentItem: Text {
@@ -208,6 +212,7 @@ Rectangle {
             height: 30
             width: 84
             visible: root.active
+            enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("Dismiss")
             focusPolicy: Qt.TabFocus
             Accessible.name: qsTr("Dismiss notification")

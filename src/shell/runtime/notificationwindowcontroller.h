@@ -50,6 +50,8 @@ private:
     QPointer<QScreen> m_screen;
     QMetaObject::Connection m_popupCountConnection;
     QMetaObject::Connection m_centerOpenConnection;
+    QMetaObject::Connection m_operationBusyConnection;
+    QMetaObject::Connection m_operationErrorConnection;
 };
 
 } // namespace QindaQt::Shell

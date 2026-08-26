@@ -42,9 +42,16 @@ NotificationSurfaceLayoutResult NotificationSurfaceLayoutPlanner::plan(
     }
     const QSize popupAvailable = availableSize(logicalOutputSize, popupMargins);
     const QSize centerAvailable = availableSize(logicalOutputSize, centerMargins);
-    const int visibleCount = std::clamp(std::max(1, popupCount), 1,
-                                        MaximumVisiblePopups);
-    const int minimumPopupHeight = PopupHeaderHeight + PopupCardHeight;
+    const int visibleCount =
+        popupCount == 0 ? 0 : std::clamp(popupCount, 1, MaximumVisiblePopups);
+    // AGENT-CONTRACT: the runtime maps a header-only popup surface for busy
+    // and error feedback. A zero popup count must therefore remain a valid
+    // plan without reserving an invisible card-height region.
+    const int desiredPopupHeight =
+        PopupHeaderHeight + PopupCardHeight * visibleCount;
+    const int minimumPopupHeight =
+        visibleCount == 0 ? PopupHeaderHeight
+                          : PopupHeaderHeight + PopupCardHeight;
     if (popupAvailable.width() < MinimumSurfaceWidth ||
         popupAvailable.height() < minimumPopupHeight ||
         centerAvailable.width() < MinimumSurfaceWidth ||
@@ -54,8 +61,7 @@ NotificationSurfaceLayoutResult NotificationSurfaceLayoutPlanner::plan(
     return {NotificationSurfaceLayout{
                 .popupSize =
                     {std::min(DesiredPopupWidth, popupAvailable.width()),
-                     std::min(PopupHeaderHeight + PopupCardHeight * visibleCount,
-                              popupAvailable.height())},
+                     std::min(desiredPopupHeight, popupAvailable.height())},
                 .centerSize =
                     {std::min(DesiredCenterSize.width(), centerAvailable.width()),
                      std::min(DesiredCenterSize.height(), centerAvailable.height())},

@@ -1,157 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-#include "qindaqt/services/notification_presentation/presentation_snapshot.h"
+#include "support/notification_presentation_client_test_support.h"
+
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
-#include "qindaqt/services/notification_presentation_client/presentation_transport.h"
 
 #include <QSignalSpy>
 #include <QtTest>
 
 using namespace QindaQt::Services;
-
-namespace {
-
-enum class RequestType { Register, Snapshot };
-
-struct RecordedRequest final {
-    quint64 token = 0;
-    QString owner;
-    RequestType type = RequestType::Register;
-};
-
-struct RecordedOperation final {
-    quint64 token = 0;
-    QString owner;
-    quint32 id = 0;
-    QString actionKey;
-    QString activationToken;
-};
-
-class FakeTransport final
-    : public NotificationPresentationClient::PresentationTransport {
-public:
-    using PresentationTransport::PresentationTransport;
-
-    bool start(QString *error) override
-    {
-        ++startCalls;
-        if (!startSucceeds) {
-            if (error != nullptr) {
-                *error = QStringLiteral("injected transport failure");
-            }
-            return false;
-        }
-        running = true;
-        return true;
-    }
-
-    void stop() override
-    {
-        ++stopCalls;
-        running = false;
-    }
-
-    void registerPresenter(quint64 token, const QString &owner,
-                           const QString &accessToken) override
-    {
-        requests.append({token, owner, RequestType::Register});
-        observedAccessToken = accessToken;
-    }
-
-    void requestSnapshot(quint64 token, const QString &owner) override
-    {
-        requests.append({token, owner, RequestType::Snapshot});
-    }
-
-    void releasePresenter(const QString &owner) override
-    {
-        releasedOwners.append(owner);
-    }
-
-    void dismiss(quint64 token, const QString &owner, quint32 id) override
-    {
-        operations.append({token, owner, id, {}, {}});
-    }
-
-    void invokeAction(quint64 token, const QString &owner, quint32 id,
-                      const QString &actionKey,
-                      const QString &activationToken) override
-    {
-        operations.append({token, owner, id, actionKey, activationToken});
-    }
-
-    void announceOwner(const QString &owner)
-    {
-        Q_EMIT serviceOwnerChanged(owner);
-    }
-
-    void invalidate(const QString &owner, const QString &epoch, quint64 revision)
-    {
-        Q_EMIT snapshotInvalidated(owner, epoch, revision);
-    }
-
-    void reply(const RecordedRequest &request, const QVariantMap &wire)
-    {
-        Q_EMIT snapshotReceived(request.token, request.owner, wire);
-    }
-
-    void fail(const RecordedRequest &request, const QString &errorName,
-              const QString &message)
-    {
-        Q_EMIT requestFailed(request.token, request.owner, errorName, message);
-    }
-
-    void finish(const RecordedOperation &operation, quint64 before,
-                quint64 after)
-    {
-        Q_EMIT operationFinished(
-            operation.token, operation.owner,
-            {{QStringLiteral("status"), QStringLiteral("applied")},
-             {QStringLiteral("revisionBefore"), before},
-             {QStringLiteral("revisionAfter"), after},
-             {QStringLiteral("notificationId"), operation.id}});
-    }
-
-    QVector<RecordedRequest> requests;
-    QVector<RecordedOperation> operations;
-    QVector<QString> releasedOwners;
-    QString observedAccessToken;
-    int startCalls = 0;
-    int stopCalls = 0;
-    bool startSucceeds = true;
-    bool running = false;
-};
-
-NotificationPresentation::PresentationAccessToken accessToken()
-{
-    QString error;
-    auto result = NotificationPresentation::PresentationAccessToken::fromHex(
-        QString(64, QLatin1Char('a')), &error);
-    Q_ASSERT(result.has_value());
-    return std::move(*result);
-}
-
-QVariantMap snapshotWire(const QString &epoch, quint64 revision,
-                         QString summary = QStringLiteral("Build complete"))
-{
-    NotificationPresentation::PresentationNotification notification;
-    notification.id = 7;
-    notification.applicationName = QStringLiteral("Builder");
-    notification.summary = std::move(summary);
-    notification.body = QStringLiteral("The requested build passed.");
-    notification.createdAtMs = 100;
-    notification.actions = {{QStringLiteral("open"), QStringLiteral("Open")}};
-    return NotificationPresentation::PresentationSnapshotCodec::encode(
-        {epoch, revision, {notification}});
-}
-
-NotificationPresentationClient::ClientTiming fastTiming()
-{
-    return {.debounceMilliseconds = 2,
-            .requestTimeoutMilliseconds = 20,
-            .retryMilliseconds = {3, 6, 12}};
-}
-
-} // namespace
+using namespace QindaQt::Tests::NotificationPresentationClientSupport;
 
 class NotificationPresentationClientTests final : public QObject {
     Q_OBJECT
@@ -305,8 +161,15 @@ void NotificationPresentationClientTests::validatesAndTracksOperations()
     QSignalSpy succeeded(
         &client,
         &NotificationPresentationClient::NotificationPresentationClient::operationSucceeded);
+    QSignalSpy inFlightChanged(
+        &client,
+        &NotificationPresentationClient::NotificationPresentationClient::
+            operationInFlightChanged);
+    QVERIFY(client.operationInFlight());
     transport.finish(transport.operations[0], 1, 2);
     QTRY_COMPARE_WITH_TIMEOUT(succeeded.size(), 1, 100);
+    QCOMPARE(inFlightChanged.size(), 1);
+    QVERIFY(!client.operationInFlight());
     QTRY_COMPARE_WITH_TIMEOUT(transport.requests.size(), 2, 100);
 }
 

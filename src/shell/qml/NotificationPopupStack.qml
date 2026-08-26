@@ -19,22 +19,32 @@ Window {
         anchors.fill: parent
         color: "transparent"
 
-        Row {
+        Item {
             id: header
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
             height: 38
-            layoutDirection: Qt.RightToLeft
-            spacing: 6
 
             Button {
+                id: historyButton
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 width: 90
                 height: 32
                 text: qsTr("History")
                 focusPolicy: Qt.TabFocus
                 Accessible.name: qsTr("Open notification center")
                 onClicked: root.presentation.setCenterOpen(true)
+            }
+
+            NotificationOperationStatus {
+                anchors.left: parent.left
+                anchors.right: historyButton.left
+                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                presentation: root.presentation
+                theme: root.theme
             }
         }
 

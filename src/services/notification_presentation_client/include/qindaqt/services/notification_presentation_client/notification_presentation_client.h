@@ -58,11 +58,13 @@ public:
 
 Q_SIGNALS:
     void stateChanged();
+    void operationInFlightChanged();
     void operationSucceeded(quint32 notificationId);
     void operationRejected(quint32 notificationId, const QString &message);
 
 private:
     enum class RequestKind { Register, Snapshot };
+    enum class OperationKind { Dismiss, Action };
     struct InFlightRequest final {
         quint64 token = 0;
         QString owner;
@@ -72,6 +74,9 @@ private:
         quint64 token = 0;
         QString owner;
         quint32 notificationId = 0;
+        quint64 initiatingRevision = 0;
+        OperationKind kind = OperationKind::Dismiss;
+        bool targetResident = false;
     };
 
     void handleOwnerChanged(const QString &uniqueOwner);
@@ -87,11 +92,13 @@ private:
                                 const QString &errorName, const QString &message);
     void scheduleRequest(int milliseconds);
     void scheduleRetry();
+    void scheduleOperationRecovery();
     void requestNow();
     void failCurrentRequest(QString message, bool authenticationFailed);
     void publish(ClientState state, QString error = {});
     [[nodiscard]] bool validateOperation(quint32 id, const QString *actionKey,
                                          const QString *activationToken,
+                                         bool *targetResident,
                                          QString *error) const;
     [[nodiscard]] quint64 nextToken();
 

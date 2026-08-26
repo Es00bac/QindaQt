@@ -33,6 +33,8 @@ bool PresentationTiming::isValid() const noexcept
         normalUrgencyMilliseconds <= MaximumPopupDurationMilliseconds &&
         criticalUrgencyMilliseconds > 0 &&
         criticalUrgencyMilliseconds <= MaximumPopupDurationMilliseconds &&
+        operationErrorMilliseconds > 0 &&
+        operationErrorMilliseconds <= MaximumPopupDurationMilliseconds &&
         maximumPopups > 0 && maximumPopups <= 32 && maximumHistory > 0 &&
         maximumHistory <= 1'000;
 }
@@ -46,8 +48,11 @@ NotificationPresentationController::NotificationPresentationController(
 {
     m_clock.start();
     m_popupTimer.setSingleShot(true);
+    m_operationErrorTimer.setSingleShot(true);
     connect(&m_popupTimer, &QTimer::timeout, this,
             &NotificationPresentationController::expirePopups);
+    connect(&m_operationErrorTimer, &QTimer::timeout, this,
+            [this] { setOperationError({}); });
     connect(&m_client,
             &NotificationPresentationClient::NotificationPresentationClient::
                 stateChanged,
@@ -55,8 +60,30 @@ NotificationPresentationController::NotificationPresentationController(
     connect(&m_client,
             &NotificationPresentationClient::NotificationPresentationClient::
                 operationRejected,
-            this, [this](quint32, const QString &message) {
+            this, [this](quint32 notificationId, const QString &message) {
+                m_pendingOperationId.reset();
+                renewPopup(notificationId);
+                setOperationError(message);
                 Q_EMIT operationError(message);
+            });
+    connect(&m_client,
+            &NotificationPresentationClient::NotificationPresentationClient::
+                operationSucceeded,
+            this, [this](quint32 notificationId) {
+                m_pendingOperationId.reset();
+                setOperationError({});
+                removePopup(notificationId);
+            });
+    connect(&m_client,
+            &NotificationPresentationClient::NotificationPresentationClient::
+                operationInFlightChanged,
+            this, [this] {
+                if (operationBusy() || m_pendingOperationId) {
+                    m_popupTimer.stop();
+                } else {
+                    rearmPopupTimer();
+                }
+                Q_EMIT operationBusyChanged();
             });
     synchronize();
 }
@@ -84,6 +111,17 @@ bool NotificationPresentationController::centerOpen() const noexcept
 int NotificationPresentationController::popupCount() const noexcept
 {
     return m_popups.rowCount();
+}
+
+bool NotificationPresentationController::operationBusy() const noexcept
+{
+    return m_client.operationInFlight();
+}
+
+const QString &
+NotificationPresentationController::operationErrorText() const noexcept
+{
+    return m_operationError;
 }
 
 void NotificationPresentationController::setCenterOpen(bool open)
@@ -123,27 +161,39 @@ void NotificationPresentationController::clearHistory()
 
 bool NotificationPresentationController::dismiss(quint32 notificationId)
 {
+    // AGENT-GUARD: establish the pending identity before calling the client.
+    // A test transport may complete synchronously from inside dismiss().
+    setOperationError({});
+    m_pendingOperationId = notificationId;
+    m_popupTimer.stop();
     QString error;
     if (!m_client.dismiss(notificationId, &error)) {
+        m_pendingOperationId.reset();
+        setOperationError(error);
         Q_EMIT operationError(error);
+        rearmPopupTimer();
         return false;
     }
-    removePopup(notificationId);
     return true;
 }
 
 bool NotificationPresentationController::invokeAction(
     quint32 notificationId, const QString &actionKey)
 {
+    setOperationError({});
+    m_pendingOperationId = notificationId;
+    m_popupTimer.stop();
     QString error;
     // AGENT-NOTE: an empty activation token permits the action but cannot
     // promise focus transfer. Capability advertisement stays disabled until a
     // compositor/portal token source is integrated.
     if (!m_client.invokeAction(notificationId, actionKey, {}, &error)) {
+        m_pendingOperationId.reset();
+        setOperationError(error);
         Q_EMIT operationError(error);
+        rearmPopupTimer();
         return false;
     }
-    removePopup(notificationId);
     return true;
 }
 
@@ -159,6 +209,7 @@ void NotificationPresentationController::synchronize()
         m_previous.clear();
         m_epoch.clear();
         m_baselined = false;
+        m_pendingOperationId.reset();
         if (hadPopups) {
             Q_EMIT popupCountChanged();
         }
@@ -295,7 +346,8 @@ void NotificationPresentationController::expirePopups()
 void NotificationPresentationController::rearmPopupTimer()
 {
     m_popupTimer.stop();
-    if (m_popupEntries.isEmpty() || m_centerOpen) {
+    if (m_popupEntries.isEmpty() || m_centerOpen || operationBusy() ||
+        m_pendingOperationId) {
         return;
     }
     const auto earliest = std::min_element(
@@ -307,6 +359,25 @@ void NotificationPresentationController::rearmPopupTimer()
         std::max<qint64>(1, earliest->deadlineMs - m_clock.elapsed());
     m_popupTimer.start(int(std::min<qint64>(remaining,
                                            MaximumPopupDurationMilliseconds)));
+}
+
+void NotificationPresentationController::renewPopup(quint32 notificationId)
+{
+    const auto entry = std::find_if(
+        m_popupEntries.begin(), m_popupEntries.end(),
+        [notificationId](const auto &candidate) {
+            return candidate.notification.id == notificationId;
+        });
+    if (entry != m_popupEntries.end()) {
+        // AGENT-CONTRACT: a rejected operation must leave its originating card
+        // actionable for a full retry interval, even if the old deadline elapsed
+        // while the client awaited its asynchronous reply.
+        entry->deadlineMs =
+            m_clock.elapsed() + popupDuration(entry->notification.urgency);
+        publishPopups();
+        return;
+    }
+    rearmPopupTimer();
 }
 
 void NotificationPresentationController::removePopup(quint32 notificationId)
@@ -331,6 +402,23 @@ void NotificationPresentationController::addHistory(
         m_historyEntries.resize(m_timing.maximumHistory);
     }
     m_history.replace(m_historyEntries);
+}
+
+void NotificationPresentationController::setOperationError(QString message)
+{
+    if (m_operationError == message) {
+        if (!message.isEmpty()) {
+            m_operationErrorTimer.start(m_timing.operationErrorMilliseconds);
+        }
+        return;
+    }
+    m_operationError = std::move(message);
+    if (m_operationError.isEmpty()) {
+        m_operationErrorTimer.stop();
+    } else {
+        m_operationErrorTimer.start(m_timing.operationErrorMilliseconds);
+    }
+    Q_EMIT operationErrorTextChanged();
 }
 
 int NotificationPresentationController::popupDuration(quint32 urgency) const noexcept
