@@ -1,75 +1,48 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/profiles/profile_loader.h"
 
+#include "profile_json_reader_p.h"
+#include "profile_json_syntax_p.h"
+
 #include <QDir>
 #include <QFile>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QSet>
+
+#include <utility>
 
 namespace QindaQt::Profiles {
 namespace {
 
-LoadResult failure(const QString &origin, const QString &message)
+LoadResult failure(ProfileError error)
 {
-    return {.ok = false, .profile = {}, .error = origin + QStringLiteral(": ") + message};
+    return {.ok = false, .profile = {}, .error = std::move(error)};
 }
 
-bool parseApplet(const QJsonObject &object, AppletSpec *applet, QString *error)
+ProfileError parseFailure(const QString &origin,
+                          QString message,
+                          qsizetype byteOffset = -1)
 {
-    applet->id = object.value(QStringLiteral("id")).toString();
-    applet->plugin = object.value(QStringLiteral("plugin")).toString();
-    applet->settings = object.value(QStringLiteral("settings")).toObject().toVariantMap();
-    if (applet->id.isEmpty() || applet->plugin.isEmpty()) {
-        *error = QStringLiteral("every applet requires non-empty id and plugin values");
-        return false;
-    }
-    return true;
+    return {.code = ProfileErrorCode::InvalidJson,
+            .origin = origin,
+            .path = {},
+            .panelId = {},
+            .appletId = {},
+            .message = std::move(message),
+            .byteOffset = byteOffset};
 }
 
-bool parsePanel(const QJsonObject &object, PanelSpec *panel, QString *error)
+bool rootStartsWithObject(const QByteArray &json)
 {
-    panel->id = object.value(QStringLiteral("id")).toString();
-    panel->output = object.value(QStringLiteral("output")).toString(QStringLiteral("*"));
-    panel->rows = object.value(QStringLiteral("rows")).toInt(1);
-    panel->thickness = object.value(QStringLiteral("thickness")).toInt(32);
-    panel->length = object.value(QStringLiteral("length")).toDouble(1.0);
-
-    if (panel->id.isEmpty()) {
-        *error = QStringLiteral("every panel requires a non-empty id");
-        return false;
-    }
-    if (!parseEdge(object.value(QStringLiteral("edge")).toString(QStringLiteral("top")), &panel->edge)
-        || !parseLayer(object.value(QStringLiteral("layer")).toString(QStringLiteral("above")), &panel->layer)
-        || !parseHideMode(object.value(QStringLiteral("hideMode")).toString(QStringLiteral("never")),
-                          &panel->hideMode)
-        || !parseAlignment(object.value(QStringLiteral("alignment")).toString(QStringLiteral("fill")),
-                           &panel->alignment)) {
-        *error = QStringLiteral("panel %1 contains an unknown enum value").arg(panel->id);
-        return false;
-    }
-    if (panel->rows < 1 || panel->rows > 4 || panel->thickness < 20 || panel->thickness > 192
-        || panel->length < 0.1 || panel->length > 1.0) {
-        *error = QStringLiteral("panel %1 has invalid rows, thickness, or length").arg(panel->id);
-        return false;
-    }
-
-    QSet<QString> appletIds;
-    const auto applets = object.value(QStringLiteral("applets")).toArray();
-    for (const auto &value : applets) {
-        AppletSpec applet;
-        if (!value.isObject() || !parseApplet(value.toObject(), &applet, error)) {
-            return false;
+    qsizetype position = 0;
+    while (position < json.size()) {
+        const char byte = json.at(position);
+        if (byte != ' ' && byte != '\t' && byte != '\r' && byte != '\n') {
+            return byte == '{';
         }
-        if (appletIds.contains(applet.id)) {
-            *error = QStringLiteral("panel %1 repeats applet id %2").arg(panel->id, applet.id);
-            return false;
-        }
-        appletIds.insert(applet.id);
-        panel->applets.append(applet);
+        ++position;
     }
-    return true;
+    return false;
 }
 
 } // namespace
@@ -78,60 +51,70 @@ LoadResult ProfileLoader::fromFile(const QString &path)
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        return failure(path, file.errorString());
+        return failure({.code = ProfileErrorCode::FileReadFailed,
+                        .origin = path,
+                        .path = {},
+                        .panelId = {},
+                        .appletId = {},
+                        .message = file.errorString(),
+                        .byteOffset = -1});
     }
-    return fromJson(file.readAll(), path);
+    const QByteArray json = file.readAll();
+    if (file.error() != QFileDevice::NoError) {
+        return failure({.code = ProfileErrorCode::FileReadFailed,
+                        .origin = path,
+                        .path = {},
+                        .panelId = {},
+                        .appletId = {},
+                        .message = file.errorString(),
+                        .byteOffset = -1});
+    }
+    return fromJson(json, path);
 }
 
 LoadResult ProfileLoader::fromJson(const QByteArray &json, const QString &origin)
 {
-    QJsonParseError parseError;
-    const auto document = QJsonDocument::fromJson(json, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-        return failure(origin, QStringLiteral("invalid JSON: %1").arg(parseError.errorString()));
+    const ProfileError syntaxError = Internal::validateJsonSyntax(json, origin);
+    if (syntaxError.hasError()) {
+        return failure(syntaxError);
+    }
+    if (!rootStartsWithObject(json)) {
+        return failure({.code = ProfileErrorCode::InvalidRoot,
+                        .origin = origin,
+                        .path = {},
+                        .panelId = {},
+                        .appletId = {},
+                        .message = QStringLiteral("profile root must be an object"),
+                        .byteOffset = -1});
     }
 
-    const auto root = document.object();
-    LayoutProfile profile;
-    profile.schemaVersion = root.value(QStringLiteral("schemaVersion")).toInt(-1);
-    profile.id = root.value(QStringLiteral("id")).toString();
-    profile.name = root.value(QStringLiteral("name")).toString();
-    profile.description = root.value(QStringLiteral("description")).toString();
-    profile.defaultTheme = root.value(QStringLiteral("defaultTheme")).toString(QStringLiteral("qinda-dark"));
+    QJsonParseError qtError;
+    const QJsonDocument document = QJsonDocument::fromJson(json, &qtError);
+    if (qtError.error != QJsonParseError::NoError) {
+        return failure(parseFailure(origin, qtError.errorString(), qtError.offset));
+    }
+    if (!document.isObject()) {
+        return failure({.code = ProfileErrorCode::InvalidRoot,
+                        .origin = origin,
+                        .path = {},
+                        .panelId = {},
+                        .appletId = {},
+                        .message = QStringLiteral("profile root must be an object"),
+                        .byteOffset = -1});
+    }
 
-    if (profile.schemaVersion != QINDAQT_PROFILE_SCHEMA_VERSION) {
-        return failure(origin, QStringLiteral("unsupported schemaVersion %1").arg(profile.schemaVersion));
-    }
-    if (profile.id.isEmpty() || profile.name.isEmpty()) {
-        return failure(origin, QStringLiteral("profile requires non-empty id and name values"));
+    Internal::ProfileJsonReadResult read =
+        Internal::readProfileObject(document.object(), origin);
+    if (!read.succeeded()) {
+        return failure(std::move(read.error));
     }
 
-    const auto workflow = root.value(QStringLiteral("workflow")).toObject();
-    profile.workflow.overview = workflow.value(QStringLiteral("overview")).toString(QStringLiteral("compact"));
-    profile.workflow.workspacePolicy =
-        workflow.value(QStringLiteral("workspacePolicy")).toString(QStringLiteral("static"));
-    profile.workflow.launcher = workflow.value(QStringLiteral("launcher")).toString(QStringLiteral("shelf"));
-    profile.workflow.menu = workflow.value(QStringLiteral("menu")).toString(QStringLiteral("global"));
-    profile.workflow.taskList = workflow.value(QStringLiteral("taskList")).toString(QStringLiteral("grouped"));
-    profile.workflow.globalMenu = workflow.value(QStringLiteral("globalMenu")).toBool(true);
-
-    QSet<QString> panelIds;
-    QString error;
-    for (const auto &value : root.value(QStringLiteral("panels")).toArray()) {
-        PanelSpec panel;
-        if (!value.isObject() || !parsePanel(value.toObject(), &panel, &error)) {
-            return failure(origin, error);
-        }
-        if (panelIds.contains(panel.id)) {
-            return failure(origin, QStringLiteral("repeated panel id %1").arg(panel.id));
-        }
-        panelIds.insert(panel.id);
-        profile.panels.append(panel);
+    ProfileValidationResult validation = ProfileValidator::validate(read.profile);
+    if (!validation.succeeded()) {
+        validation.error.origin = origin;
+        return failure(std::move(validation.error));
     }
-    if (profile.panels.isEmpty()) {
-        return failure(origin, QStringLiteral("profile must define at least one panel or dock"));
-    }
-    return {.ok = true, .profile = profile, .error = {}};
+    return {.ok = true, .profile = std::move(read.profile), .error = {}};
 }
 
 QVector<LoadResult> ProfileLoader::fromDirectory(const QString &path)

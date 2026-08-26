@@ -7,8 +7,12 @@ target_sources(
     PRIVATE
         src/layout_profile.cpp
         src/profile_catalog.cpp
+        src/profile_error.cpp
+        src/profile_json_reader.cpp
+        src/profile_json_syntax.cpp
         src/profile_loader.cpp
         src/profile_types.cpp
+        src/profile_validation.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -17,6 +21,7 @@ target_sources(
             include/qindaqt/profiles/profile_catalog.h
             include/qindaqt/profiles/profile_loader.h
             include/qindaqt/profiles/profile_types.h
+            include/qindaqt/profiles/profile_validation.h
 )
 
 target_link_libraries(qindaqt_profiles PUBLIC Qt6::Core)

@@ -29,6 +29,16 @@ profiles so upgrades do not overwrite customization. Unsupported schema majors
 are rejected with a useful error, and supported older versions migrate through
 tested transformations.
 
+Schema v1 loading is strict: present fields are never type-coerced, defaults
+apply only to absent optional fields, duplicate JSON keys and excessive nesting
+are rejected, and programmatic candidates must contain only losslessly
+persistable JSON settings values. Applet instance IDs are unique across the
+complete profile, so a move between panels preserves one identity while a
+duplicate receives a new ID. The exact accepted values and structured error
+contract are maintained in the
+[profile schema reference](../reference/profile-schema-v1.md) and
+[ADR-0006](../adr/0006-profile-global-applet-identity.md).
+
 ## Apply and edit behavior
 
 Applying a profile is a transaction: validate, stage a live preview, commit, or

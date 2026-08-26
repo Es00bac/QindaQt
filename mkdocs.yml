@@ -47,3 +47,4 @@ nav:
       - "ADR-0003: Docs as code": adr/0003-docs-as-code.md
       - "ADR-0004: Process-local Hybrid topology": adr/0004-process-local-hybrid-topology.md
       - "ADR-0005: Scene-resident Hybrid chrome": adr/0005-scene-resident-hybrid-chrome.md
+      - "ADR-0006: Profile-global applet identity": adr/0006-profile-global-applet-identity.md

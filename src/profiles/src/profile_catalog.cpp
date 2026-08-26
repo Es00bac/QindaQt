@@ -40,7 +40,7 @@ bool ProfileCatalog::loadDirectory(const QString &path, QString *error)
     for (const auto &result : ProfileLoader::fromDirectory(path)) {
         if (!result.ok) {
             if (error != nullptr) {
-                *error = result.error;
+                *error = result.error.diagnostic();
             }
             return false;
         }

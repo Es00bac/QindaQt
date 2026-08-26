@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/profiles/layout_profile.h"
+#include "qindaqt/profiles/profile_validation.h"
 
 #include <QString>
 #include <QVector>
@@ -11,7 +12,7 @@ namespace QindaQt::Profiles {
 struct LoadResult {
     bool ok = false;
     LayoutProfile profile;
-    QString error;
+    ProfileError error;
 };
 
 class ProfileLoader final {
