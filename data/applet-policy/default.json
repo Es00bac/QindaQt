@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "auditedBuiltin": "grant",
+    "thirdParty": "deny"
+  },
+  "rules": [
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "applications.launch",
+      "decision": "grant",
+      "reason": "May request application launch through the future mediated launcher interface."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "settings.read",
+      "decision": "grant",
+      "reason": "May read only its namespaced settings through the future settings mediator."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "windows.manage",
+      "decision": "deny",
+      "reason": "General third-party applets may not mutate compositor-owned window state."
+    }
+  ]
+}

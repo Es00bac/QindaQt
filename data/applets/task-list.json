@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "task-list",
+  "name": "Task List",
+  "description": "Presents compositor-published windows without owning window state.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.task-list"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-fill"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 120, "preferred": 480, "stretch": true},
+    "crossAxis": {"minimum": 28, "preferred": 40, "maximum": 144, "stretch": false}
+  },
+  "capabilities": ["windows.read", "windows.activate", "windows.manage"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "grouping": {
+        "type": "string",
+        "enum": ["never", "when-crowded", "always"],
+        "default": "when-crowded"
+      },
+      "rows": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1}
+    }
+  }
+}

@@ -20,10 +20,12 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
+      - Settings model: architecture/settings-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
       - Layout profiles: shell/layout-profiles.md
   - Reference:
+      - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
   - Development:

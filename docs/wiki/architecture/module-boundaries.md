@@ -11,6 +11,9 @@ tests, and the wiki page describing its contract.
 | `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
 | `src/profiles` | Layout-profile schema, validation, migration, and built-in profile data | `core` only when shared value types are unavoidable |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
+| `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
+| `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
+| `src/settings` | Schema-v1 settings values, layered resolution, optimistic transactions, change sets, and atomic persistence | Qt Core only; future service adapters consume this public model |
 | `src/shell` | Qt Quick presentation and controllers consuming public domain/profile/theme APIs | `core`, `profiles`, `themes`, and public service clients |
 | `src/compositor` | Small QindaQt integration layer around the KWin downstream and compositor protocol adapters | `core` and explicit KWin extension points |
 | `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |

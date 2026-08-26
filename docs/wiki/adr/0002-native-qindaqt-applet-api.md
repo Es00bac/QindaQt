@@ -38,6 +38,14 @@ capabilities or execute code. Plasma widget compatibility is not a goal.
 - Cross-process surfaces and frequent data streams need performance budgets so
   isolation does not make panels sluggish.
 
+## Implementation status
+
+Schema v1 parsing, normalization, API negotiation, validation, catalog loading,
+and the launcher, task-list, global-menu, status-tray, and clock manifests are
+implemented. Capability grants, sandboxed hosts, rendered applet surfaces, and
+platform-service mediation remain separate runtime slices. See the
+[manifest reference](../reference/applet-manifest-schema-v1.md).
+
 ## Revisit when
 
 Reconsider the hosting split if measured isolation overhead prevents the panel

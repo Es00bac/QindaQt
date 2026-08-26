@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "settings": [
+    {
+      "key": "appearance.theme",
+      "domain": "appearance",
+      "type": "string",
+      "default": "qinda-dark",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "appearance.wallpaper",
+      "domain": "appearance",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "key": "appearance.accentColor",
+      "domain": "appearance",
+      "type": "string",
+      "default": "#4f8cff",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "appearance.blurEnabled",
+      "domain": "appearance",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "appearance.animationsEnabled",
+      "domain": "appearance",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "appearance.animationDurationMs",
+      "domain": "appearance",
+      "type": "integer",
+      "default": 180,
+      "constraints": { "minimum": 0, "maximum": 1000 }
+    },
+    {
+      "key": "fonts.family",
+      "domain": "fonts",
+      "type": "string",
+      "default": "Noto Sans",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "fonts.monospaceFamily",
+      "domain": "fonts",
+      "type": "string",
+      "default": "Noto Sans Mono",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "fonts.pointSize",
+      "domain": "fonts",
+      "type": "number",
+      "default": 10.0,
+      "constraints": { "minimum": 6.0, "maximum": 36.0 }
+    },
+    {
+      "key": "fonts.antialiasing",
+      "domain": "fonts",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "fonts.hinting",
+      "domain": "fonts",
+      "type": "string",
+      "default": "slight",
+      "constraints": { "allowedValues": ["none", "slight", "medium", "full"] }
+    },
+    {
+      "key": "fonts.subpixelOrder",
+      "domain": "fonts",
+      "type": "string",
+      "default": "rgb",
+      "constraints": { "allowedValues": ["none", "rgb", "bgr", "vrgb", "vbgr"] }
+    },
+    {
+      "key": "displays.fractionalScaling",
+      "domain": "displays",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "displays.primaryOutput",
+      "domain": "displays",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "key": "displays.configuration",
+      "domain": "displays",
+      "type": "object",
+      "default": {}
+    },
+    {
+      "key": "displays.hdrPolicy",
+      "domain": "displays",
+      "type": "string",
+      "default": "automatic",
+      "constraints": { "allowedValues": ["off", "automatic", "on"] }
+    },
+    {
+      "key": "input.pointerAcceleration",
+      "domain": "input",
+      "type": "number",
+      "default": 0.0,
+      "constraints": { "minimum": -1.0, "maximum": 1.0 }
+    },
+    {
+      "key": "input.naturalScroll",
+      "domain": "input",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "input.keyboardRepeatDelayMs",
+      "domain": "input",
+      "type": "integer",
+      "default": 500,
+      "constraints": { "minimum": 100, "maximum": 2000 }
+    },
+    {
+      "key": "input.keyboardRepeatRate",
+      "domain": "input",
+      "type": "integer",
+      "default": 30,
+      "constraints": { "minimum": 1, "maximum": 100 }
+    },
+    {
+      "key": "input.tapToClick",
+      "domain": "input",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "panels.layoutProfile",
+      "domain": "panels",
+      "type": "string",
+      "default": "qindaqt",
+      "constraints": { "nonEmpty": true }
+    },
+    {
+      "key": "panels.autoHideDelayMs",
+      "domain": "panels",
+      "type": "integer",
+      "default": 250,
+      "constraints": { "minimum": 0, "maximum": 5000 }
+    },
+    {
+      "key": "panels.configuration",
+      "domain": "panels",
+      "type": "object",
+      "default": {}
+    },
+    {
+      "key": "windowManagement.dockingModifier",
+      "domain": "window-management",
+      "type": "string",
+      "default": "super",
+      "constraints": { "allowedValues": ["super", "alt", "control", "disabled"] }
+    },
+    {
+      "key": "windowManagement.snapDistance",
+      "domain": "window-management",
+      "type": "integer",
+      "default": 12,
+      "constraints": { "minimum": 0, "maximum": 64 }
+    },
+    {
+      "key": "windowManagement.focusPolicy",
+      "domain": "window-management",
+      "type": "string",
+      "default": "click",
+      "constraints": { "allowedValues": ["click", "focus-follows-mouse", "focus-under-mouse"] }
+    },
+    {
+      "key": "windowManagement.sessionRestore",
+      "domain": "window-management",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "windowManagement.closeContainerPolicy",
+      "domain": "window-management",
+      "type": "string",
+      "default": "ask",
+      "constraints": { "allowedValues": ["ask", "close-all", "ungroup"] }
+    },
+    {
+      "key": "accessibility.highContrast",
+      "domain": "accessibility",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "accessibility.reducedMotion",
+      "domain": "accessibility",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "accessibility.reducedTransparency",
+      "domain": "accessibility",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "accessibility.textScale",
+      "domain": "accessibility",
+      "type": "number",
+      "default": 1.0,
+      "constraints": { "minimum": 0.5, "maximum": 3.0 }
+    },
+    {
+      "key": "accessibility.screenReader",
+      "domain": "accessibility",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "services.clipboardHistory",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "services.notifications",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "services.bluetooth",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "services.metricsHistory",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "services.xwaylandOnDemand",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

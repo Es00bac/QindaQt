@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "global-menu",
+  "name": "Global Menu",
+  "description": "Displays an application's exported menu through a mediated menu interface.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.global-menu"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-fill"],
+    "orientations": ["horizontal"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 160, "preferred": 520, "stretch": true},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 64, "stretch": false}
+  },
+  "capabilities": ["global-menu.read", "windows.activate"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "overflow": {
+        "type": "string",
+        "enum": ["menu", "scroll"],
+        "default": "menu"
+      }
+    }
+  }
+}

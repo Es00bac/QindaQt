@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "launcher",
+  "name": "Application Launcher",
+  "description": "Opens the application browser or a profile-selected launcher view.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.launcher"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 32, "preferred": 40, "maximum": 96, "stretch": false},
+    "crossAxis": {"minimum": 32, "preferred": 40, "maximum": 96, "stretch": false}
+  },
+  "capabilities": ["applications.launch"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "showRecent": {"type": "boolean", "default": true},
+      "searchOnOpen": {"type": "boolean", "default": true}
+    }
+  }
+}

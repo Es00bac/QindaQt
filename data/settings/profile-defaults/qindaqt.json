@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "layer": "profile-defaults",
+  "values": {
+    "appearance.animationDurationMs": 160,
+    "appearance.blurEnabled": true,
+    "appearance.theme": "qinda-dark",
+    "panels.layoutProfile": "qindaqt",
+    "windowManagement.dockingModifier": "super"
+  }
+}

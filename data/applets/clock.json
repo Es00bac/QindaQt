@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "clock",
+  "name": "Clock",
+  "description": "Displays local time and opens date and calendar presentation.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.clock"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 56, "preferred": 96, "maximum": 240, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 96, "stretch": false}
+  },
+  "capabilities": [],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "format": {"type": "string", "enum": ["locale", "12-hour", "24-hour"], "default": "locale"},
+      "showSeconds": {"type": "boolean", "default": false},
+      "showDate": {"type": "boolean", "default": true}
+    }
+  }
+}
