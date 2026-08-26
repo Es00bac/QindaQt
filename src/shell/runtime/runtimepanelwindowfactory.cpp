@@ -32,9 +32,11 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      const Profiles::LayoutProfile &profile,
                                                      QVariantMap theme,
                                                      const Applets::ManifestCatalog &applets,
-                                                     const AppletHost::CapabilityPolicy &policy)
+                                                     const AppletHost::CapabilityPolicy &policy,
+                                                     QObject *notificationPresentation)
     : m_engine(engine)
     , m_theme(std::move(theme))
+    , m_notificationPresentation(notificationPresentation)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
@@ -96,6 +98,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         {QStringLiteral("panel"), panel.value()},
         {QStringLiteral("theme"), m_theme},
         {QStringLiteral("surfaceId"), surfaceId},
+        {QStringLiteral("notificationPresentation"),
+         QVariant::fromValue(m_notificationPresentation)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);

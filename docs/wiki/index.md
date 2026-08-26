@@ -19,7 +19,9 @@ workflow. It changes with the code and is validated as part of the repository.
   MVP evidence, and explicit later-milestone boundaries.
 - [Notification service](architecture/notifications-service.md) records the
   bounded model, freedesktop adapter, authenticated host/client transport,
-  descriptor provisioning, and remaining presentation boundary.
+  descriptor provisioning, and remaining service policy.
+- [Notification presentation](shell/notification-presentation.md) records the
+  bounded production popup/center behavior and its unqualified boundaries.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Hybrid topology](architecture/hybrid-topology.md),

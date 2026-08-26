@@ -7,6 +7,7 @@ Item {
     required property var panel
     required property var theme
     property bool liveApplets: false
+    property var notificationPresentation: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -31,6 +32,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 
     PanelAppletRow {
@@ -43,6 +45,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 
     PanelAppletRow {
@@ -56,6 +59,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 
     PanelAppletColumn {
@@ -68,6 +72,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 
     PanelAppletColumn {
@@ -80,6 +85,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 
     PanelAppletColumn {
@@ -92,5 +98,6 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
+        notificationPresentation: root.notificationPresentation
     }
 }

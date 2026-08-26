@@ -46,7 +46,8 @@ The repository currently builds and tests:
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
   D-Bus adapter, installable resident ownership/expiry host, authenticated
   private presentation server/client, descriptor-only token handoff, and
-  essential host/shell session supervision, currently without popup/history UI;
+  essential host/shell session supervision, plus bounded production popups and
+  an active/recent center with logical-DPI clamping;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
@@ -70,7 +71,7 @@ remain unavailable or visual fixtures rather than live integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production layer surfaces, live visibility transport/orchestration, editor policy, gated applet runtime/live clock, and authenticated notification host/client/session transport implemented; popup/history, reveal UI, and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and initial notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime/live clock, and authenticated notification stack implemented; notification keyboard/lock/DND/live proof, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

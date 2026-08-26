@@ -215,6 +215,9 @@ The model and freedesktop adapter are selected with:
 ctest --test-dir build/dev \
   -R '^qindaqt\.(notifications|notification-(host|presentation))-' \
   --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.notification-(surface-layout|surfaces-offscreen)$' \
+  --output-on-failure
 ```
 
 The three model/adapter tests cover bounded submissions and replacement,
@@ -227,9 +230,7 @@ rejection, exact one-shot records, and descriptor consumption. Four host
 tests cover typed startup conflicts/failures, standard and private-object
 rollback/release, single-presenter authentication, targeted revision signals,
 disconnect handoff, authorized dismiss/action behavior, deterministic deadline
-rearm/cancel/early-fire behavior, and the concrete one-shot QTimer. They do not
-claim popup/history presentation, do-not-disturb, persistence, sound, or
-lock-screen policy.
+rearm/cancel/early-fire behavior, and the concrete one-shot QTimer.
 
 The pure presentation-client test covers exact-owner authentication, timeout
 and bounded retry, invalidation coalescing, late-reply rejection, revision and
@@ -239,6 +240,22 @@ action activation-token forwarding. `qindaqt.session-supervisor` proves the
 secret is absent from child arguments, both descriptor consumers start, one
 child's exit tears down its sibling, and second-child startup failure rolls back
 the first. These tests open no display and inject no input.
+
+`qindaqt.notification-presentation-model` covers first-snapshot baselining
+without popup replay, new/replacement ordering, monotonic expiry, center-open
+suppression, popup/history caps, transient exclusion, and operation preflight.
+`qindaqt.notification-surface-layout` covers preferred sizes at 1080p, WUXGA,
+and 1440p; 200% logical geometry; compact clamping; and unusably small output
+rejection. `qindaqt.notification-surfaces-offscreen` instantiates the card,
+popup, active, and recent-center QML with the software renderer, verifies
+literal plain-text rendering, and keeps overflow actions plus Dismiss within a
+400-pixel card.
+
+These presentation checks do not start a compositor or inject input. They are
+not evidence for real layer-role mapping, screen placement, visual baselines,
+focus transfer, keyboard navigation, assistive-technology behavior,
+multi-output migration, do-not-disturb, persistence, sound, lock-screen policy,
+or visible asynchronous operation errors.
 
 ## Current compositor proof
 

@@ -48,7 +48,8 @@ Cross-process boundaries are versioned from their first external use:
 - `org.qindaqt.Metrics1` for shared sensor streams; and
 - private `org.qindaqt.NotificationPresentation1` for one token-bound shell
   presenter, with owner-bound asynchronous host/client transport enabled only
-  by supervisor descriptor provisioning; and
+  by supervisor descriptor provisioning and projected through bounded popup
+  and active/recent shell models; and
 - `QindaQt.Applets 1.0` for manifest-defined extensions.
 
 Private Wayland protocols may transport compositor-owned surfaces or efficient
@@ -68,8 +69,8 @@ tracked in the
 - Declarative profile and theme packages contain data, not executable code.
 - Third-party applets run outside the shell process with declared capabilities;
   audited built-ins may run in process.
-- Optional work such as XWayland, indexing, history, effects, and third-party
-  hosts starts lazily.
+- Optional work such as XWayland, indexing, persistent history, effects, and
+  third-party hosts starts lazily.
 - Every drag interaction has a keyboard-accessible command path.
 
 The KWin foundation and its downstream-maintenance constraints are recorded in

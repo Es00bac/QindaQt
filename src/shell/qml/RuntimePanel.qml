@@ -7,6 +7,7 @@ Window {
     required property var panel
     required property var theme
     required property string surfaceId
+    property var notificationPresentation: null
 
     visible: false
     color: "transparent"
@@ -18,5 +19,6 @@ Window {
         panel: root.panel
         theme: root.theme
         liveApplets: true
+        notificationPresentation: root.notificationPresentation
     }
 }

@@ -93,9 +93,12 @@ loading policy remain a client/presentation milestone.
 
 The shared values/decoder, resident-host server, owner-bound asynchronous shell
 client, Qt transport, descriptor token channel, and essential-process
-supervisor are implemented. The client authenticates and resynchronizes in the
-production shell but does not expose content to QML yet. Popup/history QML,
-accessibility, focus/activation-token acquisition, do-not-disturb, lock-screen
-redaction, and child restart policy remain. The private object stays disabled
-in the installed standalone host, and QindaQt does not advertise notification
-actions until an accessible presenter is complete.
+supervisor are implemented. The production shell now projects accepted client
+snapshots through a bounded active/popup/in-memory-history model into plain-text
+QML popup and center surfaces. This did not change the protocol schema or
+methods. Actions are rendered and forwarded with an empty activation token, so
+focus transfer is not promised and the host continues to advertise only
+`body`. Do-not-disturb, lock-screen redaction, persistent history, safe image
+loading, activation-token acquisition, visible async error handling, complete
+keyboard/accessibility proof, and child restart policy remain. The private
+object stays disabled in the installed standalone host.

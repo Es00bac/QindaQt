@@ -4,9 +4,9 @@ QindaQt implements a lean notification model, a separate freedesktop D-Bus
 adapter, a resident Core/DBus host executable, and an authenticated private
 shell-presentation protocol with an owner-bound asynchronous client. The
 essential-session supervisor provisions its token through inherited one-shot
-descriptors. This is the implemented service foundation for the
-Shell/customization milestone; popup/history presentation remains an explicit
-next slice. The dependency decision is recorded in
+descriptors. A separate bounded shell model now drives initial production
+popup and active/recent-center surfaces. This is an implemented vertical slice,
+not a complete notification subsystem. The dependency decision is recorded in
 [ADR-0008](../adr/0008-lean-notification-service.md).
 
 ## Domain contract
@@ -119,8 +119,12 @@ late-owner replies and regressing or malformed snapshots, coalesces targeted
 invalidations, enforces request timeouts, retries with bounded backoff, and
 validates dismiss/action requests against its accepted snapshot. The production
 shell composes it only when a descriptor token was supplied. The adapter stays
-presentation-neutral; QML will consume only client public values, never the
-service implementation library.
+presentation-neutral; a separate presentation-model library projects only
+client public values into active, popup, and in-memory history models. QML
+consumes those public models, never the service implementation library. The
+first owner/epoch snapshot is baselined without replaying older items as new
+popups. Detailed UI behavior and limits are in
+[Notification presentation](../shell/notification-presentation.md).
 
 ## Resident host
 
@@ -148,8 +152,9 @@ descriptor number appears in their arguments; the token never enters argv,
 environment, a persistent file, a signal, or diagnostics. A standalone host
 still receives no token, so its private object is absent. Reads accept one exact
 record and time out after two seconds. The default
-freedesktop capability remains `body` because no accessible action presenter is
-composed.
+freedesktop capability remains `body`: the initial action controls do not yet
+provide activation tokens, visible asynchronous error recovery, or a qualified
+end-to-end keyboard/accessibility path.
 
 ## Qualification and remaining work
 
@@ -184,17 +189,26 @@ acceptance. Descriptor and supervisor tests prove bounded one-shot reads,
 secret-free arguments, two-child startup, coupled shutdown, and second-child
 rollback without opening a display.
 
+Presentation-model tests cover baseline-without-replay, new and replacement
+popups, urgency ordering, monotonic expiry, center-open suppression, popup and
+history caps, transient exclusion, and operation preflight. Pure logical-screen
+planning tests cover 1080p, WUXGA, 1440p, 200% scale, compact clamping, and
+minimum usable dimensions. Offscreen QML tests exercise active and popup
+delegates, literal plain-text rendering, and bounded action/Dismiss placement.
+No live/nested display or input test was run for these notification surfaces.
+
 The following are not yet implemented:
 
-- shell popup, notification center, keyboard/accessibility presentation, and
-  do-not-disturb/inhibition policy;
-- popup-safe icon/image loading and activation-token acquisition in QML;
+- a production keyboard path to the center, full accessibility/focus proof,
+  visible operation errors, and do-not-disturb/inhibition policy;
+- popup-safe icon/image loading and activation-token acquisition;
 - D-Bus activation and post-start child/bus-loss restart policy;
-- sound, disk history, settings persistence, lock-screen redaction, and restart
-  migration;
+- sound, persistent disk history, settings persistence, lock-screen redaction,
+  and restart migration;
+- multi-output notification placement and live/nested layer-surface proof;
 - portal routing and third-party `notify-send` qualification; and
 - inline reply/vendor extensions.
 
-These omissions keep the roadmap honest: protocol, bounded state, resident
-ownership, and expiration exist, but notifications are not yet a complete
-user-visible desktop feature.
+These omissions keep the roadmap honest: the supervised production shell has
+an initial user-visible popup/center path, but notifications are not yet a
+complete daily-use desktop feature.

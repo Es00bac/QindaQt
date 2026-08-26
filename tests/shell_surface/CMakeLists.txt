@@ -40,3 +40,8 @@ qindaqt_add_shell_surface_test(
     tst_panel_surface_runtime_planner.cpp
     qindaqt.shell-surface-runtime-planner
 )
+qindaqt_add_shell_surface_test(
+    qindaqt_notification_surface_layout_tests
+    tst_notification_surface_layout.cpp
+    qindaqt.notification-surface-layout
+)

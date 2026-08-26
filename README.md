@@ -19,6 +19,8 @@ This repository currently contains the executable foundation for the desktop:
 - transactional panel/applet editing, window-aware visibility policy, and an
   installable freedesktop notification host with an owner-bound asynchronous
   shell client and descriptor-only session authentication;
+- bounded production notification popups plus an active/recent center on the
+  primary output, with plain-text rendering and logical-DPI size clamping;
 - an essential-process supervisor that starts the notification host and shell,
   couples their lifetimes, and never places its generated token in argv or env;
 - isolated nested-session and resolution-scenario tooling;
@@ -28,6 +30,9 @@ The compositor, hybrid interaction milestone, and initial real panel surfaces
 are implemented. QindaQt is still under construction as a daily-use desktop:
 the remaining live applets, global menu, settings-center presentation, platform
 services, packaging, and physical-hardware qualification remain roadmap work.
+Notification do-not-disturb, persistent history, lock-screen policy, activation
+tokens, multi-output placement, and live/nested surface qualification are also
+unfinished.
 
 ## Build
 

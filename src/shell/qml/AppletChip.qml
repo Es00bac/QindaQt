@@ -8,6 +8,7 @@ Rectangle {
     required property var theme
     property bool vertical: false
     property bool liveApplets: false
+    property var notificationPresentation: null
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
@@ -41,7 +42,7 @@ Rectangle {
     Text {
         id: label
         anchors.centerIn: parent
-        width: vertical ? parent.width - 6 : implicitWidth
+        width: root.vertical ? parent.width - 6 : implicitWidth
         text: root.displayLabel(root.pluginId)
         visible: !root.usesLiveClock
         color: mouseArea.containsMouse ? root.colors.accentText ?? "#10201b"
@@ -78,7 +79,27 @@ Rectangle {
 
     MouseArea {
         id: mouseArea
+        objectName: "notificationCenterToggle"
         anchors.fill: parent
         hoverEnabled: true
+        activeFocusOnTab: root.usesLiveClock && root.notificationPresentation
+        Accessible.role: root.usesLiveClock && root.notificationPresentation
+                         ? Accessible.Button : Accessible.StaticText
+        Accessible.name: root.usesLiveClock && root.notificationPresentation
+                         ? qsTr("Clock and notifications") : label.text
+        function toggleNotifications() {
+            if (root.usesLiveClock && root.notificationPresentation)
+                root.notificationPresentation.toggleCenter();
+        }
+        Accessible.onPressAction: toggleNotifications()
+        onClicked: toggleNotifications()
+        Keys.onReturnPressed: event => {
+            toggleNotifications();
+            event.accepted = true;
+        }
+        Keys.onSpacePressed: event => {
+            toggleNotifications();
+            event.accepted = true;
+        }
     }
 }

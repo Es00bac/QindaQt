@@ -32,6 +32,7 @@ nav:
       - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
+      - Notification presentation: shell/notification-presentation.md
   - Reference:
       - Compositor control 1.0: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md

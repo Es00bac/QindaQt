@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+pragma ComponentBehavior: Bound
 import QtQuick
 
 Column {
@@ -8,6 +9,7 @@ Column {
     required property var theme
     required property string zone
     property bool liveApplets: false
+    property var notificationPresentation: null
     spacing: 4
 
     function appletZone(applet) {
@@ -27,6 +29,7 @@ Column {
             theme: root.theme
             vertical: true
             liveApplets: root.liveApplets
+            notificationPresentation: root.notificationPresentation
         }
     }
 }

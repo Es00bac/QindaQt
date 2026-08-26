@@ -65,6 +65,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         common/catalogpaths.cpp
         common/catalogpaths.h
         runtime/main.cpp
+        runtime/notificationwindowcontroller.cpp
+        runtime/notificationwindowcontroller.h
         runtime/runtimeoptions.cpp
         runtime/runtimeoptions.h
         runtime/runtimepanelwindowfactory.cpp
@@ -80,6 +82,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         QML_FILES
             qml/AppletChip.qml
             qml/ClockApplet.qml
+            qml/NotificationCard.qml
+            qml/NotificationCenter.qml
+            qml/NotificationListSection.qml
+            qml/NotificationPopupStack.qml
             qml/PanelAppletColumn.qml
             qml/PanelAppletRow.qml
             qml/PanelContent.qml
@@ -92,6 +98,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qindaqt_profiles
             QindaQt::AppletRuntime
             QindaQt::NotificationPresentationClient
+            QindaQt::NotificationPresentationModel
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface
@@ -101,6 +108,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             Qt6::Gui
             Qt6::Qml
             Qt6::Quick
+            Qt6::QuickControls2
     )
 
     target_compile_definitions(

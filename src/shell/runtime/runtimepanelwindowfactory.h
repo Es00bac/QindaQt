@@ -11,6 +11,7 @@
 
 class QQmlComponent;
 class QQmlEngine;
+class QObject;
 
 namespace QindaQt::Applets {
 class ManifestCatalog;
@@ -28,7 +29,8 @@ public:
                               const Profiles::LayoutProfile &profile,
                               QVariantMap theme,
                               const Applets::ManifestCatalog &applets,
-                              const AppletHost::CapabilityPolicy &policy);
+                              const AppletHost::CapabilityPolicy &policy,
+                              QObject *notificationPresentation);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -41,6 +43,7 @@ private:
     QQmlEngine &m_engine;
     QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
+    QObject *m_notificationPresentation = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

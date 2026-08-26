@@ -2,12 +2,14 @@
 #include "shellruntimeapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "notificationwindowcontroller.h"
 #include "runtimepanelwindowfactory.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/services/notification_presentation/presentation_token_channel.h"
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
 #include "qindaqt/services/notification_presentation_client/qt_notification_presentation_transport.h"
+#include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -185,9 +187,21 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
     }
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
+    if (m_presentationAccessToken) {
+        m_notificationTransport = std::make_unique<Services::
+            NotificationPresentationClient::QtNotificationPresentationTransport>();
+        m_notificationClient = std::make_unique<Services::
+            NotificationPresentationClient::NotificationPresentationClient>(
+                *m_notificationTransport, std::move(*m_presentationAccessToken));
+        m_presentationAccessToken.reset();
+        m_notificationPresentation = std::make_unique<Services::
+            NotificationPresentationModel::NotificationPresentationController>(
+                *m_notificationClient);
+    }
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
-            m_engine, profile, m_themes.current(), m_applets, m_appletPolicy);
+            m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
+            m_notificationPresentation.get());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -208,17 +222,13 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
         return false;
     }
 
-    if (m_presentationAccessToken) {
-        m_notificationTransport = std::make_unique<Services::
-            NotificationPresentationClient::QtNotificationPresentationTransport>();
-        m_notificationClient = std::make_unique<Services::
-            NotificationPresentationClient::NotificationPresentationClient>(
-                *m_notificationTransport, std::move(*m_presentationAccessToken));
-        m_presentationAccessToken.reset();
+    if (m_notificationClient) {
         if (!m_notificationClient->start(error)) {
             resetRuntime();
             return false;
         }
+        m_notificationWindows = std::make_unique<NotificationWindowController>(
+            m_engine, *m_notificationPresentation, m_themes.current());
     }
 
     if (!reconcileSurfaces(error)) {
@@ -234,6 +244,8 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
         scheduleOutputReconcile();
     });
     connect(&m_application, &QGuiApplication::screenRemoved, this,
+            [this](QScreen *) { scheduleOutputReconcile(); });
+    connect(&m_application, &QGuiApplication::primaryScreenChanged, this,
             [this](QScreen *) { scheduleOutputReconcile(); });
     return true;
 }
@@ -329,6 +341,10 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
         *error = result.message;
         return false;
     }
+    if (m_notificationWindows &&
+        !m_notificationWindows->reconcile(m_application.primaryScreen(), error)) {
+        return false;
+    }
     return true;
 }
 
@@ -352,14 +368,16 @@ void ShellRuntimeApplication::scheduleOutputReconcile()
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
-    m_notificationClient.reset();
-    m_notificationTransport.reset();
+    m_notificationWindows.reset();
     m_interactions.reset();
     m_visibilityClient.reset();
     m_visibilityTransport.reset();
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_notificationPresentation.reset();
+    m_notificationClient.reset();
+    m_notificationTransport.reset();
 }
 
 } // namespace QindaQt::Shell

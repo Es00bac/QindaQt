@@ -9,6 +9,8 @@ target_sources(
     qindaqt_shell_surface
     PRIVATE
         src/layer_shell_surface_backend.cpp
+        src/layer_shell_notification_surface.cpp
+        src/notification_surface_layout.cpp
         src/panel_surface_configuration_planner.cpp
         src/panel_surface_controller.cpp
         src/panel_surface_runtime_planner.cpp
@@ -18,6 +20,8 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/shell_surface/layer_shell_surface_backend.h
+            include/qindaqt/shell_surface/layer_shell_notification_surface.h
+            include/qindaqt/shell_surface/notification_surface_layout.h
             include/qindaqt/shell_surface/panel_surface_backend.h
             include/qindaqt/shell_surface/panel_surface_configuration.h
             include/qindaqt/shell_surface/panel_surface_configuration_planner.h

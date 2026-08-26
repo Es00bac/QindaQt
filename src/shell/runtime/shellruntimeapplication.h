@@ -38,9 +38,14 @@ class NotificationPresentationClient;
 class QtNotificationPresentationTransport;
 }
 
+namespace QindaQt::Services::NotificationPresentationModel {
+class NotificationPresentationController;
+}
+
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
+class NotificationWindowController;
 
 class ShellRuntimeApplication final : public QObject {
     Q_OBJECT
@@ -84,6 +89,10 @@ private:
     std::unique_ptr<
         Services::NotificationPresentationClient::NotificationPresentationClient>
         m_notificationClient;
+    std::unique_ptr<Services::NotificationPresentationModel::
+                        NotificationPresentationController>
+        m_notificationPresentation;
+    std::unique_ptr<NotificationWindowController> m_notificationWindows;
     QTimer m_outputDebounce;
 };
 

@@ -101,8 +101,17 @@ through the validated manifest and capability policy. The clock is the first
 live applet; unresolved instances remain visibly marked static representations.
 Preview applet chips remain deterministic visual fixtures. Edge reveal/hold
 producers and hide animation also remain acceptance work. Global menu,
-notification presentation, live services, applet process hosting, and settings
-preview subscription remain in the Shell/customization milestone.
+live services, applet process hosting, and settings preview subscription remain
+in the Shell/customization milestone.
+
+Notification windows are separate nonexclusive overlay layer surfaces, not
+profile panels or reservation carriers. Their pure planner clamps preferred
+popup/center sizes to primary-output logical geometry, including a 200%-scaled
+1080p mode. Current placement is primary-output-only and top-right. The panel
+resolution matrix below does not prove notification mapping, placement, visual
+appearance, focus, or mixed-output migration; no live/nested notification
+surface run was performed for this slice. See
+[Notification presentation](notification-presentation.md).
 
 The controller and planner have focused fake-backend tests for valid and
 adversarial layouts. Bounded per-role protocol evidence requires the exact

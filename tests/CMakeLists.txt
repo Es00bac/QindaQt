@@ -33,6 +33,7 @@ add_subdirectory(session)
 add_subdirectory(settings)
 add_subdirectory(services/notification_presentation_protocol)
 add_subdirectory(services/notification_presentation_client)
+add_subdirectory(services/notification_presentation_model)
 add_subdirectory(services/notifications)
 add_subdirectory(services/notification_host)
 
