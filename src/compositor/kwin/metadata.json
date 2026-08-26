@@ -1,0 +1,10 @@
+{
+  "KPlugin": {
+    "Id": "qindaqt_compositor",
+    "Name": "QindaQt Container Compositor",
+    "Description": "KWin integration for QindaQt hybrid window containers",
+    "Version": "0.1.0",
+    "License": "GPL-3.0-or-later",
+    "EnabledByDefault": true
+  }
+}

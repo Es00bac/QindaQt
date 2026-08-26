@@ -20,11 +20,13 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
+      - Compositor and session: architecture/compositor-session.md
       - Settings model: architecture/settings-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
       - Layout profiles: shell/layout-profiles.md
   - Reference:
+      - Compositor control 1.0: reference/compositor-control-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md

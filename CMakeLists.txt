@@ -10,8 +10,15 @@ project(
 )
 
 include(CTest)
-include(GNUInstallDirs)
 
+# QindaQt ships a binary KWin plugin, so use KDE's Qt-aware install layout
+# globally. Including GNUInstallDirs first makes ECM inherit ambiguous values
+# and can silently turn plugin destinations into absolute root paths.
+find_package(ECM 6.0 REQUIRED NO_MODULE)
+list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
+include(KDEInstallDirs6)
+
+option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
 option(QINDAQT_BUILD_SHELL "Build the interactive shell preview" ON)
 option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat QindaQt warnings as errors" ON)
 

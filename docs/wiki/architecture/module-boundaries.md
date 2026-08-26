@@ -8,6 +8,7 @@ tests, and the wiki page describing its contract.
 
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
+| `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
 | `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
 | `src/profiles` | Layout-profile schema, validation, migration, and built-in profile data | `core` only when shared value types are unavoidable |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
@@ -15,7 +16,8 @@ tests, and the wiki page describing its contract.
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/settings` | Schema-v1 settings values, layered resolution, optimistic transactions, change sets, and atomic persistence | Qt Core only; future service adapters consume this public model |
 | `src/shell` | Qt Quick presentation and controllers consuming public domain/profile/theme APIs | `core`, `profiles`, `themes`, and public service clients |
-| `src/compositor` | Small QindaQt integration layer around the KWin downstream and compositor protocol adapters | `core` and explicit KWin extension points |
+| `src/compositor` | Persistence-neutral transaction bridge plus the release-matched KWin registry, scene adapter, and D-Bus plugin | `core`, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
+| `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
@@ -34,12 +36,20 @@ implemented; do not use placeholder modules to bypass a boundary.
   adapters never call QML objects.
 - Applets and applications use the SDK and public IPC. They do not include shell
   private headers or assume a specific panel implementation.
-- Tests use public APIs first. Test-only compositor/output controls must be
-  excluded from production builds and clearly named as test interfaces.
+- Tests use public APIs first. Input injection, fake-device, output-forcing,
+  and similar backdoor controls must be excluded from production artifacts and
+  clearly named as test interfaces. A versioned public mutator may remain
+  present for contract tests only when normal sessions advertise it disabled
+  and reject it before parsing or changing state.
 
 Cross-process contracts carry explicit version, error, timeout, and restart
 semantics. Persisted formats carry a schema version and migration tests. A new
 dependency crossing these directions requires an ADR.
+
+The concrete session/compositor boundary and current runtime qualifications are
+documented in [Compositor and session integration](compositor-session.md). The
+experimental D-Bus payload is documented separately in the
+[Compositor1 reference](../reference/compositor-control-v1.md).
 
 ## Decomposition rules
 

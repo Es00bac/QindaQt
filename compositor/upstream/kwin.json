@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "project": "KWin",
+    "repository": "https://invent.kde.org/plasma/kwin.git",
+    "release": "6.6.5",
+    "ref": "refs/tags/v6.6.5",
+    "tagObject": "1b035282ff05101a3441113648a93f57fe0351c1",
+    "commit": "b04d59c03749484a8a0ed5a8d4cda515a267c59b",
+    "tree": "99868e7da683d59f3ed90b0f0fe7ebfa4be5bc2b"
+  },
+  "integrationContract": {
+    "strategy": "small downstream patch series plus release-matched binary plugins",
+    "cmakeTarget": "KWin::kwin",
+    "factoryHeader": "plugin.h",
+    "factoryBase": "KWin::PluginFactory",
+    "pluginBase": "KWin::Plugin",
+    "pluginFactoryIidPrefix": "org.kde.kwin.PluginFactoryInterface",
+    "pluginInstallNamespace": "kwin/plugins",
+    "binaryPluginAbi": "rebuild for every KWin release",
+    "kwinQtMinimum": "6.10.0",
+    "qindaqtQtBaseline": "6.11"
+  }
+}

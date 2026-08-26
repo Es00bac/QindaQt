@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "service": "org.qindaqt.Compositor",
+  "objectPath": "/org/qindaqt/Compositor",
+  "interface": "org.qindaqt.Compositor1",
+  "transport": "user-session-bus",
+  "registrationOwner": "release-matched KWin integration plugin",
+  "productionControlMode": "read-only",
+  "mutationPolicy": "enabled only for an explicit isolated development test scenario",
+  "authorization": "no caller authentication; production mutation methods are disabled"
+}

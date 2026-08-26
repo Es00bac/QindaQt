@@ -32,6 +32,10 @@ def _default_program(backend: str) -> str:
         developer_build = REPOSITORY_ROOT / "build" / "dev" / "src" / "shell" / "qindaqt-shell-preview"
         if developer_build.is_file():
             return str(developer_build)
+    if backend in {"wayland", "virtual"}:
+        developer_build = REPOSITORY_ROOT / "build" / "dev" / "src" / "session" / "qindaqt-wm"
+        if developer_build.is_file():
+            return str(developer_build)
     return {
         "preview": "qindaqt-shell-preview",
         "wayland": "qindaqt-wm",
@@ -74,12 +78,36 @@ def build_plan(
         if smoke_test:
             argv = (*argv, "--list")
         notes = ("Shell-only profile preview; it does not exercise compositor behavior.",)
-    elif backend == "wayland":
-        argv = (executable, "--windowed", f"--test-scenario={scenario_path}")
-        notes = ("Primary interactive path: QindaQt runs as a nested Wayland compositor.",)
-    elif backend == "virtual":
-        argv = (executable, "--virtual", f"--test-scenario={scenario_path}")
-        notes = ("Headless deterministic path intended for automated input and screenshots.",)
+    elif backend in {"wayland", "virtual"}:
+        primary = next(output for output in scenario.enabled_outputs if output.primary)
+        mode = "--windowed" if backend == "wayland" else "--virtual"
+        argv = (
+            executable,
+            mode,
+            "--width",
+            str(width),
+            "--height",
+            str(height),
+            "--scale",
+            str(primary.scale),
+            "--output-count",
+            str(len(scenario.enabled_outputs)),
+            "--test-scenario",
+            scenario_path,
+            "--no-lockscreen",
+            "--no-global-shortcuts",
+        )
+        if backend == "wayland":
+            notes = (
+                "Primary interactive path: QindaQt runs as a nested Wayland compositor.",
+                "The compositor adapter replays per-output scenario state after KWin bootstraps its windows.",
+            )
+        else:
+            environment.update({"KWIN_COMPOSE": "Q", "QT_QUICK_BACKEND": "software"})
+            notes = (
+                "Headless deterministic KWin path intended for automated input and screenshots.",
+                "The compositor adapter replays per-output scenario state after virtual outputs exist.",
+            )
     elif backend == "weston":
         socket_name = "qindaqt-weston-reference"
         argv = (

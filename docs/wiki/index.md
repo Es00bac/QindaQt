@@ -14,6 +14,9 @@ workflow. It changes with the code and is validated as part of the repository.
   its process boundaries.
 - [Module boundaries](architecture/module-boundaries.md) defines ownership and
   dependency direction.
+- [Compositor and session integration](architecture/compositor-session.md)
+  records the exact KWin ABI, launcher/plugin boundary, completed Compositor
+  MVP evidence, and explicit later-milestone boundaries.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
@@ -22,10 +25,12 @@ workflow. It changes with the code and is validated as part of the repository.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
-  the buildable foundation from upcoming compositor and desktop milestones.
+  completed foundation/compositor work from the upcoming desktop milestones.
 - [Profile schema v1](reference/profile-schema-v1.md) and
   [theme schema v1](reference/theme-schema-v1.md) document the data currently
   accepted by the loaders.
+- [Compositor control protocol 1.0](reference/compositor-control-v1.md)
+  documents the experimental D-Bus methods, signals, and transaction boundary.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when
@@ -48,6 +53,9 @@ workflow. It changes with the code and is validated as part of the repository.
 - Accessibility and keyboard equivalents are required for every pointer-only
   customization or window-management operation.
 
-The repository is in foundation development. Pages distinguish accepted
-contracts from planned implementation; unresolved durable decisions belong in
-an ADR rather than being silently embedded in code.
+The Foundation and Compositor MVP milestones are complete. The repository now
+has a qualified virtual/nested compositor substrate; Hybrid interaction is the
+next milestone, while physical DRM/GPU qualification remains a release gate.
+Pages distinguish accepted contracts from planned implementation; unresolved
+durable decisions belong in an ADR rather than being silently embedded in
+code.

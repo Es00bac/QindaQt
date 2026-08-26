@@ -19,6 +19,12 @@ system-service state.
 The detailed source and dependency rules are in
 [Module boundaries](module-boundaries.md).
 
+The current compositor slice is narrower than the final ownership shown above.
+`qindaqt-wm` is a launcher that replaces itself with pinned KWin 6.6.5, and a
+release-matched plugin provides window discovery plus experimental container
+transactions. Exact ABI, backend, discovery, proof, and limitation details are
+in [Compositor and session integration](compositor-session.md).
+
 ## Interaction boundaries
 
 The shell receives authoritative window and output state from the compositor,
@@ -27,9 +33,13 @@ System UI talks to focused platform services, which adapt PipeWire/WirePlumber,
 NetworkManager, BlueZ, UPower, logind, colord, and related freedesktop services.
 Applications remain ordinary Wayland or XWayland clients.
 
-Planned stable boundaries are versioned from their first external use:
+Cross-process boundaries are versioned from their first external use:
 
-- `org.qindaqt.Compositor1` for privileged shell window/output operations;
+- `org.qindaqt.Compositor1`, currently experimental, for window discovery and
+  atomic container operations; window/output/input inventory is readable in a
+  normal session, while external mutations are disabled outside explicit
+  isolated development scenarios because caller authentication is not yet a
+  supported security boundary;
 - `org.qindaqt.Settings1` for transactional settings;
 - `org.qindaqt.Session1` for snapshot and restore coordination;
 - `org.qindaqt.Metrics1` for shared sensor streams; and
@@ -39,6 +49,10 @@ Private Wayland protocols may transport compositor-owned surfaces or efficient
 state, but public desktop integrations prefer freedesktop protocols and D-Bus.
 All boundaries define failure behavior and version negotiation before they are
 treated as stable.
+
+The implemented Compositor1 methods, signals, and transaction encoding are
+tracked in the
+[Compositor control protocol reference](../reference/compositor-control-v1.md).
 
 ## Design rules
 

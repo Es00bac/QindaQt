@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: LGPL-3.0-or-later -->
+<node name="/org/qindaqt/Compositor">
+  <interface name="org.qindaqt.Compositor1">
+    <method name="Capabilities">
+      <arg name="capabilitiesJson" type="ay" direction="out"/>
+    </method>
+    <method name="Windows">
+      <arg name="windowsJson" type="ay" direction="out"/>
+    </method>
+    <method name="Outputs">
+      <arg name="outputsJson" type="ay" direction="out"/>
+    </method>
+    <method name="InputCapabilities">
+      <arg name="inputCapabilitiesJson" type="ay" direction="out"/>
+    </method>
+    <method name="Containers">
+      <arg name="containersJson" type="ay" direction="out"/>
+    </method>
+    <method name="DockWindows">
+      <arg name="targetWindowId" type="s" direction="in"/>
+      <arg name="incomingWindowId" type="s" direction="in"/>
+      <arg name="orientation" type="s" direction="in"/>
+      <arg name="position" type="s" direction="in"/>
+      <arg name="ratio" type="d" direction="in"/>
+      <arg name="dockingJson" type="ay" direction="out"/>
+    </method>
+    <method name="ReleaseContainer">
+      <arg name="containerId" type="s" direction="in"/>
+      <arg name="releaseJson" type="ay" direction="out"/>
+    </method>
+    <method name="Snapshot">
+      <arg name="containerId" type="s" direction="in"/>
+      <arg name="snapshotJson" type="ay" direction="out"/>
+    </method>
+    <method name="Submit">
+      <arg name="requestJson" type="ay" direction="in"/>
+      <arg name="replyJson" type="ay" direction="out"/>
+    </method>
+    <signal name="ContainerCommitted">
+      <arg name="eventJson" type="ay"/>
+    </signal>
+    <signal name="WindowsChanged"/>
+    <signal name="OutputsChanged"/>
+    <signal name="InputCapabilitiesChanged"/>
+  </interface>
+</node>

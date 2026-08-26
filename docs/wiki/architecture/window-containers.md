@@ -80,7 +80,7 @@ Every mutation needs invariant tests plus serialize/restore round trips. Display
 and interaction coverage belongs in the
 [testing harness](../development/testing-harness.md).
 
-## Foundation implementation
+## Current implementation
 
 `src/core` currently implements the persistence-neutral layout tree and
 container value model. It supports page creation and activation, recursive
@@ -89,9 +89,14 @@ cross-tree member swaps, page reordering, structural validation, singleton
 detection for compositor unwrapping, and schema-versioned JSON round trips.
 
 The model intentionally allows a validated singleton as transaction staging
-state. A future compositor transaction coordinator consumes
-`singleWindowId()` and must unwrap before publishing session state, preserving
-the published-topology invariant above. Cross-container atomic moves, client
-size negotiation, geometry, focus, transient handling, and compositor object
-lifetimes belong to that upcoming integration layer rather than this pure
-model.
+state. The compositor bridge consumes `singleWindowId()` and, when a published
+group would fall to one member, detaches the survivor in the same scene
+transaction. Its atomic `DockWindows` entry point also keeps the initial
+singleton private until a two-member split commits. The committed empty
+snapshot is a terminal event and the container is then removed.
+
+The KWin scene adapter currently owns live frame/minimized changes, prior-frame
+restoration, and member ownership. Cross-container atomic moves, client-size
+negotiation and overflow, shared decoration, focus/transient policy, richer
+state restoration, and persisted compositor-object identity belong to the
+hybrid-interaction milestone rather than the pure model.

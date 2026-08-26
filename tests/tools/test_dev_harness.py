@@ -48,6 +48,18 @@ class DevelopmentHarnessTest(unittest.TestCase):
             ),
         )
 
+    def test_qindaqt_compositor_plan_carries_output_bootstrap(self) -> None:
+        plan = build_plan(self.baseline, "virtual", program="qindaqt-wm")
+        self.assertEqual(plan.argv[0:2], ("qindaqt-wm", "--virtual"))
+        self.assertEqual(plan.argv[plan.argv.index("--width") + 1], "1920")
+        self.assertEqual(plan.argv[plan.argv.index("--height") + 1], "1080")
+        self.assertEqual(plan.argv[plan.argv.index("--output-count") + 1], "1")
+        self.assertEqual(
+            plan.argv[plan.argv.index("--test-scenario") + 1],
+            str(self.baseline.path),
+        )
+        self.assertEqual(plan.environment["KWIN_COMPOSE"], "Q")
+
     def test_xephyr_uses_the_supported_single_screen_argument(self) -> None:
         plan = build_plan(self.baseline, "xephyr", program="Xephyr")
         screen_index = plan.argv.index("-screen")
