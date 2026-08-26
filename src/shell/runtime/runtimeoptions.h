@@ -16,6 +16,7 @@ struct RuntimeOptions {
     QString themeDirectory;
     QString appletDirectory;
     QString appletPolicyFile;
+    int presentationTokenDescriptor = -1;
     bool listOnly = false;
 };
 

@@ -2,11 +2,17 @@
 
 #include "qindaqt/services/notification_host/qt_deadline_scheduler.h"
 #include "qindaqt/services/notification_host/resident_notification_host.h"
+#include "qindaqt/services/notification_presentation/presentation_token_channel.h"
 #include "qindaqt/services/notifications/notification_clock.h"
 
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QTextStream>
+
+#include <optional>
+#include <utility>
 
 using namespace QindaQt::Services;
 
@@ -34,6 +40,27 @@ int failureExitCode(NotificationHost::NotificationHostStartStatus status) {
   return 5;
 }
 
+std::optional<NotificationPresentation::PresentationAccessToken>
+presentationToken(QCommandLineParser &parser, QString *error) {
+  if (!parser.isSet(QStringLiteral("presentation-token-fd"))) {
+    return std::nullopt;
+  }
+  bool valid = false;
+  const int descriptor =
+      parser.value(QStringLiteral("presentation-token-fd")).toInt(&valid);
+  if (!valid || descriptor < 3) {
+    *error = QStringLiteral("presentation token descriptor must be an integer at least 3");
+    return std::nullopt;
+  }
+  auto result = NotificationPresentation::PresentationTokenChannel::readAndClose(
+      descriptor);
+  if (!result.ok()) {
+    *error = std::move(result.message);
+    return std::nullopt;
+  }
+  return std::move(result.token);
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -43,18 +70,24 @@ int main(int argc, char *argv[]) {
   QCoreApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
   QCoreApplication::setOrganizationDomain(QStringLiteral("qindaqt.org"));
 
-  if (application.arguments().contains(QStringLiteral("--help")) ||
-      application.arguments().contains(QStringLiteral("-h"))) {
-    QTextStream(stdout)
-        << "Usage: qindaqt-notification-host [--help] [--version]\n"
-        << "Own the freedesktop notification service for this QindaQt "
-           "session.\n";
-    return 0;
-  }
-  if (application.arguments().contains(QStringLiteral("--version"))) {
-    QTextStream(stdout) << QCoreApplication::applicationName() << ' '
-                        << QCoreApplication::applicationVersion() << '\n';
-    return 0;
+  QCommandLineParser parser;
+  parser.setApplicationDescription(
+      QStringLiteral("Own the freedesktop notification service for this QindaQt session."));
+  parser.addHelpOption();
+  parser.addVersionOption();
+  parser.addOption(QCommandLineOption(
+      QStringLiteral("presentation-token-fd"),
+      QStringLiteral("Consume the private presentation token from this inherited descriptor."),
+      QStringLiteral("descriptor")));
+  parser.process(application);
+
+  QString tokenError;
+  auto presentationAccessToken = presentationToken(parser, &tokenError);
+  if (parser.isSet(QStringLiteral("presentation-token-fd")) &&
+      !presentationAccessToken) {
+    QTextStream(stderr) << QCoreApplication::applicationName() << ": "
+                        << tokenError << '\n';
+    return 2;
   }
 
   Notifications::SteadyNotificationClock clock;
@@ -62,7 +95,8 @@ int main(int argc, char *argv[]) {
   Notifications::FreedesktopServerIdentity identity;
   identity.version = QStringLiteral(QINDAQT_VERSION);
   NotificationHost::ResidentNotificationHost host(
-      QDBusConnection::sessionBus(), clock, scheduler, {}, identity);
+      QDBusConnection::sessionBus(), clock, scheduler, {}, identity, nullptr,
+      std::move(presentationAccessToken));
   const auto started = host.start();
   if (!started.ok()) {
     QTextStream(stderr) << QCoreApplication::applicationName() << ": "

@@ -11,12 +11,14 @@ target_sources(
     PRIVATE
         src/presentation_access_token.cpp
         src/presentation_snapshot.cpp
+        src/presentation_token_channel.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/services/notification_presentation/presentation_access_token.h
             include/qindaqt/services/notification_presentation/presentation_snapshot.h
+            include/qindaqt/services/notification_presentation/presentation_token_channel.h
             include/qindaqt/services/notification_presentation/wire_contract.h
 )
 target_link_libraries(

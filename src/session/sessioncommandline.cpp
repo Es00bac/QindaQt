@@ -55,7 +55,8 @@ void configureParser(QCommandLineParser &parser)
                       QStringLiteral("path")});
     parser.addOption({QStringLiteral("session"),
                       QStringLiteral("Session process whose exit stops the compositor."),
-                      QStringLiteral("path")});
+                      QStringLiteral("path"),
+                      QStringLiteral(QINDAQT_DEFAULT_SESSION_EXECUTABLE)});
     parser.addOption({QStringLiteral("plugin-root"),
                       QStringLiteral("Qt plugin root containing kwin/plugins."),
                       QStringLiteral("path"),

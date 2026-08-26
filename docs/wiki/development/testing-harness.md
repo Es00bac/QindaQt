@@ -220,16 +220,25 @@ ctest --test-dir build/dev \
 The three model/adapter tests cover bounded submissions and replacement,
 lifetime-safe ID allocation, ownership, close, dismiss, expiry and action
 policy, immutable revisions, standard identity and signals, protocol errors,
-and two independent callers on a private D-Bus. One pure presentation-protocol
-test covers token format/comparison, exact schema, restart epoch, normalized and
-D-Bus values, bounds, ordering, and malformed payload rejection. Four host
+and two independent callers on a private D-Bus. Presentation protocol and
+descriptor-channel tests cover token format/comparison, exact schema, restart
+epoch, normalized and D-Bus values, bounds, ordering, malformed payload
+rejection, exact one-shot records, and descriptor consumption. Four host
 tests cover typed startup conflicts/failures, standard and private-object
 rollback/release, single-presenter authentication, targeted revision signals,
 disconnect handoff, authorized dismiss/action behavior, deterministic deadline
 rearm/cancel/early-fire behavior, and the concrete one-shot QTimer. They do not
-claim production token provisioning, a shell client, session
-autostart/supervision, popup/history presentation, do-not-disturb, persistence,
-sound, or lock-screen policy.
+claim popup/history presentation, do-not-disturb, persistence, sound, or
+lock-screen policy.
+
+The pure presentation-client test covers exact-owner authentication, timeout
+and bounded retry, invalidation coalescing, late-reply rejection, revision and
+epoch policy, operation preflight, and release. A real private-D-Bus test runs
+the Qt client against successive host owners and verifies resynchronization and
+action activation-token forwarding. `qindaqt.session-supervisor` proves the
+secret is absent from child arguments, both descriptor consumers start, one
+child's exit tears down its sibling, and second-child startup failure rolls back
+the first. These tests open no display and inject no input.
 
 ## Current compositor proof
 

@@ -5,6 +5,9 @@
 #include "runtimepanelwindowfactory.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
+#include "qindaqt/services/notification_presentation/presentation_token_channel.h"
+#include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
+#include "qindaqt/services/notification_presentation_client/qt_notification_presentation_transport.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -55,7 +58,10 @@ ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
     });
 }
 
-ShellRuntimeApplication::~ShellRuntimeApplication() = default;
+ShellRuntimeApplication::~ShellRuntimeApplication()
+{
+    resetRuntime();
+}
 
 int ShellRuntimeApplication::run()
 {
@@ -66,6 +72,10 @@ int ShellRuntimeApplication::run()
     }
 
     QString error;
+    if (!loadPresentationToken(*parsed.options, &error)) {
+        qCritical().noquote() << error;
+        return 2;
+    }
     if (!loadCatalogs(*parsed.options, &error)) {
         qCritical().noquote() << error;
         return 2;
@@ -85,6 +95,23 @@ int ShellRuntimeApplication::run()
         return 4;
     }
     return m_application.exec();
+}
+
+bool ShellRuntimeApplication::loadPresentationToken(
+    const RuntimeOptions &options, QString *error)
+{
+    m_presentationAccessToken.reset();
+    if (options.presentationTokenDescriptor < 0) {
+        return true;
+    }
+    auto result = Services::NotificationPresentation::PresentationTokenChannel::
+        readAndClose(options.presentationTokenDescriptor);
+    if (!result.ok()) {
+        *error = std::move(result.message);
+        return false;
+    }
+    m_presentationAccessToken = std::move(result.token);
+    return true;
 }
 
 bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QString *error)
@@ -177,22 +204,25 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
             this, &ShellRuntimeApplication::scheduleOutputReconcile);
 
     if (!m_visibilityClient->start(error)) {
-        m_interactions.reset();
-        m_visibilityClient.reset();
-        m_visibilityTransport.reset();
-        m_controller.reset();
-        m_backend.reset();
-        m_windowFactory.reset();
+        resetRuntime();
         return false;
     }
 
+    if (m_presentationAccessToken) {
+        m_notificationTransport = std::make_unique<Services::
+            NotificationPresentationClient::QtNotificationPresentationTransport>();
+        m_notificationClient = std::make_unique<Services::
+            NotificationPresentationClient::NotificationPresentationClient>(
+                *m_notificationTransport, std::move(*m_presentationAccessToken));
+        m_presentationAccessToken.reset();
+        if (!m_notificationClient->start(error)) {
+            resetRuntime();
+            return false;
+        }
+    }
+
     if (!reconcileSurfaces(error)) {
-        m_interactions.reset();
-        m_visibilityClient.reset();
-        m_visibilityTransport.reset();
-        m_controller.reset();
-        m_backend.reset();
-        m_windowFactory.reset();
+        resetRuntime();
         return false;
     }
 
@@ -317,6 +347,19 @@ void ShellRuntimeApplication::attachOutputSignals(QScreen *screen)
 void ShellRuntimeApplication::scheduleOutputReconcile()
 {
     m_outputDebounce.start();
+}
+
+void ShellRuntimeApplication::resetRuntime()
+{
+    m_outputDebounce.stop();
+    m_notificationClient.reset();
+    m_notificationTransport.reset();
+    m_interactions.reset();
+    m_visibilityClient.reset();
+    m_visibilityTransport.reset();
+    m_controller.reset();
+    m_backend.reset();
+    m_windowFactory.reset();
 }
 
 } // namespace QindaQt::Shell

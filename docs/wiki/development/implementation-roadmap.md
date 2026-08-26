@@ -44,9 +44,9 @@ The repository currently builds and tests:
   policy, a compiled implementation registry, and least-authority grants, plus
   the first live built-in locale-aware clock;
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
-  D-Bus adapter, installable resident ownership/expiry host, and optional
-  authenticated private presentation server, currently without token
-  provisioning, shell client, session autostart, or popup/history UI;
+  D-Bus adapter, installable resident ownership/expiry host, authenticated
+  private presentation server/client, descriptor-only token handoff, and
+  essential host/shell session supervision, currently without popup/history UI;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
@@ -70,7 +70,7 @@ remain unavailable or visual fixtures rather than live integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production layer surfaces, live visibility transport/orchestration, editor policy, notification protocol foundation, gated applet runtime, and live clock implemented; reveal UI and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production layer surfaces, live visibility transport/orchestration, editor policy, gated applet runtime/live clock, and authenticated notification host/client/session transport implemented; popup/history, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

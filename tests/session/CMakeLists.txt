@@ -15,6 +15,11 @@ foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline se
     add_test(NAME session.${test_name} COMMAND tst_${test_name})
 endforeach()
 
+target_compile_definitions(
+    tst_sessioncommandline
+    PRIVATE QINDAQT_TEST_PRODUCTION_SHELL=$<BOOL:${QINDAQT_BUILD_PRODUCTION_SHELL}>
+)
+
 add_executable(
     tst_shellsurfaceprotocoltrace
     tst_shellsurfaceprotocoltrace.cpp

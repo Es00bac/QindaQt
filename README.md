@@ -17,8 +17,10 @@ This repository currently contains the executable foundation for the desktop:
 - manifest- and capability-policy-gated production applet resolution, with a
   live locale-aware clock as the first audited built-in implementation;
 - transactional panel/applet editing, window-aware visibility policy, and an
-  installable freedesktop notification host with a disabled-by-default,
-  authenticated shell-presentation protocol;
+  installable freedesktop notification host with an owner-bound asynchronous
+  shell client and descriptor-only session authentication;
+- an essential-process supervisor that starts the notification host and shell,
+  couples their lifetimes, and never places its generated token in argv or env;
 - isolated nested-session and resolution-scenario tooling;
 - an agent-oriented, versioned project wiki.
 

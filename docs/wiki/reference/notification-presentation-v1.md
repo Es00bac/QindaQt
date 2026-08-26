@@ -13,9 +13,10 @@ Production uses the standard notification service destination with:
 - schema version `1` in every complete snapshot.
 
 The object exists only when the host receives a valid presentation access token
-at construction. The standalone `qindaqt-notification-host` currently supplies
-none, so installing or starting that executable does not expose notification
-content to arbitrary session-bus peers. Registration failure removes the
+at construction. `qindaqt-notification-host` supplies none when invoked without
+an inherited token descriptor, so ordinary standalone startup does not expose
+notification content to arbitrary session-bus peers. Registration failure
+removes the
 private object if needed, releases the standard object and well-known name, and
 returns a typed startup failure.
 
@@ -25,8 +26,11 @@ A token is exactly 32 random bytes represented by 64 lowercase hexadecimal
 characters. Generation uses the operating-system random source. Comparison
 examines every stored byte without an early exit. Tokens must not appear in
 process arguments, environment variables, persistent files, logs, diagnostics,
-or signals in a production session; session-supervisor descriptor provisioning
-is the remaining integration boundary.
+or signals in a production session. `qindaqt-session` sends the same generated
+value to host and shell through separate one-shot inherited pipes. Child
+arguments contain only the inherited descriptor number, and each child closes
+its descriptor after one exact bounded record. A silent writer times out after
+two seconds, so a malformed inherited descriptor cannot block startup forever.
 
 `RegisterPresenter(token)` binds the caller's unique D-Bus name and atomically
 returns the current complete snapshot. A wrong token, non-unique sender, or
@@ -87,9 +91,11 @@ loading policy remain a client/presentation milestone.
 
 ## Current boundary
 
-The shared values/decoder and resident-host server are implemented. The
-production supervisor token channel, owner-bound asynchronous shell client,
-timeouts/backoff, popup/history QML, accessibility, focus/activation-token
-acquisition, do-not-disturb, and lock-screen redaction are not. Until those
-pieces land, the private object stays disabled in the installed standalone host
-and QindaQt does not advertise notification actions.
+The shared values/decoder, resident-host server, owner-bound asynchronous shell
+client, Qt transport, descriptor token channel, and essential-process
+supervisor are implemented. The client authenticates and resynchronizes in the
+production shell but does not expose content to QML yet. Popup/history QML,
+accessibility, focus/activation-token acquisition, do-not-disturb, lock-screen
+redaction, and child restart policy remain. The private object stays disabled
+in the installed standalone host, and QindaQt does not advertise notification
+actions until an accessible presenter is complete.

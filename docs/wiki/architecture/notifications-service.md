@@ -1,11 +1,12 @@
 # Notification service
 
 QindaQt implements a lean notification model, a separate freedesktop D-Bus
-adapter, a resident Core/DBus host executable, and the authenticated server half
-of a private shell-presentation protocol. This is the implemented service
-foundation for the Shell/customization milestone; its shell client,
-popup/history presentation, token provisioning, and session supervision remain
-explicit next slices. The dependency decision is recorded in
+adapter, a resident Core/DBus host executable, and an authenticated private
+shell-presentation protocol with an owner-bound asynchronous client. The
+essential-session supervisor provisions its token through inherited one-shot
+descriptors. This is the implemented service foundation for the
+Shell/customization milestone; popup/history presentation remains an explicit
+next slice. The dependency decision is recorded in
 [ADR-0008](../adr/0008-lean-notification-service.md).
 
 ## Domain contract
@@ -112,9 +113,14 @@ QtDBus arguments with bounded collection parsing. Full method, field, error,
 and restart behavior is in the
 [presentation protocol reference](../reference/notification-presentation-v1.md).
 
-The corresponding owner-bound asynchronous shell client is not implemented.
-The adapter remains presentation-neutral; QML will consume only client public
-values, never this service implementation library.
+The corresponding owner-bound asynchronous client is implemented as a separate
+library. It subscribes to the exact unique owner before authenticating, rejects
+late-owner replies and regressing or malformed snapshots, coalesces targeted
+invalidations, enforces request timeouts, retries with bounded backoff, and
+validates dismiss/action requests against its accepted snapshot. The production
+shell composes it only when a descriptor token was supplied. The adapter stays
+presentation-neutral; QML will consume only client public values, never the
+service implementation library.
 
 ## Resident host
 
@@ -132,13 +138,16 @@ Rearming replaces the old callback, a persistent/no-deadline model cancels it,
 an early event-loop wake rearms the remainder, and stop/destruction cancels the
 callback before releasing D-Bus ownership. Post-start scheduler or expiration
 failures disarm the deadline and remain visible through a typed runtime state;
-session-supervisor restart policy is not yet implemented.
+post-start service restart policy is not yet implemented.
 
-The executable is built and installable but is not yet automatically started
-by `qindaqt-wm`, a D-Bus activation file, or a user service. Its standalone
-composition supplies no presentation token, so the private object is absent by
-default. A future session supervisor must provision the generated token to the
-host and shell through a non-persistent, non-command-line channel. The default
+The executable is built and installable. A production-shell build makes
+`qindaqt-session` the launcher's default `--exit-with-session` process. That
+supervisor generates one token in memory, sends independent copies to host and
+shell over bounded inherited pipes, and couples both child lifetimes. Only the
+descriptor number appears in their arguments; the token never enters argv,
+environment, a persistent file, a signal, or diagnostics. A standalone host
+still receives no token, so its private object is absent. Reads accept one exact
+record and time out after two seconds. The default
 freedesktop capability remains `body` because no accessible action presenter is
 composed.
 
@@ -166,14 +175,21 @@ directed revision delivery, bounded snapshot decode, authorized action and
 dismiss paths, explicit release, disconnect handoff, and complete standard-name
 rollback when the private object path cannot register.
 
+Client tests add deterministic owner changes, late replies, malformed and
+regressing snapshots, invalidation bursts, timeout/backoff, reauthentication,
+operation validation, and release. A second private-bus workflow runs the real
+Qt client transport against two successive resident hosts and proves targeted
+updates, action-token forwarding, loss, new-owner authentication, and new epoch
+acceptance. Descriptor and supervisor tests prove bounded one-shot reads,
+secret-free arguments, two-child startup, coupled shutdown, and second-child
+rollback without opening a display.
+
 The following are not yet implemented:
 
 - shell popup, notification center, keyboard/accessibility presentation, and
   do-not-disturb/inhibition policy;
-- production token provisioning and the owner-bound shell client required for
-  snapshot resynchronization, timeouts/backoff, and presentation;
-- automatic session supervision, D-Bus activation, and post-start bus-loss
-  recovery;
+- popup-safe icon/image loading and activation-token acquisition in QML;
+- D-Bus activation and post-start child/bus-loss restart policy;
 - sound, disk history, settings persistence, lock-screen redaction, and restart
   migration;
 - portal routing and third-party `notify-send` qualification; and

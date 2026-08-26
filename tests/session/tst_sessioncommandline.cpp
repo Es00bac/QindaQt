@@ -47,6 +47,11 @@ void SessionCommandLineTest::usesInstalledPluginRootByDefault()
     const auto options = SessionCommandLine::parse({QStringLiteral("qindaqt-wm")}, &error);
     QVERIFY2(options.has_value(), qPrintable(error));
     QCOMPARE(options->pluginRoot, InstallPaths::pluginRoot());
+#if QINDAQT_TEST_PRODUCTION_SHELL
+    QCOMPARE(options->sessionExecutable, QStringLiteral("qindaqt-session"));
+#else
+    QVERIFY(options->sessionExecutable.isEmpty());
+#endif
 }
 
 void SessionCommandLineTest::acceptsExplicitPluginRoot()

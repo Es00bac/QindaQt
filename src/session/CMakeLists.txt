@@ -27,6 +27,7 @@ target_compile_definitions(
         QINDAQT_INSTALL_BIN_DIR="${KDE_INSTALL_BINDIR}"
         QINDAQT_INSTALL_PLUGIN_DIR="${KDE_INSTALL_PLUGINDIR}"
         QINDAQT_INSTALL_FULL_PLUGIN_DIR="${KDE_INSTALL_FULL_PLUGINDIR}"
+        QINDAQT_DEFAULT_SESSION_EXECUTABLE="$<IF:$<BOOL:${QINDAQT_BUILD_PRODUCTION_SHELL}>,qindaqt-session,>"
 )
 set_target_properties(qindaqt_session_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_session_support)

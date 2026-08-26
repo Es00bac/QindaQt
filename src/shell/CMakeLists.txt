@@ -91,6 +91,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         PRIVATE
             qindaqt_profiles
             QindaQt::AppletRuntime
+            QindaQt::NotificationPresentationClient
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface

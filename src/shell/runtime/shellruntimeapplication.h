@@ -6,6 +6,7 @@
 #include "qindaqt/applet_host/capability_policy.h"
 #include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/profiles/profile_catalog.h"
+#include "qindaqt/services/notification_presentation/presentation_access_token.h"
 #include "qindaqt/themes/theme_catalog.h"
 
 #include <QObject>
@@ -13,6 +14,7 @@
 #include <QTimer>
 
 #include <memory>
+#include <optional>
 
 class QGuiApplication;
 class QScreen;
@@ -31,6 +33,11 @@ class CompositorVisibilityClient;
 class QtCompositorVisibilityTransport;
 }
 
+namespace QindaQt::Services::NotificationPresentationClient {
+class NotificationPresentationClient;
+class QtNotificationPresentationTransport;
+}
+
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
@@ -46,11 +53,14 @@ public:
 
 private:
     [[nodiscard]] bool loadCatalogs(const RuntimeOptions &options, QString *error);
+    [[nodiscard]] bool loadPresentationToken(const RuntimeOptions &options,
+                                             QString *error);
     void printCatalog() const;
     [[nodiscard]] bool initializeRuntime(QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
+    void resetRuntime();
 
     QGuiApplication &m_application;
     Profiles::ProfileCatalog m_profiles;
@@ -66,6 +76,14 @@ private:
     std::unique_ptr<ShellVisibilityClient::CompositorVisibilityClient>
         m_visibilityClient;
     std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
+    std::optional<Services::NotificationPresentation::PresentationAccessToken>
+        m_presentationAccessToken;
+    std::unique_ptr<
+        Services::NotificationPresentationClient::QtNotificationPresentationTransport>
+        m_notificationTransport;
+    std::unique_ptr<
+        Services::NotificationPresentationClient::NotificationPresentationClient>
+        m_notificationClient;
     QTimer m_outputDebounce;
 };
 

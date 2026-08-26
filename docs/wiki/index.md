@@ -18,7 +18,8 @@ workflow. It changes with the code and is validated as part of the repository.
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.
 - [Notification service](architecture/notifications-service.md) records the
-  bounded model, freedesktop adapter, and remaining presentation boundary.
+  bounded model, freedesktop adapter, authenticated host/client transport,
+  descriptor provisioning, and remaining presentation boundary.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Hybrid topology](architecture/hybrid-topology.md),

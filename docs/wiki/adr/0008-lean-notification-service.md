@@ -45,11 +45,12 @@ Disconnect or explicit release clears the binding. The adapter is absent unless
 a token is injected at construction, and any registration failure rolls back
 the standard service ownership.
 
-The shell will consume the corresponding owner-bound asynchronous client once
-session supervision can provision the token without command-line, environment,
-or persistent-file exposure. The producer-facing freedesktop object cannot
-substitute for this private contract, and the shell must not link the
-notification service implementation merely to obtain model updates.
+The shell consumes a corresponding owner-bound asynchronous client. The
+essential-session supervisor sends one generated token through separate
+inherited one-shot descriptors; only descriptor numbers enter child arguments.
+The producer-facing freedesktop object cannot substitute for this private
+contract, and the shell does not link the notification service implementation
+merely to obtain model updates.
 
 The adapter reports specification version 1.3. Its default capabilities list
 contains only `body`. A composed host may advertise `actions` only when an
@@ -73,9 +74,9 @@ rejected.
 - Shell presentation, history UI, do-not-disturb policy, timers, sounds,
   persistence, and lock-screen redaction can evolve behind explicit injected
   boundaries.
-- The host now has the private server half of the shell-facing contract, but no
-  production token provisioner or shell client. Popup work remains gated on
-  both; the in-process presentation backend alone does not qualify process
+- The private server, shell client, token channel, and essential-process
+  supervisor are separate modules. Popup work consumes the accepted client
+  snapshot; the in-process presentation backend alone does not qualify process
   decoupling.
 - A second desktop already owning the bus name is a visible startup failure;
   QindaQt does not silently run two notification servers.

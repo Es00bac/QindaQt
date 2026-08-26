@@ -33,6 +33,9 @@ RuntimeOptionsResult parseRuntimeOptions(QCoreApplication &application)
         {QStringLiteral("applet-policy"),
          QStringLiteral("Read the applet capability policy from this file."),
          QStringLiteral("path")},
+        {QStringLiteral("presentation-token-fd"),
+         QStringLiteral("Consume the private notification token from this inherited descriptor."),
+         QStringLiteral("descriptor")},
         {QStringLiteral("list"),
          QStringLiteral("List validated profiles, themes, and applets, then exit.")},
     });
@@ -45,6 +48,14 @@ RuntimeOptionsResult parseRuntimeOptions(QCoreApplication &application)
     options.themeDirectory = parser.value(QStringLiteral("theme-dir"));
     options.appletDirectory = parser.value(QStringLiteral("applet-dir"));
     options.appletPolicyFile = parser.value(QStringLiteral("applet-policy"));
+    if (parser.isSet(QStringLiteral("presentation-token-fd"))) {
+        bool valid = false;
+        options.presentationTokenDescriptor =
+            parser.value(QStringLiteral("presentation-token-fd")).toInt(&valid);
+        if (!valid || options.presentationTokenDescriptor < 3) {
+            return {{}, QStringLiteral("presentation token descriptor must be an integer at least 3")};
+        }
+    }
     options.listOnly = parser.isSet(QStringLiteral("list"));
     return {options, {}};
 }

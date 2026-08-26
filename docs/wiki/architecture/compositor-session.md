@@ -60,7 +60,12 @@ search paths, builds an argument vector, and replaces itself with
 The launcher accepts one to sixteen outputs, dimensions from 320x200 through
 32768x32768, scales from 0.5 through 4.0, and a sanitized child socket name.
 Rootless XWayland is on by default and can be disabled with `--no-xwayland`.
-A `--session` process controls compositor lifetime.
+A `--session` process controls compositor lifetime. Production-shell builds
+default it to `qindaqt-session`, which starts the notification host and shell,
+provisions their private presentation token through separate one-shot inherited
+descriptors, and ends the session if either essential child exits. An explicit
+`--session` still overrides that default for isolated test probes and alternate
+session compositions; bridge-only builds retain an empty default.
 
 `--test-scenario` is an explicit development marker, not implicit trust from
 the environment. The launcher clears inherited test/development markers and
