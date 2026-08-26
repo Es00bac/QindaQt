@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Stable entry point for the QindaQt nested-session development harness."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+# AGENT-CONTRACT: Keep this wrapper free of behavior so refactors inside the package do
+# not invalidate commands copied into the wiki, CI jobs, or bug reports.
+TOOLS_DIRECTORY = Path(__file__).resolve().parent
+if str(TOOLS_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIRECTORY))
+
+from qindaqt_dev.cli import main  # noqa: E402  (path bootstrap must happen first)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

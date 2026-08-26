@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+site_name: QindaQt Project Wiki
+site_description: Architecture, behavior, and contributor guidance for QindaQt
+docs_dir: docs/wiki
+site_dir: build/docs/site
+strict: true
+
+theme:
+  name: mkdocs
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Module boundaries: architecture/module-boundaries.md
+      - Window containers: architecture/window-containers.md
+  - Shell:
+      - Layout profiles: shell/layout-profiles.md
+  - Reference:
+      - Profile schema v1: reference/profile-schema-v1.md
+      - Theme schema v1: reference/theme-schema-v1.md
+  - Development:
+      - Implementation roadmap: development/implementation-roadmap.md
+      - Coding practices: development/coding-practices.md
+      - Testing harness: development/testing-harness.md
+  - Contributing:
+      - Documentation maintenance: contributing/documentation-policy.md
+  - Decisions:
+      - ADR index: adr/index.md
+      - ADR template: adr/template.md
+      - "ADR-0001: KWin compositor base": adr/0001-use-kwin-as-compositor-base.md
+      - "ADR-0002: Native applet API": adr/0002-native-qindaqt-applet-api.md
+      - "ADR-0003: Docs as code": adr/0003-docs-as-code.md

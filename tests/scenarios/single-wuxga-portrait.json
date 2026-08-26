@@ -1,0 +1,20 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "single-wuxga-portrait",
+  "description": "WUXGA output rotated into a 1200x1920 portrait workspace.",
+  "profile": "nextstep-inspired",
+  "theme": "qinda-dusk",
+  "outputs": [
+    {
+      "name": "Virtual-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 1920, "height": 1200, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "rotate-90"
+    }
+  ],
+  "events": []
+}

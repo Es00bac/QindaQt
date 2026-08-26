@@ -1,0 +1,36 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "laptop-external-hotplug",
+  "description": "Laptop/external lifecycle with hotplug, primary transfer, lid-style disable, and restore.",
+  "profile": "qindaqt",
+  "theme": "qinda-light",
+  "outputs": [
+    {
+      "name": "eDP-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 360 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.25,
+      "transform": "normal"
+    },
+    {
+      "name": "DP-1",
+      "enabled": false,
+      "primary": false,
+      "position": { "x": 1920, "y": 0 },
+      "mode": { "width": 2560, "height": 1440, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    }
+  ],
+  "events": [
+    { "at_ms": 1000, "action": "enable", "output": "DP-1" },
+    { "at_ms": 1500, "action": "set-primary", "output": "DP-1" },
+    { "at_ms": 2000, "action": "disable", "output": "eDP-1" },
+    { "at_ms": 4000, "action": "enable", "output": "eDP-1" },
+    { "at_ms": 4500, "action": "set-primary", "output": "eDP-1" },
+    { "at_ms": 5000, "action": "disable", "output": "DP-1" }
+  ]
+}

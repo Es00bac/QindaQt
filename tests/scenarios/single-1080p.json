@@ -1,0 +1,20 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "single-1080p",
+  "description": "Baseline 1920x1080 desktop at 100% scale.",
+  "profile": "qindaqt",
+  "theme": "qinda-dusk",
+  "outputs": [
+    {
+      "name": "Virtual-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

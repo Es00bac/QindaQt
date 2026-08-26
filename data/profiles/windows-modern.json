@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "windows-modern",
+  "name": "Centered Taskbar",
+  "description": "A centered launcher and grouped tasks with a compact status area.",
+  "defaultTheme": "qinda-dusk",
+  "workflow": {
+    "overview": "task-view",
+    "workspacePolicy": "static",
+    "launcher": "centered-menu",
+    "menu": "start-menu",
+    "taskList": "grouped-icons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "centered-taskbar", "edge": "bottom", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 46, "length": 1.0,
+      "applets": [
+        {"id": "widgets", "plugin": "dashboard", "settings": {"zone": "start"}},
+        {"id": "center-tasks", "plugin": "centered-task-list", "settings": {"zone": "center"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
+      ]
+    }
+  ]
+}

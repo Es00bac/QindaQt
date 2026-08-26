@@ -1,0 +1,11 @@
+/build/
+/build-*/
+/.cache/
+/.qt/
+/.idea/
+/.vscode/
+*.user
+*.swp
+*.swo
+__pycache__/
+*.pyc

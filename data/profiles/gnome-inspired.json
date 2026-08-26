@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "gnome-inspired",
+  "name": "Overview",
+  "description": "A top bar, searchable overview, dash, and dynamic workspaces.",
+  "defaultTheme": "qinda-dark",
+  "workflow": {
+    "overview": "activities",
+    "workspacePolicy": "dynamic",
+    "launcher": "overview-dash",
+    "menu": "application-title",
+    "taskList": "overview-only",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "top-bar", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 32, "length": 1.0,
+      "applets": [
+        {"id": "activities", "plugin": "overview-trigger"},
+        {"id": "active-app", "plugin": "active-application"},
+        {"id": "clock", "plugin": "clock"},
+        {"id": "status", "plugin": "system-status"}
+      ]
+    }
+  ]
+}

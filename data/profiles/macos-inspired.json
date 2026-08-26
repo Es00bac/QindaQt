@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "macos-inspired",
+  "name": "Menu and Dock",
+  "description": "A global top menu with a centered intelligent dock.",
+  "defaultTheme": "qinda-macos",
+  "workflow": {
+    "overview": "expose",
+    "workspacePolicy": "dynamic",
+    "launcher": "center-dock",
+    "menu": "global",
+    "taskList": "dock-indicators",
+    "globalMenu": true
+  },
+  "panels": [
+    {
+      "id": "global-bar", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 29, "length": 1.0,
+      "applets": [
+        {"id": "system-menu", "plugin": "system-menu", "settings": {"zone": "start", "bare": true}},
+        {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start", "bare": true}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end", "bare": true}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end", "bare": true}}
+      ]
+    },
+    {
+      "id": "dock", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
+      "alignment": "center", "rows": 1, "thickness": 60, "length": 0.48,
+      "applets": [
+        {"id": "dock-tasks", "plugin": "dock-task-list", "settings": {"zone": "center", "bare": true}}
+      ]
+    }
+  ]
+}

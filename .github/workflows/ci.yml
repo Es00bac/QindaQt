@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: QindaQt CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qindaqt-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    name: Scenarios, docs, and source shape
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile dependency-free Python tools
+        run: python3 -m compileall -q tools
+
+      - name: Validate development scenarios
+        run: ./tools/qindaqt-dev-session --validate-scenarios
+
+      - name: Exercise stable harness interface
+        run: |
+          ./tools/qindaqt-dev-session --list-scenarios
+          ./tools/qindaqt-dev-session --scenario single-1080p --backend preview --dry-run
+
+      - name: Enforce modular source shape
+        run: ./tools/check-source-shape
+
+      - name: Validate project wiki and links
+        run: ./tools/validate-docs
+
+  core-build:
+    name: Configure, build, and test the dependency-light core
+    needs: repository-policy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.11.*"
+          cache: true
+
+      # AGENT-CONTRACT: Keep mandatory build dependencies explicit here. Do not
+      # hide a missing dependency or failed target behind `|| true`; split future
+      # compositor integration into a separately provisioned job instead.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends cmake ninja-build
+
+      - name: Configure
+        run: cmake -S . -B build/ci -G Ninja -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build build/ci --parallel 2
+
+      - name: Smoke-test preview through isolated harness
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: >-
+          ./tools/qindaqt-dev-session --scenario single-1080p --backend preview
+          --program ./build/ci/src/shell/qindaqt-shell-preview --smoke-test --execute
+
+      - name: Test
+        run: ctest --test-dir build/ci --output-on-failure

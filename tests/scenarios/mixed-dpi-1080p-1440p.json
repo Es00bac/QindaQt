@@ -1,0 +1,29 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "mixed-dpi-1080p-1440p",
+  "description": "Negative-coordinate 1080p output beside a 125%-scaled 1440p primary.",
+  "profile": "qindaqt",
+  "theme": "qinda-dusk",
+  "outputs": [
+    {
+      "name": "HDMI-A-1",
+      "enabled": true,
+      "primary": false,
+      "position": { "x": -1920, "y": 180 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    },
+    {
+      "name": "DP-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 2560, "height": 1440, "refresh_hz": 144 },
+      "scale": 1.25,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

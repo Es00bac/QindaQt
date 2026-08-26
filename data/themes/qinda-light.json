@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-light",
+  "name": "Qinda Light",
+  "variant": "light",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 10,
+  "motionDuration": 150,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#e9e8e4",
+    "surface": "#f7f6f2",
+    "surfaceRaised": "#ffffff",
+    "border": "#c9c7c0",
+    "text": "#20211f",
+    "textMuted": "#666963",
+    "accent": "#386a64",
+    "accentText": "#ffffff",
+    "danger": "#b23a3a"
+  }
+}

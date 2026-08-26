@@ -1,0 +1,53 @@
+# QindaQt project wiki
+
+QindaQt is a modular, Wayland-first Qt desktop environment. Its distinguishing
+feature is a hybrid window model: ordinary windows remain independently usable,
+but users may combine them into a movable container containing tabs and
+recursive splits.
+
+This wiki is the canonical source for architecture, behavior, and contributor
+workflow. It changes with the code and is validated as part of the repository.
+
+## Start here
+
+- [Architecture overview](architecture/overview.md) describes the runtime and
+  its process boundaries.
+- [Module boundaries](architecture/module-boundaries.md) defines ownership and
+  dependency direction.
+- [Window containers](architecture/window-containers.md) specifies the core
+  domain model and mutation invariants.
+- [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
+  QindaQt, GNOME-, Unity-, MATE-, XFCE-, NeXTSTEP-, macOS-, Windows-inspired,
+  and user-created workflows without separate shells.
+- [Testing harness](development/testing-harness.md) defines isolated nested
+  sessions, virtual outputs, visual baselines, and the required display matrix.
+- [Implementation roadmap](development/implementation-roadmap.md) distinguishes
+  the buildable foundation from upcoming compositor and desktop milestones.
+- [Profile schema v1](reference/profile-schema-v1.md) and
+  [theme schema v1](reference/theme-schema-v1.md) document the data currently
+  accepted by the loaders.
+- [Coding practices](development/coding-practices.md) keeps the implementation
+  modular and legible to future agents.
+- [Documentation maintenance](contributing/documentation-policy.md) states when
+  wiki pages and architecture decision records must change.
+- [Architecture decisions](adr/index.md) records durable choices and their
+  consequences.
+
+## Product constraints
+
+- The native session is Wayland; XWayland is started only for legacy clients.
+- Qt 6 is the UI and application foundation. Plasma is not the shell runtime,
+  though focused KDE Frameworks may be reused behind explicit boundaries.
+- Conventional floating, minimizing, maximizing, and snapping remain first
+  class alongside grouped tabs and splits.
+- Appearance and workflow are independently configurable through themes and
+  layout profiles.
+- The shell, compositor, and default resident services target no more than
+  500 MiB aggregate idle PSS and less than 1% average idle CPU on the reference
+  machine.
+- Accessibility and keyboard equivalents are required for every pointer-only
+  customization or window-management operation.
+
+The repository is in foundation development. Pages distinguish accepted
+contracts from planned implementation; unresolved durable decisions belong in
+an ADR rather than being silently embedded in code.

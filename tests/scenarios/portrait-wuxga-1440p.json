@@ -1,0 +1,29 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "portrait-wuxga-1440p",
+  "description": "Portrait WUXGA secondary adjoining a landscape 1440p primary.",
+  "profile": "minimal",
+  "theme": "qinda-dark",
+  "outputs": [
+    {
+      "name": "DP-1",
+      "enabled": true,
+      "primary": false,
+      "position": { "x": -1200, "y": -240 },
+      "mode": { "width": 1920, "height": 1200, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "rotate-90"
+    },
+    {
+      "name": "DP-2",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 2560, "height": 1440, "refresh_hz": 60 },
+      "scale": 1.25,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

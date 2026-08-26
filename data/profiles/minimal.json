@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "minimal",
+  "name": "Minimal",
+  "description": "A tiny command strip for keyboard-led workflows.",
+  "defaultTheme": "qinda-dark",
+  "workflow": {
+    "overview": "command-palette",
+    "workspacePolicy": "dynamic",
+    "launcher": "command-palette",
+    "menu": "hidden",
+    "taskList": "hidden",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "command-strip", "edge": "top", "layer": "overlay", "hideMode": "always",
+      "alignment": "center", "rows": 1, "thickness": 26, "length": 0.3,
+      "applets": [
+        {"id": "workspaces", "plugin": "workspace-switcher"},
+        {"id": "command", "plugin": "command-palette"},
+        {"id": "clock", "plugin": "clock"}
+      ]
+    }
+  ]
+}

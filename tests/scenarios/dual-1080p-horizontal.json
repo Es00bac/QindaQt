@@ -1,0 +1,29 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "dual-1080p-horizontal",
+  "description": "Two side-by-side 1080p outputs with the left output primary.",
+  "profile": "windows-classic",
+  "theme": "qinda-light",
+  "outputs": [
+    {
+      "name": "DP-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    },
+    {
+      "name": "DP-2",
+      "enabled": true,
+      "primary": false,
+      "position": { "x": 1920, "y": 0 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

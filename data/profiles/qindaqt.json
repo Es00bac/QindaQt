@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "qindaqt",
+  "name": "QindaQt",
+  "description": "A calm command bar with a window-aware smart shelf.",
+  "defaultTheme": "qinda-dark",
+  "workflow": {
+    "overview": "compact",
+    "workspacePolicy": "static",
+    "launcher": "smart-shelf",
+    "menu": "global",
+    "taskList": "grouped",
+    "globalMenu": true
+  },
+  "panels": [
+    {
+      "id": "command-bar", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
+      "applets": [
+        {"id": "brand", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
+        {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "center"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
+      ]
+    },
+    {
+      "id": "smart-shelf", "edge": "bottom", "layer": "above", "hideMode": "intelligent",
+      "alignment": "center", "rows": 1, "thickness": 54, "length": 0.52,
+      "applets": [
+        {"id": "apps", "plugin": "application-launcher", "settings": {"zone": "center"}},
+        {"id": "tasks", "plugin": "grouped-task-list", "settings": {"zone": "center"}}
+      ]
+    }
+  ]
+}

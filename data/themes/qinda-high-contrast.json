@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-high-contrast",
+  "name": "Qinda High Contrast",
+  "variant": "high-contrast",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "Noto Sans Mono",
+  "cornerRadius": 4,
+  "motionDuration": 0,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#000000",
+    "surface": "#000000",
+    "surfaceRaised": "#101010",
+    "border": "#ffffff",
+    "text": "#ffffff",
+    "textMuted": "#e6e6e6",
+    "accent": "#ffdd00",
+    "accentText": "#000000",
+    "danger": "#ff5c5c"
+  }
+}

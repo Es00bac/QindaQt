@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Stable entry point for QindaQt source-shape policy checks."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+# AGENT-CONTRACT: CI and contributor docs call this path directly; implementation
+# remains in the source_shape package so the policy checker does not become a god file.
+TOOLS_DIRECTORY = Path(__file__).resolve().parent
+if str(TOOLS_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIRECTORY))
+
+from source_shape.cli import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

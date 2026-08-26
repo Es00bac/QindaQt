@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qindaqt.org/schemas/dev-scenario-v1.json",
+  "title": "QindaQt development display scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "description",
+    "profile",
+    "theme",
+    "outputs"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "theme": {
+      "type": "string",
+      "minLength": 1
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/output"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "default": []
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "integer" },
+        "y": { "type": "integer" }
+      }
+    },
+    "mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "refresh_hz"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 320 },
+        "height": { "type": "integer", "minimum": 200 },
+        "refresh_hz": { "type": "number", "minimum": 1 }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "enabled",
+        "primary",
+        "position",
+        "mode",
+        "scale",
+        "transform"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"
+        },
+        "enabled": { "type": "boolean" },
+        "primary": { "type": "boolean" },
+        "position": { "$ref": "#/$defs/position" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "scale": { "type": "number", "minimum": 0.5 },
+        "transform": {
+          "enum": [
+            "normal",
+            "rotate-90",
+            "rotate-180",
+            "rotate-270",
+            "flipped",
+            "flipped-90",
+            "flipped-180",
+            "flipped-270"
+          ]
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_ms", "action", "output"],
+      "properties": {
+        "at_ms": { "type": "integer", "minimum": 0 },
+        "action": {
+          "enum": [
+            "enable",
+            "disable",
+            "move",
+            "set-mode",
+            "set-primary",
+            "set-scale",
+            "set-transform"
+          ]
+        },
+        "output": { "type": "string" },
+        "value": {}
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "action": { "enum": ["enable", "disable", "set-primary"] } } },
+          "then": { "not": { "required": ["value"] } }
+        },
+        {
+          "if": { "properties": { "action": { "const": "move" } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "$ref": "#/$defs/position" } }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "set-mode" } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "$ref": "#/$defs/mode" } }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "set-scale" } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "type": "number", "minimum": 0.5 } }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "set-transform" } } },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": {
+                "enum": [
+                  "normal",
+                  "rotate-90",
+                  "rotate-180",
+                  "rotate-270",
+                  "flipped",
+                  "flipped-90",
+                  "flipped-180",
+                  "flipped-270"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

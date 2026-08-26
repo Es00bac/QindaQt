@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "unity-inspired",
+  "name": "Command Rail",
+  "description": "A left launcher, global menu, and searchable command HUD.",
+  "defaultTheme": "qinda-dusk",
+  "workflow": {
+    "overview": "workspace-spread",
+    "workspacePolicy": "static",
+    "launcher": "left-rail",
+    "menu": "global-hud",
+    "taskList": "launcher-integrated",
+    "globalMenu": true
+  },
+  "panels": [
+    {
+      "id": "menu-bar", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
+      "applets": [
+        {"id": "menu", "plugin": "global-menu"},
+        {"id": "hud", "plugin": "command-hud"},
+        {"id": "status", "plugin": "system-status"},
+        {"id": "clock", "plugin": "clock"}
+      ]
+    },
+    {
+      "id": "launcher-rail", "edge": "left", "layer": "above", "hideMode": "dodge-all",
+      "alignment": "fill", "rows": 1, "thickness": 58, "length": 1.0,
+      "applets": [
+        {"id": "launcher", "plugin": "application-launcher"},
+        {"id": "tasks", "plugin": "grouped-task-list"},
+        {"id": "workspaces", "plugin": "workspace-switcher"}
+      ]
+    }
+  ]
+}

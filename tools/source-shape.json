@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "policy": "Hand-written sources crossing the review threshold need decomposition review; limit exceptions require a reason here.",
+  "source_extensions": [
+    ".c",
+    ".cc",
+    ".cmake",
+    ".cpp",
+    ".cxx",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".js",
+    ".py",
+    ".qml",
+    ".sh"
+  ],
+  "defaults": {
+    "max_nonblank_lines": 600,
+    "review_nonblank_lines": 500,
+    "max_bytes": 200000,
+    "max_function_lines": 180,
+    "max_line_characters": 5000
+  },
+  "extension_limits": {
+    ".h": {
+      "max_nonblank_lines": 400,
+      "review_nonblank_lines": 325,
+      "max_function_lines": 100
+    },
+    ".hpp": {
+      "max_nonblank_lines": 400,
+      "review_nonblank_lines": 325,
+      "max_function_lines": 100
+    },
+    ".py": {
+      "max_nonblank_lines": 450,
+      "review_nonblank_lines": 375,
+      "max_function_lines": 120
+    },
+    ".qml": {
+      "max_nonblank_lines": 350,
+      "review_nonblank_lines": 275,
+      "max_function_lines": 100
+    },
+    ".sh": {
+      "max_nonblank_lines": 300,
+      "review_nonblank_lines": 240,
+      "max_function_lines": 100
+    }
+  },
+  "ignore_patterns": [
+    ".git/**",
+    ".cache/**",
+    "build/**",
+    "build-*/**",
+    "out/**"
+  ],
+  "allowlist": []
+}

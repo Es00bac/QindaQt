@@ -1,0 +1,20 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "single-1440p-150",
+  "description": "2560x1440 desktop at 150% fractional scale.",
+  "profile": "macos-inspired",
+  "theme": "qinda-light",
+  "outputs": [
+    {
+      "name": "Virtual-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 2560, "height": 1440, "refresh_hz": 60 },
+      "scale": 1.5,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

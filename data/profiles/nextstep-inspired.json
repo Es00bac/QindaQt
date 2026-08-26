@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "nextstep-inspired",
+  "name": "Workspace Dock",
+  "description": "A vertical application dock with workspace and utility tiles.",
+  "defaultTheme": "qinda-dark",
+  "workflow": {
+    "overview": "dock-grid",
+    "workspacePolicy": "static",
+    "launcher": "tile-dock",
+    "menu": "window-local",
+    "taskList": "dock-tiles",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "workspace-dock", "edge": "right", "layer": "above", "hideMode": "never",
+      "alignment": "start", "rows": 1, "thickness": 72, "length": 0.72,
+      "applets": [
+        {"id": "apps", "plugin": "application-tiles"},
+        {"id": "workspaces", "plugin": "workspace-tiles"},
+        {"id": "clock", "plugin": "clock-tile"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "windows-classic",
+  "name": "Classic Taskbar",
+  "description": "A compact menu, quick launch area, task buttons, and tray.",
+  "defaultTheme": "qinda-light",
+  "workflow": {
+    "overview": "disabled",
+    "workspacePolicy": "static",
+    "launcher": "start-menu",
+    "menu": "start-menu",
+    "taskList": "buttons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "taskbar", "edge": "bottom", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 36, "length": 1.0,
+      "applets": [
+        {"id": "start", "plugin": "start-menu"},
+        {"id": "quick-launch", "plugin": "quick-launch"},
+        {"id": "tasks", "plugin": "task-list"},
+        {"id": "tray", "plugin": "system-tray"},
+        {"id": "clock", "plugin": "clock"}
+      ]
+    }
+  ]
+}

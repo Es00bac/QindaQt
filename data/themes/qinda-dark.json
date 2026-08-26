@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-dark",
+  "name": "Qinda Dark",
+  "variant": "dark",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 10,
+  "motionDuration": 160,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#171a18",
+    "surface": "#222624",
+    "surfaceRaised": "#2c312e",
+    "border": "#3c433f",
+    "text": "#f2f1eb",
+    "textMuted": "#a9afa9",
+    "accent": "#8fc8b7",
+    "accentText": "#10201b",
+    "danger": "#f07c76"
+  }
+}

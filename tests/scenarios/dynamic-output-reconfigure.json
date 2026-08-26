@@ -1,0 +1,35 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "dynamic-output-reconfigure",
+  "description": "Gapped outputs transition through mirroring, rotation, fractional scaling, and reordering.",
+  "profile": "qindaqt",
+  "theme": "qinda-dusk",
+  "outputs": [
+    {
+      "name": "Virtual-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 1920, "height": 1080, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    },
+    {
+      "name": "Virtual-2",
+      "enabled": true,
+      "primary": false,
+      "position": { "x": 2160, "y": 120 },
+      "mode": { "width": 1920, "height": 1200, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    }
+  ],
+  "events": [
+    { "at_ms": 1000, "action": "move", "output": "Virtual-2", "value": { "x": 0, "y": 0 } },
+    { "at_ms": 2000, "action": "set-transform", "output": "Virtual-2", "value": "rotate-90" },
+    { "at_ms": 3000, "action": "set-scale", "output": "Virtual-2", "value": 1.5 },
+    { "at_ms": 4000, "action": "move", "output": "Virtual-2", "value": { "x": -1200, "y": -240 } },
+    { "at_ms": 5000, "action": "set-mode", "output": "Virtual-1", "value": { "width": 2560, "height": 1440, "refresh_hz": 120 } }
+  ]
+}

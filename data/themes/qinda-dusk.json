@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-dusk",
+  "name": "Qinda Dusk",
+  "variant": "dusk",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 10,
+  "motionDuration": 160,
+  "blurEnabled": true,
+  "colors": {
+    "canvas": "#303331",
+    "surface": "#3b3f3c",
+    "surfaceRaised": "#484c48",
+    "border": "#5c625d",
+    "text": "#f0efe9",
+    "textMuted": "#b8b9b2",
+    "accent": "#83b9aa",
+    "accentText": "#16221f",
+    "danger": "#ef7771"
+  }
+}

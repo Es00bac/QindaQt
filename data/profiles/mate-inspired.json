@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "mate-inspired",
+  "name": "Two Panel Classic",
+  "description": "Traditional menus above and task management below.",
+  "defaultTheme": "qinda-light",
+  "workflow": {
+    "overview": "disabled",
+    "workspacePolicy": "static",
+    "launcher": "classic-menu",
+    "menu": "applications-places-system",
+    "taskList": "buttons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "menus", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
+      "applets": [
+        {"id": "main-menu", "plugin": "classic-menu"},
+        {"id": "places", "plugin": "places-menu"},
+        {"id": "system", "plugin": "system-menu"},
+        {"id": "clock", "plugin": "clock"}
+      ]
+    },
+    {
+      "id": "tasks", "edge": "bottom", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 34, "length": 1.0,
+      "applets": [
+        {"id": "show-desktop", "plugin": "show-desktop"},
+        {"id": "window-list", "plugin": "task-list"},
+        {"id": "workspaces", "plugin": "workspace-switcher"},
+        {"id": "tray", "plugin": "system-tray"}
+      ]
+    }
+  ]
+}

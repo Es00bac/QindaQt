@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "xfce-inspired",
+  "name": "Compact Flexible",
+  "description": "A compact configurable panel and independent launcher dock.",
+  "defaultTheme": "qinda-dusk",
+  "workflow": {
+    "overview": "optional",
+    "workspacePolicy": "static",
+    "launcher": "menu",
+    "menu": "application-menu",
+    "taskList": "buttons",
+    "globalMenu": false
+  },
+  "panels": [
+    {
+      "id": "main-panel", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 28, "length": 1.0,
+      "applets": [
+        {"id": "menu", "plugin": "application-menu"},
+        {"id": "launchers", "plugin": "quick-launch"},
+        {"id": "tasks", "plugin": "task-list"},
+        {"id": "workspaces", "plugin": "workspace-switcher"},
+        {"id": "tray", "plugin": "system-tray"},
+        {"id": "clock", "plugin": "clock"}
+      ]
+    },
+    {
+      "id": "launcher-dock", "edge": "bottom", "layer": "above", "hideMode": "always",
+      "alignment": "center", "rows": 1, "thickness": 46, "length": 0.34,
+      "applets": [{"id": "favorites", "plugin": "quick-launch"}]
+    }
+  ]
+}

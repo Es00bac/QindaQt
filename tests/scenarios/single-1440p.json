@@ -1,0 +1,20 @@
+{
+  "$schema": "schema.json",
+  "schema_version": 1,
+  "id": "single-1440p",
+  "description": "Baseline 2560x1440 desktop at 100% scale.",
+  "profile": "qindaqt",
+  "theme": "qinda-dark",
+  "outputs": [
+    {
+      "name": "Virtual-1",
+      "enabled": true,
+      "primary": true,
+      "position": { "x": 0, "y": 0 },
+      "mode": { "width": 2560, "height": 1440, "refresh_hz": 60 },
+      "scale": 1.0,
+      "transform": "normal"
+    }
+  ],
+  "events": []
+}

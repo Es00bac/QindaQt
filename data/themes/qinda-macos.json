@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "qinda-macos",
+  "name": "Qinda macOS",
+  "variant": "light",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 12,
+  "motionDuration": 180,
+  "blurEnabled": true,
+  "colors": {
+    "canvas": "#9FB8B2",
+    "surface": "#E7EFEC",
+    "surfaceRaised": "#F7FAF9",
+    "border": "#9DAFA9",
+    "text": "#17231F",
+    "textMuted": "#60716C",
+    "accent": "#4DAF98",
+    "accentText": "#0A2921",
+    "danger": "#FF5F57"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "right-to-left",
+    "buttonStyle": "traffic-lights",
+    "hoverGlyphs": true,
+    "closeColor": "#FF5F57",
+    "minimizeColor": "#FEBC2E",
+    "maximizeColor": "#28C840"
+  }
+}
