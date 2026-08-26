@@ -38,6 +38,29 @@ set_tests_properties(
     PROPERTIES TIMEOUT 20 LABELS "service;dbus"
 )
 
+qt_add_executable(qindaqt_notification_presentation_dbus_tests
+    tst_notification_presentation_dbus.cpp
+    support/notification_host_test_support.h
+)
+target_link_libraries(
+    qindaqt_notification_presentation_dbus_tests
+    PRIVATE
+        QindaQt::NotificationHost
+        QindaQt::NotificationPresentationProtocol
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_notification_presentation_dbus_tests)
+add_test(
+    NAME qindaqt.notification-host-presentation-dbus
+    COMMAND qindaqt_notification_presentation_dbus_tests
+)
+set_tests_properties(
+    qindaqt.notification-host-presentation-dbus
+    PROPERTIES TIMEOUT 20 LABELS "service;dbus"
+)
+
 qt_add_executable(qindaqt_qt_notification_deadline_scheduler_tests
     tst_qt_deadline_scheduler.cpp
 )

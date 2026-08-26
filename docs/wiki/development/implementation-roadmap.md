@@ -44,8 +44,9 @@ The repository currently builds and tests:
   policy, a compiled implementation registry, and least-authority grants, plus
   the first live built-in locale-aware clock;
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
-  D-Bus adapter, and installable resident ownership/expiry host, currently
-  without session autostart or popup/history UI;
+  D-Bus adapter, installable resident ownership/expiry host, and optional
+  authenticated private presentation server, currently without token
+  provisioning, shell client, session autostart, or popup/history UI;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and

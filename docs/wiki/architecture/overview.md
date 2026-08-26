@@ -12,6 +12,7 @@ system-service state.
 | `qindaqt-wm` | Wayland composition, input routing, outputs, workspaces, client lifecycle, and window-container transactions | Panels, settings UI, applet rendering, or device policy |
 | QindaQt Shell | Panels, docks, overview, task presentation, global menu, notifications UI, and direct customization | Authoritative window/output state or privileged hardware changes |
 | Settings service | Versioned schemas, preview/commit/rollback, migrations, and change notification | Settings presentation or compositor implementation details |
+| Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML, session supervision, or shell authority |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |
 | Applet hosts | Applet lifecycle and capability mediation | Unrestricted access to shell internals or the compositor |
 | First-party applications | User-facing file, terminal, editor, viewer, archive, monitor, and software workflows | Desktop-global authority unavailable to third-party clients |
@@ -44,6 +45,9 @@ Cross-process boundaries are versioned from their first external use:
 - `org.qindaqt.Settings1` for transactional settings;
 - `org.qindaqt.Session1` for snapshot and restore coordination;
 - `org.qindaqt.Metrics1` for shared sensor streams; and
+- private `org.qindaqt.NotificationPresentation1` for one token-bound shell
+  presenter, currently server-side only and disabled without supervisor token
+  provisioning; and
 - `QindaQt.Applets 1.0` for manifest-defined extensions.
 
 Private Wayland protocols may transport compositor-owned surfaces or efficient

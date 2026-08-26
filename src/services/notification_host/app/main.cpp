@@ -28,6 +28,7 @@ int failureExitCode(NotificationHost::NotificationHostStartStatus status) {
     return 4;
   case Status::ServerRegistrationFailed:
   case Status::DeadlineSchedulingFailed:
+  case Status::PresentationRegistrationFailed:
     return 5;
   }
   return 5;

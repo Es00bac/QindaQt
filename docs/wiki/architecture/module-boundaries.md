@@ -32,8 +32,9 @@ tests, and the wiki page describing its contract.
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin registry, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid contracts, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
+| `src/services/notification_presentation_protocol` | Versioned presentation values, bounded D-Bus decoding, wire limits, restart lineage, and 256-bit presenter-token values | Qt Core/DBus only; never notification policy, host objects, shell QML, or token provisioning |
 | `src/services/notifications` | Bounded notification policy/model plus a separate freedesktop QtDBus adapter | Qt Core for the domain; QtDBus only in the protocol adapter; never QML or Plasma runtime |
-| `src/services/notification_host` | Resident D-Bus ownership and one-shot notification-expiry scheduling | Public notification model/adapter plus Qt Core/DBus; never popup UI, history persistence, sound, or session supervision |
+| `src/services/notification_host` | Resident D-Bus ownership, one-shot notification-expiry scheduling, and optional authenticated presentation adapter | Public notification model/adapter and presentation protocol plus Qt Core/DBus; never popup UI, history persistence, sound, token provisioning, or session supervision |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
 | `tools` and `tests` | Isolated development harnesses, fixtures, integration scenarios, and verification | Public APIs; test-only hooks in test builds |

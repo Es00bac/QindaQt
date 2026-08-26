@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "qindaqt/services/notification_host/resident_notification_host.h"
+#include "qindaqt/services/notification_presentation/presentation_access_token.h"
+#include "qindaqt/services/notification_presentation/wire_contract.h"
 
 #include "support/notification_host_test_support.h"
 
@@ -15,6 +17,8 @@
 
 using namespace QindaQt::Services::NotificationHost;
 using namespace QindaQt::Services::NotificationHost::TestSupport;
+namespace NotificationPresentation =
+    QindaQt::Services::NotificationPresentation;
 
 namespace {
 
@@ -50,6 +54,7 @@ class NotificationHostLifecycleTests final : public QObject {
 private slots:
   void ownershipConflictAndShutdownReleaseName();
   void startupSchedulerFailureRollsBackName();
+  void presentationRegistrationFailureRollsBackName();
   void malformedServiceNameReturnsTypedFailure();
   void invalidPolicyReturnsTypedFailure();
   void disconnectedBusReturnsTypedFailure();
@@ -86,6 +91,13 @@ void NotificationHostLifecycleTests::ownershipConflictAndShutdownReleaseName() {
     QVERIFY(owner.start(ownedName).ok());
     QVERIFY(isServiceRegistered(probe, ownedName));
     verifyServerAnswers(probe, ownedName);
+
+    QObject privateEndpointSentinel;
+    QVERIFY(firstConnection.registerObject(
+        QString::fromLatin1(NotificationPresentation::WireContract::ObjectPath),
+        &privateEndpointSentinel, QDBusConnection::ExportAllSlots));
+    firstConnection.unregisterObject(
+        QString::fromLatin1(NotificationPresentation::WireContract::ObjectPath));
 
     const auto conflict = contender.start(ownedName);
     QCOMPARE(conflict.status,
@@ -175,6 +187,54 @@ void NotificationHostLifecycleTests::startupSchedulerFailureRollsBackName() {
       QDBusConnection::ExportAllSlots));
   connection.unregisterObject(QString::fromLatin1(NotificationObjectPath));
 
+  QVERIFY(host.start(rejectedName).ok());
+  QVERIFY(isServiceRegistered(probe, rejectedName));
+  host.stop();
+  QTRY_VERIFY(!isServiceRegistered(probe, rejectedName));
+
+  QDBusConnection::disconnectFromBus(probeName);
+  QDBusConnection::disconnectFromBus(hostName);
+  bus.stop();
+  QVERIFY(bus.isStopped());
+}
+
+void NotificationHostLifecycleTests::presentationRegistrationFailureRollsBackName() {
+  if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+    QSKIP("dbus-daemon is unavailable");
+  }
+  PrivateSessionBus bus;
+  QString error;
+  QVERIFY2(bus.start(&error), qPrintable(error));
+  const QString hostName = connectionName(QStringLiteral("presentation-rollback"));
+  const QString probeName = connectionName(QStringLiteral("presentation-probe"));
+  auto connection = QDBusConnection::connectToBus(bus.address(), hostName);
+  auto probe = QDBusConnection::connectToBus(bus.address(), probeName);
+  QVERIFY(connection.isConnected());
+  QVERIFY(probe.isConnected());
+
+  QObject collision;
+  QVERIFY(connection.registerObject(
+      QString::fromLatin1(NotificationPresentation::WireContract::ObjectPath),
+      &collision, QDBusConnection::ExportAllSlots));
+  const auto token = NotificationPresentation::PresentationAccessToken::fromHex(
+      QString(64, QLatin1Char('a')), &error);
+  QVERIFY2(token.has_value(), qPrintable(error));
+  ManualNotificationClock clock;
+  ManualDeadlineScheduler scheduler;
+  ResidentNotificationHost host(connection, clock, scheduler, {}, {}, nullptr,
+                                token);
+  const QString rejectedName = serviceName();
+
+  const auto rejected = host.start(rejectedName);
+
+  QCOMPARE(rejected.status,
+           NotificationHostStartStatus::PresentationRegistrationFailed);
+  QVERIFY(!rejected.message.isEmpty());
+  QVERIFY(!host.isRunning());
+  QVERIFY(!isServiceRegistered(probe, rejectedName));
+
+  connection.unregisterObject(
+      QString::fromLatin1(NotificationPresentation::WireContract::ObjectPath));
   QVERIFY(host.start(rejectedName).ok());
   QVERIFY(isServiceRegistered(probe, rejectedName));
   host.stop();

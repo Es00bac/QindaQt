@@ -24,6 +24,7 @@ add_subdirectory(applet_host)
 add_subdirectory(applet_runtime)
 add_subdirectory(session)
 add_subdirectory(settings)
+add_subdirectory(services/notification_presentation_protocol)
 add_subdirectory(services/notifications)
 add_subdirectory(services/notification_host)
 

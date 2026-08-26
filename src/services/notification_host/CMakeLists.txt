@@ -10,6 +10,9 @@ target_sources(
     PRIVATE
         src/dbus_service_name_validation.cpp
         src/dbus_service_name_validation_p.h
+        src/notification_presentation_object.cpp
+        src/notification_presentation_object_p.h
+        src/notification_presentation_server.cpp
         src/qt_deadline_scheduler.cpp
         src/resident_notification_host.cpp
     PUBLIC
@@ -17,6 +20,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/services/notification_host/deadline_scheduler.h
+            include/qindaqt/services/notification_host/notification_presentation_server.h
             include/qindaqt/services/notification_host/qt_deadline_scheduler.h
             include/qindaqt/services/notification_host/resident_notification_host.h
 )
@@ -25,6 +29,7 @@ target_link_libraries(
     qindaqt_notification_host
     PUBLIC
         QindaQt::NotificationDBus
+        QindaQt::NotificationPresentationProtocol
         Qt6::Core
         Qt6::DBus
 )

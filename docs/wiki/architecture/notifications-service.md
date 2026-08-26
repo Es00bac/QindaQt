@@ -1,10 +1,11 @@
 # Notification service
 
 QindaQt implements a lean notification model, a separate freedesktop D-Bus
-adapter, and a resident Core/DBus host executable. This is the implemented
-service foundation for the Shell/customization milestone; popup/history
-presentation and session supervision remain explicit next slices. The
-dependency decision is recorded in
+adapter, a resident Core/DBus host executable, and the authenticated server half
+of a private shell-presentation protocol. This is the implemented service
+foundation for the Shell/customization milestone; its shell client,
+popup/history presentation, token provisioning, and session supervision remain
+explicit next slices. The dependency decision is recorded in
 [ADR-0008](../adr/0008-lean-notification-service.md).
 
 ## Domain contract
@@ -95,13 +96,25 @@ resident host compose an adapter and lets tests observe publications, but it
 does not authorize linking notification implementation libraries into
 `qindaqt-shell`.
 
-Before popup/history presentation is implemented, QindaQt must add a versioned
-private IPC adapter in the resident host and a public service client in the
-shell. The protocol must carry immutable snapshot revisions, resynchronization,
-dismissal, and action invocation, with bounded messages and explicit peer
-authentication, errors, timeouts, backpressure, disconnect, and host-restart
-semantics. The adapter remains presentation-neutral; QML consumes only the
-client's public values.
+The resident host now has an optional `org.qindaqt.NotificationPresentation1`
+object on the same well-known owner as the freedesktop object. A 256-bit token
+handshake binds one unique D-Bus presenter. Only that sender may fetch complete
+snapshots, dismiss an item, invoke an action, or release the binding. The host
+watches unique-name disappearance so a restarted shell may authenticate. It
+sends change signals only to the bound destination, with epoch/revision but no
+notification content.
+
+Snapshots use an exact schema version, canonical restart UUID, monotonic
+revision, ascending nonzero IDs, bounded text/actions/count, and strict value
+types. They deliberately omit authenticated producer identity and inline image
+bytes. The shared decoder handles both process-local variants and nested
+QtDBus arguments with bounded collection parsing. Full method, field, error,
+and restart behavior is in the
+[presentation protocol reference](../reference/notification-presentation-v1.md).
+
+The corresponding owner-bound asynchronous shell client is not implemented.
+The adapter remains presentation-neutral; QML will consume only client public
+values, never this service implementation library.
 
 ## Resident host
 
@@ -122,8 +135,12 @@ failures disarm the deadline and remain visible through a typed runtime state;
 session-supervisor restart policy is not yet implemented.
 
 The executable is built and installable but is not yet automatically started
-by `qindaqt-wm`, a D-Bus activation file, or a user service. Its default
-capability remains `body` because no accessible action presenter is composed.
+by `qindaqt-wm`, a D-Bus activation file, or a user service. Its standalone
+composition supplies no presentation token, so the private object is absent by
+default. A future session supervisor must provision the generated token to the
+host and shell through a non-persistent, non-command-line channel. The default
+freedesktop capability remains `body` because no accessible action presenter is
+composed.
 
 ## Qualification and remaining work
 
@@ -143,12 +160,18 @@ typed malformed-name, invalid-policy, and
 disconnected-bus failures; and QTimer replacement cancellation observed beyond
 the superseded deadline plus destruction cancellation.
 
+Presentation tests add strict codec/token rejection and a private-bus workflow
+with a wrong-token peer, one authenticated presenter, a denied second peer,
+directed revision delivery, bounded snapshot decode, authorized action and
+dismiss paths, explicit release, disconnect handoff, and complete standard-name
+rollback when the private object path cannot register.
+
 The following are not yet implemented:
 
 - shell popup, notification center, keyboard/accessibility presentation, and
   do-not-disturb/inhibition policy;
-- the versioned private resident-host adapter and shell client required for
-  snapshot publication, resynchronization, dismissal, and actions;
+- production token provisioning and the owner-bound shell client required for
+  snapshot resynchronization, timeouts/backoff, and presentation;
 - automatic session supervision, D-Bus activation, and post-start bus-loss
   recovery;
 - sound, disk history, settings persistence, lock-screen redaction, and restart

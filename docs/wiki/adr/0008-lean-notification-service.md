@@ -36,14 +36,20 @@ standard hints, and emits the standard close/action signals. Its injected
 presentation backend is a host-side composition seam and test boundary; it is
 not a cross-process shell transport.
 
-Before user-visible presentation lands, the resident host will expose a
-versioned private QindaQt adapter and the shell will consume its corresponding
-client. That contract must publish revisioned snapshots and carry trusted
-dismiss/action commands with explicit authentication, errors, timeouts,
-backpressure, restart, and resynchronization semantics. The producer-facing
-freedesktop object cannot substitute for this private contract, and the shell
-must not link the notification service implementation merely to obtain model
-updates.
+The resident host optionally exposes a versioned private QindaQt presentation
+adapter. It publishes bounded revisioned snapshots and carries trusted
+dismiss/action commands after a 256-bit token handshake binds exactly one
+unique D-Bus sender. Change signals are targeted to that sender and contain
+only epoch/revision metadata; notification content is fetched, never broadcast.
+Disconnect or explicit release clears the binding. The adapter is absent unless
+a token is injected at construction, and any registration failure rolls back
+the standard service ownership.
+
+The shell will consume the corresponding owner-bound asynchronous client once
+session supervision can provision the token without command-line, environment,
+or persistent-file exposure. The producer-facing freedesktop object cannot
+substitute for this private contract, and the shell must not link the
+notification service implementation merely to obtain model updates.
 
 The adapter reports specification version 1.3. Its default capabilities list
 contains only `body`. A composed host may advertise `actions` only when an
@@ -67,9 +73,10 @@ rejected.
 - Shell presentation, history UI, do-not-disturb policy, timers, sounds,
   persistence, and lock-screen redaction can evolve behind explicit injected
   boundaries.
-- The current host foundation has no shell-facing cross-process client. Popup
-  work is gated on the versioned private adapter/client above; the in-process
-  presentation backend alone does not qualify process decoupling.
+- The host now has the private server half of the shell-facing contract, but no
+  production token provisioner or shell client. Popup work remains gated on
+  both; the in-process presentation backend alone does not qualify process
+  decoupling.
 - A second desktop already owning the bus name is a visible startup failure;
   QindaQt does not silently run two notification servers.
 - Caller ownership prevents one live client from replacing or closing another

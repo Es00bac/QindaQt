@@ -29,10 +29,12 @@ nav:
       - Window containers: architecture/window-containers.md
   - Shell:
       - Layout profiles: shell/layout-profiles.md
+      - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
   - Reference:
       - Compositor control 1.0: reference/compositor-control-v1.md
+      - Notification presentation 1: reference/notification-presentation-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md

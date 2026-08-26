@@ -2,12 +2,14 @@
 #pragma once
 
 #include "qindaqt/services/notification_host/deadline_scheduler.h"
+#include "qindaqt/services/notification_presentation/presentation_access_token.h"
 #include "qindaqt/services/notifications/freedesktop_notification_server.h"
 
 #include <QDBusConnection>
 #include <QString>
 
 #include <memory>
+#include <optional>
 
 namespace QindaQt::Services::NotificationHost {
 
@@ -21,6 +23,7 @@ enum class NotificationHostStartStatus {
   NameOwnershipConflict,
   ServerRegistrationFailed,
   DeadlineSchedulingFailed,
+  PresentationRegistrationFailed,
 };
 
 struct NotificationHostStartResult final {
@@ -53,6 +56,8 @@ struct NotificationHostRuntimeState final {
 // are borrowed and must outlive the host. All must share the QDBusConnection's
 // thread. The host stores its own connection handle and releases its registered
 // object and well-known name from stop() and destruction.
+// AGENT-CONTRACT: a copied presentation token enables the private object; an
+// absent token keeps that object unregistered and is the standalone default.
 class ResidentNotificationHost final {
 public:
   ResidentNotificationHost(
@@ -60,7 +65,9 @@ public:
       NotificationDeadlineScheduler &scheduler,
       Notifications::NotificationPolicy policy = {},
       Notifications::FreedesktopServerIdentity identity = {},
-      Notifications::NotificationBackend *presentationBackend = nullptr);
+      Notifications::NotificationBackend *presentationBackend = nullptr,
+      std::optional<NotificationPresentation::PresentationAccessToken>
+          presentationAccessToken = std::nullopt);
   ~ResidentNotificationHost();
 
   ResidentNotificationHost(const ResidentNotificationHost &) = delete;

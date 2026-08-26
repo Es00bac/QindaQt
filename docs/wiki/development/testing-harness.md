@@ -213,18 +213,23 @@ The model and freedesktop adapter are selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.(notifications|notification-host)-' \
+  -R '^qindaqt\.(notifications|notification-(host|presentation))-' \
   --output-on-failure
 ```
 
 The three model/adapter tests cover bounded submissions and replacement,
 lifetime-safe ID allocation, ownership, close, dismiss, expiry and action
 policy, immutable revisions, standard identity and signals, protocol errors,
-and two independent callers on a private D-Bus. Three host tests cover typed
-startup conflicts/failures, ownership rollback/release, deterministic
-deadline rearm/cancel/early-fire behavior, and the concrete one-shot QTimer.
-They do not claim session autostart/supervision, popup/history presentation,
-do-not-disturb, persistence, sound, or lock-screen policy.
+and two independent callers on a private D-Bus. One pure presentation-protocol
+test covers token format/comparison, exact schema, restart epoch, normalized and
+D-Bus values, bounds, ordering, and malformed payload rejection. Four host
+tests cover typed startup conflicts/failures, standard and private-object
+rollback/release, single-presenter authentication, targeted revision signals,
+disconnect handoff, authorized dismiss/action behavior, deterministic deadline
+rearm/cancel/early-fire behavior, and the concrete one-shot QTimer. They do not
+claim production token provisioning, a shell client, session
+autostart/supervision, popup/history presentation, do-not-disturb, persistence,
+sound, or lock-screen policy.
 
 ## Current compositor proof
 

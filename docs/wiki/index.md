@@ -44,6 +44,8 @@ workflow. It changes with the code and is validated as part of the repository.
   accepted by the loaders.
 - [Compositor control protocol 1.0](reference/compositor-control-v1.md)
   documents the experimental D-Bus methods, signals, and transaction boundary.
+- [Notification presentation protocol 1](reference/notification-presentation-v1.md)
+  documents the authenticated resident-host-to-shell snapshot boundary.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

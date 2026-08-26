@@ -3,6 +3,7 @@
 #include "qindaqt/services/notification_host/resident_notification_host.h"
 
 #include "dbus_service_name_validation_p.h"
+#include "qindaqt/services/notification_host/notification_presentation_server.h"
 
 #include <QDBusConnectionInterface>
 #include <QDBusReply>
@@ -17,7 +18,7 @@ using namespace QindaQt::Services::Notifications;
 
 class HostNotificationBackend final : public NotificationBackend {
 public:
-  using PublicationCallback = std::function<void()>;
+  using PublicationCallback = std::function<void(NotificationSnapshotPtr)>;
 
   HostNotificationBackend(PublicationCallback publicationCallback,
                           NotificationBackend *presentationBackend)
@@ -26,7 +27,7 @@ public:
 
   void modelPublished(NotificationSnapshotPtr snapshot) override {
     if (m_publicationCallback) {
-      m_publicationCallback();
+      m_publicationCallback(snapshot);
     }
     if (m_presentationBackend != nullptr) {
       m_presentationBackend->modelPublished(std::move(snapshot));
@@ -62,17 +63,29 @@ public:
   Private(QDBusConnection selectedConnection, NotificationClock &selectedClock,
           NotificationDeadlineScheduler &selectedScheduler,
           NotificationPolicy policy, FreedesktopServerIdentity identity,
-          NotificationBackend *presentationBackend)
+          NotificationBackend *presentationBackend,
+          std::optional<NotificationPresentation::PresentationAccessToken>
+              presentationAccessToken)
       : connection(std::move(selectedConnection)), clock(selectedClock),
         scheduler(selectedScheduler),
-        backend([this] { modelPublished(); }, presentationBackend),
+        backend([this](NotificationSnapshotPtr snapshot) {
+          modelPublished(std::move(snapshot));
+        }, presentationBackend),
         server(connection, clock, std::move(policy), std::move(identity),
-               &backend) {}
+               &backend) {
+    if (presentationAccessToken) {
+      presentation = std::make_unique<NotificationPresentationServer>(
+          connection, server.service(), std::move(*presentationAccessToken));
+    }
+  }
 
-  void modelPublished() {
+  void modelPublished(NotificationSnapshotPtr snapshot) {
     if (running) {
       const bool scheduled = reconcileDeadline();
       Q_UNUSED(scheduled)
+      if (presentation != nullptr && snapshot) {
+        presentation->publishRevision(snapshot->revision);
+      }
     }
   }
 
@@ -150,6 +163,7 @@ public:
   NotificationDeadlineScheduler &scheduler;
   HostNotificationBackend backend;
   FreedesktopNotificationServer server;
+  std::unique_ptr<NotificationPresentationServer> presentation;
   NotificationHostRuntimeState runtimeState;
   bool running = false;
   bool deadlineArmed = false;
@@ -160,10 +174,13 @@ ResidentNotificationHost::ResidentNotificationHost(
     NotificationDeadlineScheduler &scheduler,
     Notifications::NotificationPolicy policy,
     Notifications::FreedesktopServerIdentity identity,
-    Notifications::NotificationBackend *presentationBackend)
+    Notifications::NotificationBackend *presentationBackend,
+    std::optional<NotificationPresentation::PresentationAccessToken>
+        presentationAccessToken)
     : d(std::make_unique<Private>(std::move(connection), clock, scheduler,
                                   std::move(policy), std::move(identity),
-                                  presentationBackend)) {}
+                                  presentationBackend,
+                                  std::move(presentationAccessToken))) {}
 
 ResidentNotificationHost::~ResidentNotificationHost() { stop(); }
 
@@ -217,6 +234,16 @@ ResidentNotificationHost::start(const QString &serviceName) {
                         d->server.lastError());
   }
 
+  if (d->presentation != nullptr && !d->presentation->start()) {
+    const QString message = d->presentation->lastError();
+    d->server.stop();
+    return startFailure(
+        NotificationHostStartStatus::PresentationRegistrationFailed,
+        message.isEmpty()
+            ? QStringLiteral("notification presentation registration failed")
+            : message);
+  }
+
   d->running = true;
   if (!d->reconcileDeadline()) {
     const QString message = d->runtimeState.message;
@@ -234,6 +261,9 @@ void ResidentNotificationHost::stop() noexcept {
   d->running = false;
   d->deadlineArmed = false;
   d->scheduler.cancel();
+  if (d->presentation != nullptr) {
+    d->presentation->stop();
+  }
   d->server.stop();
 }
 
@@ -276,6 +306,8 @@ QString notificationHostStartStatusName(NotificationHostStartStatus status) {
     return QStringLiteral("server-registration-failed");
   case NotificationHostStartStatus::DeadlineSchedulingFailed:
     return QStringLiteral("deadline-scheduling-failed");
+  case NotificationHostStartStatus::PresentationRegistrationFailed:
+    return QStringLiteral("presentation-registration-failed");
   }
   return QStringLiteral("unknown");
 }
