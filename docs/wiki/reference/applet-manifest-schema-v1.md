@@ -48,6 +48,25 @@ Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
 API rule or a new manifest schema version.
 
+## Editing-time placement enforcement
+
+One shell-customization repository copies and validates the manifest catalog at
+session creation; later caller mutations cannot change that compatibility view.
+For profile schema v1, top and bottom panels map to `horizontal`, left and right
+panels map to `vertical`, and applet `settings.zone` maps `start`, `center`, and
+`end` to the corresponding panel placement zones. An absent zone is the
+canonical `start` placement.
+
+Applet insertion and duplication always require a matching catalog manifest.
+Adding a panel or changing its orientation validates every contained applet.
+Moving an existing applet or changing settings requires a manifest decision
+only when its orientation/zone placement signature changes. This lets an
+imported legacy applet with an unavailable manifest be reordered, removed, or
+moved between equivalent placements without granting it a new compatibility
+claim. Operations that require an unavailable or unsupported placement fail as
+`ManifestUnavailable` or `UnsupportedAppletPlacement`; the editor never treats
+the manifest payload in a drag source as authority.
+
 The hosting and trust decision is recorded in
 [ADR-0002](../adr/0002-native-qindaqt-applet-api.md). Layout instantiation is
 documented under [Layout profiles](../shell/layout-profiles.md).

@@ -33,9 +33,10 @@ The repository currently builds and tests:
   member detach/focus policy, transient following, group placement/actions,
   scene-restart synchronization, unload release, and read-only runtime
   diagnostics;
-- the first Shell value slice: atomic profile-panel expansion, collision-free
-  logical geometry, and deterministic per-output work areas across validated
-  multi-output candidates;
+- the first two Shell/customization value slices: atomic profile-panel
+  expansion, collision-free logical geometry and work areas, plus exclusive,
+  revisioned panel/applet editing with manifest-aware placement, preview,
+  rollback, and undo/redo across validated multi-output candidates;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
@@ -60,7 +61,7 @@ clipboard integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (pure logical panel planning implemented) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (pure layout and editing transactions implemented) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

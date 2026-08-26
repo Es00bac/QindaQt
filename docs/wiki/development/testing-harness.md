@@ -71,23 +71,31 @@ passed 3/3 in both Debug and Release for this contract revision. That evidence
 qualifies the persistence boundary only; it does not claim live shell surfaces
 or profile editing UI.
 
-## Current shell-layout proof
+## Current shell value-layer proof
 
-Pure panel planning is selected with:
+Pure panel planning and editing transactions are selected with:
 
 ```sh
-ctest --test-dir build/dev -R '^qindaqt\.shell-layout-' --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(shell-layout|shell-customization)-' \
+  --output-on-failure
 ```
 
-The suite also has a standalone entry point under `tests/shell_layout`.
-Its two tests cover deterministic wildcard expansion, every edge/alignment,
-cross-edge collision prevention, work-area reservation, malformed inventories,
-checked coordinate boundaries, and the
+Both suites also have standalone entry points under `tests/shell_layout` and
+`tests/shell_customization`. The two layout tests cover deterministic wildcard
+expansion, every edge/alignment, cross-edge collision prevention, work-area
+reservation, malformed inventories, checked coordinate boundaries, and the
 1080p/WUXGA/1440p mixed-DPI logical matrix. They passed 2/2 in strict Debug and
 Release builds and 2/2 under focused UndefinedBehaviorSanitizer
-instrumentation. This is a toolkit-neutral value-layer proof; live panel
-surfaces, hide animations, physical-pixel conversion, and output hotplug remain
-unclaimed.
+instrumentation.
+
+The four customization tests cover panel and applet commands, immutable
+manifest-catalog placement decisions, exclusive coordinator lease handoff,
+optimistic revisions and exhaustion headroom, all-output failure atomicity,
+preview commit/cancel, and durable plus provisional undo/redo. They passed 4/4
+in strict Debug and Release builds. These are toolkit-neutral value-layer
+proofs; rendered drop targets, live panel surfaces, pointer/keyboard adapters,
+window-aware hiding, and output-hotplug session replacement remain unclaimed.
 
 ## Current compositor proof
 

@@ -101,6 +101,58 @@ semantics, cross-edge corner ownership, arithmetic boundaries, 1920x1080,
 1920x1200 WUXGA, 2560x1440, and a negative-coordinate 1080p plus 125%-scaled
 1440p logical arrangement.
 
+## Implemented editing transactions
+
+`src/shell_customization` implements the pure transaction boundary used by the
+future settings window and shell surface controller. It starts from a validated
+schema-v1 profile, a supplied logical output inventory, and an immutable copy
+of the session's validated applet-manifest catalog. It then publishes retained,
+immutable snapshots carrying the normalized profile, complete solved layout,
+optimistic revision, and preview status. The output inventory belongs to one
+editor session; a later output-monitoring controller will cancel or rebuild the
+session when that inventory changes. Repository reads and commands are confined
+to one editor thread. Invalid initial profiles or manifest catalogs leave the
+repository non-ready with no published snapshot or committed profile; the
+initialization error and supplied initial revision remain available at the
+command boundary without disguising an unsolved value as usable state.
+
+One move-only coordinator lease may edit a repository at a time. Releasing and
+reacquiring that lease preserves the repository-owned durable history and any
+active preview. Typed commands add, remove, reorder, move, and configure panels;
+insert an applet by instance and plugin ID; move or reorder applets within or
+across panels; remove, duplicate, and update applet instances; and operate undo,
+redo, begin-preview, commit-preview, and cancel-preview. Future pointer and
+keyboard adapters must emit the same typed command for an equivalent edit.
+Panel IDs and applet-instance IDs remain stable, applet-instance IDs are
+profile-global, and stale revisions, duplicate IDs, self-anchors, or unknown
+drop anchors are rejected before publication.
+
+Applet creation and duplication, panel insertion, panel-orientation changes,
+and applet orientation/zone changes are checked against the copied manifest
+catalog. Top and bottom panels are horizontal; left and right panels are
+vertical. An absent applet `settings.zone` is equivalent to `start`. Legacy
+applets without an available manifest may still be reordered, removed, moved
+between equivalent placements, or receive placement-neutral settings changes;
+an operation that needs a new compatibility decision fails explicitly instead
+of guessing.
+
+Every candidate passes typed profile validation, a strict schema-v1
+serialization/load round trip, and a complete `shell_layout` solve before
+publication. Any returned command failure therefore leaves the snapshot,
+revision, preview, and history unchanged. Preview edits are visible but
+provisional: cancel restores the exact pre-preview profile in one revision,
+while commit collapses the whole preview into one durable undo step. Undo and
+redo work within an active preview, and the final available revision is
+reserved so an active preview can always commit or cancel without overflow.
+This transaction layer adds no persistence fields; accepted values remain
+profile schema v1.
+
+This module does not load applet entry points, construct shell surfaces, render
+drop targets, persist user profiles, or provide the settings UI. The platform
+surface host, window-aware hiding, drag/keyboard adapters, live output-change
+policy, and first-class customization window remain outstanding parts of the
+Shell and customization milestone.
+
 ## Built-in workflow families
 
 QindaQt ships original layouts inspired by useful interaction patterns:
