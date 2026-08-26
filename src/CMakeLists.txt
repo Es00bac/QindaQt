@@ -3,6 +3,16 @@
 add_subdirectory(profiles)
 add_subdirectory(themes)
 add_subdirectory(core)
+add_subdirectory(hybrid)
+add_subdirectory(hybrid_constraints)
+add_subdirectory(hybrid_chrome)
+add_subdirectory(hybrid_input)
+if(QINDAQT_BUILD_KWIN_PLUGIN)
+    # The decoration is part of the binary KWin integration contract. Keeping
+    # it behind the same option preserves the documented dependency-free
+    # compositor-bridge configuration.
+    add_subdirectory(decorations)
+endif()
 add_subdirectory(compositor)
 add_subdirectory(applets)
 add_subdirectory(applet_host)

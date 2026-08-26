@@ -27,19 +27,26 @@ This deployment gate is not an authorization mechanism. Production hybrid
 interaction executes as process-local compositor policy and does not enable the
 public mutation methods.
 
+The process-local Hybrid topology and this protocol's per-container bridge are
+separate authorities. Compositor1 remains a compatibility, diagnostic, and
+isolated-development surface; it is not the transport used by pointer or
+keyboard docking.
+
 ## Runtime methods
 
 | Method | Input | Current result |
 | --- | --- | --- |
-| `Capabilities` | None | Protocol, KWin ABI, methods, events, operations, limits, and control mode |
-| `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized state, and container owner |
+| `Capabilities` | None | Protocol, KWin ABI, methods, events, operations, limits, control mode, and optional Hybrid diagnostics |
+| `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
 | `Outputs` | None | Ordered outputs with name, logical frame, scale, numeric refresh rate in mHz, semantic transform, and internal flag |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
-| `Containers` | None | Published container IDs and decimal-string revisions |
-| `DockWindows` | Two window IDs, orientation, position, ratio | Atomically creates and tiles one two-member container at revision 1 |
-| `ReleaseContainer` | Container ID | Restores every member and terminates the container |
-| `Snapshot` | Container ID | Current schema-versioned snapshot and revision, or rejection |
-| `Submit` | Request JSON byte array | Committed, rejected, or conflict reply JSON |
+| `Containers` | None | Observable bridge and process-local Hybrid container IDs, actual decimal-string revisions, and explicit authority |
+| `DockWindows` | Two window IDs, orientation, position, ratio | Atomically creates and tiles one bridge-owned two-member container at revision 1 |
+| `ReleaseContainer` | Container ID | Restores and terminates one bridge-owned container |
+| `Snapshot` | Container ID | Current schema-versioned bridge or Hybrid snapshot, authority, and revision, or rejection |
+| `Submit` | Request JSON byte array | Bridge transaction committed, rejected, or conflict reply JSON |
+| `InjectTestInput` | Schema-1 event-batch JSON byte array | Development-only normal-chain injection, or a production pre-parse rejection |
+| `ReinitializeCompositingForTest` | None | Development-only queued KWin scene reinitialization, or a production pre-runtime rejection |
 
 `DockWindows` currently accepts two live, distinct, independently owned
 windows. Orientation is `horizontal` or `vertical`; position is `first` or
@@ -53,7 +60,9 @@ snapshot. No external call can observe or retain a singleton container.
 addresses, or an input-event stream. Runtime device IDs last only for the
 adapter lifetime. `observerActive` reports spy installation and
 `consumesEvents` is always false; the KWin spy API observes before filters and
-cannot implement docking consumption.
+cannot implement docking consumption. Those fields describe only the inventory
+spy. They do not describe the separate process-local Hybrid input filter, which
+consumes events only after it acquires an exact QindaQt gesture grab.
 
 Output transforms use these protocol strings: `normal`, `rotate-90`,
 `rotate-180`, `rotate-270`, `flip-x`, `flip-x-90`, `flip-x-180`, and
@@ -66,12 +75,112 @@ may differ while a Wayland configure is pending, particularly for an inactive
 minimized page whose client resumes only when that page activates. Planned
 frames update atomically with ownership and are removed on detach, release,
 close, or rollback; neither field is silently substituted for the other.
+`serverDecorated` reports whether KWin attached a server decoration, and
+`decorationClass` is the live decoration instance's Qt meta-object class (empty
+when no server decoration exists). These fields distinguish a mapped
+`QindaDecoration` from artifact discovery or `kwinrc` selection alone.
+`active`, `skipTaskbar`, and `skipSwitcher` expose KWin's current presentation
+policy. `stackIndex` is the window's absolute zero-based index in
+`Workspace::stackingOrder()`, ordered bottom to top, or `-1` if a managed
+window is momentarily absent from that list. Window activation, stacking, and
+either skip flag invalidate `Windows` through `WindowsChanged()`.
+
+## Development input seam
+
+`Capabilities.developmentInput` always describes the fixed input schema with
+`enabled`, `available`, `schemaVersion`, `maxEvents`,
+`maxLogicalCoordinateMagnitude`, `deviceId`, and `eventTypes`. Only an explicit
+isolated development scenario can make `enabled` true. That session constructs
+the `qindaqt-development-input` keyboard/pointer device and adds it to KWin's
+normal input redirection; events pass through the same observer, consuming
+filter, and Hybrid controller as admitted seat input.
+
+The input request contains exactly `schemaVersion` and a nonempty `events`
+array. It is limited to 256 KiB and 64 events. Each event must have exactly one
+of these shapes:
+
+```json
+{"type":"pointer-absolute","x":640.0,"y":350.0}
+{"type":"key","key":"left-meta","pressed":true}
+{"type":"key","key":"left-shift","pressed":true}
+{"type":"button","button":"left","pressed":true}
+```
+
+Coordinates must be finite logical values between -1,000,000 and 1,000,000.
+No other key, button, relative movement, text, delay, or device selector is
+accepted. Success returns `status: "injected"`, the event count, and the fixed
+device ID. Held modifiers/buttons are released before the device is removed.
+
+In production, the injector object does not exist and `InjectTestInput` returns
+`control-disabled` before inspecting payload size, JSON syntax, or schema. The
+method therefore discloses no parse oracle and is not a production automation
+surface.
+
+## Development compositor-restart seam
+
+`ReinitializeCompositingForTest` exists solely to qualify scene-resource
+lifetime in an isolated scenario session. It takes no arguments. When
+`controlMode` is `development-test` and the KWin compositor callback is
+available, it schedules `KWin::Compositor::reinitialize()` for the next
+event-loop turn and returns:
+
+```json
+{"status":"scheduled"}
+```
+
+Scheduling after the method returns prevents the blocking D-Bus reply from
+racing the synchronous scene teardown it requested. If the development
+callback is unavailable, the reply is `status: "rejected"` with failure code
+`compositor-reinitialize-unavailable`. The caller must observe KWin's complete
+inactive-to-active transition and then verify the restored scene state;
+`scheduled` proves admission only.
+
+Production checks the control gate before consulting compositor state and
+returns `control-disabled`. It therefore exposes neither an availability oracle
+nor a remotely callable scene restart. Like `InjectTestInput`, this is a
+deterministic nested-test seam, not a supported automation API.
+
+## Hybrid diagnostics
+
+When the process-local runtime is constructed, `Capabilities` includes a
+`hybrid` object:
+
+| Field | Encoding | Meaning |
+| --- | --- | --- |
+| `ready` | JSON boolean | Runtime initialization succeeded and shutdown has not begun |
+| `inputFilterInstalled` | JSON boolean | The consuming KWin filter is installed; it does not mean a grab is active |
+| `shortcutRegistered` | JSON boolean | KGlobalAccel accepted all 13 Hybrid semantic actions in this session |
+| `topologyRevision` | Unsigned decimal JSON string | Session-wide process-local revision, including lifecycle commands |
+| `containerCount` | JSON integer | Number of process-local Hybrid containers |
+| `chromeOverlayCount` | JSON integer | Number of reconciled per-container chrome records; the legacy field name does not imply a native overlay window or prove scene attachment |
+| `visibleChromeOverlayCount` | JSON integer | Reconciled chrome records whose scene presentation is currently visible; this alone does not prove a live stacking anchor |
+| `anchoredChromeSceneItemCount` | JSON integer | Reconciled scene items attached to a live member `WindowItem`, whether visible or intentionally hidden |
+| `visibleAnchoredChromeSceneItemCount` | JSON integer | Published items that are visible and attached to a live member `WindowItem` |
+| `quarantinedContainerCount` | JSON integer | Containers whose chrome and input are persistently suppressed after context adoption and release both failed; ordinary reconciliation cannot clear this state |
+| `publishedGroupStackingCount` | JSON integer | Containers with a currently verified contiguous active-member stack block and scene anchor; a failed synchronization or raise removes the affected publication before hiding chrome |
+| `lastGroupStackingFailure` | JSON string | Most recent group-stack synchronization or raise failure since the last successful complete stack synchronization; empty after a successful synchronization |
+
+This object is an operational snapshot taken synchronously with
+`Capabilities`; it emits no dedicated change signal and does not expose
+constraints or restore-state values. Counts describe live publication state,
+not cumulative telemetry. Its global revision is the same revision reported
+for every currently published Hybrid container.
+
+Every `Containers` entry contains `id`, `revision`, and `authority`. The older
+per-container transaction bridge reports `authority: "control-bridge"` and its
+own container revision. Process-local groups report
+`authority: "hybrid-process"` and the actual session topology revision, never a
+fabricated zero. `Snapshot` routes by authority and returns `status: "ok"`, the
+protocol, container ID, matching revision and authority, and the schema-1 model
+under `snapshot`. These reads do not make `Submit`, `DockWindows`, or
+`ReleaseContainer` Hybrid mutators.
 
 ## Runtime signals
 
-- `ContainerCommitted(ay eventJson)` follows one successful transaction;
+- `ContainerCommitted(ay eventJson)` follows one successful D-Bus-bridge
+  transaction; process-local Hybrid commits do not emit it;
 - `WindowsChanged()` covers manageable-window membership, captions, frames,
-  minimized state, and ownership;
+  minimized/active/task/switcher state, stacking order, and ownership;
 - `OutputsChanged()` follows KWin output-set changes; and
 - `InputCapabilitiesChanged()` follows input-device inventory/lifecycle
   changes.
@@ -132,8 +241,11 @@ singleton also detaches the survivor in that same transaction. The committed
 empty snapshot is the terminal event and the bridge immediately removes the
 container.
 
-The live API does not yet mutate outputs, workspaces, focus,
-maximize/fullscreen state, decorations, or pointer/keyboard grabs. Those are
-owned by later hybrid-interaction and platform milestones. See
+The production public API does not mutate outputs, workspaces, focus,
+maximize/fullscreen state, decorations, pointer/keyboard grabs, or compositor
+scene lifetime. The isolated development methods are the explicit exceptions
+for bounded input injection and queued compositor reinitialization. The
+process-local Hybrid runtime owns a subset of group policies without expanding
+Compositor1; output configuration remains a Platform-services boundary. See
 [Compositor and session integration](../architecture/compositor-session.md)
 for exact runtime evidence and remaining limits.

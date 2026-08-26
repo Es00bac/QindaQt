@@ -63,9 +63,20 @@ std::optional<ObservedWindow> parseWindow(const QJsonObject &object, QString *er
     const auto title = object.value(QStringLiteral("title"));
     const auto owner = object.value(QStringLiteral("containerId"));
     const auto minimized = object.value(QStringLiteral("minimized"));
+    const auto active = object.value(QStringLiteral("active"));
+    const auto skipTaskbar = object.value(QStringLiteral("skipTaskbar"));
+    const auto skipSwitcher = object.value(QStringLiteral("skipSwitcher"));
+    const auto keepAbove = object.value(QStringLiteral("keepAbove"));
+    const auto keepBelow = object.value(QStringLiteral("keepBelow"));
+    const auto stackIndex = object.value(QStringLiteral("stackIndex"));
     const auto targetFrame = object.value(QStringLiteral("targetGeometry"));
+    const auto serverDecorated = object.value(QStringLiteral("serverDecorated"));
+    const auto decorationClass = object.value(QStringLiteral("decorationClass"));
     if (!id.isString() || id.toString().isEmpty() || !title.isString() || !owner.isString() ||
-        !minimized.isBool()) {
+        !minimized.isBool() || !active.isBool() || !skipTaskbar.isBool()
+        || !skipSwitcher.isBool() || !keepAbove.isBool() || !keepBelow.isBool()
+        || !stackIndex.isDouble()
+        || !serverDecorated.isBool() || !decorationClass.isString()) {
         *error = QStringLiteral("Windows returned a malformed window entry");
         return std::nullopt;
     }
@@ -74,8 +85,22 @@ std::optional<ObservedWindow> parseWindow(const QJsonObject &object, QString *er
     if (!parsedFrame || !parsedTarget) {
         return std::nullopt;
     }
-    return ObservedWindow{id.toString(), title.toString(), owner.toString(),
-                          *parsedFrame,  *parsedTarget,    minimized.toBool()};
+    return ObservedWindow{
+        .id = id.toString(),
+        .title = title.toString(),
+        .containerId = owner.toString(),
+        .frame = *parsedFrame,
+        .targetFrame = *parsedTarget,
+        .minimized = minimized.toBool(),
+        .active = active.toBool(),
+        .skipTaskbar = skipTaskbar.toBool(),
+        .skipSwitcher = skipSwitcher.toBool(),
+        .keepAbove = keepAbove.toBool(),
+        .keepBelow = keepBelow.toBool(),
+        .stackIndex = stackIndex.toInt(-1),
+        .serverDecorated = serverDecorated.toBool(),
+        .decorationClass = decorationClass.toString(),
+    };
 }
 
 std::optional<WindowInventory> selectWindows(const QJsonArray &windows, const QStringList &titles,

@@ -9,7 +9,7 @@ foreach(required_variable IN ITEMS
     endif()
 endforeach()
 
-function(configure_without_kwin suffix plugin_enabled expect_success)
+function(configure_without_kwin suffix plugin_enabled testing_enabled expect_success)
     set(binary_dir "${QINDAQT_TEST_BINARY_ROOT}/${suffix}")
     set(command
         "${CMAKE_COMMAND}"
@@ -17,7 +17,7 @@ function(configure_without_kwin suffix plugin_enabled expect_success)
         -S "${QINDAQT_SOURCE_DIR}"
         -B "${binary_dir}"
         -G "${QINDAQT_TEST_GENERATOR}"
-        -DBUILD_TESTING=OFF
+        -DBUILD_TESTING=${testing_enabled}
         -DQINDAQT_BUILD_SHELL=OFF
         -DQINDAQT_BUILD_KWIN_PLUGIN=${plugin_enabled}
         -DCMAKE_DISABLE_FIND_PACKAGE_KWin=TRUE
@@ -48,7 +48,41 @@ function(configure_without_kwin suffix plugin_enabled expect_success)
     endif()
 endfunction()
 
+function(configure_standalone_bridge)
+    set(binary_dir "${QINDAQT_TEST_BINARY_ROOT}/standalone-bridge")
+    set(command
+        "${CMAKE_COMMAND}"
+        --fresh
+        -S "${QINDAQT_SOURCE_DIR}/tests/compositor"
+        -B "${binary_dir}"
+        -G "${QINDAQT_TEST_GENERATOR}"
+        -DBUILD_TESTING=ON
+        -DCMAKE_DISABLE_FIND_PACKAGE_KWin=TRUE
+        -DCMAKE_DISABLE_FIND_PACKAGE_KDecoration3=TRUE
+    )
+    if(DEFINED QINDAQT_TEST_CMAKE_PREFIX_PATH
+       AND NOT "${QINDAQT_TEST_CMAKE_PREFIX_PATH}" STREQUAL "")
+        list(APPEND command "-DCMAKE_PREFIX_PATH=${QINDAQT_TEST_CMAKE_PREFIX_PATH}")
+    endif()
+    execute_process(
+        COMMAND ${command}
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE standard_output
+        ERROR_VARIABLE standard_error
+    )
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR
+            "standalone compositor bridge tests did not configure without KWin/KDecoration3:\n"
+            "${standard_output}\n${standard_error}"
+        )
+    endif()
+endfunction()
+
 # AGENT-CONTRACT: ON means the binary integration is present; OFF is the only
 # supported bridge-only configuration.
-configure_without_kwin(required-on ON FALSE)
-configure_without_kwin(explicit-off OFF TRUE)
+configure_without_kwin(required-on ON OFF FALSE)
+configure_without_kwin(explicit-off OFF OFF TRUE)
+# The top-level test graph must preserve the same explicit bridge-only mode;
+# decoration and live-KWin tests are conditional on their production targets.
+configure_without_kwin(explicit-off-with-tests OFF ON TRUE)
+configure_standalone_bridge()

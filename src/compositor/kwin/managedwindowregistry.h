@@ -26,7 +26,9 @@ public:
     void synchronize();
     [[nodiscard]] KWin::Window *window(const QString &windowId) const;
     [[nodiscard]] QString windowId(const KWin::Window *window) const;
+    [[nodiscard]] QStringList windowIds() const;
     [[nodiscard]] QString owner(const QString &windowId) const;
+    [[nodiscard]] QRectF targetFrame(const QString &windowId) const;
     [[nodiscard]] bool setOwner(const QString &windowId,
                                 const QString &containerId,
                                 QString *error = nullptr);
@@ -36,11 +38,18 @@ public:
                                         const QSet<QString> &releasedWindowIds,
                                         const QHash<QString, QRectF> &targetFrames,
                                         QString *error = nullptr);
+    [[nodiscard]] bool transitionTopologyOwners(
+        const QHash<QString, QString> &expectedOwners,
+        const QHash<QString, QString> &candidateOwners,
+        const QHash<QString, QRectF> &targetFrames,
+        const QSet<QString> &allowedMissingWindowIds,
+        QString *error = nullptr);
     [[nodiscard]] QJsonArray windowsJson() const;
     [[nodiscard]] QJsonArray outputsJson() const;
     [[nodiscard]] QStringList containerIds() const;
 
 Q_SIGNALS:
+    void managedWindowAdded(const QString &windowId);
     void managedWindowClosed(const QString &windowId, const QString &containerId);
     void windowsChanged();
     void outputsChanged();

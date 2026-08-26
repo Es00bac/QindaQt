@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "pluginunloadworkflow.h"
+#include "hybridpointerunloadworkflow.h"
 
 #include <QBackingStore>
 #include <QExposeEvent>
@@ -90,8 +91,20 @@ int main(int argc, char *argv[])
     quaternary.show();
 
     QTimer::singleShot(700, &application, [&] {
-        const auto result = QindaQt::Test::exercisePluginUnload(
-            primary, secondary, tertiary, quaternary);
+        const bool hybridPointerExpected =
+            qEnvironmentVariableIntValue("QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD") == 1;
+        if (hybridPointerExpected) {
+            // The virtual backend initially stacks clients. This mirrors the
+            // complete pointer proof and makes the selected title hit stable.
+            tertiary.raise();
+            tertiary.requestActivate();
+        }
+        const auto result = hybridPointerExpected
+            ? QindaQt::Test::exerciseHybridPointerPluginUnload(
+                  primary, secondary, tertiary, quaternary,
+                  qEnvironmentVariable("QINDAQT_DOTOOL"))
+            : QindaQt::Test::exercisePluginUnload(
+                  primary, secondary, tertiary, quaternary);
         const auto document = resultJson(result);
         QTextStream(stdout) << "QINDAQT_PLUGIN_UNLOAD="
                             << QJsonDocument(document).toJson(QJsonDocument::Compact) << '\n';

@@ -72,6 +72,12 @@ public:
     [[nodiscard]] bool movePage(const QString &pageId,
                                 qsizetype destinationIndex,
                                 QString *error = nullptr);
+    // Transfers a complete page without rebuilding its split tree or changing
+    // any persisted page/node/window IDs. The next page at the removed index
+    // becomes active when the detached page was active.
+    [[nodiscard]] std::optional<ContainerPage> detachPage(
+        const QString &pageId,
+        QString *error = nullptr);
     [[nodiscard]] bool splitWindow(const SplitRequest &request, QString *error = nullptr);
     [[nodiscard]] bool swapWindows(const QString &firstWindowId,
                                    const QString &secondWindowId,

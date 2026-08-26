@@ -19,6 +19,10 @@ workflow. It changes with the code and is validated as part of the repository.
   MVP evidence, and explicit later-milestone boundaries.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
+- [Hybrid topology](architecture/hybrid-topology.md),
+  [constraints and restore state](architecture/hybrid-constraints.md), and
+  [container chrome](architecture/hybrid-chrome.md) define the implemented
+  process-local interaction architecture, evidence, and later boundaries.
 - [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
   QindaQt, GNOME-, Unity-, MATE-, XFCE-, NeXTSTEP-, macOS-, Windows-inspired,
   and user-created workflows without separate shells.
@@ -53,9 +57,15 @@ workflow. It changes with the code and is validated as part of the repository.
 - Accessibility and keyboard equivalents are required for every pointer-only
   customization or window-management operation.
 
-The Foundation and Compositor MVP milestones are complete. The repository now
-has a qualified virtual/nested compositor substrate; Hybrid interaction is the
-next milestone, while physical DRM/GPU qualification remains a release gate.
+The Foundation, Compositor MVP, and Hybrid interaction milestones are complete.
+The repository now has a qualified virtual/nested compositor substrate and an
+integrated process-local Hybrid runtime with scene-resident paint-only chrome,
+native member detach, complete page operations, collapsed task/switcher
+identity, member/transient policy, semantic keyboard and accessibility paths,
+bounded unload recovery, live context-menu policy, and process-local evidence.
+Final qualification results and limitations are recorded in the
+[testing harness](development/testing-harness.md).
+Physical DRM/GPU/input qualification remains a release gate.
 Pages distinguish accepted contracts from planned implementation; unresolved
 durable decisions belong in an ADR rather than being silently embedded in
 code.

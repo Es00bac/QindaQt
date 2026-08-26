@@ -27,6 +27,14 @@ struct ObservedWindow final
     QRectF frame;
     QRectF targetFrame;
     bool minimized = false;
+    bool active = false;
+    bool skipTaskbar = false;
+    bool skipSwitcher = false;
+    bool keepAbove = false;
+    bool keepBelow = false;
+    int stackIndex = -1;
+    bool serverDecorated = false;
+    QString decorationClass;
 };
 
 using WindowInventory = QHash<QString, ObservedWindow>;

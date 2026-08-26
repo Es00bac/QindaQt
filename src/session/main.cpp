@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwincommandbuilder.h"
 #include "sessioncommandline.h"
+#include "sessiondefaults.h"
 #include "sessionenvironment.h"
 
 #include <QCoreApplication>
 #include <QFile>
+#include <QStandardPaths>
 #include <QTextStream>
 
 #include <cerrno>
@@ -71,5 +73,13 @@ int main(int argc, char *argv[])
     }
 
     QindaQt::Session::SessionEnvironment::apply(*options);
+    auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
+    if (configHome.isEmpty()) {
+        configHome = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    }
+    if (!QindaQt::Session::SessionDefaults::ensure(configHome, &error)) {
+        QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
+        return 2;
+    }
     return replaceWithKWin(command);
 }

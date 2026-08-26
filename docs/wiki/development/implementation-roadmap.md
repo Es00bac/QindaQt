@@ -22,16 +22,33 @@ The repository currently builds and tests:
   singleton unwrapping, release, and exact frame restoration;
 - dynamic plugin-unload recovery for four live clients grouped in two
   containers;
+- the Hybrid interaction value layers: revisioned multi-container topology,
+  recursive constraint solving, full independent-window restore state,
+  consuming pointer/keyboard gesture semantics, shared-chrome render/hit plans,
+  and a loadable QindaQt KDecoration3 plugin;
+- the production Hybrid collaborator graph inside KWin: atomic full-state scene
+  transactions, rollback-safe group reflow, semantic gesture translation,
+  dock preview, member-anchored scene-image chrome with compositor-side ordinary
+  input routing, atomic group-context adoption and its outer-title menu, native
+  member detach/focus policy, transient following, group placement/actions,
+  scene-restart synchronization, unload release, and read-only runtime
+  diagnostics;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
 - strict compiler warnings, unit tests, source-shape checks, and this wiki.
 
 The repository now boots a real compositor and has completed its Compositor
-MVP qualification, but it is not yet a daily-use desktop session. Static
-applet chips are visual fixtures, not live audio, power, Bluetooth, menu, or
-clipboard integrations, and the user-facing hybrid interaction is the next
-milestone.
+MVP qualification. Hybrid interaction has process-local live pointer grouping,
+native-decoration detach, keyboard parity, complete page/tree operations,
+readable public state, runtime decoration proof, member focus/transient policy,
+close/ungroup policy, lifecycle synchronization, and grouped plugin-unload
+restoration. Final qualification passed every gate recorded in the
+[testing harness](testing-harness.md), so Hybrid interaction is complete. This
+is not yet a
+daily-use desktop session: static applet chips are visual fixtures, not live
+audio, power, Bluetooth, menu, or
+clipboard integrations.
 
 ## Milestones
 
@@ -39,7 +56,7 @@ milestone.
 | --- | --- | --- |
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
-| Hybrid interaction | Pointer and keyboard docking, shared outer decoration, preserved member drag regions, split/tab reorganization, restore | Planned |
+| Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
 | Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | Planned |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
@@ -81,3 +98,62 @@ See [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md) for the compositor
 choice and [Window containers](../architecture/window-containers.md) for the
 behavioral invariants. Exact current evidence and limitations are in
 [Compositor and session integration](../architecture/compositor-session.md).
+
+## Completed Hybrid interaction milestone
+
+The implemented process-local runtime translates edge/tab gestures into atomic
+session topology commands; moves individual members and complete page trees;
+detaches leaf or split pages; normalizes, activates, and resizes splits;
+constraint-solves every page; preserves complete independent state and outside
+focus; moves/resizes/maximizes complete groups; follows transients; handles
+member focus actions; propagates group output/workspace/activity/layer context;
+reconciles one member-anchored scene image per group; and releases groups before
+plugin teardown. Qinda macOS is the production style,
+with left traffic lights that reveal `x`, `_`, and `[]` glyphs on cluster hover
+and stable logical tabs laid out visually right to left.
+
+Closed acceptance items include:
+
+- a nested exact `Meta+Shift+Left` path that creates one process-local split,
+  reads its real nonzero revision/schema-1 snapshot, survives a complete
+  compositor scene reinitialization with the same visible anchored group,
+  rejects click-through from an ordinary covering window and a popup-dismiss
+  press, preserves a focused normal-type transient outside topology, then
+  detaches through a plain native member-title drag; the member keeps its size
+  and follows the pointer while its sibling restores its exact baseline and all
+  owners clear;
+- page-identity operations for cross-container move, leaf/split-page detach,
+  one-member extraction, and whole-page regrouping with intentional tab-to-edge
+  rejection;
+- autoloading keyboard modes for dock/detach, complete-group move,
+  active-divider adjustment, and complete-group resize, all with
+  commit/cancel and pass-through semantics;
+- a nonblocking Close All/Ungroup/Cancel policy;
+- a live outer-title context menu plus queued atomic whole-group output,
+  workspace, activity, Keep Above, and Keep Below adoption with rollback;
+- member maximize/fullscreen focus mode with minimize/close/native-drag and
+  shutdown restoration, plus dialog/transient following and lifecycle
+  focus/stack/output synchronization;
+- live mapped `QindaDecoration` class proof; and
+- dynamic unload while a Hybrid-owned group exists, followed by service and
+  authority removal, exact KWin restoration, and continued client usability.
+
+The milestone's explicit focused and live selectors remain authoritative rather
+than an unfiltered shared-registry count. Final qualification passed clean Debug
+and Release registries, the focused Hybrid suites, a fresh bridge-only build,
+the applied virtual-display subset, lifecycle/security and live menu/unload
+proofs, focused ASan+UBSan, ten consecutive runs of both Hybrid live workflows,
+strict documentation/source checks, and final audit. Exact counts, commands,
+and limitations are maintained in the [testing harness](testing-harness.md).
+The milestone is **Complete**.
+
+Live heterogeneous mixed-DPI migration, physical input/DRM/GPU,
+suspend/resume, hotplug/rotation/lid policy, and performance/memory evidence are
+later Platform or Release gates. Persisted topology across login remains later
+desktop work; it is not silently claimed by this interaction slice.
+
+The exact command paths, rollback boundaries, and honest coverage split are in
+[Hybrid topology](../architecture/hybrid-topology.md),
+[Hybrid constraints](../architecture/hybrid-constraints.md),
+[Hybrid chrome](../architecture/hybrid-chrome.md), and the
+[testing harness](testing-harness.md).

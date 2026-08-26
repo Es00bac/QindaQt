@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 add_subdirectory(core)
+add_subdirectory(hybrid)
+add_subdirectory(hybrid_constraints)
+add_subdirectory(hybrid_chrome)
+add_subdirectory(hybrid_input)
+if(TARGET qindaqt_decoration)
+    add_subdirectory(decorations)
+endif()
 add_subdirectory(compositor)
 add_subdirectory(profiles)
 add_subdirectory(themes)

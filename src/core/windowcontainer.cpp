@@ -149,6 +149,37 @@ bool WindowContainer::movePage(const QString &pageId,
     return true;
 }
 
+std::optional<ContainerPage> WindowContainer::detachPage(
+    const QString &pageId, QString *error)
+{
+    const auto state = validate();
+    if (!state.valid) {
+        fail(error, state.message);
+        return std::nullopt;
+    }
+    const auto match = std::find_if(m_pages.cbegin(), m_pages.cend(),
+                                    [&](const auto &page) {
+                                        return page.id() == pageId;
+                                    });
+    if (match == m_pages.cend()) {
+        fail(error, QStringLiteral("unknown page ID '%1'").arg(pageId));
+        return std::nullopt;
+    }
+
+    const qsizetype index = std::distance(m_pages.cbegin(), match);
+    const bool removedActivePage = pageId == m_activePageId;
+    ContainerPage detached = std::move(m_pages[index]);
+    m_pages.removeAt(index);
+    if (m_pages.isEmpty()) {
+        m_activePageId.clear();
+    } else if (removedActivePage) {
+        const auto nextIndex = std::min(index, m_pages.size() - 1);
+        m_activePageId = m_pages[nextIndex].id();
+    }
+    Q_ASSERT(validate().valid);
+    return detached;
+}
+
 bool WindowContainer::splitWindow(const SplitRequest &request, QString *error)
 {
     const auto state = validate();

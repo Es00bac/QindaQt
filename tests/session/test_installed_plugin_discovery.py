@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Stage an install and prove its launcher discovers its installed KWin plugin."""
+"""Prove a staged launcher discovers its compositor and decoration plugins."""
 
 from __future__ import annotations
 
 import argparse
+import configparser
 import json
 import shutil
 import subprocess
@@ -23,7 +24,18 @@ from test_nested_session import (
 )
 
 
-def stage_install(arguments: argparse.Namespace) -> tuple[Path, Path]:
+def installed_artifact_path(install_prefix: Path, relative: Path, label: str) -> Path:
+    if relative.is_absolute():
+        raise RuntimeError(f"{label} install path must be relative: {relative}")
+    artifact = (install_prefix / relative).resolve()
+    if install_prefix not in artifact.parents:
+        raise RuntimeError(f"{label} install path escapes the staged prefix: {relative}")
+    if not artifact.is_file():
+        raise RuntimeError(f"staged install omitted {label}: {artifact}")
+    return artifact
+
+
+def stage_install(arguments: argparse.Namespace) -> tuple[Path, Path, Path]:
     build_directory = arguments.build_directory.resolve()
     install_prefix = arguments.install_prefix.resolve()
     # AGENT-GUARD: The cleanup below is destructive by design. Never accept a
@@ -47,20 +59,45 @@ def stage_install(arguments: argparse.Namespace) -> tuple[Path, Path]:
             "staged installation failed:\n" + completed.stdout + completed.stderr
         )
 
-    launcher = install_prefix / arguments.launcher_relative
-    plugin = install_prefix / arguments.plugin_relative
-    if not launcher.is_file() or not plugin.is_file():
+    launcher = installed_artifact_path(
+        install_prefix, arguments.launcher_relative, "launcher"
+    )
+    compositor_plugin = installed_artifact_path(
+        install_prefix, arguments.compositor_plugin_relative, "compositor plugin"
+    )
+    decoration = installed_artifact_path(
+        install_prefix, arguments.decoration_relative, "decoration plugin"
+    )
+    return launcher, compositor_plugin, decoration
+
+
+def decoration_library(config_home: Path) -> str:
+    # AGENT-CONTRACT: SessionDefaults and KWin share this persisted section and
+    # key. Reading the real file proves the installed launcher executed its
+    # first-run policy before replacing itself with KWin.
+    parser = configparser.ConfigParser(interpolation=None)
+    kwin_config = config_home / "kwinrc"
+    try:
+        with kwin_config.open(encoding="utf-8") as stream:
+            parser.read_file(stream)
+    except (OSError, configparser.Error) as error:
         raise RuntimeError(
-            f"staged install omitted launcher or plugin: launcher={launcher}, plugin={plugin}"
+            f"could not read installed session defaults from {kwin_config}: {error}"
         )
-    return launcher, plugin
+    try:
+        return parser.get("org.kde.kdecoration2", "library")
+    except (configparser.Error, KeyError) as error:
+        raise RuntimeError(
+            f"installed session did not seed org.kde.kdecoration2/library in {kwin_config}"
+        ) from error
 
 
 def run_installed_session(arguments: argparse.Namespace, launcher: Path) -> dict[str, object]:
     spec = load_virtual_spec(arguments.scenario)
     with tempfile.TemporaryDirectory(prefix="qindaqt-installed-session-") as directory:
         environment = isolated_environment(Path(directory))
-        write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
+        config_home = Path(environment["XDG_CONFIG_HOME"])
+        write_virtual_output_config(config_home, spec)
         environment["QINDAQT_EXPECT_COMPOSITOR_PLUGIN"] = "1"
         environment["QINDAQT_EXPECT_COMPOSITOR_OUTPUTS"] = "1"
         command = [
@@ -93,18 +130,25 @@ def run_installed_session(arguments: argparse.Namespace, launcher: Path) -> dict
             timeout=20,
             check=False,
         )
-    if completed.returncode != 0:
-        raise RuntimeError(
-            "installed session failed:\n" + completed.stdout + completed.stderr
+        if completed.returncode != 0:
+            raise RuntimeError(
+                "installed session failed:\n" + completed.stdout + completed.stderr
+            )
+        selected_decoration = decoration_library(config_home)
+        if selected_decoration != "org.qindaqt":
+            raise RuntimeError(
+                "fresh installed session selected an unexpected KDecoration3 module: "
+                f"{selected_decoration!r}"
+            )
+        result = extract_probe_result(completed.stdout)
+        validate_probe_result(
+            result,
+            spec,
+            inspect_compositor_outputs=True,
+            expect_workflow=True,
+            expect_read_only=False,
         )
-    result = extract_probe_result(completed.stdout)
-    validate_probe_result(
-        result,
-        spec,
-        inspect_compositor_outputs=True,
-        expect_workflow=True,
-        expect_read_only=False,
-    )
+        result["firstRunDecorationLibrary"] = selected_decoration
     return result
 
 
@@ -114,7 +158,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("build_directory", type=Path)
     parser.add_argument("install_prefix", type=Path)
     parser.add_argument("launcher_relative", type=Path)
-    parser.add_argument("plugin_relative", type=Path)
+    parser.add_argument("compositor_plugin_relative", type=Path)
+    parser.add_argument("decoration_relative", type=Path)
     parser.add_argument("probe", type=Path)
     parser.add_argument("dbus_runner")
     parser.add_argument("scenario", type=Path)
@@ -125,13 +170,14 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> int:
     arguments = parse_arguments()
     try:
-        launcher, plugin = stage_install(arguments)
+        launcher, plugin, decoration = stage_install(arguments)
         result = run_installed_session(arguments, launcher)
     except (OSError, RuntimeError, ScenarioCoverageError, subprocess.TimeoutExpired) as error:
         print(f"installed plugin discovery failed: {error}", file=sys.stderr)
         return 1
     result["installedLauncher"] = str(launcher)
     result["installedPlugin"] = str(plugin)
+    result["installedDecoration"] = str(decoration)
     print(json.dumps(result, sort_keys=True))
     return 0
 

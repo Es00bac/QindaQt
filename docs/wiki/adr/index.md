@@ -10,5 +10,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0001](0001-use-kwin-as-compositor-base.md) | Accepted | Use a small downstream KWin integration as the compositor base |
 | [ADR-0002](0002-native-qindaqt-applet-api.md) | Accepted | Define a native, capability-declared QindaQt applet API |
 | [ADR-0003](0003-docs-as-code.md) | Accepted | Maintain the project wiki and ADRs as repository source |
+| [ADR-0004](0004-process-local-hybrid-topology.md) | Accepted; chrome portion superseded | Keep Hybrid topology process-local and compose member plus shared chrome |
+| [ADR-0005](0005-scene-resident-hybrid-chrome.md) | Accepted | Render shared Hybrid chrome as a member-anchored scene item |
 
 Numbers are never reused, including for rejected or superseded records.

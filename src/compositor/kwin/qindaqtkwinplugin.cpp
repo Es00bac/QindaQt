@@ -2,7 +2,9 @@
 #include "qindaqtkwinplugin.h"
 
 #include "kwincontrolendpoint.h"
+#include "kwindevelopmentinputinjector.h"
 #include "kwininputadapter.h"
+#include "kwinhybridsession.h"
 #include "kwinsceneadapter.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
@@ -11,11 +13,13 @@
 
 #include "windowcontainer.h"
 
+#include <compositor.h>
 #include <input.h>
 
 #include <QDBusConnectionInterface>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QPointer>
 #include <QTimer>
 #include <QUuid>
 
@@ -28,14 +32,56 @@ constexpr auto ObjectPath = "/org/qindaqt/Compositor";
 } // namespace
 
 QindaQtKWinPlugin::QindaQtKWinPlugin()
-    : m_bus(QDBusConnection::sessionBus())
+    : m_mutationsEnabled(mutationsEnabledForCurrentSession())
+    , m_bus(QDBusConnection::sessionBus())
     , m_registry(std::make_unique<ManagedWindowRegistry>())
     , m_inputAdapter(std::make_unique<KWinInputAdapter>(KWin::input()))
+    // AGENT-GUARD: Never construct a production-session injector. A null
+    // provider makes the process-level absence explicit in addition to the
+    // endpoint's gate-before-parse rejection.
+    , m_developmentInputInjector(m_mutationsEnabled
+                                     ? std::make_unique<KWinDevelopmentInputInjector>(
+                                           KWin::input())
+                                     : nullptr)
     , m_sceneAdapter(std::make_unique<KWinSceneAdapter>(*m_registry))
     , m_bridge(std::make_unique<ContainerControlBridge>(*m_sceneAdapter))
     , m_endpoint(std::make_unique<KWinControlEndpoint>(
-          *m_bridge, *m_registry, *m_inputAdapter, mutationsEnabledForCurrentSession()))
+          *m_bridge, *m_registry, *m_inputAdapter, m_mutationsEnabled,
+          m_developmentInputInjector.get()))
 {
+    m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
+    m_endpoint->setHybridDiagnosticsProvider([this] {
+        return m_hybridSession
+            ? m_hybridSession->diagnostics()
+            : QJsonObject{{QStringLiteral("ready"), false}};
+    });
+    m_endpoint->setHybridStateProviders(
+        [this] {
+            return m_hybridSession ? m_hybridSession->publicContainers() : QJsonArray{};
+        },
+        [this](const QString &containerId) {
+            return m_hybridSession
+                ? m_hybridSession->publicSnapshot(containerId)
+                : std::optional<QJsonObject>{};
+        });
+    if (m_mutationsEnabled) {
+        m_endpoint->setDevelopmentCompositorReinitializer([this] {
+            QPointer<KWin::Compositor> compositor = KWin::Compositor::self();
+            if (!compositor) {
+                return false;
+            }
+            // Reply to the test request before KWin synchronously tears down
+            // the scene and every WindowItem used by Hybrid chrome. The plugin
+            // is the timer context: dynamic unload must cancel this DSO-owned
+            // functor even when KWin's longer-lived Compositor survives.
+            QTimer::singleShot(0, this, [compositor] {
+                if (compositor) {
+                    compositor->reinitialize();
+                }
+            });
+            return true;
+        });
+    }
     connect(m_registry.get(), &ManagedWindowRegistry::managedWindowClosed,
             this, &QindaQtKWinPlugin::reconcileClosedWindow, Qt::QueuedConnection);
 
@@ -59,6 +105,13 @@ QindaQtKWinPlugin::~QindaQtKWinPlugin()
     // The copied ID list also prevents ownership mutation from invalidating
     // teardown iteration.
     disconnect(m_registry.get(), nullptr, this, nullptr);
+    m_endpoint->setHybridDiagnosticsProvider({});
+    m_endpoint->setHybridStateProviders({}, {});
+    m_endpoint->setDevelopmentCompositorReinitializer({});
+    if (m_hybridSession) {
+        m_hybridSession->shutdown();
+        m_hybridSession.reset();
+    }
     releasePublishedContainers();
 
     if (m_registeredObject) {

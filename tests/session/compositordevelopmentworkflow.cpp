@@ -109,7 +109,7 @@ bool independentlyRestored(const ObservedWindow &observed, const QRectF &restore
 }
 
 bool onlyContainer(const QJsonArray &containers, const QString &containerId,
-                   QLatin1StringView revision)
+                   const QString &revision)
 {
     if (containers.size() != 1) {
         return false;
@@ -250,7 +250,7 @@ std::optional<DevelopmentWorkflowState> establishInitialContainer(CompositorProb
     const auto ownedDock = client.dock(state.primaryId, state.secondaryId, 0.5, error);
     const auto afterOwned = client.containers(error);
     if (!rejectedWith(ownedDock, QLatin1StringView("already-owned")) || !afterOwned ||
-        !onlyContainer(*afterOwned, state.containerId, QLatin1StringView("1"))) {
+        !onlyContainer(*afterOwned, state.containerId, QStringLiteral("1"))) {
         if (error->isEmpty()) {
             *error = QStringLiteral("owned-window docking did not preserve the existing group");
         }
@@ -433,7 +433,10 @@ std::optional<QJsonObject> exerciseDevelopmentWorkflow(CompositorProbeClient &cl
                                                        QString *error)
 {
     const auto state = establishInitialContainer(client, titles, error);
-    if (!state || !exercisePageLifecycle(client, titles, *state, error) ||
+    if (!state) {
+        return std::nullopt;
+    }
+    if (!exercisePageLifecycle(client, titles, *state, error) ||
         !exerciseSingletonUnwrap(client, titles, *state, error)) {
         return std::nullopt;
     }

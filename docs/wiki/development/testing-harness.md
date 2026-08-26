@@ -19,7 +19,10 @@ The QindaQt nested session owns its rootless XWayland instance when a scenario
 needs X11 clients. External compositor mutation methods remain present for
 contract testing but return `control-disabled` in normal sessions; only an
 explicit isolated scenario plus the launcher's private development marker
-enables them. The input observer has no injection or event-export control.
+enables them. The input observer has no injection or event-export control. A
+separate development-only `KWin::InputDevice` injector exists only in those
+isolated mutation-enabled sessions and has a bounded event schema; production
+rejects its public method before parsing.
 
 Baseline commands are:
 
@@ -76,10 +79,13 @@ parent Wayland socket for `qindaqt-wm --windowed`.
 Build-tree runs always pass `<build>/plugins` explicitly. The separate
 `session.installed-plugin-discovery` test stages `cmake --install` beneath the
 build tree, starts the staged launcher without a plugin-root override, and
-requires the installed KWin module to publish its live service. Configuration
-tests also reject a conflicting ABI selection and prove that missing KWin is a
-hard error while the plugin option is `ON`; only explicit `OFF` permits a
-bridge-only build.
+requires the installed KWin module to publish its live service. The same test
+requires `org.qindaqt` at KDecoration3's KDE-relative plugin destination and
+checks that a fresh isolated `kwinrc` selects that module. The focused
+`session.sessiondefaults` test separately proves that the first-run seed never
+overwrites an existing decoration choice. Configuration tests also reject a
+conflicting ABI selection and prove that missing KWin is a hard error while the
+plugin option is `ON`; only explicit `OFF` permits a bridge-only build.
 
 The virtual matrix verifies 1920x1080, 1920x1200, 2560x1440, 1920x1080 at
 1.25 fractional scale, and two common 1920x1080 outputs. It compares Qt client
@@ -109,13 +115,152 @@ client remains usable after teardown. The main page workflow and this unload
 workflow each passed ten consecutive final repetitions.
 
 A separate plugin-loaded launch omits `--test-scenario`. It proves read-only
-inventory still works while `DockWindows`, `Submit`, and `ReleaseContainer`
-all return `control-disabled` without changing ownership. The remaining
-unproved areas are intentionally beyond the Compositor MVP boundary: consuming
-pointer/keyboard docking and richer state restoration belong to Hybrid
-interaction; heterogeneous topology replay and rotation/hotplug/lid policy
-belong to Platform services; and DRM/KMS, physical GPU/input devices, and
-suspend/resume remain Release qualification gates below.
+inventory still works while `DockWindows`, `Submit`, `ReleaseContainer`, and
+`InjectTestInput` return `control-disabled` without changing ownership; input
+rejection occurs before payload parsing. It also requires
+`ReinitializeCompositingForTest` to reject before compositor-state inspection.
+Consuming pointer/keyboard docking and richer restoration were intentionally
+beyond the Compositor MVP and are qualified separately below. Heterogeneous
+topology replay and rotation/hotplug/lid policy belong to Platform services;
+DRM/KMS, physical GPU/input devices, and suspend/resume remain Release
+qualification gates.
+
+## Completed Hybrid qualification evidence
+
+The focused Hybrid value and adapter suite is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^(hybrid\.|hybrid-chrome\.|qindaqt\.(hybrid-|decoration-hover)|compositor\.(hybrid.*|development-input-protocol|container-close-prompt|kwin-(input-adapter|development-input-injector|chrome-manager|chrome-scene-lifecycle|hybrid-(scene|pages|focus|context|task-identity|recovery)|dock-preview|group-context-menu))|session\.sessiondefaults)' \
+  -E '^compositor\.hybrid-pointer-' \
+  --output-on-failure
+```
+
+The focused suites cover:
+
+- every session-topology command, global ownership invariant, singleton
+  normalization, lifecycle add/forget, deterministic structural ID, and
+  prepare/commit rollback boundary;
+- independent-to-group insertion, independent tab grouping,
+  member-to-independent regrouping, cross-container member and complete-page
+  moves, leaf/split-page detach, whole-page regrouping with an independent
+  target, one-member page extraction, same-container page/member reorganization,
+  tab activation, intentional tab-to-edge rejection, and split-ratio update;
+- recursive minimum/maximum/fixed constraints, deterministic rounding,
+  overflow reporting, and schema-v2 round trips of every independent-window
+  restore field;
+- exact-modifier gesture ownership and drag threshold; keyboard docking,
+  explicit detach, complete-group movement, active-divider adjustment,
+  complete-group edge/corner resize, preview/commit/cancel, cumulative baseline
+  displacement, and pass-through for unrelated input;
+- Qinda macOS and conventional chrome plans, logical-DPI invariance, left
+  traffic lights with cluster-hover glyphs, stable logical/right-to-left visual
+  tabs, pure hit precedence, thresholded natural drags, and grab cancellation;
+- scene/chrome plan agreement, scene-image teardown/rebuild, ordinary
+  compositor router ownership and native member/client pass-through, hover
+  forwarding, anchor-relative exposure and occlusion, popup-before-decoration
+  ordering, topmost-member stack ranking, coalesced
+  stack/activation/output/window republish, dock-preview geometry, semantic
+  chrome-drag translation, and shortcut action dispatch;
+- fake-platform KWin transactions for full-state restore, focus, inactive-page
+  minimization, dead members, overflow, cross-container one-step ownership,
+  direct reflow, maximize/restore, independent-focus preservation, member
+  maximize/fullscreen focus mode, focus-safe minimize/close/native detach,
+  transient admission/following, atomic output/workspace/activity/layer
+  propagation, collapsed task identity, and rollback/recovery of state, focus,
+  target frames, and copied committed layout;
+- nonblocking Close All/Ungroup/Cancel policy, the outer-title group context
+  menu, normal-chain development input parsing/injection, compositor scene
+  lifecycle, and production pre-parse input rejection; and
+- KDecoration factory/metadata loading plus first-run default seeding that
+  preserves an existing user choice.
+
+The live Hybrid workflows are selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^compositor\.hybrid-pointer-(nested|plugin-unload-restores-clients)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
+  -R '^compositor\.hybrid-pointer-(nested|plugin-unload-restores-clients)$' \
+  --repeat until-fail:10 --output-on-failure
+```
+
+Both select three painted, independently owned Wayland probe windows; the
+unload workflow maps a fourth independent client as well. They require
+`Capabilities.hybrid.ready` plus `inputFilterInstalled`. The harness
+starts one persistent `dotool` process, attempts to admit its host uinput
+keyboard/pointer, and reports the detected devices when successful. In the
+qualified KWin virtual environment that seat did not admit host uinput, so the
+harness records the concrete failure and uses the isolated
+`qindaqt-development-input` device. That device is added through KWin input
+redirection, and its absolute-pointer, left-button, and left Meta/Shift events
+traverse the ordinary spy/filter/controller chain. The fallback is never
+constructed in production and is not physical-device evidence.
+
+`compositor.hybrid-pointer-nested` performs a complete exact
+`Meta+Shift+Left` title drag. It requires the process-local topology revision to
+advance, the source and target to share one owner, the planned frames to form a
+valid split with its divider gap, `Containers` to report the actual nonzero
+revision and `hybrid-process` authority, and `Snapshot` to return the matching
+schema-1 model. While that group remains owned, the workflow requests a
+development-gated compositor reinitialization, observes the inactive-to-active
+transition, and requires the same container/revision with one visible anchored
+scene item afterward. It moves an unrelated client over shared chrome and
+proves the covered point cannot click through, proves the popup-dismiss press is
+consumed before Hybrid, keeps a normal-type transient dialog outside topology
+with focus preserved, and first verifies transient association does not pull the
+group above an unrelated client. A later exposed shared-title press then raises
+the group above that client as one contiguous unit.
+
+The workflow then performs a plain left-button drag from the native KDecoration
+member title to empty desktop space. Detach must occur at KWin's
+interactive-move start; the dragged window keeps its original independent size,
+continues to the pointer drop, and matches its target frame there. The sibling
+must return to its exact original current and target frames, every
+owner/container must clear, and the topology revision must advance again. The
+dragged member is not compared to its original position because the native move
+intentionally relocates it. This proves native-decoration fall-through and
+detach, not a synthetic member-strip route; preview/chrome pixels remain
+offscreen-renderer evidence rather than a live screenshot baseline.
+
+`compositor.hybrid-pointer-plugin-unload-restores-clients` creates the same
+process-local group and first requires three mapped clients to expose live
+server-side `QindaDecoration` instances. It calls KWin's
+`/Plugins.UnloadPlugin` while the group is owned, then requires the plugin and
+`org.qindaqt.Compositor` service to disappear. Independent KWin queries must
+show the exact pre-group frames and non-minimized state; all four clients remain
+exposed, and a grouped source must still retitle and resize. No legacy bridge
+container is used.
+
+The Hybrid boundary is the focused selector and live-workflow selector above,
+plus the already-qualified prior-milestone suite. The shared Debug and Release
+registries each passed 93/93; those totals include later-milestone Shell tests,
+so the explicit Hybrid selector remains authoritative and passed 48/48 in both
+configurations. A fresh strict-warning Debug bridge-only configuration with
+`QINDAQT_BUILD_KWIN_PLUGIN=OFF` and `QINDAQT_BUILD_SHELL=OFF` passed 45/45.
+
+The applied virtual subset passed at 1920x1080, 1920x1200 WUXGA, 2560x1440,
+fractional 1080p at 125%, and dual common-1080p. Production read-only rejection,
+live outer-title menu and queued group-context adoption, scene restart, native
+detach, grouped plugin-unload restoration, decoration proof, and continued
+client usability passed in Debug and Release.
+
+Focused ASan+UBSan qualification passed all 47 registered Shell-off Hybrid
+tests with leak detection and halt-on-error, then passed the QML decoration
+test under preloaded ASan+UBSan runtimes after an instrumented Shell/QML-cache
+build, for 47+1 exact-selector coverage and zero findings. Both
+`compositor.hybrid-pointer-nested` and
+`compositor.hybrid-pointer-plugin-unload-restores-clients` passed ten
+consecutive Debug repetitions. Strict documentation, link, source-shape,
+whitespace, and independent final-audit gates passed. Together these results
+complete the Hybrid interaction milestone.
+
+Moving one live group between heterogeneous scales, physical input, DRM/KMS and
+GPU vendors, suspend/resume, hotplug/rotation/lid policy, and performance/memory
+budgets remain Platform or Release qualification work. Do not substitute the
+older D-Bus bridge workflow for the process-local evidence accepted in
+[ADR-0004](../adr/0004-process-local-hybrid-topology.md).
 
 ## Required display matrix
 
@@ -135,8 +280,10 @@ Every built-in [layout profile](../shell/layout-profiles.md) runs at 1080p,
 WUXGA, and 1440p in light, dusk, and dark themes. Focused pairwise coverage may
 run per change, but the complete matrix is a release gate. Qinda macOS also has
 a focused decoration regression covering left-side traffic lights and
-right-to-left tabs. A Qt Quick interaction test moves the pointer into and out
-of the traffic-light cluster and verifies that hover glyph visibility follows.
+right-to-left tabs. A Qt Quick shell-preview interaction test and an offscreen
+Hybrid-chrome renderer test independently move hover state into and out of the
+traffic-light cluster and verify glyph visibility. Neither is a screenshot of
+the live KDecoration or KWin scene item.
 
 ## Determinism and acceptance
 
@@ -147,10 +294,11 @@ Visual baselines pin fonts, wallpaper, locale, time, animation clock, and sample
 data. Perceptual comparison allows documented antialiasing tolerance;
 intentional baseline changes require human review.
 
-Tests cover Qt server-side decoration, GTK/Electron client-side decoration,
-XWayland, SDL, Wine, Java, dialogs, fullscreen, crash, and unresponsive clients.
-Window grouping exercises all [container invariants](../architecture/window-containers.md),
-including mixed DPI, hotplug, overflow, detach, and restoration.
+Release tests must cover Qt server-side decoration, GTK/Electron client-side
+decoration, XWayland, SDL, Wine, Java, dialogs, fullscreen, crash, and
+unresponsive clients. Window grouping must exercise all
+[container invariants](../architecture/window-containers.md), including mixed
+DPI, hotplug, overflow, detach, and restoration.
 
 Virtual tests precede hardware checks on Intel, AMD, NVIDIA, hybrid graphics,
 laptops, suspend/resume, touch, and stylus. Performance gates measure the

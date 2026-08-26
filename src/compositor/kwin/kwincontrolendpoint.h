@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "developmentinputprotocol.h"
+
 #include <QByteArray>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QObject>
+
+#include <functional>
+#include <optional>
 
 namespace QindaQt::Compositor {
 class ContainerControlBridge;
@@ -20,11 +27,31 @@ class KWinControlEndpoint final : public QObject
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Compositor1")
 
 public:
+    using HybridDiagnosticsProvider = std::function<QJsonObject()>;
+    using HybridContainersProvider = std::function<QJsonArray()>;
+    using HybridSnapshotProvider =
+        std::function<std::optional<QJsonObject>(const QString &)>;
+    using DevelopmentCompositorReinitializer = std::function<bool()>;
+
     KWinControlEndpoint(ContainerControlBridge &bridge,
                         ManagedWindowRegistry &registry,
                         KWinInputAdapter &inputAdapter,
                         bool mutationsEnabled,
+                        DevelopmentInputSink *developmentInputSink = nullptr,
                         QObject *parent = nullptr);
+
+    // The provider is invoked synchronously by Capabilities() and must not
+    // retain endpoint references. An empty provider omits the optional field.
+    void setHybridDiagnosticsProvider(HybridDiagnosticsProvider provider);
+    // These providers expose the process-local Hybrid authority through the
+    // existing read-only inventory. They must never be reused by Submit or
+    // ReleaseContainer, whose external production gate remains authoritative.
+    void setHybridStateProviders(HybridContainersProvider containers,
+                                 HybridSnapshotProvider snapshot);
+    // This callback exists only for isolated nested-session qualification. The
+    // public slot rejects production sessions before invoking it.
+    void setDevelopmentCompositorReinitializer(
+        DevelopmentCompositorReinitializer reinitializer);
 
     // Process-local compositor policy uses this path during lifecycle
     // reconciliation. It deliberately bypasses only the external D-Bus gate;
@@ -45,6 +72,8 @@ public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray ReleaseContainer(const QString &containerId);
     Q_SCRIPTABLE [[nodiscard]] QByteArray Snapshot(const QString &containerId) const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Submit(const QByteArray &requestJson);
+    Q_SCRIPTABLE [[nodiscard]] QByteArray InjectTestInput(const QByteArray &requestJson);
+    Q_SCRIPTABLE [[nodiscard]] QByteArray ReinitializeCompositingForTest();
 
 Q_SIGNALS:
     Q_SCRIPTABLE void ContainerCommitted(const QByteArray &eventJson);
@@ -57,6 +86,11 @@ private:
     ManagedWindowRegistry &m_registry;
     KWinInputAdapter &m_inputAdapter;
     ControlEndpoint *m_coreEndpoint = nullptr;
+    HybridDiagnosticsProvider m_hybridDiagnostics;
+    HybridContainersProvider m_hybridContainers;
+    HybridSnapshotProvider m_hybridSnapshot;
+    DevelopmentCompositorReinitializer m_developmentCompositorReinitializer;
+    DevelopmentInputController m_developmentInput;
     bool m_mutationsEnabled = false;
 };
 

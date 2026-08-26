@@ -8,6 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from hybrid_pointer_validation import (
+    validate_hybrid_pointer_evidence,
+    validate_hybrid_unload_evidence,
+)
 from test_nested_session import (
     ScenarioCoverageError,
     virtual_spec_from_document,
@@ -99,6 +103,156 @@ class VirtualSpecTests(unittest.TestCase):
         self.assertEqual(output_data["mode"]["width"], 1920)
         self.assertEqual(output_data["mode"]["height"], 1080)
         self.assertEqual(output_data["scale"], 1.25)
+
+
+class HybridPointerEvidenceTests(unittest.TestCase):
+    @staticmethod
+    def common_evidence() -> dict[str, object]:
+        return {
+            "workflow": "hybrid-pointer",
+            "dotoolProcessCount": 1,
+            "dotoolProcessStayedRunning": True,
+            "exactModifierGesture": "Meta+Shift+Left",
+            "topologyRevisionAdvanced": True,
+            "sameOwnerAfterDock": True,
+            "validTargetSplit": True,
+            "plainNativeDecorationDetach": True,
+            "nativeDecorationMemberTitleDrag": True,
+            "ownersClearedAfterDetach": True,
+            "draggedMemberFollowedPointer": True,
+            "draggedMemberSizeRestored": True,
+            "siblingExactFrameRestored": True,
+            "chromeSceneAttached": True,
+            "chromeSceneRemovedAfterDetach": True,
+            "groupStackContiguous": True,
+            "unrelatedWindowCoveredGroupChrome": True,
+            "coveredWindowBlockedSharedChromeInput": True,
+            "popupGrabDismissedBeforeSharedChromeInput": True,
+            "normalTransientExcludedFromTopology": True,
+            "transientFocusPreservedOutsideTopology": True,
+            "unrelatedWindowRemainedAboveTransientGroup": True,
+            "sharedChromeRaisedGroupUnit": True,
+            "stableGroupRepresentativeActivated": True,
+            "outerTitleContextMenuOpened": True,
+            "productionQMenuKeepAboveTriggered": True,
+            "groupContextQueuedAdoption": True,
+            "keepAboveAppliedToEveryMember": True,
+            "keepAboveToggleRecoveredEveryMember": True,
+            "unrelatedWindowInventoried": True,
+            "hybridSnapshotReadable": True,
+            "publicContainerRevision": "4",
+            "publicSnapshot": {
+                "status": "ok",
+                "authority": "hybrid-process",
+                "revision": "4",
+                "snapshot": {"schemaVersion": 1, "pages": [{"id": "page"}]},
+            },
+        }
+
+    def test_accepts_real_uinput_evidence(self) -> None:
+        evidence = self.common_evidence()
+        evidence.update(
+            {
+                "inputInjector": "dotool-uinput",
+                "uinputAdmitted": True,
+                "uinputDevices": [{"name": "dotool keyboard"}, {"name": "dotool pointer"}],
+            }
+        )
+
+        validate_hybrid_pointer_evidence({"compositorEvidence": evidence})
+
+    def test_accepts_disclosed_virtual_backend_fallback(self) -> None:
+        evidence = self.common_evidence()
+        evidence.update(
+            {
+                "inputInjector": "qindaqt-development-input",
+                "uinputAdmitted": False,
+                "uinputAdmissionFailure": "virtual backend devices=[]",
+                "developmentInputDeviceId": "qindaqt-development-input",
+                "developmentInputRequestCount": 17,
+            }
+        )
+
+        validate_hybrid_pointer_evidence({"compositorEvidence": evidence})
+
+    def test_rejects_fallback_that_hides_uinput_result(self) -> None:
+        evidence = self.common_evidence()
+        evidence.update(
+            {
+                "inputInjector": "qindaqt-development-input",
+                "uinputAdmitted": False,
+                "uinputAdmissionFailure": "",
+                "developmentInputDeviceId": "qindaqt-development-input",
+                "developmentInputRequestCount": 17,
+            }
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "omitted the concrete uinput failure"):
+            validate_hybrid_pointer_evidence({"compositorEvidence": evidence})
+
+    def test_rejects_revision_zero_even_with_readable_snapshot(self) -> None:
+        evidence = self.common_evidence()
+        evidence["publicContainerRevision"] = "0"
+        evidence["publicSnapshot"]["revision"] = "0"
+
+        with self.assertRaisesRegex(RuntimeError, "nonzero decimal string"):
+            validate_hybrid_pointer_evidence({"compositorEvidence": evidence})
+
+    def test_accepts_grouped_unload_lifecycle_evidence(self) -> None:
+        evidence = self.common_evidence()
+        evidence.update(
+            {
+                "workflow": "hybrid-pointer-plugin-unload",
+                "ownershipAuthority": "hybrid-process",
+                "legacyBridgeContainersUsed": False,
+                "observedFramesAndVisibilityRestoredAfterUnload": True,
+                "observedIndependentStateRestoredAfterUnload": True,
+                "onePrimaryTaskIdentity": True,
+                "onePrimarySwitcherIdentity": True,
+                "samePrimaryTaskAndSwitcherIdentity": True,
+                "inactivePageExcluded": True,
+                "inactiveActivationActivatedPage": True,
+                "pageSwitchBackRetainsSingleIdentity": True,
+                "nativeMemberMinimizedWholeContainer": True,
+                "activePageOnlyRestore": True,
+                "taskFlagsRestoredAfterUnload": True,
+                "ownershipAuthorityRemoved": True,
+                "runtimeDecorationClasses": ["QindaDecoration"] * 3,
+                "inputInjector": "qindaqt-development-input",
+                "uinputAdmitted": False,
+                "uinputAdmissionFailure": "virtual backend devices=[]",
+                "developmentInputDeviceId": "qindaqt-development-input",
+                "developmentInputRequestCount": 17,
+            }
+        )
+
+        validate_hybrid_unload_evidence(evidence)
+
+    def test_rejects_unload_without_active_page_only_restore(self) -> None:
+        evidence = self.common_evidence()
+        evidence.update(
+            {
+                "workflow": "hybrid-pointer-plugin-unload",
+                "ownershipAuthority": "hybrid-process",
+                "legacyBridgeContainersUsed": False,
+                "observedFramesAndVisibilityRestoredAfterUnload": True,
+                "observedIndependentStateRestoredAfterUnload": True,
+                "onePrimaryTaskIdentity": True,
+                "onePrimarySwitcherIdentity": True,
+                "samePrimaryTaskAndSwitcherIdentity": True,
+                "inactivePageExcluded": True,
+                "inactiveActivationActivatedPage": True,
+                "pageSwitchBackRetainsSingleIdentity": True,
+                "nativeMemberMinimizedWholeContainer": True,
+                "activePageOnlyRestore": False,
+                "taskFlagsRestoredAfterUnload": True,
+                "ownershipAuthorityRemoved": True,
+                "runtimeDecorationClasses": ["QindaDecoration"] * 3,
+            }
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "activePageOnlyRestore"):
+            validate_hybrid_unload_evidence(evidence)
 
 
 if __name__ == "__main__":

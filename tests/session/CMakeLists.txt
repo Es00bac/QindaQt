@@ -2,7 +2,11 @@
 
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline sessionenvironment)
+# AGENT-CONTRACT: KDecoration3 publishes the relative plugin directory used by
+# both the production install rule and this staged-install contract check.
+find_package(KDecoration3 6.6 REQUIRED CONFIG)
+
+foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline sessiondefaults sessionenvironment)
     add_executable(tst_${test_name} tst_${test_name}.cpp)
     target_compile_features(tst_${test_name} PRIVATE cxx_std_20)
     target_link_libraries(tst_${test_name} PRIVATE QindaQt::SessionSupport Qt6::Test)
@@ -34,6 +38,8 @@ add_test(
         "${CMAKE_COMMAND}" -E env
         "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
         "${Python3_EXECUTABLE}" -m py_compile
+        "${CMAKE_CURRENT_SOURCE_DIR}/hybrid_pointer_validation.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/nested_session_scenario.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_parent_wayland_session.py"
@@ -47,6 +53,7 @@ find_program(QINDAQT_KWIN_WAYLAND kwin_wayland)
 find_program(QINDAQT_XDPYINFO xdpyinfo)
 find_program(QINDAQT_XWAYLAND Xwayland)
 find_program(QINDAQT_WESTON weston)
+find_program(QINDAQT_DOTOOL dotool)
 
 # AGENT-CONTRACT: qindaqt-wm defaults to its installed KDE plugin root. Every
 # build-tree integration test must name the transient root explicitly.
@@ -61,6 +68,22 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         compositorprobeclient.h
         compositorworkflow.cpp
         compositorworkflow.h
+        hybridpointergeometry.cpp
+        hybridpointergeometry.h
+        hybridpointercontextmenu.cpp
+        hybridpointercontextmenu.h
+        hybridcompositorrestart.cpp
+        hybridcompositorrestart.h
+        hybridpointergrouping.cpp
+        hybridpointergrouping.h
+        hybridpointerinventory.cpp
+        hybridpointerinventory.h
+        hybridpointerraise.cpp
+        hybridpointerraise.h
+        hybridpointerworkflow.cpp
+        hybridpointerworkflow.h
+        hybridtestinputdriver.cpp
+        hybridtestinputdriver.h
         sessionprobe.cpp
     )
     target_link_libraries(qindaqt-session-probe PRIVATE Qt6::Core Qt6::DBus Qt6::Gui)
@@ -102,6 +125,21 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
     if(TARGET qindaqt_compositor)
         qt_add_executable(
             qindaqt-plugin-unload-probe
+            compositordevelopmentworkflow.h
+            compositorprobeclient.cpp
+            compositorprobeclient.h
+            hybridpointergeometry.cpp
+            hybridpointergeometry.h
+            hybridpointergrouping.cpp
+            hybridpointergrouping.h
+            hybridpointerinventory.cpp
+            hybridpointerinventory.h
+            hybridpointertaskidentityworkflow.cpp
+            hybridpointertaskidentityworkflow.h
+            hybridpointerunloadworkflow.cpp
+            hybridpointerunloadworkflow.h
+            hybridtestinputdriver.cpp
+            hybridtestinputdriver.h
             pluginunloadprobe.cpp
             pluginunloadworkflow.cpp
             pluginunloadworkflow.h
@@ -171,6 +209,31 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
             PROPERTIES TIMEOUT 30 LABELS "integration;compositor;lifecycle"
         )
 
+        if(QINDAQT_DOTOOL)
+            add_test(
+                NAME compositor.hybrid-pointer-plugin-unload-restores-clients
+                COMMAND
+                    "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/test_plugin_unload.py"
+                    "$<TARGET_FILE:qindaqt-wm>"
+                    "$<TARGET_FILE:qindaqt-plugin-unload-probe>"
+                    "${QINDAQT_DBUS_RUN_SESSION}"
+                    "${PROJECT_SOURCE_DIR}/tests/scenarios/single-1080p.json"
+                    --plugin-root "${_qindaqt_test_plugin_root}"
+                    --expect-hybrid-pointer "${QINDAQT_DOTOOL}"
+            )
+            set_tests_properties(
+                compositor.hybrid-pointer-plugin-unload-restores-clients
+                PROPERTIES
+                    # This lifecycle gate performs page activation, group
+                    # minimize/restore, and bounded post-unload settlement in
+                    # addition to the two real pointer transactions.
+                    TIMEOUT 60
+                    LABELS "integration;compositor;hybrid;input;uinput;lifecycle"
+                    RUN_SERIAL TRUE
+            )
+        endif()
+
         add_test(
             NAME compositor.production-control-read-only
             COMMAND
@@ -188,6 +251,28 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
             PROPERTIES TIMEOUT 30 LABELS "integration;compositor;security"
         )
 
+        if(QINDAQT_DOTOOL)
+            add_test(
+                NAME compositor.hybrid-pointer-nested
+                COMMAND
+                    "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
+                    "$<TARGET_FILE:qindaqt-wm>"
+                    "$<TARGET_FILE:qindaqt-session-probe>"
+                    "${QINDAQT_DBUS_RUN_SESSION}"
+                    "${PROJECT_SOURCE_DIR}/tests/scenarios/single-1080p.json"
+                    --plugin-root "${_qindaqt_test_plugin_root}"
+                    --expect-hybrid-pointer "${QINDAQT_DOTOOL}"
+            )
+            set_tests_properties(
+                compositor.hybrid-pointer-nested
+                PROPERTIES
+                    TIMEOUT 45
+                    LABELS "integration;compositor;hybrid;input;uinput"
+                    RUN_SERIAL TRUE
+            )
+        endif()
+
         if(NOT IS_ABSOLUTE "${KDE_INSTALL_BINDIR}"
            AND NOT IS_ABSOLUTE "${KDE_INSTALL_PLUGINDIR}")
             add_test(
@@ -200,6 +285,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
                     "${CMAKE_BINARY_DIR}/tests/session/installed-plugin-smoke"
                     "${KDE_INSTALL_BINDIR}/qindaqt-wm${CMAKE_EXECUTABLE_SUFFIX}"
                     "${KDE_INSTALL_PLUGINDIR}/kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
+                    "${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR}/$<TARGET_FILE_NAME:qindaqt_decoration>"
                     "$<TARGET_FILE:qindaqt-session-probe>"
                     "${QINDAQT_DBUS_RUN_SESSION}"
                     "${PROJECT_SOURCE_DIR}/tests/scenarios/single-1080p.json"
@@ -207,7 +293,10 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
             )
             set_tests_properties(
                 session.installed-plugin-discovery
-                PROPERTIES TIMEOUT 45 LABELS "integration;install;compositor" RUN_SERIAL TRUE
+                PROPERTIES
+                    TIMEOUT 45
+                    LABELS "integration;install;compositor;decoration"
+                    RUN_SERIAL TRUE
             )
         endif()
     endif()

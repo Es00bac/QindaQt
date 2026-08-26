@@ -3,7 +3,10 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QPointF>
 #include <QString>
+
+#include <functional>
 
 namespace QindaQt::Test {
 
@@ -11,6 +14,7 @@ enum class CompositorWorkflowMode
 {
     InventoryOnly,
     DevelopmentMutations,
+    HybridPointer,
     ProductionReadOnly,
 };
 
@@ -23,6 +27,8 @@ struct CompositorWorkflowResult final
     bool inputObserverActive = false;
     bool inputConsumesEvents = false;
     QJsonArray inputDevices;
+    QJsonObject hybridDiagnostics;
+    QJsonObject developmentInputCapabilities;
     bool workflowPassed = false;
     QString failure;
     QJsonObject evidence;
@@ -35,6 +41,13 @@ struct CompositorWorkflowResult final
 [[nodiscard]] CompositorWorkflowResult exerciseCompositorWorkflow(const QString &primaryTitle,
                                                                   const QString &secondaryTitle,
                                                                   const QString &pageTitle,
-                                                                  CompositorWorkflowMode mode);
+                                                                  CompositorWorkflowMode mode,
+                                                                  const QString &dotoolPath = {},
+                                                                  std::function<void(const QString &)>
+                                                                      activateProbe = {},
+                                                                  std::function<void(const QString &)>
+                                                                      showPopupForProbe = {},
+                                                                  std::function<QString(const QString &)>
+                                                                      showDialogForProbe = {});
 
 } // namespace QindaQt::Test

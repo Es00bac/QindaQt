@@ -20,12 +20,14 @@ include(KDEInstallDirs6)
 
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
 option(QINDAQT_BUILD_SHELL "Build the interactive shell preview" ON)
+option(QINDAQT_BUILD_KWIN_PLUGIN
+       "Require and build the release-matched KWin integration plugin" ON)
 option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat QindaQt warnings as errors" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(QindaQtCompiler)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets)
 if(BUILD_TESTING)
     find_package(Qt6 6.11 REQUIRED COMPONENTS Test)
 endif()

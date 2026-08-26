@@ -1,0 +1,11 @@
+{
+  "KPlugin": {
+    "Description": "QindaQt native window decoration",
+    "EnabledByDefault": true,
+    "Name": "QindaQt"
+  },
+  "org.kde.kdecoration3": {
+    "blur": false,
+    "recommendedBorderSize": "Tiny"
+  }
+}

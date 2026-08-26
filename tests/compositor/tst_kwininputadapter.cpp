@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "inputcapabilities.h"
+#include "hybridchromepointerrouter.h"
+#include "kwininteractionfilter.h"
 #include "kwininputadapter.h"
 #include "mutationcontrol.h"
 #include "normalizedinputevent.h"
@@ -16,6 +18,25 @@ using namespace std::chrono_literals;
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
+
+class EmptyInteractionResolver final
+    : public HybridInput::InteractionTargetResolver
+{
+public:
+    HybridInput::HitTarget hitTest(const QPointF &) const override { return hit; }
+    HybridInput::DockTarget pointerDockTarget(
+        const HybridInput::HitTarget &, const QPointF &) const override
+    {
+        return {};
+    }
+    HybridInput::DockTarget keyboardDockTarget(
+        const HybridInput::HitTarget &, HybridInput::DockZone) const override
+    {
+        return {};
+    }
+
+    HybridInput::HitTarget hit;
+};
 
 class FakeInputDevice final : public KWin::InputDevice
 {
@@ -83,6 +104,9 @@ private Q_SLOTS:
     void serializesMultiCapabilityDevice();
     void normalizesRepresentativeEventFamilies();
     void reportsUnavailableObserverWithoutInput();
+    void forwardsAllKeyboardInteractionBeginsWithoutInstalledInput();
+    void arbitratesChromeAndKeyboardGrabsWithoutInstalledInput();
+    void cancelInvalidatesPointerAndKeyboardTransactionsWithoutInstalledInput();
     void requiresBothMutationMarkers();
 };
 
@@ -193,6 +217,124 @@ void KWinInputAdapterTest::reportsUnavailableObserverWithoutInput()
     QCOMPARE(capabilities.value(QStringLiteral("status")).toString(), QStringLiteral("ok"));
     QCOMPARE(capabilities.value(QStringLiteral("observerActive")).toBool(), false);
     QCOMPARE(capabilities.value(QStringLiteral("devices")).toArray().size(), 0);
+}
+
+void KWinInputAdapterTest::forwardsAllKeyboardInteractionBeginsWithoutInstalledInput()
+{
+    EmptyInteractionResolver resolver;
+    HybridInput::InteractionController controller(resolver);
+    QVector<HybridInput::InteractionIntent> intents;
+    KWinInteractionFilter filter(
+        nullptr, controller,
+        [&](const HybridInput::InteractionIntent &intent) { intents.append(intent); });
+    QVERIFY(!filter.installed());
+
+    const auto verify = [&](bool acquired, HybridInput::InteractionKind kind) {
+        QVERIFY(acquired);
+        QCOMPARE(intents.constLast().phase, HybridInput::IntentPhase::Begin);
+        QCOMPARE(intents.constLast().kind, kind);
+        filter.cancel();
+        QCOMPARE(intents.constLast().phase, HybridInput::IntentPhase::Cancel);
+    };
+    verify(filter.beginKeyboardDock(
+               {HybridInput::HitKind::MemberTitle, {}, QStringLiteral("window"), {}}),
+           HybridInput::InteractionKind::MemberDock);
+    verify(filter.beginKeyboardMove(
+               {HybridInput::HitKind::OuterTitle, QStringLiteral("group"), {}, {}}),
+           HybridInput::InteractionKind::ContainerMove);
+    verify(filter.beginKeyboardDividerResize(
+               {HybridInput::HitKind::Divider, QStringLiteral("group"), {},
+                QStringLiteral("split")}),
+           HybridInput::InteractionKind::DividerResize);
+    verify(filter.beginKeyboardContainerResize(
+               {HybridInput::HitKind::OuterResize, QStringLiteral("group"), {}, {},
+                Qt::RightEdge | Qt::BottomEdge}),
+           HybridInput::InteractionKind::ContainerResize);
+
+    const auto count = intents.size();
+    QVERIFY(!filter.beginKeyboardContainerResize(
+        {HybridInput::HitKind::OuterResize, QStringLiteral("group"), {}, {}, {}}));
+    QCOMPARE(intents.size(), count);
+}
+
+void KWinInputAdapterTest::arbitratesChromeAndKeyboardGrabsWithoutInstalledInput()
+{
+    EmptyInteractionResolver resolver;
+    HybridInput::InteractionController controller(resolver);
+    HybridChromePointerRouter chrome(
+        [](const QPointF &) -> std::optional<ChromePointerHit> {
+            return ChromePointerHit{
+                QStringLiteral("group"),
+                {HybridChrome::HitKind::OuterTitleDrag,
+                 QStringLiteral("group"), -1, std::nullopt, {}}};
+        });
+    KWinInteractionFilter filter(nullptr, controller, {}, &chrome, {});
+
+    const auto acquired = chrome.pointerPress(
+        {.position = {10.0, 10.0},
+         .changedButton = Qt::LeftButton,
+         .buttons = Qt::LeftButton,
+         .modifiers = Qt::NoModifier});
+    QVERIFY(acquired.consumed);
+    QVERIFY(chrome.active());
+    QVERIFY(!filter.beginKeyboardMove(
+        {HybridInput::HitKind::OuterTitle, QStringLiteral("group"), {}, {}}));
+
+    filter.cancelChrome();
+    QVERIFY(!chrome.active());
+    QVERIFY(filter.beginKeyboardMove(
+        {HybridInput::HitKind::OuterTitle, QStringLiteral("group"), {}, {}}));
+    filter.cancel();
+}
+
+void KWinInputAdapterTest::cancelInvalidatesPointerAndKeyboardTransactionsWithoutInstalledInput()
+{
+    EmptyInteractionResolver resolver;
+    resolver.hit = {HybridInput::HitKind::OuterTitle,
+                    QStringLiteral("group"), {}, {}};
+    HybridInput::InteractionController controller(resolver, {.dragThreshold = 0.0});
+    QVector<HybridInput::InteractionIntent> intents;
+    KWinInteractionFilter filter(
+        nullptr, controller,
+        [&](const HybridInput::InteractionIntent &intent) { intents.append(intent); });
+
+    QVERIFY(controller.pointerPress(
+        {.position = {10.0, 10.0},
+         .changedButton = Qt::LeftButton,
+         .buttons = Qt::LeftButton,
+         .modifiers = Qt::MetaModifier | Qt::ShiftModifier})
+                .consumed);
+    const auto activated = controller.pointerMove({.position = {20.0, 10.0}});
+    QCOMPARE(activated.intents.constFirst().phase,
+             HybridInput::IntentPhase::Begin);
+    QVERIFY(controller.active());
+
+    filter.cancel();
+    QCOMPARE(intents.size(), 1);
+    QCOMPARE(intents.constFirst().phase, HybridInput::IntentPhase::Cancel);
+    QVERIFY(!controller.active());
+    const auto staleRelease = controller.pointerRelease(
+        {.position = {30.0, 10.0},
+         .changedButton = Qt::LeftButton,
+         .buttons = Qt::NoButton,
+         .modifiers = Qt::MetaModifier | Qt::ShiftModifier});
+    QVERIFY(!staleRelease.consumed);
+    QVERIFY(staleRelease.intents.isEmpty());
+
+    intents.clear();
+    QVERIFY(filter.beginKeyboardMove(resolver.hit));
+    QCOMPARE(intents.size(), 1);
+    QCOMPARE(intents.constFirst().phase, HybridInput::IntentPhase::Begin);
+    filter.cancel();
+    QCOMPARE(intents.size(), 2);
+    QCOMPARE(intents.constLast().phase, HybridInput::IntentPhase::Cancel);
+    QVERIFY(!controller.active());
+    const auto staleCommit = controller.keyEvent({.key = Qt::Key_Enter});
+    QVERIFY(!staleCommit.consumed);
+    QVERIFY(staleCommit.intents.isEmpty());
+
+    filter.cancel();
+    QCOMPARE(intents.size(), 2);
 }
 
 void KWinInputAdapterTest::requiresBothMutationMarkers()

@@ -21,9 +21,10 @@ The detailed source and dependency rules are in
 
 The current compositor slice is narrower than the final ownership shown above.
 `qindaqt-wm` is a launcher that replaces itself with pinned KWin 6.6.5, and a
-release-matched plugin provides window discovery plus experimental container
-transactions. Exact ABI, backend, discovery, proof, and limitation details are
-in [Compositor and session integration](compositor-session.md).
+release-matched plugin provides window discovery, experimental D-Bus container
+transactions, and an in-process Hybrid topology/input/chrome runtime. Exact
+ABI, backend, discovery, proof, and limitation details are in
+[Compositor and session integration](compositor-session.md).
 
 ## Interaction boundaries
 
@@ -69,4 +70,6 @@ tracked in the
 The KWin foundation and its downstream-maintenance constraints are recorded in
 [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md). The native extension
 boundary is recorded in
-[ADR-0002](../adr/0002-native-qindaqt-applet-api.md).
+[ADR-0002](../adr/0002-native-qindaqt-applet-api.md). Process-local Hybrid
+authority and composed member/shared chrome are recorded in
+[ADR-0004](../adr/0004-process-local-hybrid-topology.md).

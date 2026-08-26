@@ -17,6 +17,7 @@
 #include <QUuid>
 
 #include <cmath>
+#include <utility>
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -38,12 +39,14 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
                                          ManagedWindowRegistry &registry,
                                          KWinInputAdapter &inputAdapter,
                                          bool mutationsEnabled,
+                                         DevelopmentInputSink *developmentInputSink,
                                          QObject *parent)
     : QObject(parent)
     , m_bridge(bridge)
     , m_registry(registry)
     , m_inputAdapter(inputAdapter)
     , m_coreEndpoint(new ControlEndpoint(bridge, this))
+    , m_developmentInput(mutationsEnabled, developmentInputSink)
     , m_mutationsEnabled(mutationsEnabled)
 {
     connect(m_coreEndpoint, &ControlEndpoint::ContainerCommitted,
@@ -56,6 +59,26 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
             this, &KWinControlEndpoint::InputCapabilitiesChanged);
 }
 
+void KWinControlEndpoint::setHybridDiagnosticsProvider(
+    HybridDiagnosticsProvider provider)
+{
+    m_hybridDiagnostics = std::move(provider);
+}
+
+void KWinControlEndpoint::setHybridStateProviders(
+    HybridContainersProvider containers,
+    HybridSnapshotProvider snapshot)
+{
+    m_hybridContainers = std::move(containers);
+    m_hybridSnapshot = std::move(snapshot);
+}
+
+void KWinControlEndpoint::setDevelopmentCompositorReinitializer(
+    DevelopmentCompositorReinitializer reinitializer)
+{
+    m_developmentCompositorReinitializer = std::move(reinitializer);
+}
+
 QByteArray KWinControlEndpoint::Capabilities() const
 {
     auto capabilities = ControlCodec::capabilities();
@@ -63,7 +86,9 @@ QByteArray KWinControlEndpoint::Capabilities() const
     for (const auto &method : {QStringLiteral("Windows"), QStringLiteral("Outputs"),
                                QStringLiteral("InputCapabilities"),
                                QStringLiteral("Containers"), QStringLiteral("DockWindows"),
-                               QStringLiteral("ReleaseContainer")}) {
+                               QStringLiteral("ReleaseContainer"),
+                               QStringLiteral("InjectTestInput"),
+                               QStringLiteral("ReinitializeCompositingForTest")}) {
         methods.append(method);
     }
     capabilities.insert(QStringLiteral("methods"), methods);
@@ -79,6 +104,11 @@ QByteArray KWinControlEndpoint::Capabilities() const
     capabilities.insert(QStringLiteral("controlMode"),
                         m_mutationsEnabled ? QStringLiteral("development-test")
                                            : QStringLiteral("read-only"));
+    capabilities.insert(QStringLiteral("developmentInput"),
+                        m_developmentInput.capabilities());
+    if (m_hybridDiagnostics) {
+        capabilities.insert(QStringLiteral("hybrid"), m_hybridDiagnostics());
+    }
     return ControlCodec::compactJson(capabilities);
 }
 
@@ -109,9 +139,18 @@ QByteArray KWinControlEndpoint::Containers() const
     QJsonArray containers;
     for (const auto &id : m_registry.containerIds()) {
         const auto revision = m_bridge.revision(id);
-        containers.append(QJsonObject{{QStringLiteral("id"), id},
-                                      {QStringLiteral("revision"),
-                                       revision ? QString::number(*revision) : QStringLiteral("0")}});
+        if (revision) {
+            containers.append(QJsonObject{{QStringLiteral("id"), id},
+                                          {QStringLiteral("revision"),
+                                           QString::number(*revision)},
+                                          {QStringLiteral("authority"),
+                                           QStringLiteral("control-bridge")}});
+        }
+    }
+    if (m_hybridContainers) {
+        for (const auto &entry : m_hybridContainers()) {
+            containers.append(entry);
+        }
     }
     return ControlCodec::compactJson(
         {{QStringLiteral("status"), QStringLiteral("ok")},
@@ -263,6 +302,19 @@ QByteArray KWinControlEndpoint::releaseContainerForCompositor(const QString &con
 
 QByteArray KWinControlEndpoint::Snapshot(const QString &containerId) const
 {
+    if (!m_bridge.contains(containerId) && m_hybridSnapshot) {
+        const auto hybrid = m_hybridSnapshot(containerId);
+        if (hybrid) {
+            const auto protocol =
+                ControlCodec::capabilities().value(QStringLiteral("protocol"));
+            auto reply = *hybrid;
+            reply.insert(QStringLiteral("protocol"), protocol);
+            reply.insert(QStringLiteral("containerId"), containerId);
+            reply.insert(QStringLiteral("status"), QStringLiteral("ok"));
+            reply.insert(QStringLiteral("authority"), QStringLiteral("hybrid-process"));
+            return ControlCodec::compactJson(reply);
+        }
+    }
     return m_coreEndpoint->Snapshot(containerId);
 }
 
@@ -273,6 +325,30 @@ QByteArray KWinControlEndpoint::Submit(const QByteArray &requestJson)
                         QStringLiteral("external compositor mutations are disabled"));
     }
     return m_coreEndpoint->Submit(requestJson);
+}
+
+QByteArray KWinControlEndpoint::InjectTestInput(const QByteArray &requestJson)
+{
+    return m_developmentInput.injectTestInput(requestJson);
+}
+
+QByteArray KWinControlEndpoint::ReinitializeCompositingForTest()
+{
+    // AGENT-GUARD: Like InjectTestInput, this surface is visible on an
+    // unauthenticated user bus. Production rejects before consulting runtime
+    // state so the method cannot become an availability oracle or mutation.
+    if (!m_mutationsEnabled) {
+        return response(QStringLiteral("rejected"),
+                        QStringLiteral("control-disabled"),
+                        QStringLiteral("external compositor mutations are disabled"));
+    }
+    if (!m_developmentCompositorReinitializer
+        || !m_developmentCompositorReinitializer()) {
+        return response(QStringLiteral("rejected"),
+                        QStringLiteral("compositor-reinitialize-unavailable"),
+                        QStringLiteral("compositor reinitialization is unavailable"));
+    }
+    return response(QStringLiteral("scheduled"));
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

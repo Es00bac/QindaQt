@@ -43,11 +43,20 @@ modifier held, hovering over a window or container reveals targets:
 - dropping at the center or tab strip creates a page/tab; and
 - dropping outside a valid target leaves the source floating.
 
-Tabs, leaves, and split dividers are rearrangeable by pointer and keyboard.
-Dragging a member's preserved title bar out detaches it, prunes the old tree,
-and leaves the remaining topology valid. When a client-side decoration does not
-expose a reliable draggable title region, QindaQt supplies a focused/hovered
-compositor grip for the same action.
+Tabs, leaves, and split dividers are rearrangeable by pointer and keyboard. A
+tab owns one complete page tree: it may reorder, move between containers,
+detach as a leaf/window or split/new container, or regroup with an independent
+tab target. Dropping a tab on an edge is deliberately rejected until a typed
+subtree-as-split operation exists. Dropping one member on another page's tab
+target extracts only that member into a new page.
+
+Dragging a grouped member's preserved native title bar without modifiers starts
+KWin's ordinary interactive move. Hybrid detaches the member at move start,
+prunes the old tree, restores its independent size, and lets KWin continue the
+move to the pointer drop. Explicit member docking/rearrangement uses exact
+`Meta+Shift+Left` or the keyboard path; shared chrome never intercepts a member
+title or client region. Production paints it as a member-anchored KWin scene
+item, not a native overlay window.
 
 ## Container behavior
 
@@ -63,8 +72,11 @@ compositor grip for the same action.
 - Minimum and maximum client sizes constrain divider movement. If the available
   area cannot satisfy all members, the container enters an explicit recoverable
   overflow state rather than clipping silently or corrupting saved ratios.
-- Task lists and Alt-Tab expose one primary container entry with expandable
-  member previews and a member-cycling path.
+- Task lists and Alt-Tab expose exactly one primary active-page member as the
+  container identity. Every other member is suppressed while grouped;
+  activating or unminimizing an inactive-page member activates that page before
+  it can paint. Each member's independent task/switcher/minimized baseline is
+  restored on detach, normalization, close recovery, rollback, or unload.
 - Theme decoration tokens may place the outer controls on either side and lay
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.
@@ -95,8 +107,28 @@ transaction. Its atomic `DockWindows` entry point also keeps the initial
 singleton private until a two-member split commits. The committed empty
 snapshot is a terminal event and the container is then removed.
 
-The KWin scene adapter currently owns live frame/minimized changes, prior-frame
-restoration, and member ownership. Cross-container atomic moves, client-size
-negotiation and overflow, shared decoration, focus/transient policy, richer
-state restoration, and persisted compositor-object identity belong to the
-hybrid-interaction milestone rather than the pure model.
+Two KWin paths now consume this model. The completed Compositor-MVP D-Bus
+bridge remains per-container and development-only for mutation. The
+process-local Hybrid runtime owns session-wide cross-container commands,
+recursive size negotiation and overflow, full independent-window restore
+values, active/inactive page state, focus selection, group placement, and
+shared scene-resident chrome composed with the QindaQt KDecoration.
+
+The production Hybrid graph implements pointer and keyboard docking/detach,
+complete-page and one-member reorganization, divider and complete-group geometry
+controls, member maximize/fullscreen focus mode, focus-safe minimize/close/native
+detach, transient following, lifecycle focus/stack/output synchronization,
+collapsed task/switcher identity, Close All/Ungroup/Cancel, virtual
+accessibility trees, and readable process-local snapshots. Native minimize of
+any visible grouped member minimizes the complete container; restoring exposes
+only its active page. Nested workflows create and detach a group through the
+real input paths, require live QindaQt decorations, and verify exact restoration
+when a grouped plugin unloads. Final qualification evidence is maintained in
+the [testing harness](../development/testing-harness.md).
+
+Persisted login-session restore, mixed-DPI output migration, and physical
+hardware qualification remain later desktop work. Current and intended behavior
+are separated in
+[Hybrid topology](hybrid-topology.md), [Hybrid constraints](hybrid-constraints.md),
+[Hybrid chrome](hybrid-chrome.md), and the
+[testing harness](../development/testing-harness.md).

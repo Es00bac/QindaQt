@@ -1,11 +1,12 @@
 # Compositor and session integration
 
-The Compositor MVP milestone is **complete**. QindaQt launches a real KWin
-Wayland compositor, loads an exact-release native plugin, owns rootless
-XWayland, reports output/input state, and commits container model plus live
-scene changes atomically. This is the qualified compositor substrate, not yet
-the finished hybrid interaction described by the
-[container model](window-containers.md).
+The Compositor MVP and Hybrid interaction milestones are **complete**. QindaQt
+launches a real KWin Wayland compositor, loads an exact-release native plugin,
+owns rootless XWayland, reports output/input state, and commits container model
+plus live scene changes atomically. The process-local Hybrid runtime adds live
+pointer and native-decoration interaction, member/public state, scene-resident
+chrome, lifecycle recovery, context-menu policy, and unload restoration.
+Evidence for the two completed milestone boundaries is kept distinct below.
 
 ## Pinned KWin and binary ABI
 
@@ -81,9 +82,13 @@ For a relative KDE layout, the launcher reconstructs the install prefix from
 its executable directory, so staged and relocated installs keep launcher and
 plugin aligned. Absolute KDE plugin paths use the configured absolute fallback.
 A staged-install test starts the installed launcher without `--plugin-root`,
-then requires the installed plugin's live service and exact ABI.
+then requires the installed plugin's live service and exact ABI. It also
+requires the `org.qindaqt` KDecoration3 artifact at KDecoration3's exported
+relative plugin directory and verifies that a fresh isolated `kwinrc` selects
+it. The launcher seeds that selection only when the key is absent, preserving
+an explicit user choice.
 
-## Runtime layers
+## Compositor-MVP runtime layers
 
 The KWin plugin provides:
 
@@ -116,21 +121,157 @@ For Wayland clients, `geometry` is the currently acknowledged frame and
 inactive client can defer configure acknowledgement until activation; exposing
 both values avoids pretending asynchronous state is synchronous.
 
+## Process-local Hybrid runtime
+
+`KWinHybridSession` owns a second, session-wide topology used by production
+input. It composes narrowly scoped collaborators for semantic command
+translation, recursive constraints and restore state, KWin scene transactions,
+direct group placement, immutable chrome planning, one scene image per
+container, a pure ordinary-chrome pointer router, whole-group context adoption,
+member focus policy, transient following, dock preview, exact-modifier input
+filtering, and global keyboard entry actions. It shares only the managed-window
+registry with the older D-Bus bridge; the two topology models are not
+interchangeable.
+[ADR-0004](../adr/0004-process-local-hybrid-topology.md) records why this
+authority stays inside the compositor process.
+
+The topology coordinator stages one globally valid multi-container candidate.
+The KWin transaction captures full independent state, constraint-solves every
+page, applies members and focus, atomically finalizes ownership plus planned
+frames, and only then publishes restore/layout maps and the topology revision.
+Commit failure reverses applied members and focus. Tree-preserving group move,
+resize, maximize, and restore use a separate rollback-safe reflow transaction
+and do not invent a topology revision.
+
+Shared chrome uses global logical coordinates and a copied committed layout.
+Production creates no chrome `QWidget`, `QWindow`, internal window, mask, or
+focusable/input surface. `ChromeRenderer` produces one transparent ARGB image
+per group, and KWin owns it as an `ImageItem` parented to the group's topmost
+active-page member `WindowItem`. That member supplies the real stack slot, so a
+later unrelated window covers the item and associated dialogs remain above the
+complete member block. Missing or stale anchors hide chrome rather than leaving
+a detached plan visible. This choice is recorded in
+[ADR-0005](../adr/0005-scene-resident-hybrid-chrome.md).
+
+Ordinary interaction is resolved and consumed by
+`HybridChromePointerRouter` inside KWin, with hover sent back to the scene
+renderer. Its live-stack exposure gate blocks input wherever any eligible real
+window above the member anchor covers the point; internal windows, popups, and
+transients cannot cause click-through. The filter runs at Decoration order,
+after KWin's Popup filter and before native KDecoration, so the press that
+dismisses a popup does not also mutate Hybrid. Member-title and client regions
+pass through to KDecoration/client input. The separate dock-preview widget is
+input-transparent and sets `outputOnly` on its backing `QWindow` before map so
+it cannot occlude its own target. Production selects the Qinda macOS style: left
+close/minimize/maximize-or-restore traffic lights reveal `x`, `_`, and `[]`
+glyphs on cluster hover, and tabs are placed visually right to left without
+changing logical page order. Details live in [Hybrid chrome](hybrid-chrome.md).
+
+Ordinary shared controls, tabs, dividers, outer-title movement, and outer-edge
+resize need no modifier. A plain member-title drag remains KWin's native move;
+its interactive-move start atomically detaches that member and the native move
+continues to the drop with restored independent size. Exact
+`Meta+Shift+Left` provides the compositor docking grab for independent and
+grouped titles. Thirteen autoloading actions cover member and complete-page
+docking, group move/resize, split adjustment, page activation/reorder, and
+group close/minimize/maximize/restore policy. Interactive arrows update from one
+stable baseline, while `Enter` commits and `Escape` cancels. The filter consumes
+events only while it owns a grab; unrelated input and the older independently
+non-consuming input spy pass through.
+
+Tabs carry page identity rather than only a representative member. Runtime
+commands move or detach a complete page/tree, regroup it with an independent
+tab target, or extract one member into a new page. A tab-to-edge request is
+rejected until a typed subtree-as-split operation exists.
+
+Member maximize/fullscreen focus mode, focus-safe minimize/close/native detach,
+and dialog/transient following are active KWin policies. Popups, dialogs, and
+all transients are excluded from topology even if KWin reports a normal type.
+The transient adapter follows stable owner-relative geometry plus output,
+desktops, and activities but never raises on its own; group stacking alone keeps
+transients above the contiguous member block without moving the group above an
+unrelated active window. Opaque all-KWin UUID focus tokens preserve focused
+dialogs across scene commit and rollback.
+
+Stack and activation changes plus registry output-inventory changes coalesce one
+chrome republish. Scene items rank by their topmost active-page member and
+resample committed geometry and live output scale. Separately, a member change
+to output, workspaces, activities, Keep Above, or Keep Below queues one canonical
+source per container. The rollback-safe scene transaction maps the complete
+outer frame between output placement areas when needed, re-solves every page,
+and applies the final context to every member without changing their independent
+restore snapshots. The outer-title right-click menu exposes the same layer,
+pin/workspace, activity, and Move to Output operations by mutating one live
+representative and using that queued whole-group path. Failed adoption restores
+every member and focus, then releases the group if it cannot remain coherent.
+Scene commands also preserve an untouched active, non-minimized independent
+window across add/forget, group replan, and multi-group release.
+
+KWin compositor reinitialization is a scene-resource transition, not a topology
+transition. Direct `aboutToToggleCompositing` and `aboutToDestroy` handlers
+invalidate input targets and clear every chrome image, stack anchor, and
+accessibility root before KWin destroys client `WindowItem` objects. Chrome
+synchronization remains suspended until `compositingToggled(true)`, after the
+replacement client items exist, then rebuilds from the unchanged topology and
+committed layouts. `sceneCreated` is deliberately too early for republishing.
+
+Plugin teardown disconnects queued lifecycle synchronization, destroys the
+shortcut/filter, cancels preview and placement, restores temporary member focus,
+and releases process-local groups while scene state and transient following are
+live. It then clears shared chrome, destroys Hybrid collaborators, releases
+legacy bridge groups, and finally unregisters D-Bus. A failure to release one
+Hybrid group does not stop attempts for the remaining containers.
+
 ## Control security mode
 
 The service uses the ordinary user session bus and has no caller
 authentication. Production therefore advertises `controlMode: "read-only"`.
-`DockWindows`, `Submit`, and `ReleaseContainer` reject with
-`control-disabled` before parsing or mutation. Inventory and snapshots remain
+`DockWindows`, `Submit`, `ReleaseContainer`, `InjectTestInput`, and
+`ReinitializeCompositingForTest` reject with `control-disabled` before request
+parsing, runtime inspection, or mutation. Inventory and snapshots remain
 readable. Only the isolated explicit scenario path enables the
-`development-test` mutation mode. Production hybrid gestures will call typed
+`development-test` mutation mode. Production Hybrid gestures call typed
 process-local policy instead of enabling D-Bus mutation.
+
+Development test sessions construct one combined keyboard/pointer
+`KWin::InputDevice` and register it with KWin input redirection. The versioned,
+bounded `InjectTestInput` method emits only absolute pointer movement, left
+button, and left Meta/Shift events through the ordinary input chain; shutdown
+releases held state before removing the device. Production does not construct
+the injector, and its gate-before-parse reply is identical for malformed and
+oversized input. This is a deterministic nested-session seam, never a public
+automation API or physical-device claim.
+
+That same development gate exposes the no-input
+`ReinitializeCompositingForTest` method. It queues
+`KWin::Compositor::reinitialize()` for the next event-loop turn so the D-Bus
+reply can return before synchronous scene teardown begins, then replies
+`status: "scheduled"`; a missing compositor/reinitializer instead returns
+`compositor-reinitialize-unavailable`. The nested workflow separately observes
+the compositor's inactive-to-active transition and requires the same live
+Hybrid revision/container with one visible anchored scene item afterward.
+Admission alone is not restart evidence, and production never enables this
+test seam.
 
 Internal lifecycle cleanup uses a non-scriptable release path and is not
 blocked by the external gate. On KWin `UnloadPlugin`, the plugin copies all
-published container IDs, disconnects queued close reconciliation, releases
-each group while scene collaborators are alive, and only then unregisters
-D-Bus and tears down.
+published legacy container IDs, disconnects queued close reconciliation,
+releases each group while scene collaborators are alive, and only then
+unregisters D-Bus. Process-local Hybrid groups follow the earlier shutdown
+ordering described above.
+
+`Capabilities` also carries an optional `hybrid` diagnostic object with runtime
+readiness, input-filter installation, all-shortcut registration, a decimal
+string session topology revision, container count, reconciled/visible/anchored
+scene-chrome counts, persistent context-quarantine count, verified group-stack
+publication count, and the current stack failure diagnostic. These are live
+coherence values: failed raises revoke their affected publication, and a
+successful complete synchronization clears the failure string. `Containers`
+publishes each process-local group at that actual revision with
+`authority: "hybrid-process"`; `Snapshot` returns its schema-1 model. These are
+read-only observations, not a public mutation authority. The exact fields and
+authority distinction are in the
+[Compositor1 reference](../reference/compositor-control-v1.md).
 
 ## Qualified integration matrix
 
@@ -158,14 +299,61 @@ stress repetitions. Scenario parsing explicitly rejects heterogeneous common
 modes/scales, transforms, and fractional dimensions that cannot produce
 integral logical extents.
 
-## Boundary of this milestone
+## Completed Hybrid qualification
 
-The following are intentionally assigned to later milestones:
+Focused tests cover the complete semantic command set, including complete-page
+move/detach/regroup and one-member page extraction; atomic candidate publication;
+recursive constraints and restore state; exact modifier and keyboard parity;
+Qinda macOS painting; the ordinary compositor router; scene-image lifetime and
+anchor exposure; scene/chrome agreement; stack/activation/output
+synchronization; whole-group context adoption and its outer-title menu; member
+focus mode; transient admission/following; lifecycle focus preservation;
+compositor scene teardown/rebuild; KWin rollback; group placement and close
+policy; deterministic development input; and release-all continuation. The
+KDecoration factory loads in a focused test; staged
+installation verifies its artifact and first-run default. Qualification results
+for this expanded set are tracked separately below.
 
-- shared outer decoration, preserved member drag regions, consuming
-  pointer/keyboard grabs, split/tab/divider manipulation, client constraints,
-  focus/maximize/fullscreen/workspace state, and richer restoration belong to
-  **Hybrid interaction**;
+The live pointer workflow drives exact `Meta+Shift+Left` through KWin's normal
+input chain, creates one process-local split, observes one shared owner and valid
+divider geometry, and reads the actual nonzero Hybrid revision and schema-1
+snapshot. While the group is still live, the workflow proves compositor
+reinitialization restores the unchanged Hybrid revision/container with one
+visible anchored scene item, a covering ordinary window blocks shared input,
+the popup-dismiss press does not fall through, and a focused normal-type
+transient stays outside topology. A plain native KDecoration member-title drag
+then detaches at KWin's interactive-move start. The dragged member preserves its
+independent size and follows the pointer to the drop, while the sibling returns
+to its exact original current and target frames and every owner clears. The
+moved member is intentionally not required to return to its original position.
+The host uinput device was not admitted by the virtual seat, so the workflow
+records that failure and uses the development-only KWin input device; it does
+not claim physical input coverage.
+
+A separate four-client workflow creates the same Hybrid-owned group, verifies
+three live mapped decorations are `QindaDecoration` instances, unloads the
+plugin through KWin, and requires the plugin, service, and Hybrid authority to
+disappear. KWin must then report exact original frames and non-minimized state,
+and all clients must remain exposed while one is retitled and resized. Offscreen
+tests prove dock-preview/chrome rendering; the live workflow functionally
+exercises compositor and native-decoration input but is not a screenshot
+baseline.
+
+The explicit focused and live selectors define the Hybrid boundary; the shared
+registry total also contains later-milestone Shell tests. Final Debug/Release,
+focused Hybrid, bridge-only, applied virtual-display, production read-only,
+live menu/unload, sanitizer/stress, documentation/source, and independent-audit
+results are recorded in the
+[testing harness](../development/testing-harness.md). Together they complete
+Hybrid interaction.
+
+## Post-Hybrid milestone boundaries
+
+Hybrid interaction is complete. The following remain explicit later-milestone
+boundaries:
+
+- persisted topology/session restore and live mixed-output DPI migration remain
+  later compositor, Platform, or Release work rather than claims of this slice;
 - shell panels/docks, global menu, notifications, applet rendering, and direct
   customization belong to **Shell and customization**;
 - heterogeneous topology application, display mutation, rotation/hotplug/lid

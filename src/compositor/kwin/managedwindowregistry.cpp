@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "managedwindowregistry.h"
 
+#include "hybridwindowadmission.h"
+
 #include <core/output.h>
 #include <window.h>
 #include <workspace.h>
+
+#include <KDecoration3/Decoration>
 
 #include <QJsonObject>
 #include <QSet>
@@ -67,6 +71,13 @@ ManagedWindowRegistry::ManagedWindowRegistry(QObject *parent)
             this, &ManagedWindowRegistry::removeWindow);
     connect(compositorWorkspace, &KWin::Workspace::outputsChanged,
             this, &ManagedWindowRegistry::outputsChanged);
+    // AGENT-CONTRACT: `Windows` exposes active and absolute stacking state.
+    // Their workspace-level changes therefore invalidate the same snapshot as
+    // per-client frame/minimize/task-policy changes.
+    connect(compositorWorkspace, &KWin::Workspace::windowActivated,
+            this, [this](KWin::Window *) { Q_EMIT windowsChanged(); });
+    connect(compositorWorkspace, &KWin::Workspace::stackingOrderChanged,
+            this, &ManagedWindowRegistry::windowsChanged);
     synchronize();
     // AGENT-GUARD: --exit-with-session can map its first clients while KWin is
     // still loading default plugins. Reconcile once after startup so a client
@@ -76,8 +87,15 @@ ManagedWindowRegistry::ManagedWindowRegistry(QObject *parent)
 
 bool ManagedWindowRegistry::isManageable(const KWin::Window *window)
 {
-    return window && !window->isDeleted() && !window->isInternal()
-        && !window->isPopupWindow() && window->isNormalWindow();
+    return admitsHybridTopologyWindow({
+        .exists = window != nullptr,
+        .deleted = window && window->isDeleted(),
+        .internal = window && window->isInternal(),
+        .popup = window && window->isPopupWindow(),
+        .normal = window && window->isNormalWindow(),
+        .transient = window && window->isTransient(),
+        .dialog = window && window->isDialog(),
+    });
 }
 
 QString ManagedWindowRegistry::windowId(const KWin::Window *window) const
@@ -107,6 +125,15 @@ void ManagedWindowRegistry::addWindow(KWin::Window *window)
             this, [this](const KWin::RectF &) { Q_EMIT windowsChanged(); });
     connect(window, &KWin::Window::minimizedChanged,
             this, &ManagedWindowRegistry::windowsChanged);
+    connect(window, &KWin::Window::skipTaskbarChanged,
+            this, &ManagedWindowRegistry::windowsChanged);
+    connect(window, &KWin::Window::skipSwitcherChanged,
+            this, &ManagedWindowRegistry::windowsChanged);
+    connect(window, &KWin::Window::keepAboveChanged,
+            this, [this](bool) { Q_EMIT windowsChanged(); });
+    connect(window, &KWin::Window::keepBelowChanged,
+            this, [this](bool) { Q_EMIT windowsChanged(); });
+    Q_EMIT managedWindowAdded(id);
     Q_EMIT windowsChanged();
 }
 
@@ -127,9 +154,24 @@ KWin::Window *ManagedWindowRegistry::window(const QString &windowId) const
     return m_windows.value(windowId).data();
 }
 
+QStringList ManagedWindowRegistry::windowIds() const
+{
+    auto result = m_windows.keys();
+    result.sort();
+    return result;
+}
+
 QString ManagedWindowRegistry::owner(const QString &windowId) const
 {
     return m_owners.value(windowId);
+}
+
+QRectF ManagedWindowRegistry::targetFrame(const QString &windowId) const
+{
+    const auto *managedWindow = window(windowId);
+    return managedWindow
+        ? m_targetFrames.value(windowId, managedWindow->moveResizeGeometry())
+        : QRectF{};
 }
 
 bool ManagedWindowRegistry::setOwner(const QString &windowId,
@@ -208,9 +250,84 @@ bool ManagedWindowRegistry::transitionOwners(const QString &containerId,
     return true;
 }
 
+bool ManagedWindowRegistry::transitionTopologyOwners(
+    const QHash<QString, QString> &expectedOwners,
+    const QHash<QString, QString> &candidateOwners,
+    const QHash<QString, QRectF> &targetFrames,
+    const QSet<QString> &allowedMissingWindowIds,
+    QString *error)
+{
+    if (expectedOwners.size() != candidateOwners.size()) {
+        return fail(error, QStringLiteral("owner transition key sets do not match"));
+    }
+    for (auto iterator = expectedOwners.cbegin(); iterator != expectedOwners.cend();
+         ++iterator) {
+        if (!candidateOwners.contains(iterator.key())) {
+            return fail(error, QStringLiteral("owner transition key sets do not match"));
+        }
+    }
+
+    for (auto iterator = candidateOwners.cbegin(); iterator != candidateOwners.cend();
+         ++iterator) {
+        const auto &windowId = iterator.key();
+        const auto *managedWindow = window(windowId);
+        if (!managedWindow) {
+            if (allowedMissingWindowIds.contains(windowId) && iterator.value().isEmpty()) {
+                continue;
+            }
+            return fail(error,
+                        QStringLiteral("unknown managed window '%1'").arg(windowId));
+        }
+        if (owner(windowId) != expectedOwners.value(windowId)) {
+            return fail(error,
+                        QStringLiteral("window '%1' owner changed during transaction")
+                            .arg(windowId));
+        }
+        if (!iterator.value().isEmpty()
+            && (!targetFrames.contains(windowId)
+                || !targetFrames.value(windowId).isValid())) {
+            return fail(error,
+                        QStringLiteral("window '%1' has no valid planned frame")
+                            .arg(windowId));
+        }
+    }
+
+    // AGENT-GUARD: All live objects, expected owners, and target frames are
+    // validated before the first map edit. Cross-container moves must never be
+    // observable as a transient release followed by a second acquisition.
+    bool changed = false;
+    for (auto iterator = candidateOwners.cbegin(); iterator != candidateOwners.cend();
+         ++iterator) {
+        const auto &windowId = iterator.key();
+        const auto &containerId = iterator.value();
+        if (!window(windowId) || containerId.isEmpty()) {
+            changed = m_owners.remove(windowId) > 0 || changed;
+            changed = m_targetFrames.remove(windowId) > 0 || changed;
+            continue;
+        }
+        if (m_owners.value(windowId) != containerId) {
+            m_owners.insert(windowId, containerId);
+            changed = true;
+        }
+        if (m_targetFrames.value(windowId) != targetFrames.value(windowId)) {
+            m_targetFrames.insert(windowId, targetFrames.value(windowId));
+            changed = true;
+        }
+    }
+    if (changed) {
+        Q_EMIT windowsChanged();
+    }
+    return true;
+}
+
 QJsonArray ManagedWindowRegistry::windowsJson() const
 {
     QJsonArray result;
+    QHash<const KWin::Window *, int> stackIndices;
+    const auto stackingOrder = KWin::workspace()->stackingOrder();
+    for (qsizetype index = 0; index < stackingOrder.size(); ++index) {
+        stackIndices.insert(stackingOrder[index], int(index));
+    }
     auto ids = m_windows.keys();
     ids.sort();
     for (const auto &id : ids) {
@@ -218,9 +335,19 @@ QJsonArray ManagedWindowRegistry::windowsJson() const
         if (!isManageable(window)) {
             continue;
         }
+        const auto *const decoration = window->decoration();
         result.append(QJsonObject{{QStringLiteral("id"), id},
                                   {QStringLiteral("title"), window->caption()},
                                   {QStringLiteral("applicationId"), window->resourceClass()},
+                                  // AGENT-CONTRACT: Discovery and kwinrc tests only prove that
+                                  // the module can be selected. These fields expose the actual
+                                  // server-side instance so nested workflows can reject a silent
+                                  // fallback to another decoration implementation.
+                                  {QStringLiteral("serverDecorated"), decoration != nullptr},
+                                  {QStringLiteral("decorationClass"),
+                                   decoration
+                                       ? QString::fromLatin1(decoration->metaObject()->className())
+                                       : QString{}},
                                   {QStringLiteral("geometry"), rectJson(window->frameGeometry())},
                                   // Wayland resize acknowledgement is
                                   // asynchronous, and a minimized client may
@@ -232,6 +359,16 @@ QJsonArray ManagedWindowRegistry::windowsJson() const
                                    rectJson(m_targetFrames.value(
                                        id, window->moveResizeGeometry()))},
                                   {QStringLiteral("minimized"), window->isMinimized()},
+                                  {QStringLiteral("active"), window->isActive()},
+                                  {QStringLiteral("skipTaskbar"), window->skipTaskbar()},
+                                  {QStringLiteral("skipSwitcher"), window->skipSwitcher()},
+                                  {QStringLiteral("keepAbove"), window->keepAbove()},
+                                  {QStringLiteral("keepBelow"), window->keepBelow()},
+                                  // Absolute Workspace::stackingOrder index,
+                                  // bottom-to-top. Live group evidence filters
+                                  // this inventory to current managed IDs.
+                                  {QStringLiteral("stackIndex"),
+                                   stackIndices.value(window, -1)},
                                   {QStringLiteral("containerId"), owner(id)}});
     }
     return result;

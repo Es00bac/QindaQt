@@ -12,10 +12,18 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from hybrid_pointer_validation import validate_hybrid_unload_evidence
+
 
 def isolated_environment(root: Path) -> dict[str, str]:
     environment = dict(os.environ)
-    for key in ("DBUS_SESSION_BUS_ADDRESS", "DISPLAY", "WAYLAND_DISPLAY"):
+    for key in (
+        "DBUS_SESSION_BUS_ADDRESS",
+        "DISPLAY",
+        "WAYLAND_DISPLAY",
+        "QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD",
+        "QINDAQT_DOTOOL",
+    ):
         environment.pop(key, None)
     for name in ("home", "config", "data", "cache", "state"):
         (root / name).mkdir()
@@ -60,6 +68,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("dbus_runner")
     parser.add_argument("scenario", type=Path)
     parser.add_argument("--plugin-root", type=Path, required=True)
+    parser.add_argument("--expect-hybrid-pointer", metavar="DOTOOL", type=Path)
     return parser.parse_args()
 
 
@@ -67,6 +76,9 @@ def main() -> int:
     arguments = parse_arguments()
     with tempfile.TemporaryDirectory(prefix="qindaqt-plugin-unload-") as directory:
         environment = isolated_environment(Path(directory))
+        if arguments.expect_hybrid_pointer is not None:
+            environment["QINDAQT_EXPECT_HYBRID_POINTER_UNLOAD"] = "1"
+            environment["QINDAQT_DOTOOL"] = str(arguments.expect_hybrid_pointer)
         command = [
             arguments.dbus_runner,
             "--",
@@ -95,7 +107,7 @@ def main() -> int:
             env=environment,
             text=True,
             capture_output=True,
-            timeout=20,
+            timeout=50 if arguments.expect_hybrid_pointer is not None else 20,
             check=False,
         )
     if completed.returncode != 0:
@@ -123,6 +135,20 @@ def main() -> int:
         print("plugin unload logged a container release failure", file=sys.stderr)
         print(completed.stderr, file=sys.stderr)
         return 1
+    if "QindaQt Hybrid unload recovery was incomplete" in completed.stderr:
+        print("plugin unload logged incomplete Hybrid recovery", file=sys.stderr)
+        print(completed.stderr, file=sys.stderr)
+        return 1
+    if arguments.expect_hybrid_pointer is not None:
+        evidence = result.get("evidence")
+        if not isinstance(evidence, dict):
+            print("Hybrid unload proof omitted structured evidence", file=sys.stderr)
+            return 1
+        try:
+            validate_hybrid_unload_evidence(evidence)
+        except RuntimeError as error:
+            print(f"Hybrid unload evidence invalid: {error}", file=sys.stderr)
+            return 1
     print(json.dumps(result, sort_keys=True))
     return 0
 

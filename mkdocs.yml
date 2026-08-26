@@ -21,6 +21,9 @@ nav:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - Compositor and session: architecture/compositor-session.md
+      - Hybrid topology: architecture/hybrid-topology.md
+      - Hybrid constraints: architecture/hybrid-constraints.md
+      - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
@@ -42,3 +45,5 @@ nav:
       - "ADR-0001: KWin compositor base": adr/0001-use-kwin-as-compositor-base.md
       - "ADR-0002: Native applet API": adr/0002-native-qindaqt-applet-api.md
       - "ADR-0003: Docs as code": adr/0003-docs-as-code.md
+      - "ADR-0004: Process-local Hybrid topology": adr/0004-process-local-hybrid-topology.md
+      - "ADR-0005: Scene-resident Hybrid chrome": adr/0005-scene-resident-hybrid-chrome.md

@@ -19,6 +19,8 @@ EXPECTED_METHODS = {
     "ReleaseContainer",
     "Snapshot",
     "Submit",
+    "InjectTestInput",
+    "ReinitializeCompositingForTest",
 }
 EXPECTED_SIGNALS = {
     "ContainerCommitted",
@@ -63,6 +65,42 @@ def validate_descriptor(path: Path) -> None:
     if inputs != expected_inputs:
         raise ValueError(
             f"DockWindows signature drift: expected {expected_inputs}, got {inputs}"
+        )
+
+    inject = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == "InjectTestInput"
+    )
+    inject_arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in inject.findall("arg")
+    ]
+    expected_inject_arguments = [
+        ("requestJson", "ay", "in"),
+        ("replyJson", "ay", "out"),
+    ]
+    if inject_arguments != expected_inject_arguments:
+        raise ValueError(
+            "InjectTestInput signature drift: "
+            f"expected {expected_inject_arguments}, got {inject_arguments}"
+        )
+
+    reinitialize = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == "ReinitializeCompositingForTest"
+    )
+    reinitialize_arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in reinitialize.findall("arg")
+    ]
+    expected_reinitialize_arguments = [("replyJson", "ay", "out")]
+    if reinitialize_arguments != expected_reinitialize_arguments:
+        raise ValueError(
+            "ReinitializeCompositingForTest signature drift: "
+            f"expected {expected_reinitialize_arguments}, "
+            f"got {reinitialize_arguments}"
         )
 
 

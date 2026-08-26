@@ -37,6 +37,13 @@
       <arg name="requestJson" type="ay" direction="in"/>
       <arg name="replyJson" type="ay" direction="out"/>
     </method>
+    <method name="InjectTestInput">
+      <arg name="requestJson" type="ay" direction="in"/>
+      <arg name="replyJson" type="ay" direction="out"/>
+    </method>
+    <method name="ReinitializeCompositingForTest">
+      <arg name="replyJson" type="ay" direction="out"/>
+    </method>
     <signal name="ContainerCommitted">
       <arg name="eventJson" type="ay"/>
     </signal>

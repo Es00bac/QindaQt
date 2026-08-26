@@ -7,6 +7,8 @@ add_library(qindaqt_session_support STATIC
     kwincommandbuilder.h
     sessioncommandline.cpp
     sessioncommandline.h
+    sessiondefaults.cpp
+    sessiondefaults.h
     sessionenvironment.cpp
     sessionenvironment.h
     sessionoptions.h

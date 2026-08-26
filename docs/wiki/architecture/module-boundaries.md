@@ -10,13 +10,18 @@ tests, and the wiki page describing its contract.
 | --- | --- | --- |
 | `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
 | `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
+| `src/hybrid` | Session-wide window ownership, typed topology commands, and atomic candidate/scene publication | `core` and Qt Core; never KWin objects or input events |
+| `src/hybrid_constraints` | Recursive member-size solving and lossless independent-window restore values | `core` and Qt Core; never compositor objects or presentation |
+| `src/hybrid_input` | Toolkit-neutral pointer/keyboard docking grab and intent state machine | Qt Core/Gui value types and an injected target resolver |
+| `src/hybrid_chrome` | Event-free shared-container render-plan layout, typed hit testing, and Qt painting | Qt Core/Gui/Widgets; never topology mutation or KWin policy |
+| `src/decorations` | Loadable KDecoration3 member-window presentation and standard window actions | KDecoration3 and Qt Gui; it does not infer container topology |
 | `src/profiles` | Layout-profile schema, validation, migration, and built-in profile data | `core` only when shared value types are unavoidable |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
 | `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/settings` | Schema-v1 settings values, layered resolution, optimistic transactions, change sets, and atomic persistence | Qt Core only; future service adapters consume this public model |
 | `src/shell` | Qt Quick presentation and controllers consuming public domain/profile/theme APIs | `core`, `profiles`, `themes`, and public service clients |
-| `src/compositor` | Persistence-neutral transaction bridge plus the release-matched KWin registry, scene adapter, and D-Bus plugin | `core`, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
+| `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin registry, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid contracts, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
@@ -32,15 +37,21 @@ implemented; do not use placeholder modules to bypass a boundary.
   application presentation code.
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
+- `src/hybrid` owns the process-local session topology; the KWin adapter may
+  orchestrate its public coordinator but may not duplicate tree mutation or
+  expose KWin pointers through it. The older Compositor1 bridge remains a
+  separate per-container compatibility surface. Compositor1 may mirror actual
+  Hybrid revisions and value snapshots for read-only observation without
+  becoming the interaction transport.
 - The shell depends on service clients, not service implementations. Platform
   adapters never call QML objects.
 - Applets and applications use the SDK and public IPC. They do not include shell
   private headers or assume a specific panel implementation.
-- Tests use public APIs first. Input injection, fake-device, output-forcing,
-  and similar backdoor controls must be excluded from production artifacts and
-  clearly named as test interfaces. A versioned public mutator may remain
-  present for contract tests only when normal sessions advertise it disabled
-  and reject it before parsing or changing state.
+- Tests use public APIs first. Input-injection providers/devices, fake-device
+  creation, output forcing, and similar backdoor authority must be absent from
+  normal production sessions and clearly named as test interfaces. A versioned
+  public method may remain present for contract tests only when normal sessions
+  advertise it disabled and reject it before parsing or changing state.
 
 Cross-process contracts carry explicit version, error, timeout, and restart
 semantics. Persisted formats carry a schema version and migration tests. A new

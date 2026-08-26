@@ -15,6 +15,7 @@ private slots:
     void addsPagesAndBuildsSplitTrees();
     void detachNormalizesTreeAndPreservesIds();
     void removingActivePageSelectsItsNeighbor();
+    void detachesWholePageAndPreservesItsTree();
     void rejectsInvalidMutationsAtomically();
     void serializesRoundTrip();
     void rejectsMalformedJson();
@@ -130,6 +131,41 @@ void WindowContainerTest::removingActivePageSelectsItsNeighbor()
     QVERIFY(container.removeWindow(QStringLiteral("window-3"), &error));
     QCOMPARE(container.activePageId(), QStringLiteral("page-1"));
     QVERIFY(container.validate().valid);
+}
+
+void WindowContainerTest::detachesWholePageAndPreservesItsTree()
+{
+    WindowContainer container(QStringLiteral("container"));
+    QString error;
+    QVERIFY(container.addPage(QStringLiteral("page-a"), QStringLiteral("leaf-a"),
+                              QStringLiteral("window-a"), &error));
+    QVERIFY(container.splitWindow({QStringLiteral("window-a"),
+                                   QStringLiteral("window-b"),
+                                   QStringLiteral("leaf-b"),
+                                   QStringLiteral("split-ab"),
+                                   SplitOrientation::Horizontal,
+                                   0.4,
+                                   InsertPosition::Second},
+                                  &error));
+    QVERIFY(container.addPage(QStringLiteral("page-c"), QStringLiteral("leaf-c"),
+                              QStringLiteral("window-c"), &error));
+    QVERIFY(container.activatePage(QStringLiteral("page-a"), &error));
+
+    const auto detached = container.detachPage(QStringLiteral("page-a"), &error);
+    QVERIFY2(detached.has_value(), qPrintable(error));
+    QCOMPARE(detached->id(), QStringLiteral("page-a"));
+    QCOMPARE(detached->root().id(), QStringLiteral("split-ab"));
+    QCOMPARE(detached->root().firstChild()->id(), QStringLiteral("leaf-a"));
+    QCOMPARE(detached->root().secondChild()->id(), QStringLiteral("leaf-b"));
+    QCOMPARE(container.activePageId(), QStringLiteral("page-c"));
+    QVERIFY(!container.page(QStringLiteral("page-a")));
+
+    const auto last = container.detachPage(QStringLiteral("page-c"), &error);
+    QVERIFY(last.has_value());
+    QVERIFY(container.pages().isEmpty());
+    QVERIFY(container.activePageId().isEmpty());
+    QVERIFY(container.validate().valid);
+    QVERIFY(!container.detachPage(QStringLiteral("missing"), &error));
 }
 
 void WindowContainerTest::rejectsInvalidMutationsAtomically()
