@@ -341,7 +341,8 @@ copy-on-write save failure, no-op, conflict, validation, revision exhaustion,
 validated QindaQt profile precedence/migration/rejection, hostile opaque
 transactions, private-bus name collision, release, and restart. Client tests
 cover serialized activation/backoff, synchronous-start recovery, exact
-commit/invalidation lineage, timeout uncertainty without replay, stale-owner
+commit/invalidation lineage, exact UnknownKey empty-authority acceptance and
+fabricated-map rejection, timeout uncertainty without replay, stale-owner
 subscription and pending-reply generation fencing, activation completion
 without an owner, repeated-start-failure Retry truth, same-owner epoch and
 equal-revision contradiction rejection, same-object stop/start, replacement epoch/rebaseline,

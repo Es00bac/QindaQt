@@ -19,6 +19,7 @@ enum class RepositoryCommitStatus {
     ReadOnlyLayer,
     PersistenceFailed,
     RevisionExhausted,
+    UnknownKey,
 };
 
 struct RepositoryCommitResult final {
@@ -27,9 +28,11 @@ struct RepositoryCommitResult final {
     quint64 revisionAfter = 0;
     // Authoritative effective value/source for every key named by the
     // request's operations, reflecting whatever the model actually holds
-    // *after* this call returns -- on every outcome, not only Applied. A
-    // conflict/failure caller can compare this against what it requested to
-    // decide whether to settle, retry, or surface an alert.
+    // *after* this call returns -- on every outcome except UnknownKey. That
+    // status has exactly empty maps because at least one requested key has no
+    // authority and a partial map would be ambiguous. A conflict/failure
+    // caller can otherwise compare this against what it requested to decide
+    // whether to settle, retry, or surface an alert.
     QVariantMap currentValues;
     QMap<QString, Settings::SettingLayer> currentSourceLayers;
     // Non-empty only for a real (non-no-op) Applied commit.

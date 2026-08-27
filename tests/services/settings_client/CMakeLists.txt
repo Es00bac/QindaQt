@@ -5,6 +5,14 @@ target_link_libraries(qindaqt_settings_client_tests PRIVATE QindaQt::SettingsCli
 qindaqt_enable_warnings(qindaqt_settings_client_tests)
 add_test(NAME qindaqt.settings-client COMMAND qindaqt_settings_client_tests)
 
+qt_add_executable(qindaqt_settings_commit_reply_validation_tests
+                  tst_settings_commit_reply_validation.cpp)
+target_link_libraries(qindaqt_settings_commit_reply_validation_tests
+                      PRIVATE QindaQt::SettingsClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_settings_commit_reply_validation_tests)
+add_test(NAME qindaqt.settings-client-commit-validation
+         COMMAND qindaqt_settings_commit_reply_validation_tests)
+
 qt_add_executable(qindaqt_do_not_disturb_controller_tests
                   tst_do_not_disturb_controller.cpp)
 target_link_libraries(qindaqt_do_not_disturb_controller_tests

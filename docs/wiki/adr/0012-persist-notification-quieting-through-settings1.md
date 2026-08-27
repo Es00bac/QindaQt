@@ -48,6 +48,13 @@ one in-flight request and configured backoff. Validate every commit result
 against the initiating epoch, schema version, base revision, key maps, and
 status/revision relation; treat signals only as bounded refresh hints.
 
+After envelope and epoch fencing, preflight transaction keys before optimistic
+base/revision checks. A transaction containing any unknown schema key returns
+typed `UnknownKey` with unchanged revisions and exactly empty value/source and
+exactly empty changed-key list; it never constructs an invalid current
+QVariant, returns a partial known-key map, persists, or publishes. Other
+semantic outcomes retain authoritative entries for every operated key.
+
 Normalize Object settings recursively to a single persistable JSON form:
 `Nullptr` null, signed 64-bit integers (including in-range unsigned inputs),
 canonical integral doubles, finite non-integral doubles, strings, lists, and
@@ -81,6 +88,9 @@ layer-shell settings surface, global shortcut, or supervisor child.
 - Every supported Object value has one exact metatype/value after commit,
   atomic save, service reconstruction, and client decode; unsupported values
   fail before authoritative mutation.
+- Unknown schema keys remain distinct from malformed values: they cannot be
+  misreported as canonical null or reply-construction failure, and clients
+  accept only their exact empty-authority outcome.
 - Settings1 remains useful for later schema keys without importing settings
   model or shell types into the wire module.
 - The shell may remain conservatively quiet while Settings1 is unavailable;

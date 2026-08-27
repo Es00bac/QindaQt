@@ -16,6 +16,7 @@ private slots:
     void commitPersistsBeforeAuthoritativeSwap();
     void noOpConflictAndSaveFailureAreAtomic();
     void rejectsInvalidUnknownAndExhaustedInput();
+    void unknownKeysPrecedeRevisionChecksAndHaveNoAuthority();
 private:
     std::optional<SettingsSchema> m_schema;
 };
@@ -90,7 +91,9 @@ void SettingsRepositoryTests::rejectsInvalidUnknownAndExhaustedInput()
     QVERIFY(invalid.status == RepositoryCommitStatus::ValidationFailed);
     const auto unknown = repository.commitUserOverrides(0, {{
         .key = QStringLiteral("unknown.key"), .remove = false, .value = true}});
-    QVERIFY(unknown.status == RepositoryCommitStatus::ValidationFailed);
+    QVERIFY(unknown.status == RepositoryCommitStatus::UnknownKey);
+    QVERIFY(unknown.currentValues.isEmpty());
+    QVERIFY(unknown.currentSourceLayers.isEmpty());
     SettingsRepository exhausted(LayeredSettings(*m_schema),
                                  directory.filePath(QStringLiteral("exhausted.json")),
                                  QStringLiteral("epoch-exhausted"),
@@ -104,6 +107,45 @@ void SettingsRepositoryTests::rejectsInvalidUnknownAndExhaustedInput()
     QCOMPARE(exhausted.snapshot({QStringLiteral("services.doNotDisturb")}).values
                  .value(QStringLiteral("services.doNotDisturb")).toBool(), false);
     QVERIFY(!QFile::exists(directory.filePath(QStringLiteral("exhausted.json"))));
+}
+
+void SettingsRepositoryTests::unknownKeysPrecedeRevisionChecksAndHaveNoAuthority()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("user.json"));
+    SettingsRepository repository(LayeredSettings(*m_schema), path,
+                                  QStringLiteral("epoch"), 7);
+    for (const bool remove : {false, true}) {
+        const auto result = repository.commitUserOverrides(
+            2, {{.key = QStringLiteral("unknown.key"),
+                 .remove = remove,
+                 .value = remove ? QVariant{} : QVariant::fromValue(true)}});
+        QVERIFY(result.status == RepositoryCommitStatus::UnknownKey);
+        QCOMPARE(result.revisionBefore, quint64(7));
+        QCOMPARE(result.revisionAfter, quint64(7));
+        QVERIFY(result.currentValues.isEmpty());
+        QVERIFY(result.currentSourceLayers.isEmpty());
+        QVERIFY(result.changedKeys.isEmpty());
+        QVERIFY(result.message.contains(QStringLiteral("unknown.key")));
+    }
+    QCOMPARE(repository.revision(), quint64(7));
+    QVERIFY(!QFile::exists(path));
+    QCOMPARE(repository.snapshot({QStringLiteral("services.doNotDisturb")})
+                 .values.value(QStringLiteral("services.doNotDisturb")).toBool(), false);
+
+    SettingsRepository exhausted(LayeredSettings(*m_schema),
+                                 directory.filePath(QStringLiteral("exhausted-unknown.json")),
+                                 QStringLiteral("epoch-exhausted"),
+                                 std::numeric_limits<quint64>::max());
+    const auto unknownAtLimit = exhausted.commitUserOverrides(
+        0, {{.key = QStringLiteral("unknown.key"), .remove = true, .value = {}}});
+    QVERIFY(unknownAtLimit.status == RepositoryCommitStatus::UnknownKey);
+    QCOMPARE(unknownAtLimit.revisionBefore, std::numeric_limits<quint64>::max());
+    QCOMPARE(unknownAtLimit.revisionAfter, std::numeric_limits<quint64>::max());
+    QVERIFY(unknownAtLimit.currentValues.isEmpty());
+    QVERIFY(unknownAtLimit.currentSourceLayers.isEmpty());
+    QVERIFY(!QFile::exists(directory.filePath(QStringLiteral("exhausted-unknown.json"))));
 }
 
 QTEST_GUILESS_MAIN(SettingsRepositoryTests)

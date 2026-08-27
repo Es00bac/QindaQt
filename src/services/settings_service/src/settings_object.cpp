@@ -34,6 +34,8 @@ SettingsWireStatus wireStatusFor(RepositoryCommitStatus status)
         return SettingsWireStatus::PersistenceFailed;
     case RepositoryCommitStatus::RevisionExhausted:
         return SettingsWireStatus::RevisionExhausted;
+    case RepositoryCommitStatus::UnknownKey:
+        return SettingsWireStatus::UnknownKey;
     }
     return SettingsWireStatus::ValidationFailed;
 }

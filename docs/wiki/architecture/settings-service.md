@@ -56,6 +56,15 @@ revision, and publication unchanged. A raw no-op does not write, increment, or
 signal. Stale revisions conflict and an exhausted `quint64` revision returns a
 typed terminal failure rather than wrapping.
 
+After the service validates the request envelope and epoch, the repository
+preflights every operation key before checking its base revision or revision
+capacity. Any unknown key rejects the complete atomic transaction as
+`UnknownKey`, with unchanged revisions, no publication or persistence, and
+exactly empty authoritative value/source maps. Known-key outcomes retain one
+current value/source per operated key. This distinction prevents a nonexistent
+value from being confused with canonical JSON null or a mixed transaction from
+returning misleading partial authority.
+
 A committed file with a lost reply is possible at any IPC boundary. Clients
 therefore classify timeout, owner change, and transport loss during a write as
 uncertain, never replay the operation, and fetch a complete authoritative
@@ -95,11 +104,13 @@ and backs off. Stop/start is symmetric on the same connected bus.
 
 Snapshot and commit envelopes must have their exact field sets. Commit replies
 are accepted only when owner, initiating epoch, settings-schema version, base
-revision, operated key maps, changed-key set, and status/revision relationship
-agree. Any contradiction makes the write uncertain and triggers authoritative
-resync without replay. `SettingsChanged` is only a bounded, deduplicated refresh
-hint; because repository revisions are global, even an unrelated-key change
-refreshes a scoped client's next commit base.
+revision, status-specific operated-key maps, changed-key set, and
+status/revision relationship agree. UnknownKey alone requires both authority
+maps to be empty; every known-key semantic outcome requires exact operated-key
+entries. Any contradiction makes the write uncertain and triggers
+authoritative resync without replay. `SettingsChanged` is only a bounded,
+deduplicated refresh hint; because repository revisions are global, even an
+unrelated-key change refreshes a scoped client's next commit base.
 
 The transport publishes old-owner loss before attempting a replacement
 subscription, and every pending request carries its initiating owner generation.

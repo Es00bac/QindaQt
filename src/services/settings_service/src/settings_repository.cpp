@@ -58,6 +58,12 @@ RepositoryCommitResult SettingsRepository::currentAsResult(RepositoryCommitStatu
     result.revisionBefore = revisionBefore;
     result.revisionAfter = m_revision;
     for (const auto &operation : operations) {
+        // AGENT-GUARD: an absent schema key has no authoritative QVariant or
+        // source. Skipping it here prevents future error paths from turning
+        // absence into invalid-QVariant JSON null and corrupting wire status.
+        if (!m_settings.schema().contains(operation.key)) {
+            continue;
+        }
         result.currentValues.insert(operation.key, m_settings.value(operation.key));
         if (const auto source = m_settings.sourceLayer(operation.key)) {
             result.currentSourceLayers.insert(operation.key, *source);
@@ -80,6 +86,20 @@ RepositoryCommitResult SettingsRepository::commitUserOverrides(quint64 baseRevis
                                                                 const QVector<Operation> &operations)
 {
     const quint64 revisionBefore = m_revision;
+    for (const auto &operation : operations) {
+        if (!m_settings.schema().contains(operation.key)) {
+            // AGENT-CONTRACT: after service epoch/envelope fencing, UnknownKey
+            // precedes base-revision and exhaustion checks. Its maps are
+            // exactly empty: partial authority for a mixed known/unknown
+            // transaction would not describe one atomic result.
+            RepositoryCommitResult result;
+            result.status = RepositoryCommitStatus::UnknownKey;
+            result.revisionBefore = revisionBefore;
+            result.revisionAfter = revisionBefore;
+            result.message = QStringLiteral("unknown key: %1").arg(operation.key);
+            return result;
+        }
+    }
     if (baseRevision != revisionBefore) {
         return currentAsResult(RepositoryCommitStatus::Conflict, revisionBefore, operations,
                                QStringLiteral("stale base revision"));

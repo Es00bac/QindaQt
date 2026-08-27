@@ -20,18 +20,30 @@ compatibility version.
 
 `CommitUserTransaction(epoch, baseRevision, operations)` accepts a bounded list
 of unique-key `set`/`remove` operations. It returns a typed status, revision
-before/after, authoritative current value/source for every operated key,
-changed keys, and a bounded message. Statuses distinguish applied, validation,
-conflict, read-only layer, persistence failure, revision exhaustion, epoch
-mismatch, unknown key, and malformed request. Applied no-ops keep revision and
-publish nothing.
+before/after, changed keys, and a bounded message. Every known-key semantic
+outcome includes the authoritative current value/source for each operated key.
+`UnknownKey` instead has exactly empty value and source maps: an unknown key has
+no authoritative value, invalid QVariant is not null, and a partial map for a
+mixed transaction would be ambiguous. Statuses distinguish applied,
+validation, conflict, read-only layer, persistence failure, revision
+exhaustion, epoch mismatch, unknown key, and malformed request. Applied no-ops
+keep revision and publish nothing.
+
+Status precedence is deterministic. The service first validates the bounded
+request shape, then fences the service epoch. Repository schema-key preflight
+comes next and precedes base-revision conflict and revision-exhaustion checks.
+Thus any well-formed transaction containing an unknown key returns
+`UnknownKey`, unchanged before/after revisions, empty changed keys, empty
+value/source maps, and no persistence or publication. `EpochMismatch` still
+wins before repository evaluation.
 
 Snapshot replies contain exactly eight fields and commit replies exactly ten.
 A method reply contains exactly one top-level map argument.
 A client accepts a commit result only for the initiating owner/epoch,
 settings-schema version, base revision, and operated key; its status must agree
-with revision-before/after and its bounded, deduplicated changed keys. A
-contradiction is an uncertain write followed by resync, never a replay.
+with revision-before/after, the exact known-key map or UnknownKey empty-map
+shape, and its bounded, deduplicated changed keys. A contradiction is an
+uncertain write followed by resync, never a replay.
 
 `SettingsChanged(epoch, revision, changedKeys)` is an invalidation hint. A
 client subscribed to the exact unique sender fetches a complete scoped

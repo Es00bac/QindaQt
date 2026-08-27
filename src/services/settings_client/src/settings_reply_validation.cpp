@@ -141,6 +141,20 @@ bool revisionsMatchStatus(SettingsWireStatus status,
     return false;
 }
 
+bool authorityMapsMatchStatus(SettingsWireStatus status,
+                              const QVariantMap &values,
+                              const QVariantMap &sources,
+                              const QString &key)
+{
+    if (status == SettingsWireStatus::UnknownKey) {
+        // No value/source authority exists for an unknown schema key. Accept
+        // only the exact empty pair, never a fabricated null or partial map.
+        return values.isEmpty() && sources.isEmpty();
+    }
+    return values.size() == 1 && sources.size() == 1
+           && values.contains(key) && sources.contains(key);
+}
+
 } // namespace
 
 bool hasExactSnapshotFields(const QVariantMap &wire)
@@ -194,8 +208,7 @@ std::optional<CommitOutcome> validatedCommitReply(
         || !validEpoch(epochField.toString())
         || !validVersions(wire, &settingsSchemaVersion)
         || settingsSchemaVersion != context.settingsSchemaVersion
-        || values->size() != 1 || sources->size() != 1
-        || !values->contains(context.key) || !sources->contains(context.key)
+        || !authorityMapsMatchStatus(*status, *values, *sources, context.key)
         || !revisionsMatchStatus(*status, *before, *after, context.baseRevision,
                                  *changed, context.key)) {
         return std::nullopt;

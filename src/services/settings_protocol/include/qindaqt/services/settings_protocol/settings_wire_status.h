@@ -37,7 +37,10 @@ enum class SettingsWireStatus : quint32 {
     // baseline). The revision comparison is meaningless across epochs, so
     // the caller must fetch a fresh GetSnapshot rather than retry the write.
     EpochMismatch = 6,
-    // A requested or operation key is not defined by the active schema.
+    // A requested or operation key is not defined by the active schema. A
+    // commit UnknownKey reply has unchanged revisions, no changed keys, and
+    // exactly empty value/source maps because no authority exists for that
+    // key; never encode absence as invalid QVariant or JSON null.
     UnknownKey = 7,
     // The request itself violates a protocol bound (too many keys/
     // operations, duplicate operation keys, oversized value, malformed

@@ -18,6 +18,124 @@
 
 using namespace QindaQt::Services::SettingsService;
 using namespace QindaQt::Settings;
+using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
+using QindaQt::Services::SettingsProtocol::WireContract;
+
+class SettingsChangedCounter final : public QObject {
+    Q_OBJECT
+public:
+    int count = 0;
+
+public Q_SLOTS:
+    void receive(const QString &, qulonglong, const QStringList &) { ++count; }
+};
+
+namespace {
+
+QDBusPendingCall requestSnapshot(const QDBusConnection &connection,
+                                 const QStringList &keys)
+{
+    auto message = QDBusMessage::createMethodCall(
+        QString::fromLatin1(WireContract::ServiceName),
+        QString::fromLatin1(WireContract::ObjectPath),
+        QString::fromLatin1(WireContract::InterfaceName),
+        QString::fromLatin1(WireContract::GetSnapshotMethod));
+    message << keys;
+    return connection.asyncCall(message, 5'000);
+}
+
+QDBusPendingCall requestCommit(const QDBusConnection &connection,
+                               const QString &epoch,
+                               quint64 baseRevision,
+                               const QVariantList &operations)
+{
+    auto message = QDBusMessage::createMethodCall(
+        QString::fromLatin1(WireContract::ServiceName),
+        QString::fromLatin1(WireContract::ObjectPath),
+        QString::fromLatin1(WireContract::InterfaceName),
+        QString::fromLatin1(WireContract::CommitUserTransactionMethod));
+    message << epoch << baseRevision << operations;
+    return connection.asyncCall(message, 5'000);
+}
+
+void verifyUnknownKeyTransactions(const QDBusConnection &serviceBus,
+                                  QDBusConnection clientBus,
+                                  const ResidentSettingsService &service,
+                                  const QString &storagePath)
+{
+    SettingsChangedCounter changedCounter;
+    QVERIFY(clientBus.connect(
+        serviceBus.baseService(), QString::fromLatin1(WireContract::ObjectPath),
+        QString::fromLatin1(WireContract::InterfaceName),
+        QString::fromLatin1(WireContract::SettingsChangedSignal),
+        &changedCounter, SLOT(receive(QString,qulonglong,QStringList))));
+    for (const QString &kind : {QString::fromLatin1(WireContract::OperationKindSet),
+                                QString::fromLatin1(WireContract::OperationKindRemove)}) {
+        QVariantMap operation{{QLatin1StringView(WireContract::FieldKey),
+                               QStringLiteral("unknown.key")},
+                              {QLatin1StringView(WireContract::FieldKind), kind}};
+        if (kind == QLatin1StringView(WireContract::OperationKindSet)) {
+            operation.insert(QLatin1StringView(WireContract::FieldValue), true);
+        }
+        QDBusPendingCallWatcher watcher(requestCommit(
+            clientBus, service.epoch(), 0, {operation}));
+        QTRY_VERIFY_WITH_TIMEOUT(watcher.isFinished(), 5'000);
+        const QDBusPendingReply<QVariantMap> reply(watcher);
+        QVERIFY2(reply.isValid(), qPrintable(reply.error().message()));
+        const QVariantMap wire = reply.value();
+        QCOMPARE(wire.size(), WireContract::CommitReplyFieldCount);
+        QCOMPARE(wire.value(QLatin1StringView(WireContract::FieldStatus)).toUInt(),
+                 quint32(SettingsWireStatus::UnknownKey));
+        QCOMPARE(wire.value(QLatin1StringView(WireContract::FieldEpoch)).toString(),
+                 service.epoch());
+        const QVariant before = wire.value(
+            QLatin1StringView(WireContract::FieldRevisionBefore));
+        const QVariant after = wire.value(
+            QLatin1StringView(WireContract::FieldRevisionAfter));
+        QCOMPARE(before.metaType().id(), QMetaType::ULongLong);
+        QCOMPARE(after.metaType().id(), QMetaType::ULongLong);
+        QCOMPARE(before.toULongLong(), quint64(0));
+        QCOMPARE(after.toULongLong(), quint64(0));
+        const auto values = QindaQt::Services::SettingsProtocol::decodeBoundedVariantMap(
+            wire.value(QLatin1StringView(WireContract::FieldValues)), 1);
+        const auto sources = QindaQt::Services::SettingsProtocol::decodeBoundedVariantMap(
+            wire.value(QLatin1StringView(WireContract::FieldSourceLayers)), 1);
+        const auto changed = QindaQt::Services::SettingsProtocol::decodeBoundedKeyList(
+            wire.value(QLatin1StringView(WireContract::FieldChangedKeys)), 1);
+        QVERIFY(values && values->isEmpty());
+        QVERIFY(sources && sources->isEmpty());
+        QVERIFY(changed && changed->isEmpty());
+        const QVariant message = wire.value(QLatin1StringView(WireContract::FieldMessage));
+        QCOMPARE(message.metaType().id(), QMetaType::QString);
+        QVERIFY(message.toString().contains(QStringLiteral("unknown.key")));
+        QVERIFY(!message.toString().contains(QChar::Null));
+        QVERIFY(message.toString().toUtf8().size() <= WireContract::MaximumMessageBytes);
+        QCOMPARE(service.revision(), quint64(0));
+        QVERIFY(!QFileInfo::exists(storagePath));
+    }
+    QTest::qWait(25);
+    QCOMPARE(changedCounter.count, 0);
+
+    QDBusPendingCallWatcher snapshotWatcher(requestSnapshot(
+        clientBus, {QStringLiteral("services.doNotDisturb")}));
+    QTRY_VERIFY_WITH_TIMEOUT(snapshotWatcher.isFinished(), 5'000);
+    const QDBusPendingReply<QVariantMap> snapshotReply(snapshotWatcher);
+    QVERIFY2(snapshotReply.isValid(), qPrintable(snapshotReply.error().message()));
+    QCOMPARE(snapshotReply.value()
+                 .value(QLatin1StringView(WireContract::FieldRevision)).toULongLong(),
+             quint64(0));
+    const auto unchangedValues =
+        QindaQt::Services::SettingsProtocol::decodeBoundedVariantMap(
+            snapshotReply.value().value(QLatin1StringView(WireContract::FieldValues)), 1);
+    QVERIFY(unchangedValues);
+    const auto unchangedDnd = QindaQt::Services::SettingsProtocol::decodeBoundedJsonValue(
+        unchangedValues->value(QStringLiteral("services.doNotDisturb")));
+    QVERIFY(unchangedDnd);
+    QCOMPARE(unchangedDnd->metaType().id(), QMetaType::Bool);
+    QCOMPARE(unchangedDnd->toBool(), false);
+}
+
+} // namespace
 
 class SettingsServiceLifecycleTests final : public QObject {
     Q_OBJECT
@@ -58,15 +176,8 @@ void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBu
     QVERIFY2(first.start().ok(), "first service did not start");
     QVERIFY(bus.interface()->isServiceRegistered(QStringLiteral("org.qindaqt.Settings1")));
 
-    auto snapshotCall = [](const QDBusConnection &connection) {
-        auto message = QDBusMessage::createMethodCall(
-            QStringLiteral("org.qindaqt.Settings1"),
-            QStringLiteral("/org/qindaqt/Settings1"),
-            QStringLiteral("org.qindaqt.Settings1"), QStringLiteral("GetSnapshot"));
-        message << QStringList{QStringLiteral("appearance.animationDurationMs")};
-        return connection.asyncCall(message, 5'000);
-    };
-    QDBusPendingCallWatcher profileWatcher(snapshotCall(replacementBus));
+    QDBusPendingCallWatcher profileWatcher(requestSnapshot(
+        replacementBus, {QStringLiteral("appearance.animationDurationMs")}));
     QTRY_VERIFY_WITH_TIMEOUT(profileWatcher.isFinished(), 5'000);
     const QDBusPendingReply<QVariantMap> profileSnapshot(profileWatcher);
     QVERIFY2(profileSnapshot.isValid(), qPrintable(profileSnapshot.error().message()));
@@ -84,15 +195,8 @@ void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBu
     QCOMPARE(profileSources->value(QStringLiteral("appearance.animationDurationMs")).toString(),
              QStringLiteral("profile-defaults"));
 
-    auto commitCall = [&replacementBus, &first](const QVariantList &operations) {
-        auto message = QDBusMessage::createMethodCall(
-            QStringLiteral("org.qindaqt.Settings1"),
-            QStringLiteral("/org/qindaqt/Settings1"),
-            QStringLiteral("org.qindaqt.Settings1"),
-            QStringLiteral("CommitUserTransaction"));
-        message << first.epoch() << quint64(0) << operations;
-        return replacementBus.asyncCall(message, 5'000);
-    };
+    verifyUnknownKeyTransactions(bus, replacementBus, first, path);
+
     QVariantList nodeOverflow;
     for (qsizetype index = 0;
          index < QindaQt::Services::SettingsProtocol::WireContract::MaximumListEntries - 12;
@@ -103,7 +207,8 @@ void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBu
         {QStringLiteral("key"), QStringLiteral("displays.configuration")},
         {QStringLiteral("kind"), QStringLiteral("set")},
         {QStringLiteral("value"), nodeOverflow}};
-    QDBusPendingCallWatcher nodeWatcher(commitCall({nodeOperation}));
+    QDBusPendingCallWatcher nodeWatcher(requestCommit(
+        replacementBus, first.epoch(), 0, {nodeOperation}));
     QTRY_VERIFY_WITH_TIMEOUT(nodeWatcher.isFinished(), 5'000);
     const QDBusPendingReply<QVariantMap> nodeReply(nodeWatcher);
     QVERIFY(nodeReply.isValid());
@@ -120,7 +225,8 @@ void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBu
             {QStringLiteral("kind"), QStringLiteral("set")},
             {QStringLiteral("value"), largeValue}}));
     }
-    QDBusPendingCallWatcher aggregateWatcher(commitCall(transactionOperations));
+    QDBusPendingCallWatcher aggregateWatcher(requestCommit(
+        replacementBus, first.epoch(), 0, transactionOperations));
     QTRY_VERIFY_WITH_TIMEOUT(aggregateWatcher.isFinished(), 5'000);
     const QDBusPendingReply<QVariantMap> aggregateReply(aggregateWatcher);
     QVERIFY(aggregateReply.isValid());
