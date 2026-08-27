@@ -620,6 +620,45 @@ budgets remain Platform or Release qualification work. Do not substitute the
 older D-Bus bridge workflow for the process-local evidence accepted in
 [ADR-0004](../adr/0004-process-local-hybrid-topology.md).
 
+## Current Audio1 proof
+
+The focused Audio1 boundary is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|wireplumber-runtime)$' \
+  --output-on-failure
+```
+
+Protocol tests cover exact fixed signatures, round trips, malformed enums,
+lineage, sorting and uniqueness, target compatibility, finite normalized
+levels, UTF-8 byte limits, and oversized-array rejection. Fake transport and
+backend tests cover snapshot/model changes, operation validation, stale handles,
+exact owner/epoch/revision binding, invalidation coalescing, owner replacement,
+timeouts, uncertain outcomes, and the no-replay rule. Private session-bus tests
+cover delayed operations across successive unique owners plus executable D-Bus
+activation. They tear down the constructing daemon, prove that exact activated
+PID exits, activate a fresh PID/owner/epoch on a replacement daemon, and repeat
+the no-orphan proof. Cleanup revalidates `/proc/<pid>/exe` before bounded
+TERM-to-KILL fallback, so a reused PID is never signalled.
+
+`qindaqt.audio-wireplumber-runtime` creates its own `XDG_RUNTIME_DIR`, PipeWire
+socket, WirePlumber `policy` profile, state/config roots, and intentionally
+unreachable session-bus address. It creates only disposable null sinks/sources,
+starts a synthetic playback stream against that private remote, and exercises
+real libwireplumber graph discovery, default, normalized volume, mute, stream
+target metadata, WirePlumber restart/epoch advance, and stale-handle rejection.
+It then races eight submitted operations against consecutive WirePlumber
+disconnect/reconnect cycles before backend teardown, covering cancellation and
+late-completion lifetime. It is serial and must fail rather than fall through
+to the host graph.
+
+This runtime proof does not use physical microphones, speakers, or input and
+does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,
+hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
+Settings/shell UI. Those are later isolated hardware and integrated-session
+gates; a `wpctl`-based test or production fallback is not equivalent evidence.
+
 ## Required display matrix
 
 Single-output scenarios cover:

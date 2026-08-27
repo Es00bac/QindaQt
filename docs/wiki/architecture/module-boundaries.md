@@ -36,7 +36,10 @@ tests, and the wiki page describing its contract.
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin registry, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid contracts, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/session_supervisor` | Essential host/shell child startup, descriptor-only token handoff, parent-death-witnessed compositor-PID provisioning, coupled lifetime, and failure rollback | Public presentation-token protocol, Linux process identity/lifetime syscalls, and Qt Core; never compositor internals, QML, or service implementation libraries |
-| `src/services` | Settings, session, metrics, notifications, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
+| `src/services` | Settings, session, metrics, notifications, audio, portals, and platform adapters | Shared interfaces and narrowly selected platform libraries |
+| `src/services/audio_protocol` | Audio1 typed values, fixed D-Bus structures, aggregate/text limits, and fail-closed validation | Qt Core/DBus only; never transport state, QML, or platform objects |
+| `src/services/audio_client` | Exact-owner asynchronous Audio1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty, and stale-reply rejection | Public Audio1 protocol plus Qt Core/DBus; never service implementation, WirePlumber, or QML |
+| `src/services/audio_service` | Audio backend abstraction, operation coordinator, resident D-Bus object/process, and confined libwireplumber adapter | Public Audio1 protocol plus Qt Core/DBus and private WirePlumber/GLib worker; never shell/settings UI or PipeWire configuration |
 | `src/services/notification_presentation_protocol` | Versioned presentation values, bounded D-Bus decoding, wire limits, restart lineage, 256-bit presenter-token values, and exact one-shot descriptor records | Qt Core/DBus and Linux descriptor syscalls; never notification policy, child lifecycle, host objects, or shell QML |
 | `src/services/notification_presentation_client` | Unique-owner binding, asynchronous authentication/snapshots, serialized operations, initiating-revision result validation, bounded error normalization, uncertain-result recovery, timeout/backoff, invalidation coalescing, and stale-reply rejection | Public presentation protocol plus Qt Core/DBus; never host/service implementation or QML |
 | `src/services/session_lock_state` | Fail-closed owner/PID-authenticated KWin/KScreenLocker state, asynchronous query/signal fencing, and bounded object-startup retry | Qt Core/DBus and a supervisor-provisioned PID value; never shell, notification, compositor-private, PAM, or QML objects |
@@ -73,6 +76,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   private resident-host adapter and public shell client rather than an
   implementation-library link. The shell model consumes that public client,
   and QML consumes the public model projection.
+- Audio consumers depend on the typed Audio1 client. WirePlumber and GObject
+  handles remain on the audio service's dedicated GLib worker; only bounded
+  values cross to Qt. A future Settings route may consume the full model, while
+  shell QML receives only a default-output facade and settings-opening action.
+  See [Audio service](audio-service.md) and
+  [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
 - Notification interruption policy is injected into the presentation model by
   shell composition. It filters only the popup projection; it cannot mutate the
   host, private wire, Active/Recent retention, or persistent settings. The

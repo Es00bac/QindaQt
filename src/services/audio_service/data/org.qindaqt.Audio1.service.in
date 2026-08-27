@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.qindaqt.Audio1
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-audio-service
+SystemdService=qindaqt-audio-service.service

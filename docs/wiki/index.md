@@ -34,6 +34,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Notification service](architecture/notifications-service.md) records the
   bounded model, freedesktop adapter, authenticated host/client transport,
   descriptor provisioning, and remaining service policy.
+- [Audio service](architecture/audio-service.md) records the typed Audio1
+  model/client/service boundary, confined WirePlumber adapter, activation, and
+  isolated-runtime qualification.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, Settings1-fed interruption policy,
   authenticated lock-state privacy gate, and unqualified boundaries.
@@ -66,6 +69,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   documents the authenticated resident-host-to-shell snapshot boundary.
 - [Settings1 protocol 1](reference/settings1-v1.md) documents the generic,
   bounded user-settings snapshot and optimistic-commit boundary.
+- [Audio1 protocol version 1](reference/audio1-v1.md) documents the fixed
+  device/stream snapshot, handle lineage, operation results, and bounds.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

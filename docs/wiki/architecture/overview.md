@@ -15,6 +15,7 @@ system-service state.
 | `qindaqt-settings-service` | Active schema v2, v1 migration, copy-on-write user persistence, optimistic revision order, and change notification | Settings presentation, executable attestation, compositor/lock/presenter authority, or session supervision |
 | `qindaqt-settings` | Ordinary notifications settings page and honest async save/conflict/error presentation | Shell internals, settings files, or notification host authority |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
+| Audio service | Bounded typed PipeWire graph snapshots and validated controls through the running WirePlumber authority | Samples, devices, WirePlumber policy, PipeWire configuration, or UI |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |
 | Applet hosts | Applet lifecycle and capability mediation | Unrestricted access to shell internals or the compositor |
 | First-party applications | User-facing file, terminal, editor, viewer, archive, monitor, and software workflows | Desktop-global authority unavailable to third-party clients |
@@ -45,6 +46,8 @@ Cross-process boundaries are versioned from their first external use:
   isolated development scenarios because caller authentication is not yet a
   supported security boundary;
 - `org.qindaqt.Settings1` for transactional settings;
+- `org.qindaqt.Audio1` for exact-owner, epoch/revision-bound device and
+  application-stream snapshots plus typed controls;
 - `org.qindaqt.Session1` for snapshot and restore coordination;
 - `org.qindaqt.Metrics1` for shared sensor streams; and
 - private `org.qindaqt.NotificationPresentation1` for one token-bound shell
@@ -112,3 +115,5 @@ Authenticated fail-closed lock privacy is recorded in
 [ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
 Persistent notification quieting is recorded in
 [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
+The Audio1 Qt/GLib ownership boundary is recorded in
+[ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).

@@ -1,0 +1,35 @@
+[Unit]
+Description=QindaQt Audio1 service
+Documentation=https://qindaqt.org/
+After=pipewire.service wireplumber.service
+
+[Service]
+Type=dbus
+BusName=org.qindaqt.Audio1
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-audio-service
+Restart=on-failure
+RestartSec=1s
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+TasksMax=16
+UMask=0077
+
+[Install]
+WantedBy=default.target
