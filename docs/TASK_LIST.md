@@ -7,33 +7,6 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
-### Bounded Audio1 platform service
-
-Applications and future shell/settings consumers can observe and mutate a
-bounded audio graph through one asynchronous, versioned Qt boundary without
-loading PipeWire or WirePlumber into presentation processes.
-
-Completion requires all of the following on the integrated branch:
-
-1. `org.qindaqt.Audio1` exposes bounded, validated output, input, and
-   application-stream state plus mutation results; malformed or stale values
-   fail closed without partial publication.
-2. WirePlumber and GLib ownership remains confined to a worker boundary. Only
-   immutable typed values cross to the Qt service thread, and run generations
-   fence queued values across stop, restart, and authority replacement.
-3. The public client is asynchronous, exact-owner and epoch/revision aware,
-   non-reentrant, cancellation safe, and never replays an uncertain mutation.
-4. PipeWire loss, service-bus loss, rapid start/stop, repeated recovery, and
-   malformed backend outcomes have deterministic tested behavior with no
-   surviving worker resources or orphaned services.
-5. Focused Debug, Release, and sanitizer tests; the complete QindaQt registry;
-   strict documentation/source gates; and staged private-D-Bus activation all
-   pass on an independently accepted exact candidate and again after
-   integration with QST-1.
-6. The owning architecture, protocol, testing, and ADR pages distinguish the
-   backend/service boundary from the later settings page, applet, mixer, and
-   real-host audio qualification.
-
 ### Live notification interaction qualification
 
 The installed production shell must prove its notification center shortcut,
@@ -45,6 +18,9 @@ desktop.
 
 ## Completed outcomes
 
+- `fac2756` — Bounded `org.qindaqt.Audio1` protocol, asynchronous Qt client,
+  resident service, confined WirePlumber worker, deterministic reset
+  lifecycle, and isolated null-device runtime and package qualification.
 - `05a8636` — QST-1 semantic design tokens, immutable palette/metric
   derivation, accessibility overrides, read-only QML exposure, and installed
   C++/QML consumer boundaries.
