@@ -626,7 +626,7 @@ The focused Audio1 boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|wireplumber-runtime)$' \
+  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|wireplumber-(runtime|reset-lifecycle))$' \
   --output-on-failure
 ```
 
