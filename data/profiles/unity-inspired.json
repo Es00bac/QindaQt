@@ -20,6 +20,7 @@
         {"id": "menu", "plugin": "global-menu"},
         {"id": "hud", "plugin": "command-hud"},
         {"id": "status", "plugin": "system-status"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"}
       ]
     },

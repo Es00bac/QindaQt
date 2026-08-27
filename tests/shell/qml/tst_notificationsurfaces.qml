@@ -103,8 +103,36 @@ Item {
         when: windowShown
 
         function init() {
+            fakePresentation.centerOpen = false;
             fakePresentation.operationBusy = false;
             fakePresentation.operationErrorText = "";
+        }
+
+        function test_centerProvidesWindowScopedCancelPath() {
+            const center = createTemporaryObject(centerComponent, testRoot);
+            verify(center !== null);
+            const cancelShortcut = findChild(
+                                     center,
+                                     "notificationCenterCloseShortcut");
+            const closeButton = findChild(center,
+                                          "notificationCenterCloseButton");
+            verify(cancelShortcut !== null);
+            verify(closeButton !== null);
+            compare(cancelShortcut.context, Qt.WindowShortcut);
+            compare(cancelShortcut.enabled, false);
+
+            fakePresentation.centerOpen = true;
+            center.visible = true;
+            tryCompare(cancelShortcut, "enabled", true);
+            closeButton.forceActiveFocus(Qt.ActiveWindowFocusReason);
+            // The offscreen platform cannot activate this child Window, but
+            // the focus target itself must still accept the seeded focus.
+            verify(closeButton.focus);
+
+            // Emit the Shortcut signal directly: the offscreen test proves the
+            // close route without registering or synthesizing desktop input.
+            cancelShortcut.activated();
+            compare(fakePresentation.centerOpen, false);
         }
 
         function test_componentsInstantiateOffscreen() {

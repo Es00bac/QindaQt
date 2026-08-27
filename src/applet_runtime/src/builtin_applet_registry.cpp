@@ -18,6 +18,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
     // until its concrete runtime implementation and authority path ship.
     return BuiltinAppletRegistry({
         QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.notification-center"),
     });
 }
 

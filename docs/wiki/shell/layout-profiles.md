@@ -188,6 +188,15 @@ These profiles reproduce workflows with original QindaQt code and assets. They
 do not claim extension compatibility with those desktops or copy proprietary
 branding.
 
+Every one of the ten shipped profiles contains exactly one
+`notification-center` applet instance. This is a stock default, not a schema
+requirement: customization may remove it, and imported or user-created profiles
+may omit it. When the authenticated notification presentation runtime is
+available, the shell-owned `Meta+N` action remains the layout-independent entry
+path; its user mapping is owned by KGlobalAccel rather than profile shortcut
+data. See [Notification presentation](notification-presentation.md) for the
+current focus and live-qualification limits.
+
 Profile components communicate through the public boundaries in
 [Module boundaries](../architecture/module-boundaries.md). Each built-in profile
 is exercised by the resolution matrix in the

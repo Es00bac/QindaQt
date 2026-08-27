@@ -8,22 +8,24 @@ Rectangle {
     required property var theme
     property bool vertical: false
     property bool liveApplets: false
-    property var notificationPresentation: null
+    property var notificationCenterAppletAccess: null
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string pluginId: String(applet.plugin)
     readonly property bool iconic: pluginId === "dock-task-list"
-    readonly property bool usesLiveClock: liveApplets && runtime.ready === true
-                                                   && runtime.entryPoint === "qindaqt.applets.clock"
+    readonly property bool usesLiveContent: builtinContent.hasLiveContent
     readonly property bool runtimeUnavailable: liveApplets && runtime.ready !== true
 
-    width: vertical ? 50 : Math.max(42, usesLiveClock ? clock.implicitWidth
-                                                     : label.implicitWidth + 18)
-    height: vertical ? Math.max(42, usesLiveClock ? clock.implicitHeight
-                                                  : label.implicitHeight + 16) : 28
+    width: vertical ? 50 : Math.max(42, usesLiveContent
+                                         ? builtinContent.implicitWidth
+                                         : label.implicitWidth + 18)
+    height: vertical ? Math.max(42, usesLiveContent
+                                     ? builtinContent.implicitHeight
+                                     : label.implicitHeight + 16) : 28
     radius: Math.min(theme.cornerRadius ?? 8, 8)
-    color: mouseArea.containsMouse ? colors.accent ?? "#8fc8b7"
+    color: builtinContent.selected || hoverHandler.hovered
+          ? colors.accent ?? "#8fc8b7"
           : settings.bare ? "transparent"
           : colors.surfaceRaised ?? "#2c312e"
 
@@ -34,6 +36,7 @@ Rectangle {
             "system-menu": "Q",
             "system-status": "◉   Wi‑Fi   87%",
             "clock": "Tue 10:42",
+            "notification-center": "Notifications",
             "launcher": "QindaQt"
         };
         return labels[plugin] ?? plugin.replace(/-/g, " ");
@@ -44,22 +47,24 @@ Rectangle {
         anchors.centerIn: parent
         width: root.vertical ? parent.width - 6 : implicitWidth
         text: root.displayLabel(root.pluginId)
-        visible: !root.usesLiveClock
-        color: mouseArea.containsMouse ? root.colors.accentText ?? "#10201b"
-                                       : root.colors.text ?? "white"
+        visible: !root.usesLiveContent
+        color: hoverHandler.hovered ? root.colors.accentText ?? "#10201b"
+                                    : root.colors.text ?? "white"
         font.pixelSize: root.vertical ? 9 : root.iconic ? 16 : 11
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
         elide: Text.ElideRight
     }
 
-    ClockApplet {
-        id: clock
+    BuiltinAppletContent {
+        id: builtinContent
         anchors.fill: parent
-        visible: root.usesLiveClock
+        visible: root.usesLiveContent
         applet: root.applet
         theme: root.theme
         vertical: root.vertical
+        liveApplets: root.liveApplets
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     Rectangle {
@@ -77,29 +82,7 @@ Rectangle {
         border.width: 1
     }
 
-    MouseArea {
-        id: mouseArea
-        objectName: "notificationCenterToggle"
-        anchors.fill: parent
-        hoverEnabled: true
-        activeFocusOnTab: root.usesLiveClock && root.notificationPresentation
-        Accessible.role: root.usesLiveClock && root.notificationPresentation
-                         ? Accessible.Button : Accessible.StaticText
-        Accessible.name: root.usesLiveClock && root.notificationPresentation
-                         ? qsTr("Clock and notifications") : label.text
-        function toggleNotifications() {
-            if (root.usesLiveClock && root.notificationPresentation)
-                root.notificationPresentation.toggleCenter();
-        }
-        Accessible.onPressAction: toggleNotifications()
-        onClicked: toggleNotifications()
-        Keys.onReturnPressed: event => {
-            toggleNotifications();
-            event.accepted = true;
-        }
-        Keys.onSpacePressed: event => {
-            toggleNotifications();
-            event.accepted = true;
-        }
+    HoverHandler {
+        id: hoverHandler
     }
 }

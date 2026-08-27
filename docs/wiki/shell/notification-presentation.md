@@ -94,8 +94,10 @@ seconds or the next successful operation.
 
 Both windows currently use the primary output, top-right anchors, overlay
 layer, a 16-logical-pixel top/right margin, zero exclusive zone, on-demand
-keyboard interactivity, disabled activate-on-show, and separate
-`notification-popup` and `notification-center` scopes. Preferred sizes are
+keyboard interactivity, and separate `notification-popup` and
+`notification-center` scopes. Popup stacks always disable activate-on-show so
+an incoming notification cannot steal focus. The center alone requests
+activate-on-show when mapped. Preferred sizes are
 400 logical pixels wide for popups and 440 by 640 for the center. Popup height
 is a 38-logical-pixel header plus at most three 146-logical-pixel cards. The
 runtime keeps the 38-pixel header-only surface mapped while an operation is
@@ -104,12 +106,33 @@ the output's logical geometry, including a
 1920x1080 mode exposed by Qt as 960x540 at 200% scaling, and rejects geometry
 too small to retain usable controls.
 
-The popup **History** button opens the center while a popup is visible. A live
-clock applet toggles the center in profiles that contain it. This is not yet a
-complete keyboard entry path: production panels intentionally request no
-keyboard interactivity, and a custom profile may omit the clock. A dedicated
-status applet or compositor/global shortcut, focus transfer, and end-to-end
-assistive-technology verification remain required.
+The popup **History** button opens the center while a popup is visible. A
+dedicated notification-center applet now appears exactly once in each of the
+ten stock profiles. Its manifest requests no capabilities; the production
+renderer receives only a shell-owned facade that requests a center toggle and
+mirrors open state. Notification records, dismiss/action operations, and the
+presentation controller remain outside the applet boundary. A custom profile
+may remove or omit this entry. If the shell starts without the supervisor's
+authenticated presentation descriptor, the facade is absent and the button is
+disabled.
+
+Once the authenticated presentation client has started, the shell also owns a
+stable `qindaqt_toggle_notification_center` action with default `Meta+N` and
+registers it through KF6 GlobalAccel using autoloading semantics. This entry
+path does not depend on the selected profile and preserves a user's remapped or
+disabled binding. KGlobalAccel setter acceptance and an observable active
+binding are tracked separately: acceptance is not proof that the service is
+active, while an empty binding may be intentional disablement, a conflict, or
+service absence and is not forcibly reclaimed. The boundary is recorded in
+[ADR-0009](../adr/0009-use-kglobalaccel-for-shell-shortcuts.md).
+
+The center seeds its close button as the initial focus target only after the
+window becomes active and no item already owns focus. A window-scoped Escape
+shortcut closes it without changing the global binding. These are structural
+keyboard paths, not yet a qualified live keyboard experience: no isolated
+nested-Wayland run has proved that the compositor accepts activation, that
+focus traversal works end to end, or that GlobalAccel remapping, conflicts, and
+assistive-technology operation behave correctly.
 
 ## Qualification boundary
 
@@ -125,17 +148,29 @@ tests instantiate cards, popup and center surfaces, exercise active and popup
 delegates, verify literal plain-text body and operation-error rendering, disable
 controls while busy, and keep overflow plus Dismiss inside the card.
 
+The notification-center entry tests use an injected registrar to prove the
+facade's toggle/open-state boundary, stable action identity and `Meta+N`
+default, dispatch, setter-request status, and active-binding state changes
+without touching the developer's shortcut registry. A second offscreen QML
+test proves the applet's disabled fallback, accessibility label changes, narrow
+toggle call, and compiled-entry-point dispatch without compositor or pointer
+input. The notification-surface offscreen test proves the center's window-
+scoped Escape route and focusable initial target without activating a real
+surface. Catalog, resolver, and profile tests prove the empty capability
+request, audited registry entry, and exactly one instance in every stock
+profile.
+
 This milestone did **not** run a live or nested compositor and did not inject
 input. The following remain unqualified or unimplemented:
 
-- real layer-role mapping, placement, focus, keyboard navigation, and visual
-  baselines at the reference resolutions;
+- real layer-role mapping, placement, compositor activation acceptance, focus
+  traversal, global-shortcut dispatch/remapping, and visual baselines at the
+  reference resolutions;
 - multi-output placement policy, per-output histories, and output migration;
 - do-not-disturb/inhibition, lock-screen redaction, sound, and safe image/icon
   loading;
 - persistent history/settings, D-Bus activation, and child/bus-loss restart;
 - activation-token acquisition, portal routing, inline reply, and vendor
-  extensions; and
-- a persistent center entry point independent of a particular applet.
+  extensions.
 
 These limits are deliberate status statements, not final product behavior.

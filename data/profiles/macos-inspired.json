@@ -20,6 +20,7 @@
         {"id": "system-menu", "plugin": "system-menu", "settings": {"zone": "start", "bare": true}},
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start", "bare": true}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end", "bare": true}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end", "bare": true}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end", "bare": true}}
       ]
     },

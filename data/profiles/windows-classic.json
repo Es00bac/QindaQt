@@ -21,6 +21,7 @@
         {"id": "quick-launch", "plugin": "quick-launch"},
         {"id": "tasks", "plugin": "task-list"},
         {"id": "tray", "plugin": "system-tray"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"}
       ]
     }

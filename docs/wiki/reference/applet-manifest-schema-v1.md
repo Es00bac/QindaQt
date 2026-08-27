@@ -40,9 +40,15 @@ authority.
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes launcher,
-task-list, global-menu, status-tray, and clock applets. Directory loading is
-atomic and deterministic: malformed manifests, duplicate IDs, or incompatible
-documents leave the previously loaded catalog intact.
+task-list, global-menu, status-tray, clock, and notification-center applets.
+Directory loading is atomic and deterministic: malformed manifests, duplicate
+IDs, or incompatible documents leave the previously loaded catalog intact.
+
+The notification-center manifest intentionally requests no capabilities.
+Opening a shell-owned surface is not notification data or operation authority;
+the audited in-process renderer receives only a private toggle/open-state facade
+from the shell. That facade is not a manifest capability and is not available
+to third-party packages.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

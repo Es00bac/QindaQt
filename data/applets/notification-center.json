@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "notification-center",
+  "name": "Notification Center",
+  "description": "Opens the shell-owned notification center without receiving notification data or service authority.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.notification-center"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end", "panel-fill"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 32, "preferred": 40, "maximum": 72, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": [],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

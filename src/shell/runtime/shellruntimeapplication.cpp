@@ -2,6 +2,9 @@
 #include "shellruntimeapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "kglobalaccelshortcutregistrar.h"
+#include "notificationcenterappletaccess.h"
+#include "notificationcentershortcut.h"
 #include "notificationwindowcontroller.h"
 #include "runtimepanelwindowfactory.h"
 
@@ -197,11 +200,25 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient);
+        m_notificationCenterAccess =
+            std::make_unique<NotificationCenterAppletAccess>();
+        connect(m_notificationCenterAccess.get(),
+                &NotificationCenterAppletAccess::toggleRequested,
+                m_notificationPresentation.get(),
+                &Services::NotificationPresentationModel::
+                    NotificationPresentationController::toggleCenter);
+        connect(m_notificationPresentation.get(),
+                &Services::NotificationPresentationModel::
+                    NotificationPresentationController::centerOpenChanged,
+                m_notificationCenterAccess.get(), [this] {
+                    m_notificationCenterAccess->publishCenterOpen(
+                        m_notificationPresentation->centerOpen());
+                });
     }
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
-            m_notificationPresentation.get());
+            m_notificationCenterAccess.get());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -229,6 +246,17 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
         }
         m_notificationWindows = std::make_unique<NotificationWindowController>(
             m_engine, *m_notificationPresentation, m_themes.current());
+        m_globalShortcutRegistrar =
+            std::make_unique<KGlobalAccelShortcutRegistrar>();
+        m_notificationCenterShortcut =
+            std::make_unique<NotificationCenterShortcut>(
+                *m_globalShortcutRegistrar,
+                [this] { m_notificationCenterAccess->toggle(); });
+        if (!m_notificationCenterShortcut->registrationRequestAccepted()) {
+            qWarning().noquote()
+                << "QindaQt shell could not submit the notification-center"
+                   " global shortcut; the panel entry remains available";
+        }
     }
 
     if (!reconcileSurfaces(error)) {
@@ -368,6 +396,8 @@ void ShellRuntimeApplication::scheduleOutputReconcile()
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
+    m_notificationCenterShortcut.reset();
+    m_globalShortcutRegistrar.reset();
     m_notificationWindows.reset();
     m_interactions.reset();
     m_visibilityClient.reset();
@@ -375,6 +405,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_notificationCenterAccess.reset();
     m_notificationPresentation.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();

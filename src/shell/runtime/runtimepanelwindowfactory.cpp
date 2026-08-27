@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtimepanelwindowfactory.h"
 
+#include "notificationcenterappletaccess.h"
+
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
@@ -33,10 +35,10 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      QVariantMap theme,
                                                      const Applets::ManifestCatalog &applets,
                                                      const AppletHost::CapabilityPolicy &policy,
-                                                     QObject *notificationPresentation)
+                                                     NotificationCenterAppletAccess *notificationCenterAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
-    , m_notificationPresentation(notificationPresentation)
+    , m_notificationCenterAccess(notificationCenterAccess)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
@@ -98,8 +100,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         {QStringLiteral("panel"), panel.value()},
         {QStringLiteral("theme"), m_theme},
         {QStringLiteral("surfaceId"), surfaceId},
-        {QStringLiteral("notificationPresentation"),
-         QVariant::fromValue(m_notificationPresentation)},
+        {QStringLiteral("notificationCenterAppletAccess"),
+         QVariant::fromValue(m_notificationCenterAccess)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);

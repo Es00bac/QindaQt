@@ -21,7 +21,9 @@ qt_add_qml_module(
     VERSION 1.0
     QML_FILES
         qml/AppletChip.qml
+        qml/BuiltinAppletContent.qml
         qml/ClockApplet.qml
+        qml/NotificationCenterApplet.qml
         qml/ContainerTabStrip.qml
         qml/DecorationButtons.qml
         qml/DesktopPreview.qml
@@ -60,11 +62,20 @@ qindaqt_enable_warnings(qindaqt-shell-preview)
 install(TARGETS qindaqt-shell-preview RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
+    find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+
     qt_add_executable(
         qindaqt-shell
         common/catalogpaths.cpp
         common/catalogpaths.h
         runtime/main.cpp
+        runtime/globalshortcutregistrar.h
+        runtime/kglobalaccelshortcutregistrar.cpp
+        runtime/kglobalaccelshortcutregistrar.h
+        runtime/notificationcenterappletaccess.cpp
+        runtime/notificationcenterappletaccess.h
+        runtime/notificationcentershortcut.cpp
+        runtime/notificationcentershortcut.h
         runtime/notificationwindowcontroller.cpp
         runtime/notificationwindowcontroller.h
         runtime/runtimeoptions.cpp
@@ -81,7 +92,9 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         VERSION 1.0
         QML_FILES
             qml/AppletChip.qml
+            qml/BuiltinAppletContent.qml
             qml/ClockApplet.qml
+            qml/NotificationCenterApplet.qml
             qml/NotificationCard.qml
             qml/NotificationCenter.qml
             qml/NotificationListSection.qml
@@ -105,6 +118,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellSurface
             QindaQt::ShellVisibilityClient
             qindaqt_themes
+            KF6::GlobalAccel
             Qt6::Core
             Qt6::Gui
             Qt6::Qml

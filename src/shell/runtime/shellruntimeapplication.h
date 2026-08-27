@@ -45,6 +45,9 @@ class NotificationPresentationController;
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
+class KGlobalAccelShortcutRegistrar;
+class NotificationCenterAppletAccess;
+class NotificationCenterShortcut;
 class NotificationWindowController;
 
 class ShellRuntimeApplication final : public QObject {
@@ -92,7 +95,10 @@ private:
     std::unique_ptr<Services::NotificationPresentationModel::
                         NotificationPresentationController>
         m_notificationPresentation;
+    std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
+    std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
+    std::unique_ptr<NotificationCenterShortcut> m_notificationCenterShortcut;
     QTimer m_outputDebounce;
 };
 

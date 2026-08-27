@@ -48,13 +48,24 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
-The manifest catalog describes clock, launcher, task list, global menu, and
-status tray packages. The compiled first-party registry currently contains only
-`qindaqt.applets.clock`, because it is the only concrete runtime component in
-this slice. The clock updates from local time, follows the locale by default,
-supports 12/24-hour overrides, optional seconds/date, and horizontal or vertical
-panels. The preview keeps its fixed sample time so image baselines remain
-deterministic.
+The manifest catalog describes clock, notification center, launcher, task list,
+global menu, and status tray packages. The compiled first-party registry and
+production QML dispatcher currently contain two audited entry points:
+
+- `qindaqt.applets.clock` renders local time, follows the locale by default,
+  supports 12/24-hour overrides and optional seconds/date, and works on
+  horizontal or vertical panels; and
+- `qindaqt.applets.notification-center` renders a dedicated open/close button
+  on either orientation. Its manifest has an empty capability set. When the
+  authenticated presentation runtime is provisioned, QML receives only a
+  shell-owned facade that can request a center toggle and observe whether the
+  center is open. It cannot read notification records or invoke notification
+  operations.
+
+The notification-center entry remains a valid compiled applet when the shell
+starts without presentation-token provisioning, but its facade is absent and
+the control is visibly disabled. The preview keeps deterministic static applet
+fixtures rather than connecting to live clock or notification state.
 
 Launcher, task-list, global-menu, and status-tray manifests remain accepted
 contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
@@ -72,6 +83,9 @@ content and never mutates the selected profile.
 
 The pure `src/applet_runtime` module owns resolution. `src/shell` converts its
 descriptors to QML data; QML does not repeat trust, host, or capability policy.
+The compiled registry and QML renderer inventory are separate fail-closed
+gates and must remain aligned through focused tests. A shell-private facade is
+not part of `QindaQt.Applets 1.0` and must not be exposed to third-party hosts.
 The architectural decision is in
 [ADR-0002](../adr/0002-native-qindaqt-applet-api.md), and manifest fields are in
 [Applet manifest schema v1](../reference/applet-manifest-schema-v1.md).

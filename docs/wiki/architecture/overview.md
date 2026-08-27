@@ -11,7 +11,7 @@ system-service state.
 | --- | --- | --- |
 | `qindaqt-wm` | Wayland composition, input routing, outputs, workspaces, client lifecycle, and window-container transactions | Panels, settings UI, applet rendering, or device policy |
 | `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, and coupled process lifetime | Compositor internals, desktop policy, or token persistence |
-| QindaQt Shell | Panels, docks, overview, task presentation, global menu, notifications UI, and direct customization | Authoritative window/output state or privileged hardware changes |
+| QindaQt Shell | Panels, docks, overview, task presentation, global menu, notifications UI, direct customization, and shell-wide presentation actions | Authoritative window/output state, global-shortcut conflict/remapping policy, or privileged hardware changes |
 | Settings service | Versioned schemas, preview/commit/rollback, migrations, and change notification | Settings presentation or compositor implementation details |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |
@@ -57,6 +57,12 @@ state, but public desktop integrations prefer freedesktop protocols and D-Bus.
 All boundaries define failure behavior and version negotiation before they are
 treated as stable.
 
+Shell-wide actions use the KGlobalAccel client boundary supplied by the KWin
+session. The shell owns action identity and callbacks; KGlobalAccel owns the
+active user mapping and conflicts. Built-in applet QML can reach the same shell
+presentation through narrow, action-specific facades without gaining the
+underlying notification model or service authority.
+
 The implemented Compositor1 methods, signals, and transaction encoding are
 tracked in the
 [Compositor control protocol reference](../reference/compositor-control-v1.md).
@@ -78,4 +84,6 @@ The KWin foundation and its downstream-maintenance constraints are recorded in
 boundary is recorded in
 [ADR-0002](../adr/0002-native-qindaqt-applet-api.md). Process-local Hybrid
 authority and composed member/shared chrome are recorded in
-[ADR-0004](../adr/0004-process-local-hybrid-topology.md).
+[ADR-0004](../adr/0004-process-local-hybrid-topology.md). Shell-owned global
+shortcut registration is recorded in
+[ADR-0009](../adr/0009-use-kglobalaccel-for-shell-shortcuts.md).

@@ -22,6 +22,7 @@
         {"id": "tasks", "plugin": "task-list"},
         {"id": "workspaces", "plugin": "workspace-switcher"},
         {"id": "tray", "plugin": "system-tray"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"}
       ]
     },

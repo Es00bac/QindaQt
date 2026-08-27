@@ -15,5 +15,6 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0006](0006-profile-global-applet-identity.md) | Accepted | Make applet instance identity global within a layout profile |
 | [ADR-0007](0007-layer-shell-panel-surfaces.md) | Accepted | Use LayerShellQt behind a QindaQt panel-surface boundary |
 | [ADR-0008](0008-lean-notification-service.md) | Accepted | Own a bounded QtDBus notification service without Plasma runtime |
+| [ADR-0009](0009-use-kglobalaccel-for-shell-shortcuts.md) | Accepted | Use KGlobalAccel for user-remappable shell-wide shortcuts |
 
 Numbers are never reused, including for rejected or superseded records.

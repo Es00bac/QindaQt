@@ -36,14 +36,48 @@ add_test(
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationsurfaces.qml"
 )
 
+add_test(
+    NAME qindaqt.notification-center-applet-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationcenterapplet.qml"
+)
+
 set_tests_properties(
     qindaqt.decoration-hover
     qindaqt.notification-surfaces-offscreen
+    qindaqt.notification-center-applet-offscreen
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
 if(TARGET qindaqt-shell)
+    qt_add_executable(
+        qindaqt_notification_center_entry_tests
+        tst_notificationcenterentry.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationcenterappletaccess.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationcenterappletaccess.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationcentershortcut.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationcentershortcut.h"
+    )
+    target_include_directories(
+        qindaqt_notification_center_entry_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_notification_center_entry_tests
+        PRIVATE Qt6::Gui Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_notification_center_entry_tests)
+    add_test(
+        NAME qindaqt.notification-center-entry
+        COMMAND qindaqt_notification_center_entry_tests
+    )
+    set_tests_properties(
+        qindaqt.notification-center-entry
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
+
     add_test(
         NAME qindaqt.shell-runtime-catalog
         COMMAND $<TARGET_FILE:qindaqt-shell> --list
@@ -52,6 +86,6 @@ if(TARGET qindaqt-shell)
         qindaqt.shell-runtime-catalog
         PROPERTIES
             ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
-            PASS_REGULAR_EXPRESSION "clock - Clock"
+            PASS_REGULAR_EXPRESSION "notification-center - Notification Center"
     )
 endif()

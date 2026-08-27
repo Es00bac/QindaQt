@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
     // remaining output inventory instead of ending the desktop session.
     application.setQuitOnLastWindowClosed(false);
     QCoreApplication::setApplicationName(QStringLiteral("qindaqt-shell"));
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("QindaQt Shell"));
     QCoreApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
     QCoreApplication::setOrganizationDomain(QStringLiteral("qindaqt.org"));
 

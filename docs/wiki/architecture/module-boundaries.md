@@ -28,7 +28,7 @@ tests, and the wiki page describing its contract.
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/applet_runtime` | Resolve profile instances through validated manifests, placement, host policy, the compiled built-in registry, and least-authority capability grants | Public `profiles`, `applets`, and `applet_host` values plus Qt Core; never QML, services, or third-party process launch |
 | `src/settings` | Schema-v1 settings values, layered resolution, optimistic transactions, change sets, and atomic persistence | Qt Core only; future service adapters consume this public model |
-| `src/shell` | Qt Quick panel/notification presentation, production window factories, and shell controllers consuming public values | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, and public service clients/models; never LayerShellQt or service implementations directly |
+| `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, and shell-owned global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin registry, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid contracts, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/session_supervisor` | Essential host/shell child startup, descriptor-only token handoff, coupled lifetime, and failure rollback | Public presentation-token protocol and Qt Core; never compositor internals, QML, or service implementation libraries |
@@ -63,6 +63,16 @@ implemented; do not use placeholder modules to bypass a boundary.
   private resident-host adapter and public shell client rather than an
   implementation-library link. The shell model consumes that public client,
   and QML consumes the public model projection.
+- Built-in applet QML receives a purpose-specific shell facade, never a general
+  shell controller or service model. The notification-center entry can request
+  a toggle and observe open state, but it receives no notification records,
+  operations, or service authority. Its manifest therefore requests no
+  capabilities.
+- Shell-wide presentation shortcuts are shell-owned actions registered through
+  a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
+  and user remapping; neither profile data nor applet QML may register or
+  reclaim those bindings. This focused dependency is accepted in
+  [ADR-0009](../adr/0009-use-kglobalaccel-for-shell-shortcuts.md).
 - Applets and applications use the SDK and public IPC. They do not include shell
   private headers or assume a specific panel implementation.
 - Tests use public APIs first. Input-injection providers/devices, fake-device

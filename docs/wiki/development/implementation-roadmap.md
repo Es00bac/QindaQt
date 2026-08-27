@@ -42,13 +42,16 @@ The repository currently builds and tests:
   work-area proof at 1080p, WUXGA, and 1440p;
 - production applet resolution through validated manifests, placement and host
   policy, a compiled implementation registry, and least-authority grants, plus
-  the first live built-in locale-aware clock;
+  live built-in locale-aware clock and capability-empty notification-center
+  entries;
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
   D-Bus adapter, installable resident ownership/expiry host, authenticated
   private presentation server/client, descriptor-only token handoff, and
   essential host/shell session supervision, plus bounded production popups and
   an active/recent center with logical-DPI clamping, serialized operations,
-  authoritative failure recovery, and bounded busy/error presentation;
+  authoritative failure recovery, bounded busy/error presentation, a dedicated
+  entry in every stock profile, and a shell-owned `Meta+N` action registered
+  through KF6 GlobalAccel without applet notification authority;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
@@ -61,9 +64,11 @@ readable public state, runtime decoration proof, member focus/transient policy,
 close/ungroup policy, lifecycle synchronization, and grouped plugin-unload
 restoration. Final qualification passed every gate recorded in the
 [testing harness](testing-harness.md), so Hybrid interaction is complete. This
-is not yet a daily-use desktop session: panel windows and the clock are real,
-but audio, power, Bluetooth, menu, task, launcher, tray, and clipboard entries
-remain unavailable or visual fixtures rather than live integrations.
+is not yet a daily-use desktop session: panel windows, the clock, and the
+bounded notification presentation/entry path are implemented, but live
+notification shortcut dispatch and compositor focus acceptance are not yet
+qualified. Audio, power, Bluetooth, menu, task, launcher, tray, and clipboard
+entries remain unavailable or visual fixtures rather than live integrations.
 
 ## Milestones
 
@@ -72,7 +77,7 @@ remain unavailable or visual fixtures rather than live integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime/live clock, authenticated notification stack, and visible recoverable notification operations implemented; notification keyboard/lock/DND/live proof, reveal UI, and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime with clock/notification-center entries, authenticated notification stack, visible recoverable operations, and a shell-owned global toggle implemented; notification live shortcut/focus proof, lock/DND, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

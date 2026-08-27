@@ -112,10 +112,11 @@ The same three tests can be configured directly from `tests/profiles` when a
 later in-progress module makes the complete tree temporarily unbuildable. They
 cover built-in/catalog behavior, strict JSON syntax and field types, exact
 integer and range handling, global applet identity, deterministic structured
-errors, and lossless JSON-native settings values. The isolated profile suite
-passed 3/3 in both Debug and Release for this contract revision. That evidence
-qualifies the persistence boundary only; it does not claim live shell surfaces
-or profile editing UI.
+errors, lossless JSON-native settings values, and exactly one
+notification-center instance in each of the ten stock profiles. The isolated
+profile suite passed 3/3 in both Debug and Release for this contract revision.
+That evidence qualifies the persistence boundary only; it does not claim live
+shell surfaces or profile editing UI.
 
 ## Current shell and panel-surface proof
 
@@ -162,9 +163,10 @@ ctest --test-dir build/dev \
 It proves exact manifest lookup, horizontal/vertical placement rejection,
 invalid-edge rejection, compiled implementation registration, typed unresolved
 states, grant filtering, and deny-default least authority. The QML cache build
-proves the live clock component is compilable; visual behavior and interaction
-require a separately isolated display test and are not claimed by this unit
-selector.
+proves the clock and notification-center components are compilable; visual
+behavior and interaction require a separately isolated display test and are
+not claimed by this unit selector. Manifest and catalog tests additionally
+prove that the notification-center package requests no capabilities.
 
 The production Wayland surface matrix is selected with:
 
@@ -218,6 +220,9 @@ ctest --test-dir build/dev \
 ctest --test-dir build/dev \
   -R '^qindaqt\.notification-(surface-layout|surfaces-offscreen)$' \
   --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.notification-center-(entry|applet-offscreen)$' \
+  --output-on-failure
 ```
 
 The three model/adapter tests cover bounded submissions and replacement,
@@ -257,11 +262,24 @@ and recent-center QML with the software renderer, verifies literal plain-text
 body/error rendering and busy control disabling, and keeps overflow actions
 plus Dismiss within a 400-pixel card.
 
+`qindaqt.notification-center-entry` uses an injected shortcut registrar to
+cover the shell-private applet facade, stable action identity, default `Meta+N`
+sequence, callback dispatch, request-acceptance state, and independently
+observable active-binding changes. It never calls KGlobalAccel or mutates the
+developer's shortcut registry. `qindaqt.notification-center-applet-offscreen`
+uses the software renderer to cover the disabled-without-facade fallback,
+accessible open/close labels, the narrow toggle request, and the audited QML
+entry-point dispatcher. `qindaqt.notification-surfaces-offscreen` also covers
+the window-scoped Escape close route and a focusable initial target without
+activating a real surface. None of these tests opens a production surface or
+injects input.
+
 These presentation checks do not start a compositor or inject input. They are
 not evidence for real layer-role mapping, screen placement, visual baselines,
 focus transfer, keyboard navigation, assistive-technology behavior,
-multi-output migration, do-not-disturb, persistence, sound, lock-screen policy,
-or live operation-result interaction.
+KGlobalAccel registration/remapping or live dispatch, compositor acceptance of
+the center's activate-on-show request, multi-output migration, do-not-disturb,
+persistence, sound, lock-screen policy, or live operation-result interaction.
 
 ## Current compositor proof
 

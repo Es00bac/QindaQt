@@ -15,12 +15,14 @@ This repository currently contains the executable foundation for the desktop:
 - a Qt Quick shell preview and a production LayerShellQt panel process with
   owner-bound compositor visibility and safe-visible recovery;
 - manifest- and capability-policy-gated production applet resolution, with a
-  live locale-aware clock as the first audited built-in implementation;
+  live locale-aware clock and capability-empty notification-center entry as the
+  first two audited built-in implementations;
 - transactional panel/applet editing, window-aware visibility policy, and an
   installable freedesktop notification host with an owner-bound asynchronous
   shell client and descriptor-only session authentication;
 - bounded production notification popups plus an active/recent center on the
-  primary output, with plain-text rendering and logical-DPI size clamping;
+  primary output, with plain-text rendering, logical-DPI size clamping, a
+  dedicated entry in every stock profile, and a shell-owned `Meta+N` action;
 - an essential-process supervisor that starts the notification host and shell,
   couples their lifetimes, and never places its generated token in argv or env;
 - isolated nested-session and resolution-scenario tooling;
@@ -31,8 +33,8 @@ are implemented. QindaQt is still under construction as a daily-use desktop:
 the remaining live applets, global menu, settings-center presentation, platform
 services, packaging, and physical-hardware qualification remain roadmap work.
 Notification do-not-disturb, persistent history, lock-screen policy, activation
-tokens, multi-output placement, and live/nested surface qualification are also
-unfinished.
+tokens, multi-output placement, and live/nested surface, shortcut, and focus
+qualification are also unfinished.
 
 ## Build
 

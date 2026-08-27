@@ -19,6 +19,7 @@
       "applets": [
         {"id": "apps", "plugin": "application-tiles"},
         {"id": "workspaces", "plugin": "workspace-tiles"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock-tile"}
       ]
     }

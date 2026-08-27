@@ -7,7 +7,7 @@ Item {
     required property var panel
     required property var theme
     property bool liveApplets: false
-    property var notificationPresentation: null
+    property var notificationCenterAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -32,7 +32,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     PanelAppletRow {
@@ -45,7 +45,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     PanelAppletRow {
@@ -59,7 +59,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     PanelAppletColumn {
@@ -72,7 +72,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     PanelAppletColumn {
@@ -85,7 +85,7 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 
     PanelAppletColumn {
@@ -98,6 +98,6 @@ Item {
         panel: root.panel
         theme: root.theme
         liveApplets: root.liveApplets
-        notificationPresentation: root.notificationPresentation
+        notificationCenterAppletAccess: root.notificationCenterAppletAccess
     }
 }

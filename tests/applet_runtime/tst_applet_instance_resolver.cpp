@@ -47,6 +47,7 @@ class AppletInstanceResolverTests final : public QObject {
 
 private slots:
     void resolvesAuditedBuiltinsAndCapabilities();
+    void resolvesNotificationCenterForEveryPanelPlacement();
     void rejectsMissingManifestsAndUnsupportedPlacements();
     void requiresTheCompiledImplementationRegistry();
     void exposesCapabilitiesOnlyForRegisteredImplementations();
@@ -69,8 +70,39 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
                  .toMap().value(QStringLiteral("status")).toString(),
              QStringLiteral("ready"));
 
-    QCOMPARE(fixture.registry.entryPoints(),
-             QStringList{QStringLiteral("qindaqt.applets.clock")});
+    const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.notification-center")};
+    QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
+}
+
+void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+
+    const QList<Profiles::Edge> edges{Profiles::Edge::Top,
+                                      Profiles::Edge::Bottom,
+                                      Profiles::Edge::Left,
+                                      Profiles::Edge::Right};
+    const QStringList zones{QStringLiteral("start"),
+                            QStringLiteral("center"),
+                            QStringLiteral("end"),
+                            QStringLiteral("fill")};
+    for (const Profiles::Edge edge : edges) {
+        for (const QString &zone : zones) {
+            auto notificationCenter = instance(QStringLiteral("notification-center"));
+            notificationCenter.settings[QStringLiteral("zone")] = zone;
+            const auto resolved = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                notificationCenter, edge, fixture.catalog, fixture.policy,
+                fixture.registry);
+            QVERIFY2(resolved.ready(), qPrintable(resolved.diagnostic));
+            QCOMPARE(resolved.entryPoint,
+                     QStringLiteral("qindaqt.applets.notification-center"));
+            QVERIFY(resolved.grantedCapabilities.isEmpty());
+        }
+    }
 }
 
 void AppletInstanceResolverTests::rejectsMissingManifestsAndUnsupportedPlacements()
@@ -117,7 +149,7 @@ void AppletInstanceResolverTests::requiresTheCompiledImplementationRegistry()
     const AppletRuntime::BuiltinAppletRegistry empty(QStringList{});
 
     const auto rejected = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
-        instance(QStringLiteral("clock")), Profiles::Edge::Top,
+        instance(QStringLiteral("notification-center")), Profiles::Edge::Top,
         fixture.catalog, fixture.policy, empty);
 
     QCOMPARE(AppletRuntime::toString(rejected.status),

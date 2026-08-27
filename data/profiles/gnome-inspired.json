@@ -20,6 +20,7 @@
         {"id": "activities", "plugin": "overview-trigger"},
         {"id": "active-app", "plugin": "active-application"},
         {"id": "clock", "plugin": "clock"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "status", "plugin": "system-status"}
       ]
     }

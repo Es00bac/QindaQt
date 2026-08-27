@@ -61,7 +61,10 @@ bool LayerShellNotificationSurface::configure(
                               : QStringLiteral("notification-center"));
     layerWindow->setKeyboardInteractivity(
         LayerShellQt::Window::KeyboardInteractivityOnDemand);
-    layerWindow->setActivateOnShow(false);
+    // AGENT-GUARD: only the explicitly opened center may ask the compositor
+    // for keyboard focus. Enabling this for PopupStack would let an incoming
+    // notification interrupt typing in the user's active application.
+    layerWindow->setActivateOnShow(role == NotificationSurfaceRole::Center);
     layerWindow->setCloseOnDismissed(false);
     LayerShellQt::Window::Anchors anchors = LayerShellQt::Window::AnchorTop;
     anchors |= LayerShellQt::Window::AnchorRight;

@@ -67,6 +67,7 @@ jobs:
             cmake \
             extra-cmake-modules \
             git \
+            kglobalaccel \
             kdecoration \
             ninja \
             python \
@@ -158,7 +159,7 @@ jobs:
       - name: Record production shell stack
         run: >-
           pacman -Q dbus extra-cmake-modules kdecoration kwin
-          layer-shell-qt libcap qt6-base qt6-declarative qt6-wayland
+          kglobalaccel layer-shell-qt libcap qt6-base qt6-declarative qt6-wayland
           xorg-xwayland
 
       - name: Configure production shell without the binary KWin plugin

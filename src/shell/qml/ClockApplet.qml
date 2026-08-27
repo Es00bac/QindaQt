@@ -4,6 +4,8 @@ import QtQuick
 Item {
     id: root
 
+    objectName: "clockApplet"
+
     required property var applet
     required property var theme
     property bool vertical: false

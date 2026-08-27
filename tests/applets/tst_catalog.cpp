@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 5);
+    QCOMPARE(catalog.manifests().size(), 6);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -48,6 +48,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("global-menu"),
         QStringLiteral("system-tray"),
         QStringLiteral("clock"),
+        QStringLiteral("notification-center"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {
@@ -68,12 +69,28 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *clock = catalog.findById(QStringLiteral("clock"));
     const AppletManifest *taskList = catalog.findById(QStringLiteral("task-list"));
     const AppletManifest *tray = catalog.findById(QStringLiteral("system-tray"));
+    const AppletManifest *notificationCenter =
+        catalog.findById(QStringLiteral("notification-center"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
+    QVERIFY(notificationCenter != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
+    QVERIFY(notificationCenter->capabilities.isEmpty());
+    QVERIFY(notificationCenter->placementZones
+            == QVector<PlacementZone>({PlacementZone::PanelStart,
+                                       PlacementZone::PanelCenter,
+                                       PlacementZone::PanelEnd,
+                                       PlacementZone::PanelFill}));
+    QVERIFY(notificationCenter->orientations
+            == QVector<Orientation>({Orientation::Horizontal,
+                                     Orientation::Vertical}));
+    QCOMPARE(notificationCenter->settingsSchema.value(QStringLiteral("type")).toString(),
+             QStringLiteral("object"));
+    QVERIFY(notificationCenter->settingsSchema.value(QStringLiteral("properties"))
+                .toObject().isEmpty());
 }
 
 void ManifestCatalogTest::preservesPreviousCatalogOnDuplicateFailure()

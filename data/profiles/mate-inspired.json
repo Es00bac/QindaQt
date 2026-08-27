@@ -20,6 +20,7 @@
         {"id": "main-menu", "plugin": "classic-menu"},
         {"id": "places", "plugin": "places-menu"},
         {"id": "system", "plugin": "system-menu"},
+        {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"}
       ]
     },

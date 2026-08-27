@@ -97,12 +97,16 @@ This slice makes panels and docks real compositor-managed surfaces and wires
 the compositor-driven [panel visibility policy](panel-visibility.md) into the
 production runtime. Safe-visible recovery is active, and visibility-only
 updates retain existing panel/QML objects. Production panels resolve instances
-through the validated manifest and capability policy. The clock is the first
-live applet; unresolved instances remain visibly marked static representations.
+through the validated manifest and capability policy. The clock and dedicated
+notification-center button are the two compiled live built-ins; unresolved
+instances remain visibly marked static representations. The button receives
+only a shell-owned toggle/open-state facade and no notification records or
+operation authority. Without authenticated notification presentation
+provisioning, the facade is absent and the otherwise valid button is disabled.
 Preview applet chips remain deterministic visual fixtures. Edge reveal/hold
-producers and hide animation also remain acceptance work. Global menu,
-live services, applet process hosting, and settings preview subscription remain
-in the Shell/customization milestone.
+producers and hide animation also remain acceptance work. Global menu, live
+platform services, applet process hosting, and settings preview subscription
+remain in the Shell/customization milestone.
 
 Notification windows are separate nonexclusive overlay layer surfaces, not
 profile panels or reservation carriers. Their pure planner clamps preferred
@@ -110,10 +114,13 @@ popup/center sizes to primary-output logical geometry, including a 200%-scaled
 1080p mode. A popup stack uses a 38-logical-pixel header and up to three
 146-logical-pixel cards. That header remains a valid mapped surface with zero
 cards while an operation is busy or its bounded error is visible. Current
-placement is primary-output-only and top-right. The panel resolution matrix
-below does not prove notification mapping, placement, visual appearance, focus,
-keyboard operation, or mixed-output migration; no live/nested notification
-surface run was performed for this slice. See
+placement is primary-output-only and top-right. Popup roles disable
+activate-on-show to preserve the non-focus-steal invariant; the center role
+requests activation so its QML can seed keyboard focus and expose an Escape
+close path. The panel resolution matrix below does not prove notification
+mapping, placement, visual appearance, compositor acceptance of that activation
+request, focus traversal, keyboard operation, or mixed-output migration; no
+live/nested notification surface run was performed for this slice. See
 [Notification presentation](notification-presentation.md).
 
 The controller and planner have focused fake-backend tests for valid and

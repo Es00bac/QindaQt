@@ -20,6 +20,7 @@
         {"id": "widgets", "plugin": "dashboard", "settings": {"zone": "start"}},
         {"id": "center-tasks", "plugin": "centered-task-list", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]
     }

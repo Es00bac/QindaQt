@@ -23,6 +23,7 @@ private slots:
     void catalogSelectsByStableId();
     void catalogRejectsDuplicateIdsAtomically();
     void macosProfileUsesQindaMacosTheme();
+    void everyBuiltInProfileHasOneNotificationCenter();
 };
 
 void ProfileTests::loadsEveryBuiltInProfile()
@@ -135,6 +136,27 @@ void ProfileTests::macosProfileUsesQindaMacosTheme()
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/macos-inspired.json"));
     QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
     QCOMPARE(result.profile.defaultTheme, QStringLiteral("qinda-macos"));
+}
+
+void ProfileTests::everyBuiltInProfileHasOneNotificationCenter()
+{
+    const QString directory = QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles");
+    const auto results = ProfileLoader::fromDirectory(directory);
+    QVERIFY2(!results.isEmpty(), "The built-in profile directory must not be empty");
+
+    for (const auto &result : results) {
+        QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+
+        qsizetype notificationCenterCount = 0;
+        for (const auto &panel : result.profile.panels) {
+            for (const auto &applet : panel.applets) {
+                notificationCenterCount +=
+                    applet.plugin == QLatin1String("notification-center") ? 1 : 0;
+            }
+        }
+
+        QCOMPARE(notificationCenterCount, 1);
+    }
 }
 
 QTEST_GUILESS_MAIN(ProfileTests)

@@ -14,6 +14,21 @@ Window {
     title: qsTr("Notification center")
     flags: Qt.FramelessWindowHint
 
+    onActiveChanged: {
+        // AGENT-GUARD: seed keyboard navigation only on first activation. Do
+        // not reset focus when a user is already traversing notification cards.
+        if (active && activeFocusItem === null)
+            closeButton.forceActiveFocus(Qt.ActiveWindowFocusReason);
+    }
+
+    Shortcut {
+        objectName: "notificationCenterCloseShortcut"
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: root.visible
+        onActivated: root.presentation.setCenterOpen(false)
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: Math.min(root.theme.cornerRadius ?? 10, 16)
@@ -56,6 +71,7 @@ Window {
 
         ToolButton {
             id: closeButton
+            objectName: "notificationCenterCloseButton"
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: 8

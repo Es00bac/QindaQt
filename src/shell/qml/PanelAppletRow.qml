@@ -9,7 +9,7 @@ Row {
     required property var theme
     required property string zone
     property bool liveApplets: false
-    property var notificationPresentation: null
+    property var notificationCenterAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {
@@ -28,7 +28,7 @@ Row {
             applet: modelData
             theme: root.theme
             liveApplets: root.liveApplets
-            notificationPresentation: root.notificationPresentation
+            notificationCenterAppletAccess: root.notificationCenterAppletAccess
         }
     }
 }
