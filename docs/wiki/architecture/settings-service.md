@@ -6,6 +6,13 @@ session-bus name `org.qindaqt.Settings1` and is independently D-Bus activatable;
 it is not an essential `qindaqt-session` child and has no compositor,
 notification-presenter, or lock authority.
 
+An activated process is bound to the exact session-bus connection that created
+its owner and epoch. Permanent local connection loss terminates that process
+promptly; it does not reconnect a repository whose in-memory authority belongs
+to the lost bus lineage. A replacement bus therefore activates a fresh process
+with a fresh owner and epoch. This process policy prevents unreachable resident
+services from accumulating after daemon replacement.
+
 ## Schema and resolution
 
 The active persisted schema is v2. Immutable

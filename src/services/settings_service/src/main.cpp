@@ -31,6 +31,19 @@ int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("qindaqt-settings-service"));
+    QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    // AGENT-GUARD: One resident process owns one bus-daemon lineage and one
+    // epoch. A disconnected process cannot reconnect without retaining stale
+    // repository authority, so it must exit and let D-Bus activate a fresh
+    // process. See ADR-0012 and the process-level private-daemon regression.
+    if (!sessionBus.connect(
+            QString(), QStringLiteral("/org/freedesktop/DBus/Local"),
+            QStringLiteral("org.freedesktop.DBus.Local"), QStringLiteral("Disconnected"),
+            &application, SLOT(quit()))) {
+        std::fprintf(stderr,
+                     "qindaqt-settings-service: cannot observe session-bus disconnect\n");
+        return 3;
+    }
     const QString schemas = schemaDirectory();
     QString error;
     auto active = QindaQt::Settings::SettingsSchema::fromFile(
@@ -45,7 +58,7 @@ int main(int argc, char **argv)
                                 .filePath(QStringLiteral("qindaqt/settings-v2.json"));
     const QString profileDefaults = schemas
                                     + QStringLiteral("/profile-defaults/qindaqt.json");
-    ResidentSettingsService service(QDBusConnection::sessionBus(), std::move(*active),
+    ResidentSettingsService service(sessionBus, std::move(*active),
                                     std::move(*legacy), profileDefaults, storage);
     const auto started = service.start();
     if (!started.ok()) {

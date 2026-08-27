@@ -358,6 +358,18 @@ independent privacy precedence, ordinary-controller reopen, repeated shell
 reconstruction with one service, both-side reconstruction from one file, and
 no replay.
 
+The service process-lifecycle test creates a real activation directory and two
+successive private `dbus-daemon` instances. It records the first activated
+service's exact PID, owner, and epoch, terminates that daemon, and requires the
+PID to disappear within five seconds. It then activates through the same
+descriptor on a replacement daemon, requires a distinct live process/owner/
+epoch, and terminates the second daemon with the same no-orphan assertion. An
+exact-executable cleanup guard prevents a failed assertion from leaving either
+fixture process resident. The same test accepts explicit
+`QINDAQT_TEST_SETTINGS_SERVICE_{DATA_ROOT,EXECUTABLE,SCHEMA_DIR}` paths so the
+release gate can rerun the identical daemon-loss/reactivation proof through the
+installed activation descriptor, binary, and schemas in an isolated prefix.
+
 This evidence uses private D-Bus and offscreen software rendering. It does not
 claim a real session bus, live assistive technology, compositor focus,
 KGlobalAccel dispatch, or pointer/keyboard automation.

@@ -35,6 +35,11 @@ candidate mutation, atomic candidate save, then authoritative swap and
 publication. No-op, conflict, persistence failure, malformed input, and
 revision exhaustion are distinct outcomes.
 
+Bind each activated resident process to its constructing session-bus
+connection. If that connection is permanently disconnected, terminate the
+process promptly instead of reconnecting its stale in-memory repository. A
+replacement daemon can then activate a new process with a new owner and epoch.
+
 Expose a generic Qt Core/DBus-only Settings1 protocol with recursive
 JSON-native values and explicit byte/node/depth/container/transaction bounds.
 Ordinary same-user clients may write user overrides. Bind clients to an exact
@@ -91,6 +96,9 @@ layer-shell settings surface, global shortcut, or supervisor child.
 - Unknown schema keys remain distinct from malformed values: they cannot be
   misreported as canonical null or reply-construction failure, and clients
   accept only their exact empty-authority outcome.
+- Session-daemon replacement cannot strand an unreachable settings authority:
+  the old activated process exits, and replacement activation establishes a
+  new process/owner/epoch lineage without reusing in-memory state.
 - Settings1 remains useful for later schema keys without importing settings
   model or shell types into the wire module.
 - The shell may remain conservatively quiet while Settings1 is unavailable;
