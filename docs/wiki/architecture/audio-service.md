@@ -71,6 +71,11 @@ worker. Stop cancels all such work and keeps the context alive until every
 completion callback releases its state, so thread join is both a callback and
 resource barrier rather than merely a loop exit.
 
+PipeWire disconnect cleanup is deferred out of the GObject signal turn through
+an explicitly owned idle source. That source carries the worker-run token and
+cleanup destroys it synchronously; stop therefore cannot leave a latch or stale
+reset callback that suppresses or mutates the next run's disconnect handling.
+
 The adapter loads WirePlumber 0.5's public default-nodes and mixer API modules.
 It observes nodes, links, clients, and default metadata. It uses:
 
@@ -143,8 +148,11 @@ replacement, equal-lineage contradictions, queued exactly-once completion,
 stopped/superseded backend generations, malformed backend outcomes, and no
 replay. A 250-cycle production-backend test against an unreachable private
 runtime bounds file-descriptor growth while exercising immediate start/stop and
-callback cancellation. Private `dbus-daemon` tests cover successive owners and executable
-activation/lifecycle.
+callback cancellation. A separate scheduler regression forces a disconnect
+reset idle to be pending when the higher-priority stop task runs, repeats the
+stop/restart/loss sequence twice against private PipeWire processes, and proves
+each second loss advances epoch and publishes. Private `dbus-daemon` tests cover
+successive owners and executable activation/lifecycle.
 
 The production adapter test launches disposable PipeWire and WirePlumber
 processes against a private runtime directory and an invalid private D-Bus

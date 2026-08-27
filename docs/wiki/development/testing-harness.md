@@ -660,6 +660,15 @@ restarts without draining an older run, and accepts only the fresh
 generation/epoch. It is serial and must fail rather than fall through to the
 host graph.
 
+`qindaqt.audio-wireplumber-reset-lifecycle` uses a private worker-only scheduler
+probe to pause after the disconnect idle is attached, confirms that explicit
+stop has queued its higher-priority cleanup, then releases the signal turn. It
+repeats two complete private PipeWire loss/stop/restart/second-loss cycles and
+requires every second loss to advance epoch and publish `pipewire-unavailable`,
+with bounded file descriptors and exact child reaping. This ordering test must
+remain deterministic; an unforced timing loop does not cover the source/latch
+ownership contract.
+
 This runtime proof does not use physical microphones, speakers, or input and
 does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,
 hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio

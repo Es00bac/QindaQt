@@ -28,13 +28,17 @@ uses default metadata for stream targeting. It neither transports samples nor
 loads policy scripts, monitors hardware, starts another policy daemon, parses
 `wpctl`, or changes user/system PipeWire configuration.
 
-Core disconnect cleanup is deferred outside the disconnect signal emission.
+Core disconnect cleanup is deferred outside the disconnect signal emission by
+an explicitly retained idle source. The source carries its worker-run token;
+cleanup destroys it and clears ownership synchronously, while dispatch rejects
+any stale run. A discarded idle therefore cannot leave a latch that poisons a
+later start.
 Stop synchronously quits and joins the worker before backend destruction.
 Component API loads begin only after PipeWire accepts the core, and both load
 and core-sync completions own tracked cancellables. Cleanup cancels them and
 stop keeps the GLib loop alive until every completion has released that state.
-Queued worker tasks have GLib destroy notifications so
-context teardown cannot leak a task that never ran. Immutable callbacks queued
+Queued worker tasks have GLib destroy notifications so context teardown cannot
+leak a task that never ran. Immutable callbacks queued
 to Qt carry a backend-run generation; stop invalidates it before the join, and
 the coordinator rejects stopped or superseded generations. Restarting the same
 adapter advances the service epoch before new publication, so a prior run's

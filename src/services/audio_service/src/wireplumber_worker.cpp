@@ -27,6 +27,12 @@ struct WirePlumberWorker::ComponentLoad {
     }
 };
 
+struct WirePlumberWorker::DisconnectReset {
+    WirePlumberWorker *worker = nullptr;
+    quint64 workerRun = 0;
+    GSource *source = nullptr;
+};
+
 namespace
 {
 
@@ -73,10 +79,12 @@ bool payloadEqual(const Snapshot &left, Snapshot right)
 
 WirePlumberWorker::WirePlumberWorker(const quint64 initialEpoch,
                                      SnapshotCallback snapshotCallback,
-                                     OutcomeCallback outcomeCallback)
+                                     OutcomeCallback outcomeCallback,
+                                     WirePlumberWorkerLifecycleHooks lifecycleHooks)
     : m_epoch(initialEpoch == 0 ? 1 : initialEpoch)
     , m_snapshotCallback(std::move(snapshotCallback))
     , m_outcomeCallback(std::move(outcomeCallback))
+    , m_lifecycleHooks(std::move(lifecycleHooks))
 {
 }
 
@@ -118,6 +126,9 @@ void WirePlumberWorker::stop()
             }},
             deleteTaskPayload);
         g_main_context_unref(context);
+        if (m_lifecycleHooks.stopTaskQueued) {
+            m_lifecycleHooks.stopTaskQueued();
+        }
     }
     if (m_thread.joinable()) {
         m_thread.join();
@@ -163,6 +174,10 @@ void WirePlumberWorker::run()
         m_loop = loop;
     }
     m_contextReady.notify_all();
+
+    m_workerRun = m_workerRun == std::numeric_limits<quint64>::max()
+        ? 1
+        : m_workerRun + 1;
 
     if (m_hasRun) {
         // AGENT-GUARD: Reusing a stopped backend creates a new service
@@ -407,24 +422,67 @@ void WirePlumberWorker::onCoreDisconnected(WpCore *core, gpointer data)
 {
     Q_UNUSED(core)
     auto *self = static_cast<WirePlumberWorker *>(data);
-    if (self->m_resetScheduled) {
+    if (self->m_disconnectResetSource != nullptr || self->m_stopping) {
         return;
     }
-    self->m_resetScheduled = true;
     // AGENT-GUARD: g_main_context_invoke_full() may invoke synchronously while
     // already owning the context. An idle source is required so cleanup cannot
-    // destroy WpCore from inside its own "disconnected" signal emission.
+    // destroy WpCore from inside its own "disconnected" signal emission. The
+    // worker retains and explicitly cancels this source: a boolean latch alone
+    // can survive context teardown when stop supersedes the idle callback.
     GSource *source = g_idle_source_new();
-    g_source_set_callback(source, runTask,
-                          new TaskPayload{[self] { self->handleDisconnected(); }},
-                          deleteTaskPayload);
-    g_source_attach(source, self->m_context);
+    auto *reset = new DisconnectReset{.worker = self,
+                                      .workerRun = self->m_workerRun,
+                                      .source = source};
+    self->m_disconnectResetSource = source;
+    g_source_set_callback(source, dispatchDisconnectReset, reset,
+                          deleteDisconnectReset);
+    if (g_source_attach(source, self->m_context) == 0) {
+        self->cancelDisconnectReset();
+        return;
+    }
+    if (self->m_lifecycleHooks.disconnectResetScheduled) {
+        self->m_lifecycleHooks.disconnectResetScheduled();
+    }
+}
+
+gboolean WirePlumberWorker::dispatchDisconnectReset(gpointer data)
+{
+    auto *reset = static_cast<DisconnectReset *>(data);
+    WirePlumberWorker *self = reset->worker;
+    if (self->m_disconnectResetSource == reset->source) {
+        self->m_disconnectResetSource = nullptr;
+        // The context retains the dispatching source until this callback
+        // returns; release the worker's creator reference here.
+        g_source_unref(reset->source);
+    }
+    self->handleDisconnected(reset->workerRun);
+    return G_SOURCE_REMOVE;
+}
+
+void WirePlumberWorker::deleteDisconnectReset(gpointer data)
+{
+    delete static_cast<DisconnectReset *>(data);
+}
+
+void WirePlumberWorker::cancelDisconnectReset()
+{
+    GSource *source = std::exchange(m_disconnectResetSource, nullptr);
+    if (source == nullptr) {
+        return;
+    }
+    g_source_destroy(source);
     g_source_unref(source);
 }
 
-void WirePlumberWorker::handleDisconnected()
+void WirePlumberWorker::handleDisconnected(const quint64 workerRun)
 {
-    m_resetScheduled = false;
+    // AGENT-GUARD: Deferred source data belongs to exactly one worker run. Even
+    // if later source-management code regresses, stale work must never advance
+    // epoch, invalidate operations, or tear down a restarted core.
+    if (workerRun != m_workerRun || m_stopping) {
+        return;
+    }
     advanceEpoch();
     m_daemonSerial = 0;
     invalidatePending(QStringLiteral("pipewire-replaced"));
@@ -453,6 +511,7 @@ void WirePlumberWorker::scheduleReconnect()
 
 void WirePlumberWorker::cleanupCore()
 {
+    cancelDisconnectReset();
     cancelComponentLoads();
     cancelOperationSyncs();
     m_managerInstalled = false;
