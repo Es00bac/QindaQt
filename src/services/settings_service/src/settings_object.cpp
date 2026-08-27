@@ -82,25 +82,59 @@ QVariantMap malformedReply(QString message, quint32 settingsSchemaVersion,
             {QLatin1StringView(WireContract::FieldMessage), std::move(message)}};
 }
 
+QVariantMap malformedSnapshotReply(QString message, quint32 settingsSchemaVersion,
+                                   QString epoch, quint64 revision)
+{
+    // AGENT-CONTRACT: GetSnapshot always returns its exact eight-field
+    // envelope, including on malformed requests. A commit-shaped error would
+    // be rejected by the client's bounded top-level decoder before it could
+    // report the actual failure.
+    return {{QLatin1StringView(WireContract::FieldStatus),
+             static_cast<quint32>(SettingsWireStatus::MalformedRequest)},
+            {QLatin1StringView(WireContract::FieldWireSchemaVersion),
+             WireContract::WireSchemaVersion},
+            {QLatin1StringView(WireContract::FieldSettingsSchemaVersion),
+             settingsSchemaVersion},
+            {QLatin1StringView(WireContract::FieldEpoch), std::move(epoch)},
+            {QLatin1StringView(WireContract::FieldRevision), revision},
+            {QLatin1StringView(WireContract::FieldValues), QVariantMap{}},
+            {QLatin1StringView(WireContract::FieldSourceLayers), QVariantMap{}},
+            {QLatin1StringView(WireContract::FieldMessage), std::move(message)}};
+}
+
 // Decodes one operation entry {key, kind, value} into a repository
 // operation, or returns nullopt with *error set for any bound violation,
 // unknown/missing field, or unsupported value shape. Duplicate-key rejection
 // happens at the caller, across the whole batch.
-std::optional<SettingsRepository::Operation> decodeOperation(const QVariant &entry, QString *error)
+std::optional<SettingsRepository::Operation> decodeOperation(
+    const QVariant &entry,
+    AggregateValueDecodeBudget &aggregate,
+    QString *error)
 {
-    const auto map = decodeBoundedVariantMap(entry, 3);
+    const auto map = decodeBoundedVariantMap(entry, WireContract::OperationFieldCount);
     if (!map.has_value()) {
         *error = QStringLiteral("operation entry is not a bounded object");
         return std::nullopt;
     }
-    const QString key = map->value(QLatin1StringView(WireContract::FieldKey)).toString();
+    const QVariant keyField = map->value(QLatin1StringView(WireContract::FieldKey));
+    const QVariant kindField = map->value(QLatin1StringView(WireContract::FieldKind));
+    if (keyField.metaType().id() != QMetaType::QString
+        || kindField.metaType().id() != QMetaType::QString) {
+        *error = QStringLiteral("operation key and kind must be strings");
+        return std::nullopt;
+    }
+    const QString key = keyField.toString();
     if (!BoundedSettingsValueCodec::validateKey(key, error)) {
         return std::nullopt;
     }
-    const QString kind = map->value(QLatin1StringView(WireContract::FieldKind)).toString();
+    const QString kind = kindField.toString();
     SettingsRepository::Operation operation;
     operation.key = key;
     if (kind == QLatin1StringView(WireContract::OperationKindRemove)) {
+        if (map->size() != 2 || map->contains(QLatin1StringView(WireContract::FieldValue))) {
+            *error = QStringLiteral("a \"remove\" operation has exactly key and kind");
+            return std::nullopt;
+        }
         operation.remove = true;
         return operation;
     }
@@ -108,12 +142,13 @@ std::optional<SettingsRepository::Operation> decodeOperation(const QVariant &ent
         *error = QStringLiteral("operation kind must be \"set\" or \"remove\"");
         return std::nullopt;
     }
-    if (!map->contains(QLatin1StringView(WireContract::FieldValue))) {
+    if (map->size() != WireContract::OperationFieldCount
+        || !map->contains(QLatin1StringView(WireContract::FieldValue))) {
         *error = QStringLiteral("a \"set\" operation requires a value");
         return std::nullopt;
     }
     auto value = decodeBoundedJsonValue(
-        map->value(QLatin1StringView(WireContract::FieldValue)), error);
+        map->value(QLatin1StringView(WireContract::FieldValue)), aggregate, error);
     if (!value.has_value()) {
         return std::nullopt;
     }
@@ -133,20 +168,22 @@ SettingsObject::SettingsObject(QDBusConnection connection, SettingsRepository &r
 QVariantMap SettingsObject::GetSnapshot(const QStringList &keys)
 {
     if (keys.isEmpty() || keys.size() > WireContract::MaximumRequestedKeys) {
-        return malformedReply(QStringLiteral("GetSnapshot requires between 1 and %1 keys")
-                                  .arg(WireContract::MaximumRequestedKeys),
-                              quint32(m_repository.schema().version()),
-                              m_repository.epoch(), m_repository.revision());
+        return malformedSnapshotReply(
+            QStringLiteral("GetSnapshot requires between 1 and %1 keys")
+                .arg(WireContract::MaximumRequestedKeys),
+            quint32(m_repository.schema().version()),
+            m_repository.epoch(), m_repository.revision());
     }
     QSet<QString> seenKeys;
     for (const auto &key : keys) {
         QString keyError;
         if (!BoundedSettingsValueCodec::validateKey(key, &keyError) || seenKeys.contains(key)) {
-            return malformedReply(seenKeys.contains(key)
-                                      ? QStringLiteral("duplicate snapshot key: %1").arg(key)
-                                      : keyError,
-                                  quint32(m_repository.schema().version()),
-                                  m_repository.epoch(), m_repository.revision());
+            return malformedSnapshotReply(
+                seenKeys.contains(key)
+                    ? QStringLiteral("duplicate snapshot key: %1").arg(key)
+                    : keyError,
+                quint32(m_repository.schema().version()),
+                m_repository.epoch(), m_repository.revision());
         }
         seenKeys.insert(key);
     }
@@ -167,8 +204,9 @@ QVariantMap SettingsObject::GetSnapshot(const QStringList &keys)
                                   WireContract::MaximumSnapshotValueBytes,
                                   WireContract::MaximumSnapshotValueNodes,
                                   &boundsError)) {
-        return malformedReply(boundsError, quint32(m_repository.schema().version()),
-                              m_repository.epoch(), m_repository.revision());
+        return malformedSnapshotReply(boundsError,
+                                      quint32(m_repository.schema().version()),
+                                      m_repository.epoch(), m_repository.revision());
     }
     return encodeSnapshot(snapshot);
 }
@@ -198,11 +236,11 @@ QVariantMap SettingsObject::CommitUserTransaction(const QString &epoch, quint64 
     QVector<SettingsRepository::Operation> decoded;
     decoded.reserve(operations.size());
     QSet<QString> seenKeys;
-    qsizetype aggregateBytes = 0;
-    qsizetype aggregateNodes = 0;
+    AggregateValueDecodeBudget aggregate{WireContract::MaximumTransactionValueBytes,
+                                         WireContract::MaximumTransactionValueNodes};
     for (const auto &entry : operations) {
         QString decodeError;
-        auto operation = decodeOperation(entry, &decodeError);
+        auto operation = decodeOperation(entry, aggregate, &decodeError);
         if (!operation.has_value()) {
             return malformedReply(decodeError, quint32(m_repository.schema().version()),
                                   m_repository.epoch(), m_repository.revision());
@@ -213,28 +251,6 @@ QVariantMap SettingsObject::CommitUserTransaction(const QString &epoch, quint64 
                                   m_repository.epoch(), m_repository.revision());
         }
         seenKeys.insert(operation->key);
-        if (!operation->remove) {
-            BoundedSettingsValueCodec::Usage usage;
-            QString usageError;
-            if (!BoundedSettingsValueCodec::validateValue(operation->value, &usageError, &usage)
-                || aggregateBytes > WireContract::MaximumTransactionValueBytes - usage.bytes) {
-                return malformedReply(usageError.isEmpty()
-                                          ? QStringLiteral("transaction values exceed %1 aggregate bytes")
-                                                .arg(WireContract::MaximumTransactionValueBytes)
-                                          : usageError,
-                                      quint32(m_repository.schema().version()),
-                                      m_repository.epoch(), m_repository.revision());
-            }
-            if (aggregateNodes > WireContract::MaximumTransactionValueNodes - usage.nodes) {
-                return malformedReply(
-                    QStringLiteral("transaction values exceed %1 aggregate nodes")
-                        .arg(WireContract::MaximumTransactionValueNodes),
-                    quint32(m_repository.schema().version()),
-                    m_repository.epoch(), m_repository.revision());
-            }
-            aggregateBytes += usage.bytes;
-            aggregateNodes += usage.nodes;
-        }
         decoded.append(std::move(*operation));
     }
 

@@ -2,6 +2,7 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
+#include "qindaqt/services/settings_protocol/settings_wire_decode.h"
 
 #include <QDBusError>
 #include <QDBusMessage>
@@ -31,6 +32,27 @@ void setError(QString *error, QString message)
 
 } // namespace
 
+class SettingsChangeRelay final : public QObject {
+    Q_OBJECT
+public:
+    SettingsChangeRelay(QString owner, quint64 generation, QObject *parent)
+        : QObject(parent), m_owner(std::move(owner)), m_generation(generation) {}
+
+Q_SIGNALS:
+    void observed(const QString &owner, quint64 ownerGeneration,
+                  const QString &epoch, quint64 revision, const QStringList &keys);
+
+private Q_SLOTS:
+    void receive(const QString &epoch, quint64 revision, const QStringList &keys)
+    {
+        Q_EMIT observed(m_owner, m_generation, epoch, revision, keys);
+    }
+
+private:
+    const QString m_owner;
+    const quint64 m_generation;
+};
+
 class QtSettingsTransport::Private final {
 public:
     Private(QtSettingsTransport &transport, QDBusConnection bus, QString name)
@@ -58,28 +80,52 @@ public:
     {
         if (!started || next == owner) return;
         const QString previous = owner;
-        if (!previous.isEmpty()) {
+        ++ownerGeneration;
+        if (subscription != nullptr) {
             connection.disconnect(previous, QString::fromLatin1(WireContract::ObjectPath),
                                   QString::fromLatin1(WireContract::InterfaceName),
-                                  QString::fromLatin1(WireContract::SettingsChangedSignal), &q,
-                                  SLOT(handleSettingsChanged(QString,qulonglong,QStringList)));
+                                  QString::fromLatin1(WireContract::SettingsChangedSignal),
+                                  subscription,
+                                  SLOT(receive(QString,qulonglong,QStringList)));
+            subscription->deleteLater();
+            subscription = nullptr;
         }
         owner.clear();
+        if (!previous.isEmpty()) {
+            // Retire the client's old lineage before attempting to subscribe
+            // to a replacement. Subscription failure must fail closed rather
+            // than leave pending old-owner requests acceptable.
+            Q_EMIT q.ownerChanged({});
+        }
         if (next.isEmpty()) {
-            if (!previous.isEmpty()) Q_EMIT q.ownerChanged({});
             return;
         }
         // AGENT-GUARD: subscribe to the exact unique sender before publishing
         // it. The client's immediate baseline cannot race a missed signal.
+        auto *nextSubscription = new SettingsChangeRelay(next, ownerGeneration, &q);
+        QObject::connect(nextSubscription, &SettingsChangeRelay::observed, &q,
+                         [this](const QString &observedOwner, quint64 observedGeneration,
+                                const QString &epoch, quint64 revision,
+                                const QStringList &keys) {
+            // AGENT-GUARD: the relay captures the owner generation that
+            // installed the subscription. A queued signal from a retired
+            // relay must never be relabelled as traffic from its replacement.
+            if (started && observedGeneration == ownerGeneration
+                && observedOwner == owner) {
+                Q_EMIT q.settingsChanged(observedOwner, epoch, revision, keys);
+            }
+        });
         const bool connected = connection.connect(
             next, QString::fromLatin1(WireContract::ObjectPath),
             QString::fromLatin1(WireContract::InterfaceName),
-            QString::fromLatin1(WireContract::SettingsChangedSignal), &q,
-            SLOT(handleSettingsChanged(QString,qulonglong,QStringList)));
+            QString::fromLatin1(WireContract::SettingsChangedSignal), nextSubscription,
+            SLOT(receive(QString,qulonglong,QStringList)));
         if (!connected) {
+            delete nextSubscription;
             QTimer::singleShot(100, &q, [this] { resolveOwner(); });
             return;
         }
+        subscription = nextSubscription;
         owner = next;
         Q_EMIT q.ownerChanged(owner);
     }
@@ -112,27 +158,36 @@ public:
             targetOwner, QString::fromLatin1(WireContract::ObjectPath),
             QString::fromLatin1(WireContract::InterfaceName), method);
         message.setArguments(std::move(arguments));
-        watch(message, [this, token, targetOwner, commit](const QDBusMessage &reply) {
-            if (!started) return;
-            if (reply.type() == QDBusMessage::ErrorMessage || reply.arguments().isEmpty()) {
-                Q_EMIT q.requestFailed(token, targetOwner, reply.errorName(), reply.errorMessage());
+        const quint64 requestGeneration = ownerGeneration;
+        watch(message, [this, token, targetOwner, requestGeneration,
+                        commit](const QDBusMessage &reply) {
+            // AGENT-GUARD: owner loss/replacement retires every pending reply
+            // even when a replacement subscription cannot be installed.
+            if (!started || requestGeneration != ownerGeneration
+                || targetOwner != owner) return;
+            if (reply.type() == QDBusMessage::ErrorMessage
+                || reply.arguments().size() != 1) {
+                const bool remoteError = reply.type() == QDBusMessage::ErrorMessage;
+                Q_EMIT q.requestFailed(
+                    token, targetOwner,
+                    remoteError ? reply.errorName()
+                                : QStringLiteral("org.qindaqt.Settings1.Error.MalformedReply"),
+                    remoteError ? reply.errorMessage()
+                                : QStringLiteral("settings service returned wrong reply arity"));
                 return;
             }
             const QVariant first = reply.arguments().constFirst();
-            QVariantMap result;
-            if (first.metaType().id() == QMetaType::QVariantMap) {
-                result = first.toMap();
-            } else if (first.metaType() == QMetaType::fromType<QDBusArgument>()) {
-                result = qdbus_cast<QVariantMap>(qvariant_cast<QDBusArgument>(first));
-            }
-            if (result.isEmpty()) {
+            const qsizetype maximumFields = commit ? WireContract::CommitReplyFieldCount
+                                                   : WireContract::SnapshotReplyFieldCount;
+            const auto result = SettingsProtocol::decodeBoundedVariantMap(first, maximumFields);
+            if (!result.has_value() || result->isEmpty()) {
                 Q_EMIT q.requestFailed(token, targetOwner,
                                        QStringLiteral("org.qindaqt.Settings1.Error.MalformedReply"),
                                        QStringLiteral("settings service returned a malformed map"));
             } else if (commit) {
-                Q_EMIT q.commitReceived(token, targetOwner, result);
+                Q_EMIT q.commitReceived(token, targetOwner, *result);
             } else {
-                Q_EMIT q.snapshotReceived(token, targetOwner, result);
+                Q_EMIT q.snapshotReceived(token, targetOwner, *result);
             }
         });
     }
@@ -142,8 +197,11 @@ public:
     QString serviceName;
     QString owner;
     QDBusServiceWatcher *serviceWatcher = nullptr;
+    SettingsChangeRelay *subscription = nullptr;
     QList<QDBusPendingCallWatcher *> pending;
     quint64 resolutionGeneration = 0;
+    quint64 ownerGeneration = 0;
+    bool activationInFlight = false;
     bool started = false;
 };
 
@@ -197,9 +255,18 @@ bool QtSettingsTransport::start(QString *error)
 void QtSettingsTransport::stop()
 {
     if (!d->started) return;
-    d->started = false;
     ++d->resolutionGeneration;
     d->bindOwner({});
+    // AGENT-GUARD: start()/stop() is a reusable lifecycle. Leave neither the
+    // exact-owner relay nor the bus-local disconnect match installed, or a
+    // second start on the same connection is rejected as a duplicate match.
+    d->connection.disconnect(QString{},
+                             QStringLiteral("/org/freedesktop/DBus/Local"),
+                             QStringLiteral("org.freedesktop.DBus.Local"),
+                             QStringLiteral("Disconnected"), this,
+                             SLOT(handleBusDisconnected()));
+    d->started = false;
+    d->activationInFlight = false;
     for (auto *watcher : std::as_const(d->pending)) {
         watcher->disconnect(this);
         watcher->deleteLater();
@@ -226,17 +293,20 @@ void QtSettingsTransport::commit(quint64 token, const QString &owner,
 
 void QtSettingsTransport::requestActivation()
 {
-    if (!d->started) return;
+    if (!d->started || d->activationInFlight) return;
+    d->activationInFlight = true;
     QDBusMessage message = QDBusMessage::createMethodCall(
         QString::fromLatin1(BusService), QString::fromLatin1(BusPath),
         QString::fromLatin1(BusInterface), QStringLiteral("StartServiceByName"));
     message << d->serviceName << quint32(0);
     d->watch(message, [this](const QDBusMessage &reply) {
         if (!d->started) return;
+        d->activationInFlight = false;
         if (reply.type() == QDBusMessage::ErrorMessage) {
             Q_EMIT activationFailed(reply.errorMessage().left(512));
             return;
         }
+        Q_EMIT activationCompleted();
         d->resolveOwner();
     });
 }
@@ -245,17 +315,24 @@ void QtSettingsTransport::handleBusDisconnected()
 {
     if (!d->started) return;
     d->started = false;
+    ++d->resolutionGeneration;
+    ++d->ownerGeneration;
+    d->activationInFlight = false;
     d->owner.clear();
+    if (d->subscription != nullptr) {
+        d->subscription->deleteLater();
+        d->subscription = nullptr;
+    }
+    for (auto *watcher : std::as_const(d->pending)) {
+        watcher->disconnect(this);
+        watcher->deleteLater();
+    }
+    d->pending.clear();
+    delete d->serviceWatcher;
+    d->serviceWatcher = nullptr;
     Q_EMIT busDisconnected();
 }
 
-void QtSettingsTransport::handleSettingsChanged(const QString &epoch,
-                                                quint64 revision,
-                                                const QStringList &keys)
-{
-    if (d->started && !d->owner.isEmpty()) {
-        Q_EMIT settingsChanged(d->owner, epoch, revision, keys);
-    }
-}
-
 } // namespace QindaQt::Services::SettingsClient
+
+#include "qt_settings_transport.moc"

@@ -326,21 +326,30 @@ Settings persistence and its consumers are selected with:
 ```sh
 ctest --test-dir build/dev -R '^qindaqt\.settings-' --output-on-failure
 ctest --test-dir build/dev \
-  -R '^qindaqt\.(notification-quieting-settings-bridge|notification-surfaces-offscreen)$' \
+  -R '^qindaqt\.(notification-quieting-settings-bridge|notification-quieting-controls-offscreen|notification-surfaces-offscreen)$' \
   --output-on-failure
 ```
 
 Schema/model tests cover the v2 default/type, immutable-v1 loading, explicit
 valid v1 migration, corrupt/unsupported rejection, and atomic documents.
-Protocol tests cover recursive JSON-native display-shaped values and byte,
-node, depth, list, and map bounds. Repository/service tests cover copy-on-write
-save failure, no-op, conflict, validation, revision exhaustion, private-bus
-name collision, release, and restart. Client tests cover timeout uncertainty
-without replay, stale-owner fencing, replacement epoch/rebaseline, real
-private-bus nested Object commit, persistence, and local daemon loss.
-Settings-app/shell QML tests cover structural state, focus, and accessibility
-semantics. The bridge proves fail-quiet initialization, retained last-confirmed
-values, and independent privacy precedence.
+Protocol tests cover ordinary and real-QtDBus recursive JSON-native
+display-shaped values, shared aggregate byte/node budgets, depth/list/map/key
+bounds, and bounded fixed reply envelopes. Repository/service tests cover
+copy-on-write save failure, no-op, conflict, validation, revision exhaustion,
+validated QindaQt profile precedence/migration/rejection, hostile opaque
+transactions, private-bus name collision, release, and restart. Client tests
+cover serialized activation/backoff, synchronous-start recovery, exact
+commit/invalidation lineage, timeout uncertainty without replay, stale-owner
+subscription and pending-reply generation fencing, activation completion
+without an owner, repeated-start-failure Retry truth, same-owner epoch and
+equal-revision contradiction rejection, same-object stop/start, replacement epoch/rebaseline,
+real private-bus nested Object commit, profile fallback after user removal,
+persistence, and local daemon loss. Settings-app/shell QML tests cover
+failure/Retry/recovery, structural state, focus, and accessibility semantics.
+The bridge proves fail-quiet initialization, retained last-confirmed values,
+independent privacy precedence, ordinary-controller reopen, repeated shell
+reconstruction with one service, both-side reconstruction from one file, and
+no replay.
 
 This evidence uses private D-Bus and offscreen software rendering. It does not
 claim a real session bus, live assistive technology, compositor focus,

@@ -43,8 +43,10 @@ int main(int argc, char **argv)
     }
     const QString storage = QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
                                 .filePath(QStringLiteral("qindaqt/settings-v2.json"));
+    const QString profileDefaults = schemas
+                                    + QStringLiteral("/profile-defaults/qindaqt.json");
     ResidentSettingsService service(QDBusConnection::sessionBus(), std::move(*active),
-                                    std::move(*legacy), storage);
+                                    std::move(*legacy), profileDefaults, storage);
     const auto started = service.start();
     if (!started.ok()) {
         std::fprintf(stderr, "qindaqt-settings-service: %s: %s\n",

@@ -73,7 +73,14 @@ Q_SIGNALS:
 
 private:
     enum class RequestKind { Snapshot, Commit };
-    struct Request final { quint64 token = 0; QString owner; RequestKind kind; };
+    struct Request final {
+        quint64 token = 0;
+        QString owner;
+        RequestKind kind = RequestKind::Snapshot;
+        QString epoch;
+        quint32 settingsSchemaVersion = 0;
+        quint64 baseRevision = 0;
+    };
     struct Write final { QString key; QVariant value; bool remove = false; };
 
     void handleOwnerChanged(const QString &owner);
@@ -83,8 +90,13 @@ private:
     void handleCommit(quint64 token, const QString &owner, const QVariantMap &wire);
     void handleFailure(quint64 token, const QString &owner,
                        const QString &errorName, const QString &message);
+    void handleActivationCompleted();
+    void handleActivationFailure(const QString &message);
     void handleBusDisconnected();
+    void handleRefreshTimer();
     void requestSnapshotNow();
+    void requestActivationIfReady();
+    [[nodiscard]] bool startTransport(QString *error = nullptr);
     void scheduleRetry();
     void makeWriteUncertain(QString message);
     void publish(ClientState state, QString error = {});
@@ -103,8 +115,9 @@ private:
     ClientState m_state = ClientState::Unavailable;
     qsizetype m_retryIndex = 0;
     quint64 m_nextToken = 1;
-    quint64 m_targetRevision = 0;
     bool m_started = false;
+    bool m_transportStarted = false;
+    bool m_activationInFlight = false;
     bool m_dirty = false;
 };
 

@@ -70,7 +70,9 @@ bool DoNotDisturbController::applyMyChoice()
 
 void DoNotDisturbController::retry()
 {
-    setState(m_hasBaseline ? State::Unavailable : State::Loading);
+    // Do not claim Loading until the client actually enters Authenticating.
+    // A repeated synchronous start failure can preserve the same client
+    // state/error and emit no signal; retaining Unavailable keeps Retry honest.
     m_client.refresh();
 }
 

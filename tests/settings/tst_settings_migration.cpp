@@ -50,6 +50,7 @@ void SettingsMigrationTests::migratesAValidV1DocumentLosslessly()
     const auto migrated =
         SettingsMigration::migrateV1ToV2(v1Document, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
     QVERIFY2(migrated.ok, qPrintable(migrated.error));
+    QCOMPARE(migrated.sourceSchemaVersion, 1);
     QCOMPARE(migrated.document.schemaVersion, 2);
     QVERIFY(migrated.document.layer == SettingLayer::UserOverrides);
     QCOMPARE(migrated.document.values.value(QStringLiteral("appearance.theme")).toString(),
@@ -115,6 +116,7 @@ void SettingsMigrationTests::compatibilityLoaderReadsActiveVersionDirectly()
 
     const auto loaded = SettingsCompatibilityLoader::load(path, *m_v2Schema, *m_v1Schema);
     QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    QCOMPARE(loaded.sourceSchemaVersion, 2);
     QCOMPARE(loaded.document.schemaVersion, 2);
     QCOMPARE(loaded.document.values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
 }
@@ -137,6 +139,7 @@ void SettingsMigrationTests::compatibilityLoaderMigratesALegacyFileWithoutMutati
 
     const auto loaded = SettingsCompatibilityLoader::load(path, *m_v2Schema, *m_v1Schema);
     QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    QCOMPARE(loaded.sourceSchemaVersion, 1);
     QCOMPARE(loaded.document.schemaVersion, 2);
     QCOMPARE(loaded.document.values.value(QStringLiteral("appearance.theme")).toString(),
              QStringLiteral("qinda-light"));

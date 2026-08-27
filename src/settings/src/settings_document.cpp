@@ -14,7 +14,8 @@ namespace {
 
 DocumentLoadResult failure(const QString &message, ValidationResult validation = {})
 {
-    return {.ok = false, .document = {}, .validation = std::move(validation), .error = message};
+    return {.ok = false, .document = {}, .sourceSchemaVersion = 0,
+            .validation = std::move(validation), .error = message};
 }
 
 bool validateDocumentHeader(const SettingsDocument &document,
@@ -73,7 +74,8 @@ DocumentLoadResult SettingsDocumentCodec::fromJson(const QByteArray &json,
         return failure(origin + QStringLiteral(": ") + validation.summary(), validation);
     }
     document.values = *normalized;
-    return {.ok = true, .document = document, .validation = {}, .error = {}};
+    return {.ok = true, .document = document, .sourceSchemaVersion = document.schemaVersion,
+            .validation = {}, .error = {}};
 }
 
 std::optional<QByteArray> SettingsDocumentCodec::toJson(const SettingsDocument &document,

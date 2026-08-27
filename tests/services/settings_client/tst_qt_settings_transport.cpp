@@ -44,7 +44,9 @@ void QtSettingsTransportTests::exactOwnerCommitReplacementAndLocalBusLoss()
     QVERIFY2(active && legacy, qPrintable(error));
     QTemporaryDir directory;
     const QString storage = directory.filePath(QStringLiteral("user.json"));
-    ResidentSettingsService first(serviceBus, *active, *legacy, storage);
+    const QString profileDefaults = QStringLiteral(
+        QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json");
+    ResidentSettingsService first(serviceBus, *active, *legacy, profileDefaults, storage);
     QVERIFY(first.start().ok());
 
     QtSettingsTransport transport(clientBus);
@@ -56,6 +58,45 @@ void QtSettingsTransportTests::exactOwnerCommitReplacementAndLocalBusLoss()
     QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Ready, 2'000);
     QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), false);
 
+    QtSettingsTransport profileTransport(clientBus);
+    SettingsClient profileClient(profileTransport,
+                                 {QStringLiteral("appearance.animationDurationMs")},
+                                 {.requestTimeoutMilliseconds = 500,
+                                  .debounceMilliseconds = 0,
+                                  .retryMilliseconds = {10, 20}});
+    QVERIFY(profileClient.start(&error));
+    QTRY_VERIFY_WITH_TIMEOUT(profileClient.state() == ClientState::Ready, 2'000);
+    QCOMPARE(profileClient.snapshot()->values
+                 .value(QStringLiteral("appearance.animationDurationMs")).toInt(), 160);
+    QCOMPARE(profileClient.snapshot()->sourceLayers
+                 .value(QStringLiteral("appearance.animationDurationMs")).toString(),
+             QStringLiteral("profile-defaults"));
+    QVERIFY(profileClient.setUserValue(QStringLiteral("appearance.animationDurationMs"),
+                                       240, &error));
+    QTRY_VERIFY_WITH_TIMEOUT(profileClient.state() == ClientState::Ready
+                                 && !profileClient.writeInFlight()
+                                 && profileClient.snapshot()->values
+                                        .value(QStringLiteral("appearance.animationDurationMs"))
+                                        .toInt() == 240,
+                             2'000);
+    QCOMPARE(profileClient.snapshot()->sourceLayers
+                 .value(QStringLiteral("appearance.animationDurationMs")).toString(),
+             QStringLiteral("user-overrides"));
+    QVERIFY(profileClient.removeUserValue(QStringLiteral("appearance.animationDurationMs"),
+                                          &error));
+    QTRY_VERIFY_WITH_TIMEOUT(profileClient.state() == ClientState::Ready
+                                 && !profileClient.writeInFlight()
+                                 && profileClient.snapshot()->values
+                                        .value(QStringLiteral("appearance.animationDurationMs"))
+                                        .toInt() == 160,
+                             2'000);
+    QCOMPARE(profileClient.snapshot()->sourceLayers
+                 .value(QStringLiteral("appearance.animationDurationMs")).toString(),
+             QStringLiteral("profile-defaults"));
+
+    QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Ready && client.snapshot()
+                                 && client.snapshot()->revision == first.revision(),
+                             2'000);
     QVERIFY(client.setUserValue(QStringLiteral("services.doNotDisturb"), true, &error));
     QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Ready && !client.writeInFlight()
                                  && client.snapshot()->values
@@ -87,7 +128,8 @@ void QtSettingsTransportTests::exactOwnerCommitReplacementAndLocalBusLoss()
     const QString firstOwner = client.snapshot()->owner;
     const QString firstEpoch = client.snapshot()->epoch;
     first.stop();
-    ResidentSettingsService replacement(replacementBus, *active, *legacy, storage);
+    ResidentSettingsService replacement(replacementBus, *active, *legacy,
+                                        profileDefaults, storage);
     QVERIFY(replacement.start().ok());
     QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Ready
                                  && client.snapshot()->owner != firstOwner,
@@ -96,12 +138,21 @@ void QtSettingsTransportTests::exactOwnerCommitReplacementAndLocalBusLoss()
     QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
     QCOMPARE(uncertain.size(), 0);
 
+    // Exercise the public reusable lifecycle on one SettingsClient/transport
+    // pair rather than relying on composition-root object reconstruction.
+    client.stop();
+    QCOMPARE(client.state(), ClientState::Unavailable);
+    QVERIFY2(client.start(&error), qPrintable(error));
+    QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Ready, 2'000);
+    QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
+
     daemon.kill();
     QVERIFY(daemon.waitForFinished());
     QTRY_VERIFY_WITH_TIMEOUT(client.state() == ClientState::Unavailable, 2'000);
     QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
 
     client.stop();
+    profileClient.stop();
     objectClient.stop();
     replacement.stop();
     QDBusConnection::disconnectFromBus(QStringLiteral("settings-service-") + suffix);

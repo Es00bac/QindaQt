@@ -27,8 +27,6 @@ public:
 
 private Q_SLOTS:
     void handleBusDisconnected();
-    void handleSettingsChanged(const QString &epoch, quint64 revision,
-                               const QStringList &keys);
 
 private:
     class Private;

@@ -14,6 +14,8 @@ enum class SettingsServiceStartStatus {
     Started,
     AlreadyRunning,
     InvalidStoragePath,
+    InvalidProfileDefaultsPath,
+    CorruptProfileDefaults,
     CorruptUserOverrides,
     BusUnavailable,
     BusQueryFailed,
@@ -34,18 +36,24 @@ struct SettingsServiceStartResult final {
 
 // Resident composition root for org.qindaqt.Settings1: owns the D-Bus
 // registration lifecycle, the schema pair (active v2 plus legacy v1 for
-// migration), and the SettingsRepository/private D-Bus object pair.
+// migration), one mandatory profile-defaults document, one optional user file,
+// and the SettingsRepository/private D-Bus object pair. Paths and schemas are
+// copied into the service; the connection remains Qt-owned. Calls and emitted
+// D-Bus traffic stay on the constructing thread.
 // AGENT-CONTRACT: a document migrated from v1 is persisted to disk only
 // *after* this process has won the well-known service name. A losing
 // concurrent instance during a startup race therefore can never overwrite
 // the winner's freshly migrated file -- see
 // docs/wiki/adr/0012-persist-notification-quieting-through-settings1.md. Corrupt or
-// unsupported-version user-override data fails start() outright rather than
-// silently discarding it.
+// unsupported-version profile/user data fails start() outright rather than
+// silently discarding it. An installed v1 profile is migrated only in memory;
+// a v1 user file is replaced only after name ownership succeeds.
 class ResidentSettingsService final {
 public:
     ResidentSettingsService(QDBusConnection connection, Settings::SettingsSchema activeSchema,
-                            Settings::SettingsSchema legacySchema, QString userOverridesPath);
+                            Settings::SettingsSchema legacySchema,
+                            QString profileDefaultsPath,
+                            QString userOverridesPath);
     ~ResidentSettingsService();
 
     ResidentSettingsService(const ResidentSettingsService &) = delete;

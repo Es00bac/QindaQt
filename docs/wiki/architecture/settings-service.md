@@ -12,10 +12,17 @@ The active persisted schema is v2. Immutable
 `data/settings/schema-v1.json` remains accepted only as a migration input. V2
 adds `services.doNotDisturb`, Boolean, default `false`; it does not repurpose
 `services.notifications`. A valid v1 profile/user document is completely
-validated against v1, copied to a v2 candidate, validated against v2, and saved
-as v2. The new key remains absent so normal system-default resolution supplies
-`false`. Corrupt, wrong-layer, stale/unsupported, or invalid migrated input
-fails without mutation.
+validated against v1, copied to a v2 candidate, and validated against v2. After
+the service wins its D-Bus name, a migrated user document is atomically
+replaced with v2; the immutable installed profile is composed from the
+migrated candidate in memory. The new key remains absent so normal
+system-default resolution supplies `false`. Corrupt, wrong-layer, missing,
+stale/unsupported, or invalid migrated input fails startup without mutation.
+
+The production composition currently selects the installed
+`profile-defaults/qindaqt.json` document beside the active schemas. It is a
+required, validated `profile-defaults` layer, applied before the optional user
+document. Dynamic profile selection is not part of this slice.
 
 Settings resolve from highest to lowest precedence:
 
@@ -50,14 +57,39 @@ The [Settings1 protocol](../reference/settings1-v1.md) is generic rather than
 Do-Not-Disturb-specific. It supports scoped snapshots and one bounded
 `CommitUserTransaction` over every JSON-native value shape accepted by active
 schema keys, including nested display and panel objects. UTF-8 bytes, aggregate
-bytes, nodes, depth, list entries, map entries, requested keys, operations, and
-changed keys are all bounded before schema evaluation.
+bytes, nodes, depth, list entries, map entries, requested keys, operations,
+fixed reply envelopes, messages, and changed keys are all bounded before schema
+evaluation. Real QtDBus lazy arrays/maps are streamed through those shared
+budgets: each temporarily demarshalled child is charged before retention,
+append, or insert, rather than the complete tree being expanded by an unbounded
+`qdbus_cast` first.
 
 The asynchronous client watches activation/owner change and local bus
 disconnect, subscribes to `SettingsChanged` from the exact unique owner before
 requesting its baseline, and targets that owner for every call. The service
 epoch is fresh per process; revisions compare only inside `(unique owner,
 epoch)`. Replacement and late old-owner traffic cannot update published state.
+Activation is serialized with one in-flight request and configured bounded
+backoff. Synchronous transport-start failure publishes Unavailable truth while
+retaining a logical start, so explicit Retry can safely reattempt transport
+startup; another identical failure retains that honest Retry state. A successful
+activation call that yields no stable owner also releases its in-flight guard
+and backs off. Stop/start is symmetric on the same connected bus.
+
+Snapshot and commit envelopes must have their exact field sets. Commit replies
+are accepted only when owner, initiating epoch, settings-schema version, base
+revision, operated key maps, changed-key set, and status/revision relationship
+agree. Any contradiction makes the write uncertain and triggers authoritative
+resync without replay. `SettingsChanged` is only a bounded, deduplicated refresh
+hint; because repository revisions are global, even an unrelated-key change
+refreshes a scoped client's next commit base.
+
+The transport publishes old-owner loss before attempting a replacement
+subscription, and every pending request carries its initiating owner generation.
+Failed replacement subscription or late old-owner replies therefore fail
+closed. Within one unique-owner lifetime the epoch and settings-schema version
+are immutable; equal-revision snapshots must also equal the last accepted
+values and sources.
 
 ## Do Not Disturb consumers
 
@@ -65,6 +97,9 @@ The generic client has a DND-scoped controller with Loading, Ready, Saving,
 Conflict, and Unavailable projections. A conflict refreshes authority and
 requires explicit **Apply my choice**; an uncertain result exposes last
 confirmed state and requires refresh, never an automatic resubmit.
+An initial transport-start failure immediately projects Unavailable plus a
+bounded diagnostic; Retry performs the safe transport/activation attempt
+rather than leaving the surface stranded in Loading.
 
 Shell composition injects confirmed values into the persistence-neutral
 notification interruption policy. Before its first authenticated Settings1
@@ -80,6 +115,14 @@ presentation internals. The shell's quick toggle uses that same controller;
 presentation DND is read-only to QML. The notification-center applet remains a
 read-only indicator. A fixed **Notification settings…** action opens the
 ordinary app without exposing arbitrary process-launch capability.
+
+Private-bus reconstruction coverage saves through the ordinary controller,
+destroys and reopens it, constructs and reconstructs the shell
+client/controller/bridge while the service remains, then reconstructs both
+service and shell from the same isolated file. Each shell policy starts
+fail-quiet and accepts the restored
+choice only after a fresh exact-owner baseline; service revisions prove none of
+the reconstruction paths replay the commit.
 
 Scheduling, per-application exceptions, inhibition, and the complete
 multi-page/applet-based settings catalog remain later work. See

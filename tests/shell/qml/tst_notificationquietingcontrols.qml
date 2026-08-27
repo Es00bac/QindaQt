@@ -36,8 +36,9 @@ Item {
         property string statusText: ""
         property string errorText: ""
         property int requests: 0
+        property int retries: 0
         function requestSet(value) { ++requests; enabled = value; return true; }
-        function retry() {}
+        function retry() { ++retries; }
         function applyMyChoice() { return true; }
     }
 
@@ -75,7 +76,13 @@ Item {
             fakePresentation.operationBusy = false;
             fakePresentation.operationErrorText = "";
             fakeQuieting.enabled = false;
+            fakeQuieting.canToggle = true;
+            fakeQuieting.conflict = false;
+            fakeQuieting.unavailable = false;
+            fakeQuieting.statusText = "";
+            fakeQuieting.errorText = "";
             fakeQuieting.requests = 0;
+            fakeQuieting.retries = 0;
             fakeSettingsLauncher.launches = 0;
         }
 
@@ -120,6 +127,35 @@ Item {
             tryCompare(dnd, "checked", false);
             settings.clicked();
             compare(fakeSettingsLauncher.launches, 1);
+        }
+
+        function test_transportStartFailureRetryThenRecovery() {
+            fakeQuieting.canToggle = false;
+            fakeQuieting.unavailable = true;
+            fakeQuieting.statusText = "Do Not Disturb setting unavailable";
+            fakeQuieting.errorText = "settings session D-Bus is not connected";
+            const center = createTemporaryObject(centerComponent, testRoot);
+            verify(center !== null);
+            center.width = 384;
+            center.height = 284;
+            center.visible = true;
+            const dnd = findChild(center, "notificationDoNotDisturbButton");
+            const action = findChild(center, "notificationQuietingStateAction");
+            const status = findChild(center, "notificationQuietingStatus");
+            tryCompare(action, "visible", true);
+            verify(!dnd.enabled);
+            compare(action.text, "Retry");
+            compare(status.Accessible.role, Accessible.AlertMessage);
+            action.clicked();
+            compare(fakeQuieting.retries, 1);
+
+            fakeQuieting.unavailable = false;
+            fakeQuieting.statusText = "Loading Do Not Disturb setting…";
+            tryCompare(action, "visible", false);
+            verify(!dnd.enabled);
+            fakeQuieting.canToggle = true;
+            fakeQuieting.statusText = "";
+            tryCompare(dnd, "enabled", true);
         }
     }
 }

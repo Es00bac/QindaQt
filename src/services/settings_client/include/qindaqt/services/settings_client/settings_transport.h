@@ -35,6 +35,9 @@ Q_SIGNALS:
                         const QVariantMap &wire);
     void requestFailed(quint64 token, const QString &uniqueOwner,
                        const QString &errorName, const QString &message);
+    // Exactly one terminal activation signal follows each accepted attempt.
+    // Completion does not imply an owner survived long enough to bind.
+    void activationCompleted();
     void activationFailed(const QString &message);
     void busDisconnected();
 };

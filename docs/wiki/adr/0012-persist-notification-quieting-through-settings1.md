@@ -24,7 +24,10 @@ settings a third essential child would defeat independent activation/restart.
 
 Keep schema v1 immutable, make schema v2 active, and add the dedicated Boolean
 `services.doNotDisturb` defaulting to `false`. Explicitly migrate only valid v1
-profile/user documents to validated v2 candidates.
+profile/user documents to validated v2 candidates. Production selects and
+validates the installed QindaQt profile before user overrides; an installed v1
+profile is migrated in memory, while a migrated user file is persisted only
+after winning the service name.
 
 Run `qindaqt-settings-service` as an independently session-bus-activatable
 process. It owns user persistence and implements copy-on-write commits:
@@ -38,6 +41,12 @@ Ordinary same-user clients may write user overrides. Bind clients to an exact
 unique owner plus service epoch, subscribe before baseline, use asynchronous
 calls/timeouts, and treat uncertain writes as resync-only. Owner identity fences
 lineages; it does not attest a program.
+
+Decode QtDBus lazy containers incrementally under shared aggregate budgets and
+bound fixed reply envelopes before materialization. Serialize activation with
+one in-flight request and configured backoff. Validate every commit result
+against the initiating epoch, schema version, base revision, key maps, and
+status/revision relation; treat signals only as bounded refresh hints.
 
 Add a DND-scoped controller above the generic client. Shell composition fails
 quiet before its first baseline and retains the last confirmed value across
@@ -55,7 +64,8 @@ layer-shell settings surface, global shortcut, or supervisor child.
 - DND survives service, app, and shell reconstruction through one validated
   file and service authority.
 - UI exposes loading, saving, conflict, and unavailable/last-confirmed truth;
-  timeout never means confirmed failure or automatic retry.
+  timeout never means confirmed failure or automatic commit retry. Explicit UI
+  Retry can recover a synchronous transport-start failure.
 - Settings1 remains useful for later schema keys without importing settings
   model or shell types into the wire module.
 - The shell may remain conservatively quiet while Settings1 is unavailable;

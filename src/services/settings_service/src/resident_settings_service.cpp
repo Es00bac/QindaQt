@@ -32,10 +32,12 @@ public:
     Private(QDBusConnection busConnection,
             Settings::SettingsSchema currentSchema,
             Settings::SettingsSchema previousSchema,
+            QString defaultsPath,
             QString storagePath)
         : connection(std::move(busConnection))
         , activeSchema(std::move(currentSchema))
         , legacySchema(std::move(previousSchema))
+        , profileDefaultsPath(std::move(defaultsPath))
         , userOverridesPath(std::move(storagePath))
     {
     }
@@ -43,6 +45,7 @@ public:
     QDBusConnection connection;
     Settings::SettingsSchema activeSchema;
     Settings::SettingsSchema legacySchema;
+    QString profileDefaultsPath;
     QString userOverridesPath;
     QString serviceName;
     std::unique_ptr<SettingsRepository> repository;
@@ -52,9 +55,11 @@ public:
 ResidentSettingsService::ResidentSettingsService(QDBusConnection connection,
                                                  Settings::SettingsSchema activeSchema,
                                                  Settings::SettingsSchema legacySchema,
+                                                 QString profileDefaultsPath,
                                                  QString userOverridesPath)
     : d(std::make_unique<Private>(std::move(connection), std::move(activeSchema),
-                                  std::move(legacySchema), std::move(userOverridesPath)))
+                                  std::move(legacySchema), std::move(profileDefaultsPath),
+                                  std::move(userOverridesPath)))
 {
 }
 
@@ -84,7 +89,29 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
                        QStringLiteral("settings storage path must name an absolute file"));
     }
 
+    const QFileInfo profileDefaults(d->profileDefaultsPath);
+    if (!profileDefaults.isAbsolute() || profileDefaults.fileName().isEmpty()) {
+        return failure(SettingsServiceStartStatus::InvalidProfileDefaultsPath,
+                       QStringLiteral("profile-defaults path must name an absolute file"));
+    }
+
     Settings::LayeredSettings initial(d->activeSchema);
+    const auto loadedProfile = Settings::SettingsCompatibilityLoader::load(
+        d->profileDefaultsPath, d->activeSchema, d->legacySchema);
+    if (!loadedProfile.ok
+        || loadedProfile.document.layer != Settings::SettingLayer::ProfileDefaults) {
+        return failure(SettingsServiceStartStatus::CorruptProfileDefaults,
+                       loadedProfile.ok
+                           ? QStringLiteral("settings document is not profile defaults")
+                           : loadedProfile.error);
+    }
+    const auto appliedProfile = initial.replaceLayer(
+        Settings::SettingLayer::ProfileDefaults, loadedProfile.document.values);
+    if (!appliedProfile.ok()) {
+        return failure(SettingsServiceStartStatus::CorruptProfileDefaults,
+                       appliedProfile.message);
+    }
+
     bool migrationPending = false;
     if (storage.exists()) {
         const auto loaded = Settings::SettingsCompatibilityLoader::load(
@@ -98,9 +125,7 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
         if (!applied.ok()) {
             return failure(SettingsServiceStartStatus::CorruptUserOverrides, applied.message);
         }
-        migrationPending = loaded.document.schemaVersion == d->activeSchema.version()
-                           && Settings::SettingsFileStore::load(d->userOverridesPath,
-                                                               d->activeSchema).ok == false;
+        migrationPending = loaded.sourceSchemaVersion == d->legacySchema.version();
     }
 
     if (!d->connection.registerService(serviceName)) {
@@ -181,6 +206,8 @@ QString settingsServiceStartStatusName(SettingsServiceStartStatus status)
     case SettingsServiceStartStatus::Started: return QStringLiteral("started");
     case SettingsServiceStartStatus::AlreadyRunning: return QStringLiteral("already-running");
     case SettingsServiceStartStatus::InvalidStoragePath: return QStringLiteral("invalid-storage-path");
+    case SettingsServiceStartStatus::InvalidProfileDefaultsPath: return QStringLiteral("invalid-profile-defaults-path");
+    case SettingsServiceStartStatus::CorruptProfileDefaults: return QStringLiteral("corrupt-profile-defaults");
     case SettingsServiceStartStatus::CorruptUserOverrides: return QStringLiteral("corrupt-user-overrides");
     case SettingsServiceStartStatus::BusUnavailable: return QStringLiteral("bus-unavailable");
     case SettingsServiceStartStatus::BusQueryFailed: return QStringLiteral("bus-query-failed");

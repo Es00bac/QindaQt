@@ -99,5 +99,31 @@ Item {
             retry.clicked();
             compare(quieting.retries, 1);
         }
+
+        function test_transportStartFailureRetryThenRecovery() {
+            quieting.unavailable = true;
+            quieting.statusText = "Do Not Disturb setting unavailable";
+            quieting.errorText = "settings session D-Bus is not connected";
+            const page = createTemporaryObject(pageComponent, root);
+            const toggle = findChild(page, "settingsDoNotDisturbSwitch");
+            const retry = findChild(page, "settingsRetryButton");
+            const error = findChild(page, "settingsQuietingError");
+            tryVerify(function() { return retry.visible; });
+            verify(!toggle.enabled);
+            compare(error.text, quieting.errorText);
+            compare(error.Accessible.role, Accessible.AlertMessage);
+
+            retry.clicked();
+            compare(quieting.retries, 1);
+            quieting.unavailable = false;
+            quieting.statusText = "Loading Do Not Disturb setting…";
+            quieting.errorText = "";
+            tryVerify(function() { return !retry.visible; });
+            verify(!toggle.enabled);
+
+            quieting.canToggle = true;
+            quieting.statusText = "";
+            tryVerify(function() { return toggle.enabled; });
+        }
     }
 }

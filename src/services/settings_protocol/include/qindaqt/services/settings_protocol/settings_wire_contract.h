@@ -51,6 +51,14 @@ struct WireContract final {
     static constexpr qsizetype MaximumTransactionValueBytes = 1'048'576;
     static constexpr qsizetype MaximumChangedKeysPerSignal = 64;
     static constexpr qsizetype MaximumEpochBytes = 128;
+    static constexpr qsizetype MaximumMessageBytes = 2'048;
+
+    // Fixed envelopes are deliberately smaller than the generic map limit.
+    // The transport streams only this many fields before handing a reply to
+    // the semantic validator, which then requires the exact field set.
+    static constexpr qsizetype SnapshotReplyFieldCount = 8;
+    static constexpr qsizetype CommitReplyFieldCount = 10;
+    static constexpr qsizetype OperationFieldCount = 3;
 
     // QVariantMap field names shared by every request/reply/signal shape, so
     // the service and client never hand-duplicate string literals.

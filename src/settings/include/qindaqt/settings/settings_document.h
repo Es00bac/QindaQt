@@ -18,6 +18,10 @@ struct SettingsDocument final {
 struct DocumentLoadResult final {
     bool ok = false;
     SettingsDocument document;
+    // Original on-disk/input version. This stays 1 when compatibility loading
+    // returns a validated v2 migration candidate, so the service can decide
+    // whether it must durably replace a user document after winning its name.
+    int sourceSchemaVersion = 0;
     ValidationResult validation;
     QString error;
 };

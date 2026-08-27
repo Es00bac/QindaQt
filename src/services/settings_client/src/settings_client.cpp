@@ -28,10 +28,14 @@ void setError(QString *output, QString message)
 } // namespace
 
 using Private::boundedSourceMap;
+using Private::boundedChangedKeys;
 using Private::boundedValueMap;
+using Private::boundedWireMessage;
 using Private::exactUnsigned64;
+using Private::hasExactSnapshotFields;
 using Private::validEpoch;
 using Private::validVersions;
+using Private::validatedCommitReply;
 using Private::wireStatus;
 
 bool ClientTiming::isValid() const noexcept
@@ -60,7 +64,7 @@ SettingsClient::SettingsClient(SettingsTransport &transport, QStringList scopedK
 {
     m_refreshTimer.setSingleShot(true);
     m_timeout.setSingleShot(true);
-    connect(&m_refreshTimer, &QTimer::timeout, this, &SettingsClient::requestSnapshotNow);
+    connect(&m_refreshTimer, &QTimer::timeout, this, &SettingsClient::handleRefreshTimer);
     connect(&m_timeout, &QTimer::timeout, this, [this] {
         if (!m_request) {
             return;
@@ -83,12 +87,10 @@ SettingsClient::SettingsClient(SettingsTransport &transport, QStringList scopedK
             this, &SettingsClient::handleCommit);
     connect(&m_transport, &SettingsTransport::requestFailed,
             this, &SettingsClient::handleFailure);
-    connect(&m_transport, &SettingsTransport::activationFailed, this, [this](const QString &message) {
-        if (m_owner.isEmpty()) {
-            publish(ClientState::Unavailable, message.left(512));
-            scheduleRetry();
-        }
-    });
+    connect(&m_transport, &SettingsTransport::activationCompleted,
+            this, &SettingsClient::handleActivationCompleted);
+    connect(&m_transport, &SettingsTransport::activationFailed,
+            this, &SettingsClient::handleActivationFailure);
     connect(&m_transport, &SettingsTransport::busDisconnected,
             this, &SettingsClient::handleBusDisconnected);
 }
@@ -101,7 +103,10 @@ SettingsClient::~SettingsClient()
 bool SettingsClient::start(QString *error)
 {
     if (m_started) {
-        setError(error, {});
+        if (!startTransport(error)) {
+            return false;
+        }
+        requestActivationIfReady();
         return true;
     }
     QSet<QString> unique;
@@ -118,11 +123,10 @@ bool SettingsClient::start(QString *error)
         unique.insert(key);
     }
     m_started = true;
-    if (!m_transport.start(error)) {
-        m_started = false;
+    if (!startTransport(error)) {
         return false;
     }
-    m_transport.requestActivation();
+    requestActivationIfReady();
     return true;
 }
 
@@ -139,10 +143,13 @@ void SettingsClient::stop()
     m_write.reset();
     m_snapshot.reset();
     m_owner.clear();
-    m_targetRevision = 0;
     m_dirty = false;
     m_retryIndex = 0;
-    m_transport.stop();
+    m_activationInFlight = false;
+    if (m_transportStarted) {
+        m_transport.stop();
+    }
+    m_transportStarted = false;
     publish(ClientState::Unavailable);
     if (wasWriting) {
         Q_EMIT writeInFlightChanged();
@@ -154,8 +161,14 @@ void SettingsClient::refresh()
     if (!m_started) {
         return;
     }
+    if (!m_transportStarted) {
+        QString error;
+        if (!startTransport(&error)) {
+            return;
+        }
+    }
     if (m_owner.isEmpty()) {
-        m_transport.requestActivation();
+        requestActivationIfReady();
         return;
     }
     if (m_request) {
@@ -185,7 +198,8 @@ bool SettingsClient::setUserValue(const QString &key, const QVariant &value, QSt
                                  QLatin1StringView(WireContract::OperationKindSet)},
                                 {QLatin1StringView(WireContract::FieldValue), value}};
     m_write = Write{key, value, false};
-    m_request = Request{token, m_owner, RequestKind::Commit};
+    m_request = Request{token, m_owner, RequestKind::Commit, m_snapshot->epoch,
+                        m_snapshot->settingsSchemaVersion, m_snapshot->revision};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     Q_EMIT writeInFlightChanged();
     m_transport.commit(token, m_owner, m_snapshot->epoch, m_snapshot->revision,
@@ -209,7 +223,8 @@ bool SettingsClient::removeUserValue(const QString &key, QString *error)
                                 {QLatin1StringView(WireContract::FieldKind),
                                  QLatin1StringView(WireContract::OperationKindRemove)}};
     m_write = Write{key, {}, true};
-    m_request = Request{token, m_owner, RequestKind::Commit};
+    m_request = Request{token, m_owner, RequestKind::Commit, m_snapshot->epoch,
+                        m_snapshot->settingsSchemaVersion, m_snapshot->revision};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     Q_EMIT writeInFlightChanged();
     m_transport.commit(token, m_owner, m_snapshot->epoch, m_snapshot->revision,
@@ -228,12 +243,11 @@ void SettingsClient::handleOwnerChanged(const QString &owner)
     m_request.reset();
     m_write.reset();
     m_owner = owner;
-    m_targetRevision = 0;
     m_dirty = false;
-    m_retryIndex = 0;
+    m_activationInFlight = false;
     if (owner.isEmpty()) {
         publish(ClientState::Unavailable, QStringLiteral("settings service is unavailable"));
-        m_transport.requestActivation();
+        scheduleRetry();
     } else {
         publish(ClientState::Authenticating);
         m_refreshTimer.start(0);
@@ -247,18 +261,15 @@ void SettingsClient::handleOwnerChanged(const QString &owner)
 void SettingsClient::handleInvalidation(const QString &owner, const QString &epoch,
                                         quint64 revision, const QStringList &keys)
 {
-    if (!m_started || owner != m_owner || !m_snapshot || epoch != m_snapshot->epoch
+    const auto boundedKeys = boundedChangedKeys(QVariant::fromValue(keys));
+    if (!m_started || owner != m_owner || !m_snapshot || !validEpoch(epoch)
+        || epoch != m_snapshot->epoch || !boundedKeys || boundedKeys->isEmpty()
         || revision <= m_snapshot->revision) {
         return;
     }
-    bool relevant = false;
-    for (const auto &key : keys) {
-        relevant = relevant || m_keys.contains(key);
-    }
-    if (!relevant) {
-        return;
-    }
-    m_targetRevision = std::max(m_targetRevision, revision);
+    // Settings1 revisions are repository-global. Even a transaction touching
+    // only another scope invalidates this client's commit base; skipping that
+    // refresh would make its next legitimate write conflict spuriously.
     if (m_request) {
         m_dirty = true;
     } else {
@@ -280,16 +291,26 @@ void SettingsClient::handleSnapshot(quint64 token, const QString &owner,
     const QString epoch = wire.value(QLatin1StringView(WireContract::FieldEpoch)).toString();
     const auto values = boundedValueMap(wire.value(QLatin1StringView(WireContract::FieldValues)));
     const auto sources = boundedSourceMap(wire.value(QLatin1StringView(WireContract::FieldSourceLayers)));
+    const auto message = boundedWireMessage(
+        wire.value(QLatin1StringView(WireContract::FieldMessage)));
+    const QVariant epochField = wire.value(QLatin1StringView(WireContract::FieldEpoch));
     quint32 settingsSchemaVersion = 0;
     bool exactScope = values && sources && values->size() == m_keys.size()
                       && sources->size() == m_keys.size();
     for (const auto &key : m_keys) {
         exactScope = exactScope && values && sources && values->contains(key) && sources->contains(key);
     }
-    if (!replyStatus || *replyStatus != SettingsWireStatus::Applied || !revision
+    if (!hasExactSnapshotFields(wire)
+        || !replyStatus || *replyStatus != SettingsWireStatus::Applied || !revision || !message
+        || epochField.metaType().id() != QMetaType::QString
         || !validVersions(wire, &settingsSchemaVersion) || !validEpoch(epoch) || !exactScope
-        || (m_snapshot && m_snapshot->owner == owner && m_snapshot->epoch == epoch
-            && *revision < m_snapshot->revision)) {
+        || (m_snapshot && m_snapshot->owner == owner
+            && (epoch != m_snapshot->epoch
+                || settingsSchemaVersion != m_snapshot->settingsSchemaVersion
+                || *revision < m_snapshot->revision
+                || (*revision == m_snapshot->revision
+                    && (*values != m_snapshot->values
+                        || *sources != m_snapshot->sourceLayers))))) {
         publish(ClientState::Degraded, QStringLiteral("settings snapshot is malformed or regressed"));
         scheduleRetry();
         return;
@@ -298,11 +319,8 @@ void SettingsClient::handleSnapshot(quint64 token, const QString &owner,
     m_retryIndex = 0;
     publish(ClientState::Ready);
     Q_EMIT snapshotChanged();
-    const bool followUp = m_dirty || m_targetRevision > *revision;
+    const bool followUp = m_dirty;
     m_dirty = false;
-    if (m_targetRevision <= *revision) {
-        m_targetRevision = 0;
-    }
     if (followUp) {
         m_refreshTimer.start(0);
     }
@@ -315,33 +333,26 @@ void SettingsClient::handleCommit(quint64 token, const QString &owner,
         || m_request->token != token || m_request->owner != owner || owner != m_owner) {
         return;
     }
+    const Request request = *m_request;
+    const Write write = *m_write;
     m_request.reset();
     m_timeout.stop();
-    const auto replyStatus = wireStatus(wire);
-    const auto before = exactUnsigned64(wire.value(QLatin1StringView(WireContract::FieldRevisionBefore)));
-    const auto after = exactUnsigned64(wire.value(QLatin1StringView(WireContract::FieldRevisionAfter)));
-    const auto values = boundedValueMap(wire.value(QLatin1StringView(WireContract::FieldValues)));
-    const auto sources = boundedSourceMap(wire.value(QLatin1StringView(WireContract::FieldSourceLayers)));
-    const QString message = wire.value(QLatin1StringView(WireContract::FieldMessage)).toString().left(512);
-    const QStringList changed = wire.value(QLatin1StringView(WireContract::FieldChangedKeys)).toStringList();
-    quint32 settingsSchemaVersion = 0;
-    const QString writeKey = m_write->key;
+    const auto outcome = validatedCommitReply(
+        wire, Private::CommitReplyContext{request.epoch, request.settingsSchemaVersion,
+                                         request.baseRevision, write.key});
     m_write.reset();
     Q_EMIT writeInFlightChanged();
-    if (!replyStatus || !before || !after || !values || !sources
-        || !validVersions(wire, &settingsSchemaVersion)
-        || !values->contains(writeKey) || !sources->contains(writeKey)) {
+    if (!outcome) {
         publish(ClientState::Degraded, QStringLiteral("settings commit reply is malformed"));
         Q_EMIT commitUncertain(m_lastError);
         refresh();
         return;
     }
-    CommitOutcome outcome{*replyStatus, *before, *after, *values, *sources, changed, message};
-    Q_EMIT commitFinished(outcome);
+    Q_EMIT commitFinished(*outcome);
     // Even a confirmed rejection can race an invalidation. Re-read authority;
     // clients never manufacture a partial snapshot from a commit reply.
     publish(ClientState::Authenticating,
-            *replyStatus == SettingsWireStatus::Applied ? QString{} : message);
+            outcome->status == SettingsWireStatus::Applied ? QString{} : outcome->message);
     refresh();
 }
 
@@ -373,10 +384,47 @@ void SettingsClient::handleBusDisconnected()
     m_request.reset();
     m_write.reset();
     m_owner.clear();
+    m_transportStarted = false;
+    m_activationInFlight = false;
     publish(ClientState::Unavailable, QStringLiteral("session bus disconnected"));
     if (uncertain) {
         Q_EMIT writeInFlightChanged();
         Q_EMIT commitUncertain(m_lastError);
+    }
+}
+
+void SettingsClient::handleActivationFailure(const QString &message)
+{
+    if (!m_started || !m_activationInFlight || !m_owner.isEmpty()) {
+        return;
+    }
+    m_activationInFlight = false;
+    publish(ClientState::Unavailable,
+            message.isEmpty() ? QStringLiteral("settings activation failed")
+                              : message.left(512));
+    scheduleRetry();
+}
+
+void SettingsClient::handleActivationCompleted()
+{
+    if (!m_started || !m_activationInFlight || !m_owner.isEmpty()) {
+        return;
+    }
+    // A successful StartServiceByName reply is not an owner baseline. The
+    // process may have exited already; release the serialized attempt and let
+    // owner resolution race a bounded retry instead of stranding activation.
+    m_activationInFlight = false;
+    publish(ClientState::Unavailable,
+            QStringLiteral("settings activation completed without a stable owner"));
+    scheduleRetry();
+}
+
+void SettingsClient::handleRefreshTimer()
+{
+    if (m_owner.isEmpty()) {
+        requestActivationIfReady();
+    } else {
+        requestSnapshotNow();
     }
 }
 
@@ -390,18 +438,46 @@ void SettingsClient::requestSnapshotNow()
         publish(ClientState::Degraded, QStringLiteral("settings request token is exhausted"));
         return;
     }
-    m_request = Request{token, m_owner, RequestKind::Snapshot};
+    // Only invalidations that arrive after this call starts require a second
+    // baseline. A prior signal is an ordering hint, not an attacker-controlled
+    // target revision that can force an endless catch-up loop.
+    m_dirty = false;
+    m_request = Request{token, m_owner, RequestKind::Snapshot, {}, 0, 0};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     m_transport.requestSnapshot(token, m_owner, m_keys);
+}
+
+void SettingsClient::requestActivationIfReady()
+{
+    if (!m_started || !m_transportStarted || !m_owner.isEmpty()
+        || m_activationInFlight || m_refreshTimer.isActive()) {
+        return;
+    }
+    m_activationInFlight = true;
+    m_transport.requestActivation();
+}
+
+bool SettingsClient::startTransport(QString *error)
+{
+    if (m_transportStarted) {
+        setError(error, {});
+        return true;
+    }
+    if (!m_transport.start(error)) {
+        const QString message = error != nullptr && !error->isEmpty()
+                                    ? error->left(512)
+                                    : QStringLiteral("settings transport could not start");
+        publish(ClientState::Unavailable, message);
+        return false;
+    }
+    m_transportStarted = true;
+    publish(ClientState::Authenticating);
+    return true;
 }
 
 void SettingsClient::scheduleRetry()
 {
     if (!m_started) {
-        return;
-    }
-    if (m_owner.isEmpty()) {
-        m_transport.requestActivation();
         return;
     }
     const qsizetype last = m_timing.retryMilliseconds.size() - 1;

@@ -11,7 +11,8 @@ namespace {
 
 DocumentLoadResult failure(QString message, ValidationResult validation = {})
 {
-    return {.ok = false, .document = {}, .validation = std::move(validation), .error = std::move(message)};
+    return {.ok = false, .document = {}, .sourceSchemaVersion = 0,
+            .validation = std::move(validation), .error = std::move(message)};
 }
 
 } // namespace
@@ -54,7 +55,8 @@ DocumentLoadResult SettingsMigration::migrateV1ToV2(const QByteArray &v1Json,
                        validation);
     }
     migrated.values = *normalized;
-    return {.ok = true, .document = migrated, .validation = {}, .error = {}};
+    return {.ok = true, .document = migrated, .sourceSchemaVersion = 1,
+            .validation = {}, .error = {}};
 }
 
 DocumentLoadResult SettingsCompatibilityLoader::load(const QString &path,

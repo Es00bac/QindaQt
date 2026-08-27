@@ -49,7 +49,7 @@ void SettingsProtocolTests::rejectsDepthNodeCountAndAggregateByteOverflow()
     QVariantList nodes;
     nodes.reserve(WireContract::MaximumListEntries);
     for (qsizetype i = 0; i < WireContract::MaximumListEntries; ++i) {
-        nodes.append(QVariantList(8, true));
+        nodes.append(QVariant::fromValue(QVariantList(8, true)));
     }
     error.clear();
     QVERIFY(!BoundedSettingsValueCodec::validateValue(nodes, &error));

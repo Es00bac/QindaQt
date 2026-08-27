@@ -3,6 +3,7 @@
 # AGENT-GUARD: Use Qt's imported runner target. A bare `qmltestrunner` resolves
 # to Qt 5 on mixed-Qt distributions and cannot load this Qt 6 module.
 find_package(Qt6 REQUIRED COMPONENTS QuickTest)
+find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
 
 qt_add_executable(
     qindaqt_notification_quieting_bridge_tests
@@ -18,7 +19,18 @@ target_include_directories(
 )
 target_link_libraries(
     qindaqt_notification_quieting_bridge_tests
-    PRIVATE QindaQt::SettingsClient QindaQt::NotificationPresentationPolicy Qt6::Test
+    PRIVATE
+        QindaQt::SettingsClient
+        QindaQt::SettingsService
+        QindaQt::NotificationPresentationPolicy
+        Qt6::DBus
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_notification_quieting_bridge_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
 )
 qindaqt_enable_warnings(qindaqt_notification_quieting_bridge_tests)
 add_test(

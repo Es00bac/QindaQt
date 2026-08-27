@@ -14,3 +14,15 @@ target_compile_definitions(
 )
 qindaqt_enable_warnings(qindaqt_qt_settings_transport_tests)
 add_test(NAME qindaqt.settings-qt-transport COMMAND qindaqt_qt_settings_transport_tests)
+
+qt_add_executable(qindaqt_qt_settings_transport_adversarial_tests
+                  tst_qt_settings_transport_adversarial.cpp)
+target_link_libraries(qindaqt_qt_settings_transport_adversarial_tests
+                      PRIVATE QindaQt::SettingsClient Qt6::Test Qt6::DBus)
+target_compile_definitions(
+    qindaqt_qt_settings_transport_adversarial_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(qindaqt_qt_settings_transport_adversarial_tests)
+add_test(NAME qindaqt.settings-qt-transport-adversarial
+         COMMAND qindaqt_qt_settings_transport_adversarial_tests)
