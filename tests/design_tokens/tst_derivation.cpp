@@ -24,12 +24,69 @@ ThemeSpec builtIn(const QString &fileName = QStringLiteral("qinda-dark.json"))
     return result.theme;
 }
 
+ThemeSpec translucentTheme()
+{
+    static constexpr auto json = R"JSON({
+        "schemaVersion": 1,
+        "id": "translucent-contract",
+        "name": "Translucent contract fixture",
+        "variant": "custom",
+        "cornerRadius": 9,
+        "motionDuration": 140,
+        "blurEnabled": true,
+        "colors": {
+            "canvas": "#80406080",
+            "surface": "#80c08040",
+            "surfaceRaised": "#80ffffff",
+            "border": "#40404040",
+            "text": "#c0ffffff",
+            "textMuted": "#8080a0c0",
+            "accent": "#809040d0",
+            "accentText": "#c0000000",
+            "danger": "#80ff2040"
+        }
+    })JSON";
+    const auto result = ThemeLoader::fromJson(QByteArray(json), QStringLiteral("translucent fixture"));
+    if (!result.ok) {
+        qFatal("translucent theme fixture failed: %s", qPrintable(result.error));
+    }
+    return result.theme;
+}
+
 const DesignTokens &requireTokens(const DerivationResult &result)
 {
     if (!result.ok()) {
         qFatal("token derivation failed: %s", qPrintable(result.diagnostic));
     }
     return *result.tokens;
+}
+
+std::array<QColor, 22> publishedColors(const DesignTokens &tokens)
+{
+    return {
+        tokens.background().base,
+        tokens.background().raised,
+        tokens.background().highest,
+        tokens.foreground().defaultColor,
+        tokens.foreground().muted,
+        tokens.foreground().disabled,
+        tokens.accent().defaultColor,
+        tokens.accent().foreground,
+        tokens.accent().subtle,
+        tokens.state().hover,
+        tokens.state().pressed,
+        tokens.focusRing(),
+        tokens.divider(),
+        tokens.strongOutline(),
+        tokens.status().success.background,
+        tokens.status().success.foreground,
+        tokens.status().warning.background,
+        tokens.status().warning.foreground,
+        tokens.status().info.background,
+        tokens.status().info.foreground,
+        tokens.danger().defaultColor,
+        tokens.danger().foreground,
+    };
 }
 
 } // namespace
@@ -41,6 +98,8 @@ private slots:
     void mapsEveryQstRoleFromSchemaV1();
     void normalizesCallerInputsDeterministically();
     void appliesAccessibilityTransforms();
+    void flattensEveryTranslucentSemanticRoleDeterministically();
+    void flattensTheCompleteSchemaAlphaRange();
     void coversSchemaMetricBoundaries();
     void rejectsValuesOutsideThePublicThemeContract();
 };
@@ -154,6 +213,66 @@ void DerivationTests::appliesAccessibilityTransforms()
     QVERIFY(!transformed.elevation().one.backgroundBlur);
     QCOMPARE(transformed.elevation().one.shadowOpacity, 0.0);
     QVERIFY(normal.elevation().one.backgroundBlur);
+}
+
+void DerivationTests::flattensEveryTranslucentSemanticRoleDeterministically()
+{
+    const ThemeSpec theme = translucentTheme();
+    const auto normalResult = DesignTokenDeriver::derive(theme);
+    const DesignTokens &normal = requireTokens(normalResult);
+    QCOMPARE(normal.background().base.alpha(), 128);
+    QCOMPARE(normal.background().raised.alpha(), 128);
+    QCOMPARE(normal.background().highest.alpha(), 128);
+
+    const auto firstResult = DesignTokenDeriver::derive(
+        theme, {.reducedTransparency = true});
+    const auto secondResult = DesignTokenDeriver::derive(
+        theme, {.reducedTransparency = true});
+    const DesignTokens &tokens = requireTokens(firstResult);
+    QCOMPARE(tokens, requireTokens(secondResult));
+
+    // AGENT-GUARD: Keep exact colors here, not only alpha checks. They pin the
+    // normative canvas -> surface -> semantic-role flattening order against a
+    // ThemeLoader-accepted schema-v1 theme with alpha in every source role.
+    QCOMPARE(tokens.background().base.name(QColor::HexArgb), QStringLiteral("#ff203040"));
+    QCOMPARE(tokens.background().raised.name(QColor::HexArgb), QStringLiteral("#ff705840"));
+    QCOMPARE(tokens.background().highest.name(QColor::HexArgb), QStringLiteral("#ffb8aca0"));
+    QCOMPARE(tokens.foreground().defaultColor.name(QColor::HexArgb),
+             QStringLiteral("#ffdcd6d0"));
+    QCOMPARE(tokens.foreground().muted.name(QColor::HexArgb), QStringLiteral("#ff787c80"));
+    QCOMPARE(tokens.foreground().disabled.name(QColor::HexArgb),
+             QStringLiteral("#ff746a60"));
+    QCOMPARE(tokens.accent().defaultColor.name(QColor::HexArgb), QStringLiteral("#ff804c88"));
+    QCOMPARE(tokens.accent().foreground.name(QColor::HexArgb), QStringLiteral("#ff201322"));
+    QCOMPARE(tokens.accent().subtle.name(QColor::HexArgb), QStringLiteral("#ff725749"));
+    QCOMPARE(tokens.state().hover.name(QColor::HexArgb), QStringLiteral("#ff79624c"));
+    QCOMPARE(tokens.state().pressed.name(QColor::HexArgb), QStringLiteral("#ff826c57"));
+    QCOMPARE(tokens.divider().name(QColor::HexArgb), QStringLiteral("#ff645240"));
+    QCOMPARE(tokens.danger().defaultColor.name(QColor::HexArgb), QStringLiteral("#ffb83c40"));
+
+    for (const QColor &color : publishedColors(tokens)) {
+        QCOMPARE(color.alpha(), 255);
+    }
+}
+
+void DerivationTests::flattensTheCompleteSchemaAlphaRange()
+{
+    ThemeSpec theme = translucentTheme();
+    for (int alpha = 0; alpha <= 255; ++alpha) {
+        for (auto color = theme.colors.begin(); color != theme.colors.end(); ++color) {
+            color->setAlpha(alpha);
+        }
+        const auto first = DesignTokenDeriver::derive(
+            theme, {.reducedTransparency = true});
+        const auto second = DesignTokenDeriver::derive(
+            theme, {.reducedTransparency = true});
+        QVERIFY2(first.ok(), qPrintable(first.diagnostic));
+        QVERIFY2(second.ok(), qPrintable(second.diagnostic));
+        QCOMPARE(*first.tokens, *second.tokens);
+        for (const QColor &color : publishedColors(*first.tokens)) {
+            QCOMPARE(color.alpha(), 255);
+        }
+    }
 }
 
 void DerivationTests::coversSchemaMetricBoundaries()

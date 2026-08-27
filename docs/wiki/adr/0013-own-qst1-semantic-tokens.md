@@ -44,6 +44,9 @@ focused dependency, accessibility, resource, and replacement tests.
 - Font point size, text scale, reduced motion/transparency, and high-contrast
   preference remain caller inputs; the token layer has no persistence or
   service dependency.
+- Reduced transparency is one total provider-owned projection across every
+  schema-v1 color. Consumers must not reinterpret the Boolean or add local
+  opacity fallbacks.
 - WCAG pair checks and deterministic transform/property tests are mandatory for
   compatible QST-1 corrections.
 - QST/QML role compatibility is independent from theme-schema compatibility.

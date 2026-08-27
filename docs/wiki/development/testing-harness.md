@@ -127,12 +127,16 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.design-tokens-' --output-on-failure
 ```
 
-The four tests cover schema-v1 and caller-input boundaries, property-style
+The five tests cover schema-v1 and caller-input boundaries, property-style
 metric ranges, deterministic reduced-motion/reduced-transparency/high-contrast/
-text-scale transforms, exact WCAG pair scopes across all five built-in themes,
+text-scale transforms, exact opaque values for a loader-valid theme with alpha
+in every source color, exact WCAG pair scopes across all five built-in themes,
 GUI-thread-only publication, same-value suppression, and an offscreen QML
-consumer observing one complete generation. The benchmark records an all-five-
-themes derivation sample without an unstable absolute CI timing assertion.
+consumer observing one complete generation. The fifth gate performs a clean
+staged install, configures a standalone C++ consumer against only installed
+headers/static libraries, and verifies the exact QST-1 map plus representative
+Qinda macOS accessibility values. The benchmark records an all-five-theme
+derivation sample without an unstable absolute CI timing assertion.
 
 These are value and software-renderer checks. They do not prove visual control
 baselines, a Settings Center, Settings1 projection, assistive-technology bridge

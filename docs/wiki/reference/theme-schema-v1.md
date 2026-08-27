@@ -53,3 +53,8 @@ adding stored fields. Base point size and accessibility preferences are
 caller-owned inputs, not theme data. A future role that genuinely requires an
 authored value still needs a compatible schema addition or a new version with
 migration tests.
+
+Every required `colors` entry accepts any valid Qt color, including alpha; v1
+does not require opacity. QST-1's reduced-transparency input therefore owns a
+total, deterministic opaque flattening of those existing values rather than
+narrowing this schema or asking controls to compensate.

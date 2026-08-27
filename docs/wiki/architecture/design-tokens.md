@@ -75,7 +75,7 @@ revision and migration; derived roles do not.
 | `basePointSize` | default 10; clamp 6–72 points | Caller-owned font preference; intentionally not theme data |
 | `textScale` | default 1.0; clamp 0.5–3.0 | Accessibility multiplier applied to the whole type ramp |
 | `reducedMotion` | Boolean | Caps non-instant durations at 80 ms |
-| `reducedTransparency` | Boolean | Composites alpha roles to opaque surface colors and disables background blur |
+| `reducedTransparency` | Boolean | Flattens every semantic color to an opaque palette and disables background blur/shadows |
 | `highContrast` | Boolean | Uses theme text for focus and strong outlines; theme selection remains caller-owned |
 
 The later Settings Center/application composition layer may project validated
@@ -104,8 +104,31 @@ the rendering/output boundary.
 | `elevation` | `1`…`3` | Three bounded offset/opacity levels; reduced transparency removes shadow opacity and background blur |
 
 Default alpha roles remain overlays so controls can apply them to their
-semantic surfaces. Reduced transparency composites those roles over
-`bg.raised`, yielding deterministic opaque colors.
+semantic surfaces.
+
+### Reduced-transparency flattening
+
+Schema v1 permits alpha in every authored Qt color. When reduced transparency
+is requested, QST-1—not a control, shell, or Settings consumer—applies this
+ordered transform before deriving the role table:
+
+1. Choose an opaque desktop backdrop from the authored canvas RGB: black when
+   its WCAG relative luminance is below 0.5, otherwise white. Canvas alpha does
+   not affect this choice.
+2. Composite canvas over that backdrop, surface over the flattened canvas, and
+   `surfaceRaised` over the flattened surface.
+3. Composite border, text, muted text, accent, and danger over the flattened
+   surface. Composite accent text over the flattened accent.
+4. Derive disabled, subtle, hover, and pressed overlays from that already
+   opaque palette and composite each over the flattened surface. Derive focus,
+   outlines, status, and danger foregrounds from the same opaque colors.
+5. Disable elevation background blur and set shadow opacity to zero.
+
+Every published QST color consequently has alpha 255. Fully opaque authored
+themes retain their exact source colors. The fixed threshold, stacking order,
+and source-over arithmetic are QST-1 compatibility behavior; changing one
+requires exact loader-backed property tests and review as a compatible QST-1
+correction or a token revision.
 
 ## WCAG pair scope
 
@@ -138,8 +161,11 @@ ctest --test-dir build/dev \
 ```
 
 They cover schema/metric boundaries, deterministic input normalization,
-accessibility transforms, complete QML maps, exact five-theme WCAG pairs,
-GUI-thread ownership, atomic change publication, and same-value suppression.
+loader-valid translucent-theme flattening with exact values, complete QML
+maps, exact five-theme WCAG pairs, GUI-thread ownership, atomic change
+publication, same-value suppression, and a clean staged-install C++ consumer
+that recompiles against installed headers/libraries and verifies exact role
+keys plus representative Qinda macOS accessibility values.
 The offscreen singleton test uses Qt's software renderer and never opens or
 controls a desktop surface.
 
@@ -149,8 +175,8 @@ reporter. Candidate handoffs divide the reported time by 1,000 and record the
 median against the target of less than 1 ms for one five-theme batch. CI
 deliberately has no absolute wall-clock assertion because shared-runner jitter
 would make that gate unstable; reviewers compare recorded measurements and
-investigate material regressions. On the final S1 candidate host, 20-iteration
-medians were 23.5 ms Debug and 7.90 ms Release per 1,000 batches, or 0.0235 ms
-and 0.00790 ms per complete five-theme batch. This is
+investigate material regressions. On the repaired S1 candidate host,
+20-iteration medians were 28.5 ms Debug and 10.8 ms Release per 1,000 batches,
+or 0.0285 ms and 0.0108 ms per complete five-theme batch. This is
 derivation evidence only—not a Settings Center startup, repaint, memory, live
 accessibility bridge, or physical-display claim.
