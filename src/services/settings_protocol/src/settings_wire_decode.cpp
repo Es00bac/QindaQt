@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/services/settings_protocol/settings_wire_decode.h"
 
+#include "settings_wire_decode_p.h"
+
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 
 #include <QDBusArgument>
+#include <QDBusSignature>
 #include <QDBusVariant>
-#include <QSet>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace QindaQt::Services::SettingsProtocol {
@@ -21,11 +24,6 @@ void setError(QString *error, QString message)
     }
 }
 
-bool exactType(const QVariant &value, int type)
-{
-    return value.isValid() && value.metaType().id() == type;
-}
-
 bool wouldExceed(qsizetype current, qsizetype maximum, qsizetype addition)
 {
     return current < 0 || maximum < 0 || addition < 0 || current > maximum
@@ -35,6 +33,7 @@ bool wouldExceed(qsizetype current, qsizetype maximum, qsizetype addition)
 struct DecodeState final {
     BoundedSettingsValueCodec::Usage value;
     AggregateValueDecodeBudget aggregate;
+    bool allowWireNullMarker = true;
 };
 
 bool chargeBytes(DecodeState &state, qsizetype bytes, QString *error)
@@ -90,16 +89,10 @@ bool chargeKey(const QString &key, DecodeState &state, QString *error)
 
 bool chargeString(const QString &text, DecodeState &state, qsizetype depth, QString *error)
 {
-    if (text.contains(QChar(u'\0'))) {
-        setError(error, QStringLiteral("string contains an embedded NUL"));
+    if (!BoundedSettingsValueCodec::validateString(text, error)) {
         return false;
     }
     const qsizetype bytes = text.toUtf8().size();
-    if (bytes > WireContract::MaximumStringValueBytes) {
-        setError(error, QStringLiteral("string exceeds %1 UTF-8 bytes")
-                            .arg(WireContract::MaximumStringValueBytes));
-        return false;
-    }
     return chargeNode(state, bytes, depth, error);
 }
 
@@ -149,7 +142,7 @@ std::optional<QVariant> decodeOpaqueStringArray(const QDBusArgument &argument,
     if (!chargeNode(state, 8, depth, error)) {
         return std::nullopt;
     }
-    QStringList result;
+    QVariantList result;
     argument.beginArray();
     while (!argument.atEnd()) {
         if (result.size() >= WireContract::MaximumListEntries) {
@@ -245,27 +238,73 @@ std::optional<QVariant> decodeJsonValue(const QVariant &value,
         const auto *argument = static_cast<const QDBusArgument *>(value.constData());
         return decodeOpaque(*argument, depth, state, error);
     }
-    if (!value.isValid() || value.isNull()) {
-        return chargeNode(state, 1, depth, error) ? std::optional<QVariant>(QVariant{})
-                                                  : std::nullopt;
+    if (!value.isValid()) {
+        setError(error, QStringLiteral("invalid QVariant is not JSON null"));
+        return std::nullopt;
+    }
+    if (value.metaType().id() == QMetaType::Nullptr) {
+        return chargeNode(state, 1, depth, error)
+                   ? std::optional<QVariant>(QVariant::fromValue(nullptr)) : std::nullopt;
+    }
+    if (value.metaType() == QMetaType::fromType<QDBusSignature>()) {
+        if (!state.allowWireNullMarker) {
+            setError(error, QStringLiteral("D-Bus signatures are reserved for the Settings1 null marker"));
+            return std::nullopt;
+        }
+        const QString signature = qvariant_cast<QDBusSignature>(value).signature();
+        if (signature != QLatin1String(WireContract::JsonNullWireSignature)) {
+            setError(error, QStringLiteral("D-Bus signature is not the Settings1 null marker"));
+            return std::nullopt;
+        }
+        return chargeNode(state, signature.toLatin1().size(), depth, error)
+                   ? std::optional<QVariant>(QVariant::fromValue(nullptr)) : std::nullopt;
     }
     switch (value.metaType().id()) {
     case QMetaType::Bool:
         return chargeNode(state, 1, depth, error) ? std::optional<QVariant>(value)
                                                   : std::nullopt;
+    case QMetaType::Char:
+    case QMetaType::SChar:
+    case QMetaType::Short:
     case QMetaType::Int:
-    case QMetaType::LongLong:
+    case QMetaType::Long:
+    case QMetaType::LongLong: {
+        bool ok = false;
+        const qint64 integer = value.toLongLong(&ok);
+        return ok && chargeNode(state, 8, depth, error)
+                   ? std::optional<QVariant>(QVariant::fromValue(integer)) : std::nullopt;
+    }
+    case QMetaType::UChar:
+    case QMetaType::UShort:
     case QMetaType::UInt:
-    case QMetaType::ULongLong:
-        return chargeNode(state, 8, depth, error) ? std::optional<QVariant>(value)
-                                                  : std::nullopt;
-    case QMetaType::Double:
-        if (!std::isfinite(value.toDouble())) {
+    case QMetaType::ULong:
+    case QMetaType::ULongLong: {
+        bool ok = false;
+        const quint64 integer = value.toULongLong(&ok);
+        if (!ok || integer > quint64(std::numeric_limits<qint64>::max())) {
+            setError(error, QStringLiteral("integer exceeds the canonical signed 64-bit range"));
+            return std::nullopt;
+        }
+        return chargeNode(state, 8, depth, error)
+                   ? std::optional<QVariant>(QVariant::fromValue(static_cast<qint64>(integer)))
+                   : std::nullopt;
+    }
+    case QMetaType::Float:
+    case QMetaType::Double: {
+        const double number = value.toDouble();
+        if (!std::isfinite(number)) {
             setError(error, QStringLiteral("number is not finite"));
             return std::nullopt;
         }
-        return chargeNode(state, 8, depth, error) ? std::optional<QVariant>(value)
+        constexpr double minimumInteger = -9223372036854775808.0;
+        constexpr double maximumIntegerExclusive = 9223372036854775808.0;
+        const QVariant canonical = std::trunc(number) == number
+                && number >= minimumInteger && number < maximumIntegerExclusive
+            ? QVariant::fromValue(static_cast<qint64>(number))
+            : QVariant::fromValue(number);
+        return chargeNode(state, 8, depth, error) ? std::optional<QVariant>(canonical)
                                                   : std::nullopt;
+    }
     case QMetaType::QString: {
         const QString text = value.toString();
         return chargeString(text, state, depth, error)
@@ -281,7 +320,7 @@ std::optional<QVariant> decodeJsonValue(const QVariant &value,
         if (!chargeNode(state, 8, depth, error)) {
             return std::nullopt;
         }
-        QStringList result;
+        QVariantList result;
         for (const auto &entry : list) {
             if (!chargeString(entry, state, depth + 1, error)) {
                 return std::nullopt;
@@ -341,6 +380,7 @@ std::optional<QVariant> decodeJsonValue(const QVariant &value,
 
 std::optional<QVariant> decodeWithBudget(const QVariant &value,
                                          AggregateValueDecodeBudget &aggregate,
+                                         bool allowWireNullMarker,
                                          QString *error,
                                          BoundedSettingsValueCodec::Usage *usage)
 {
@@ -351,7 +391,7 @@ std::optional<QVariant> decodeWithBudget(const QVariant &value,
         setError(error, QStringLiteral("aggregate decode budget is invalid"));
         return std::nullopt;
     }
-    DecodeState state{{}, aggregate};
+    DecodeState state{{}, aggregate, allowWireNullMarker};
     auto result = decodeJsonValue(value, 1, state, error);
     if (usage != nullptr) {
         *usage = state.value;
@@ -365,128 +405,6 @@ std::optional<QVariant> decodeWithBudget(const QVariant &value,
 
 } // namespace
 
-std::optional<QVariantList> decodeBoundedVariantList(const QVariant &value,
-                                                      qsizetype maximumElements)
-{
-    if (maximumElements < 0) {
-        return std::nullopt;
-    }
-    if (exactType(value, QMetaType::QVariantList)) {
-        const QVariantList result = value.toList();
-        return result.size() <= maximumElements ? std::optional<QVariantList>(result)
-                                                : std::nullopt;
-    }
-    if (value.metaType() != QMetaType::fromType<QDBusArgument>()) {
-        return std::nullopt;
-    }
-    const auto &argument = *static_cast<const QDBusArgument *>(value.constData());
-    if (argument.currentSignature() != QLatin1String("av")) {
-        return std::nullopt;
-    }
-    QVariantList result;
-    argument.beginArray();
-    while (!argument.atEnd()) {
-        if (result.size() >= maximumElements) {
-            return std::nullopt;
-        }
-        QDBusVariant item;
-        argument >> item;
-        QVariant child = item.variant();
-        item = QDBusVariant{};
-        result.append(std::move(child));
-    }
-    argument.endArray();
-    return result;
-}
-
-std::optional<QVariantMap> decodeBoundedVariantMap(const QVariant &value,
-                                                    qsizetype maximumEntries)
-{
-    if (maximumEntries < 0) {
-        return std::nullopt;
-    }
-    if (exactType(value, QMetaType::QVariantMap)) {
-        const QVariantMap result = value.toMap();
-        if (result.size() > maximumEntries) {
-            return std::nullopt;
-        }
-        for (auto iterator = result.cbegin(); iterator != result.cend(); ++iterator) {
-            if (!BoundedSettingsValueCodec::validateKey(iterator.key())) {
-                return std::nullopt;
-            }
-        }
-        return result;
-    }
-    if (value.metaType() != QMetaType::fromType<QDBusArgument>()) {
-        return std::nullopt;
-    }
-    const auto &argument = *static_cast<const QDBusArgument *>(value.constData());
-    if (argument.currentSignature() != QLatin1String("a{sv}")) {
-        return std::nullopt;
-    }
-    QVariantMap result;
-    argument.beginMap();
-    while (!argument.atEnd()) {
-        if (result.size() >= maximumEntries) {
-            return std::nullopt;
-        }
-        QString key;
-        QDBusVariant item;
-        argument.beginMapEntry();
-        argument >> key >> item;
-        argument.endMapEntry();
-        if (result.contains(key) || !BoundedSettingsValueCodec::validateKey(key)) {
-            return std::nullopt;
-        }
-        QVariant child = item.variant();
-        item = QDBusVariant{};
-        result.insert(std::move(key), std::move(child));
-    }
-    argument.endMap();
-    return result;
-}
-
-std::optional<QStringList> decodeBoundedKeyList(const QVariant &value,
-                                                qsizetype maximumElements)
-{
-    if (maximumElements < 0) {
-        return std::nullopt;
-    }
-    QStringList result;
-    if (exactType(value, QMetaType::QStringList)) {
-        result = value.toStringList();
-        if (result.size() > maximumElements) {
-            return std::nullopt;
-        }
-    } else if (value.metaType() == QMetaType::fromType<QDBusArgument>()) {
-        const auto &argument = *static_cast<const QDBusArgument *>(value.constData());
-        if (argument.currentSignature() != QLatin1String("as")) {
-            return std::nullopt;
-        }
-        argument.beginArray();
-        while (!argument.atEnd()) {
-            if (result.size() >= maximumElements) {
-                return std::nullopt;
-            }
-            QString key;
-            argument >> key;
-            result.append(std::move(key));
-        }
-        argument.endArray();
-    } else {
-        return std::nullopt;
-    }
-
-    QSet<QString> unique;
-    for (const auto &key : result) {
-        if (!BoundedSettingsValueCodec::validateKey(key) || unique.contains(key)) {
-            return std::nullopt;
-        }
-        unique.insert(key);
-    }
-    return result;
-}
-
 std::optional<QVariant> decodeBoundedJsonValue(
     const QVariant &value,
     QString *error,
@@ -494,7 +412,7 @@ std::optional<QVariant> decodeBoundedJsonValue(
 {
     AggregateValueDecodeBudget aggregate{WireContract::MaximumAggregateValueBytes,
                                          WireContract::MaximumValueNodes};
-    return decodeWithBudget(value, aggregate, error, usage);
+    return decodeWithBudget(value, aggregate, true, error, usage);
 }
 
 std::optional<QVariant> decodeBoundedJsonValue(
@@ -503,7 +421,30 @@ std::optional<QVariant> decodeBoundedJsonValue(
     QString *error,
     BoundedSettingsValueCodec::Usage *usage)
 {
-    return decodeWithBudget(value, aggregate, error, usage);
+    return decodeWithBudget(value, aggregate, true, error, usage);
 }
+
+namespace Private {
+
+std::optional<QVariant> normalizeBoundedJsonValueForWireEncoding(
+    const QVariant &value,
+    QString *error,
+    BoundedSettingsValueCodec::Usage *usage)
+{
+    AggregateValueDecodeBudget aggregate{WireContract::MaximumAggregateValueBytes,
+                                         WireContract::MaximumValueNodes};
+    return decodeWithBudget(value, aggregate, false, error, usage);
+}
+
+std::optional<QVariant> normalizeBoundedJsonValueForWireEncoding(
+    const QVariant &value,
+    AggregateValueDecodeBudget &aggregate,
+    QString *error,
+    BoundedSettingsValueCodec::Usage *usage)
+{
+    return decodeWithBudget(value, aggregate, false, error, usage);
+}
+
+} // namespace Private
 
 } // namespace QindaQt::Services::SettingsProtocol

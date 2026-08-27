@@ -21,8 +21,15 @@ DoNotDisturbController::DoNotDisturbController(SettingsClient &client, QObject *
             this, &DoNotDisturbController::handleCommit);
     connect(&m_client, &SettingsClient::commitUncertain, this, [this](const QString &message) {
         m_waitingForCommitSnapshot = false;
+        m_conflictIntent = false;
+        m_hasRequestedValue = false;
         setState(State::Unavailable, message.left(512));
     });
+}
+
+QString DoNotDisturbController::errorText() const
+{
+    return m_transientError.isEmpty() ? m_confirmedError : m_transientError;
 }
 
 QString DoNotDisturbController::statusText() const
@@ -46,11 +53,16 @@ bool DoNotDisturbController::requestSet(bool enabled)
     if (!ready()) {
         return false;
     }
+    // A new explicit write is the dismissal contract for an earlier confirmed
+    // rejection diagnostic. Automatic authority refresh never clears it.
+    m_confirmedError.clear();
     m_requestedValue = enabled;
     m_hasRequestedValue = true;
     m_waitingForCommitSnapshot = false;
+    m_conflictIntent = false;
     QString error;
     if (!m_client.setUserValue(DoNotDisturbKey, enabled, &error)) {
+        m_hasRequestedValue = false;
         setState(State::Unavailable, error.left(512));
         return false;
     }
@@ -78,14 +90,17 @@ void DoNotDisturbController::retry()
 
 void DoNotDisturbController::handleClientState()
 {
-    if (m_state == State::Saving || m_state == State::Conflict) {
-        return;
-    }
     switch (m_client.state()) {
     case ClientState::Ready:
-        if (m_hasBaseline) setState(State::Ready);
+        // SettingsClient emits snapshotChanged immediately after Ready. Keep
+        // accepted/conflict intent private until that fresh baseline resolves it.
+        if (m_hasBaseline && !m_waitingForCommitSnapshot && !m_conflictIntent) {
+            setState(State::Ready);
+        }
         break;
     case ClientState::Authenticating:
+        // A retained baseline is not current authority. Replacement/loss must
+        // hide Conflict actions and never leave a stale Saving claim visible.
         setState(m_hasBaseline ? State::Unavailable : State::Loading,
                  m_client.lastError());
         break;
@@ -114,10 +129,16 @@ void DoNotDisturbController::handleSnapshot()
         Q_EMIT hasBaselineChanged();
     }
     Q_EMIT confirmedValue(m_enabled);
-    if (m_state == State::Conflict) {
-        return;
-    }
-    if (m_waitingForCommitSnapshot) {
+    if (m_conflictIntent) {
+        m_waitingForCommitSnapshot = false;
+        if (m_hasRequestedValue && m_enabled != m_requestedValue) {
+            setState(State::Conflict,
+                     QStringLiteral("Changed elsewhere; current value reloaded"));
+            return;
+        }
+        m_conflictIntent = false;
+        m_hasRequestedValue = false;
+    } else if (m_waitingForCommitSnapshot) {
         m_waitingForCommitSnapshot = false;
         m_hasRequestedValue = false;
     }
@@ -128,6 +149,7 @@ void DoNotDisturbController::handleCommit(const CommitOutcome &outcome)
 {
     if (outcome.status == SettingsProtocol::SettingsWireStatus::Applied) {
         m_waitingForCommitSnapshot = true;
+        m_conflictIntent = false;
         setState(State::Saving);
         return;
     }
@@ -136,22 +158,32 @@ void DoNotDisturbController::handleCommit(const CommitOutcome &outcome)
         if (m_hasRequestedValue && current.metaType().id() == QMetaType::Bool
             && current.toBool() == m_requestedValue) {
             m_waitingForCommitSnapshot = true;
+            m_conflictIntent = false;
             setState(State::Saving);
         } else {
+            m_waitingForCommitSnapshot = false;
+            m_conflictIntent = true;
             setState(State::Conflict,
                      QStringLiteral("Changed elsewhere; current value reloaded"));
         }
         return;
     }
     m_hasRequestedValue = false;
-    setState(State::Ready, outcome.message.left(512));
+    m_waitingForCommitSnapshot = false;
+    m_conflictIntent = false;
+    m_confirmedError = outcome.message.left(512);
+    if (m_confirmedError.isEmpty()) {
+        m_confirmedError = QStringLiteral("Settings save failed: %1")
+                               .arg(SettingsProtocol::settingsWireStatusName(outcome.status));
+    }
+    setState(State::Ready);
 }
 
 void DoNotDisturbController::setState(State state, QString error)
 {
-    if (m_state == state && m_error == error) return;
+    if (m_state == state && m_transientError == error) return;
     m_state = state;
-    m_error = std::move(error);
+    m_transientError = std::move(error);
     Q_EMIT stateChanged();
 }
 

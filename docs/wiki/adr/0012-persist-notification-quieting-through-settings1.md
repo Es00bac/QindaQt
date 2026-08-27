@@ -48,6 +48,16 @@ one in-flight request and configured backoff. Validate every commit result
 against the initiating epoch, schema version, base revision, key maps, and
 status/revision relation; treat signals only as bounded refresh hints.
 
+Normalize Object settings recursively to a single persistable JSON form:
+`Nullptr` null, signed 64-bit integers (including in-range unsigned inputs),
+canonical integral doubles, finite non-integral doubles, strings, lists, and
+string-keyed maps. Reject invalid QVariant, wider unsigned integers,
+non-finite/non-JSON values, embedded NUL, and malformed Unicode before
+mutation. Encode documents explicitly. Carry null over D-Bus only as the exact
+reserved, fixed-size signature scalar `g:"v"`, and encode all request/reply
+value maps before QtDBus marshalling. Loaded persistent layers must pass the
+same wire-fit gate before service registration.
+
 Add a DND-scoped controller above the generic client. Shell composition fails
 quiet before its first baseline and retains the last confirmed value across
 loss. It only changes the injected interruption policy. Authenticated lock
@@ -66,6 +76,11 @@ layer-shell settings surface, global shortcut, or supervisor child.
 - UI exposes loading, saving, conflict, and unavailable/last-confirmed truth;
   timeout never means confirmed failure or automatic commit retry. Explicit UI
   Retry can recover a synchronous transport-start failure.
+- Authority loss overrides Saving/Conflict, while a confirmed save rejection
+  remains visible across automatic refresh until a new explicit write.
+- Every supported Object value has one exact metatype/value after commit,
+  atomic save, service reconstruction, and client decode; unsupported values
+  fail before authoritative mutation.
 - Settings1 remains useful for later schema keys without importing settings
   model or shell types into the wire module.
 - The shell may remain conservatively quiet while Settings1 is unavailable;

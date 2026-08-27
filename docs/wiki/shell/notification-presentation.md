@@ -83,6 +83,13 @@ indicator. The separate lock-state privacy gate below cannot be weakened by
 this preference. Scheduling, application exceptions, and inhibition remain
 future work. See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
+Owner or transport loss overrides a pending Saving/Conflict projection and
+shows Unavailable/Retry while retaining the last confirmed policy value. A
+conflict action reappears only after a fresh baseline proves the original
+choice still differs. Confirmed validation, persistence, or revision-exhaustion
+failures stay visible on both the settings page and shell center after the
+automatic refresh; a new user write explicitly dismisses that diagnostic.
+
 ## Lock-state privacy
 
 Notification presentation starts denied and remains denied while lock state is

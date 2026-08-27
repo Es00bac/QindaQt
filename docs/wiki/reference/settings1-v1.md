@@ -43,8 +43,18 @@ refreshes the scoped client's optimistic commit base.
 ## Value and resource bounds
 
 Values are JSON-native null, Boolean, bounded integer/finite number, UTF-8
-string, array, or string-keyed object. Arrays and objects may nest. The v1
-limits are:
+string, array, or string-keyed object. Arrays and objects may nest. In the
+canonical in-process form, null is a valid `QMetaType::Nullptr` QVariant;
+invalid QVariant means absent/malformed and is rejected. Integers use exact
+signed 64-bit representation. Unsigned inputs through `INT64_MAX` normalize to
+that representation and wider inputs reject before mutation. Finite integral
+floating inputs inside the same range normalize to signed integers (`-0.0`
+becomes integer zero); other finite doubles retain their exact value through
+document and service restart. NaN and infinities reject.
+
+Strings and object keys must contain well-formed UTF-16 with no embedded NUL;
+object keys are non-empty. This prevents UTF-8/JSON/D-Bus replacement from
+collapsing distinct values. The v1 limits are:
 
 | Resource | Limit |
 | --- | ---: |
@@ -65,6 +75,20 @@ before retaining, appending, or inserting it. Duplicate operations, non-finite
 numbers, non-JSON Qt values,
 malformed D-Bus containers, or any bound overflow reject the complete request
 before it reaches the settings model.
+
+Ordinary `QStringList`, opaque D-Bus `as`, and generic `av` string arrays all
+normalize to the same canonical `QVariantList` shape. D-Bus variants have no
+untyped null, so Settings1 represents null on the wire as the exact reserved
+D-Bus signature scalar `g:"v"`. The signature type is outside the JSON-native
+caller domain and D-Bus bounds its payload before Qt exposes it. Only that
+exact marker decodes to null; all other and caller-supplied signatures reject.
+
+Snapshot values, authoritative values in every commit outcome, and transaction
+set values are encoded before QtDBus marshalling. The public Qt transport
+repeats complete operation validation/encoding defensively, so a raw invalid or
+null operation cannot reach libdbus. Persistent profile and user layers are
+normalized to the same canonical JSON domain, and the resident service proves
+each loaded layer fits Settings1 wire limits before object registration.
 
 Activation and client restart are serialized. Only one
 `StartServiceByName` call may be in flight; failures use the configured retry

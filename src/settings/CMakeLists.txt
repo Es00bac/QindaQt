@@ -6,6 +6,8 @@ add_library(QindaQt::Settings ALIAS qindaqt_settings)
 target_sources(
     qindaqt_settings
     PRIVATE
+        src/canonical_json_value.cpp
+        src/canonical_json_value_p.h
         src/layered_settings.cpp
         src/settings_document.cpp
         src/settings_migration.cpp

@@ -125,5 +125,19 @@ Item {
             quieting.statusText = "";
             tryVerify(function() { return toggle.enabled; });
         }
+
+        function test_confirmedSaveFailureRemainsVisibleAfterRebaseline() {
+            quieting.canToggle = true;
+            quieting.statusText = "";
+            quieting.errorText = "durable save failed";
+            const page = createTemporaryObject(pageComponent, root);
+            const toggle = findChild(page, "settingsDoNotDisturbSwitch");
+            const error = findChild(page, "settingsQuietingError");
+            const retry = findChild(page, "settingsRetryButton");
+            verify(toggle.enabled);
+            compare(error.text, "durable save failed");
+            compare(error.Accessible.role, Accessible.AlertMessage);
+            verify(!retry.visible);
+        }
     }
 }

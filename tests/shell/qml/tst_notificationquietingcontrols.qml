@@ -157,5 +157,35 @@ Item {
             fakeQuieting.statusText = "";
             tryCompare(dnd, "enabled", true);
         }
+
+        function test_conflictLossAndConfirmedFailureStayTruthful() {
+            fakeQuieting.canToggle = false;
+            fakeQuieting.conflict = true;
+            fakeQuieting.statusText = "Changed elsewhere; current value reloaded";
+            const center = createTemporaryObject(centerComponent, testRoot);
+            center.width = 384;
+            center.height = 284;
+            center.visible = true;
+            const dnd = findChild(center, "notificationDoNotDisturbButton");
+            const action = findChild(center, "notificationQuietingStateAction");
+            const status = findChild(center, "notificationQuietingStatus");
+            tryCompare(action, "visible", true);
+            compare(action.text, "Apply my choice");
+
+            fakeQuieting.conflict = false;
+            fakeQuieting.unavailable = true;
+            fakeQuieting.statusText = "Last confirmed: Off";
+            tryCompare(action, "text", "Retry");
+            verify(!dnd.enabled);
+
+            fakeQuieting.unavailable = false;
+            fakeQuieting.canToggle = true;
+            fakeQuieting.statusText = "";
+            fakeQuieting.errorText = "durable save failed";
+            tryCompare(status, "text", "durable save failed");
+            compare(status.Accessible.role, Accessible.AlertMessage);
+            verify(!action.visible);
+            verify(dnd.enabled);
+        }
     }
 }

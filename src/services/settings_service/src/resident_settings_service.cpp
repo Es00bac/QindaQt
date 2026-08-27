@@ -5,6 +5,7 @@
 #include "settings_object_p.h"
 
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
+#include "qindaqt/services/settings_protocol/settings_wire_encode.h"
 #include "qindaqt/settings/layered_settings.h"
 #include "qindaqt/settings/settings_document.h"
 #include "qindaqt/settings/settings_migration.h"
@@ -23,6 +24,21 @@ namespace {
 SettingsServiceStartResult failure(SettingsServiceStartStatus status, QString message)
 {
     return {.status = status, .message = std::move(message)};
+}
+
+bool layerFitsWire(const QVariantMap &values, QString *error)
+{
+    SettingsProtocol::AggregateValueDecodeBudget aggregate{
+        SettingsProtocol::WireContract::MaximumSnapshotValueBytes,
+        SettingsProtocol::WireContract::MaximumSnapshotValueNodes};
+    for (auto iterator = values.cbegin(); iterator != values.cend(); ++iterator) {
+        if (!SettingsProtocol::BoundedSettingsValueCodec::validateKey(iterator.key(), error)
+            || !SettingsProtocol::encodeBoundedJsonValueForWire(
+                    iterator.value(), aggregate, error).has_value()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace
@@ -96,6 +112,12 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
     }
 
     Settings::LayeredSettings initial(d->activeSchema);
+    QString wireError;
+    if (!layerFitsWire(d->activeSchema.systemDefaults(), &wireError)) {
+        return failure(SettingsServiceStartStatus::ServerRegistrationFailed,
+                       QStringLiteral("schema defaults are not Settings1-compatible: ")
+                           + wireError);
+    }
     const auto loadedProfile = Settings::SettingsCompatibilityLoader::load(
         d->profileDefaultsPath, d->activeSchema, d->legacySchema);
     if (!loadedProfile.ok
@@ -104,6 +126,11 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
                        loadedProfile.ok
                            ? QStringLiteral("settings document is not profile defaults")
                            : loadedProfile.error);
+    }
+    if (!layerFitsWire(loadedProfile.document.values, &wireError)) {
+        return failure(SettingsServiceStartStatus::CorruptProfileDefaults,
+                       QStringLiteral("profile defaults exceed Settings1 bounds: ")
+                           + wireError);
     }
     const auto appliedProfile = initial.replaceLayer(
         Settings::SettingLayer::ProfileDefaults, loadedProfile.document.values);
@@ -120,6 +147,11 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
             return failure(SettingsServiceStartStatus::CorruptUserOverrides,
                            loaded.ok ? QStringLiteral("settings document is not user overrides")
                                      : loaded.error);
+        }
+        if (!layerFitsWire(loaded.document.values, &wireError)) {
+            return failure(SettingsServiceStartStatus::CorruptUserOverrides,
+                           QStringLiteral("user overrides exceed Settings1 bounds: ")
+                               + wireError);
         }
         const auto applied = initial.replaceLayer(loaded.document.layer, loaded.document.values);
         if (!applied.ok()) {

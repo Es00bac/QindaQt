@@ -1,33 +1,26 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "settings_value_normalizer_p.h"
 
+#include "canonical_json_value_p.h"
+
 #include <QMetaType>
 
 #include <cmath>
+#include <utility>
 
 namespace QindaQt::Settings::Internal {
 namespace {
 
-bool isNumericType(int typeId)
+bool normalizedInteger(const QVariant &input, qint64 *output)
 {
-    switch (typeId) {
-    case QMetaType::Char:
-    case QMetaType::SChar:
-    case QMetaType::UChar:
-    case QMetaType::Short:
-    case QMetaType::UShort:
-    case QMetaType::Int:
-    case QMetaType::UInt:
-    case QMetaType::Long:
-    case QMetaType::ULong:
-    case QMetaType::LongLong:
-    case QMetaType::ULongLong:
-    case QMetaType::Float:
-    case QMetaType::Double:
-        return true;
-    default:
+    QVariant normalized;
+    QString ignored;
+    if (!normalizeCanonicalJsonValue(input, &normalized, &ignored)
+        || normalized.metaType().id() != QMetaType::LongLong) {
         return false;
     }
+    *output = normalized.toLongLong();
+    return true;
 }
 
 } // namespace
@@ -47,39 +40,32 @@ bool normalizeSettingValue(const SettingDefinition &definition,
         *normalized = input.toBool();
         break;
     case SettingValueType::Integer: {
-        if (!isNumericType(typeId)) {
-            *message = QStringLiteral("expected an integer");
-            return false;
-        }
-        bool converted = false;
-        const double number = input.toDouble(&converted);
-        constexpr double minimumInteger = -9223372036854775808.0;
-        constexpr double maximumIntegerExclusive = 9223372036854775808.0;
-        if (!converted || !std::isfinite(number) || std::trunc(number) != number
-            || number < minimumInteger || number >= maximumIntegerExclusive) {
+        qint64 integer = 0;
+        if (!normalizedInteger(input, &integer)) {
             *message = QStringLiteral("expected a finite integer");
             return false;
         }
-        *normalized = QVariant::fromValue(static_cast<qint64>(number));
+        *normalized = QVariant::fromValue(integer);
         break;
     }
     case SettingValueType::Number: {
-        if (!isNumericType(typeId)) {
+        QVariant canonical;
+        QString ignored;
+        if (!normalizeCanonicalJsonValue(input, &canonical, &ignored)
+            || (canonical.metaType().id() != QMetaType::LongLong
+                && canonical.metaType().id() != QMetaType::Double)) {
             *message = QStringLiteral("expected a number");
             return false;
         }
-        bool converted = false;
-        const double number = input.toDouble(&converted);
-        if (!converted || !std::isfinite(number)) {
-            *message = QStringLiteral("expected a finite number");
-            return false;
-        }
-        *normalized = number;
+        *normalized = canonical.toDouble();
         break;
     }
     case SettingValueType::String:
         if (typeId != QMetaType::QString) {
             *message = QStringLiteral("expected a string");
+            return false;
+        }
+        if (!validateCanonicalJsonText(input.toString(), message)) {
             return false;
         }
         *normalized = input.toString();
@@ -94,11 +80,19 @@ bool normalizeSettingValue(const SettingDefinition &definition,
                     *message = QStringLiteral("expected a list containing only strings");
                     return false;
                 }
+                if (!validateCanonicalJsonText(item.toString(), message)) {
+                    return false;
+                }
                 strings.append(item.toString());
             }
         } else {
             *message = QStringLiteral("expected a string list");
             return false;
+        }
+        for (const auto &string : std::as_const(strings)) {
+            if (!validateCanonicalJsonText(string, message)) {
+                return false;
+            }
         }
         *normalized = strings;
         break;
@@ -108,7 +102,9 @@ bool normalizeSettingValue(const SettingDefinition &definition,
             *message = QStringLiteral("expected an object");
             return false;
         }
-        *normalized = input.toMap();
+        if (!normalizeCanonicalJsonValue(input, normalized, message)) {
+            return false;
+        }
         break;
     }
 

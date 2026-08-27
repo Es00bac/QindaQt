@@ -8,6 +8,9 @@ target_sources(
     PRIVATE
         src/settings_value_codec.cpp
         src/settings_wire_decode.cpp
+        src/settings_wire_decode_p.h
+        src/settings_wire_encode.cpp
+        src/settings_wire_envelope.cpp
         src/settings_wire_status.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -16,6 +19,7 @@ target_sources(
             include/qindaqt/services/settings_protocol/settings_value_codec.h
             include/qindaqt/services/settings_protocol/settings_wire_contract.h
             include/qindaqt/services/settings_protocol/settings_wire_decode.h
+            include/qindaqt/services/settings_protocol/settings_wire_encode.h
             include/qindaqt/services/settings_protocol/settings_wire_status.h
 )
 target_link_libraries(

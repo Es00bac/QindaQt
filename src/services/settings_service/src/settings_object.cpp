@@ -4,6 +4,7 @@
 #include "qindaqt/services/settings_protocol/settings_value_codec.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 #include "qindaqt/services/settings_protocol/settings_wire_decode.h"
+#include "qindaqt/services/settings_protocol/settings_wire_encode.h"
 #include "qindaqt/services/settings_protocol/settings_wire_status.h"
 #include "qindaqt/settings/settings_types.h"
 
@@ -46,25 +47,21 @@ QVariantMap sourceLayerNames(const QMap<QString, Settings::SettingLayer> &layers
     return result;
 }
 
-bool valuesFitAggregateBounds(const QVariantMap &values, qsizetype maximumBytes,
-                              qsizetype maximumNodes, QString *error)
+std::optional<QVariantMap> encodeValuesForWire(const QVariantMap &values,
+                                               qsizetype maximumBytes,
+                                               qsizetype maximumNodes,
+                                               QString *error)
 {
-    qsizetype aggregateBytes = 0;
-    qsizetype aggregateNodes = 0;
+    AggregateValueDecodeBudget aggregate{maximumBytes, maximumNodes};
+    QVariantMap result;
     for (auto iterator = values.cbegin(); iterator != values.cend(); ++iterator) {
-        BoundedSettingsValueCodec::Usage usage;
-        if (!BoundedSettingsValueCodec::validateValue(iterator.value(), error, &usage)
-            || aggregateBytes > maximumBytes - usage.bytes
-            || aggregateNodes > maximumNodes - usage.nodes) {
-            if (error != nullptr && error->isEmpty()) {
-                *error = QStringLiteral("aggregate values exceed protocol bounds");
-            }
-            return false;
+        auto encoded = encodeBoundedJsonValueForWire(iterator.value(), aggregate, error);
+        if (!encoded.has_value()) {
+            return std::nullopt;
         }
-        aggregateBytes += usage.bytes;
-        aggregateNodes += usage.nodes;
+        result.insert(iterator.key(), std::move(*encoded));
     }
-    return true;
+    return result;
 }
 
 QVariantMap malformedReply(QString message, quint32 settingsSchemaVersion,
@@ -200,25 +197,27 @@ QVariantMap SettingsObject::GetSnapshot(const QStringList &keys)
                  QStringLiteral("unknown key: %1").arg(snapshot.unknownKey)}};
     }
     QString boundsError;
-    if (!valuesFitAggregateBounds(snapshot.values,
-                                  WireContract::MaximumSnapshotValueBytes,
-                                  WireContract::MaximumSnapshotValueNodes,
-                                  &boundsError)) {
+    auto wireValues = encodeValuesForWire(snapshot.values,
+                                          WireContract::MaximumSnapshotValueBytes,
+                                          WireContract::MaximumSnapshotValueNodes,
+                                          &boundsError);
+    if (!wireValues.has_value()) {
         return malformedSnapshotReply(boundsError,
                                       quint32(m_repository.schema().version()),
                                       m_repository.epoch(), m_repository.revision());
     }
-    return encodeSnapshot(snapshot);
+    return encodeSnapshot(snapshot, std::move(*wireValues));
 }
 
-QVariantMap SettingsObject::encodeSnapshot(const RepositorySnapshot &snapshot) const
+QVariantMap SettingsObject::encodeSnapshot(const RepositorySnapshot &snapshot,
+                                           QVariantMap wireValues) const
 {
     return {{QLatin1StringView(WireContract::FieldStatus), static_cast<quint32>(SettingsWireStatus::Applied)},
             {QLatin1StringView(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
             {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(m_repository.schema().version())},
             {QLatin1StringView(WireContract::FieldEpoch), m_repository.epoch()},
             {QLatin1StringView(WireContract::FieldRevision), snapshot.revision},
-            {QLatin1StringView(WireContract::FieldValues), snapshot.values},
+            {QLatin1StringView(WireContract::FieldValues), std::move(wireValues)},
             {QLatin1StringView(WireContract::FieldSourceLayers), sourceLayerNames(snapshot.sourceLayers)},
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
@@ -272,10 +271,20 @@ QVariantMap SettingsObject::CommitUserTransaction(const QString &epoch, quint64 
     if (result.ok() && !result.changedKeys.isEmpty()) {
         publishChanged(result);
     }
-    return encodeCommitResult(result);
+    QString boundsError;
+    auto wireValues = encodeValuesForWire(result.currentValues,
+                                          WireContract::MaximumSnapshotValueBytes,
+                                          WireContract::MaximumSnapshotValueNodes,
+                                          &boundsError);
+    if (!wireValues.has_value()) {
+        return malformedReply(boundsError, quint32(m_repository.schema().version()),
+                              m_repository.epoch(), m_repository.revision());
+    }
+    return encodeCommitResult(result, std::move(*wireValues));
 }
 
-QVariantMap SettingsObject::encodeCommitResult(const RepositoryCommitResult &result) const
+QVariantMap SettingsObject::encodeCommitResult(const RepositoryCommitResult &result,
+                                               QVariantMap wireValues) const
 {
     return {{QLatin1StringView(WireContract::FieldStatus), static_cast<quint32>(wireStatusFor(result.status))},
             {QLatin1StringView(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
@@ -283,7 +292,7 @@ QVariantMap SettingsObject::encodeCommitResult(const RepositoryCommitResult &res
             {QLatin1StringView(WireContract::FieldEpoch), m_repository.epoch()},
             {QLatin1StringView(WireContract::FieldRevisionBefore), result.revisionBefore},
             {QLatin1StringView(WireContract::FieldRevisionAfter), result.revisionAfter},
-            {QLatin1StringView(WireContract::FieldValues), result.currentValues},
+            {QLatin1StringView(WireContract::FieldValues), std::move(wireValues)},
             {QLatin1StringView(WireContract::FieldSourceLayers), sourceLayerNames(result.currentSourceLayers)},
             {QLatin1StringView(WireContract::FieldChangedKeys), result.changedKeys},
             {QLatin1StringView(WireContract::FieldMessage), result.message}};

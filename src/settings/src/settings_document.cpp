@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/settings/settings_document.h"
 
+#include "canonical_json_value_p.h"
+
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -103,10 +105,18 @@ std::optional<QByteArray> SettingsDocumentCodec::toJson(const SettingsDocument &
         return std::nullopt;
     }
 
+    auto encodedValues = Internal::encodeCanonicalJsonValue(QVariant::fromValue(*normalized), error);
+    if (!encodedValues.has_value() || !encodedValues->isObject()) {
+        if (error != nullptr && error->isEmpty()) {
+            *error = QStringLiteral("normalized settings values are not a JSON object");
+        }
+        return std::nullopt;
+    }
+
     QJsonObject root;
     root.insert(QStringLiteral("schemaVersion"), document.schemaVersion);
     root.insert(QStringLiteral("layer"), toString(document.layer));
-    root.insert(QStringLiteral("values"), QJsonObject::fromVariantMap(*normalized));
+    root.insert(QStringLiteral("values"), encodedValues->toObject());
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
 

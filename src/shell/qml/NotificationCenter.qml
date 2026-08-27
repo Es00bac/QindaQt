@@ -154,15 +154,19 @@ Window {
             anchors.rightMargin: 12
             anchors.bottomMargin: 4
             visible: text.length > 0
-            text: root.quietingSettings.statusText
+            text: root.quietingSettings.statusText.length > 0
+                  ? root.quietingSettings.statusText
+                  : root.quietingSettings.errorText
             color: root.quietingSettings.conflict
                    || root.quietingSettings.unavailable
+                   || root.quietingSettings.errorText.length > 0
                    ? (root.colors.danger ?? "#f07c76")
                    : (root.colors.textMuted ?? "#a9afa9")
             elide: Text.ElideRight
             textFormat: Text.PlainText
             Accessible.role: root.quietingSettings.conflict
                              || root.quietingSettings.unavailable
+                             || root.quietingSettings.errorText.length > 0
                              ? Accessible.AlertMessage : Accessible.StaticText
             Accessible.name: text
         }

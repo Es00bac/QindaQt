@@ -334,7 +334,9 @@ Schema/model tests cover the v2 default/type, immutable-v1 loading, explicit
 valid v1 migration, corrupt/unsupported rejection, and atomic documents.
 Protocol tests cover ordinary and real-QtDBus recursive JSON-native
 display-shaped values, shared aggregate byte/node budgets, depth/list/map/key
-bounds, and bounded fixed reply envelopes. Repository/service tests cover
+bounds, canonical `g:"v"` null, signed/unsigned integer edges, exact finite
+double bit patterns, malformed Unicode/NUL rejection, direct-transport
+pre-marshalling defense, and bounded fixed reply envelopes. Repository/service tests cover
 copy-on-write save failure, no-op, conflict, validation, revision exhaustion,
 validated QindaQt profile precedence/migration/rejection, hostile opaque
 transactions, private-bus name collision, release, and restart. Client tests
@@ -344,8 +346,12 @@ subscription and pending-reply generation fencing, activation completion
 without an owner, repeated-start-failure Retry truth, same-owner epoch and
 equal-revision contradiction rejection, same-object stop/start, replacement epoch/rebaseline,
 real private-bus nested Object commit, profile fallback after user removal,
-persistence, and local daemon loss. Settings-app/shell QML tests cover
-failure/Retry/recovery, structural state, focus, and accessibility semantics.
+persistence/reconstruction with exact null/list/map/numeric metatypes,
+oversized persistent-startup rejection, and local daemon loss. Controller tests
+cover owner loss while accepted-save/conflict intent is pending and persistent
+validation/save/revision-exhaustion diagnostics without replay.
+Settings-app/shell QML tests cover failure/Retry/recovery, stable confirmed
+diagnostics, structural state, focus, and accessibility semantics.
 The bridge proves fail-quiet initialization, retained last-confirmed values,
 independent privacy precedence, ordinary-controller reopen, repeated shell
 reconstruction with one service, both-side reconstruction from one file, and

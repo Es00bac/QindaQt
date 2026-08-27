@@ -36,7 +36,7 @@ public:
     [[nodiscard]] bool unavailable() const noexcept { return m_state == State::Unavailable; }
     [[nodiscard]] bool canToggle() const noexcept { return ready(); }
     [[nodiscard]] QString statusText() const;
-    [[nodiscard]] const QString &errorText() const noexcept { return m_error; }
+    [[nodiscard]] QString errorText() const;
 
     Q_INVOKABLE bool requestSet(bool enabled);
     Q_INVOKABLE bool applyMyChoice();
@@ -55,13 +55,15 @@ private:
     void setState(State state, QString error = {});
 
     SettingsClient &m_client;
-    QString m_error;
+    QString m_transientError;
+    QString m_confirmedError;
     State m_state = State::Loading;
     bool m_enabled = false;
     bool m_hasBaseline = false;
     bool m_requestedValue = false;
     bool m_hasRequestedValue = false;
     bool m_waitingForCommitSnapshot = false;
+    bool m_conflictIntent = false;
 };
 
 } // namespace QindaQt::Services::SettingsClient

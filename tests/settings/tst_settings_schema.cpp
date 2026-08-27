@@ -4,6 +4,8 @@
 #include <QSet>
 #include <QtTest>
 
+#include <limits>
+
 using namespace QindaQt::Settings;
 
 class SettingsSchemaTests final : public QObject {
@@ -14,6 +16,8 @@ private slots:
     void rejectsMismatchedDomainAndDuplicateKey();
     void validatesTypesBoundsAndEnums();
     void normalizesJsonNumericDefaults();
+    void canonicalizesRecursiveObjectValues();
+    void rejectsObjectTextThatCannotRoundTripLosslessly();
     void doNotDisturbDefaultsToDisabled();
     void rejectsAnUnsupportedSchemaVersion();
 };
@@ -91,6 +95,91 @@ void SettingsSchemaTests::normalizesJsonNumericDefaults()
     QCOMPARE(integer.toLongLong(), 250);
     QCOMPARE(number.metaType().id(), QMetaType::Double);
     QCOMPARE(number.toDouble(), 10.0);
+}
+
+void SettingsSchemaTests::canonicalizesRecursiveObjectValues()
+{
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+
+    const QVariantMap input{
+        {QStringLiteral("null"), QVariant::fromValue(nullptr)},
+        {QStringLiteral("signedMinimum"), QVariant::fromValue(std::numeric_limits<qint64>::min())},
+        {QStringLiteral("unsignedInRange"),
+         QVariant::fromValue(quint64(std::numeric_limits<qint64>::max()))},
+        {QStringLiteral("unsigned32"), QVariant::fromValue(std::numeric_limits<quint32>::max())},
+        {QStringLiteral("integralDouble"), 42.0},
+        {QStringLiteral("fraction"), 1.25},
+        {QStringLiteral("array"),
+         QVariantList{QVariant::fromValue(nullptr), QStringList{QStringLiteral("one")}}}};
+    const auto normalized = schema->normalizedValue(QStringLiteral("displays.configuration"), input);
+    QVERIFY(normalized.has_value());
+    const QVariantMap object = normalized->toMap();
+    QCOMPARE(object.value(QStringLiteral("null")).metaType().id(), QMetaType::Nullptr);
+    QCOMPARE(object.value(QStringLiteral("signedMinimum")).metaType().id(), QMetaType::LongLong);
+    QCOMPARE(object.value(QStringLiteral("signedMinimum")).toLongLong(),
+             std::numeric_limits<qint64>::min());
+    QCOMPARE(object.value(QStringLiteral("unsignedInRange")).metaType().id(), QMetaType::LongLong);
+    QCOMPARE(object.value(QStringLiteral("unsignedInRange")).toLongLong(),
+             std::numeric_limits<qint64>::max());
+    QCOMPARE(object.value(QStringLiteral("unsigned32")).metaType().id(), QMetaType::LongLong);
+    QCOMPARE(object.value(QStringLiteral("unsigned32")).toLongLong(),
+             qint64(std::numeric_limits<quint32>::max()));
+    QCOMPARE(object.value(QStringLiteral("integralDouble")).metaType().id(), QMetaType::LongLong);
+    QCOMPARE(object.value(QStringLiteral("fraction")).metaType().id(), QMetaType::Double);
+    const QVariantList array = object.value(QStringLiteral("array")).toList();
+    QCOMPARE(array.at(0).metaType().id(), QMetaType::Nullptr);
+    QCOMPARE(array.at(1).metaType().id(), QMetaType::QVariantList);
+
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"),
+        QVariantMap{{QStringLiteral("invalid"), QVariant{}}}).has_value());
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"),
+        QVariantMap{{QStringLiteral("tooWide"),
+                     QVariant::fromValue(std::numeric_limits<quint64>::max())}}).has_value());
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"),
+        QVariantMap{{QStringLiteral("infinite"),
+                     std::numeric_limits<double>::infinity()}}).has_value());
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"),
+        QVariantMap{{QStringLiteral("negativeInfinite"),
+                     -std::numeric_limits<double>::infinity()}}).has_value());
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"),
+        QVariantMap{{QStringLiteral("nan"),
+                     std::numeric_limits<double>::quiet_NaN()}}).has_value());
+}
+
+void SettingsSchemaTests::rejectsObjectTextThatCannotRoundTripLosslessly()
+{
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+    const QString emoji = QString::fromUcs4(U"\U0001f642");
+    const QString replacement(QChar::ReplacementCharacter);
+    const QVariantMap valid{{emoji, replacement},
+                            {replacement, emoji}};
+    QVERIFY(schema->normalizedValue(QStringLiteral("displays.configuration"), valid).has_value());
+
+    const QString loneHigh(1, QChar(0xd800));
+    const QString loneLow(1, QChar(0xdc00));
+    QString embeddedNul = QStringLiteral("ab");
+    embeddedNul.insert(1, QChar::Null);
+    for (const auto &invalid : {loneHigh, loneLow, embeddedNul}) {
+        QVERIFY(!schema->normalizedValue(
+            QStringLiteral("displays.configuration"),
+            QVariantMap{{QStringLiteral("value"), invalid}}).has_value());
+        QVariantMap invalidKey{{invalid, true}, {replacement, false}};
+        QVERIFY(!schema->normalizedValue(
+            QStringLiteral("displays.configuration"), invalidKey).has_value());
+    }
+    QVERIFY(!schema->normalizedValue(
+        QStringLiteral("displays.configuration"), QVariantMap{{QString{}, true}}).has_value());
 }
 
 void SettingsSchemaTests::doNotDisturbDefaultsToDisabled()

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
+#include "qindaqt/services/settings_protocol/settings_wire_decode.h"
 #include "qindaqt/services/settings_protocol/settings_wire_status.h"
 
 #include <QDBusConnection>
@@ -24,6 +25,8 @@ public:
     bool addExtraArgument = false;
     int delayMilliseconds = 0;
     int snapshotCalls = 0;
+    int commitCalls = 0;
+    bool decodedCanonicalNull = false;
 
 public Q_SLOTS:
     QVariantMap GetSnapshot(const QStringList &keys)
@@ -65,6 +68,37 @@ public Q_SLOTS:
             return {};
         }
         return result;
+    }
+
+    QVariantMap CommitUserTransaction(const QString &epoch, quint64 baseRevision,
+                                      const QVariantList &operations)
+    {
+        ++commitCalls;
+        Q_UNUSED(epoch)
+        const auto operation = operations.size() == 1
+            ? decodeBoundedVariantMap(operations.constFirst(), WireContract::OperationFieldCount)
+            : std::nullopt;
+        QString decodeError;
+        const auto value = operation
+            ? decodeBoundedJsonValue(
+                  operation->value(QLatin1StringView(WireContract::FieldValue)), &decodeError)
+            : std::nullopt;
+        decodedCanonicalNull = value && value->metaType().id() == QMetaType::Nullptr;
+        const QString key = QStringLiteral("services.doNotDisturb");
+        return {{QLatin1StringView(WireContract::FieldStatus),
+                 quint32(SettingsWireStatus::ValidationFailed)},
+                {QLatin1StringView(WireContract::FieldWireSchemaVersion),
+                 WireContract::WireSchemaVersion},
+                {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+                {QLatin1StringView(WireContract::FieldEpoch), QStringLiteral("hostile-epoch")},
+                {QLatin1StringView(WireContract::FieldRevisionBefore), baseRevision},
+                {QLatin1StringView(WireContract::FieldRevisionAfter), baseRevision},
+                {QLatin1StringView(WireContract::FieldValues), QVariantMap{{key, false}}},
+                {QLatin1StringView(WireContract::FieldSourceLayers),
+                 QVariantMap{{key, QStringLiteral("system-defaults")}}},
+                {QLatin1StringView(WireContract::FieldChangedKeys), QStringList{}},
+                {QLatin1StringView(WireContract::FieldMessage),
+                 QStringLiteral("fixture rejection")}};
     }
 };
 
@@ -114,6 +148,7 @@ void QtSettingsTransportAdversarialTests::
     QSignalSpy ownerChanges(&transport, &SettingsTransport::ownerChanged);
     QSignalSpy requestFailures(&transport, &SettingsTransport::requestFailed);
     QSignalSpy snapshots(&transport, &SettingsTransport::snapshotReceived);
+    QSignalSpy commits(&transport, &SettingsTransport::commitReceived);
     QSignalSpy invalidations(&transport, &SettingsTransport::settingsChanged);
     QString error;
     QVERIFY2(transport.start(&error), qPrintable(error));
@@ -145,6 +180,26 @@ void QtSettingsTransportAdversarialTests::
     QTRY_COMPARE_WITH_TIMEOUT(snapshots.size(), 1, 2'000);
     QCOMPARE(snapshots.constFirst().at(0).toULongLong(), quint64(42));
 
+    const QVariantMap malformedSet{
+        {QLatin1StringView(WireContract::FieldKey),
+         QStringLiteral("services.doNotDisturb")},
+        {QLatin1StringView(WireContract::FieldKind),
+         QLatin1StringView(WireContract::OperationKindSet)},
+        {QLatin1StringView(WireContract::FieldValue), QVariant{}}};
+    transport.commit(45, firstOwner, QStringLiteral("hostile-epoch"), 0,
+                     QVariantList{malformedSet});
+    QCOMPARE(requestFailures.size(), 2);
+    QCOMPARE(firstObject.commitCalls, 0);
+
+    QVariantMap nullSet = malformedSet;
+    nullSet.insert(QLatin1StringView(WireContract::FieldValue),
+                   QVariant::fromValue(nullptr));
+    transport.commit(46, firstOwner, QStringLiteral("hostile-epoch"), 0,
+                     QVariantList{nullSet});
+    QTRY_COMPARE_WITH_TIMEOUT(firstObject.commitCalls, 1, 2'000);
+    QVERIFY(firstObject.decodedCanonicalNull);
+    QTRY_COMPARE_WITH_TIMEOUT(commits.size(), 1, 2'000);
+
     QVERIFY(sendChanged(firstBus, QStringLiteral("old-epoch"), 1));
     QTRY_COMPARE_WITH_TIMEOUT(invalidations.size(), 1, 2'000);
     QCOMPARE(invalidations.constFirst().at(0).toString(), firstOwner);
@@ -152,7 +207,7 @@ void QtSettingsTransportAdversarialTests::
     firstObject.addExtraArgument = true;
     transport.requestSnapshot(43, firstOwner,
                               {QStringLiteral("services.doNotDisturb")});
-    QTRY_COMPARE_WITH_TIMEOUT(requestFailures.size(), 2, 2'000);
+    QTRY_COMPARE_WITH_TIMEOUT(requestFailures.size(), 3, 2'000);
     QCOMPARE(snapshots.size(), 1);
     firstObject.addExtraArgument = false;
 
@@ -177,7 +232,7 @@ void QtSettingsTransportAdversarialTests::
     QVERIFY(observedExplicitLoss);
     QTest::qWait(firstObject.delayMilliseconds + 50);
     QCOMPARE(snapshots.size(), 1); // late old-owner reply was generation-fenced
-    QCOMPARE(requestFailures.size(), 2);
+    QCOMPARE(requestFailures.size(), 3);
 
     // The old connection can still emit a signal after losing the well-known
     // name. The retired exact-owner relay must not relabel it as the replacement.

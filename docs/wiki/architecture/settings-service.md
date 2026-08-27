@@ -19,6 +19,16 @@ migrated candidate in memory. The new key remains absent so normal
 system-default resolution supplies `false`. Corrupt, wrong-layer, missing,
 stale/unsupported, or invalid migrated input fails startup without mutation.
 
+Object values are recursively normalized at every schema/layer/migration
+ingress to one restart-stable JSON domain. Null has one valid in-memory form,
+integers have one signed 64-bit form, and integral doubles normalize
+consistently. Invalid QVariant, wide unsigned integers, non-finite numbers,
+embedded NUL, ill-formed UTF-16, empty object keys, and non-JSON Qt types
+reject. Persistence uses an explicit canonical `QJsonValue` encoder rather
+than QVariant's lossy unsigned/numeric conversions. Loaded
+system/profile/user state must also fit Settings1 snapshot bounds before the
+service registers.
+
 The production composition currently selects the installed
 `profile-defaults/qindaqt.json` document beside the active schemas. It is a
 required, validated `profile-defaults` layer, applied before the optional user
@@ -64,6 +74,13 @@ budgets: each temporarily demarshalled child is charged before retention,
 append, or insert, rather than the complete tree being expanded by an unbounded
 `qdbus_cast` first.
 
+Canonical null crosses D-Bus only as the fixed reserved signature scalar
+`g:"v"`, never as invalid QVariant or a variable-length byte array. Outbound
+snapshot/commit values and transactions are recursively encoded before QtDBus;
+the public Qt transport validates again so direct callers cannot reach libdbus
+with raw null. Ordinary and opaque collection forms converge to the same
+canonical metatypes.
+
 The asynchronous client watches activation/owner change and local bus
 disconnect, subscribes to `SettingsChanged` from the exact unique owner before
 requesting its baseline, and targets that owner for every call. The service
@@ -100,6 +117,12 @@ confirmed state and requires refresh, never an automatic resubmit.
 An initial transport-start failure immediately projects Unavailable plus a
 bounded diagnostic; Retry performs the safe transport/activation attempt
 rather than leaving the surface stranded in Loading.
+Owner replacement/loss always outranks Saving or Conflict and exposes
+Unavailable/Retry while retaining the last confirmed value. Conflict intent
+is private until a fresh authority baseline either resolves it or makes
+**Apply my choice** valid again. Confirmed validation, persistence, and
+revision-exhaustion diagnostics survive automatic authoritative refresh;
+only a new explicit write dismisses them. None of these paths replays a write.
 
 Shell composition injects confirmed values into the persistence-neutral
 notification interruption policy. Before its first authenticated Settings1

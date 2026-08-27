@@ -23,6 +23,7 @@ public:
     };
 
     [[nodiscard]] static bool validateKey(const QString &key, QString *error = nullptr);
+    [[nodiscard]] static bool validateString(const QString &text, QString *error = nullptr);
 
     [[nodiscard]] static bool validateValue(const QVariant &value,
                                             QString *error = nullptr,

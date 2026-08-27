@@ -78,6 +78,12 @@ struct WireContract final {
     static constexpr auto FieldValue = "value";
     static constexpr auto OperationKindSet = "set";
     static constexpr auto OperationKindRemove = "remove";
+
+    // D-Bus variants have no untyped null payload. This exact one-byte D-Bus
+    // signature is a reserved scalar token outside the JSON-native domain.
+    // Unlike `ay`, signature payloads are protocol-bounded before Qt exposes
+    // them, and this marker's physical payload matches null's one-byte charge.
+    static constexpr auto JsonNullWireSignature = "v";
 };
 
 } // namespace QindaQt::Services::SettingsProtocol

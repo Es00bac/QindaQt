@@ -2,6 +2,7 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
+#include "qindaqt/services/settings_protocol/settings_wire_encode.h"
 #include "qindaqt/services/settings_protocol/settings_wire_decode.h"
 
 #include <QDBusError>
@@ -287,8 +288,18 @@ void QtSettingsTransport::commit(quint64 token, const QString &owner,
                                  const QString &epoch, quint64 baseRevision,
                                  const QVariantList &operations)
 {
+    QString error;
+    auto wireOperations = SettingsProtocol::encodeBoundedOperationsForWire(operations, &error);
+    if (!wireOperations.has_value()) {
+        Q_EMIT requestFailed(token, owner,
+                             QStringLiteral("org.qindaqt.Settings1.MalformedClientRequest"),
+                             error.left(512));
+        return;
+    }
+    QVariantList arguments;
+    arguments << epoch << baseRevision << QVariant::fromValue(std::move(*wireOperations));
     d->requestMap(token, owner, QString::fromLatin1(WireContract::CommitUserTransactionMethod),
-                  {epoch, baseRevision, operations}, true);
+                  std::move(arguments), true);
 }
 
 void QtSettingsTransport::requestActivation()

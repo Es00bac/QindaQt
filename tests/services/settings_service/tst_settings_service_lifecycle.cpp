@@ -256,6 +256,22 @@ void SettingsServiceLifecycleTests::validatesProfileAndUserCompatibilityDocument
     QVERIFY(persistedMigration.document.layer == SettingLayer::UserOverrides);
     legacyUserService.stop();
 
+    const QString oversizedUserPath = directory.filePath(QStringLiteral("oversized-user.json"));
+    const SettingsDocument oversizedUser{
+        .schemaVersion = 2,
+        .layer = SettingLayer::UserOverrides,
+        .values = {{QStringLiteral("displays.configuration"),
+                    QVariantMap{{QStringLiteral("payload"),
+                                 QString(QindaQt::Services::SettingsProtocol::WireContract::
+                                             MaximumStringValueBytes + 1,
+                                         QLatin1Char('x'))}}}}};
+    QVERIFY(SettingsFileStore::save(oversizedUserPath, oversizedUser, *active));
+    ResidentSettingsService oversizedUserService(bus, *active, *legacy,
+                                                 profileDefaults, oversizedUserPath);
+    const auto oversizedStart = oversizedUserService.start();
+    QCOMPARE(oversizedStart.status, SettingsServiceStartStatus::CorruptUserOverrides);
+    QVERIFY(oversizedStart.message.contains(QStringLiteral("UTF-8 bytes")));
+
     QDBusConnection::disconnectFromBus(serviceConnection);
     QDBusConnection::disconnectFromBus(clientConnection);
     daemon.terminate();

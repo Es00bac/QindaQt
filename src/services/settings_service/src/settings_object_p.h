@@ -38,8 +38,10 @@ public slots:
                                                      const QVariantList &operations);
 
 private:
-    [[nodiscard]] QVariantMap encodeSnapshot(const RepositorySnapshot &snapshot) const;
-    [[nodiscard]] QVariantMap encodeCommitResult(const RepositoryCommitResult &result) const;
+    [[nodiscard]] QVariantMap encodeSnapshot(const RepositorySnapshot &snapshot,
+                                             QVariantMap wireValues) const;
+    [[nodiscard]] QVariantMap encodeCommitResult(const RepositoryCommitResult &result,
+                                                 QVariantMap wireValues) const;
     void publishChanged(const RepositoryCommitResult &result);
 
     QDBusConnection m_connection;
