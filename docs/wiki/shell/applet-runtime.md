@@ -59,7 +59,9 @@ production QML dispatcher currently contain two audited entry points:
   on either orientation. Its manifest has an empty capability set. When the
   authenticated presentation runtime is provisioned, QML receives only a
   shell-owned facade that can request a center toggle and observe whether the
-  center is open. It cannot read notification records or invoke notification
+  center is open plus read-only Do Not Disturb state. The applet shows a moon
+  indicator and includes that state in its accessible label, but cannot change
+  interruption policy, read notification records, or invoke notification
   operations.
 
 The notification-center entry remains a valid compiled applet when the shell

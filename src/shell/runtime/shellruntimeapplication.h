@@ -42,6 +42,10 @@ namespace QindaQt::Services::NotificationPresentationModel {
 class NotificationPresentationController;
 }
 
+namespace QindaQt::Services::NotificationPresentationPolicy {
+class NotificationInterruptionPolicy;
+}
+
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
@@ -92,6 +96,11 @@ private:
     std::unique_ptr<
         Services::NotificationPresentationClient::NotificationPresentationClient>
         m_notificationClient;
+    // AGENT-GUARD: declaration order makes the borrowed policy outlive the
+    // presentation controller even if a future teardown bypasses resetRuntime.
+    std::unique_ptr<Services::NotificationPresentationPolicy::
+                        NotificationInterruptionPolicy>
+        m_notificationInterruptionPolicy;
     std::unique_ptr<Services::NotificationPresentationModel::
                         NotificationPresentationController>
         m_notificationPresentation;

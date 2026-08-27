@@ -12,6 +12,7 @@ constexpr int PopupCardHeight = 146;
 constexpr int MaximumVisiblePopups = 3;
 constexpr QSize DesiredCenterSize{440, 640};
 constexpr int MinimumSurfaceWidth = 240;
+constexpr int MinimumCenterWidth = 384;
 constexpr int MinimumCenterHeight = 240;
 
 bool validMargins(const QMargins &margins)
@@ -54,7 +55,7 @@ NotificationSurfaceLayoutResult NotificationSurfaceLayoutPlanner::plan(
                           : PopupHeaderHeight + PopupCardHeight;
     if (popupAvailable.width() < MinimumSurfaceWidth ||
         popupAvailable.height() < minimumPopupHeight ||
-        centerAvailable.width() < MinimumSurfaceWidth ||
+        centerAvailable.width() < MinimumCenterWidth ||
         centerAvailable.height() < MinimumCenterHeight) {
         return {{}, QStringLiteral("logical output is too small for notifications")};
     }

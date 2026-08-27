@@ -18,7 +18,8 @@ The production path is:
 3. The owner-bound asynchronous shell client authenticates and accepts only a
    coherent owner, epoch, and monotonic revision lineage.
 4. `NotificationPresentationController` projects that snapshot into separate
-   active, popup, and recent list models.
+   active, popup, and recent list models using an injected shell-owned
+   interruption policy.
 5. The shell window controller maps popup and center QML as nonexclusive
    LayerShellQt overlay surfaces.
 
@@ -46,6 +47,33 @@ notifications. It survives a host reconnect only while the same shell process
 continues. It is lost on shell restart and can miss removals that occur while
 the client is disconnected. **Clear history** changes only this local model; it
 does not close active notifications or modify application state.
+
+## Do Not Disturb
+
+Do Not Disturb is an implemented, session-volatile popup policy. It starts off
+for every new production-shell lifetime. Enabling it immediately filters low-
+and normal-urgency entries from the current popup stack and suppresses later
+low/normal popups. Critical urgency (`2`) explicitly bypasses the filter;
+unknown in-process urgency values fail closed while the policy is enabled.
+
+The Active model continues to reflect the authenticated host snapshot, and
+disappearing non-transient items still enter Recent. The policy never dismisses,
+closes, or removes a notification from the host. Disabling Do Not Disturb does
+not replay entries received or filtered while it was active because the
+controller preserves its prior-snapshot baseline. Only a later new or replaced
+entry is reconsidered. Consequently, a replacement promoted to critical may
+appear while Do Not Disturb is on, while one demoted from critical is removed
+from the popup projection immediately.
+
+The notification center exposes the writable, tab-focusable control with an
+accessible description of the critical bypass. The panel applet receives only
+a read-only policy flag: it shows a moon indicator and includes Do Not Disturb
+in its accessible open/close label, but cannot change the policy. Persistence,
+schedules, per-application exceptions, inhibition integration, and lock-screen
+policy are not implemented. Future persistence must arrive through
+`org.qindaqt.Settings1`; it must not be added to the policy module or private
+notification wire. The boundary is accepted in
+[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
 
 ## Cards and operations
 
@@ -104,14 +132,18 @@ runtime keeps the 38-pixel header-only surface mapped while an operation is
 busy or rejected even when no popup card remains. A pure planner clamps both to
 the output's logical geometry, including a
 1920x1080 mode exposed by Qt as 960x540 at 200% scaling, and rejects geometry
-too small to retain usable controls.
+too small to retain usable controls. Popups retain a 240-logical-pixel minimum
+usable width. The center requires 384 logical pixels so its Do Not Disturb,
+History, and Close header controls remain usable; a compact 400x300 output
+therefore produces a clamped 384x284 center.
 
 The popup **History** button opens the center while a popup is visible. A
 dedicated notification-center applet now appears exactly once in each of the
 ten stock profiles. Its manifest requests no capabilities; the production
 renderer receives only a shell-owned facade that requests a center toggle and
-mirrors open state. Notification records, dismiss/action operations, and the
-presentation controller remain outside the applet boundary. A custom profile
+mirrors open state plus read-only Do Not Disturb state. Notification records,
+dismiss/action operations, interruption-policy mutation, and the presentation
+controller remain outside the applet boundary. A custom profile
 may remove or omit this entry. If the shell starts without the supervisor's
 authenticated presentation descriptor, the facade is absent and the button is
 disabled.
@@ -139,24 +171,34 @@ assistive-technology operation behave correctly.
 Pure model tests cover baseline-without-replay, new and replacement popups,
 urgency ordering, monotonic expiry, center suppression, popup/history bounds,
 transient exclusion, serialized operations, success-only removal, rejection
-retention and renewal, and bounded error lifetime. Client tests cover resident
-equal-revision success, advancing-operation validation, timeout/malformed/
-remote-error recovery, owner replacement, and stale replies. Pure surface-
+retention and renewal, bounded error lifetime, immediate Do Not Disturb
+filtering, the critical bypass, urgency-changing replacements, Active/Recent
+retention, no replay on disable, service-owner/epoch rebaseline, and rejection
+of an in-flight operation after its popup becomes suppressed. Focused policy
+tests cover default-off session lifetime, change notification, and total
+urgency admission. Client
+tests cover resident equal-revision success, advancing-operation validation,
+timeout/malformed/remote-error recovery, owner replacement, and stale replies.
+Pure surface-
 layout tests cover 1080p, WUXGA, 1440p, 200% logical geometry, compact clamping,
-the zero-popup 38-pixel status plan, and minimum usable geometry. Offscreen QML
+the zero-popup 38-pixel status plan, the center's 384-pixel minimum usable
+width and compact 400x300 result, and minimum usable geometry. Offscreen QML
 tests instantiate cards, popup and center surfaces, exercise active and popup
 delegates, verify literal plain-text body and operation-error rendering, disable
 controls while busy, and keep overflow plus Dismiss inside the card.
 
 The notification-center entry tests use an injected registrar to prove the
-facade's toggle/open-state boundary, stable action identity and `Meta+N`
-default, dispatch, setter-request status, and active-binding state changes
-without touching the developer's shortcut registry. A second offscreen QML
+facade's center-toggle/open-state and read-only Do Not Disturb boundary, stable
+action identity and `Meta+N` default, dispatch, setter-request status, and
+active-binding state changes without touching the developer's shortcut
+registry. A second offscreen QML
 test proves the applet's disabled fallback, accessibility label changes, narrow
-toggle call, and compiled-entry-point dispatch without compositor or pointer
-input. The notification-surface offscreen test proves the center's window-
-scoped Escape route and focusable initial target without activating a real
-surface. Catalog, resolver, and profile tests prove the empty capability
+toggle call, read-only Do Not Disturb state/indicator, and compiled-entry-point
+dispatch without compositor or pointer input. The notification-surface
+offscreen test proves the center's writable, accessible Do Not Disturb control,
+explicit bidirectional header focus chain, compact 384x284 busy/error geometry,
+window-scoped Escape route, and focusable initial target without activating a
+real surface. Catalog, resolver, and profile tests prove the empty capability
 request, audited registry entry, and exactly one instance in every stock
 profile.
 
@@ -167,9 +209,9 @@ input. The following remain unqualified or unimplemented:
   traversal, global-shortcut dispatch/remapping, and visual baselines at the
   reference resolutions;
 - multi-output placement policy, per-output histories, and output migration;
-- do-not-disturb/inhibition, lock-screen redaction, sound, and safe image/icon
-  loading;
-- persistent history/settings, D-Bus activation, and child/bus-loss restart;
+- Do Not Disturb persistence/scheduling/inhibition, lock-screen redaction,
+  sound, and safe image/icon loading;
+- persistent history and settings, D-Bus activation, and child/bus-loss restart;
 - activation-token acquisition, portal routing, inline reply, and vendor
   extensions.
 

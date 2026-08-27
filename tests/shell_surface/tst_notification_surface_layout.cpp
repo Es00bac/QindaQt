@@ -71,6 +71,15 @@ void NotificationSurfaceLayoutTests::
         {240, 220}, {0, 16, 16, 0}, {0, 16, 16, 0}, 1);
     QVERIFY(!result.ok());
     QVERIFY(!result.error.isEmpty());
+
+    // The center header now carries title, DND, history, and close controls.
+    // A width that remains valid for popup cards must still fail when those
+    // center controls cannot retain distinct hit/focus targets.
+    const auto narrowCenter =
+        ShellSurface::NotificationSurfaceLayoutPlanner::plan(
+            {360, 480}, {0, 16, 16, 0}, {0, 16, 16, 0}, 0);
+    QVERIFY(!narrowCenter.ok());
+    QVERIFY(!narrowCenter.error.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(NotificationSurfaceLayoutTests)

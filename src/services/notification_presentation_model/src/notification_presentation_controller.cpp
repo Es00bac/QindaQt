@@ -2,6 +2,7 @@
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
+#include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 
 #include <algorithm>
 #include <limits>
@@ -41,9 +42,12 @@ bool PresentationTiming::isValid() const noexcept
 
 NotificationPresentationController::NotificationPresentationController(
     NotificationPresentationClient::NotificationPresentationClient &client,
+    NotificationPresentationPolicy::NotificationInterruptionPolicy &
+        interruptionPolicy,
     PresentationTiming timing, QObject *parent)
     : QObject(parent)
     , m_client(client)
+    , m_interruptionPolicy(interruptionPolicy)
     , m_timing(timing.isValid() ? std::move(timing) : PresentationTiming{})
 {
     m_clock.start();
@@ -57,6 +61,11 @@ NotificationPresentationController::NotificationPresentationController(
             &NotificationPresentationClient::NotificationPresentationClient::
                 stateChanged,
             this, &NotificationPresentationController::synchronize);
+    connect(&m_interruptionPolicy,
+            &NotificationPresentationPolicy::NotificationInterruptionPolicy::
+                doNotDisturbEnabledChanged,
+            this, &NotificationPresentationController::
+                      handleInterruptionPolicyChanged);
     connect(&m_client,
             &NotificationPresentationClient::NotificationPresentationClient::
                 operationRejected,
@@ -108,6 +117,11 @@ bool NotificationPresentationController::centerOpen() const noexcept
     return m_centerOpen;
 }
 
+bool NotificationPresentationController::doNotDisturbEnabled() const noexcept
+{
+    return m_interruptionPolicy.doNotDisturbEnabled();
+}
+
 int NotificationPresentationController::popupCount() const noexcept
 {
     return m_popups.rowCount();
@@ -138,6 +152,11 @@ void NotificationPresentationController::setCenterOpen(bool open)
         rearmPopupTimer();
     }
     Q_EMIT centerOpenChanged();
+}
+
+void NotificationPresentationController::setDoNotDisturbEnabled(bool enabled)
+{
+    m_interruptionPolicy.setDoNotDisturbEnabled(enabled);
 }
 
 void NotificationPresentationController::toggleCenter()
@@ -223,6 +242,25 @@ void NotificationPresentationController::synchronize()
     update(snapshot);
 }
 
+void NotificationPresentationController::handleInterruptionPolicyChanged()
+{
+    const auto firstSuppressed = std::remove_if(
+        m_popupEntries.begin(), m_popupEntries.end(),
+        [this](const PopupEntry &entry) {
+            return !m_interruptionPolicy.allowsPopup(entry.notification);
+        });
+    if (firstSuppressed != m_popupEntries.end()) {
+        m_popupEntries.erase(firstSuppressed, m_popupEntries.end());
+        publishPopups();
+    } else {
+        rearmPopupTimer();
+    }
+    // AGENT-CONTRACT: changing policy filters only the current popup
+    // projection. Active/history state and m_previous remain intact so
+    // disabling DND cannot replay notifications received while it was active.
+    Q_EMIT doNotDisturbEnabledChanged();
+}
+
 void NotificationPresentationController::baseline(
     const NotificationPresentation::PresentationSnapshot &snapshot)
 {
@@ -283,6 +321,12 @@ void NotificationPresentationController::update(
             [&notification](const auto &entry) {
                 return entry.notification.id == notification.id;
             });
+        if (!m_interruptionPolicy.allowsPopup(notification)) {
+            if (existing != m_popupEntries.end()) {
+                m_popupEntries.erase(existing);
+            }
+            continue;
+        }
         if (m_sequence == std::numeric_limits<quint64>::max()) {
             m_popupEntries.clear();
             m_sequence = 0;

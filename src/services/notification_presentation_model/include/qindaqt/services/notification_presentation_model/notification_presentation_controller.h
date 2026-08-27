@@ -13,6 +13,10 @@ namespace QindaQt::Services::NotificationPresentationClient {
 class NotificationPresentationClient;
 }
 
+namespace QindaQt::Services::NotificationPresentationPolicy {
+class NotificationInterruptionPolicy;
+}
+
 namespace QindaQt::Services::NotificationPresentationModel {
 
 struct PresentationTiming final {
@@ -33,28 +37,35 @@ class NotificationPresentationController final : public QObject {
     Q_PROPERTY(QAbstractItemModel *historyModel READ historyModel CONSTANT)
     Q_PROPERTY(bool centerOpen READ centerOpen WRITE setCenterOpen
                    NOTIFY centerOpenChanged)
+    Q_PROPERTY(bool doNotDisturbEnabled READ doNotDisturbEnabled
+                   WRITE setDoNotDisturbEnabled
+                       NOTIFY doNotDisturbEnabledChanged)
     Q_PROPERTY(int popupCount READ popupCount NOTIFY popupCountChanged)
     Q_PROPERTY(bool operationBusy READ operationBusy NOTIFY operationBusyChanged)
     Q_PROPERTY(QString operationErrorText READ operationErrorText
                    NOTIFY operationErrorTextChanged)
 
 public:
-    // AGENT-CONTRACT: `client` is borrowed, must remain on this object's
-    // thread, and must outlive the controller. Invalid timing is replaced by
-    // the bounded defaults instead of weakening presentation limits.
+    // AGENT-CONTRACT: `client` and `interruptionPolicy` are borrowed, must
+    // remain on this object's thread, and must outlive the controller. Invalid
+    // timing is replaced by bounded defaults instead of weakening limits.
     explicit NotificationPresentationController(
         NotificationPresentationClient::NotificationPresentationClient &client,
+        NotificationPresentationPolicy::NotificationInterruptionPolicy &
+            interruptionPolicy,
         PresentationTiming timing = {}, QObject *parent = nullptr);
 
     [[nodiscard]] QAbstractItemModel *activeModel() noexcept;
     [[nodiscard]] QAbstractItemModel *popupModel() noexcept;
     [[nodiscard]] QAbstractItemModel *historyModel() noexcept;
     [[nodiscard]] bool centerOpen() const noexcept;
+    [[nodiscard]] bool doNotDisturbEnabled() const noexcept;
     [[nodiscard]] int popupCount() const noexcept;
     [[nodiscard]] bool operationBusy() const noexcept;
     [[nodiscard]] const QString &operationErrorText() const noexcept;
 
     void setCenterOpen(bool open);
+    void setDoNotDisturbEnabled(bool enabled);
     Q_INVOKABLE void toggleCenter();
     Q_INVOKABLE void closePopup(quint32 notificationId);
     Q_INVOKABLE void clearHistory();
@@ -64,6 +75,7 @@ public:
 
 Q_SIGNALS:
     void centerOpenChanged();
+    void doNotDisturbEnabledChanged();
     void popupCountChanged();
     void operationBusyChanged();
     void operationErrorTextChanged();
@@ -77,6 +89,7 @@ private:
     };
 
     void synchronize();
+    void handleInterruptionPolicyChanged();
     void baseline(const NotificationPresentation::PresentationSnapshot &snapshot);
     void update(const NotificationPresentation::PresentationSnapshot &snapshot);
     void publishPopups();
@@ -90,6 +103,8 @@ private:
     [[nodiscard]] int popupDuration(quint32 urgency) const noexcept;
 
     NotificationPresentationClient::NotificationPresentationClient &m_client;
+    NotificationPresentationPolicy::NotificationInterruptionPolicy &
+        m_interruptionPolicy;
     PresentationTiming m_timing;
     NotificationListModel m_active;
     NotificationListModel m_popups;

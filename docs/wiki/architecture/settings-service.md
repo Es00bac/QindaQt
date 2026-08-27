@@ -57,6 +57,23 @@ center is an ordinary client. Compositor and platform adapters consume scoped
 changes through their public clients; they do not read the JSON files or link
 to settings UI objects.
 
+## Current Do Not Disturb boundary
+
+The implemented notification Do Not Disturb switch is deliberately not yet a
+persisted setting. One interruption-policy instance starts disabled and lives
+only for the current production-shell lifetime. The existing
+`services.notifications` schema-v1 key is a desktop-service preference; it is
+not silently repurposed as Do Not Disturb.
+
+A future schema revision and `org.qindaqt.Settings1` adapter may define a
+dedicated setting, initialize the shell-owned policy, and subscribe it to
+committed changes. The settings model/service will own persistence and revision
+semantics; the interruption-policy module will remain persistence-neutral and
+must not read settings files or call a settings-center object. Scheduling,
+per-application exceptions, and lock-screen policy also remain future contracts.
+See
+[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+
 The component ownership is summarized in
 [Architecture overview](overview.md), and dependency rules are in
 [Module boundaries](module-boundaries.md).

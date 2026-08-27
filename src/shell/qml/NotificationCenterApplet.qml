@@ -20,9 +20,13 @@ AbstractButton {
     Accessible.role: Accessible.Button
     Accessible.name: !available
                      ? qsTr("Notifications unavailable")
-                     : access.centerOpen
-                       ? qsTr("Close notification center")
-                       : qsTr("Open notification center")
+                     : access.doNotDisturbEnabled
+                       ? access.centerOpen
+                         ? qsTr("Close notification center; Do Not Disturb is on")
+                         : qsTr("Open notification center; Do Not Disturb is on")
+                       : access.centerOpen
+                         ? qsTr("Close notification center")
+                         : qsTr("Open notification center")
 
     function activate() {
         if (available)
@@ -34,10 +38,12 @@ AbstractButton {
 
     contentItem: Item {
         Text {
+            objectName: "notificationCenterAppletGlyph"
             anchors.centerIn: parent
             // A text glyph keeps the first implementation themeable and avoids
             // granting the panel applet any icon-path or image-loading authority.
-            text: root.access?.centerOpen ? "●" : "◉"
+            text: root.access?.doNotDisturbEnabled ? "☾"
+                  : root.access?.centerOpen ? "●" : "◉"
             color: !root.available ? (root.colors.textMuted ?? "#a9afa9")
                    : root.down ? (root.colors.accentText ?? "#10201b")
                    : (root.colors.text ?? "white")

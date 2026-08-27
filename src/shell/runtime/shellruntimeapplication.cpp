@@ -13,6 +13,7 @@
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
 #include "qindaqt/services/notification_presentation_client/qt_notification_presentation_transport.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
+#include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -197,9 +198,11 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
             NotificationPresentationClient::NotificationPresentationClient>(
                 *m_notificationTransport, std::move(*m_presentationAccessToken));
         m_presentationAccessToken.reset();
+        m_notificationInterruptionPolicy = std::make_unique<Services::
+            NotificationPresentationPolicy::NotificationInterruptionPolicy>();
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
-                *m_notificationClient);
+                *m_notificationClient, *m_notificationInterruptionPolicy);
         m_notificationCenterAccess =
             std::make_unique<NotificationCenterAppletAccess>();
         connect(m_notificationCenterAccess.get(),
@@ -214,6 +217,14 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
                     m_notificationCenterAccess->publishCenterOpen(
                         m_notificationPresentation->centerOpen());
                 });
+        connect(m_notificationInterruptionPolicy.get(),
+                &Services::NotificationPresentationPolicy::
+                    NotificationInterruptionPolicy::doNotDisturbEnabledChanged,
+                m_notificationCenterAccess.get(), [this](bool enabled) {
+                    m_notificationCenterAccess->publishDoNotDisturbEnabled(enabled);
+                });
+        m_notificationCenterAccess->publishDoNotDisturbEnabled(
+            m_notificationInterruptionPolicy->doNotDisturbEnabled());
     }
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
@@ -407,6 +418,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_windowFactory.reset();
     m_notificationCenterAccess.reset();
     m_notificationPresentation.reset();
+    m_notificationInterruptionPolicy.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();
 }

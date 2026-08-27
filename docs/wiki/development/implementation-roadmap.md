@@ -51,7 +51,10 @@ The repository currently builds and tests:
   an active/recent center with logical-DPI clamping, serialized operations,
   authoritative failure recovery, bounded busy/error presentation, a dedicated
   entry in every stock profile, and a shell-owned `Meta+N` action registered
-  through KF6 GlobalAccel without applet notification authority;
+  through KF6 GlobalAccel without applet notification authority, plus injected
+  session-volatile Do Not Disturb with immediate low/normal popup suppression,
+  an explicit critical bypass, Active/Recent retention, and no replay on
+  disable;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies; and
@@ -66,9 +69,11 @@ restoration. Final qualification passed every gate recorded in the
 [testing harness](testing-harness.md), so Hybrid interaction is complete. This
 is not yet a daily-use desktop session: panel windows, the clock, and the
 bounded notification presentation/entry path are implemented, but live
-notification shortcut dispatch and compositor focus acceptance are not yet
-qualified. Audio, power, Bluetooth, menu, task, launcher, tray, and clipboard
-entries remain unavailable or visual fixtures rather than live integrations.
+notification shortcut dispatch, compositor focus acceptance, and Do Not Disturb
+interaction are not yet qualified. Do Not Disturb persistence and lock-screen
+policy also remain pending. Audio, power, Bluetooth, menu, task, launcher, tray,
+and clipboard entries remain unavailable or visual fixtures rather than live
+integrations.
 
 ## Milestones
 
@@ -77,7 +82,7 @@ entries remain unavailable or visual fixtures rather than live integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime with clock/notification-center entries, authenticated notification stack, visible recoverable operations, and a shell-owned global toggle implemented; notification live shortcut/focus proof, lock/DND, reveal UI, and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime with clock/notification-center entries, authenticated notification stack, visible recoverable operations, shell-owned global toggle, and session-volatile Do Not Disturb implemented; notification live shortcut/focus/DND proof, lock policy, DND persistence, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

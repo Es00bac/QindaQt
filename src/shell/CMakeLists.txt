@@ -113,6 +113,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::AppletRuntime
             QindaQt::NotificationPresentationClient
             QindaQt::NotificationPresentationModel
+            QindaQt::NotificationPresentationPolicy
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface

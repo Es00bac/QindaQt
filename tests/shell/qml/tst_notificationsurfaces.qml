@@ -20,10 +20,13 @@ Item {
         property var popupModel: popupItems
         property var historyModel: historyItems
         property bool centerOpen: false
+        property bool doNotDisturbEnabled: false
+        property int doNotDisturbChanges: 0
         property bool operationBusy: false
         property string operationErrorText: ""
 
         function setCenterOpen(open) { centerOpen = open; }
+        onDoNotDisturbEnabledChanged: ++doNotDisturbChanges
         function closePopup(notificationId) {}
         function clearHistory() { historyItems.clear(); }
         function dismiss(notificationId) { return true; }
@@ -104,8 +107,77 @@ Item {
 
         function init() {
             fakePresentation.centerOpen = false;
+            fakePresentation.doNotDisturbEnabled = false;
+            fakePresentation.doNotDisturbChanges = 0;
             fakePresentation.operationBusy = false;
             fakePresentation.operationErrorText = "";
+        }
+
+        function test_centerExposesSessionVolatileDndControl() {
+            const center = createTemporaryObject(centerComponent, testRoot);
+            verify(center !== null);
+            center.width = 384;
+            // The 400x300 compact-output planner result is 384x284.
+            center.height = 284;
+            center.visible = true;
+            const dnd = findChild(center, "notificationDoNotDisturbButton");
+            const title = findChild(center, "notificationCenterTitle");
+            const clear = findChild(center, "notificationClearHistoryButton");
+            const close = findChild(center, "notificationCenterCloseButton");
+            const status = findChild(center, "notificationOperationStatus");
+            verify(dnd !== null);
+            verify(title !== null);
+            verify(clear !== null);
+            verify(close !== null);
+            verify(status !== null);
+            wait(0);
+            verify(title.x + title.width <= dnd.x,
+                   "title right=" + (title.x + title.width)
+                   + " dnd left=" + dnd.x);
+            verify(dnd.x + dnd.width <= clear.x,
+                   "dnd right=" + (dnd.x + dnd.width)
+                   + " clear left=" + clear.x);
+            verify(clear.x + clear.width <= close.x,
+                   "clear right=" + (clear.x + clear.width)
+                   + " close left=" + close.x);
+            compare(dnd.KeyNavigation.tab, clear);
+            compare(dnd.KeyNavigation.backtab, close);
+            compare(clear.KeyNavigation.tab, close);
+            compare(clear.KeyNavigation.backtab, dnd);
+            compare(close.KeyNavigation.tab, dnd);
+            compare(close.KeyNavigation.backtab, clear);
+
+            fakePresentation.operationBusy = true;
+            tryCompare(status, "visible", true);
+            verify(status.width >= 0);
+            verify(status.x >= title.x + title.width,
+                   "status left=" + status.x
+                   + " title right=" + (title.x + title.width));
+            verify(status.x + status.width <= dnd.x,
+                   "status right=" + (status.x + status.width)
+                   + " dnd left=" + dnd.x);
+            fakePresentation.operationErrorText =
+                    "A deliberately long operation failure that must elide";
+            wait(0);
+            verify(status.x + status.width <= dnd.x);
+            fakePresentation.operationBusy = false;
+            fakePresentation.operationErrorText = "";
+            verify(!dnd.checked);
+            compare(dnd.Accessible.name, "Turn on Do Not Disturb");
+            verify(dnd.Accessible.description.indexOf(
+                       "critical banners remain visible") >= 0);
+
+            // Emit the local signal rather than synthesizing desktop input.
+            dnd.clicked();
+            compare(fakePresentation.doNotDisturbChanges, 1);
+            verify(fakePresentation.doNotDisturbEnabled);
+            tryCompare(dnd, "checked", true);
+            compare(dnd.Accessible.name, "Turn off Do Not Disturb");
+
+            dnd.clicked();
+            compare(fakePresentation.doNotDisturbChanges, 2);
+            verify(!fakePresentation.doNotDisturbEnabled);
+            tryCompare(dnd, "checked", false);
         }
 
         function test_centerProvidesWindowScopedCancelPath() {

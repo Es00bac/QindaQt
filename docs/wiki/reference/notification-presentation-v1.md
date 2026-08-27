@@ -105,6 +105,13 @@ shell does not need source ownership, and moving admitted image buffers into a
 resident UI feed would violate its memory target. Image-path trust and icon
 loading policy remain a client/presentation milestone.
 
+Do Not Disturb is intentionally absent from this wire contract. The shell
+applies its injected interruption policy after accepting a complete snapshot;
+the host still retains and reports every admitted notification. Enabling the
+policy therefore requires no method, signal, snapshot field, schema increment,
+or presenter reauthentication. See
+[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+
 ## Current boundary
 
 The shared values/decoder, resident-host server, owner-bound asynchronous shell
@@ -118,7 +125,11 @@ reject the old operation without accepting its late reply. The presentation
 model keeps the originating popup until success and exposes bounded, plain-text
 busy/error feedback for eight seconds after rejection. Actions are rendered and
 forwarded with an empty activation token, so focus transfer is not promised and
-the host continues to advertise only `body`. Do-not-disturb, lock-screen
-redaction, persistent history, safe image loading, activation-token acquisition,
-complete keyboard/accessibility proof, and child restart policy remain. The
-private object stays disabled in the installed standalone host.
+the host continues to advertise only `body`. The shell now provides
+session-volatile Do Not Disturb without changing this protocol: low/normal
+popups are suppressed, critical popups bypass the filter, Active/Recent are
+preserved, and disabling the policy does not replay suppressed entries.
+Settings persistence, scheduling/inhibition, lock-screen redaction, persistent
+history, safe image loading, activation-token acquisition, complete
+keyboard/accessibility proof, and child restart policy remain. The private
+object stays disabled in the installed standalone host.

@@ -57,3 +57,4 @@ nav:
       - "ADR-0007: Layer-shell panel surfaces": adr/0007-layer-shell-panel-surfaces.md
       - "ADR-0008: Lean notification service": adr/0008-lean-notification-service.md
       - "ADR-0009: KGlobalAccel shell shortcuts": adr/0009-use-kglobalaccel-for-shell-shortcuts.md
+      - "ADR-0010: Shell notification interruption policy": adr/0010-inject-shell-notification-interruption-policy.md

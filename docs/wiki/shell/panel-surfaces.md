@@ -100,8 +100,9 @@ updates retain existing panel/QML objects. Production panels resolve instances
 through the validated manifest and capability policy. The clock and dedicated
 notification-center button are the two compiled live built-ins; unresolved
 instances remain visibly marked static representations. The button receives
-only a shell-owned toggle/open-state facade and no notification records or
-operation authority. Without authenticated notification presentation
+only a shell-owned center-toggle/open-state facade with read-only Do Not
+Disturb status and no policy mutation, notification records, or operation
+authority. Without authenticated notification presentation
 provisioning, the facade is absent and the otherwise valid button is disabled.
 Preview applet chips remain deterministic visual fixtures. Edge reveal/hold
 producers and hide animation also remain acceptance work. Global menu, live

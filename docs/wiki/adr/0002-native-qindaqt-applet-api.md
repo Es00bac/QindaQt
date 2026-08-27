@@ -51,7 +51,8 @@ any capability grants.
 The locale-aware clock and dedicated notification-center entry currently
 satisfy that last gate and render as live production QML. The notification
 entry requests no capabilities and receives only a shell-private toggle/open-
-state facade, not notification records or service operations. Other profile
+state facade with read-only Do Not Disturb status, not policy mutation,
+notification records, or service operations. Other profile
 entries are retained with an explicit `missing-manifest` or
 `implementation-unavailable` status and visible warning marker instead of being
 reported as working. Sandboxed hosts and platform-service mediation remain

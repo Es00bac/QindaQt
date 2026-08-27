@@ -51,9 +51,23 @@ void NotificationCenterEntryTests::facadePublishesOnlyToggleAndOpenState()
                             &NotificationCenterAppletAccess::centerOpenChanged);
 
     QVERIFY(!access.centerOpen());
-    QVERIFY(access.metaObject()->indexOfProperty("centerOpen") >= 0);
+    QVERIFY(!access.doNotDisturbEnabled());
+    const int centerOpenProperty =
+        access.metaObject()->indexOfProperty("centerOpen");
+    const int dndProperty =
+        access.metaObject()->indexOfProperty("doNotDisturbEnabled");
+    QVERIFY(centerOpenProperty >= 0);
+    QVERIFY(dndProperty >= 0);
+    QVERIFY(!access.metaObject()->property(centerOpenProperty).isWritable());
+    QVERIFY(!access.metaObject()->property(dndProperty).isWritable());
     QVERIFY(access.metaObject()->indexOfMethod("toggle()") >= 0);
     QCOMPARE(access.metaObject()->indexOfMethod("publishCenterOpen(bool)"), -1);
+    QCOMPARE(access.metaObject()->indexOfMethod(
+                 "publishDoNotDisturbEnabled(bool)"),
+             -1);
+    QCOMPARE(access.metaObject()->indexOfMethod(
+                 "setDoNotDisturbEnabled(bool)"),
+             -1);
     access.toggle();
     QCOMPARE(toggles.size(), 1);
     QVERIFY(!access.centerOpen());
@@ -65,6 +79,17 @@ void NotificationCenterEntryTests::facadePublishesOnlyToggleAndOpenState()
     QCOMPARE(stateChanges.size(), 1);
     access.publishCenterOpen(false);
     QCOMPARE(stateChanges.size(), 2);
+
+    QSignalSpy dndChanges(
+        &access, &NotificationCenterAppletAccess::doNotDisturbEnabledChanged);
+    access.publishDoNotDisturbEnabled(true);
+    QVERIFY(access.doNotDisturbEnabled());
+    QCOMPARE(dndChanges.size(), 1);
+    access.publishDoNotDisturbEnabled(true);
+    QCOMPARE(dndChanges.size(), 1);
+    access.publishDoNotDisturbEnabled(false);
+    QVERIFY(!access.doNotDisturbEnabled());
+    QCOMPARE(dndChanges.size(), 2);
 }
 
 void NotificationCenterEntryTests::

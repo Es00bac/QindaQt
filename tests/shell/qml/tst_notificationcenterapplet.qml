@@ -23,6 +23,7 @@ Item {
     QtObject {
         id: fakeAccess
         property bool centerOpen: false
+        property bool doNotDisturbEnabled: false
         property int toggleCalls: 0
         function toggle() { ++toggleCalls; }
     }
@@ -82,6 +83,7 @@ Item {
 
         function init() {
             fakeAccess.centerOpen = false;
+            fakeAccess.doNotDisturbEnabled = false;
             fakeAccess.toggleCalls = 0;
         }
 
@@ -95,6 +97,13 @@ Item {
 
             fakeAccess.centerOpen = true;
             tryCompare(applet.Accessible, "name", "Close notification center");
+
+            fakeAccess.doNotDisturbEnabled = true;
+            tryCompare(applet.Accessible, "name",
+                       "Close notification center; Do Not Disturb is on");
+            const glyph = findChild(applet, "notificationCenterAppletGlyph");
+            verify(glyph !== null);
+            compare(glyph.text, "☾");
         }
 
         function test_nullAccessIsDisabled() {

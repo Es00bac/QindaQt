@@ -253,14 +253,27 @@ and inject no input.
 without popup replay, new/replacement ordering, monotonic expiry, center-open
 suppression, popup/history caps, transient exclusion, operation preflight,
 success-only popup removal, retention and renewed expiry after rejection,
-serialized busy state, and eight-second production error lifetime.
+serialized busy state, eight-second production error lifetime, and injected Do
+Not Disturb behavior: immediate low/normal filtering, critical bypass,
+urgency-changing replacements, Active/Recent retention, and no replay on
+disable, including service-owner/epoch rebaseline and a rejected operation
+whose popup becomes suppressed while it is in flight.
+`qindaqt.notification-presentation-policy` separately covers its
+default-off session lifetime, change signals, exact critical admission, and
+fail-closed unknown urgency while enabled.
 `qindaqt.notification-surface-layout` covers preferred sizes at 1080p, WUXGA,
 and 1440p; 200% logical geometry; compact clamping; and unusably small output
-rejection, including the zero-popup 38-logical-pixel status surface.
+rejection, including the zero-popup 38-logical-pixel status surface, the
+center's 384-logical-pixel minimum usable width, and its 384x284 result on a
+compact 400x300 output. Popup minimum usable width remains 240 logical pixels.
 `qindaqt.notification-surfaces-offscreen` instantiates the card, popup, active,
 and recent-center QML with the software renderer, verifies literal plain-text
 body/error rendering and busy control disabling, and keeps overflow actions
-plus Dismiss within a 400-pixel card.
+plus Dismiss within a 400-pixel card. It also exercises the center's writable,
+accessible Do Not Disturb control without synthesizing desktop input.
+At the planner's compact 384x284 result it also proves distinct English header
+controls, an explicit bidirectional focus chain, and bounded busy/error status
+geometry. Translated and right-to-left header layouts remain unqualified.
 
 `qindaqt.notification-center-entry` uses an injected shortcut registrar to
 cover the shell-private applet facade, stable action identity, default `Meta+N`
@@ -268,8 +281,9 @@ sequence, callback dispatch, request-acceptance state, and independently
 observable active-binding changes. It never calls KGlobalAccel or mutates the
 developer's shortcut registry. `qindaqt.notification-center-applet-offscreen`
 uses the software renderer to cover the disabled-without-facade fallback,
-accessible open/close labels, the narrow toggle request, and the audited QML
-entry-point dispatcher. `qindaqt.notification-surfaces-offscreen` also covers
+accessible open/close labels, the narrow toggle request, read-only Do Not
+Disturb state and indicator, and the audited QML entry-point dispatcher.
+`qindaqt.notification-surfaces-offscreen` also covers
 the window-scoped Escape close route and a focusable initial target without
 activating a real surface. None of these tests opens a production surface or
 injects input.
@@ -278,8 +292,9 @@ These presentation checks do not start a compositor or inject input. They are
 not evidence for real layer-role mapping, screen placement, visual baselines,
 focus transfer, keyboard navigation, assistive-technology behavior,
 KGlobalAccel registration/remapping or live dispatch, compositor acceptance of
-the center's activate-on-show request, multi-output migration, do-not-disturb,
-persistence, sound, lock-screen policy, or live operation-result interaction.
+the center's activate-on-show request, multi-output migration, live Do Not
+Disturb interaction, persistence, sound, lock-screen policy, or live
+operation-result interaction.
 
 ## Current compositor proof
 

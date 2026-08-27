@@ -5,8 +5,10 @@ adapter, a resident Core/DBus host executable, and an authenticated private
 shell-presentation protocol with an owner-bound asynchronous client. The
 essential-session supervisor provisions its token through inherited one-shot
 descriptors. A separate bounded shell model now drives initial production
-popup and active/recent-center surfaces. This is an implemented vertical slice,
-not a complete notification subsystem. The dependency decision is recorded in
+popup and active/recent-center surfaces, with an injected shell-side
+interruption policy controlling popup admission. This is an implemented
+vertical slice, not a complete notification subsystem. The service dependency
+decision is recorded in
 [ADR-0008](../adr/0008-lean-notification-service.md).
 
 ## Domain contract
@@ -138,6 +140,15 @@ library. The first owner/epoch snapshot is baselined without replaying older
 items as new popups. Detailed UI behavior and limits are in
 [Notification presentation](../shell/notification-presentation.md).
 
+Do Not Disturb remains entirely on the shell side of this boundary. A focused,
+injected interruption policy defaults off for each shell lifetime. While on, it
+removes and suppresses low- and normal-urgency popups but explicitly admits
+critical urgency. Active and Recent projection still retain notifications, and
+turning the policy off does not replay suppressed entries. Neither the resident
+host nor this private protocol receives a new setting, method, or field. The
+decision is recorded in
+[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+
 ## Resident host
 
 `QindaQt::NotificationHost` composes the standard server with an injected
@@ -207,7 +218,11 @@ rollback without opening a display.
 Presentation-model tests cover baseline-without-replay, new and replacement
 popups, urgency ordering, monotonic expiry, center-open suppression, popup and
 history caps, transient exclusion, operation preflight, busy serialization,
-success-only removal, rejection retry preservation, and bounded error lifetime.
+success-only removal, rejection retry preservation, bounded error lifetime,
+and injected Do Not Disturb filtering without Active/Recent loss or replay.
+Focused interruption-policy tests cover the default lifetime, change signals,
+the exact critical bypass, unknown-urgency rejection while enabled, and
+state-dependent admission.
 Pure logical-screen planning tests cover 1080p, WUXGA, 1440p, 200% scale,
 compact clamping, a zero-popup 38-logical-pixel status surface, and minimum
 usable dimensions. Offscreen QML tests exercise active and popup delegates,
@@ -217,12 +232,13 @@ these notification surfaces.
 
 The following are not yet implemented:
 
-- a production keyboard path to the center, full accessibility/focus proof,
-  and do-not-disturb/inhibition policy;
+- live qualification of the production keyboard path, compositor focus
+  acceptance, and complete accessibility behavior;
 - popup-safe icon/image loading and activation-token acquisition;
 - D-Bus activation and post-start child/bus-loss restart policy;
-- sound, persistent disk history, settings persistence, lock-screen redaction,
-  and restart migration;
+- sound, persistent disk history, Do Not Disturb settings persistence,
+  scheduling/inhibition integration, lock-screen redaction, and restart
+  migration;
 - multi-output notification placement and live/nested layer-surface proof;
 - portal routing and third-party `notify-send` qualification; and
 - inline reply/vendor extensions.

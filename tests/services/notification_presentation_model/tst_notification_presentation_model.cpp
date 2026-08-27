@@ -4,6 +4,7 @@
 #include "qindaqt/services/notification_presentation_client/presentation_transport.h"
 #include "qindaqt/services/notification_presentation_model/notification_list_model.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
+#include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 
 #include <QSignalSpy>
 #include <QtTest>
@@ -151,8 +152,10 @@ void NotificationPresentationModelTests::
     FakeTransport transport;
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
+    NotificationPresentationPolicy::NotificationInterruptionPolicy
+        interruptionPolicy;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, presentationTiming());
+        client, interruptionPolicy, presentationTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.70");
     const QString epoch = QStringLiteral("77777777-7777-7777-7777-777777777777");
@@ -203,8 +206,10 @@ void NotificationPresentationModelTests::
     FakeTransport transport;
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
+    NotificationPresentationPolicy::NotificationInterruptionPolicy
+        interruptionPolicy;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, presentationTiming());
+        client, interruptionPolicy, presentationTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.71");
     const QString epoch = QStringLiteral("88888888-8888-8888-8888-888888888888");
@@ -236,12 +241,14 @@ void NotificationPresentationModelTests::
     FakeTransport transport;
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
+    NotificationPresentationPolicy::NotificationInterruptionPolicy
+        interruptionPolicy;
     auto timing = presentationTiming();
     timing.lowUrgencyMilliseconds = 1'000;
     timing.normalUrgencyMilliseconds = 1'000;
     timing.criticalUrgencyMilliseconds = 1'000;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, timing);
+        client, interruptionPolicy, timing);
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.73");
     const QString epoch = QStringLiteral("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -304,11 +311,13 @@ void NotificationPresentationModelTests::
     FakeTransport transport;
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
+    NotificationPresentationPolicy::NotificationInterruptionPolicy
+        interruptionPolicy;
     auto timing = presentationTiming();
     timing.normalUrgencyMilliseconds = 120;
     timing.operationErrorMilliseconds = 40;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, timing);
+        client, interruptionPolicy, timing);
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.72");
     const QString epoch = QStringLiteral("99999999-9999-9999-9999-999999999999");

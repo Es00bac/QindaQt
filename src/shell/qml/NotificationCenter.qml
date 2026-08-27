@@ -38,6 +38,7 @@ Window {
 
         Text {
             id: titleText
+            objectName: "notificationCenterTitle"
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.margins: 16
@@ -48,21 +49,50 @@ Window {
             textFormat: Text.PlainText
         }
 
+        ToolButton {
+            id: doNotDisturbButton
+            objectName: "notificationDoNotDisturbButton"
+            anchors.right: clearButton.left
+            anchors.rightMargin: 6
+            anchors.verticalCenter: titleText.verticalCenter
+            width: 40
+            height: 32
+            text: "☾"
+            checkable: true
+            checked: root.presentation.doNotDisturbEnabled
+            focusPolicy: Qt.TabFocus
+            KeyNavigation.tab: clearButton
+            KeyNavigation.backtab: closeButton
+            Accessible.name: checked ? qsTr("Turn off Do Not Disturb")
+                                     : qsTr("Turn on Do Not Disturb")
+            Accessible.description: qsTr(
+                "Low and normal notification banners are hidden; critical banners remain visible")
+            ToolTip.visible: hovered
+            ToolTip.text: checked
+                          ? qsTr("Do Not Disturb is on; critical banners remain visible")
+                          : qsTr("Hide low and normal notification banners")
+            onClicked: root.presentation.doNotDisturbEnabled =
+                           !root.presentation.doNotDisturbEnabled
+        }
+
         Button {
             id: clearButton
+            objectName: "notificationClearHistoryButton"
             anchors.right: closeButton.left
             anchors.rightMargin: 6
             anchors.verticalCenter: titleText.verticalCenter
             text: qsTr("Clear history")
             enabled: historySection.count > 0
             focusPolicy: Qt.TabFocus
+            KeyNavigation.tab: closeButton
+            KeyNavigation.backtab: doNotDisturbButton
             onClicked: root.presentation.clearHistory()
         }
 
         NotificationOperationStatus {
             anchors.left: titleText.right
             anchors.leftMargin: 12
-            anchors.right: clearButton.left
+            anchors.right: doNotDisturbButton.left
             anchors.rightMargin: 8
             anchors.verticalCenter: titleText.verticalCenter
             presentation: root.presentation
@@ -79,6 +109,8 @@ Window {
             height: 36
             text: "×"
             focusPolicy: Qt.TabFocus
+            KeyNavigation.tab: doNotDisturbButton
+            KeyNavigation.backtab: clearButton
             Accessible.name: qsTr("Close notification center")
             onClicked: root.presentation.setCenterOpen(false)
         }

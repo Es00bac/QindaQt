@@ -46,9 +46,10 @@ IDs, or incompatible documents leave the previously loaded catalog intact.
 
 The notification-center manifest intentionally requests no capabilities.
 Opening a shell-owned surface is not notification data or operation authority;
-the audited in-process renderer receives only a private toggle/open-state facade
-from the shell. That facade is not a manifest capability and is not available
-to third-party packages.
+the audited in-process renderer receives only a private center-toggle/open-state
+facade plus a read-only Do Not Disturb indicator from the shell. It cannot set
+interruption policy. That facade is not a manifest capability and is not
+available to third-party packages.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

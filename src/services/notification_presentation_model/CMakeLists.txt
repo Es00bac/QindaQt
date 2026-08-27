@@ -19,7 +19,10 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_notification_presentation_model
-    PUBLIC QindaQt::NotificationPresentationClient Qt6::Core
+    PUBLIC
+        QindaQt::NotificationPresentationClient
+        QindaQt::NotificationPresentationPolicy
+        Qt6::Core
 )
 target_compile_features(qindaqt_notification_presentation_model PUBLIC cxx_std_20)
 set_target_properties(
