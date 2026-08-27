@@ -44,8 +44,8 @@ Integrated evidence:
   and zero fixture roots.
 - Documentation link/navigation validation, source-shape audit, strict MkDocs,
   whitespace, and post-test process cleanup passed on the integrated tree.
-- No active desktop, user session bus, global input, real audio graph, physical
-  display, or physical screen lock was touched by this evidence.
+- No active desktop, user session bus, global input, host audio graph/device,
+  physical display, or physical screen lock was touched by this evidence.
 
 ## Next outcome
 
