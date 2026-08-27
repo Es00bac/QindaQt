@@ -5,6 +5,7 @@
 #include "qindaqt/services/notification_presentation_model/notification_list_model.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
+#include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 
 #include <QSignalSpy>
 #include <QtTest>
@@ -154,8 +155,10 @@ void NotificationPresentationModelTests::
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy
         interruptionPolicy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, interruptionPolicy, presentationTiming());
+        client, interruptionPolicy, privacyPolicy, presentationTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.70");
     const QString epoch = QStringLiteral("77777777-7777-7777-7777-777777777777");
@@ -208,8 +211,10 @@ void NotificationPresentationModelTests::
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy
         interruptionPolicy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, interruptionPolicy, presentationTiming());
+        client, interruptionPolicy, privacyPolicy, presentationTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.71");
     const QString epoch = QStringLiteral("88888888-8888-8888-8888-888888888888");
@@ -243,12 +248,14 @@ void NotificationPresentationModelTests::
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy
         interruptionPolicy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     auto timing = presentationTiming();
     timing.lowUrgencyMilliseconds = 1'000;
     timing.normalUrgencyMilliseconds = 1'000;
     timing.criticalUrgencyMilliseconds = 1'000;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, interruptionPolicy, timing);
+        client, interruptionPolicy, privacyPolicy, timing);
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.73");
     const QString epoch = QStringLiteral("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -313,11 +320,13 @@ void NotificationPresentationModelTests::
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy
         interruptionPolicy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     auto timing = presentationTiming();
     timing.normalUrgencyMilliseconds = 120;
     timing.operationErrorMilliseconds = 40;
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, interruptionPolicy, timing);
+        client, interruptionPolicy, privacyPolicy, timing);
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.72");
     const QString epoch = QStringLiteral("99999999-9999-9999-9999-999999999999");

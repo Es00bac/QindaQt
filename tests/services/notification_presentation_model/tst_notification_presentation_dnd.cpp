@@ -5,6 +5,7 @@
 #include "qindaqt/services/notification_presentation_model/notification_list_model.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
+#include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 
 #include <QSet>
 #include <QSignalSpy>
@@ -145,8 +146,10 @@ void NotificationPresentationDndTests::
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy policy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, policy, longPopupTiming());
+        client, policy, privacyPolicy, longPopupTiming());
     QSignalSpy dndChanges(
         &controller,
         &NotificationPresentationModel::NotificationPresentationController::
@@ -213,8 +216,10 @@ void NotificationPresentationDndTests::handlesUrgencyChangingReplacements()
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy policy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, policy, longPopupTiming());
+        client, policy, privacyPolicy, longPopupTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.75");
     const QString epoch = QStringLiteral("cccccccc-cccc-cccc-cccc-cccccccccccc");
@@ -253,8 +258,10 @@ void NotificationPresentationDndTests::
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy policy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, policy, longPopupTiming());
+        client, policy, privacyPolicy, longPopupTiming());
     QVERIFY(client.start());
     const QString firstOwner = QStringLiteral(":1.76");
     const QString firstEpoch =
@@ -324,8 +331,10 @@ void NotificationPresentationDndTests::
     NotificationPresentationClient::NotificationPresentationClient client(
         transport, token(), clientTiming());
     NotificationPresentationPolicy::NotificationInterruptionPolicy policy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacyPolicy;
+    privacyPolicy.setPrivatePresentationAllowed(true);
     NotificationPresentationModel::NotificationPresentationController controller(
-        client, policy, longPopupTiming());
+        client, policy, privacyPolicy, longPopupTiming());
     QVERIFY(client.start());
     const QString owner = QStringLiteral(":1.78");
     const QString epoch = QStringLiteral("ffffffff-ffff-ffff-ffff-ffffffffffff");

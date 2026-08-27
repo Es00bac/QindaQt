@@ -114,6 +114,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NotificationPresentationClient
             QindaQt::NotificationPresentationModel
             QindaQt::NotificationPresentationPolicy
+            QindaQt::SessionLockState
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface

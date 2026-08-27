@@ -3,6 +3,7 @@
 
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
+#include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 
 #include <algorithm>
 #include <limits>
@@ -44,10 +45,12 @@ NotificationPresentationController::NotificationPresentationController(
     NotificationPresentationClient::NotificationPresentationClient &client,
     NotificationPresentationPolicy::NotificationInterruptionPolicy &
         interruptionPolicy,
+    NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
     PresentationTiming timing, QObject *parent)
     : QObject(parent)
     , m_client(client)
     , m_interruptionPolicy(interruptionPolicy)
+    , m_privacyPolicy(privacyPolicy)
     , m_timing(timing.isValid() ? std::move(timing) : PresentationTiming{})
 {
     m_clock.start();
@@ -66,11 +69,21 @@ NotificationPresentationController::NotificationPresentationController(
                 doNotDisturbEnabledChanged,
             this, &NotificationPresentationController::
                       handleInterruptionPolicyChanged);
+    connect(&m_privacyPolicy,
+            &NotificationPresentationPolicy::NotificationPrivacyPolicy::
+                privatePresentationAllowedChanged,
+            this,
+            &NotificationPresentationController::handlePrivacyPolicyChanged);
     connect(&m_client,
             &NotificationPresentationClient::NotificationPresentationClient::
                 operationRejected,
             this, [this](quint32 notificationId, const QString &message) {
                 m_pendingOperationId.reset();
+                if (m_suppressCurrentOperationOutcome ||
+                    !privatePresentationAllowed()) {
+                    m_suppressCurrentOperationOutcome = false;
+                    return;
+                }
                 renewPopup(notificationId);
                 setOperationError(message);
                 Q_EMIT operationError(message);
@@ -80,6 +93,11 @@ NotificationPresentationController::NotificationPresentationController(
                 operationSucceeded,
             this, [this](quint32 notificationId) {
                 m_pendingOperationId.reset();
+                if (m_suppressCurrentOperationOutcome ||
+                    !privatePresentationAllowed()) {
+                    m_suppressCurrentOperationOutcome = false;
+                    return;
+                }
                 setOperationError({});
                 removePopup(notificationId);
             });
@@ -87,6 +105,14 @@ NotificationPresentationController::NotificationPresentationController(
             &NotificationPresentationClient::NotificationPresentationClient::
                 operationInFlightChanged,
             this, [this] {
+                if (!privatePresentationAllowed() &&
+                    m_client.operationInFlight()) {
+                    // A future trusted C++ collaborator may share the client.
+                    // Outcomes of operations begun during a private interval
+                    // must remain suppressed even if presentation is granted
+                    // before their asynchronous completion.
+                    m_suppressCurrentOperationOutcome = true;
+                }
                 if (operationBusy() || m_pendingOperationId) {
                     m_popupTimer.stop();
                 } else {
@@ -122,6 +148,11 @@ bool NotificationPresentationController::doNotDisturbEnabled() const noexcept
     return m_interruptionPolicy.doNotDisturbEnabled();
 }
 
+bool NotificationPresentationController::privatePresentationAllowed() const noexcept
+{
+    return m_privacyPolicy.privatePresentationAllowed();
+}
+
 int NotificationPresentationController::popupCount() const noexcept
 {
     return m_popups.rowCount();
@@ -129,7 +160,8 @@ int NotificationPresentationController::popupCount() const noexcept
 
 bool NotificationPresentationController::operationBusy() const noexcept
 {
-    return m_client.operationInFlight();
+    return privatePresentationAllowed() && !m_suppressCurrentOperationOutcome &&
+        m_client.operationInFlight();
 }
 
 const QString &
@@ -140,6 +172,9 @@ NotificationPresentationController::operationErrorText() const noexcept
 
 void NotificationPresentationController::setCenterOpen(bool open)
 {
+    if (open && !privatePresentationAllowed()) {
+        return;
+    }
     if (m_centerOpen == open) {
         return;
     }
@@ -161,6 +196,9 @@ void NotificationPresentationController::setDoNotDisturbEnabled(bool enabled)
 
 void NotificationPresentationController::toggleCenter()
 {
+    if (!privatePresentationAllowed()) {
+        return;
+    }
     setCenterOpen(!m_centerOpen);
 }
 
@@ -180,6 +218,9 @@ void NotificationPresentationController::clearHistory()
 
 bool NotificationPresentationController::dismiss(quint32 notificationId)
 {
+    if (!privatePresentationAllowed() || m_suppressCurrentOperationOutcome) {
+        return false;
+    }
     // AGENT-GUARD: establish the pending identity before calling the client.
     // A test transport may complete synchronously from inside dismiss().
     setOperationError({});
@@ -199,6 +240,9 @@ bool NotificationPresentationController::dismiss(quint32 notificationId)
 bool NotificationPresentationController::invokeAction(
     quint32 notificationId, const QString &actionKey)
 {
+    if (!privatePresentationAllowed() || m_suppressCurrentOperationOutcome) {
+        return false;
+    }
     setOperationError({});
     m_pendingOperationId = notificationId;
     m_popupTimer.stop();
@@ -218,6 +262,10 @@ bool NotificationPresentationController::invokeAction(
 
 void NotificationPresentationController::synchronize()
 {
+    if (!privatePresentationAllowed()) {
+        clearPrivatePresentation();
+        return;
+    }
     using State = NotificationPresentationClient::ClientState;
     if (m_client.state() != State::Ready || !m_client.snapshot()) {
         const bool hadPopups = !m_popupEntries.isEmpty();
@@ -244,6 +292,12 @@ void NotificationPresentationController::synchronize()
 
 void NotificationPresentationController::handleInterruptionPolicyChanged()
 {
+    if (!privatePresentationAllowed()) {
+        // DND state remains independently configurable, but privacy denial
+        // owns every projection and therefore leaves nothing to refilter.
+        Q_EMIT doNotDisturbEnabledChanged();
+        return;
+    }
     const auto firstSuppressed = std::remove_if(
         m_popupEntries.begin(), m_popupEntries.end(),
         [this](const PopupEntry &entry) {
@@ -264,6 +318,10 @@ void NotificationPresentationController::handleInterruptionPolicyChanged()
 void NotificationPresentationController::baseline(
     const NotificationPresentation::PresentationSnapshot &snapshot)
 {
+    if (!privatePresentationAllowed()) {
+        clearPrivatePresentation();
+        return;
+    }
     const bool hadPopups = !m_popupEntries.isEmpty();
     m_popupTimer.stop();
     m_popupEntries.clear();
@@ -283,6 +341,10 @@ void NotificationPresentationController::baseline(
 void NotificationPresentationController::update(
     const NotificationPresentation::PresentationSnapshot &snapshot)
 {
+    if (!privatePresentationAllowed()) {
+        clearPrivatePresentation();
+        return;
+    }
     QHash<quint32, NotificationPresentation::PresentationNotification> current;
     for (const auto &notification : snapshot.notifications) {
         current.insert(notification.id, notification);
@@ -354,100 +416,6 @@ void NotificationPresentationController::update(
     publishPopups();
 }
 
-void NotificationPresentationController::publishPopups()
-{
-    const int previousCount = m_popups.rowCount();
-    QVector<PopupEntry> ordered = m_popupEntries;
-    std::sort(ordered.begin(), ordered.end(),
-              [](const auto &left, const auto &right) {
-                  if (left.notification.urgency != right.notification.urgency) {
-                      return left.notification.urgency > right.notification.urgency;
-                  }
-                  return left.sequence > right.sequence;
-              });
-    QVector<NotificationListEntry> entries;
-    entries.reserve(ordered.size());
-    for (const auto &entry : std::as_const(ordered)) {
-        entries.append({entry.notification, true});
-    }
-    m_popups.replace(std::move(entries));
-    if (previousCount != m_popups.rowCount()) {
-        Q_EMIT popupCountChanged();
-    }
-    rearmPopupTimer();
-}
-
-void NotificationPresentationController::expirePopups()
-{
-    const qint64 now = m_clock.elapsed();
-    const auto expired = std::remove_if(
-        m_popupEntries.begin(), m_popupEntries.end(),
-        [now](const auto &entry) { return entry.deadlineMs <= now; });
-    m_popupEntries.erase(expired, m_popupEntries.end());
-    publishPopups();
-}
-
-void NotificationPresentationController::rearmPopupTimer()
-{
-    m_popupTimer.stop();
-    if (m_popupEntries.isEmpty() || m_centerOpen || operationBusy() ||
-        m_pendingOperationId) {
-        return;
-    }
-    const auto earliest = std::min_element(
-        m_popupEntries.cbegin(), m_popupEntries.cend(),
-        [](const auto &left, const auto &right) {
-            return left.deadlineMs < right.deadlineMs;
-        });
-    const qint64 remaining =
-        std::max<qint64>(1, earliest->deadlineMs - m_clock.elapsed());
-    m_popupTimer.start(int(std::min<qint64>(remaining,
-                                           MaximumPopupDurationMilliseconds)));
-}
-
-void NotificationPresentationController::renewPopup(quint32 notificationId)
-{
-    const auto entry = std::find_if(
-        m_popupEntries.begin(), m_popupEntries.end(),
-        [notificationId](const auto &candidate) {
-            return candidate.notification.id == notificationId;
-        });
-    if (entry != m_popupEntries.end()) {
-        // AGENT-CONTRACT: a rejected operation must leave its originating card
-        // actionable for a full retry interval, even if the old deadline elapsed
-        // while the client awaited its asynchronous reply.
-        entry->deadlineMs =
-            m_clock.elapsed() + popupDuration(entry->notification.urgency);
-        publishPopups();
-        return;
-    }
-    rearmPopupTimer();
-}
-
-void NotificationPresentationController::removePopup(quint32 notificationId)
-{
-    const auto removed = std::remove_if(
-        m_popupEntries.begin(), m_popupEntries.end(),
-        [notificationId](const auto &entry) {
-            return entry.notification.id == notificationId;
-        });
-    if (removed == m_popupEntries.end()) {
-        return;
-    }
-    m_popupEntries.erase(removed, m_popupEntries.end());
-    publishPopups();
-}
-
-void NotificationPresentationController::addHistory(
-    const NotificationPresentation::PresentationNotification &notification)
-{
-    m_historyEntries.prepend({notification, false});
-    if (m_historyEntries.size() > m_timing.maximumHistory) {
-        m_historyEntries.resize(m_timing.maximumHistory);
-    }
-    m_history.replace(m_historyEntries);
-}
-
 void NotificationPresentationController::setOperationError(QString message)
 {
     if (m_operationError == message) {
@@ -463,17 +431,6 @@ void NotificationPresentationController::setOperationError(QString message)
         m_operationErrorTimer.start(m_timing.operationErrorMilliseconds);
     }
     Q_EMIT operationErrorTextChanged();
-}
-
-int NotificationPresentationController::popupDuration(quint32 urgency) const noexcept
-{
-    if (urgency == 0) {
-        return m_timing.lowUrgencyMilliseconds;
-    }
-    if (urgency == 2) {
-        return m_timing.criticalUrgencyMilliseconds;
-    }
-    return m_timing.normalUrgencyMilliseconds;
 }
 
 } // namespace QindaQt::Services::NotificationPresentationModel

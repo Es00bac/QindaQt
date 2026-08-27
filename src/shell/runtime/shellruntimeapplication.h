@@ -44,6 +44,12 @@ class NotificationPresentationController;
 
 namespace QindaQt::Services::NotificationPresentationPolicy {
 class NotificationInterruptionPolicy;
+class NotificationPrivacyPolicy;
+}
+
+namespace QindaQt::Services::SessionLockState {
+class QtSessionLockTransport;
+class SessionLockStateMonitor;
 }
 
 namespace QindaQt::Shell {
@@ -68,7 +74,8 @@ private:
     [[nodiscard]] bool loadPresentationToken(const RuntimeOptions &options,
                                              QString *error);
     void printCatalog() const;
-    [[nodiscard]] bool initializeRuntime(QString *error);
+    [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
+                                         QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
@@ -96,11 +103,20 @@ private:
     std::unique_ptr<
         Services::NotificationPresentationClient::NotificationPresentationClient>
         m_notificationClient;
-    // AGENT-GUARD: declaration order makes the borrowed policy outlive the
-    // presentation controller even if a future teardown bypasses resetRuntime.
+    // AGENT-GUARD: declaration order makes each borrowed dependency outlive
+    // its consumer even if a future teardown bypasses resetRuntime. The lock
+    // transport precedes its monitor; the client and both policies precede the
+    // presentation controller.
+    std::unique_ptr<Services::SessionLockState::QtSessionLockTransport>
+        m_sessionLockTransport;
+    std::unique_ptr<Services::SessionLockState::SessionLockStateMonitor>
+        m_sessionLockMonitor;
     std::unique_ptr<Services::NotificationPresentationPolicy::
                         NotificationInterruptionPolicy>
         m_notificationInterruptionPolicy;
+    std::unique_ptr<Services::NotificationPresentationPolicy::
+                        NotificationPrivacyPolicy>
+        m_notificationPrivacyPolicy;
     std::unique_ptr<Services::NotificationPresentationModel::
                         NotificationPresentationController>
         m_notificationPresentation;

@@ -39,6 +39,7 @@ class NotificationCenterEntryTests final : public QObject {
 private slots:
     void facadePublishesOnlyToggleAndOpenState();
     void shortcutExposesStableIdentityAndTracksRegistration();
+    void shortcutCallbackCannotBypassFacadePrivacy();
     void shortcutKeepsRegistrationRequestSeparateFromActiveBinding_data();
     void shortcutKeepsRegistrationRequestSeparateFromActiveBinding();
 };
@@ -52,14 +53,19 @@ void NotificationCenterEntryTests::facadePublishesOnlyToggleAndOpenState()
 
     QVERIFY(!access.centerOpen());
     QVERIFY(!access.doNotDisturbEnabled());
+    QVERIFY(!access.privatePresentationAllowed());
     const int centerOpenProperty =
         access.metaObject()->indexOfProperty("centerOpen");
     const int dndProperty =
         access.metaObject()->indexOfProperty("doNotDisturbEnabled");
+    const int privacyProperty =
+        access.metaObject()->indexOfProperty("privatePresentationAllowed");
     QVERIFY(centerOpenProperty >= 0);
     QVERIFY(dndProperty >= 0);
+    QVERIFY(privacyProperty >= 0);
     QVERIFY(!access.metaObject()->property(centerOpenProperty).isWritable());
     QVERIFY(!access.metaObject()->property(dndProperty).isWritable());
+    QVERIFY(!access.metaObject()->property(privacyProperty).isWritable());
     QVERIFY(access.metaObject()->indexOfMethod("toggle()") >= 0);
     QCOMPARE(access.metaObject()->indexOfMethod("publishCenterOpen(bool)"), -1);
     QCOMPARE(access.metaObject()->indexOfMethod(
@@ -68,9 +74,21 @@ void NotificationCenterEntryTests::facadePublishesOnlyToggleAndOpenState()
     QCOMPARE(access.metaObject()->indexOfMethod(
                  "setDoNotDisturbEnabled(bool)"),
              -1);
+    QCOMPARE(access.metaObject()->indexOfMethod(
+                 "publishPrivatePresentationAllowed(bool)"),
+             -1);
+    access.toggle();
+    QCOMPARE(toggles.size(), 0);
+    QVERIFY(!access.centerOpen());
+
+    QSignalSpy privacyChanges(
+        &access,
+        &NotificationCenterAppletAccess::privatePresentationAllowedChanged);
+    access.publishPrivatePresentationAllowed(true);
+    QVERIFY(access.privatePresentationAllowed());
+    QCOMPARE(privacyChanges.size(), 1);
     access.toggle();
     QCOMPARE(toggles.size(), 1);
-    QVERIFY(!access.centerOpen());
 
     access.publishCenterOpen(true);
     QVERIFY(access.centerOpen());
@@ -79,6 +97,18 @@ void NotificationCenterEntryTests::facadePublishesOnlyToggleAndOpenState()
     QCOMPARE(stateChanges.size(), 1);
     access.publishCenterOpen(false);
     QCOMPARE(stateChanges.size(), 2);
+    access.publishCenterOpen(true);
+    QCOMPARE(stateChanges.size(), 3);
+
+    access.publishPrivatePresentationAllowed(false);
+    QVERIFY(!access.privatePresentationAllowed());
+    QVERIFY(!access.centerOpen());
+    QCOMPARE(stateChanges.size(), 4);
+    QCOMPARE(privacyChanges.size(), 2);
+    access.publishCenterOpen(true);
+    QVERIFY(!access.centerOpen());
+    access.toggle();
+    QCOMPARE(toggles.size(), 1);
 
     QSignalSpy dndChanges(
         &access, &NotificationCenterAppletAccess::doNotDisturbEnabledChanged);
@@ -137,6 +167,23 @@ void NotificationCenterEntryTests::
     QTest::newRow("request-accepted-and-binding-present") << true << true;
     QTest::newRow("request-rejected-but-existing-binding-observed")
         << false << true;
+}
+
+void NotificationCenterEntryTests::shortcutCallbackCannotBypassFacadePrivacy()
+{
+    FakeRegistrar registrar;
+    NotificationCenterAppletAccess access;
+    QSignalSpy toggles(&access, &NotificationCenterAppletAccess::toggleRequested);
+    NotificationCenterShortcut shortcut(registrar, [&] { access.toggle(); });
+
+    shortcut.action()->trigger();
+    QCOMPARE(toggles.size(), 0);
+    access.publishPrivatePresentationAllowed(true);
+    shortcut.action()->trigger();
+    QCOMPARE(toggles.size(), 1);
+    access.publishPrivatePresentationAllowed(false);
+    shortcut.action()->trigger();
+    QCOMPARE(toggles.size(), 1);
 }
 
 void NotificationCenterEntryTests::

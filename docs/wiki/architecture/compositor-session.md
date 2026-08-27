@@ -63,9 +63,15 @@ Rootless XWayland is on by default and can be disabled with `--no-xwayland`.
 A `--session` process controls compositor lifetime. Production-shell builds
 default it to `qindaqt-session`, which starts the notification host and shell,
 provisions their private presentation token through separate one-shot inherited
-descriptors, and ends the session if either essential child exits. An explicit
-`--session` still overrides that default for isolated test probes and alternate
-session compositions; bridge-only builds retain an empty default.
+descriptors, and ends the session if either essential child exits. Because
+KWin directly launches this supervisor, it arms a kernel parent-death signal,
+race-checks and validates the direct parent PID, and passes the value to the
+shell with the presentation descriptor. Host and shell also die with their
+supervisor, preventing PID-reuse trust after KWin exits. The shell uses that
+non-secret PID only to authenticate the unique D-Bus owner that publishes
+compositor and KScreenLocker state. An
+explicit `--session` still overrides the default for isolated test probes and
+alternate session compositions; bridge-only builds retain an empty default.
 
 `--test-scenario` is an explicit development marker, not implicit trust from
 the environment. The launcher clears inherited test/development markers and

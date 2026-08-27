@@ -10,8 +10,8 @@ system-service state.
 | Component | Owns | Does not own |
 | --- | --- | --- |
 | `qindaqt-wm` | Wayland composition, input routing, outputs, workspaces, client lifecycle, and window-container transactions | Panels, settings UI, applet rendering, or device policy |
-| `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, and coupled process lifetime | Compositor internals, desktop policy, or token persistence |
-| QindaQt Shell | Panels, docks, overview, task presentation, global menu, notifications UI and session-volatile interruption policy, direct customization, and shell-wide presentation actions | Authoritative window/output state, global-shortcut conflict/remapping policy, persistent settings, or privileged hardware changes |
+| `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, parent-death-witnessed KWin PID provisioning, and coupled process lifetime | Compositor internals, desktop policy, or token persistence |
+| QindaQt Shell | Panels, docks, overview, task presentation, global menu, privacy-gated notifications UI and session-volatile interruption policy, direct customization, and shell-wide presentation actions | Authoritative window/output/lock state, global-shortcut conflict/remapping policy, persistent settings, or privileged hardware changes |
 | Settings service | Versioned schemas, preview/commit/rollback, migrations, and change notification | Settings presentation or compositor implementation details |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |
@@ -71,6 +71,16 @@ to Settings1 composition rather than the policy module. This boundary is
 recorded in
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
 
+Full notification presentation is independently gated by a fail-closed lock-
+privacy boundary. The shell accepts `Unlocked` only after a dedicated
+asynchronous client proves that the QindaQt compositor service and both
+KScreenLocker services have one unique owner whose bus PID equals the KWin PID
+provisioned by its direct child supervisor. Unknown, locking, locked, and
+transport-failure states expose no notification projections or actions. This
+does not create a lock-screen presenter; it protects the ordinary private shell
+channel. See
+[ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
+
 The implemented Compositor1 methods, signals, and transaction encoding are
 tracked in the
 [Compositor control protocol reference](../reference/compositor-control-v1.md).
@@ -97,3 +107,5 @@ shortcut registration is recorded in
 [ADR-0009](../adr/0009-use-kglobalaccel-for-shell-shortcuts.md). Injected
 shell-side interruption policy is recorded in
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+Authenticated fail-closed lock privacy is recorded in
+[ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).

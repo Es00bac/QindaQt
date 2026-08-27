@@ -22,7 +22,7 @@ workflow. It changes with the code and is validated as part of the repository.
   descriptor provisioning, and remaining service policy.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, session-volatile interruption
-  policy, and unqualified boundaries.
+  policy, authenticated lock-state privacy gate, and unqualified boundaries.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Hybrid topology](architecture/hybrid-topology.md),

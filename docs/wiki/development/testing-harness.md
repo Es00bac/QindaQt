@@ -223,6 +223,9 @@ ctest --test-dir build/dev \
 ctest --test-dir build/dev \
   -R '^qindaqt\.notification-center-(entry|applet-offscreen)$' \
   --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(session-lock-|shell-runtime-options|notification-(privacy-policy|presentation-privacy))' \
+  --output-on-failure
 ```
 
 The three model/adapter tests cover bounded submissions and replacement,
@@ -261,6 +264,26 @@ whose popup becomes suppressed while it is in flight.
 `qindaqt.notification-presentation-policy` separately covers its
 default-off session lifetime, change signals, exact critical admission, and
 fail-closed unknown urgency while enabled.
+`qindaqt.notification-privacy-policy` and
+`qindaqt.notification-presentation-privacy` cover default denial, read-only
+publication, complete model/status/timer clearing, critical suppression,
+transport-free operation rejection, in-flight result suppression, and unlock
+baselining without popup or history replay.
+`qindaqt.session-lock-authentication` and
+`qindaqt.session-lock-transitions` deterministically exercise the three-owner
+quorum, expected-PID match, stale owner/request fencing, early locking, active
+signals, double-inactive confirmation, bounded service-object retry, and
+fail-closed stop/restart. `qindaqt.session-lock-qt-transport` runs the real
+asynchronous Qt adapter against a private `dbus-daemon`, with separate KDE
+`AboutToLock` and freedesktop `ActiveChanged`/`GetActive` interfaces on the same
+object. It also kills that isolated daemon after reaching `Unlocked` and proves
+immediate transport-loss revocation. `qindaqt.shell-runtime-options` and
+`qindaqt.session-supervisor` prove
+the token descriptor and compositor PID form one validated launch bundle.
+The supervisor fixture also becomes a Linux child subreaper and uses disposable
+subprocesses to prove that KWin-parent death terminates the witnessed supervisor
+and supervisor death terminates a tokenized child; it never signals a desktop
+or compositor process.
 `qindaqt.notification-surface-layout` covers preferred sizes at 1080p, WUXGA,
 and 1440p; 200% logical geometry; compact clamping; and unusably small output
 rejection, including the zero-popup 38-logical-pixel status surface, the
@@ -293,8 +316,8 @@ not evidence for real layer-role mapping, screen placement, visual baselines,
 focus transfer, keyboard navigation, assistive-technology behavior,
 KGlobalAccel registration/remapping or live dispatch, compositor acceptance of
 the center's activate-on-show request, multi-output migration, live Do Not
-Disturb interaction, persistence, sound, lock-screen policy, or live
-operation-result interaction.
+Disturb or lock-transition interaction, persistence, sound, multi-seat or
+alternative-locker behavior, or live operation-result interaction.
 
 ## Current compositor proof
 

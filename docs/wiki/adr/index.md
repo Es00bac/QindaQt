@@ -17,5 +17,6 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0008](0008-lean-notification-service.md) | Accepted | Own a bounded QtDBus notification service without Plasma runtime |
 | [ADR-0009](0009-use-kglobalaccel-for-shell-shortcuts.md) | Accepted | Use KGlobalAccel for user-remappable shell-wide shortcuts |
 | [ADR-0010](0010-inject-shell-notification-interruption-policy.md) | Accepted | Inject session-volatile notification interruption policy on the shell side |
+| [ADR-0011](0011-gate-notifications-on-authenticated-lock-state.md) | Accepted | Gate full notification presentation on owner/PID-authenticated KWin lock state |
 
 Numbers are never reused, including for rejected or superseded records.

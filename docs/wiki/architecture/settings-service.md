@@ -70,8 +70,10 @@ dedicated setting, initialize the shell-owned policy, and subscribe it to
 committed changes. The settings model/service will own persistence and revision
 semantics; the interruption-policy module will remain persistence-neutral and
 must not read settings files or call a settings-center object. Scheduling,
-per-application exceptions, and lock-screen policy also remain future contracts.
-See
+per-application exceptions, and inhibition integration remain future contracts.
+The implemented authenticated lock-state privacy gate is deliberately not a
+user setting: settings can never override its fail-closed decision or critical
+notification suppression. See
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
 
 The component ownership is summarized in

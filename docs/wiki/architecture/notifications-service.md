@@ -149,6 +149,18 @@ host nor this private protocol receives a new setting, method, or field. The
 decision is recorded in
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
 
+Lock privacy is a separate, higher-priority shell policy and likewise does not
+change the presentation wire. The session supervisor supplies KWin's direct
+kernel-parent PID alongside the token descriptor. A focused asynchronous
+observer accepts lock state only when `org.qindaqt.Compositor`,
+`org.freedesktop.ScreenSaver`, and `org.kde.screensaver` share one exact unique
+owner whose bus-daemon PID matches that provisioned value. State is private by
+default and during every unknown, locking, locked, owner-change, or failure
+condition. Denial clears all public projections and operations; unlock consumes
+the current snapshot as a fresh no-replay baseline. Critical urgency cannot
+bypass this boundary. See
+[ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
+
 ## Resident host
 
 `QindaQt::NotificationHost` composes the standard server with an injected
@@ -170,11 +182,13 @@ post-start service restart policy is not yet implemented.
 The executable is built and installable. A production-shell build makes
 `qindaqt-session` the launcher's default `--exit-with-session` process. That
 supervisor generates one token in memory, sends independent copies to host and
-shell over bounded inherited pipes, and couples both child lifetimes. Only the
-descriptor number appears in their arguments; the token never enters argv,
-environment, a persistent file, a signal, or diagnostics. A standalone host
-still receives no token, so its private object is absent. Reads accept one exact
-record and time out after two seconds. The default
+shell over bounded inherited pipes, arms a race-closed parent-death witness,
+captures its direct KWin parent PID, and gives both children their own
+supervisor-death witnesses. Only the descriptor number and non-secret PID
+appear in shell arguments; the token never enters argv, environment, a
+persistent file, a signal, or diagnostics. A standalone host still receives no
+token, so its private object is absent. Reads accept one exact record and time
+out after two seconds. The default
 freedesktop capability remains `body`: the initial action controls do not yet
 provide activation tokens or a qualified end-to-end keyboard/accessibility
 path. Busy and failure state are visible, but no live compositor/input run has
@@ -222,7 +236,18 @@ success-only removal, rejection retry preservation, bounded error lifetime,
 and injected Do Not Disturb filtering without Active/Recent loss or replay.
 Focused interruption-policy tests cover the default lifetime, change signals,
 the exact critical bypass, unknown-urgency rejection while enabled, and
-state-dependent admission.
+state-dependent admission. Privacy-policy/model tests cover default denial,
+complete projection and status clearing, critical suppression, transport-free
+operation rejection, in-flight outcome suppression, and fresh unlock
+baselining. Lock-state tests add three-owner/PID authentication, stale-reply and
+owner-change fencing, early locking, active transitions, double inactive
+confirmation, bounded object retry, stop/restart behavior, and a real
+asynchronous Qt transport against a private `dbus-daemon` with separate KDE
+and freedesktop interfaces. The transport-loss case terminates only that
+isolated daemon after the monitor reaches `Unlocked` and proves immediate
+presentation revocation without an explicit monitor stop. Runtime-option and
+supervisor tests require the
+token descriptor and compositor PID as one validated argument bundle.
 Pure logical-screen planning tests cover 1080p, WUXGA, 1440p, 200% scale,
 compact clamping, a zero-popup 38-logical-pixel status surface, and minimum
 usable dimensions. Offscreen QML tests exercise active and popup delegates,
@@ -237,8 +262,10 @@ The following are not yet implemented:
 - popup-safe icon/image loading and activation-token acquisition;
 - D-Bus activation and post-start child/bus-loss restart policy;
 - sound, persistent disk history, Do Not Disturb settings persistence,
-  scheduling/inhibition integration, lock-screen redaction, and restart
-  migration;
+  scheduling/inhibition integration, and restart migration;
+- live lock-transition, multi-seat/session-switching, alternative-locker, and
+  suspend/resume qualification, plus any future least-authority lock-screen
+  presenter;
 - multi-output notification placement and live/nested layer-surface proof;
 - portal routing and third-party `notify-send` qualification; and
 - inline reply/vendor extensions.

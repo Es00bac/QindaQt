@@ -13,14 +13,20 @@ wire contract is in
 The production path is:
 
 1. `qindaqt-session` generates one presentation token and sends independent
-   copies to the host and shell through inherited one-shot descriptors.
+   copies to the host and shell through inherited one-shot descriptors. It
+   also supplies the shell with the kernel-reported PID of its direct KWin
+   parent.
 2. The host publishes snapshots through its private, token-bound D-Bus object.
 3. The owner-bound asynchronous shell client authenticates and accepts only a
    coherent owner, epoch, and monotonic revision lineage.
-4. `NotificationPresentationController` projects that snapshot into separate
+4. A separate lock-state monitor requires the QindaQt compositor and both
+   KScreenLocker names to share one unique owner whose bus-daemon PID is the
+   provisioned KWin PID. Only its conclusive `Unlocked` state opens the privacy
+   gate.
+5. `NotificationPresentationController` projects that snapshot into separate
    active, popup, and recent list models using an injected shell-owned
-   interruption policy.
-5. The shell window controller maps popup and center QML as nonexclusive
+   interruption policy and the higher-priority privacy policy.
+6. The shell window controller maps popup and center QML as nonexclusive
    LayerShellQt overlay surfaces.
 
 The client, model, and surfaces are constructed only when the shell receives a
@@ -69,11 +75,41 @@ The notification center exposes the writable, tab-focusable control with an
 accessible description of the critical bypass. The panel applet receives only
 a read-only policy flag: it shows a moon indicator and includes Do Not Disturb
 in its accessible open/close label, but cannot change the policy. Persistence,
-schedules, per-application exceptions, inhibition integration, and lock-screen
-policy are not implemented. Future persistence must arrive through
+schedules, per-application exceptions, and inhibition integration are not
+implemented. The separate lock-state privacy gate below cannot be weakened by
+this preference. Future persistence must arrive through
 `org.qindaqt.Settings1`; it must not be added to the policy module or private
 notification wire. The boundary is accepted in
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+
+## Lock-state privacy
+
+Notification presentation starts denied and remains denied while lock state is
+`Unknown`, `Locking`, or `Locked`. The monitor watches
+`org.qindaqt.Compositor`, `org.freedesktop.ScreenSaver`, and
+`org.kde.screensaver` before querying their owners. All three must resolve to
+one exact unique name, and the bus daemon must report the supervisor-provisioned
+KWin PID for that owner. Lock signals are then subscribed on the exact owner
+before `GetActive` is called. Initial unlock needs two serial-fenced false
+replies; owner churn, `AboutToLock`, `ActiveChanged(true)`, a timeout, malformed
+state, or transport failure returns to a private state. A trusted
+`ActiveChanged(false)` permits presentation again.
+
+Denial immediately closes the center; clears Active, popup, Recent, busy, and
+error projections; stops timers; and rejects dismiss or action requests before
+the client transport. Critical urgency does not bypass this policy. The panel
+entry becomes unavailable, mapped notification windows hide, and `Meta+N`
+becomes a no-op without rewriting the user's shortcut. An operation already in
+flight may settle inside the authenticated client, but its outcome is never
+projected across the private interval.
+
+After unlock, the current authoritative host snapshot becomes a fresh
+baseline. Existing items may return to Active, but items received or removed
+while private are not replayed as popup or Recent entries, and prior Recent
+history stays cleared. A missing or late lock object leaves panels operational
+while notification content remains private. The design and trust separation
+are recorded in
+[ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
 
 ## Cards and operations
 
@@ -141,12 +177,12 @@ The popup **History** button opens the center while a popup is visible. A
 dedicated notification-center applet now appears exactly once in each of the
 ten stock profiles. Its manifest requests no capabilities; the production
 renderer receives only a shell-owned facade that requests a center toggle and
-mirrors open state plus read-only Do Not Disturb state. Notification records,
-dismiss/action operations, interruption-policy mutation, and the presentation
+mirrors open state plus read-only Do Not Disturb and privacy state. Notification
+records, dismiss/action operations, policy mutation, and the presentation
 controller remain outside the applet boundary. A custom profile
 may remove or omit this entry. If the shell starts without the supervisor's
-authenticated presentation descriptor, the facade is absent and the button is
-disabled.
+authenticated presentation descriptor, the facade is absent. If lock state is
+not conclusively unlocked, the facade exists but the button remains disabled.
 
 Once the authenticated presentation client has started, the shell also owns a
 stable `qindaqt_toggle_notification_center` action with default `Meta+N` and
@@ -174,9 +210,12 @@ transient exclusion, serialized operations, success-only removal, rejection
 retention and renewal, bounded error lifetime, immediate Do Not Disturb
 filtering, the critical bypass, urgency-changing replacements, Active/Recent
 retention, no replay on disable, service-owner/epoch rebaseline, and rejection
-of an in-flight operation after its popup becomes suppressed. Focused policy
-tests cover default-off session lifetime, change notification, and total
-urgency admission. Client
+of an in-flight operation after its popup becomes suppressed. Privacy tests add
+default denial, complete projection/timer clearing, critical suppression,
+transport-free operation rejection, in-flight outcome suppression, and
+unlock baselining without popup/history replay. Focused policy tests cover
+default-off interruption state, default-denied privacy state, change
+notification, and their distinct authority boundaries. Client
 tests cover resident equal-revision success, advancing-operation validation,
 timeout/malformed/remote-error recovery, owner replacement, and stale replies.
 Pure surface-
@@ -192,15 +231,24 @@ facade's center-toggle/open-state and read-only Do Not Disturb boundary, stable
 action identity and `Meta+N` default, dispatch, setter-request status, and
 active-binding state changes without touching the developer's shortcut
 registry. A second offscreen QML
-test proves the applet's disabled fallback, accessibility label changes, narrow
-toggle call, read-only Do Not Disturb state/indicator, and compiled-entry-point
-dispatch without compositor or pointer input. The notification-surface
+test proves the applet's disabled fallback, locked-state unavailability,
+accessibility label changes, narrow toggle call, read-only policy indicators,
+and compiled-entry-point dispatch without compositor or pointer input. The
+notification-surface
 offscreen test proves the center's writable, accessible Do Not Disturb control,
 explicit bidirectional header focus chain, compact 384x284 busy/error geometry,
 window-scoped Escape route, and focusable initial target without activating a
 real surface. Catalog, resolver, and profile tests prove the empty capability
 request, audited registry entry, and exactly one instance in every stock
 profile.
+
+Pure lock-monitor tests exercise mismatched and malformed owners, PID mismatch,
+stale generations and serials, startup races, lock transitions, double-inactive
+confirmation, bounded service-object retry, and fail-closed stop/restart. A
+private `dbus-daemon` fixture exports the KDE and freedesktop interfaces
+separately on `/ScreenSaver` and verifies exact-owner signal delivery and the
+real asynchronous Qt transport. Supervisor/parser tests cover the inseparable
+token/PID argument bundle. None locks the developer's desktop.
 
 This milestone did **not** run a live or nested compositor and did not inject
 input. The following remain unqualified or unimplemented:
@@ -209,9 +257,12 @@ input. The following remain unqualified or unimplemented:
   traversal, global-shortcut dispatch/remapping, and visual baselines at the
   reference resolutions;
 - multi-output placement policy, per-output histories, and output migration;
-- Do Not Disturb persistence/scheduling/inhibition, lock-screen redaction,
-  sound, and safe image/icon loading;
+- Do Not Disturb persistence/scheduling/inhibition, sound, and safe image/icon
+  loading;
 - persistent history and settings, D-Bus activation, and child/bus-loss restart;
+- live lock-transition proof, multi-seat/session switching, alternative-locker
+  support, suspend/resume qualification, and a separately authenticated,
+  data-minimized lock-screen presenter;
 - activation-token acquisition, portal routing, inline reply, and vendor
   extensions.
 

@@ -9,7 +9,9 @@ target_sources(
     qindaqt_notification_presentation_model
     PRIVATE
         src/notification_list_model.cpp
+        src/notification_popup_lifecycle.cpp
         src/notification_presentation_controller.cpp
+        src/notification_presentation_privacy.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

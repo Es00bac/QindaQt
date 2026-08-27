@@ -2,6 +2,7 @@
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 
 #include "qindaqt/services/notification_presentation/presentation_access_token.h"
+#include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 
 #include <QCoreApplication>
@@ -23,6 +24,26 @@ void setError(QString *error, QString message)
 }
 
 } // namespace
+
+std::optional<QStringList> shellProcessArguments(
+    const SessionProcessOptions &options, QString *error)
+{
+    if (!isUsableCompositorProcessId(options.compositorProcessId)) {
+        setError(error, QStringLiteral("expected compositor process id is invalid"));
+        return std::nullopt;
+    }
+    QStringList arguments;
+    if (!options.profileId.isEmpty()) {
+        arguments.append({QStringLiteral("--profile"), options.profileId});
+    }
+    if (!options.themeId.isEmpty()) {
+        arguments.append({QStringLiteral("--theme"), options.themeId});
+    }
+    arguments.append({QStringLiteral("--compositor-pid"),
+                      QString::number(options.compositorProcessId)});
+    setError(error, {});
+    return arguments;
+}
 
 SessionProcessSupervisor::SessionProcessSupervisor(
     SessionProcessOptions options, QObject *parent)
@@ -52,6 +73,10 @@ bool SessionProcessSupervisor::start(QString *error)
         setError(error, QStringLiteral("QindaQt session supervisor is already active"));
         return false;
     }
+    const auto shellArguments = shellProcessArguments(m_options, error);
+    if (!shellArguments.has_value()) {
+        return false;
+    }
     const auto token =
         Services::NotificationPresentation::PresentationAccessToken::generate();
     const QString hostProgram = resolveExecutable(m_options.notificationHostExecutable);
@@ -59,15 +84,8 @@ bool SessionProcessSupervisor::start(QString *error)
         return false;
     }
 
-    QStringList shellArguments;
-    if (!m_options.profileId.isEmpty()) {
-        shellArguments.append({QStringLiteral("--profile"), m_options.profileId});
-    }
-    if (!m_options.themeId.isEmpty()) {
-        shellArguments.append({QStringLiteral("--theme"), m_options.themeId});
-    }
     const QString shellProgram = resolveExecutable(m_options.shellExecutable);
-    if (!TokenizedProcessLauncher::start(m_shell, shellProgram, shellArguments,
+    if (!TokenizedProcessLauncher::start(m_shell, shellProgram, *shellArguments,
                                          token, error)) {
         m_stopping = true;
         stopChild(m_host);

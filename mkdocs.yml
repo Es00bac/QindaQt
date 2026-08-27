@@ -58,3 +58,4 @@ nav:
       - "ADR-0008: Lean notification service": adr/0008-lean-notification-service.md
       - "ADR-0009: KGlobalAccel shell shortcuts": adr/0009-use-kglobalaccel-for-shell-shortcuts.md
       - "ADR-0010: Shell notification interruption policy": adr/0010-inject-shell-notification-interruption-policy.md
+      - "ADR-0011: Authenticated lock-state privacy": adr/0011-gate-notifications-on-authenticated-lock-state.md

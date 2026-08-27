@@ -14,6 +14,9 @@
 #include "qindaqt/services/notification_presentation_client/qt_notification_presentation_transport.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
+#include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
+#include "qindaqt/services/session_lock_state/qt_session_lock_transport.h"
+#include "qindaqt/services/session_lock_state/session_lock_state_monitor.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -96,7 +99,7 @@ int ShellRuntimeApplication::run()
                " offscreen or X11 development";
         return 3;
     }
-    if (!initializeRuntime(&error)) {
+    if (!initializeRuntime(*parsed.options, &error)) {
         qCritical().noquote() << error;
         return 4;
     }
@@ -181,7 +184,8 @@ void ShellRuntimeApplication::printCatalog() const
     }
 }
 
-bool ShellRuntimeApplication::initializeRuntime(QString *error)
+bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
+                                                QString *error)
 {
     const int profileIndex = m_profiles.currentIndex();
     if (profileIndex < 0 ||
@@ -192,17 +196,33 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
     if (m_presentationAccessToken) {
+        // Runtime option parsing treats these values as one trust bundle. Keep
+        // the assertion fail closed here too so future alternate callers cannot
+        // accidentally construct a presenter without a compositor identity.
+        if (!options.compositorProcessId.has_value()) {
+            *error = QStringLiteral(
+                "notification presentation requires a compositor process id");
+            return false;
+        }
         m_notificationTransport = std::make_unique<Services::
             NotificationPresentationClient::QtNotificationPresentationTransport>();
         m_notificationClient = std::make_unique<Services::
             NotificationPresentationClient::NotificationPresentationClient>(
                 *m_notificationTransport, std::move(*m_presentationAccessToken));
         m_presentationAccessToken.reset();
+        m_sessionLockTransport = std::make_unique<Services::SessionLockState::
+            QtSessionLockTransport>();
+        m_sessionLockMonitor = std::make_unique<Services::SessionLockState::
+            SessionLockStateMonitor>(*m_sessionLockTransport,
+                                     *options.compositorProcessId);
         m_notificationInterruptionPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationInterruptionPolicy>();
+        m_notificationPrivacyPolicy = std::make_unique<Services::
+            NotificationPresentationPolicy::NotificationPrivacyPolicy>();
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
-                *m_notificationClient, *m_notificationInterruptionPolicy);
+                *m_notificationClient, *m_notificationInterruptionPolicy,
+                *m_notificationPrivacyPolicy);
         m_notificationCenterAccess =
             std::make_unique<NotificationCenterAppletAccess>();
         connect(m_notificationCenterAccess.get(),
@@ -223,6 +243,25 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
                 m_notificationCenterAccess.get(), [this](bool enabled) {
                     m_notificationCenterAccess->publishDoNotDisturbEnabled(enabled);
                 });
+        connect(m_sessionLockMonitor.get(),
+                &Services::SessionLockState::SessionLockStateMonitor::
+                    contentMayBeShownChanged,
+                m_notificationPrivacyPolicy.get(),
+                &Services::NotificationPresentationPolicy::
+                    NotificationPrivacyPolicy::setPrivatePresentationAllowed);
+        connect(m_notificationPrivacyPolicy.get(),
+                &Services::NotificationPresentationPolicy::
+                    NotificationPrivacyPolicy::privatePresentationAllowedChanged,
+                m_notificationCenterAccess.get(),
+                &NotificationCenterAppletAccess::
+                    publishPrivatePresentationAllowed);
+        // The monitor's edge-triggered signal does not publish its initial
+        // Unknown state. Mirror both fail-closed defaults explicitly before
+        // any D-Bus work can complete.
+        m_notificationPrivacyPolicy->setPrivatePresentationAllowed(
+            m_sessionLockMonitor->contentMayBeShown());
+        m_notificationCenterAccess->publishPrivatePresentationAllowed(
+            m_notificationPrivacyPolicy->privatePresentationAllowed());
         m_notificationCenterAccess->publishDoNotDisturbEnabled(
             m_notificationInterruptionPolicy->doNotDisturbEnabled());
     }
@@ -251,6 +290,16 @@ bool ShellRuntimeApplication::initializeRuntime(QString *error)
     }
 
     if (m_notificationClient) {
+        QString lockError;
+        if (!m_sessionLockMonitor->start(&lockError)) {
+            // Lock observation is a privacy gate, not an essential panel
+            // process. A local/session-bus failure keeps the policy denied
+            // while the remainder of the shell stays available.
+            qWarning().noquote()
+                << "QindaQt shell could not start authenticated lock-state"
+                   " observation; notification presentation remains private:"
+                << lockError;
+        }
         if (!m_notificationClient->start(error)) {
             resetRuntime();
             return false;
@@ -418,7 +467,10 @@ void ShellRuntimeApplication::resetRuntime()
     m_windowFactory.reset();
     m_notificationCenterAccess.reset();
     m_notificationPresentation.reset();
+    m_notificationPrivacyPolicy.reset();
     m_notificationInterruptionPolicy.reset();
+    m_sessionLockMonitor.reset();
+    m_sessionLockTransport.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();
 }

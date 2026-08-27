@@ -15,11 +15,14 @@ int main(int argc, char *argv[])
     parser.addOptions({
         {QStringLiteral("presentation-token-fd"), QStringLiteral("Token descriptor"),
          QStringLiteral("descriptor")},
+        {QStringLiteral("compositor-pid"), QStringLiteral("Compositor pid"),
+         QStringLiteral("pid")},
         {QStringLiteral("profile"), QStringLiteral("Profile marker"),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Theme marker"),
          QStringLiteral("id")},
         {QStringLiteral("quick-exit"), QStringLiteral("Exit immediately")},
+        {QStringLiteral("hold"), QStringLiteral("Wait for a parent-death test")},
     });
     if (!parser.parse(application.arguments())) {
         return 2;
@@ -34,12 +37,19 @@ int main(int argc, char *argv[])
     if (!result.ok()) {
         return 4;
     }
-    const bool shellRole = parser.isSet(QStringLiteral("profile"));
+    const bool shellRole = parser.isSet(QStringLiteral("compositor-pid"));
+    if (shellRole) {
+        const qint64 processId =
+            parser.value(QStringLiteral("compositor-pid")).toLongLong(&valid);
+        if (!valid || processId <= 1) {
+            return 5;
+        }
+    }
     QTextStream(stdout) << "token-channel-ok "
                         << (shellRole ? "shell" : "host") << '\n';
-    const int lifetime = parser.isSet(QStringLiteral("quick-exit")) || shellRole
-        ? 20
-        : 5'000;
+    const int lifetime = parser.isSet(QStringLiteral("hold"))
+        ? 30'000
+        : (parser.isSet(QStringLiteral("quick-exit")) || shellRole ? 20 : 5'000);
     QTimer::singleShot(lifetime, &application, &QCoreApplication::quit);
     return application.exec();
 }

@@ -4,6 +4,10 @@
 #include <QObject>
 #include <QProcess>
 #include <QString>
+#include <QStringList>
+#include <QtTypes>
+
+#include <optional>
 
 namespace QindaQt::SessionSupervisor {
 
@@ -12,7 +16,13 @@ struct SessionProcessOptions final {
     QString shellExecutable = QStringLiteral("qindaqt-shell");
     QString profileId;
     QString themeId;
+    qint64 compositorProcessId = 0;
 };
+
+// Builds the non-secret portion of the shell process contract. The tokenized
+// launcher appends its inherited descriptor after this exact argument list.
+[[nodiscard]] std::optional<QStringList> shellProcessArguments(
+    const SessionProcessOptions &options, QString *error = nullptr);
 
 // Owns exactly the notification host and shell child processes. Unexpected
 // exit of either child tears down the sibling and ends the compositor session.

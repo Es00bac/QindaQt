@@ -112,6 +112,14 @@ policy therefore requires no method, signal, snapshot field, schema increment,
 or presenter reauthentication. See
 [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
 
+Session lock state is also intentionally absent from this wire contract. The
+ordinary presenter remains a full-content, unlocked-shell channel; its token
+does not authorize lock-screen display. A separately authenticated shell-side
+observer clears and denies every projection unless the compositor's bound
+KScreenLocker state is conclusively `Unlocked`. This requires no method,
+snapshot field, or schema increment. See
+[ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
+
 ## Current boundary
 
 The shared values/decoder, resident-host server, owner-bound asynchronous shell
@@ -129,7 +137,10 @@ the host continues to advertise only `body`. The shell now provides
 session-volatile Do Not Disturb without changing this protocol: low/normal
 popups are suppressed, critical popups bypass the filter, Active/Recent are
 preserved, and disabling the policy does not replay suppressed entries.
-Settings persistence, scheduling/inhibition, lock-screen redaction, persistent
-history, safe image loading, activation-token acquisition, complete
+Authenticated lock-state privacy is likewise implemented outside this
+protocol: the shell baselines after unlock and exposes no notification content
+while state is unknown, locking, or locked. Settings persistence,
+scheduling/inhibition, persistent history, safe image loading,
+activation-token acquisition, complete
 keyboard/accessibility proof, and child restart policy remain. The private
 object stays disabled in the installed standalone host.

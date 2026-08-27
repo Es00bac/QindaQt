@@ -24,9 +24,11 @@ This repository currently contains the executable foundation for the desktop:
   primary output, with plain-text rendering, logical-DPI size clamping, a
   dedicated entry in every stock profile, a shell-owned `Meta+N` action, and
   session-volatile Do Not Disturb that immediately suppresses low/normal
-  banners while preserving critical banners and Active/Recent state;
+  banners while preserving critical banners and Active/Recent state, with all
+  notification presentation fail-closed behind authenticated KWin lock state;
 - an essential-process supervisor that starts the notification host and shell,
-  couples their lifetimes, and never places its generated token in argv or env;
+  couples their lifetimes, keeps its generated token out of argv and env, and
+  provisions the shell with a parent-death-witnessed direct KWin PID;
 - isolated nested-session and resolution-scenario tooling;
 - an agent-oriented, versioned project wiki.
 
@@ -35,9 +37,9 @@ are implemented. QindaQt is still under construction as a daily-use desktop:
 the remaining live applets, global menu, settings-center presentation, platform
 services, packaging, and physical-hardware qualification remain roadmap work.
 Do Not Disturb settings persistence and scheduling, persistent history,
-lock-screen policy, activation tokens, multi-output placement, and live/nested
-surface, shortcut, focus, and Do Not Disturb interaction qualification are also
-unfinished.
+activation tokens, multi-output placement, multi-seat and alternative-locker
+support, and live/nested surface, shortcut, focus, lock-transition, and Do Not
+Disturb interaction qualification are also unfinished.
 
 ## Build
 

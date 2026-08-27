@@ -24,6 +24,7 @@ Item {
         id: fakeAccess
         property bool centerOpen: false
         property bool doNotDisturbEnabled: false
+        property bool privatePresentationAllowed: false
         property int toggleCalls: 0
         function toggle() { ++toggleCalls; }
     }
@@ -84,6 +85,7 @@ Item {
         function init() {
             fakeAccess.centerOpen = false;
             fakeAccess.doNotDisturbEnabled = false;
+            fakeAccess.privatePresentationAllowed = true;
             fakeAccess.toggleCalls = 0;
         }
 
@@ -112,6 +114,19 @@ Item {
             verify(applet !== null);
             verify(!applet.enabled);
             compare(applet.Accessible.name, "Notifications unavailable");
+            applet.activate();
+            compare(fakeAccess.toggleCalls, 0);
+        }
+
+        function test_privatePresentationDeniedIsUnavailable() {
+            fakeAccess.privatePresentationAllowed = false;
+            const applet = createTemporaryObject(appletComponent, testRoot);
+            verify(applet !== null);
+            verify(!applet.enabled);
+            compare(applet.Accessible.name, "Notifications unavailable");
+            const glyph = findChild(applet, "notificationCenterAppletGlyph");
+            verify(glyph !== null);
+            compare(glyph.text, "○");
             applet.activate();
             compare(fakeAccess.toggleCalls, 0);
         }

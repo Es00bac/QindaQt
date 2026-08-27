@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 
 #include <QCommandLineOption>
@@ -35,13 +36,22 @@ int main(int argc, char *argv[])
     });
     parser.process(application);
 
+    QString error;
+    const auto compositorProcessId =
+        establishDirectParentProcessWitness(&error);
+    if (!compositorProcessId.has_value()) {
+        QTextStream(stderr) << QCoreApplication::applicationName() << ": "
+                            << error << '\n';
+        return 2;
+    }
+
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));
     options.shellExecutable = parser.value(QStringLiteral("shell"));
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
+    options.compositorProcessId = *compositorProcessId;
     SessionProcessSupervisor supervisor(std::move(options));
-    QString error;
     if (!supervisor.start(&error)) {
         QTextStream(stderr) << QCoreApplication::applicationName() << ": "
                             << error << '\n';

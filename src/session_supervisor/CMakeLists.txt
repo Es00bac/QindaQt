@@ -5,12 +5,14 @@ add_library(QindaQt::SessionSupervisorSupport ALIAS qindaqt_session_supervisor_s
 target_sources(
     qindaqt_session_supervisor_support
     PRIVATE
+        src/direct_parent_process.cpp
         src/tokenized_process_launcher.cpp
         src/session_process_supervisor.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/session_supervisor/direct_parent_process.h
             include/qindaqt/session_supervisor/tokenized_process_launcher.h
             include/qindaqt/session_supervisor/session_process_supervisor.h
 )

@@ -15,6 +15,29 @@ foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline se
     add_test(NAME session.${test_name} COMMAND tst_${test_name})
 endforeach()
 
+qt_add_executable(
+    qindaqt_shell_runtime_options_tests
+    tst_runtimeoptions.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/runtimeoptions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/runtimeoptions.h"
+)
+target_include_directories(
+    qindaqt_shell_runtime_options_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}/src/shell/runtime"
+)
+target_link_libraries(qindaqt_shell_runtime_options_tests PRIVATE Qt6::Core Qt6::Test)
+set_target_properties(
+    qindaqt_shell_runtime_options_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_shell_runtime_options_tests)
+add_test(
+    NAME qindaqt.shell-runtime-options
+    COMMAND qindaqt_shell_runtime_options_tests
+)
+set_tests_properties(
+    qindaqt.shell-runtime-options PROPERTIES LABELS "unit;shell;session;security"
+)
+
 target_compile_definitions(
     tst_sessioncommandline
     PRIVATE QINDAQT_TEST_PRODUCTION_SHELL=$<BOOL:${QINDAQT_BUILD_PRODUCTION_SHELL}>

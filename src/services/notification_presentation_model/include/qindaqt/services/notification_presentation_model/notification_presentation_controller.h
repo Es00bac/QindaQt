@@ -15,6 +15,7 @@ class NotificationPresentationClient;
 
 namespace QindaQt::Services::NotificationPresentationPolicy {
 class NotificationInterruptionPolicy;
+class NotificationPrivacyPolicy;
 }
 
 namespace QindaQt::Services::NotificationPresentationModel {
@@ -40,19 +41,24 @@ class NotificationPresentationController final : public QObject {
     Q_PROPERTY(bool doNotDisturbEnabled READ doNotDisturbEnabled
                    WRITE setDoNotDisturbEnabled
                        NOTIFY doNotDisturbEnabledChanged)
+    Q_PROPERTY(bool privatePresentationAllowed READ privatePresentationAllowed
+                   NOTIFY privatePresentationAllowedChanged)
     Q_PROPERTY(int popupCount READ popupCount NOTIFY popupCountChanged)
     Q_PROPERTY(bool operationBusy READ operationBusy NOTIFY operationBusyChanged)
     Q_PROPERTY(QString operationErrorText READ operationErrorText
                    NOTIFY operationErrorTextChanged)
 
 public:
-    // AGENT-CONTRACT: `client` and `interruptionPolicy` are borrowed, must
-    // remain on this object's thread, and must outlive the controller. Invalid
-    // timing is replaced by bounded defaults instead of weakening limits.
+    // AGENT-CONTRACT: `client`, `interruptionPolicy`, and `privacyPolicy` are
+    // borrowed, must remain on this object's thread, and must outlive the
+    // controller. Invalid timing is replaced by bounded defaults instead of
+    // weakening limits. Privacy starts denied and outranks interruption
+    // policy, urgency, operations, and every public presentation projection.
     explicit NotificationPresentationController(
         NotificationPresentationClient::NotificationPresentationClient &client,
         NotificationPresentationPolicy::NotificationInterruptionPolicy &
             interruptionPolicy,
+        NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
         PresentationTiming timing = {}, QObject *parent = nullptr);
 
     [[nodiscard]] QAbstractItemModel *activeModel() noexcept;
@@ -60,6 +66,7 @@ public:
     [[nodiscard]] QAbstractItemModel *historyModel() noexcept;
     [[nodiscard]] bool centerOpen() const noexcept;
     [[nodiscard]] bool doNotDisturbEnabled() const noexcept;
+    [[nodiscard]] bool privatePresentationAllowed() const noexcept;
     [[nodiscard]] int popupCount() const noexcept;
     [[nodiscard]] bool operationBusy() const noexcept;
     [[nodiscard]] const QString &operationErrorText() const noexcept;
@@ -76,6 +83,7 @@ public:
 Q_SIGNALS:
     void centerOpenChanged();
     void doNotDisturbEnabledChanged();
+    void privatePresentationAllowedChanged();
     void popupCountChanged();
     void operationBusyChanged();
     void operationErrorTextChanged();
@@ -90,6 +98,8 @@ private:
 
     void synchronize();
     void handleInterruptionPolicyChanged();
+    void handlePrivacyPolicyChanged();
+    void clearPrivatePresentation();
     void baseline(const NotificationPresentation::PresentationSnapshot &snapshot);
     void update(const NotificationPresentation::PresentationSnapshot &snapshot);
     void publishPopups();
@@ -105,6 +115,7 @@ private:
     NotificationPresentationClient::NotificationPresentationClient &m_client;
     NotificationPresentationPolicy::NotificationInterruptionPolicy &
         m_interruptionPolicy;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy &m_privacyPolicy;
     PresentationTiming m_timing;
     NotificationListModel m_active;
     NotificationListModel m_popups;
@@ -121,6 +132,7 @@ private:
     quint64 m_sequence = 0;
     bool m_baselined = false;
     bool m_centerOpen = false;
+    bool m_suppressCurrentOperationOutcome = false;
 };
 
 } // namespace QindaQt::Services::NotificationPresentationModel

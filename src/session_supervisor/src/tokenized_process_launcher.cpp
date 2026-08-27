@@ -8,6 +8,8 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <signal.h>
+#include <sys/prctl.h>
 #include <unistd.h>
 #include <utility>
 
@@ -49,9 +51,15 @@ bool TokenizedProcessLauncher::start(
 
     arguments.append({QStringLiteral("--presentation-token-fd"),
                       QString::number(readDescriptor)});
-    process.setChildProcessModifier([readDescriptor] {
+    const pid_t supervisorProcessId = ::getpid();
+    process.setChildProcessModifier([readDescriptor, supervisorProcessId] {
         // Only async-signal-safe syscalls are permitted between fork and exec.
-        if (::fcntl(readDescriptor, F_SETFD, 0) != 0) {
+        // AGENT-GUARD: Both essential children must die with qindaqt-session;
+        // otherwise KWin death could leave a token-authenticated orphan that
+        // later accepts an unrelated process reusing the compositor PID.
+        if (::prctl(PR_SET_PDEATHSIG, SIGKILL) != 0
+            || ::getppid() != supervisorProcessId
+            || ::fcntl(readDescriptor, F_SETFD, 0) != 0) {
             ::_exit(127);
         }
     });
