@@ -23,6 +23,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   its process boundaries.
 - [Module boundaries](architecture/module-boundaries.md) defines ownership and
   dependency direction.
+- [QST-1 semantic design tokens](architecture/design-tokens.md) defines the
+  immutable theme/accessibility derivation and read-only QML boundary.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.

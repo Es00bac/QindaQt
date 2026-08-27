@@ -3,6 +3,7 @@
 add_subdirectory(profiles)
 add_subdirectory(shell_layout)
 add_subdirectory(themes)
+add_subdirectory(design_tokens)
 add_subdirectory(core)
 add_subdirectory(hybrid)
 add_subdirectory(hybrid_constraints)

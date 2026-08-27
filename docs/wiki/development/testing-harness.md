@@ -118,6 +118,29 @@ profile suite passed 3/3 in both Debug and Release for this contract revision.
 That evidence qualifies the persistence boundary only; it does not claim live
 shell surfaces or profile editing UI.
 
+## Current design-token proof
+
+QST-1 derivation and its QML adapter are selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.design-tokens-' --output-on-failure
+```
+
+The four tests cover schema-v1 and caller-input boundaries, property-style
+metric ranges, deterministic reduced-motion/reduced-transparency/high-contrast/
+text-scale transforms, exact WCAG pair scopes across all five built-in themes,
+GUI-thread-only publication, same-value suppression, and an offscreen QML
+consumer observing one complete generation. The benchmark records an all-five-
+themes derivation sample without an unstable absolute CI timing assertion.
+
+These are value and software-renderer checks. They do not prove visual control
+baselines, a Settings Center, Settings1 projection, assistive-technology bridge
+behavior, repaint cost, memory residency, a production compositor, or physical
+display behavior. Those gates begin with the later controls and application
+slices. The exact role/pair contract and measurement policy are in
+[QST-1 semantic design tokens](../architecture/design-tokens.md).
+
 ## Current shell and panel-surface proof
 
 Pure panel planning, editor transactions, visibility policy, owner-bound client,

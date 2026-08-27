@@ -46,3 +46,10 @@ palette, left-side traffic lights whose `x`, `_`, and `[]` glyphs appear on
 hover, and right-to-left container tabs. Future state, elevation, focus,
 wallpaper, icon, and typography tokens must be added compatibly or through a
 new schema version with migration tests.
+
+[QST-1](../architecture/design-tokens.md) derives the richer state, focus,
+status, spacing, typography-size, motion, and elevation vocabulary without
+adding stored fields. Base point size and accessibility preferences are
+caller-owned inputs, not theme data. A future role that genuinely requires an
+authored value still needs a compatible schema addition or a new version with
+migration tests.

@@ -21,6 +21,7 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
+      - QST-1 semantic design tokens: architecture/design-tokens.md
       - Compositor and session: architecture/compositor-session.md
       - Hybrid topology: architecture/hybrid-topology.md
       - Hybrid constraints: architecture/hybrid-constraints.md
@@ -62,3 +63,4 @@ nav:
       - "ADR-0010: Shell notification interruption policy": adr/0010-inject-shell-notification-interruption-policy.md
       - "ADR-0011: Authenticated lock-state privacy": adr/0011-gate-notifications-on-authenticated-lock-state.md
       - "ADR-0012: Persistent notification quieting": adr/0012-persist-notification-quieting-through-settings1.md
+      - "ADR-0013: Own QST-1 semantic tokens": adr/0013-own-qst1-semantic-tokens.md

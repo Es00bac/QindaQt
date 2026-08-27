@@ -18,6 +18,9 @@ apply it during implementation.
   persistent state belong in testable C++ domain or service components.
 - Make cancellation, timeout, restart, ownership, and thread-affinity behavior
   explicit at asynchronous and process boundaries.
+- First-party QML consumes semantic values through
+  [QST-1](../architecture/design-tokens.md). Do not add theme IDs, palette hex
+  literals, per-app token derivations, or a second framework theme authority.
 
 The permitted dependency direction is documented in
 [Module boundaries](../architecture/module-boundaries.md).

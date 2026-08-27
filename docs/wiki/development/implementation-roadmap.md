@@ -13,6 +13,9 @@ The repository currently builds and tests:
 - validated profile schema v1 with ten built-in workflow families;
 - validated theme schema v1 with light, dusk, dark, high-contrast, and Qinda
   macOS themes;
+- QST-1 immutable semantic-token derivation, caller-owned accessibility
+  transforms, exact five-theme WCAG pair gates, and a read-only GUI-thread QML
+  singleton;
 - a Qt Quick shell preview showing panels, applets, and the shared-title-bar
   window-container concept at arbitrary preview dimensions;
 - an exact KWin 6.6.5 source/ABI pin, the `qindaqt-wm` launcher, a
@@ -87,7 +90,7 @@ integrations.
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
 | Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels/notifications, authenticated stack, Settings1-persisted DND with ordinary settings page and fixed route, and fail-closed lock privacy implemented; live shortcut/focus/DND/lock proof, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
-| First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
+| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 token/value and QML publication boundary implemented; controls, app shell, Settings Center routes, responsive/visual matrices, and live accessibility bridge pending) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |
 
 Each milestone lands behind stable module boundaries rather than accumulating

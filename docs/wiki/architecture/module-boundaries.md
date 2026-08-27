@@ -24,6 +24,7 @@ tests, and the wiki page describing its contract.
 | `src/shell_surface` | Backend-neutral panel and notification logical-surface planning, persistent panel live-set reconciliation, Qt output inventory, and private LayerShellQt adapters | Public `profiles` and `shell_layout` values, Qt Gui/Quick, and LayerShellQt only in adapters; never catalogs, applets, settings, or QML policy |
 | `src/shell_orchestration` | Exact output matching, pure cross-module inventory assembly, tokenized reveal/hold interaction state, and runtime panel-plan coordination | Public profile/layout/visibility/surface values and Qt Core; never D-Bus, KWin, LayerShellQt, or QML |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
+| `src/design_tokens` | Immutable QST-1 semantic derivation and a GUI-thread, read-only QML singleton adapter | Public `themes` values plus Qt Core/Gui; Qt QML only in the adapter; never settings, services, shell, applications, or Kirigami |
 | `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/applet_runtime` | Resolve profile instances through validated manifests, placement, host policy, the compiled built-in registry, and least-authority capability grants | Public `profiles`, `applets`, and `applet_host` values plus Qt Core; never QML, services, or third-party process launch |
@@ -54,6 +55,10 @@ implemented; do not use placeholder modules to bypass a boundary.
 
 - `core`, profile, and theme models never import shell, compositor, service, or
   application presentation code.
+- QST-1 consumes themes and explicit caller inputs. Theme/catalog selection and
+  Settings1 projection remain outside the token module; QML can observe only
+  complete generations. See
+  [ADR-0013](../adr/0013-own-qst1-semantic-tokens.md).
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
 - `src/hybrid` owns the process-local session topology; the KWin adapter may
