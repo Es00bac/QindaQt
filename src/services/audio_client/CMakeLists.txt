@@ -9,6 +9,7 @@ target_sources(
     qindaqt_audio_client
     PRIVATE
         src/audio_client.cpp
+        src/audio_client_completion.cpp
         src/qt_audio_transport.cpp
     PUBLIC
         FILE_SET HEADERS

@@ -635,7 +635,10 @@ lineage, sorting and uniqueness, target compatibility, finite normalized
 levels, UTF-8 byte limits, and oversized-array rejection. Fake transport and
 backend tests cover snapshot/model changes, operation validation, stale handles,
 exact owner/epoch/revision binding, invalidation coalescing, owner replacement,
-timeouts, uncertain outcomes, and the no-replay rule. Private session-bus tests
+equal-revision contradiction rejection, queued exactly-once completion for all
+public result classes, stopped/superseded backend generations, malformed
+backend-outcome normalization, timeouts, uncertain outcomes, and the no-replay
+rule. Private session-bus tests
 cover delayed operations across successive unique owners plus executable D-Bus
 activation. They tear down the constructing daemon, prove that exact activated
 PID exits, activate a fresh PID/owner/epoch on a replacement daemon, and repeat
@@ -650,8 +653,12 @@ real libwireplumber graph discovery, default, normalized volume, mute, stream
 target metadata, WirePlumber restart/epoch advance, and stale-handle rejection.
 It then races eight submitted operations against consecutive WirePlumber
 disconnect/reconnect cycles before backend teardown, covering cancellation and
-late-completion lifetime. It is serial and must fail rather than fall through
-to the host graph.
+late-completion lifetime. A separate production-adapter loop repeatedly stops
+before draining Qt callbacks for 250 cycles against an unreachable private
+runtime, bounds file-descriptor growth, proves no post-stop publication,
+restarts without draining an older run, and accepts only the fresh
+generation/epoch. It is serial and must fail rather than fall through to the
+host graph.
 
 This runtime proof does not use physical microphones, speakers, or input and
 does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,

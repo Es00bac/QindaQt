@@ -33,11 +33,13 @@ public:
     void submit(quint64 operationId, OperationRequest request);
 
 private:
+    struct ComponentLoad;
     struct OperationSync;
 
     void run();
     void setupCore();
     void finishApiLoading();
+    void beginComponentLoad(const char *component);
     void cleanupCore();
     void handleDisconnected();
     void scheduleReconnect();
@@ -49,8 +51,9 @@ private:
     void submitOnWorker(quint64 operationId, const OperationRequest &request);
     void beginSync(quint64 operationId);
     void finishSync(quint64 operationId, quint64 operationEpoch, bool success);
+    void cancelComponentLoads();
     void cancelOperationSyncs();
-    void quitWhenSyncsDrained();
+    void quitWhenCallbacksDrained();
     void invoke(std::function<void()> task);
 
     static void onComponentLoaded(GObject *source, GAsyncResult *result, gpointer data);
@@ -65,6 +68,7 @@ private:
     quint64 m_revision = 0;
     quint64 m_daemonSerial = 0;
     bool m_hadDaemon = false;
+    bool m_hasRun = false;
     bool m_managerInstalled = false;
     bool m_apiLoadFailed = false;
     guint m_pendingComponents = 0;
@@ -74,6 +78,7 @@ private:
     OutcomeCallback m_outcomeCallback;
     std::optional<Snapshot> m_lastSnapshot;
     std::unordered_map<quint64, quint64> m_pendingOperations;
+    std::unordered_set<ComponentLoad *> m_componentLoads;
     std::unordered_set<OperationSync *> m_operationSyncs;
 
     GMainContext *m_context = nullptr;

@@ -171,7 +171,7 @@ void WirePlumberWorker::onCoreSync(GObject *source, GAsyncResult *result, gpoint
     if (!state->cancelled) {
         worker->finishSync(state->operationId, state->epoch, success);
     }
-    worker->quitWhenSyncsDrained();
+    worker->quitWhenCallbacksDrained();
 }
 
 void WirePlumberWorker::cancelOperationSyncs()
@@ -186,9 +186,10 @@ void WirePlumberWorker::cancelOperationSyncs()
     }
 }
 
-void WirePlumberWorker::quitWhenSyncsDrained()
+void WirePlumberWorker::quitWhenCallbacksDrained()
 {
-    if (m_stopping && m_operationSyncs.empty() && m_loop != nullptr) {
+    if (m_stopping && m_componentLoads.empty() && m_operationSyncs.empty()
+        && m_loop != nullptr) {
         g_main_loop_quit(m_loop);
     }
 }

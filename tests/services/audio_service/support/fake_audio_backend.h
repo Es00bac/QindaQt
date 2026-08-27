@@ -12,18 +12,44 @@ class FakeAudioBackend final : public Audio::AudioBackend
 public:
     using AudioBackend::AudioBackend;
 
-    void start() override { ++startCalls; }
-    void stop() override { ++stopCalls; }
+    quint64 start() override
+    {
+        ++startCalls;
+        ++generation;
+        if (generation == 0) {
+            ++generation;
+        }
+        running = true;
+        return generation;
+    }
+    void stop() override
+    {
+        ++stopCalls;
+        running = false;
+    }
     void submit(const quint64 operationId,
                 const Audio::OperationRequest &request) override
     {
         operations.push_back({operationId, request});
     }
 
-    void publish(const Audio::Snapshot &snapshot) { Q_EMIT snapshotReady(snapshot); }
+    void publish(const Audio::Snapshot &snapshot)
+    {
+        publishForGeneration(generation, snapshot);
+    }
+    void publishForGeneration(const quint64 runGeneration,
+                              const Audio::Snapshot &snapshot)
+    {
+        Q_EMIT snapshotReady(runGeneration, snapshot);
+    }
     void finish(const quint64 operationId, const Audio::BackendOperationOutcome &outcome)
     {
-        Q_EMIT operationFinished(operationId, outcome);
+        finishForGeneration(generation, operationId, outcome);
+    }
+    void finishForGeneration(const quint64 runGeneration, const quint64 operationId,
+                             const Audio::BackendOperationOutcome &outcome)
+    {
+        Q_EMIT operationFinished(runGeneration, operationId, outcome);
     }
 
     struct RecordedOperation {
@@ -34,6 +60,8 @@ public:
     QList<RecordedOperation> operations;
     int startCalls = 0;
     int stopCalls = 0;
+    quint64 generation = 0;
+    bool running = false;
 };
 
 inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,

@@ -9,10 +9,24 @@
 #include <QtCore/QSet>
 
 #include <limits>
+#include <memory>
 #include <utility>
 
 namespace QindaQt::Audio
 {
+
+struct WirePlumberWorker::ComponentLoad {
+    WirePlumberWorker *worker = nullptr;
+    WpCore *core = nullptr;
+    GCancellable *cancellable = nullptr;
+    bool cancelled = false;
+
+    ~ComponentLoad()
+    {
+        g_clear_object(&cancellable);
+    }
+};
+
 namespace
 {
 
@@ -100,7 +114,7 @@ void WirePlumberWorker::stop()
             new TaskPayload{[this] {
                 invalidatePending(QStringLiteral("backend-stopped"));
                 cleanupCore();
-                quitWhenSyncsDrained();
+                quitWhenCallbacksDrained();
             }},
             deleteTaskPayload);
         g_main_context_unref(context);
@@ -150,6 +164,15 @@ void WirePlumberWorker::run()
     }
     m_contextReady.notify_all();
 
+    if (m_hasRun) {
+        // AGENT-GUARD: Reusing a stopped backend creates a new service
+        // authority run even when the upstream daemon never changed. Advance
+        // epoch before publishing so handles from the prior run cannot revive.
+        advanceEpoch();
+        m_daemonSerial = 0;
+        m_hadDaemon = false;
+    }
+    m_hasRun = true;
     setupCore();
     g_main_loop_run(loop);
     cleanupCore();
@@ -169,7 +192,7 @@ void WirePlumberWorker::setupCore()
     cleanupCore();
     m_apiLoadFailed = false;
     m_managerInstalled = false;
-    m_pendingComponents = 2;
+    m_pendingComponents = 0;
     m_core = wp_core_new(m_context, nullptr, nullptr);
     g_signal_connect(m_core, "disconnected", G_CALLBACK(onCoreDisconnected), this);
 
@@ -189,34 +212,67 @@ void WirePlumberWorker::setupCore()
     g_signal_connect(m_manager, "installed", G_CALLBACK(onManagerInstalled), this);
     g_signal_connect(m_manager, "objects-changed", G_CALLBACK(onObjectsChanged), this);
 
-    wp_core_load_component(m_core, "libwireplumber-module-default-nodes-api", "module",
-                           nullptr, nullptr, nullptr, onComponentLoaded, this);
-    wp_core_load_component(m_core, "libwireplumber-module-mixer-api", "module", nullptr,
-                           nullptr, nullptr, onComponentLoaded, this);
     if (!wp_core_connect(m_core)) {
         publishUnavailable(QStringLiteral("pipewire-unavailable"));
         scheduleReconnect();
+        return;
     }
+
+    // AGENT-GUARD: Start asynchronous API loads only after PipeWire accepted
+    // this core. Starting them against an unreachable runtime makes every
+    // rapid stop wait for loader cancellation and used to leak one GWakeup
+    // pipe pair per attempt. Connected loads remain explicitly cancellable and
+    // are drained before the worker thread can exit.
+    m_pendingComponents = 2;
+    beginComponentLoad("libwireplumber-module-default-nodes-api");
+    beginComponentLoad("libwireplumber-module-mixer-api");
+}
+
+void WirePlumberWorker::beginComponentLoad(const char *component)
+{
+    auto *state = new ComponentLoad{.worker = this,
+                                    .core = m_core,
+                                    .cancellable = g_cancellable_new(),
+                                    .cancelled = false};
+    m_componentLoads.insert(state);
+    wp_core_load_component(m_core, component, "module", nullptr, nullptr,
+                           state->cancellable, onComponentLoaded, state);
 }
 
 void WirePlumberWorker::onComponentLoaded(GObject *source, GAsyncResult *result,
                                           gpointer data)
 {
-    auto *self = static_cast<WirePlumberWorker *>(data);
+    std::unique_ptr<ComponentLoad> state(static_cast<ComponentLoad *>(data));
+    WirePlumberWorker *self = state->worker;
+    self->m_componentLoads.erase(state.get());
     auto *core = WP_CORE(source);
-    if (core != self->m_core) {
-        return;
-    }
     GError *error = nullptr;
-    if (!wp_core_load_component_finish(core, result, &error)) {
+    const bool succeeded = wp_core_load_component_finish(core, result, &error) != FALSE;
+    g_clear_error(&error);
+    if (!state->cancelled && core == state->core && core == self->m_core
+        && !succeeded) {
         self->m_apiLoadFailed = true;
-        g_clear_error(&error);
     }
-    if (self->m_pendingComponents > 0) {
+    if (!state->cancelled && core == state->core && core == self->m_core
+        && self->m_pendingComponents > 0) {
         --self->m_pendingComponents;
     }
-    if (self->m_pendingComponents == 0) {
+    if (!state->cancelled && core == state->core && core == self->m_core
+        && self->m_pendingComponents == 0) {
         self->finishApiLoading();
+    }
+    self->quitWhenCallbacksDrained();
+}
+
+void WirePlumberWorker::cancelComponentLoads()
+{
+    // AGENT-GUARD: The component loader owns callback data and a WpCore
+    // reference until finish runs. Cancel but retain every state, then keep the
+    // GLib loop alive until callbacks consume them; otherwise rapid stop leaks
+    // the loader's wakeup pipes and leaves raw worker pointers outstanding.
+    for (ComponentLoad *state : m_componentLoads) {
+        state->cancelled = true;
+        g_cancellable_cancel(state->cancellable);
     }
 }
 
@@ -397,6 +453,7 @@ void WirePlumberWorker::scheduleReconnect()
 
 void WirePlumberWorker::cleanupCore()
 {
+    cancelComponentLoads();
     cancelOperationSyncs();
     m_managerInstalled = false;
     if (m_mixer != nullptr) {

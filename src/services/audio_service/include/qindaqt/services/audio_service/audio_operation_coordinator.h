@@ -19,7 +19,9 @@ struct OperationSubmission {
 // Owns authoritative Qt-thread publication and operation lineage. The backend
 // remains policy-neutral and cannot bypass stale-handle or payload validation.
 // The borrowed backend shares this object's Qt thread and must outlive it;
-// stop() makes every outstanding submitted operation uncertain.
+// stop() is a publication barrier and makes every outstanding submitted
+// operation uncertain. Backend run generations and snapshot lineage prevent a
+// stopped or superseded adapter run from replacing authoritative state.
 class AudioOperationCoordinator : public QObject
 {
     Q_OBJECT
@@ -39,8 +41,9 @@ Q_SIGNALS:
                             const QindaQt::Audio::OperationResult &result);
 
 private Q_SLOTS:
-    void acceptSnapshot(const QindaQt::Audio::Snapshot &snapshot);
-    void acceptBackendResult(quint64 operationId,
+    void acceptSnapshot(quint64 generation,
+                        const QindaQt::Audio::Snapshot &snapshot);
+    void acceptBackendResult(quint64 generation, quint64 operationId,
                              const QindaQt::Audio::BackendOperationOutcome &outcome);
 
 private:
@@ -55,11 +58,15 @@ private:
                                             const QString &reasonCode) const;
     [[nodiscard]] QString validateRequest(const OperationRequest &request) const;
     void makePendingUncertain(const Snapshot &observed, const QString &reasonCode);
+    void publishRestartingSnapshot();
 
     AudioBackend *m_backend = nullptr;
     Snapshot m_snapshot;
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
+    quint64 m_backendGeneration = 0;
+    quint64 m_minimumRestartEpoch = 0;
+    bool m_hasBackendSnapshot = false;
     bool m_running = false;
 };
 

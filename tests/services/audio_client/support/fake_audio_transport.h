@@ -4,6 +4,8 @@
 
 #include <qindaqt/services/audio_client/audio_transport.h>
 
+#include <functional>
+
 namespace QindaQt::Tests
 {
 
@@ -32,6 +34,9 @@ public:
                          const Audio::OperationRequest &request) override
     {
         operations.push_back({owner, requestId, request});
+        if (operationSubmitted) {
+            operationSubmitted(operations.constLast());
+        }
     }
 
     void announceOwner(const QString &owner) { Q_EMIT ownerChanged(owner); }
@@ -58,6 +63,7 @@ public:
 
     QList<Fetch> fetches;
     QList<Operation> operations;
+    std::function<void(const Operation &)> operationSubmitted;
     int startCalls = 0;
     int stopCalls = 0;
 };
@@ -73,6 +79,7 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
         | Audio::Capability::SetVolume | Audio::Capability::SetMute
         | Audio::Capability::MoveStream;
     snapshot.defaultOutput = {.epoch = epoch, .serial = 10};
+    snapshot.defaultInput = {.epoch = epoch, .serial = 20};
     snapshot.outputs = {{.handle = {.epoch = epoch, .serial = 10},
                          .kind = Audio::DeviceKind::Output,
                          .name = QStringLiteral("Output"),
@@ -84,6 +91,30 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
                          .isDefault = true,
                          .canSetVolume = true,
                          .canSetMute = true}};
+    snapshot.inputs = {{.handle = {.epoch = epoch, .serial = 20},
+                        .kind = Audio::DeviceKind::Input,
+                        .name = QStringLiteral("Input"),
+                        .description = {},
+                        .volume = 0.5,
+                        .volumeKnown = true,
+                        .muted = false,
+                        .muteKnown = true,
+                        .isDefault = true,
+                        .canSetVolume = true,
+                        .canSetMute = true}};
+    snapshot.streams = {{.handle = {.epoch = epoch, .serial = 30},
+                         .direction = Audio::StreamDirection::Playback,
+                         .applicationName = QStringLiteral("Player"),
+                         .mediaName = QStringLiteral("Music"),
+                         .target = {.epoch = epoch, .serial = 10},
+                         .targetKnown = true,
+                         .volume = 0.75,
+                         .volumeKnown = true,
+                         .muted = false,
+                         .muteKnown = true,
+                         .canSetVolume = true,
+                         .canSetMute = true,
+                         .canMove = true}};
     return snapshot;
 }
 

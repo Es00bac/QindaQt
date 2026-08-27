@@ -4,6 +4,7 @@
 
 #include <qindaqt/services/audio_client/audio_transport.h>
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 
@@ -24,7 +25,9 @@ enum class ClientState {
 // an exact D-Bus owner, publishes only validated snapshots, serializes
 // mutations, and never replays a timed-out or owner-interrupted mutation. The
 // borrowed transport must share this object's thread and outlive it; all
-// completion/error reporting is asynchronous through signals.
+// completion/error reporting is asynchronous through signals. stop() cancels
+// undelivered results, then schedules one client-stopped result for a mutation
+// that was still transport-backed; destruction safely drops queued delivery.
 class AudioClient : public QObject
 {
     Q_OBJECT
@@ -74,9 +77,12 @@ private:
     };
 
     void publishState(ClientState state, const QString &reasonCode);
+    void publishSnapshotState(const Snapshot &snapshot);
     void requestSnapshot();
     void scheduleRefetch();
     [[nodiscard]] quint64 beginOperation(const OperationRequest &request);
+    void queueOperationCompletion(quint64 requestId, OperationResult result);
+    void cancelQueuedOperationCompletions();
     void completeUncertain(const QString &reasonCode);
     [[nodiscard]] OperationResult localResult(const OperationRequest &request,
                                               OperationStatus status,
@@ -88,6 +94,7 @@ private:
     QString m_owner;
     std::optional<Snapshot> m_snapshot;
     std::optional<PendingOperation> m_operation;
+    QHash<quint64, OperationResult> m_queuedOperationCompletions;
     QTimer m_fetchTimer;
     QTimer m_operationTimer;
     QTimer m_retryTimer;

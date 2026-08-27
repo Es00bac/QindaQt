@@ -30,10 +30,15 @@ loads policy scripts, monitors hardware, starts another policy daemon, parses
 
 Core disconnect cleanup is deferred outside the disconnect signal emission.
 Stop synchronously quits and joins the worker before backend destruction.
-Outstanding core-sync completions own cancellables and tracked callback state;
-cleanup cancels them and stop keeps the GLib loop alive until every completion
-has released that state. Queued worker tasks have GLib destroy notifications so
-context teardown cannot leak a task that never ran.
+Component API loads begin only after PipeWire accepts the core, and both load
+and core-sync completions own tracked cancellables. Cleanup cancels them and
+stop keeps the GLib loop alive until every completion has released that state.
+Queued worker tasks have GLib destroy notifications so
+context teardown cannot leak a task that never ran. Immutable callbacks queued
+to Qt carry a backend-run generation; stop invalidates it before the join, and
+the coordinator rejects stopped or superseded generations. Restarting the same
+adapter advances the service epoch before new publication, so a prior run's
+handles and values cannot revive.
 WirePlumber daemon or PipeWire authority replacement advances the service
 epoch and makes pending mutations uncertain. Such mutations are never replayed.
 

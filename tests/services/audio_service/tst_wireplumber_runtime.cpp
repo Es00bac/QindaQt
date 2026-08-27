@@ -69,10 +69,17 @@ bool runCommand(const QString &program, const QStringList &arguments,
     return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
 }
 
+qsizetype openFileDescriptorCount()
+{
+    return QDir(QStringLiteral("/proc/self/fd"))
+        .entryList(QDir::AllEntries | QDir::NoDotAndDotDot)
+        .size();
+}
+
 std::optional<Snapshot> newestSnapshot(const QSignalSpy &spy)
 {
     for (qsizetype index = spy.size(); index > 0; --index) {
-        const Snapshot snapshot = spy.at(index - 1).at(0).value<Snapshot>();
+        const Snapshot snapshot = spy.at(index - 1).at(1).value<Snapshot>();
         if (snapshot.availability == Availability::Ready
             || snapshot.availability == Availability::Degraded) {
             return snapshot;
@@ -86,7 +93,7 @@ std::optional<Snapshot> latestSnapshot(const QSignalSpy &spy)
     if (spy.isEmpty()) {
         return std::nullopt;
     }
-    return spy.constLast().at(0).value<Snapshot>();
+    return spy.constLast().at(1).value<Snapshot>();
 }
 
 const Device *findDevice(const Snapshot &snapshot, const QString &name)
@@ -120,6 +127,7 @@ class WirePlumberRuntimeTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void runGenerationFencesStopAndRestart();
     void isolatedGraphOperationsAndAuthorityRestart();
 
 private:
@@ -128,6 +136,66 @@ private:
                                  ProcessGuard &wireplumber,
                                  const QProcessEnvironment &environment);
 };
+
+void WirePlumberRuntimeTests::runGenerationFencesStopAndRestart()
+{
+    registerDBusTypes();
+    qRegisterMetaType<BackendOperationOutcome>();
+    QTemporaryDir root(QStringLiteral("/tmp/qindaqt-audio-generation-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString runtime = root.filePath(QStringLiteral("runtime"));
+    const QString state = root.filePath(QStringLiteral("state"));
+    const QString config = root.filePath(QStringLiteral("config"));
+    QVERIFY(QDir().mkpath(runtime));
+    QVERIFY(QDir().mkpath(state));
+    QVERIFY(QDir().mkpath(config));
+    qputenv("XDG_RUNTIME_DIR", runtime.toUtf8());
+    qputenv("PIPEWIRE_RUNTIME_DIR", runtime.toUtf8());
+    qputenv("XDG_STATE_HOME", state.toUtf8());
+    qputenv("XDG_CONFIG_HOME", config.toUtf8());
+    qputenv("DBUS_SESSION_BUS_ADDRESS",
+            QStringLiteral("unix:path=%1/no-session-bus").arg(root.path()).toUtf8());
+    qunsetenv("PIPEWIRE_REMOTE");
+
+    WirePlumberAudioBackend backend;
+    QSignalSpy snapshots(&backend, &AudioBackend::snapshotReady);
+    const qsizetype descriptorsBefore = openFileDescriptorCount();
+    for (int iteration = 0; iteration < 250; ++iteration) {
+        QVERIFY(backend.start() != 0);
+        backend.stop();
+    }
+    const qsizetype descriptorsAfter = openFileDescriptorCount();
+    QVERIFY2(descriptorsAfter <= descriptorsBefore + 5,
+             qPrintable(QStringLiteral("FD growth after 250 cycles: %1 -> %2")
+                            .arg(descriptorsBefore)
+                            .arg(descriptorsAfter)));
+    QCoreApplication::processEvents();
+    QCOMPARE(snapshots.size(), 0);
+
+    const quint64 establishedGeneration = backend.start();
+    QTRY_VERIFY_WITH_TIMEOUT(!snapshots.isEmpty(), 5000);
+    const quint64 establishedEpoch = latestSnapshot(snapshots)->epoch;
+    QCOMPARE(snapshots.constLast().at(0).toULongLong(), establishedGeneration);
+    backend.stop();
+    const qsizetype stoppedCount = snapshots.size();
+    QTest::qWait(5);
+    QCOMPARE(snapshots.size(), stoppedCount);
+
+    const quint64 supersededGeneration = backend.start();
+    backend.stop();
+    const quint64 currentGeneration = backend.start();
+    QVERIFY(currentGeneration != supersededGeneration);
+    const qsizetype restartStart = snapshots.size();
+    QTRY_VERIFY_WITH_TIMEOUT(snapshots.size() > restartStart, 5000);
+    for (qsizetype index = restartStart; index < snapshots.size(); ++index) {
+        QCOMPARE(snapshots.at(index).at(0).toULongLong(), currentGeneration);
+    }
+    QVERIFY(latestSnapshot(snapshots)->epoch != establishedEpoch);
+    backend.stop();
+    const qsizetype finalCount = snapshots.size();
+    QTest::qWait(5);
+    QCOMPARE(snapshots.size(), finalCount);
+}
 
 void WirePlumberRuntimeTests::exerciseReconnectStress(
     WirePlumberAudioBackend &backend, QSignalSpy &snapshots, QSignalSpy &outcomes,
@@ -236,7 +304,8 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
     WirePlumberAudioBackend backend;
     QSignalSpy snapshots(&backend, &AudioBackend::snapshotReady);
     QSignalSpy outcomes(&backend, &AudioBackend::operationFinished);
-    backend.start();
+    const quint64 backendGeneration = backend.start();
+    QVERIFY(backendGeneration != 0);
     QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value(), 10000);
     Snapshot snapshot = *newestSnapshot(snapshots);
     QTRY_VERIFY_WITH_TIMEOUT(newestSnapshot(snapshots).has_value()
@@ -257,7 +326,7 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .secondary = {},
                        .volume = 0.25});
     QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 1, 5000);
-    QCOMPARE(outcomes.at(0).at(1).value<BackendOperationOutcome>().status,
+    QCOMPARE(outcomes.at(0).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Succeeded);
     backend.submit(2, {.kind = OperationKind::SetMute,
                        .primary = firstHandle,
@@ -265,7 +334,7 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .volume = 0.0,
                        .muted = true});
     QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 2, 5000);
-    QCOMPARE(outcomes.at(1).at(1).value<BackendOperationOutcome>().status,
+    QCOMPARE(outcomes.at(1).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Succeeded);
     backend.submit(3, {.kind = OperationKind::SetDefault,
                        .primary = secondHandle,
@@ -273,7 +342,7 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .volume = 0.0,
                        .muted = false});
     QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 3, 5000);
-    QCOMPARE(outcomes.at(2).at(1).value<BackendOperationOutcome>().status,
+    QCOMPARE(outcomes.at(2).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Succeeded);
 
     ProcessGuard playback;
@@ -295,7 +364,7 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .volume = 0.0,
                        .muted = false});
     QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 4, 5000);
-    QCOMPARE(outcomes.at(3).at(1).value<BackendOperationOutcome>().status,
+    QCOMPARE(outcomes.at(3).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Succeeded);
     playback.stop();
 
@@ -321,9 +390,9 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
                        .volume = 0.0,
                        .muted = false});
     QTRY_COMPARE_WITH_TIMEOUT(outcomes.size(), 5, 5000);
-    QCOMPARE(outcomes.at(4).at(1).value<BackendOperationOutcome>().status,
+    QCOMPARE(outcomes.at(4).at(2).value<BackendOperationOutcome>().status,
              BackendOperationStatus::Failed);
-    QCOMPARE(outcomes.at(4).at(1).value<BackendOperationOutcome>().reasonCode,
+    QCOMPARE(outcomes.at(4).at(2).value<BackendOperationOutcome>().reasonCode,
              QStringLiteral("stale-handle"));
 
     exerciseReconnectStress(backend, snapshots, outcomes, wireplumber, environment);

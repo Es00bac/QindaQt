@@ -137,6 +137,11 @@ void AudioClient::stop()
     if (m_state == ClientState::Stopped) {
         return;
     }
+    // AGENT-GUARD: Results accepted before stop but not yet published belong to
+    // the cancelled client lifetime. Drop those first, but retain the distinct
+    // asynchronous Uncertain result created here for a mutation that is still
+    // transport-backed. The receiver-context queue drops it on destruction.
+    cancelQueuedOperationCompletions();
     completeUncertain(QStringLiteral("client-stopped"));
     m_fetchTimer.stop();
     m_operationTimer.stop();
@@ -193,6 +198,24 @@ void AudioClient::publishState(const ClientState state, const QString &reasonCod
     m_state = state;
     m_reasonCode = reasonCode;
     Q_EMIT stateChanged(m_state, m_reasonCode);
+}
+
+void AudioClient::publishSnapshotState(const Snapshot &snapshot)
+{
+    switch (snapshot.availability) {
+    case Availability::Starting:
+        publishState(ClientState::Starting, snapshot.reasonCode);
+        break;
+    case Availability::Ready:
+        publishState(ClientState::Ready, snapshot.reasonCode);
+        break;
+    case Availability::Unavailable:
+        publishState(ClientState::Unavailable, snapshot.reasonCode);
+        break;
+    case Availability::Degraded:
+        publishState(ClientState::Degraded, snapshot.reasonCode);
+        break;
+    }
 }
 
 void AudioClient::acceptOwner(const QString &owner)
@@ -268,31 +291,46 @@ void AudioClient::acceptSnapshotReply(const QString &owner, const quint64 reques
     m_fetchRequestId = 0;
 
     const ValidationResult validation = validateSnapshot(snapshot);
-    const bool regressed = m_snapshot.has_value() && snapshot.epoch == m_snapshot->epoch
-        && snapshot.revision < m_snapshot->revision;
-    if (!transportSuccess || !validation.accepted || regressed) {
+    bool lineageContradiction = false;
+    bool exactDuplicate = false;
+    if (m_snapshot.has_value()) {
+        if (snapshot.epoch < m_snapshot->epoch) {
+            lineageContradiction = true;
+        } else if (snapshot.epoch == m_snapshot->epoch) {
+            if (snapshot.revision < m_snapshot->revision) {
+                lineageContradiction = true;
+            } else if (snapshot.revision == m_snapshot->revision) {
+                exactDuplicate = snapshot == *m_snapshot;
+                lineageContradiction = !exactDuplicate;
+            }
+        }
+    }
+    if (!transportSuccess || !validation.accepted || lineageContradiction) {
         publishState(ClientState::Unavailable,
                      !transportSuccess ? reasonCode : QStringLiteral("malformed-snapshot"));
         scheduleRefetch();
         return;
     }
 
-    m_snapshot = snapshot;
-    switch (snapshot.availability) {
-    case Availability::Starting:
-        publishState(ClientState::Starting, snapshot.reasonCode);
-        break;
-    case Availability::Ready:
-        publishState(ClientState::Ready, snapshot.reasonCode);
-        break;
-    case Availability::Unavailable:
-        publishState(ClientState::Unavailable, snapshot.reasonCode);
-        break;
-    case Availability::Degraded:
-        publishState(ClientState::Degraded, snapshot.reasonCode);
-        break;
+    if (exactDuplicate) {
+        publishSnapshotState(snapshot);
+        if (m_refetchNeeded) {
+            requestSnapshot();
+        }
+        return;
     }
+    const bool authorityReplaced = m_snapshot.has_value()
+        && snapshot.epoch != m_snapshot->epoch;
+    m_snapshot = snapshot;
+    publishSnapshotState(snapshot);
     Q_EMIT snapshotChanged(snapshot);
+    if (authorityReplaced) {
+        // AGENT-CONTRACT: Epochs are strictly increasing only within this
+        // exact service owner. A new accepted epoch retires the dispatched
+        // mutation immediately; a delayed old-epoch reply is never allowed to
+        // restore success or trigger a replay.
+        completeUncertain(QStringLiteral("authority-replaced"));
+    }
     if (m_refetchNeeded) {
         requestSnapshot();
     }
@@ -322,20 +360,20 @@ quint64 AudioClient::beginOperation(const OperationRequest &request)
     }
     const quint64 requestId = m_nextRequestId++;
     if (m_operation.has_value()) {
-        Q_EMIT operationCompleted(
+        queueOperationCompletion(
             requestId,
             localResult(request, OperationStatus::Busy, QStringLiteral("operation-busy")));
         return requestId;
     }
     if (m_owner.isEmpty() || !m_snapshot.has_value()) {
-        Q_EMIT operationCompleted(
+        queueOperationCompletion(
             requestId,
             localResult(request, OperationStatus::Rejected, QStringLiteral("unavailable")));
         return requestId;
     }
     const QString rejection = preflightOperation(*m_snapshot, request);
     if (!rejection.isEmpty()) {
-        Q_EMIT operationCompleted(
+        queueOperationCompletion(
             requestId,
             localResult(request,
                         rejection == QStringLiteral("unsupported")
@@ -404,7 +442,7 @@ void AudioClient::completeUncertain(const QString &reasonCode)
     const quint64 observedEpoch = m_snapshot.has_value() ? m_snapshot->epoch : pending.epoch;
     const quint64 observedRevision = m_snapshot.has_value() ? m_snapshot->revision
                                                              : pending.revision;
-    Q_EMIT operationCompleted(
+    queueOperationCompletion(
         pending.requestId,
         {.kind = pending.request.kind,
          .status = OperationStatus::Uncertain,
@@ -434,8 +472,11 @@ void AudioClient::acceptOperationReply(const QString &owner, const quint64 reque
     const bool exactInitiator = result.kind == pending.request.kind
         && result.initiatingEpoch == pending.epoch
         && result.initiatingRevision == pending.revision;
-    if (!transportSuccess || !validation.accepted || !exactInitiator) {
-        Q_EMIT operationCompleted(
+    const bool currentSuccessLineage = result.status != OperationStatus::Succeeded
+        || (m_snapshot.has_value() && result.observedEpoch == m_snapshot->epoch);
+    if (!transportSuccess || !validation.accepted || !exactInitiator
+        || !currentSuccessLineage) {
+        queueOperationCompletion(
             requestId,
             {.kind = pending.request.kind,
              .status = OperationStatus::Uncertain,
@@ -452,7 +493,7 @@ void AudioClient::acceptOperationReply(const QString &owner, const quint64 reque
         return;
     }
 
-    Q_EMIT operationCompleted(requestId, result);
+    queueOperationCompletion(requestId, result);
     requestSnapshot();
 }
 

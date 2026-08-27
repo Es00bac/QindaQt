@@ -107,11 +107,19 @@ returns `Uncertain`; clients refetch but never replay it. A late result for an
 old owner, request ID, epoch, revision, or operation kind is ignored or treated
 as malformed.
 
+The public Qt client returns a nonzero request ID before it emits that request's
+completion. Local rejection, busy/unsupported classification, transport reply,
+timeout, and uncertainty all use the same queued exactly-once completion path.
+Explicit stop cancels an undelivered local/accepted result, while a mutation
+still awaiting its transport result completes asynchronously as
+`Uncertain/client-stopped`; client destruction drops queued delivery safely.
+
 Common stable reason codes include `unavailable`, `stale-handle`,
 `invalid-volume`, `incompatible-target`, `unsupported`,
 `too-many-operations`, `operation-timeout`, `owner-replaced`,
-`wireplumber-replaced`, `pipewire-replaced`, `malformed-snapshot`, and
-`malformed-result`. Callers must branch on status and reason code rather than
+`authority-replaced`, `client-stopped`, `wireplumber-replaced`,
+`pipewire-replaced`, `malformed-snapshot`, `malformed-result`, and
+`backend-malformed`. Callers must branch on status and reason code rather than
 diagnostic text.
 
 ## Compatibility

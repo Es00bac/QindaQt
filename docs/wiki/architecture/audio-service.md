@@ -31,9 +31,10 @@ Every public handle is `(epoch, object.serial)`. `object.serial` is PipeWire's
 stable object serial, not a transient bound object ID. Bound IDs are used only
 inside one GLib worker turn when calling a WirePlumber API.
 
-The service starts with a nonzero random epoch. It advances that epoch when the
-PipeWire connection is replaced or the observed `wireplumber.daemon` client
-serial disappears or changes. All handles from an earlier epoch are stale.
+The service starts with a nonzero random epoch. Within one resident service
+owner it strictly increases that epoch when the PipeWire connection is replaced
+or the observed `wireplumber.daemon` client serial disappears or changes. All
+handles from an earlier epoch are stale.
 Pending operations cross that boundary as `Uncertain`; neither the resident
 coordinator nor the public client replays them. A D-Bus unique-owner change is
 an independent client authority change: the client discards its snapshot,
@@ -42,8 +43,14 @@ marks an in-flight mutation uncertain, and fetches from the new exact owner.
 Snapshot revisions are monotonic within an epoch. A `Changed(epoch, revision)`
 signal carries no graph data and only prompts a fetch. The client subscribes to
 the current unique owner rather than the well-known name, rejects late replies,
-coalesces invalidations while a fetch is active, and rejects regressing or
-malformed snapshots before publication.
+coalesces invalidations while a fetch is active, and rejects older epochs,
+regressing revisions, equal-revision content contradictions, and malformed
+snapshots before publication. Public mutation results are always queued until
+after the request ID returns; stop cancels undelivered results except for one
+queued `client-stopped` uncertainty for a still-dispatched mutation, and object
+destruction safely drops that queued delivery. An accepted new epoch immediately
+makes any dispatched mutation uncertain; a delayed old-epoch result cannot
+restore success and is never replayed.
 
 ## WirePlumber integration
 
@@ -52,7 +59,17 @@ One dedicated standard thread creates and owns a private `GMainContext`,
 all other GObject references. Qt never receives those pointers. Only bounded
 `Snapshot` and `BackendOperationOutcome` value copies cross to the Qt thread by
 queued invocation; requests cross in the other direction as copied typed
-values.
+values. Every adapter run has a fresh generation carried by both value types.
+Generations are opaque equality tokens; they are never ordered numerically.
+Stop invalidates that generation before joining the worker, and both the adapter
+and coordinator drop queued values from stopped or superseded runs. Reusing the
+backend advances the public service epoch before the new run can publish.
+
+Core API component loads begin only after PipeWire accepts the private core.
+Every component load and operation sync owns a cancellable tracked by the GLib
+worker. Stop cancels all such work and keeps the context alive until every
+completion callback releases its state, so thread join is both a callback and
+resource barrier rather than merely a loop exit.
 
 The adapter loads WirePlumber 0.5's public default-nodes and mixer API modules.
 It observes nodes, links, clients, and default metadata. It uses:
@@ -83,6 +100,12 @@ enum values, and excess concurrency. A timeout, service-owner replacement,
 WirePlumber replacement, or PipeWire disconnect makes a dispatched operation
 uncertain because completion cannot be proven. Callers must refetch and show
 that uncertainty; they must not retry automatically.
+
+Backend operation outcomes are untrusted platform values. The coordinator
+accepts only known status values, bounded stable reason-code tokens, safe
+bounded diagnostics, and valid lineage. Any malformed field replaces the whole
+outcome with the protocol-valid `Failed/backend-malformed` classification; raw
+adapter text never reaches D-Bus.
 
 ## Activation and hardening
 
@@ -116,8 +139,12 @@ Focused protocol tests cover exact signatures, round trips, aggregate counts,
 ordering, lineage, malformed enums/text/levels, and oversized arrays. Fake
 backend/client tests cover model publication, operation validation, stale
 handles, exact owner/revision handling, invalidation/refetch, timeout,
-replacement, and no replay. Private `dbus-daemon` tests cover successive owners
-and executable activation/lifecycle.
+replacement, equal-lineage contradictions, queued exactly-once completion,
+stopped/superseded backend generations, malformed backend outcomes, and no
+replay. A 250-cycle production-backend test against an unreachable private
+runtime bounds file-descriptor growth while exercising immediate start/stop and
+callback cancellation. Private `dbus-daemon` tests cover successive owners and executable
+activation/lifecycle.
 
 The production adapter test launches disposable PipeWire and WirePlumber
 processes against a private runtime directory and an invalid private D-Bus
