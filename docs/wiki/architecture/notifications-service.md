@@ -140,14 +140,12 @@ library. The first owner/epoch snapshot is baselined without replaying older
 items as new popups. Detailed UI behavior and limits are in
 [Notification presentation](../shell/notification-presentation.md).
 
-Do Not Disturb remains entirely on the shell side of this boundary. A focused,
-injected interruption policy defaults off for each shell lifetime. While on, it
-removes and suppresses low- and normal-urgency popups but explicitly admits
-critical urgency. Active and Recent projection still retain notifications, and
-turning the policy off does not replay suppressed entries. Neither the resident
-host nor this private protocol receives a new setting, method, or field. The
-decision is recorded in
-[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+Do Not Disturb remains entirely on the shell side of this boundary. Settings1
+persists and publishes the preference; a scoped shell bridge applies confirmed
+values to the focused interruption policy. Low/normal popups are suppressed,
+critical urgency bypasses, Active/Recent remain, and disabling does not replay.
+Neither the host nor private notification protocol gains a setting or field.
+See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
 Lock privacy is a separate, higher-priority shell policy and likewise does not
 change the presentation wire. The session supervisor supplies KWin's direct
@@ -260,9 +258,9 @@ The following are not yet implemented:
 - live qualification of the production keyboard path, compositor focus
   acceptance, and complete accessibility behavior;
 - popup-safe icon/image loading and activation-token acquisition;
-- D-Bus activation and post-start child/bus-loss restart policy;
-- sound, persistent disk history, Do Not Disturb settings persistence,
-  scheduling/inhibition integration, and restart migration;
+- post-start notification-child restart policy;
+- sound, persistent disk history, Do Not Disturb scheduling/inhibition, and
+  live desktop interaction qualification;
 - live lock-transition, multi-seat/session-switching, alternative-locker, and
   suspend/resume qualification, plus any future least-authority lock-screen
   presenter;

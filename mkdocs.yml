@@ -37,6 +37,7 @@ nav:
   - Reference:
       - Compositor control 1.0: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
+      - Settings1 protocol 1: reference/settings1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
@@ -60,3 +61,4 @@ nav:
       - "ADR-0009: KGlobalAccel shell shortcuts": adr/0009-use-kglobalaccel-for-shell-shortcuts.md
       - "ADR-0010: Shell notification interruption policy": adr/0010-inject-shell-notification-interruption-policy.md
       - "ADR-0011: Authenticated lock-state privacy": adr/0011-gate-notifications-on-authenticated-lock-state.md
+      - "ADR-0012: Persistent notification quieting": adr/0012-persist-notification-quieting-through-settings1.md

@@ -52,7 +52,7 @@ The repository currently builds and tests:
   authoritative failure recovery, bounded busy/error presentation, a dedicated
   entry in every stock profile, and a shell-owned `Meta+N` action registered
   through KF6 GlobalAccel without applet notification authority, plus injected
-  session-volatile Do Not Disturb with immediate low/normal popup suppression,
+  Settings1-persisted Do Not Disturb with immediate low/normal popup suppression,
   an explicit critical bypass, Active/Recent retention, and no replay on
   disable, plus a compositor-PID/unique-owner-authenticated KScreenLocker
   monitor that clears and denies every notification projection unless the
@@ -73,7 +73,7 @@ is not yet a daily-use desktop session: panel windows, the clock, and the
 bounded notification presentation/entry path are implemented, but live
 notification shortcut dispatch, compositor focus acceptance, and Do Not Disturb
 interaction are not yet qualified. Live lock transitions are also not yet
-qualified. Do Not Disturb persistence remains pending, as do alternative-locker
+qualified. Do Not Disturb live desktop interaction remains pending, as do alternative-locker
 and multi-seat support. Audio, power, Bluetooth, menu, task, launcher, tray, and
 clipboard entries remain unavailable or visual fixtures rather than live
 integrations.
@@ -85,7 +85,7 @@ integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panel and notification surfaces, live visibility transport/orchestration, editor policy, gated applet runtime with clock/notification-center entries, authenticated notification stack, visible recoverable operations, shell-owned global toggle, session-volatile Do Not Disturb, and authenticated fail-closed lock privacy implemented; notification live shortcut/focus/DND/lock proof, DND persistence, reveal UI, and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels/notifications, authenticated stack, Settings1-persisted DND with ordinary settings page and fixed route, and fail-closed lock privacy implemented; live shortcut/focus/DND/lock proof, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | Planned |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | Planned |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

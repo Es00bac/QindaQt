@@ -14,6 +14,8 @@ private slots:
     void rejectsMismatchedDomainAndDuplicateKey();
     void validatesTypesBoundsAndEnums();
     void normalizesJsonNumericDefaults();
+    void doNotDisturbDefaultsToDisabled();
+    void rejectsAnUnsupportedSchemaVersion();
 };
 
 void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
@@ -21,7 +23,7 @@ void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
     ValidationResult validation;
     QString error;
     const auto schema = SettingsSchema::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), &validation, &error);
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), &validation, &error);
     QVERIFY2(schema.has_value(), qPrintable(error));
     QVERIFY(validation.isValid());
     QCOMPARE(schema->systemDefaults().size(), schema->definitions().size());
@@ -45,7 +47,7 @@ void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
 void SettingsSchemaTests::rejectsMismatchedDomainAndDuplicateKey()
 {
     constexpr auto invalid = R"json({
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "settings": [
         {"key":"appearance.theme","domain":"appearance","type":"string","default":"dark"},
         {"key":"appearance.theme","domain":"appearance","type":"string","default":"light"},
@@ -66,7 +68,7 @@ void SettingsSchemaTests::validatesTypesBoundsAndEnums()
 {
     QString error;
     const auto schema = SettingsSchema::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error);
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
     QVERIFY2(schema.has_value(), qPrintable(error));
 
     QVERIFY(schema->validateValue(QStringLiteral("appearance.blurEnabled"), false).isValid());
@@ -80,7 +82,7 @@ void SettingsSchemaTests::normalizesJsonNumericDefaults()
 {
     QString error;
     const auto schema = SettingsSchema::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error);
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
     QVERIFY2(schema.has_value(), qPrintable(error));
 
     const auto integer = schema->systemDefaults().value(QStringLiteral("panels.autoHideDelayMs"));
@@ -89,6 +91,34 @@ void SettingsSchemaTests::normalizesJsonNumericDefaults()
     QCOMPARE(integer.toLongLong(), 250);
     QCOMPARE(number.metaType().id(), QMetaType::Double);
     QCOMPARE(number.toDouble(), 10.0);
+}
+
+void SettingsSchemaTests::doNotDisturbDefaultsToDisabled()
+{
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+    const auto *definition = schema->definition(QStringLiteral("services.doNotDisturb"));
+    QVERIFY(definition != nullptr);
+    QVERIFY(definition->domain == SettingDomain::Services);
+    QVERIFY(definition->type == SettingValueType::Boolean);
+    QCOMPARE(schema->systemDefaults().value(QStringLiteral("services.doNotDisturb")).toBool(), false);
+    QVERIFY(schema->validateValue(QStringLiteral("services.doNotDisturb"), true).isValid());
+    QVERIFY(!schema->validateValue(QStringLiteral("services.doNotDisturb"), QStringLiteral("on")).isValid());
+}
+
+void SettingsSchemaTests::rejectsAnUnsupportedSchemaVersion()
+{
+    QString error;
+    const auto active = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error);
+    QVERIFY(!active.has_value());
+    QVERIFY(error.contains(QStringLiteral("unsupported schemaVersion 1")));
+    const auto legacy = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
+    QVERIFY2(legacy.has_value(), qPrintable(error));
+    QVERIFY(legacy->definition(QStringLiteral("services.doNotDisturb")) == nullptr);
 }
 
 QTEST_GUILESS_MAIN(SettingsSchemaTests)

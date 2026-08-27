@@ -31,3 +31,11 @@ Implement the persistent notification-quieting outcome in
 an isolated worktree. Before integration, a separate worker must review the
 exact candidate commit for persistence atomicity, D-Bus owner authentication,
 restart behavior, privacy precedence, accessibility, and dependency direction.
+
+The accepted implementation boundary is immutable schema v1 plus active v2,
+generic recursively bounded Settings1, an independently activatable service,
+exact-owner asynchronous clients, fail-quiet/retain-last shell composition, and
+an ordinary Notifications settings page. Settings1 owner binding is lineage
+fencing for same-user operations, not executable/PID attestation. Do not couple
+the service to the essential host/shell supervisor or add a settings applet,
+layer-shell settings UI, or global shortcut.

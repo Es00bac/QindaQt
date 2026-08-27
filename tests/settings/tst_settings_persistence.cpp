@@ -28,7 +28,7 @@ void SettingsPersistenceTests::initTestCase()
 {
     QString error;
     m_schema = SettingsSchema::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error);
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
     QVERIFY2(m_schema.has_value(), qPrintable(error));
 }
 
@@ -50,7 +50,7 @@ void SettingsPersistenceTests::roundTripsAUserDocument()
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const auto path = directory.filePath(QStringLiteral("settings.json"));
-    const SettingsDocument document{.schemaVersion = 1,
+    const SettingsDocument document{.schemaVersion = 2,
                                     .layer = SettingLayer::UserOverrides,
                                     .values = {{QStringLiteral("appearance.theme"),
                                                 QStringLiteral("qinda-light")},
@@ -68,7 +68,7 @@ void SettingsPersistenceTests::roundTripsAUserDocument()
 
 void SettingsPersistenceTests::rejectsVolatileAndInvalidDocuments()
 {
-    const SettingsDocument session{.schemaVersion = 1,
+    const SettingsDocument session{.schemaVersion = 2,
                                    .layer = SettingLayer::SessionOverrides,
                                    .values = {}};
     QString error;
@@ -76,7 +76,7 @@ void SettingsPersistenceTests::rejectsVolatileAndInvalidDocuments()
     QVERIFY(error.contains(QStringLiteral("not persistable")));
 
     constexpr auto invalid = R"json({
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "layer": "user-overrides",
       "values": {"windowManagement.snapDistance": 999, "unknown.key": true}
     })json";
@@ -90,7 +90,7 @@ void SettingsPersistenceTests::failedSavePreservesExistingFile()
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const auto path = directory.filePath(QStringLiteral("settings.json"));
-    const SettingsDocument valid{.schemaVersion = 1,
+    const SettingsDocument valid{.schemaVersion = 2,
                                  .layer = SettingLayer::UserOverrides,
                                  .values = {{QStringLiteral("appearance.blurEnabled"), false}}};
     QString error;
@@ -101,7 +101,7 @@ void SettingsPersistenceTests::failedSavePreservesExistingFile()
     beforeFile.close();
 
     const SettingsDocument invalid{
-        .schemaVersion = 1,
+        .schemaVersion = 2,
         .layer = SettingLayer::UserOverrides,
         .values = {{QStringLiteral("windowManagement.snapDistance"), 999}}};
     QVERIFY(!SettingsFileStore::save(path, invalid, *m_schema, nullptr, &error));

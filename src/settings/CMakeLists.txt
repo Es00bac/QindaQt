@@ -8,6 +8,7 @@ target_sources(
     PRIVATE
         src/layered_settings.cpp
         src/settings_document.cpp
+        src/settings_migration.cpp
         src/settings_schema.cpp
         src/settings_transaction.cpp
         src/settings_types.cpp
@@ -19,6 +20,7 @@ target_sources(
         FILES
             include/qindaqt/settings/layered_settings.h
             include/qindaqt/settings/settings_document.h
+            include/qindaqt/settings/settings_migration.h
             include/qindaqt/settings/settings_schema.h
             include/qindaqt/settings/settings_transaction.h
             include/qindaqt/settings/settings_types.h
@@ -31,7 +33,7 @@ qindaqt_enable_warnings(qindaqt_settings)
 target_compile_definitions(
     qindaqt_settings
     PUBLIC
-        QINDAQT_SETTINGS_SCHEMA_VERSION=1
+        QINDAQT_SETTINGS_SCHEMA_VERSION=2
 )
 
 install(

@@ -15,8 +15,13 @@ class QScreen;
 namespace QindaQt::Services::NotificationPresentationModel {
 class NotificationPresentationController;
 }
+namespace QindaQt::Services::SettingsClient {
+class DoNotDisturbController;
+}
 
 namespace QindaQt::Shell {
+
+class SettingsRouteLauncher;
 
 class NotificationWindowController final {
 public:
@@ -24,6 +29,8 @@ public:
         QQmlEngine &engine,
         Services::NotificationPresentationModel::NotificationPresentationController &
             presentation,
+        Services::SettingsClient::DoNotDisturbController &quietingSettings,
+        SettingsRouteLauncher &settingsLauncher,
         QVariantMap theme);
     ~NotificationWindowController();
 
@@ -42,6 +49,8 @@ private:
     QQmlEngine &m_engine;
     Services::NotificationPresentationModel::NotificationPresentationController &
         m_presentation;
+    Services::SettingsClient::DoNotDisturbController &m_quietingSettings;
+    SettingsRouteLauncher &m_settingsLauncher;
     QVariantMap m_theme;
     std::unique_ptr<QQmlComponent> m_popupComponent;
     std::unique_ptr<QQmlComponent> m_centerComponent;

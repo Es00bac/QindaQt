@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Settings
+Comment=Configure QindaQt
+Exec=qindaqt-settings
+Icon=preferences-system
+Terminal=false
+Categories=Settings;DesktopSettings;Qt;
+StartupNotify=true

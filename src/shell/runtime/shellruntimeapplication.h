@@ -46,6 +46,10 @@ namespace QindaQt::Services::NotificationPresentationPolicy {
 class NotificationInterruptionPolicy;
 class NotificationPrivacyPolicy;
 }
+namespace QindaQt::Services::SettingsClient {
+class SettingsClient;
+class QtSettingsTransport;
+}
 
 namespace QindaQt::Services::SessionLockState {
 class QtSessionLockTransport;
@@ -59,6 +63,8 @@ class KGlobalAccelShortcutRegistrar;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
+class NotificationQuietingSettingsBridge;
+class SettingsRouteLauncher;
 
 class ShellRuntimeApplication final : public QObject {
     Q_OBJECT
@@ -117,6 +123,11 @@ private:
     std::unique_ptr<Services::NotificationPresentationPolicy::
                         NotificationPrivacyPolicy>
         m_notificationPrivacyPolicy;
+    std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
+        m_settingsTransport;
+    std::unique_ptr<Services::SettingsClient::SettingsClient> m_settingsClient;
+    std::unique_ptr<NotificationQuietingSettingsBridge> m_quietingSettingsBridge;
+    std::unique_ptr<SettingsRouteLauncher> m_settingsRouteLauncher;
     std::unique_ptr<Services::NotificationPresentationModel::
                         NotificationPresentationController>
         m_notificationPresentation;

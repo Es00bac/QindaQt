@@ -16,7 +16,8 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0007](0007-layer-shell-panel-surfaces.md) | Accepted | Use LayerShellQt behind a QindaQt panel-surface boundary |
 | [ADR-0008](0008-lean-notification-service.md) | Accepted | Own a bounded QtDBus notification service without Plasma runtime |
 | [ADR-0009](0009-use-kglobalaccel-for-shell-shortcuts.md) | Accepted | Use KGlobalAccel for user-remappable shell-wide shortcuts |
-| [ADR-0010](0010-inject-shell-notification-interruption-policy.md) | Accepted | Inject session-volatile notification interruption policy on the shell side |
+| [ADR-0010](0010-inject-shell-notification-interruption-policy.md) | Accepted; lifetime/UI clause superseded | Inject notification interruption policy on the shell side |
 | [ADR-0011](0011-gate-notifications-on-authenticated-lock-state.md) | Accepted | Gate full notification presentation on owner/PID-authenticated KWin lock state |
+| [ADR-0012](0012-persist-notification-quieting-through-settings1.md) | Accepted | Persist notification quieting through an activatable Settings1 authority |
 
 Numbers are never reused, including for rejected or superseded records.

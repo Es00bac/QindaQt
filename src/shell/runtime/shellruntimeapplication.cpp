@@ -6,7 +6,9 @@
 #include "notificationcenterappletaccess.h"
 #include "notificationcentershortcut.h"
 #include "notificationwindowcontroller.h"
+#include "notificationquietingsettingsbridge.h"
 #include "runtimepanelwindowfactory.h"
+#include "settingsroutelauncher.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/services/notification_presentation/presentation_token_channel.h"
@@ -17,6 +19,8 @@
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 #include "qindaqt/services/session_lock_state/qt_session_lock_transport.h"
 #include "qindaqt/services/session_lock_state/session_lock_state_monitor.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_layout/panel_layout_solver.h"
 #include "qindaqt/shell_orchestration/output_inventory_matcher.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -219,6 +223,14 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             NotificationPresentationPolicy::NotificationInterruptionPolicy>();
         m_notificationPrivacyPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationPrivacyPolicy>();
+        m_settingsTransport = std::make_unique<Services::SettingsClient::QtSettingsTransport>(
+            QDBusConnection::sessionBus());
+        m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
+            *m_settingsTransport, QStringList{QStringLiteral("services.doNotDisturb")});
+        m_quietingSettingsBridge =
+            std::make_unique<NotificationQuietingSettingsBridge>(
+                *m_settingsClient, *m_notificationInterruptionPolicy);
+        m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient, *m_notificationInterruptionPolicy,
@@ -304,8 +316,16 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             resetRuntime();
             return false;
         }
+        QString settingsError;
+        if (!m_settingsClient->start(&settingsError)) {
+            qWarning().noquote()
+                << "QindaQt shell could not start Settings1; notifications remain quiet"
+                << "until a baseline is available:" << settingsError;
+        }
         m_notificationWindows = std::make_unique<NotificationWindowController>(
-            m_engine, *m_notificationPresentation, m_themes.current());
+            m_engine, *m_notificationPresentation,
+            m_quietingSettingsBridge->controller(), *m_settingsRouteLauncher,
+            m_themes.current());
         m_globalShortcutRegistrar =
             std::make_unique<KGlobalAccelShortcutRegistrar>();
         m_notificationCenterShortcut =
@@ -459,6 +479,10 @@ void ShellRuntimeApplication::resetRuntime()
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();
     m_notificationWindows.reset();
+    m_settingsRouteLauncher.reset();
+    m_quietingSettingsBridge.reset();
+    m_settingsClient.reset();
+    m_settingsTransport.reset();
     m_interactions.reset();
     m_visibilityClient.reset();
     m_visibilityTransport.reset();

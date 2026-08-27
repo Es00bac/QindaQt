@@ -1,81 +1,86 @@
 # Settings model and service boundary
 
-QindaQt settings use a validated, schema-versioned model before they cross a
-process boundary or reach a control-panel page. The current C++ foundation owns
-schema loading, layered resolution, optimistic transactions, change sets, and
-atomic JSON persistence. The `org.qindaqt.Settings1` D-Bus service and visual
-settings center remain later slices; neither may bypass this model.
+`qindaqt-settings-service` is the sole authority for QindaQt user-settings
+persistence, revision order, migration, and change publication. It owns the
+session-bus name `org.qindaqt.Settings1` and is independently D-Bus activatable;
+it is not an essential `qindaqt-session` child and has no compositor,
+notification-presenter, or lock authority.
 
-## Resolution order
+## Schema and resolution
+
+The active persisted schema is v2. Immutable
+`data/settings/schema-v1.json` remains accepted only as a migration input. V2
+adds `services.doNotDisturb`, Boolean, default `false`; it does not repurpose
+`services.notifications`. A valid v1 profile/user document is completely
+validated against v1, copied to a v2 candidate, validated against v2, and saved
+as v2. The new key remains absent so normal system-default resolution supplies
+`false`. Corrupt, wrong-layer, stale/unsupported, or invalid migrated input
+fails without mutation.
 
 Settings resolve from highest to lowest precedence:
 
 1. volatile session overrides;
 2. persisted user overrides;
 3. persisted profile defaults; and
-4. system defaults declared by the schema.
+4. schema system defaults.
 
-Every schema key has one normalized system default, so an effective read of a
-known key is never ambiguous. Removing a value from a higher layer reveals the
-next value and records both source layers in the resulting change set. Session
-overrides are never written to disk.
+Settings1 exposes ordinary same-user writes to user overrides only. Exact
+service-owner binding is lineage fencing against stale replies and signals; it
+does not attest a PID or executable and is not a security boundary against the
+session user.
 
-## Atomic updates
+## Atomic commits
 
-A caller begins a transaction against a mutable layer and captures the current
-revision. It may stage any number of set and remove operations. Commit validates
-the complete candidate layer, then either publishes every operation or publishes
-none. A raw-layer mutation advances the revision exactly once; a semantic no-op
-keeps the existing revision. A stale revision returns a conflict instead of
-overwriting newer work. System defaults are read-only.
+`SettingsRepository` owns one authoritative `LayeredSettings` value. For each
+optimistic transaction it validates and applies operations to a clone, writes
+the clone's user document with `QSaveFile`, then swaps the authoritative model
+and publishes changed-key invalidation. A save failure leaves memory, file,
+revision, and publication unchanged. A raw no-op does not write, increment, or
+signal. Stale revisions conflict and an exhausted `quint64` revision returns a
+typed terminal failure rather than wrapping.
 
-Successful changes identify touched keys and the subset whose effective value
-or source actually changed. This is the future notification payload for
-`org.qindaqt.Settings1`; presentation code should refresh only the owning pages
-and live previews.
+A committed file with a lost reply is possible at any IPC boundary. Clients
+therefore classify timeout, owner change, and transport loss during a write as
+uncertain, never replay the operation, and fetch a complete authoritative
+snapshot.
 
-## Schema v1 domains
+## Wire and client lineage
 
-The shipped schema in `data/settings/schema-v1.json` covers appearance,
-wallpaper and animation; font family, size, antialiasing, hinting and subpixel
-order; displays and fractional scaling; pointer and keyboard input; panels;
-window docking and focus; accessibility; and desktop-service preferences.
-Definitions carry an exact type plus optional numeric ranges, enumerated values,
-and non-empty constraints.
+The [Settings1 protocol](../reference/settings1-v1.md) is generic rather than
+Do-Not-Disturb-specific. It supports scoped snapshots and one bounded
+`CommitUserTransaction` over every JSON-native value shape accepted by active
+schema keys, including nested display and panel objects. UTF-8 bytes, aggregate
+bytes, nodes, depth, list entries, map entries, requested keys, operations, and
+changed keys are all bounded before schema evaluation.
 
-Persisted profile and user documents include `schemaVersion`, their exact
-`layer`, and a `values` object. Loading rejects unknown keys, incorrect types,
-invalid constraints, or an unknown/non-persistable declared layer. Saving uses
-`QSaveFile`, so a failed write cannot leave a partially replaced settings
-document.
+The asynchronous client watches activation/owner change and local bus
+disconnect, subscribes to `SettingsChanged` from the exact unique owner before
+requesting its baseline, and targets that owner for every call. The service
+epoch is fresh per process; revisions compare only inside `(unique owner,
+epoch)`. Replacement and late old-owner traffic cannot update published state.
 
-## Process contract
+## Do Not Disturb consumers
 
-The future settings service owns persistent files, migrations, revision order,
-preview/commit/rollback coordination, and change notification. The settings
-center is an ordinary client. Compositor and platform adapters consume scoped
-changes through their public clients; they do not read the JSON files or link
-to settings UI objects.
+The generic client has a DND-scoped controller with Loading, Ready, Saving,
+Conflict, and Unavailable projections. A conflict refreshes authority and
+requires explicit **Apply my choice**; an uncertain result exposes last
+confirmed state and requires refresh, never an automatic resubmit.
 
-## Current Do Not Disturb boundary
+Shell composition injects confirmed values into the persistence-neutral
+notification interruption policy. Before its first authenticated Settings1
+baseline the bridge enables DND to fail quiet. After a baseline it retains the
+last confirmed value across service, owner, or bus loss. This affects popup
+interruption only. The independent authenticated lock privacy gate always
+outranks DND and suppresses even critical presentation when state is not
+conclusively unlocked.
 
-The implemented notification Do Not Disturb switch is deliberately not yet a
-persisted setting. One interruption-policy instance starts disabled and lives
-only for the current production-shell lifetime. The existing
-`services.notifications` schema-v1 key is a desktop-service preference; it is
-not silently repurposed as Do Not Disturb.
+`qindaqt-settings --page notifications` is a normal Qt Quick application. It
+links only the public settings client/controller, not shell or notification
+presentation internals. The shell's quick toggle uses that same controller;
+presentation DND is read-only to QML. The notification-center applet remains a
+read-only indicator. A fixed **Notification settings…** action opens the
+ordinary app without exposing arbitrary process-launch capability.
 
-A future schema revision and `org.qindaqt.Settings1` adapter may define a
-dedicated setting, initialize the shell-owned policy, and subscribe it to
-committed changes. The settings model/service will own persistence and revision
-semantics; the interruption-policy module will remain persistence-neutral and
-must not read settings files or call a settings-center object. Scheduling,
-per-application exceptions, and inhibition integration remain future contracts.
-The implemented authenticated lock-state privacy gate is deliberately not a
-user setting: settings can never override its fail-closed decision or critical
-notification suppression. See
-[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
-
-The component ownership is summarized in
-[Architecture overview](overview.md), and dependency rules are in
-[Module boundaries](module-boundaries.md).
+Scheduling, per-application exceptions, inhibition, and the complete
+multi-page/applet-based settings catalog remain later work. See
+[ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).

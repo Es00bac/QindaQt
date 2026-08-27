@@ -21,3 +21,13 @@ target_compile_definitions(
 )
 qindaqt_enable_warnings(qindaqt_settings_persistence_tests)
 add_test(NAME qindaqt.settings-persistence COMMAND qindaqt_settings_persistence_tests)
+
+qt_add_executable(qindaqt_settings_migration_tests tst_settings_migration.cpp)
+target_link_libraries(qindaqt_settings_migration_tests PRIVATE qindaqt_settings Qt6::Test)
+target_compile_definitions(
+    qindaqt_settings_migration_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_settings_migration_tests)
+add_test(NAME qindaqt.settings-migration COMMAND qindaqt_settings_migration_tests)

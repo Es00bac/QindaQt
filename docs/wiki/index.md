@@ -30,8 +30,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   bounded model, freedesktop adapter, authenticated host/client transport,
   descriptor provisioning, and remaining service policy.
 - [Notification presentation](shell/notification-presentation.md) records the
-  bounded production popup/center behavior, session-volatile interruption
-  policy, authenticated lock-state privacy gate, and unqualified boundaries.
+  bounded production popup/center behavior, Settings1-fed interruption policy,
+  authenticated lock-state privacy gate, and unqualified boundaries.
 - [Window containers](architecture/window-containers.md) specifies the core
   domain model and mutation invariants.
 - [Hybrid topology](architecture/hybrid-topology.md),
@@ -59,6 +59,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   documents the experimental D-Bus methods, signals, and transaction boundary.
 - [Notification presentation protocol 1](reference/notification-presentation-v1.md)
   documents the authenticated resident-host-to-shell snapshot boundary.
+- [Settings1 protocol 1](reference/settings1-v1.md) documents the generic,
+  bounded user-settings snapshot and optimistic-commit boundary.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

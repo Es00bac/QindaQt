@@ -6,6 +6,8 @@ Window {
     id: root
 
     required property var presentation
+    required property var quietingSettings
+    required property var settingsLauncher
     required property var theme
     readonly property var colors: theme.colors ?? ({})
 
@@ -59,10 +61,11 @@ Window {
             height: 32
             text: "☾"
             checkable: true
-            checked: root.presentation.doNotDisturbEnabled
+            checked: root.quietingSettings.enabled
+            enabled: root.quietingSettings.canToggle
             focusPolicy: Qt.TabFocus
             KeyNavigation.tab: clearButton
-            KeyNavigation.backtab: closeButton
+            KeyNavigation.backtab: settingsButton
             Accessible.name: checked ? qsTr("Turn off Do Not Disturb")
                                      : qsTr("Turn on Do Not Disturb")
             Accessible.description: qsTr(
@@ -71,8 +74,8 @@ Window {
             ToolTip.text: checked
                           ? qsTr("Do Not Disturb is on; critical banners remain visible")
                           : qsTr("Hide low and normal notification banners")
-            onClicked: root.presentation.doNotDisturbEnabled =
-                           !root.presentation.doNotDisturbEnabled
+            onClicked: root.quietingSettings.requestSet(
+                           !root.quietingSettings.enabled)
         }
 
         Button {
@@ -109,7 +112,7 @@ Window {
             height: 36
             text: "×"
             focusPolicy: Qt.TabFocus
-            KeyNavigation.tab: doNotDisturbButton
+            KeyNavigation.tab: stateAction.visible ? stateAction : settingsButton
             KeyNavigation.backtab: clearButton
             Accessible.name: qsTr("Close notification center")
             onClicked: root.presentation.setCenterOpen(false)
@@ -133,12 +136,73 @@ Window {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: activeSection.bottom
-            anchors.bottom: parent.bottom
+            anchors.bottom: quietingStatus.visible ? quietingStatus.top : footerRow.top
             anchors.margins: 12
             heading: qsTr("Recent")
             notificationModel: root.presentation.historyModel
             presentation: root.presentation
             theme: root.theme
+        }
+
+        Text {
+            id: quietingStatus
+            objectName: "notificationQuietingStatus"
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: footerRow.top
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.bottomMargin: 4
+            visible: text.length > 0
+            text: root.quietingSettings.statusText
+            color: root.quietingSettings.conflict
+                   || root.quietingSettings.unavailable
+                   ? (root.colors.danger ?? "#f07c76")
+                   : (root.colors.textMuted ?? "#a9afa9")
+            elide: Text.ElideRight
+            textFormat: Text.PlainText
+            Accessible.role: root.quietingSettings.conflict
+                             || root.quietingSettings.unavailable
+                             ? Accessible.AlertMessage : Accessible.StaticText
+            Accessible.name: text
+        }
+
+        Row {
+            id: footerRow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 12
+            spacing: 8
+
+            Button {
+                id: stateAction
+                objectName: "notificationQuietingStateAction"
+                visible: root.quietingSettings.conflict
+                         || root.quietingSettings.unavailable
+                text: root.quietingSettings.conflict
+                      ? qsTr("Apply my choice") : qsTr("Retry")
+                focusPolicy: Qt.TabFocus
+                KeyNavigation.tab: settingsButton
+                KeyNavigation.backtab: closeButton
+                onClicked: {
+                    if (root.quietingSettings.conflict)
+                        root.quietingSettings.applyMyChoice()
+                    else
+                        root.quietingSettings.retry()
+                }
+            }
+
+            Button {
+                id: settingsButton
+                objectName: "notificationSettingsRouteButton"
+                text: qsTr("Notification settings…")
+                focusPolicy: Qt.TabFocus
+                KeyNavigation.tab: doNotDisturbButton
+                KeyNavigation.backtab: stateAction.visible ? stateAction : closeButton
+                Accessible.name: qsTr("Notification settings")
+                onClicked: root.settingsLauncher.openNotifications()
+            }
         }
 
         Text {

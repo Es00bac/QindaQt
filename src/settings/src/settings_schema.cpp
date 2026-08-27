@@ -38,7 +38,8 @@ void setOutputValidation(const ValidationResult &result, ValidationResult *outpu
 
 std::optional<SettingsSchema> SettingsSchema::fromFile(const QString &path,
                                                         ValidationResult *validation,
-                                                        QString *error)
+                                                        QString *error,
+                                                        int expectedVersion)
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -47,13 +48,14 @@ std::optional<SettingsSchema> SettingsSchema::fromFile(const QString &path,
         }
         return std::nullopt;
     }
-    return fromJson(file.readAll(), path, validation, error);
+    return fromJson(file.readAll(), path, validation, error, expectedVersion);
 }
 
 std::optional<SettingsSchema> SettingsSchema::fromJson(const QByteArray &json,
                                                         const QString &origin,
                                                         ValidationResult *validation,
-                                                        QString *error)
+                                                        QString *error,
+                                                        int expectedVersion)
 {
     QJsonParseError parseError;
     const auto document = QJsonDocument::fromJson(json, &parseError);
@@ -68,10 +70,12 @@ std::optional<SettingsSchema> SettingsSchema::fromJson(const QByteArray &json,
     ValidationResult result;
     const auto root = document.object();
     schema.m_version = root.value(QStringLiteral("schemaVersion")).toInt(-1);
-    if (schema.m_version != QINDAQT_SETTINGS_SCHEMA_VERSION) {
+    if (schema.m_version != expectedVersion) {
         result.add({},
                    QStringLiteral("unsupported-schema-version"),
-                   QStringLiteral("unsupported schemaVersion %1").arg(schema.m_version));
+                   QStringLiteral("unsupported schemaVersion %1, expected %2")
+                       .arg(schema.m_version)
+                       .arg(expectedVersion));
     }
 
     const auto settingsValue = root.value(QStringLiteral("settings"));

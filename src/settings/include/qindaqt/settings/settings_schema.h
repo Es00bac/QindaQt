@@ -33,12 +33,14 @@ public:
     [[nodiscard]] static std::optional<SettingsSchema> fromFile(
         const QString &path,
         ValidationResult *validation = nullptr,
-        QString *error = nullptr);
+        QString *error = nullptr,
+        int expectedVersion = QINDAQT_SETTINGS_SCHEMA_VERSION);
     [[nodiscard]] static std::optional<SettingsSchema> fromJson(
         const QByteArray &json,
         const QString &origin,
         ValidationResult *validation = nullptr,
-        QString *error = nullptr);
+        QString *error = nullptr,
+        int expectedVersion = QINDAQT_SETTINGS_SCHEMA_VERSION);
 
     [[nodiscard]] int version() const noexcept { return m_version; }
     [[nodiscard]] bool contains(const QString &key) const noexcept;

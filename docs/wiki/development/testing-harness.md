@@ -292,8 +292,8 @@ compact 400x300 output. Popup minimum usable width remains 240 logical pixels.
 `qindaqt.notification-surfaces-offscreen` instantiates the card, popup, active,
 and recent-center QML with the software renderer, verifies literal plain-text
 body/error rendering and busy control disabling, and keeps overflow actions
-plus Dismiss within a 400-pixel card. It also exercises the center's writable,
-accessible Do Not Disturb control without synthesizing desktop input.
+plus Dismiss within a 400-pixel card. It also exercises the center's
+Settings1-backed accessible Do Not Disturb control without synthesizing input.
 At the planner's compact 384x284 result it also proves distinct English header
 controls, an explicit bidirectional focus chain, and bounded busy/error status
 geometry. Translated and right-to-left header layouts remain unqualified.
@@ -318,6 +318,33 @@ KGlobalAccel registration/remapping or live dispatch, compositor acceptance of
 the center's activate-on-show request, multi-output migration, live Do Not
 Disturb or lock-transition interaction, persistence, sound, multi-seat or
 alternative-locker behavior, or live operation-result interaction.
+
+## Current Settings1 and persistent quieting proof
+
+Settings persistence and its consumers are selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.settings-' --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(notification-quieting-settings-bridge|notification-surfaces-offscreen)$' \
+  --output-on-failure
+```
+
+Schema/model tests cover the v2 default/type, immutable-v1 loading, explicit
+valid v1 migration, corrupt/unsupported rejection, and atomic documents.
+Protocol tests cover recursive JSON-native display-shaped values and byte,
+node, depth, list, and map bounds. Repository/service tests cover copy-on-write
+save failure, no-op, conflict, validation, revision exhaustion, private-bus
+name collision, release, and restart. Client tests cover timeout uncertainty
+without replay, stale-owner fencing, replacement epoch/rebaseline, real
+private-bus nested Object commit, persistence, and local daemon loss.
+Settings-app/shell QML tests cover structural state, focus, and accessibility
+semantics. The bridge proves fail-quiet initialization, retained last-confirmed
+values, and independent privacy precedence.
+
+This evidence uses private D-Bus and offscreen software rendering. It does not
+claim a real session bus, live assistive technology, compositor focus,
+KGlobalAccel dispatch, or pointer/keyboard automation.
 
 ## Current compositor proof
 

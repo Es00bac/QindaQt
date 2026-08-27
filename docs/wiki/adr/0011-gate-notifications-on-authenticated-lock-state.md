@@ -111,8 +111,9 @@ greeter.
 - A lock attempt that never produces a trustworthy terminal state remains
   suppressed until owner-bound reauthentication or session restart. This is an
   intentional fail-closed result.
-- Do Not Disturb state may remain session-volatile across a lock, but it cannot
-  weaken privacy. After unlock it again controls only popup interruption.
+- Persisted Do Not Disturb state may remain cached across a lock or Settings1
+  loss, but it cannot weaken privacy. After unlock it again controls only popup
+  interruption.
 - Pure state-machine, private-D-Bus, presentation-model, facade, and offscreen
   window tests can qualify the boundary without locking the developer's real
   desktop or injecting input.

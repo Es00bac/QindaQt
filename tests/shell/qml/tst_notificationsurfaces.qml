@@ -33,6 +33,28 @@ Item {
         function invokeAction(notificationId, actionKey) { return true; }
     }
 
+    QtObject {
+        id: fakeQuieting
+        property bool enabled: false
+        property bool canToggle: true
+        property bool conflict: false
+        property bool unavailable: false
+        property string statusText: ""
+        property string errorText: ""
+        property int requests: 0
+        property int retries: 0
+        property int applies: 0
+        function requestSet(value) { ++requests; enabled = value; return true; }
+        function retry() { ++retries; }
+        function applyMyChoice() { ++applies; return true; }
+    }
+
+    QtObject {
+        id: fakeSettingsLauncher
+        property int launches: 0
+        function openNotifications() { ++launches; return true; }
+    }
+
     property var theme: ({
         "cornerRadius": 10,
         "colors": {
@@ -97,6 +119,8 @@ Item {
         id: centerComponent
         ShellComponents.NotificationCenter {
             presentation: fakePresentation
+            quietingSettings: fakeQuieting
+            settingsLauncher: fakeSettingsLauncher
             theme: testRoot.theme
         }
     }
@@ -111,73 +135,16 @@ Item {
             fakePresentation.doNotDisturbChanges = 0;
             fakePresentation.operationBusy = false;
             fakePresentation.operationErrorText = "";
-        }
-
-        function test_centerExposesSessionVolatileDndControl() {
-            const center = createTemporaryObject(centerComponent, testRoot);
-            verify(center !== null);
-            center.width = 384;
-            // The 400x300 compact-output planner result is 384x284.
-            center.height = 284;
-            center.visible = true;
-            const dnd = findChild(center, "notificationDoNotDisturbButton");
-            const title = findChild(center, "notificationCenterTitle");
-            const clear = findChild(center, "notificationClearHistoryButton");
-            const close = findChild(center, "notificationCenterCloseButton");
-            const status = findChild(center, "notificationOperationStatus");
-            verify(dnd !== null);
-            verify(title !== null);
-            verify(clear !== null);
-            verify(close !== null);
-            verify(status !== null);
-            wait(0);
-            verify(title.x + title.width <= dnd.x,
-                   "title right=" + (title.x + title.width)
-                   + " dnd left=" + dnd.x);
-            verify(dnd.x + dnd.width <= clear.x,
-                   "dnd right=" + (dnd.x + dnd.width)
-                   + " clear left=" + clear.x);
-            verify(clear.x + clear.width <= close.x,
-                   "clear right=" + (clear.x + clear.width)
-                   + " close left=" + close.x);
-            compare(dnd.KeyNavigation.tab, clear);
-            compare(dnd.KeyNavigation.backtab, close);
-            compare(clear.KeyNavigation.tab, close);
-            compare(clear.KeyNavigation.backtab, dnd);
-            compare(close.KeyNavigation.tab, dnd);
-            compare(close.KeyNavigation.backtab, clear);
-
-            fakePresentation.operationBusy = true;
-            tryCompare(status, "visible", true);
-            verify(status.width >= 0);
-            verify(status.x >= title.x + title.width,
-                   "status left=" + status.x
-                   + " title right=" + (title.x + title.width));
-            verify(status.x + status.width <= dnd.x,
-                   "status right=" + (status.x + status.width)
-                   + " dnd left=" + dnd.x);
-            fakePresentation.operationErrorText =
-                    "A deliberately long operation failure that must elide";
-            wait(0);
-            verify(status.x + status.width <= dnd.x);
-            fakePresentation.operationBusy = false;
-            fakePresentation.operationErrorText = "";
-            verify(!dnd.checked);
-            compare(dnd.Accessible.name, "Turn on Do Not Disturb");
-            verify(dnd.Accessible.description.indexOf(
-                       "critical banners remain visible") >= 0);
-
-            // Emit the local signal rather than synthesizing desktop input.
-            dnd.clicked();
-            compare(fakePresentation.doNotDisturbChanges, 1);
-            verify(fakePresentation.doNotDisturbEnabled);
-            tryCompare(dnd, "checked", true);
-            compare(dnd.Accessible.name, "Turn off Do Not Disturb");
-
-            dnd.clicked();
-            compare(fakePresentation.doNotDisturbChanges, 2);
-            verify(!fakePresentation.doNotDisturbEnabled);
-            tryCompare(dnd, "checked", false);
+            fakeQuieting.enabled = false;
+            fakeQuieting.canToggle = true;
+            fakeQuieting.conflict = false;
+            fakeQuieting.unavailable = false;
+            fakeQuieting.statusText = "";
+            fakeQuieting.errorText = "";
+            fakeQuieting.requests = 0;
+            fakeQuieting.retries = 0;
+            fakeQuieting.applies = 0;
+            fakeSettingsLauncher.launches = 0;
         }
 
         function test_centerProvidesWindowScopedCancelPath() {

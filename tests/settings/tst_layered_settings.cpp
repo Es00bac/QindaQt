@@ -27,7 +27,7 @@ void LayeredSettingsTests::initTestCase()
 {
     QString error;
     m_schema = SettingsSchema::fromFile(
-        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error);
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
     QVERIFY2(m_schema.has_value(), qPrintable(error));
 }
 

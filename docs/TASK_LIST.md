@@ -13,9 +13,10 @@ restart without weakening lock-screen privacy.
 
 Completion requires all of the following on the integrated branch:
 
-1. A versioned `org.qindaqt.Settings1` service owns settings persistence,
-   revision order, transactions, and change publication through the existing
-   validated settings model. No client reads or writes settings JSON directly.
+1. A generic, bounded `org.qindaqt.Settings1` service owns user persistence,
+   nonwrapping revision order, copy-on-write transactions, migration, and
+   change publication through the validated settings model. No client reads or
+   writes settings JSON directly.
 2. The schema has an explicit Do Not Disturb key with migration/default
    behavior. Existing valid settings continue to load, and corrupt, stale, or
    unsupported data fails without partial mutation.
@@ -23,9 +24,10 @@ Completion requires all of the following on the integrated branch:
    policy through an owner-authenticated asynchronous Settings1 client. Service
    loss has documented deterministic behavior and cannot override the
    authenticated lock-state privacy gate.
-4. A production settings-center route exposes the setting with keyboard and
-   screen-reader semantics, visible pending/error states, conflict recovery,
-   and no direct dependency on shell presentation internals.
+4. The ordinary `qindaqt-settings --page notifications` route and the shell's
+   Settings1-backed quick control expose keyboard/screen-reader semantics,
+   pending/conflict/unavailable truth, explicit recovery, and no direct
+   dependency from the app to shell presentation internals.
 5. The setting survives save/reopen and independent service/shell restart
    tests. Transactions prove no-op, conflict, rollback, malformed input, owner
    replacement, timeout, and transport-loss behavior.

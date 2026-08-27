@@ -78,12 +78,16 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/notificationcentershortcut.h
         runtime/notificationwindowcontroller.cpp
         runtime/notificationwindowcontroller.h
+        runtime/notificationquietingsettingsbridge.cpp
+        runtime/notificationquietingsettingsbridge.h
         runtime/runtimeoptions.cpp
         runtime/runtimeoptions.h
         runtime/runtimepanelwindowfactory.cpp
         runtime/runtimepanelwindowfactory.h
         runtime/shellruntimeapplication.cpp
         runtime/shellruntimeapplication.h
+        runtime/settingsroutelauncher.cpp
+        runtime/settingsroutelauncher.h
     )
 
     qt_add_qml_module(
@@ -115,6 +119,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NotificationPresentationModel
             QindaQt::NotificationPresentationPolicy
             QindaQt::SessionLockState
+            QindaQt::SettingsClient
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface

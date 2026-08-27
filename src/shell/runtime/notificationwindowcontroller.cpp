@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "notificationwindowcontroller.h"
+#include "settingsroutelauncher.h"
 
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
+#include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/shell_surface/layer_shell_notification_surface.h"
 #include "qindaqt/shell_surface/notification_surface_layout.h"
 
@@ -43,9 +45,13 @@ NotificationWindowController::NotificationWindowController(
     QQmlEngine &engine,
     Services::NotificationPresentationModel::NotificationPresentationController &
         presentation,
+    Services::SettingsClient::DoNotDisturbController &quietingSettings,
+    SettingsRouteLauncher &settingsLauncher,
     QVariantMap theme)
     : m_engine(engine)
     , m_presentation(presentation)
+    , m_quietingSettings(quietingSettings)
+    , m_settingsLauncher(settingsLauncher)
     , m_theme(std::move(theme))
 {
     m_popupCountConnection =
@@ -143,11 +149,17 @@ bool NotificationWindowController::ensureComponents(QString *error)
 std::unique_ptr<QQuickWindow> NotificationWindowController::createWindow(
     QQmlComponent &component, const QString &role, QString *error)
 {
-    const QVariantMap properties = {
+    QVariantMap properties = {
         {QStringLiteral("theme"), m_theme},
         {QStringLiteral("presentation"),
          QVariant::fromValue(static_cast<QObject *>(&m_presentation))},
     };
+    if (role == QLatin1String("center")) {
+        properties.insert(QStringLiteral("quietingSettings"),
+                          QVariant::fromValue(static_cast<QObject *>(&m_quietingSettings)));
+        properties.insert(QStringLiteral("settingsLauncher"),
+                          QVariant::fromValue(static_cast<QObject *>(&m_settingsLauncher)));
+    }
     QObject *created = component.createWithInitialProperties(properties);
     auto *window = qobject_cast<QQuickWindow *>(created);
     if (window == nullptr) {

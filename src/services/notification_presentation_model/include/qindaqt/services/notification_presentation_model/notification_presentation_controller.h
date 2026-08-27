@@ -39,8 +39,7 @@ class NotificationPresentationController final : public QObject {
     Q_PROPERTY(bool centerOpen READ centerOpen WRITE setCenterOpen
                    NOTIFY centerOpenChanged)
     Q_PROPERTY(bool doNotDisturbEnabled READ doNotDisturbEnabled
-                   WRITE setDoNotDisturbEnabled
-                       NOTIFY doNotDisturbEnabledChanged)
+                   NOTIFY doNotDisturbEnabledChanged)
     Q_PROPERTY(bool privatePresentationAllowed READ privatePresentationAllowed
                    NOTIFY privatePresentationAllowedChanged)
     Q_PROPERTY(int popupCount READ popupCount NOTIFY popupCountChanged)

@@ -4,7 +4,7 @@
 - **Date:** 2026-08-26
 - **Owners:** Shell and notification presentation
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** ADR-0012 for state lifetime and writable UI ownership; the injected popup-policy boundary remains accepted
 
 ## Context
 

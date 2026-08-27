@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.qindaqt.Settings1
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-settings-service

@@ -56,11 +56,12 @@ does not close active notifications or modify application state.
 
 ## Do Not Disturb
 
-Do Not Disturb is an implemented, session-volatile popup policy. It starts off
-for every new production-shell lifetime. Enabling it immediately filters low-
-and normal-urgency entries from the current popup stack and suppresses later
-low/normal popups. Critical urgency (`2`) explicitly bypasses the filter;
-unknown in-process urgency values fail closed while the policy is enabled.
+Do Not Disturb is a persisted Settings1 preference projected into the existing
+popup policy. The shell enables interruption suppression before its first
+exact-owner settings baseline, then applies the confirmed
+`services.doNotDisturb` Boolean. Service/owner/bus loss retains the last
+confirmed value. Enabling it immediately filters low/normal urgency; critical
+urgency (`2`) explicitly bypasses the filter and unknown urgency fails closed.
 
 The Active model continues to reflect the authenticated host snapshot, and
 disappearing non-transient items still enter Recent. The policy never dismisses,
@@ -71,16 +72,16 @@ entry is reconsidered. Consequently, a replacement promoted to critical may
 appear while Do Not Disturb is on, while one demoted from critical is removed
 from the popup projection immediately.
 
-The notification center exposes the writable, tab-focusable control with an
-accessible description of the critical bypass. The panel applet receives only
-a read-only policy flag: it shows a moon indicator and includes Do Not Disturb
-in its accessible open/close label, but cannot change the policy. Persistence,
-schedules, per-application exceptions, and inhibition integration are not
-implemented. The separate lock-state privacy gate below cannot be weakened by
-this preference. Future persistence must arrive through
-`org.qindaqt.Settings1`; it must not be added to the policy module or private
-notification wire. The boundary is accepted in
-[ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+The notification center's tab-focusable quick control submits the same
+optimistic Settings1 transaction as the ordinary
+`qindaqt-settings --page notifications` page. Both expose loading, saving,
+conflict, and unavailable/last-confirmed states; conflict requires explicit
+retry and uncertain writes are never replayed. A fixed **Notification
+settings…** action opens the ordinary application. Presentation DND is
+read-only to QML, and the capability-empty applet receives only a read-only
+indicator. The separate lock-state privacy gate below cannot be weakened by
+this preference. Scheduling, application exceptions, and inhibition remain
+future work. See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
 ## Lock-state privacy
 
@@ -235,12 +236,13 @@ test proves the applet's disabled fallback, locked-state unavailability,
 accessibility label changes, narrow toggle call, read-only policy indicators,
 and compiled-entry-point dispatch without compositor or pointer input. The
 notification-surface
-offscreen test proves the center's writable, accessible Do Not Disturb control,
-explicit bidirectional header focus chain, compact 384x284 busy/error geometry,
-window-scoped Escape route, and focusable initial target without activating a
-real surface. Catalog, resolver, and profile tests prove the empty capability
-request, audited registry entry, and exactly one instance in every stock
-profile.
+offscreen test proves the Settings1-backed accessible quick control, honest
+state/retry projection, fixed settings route, explicit bidirectional focus
+chain, compact busy/error geometry, window-scoped Escape route, and focusable
+initial target without activating a real surface. Separate app QML tests prove
+the switch role/name/description/checked state and loading/saving/conflict/loss
+routes. Catalog, resolver, and profile tests prove the applet's empty capability
+request and exactly one instance in every stock profile.
 
 Pure lock-monitor tests exercise mismatched and malformed owners, PID mismatch,
 stale generations and serials, startup races, lock transitions, double-inactive
@@ -257,9 +259,8 @@ input. The following remain unqualified or unimplemented:
   traversal, global-shortcut dispatch/remapping, and visual baselines at the
   reference resolutions;
 - multi-output placement policy, per-output histories, and output migration;
-- Do Not Disturb persistence/scheduling/inhibition, sound, and safe image/icon
-  loading;
-- persistent history and settings, D-Bus activation, and child/bus-loss restart;
+- Do Not Disturb scheduling/inhibition, sound, and safe image/icon loading;
+- persistent notification history and live session-bus activation interaction;
 - live lock-transition proof, multi-seat/session switching, alternative-locker
   support, suspend/resume qualification, and a separately authenticated,
   data-minimized lock-screen presenter;
