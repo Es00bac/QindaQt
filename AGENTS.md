@@ -85,6 +85,39 @@ The complete policy and ADR workflow are in
   session state, generated screenshots outside approved baselines, credentials,
   or machine-specific paths.
 
+## Team workflow
+
+The manager/worker workflow is deliberately file-based. The product source of
+truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
+[Handoff](docs/HANDOFF.md), and worker communication lives under
+`ops/team/messages/`.
+
+- The manager owns priorities, collision avoidance, candidate integration, and
+  truthful outcome reporting. Only the manager edits the integration branch.
+- Every implementer receives one user-visible outcome, an exact base commit,
+  an isolated Git worktree and branch, explicit path ownership, and executable
+  acceptance evidence. Workers never implement in the shared checkout.
+- A worker posts a new timestamped Markdown reply when claiming work, finding a
+  material fact, requesting or offering help, changing direction, verifying a
+  candidate, or handing it off. Never rewrite another worker's reply.
+- `ops/team/workers/<name>.md` describes one stable employee identity and its
+  genuine current state. `working` requires a live process doing the named
+  outcome; an assignment, timestamp, or completed handoff is not liveness.
+- Candidate handoffs name one exact commit, changed paths, tests with exit
+  status/counts, remaining bounded caveats, and the requested next action.
+- A different worker reviews the exact candidate commit before high-confidence
+  integration. The implementer repairs blocking findings in the same worktree;
+  the reviewer rechecks the repaired commit rather than approving prose.
+- The manager integrates an accepted commit, reruns the affected gates on the
+  integrated tree, updates the wiki/task state in the same integration, and
+  retires a worktree only after its commit is preserved.
+- Provider, model, test, process, and completion claims require direct evidence.
+  Never infer them from a command line, assignment, exit code, or stale record.
+
+Workers may use the collaboration channel for prompt delivery, but durable
+claims and handoffs still belong on the message board. Coordination must remain
+smaller than the product work it enables.
+
 ## Verification
 
 Build and run focused tests for every changed module, then run the broadest
