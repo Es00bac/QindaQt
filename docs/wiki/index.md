@@ -8,6 +8,15 @@ recursive splits.
 This wiki is the canonical source for architecture, behavior, and contributor
 workflow. It changes with the code and is validated as part of the repository.
 
+## Reading the wiki offline
+
+Open `build/docs/qindaqt-project-wiki.epub` in Calibre's E-book viewer rather
+than opening this Markdown file directly. Calibre treats one directly opened
+`.md` file as the complete book and therefore does not include linked sibling
+pages. Generate the complete EPUB with `tools/build-wiki-epub`; its internal
+links include every page in this wiki. The regular relative Markdown links
+below remain the source-of-truth links for repository browsers and MkDocs.
+
 ## Start here
 
 - [Architecture overview](architecture/overview.md) describes the runtime and

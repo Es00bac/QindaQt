@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+set -euo pipefail
+
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+output_path="${1:-${repository_root}/build/docs/qindaqt-project-wiki.epub}"
+mkdocs_executable="${QINDAQT_MKDOCS:-mkdocs}"
+
+if ! command -v "${mkdocs_executable}" >/dev/null 2>&1; then
+    echo "build-wiki-epub: MkDocs is unavailable; set QINDAQT_MKDOCS to its executable" >&2
+    exit 2
+fi
+if ! command -v ebook-convert >/dev/null 2>&1; then
+    echo "build-wiki-epub: Calibre ebook-convert is unavailable" >&2
+    exit 2
+fi
+
+temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/qindaqt-wiki-epub.XXXXXX")"
+trap 'rm -rf -- "${temporary_root}"' EXIT
+
+mkdir -p "$(dirname "${output_path}")"
+
+# AGENT-CONTRACT: explicit .html URLs let Calibre follow every MkDocs page.
+# Directory-style URLs are valid in browsers but Calibre treats them as
+# navigation directories and omits their index documents from the EPUB.
+"${mkdocs_executable}" build \
+    --strict \
+    --config-file "${repository_root}/mkdocs.yml" \
+    --site-dir "${temporary_root}/site"
+
+conversion_log="${temporary_root}/ebook-convert.log"
+if ! ebook-convert \
+        "${temporary_root}/site/index.html" \
+        "${output_path}" \
+        --max-levels 5 \
+        --breadth-first \
+        --title "QindaQt Project Wiki" \
+        --authors "QindaQt Contributors" \
+        --language en \
+        >"${conversion_log}" 2>&1; then
+    cat "${conversion_log}" >&2
+    exit 3
+fi
+
+# AGENT-GUARD: a single-page conversion recreates the original broken-reader
+# behavior. Refuse to report success unless Calibre packaged multiple pages.
+packaged_pages="$(unzip -Z1 "${output_path}" | grep -Ec '\.(x?html)$')"
+if [[ "${packaged_pages}" -lt 10 ]]; then
+    echo "build-wiki-epub: only ${packaged_pages} HTML pages were packaged" >&2
+    exit 4
+fi
+
+echo "QindaQt wiki EPUB: ${output_path} (${packaged_pages} packaged HTML pages)"
