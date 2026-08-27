@@ -1,5 +1,7 @@
 # QindaQt
 
+> **Pronounced “kinda cute”** (`KYNE-duh kyoot`, /ˈkaɪndə kjuːt/).
+
 QindaQt is a modular Qt desktop environment centered on hybrid window
 containers: ordinary application windows can be combined into a movable,
 tabbed, recursively split container and separated again without changing the

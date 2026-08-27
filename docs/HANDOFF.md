@@ -2,40 +2,51 @@
 
 ## Current baseline
 
-- Branch: `main`
-- Commit: `11c1f4bf9de52da4d98151dd9ba251da0ed1fdbf`
-- Outcome: authenticated lock-state notification privacy
-- State: integrated and verified
+- Branch: public `main`
+- Functional commit: `05a8636fb8ba9914e51d1cae5f117f77e90c75e3`
+- Tree: `bf0e61dd1fad12bbb6498a943b69b17921e17656`
+- Outcome: persistent Settings1 plus QST-1 semantic design tokens
+- State: independently accepted, manager-qualified, and published with a
+  documentation-only project-identity descendant
 
-The milestone authenticates all three lock-service owners against the
-supervisor-provisioned KWin PID, uses a race-closed parent-death chain, requires
-a double-inactive baseline, and fails closed on owner, reply, or bus loss. Every
-notification projection and action is privacy-gated, and unlock starts from a
-fresh authoritative baseline without replay.
+The baseline combines generic persistent Settings1 and the first-class
+Notifications route with QST-1's pure semantic token derivation, accessibility
+overrides, read-only QML adapter, and installed consumer packages. The
+Settings1 resident exits on permanent session-bus loss; a new daemon activates
+a new process and lineage rather than reconnecting stale repository state.
+QST-1 owns semantic policy without importing a general application framework
+or widening the theme schema.
 
 Integrated evidence:
 
-- Debug complete registry: 67/67 passed.
-- Release complete registry: 67/67 passed.
-- Focused private-D-Bus, offscreen QML, policy, facade, and supervisor tests
-  passed.
-- QML lint, source-shape, strict documentation, whitespace, and staged Release
-  installation checks passed.
-- No live compositor, real screen lock, active session bus, global input, or
-  real desktop shortcut was exercised.
+- Independent exact-tree review: accepted with P1/P2/P3 `0/0/0`.
+- Strict-warning Debug and Release production-shell builds: 906/906 each.
+- Debug and Release complete QindaQt registries: 87/87 each; QST-1 5/5 and
+  Settings1 16/16 in each configuration.
+- Settings process daemon-loss lifecycle: 20 consecutive passes in each
+  configuration.
+- Fresh testing-disabled production/package build: 454/454; staged install:
+  168 files with exact Settings1 descriptor/executable resolution and no
+  missing linked library.
+- Installed QST QML consumer: 3/3; installed two-daemon Settings1 loss,
+  replacement, and `UnknownKey` lifecycle: ten consecutive passes.
+- Debug, Release, and production QML lint; 789-file source-shape audit;
+  44-document link/navigation validation; strict MkDocs; whitespace; and
+  post-test process cleanup all passed.
+- No active desktop, user session bus, global input, real audio graph, physical
+  display, or physical screen lock was touched by this evidence.
 
 ## Next outcome
 
-Implement the persistent notification-quieting outcome in
-[Task list](TASK_LIST.md). Candidate work must start from the baseline above in
-an isolated worktree. Before integration, a separate worker must review the
-exact candidate commit for persistence atomicity, D-Bus owner authentication,
-restart behavior, privacy precedence, accessibility, and dependency direction.
+Qualify and integrate the bounded Audio1 service described in
+[Task list](TASK_LIST.md). Its current repair work is not part of this baseline
+and must produce a new exact commit, pass independent re-review, resolve the
+shared QST-1 registries and documentation additively, and pass combined manager
+gates before integration.
 
-The accepted implementation boundary is immutable schema v1 plus active v2,
-generic recursively bounded Settings1, an independently activatable service,
-exact-owner asynchronous clients, fail-quiet/retain-last shell composition, and
-an ordinary Notifications settings page. Settings1 owner binding is lineage
-fencing for same-user operations, not executable/PID attestation. Do not couple
-the service to the essential host/shell supervisor or add a settings applet,
-layer-shell settings UI, or global shortcut.
+In parallel, qualify the installed notification shortcut, keyboard/focus,
+Settings1 replacement, Do Not Disturb, and real nested lock transitions at
+1080p, WUXGA, and 1440p. That lane must remain private and nested: it may not
+move the host cursor, inject host input, replace the active compositor, or use
+the live session bus. Neither active lane is complete merely because its worker
+process exists or a source-only test passes.

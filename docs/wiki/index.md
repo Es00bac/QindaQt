@@ -1,5 +1,8 @@
 # QindaQt project wiki
 
+> **QindaQt is pronounced “kinda cute”** (`KYNE-duh kyoot`,
+> /ˈkaɪndə kjuːt/). Use the `QindaQt` spelling in written project names.
+
 QindaQt is a modular, Wayland-first Qt desktop environment. Its distinguishing
 feature is a hybrid window model: ordinary windows remain independently usable,
 but users may combine them into a movable container containing tabs and
