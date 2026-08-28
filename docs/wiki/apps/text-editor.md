@@ -6,7 +6,12 @@ application framework: document policy, local filesystem persistence, and Qt
 Widgets presentation have separate owners inside `src/apps/text_editor`.
 
 The durable persistence and menu choices are recorded in
-[ADR-0022](../adr/0022-keep-text-documents-local-and-atomic.md).
+[ADR-0022](../adr/0022-keep-text-documents-local-and-atomic.md). The editor
+also participates in the shared
+[QindaQt.AppShell 1.0](application-shell.md) action/lifecycle boundary
+established by
+[ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md); see
+[AppShell participation](#appshell-participation) below.
 
 S1 uses Qt Widgets because `QPlainTextEdit`, `QMainWindow`, standard actions,
 native dialogs, and accessibility adapters supply this narrow editor surface
@@ -58,6 +63,62 @@ value, so ordinary typing does not copy and compare the complete buffer on each
 keystroke; equal-length edits still receive an exact baseline comparison. New,
 Open, Quit, and external Reload require Save, Discard, or Cancel consent when
 dirty. The window's standard modified marker and Save action reflect that state.
+
+## AppShell participation
+
+`EditorWindow` owns one `EditorAppShellBridge`
+(`src/apps/text_editor/app_shell/`), which owns the window's single
+`QindaQt::AppShell::ApplicationCoordinator` for the primary-window lifetime.
+The bridge never decides consent or command execution itself; `EditorWindow`
+keeps that authority, matching the ownership boundary in
+[QindaQt.AppShell 1.0](application-shell.md).
+
+- **Action and menu export.** `editorActionCatalog()`
+  (`app_shell/editor_action_catalog.h`) builds one atomic `ActionSpec`
+  replacement for the documented File/Edit commands, published once during
+  construction. Each AppShell action uses a lowercase dotted ID (`file.new`,
+  `file.open`, `file.save`, `file.save-as`, `file.quit`, `edit.undo`,
+  `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.select-all`) —
+  a separate identifier space from the stable QAction object names in the
+  table above. `EditorWindow` keeps the published `enabled` projection in
+  sync with the live QAction tree through `QAction::enabledChanged`, and
+  routes `ApplicationCoordinator::actionRequested` back to the same local
+  `QAction::trigger()` used by the visible menu, so a future global-menu
+  consumer runs the identical local command path.
+- **Close consent.** `closeEvent()` calls `requestQuit()` instead of running
+  dirty consent directly. The coordinator's `quitDecisionRequested` handler
+  runs the same `confirmDiscardOrSave()` dirty-consent policy and resolves
+  the request; the window only accepts the close once `quitApproved` fires.
+  Settings and session hooks stay `IntegrationState::NotRequired`: S1 has
+  neither integration.
+- **File selection.** Open and Save As no longer call `QFileDialog`
+  directly. They issue an AppShell `requestOpenFile`/`requestSaveFile`
+  portal request and wait for the injected `FileSelectionAdapter`
+  (`app_shell/file_selection_adapter.h`) to resolve it.
+  `NativeFileSelectionAdapter` is the production adapter and shows the same
+  modal `QFileDialog` as before; `FailClosedFileSelectionAdapter` is the
+  default when no adapter is injected and denies every request without
+  touching any host chooser, so a missing or misconfigured adapter can never
+  silently invent a path. A Save As suggests only the destination's base
+  file name, not a full initial directory, matching the portal's
+  sandbox-compatible contract.
+
+The focused selector is:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.editor-app-shell-' --output-on-failure
+```
+
+It covers the published catalog against the real `ActionRegistry`
+validation, the atomic initial menu snapshot and its synced enabled
+projection, dirty-state projection, AppShell-activated commands running the
+identical local trigger, close consent routed through `quitApproved`, the
+fail-closed portal default, and a full open resolved by an injected adapter.
+These rows never open a real file chooser or consent dialog; the existing
+`qindaqt.editor-` regressions above remain the coverage for local dirty
+consent and the file dialogs themselves. Real portal/global-menu adapters,
+Settings/session hook composition, and a global-menu export transport remain
+later outcomes per ADR-0027.
 
 ## External changes and atomic saves
 
@@ -176,8 +237,11 @@ driver, or session integration.
 - Tab remains an editor character. Visible recovery buttons retain direct Alt
   mnemonics and reverse focus traversal; a forward pane-cycle shortcut waits for
   a desktop-wide focus convention rather than becoming editor-private policy.
-- Modal native file and consent dialogs remain presentation-owned Qt calls.
-  Controller tests prove every destructive state transition; an injectable
-  dialog seam waits until a second application proves reusable demand.
+- File selection is now injectable through AppShell's portal request and
+  `FileSelectionAdapter` (see [AppShell participation](#appshell-participation)),
+  but the dirty-save and replace-confirmation consent dialogs remain direct,
+  non-injectable `QMessageBox` calls. Controller tests prove every
+  destructive state transition; an injectable consent seam waits until a
+  second application proves reusable demand.
 - The desktop entry uses the platform's `accessories-text-editor` icon. A
   QindaQt-branded installed icon belongs to a later branding asset slice.

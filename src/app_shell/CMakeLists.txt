@@ -100,3 +100,17 @@ install(
         "${QINDAQT_APP_SHELL_QML_OUTPUT_DIRECTORY}/qindaqt_app_shell.qmltypes"
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
 )
+
+# AGENT-CONTRACT: The Text Editor links qindaqt_app_shell's C++ classes
+# directly (no QML engine), so its narrow single-component staged install
+# (tests/apps/text_editor/run_installed_editor.cmake, --component TextEditor)
+# needs the shared library even though it does not need the QML plugin or
+# qmldir. Mirrors the SettingsAppearanceRuntime precedent in
+# src/design_tokens/CMakeLists.txt and src/controls/CMakeLists.txt: an
+# additive per-consumer COMPONENT on a shared library's install() rule, added
+# here because src/app_shell is not the Text Editor's owned path.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT TextEditor
+)
