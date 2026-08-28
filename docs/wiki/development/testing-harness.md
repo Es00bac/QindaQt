@@ -1101,6 +1101,29 @@ root. Release, ASan+UBSan, staged-package, and linked-consumer evidence remains
 attached to the byte-identical repaired candidate as recorded in the D2
 handoff.
 
+## D3 private Display1 client proof
+
+The D3 client rows and the two D2 projection/lifecycle regressions are selected
+with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.(display-client-(lineage|publication|operations|coordinator|private-bus)|display-service-(model|resident-private-bus))$'
+```
+
+The five client rows cover exact-owner activation, validated atomic snapshot
+publication, owner/epoch/revision and late-reply fencing, bounded exactly-once
+operation completion, server-projected confirmation readiness, timeout and
+uncertain cancellation, and a real client/service composition on a disposable
+private session bus. The two service rows prevent drift in the transaction
+summary the client consumes. Strict Debug and Release current-manager builds
+each complete 81/81 targeted actions and pass this selector 7/7.
+
+This is private-bus and deterministic client evidence, not compositor output
+mutation evidence. It opens no display and does not qualify the public writer,
+durable journal, Settings display UI, nested convergence, physical hardware,
+or resource budget.
+
 ## Contained interactive virtual desktop S0+S1
 
 The first whole-desktop harness boundary is selected with:

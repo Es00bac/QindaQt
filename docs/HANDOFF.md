@@ -4,6 +4,15 @@
 
 Manager integration delta after the public baseline below:
 
+- `c819db8` integrates the exact independently accepted Display D3 typed
+  asynchronous client and D2 transaction-summary projection replay. Astra's
+  immutable Gemini review found P0/P1/P2/P3 `0/0/0/0`; the replay preserves
+  all 20 D3 leaf blobs and seven D2 source/test blobs while retaining every
+  current-manager shared-registry entry. Fresh manager-tree strict Debug and
+  Release builds complete 81/81 targeted actions and pass the exact seven-row
+  D2/D3 selector in each profile. The compositor writer, durable journal,
+  Settings display UI, nested convergence, hardware, and resource proof remain.
+
 - `0c9f4b0` integrates the exact independently accepted Settings Center S1
   repair over typed navigation commit `80a91f8`. Noether's immutable rereview
   found P0/P1/P2/P3 `0/0/0/0`; Debug and Release passed 9/9, the direct page
@@ -206,8 +215,10 @@ now integrated at `a5528f8` after the A/B/A epoch-reuse defect was repaired and
 two independent exact reviews passed. A fresh combined-tree Debug build passed
 68/68 focused build steps and all five Display1 service tests, including both
 serial private-D-Bus lifecycle rows, with no surviving service or fixture.
-Display1 remains fail-closed for output mutation: D3 client, writer binding,
-persistence, Settings UI, and nested preview/confirm/revert proof are next.
+Display1 now exposes the fail-closed D3 typed asynchronous client and
+server-projected reversible transaction coordinator. Output mutation remains
+unavailable until the compositor writer, durable persistence, Settings UI, and
+nested preview/confirm/revert convergence proof land.
 Power/Brightness architecture is independently accepted at MODELLED only:
 PB-0 protocol/aggregation/model is the first ungated implementation slice,
 followed by PB-1; PB-2 waits on the routed session-lane activation contract. A
