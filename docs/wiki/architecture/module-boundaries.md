@@ -68,7 +68,7 @@ tests, and the wiki page describing its contract.
 | `src/apps/text_editor` | Single-document text policy, bounded local UTF-8 persistence, standard Qt action/menu presentation, and QST-1 adaptation | Public themes/QST-1 plus Qt Core/Gui/Widgets; never shell internals, services, or another app's private code |
 | `src/apps/file_manager` | Local directory listing/navigation history policy, a bounded local file-launch intent, and QST-1/QindaQt.Controls QML presentation | Public themes/QST-1/`QindaQt.Controls 1.0` plus Qt Core/Gui/Qml/Quick/QuickControls2; never shell internals, services, mount/portal/trash authority, or another app's private code |
 | `src/apps/settings/appearance` | Strict Appearance values, per-key draft/rebase and save-result truth, pure QST preview projection, and the route's modular QML presentation | Public Settings1 client, themes, QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never settings persistence/service implementations, shell/compositor/display/platform mutation, another route's model, or transport access from QML |
-| `src/apps/terminal` | Terminal launch policy (argv/shell resolution, child environment, hostile-view clamping), bounded single-session PTY lifecycle with exit truth and guaranteed process-group teardown, QST-1 adaptation, and Qt action/menu presentation | Public themes/QST-1, Qt Core/Gui/Widgets, and `qtermwidget6` confined to the rendering adapter per [ADR-0028](../adr/0028-confine-qtermwidget-behind-terminal-adapter.md); never shell internals, services, or another app's private code |
+| `src/apps/terminal` | Terminal launch policy (argv/shell resolution, child environment, hostile-view clamping), bounded single-session PTY lifecycle with exit truth and guaranteed process-group teardown, QST-1 adaptation, and Qt action/menu presentation | Public themes/QST-1, Qt Core/Gui/Widgets, and `qtermwidget6` confined to the rendering adapter per [ADR-0030](../adr/0030-confine-qtermwidget-behind-terminal-adapter.md); never shell internals, services, or another app's private code |
 | `tools` and `tests` | Isolated development harnesses, fixtures, integration scenarios, and verification | Public APIs; test-only hooks in test builds |
 
 Not every planned directory exists yet. Add one only when its responsibility is
@@ -172,7 +172,7 @@ implemented; do not use placeholder modules to bypass a boundary.
 - The Terminal application is the only consumer of `qtermwidget6`; the library
   is mandatory for the terminal target, invisible to every other module, and
   its integration contract is pinned in
-  [ADR-0028](../adr/0028-confine-qtermwidget-behind-terminal-adapter.md).
+  [ADR-0030](../adr/0030-confine-qtermwidget-behind-terminal-adapter.md).
 - Tests use public APIs first. Input-injection providers/devices, fake-device
   creation, output forcing, and similar backdoor authority must be absent from
   normal production sessions and clearly named as test interfaces. A versioned

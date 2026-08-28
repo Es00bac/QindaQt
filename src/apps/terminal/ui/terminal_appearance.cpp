@@ -60,7 +60,7 @@ AppearanceResult TerminalAppearanceAdapter::fromTheme(
   terminalFont.setStyleHint(QFont::Monospace);
   terminalFont.setFixedPitch(true);
 
-  // ANSI mapping is a bounded adaptation of public QST roles (ADR-0028):
+  // ANSI mapping is a bounded adaptation of public QST roles (ADR-0030):
   // QST publishes red/green/yellow/blue semantics and no distinct magenta or
   // cyan hue, so magenta maps to the accent's subtle role and every "bright"
   // slot uses the same mechanical lighten step. A full palette profile is a

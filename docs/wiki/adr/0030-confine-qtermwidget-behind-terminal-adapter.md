@@ -1,4 +1,4 @@
-# ADR-0028: Confine qtermwidget6 behind the Terminal rendering adapter
+# ADR-0030: Confine qtermwidget6 behind the Terminal rendering adapter
 
 - **Status:** Accepted
 - **Date:** 2026-08-28

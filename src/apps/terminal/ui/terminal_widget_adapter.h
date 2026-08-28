@@ -13,9 +13,9 @@ class QTermWidget;
 
 namespace QindaQt::Apps::Terminal {
 
-// AGENT-CONTRACT (ADR-0028): This is the only translation unit in the
+// AGENT-CONTRACT (ADR-0030): This is the only translation unit in the
 // repository that includes qtermwidget6 headers or links qtermwidget6. The
-// integration contract pinned by ADR-0028 at upstream tag 2.4.x is:
+// integration contract pinned by ADR-0030 at upstream tag 2.4.x is:
 //  - startTerminalTeletype() opens the empty PTY and re-exposes keyboard
 //    bytes on the sendData signal (master never sees emulator writes);
 //  - getPtySlaveFd() yields the slave this class's child adopts;

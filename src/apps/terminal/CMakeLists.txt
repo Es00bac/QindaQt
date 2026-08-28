@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# ADR-0028 (Accepted): qtermwidget6 is mandatory for the terminal target and
+# ADR-0030 (Accepted): qtermwidget6 is mandatory for the terminal target and
 # its headers must not leak to any other module. The adapter + executable
 # also never reach the build without the library. The audited integration
 # contract is pinned to the 2.4.x series: upstream generates AnyNewerVersion
@@ -45,7 +45,7 @@ target_compile_features(qindaqt_terminal_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_terminal_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_terminal_support)
 
-# The adapter is the only place qtermwidget6 is linked (ADR-0028). Keeping it
+# The adapter is the only place qtermwidget6 is linked (ADR-0030). Keeping it
 # out of the support library makes the boundary enforceable at link time.
 qt_add_library(qindaqt_terminal_adapter STATIC)
 target_sources(

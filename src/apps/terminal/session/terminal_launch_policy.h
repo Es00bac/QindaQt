@@ -66,7 +66,7 @@ public:
   //
   // AGENT-CONTRACT: The child's effective character-set locale follows libc
   // precedence LC_ALL > LC_CTYPE > LANG. The rendering layer decodes child
-  // bytes as UTF-8 (ADR-0028), so the first locale variable present in that
+  // bytes as UTF-8 (ADR-0030), so the first locale variable present in that
   // precedence order must select UTF-8: when it does not, exactly that
   // variable is replaced with LANG's policy fallback value, and when none is
   // present LANG=C.UTF-8 is appended. Hostile input can only shrink or
@@ -78,7 +78,7 @@ public:
   // Clamps the embedded terminal view's pixel extents to a sane range. Zero
   // or negative extents collapse to the minimum instead of failing; huge
   // extents clamp to the maximum. The widget owns the actual PTY winsize
-  // ioctl and cell conversion (ADR-0028); this policy exists so hostile
+  // ioctl and cell conversion (ADR-0030); this policy exists so hostile
   // window sizes cannot reach it verbatim.
   static constexpr int kMinViewWidth = 1;
   static constexpr int kMinViewHeight = 1;
