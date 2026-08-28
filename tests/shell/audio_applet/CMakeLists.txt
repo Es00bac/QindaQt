@@ -8,8 +8,8 @@
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test)
 
 set(QINDAQT_AUDIO_APPLET_SOURCES
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/audio_applet/audio_applet_model.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/audio_applet/audio_applet_controller.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/audio_applet/audio_applet_model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/audio_applet/audio_applet_controller.cpp"
 )
 
 qt_add_executable(qindaqt_audio_applet_model_tests tst_audio_applet_model.cpp)
@@ -19,7 +19,7 @@ target_sources(
 )
 target_include_directories(
     qindaqt_audio_applet_model_tests
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/audio_applet"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/audio_applet"
 )
 target_link_libraries(
     qindaqt_audio_applet_model_tests
@@ -38,7 +38,7 @@ qt_add_executable(
 )
 target_include_directories(
     qindaqt_audio_applet_controller_tests
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/audio_applet"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/audio_applet"
 )
 target_link_libraries(
     qindaqt_audio_applet_controller_tests
