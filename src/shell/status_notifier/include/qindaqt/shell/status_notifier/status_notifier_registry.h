@@ -58,8 +58,8 @@ public:
 
     // Starts a new watcher epoch and returns its monotonic identifier.
     [[nodiscard]] quint64 beginWatcherEpoch() override;
-    // Marks initial population complete for `epoch` and reconciles membership
-    // by pruning any registered items not observed in this epoch.
+    // Marks initial population complete for `epoch`. A replacement watcher
+    // publishes its staged target population atomically at this boundary.
     [[nodiscard]] RegistryOutcome markInitialPopulationComplete(quint64 epoch) override;
 
     // AGENT-NOTE: Re-basing a still-live name is the watcher-rebaseline
@@ -112,9 +112,15 @@ public:
 
 private:
     [[nodiscard]] RegistryOutcome reject(RegistryStatus status, QString reasonCode) const;
+    [[nodiscard]] RegistryOutcome stageItem(const OwnerKey &key,
+                                            const ItemDescriptor &descriptor);
+    [[nodiscard]] bool stageLastKnownGood(const OwnerKey &key);
+    void invalidateStagedPopulation(RegistryStatus status, QString reasonCode);
     void forgetItem(const OwnerKey &key);
+    void forgetStagedItem(const OwnerKey &key);
     // Drops every item of the owner and frees its identity claims.
     void dropOwnerItems(const QString &uniqueName);
+    void dropStagedOwnerItems(const QString &uniqueName);
     [[nodiscard]] bool isLiveGeneration(const OwnerKey &key) const;
 
     // AGENT-GUARD: Only live owners appear in m_generations, and the table is
@@ -126,11 +132,20 @@ private:
     quint64 m_generationSeed = 0;
     quint64 m_watcherEpochSeed = 0;
     quint64 m_currentWatcherEpoch = 0;
+    bool m_hasCompletedPopulation = false;
+    bool m_reconcilingPopulation = false;
     QHash<OwnerKey, ItemDescriptor> m_items;
     QHash<OwnerKey, quint64> m_itemLastSeenEpoch;
     // AGENT-GUARD: Reverse index identity -> owning key. It must stay exactly
     // in sync with m_items; every m_items mutation updates both or neither.
     QHash<QString, OwnerKey> m_identityOwners;
+    // AGENT-GUARD: A replacement watcher's target lives only in these bounded
+    // maps until matching completion swaps both published indexes together.
+    // Never validate staged identity or capacity against m_items: unseen LKG
+    // members are precisely what the target population replaces.
+    QHash<OwnerKey, ItemDescriptor> m_stagedItems;
+    QHash<QString, OwnerKey> m_stagedIdentityOwners;
+    RegistryOutcome m_stagedPopulationFailure;
     bool m_initialPopulationComplete = false;
     QString m_degradedReason;
 };

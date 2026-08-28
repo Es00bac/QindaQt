@@ -77,13 +77,19 @@ trusting rules are:
   exhaustion fails closed, and generations come from a globally monotonic
   counter so no stale event can ever match a reissued value.
 - Watcher epochs also refuse wrap. Empty, partial, and full replacement
-  populations reconcile only on a matching completion event; every stale
+  populations are staged separately from the published last-known-good set and
+  reconcile only on a matching completion event. Identity uniqueness and item
+  capacity apply to the staged post-prune target, so a valid key or owner
+  handover and a capacity-bound one-for-one replacement publish atomically;
+  contradictory or over-capacity targets retain the prior snapshot. Every stale
   completion, owner, item, and mass-removal event is rejected.
 - The bounds in `status_notifier_limits.h` are a cross-module contract shared
   by every future producer and consumer; changing one is a contract change.
 - Hostile coverage (spoofed owner, stale reply, malformed menu/icon, duplicate
   identity, restart, rebaseline, watcher loss/reconnect, empty/partial/full
-  epoch reconciliation, counter exhaustion, and intent revalidation) is part
+  epoch reconciliation, path/owner identity handover, capacity-bound atomic
+  replacement, conflicting-target rollback, counter exhaustion, and intent
+  revalidation) is part
   of the module's acceptance evidence and must be extended alongside any new
   value type.
 - Degraded state retains last-known-good items and requires explicit

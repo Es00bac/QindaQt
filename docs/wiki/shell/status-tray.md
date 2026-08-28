@@ -48,8 +48,13 @@ Two lifecycle transitions keep presented keys safe:
 - **Watcher epochs.** A watcher (re)connection begins a new monotonic watcher
   epoch, which resets the population bit; presentation returns to fail-closed
   Loading until the replacement watcher's population is observed and marked
-  complete. Marking initial population complete prunes any registered items
-  not observed during that epoch. Watcher *loss* is handled at the presentation
+  complete. A replacement population is staged beside the published last-known-
+  good set, validates identity uniqueness and the item bound against its own
+  post-prune target, then replaces both membership and the reverse identity
+  index atomically on matching completion. This permits valid path/owner
+  identity handover and 64-for-64 replacement without transient duplicate
+  claims. A contradictory or over-capacity target cannot complete and leaves
+  the last-known-good set intact. Watcher *loss* is handled at the presentation
   layer (below) because a watcher departure says nothing about its sources'
   liveness.
 
@@ -146,7 +151,10 @@ identity across live owners, stale replies after owner loss, generation-fenced
 loss events, restart generation advance, live-owner rebaseline, globally unique
 generations, bounded owner history with fail-closed exhaustion, capacity
 overflow, watcher-epoch rebaseline with stale completion/arrival/registration/
-removal/loss fencing, empty/partial/full membership reconciliation, and both
+removal/loss fencing, empty/partial/full membership reconciliation, atomic
+same-owner and cross-owner identity handover, conflicting handover rollback in
+both event orders, 64-for-64 post-prune replacement in both event orders, and
+both
 generation- and epoch-counter exhaustion,
 malformed-replacement degradation with last-known-good retention, typed
 accepted intents bound to owner/generation/identity, and `revalidateIntent`

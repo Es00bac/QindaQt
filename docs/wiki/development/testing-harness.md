@@ -588,7 +588,9 @@ bus names, root object path, in-place aggregate pixmap checks), the exact-owner
 keyed registry with generation fencing (spoofed owner, stale reply, duplicate
 identity, restart, live-owner rebaseline, generation-fenced loss, bounded
 owner history, capacity overflow, malformed-replacement degradation, monotonic
-watcher epoch fencing with empty/partial/full reconciliation, generation and
+watcher epoch fencing with empty/partial/full reconciliation, atomic same-owner
+and cross-owner identity handover, conflicting-target rollback in both event
+orders, 64-for-64 post-prune replacement in both event orders, generation and
 epoch exhaustion, intent revalidation), watcher loss and reconnect rebaseline
 presentation, typed accepted request intents, and a scripted lifecycle driven
 through the injected fake transport. Attachment cases distinguish null-first

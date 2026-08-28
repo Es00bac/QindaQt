@@ -35,10 +35,21 @@ quint64 StatusNotifierRegistry::beginWatcherEpoch()
         // the previous watcher cannot mutate state after this failed handoff.
         m_currentWatcherEpoch = 0;
         m_initialPopulationComplete = false;
+        m_reconcilingPopulation = false;
+        m_stagedItems.clear();
+        m_stagedIdentityOwners.clear();
+        m_stagedPopulationFailure = {};
         return 0;
     }
     m_currentWatcherEpoch = ++m_watcherEpochSeed;
     m_initialPopulationComplete = false;
+    // The first population has no accepted LKG snapshot to protect, so its
+    // events retain the established immediate registry semantics. Every later
+    // watcher stages its complete target beside the published LKG snapshot.
+    m_reconcilingPopulation = m_hasCompletedPopulation;
+    m_stagedItems.clear();
+    m_stagedIdentityOwners.clear();
+    m_stagedPopulationFailure = {};
     return m_currentWatcherEpoch;
 }
 
@@ -48,20 +59,39 @@ RegistryOutcome StatusNotifierRegistry::markInitialPopulationComplete(quint64 ep
         return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
     }
 
-    // Reconcile membership: prune any items not seen in the current watcher epoch.
-    for (auto iterator = m_items.begin(); iterator != m_items.end();) {
-        const OwnerKey itemKey = iterator.key();
-        if (m_itemLastSeenEpoch.value(itemKey, 0) < epoch) {
-            if (m_identityOwners.value(iterator->identity) == itemKey) {
-                m_identityOwners.remove(iterator->identity);
+    if (m_reconcilingPopulation) {
+        if (!m_stagedPopulationFailure.accepted()) {
+            return m_stagedPopulationFailure;
+        }
+
+        // AGENT-GUARD: Publish the complete target and both indexes together.
+        // Mutating m_items incrementally would expose duplicate identity claims
+        // and make valid 64-for-64 replacement depend on event order.
+        m_items = std::move(m_stagedItems);
+        m_identityOwners = std::move(m_stagedIdentityOwners);
+        m_itemLastSeenEpoch.clear();
+        for (auto iterator = m_items.cbegin(); iterator != m_items.cend(); ++iterator) {
+            m_itemLastSeenEpoch.insert(iterator.key(), epoch);
+        }
+        m_reconcilingPopulation = false;
+    } else {
+        // The first watcher population is admitted directly because there is
+        // no accepted snapshot to preserve; reconcile any unseen keys here.
+        for (auto iterator = m_items.begin(); iterator != m_items.end();) {
+            const OwnerKey itemKey = iterator.key();
+            if (m_itemLastSeenEpoch.value(itemKey, 0) < epoch) {
+                if (m_identityOwners.value(iterator->identity) == itemKey) {
+                    m_identityOwners.remove(iterator->identity);
+                }
+                m_itemLastSeenEpoch.remove(itemKey);
+                iterator = m_items.erase(iterator);
+            } else {
+                ++iterator;
             }
-            m_itemLastSeenEpoch.remove(itemKey);
-            iterator = m_items.erase(iterator);
-        } else {
-            ++iterator;
         }
     }
 
+    m_hasCompletedPopulation = true;
     m_initialPopulationComplete = true;
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
@@ -95,6 +125,7 @@ quint64 StatusNotifierRegistry::beginOwnerGeneration(quint64 epoch, const QStrin
         // generation are dropped with their identity claims, so no stale or
         // unactionable key can remain presented or block re-registration.
         dropOwnerItems(uniqueName);
+        dropStagedOwnerItems(uniqueName);
     }
     m_generations.insert(uniqueName, next);
     return next;
@@ -117,6 +148,7 @@ RegistryOutcome StatusNotifierRegistry::ownerLost(quint64 epoch,
     }
 
     dropOwnerItems(uniqueName);
+    dropStagedOwnerItems(uniqueName);
     // The tracking slot is freed immediately: the globally unique generation
     // already fences any late event, so no departed-name residue is needed.
     m_generations.remove(uniqueName);
@@ -136,6 +168,10 @@ RegistryOutcome StatusNotifierRegistry::registerItem(quint64 epoch,
     }
     if (!isLiveGeneration(key)) {
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
+    }
+
+    if (m_reconcilingPopulation) {
+        return stageItem(key, descriptor);
     }
 
     const bool replacesExistingItem = m_items.contains(key);
@@ -189,10 +225,11 @@ RegistryOutcome StatusNotifierRegistry::removeItem(quint64 epoch, const OwnerKey
     if (!isLiveGeneration(key)) {
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
     }
-    if (!m_items.contains(key)) {
+    if (!m_items.contains(key) && !m_stagedItems.contains(key)) {
         return reject(RegistryStatus::UnknownItem, QStringLiteral("item-not-registered"));
     }
     forgetItem(key);
+    forgetStagedItem(key);
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
@@ -212,6 +249,7 @@ RegistryOutcome StatusNotifierRegistry::removeAllForOwner(quint64 epoch,
     }
 
     dropOwnerItems(uniqueName);
+    dropStagedOwnerItems(uniqueName);
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
@@ -357,6 +395,82 @@ RegistryOutcome StatusNotifierRegistry::reject(RegistryStatus status, QString re
     return RegistryOutcome{status, std::move(reasonCode)};
 }
 
+RegistryOutcome StatusNotifierRegistry::stageItem(const OwnerKey &key,
+                                                  const ItemDescriptor &descriptor)
+{
+    const bool replacesPublished = m_items.contains(key);
+    const bool replacesStaged = m_stagedItems.contains(key);
+    const ValidationOutcome descriptorOutcome = validateItemDescriptor(descriptor);
+    if (!descriptorOutcome.accepted) {
+        if (replacesStaged || (replacesPublished && stageLastKnownGood(key))) {
+            m_degradedReason = QStringLiteral("malformed-item-replacement");
+        }
+        return reject(RegistryStatus::InvalidDescriptor, descriptorOutcome.reasonCode);
+    }
+
+    const auto identityOwner = m_stagedIdentityOwners.constFind(descriptor.identity);
+    if (identityOwner != m_stagedIdentityOwners.cend() && identityOwner.value() != key) {
+        // An exact LKG key may still be observed with a policy-rejected update;
+        // retain its previous descriptor when it does not conflict with the
+        // staged target. Otherwise the target contains contradictory identity
+        // claims and must not partially replace the published snapshot.
+        if (!replacesStaged && (!replacesPublished || !stageLastKnownGood(key))) {
+            invalidateStagedPopulation(RegistryStatus::DuplicateIdentity,
+                                       QStringLiteral("replacement-population-duplicate-identity"));
+        }
+        return reject(RegistryStatus::DuplicateIdentity, QStringLiteral("identity-claimed"));
+    }
+
+    if (!replacesStaged && m_stagedItems.size() >= kMaxItems) {
+        m_degradedReason = QStringLiteral("item-capacity-exceeded");
+        invalidateStagedPopulation(RegistryStatus::CapacityExceeded,
+                                   QStringLiteral("replacement-population-capacity-exceeded"));
+        return reject(RegistryStatus::CapacityExceeded,
+                      QStringLiteral("item-capacity-exceeded"));
+    }
+
+    const auto existing = m_stagedItems.constFind(key);
+    if (existing != m_stagedItems.cend() && existing->identity != descriptor.identity) {
+        m_stagedIdentityOwners.remove(existing->identity);
+    }
+    m_stagedItems.insert(key, descriptor);
+    m_stagedIdentityOwners.insert(descriptor.identity, key);
+    return RegistryOutcome{RegistryStatus::Accepted, {}};
+}
+
+bool StatusNotifierRegistry::stageLastKnownGood(const OwnerKey &key)
+{
+    if (m_stagedItems.contains(key)) {
+        return true;
+    }
+    const auto published = m_items.constFind(key);
+    if (published == m_items.cend()) {
+        return false;
+    }
+    if (m_stagedItems.size() >= kMaxItems) {
+        invalidateStagedPopulation(RegistryStatus::CapacityExceeded,
+                                   QStringLiteral("replacement-population-cannot-retain-item"));
+        return false;
+    }
+    const auto identityOwner = m_stagedIdentityOwners.constFind(published->identity);
+    if (identityOwner != m_stagedIdentityOwners.cend() && identityOwner.value() != key) {
+        invalidateStagedPopulation(RegistryStatus::DuplicateIdentity,
+                                   QStringLiteral("replacement-population-duplicate-identity"));
+        return false;
+    }
+    m_stagedItems.insert(key, published.value());
+    m_stagedIdentityOwners.insert(published->identity, key);
+    return true;
+}
+
+void StatusNotifierRegistry::invalidateStagedPopulation(RegistryStatus status,
+                                                        QString reasonCode)
+{
+    if (m_stagedPopulationFailure.accepted()) {
+        m_stagedPopulationFailure = RegistryOutcome{status, std::move(reasonCode)};
+    }
+}
+
 void StatusNotifierRegistry::forgetItem(const OwnerKey &key)
 {
     const auto iterator = m_items.constFind(key);
@@ -372,6 +486,18 @@ void StatusNotifierRegistry::forgetItem(const OwnerKey &key)
     m_items.erase(iterator);
 }
 
+void StatusNotifierRegistry::forgetStagedItem(const OwnerKey &key)
+{
+    const auto iterator = m_stagedItems.constFind(key);
+    if (iterator == m_stagedItems.cend()) {
+        return;
+    }
+    if (m_stagedIdentityOwners.value(iterator->identity) == key) {
+        m_stagedIdentityOwners.remove(iterator->identity);
+    }
+    m_stagedItems.erase(iterator);
+}
+
 void StatusNotifierRegistry::dropOwnerItems(const QString &uniqueName)
 {
     for (auto iterator = m_items.begin(); iterator != m_items.end();) {
@@ -381,6 +507,20 @@ void StatusNotifierRegistry::dropOwnerItems(const QString &uniqueName)
             }
             m_itemLastSeenEpoch.remove(iterator.key());
             iterator = m_items.erase(iterator);
+        } else {
+            ++iterator;
+        }
+    }
+}
+
+void StatusNotifierRegistry::dropStagedOwnerItems(const QString &uniqueName)
+{
+    for (auto iterator = m_stagedItems.begin(); iterator != m_stagedItems.end();) {
+        if (iterator.key().uniqueName == uniqueName) {
+            if (m_stagedIdentityOwners.value(iterator->identity) == iterator.key()) {
+                m_stagedIdentityOwners.remove(iterator->identity);
+            }
+            iterator = m_stagedItems.erase(iterator);
         } else {
             ++iterator;
         }

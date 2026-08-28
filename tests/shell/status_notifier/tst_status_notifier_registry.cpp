@@ -5,6 +5,7 @@
 #include <qindaqt/shell/status_notifier/status_notifier_registry.h>
 
 #include "status_notifier_registry_test_support.h"
+#include "status_notifier_atomic_reconciliation_test_support.h"
 
 #include <QtTest>
 
@@ -400,6 +401,16 @@ private slots:
     void watcherEpochReconciliationPrunesUnseenMembership()
     {
         verifyWatcherEpochReconciliation();
+    }
+
+    void replacementPopulationAtomicallyHandsOverIdentity()
+    {
+        verifyAtomicIdentityHandovers();
+    }
+
+    void replacementPopulationUsesPostPruneCapacity()
+    {
+        verifyCapacityBoundAtomicReplacement();
     }
 
     void evaluateRequestBindsTypedIntentToExactOwnership()

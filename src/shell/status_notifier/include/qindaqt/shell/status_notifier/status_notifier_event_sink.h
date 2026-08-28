@@ -42,9 +42,10 @@ public:
     [[nodiscard]] virtual quint64 beginWatcherEpoch() = 0;
 
     // Marks the watcher's item population as observed for the current `epoch`.
-    // Reconciles membership by pruning any items unseen during this epoch;
-    // presentation may leave Loading only afterwards. Returns failure if `epoch`
-    // is not current.
+    // A replacement population is validated against its own post-prune target
+    // and published atomically here; the last-known-good set survives if that
+    // target is invalid. Presentation may leave Loading only after success.
+    // Returns failure if `epoch` is not current or the target cannot publish.
     [[nodiscard]] virtual RegistryOutcome markInitialPopulationComplete(quint64 epoch) = 0;
 
     // Allocates a fresh, globally unique generation for `uniqueName` in `epoch`
