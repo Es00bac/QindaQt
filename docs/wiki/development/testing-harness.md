@@ -964,7 +964,7 @@ The immutable S1 evidence model requires:
 | Services | Unique owners and exact executable-bound PIDs for Compositor1, Settings1, Audio1, and freedesktop Notifications |
 | Display | One `Virtual-1` output at `(0,0)`, `1920x1080`, scale 1; equal canonical nonzero Outputs/ShellVisibility generation |
 | Input | Exactly one combined `QindaQt Development Input`; no host input node |
-| Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1` |
+| Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1`, with canonical client `processId` equal to the authenticated current production-shell PID |
 | Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
 | Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
 

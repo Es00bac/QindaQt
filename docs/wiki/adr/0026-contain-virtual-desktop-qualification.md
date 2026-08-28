@@ -62,8 +62,11 @@ session/shell/notification graph, Settings1, Audio1, Settings and Text Editor
 applications, the public-D-Bus probe, one `Virtual-1` output, matching nonzero
 output/visibility generations, one combined development input device, and at
 least one mapped and committed production `dock` layer surface on that output.
-An unavailable surface-evidence method is a dependency failure; ordinary
-window inventory cannot be substituted.
+Every consumed dock record must carry a canonical positive decimal-string
+client PID equal to the externally authenticated current production-shell PID;
+a foreign or stale replacement surface cannot satisfy the row. An unavailable
+surface-evidence method is a dependency failure; ordinary window inventory
+cannot be substituted.
 
 Service ownership alone is not readiness. One bounded loop reacquires the
 complete public-D-Bus snapshot until output/generation, input, dock, and both

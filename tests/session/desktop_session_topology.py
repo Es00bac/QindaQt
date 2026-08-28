@@ -258,7 +258,14 @@ def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> Non
         raise TopologyContractError("output and shell visibility generations differ")
 
 
-def _validate_input_and_dock(evidence: Mapping[str, Any], topology: BootTopology) -> None:
+def _canonical_process_id(value: Any) -> int:
+    process_id = int(value, 10) if isinstance(value, str) and value.isascii() and value.isdecimal() else 0
+    if process_id <= 0 or value != str(process_id):
+        raise TopologyContractError("dock processId must be a canonical positive decimal string")
+    return process_id
+
+
+def _validate_input_and_dock(evidence: Mapping[str, Any], topology: BootTopology, shell_pid: int | None = None) -> None:
     devices = _sequence(evidence.get("inputDevices"), "evidence.inputDevices")
     development = [
         item
@@ -270,13 +277,20 @@ def _validate_input_and_dock(evidence: Mapping[str, Any], topology: BootTopology
     ]
     if len(development) != 1:
         raise TopologyContractError("exactly one combined development input is required")
-    surfaces = _sequence(evidence.get("dockSurfaces"), "evidence.dockSurfaces")
+    dock_surfaces: list[Mapping[str, Any]] = []
+    for item in _sequence(evidence.get("dockSurfaces"), "evidence.dockSurfaces"):
+        if not isinstance(item, Mapping) or item.get("scope") != topology.dock.scope:
+            continue
+        process_id = _canonical_process_id(item.get("processId"))
+        # AGENT-CONTRACT: Bind every consumed dock record to the separately
+        # authenticated current shell; foreign/replaced client PIDs are not proof.
+        if shell_pid is not None and process_id != shell_pid:
+            raise TopologyContractError("dock processId does not match authenticated shell")
+        dock_surfaces.append(item)
     matched = [
         item
-        for item in surfaces
-        if isinstance(item, Mapping)
-        and item.get("scope") == topology.dock.scope
-        and item.get("outputName") == topology.dock.output_name
+        for item in dock_surfaces
+        if item.get("outputName") == topology.dock.output_name
         and item.get("desiredOutputName") == topology.dock.output_name
         and item.get("mapped") is True
         and item.get("committed") is True
@@ -408,7 +422,7 @@ def validate_boot_evidence(document: Any) -> None:
     pids = _validate_processes(evidence, topology)
     _validate_services(evidence, topology, pids)
     _validate_output(evidence, topology)
-    _validate_input_and_dock(evidence, topology)
+    _validate_input_and_dock(evidence, topology, pids["shell"])
     _validate_applications(evidence, topology)
     _validate_measurements(evidence)
     _validate_cleanup(evidence, topology, pids)

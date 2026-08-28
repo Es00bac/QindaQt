@@ -67,6 +67,7 @@ def valid_evidence() -> dict[str, object]:
         "dockSurfaces": [
             {
                 "scope": "dock",
+                "processId": str(pids["shell"]),
                 "outputName": "Virtual-1",
                 "desiredOutputName": "Virtual-1",
                 "mapped": True,
@@ -192,6 +193,53 @@ class TopologyTests(unittest.TestCase):
         evidence = valid_evidence()
         evidence["dockSurfaces"] = []
         with self.assertRaisesRegex(TopologyContractError, "dock surface"):
+            validate_boot_evidence(evidence)
+
+    def test_shell_owned_dock_process_id_passes(self) -> None:
+        evidence = valid_evidence()
+        shell_pid = evidence["processes"]["shell"]["pid"]  # type: ignore[index]
+        self.assertEqual(
+            evidence["dockSurfaces"][0]["processId"], str(shell_pid)  # type: ignore[index]
+        )
+        validate_boot_evidence(evidence)
+
+    def test_dock_process_id_is_required(self) -> None:
+        evidence = valid_evidence()
+        del evidence["dockSurfaces"][0]["processId"]  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "canonical positive"):
+            validate_boot_evidence(evidence)
+
+    def test_dock_process_id_rejects_noncanonical_values(self) -> None:
+        for process_id in ("0", "-1", 104, True, "0104", "+104", " 104"):
+            with self.subTest(process_id=process_id):
+                evidence = valid_evidence()
+                evidence["dockSurfaces"][0]["processId"] = process_id  # type: ignore[index]
+                with self.assertRaisesRegex(TopologyContractError, "canonical positive"):
+                    validate_boot_evidence(evidence)
+
+    def test_forged_999999_dock_process_id_is_rejected(self) -> None:
+        evidence = valid_evidence()
+        evidence["dockSurfaces"][0]["processId"] = "999999"  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "authenticated shell"):
+            validate_boot_evidence(evidence)
+
+    def test_foreign_live_process_cannot_own_the_dock(self) -> None:
+        evidence = valid_evidence()
+        foreign_pid = evidence["processes"]["editor-app"]["pid"]  # type: ignore[index]
+        evidence["dockSurfaces"][0]["processId"] = str(foreign_pid)  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "authenticated shell"):
+            validate_boot_evidence(evidence)
+
+    def test_stale_dock_pid_rejects_an_authenticated_shell_replacement(self) -> None:
+        evidence = valid_evidence()
+        stale_pid = evidence["dockSurfaces"][0]["processId"]  # type: ignore[index]
+        replacement_pid = 999999
+        evidence["processes"]["shell"]["pid"] = replacement_pid  # type: ignore[index]
+        for record in evidence["cleanup"]["terminalPhases"]:  # type: ignore[index]
+            if record["role"] == "shell":
+                record["pid"] = replacement_pid
+        self.assertNotEqual(stale_pid, str(replacement_pid))
+        with self.assertRaisesRegex(TopologyContractError, "authenticated shell"):
             validate_boot_evidence(evidence)
 
     def test_host_reachability_and_survivors_fail(self) -> None:
