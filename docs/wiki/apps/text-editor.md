@@ -95,12 +95,14 @@ keeps that authority, matching the ownership boundary in
   directly. They issue an AppShell `requestOpenFile`/`requestSaveFile`
   portal request and wait for the injected `FileSelectionAdapter`
   (`app_shell/file_selection_adapter.h`) to resolve it.
-  `NativeFileSelectionAdapter` is the production adapter and shows the same
-  modal `QFileDialog` as before; `FailClosedFileSelectionAdapter` is the
-  default when no adapter is injected and denies every request without
-  touching any host chooser, so a missing or misconfigured adapter can never
-  silently invent a path. A Save As suggests only the destination's base
-  file name, not a full initial directory, matching the portal's
+  `EditorWindow` constructs `NativeFileSelectionAdapter` by default for the
+  production application; it shows the same modal `QFileDialog` as before.
+  A caller may inject another adapter, while `EditorAppShellBridge` itself
+  substitutes `FailClosedFileSelectionAdapter` only when constructed with a
+  null adapter. That bridge-level fallback denies every request without
+  touching any host chooser, so a missing or misconfigured collaborator can
+  never silently invent a path. A Save As suggests only the destination's
+  base file name, not a full initial directory, matching the portal's
   sandbox-compatible contract.
 
 The focused selector is:
@@ -113,8 +115,13 @@ It covers the published catalog against the real `ActionRegistry`
 validation, the atomic initial menu snapshot and its synced enabled
 projection, dirty-state projection, AppShell-activated commands running the
 identical local trigger, close consent routed through `quitApproved`, the
-fail-closed portal default, and a full open resolved by an injected adapter.
-These rows never open a real file chooser or consent dialog; the existing
+fail-closed bridge fallback, typed Open/Save As cancellation with subsequent
+request recovery, stale-reply fencing followed by exact-ID recovery, and a
+full open resolved by an injected adapter. A dedicated source-policy row scans
+the complete editor bridge/window seam, confines `QFileDialog` to the native
+adapter, rejects private platform/service dependencies, and proves the matcher
+with a generated poisoned fixture. These rows never open a real file chooser
+or consent dialog; the existing
 `qindaqt.editor-` regressions above remain the coverage for local dirty
 consent and the file dialogs themselves. Real portal/global-menu adapters,
 Settings/session hook composition, and a global-menu export transport remain
@@ -191,8 +198,11 @@ and exits before constructing a window. Packaging uses it to prove that source-
 tree data and build-tree linkage are not masking a broken installed prefix; the
 installed gate exercises all five built-in themes and reads the installed
 desktop entry rather than its source copy. The focused `TextEditor` install
-component contains only the executable, desktop entry, and required built-in
-theme data, so its packaging proof never depends on unrelated binaries.
+component contains the executable, desktop entry, required built-in theme
+data, and the `QindaQt.AppShell`, `QindaQt.Controls`, and `QindaQt.Tokens`
+shared runtime libraries needed by that executable's verified relative RUNPATH
+chain. Unrelated application binaries and QML plugins remain excluded, so the
+packaging proof does not depend on them.
 `--report-startup` emits the elapsed milliseconds only after the real top-level
 has completed its first paint; it does not bypass document loading or theme
 composition.
