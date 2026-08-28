@@ -19,10 +19,11 @@ private slots:
         // no accepted generation exists yet, so whatever is handed in must be
         // ignored.
         TaskListSource source;
-        const auto generation = TaskListTest::publish(
+        const auto evaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(evaluation.ok());
         const auto presentation = TaskListPresentationModel::project(
-            TaskListSourceStatus::Loading, generation, TaskListScope{});
+            TaskListSourceStatus::Loading, evaluation.generation, TaskListScope{});
         QCOMPARE(presentation.state, TaskListState::Loading);
         QCOMPARE(presentation.entries.isEmpty(), true);
         QCOMPARE(presentation.identities.isEmpty(), true);
@@ -31,12 +32,13 @@ private slots:
     void readyGenerationProjectsIdentitiesInCanonicalOrder()
     {
         TaskListSource source;
-        const auto generation = TaskListTest::publish(source, {
+        const auto evaluation = TaskListTest::publish(source, {
             TaskListTest::standalone(QStringLiteral("w-b"), kAppId),
             TaskListTest::standalone(QStringLiteral("w-a"), kAppId),
         });
+        QVERIFY(evaluation.ok());
         const auto presentation = TaskListPresentationModel::project(
-            source.status(), generation, TaskListScope{});
+            source.status(), evaluation.generation, TaskListScope{});
 
         QCOMPARE(presentation.state, TaskListState::Ready);
         QCOMPARE(presentation.entries.size(), 2);
@@ -52,13 +54,14 @@ private slots:
     void filteredOutSelectionPresentsEmpty()
     {
         TaskListSource source;
-        const auto generation = TaskListTest::publish(
+        const auto evaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(evaluation.ok());
         TaskListScope scope;
         scope.outputId = QStringLiteral("output-absent");
 
         const auto presentation =
-            TaskListPresentationModel::project(source.status(), generation, scope);
+            TaskListPresentationModel::project(source.status(), evaluation.generation, scope);
         QCOMPARE(presentation.state, TaskListState::Empty);
         QCOMPARE(presentation.identities.isEmpty(), true);
     }
@@ -66,12 +69,13 @@ private slots:
     void degradedSourcesRetainTheirVisibleEntries()
     {
         TaskListSource source;
-        const auto generation = TaskListTest::publish(
+        const auto evaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(evaluation.ok());
         source.markDegraded();
 
         const auto presentation = TaskListPresentationModel::project(
-            source.status(), generation, TaskListScope{});
+            source.status(), evaluation.generation, TaskListScope{});
         QCOMPARE(presentation.state, TaskListState::Degraded);
         QCOMPARE(presentation.entries.size(), 1);
         QCOMPARE(presentation.identities.size(), 1);
@@ -80,15 +84,16 @@ private slots:
         TaskListScope absent;
         absent.outputId = QStringLiteral("output-absent");
         const auto emptyDegraded = TaskListPresentationModel::project(
-            source.status(), generation, absent);
+            source.status(), evaluation.generation, absent);
         QCOMPARE(emptyDegraded.state, TaskListState::Empty);
     }
 
     void resetReturnsToLoading()
     {
         TaskListSource source;
-        TaskListTest::publish(
-            source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(TaskListTest::publish(
+                    source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)})
+                    .ok());
         source.reset();
         QCOMPARE(source.status(), TaskListSourceStatus::Loading);
         QCOMPARE(source.revision(), quint64(0));
@@ -98,16 +103,18 @@ private slots:
     void keyboardIndicesStayStableAcrossIdenticalGenerations()
     {
         TaskListSource source;
-        const auto first = TaskListTest::publish(
+        const auto firstEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId),
                      TaskListTest::standalone(QStringLiteral("w-2"), kAppId)});
+        QVERIFY(firstEvaluation.ok());
         const auto firstPresentation = TaskListPresentationModel::project(
-            source.status(), first, TaskListScope{});
-        const auto second = TaskListTest::publish(
+            source.status(), firstEvaluation.generation, TaskListScope{});
+        const auto secondEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId),
                      TaskListTest::standalone(QStringLiteral("w-2"), kAppId)});
+        QVERIFY(secondEvaluation.ok());
         const auto secondPresentation = TaskListPresentationModel::project(
-            source.status(), second, TaskListScope{});
+            source.status(), secondEvaluation.generation, TaskListScope{});
 
         // AGENT-GUARD: Equal fact batches must not reshuffle keyboard order
         // between generations; shortcuts would otherwise change meaning.
@@ -149,6 +156,7 @@ private slots:
 
         TaskEntry singletonContainer = container;
         singletonContainer.windowCount = 1;
+        singletonContainer.minimized = false;
         QCOMPARE(TaskListPresentationModel::accessibleName(singletonContainer),
                  QStringLiteral("Files — Projects"));
     }

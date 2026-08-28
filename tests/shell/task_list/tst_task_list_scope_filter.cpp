@@ -14,7 +14,11 @@ const QString kFilesId = QStringLiteral("app.files");
 // from an accepted generation rather than grouping internals.
 QVector<TaskEntry> entriesFor(const QVector<TaskWindowFact> &facts) {
   TaskListSource source;
-  return TaskListTest::publish(source, facts).entries;
+  const auto evaluation = TaskListTest::publish(source, facts);
+  // AGENT-GUARD: This helper is only used with deliberately valid facts; a
+  // failure here is a test-fixture defect, not the behavior under test.
+  Q_ASSERT(evaluation.ok());
+  return evaluation.generation.entries;
 }
 
 QVector<TaskWindowFact> sampleFacts()
@@ -46,10 +50,9 @@ private slots:
         scope.outputId = QStringLiteral("output-2");
 
         const auto visible = TaskListFilter::filter(entries, scope);
-        QCOMPARE(visible.size(), 2);
-        for (const TaskEntry &entry : visible) {
-            QCOMPARE(entry.outputId, QStringLiteral("output-2"));
-        }
+        QCOMPARE(visible.size(), 1);
+        QCOMPARE(visible.first().outputId, QStringLiteral("output-2"));
+        QCOMPARE(visible.first().taskId, QStringLiteral("w-out2"));
     }
 
     void workspaceScopeIncludesAllWorkspaceEntries()

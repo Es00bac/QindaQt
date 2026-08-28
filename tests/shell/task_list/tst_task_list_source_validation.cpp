@@ -16,9 +16,9 @@ private slots:
     void acceptedSeedGenerationSurvivesLaterHostilePublishes()
     {
         TaskListSource source;
-        const auto seed = TaskListTest::publish(
+        const auto seedEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
-        QVERIFY(seed.ok());
+        QVERIFY(seedEvaluation.ok());
 
         auto orphaned = TaskListTest::member(QStringLiteral("w-orphan"),
                                              QStringLiteral("c-none"));

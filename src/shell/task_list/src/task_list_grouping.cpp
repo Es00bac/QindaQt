@@ -50,6 +50,10 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
     if (fact.role == TaskWindowRole::ContainerPrimary) {
       entry.taskId = fact.containerId;
       entry.kind = TaskEntryKind::Container;
+      // AGENT-GUARD: The representative primary window is part of the collapsed
+      // container; adapters receive every member (including the primary) so
+      // container close/minimize policy stays deterministic.
+      entry.memberWindowIds = {fact.windowId};
       containerIndex.insert(entry.taskId,
                             static_cast<int>(containers.size()));
       containers.append(entry);

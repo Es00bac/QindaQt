@@ -34,13 +34,15 @@ private slots:
     {
         TaskListSource source;
         // Deliberately scrambled producer order across applications and kinds.
-        const auto generation = TaskListTest::publish(source, {
+        const auto evaluation = TaskListTest::publish(source, {
             TaskListTest::standalone(QStringLiteral("w-editor-2"), kEditorId),
             TaskListTest::primary(QStringLiteral("w-files-p"), kFilesId,
                                   QStringLiteral("c-files")),
             TaskListTest::standalone(QStringLiteral("w-editor-1"), kEditorId),
             TaskListTest::member(QStringLiteral("w-files-m"), QStringLiteral("c-files")),
         });
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
         QCOMPARE(source.status(), TaskListSourceStatus::Ready);
         QCOMPARE(generation.revision, quint64(1));
 
@@ -65,12 +67,14 @@ private slots:
     void containerCollapsesToOneEntryWithSortedMembership()
     {
         TaskListSource source;
-        const auto generation = TaskListTest::publish(source, {
+        const auto evaluation = TaskListTest::publish(source, {
             TaskListTest::member(QStringLiteral("w-m2"), QStringLiteral("c-1")),
             TaskListTest::standalone(QStringLiteral("w-loose"), kEditorId),
             TaskListTest::member(QStringLiteral("w-m1"), QStringLiteral("c-1")),
             TaskListTest::primary(QStringLiteral("w-p"), kFilesId, QStringLiteral("c-1")),
         });
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
 
         QCOMPARE(generation.entries.size(), 2);
         const TaskEntry &container = generation.entries.at(1);
@@ -79,8 +83,8 @@ private slots:
         QCOMPARE(container.primaryWindowId, QStringLiteral("w-p"));
         QCOMPARE(container.windowCount, quint32(3));
         QCOMPARE(container.memberWindowIds,
-                 QStringList{QStringLiteral("w-m1"), QStringLiteral("w-m2"),
-                             QStringLiteral("w-p")});
+                 (QStringList{QStringLiteral("w-m1"), QStringLiteral("w-m2"),
+                              QStringLiteral("w-p")}));
     }
 
     void suppressedMembersNeverCreateTheirOwnEntries()
@@ -88,10 +92,12 @@ private slots:
         TaskListSource source;
         // A grouped member of a foreign application must not surface its own
         // application group; the container speaks with the primary identity.
-        const auto generation = TaskListTest::publish(source, {
+        const auto evaluation = TaskListTest::publish(source, {
             TaskListTest::primary(QStringLiteral("w-p"), kFilesId, QStringLiteral("c-1")),
             TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
         });
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
         QCOMPARE(generation.entries.size(), 1);
         QCOMPARE(generation.entries.first().applicationId, kFilesId);
         QCOMPARE(generation.entries.first().applicationName,
@@ -104,12 +110,14 @@ private slots:
         auto primaryFact =
             TaskListTest::primary(QStringLiteral("w-p"), kFilesId, QStringLiteral("c-1"));
         primaryFact.minimized = true;
-        const auto generation = TaskListTest::publish(source, {
+        const auto evaluation = TaskListTest::publish(source, {
             TaskListTest::withWorkspaces(
                 TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
                 {QStringLiteral("ws-2")}),
             primaryFact,
         });
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
         QCOMPARE(generation.entries.size(), 1);
         const TaskEntry &container = generation.entries.first();
         QCOMPARE(container.minimized, true);
@@ -118,10 +126,12 @@ private slots:
         auto urgentMember =
             TaskListTest::member(QStringLiteral("w-urgent"), QStringLiteral("c-2"));
         urgentMember.urgent = true;
-        const auto next = TaskListTest::publish(source, {
+        const auto nextEvaluation = TaskListTest::publish(source, {
             TaskListTest::primary(QStringLiteral("w-p2"), kFilesId, QStringLiteral("c-2")),
             urgentMember,
         });
+        QVERIFY(nextEvaluation.ok());
+        const auto &next = nextEvaluation.generation;
         QCOMPARE(next.entries.first().urgent, true);
         QCOMPARE(next.entries.first().windowCount, quint32(2));
     }
@@ -137,8 +147,10 @@ private slots:
         auto urgentFact = TaskListTest::standalone(QStringLiteral("w-urgent"), kFilesId);
         urgentFact.urgent = true;
 
-        const auto generation =
+        const auto evaluation =
             TaskListTest::publish(source, {activeFact, minimizedFact, urgentFact});
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
         QCOMPARE(generation.entries.size(), 3);
         QCOMPARE(generation.entries.at(0).active, true);
         QCOMPARE(generation.entries.at(0).urgent, false);
@@ -150,7 +162,7 @@ private slots:
     {
         const QVector<TaskWindowFact> facts = {
             TaskListTest::standalone(QStringLiteral("w-b"), kFilesId),
-            TaskListTest::primary(QStringLiteral("w-a"), kEditorId, QStringLiteral("c-a")),
+            TaskListTest::primary(QStringLiteral("w-p"), kEditorId, QStringLiteral("c-a")),
             TaskListTest::standalone(QStringLiteral("w-a"), kEditorId),
             TaskListTest::member(QStringLiteral("w-a-m"), QStringLiteral("c-a")),
         };
@@ -159,21 +171,49 @@ private slots:
 
         TaskListSource first;
         TaskListSource second;
-        const auto fromFacts = TaskListTest::publish(first, facts);
-        const auto fromShuffled = TaskListTest::publish(second, shuffled);
+        const auto fromFactsEvaluation = TaskListTest::publish(first, facts);
+        QVERIFY(fromFactsEvaluation.ok());
+        const auto &fromFacts = fromFactsEvaluation.generation;
+        const auto fromShuffledEvaluation = TaskListTest::publish(second, shuffled);
+        QVERIFY(fromShuffledEvaluation.ok());
+        const auto &fromShuffled = fromShuffledEvaluation.generation;
         // AGENT-GUARD: Keyboard traversal order is the canonical order, so two
         // equal fact batches must produce byte-identical generations.
         QCOMPARE(fromShuffled.entries == fromFacts.entries, true);
     }
 
+    void primaryOnlyContainerCountsItself()
+    {
+        // AGENT-GUARD: A container with no additional members must still count
+        // its representative primary; the old implementation left the primary
+        // out of memberWindowIds and reported windowCount == 0.
+        TaskListSource source;
+        const auto evaluation = TaskListTest::publish(
+            source,
+            {TaskListTest::primary(QStringLiteral("w-p"), kFilesId,
+                                   QStringLiteral("c-1"))});
+        QVERIFY(evaluation.ok());
+        const auto &generation = evaluation.generation;
+        QCOMPARE(generation.entries.size(), 1);
+        const TaskEntry &container = generation.entries.first();
+        QCOMPARE(container.kind, TaskEntryKind::Container);
+        QCOMPARE(container.windowCount, quint32(1));
+        QCOMPARE(container.memberWindowIds,
+                 (QStringList{QStringLiteral("w-p")}));
+    }
+
     void revisionAdvancesExactlyOncePerAcceptedPublish()
     {
         TaskListSource source;
-        const auto first = TaskListTest::publish(
+        const auto firstEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kEditorId)});
+        QVERIFY(firstEvaluation.ok());
+        const auto &first = firstEvaluation.generation;
         QCOMPARE(first.revision, quint64(1));
-        const auto second = TaskListTest::publish(
+        const auto secondEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-2"), kEditorId)});
+        QVERIFY(secondEvaluation.ok());
+        const auto &second = secondEvaluation.generation;
         QCOMPARE(second.revision, quint64(2));
         QCOMPARE(source.revision(), quint64(2));
     }

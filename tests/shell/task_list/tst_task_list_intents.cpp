@@ -30,11 +30,37 @@ private slots:
                  TaskIntentErrorCode::InvalidRequest);
     }
 
+    void activationTargetsTheContainerPrimary()
+    {
+        // AGENT-GUARD: Container activation must resolve to the primary window,
+        // and a primary-only container must still enumerate that primary as the
+        // only member target.
+        TaskListSource source;
+        QVERIFY(TaskListTest::publish(
+                    source,
+                    {TaskListTest::primary(QStringLiteral("w-p"), kAppId,
+                                           QStringLiteral("c-1"))})
+                    .ok());
+
+        TaskIntentRequest request;
+        request.taskId = QStringLiteral("c-1");
+        request.kind = TaskIntentKind::Activate;
+        request.expectedRevision = source.revision();
+
+        const auto outcome = source.requestIntent(request);
+        QCOMPARE(outcome.ok(), true);
+        QCOMPARE(outcome.entryKind, TaskEntryKind::Container);
+        QCOMPARE(outcome.primaryWindowId, QStringLiteral("w-p"));
+        QCOMPARE(outcome.memberWindowIds,
+                 (QStringList{QStringLiteral("w-p")}));
+    }
+
     void activationTargetsTheStandaloneWindow()
     {
         TaskListSource source;
-        TaskListTest::publish(
-            source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(TaskListTest::publish(
+                    source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)})
+                    .ok());
 
         TaskIntentRequest request;
         request.taskId = QStringLiteral("w-1");
@@ -52,12 +78,13 @@ private slots:
     void containerIntentsExposeEveryMemberDeterministically()
     {
         TaskListSource source;
-        TaskListTest::publish(source, {
-            TaskListTest::member(QStringLiteral("w-m2"), QStringLiteral("c-1")),
-            TaskListTest::primary(QStringLiteral("w-p"), kAppId,
-                                  QStringLiteral("c-1")),
-            TaskListTest::member(QStringLiteral("w-m1"), QStringLiteral("c-1")),
-        });
+        QVERIFY(TaskListTest::publish(source, {
+                                          TaskListTest::member(QStringLiteral("w-m2"), QStringLiteral("c-1")),
+                                          TaskListTest::primary(QStringLiteral("w-p"), kAppId,
+                                                                QStringLiteral("c-1")),
+                                          TaskListTest::member(QStringLiteral("w-m1"), QStringLiteral("c-1")),
+                                      })
+                    .ok());
 
         TaskIntentRequest request;
         request.taskId = QStringLiteral("c-1");
@@ -71,17 +98,19 @@ private slots:
         // AGENT-CONTRACT: The adapter decides Close All/Ungroup/Cancel policy;
         // this boundary only guarantees a deterministic member enumeration.
         QCOMPARE(outcome.memberWindowIds,
-                 QStringList{QStringLiteral("w-m1"), QStringLiteral("w-m2"),
-                             QStringLiteral("w-p")});
+                 (QStringList{QStringLiteral("w-m1"), QStringLiteral("w-m2"),
+                              QStringLiteral("w-p")}));
     }
 
     void staleRevisionIsRejectedBeforeUnknownTask()
     {
         TaskListSource source;
-        TaskListTest::publish(
-            source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
-        TaskListTest::publish(
-            source, {TaskListTest::standalone(QStringLiteral("w-2"), kAppId)});
+        QVERIFY(TaskListTest::publish(
+                    source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)})
+                    .ok());
+        QVERIFY(TaskListTest::publish(
+                    source, {TaskListTest::standalone(QStringLiteral("w-2"), kAppId)})
+                    .ok());
 
         TaskIntentRequest stale;
         stale.taskId = QStringLiteral("w-1");
@@ -107,15 +136,17 @@ private slots:
     void regroupedTasksRejectTheirVanishedIdentity()
     {
         TaskListSource source;
-        TaskListTest::publish(source, {
-            TaskListTest::primary(QStringLiteral("w-p"), kAppId,
-                                  QStringLiteral("c-1")),
-            TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
-        });
+        QVERIFY(TaskListTest::publish(source, {
+                                          TaskListTest::primary(QStringLiteral("w-p"), kAppId,
+                                                                QStringLiteral("c-1")),
+                                          TaskListTest::member(QStringLiteral("w-m"), QStringLiteral("c-1")),
+                                      })
+                    .ok());
         // A later generation ungroups the container: the container identity
         // must never resolve again even with a current revision.
-        TaskListTest::publish(source, {TaskListTest::standalone(
-                                          QStringLiteral("w-p"), kAppId)});
+        QVERIFY(TaskListTest::publish(source, {TaskListTest::standalone(
+                                                   QStringLiteral("w-p"), kAppId)})
+                    .ok());
 
         TaskIntentRequest request;
         request.taskId = QStringLiteral("c-1");
@@ -132,20 +163,23 @@ private slots:
     void degradedSourcesRefuseEveryIntentUntilRecovery()
     {
         TaskListSource source;
-        const auto generation = TaskListTest::publish(
+        const auto evaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(evaluation.ok());
 
         TaskIntentRequest request;
         request.taskId = QStringLiteral("w-1");
-        request.expectedRevision = generation.revision;
+        request.expectedRevision = evaluation.generation.revision;
 
         source.markDegraded();
         QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
         QCOMPARE(source.requestIntent(request).code,
                  TaskIntentErrorCode::SourceDegraded);
 
-        const auto recovered = TaskListTest::publish(
+        const auto recoveredEvaluation = TaskListTest::publish(
             source, {TaskListTest::standalone(QStringLiteral("w-1"), kAppId)});
+        QVERIFY(recoveredEvaluation.ok());
+        const auto &recovered = recoveredEvaluation.generation;
         QCOMPARE(recovered.revision, quint64(2));
         request.expectedRevision = recovered.revision;
         QCOMPARE(source.requestIntent(request).ok(), true);

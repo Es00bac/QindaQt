@@ -66,11 +66,10 @@ allWorkspaces(QindaQt::ShellTaskList::TaskWindowFact fact) {
   return fact;
 }
 
-inline QindaQt::ShellTaskList::TaskGeneration
+inline QindaQt::ShellTaskList::TaskListEvaluation
 publish(QindaQt::ShellTaskList::TaskListSource &source,
         const QVector<QindaQt::ShellTaskList::TaskWindowFact> &facts) {
-  const auto evaluation = source.publishGeneration(facts);
-  return evaluation.generation;
+  return source.publishGeneration(facts);
 }
 
 } // namespace TaskListTest

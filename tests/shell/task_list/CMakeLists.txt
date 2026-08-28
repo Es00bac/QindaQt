@@ -58,11 +58,16 @@ qindaqt_add_task_list_test(
     qindaqt.task-list-presentation
 )
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(task_list_boundary_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+else()
+    set(task_list_boundary_source_root "${CMAKE_SOURCE_DIR}")
+endif()
 add_test(
     NAME qindaqt.task-list-boundary
     COMMAND
         "${CMAKE_COMMAND}"
-        "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
+        "-DSOURCE_ROOT=${task_list_boundary_source_root}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_task_list_boundary.cmake"
 )
 set_tests_properties(qindaqt.task-list-boundary PROPERTIES
