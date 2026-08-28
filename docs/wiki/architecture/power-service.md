@@ -99,8 +99,12 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
   and completes dispatched operations as `Uncertain` exactly once.
 - Battery-supply and keyboard-backlight identities take precedence over
   profile-hold identities in the shared Power1 handle namespace regardless of
-  collaborator fact arrival order. A collision degrades only the profile
-  domain; valid battery and session truth remains published.
+  collaborator fact arrival order. The coordinator retains separately
+  sanitized profile truth while a collision suppresses its public projection,
+  re-evaluates that truth on each accepted battery identity change, and
+  restores it when the collision clears. Intrinsically malformed or unavailable
+  profile input is not retained for this recovery. A collision degrades only
+  the profile domain; valid battery and session truth remains published.
 - The PB-1 process deliberately injects deterministic unavailable
   collaborators: it owns `org.qindaqt.Power1` and speaks exact Power1 over
   D-Bus, but publishes an honest `Unavailable/upstream-not-integrated`
