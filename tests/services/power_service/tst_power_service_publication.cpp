@@ -58,6 +58,8 @@ private Q_SLOTS:
     void malformedBatteryDomainDegradesOnlyThatDomain();
     void batteryIdentityWinsAcrossFactArrivalOrder_data();
     void batteryIdentityWinsAcrossFactArrivalOrder();
+    void clearedBatteryIdentityRestoresRetainedProfiles();
+    void clearedBatteryIdentityDoesNotRestoreMalformedProfiles();
     void sanitizedHostileTextIsPublishedBounded();
     void allDomainsUnavailablePublishesUnavailable();
     void mixedValidAndUnavailablePublishesDegraded();
@@ -195,6 +197,83 @@ void PowerServicePublicationTests::batteryIdentityWinsAcrossFactArrivalOrder()
     QVERIFY(snapshot.profiles.supported.isEmpty());
     QVERIFY(snapshot.profiles.holds.isEmpty());
     QVERIFY(validateSnapshot(snapshot).accepted);
+}
+
+void PowerServicePublicationTests::clearedBatteryIdentityRestoresRetainedProfiles()
+{
+    CoordinatorHarness harness;
+    harness.profiles.publish(fixtureProfileFactsCollidingWithBattery());
+    harness.session.publish(fixtureSessionFacts());
+    harness.battery.publish(fixtureBatteryFacts());
+
+    const Snapshot collided = harness.coordinator->snapshot();
+    QCOMPARE(collided.availability, Availability::Degraded);
+    QCOMPARE(collided.reasonCode, QStringLiteral("profile-malformed"));
+    QVERIFY(collided.profiles.supported.isEmpty());
+    QVERIFY(collided.profiles.holds.isEmpty());
+
+    BatteryFacts cleared = fixtureBatteryFacts();
+    cleared.supplies.first().handle.opaqueId = QStringLiteral("battery-bat1");
+    harness.battery.publish(cleared);
+
+    const Snapshot recovered = harness.coordinator->snapshot();
+    QCOMPARE(recovered.availability, Availability::Ready);
+    QCOMPARE(recovered.reasonCode, QStringLiteral("ready"));
+    QCOMPARE(recovered.epoch, collided.epoch);
+    QVERIFY(recovered.revision > collided.revision);
+    QCOMPARE(recovered.supplies.size(), 1);
+    QCOMPARE(recovered.supplies.first().handle.opaqueId,
+             QStringLiteral("battery-bat1"));
+    QCOMPARE(recovered.supplies.first().handle.epoch, recovered.epoch);
+    QCOMPARE(recovered.keyboardBacklights.size(), 1);
+    QCOMPARE(recovered.profiles.supported.size(), 3);
+    QCOMPARE(recovered.profiles.activeProfileId, QStringLiteral("balanced"));
+    QCOMPARE(recovered.profiles.holds.size(), 1);
+    QCOMPARE(recovered.profiles.holds.first().handle.opaqueId,
+             QStringLiteral("battery-bat0"));
+    QCOMPARE(recovered.profiles.holds.first().handle.epoch, recovered.epoch);
+    QCOMPARE(recovered.inhibitors.size(), 1);
+    QVERIFY(recovered.source.onBattery);
+    QVERIFY(recovered.source.lidPresent);
+    QVERIFY(recovered.capabilities.testFlag(Capability::Supplies));
+    QVERIFY(recovered.capabilities.testFlag(Capability::Profiles));
+    QVERIFY(recovered.capabilities.testFlag(Capability::ProfileHolds));
+    QVERIFY(recovered.capabilities.testFlag(Capability::Inhibitors));
+    QVERIFY(validateSnapshot(recovered).accepted);
+}
+
+void PowerServicePublicationTests::clearedBatteryIdentityDoesNotRestoreMalformedProfiles()
+{
+    CoordinatorHarness harness;
+    harness.profiles.publish(fixtureProfileFactsCollidingWithBattery());
+    harness.session.publish(fixtureSessionFacts());
+    harness.battery.publish(fixtureBatteryFacts());
+
+    ProfileFacts malformed = fixtureProfileFacts();
+    malformed.profiles.supported.push_back(malformed.profiles.supported.first());
+    harness.profiles.publish(malformed);
+    const Snapshot rejected = harness.coordinator->snapshot();
+    QCOMPARE(rejected.availability, Availability::Degraded);
+    QCOMPARE(rejected.reasonCode, QStringLiteral("profile-malformed"));
+
+    BatteryFacts cleared = fixtureBatteryFacts();
+    cleared.supplies.first().handle.opaqueId = QStringLiteral("battery-bat1");
+    harness.battery.publish(cleared);
+
+    const Snapshot stillRejected = harness.coordinator->snapshot();
+    QCOMPARE(stillRejected.availability, Availability::Degraded);
+    QCOMPARE(stillRejected.reasonCode, QStringLiteral("profile-malformed"));
+    QCOMPARE(stillRejected.epoch, rejected.epoch);
+    QVERIFY(stillRejected.revision > rejected.revision);
+    QCOMPARE(stillRejected.supplies.size(), 1);
+    QCOMPARE(stillRejected.supplies.first().handle.opaqueId,
+             QStringLiteral("battery-bat1"));
+    QCOMPARE(stillRejected.inhibitors.size(), 1);
+    QVERIFY(stillRejected.profiles.supported.isEmpty());
+    QVERIFY(stillRejected.profiles.holds.isEmpty());
+    QVERIFY(!stillRejected.capabilities.testFlag(Capability::Profiles));
+    QVERIFY(!stillRejected.capabilities.testFlag(Capability::ProfileHolds));
+    QVERIFY(validateSnapshot(stillRejected).accepted);
 }
 
 void PowerServicePublicationTests::sanitizedHostileTextIsPublishedBounded()

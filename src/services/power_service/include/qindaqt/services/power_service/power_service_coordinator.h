@@ -106,8 +106,16 @@ private:
   };
 
   using BatteryDomain = Domain<BatteryFacts>;
-  using ProfileDomain = Domain<ProfileFacts>;
   using SessionDomain = Domain<SessionFacts>;
+
+  struct ProfileDomain {
+    bool has = false;
+    bool valid = false;
+    bool intrinsicValid = false;
+    ProfileFacts facts;
+    ProfileFacts intrinsicFacts;
+    DomainState state;
+  };
 
   void connectBattery(BatteryCollaborator *battery);
   void connectProfile(ProfileCollaborator *profiles);

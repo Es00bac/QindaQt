@@ -172,31 +172,37 @@ void PowerServiceCoordinator::acceptBatteryFacts(const quint64 generation,
         m_batteryDomain.valid = true;
         m_batteryDomain.state.phase = ServiceStartPhase::FactsObserved;
         m_batteryDomain.state.reasonCode.clear();
-        enforceBatteryIdentityPrecedence();
     } else {
         m_batteryDomain.valid = false;
         m_batteryDomain.state.phase = ServiceStartPhase::DomainDegraded;
         m_batteryDomain.state.reasonCode = QStringLiteral("battery-malformed");
     }
+    enforceBatteryIdentityPrecedence();
     publishAssembled();
 }
 
 void PowerServiceCoordinator::enforceBatteryIdentityPrecedence()
 {
-    if (!m_batteryDomain.valid || !m_profileDomain.valid) {
+    if (!m_profileDomain.has || !m_profileDomain.intrinsicValid) {
         return;
     }
 
     ProfileFacts revalidated;
     // AGENT-GUARD: Battery and keyboard identities own the shared Power1
-    // handle namespace regardless of fact arrival order. Revalidate retained
-    // profile truth whenever battery facts change; otherwise a profile-first
-    // collision reaches whole-snapshot fallback and erases unrelated valid
-    // battery/session content.
+    // handle namespace regardless of fact arrival order. Always project from
+    // intrinsically sanitized profile truth: the publishable projection can
+    // be invalid only because of a transient namespace collision and must not
+    // become the source for later recovery.
+    const QSet<QString> reservedOpaqueIds = m_batteryDomain.valid
+        ? Assembly::batteryOpaqueIds(m_batteryDomain.facts)
+        : QSet<QString>{};
     if (Assembly::sanitizeProfileFacts(
-            m_profileDomain.facts, m_snapshot.epoch,
-            Assembly::batteryOpaqueIds(m_batteryDomain.facts), revalidated)) {
+            m_profileDomain.intrinsicFacts, m_snapshot.epoch,
+            reservedOpaqueIds, revalidated)) {
         m_profileDomain.facts = std::move(revalidated);
+        m_profileDomain.valid = true;
+        m_profileDomain.state.phase = ServiceStartPhase::FactsObserved;
+        m_profileDomain.state.reasonCode.clear();
         return;
     }
 
@@ -212,18 +218,16 @@ void PowerServiceCoordinator::acceptProfileFacts(const quint64 generation,
         return;
     }
     m_profileDomain.has = true;
-    ProfileFacts sanitized;
-    // AGENT-GUARD: Public handles share one Power1 namespace. Profile holds
-    // yield to battery IDs so a cross-domain collision deterministically
-    // degrades the profile domain instead of publishing duplicate handles.
-    if (Assembly::sanitizeProfileFacts(
-            facts, m_snapshot.epoch,
-            Assembly::batteryOpaqueIds(m_batteryDomain.facts), sanitized)) {
-        m_profileDomain.facts = std::move(sanitized);
-        m_profileDomain.valid = true;
-        m_profileDomain.state.phase = ServiceStartPhase::FactsObserved;
-        m_profileDomain.state.reasonCode.clear();
+    ProfileFacts intrinsic;
+    // AGENT-GUARD: Preserve only intrinsically valid upstream truth. A later
+    // battery mutation may lift collision suppression, but it must never
+    // resurrect a profile fact set rejected for its own malformed content.
+    if (Assembly::sanitizeProfileFacts(facts, m_snapshot.epoch, {}, intrinsic)) {
+        m_profileDomain.intrinsicFacts = std::move(intrinsic);
+        m_profileDomain.intrinsicValid = true;
+        enforceBatteryIdentityPrecedence();
     } else {
+        m_profileDomain.intrinsicValid = false;
         m_profileDomain.valid = false;
         m_profileDomain.state.phase = ServiceStartPhase::DomainDegraded;
         m_profileDomain.state.reasonCode = QStringLiteral("profile-malformed");
@@ -271,6 +275,7 @@ void PowerServiceCoordinator::acceptProfileUnavailable(const quint64 generation,
         return;
     }
     m_profileDomain.has = true;
+    m_profileDomain.intrinsicValid = false;
     m_profileDomain.valid = false;
     markDomainUnavailable(m_profileDomain.state, generation, reasonCode);
     publishAssembled();
@@ -361,6 +366,7 @@ void PowerServiceCoordinator::publishRestarting()
     m_batteryDomain.valid = false;
     m_profileDomain.has = false;
     m_profileDomain.valid = false;
+    m_profileDomain.intrinsicValid = false;
     m_sessionDomain.has = false;
     m_sessionDomain.valid = false;
     m_snapshot = restarting;
