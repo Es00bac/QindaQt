@@ -80,7 +80,7 @@ struct BackendRequest {
 // Bluetooth1) owns pairing, trust, keys, device records, profiles, and
 // authorization. A future BluezQt adapter implements this port; the
 // deterministic adapter stands in until that runtime lane opens. See
-// ADR-0026.
+// ADR-0037.
 class AdapterBackend : public QObject
 {
     Q_OBJECT
