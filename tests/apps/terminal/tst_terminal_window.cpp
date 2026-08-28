@@ -80,20 +80,37 @@ public:
 class InstantExitMonitor final : public ProcessMonitor {
 public:
   [[nodiscard]] ProcessExitInfo reap(ProcessId) override {
-    return {.state = ProcessState::Exited, .signaled = false, .code = 0};
+    return {.state = ProcessState::Exited, .signaled = false, .code = 0,
+            .statusKnown = true};
   }
   [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
     return false;
   }
 };
 
+class NeverExitMonitor final : public ProcessMonitor {
+public:
+  [[nodiscard]] ProcessExitInfo reap(ProcessId) override {
+    return {.state = ProcessState::Running, .signaled = false, .code = 0,
+            .statusKnown = true};
+  }
+  [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
+    return true;
+  }
+};
+
 struct WindowHarness final {
-  InstantExitMonitor monitor;
+  InstantExitMonitor instantExit;
+  NeverExitMonitor neverExit;
+  bool survivorScenario = false;
   StubBackend *stub = nullptr;
 
   std::unique_ptr<TerminalWindow> makeWindow() {
-    // The stub needs no theme, so the factory captures nothing that could
-    // dangle after makeWindow returns.
+    // The survivor scenario exercises the failed-escalation ownership path
+    // (P1-2) with tiny injected bounds; the default proves clean close.
+    ProcessMonitor *monitor =
+        survivorScenario ? static_cast<ProcessMonitor *>(&neverExit)
+                         : static_cast<ProcessMonitor *>(&instantExit);
     StubBackend **created = &stub;
     TerminalSession::BackendFactory factory = [created]() {
       auto backend = std::make_unique<StubBackend>();
@@ -101,7 +118,7 @@ struct WindowHarness final {
       return std::unique_ptr<TerminalSessionBackend>(std::move(backend));
     };
     auto session = std::make_unique<TerminalSession>(
-        std::move(factory), &monitor, TeardownBounds{30, 30, 30, 1});
+        std::move(factory), monitor, TeardownBounds{30, 30, 30, 1});
     return std::make_unique<TerminalWindow>(std::move(session),
                                             testAppearance());
   }
@@ -126,6 +143,8 @@ private slots:
   void accessibilityMetadataIsPresentAndFocusIsOnTerminalView();
   void hostileResizeClampsEmbeddedView();
   void closeRequestsShutdownBeforeQuitSignal();
+  void viewActionStatesTrackSessionTruth();
+  void quitIsRefusedWhileSurvivorRemains();
 };
 
 void TerminalWindowTest::windowEmbedsOnlyPublishedWidgets() {
@@ -281,6 +300,15 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
                                     Q_ARG(TerminalExitStatus, failed)));
   QVERIFY(status->text().startsWith(QLatin1String("Error:")));
   QVERIFY(status->text().contains(QLatin1String("channel unavailable")));
+
+  // P2-5: an unknown exit is surfaced as its own truth, never as success.
+  const TerminalExitStatus unknown{TerminalExitStatus::Kind::UnknownExit, 0,
+                                   {}};
+  QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
+                                    Q_ARG(TerminalExitStatus, unknown)));
+  QCOMPARE(status->text(), QStringLiteral("Session exited (status unknown)"));
+  QCOMPARE(status->palette().color(QPalette::WindowText),
+           testAppearance().statusWarningForeground);
 }
 
 void TerminalWindowTest::
@@ -364,6 +392,81 @@ void TerminalWindowTest::closeRequestsShutdownBeforeQuitSignal() {
   QVERIFY(quitConnect >= 0);
   QVERIFY(show > wiring);
   QVERIFY(show > quitConnect);
+}
+
+void TerminalWindowTest::viewActionStatesTrackSessionTruth() {
+  WindowHarness harness;
+  auto window = harness.makeWindow();
+
+  auto *copy =
+      window->findChild<QAction *>(QStringLiteral("editCopyAction"));
+  auto *paste =
+      window->findChild<QAction *>(QStringLiteral("editPasteAction"));
+  auto *pasteSelection = window->findChild<QAction *>(
+      QStringLiteral("editPasteSelectionAction"));
+  auto *selectAll = window->findChild<QAction *>(
+      QStringLiteral("editSelectAllAction"));
+  auto *clear =
+      window->findChild<QAction *>(QStringLiteral("viewClearAction"));
+  auto *restart = window->findChild<QAction *>(
+      QStringLiteral("sessionRestartAction"));
+  QVERIFY(copy && paste && pasteSelection && selectAll && clear && restart);
+
+  // P2-4: without a live view the view operations are disabled, exactly as
+  // the accessibility prose claims.
+  QVERIFY(!paste->isEnabled());
+  QVERIFY(!pasteSelection->isEnabled());
+  QVERIFY(!selectAll->isEnabled());
+  QVERIFY(!clear->isEnabled());
+  QVERIFY(!copy->isEnabled());
+
+  QVERIFY(window->session()->start(validRequest()));
+  QVERIFY(paste->isEnabled());
+  QVERIFY(pasteSelection->isEnabled());
+  QVERIFY(selectAll->isEnabled());
+  QVERIFY(clear->isEnabled());
+  QVERIFY(!copy->isEnabled()); // No selection event yet.
+
+  QVERIFY(QMetaObject::invokeMethod(window->session(),
+                                    "selectionAvailable",
+                                    Q_ARG(bool, true)));
+  QVERIFY(copy->isEnabled());
+
+  // View disposal clears selection and deactivates view operations; Restart
+  // is refused only while the escalation runs.
+  QVERIFY(window->session()->restart());
+  QCOMPARE(window->session()->state(), TerminalSession::State::ShuttingDown);
+  QVERIFY(!paste->isEnabled());
+  QVERIFY(!copy->isEnabled());
+  QVERIFY(!restart->isEnabled());
+}
+
+void TerminalWindowTest::quitIsRefusedWhileSurvivorRemains() {
+  // P1-2: a SIGKILL survivor stays owned. The failed escalation must not
+  // emit the quit signal, and further close attempts are refused.
+  WindowHarness harness;
+  harness.survivorScenario = true;
+  auto window = harness.makeWindow();
+  QVERIFY(window->session()->start(validRequest()));
+  QSignalSpy shutdownSpy(window->session(),
+                         &TerminalSession::shutdownFinished);
+  QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
+
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window.get()));
+  window->close();
+  QTest::qWait(600);
+  QCOMPARE(shutdownSpy.count(), 1);
+  QVERIFY(!shutdownSpy.first().first().toBool());
+  QCOMPARE(quitSpy.count(), 0);
+  QCOMPARE(window->session()->state(),
+           TerminalSession::State::ShutdownFailed);
+  // The window is re-shown with the failure visible; close stays refused.
+  QVERIFY(window->isVisible());
+  window->close();
+  QVERIFY(window->isVisible());
+  QTest::qWait(50);
+  QCOMPARE(quitSpy.count(), 0);
 }
 
 QTEST_MAIN(TerminalWindowTest)

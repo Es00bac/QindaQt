@@ -9,8 +9,9 @@ enum class ProcessState { Unknown, Running, Exited };
 
 struct ProcessExitInfo final {
   ProcessState state = ProcessState::Unknown;
-  bool signaled = false; // Valid when state == Exited.
-  int code = 0;          // Exit code, or signal number when signaled.
+  bool signaled = false;      // Valid when state == Exited && statusKnown.
+  int code = 0;               // Exit code, or signal number when signaled.
+  bool statusKnown = true;    // False when the status was reaped elsewhere.
 
   [[nodiscard]] bool operator==(const ProcessExitInfo &) const = default;
 };
@@ -32,8 +33,11 @@ public:
 
 // Production monitor over waitpid/getpgid/kill. The Terminal application is
 // always the direct parent of the terminal child, so waitpid(WNOHANG) is the
-// correct reap primitive; ECHILD maps to Exited because another component in
-// this process (never QindaQt code) already reaped it.
+// correct reap primitive. AGENT-GUARD (P2-5): ECHILD means the exit status
+// was consumed by some other reaper; it is reported as Exited with
+// statusKnown=false so the session can publish an unknown-exit outcome —
+// fabricating a normal code 0 would violate the application-owned exit
+// truth.
 class PosixProcessMonitor final : public ProcessMonitor {
 public:
   [[nodiscard]] ProcessExitInfo reap(ProcessId pid) override;

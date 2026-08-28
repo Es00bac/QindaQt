@@ -27,6 +27,7 @@ ProcessExitInfo PosixProcessMonitor::reap(ProcessId pid) {
   if (result == static_cast<pid_t>(pid)) {
     ProcessExitInfo info;
     info.state = ProcessState::Exited;
+    info.statusKnown = true;
     if (WIFSIGNALED(status)) {
       info.signaled = true;
       info.code = WTERMSIG(status);
@@ -43,14 +44,16 @@ ProcessExitInfo PosixProcessMonitor::reap(ProcessId pid) {
   if (result == 0) {
     return {.state = ProcessState::Running, .signaled = false, .code = 0};
   }
-  // result < 0: ECHILD means the child was already reaped (exit code
-  // unknowable); any other errno is reported as Unknown so callers treat the
-  // process conservatively as alive rather than signaling on a guess.
+  // result < 0: ECHILD means the exit status was already reaped elsewhere —
+  // reported as Exited with statusKnown=false (never a fabricated normal
+  // code); any other errno is Unknown so callers treat the process
+  // conservatively as alive rather than signaling on a guess.
   const bool alreadyReaped = (errno == ECHILD);
   return {.state = alreadyReaped ? ProcessState::Exited
                                  : ProcessState::Unknown,
           .signaled = false,
-          .code = 0};
+          .code = 0,
+          .statusKnown = !alreadyReaped};
 }
 
 bool PosixProcessMonitor::signalProcessGroup(ProcessId groupLeader,

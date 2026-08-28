@@ -45,9 +45,17 @@ int envEntryCount(const QStringList &environment, const QString &name) {
 }
 
 bool selectsUtf8(const QString &value) {
-  const QString upper = value.toUpper();
-  return upper.contains(QLatin1String("UTF-8")) ||
-         upper.contains(QLatin1String("UTF8"));
+  const qsizetype dot = value.indexOf(QLatin1Char('.'));
+  if (dot < 0) {
+    return false;
+  }
+  QString codeset = value.mid(dot + 1);
+  const qsizetype modifier = codeset.indexOf(QLatin1Char('@'));
+  if (modifier >= 0) {
+    codeset.truncate(modifier);
+  }
+  const QString upper = codeset.toUpper();
+  return upper == QLatin1String("UTF-8") || upper == QLatin1String("UTF8");
 }
 
 // Applies libc locale precedence (LC_ALL > LC_CTYPE > LANG) to the produced
@@ -230,8 +238,21 @@ void TerminalLaunchPolicyTest::
 
 void TerminalLaunchPolicyTest::
     effectiveLocaleAuthorityIsUtf8UnderHostileInheritance() {
-  // A non-UTF-8 LC_ALL governs even when LANG selects UTF-8; the policy must
-  // replace the effective authority variable itself.
+  // P2-1: authority follows presence order LC_ALL > LC_CTYPE > LANG, never
+  // envp order. LANG listed first must not mask a later hostile LC_ALL.
+  auto hostileAllLate = TerminalLaunchPolicy::childEnvironment(
+      {QStringLiteral("LANG=en_US.UTF-8"), QStringLiteral("LC_ALL=C")});
+  QVERIFY(hostileAllLate.outcome.ok);
+  QVERIFY(effectiveLocaleIsUtf8(hostileAllLate.environment));
+  QCOMPARE(firstEnvValue(hostileAllLate.environment,
+                         QStringLiteral("LC_ALL")),
+           std::optional<QString>(
+               TerminalLaunchPolicy::kUtf8FallbackLocale));
+  QCOMPARE(firstEnvValue(hostileAllLate.environment,
+                         QStringLiteral("LANG")),
+           std::optional<QString>(QStringLiteral("en_US.UTF-8")));
+
+  // A non-UTF-8 LC_ALL governs even when LANG selects UTF-8.
   auto hostileAll = TerminalLaunchPolicy::childEnvironment(
       {QStringLiteral("LC_ALL=de_DE.ISO-8859-1"),
        QStringLiteral("LANG=en_US.UTF-8"), QStringLiteral("PATH=/usr/bin")});
@@ -295,13 +316,27 @@ void TerminalLaunchPolicyTest::
            std::optional<QString>(
                TerminalLaunchPolicy::kUtf8FallbackLocale));
 
-  // An already-UTF-8 authority is preserved, never rewritten.
+  // An already-UTF-8 authority is preserved, never rewritten; the strict
+  // codeset oracle accepts the modifier form.
   auto alreadyUtf8 = TerminalLaunchPolicy::childEnvironment(
-      {QStringLiteral("LC_ALL=C.UTF-8")});
+      {QStringLiteral("LC_ALL=en_US.UTF-8@euro")});
   QVERIFY(alreadyUtf8.outcome.ok);
   QCOMPARE(firstEnvValue(alreadyUtf8.environment,
                          QStringLiteral("LC_ALL")),
-           std::optional<QString>(QStringLiteral("C.UTF-8")));
+           std::optional<QString>(QStringLiteral("en_US.UTF-8@euro")));
+
+  // P2-1: a hostile value merely CONTAINING the "UTF8" substring is not
+  // UTF-8. The strict codeset parse rejects it and the authority is forced.
+  auto hostileSubstring = TerminalLaunchPolicy::childEnvironment(
+      {QStringLiteral("LC_ALL=de_DE.UTF8-evil")});
+  QVERIFY(hostileSubstring.outcome.ok);
+  QVERIFY(effectiveLocaleIsUtf8(hostileSubstring.environment));
+  QCOMPARE(firstEnvValue(hostileSubstring.environment,
+                         QStringLiteral("LC_ALL")),
+           std::optional<QString>(
+               TerminalLaunchPolicy::kUtf8FallbackLocale));
+  QVERIFY(!hostileSubstring.environment.join(QLatin1Char('\n')).contains(
+      QLatin1String("UTF8-evil")));
 
   // Duplicate hostile authorities collapse to one forced UTF-8 entry.
   auto duplicates = TerminalLaunchPolicy::childEnvironment(

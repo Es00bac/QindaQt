@@ -15,6 +15,11 @@ qindaqt_add_terminal_test(
     qindaqt.terminal-launch-policy
 )
 qindaqt_add_terminal_test(
+    qindaqt_terminal_pty_bridge_tests
+    tst_pty_bridge.cpp
+    qindaqt.terminal-pty-bridge
+)
+qindaqt_add_terminal_test(
     qindaqt_terminal_session_tests
     tst_terminal_session.cpp
     qindaqt.terminal-session

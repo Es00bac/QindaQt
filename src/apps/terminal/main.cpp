@@ -24,9 +24,10 @@ namespace QindaQt::Apps::Terminal {
 namespace {
 
 // AGENT-NOTE: Duplicated from the Text Editor S1 launcher on purpose: the
-// shared application-shell seam (QQ-006.03) does not exist on this base yet,
-// and creating a second framework would repeat the problem it would solve.
-// When that seam lands, both launchers should consume it.
+// shared application-shell seam is owned by a different lane, and this
+// launcher must not reach into another module's private code. When that seam
+// is part of this branch's integration base, both launchers should consume
+// it instead of duplicating the lookup.
 [[nodiscard]] QStringList
 themeSearchDirectories(const QString &explicitDirectory) {
   QStringList directories;

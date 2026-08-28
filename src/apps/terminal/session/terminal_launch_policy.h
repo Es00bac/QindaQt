@@ -35,6 +35,10 @@ public:
   static constexpr int kMaxArgumentLength = 4096;
   static constexpr int kMaxEnvironmentEntries = 4096;
   static constexpr int kMaxEnvironmentEntryLength = 4096;
+  // P3-1: program and working-directory paths follow the same bounded
+  // hostile-input contract as arguments and environment entries.
+  static constexpr int kMaxProgramLength = 4096;
+  static constexpr int kMaxWorkingDirectoryLength = 4096;
 
   // TERM/COLORTERM are always forced: a hostile or missing inherited value
   // must never reach the child, and a remote/attacker-controlled environment

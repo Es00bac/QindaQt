@@ -97,6 +97,8 @@ TerminalWindow::TerminalWindow(std::unique_ptr<TerminalSession> session,
               m_terminalLayout->removeWidget(m_terminalView);
               m_terminalView = nullptr;
             }
+            m_hasSelection = false;
+            updateViewActionStates();
           });
   connect(m_session.get(), &TerminalSession::stateChanged, this,
           [this](TerminalSession::State state) {
@@ -185,7 +187,6 @@ void TerminalWindow::buildActions() {
   });
   connect(m_copyAction, &QAction::triggered, this,
           [this] { m_session->copySelectionToClipboard(); });
-  m_copyAction->setEnabled(false);
   connect(m_pasteAction, &QAction::triggered, this,
           [this] { m_session->pasteClipboardToSession(); });
   connect(m_pasteSelectionAction, &QAction::triggered, this,
@@ -198,7 +199,11 @@ void TerminalWindow::buildActions() {
           &TerminalWindow::close);
 
   connect(m_session.get(), &TerminalSession::selectionAvailable, this,
-          [this](bool hasSelection) { m_copyAction->setEnabled(hasSelection); });
+          [this](bool hasSelection) {
+            m_hasSelection = hasSelection;
+            updateViewActionStates();
+          });
+  updateViewActionStates();
 }
 
 void TerminalWindow::buildMenus() {
@@ -243,9 +248,26 @@ void TerminalWindow::embedTerminalWidget(QWidget *widget) {
   updateStatusForState(m_session->state());
 }
 
+void TerminalWindow::updateViewActionStates() {
+  // AGENT-CONTRACT (P2-4): action enabled state must match observable
+  // reality. View operations need a live view; copy additionally needs a
+  // selection; Restart is refused while an escalation is in flight and
+  // while a SIGKILL survivor is owned (ShutdownFailed).
+  const auto state = m_session->state();
+  const bool viewLive = m_session->terminalWidget() != nullptr &&
+                        state != TerminalSession::State::ShuttingDown;
+  m_copyAction->setEnabled(m_hasSelection && viewLive);
+  m_pasteAction->setEnabled(viewLive);
+  m_pasteSelectionAction->setEnabled(viewLive);
+  m_selectAllAction->setEnabled(viewLive);
+  m_clearAction->setEnabled(viewLive);
+  m_restartAction->setEnabled(state != TerminalSession::State::ShuttingDown &&
+                              state != TerminalSession::State::ShutdownFailed);
+}
+
 void TerminalWindow::updateStatusForState(TerminalSession::State state) {
-  m_restartAction->setEnabled(state != TerminalSession::State::ShuttingDown);
   QString text;
+  QPalette palette = m_appearance.windowPalette;
   switch (state) {
   case TerminalSession::State::Idle:
     text = QStringLiteral("No session");
@@ -256,13 +278,14 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
   case TerminalSession::State::Exited:
     // AGENT-GUARD: The typed exit status and the Exited state arrive in the
     // same tick (publishExit runs before setState). Rendering the generic
-    // state text here would overwrite the code/signal/start-failure detail
-    // before the user can read it, so the exit detail is the Exited state's
-    // visible text.
+    // state text here would overwrite the code/signal/unknown detail before
+    // the user can read it, so the exit detail is the Exited state's visible
+    // text.
     if (m_session->lastExit().kind == TerminalExitStatus::Kind::None) {
       text = QStringLiteral("Session ended");
     } else {
       showExitStatus(m_session->lastExit());
+      updateViewActionStates();
       return;
     }
     break;
@@ -273,18 +296,20 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
     text = QStringLiteral("Session closed");
     break;
   case TerminalSession::State::ShutdownFailed:
-    text = QStringLiteral("Session close incomplete");
+    text = QStringLiteral("Session close failed");
+    palette.setColor(QPalette::WindowText,
+                     m_appearance.statusDangerForeground);
     break;
   }
   if (m_statusLabel != nullptr) {
     m_statusLabel->setText(text);
-    m_statusLabel->setPalette(
-        m_appearance.windowPalette); // Neutral states use window palette.
+    m_statusLabel->setPalette(palette);
     // NF-T5: every visible text change must also update the screen-reader
     // name; showExitStatus does the same for exit severities.
     m_statusLabel->setAccessibleName(
         QStringLiteral("Session status: %1").arg(text));
   }
+  updateViewActionStates();
 }
 
 void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
@@ -303,6 +328,13 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
     palette.setColor(QPalette::WindowText,
                      m_appearance.statusDangerForeground);
     break;
+  case TerminalExitStatus::Kind::UnknownExit:
+    // P2-5: another reaper consumed the status; the truth is "exited, code
+    // unknown", never a fabricated normal status.
+    text = QStringLiteral("Session exited (status unknown)");
+    palette.setColor(QPalette::WindowText,
+                     m_appearance.statusWarningForeground);
+    break;
   case TerminalExitStatus::Kind::StartFailed:
     text = QStringLiteral("Error: %1").arg(status.diagnostic);
     palette.setColor(QPalette::WindowText,
@@ -320,11 +352,17 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
 void TerminalWindow::reportShutdownOutcome(bool clean,
                                            const QString &diagnostic) {
   if (!clean) {
-    // The window is hidden at this point; stderr is the honest channel for a
-    // teardown failure that UI can no longer show.
+    // P1-2: a SIGKILL survivor stays owned. The application must not quit
+    // while that is true, so the close signal is not emitted; the window
+    // comes back and the failure stays visible.
     std::fprintf(stderr, "qindaqt-terminal: %s\n",
                  qPrintable(diagnostic));
     std::fflush(stderr);
+    if (m_quitRequested) {
+      m_quitRequested = false;
+      show();
+    }
+    return;
   }
   if (m_quitRequested) {
     emit closeShutdownFinished();
@@ -335,7 +373,8 @@ void TerminalWindow::requestCloseShutdown() {
   // AGENT-GUARD: The application must not exit before the session reached a
   // terminal state, or a surviving child would defeat the teardown
   // guarantee. Hiding the window and waiting for shutdownFinished is what
-  // keeps close deterministic under the bounded escalation.
+  // keeps close deterministic under the bounded escalation; a failed
+  // escalation re-showns the window and refuses further close attempts.
   m_quitRequested = true;
   hide();
   m_session->beginShutdown();
@@ -345,6 +384,23 @@ void TerminalWindow::closeEvent(QCloseEvent *event) {
   if (m_session->state() == TerminalSession::State::ShuttingDown) {
     m_quitRequested = true;
     event->accept();
+    return;
+  }
+  if (m_session->state() == TerminalSession::State::ShutdownFailed) {
+    // P1-2: ownership of the survivor is retained, so closing (and the quit
+    // it would trigger) is refused until the child is actually gone.
+    if (m_statusLabel != nullptr) {
+      const QString text = QStringLiteral(
+          "Error: session child survived teardown; close is refused");
+      m_statusLabel->setText(text);
+      QPalette palette = m_appearance.windowPalette;
+      palette.setColor(QPalette::WindowText,
+                       m_appearance.statusDangerForeground);
+      m_statusLabel->setPalette(palette);
+      m_statusLabel->setAccessibleName(
+          QStringLiteral("Session status: %1").arg(text));
+    }
+    event->ignore();
     return;
   }
   requestCloseShutdown();

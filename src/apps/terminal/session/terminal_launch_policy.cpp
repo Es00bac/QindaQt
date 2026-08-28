@@ -52,10 +52,22 @@ std::optional<NameValue> splitEntry(const QString &entry) {
   return NameValue{name, value};
 }
 
+// AGENT-GUARD (P2-1): the UTF-8 decision is a strict codeset comparison, not
+// a substring search — a hostile value like "de_DE.UTF8-evil" must not pass.
+// The codeset is the part after the first '.', with any '@' modifier
+// stripped; "C" and bare language tags have no codeset and are not UTF-8.
 bool selectsUtf8(const QString &value) {
-  const QString upper = value.toUpper();
-  return upper.contains(QLatin1String("UTF-8")) ||
-         upper.contains(QLatin1String("UTF8"));
+  const qsizetype dot = value.indexOf(QLatin1Char('.'));
+  if (dot < 0) {
+    return false;
+  }
+  QString codeset = value.mid(dot + 1);
+  const qsizetype modifier = codeset.indexOf(QLatin1Char('@'));
+  if (modifier >= 0) {
+    codeset.truncate(modifier);
+  }
+  const QString upper = codeset.toUpper();
+  return upper == QLatin1String("UTF-8") || upper == QLatin1String("UTF8");
 }
 
 void appendForcedEntry(QStringList &environment, const QString &name,
@@ -100,6 +112,13 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
     return {.outcome = {false, QStringLiteral("Shell program is empty")},
             .request = {}};
   }
+  // P3-1: bounded hostile-path contract, mirroring the argument bounds.
+  if (candidate.size() > kMaxProgramLength) {
+    return {.outcome = {false,
+                        QStringLiteral("Shell program path exceeds %1 bytes")
+                            .arg(kMaxProgramLength)},
+            .request = {}};
+  }
   if (hasControlCharacter(candidate)) {
     return {.outcome = {false,
                         QStringLiteral("Shell program contains a control "
@@ -129,6 +148,13 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
     return {.outcome = {false,
                         QStringLiteral("Shell program is a directory, not an "
                                        "executable: %1")
+                            .arg(quotedForDiagnostic(candidate))},
+            .request = {}};
+  }
+  if (!info.isFile()) {
+    return {.outcome = {false,
+                        QStringLiteral("Shell program is not a regular "
+                                       "file: %1")
                             .arg(quotedForDiagnostic(candidate))},
             .request = {}};
   }
@@ -162,13 +188,21 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
     }
   }
 
-  if (!workingDirectory.isEmpty() &&
-      !QFileInfo(workingDirectory).isDir()) {
-    return {.outcome = {false,
-                        QStringLiteral("Working directory is not a "
-                                       "directory: %1")
-                            .arg(quotedForDiagnostic(workingDirectory))},
-            .request = {}};
+  if (!workingDirectory.isEmpty()) {
+    if (workingDirectory.size() > kMaxWorkingDirectoryLength) {
+      return {.outcome =
+                  {false,
+                   QStringLiteral("Working directory path exceeds %1 bytes")
+                       .arg(kMaxWorkingDirectoryLength)},
+              .request = {}};
+    }
+    if (!QFileInfo(workingDirectory).isDir()) {
+      return {.outcome = {false,
+                          QStringLiteral("Working directory is not a "
+                                         "directory: %1")
+                              .arg(quotedForDiagnostic(workingDirectory))},
+              .request = {}};
+    }
   }
 
   return {.outcome = {true, {}},
@@ -189,23 +223,27 @@ TerminalLaunchPolicy::childEnvironment(const QStringList &baseEnvironment) {
             .environment = {}};
   }
 
-  // Locale authority bookkeeping: the first variable present in libc's
-  // precedence order decides the child's character set, so only that
-  // variable's UTF-8-ness matters.
-  enum class LocaleVariable { None, LcAll, LcType, Lang };
-  const struct {
-    QLatin1String name;
-    LocaleVariable kind;
-  } localeVariables[3] = {
-      {QLatin1String("LC_ALL"), LocaleVariable::LcAll},
-      {QLatin1String("LC_CTYPE"), LocaleVariable::LcType},
-      {QLatin1String("LANG"), LocaleVariable::Lang},
+  // AGENT-GUARD (P2-1): the effective locale variable is chosen by presence
+  // in libc's precedence order — LC_ALL if present, else LC_CTYPE, else
+  // LANG — never by envp order, so a UTF-8 LANG cannot mask a non-UTF-8
+  // LC_ALL that appears later in the list. First occurrence of each variable
+  // is the deterministic decision input; forcing removes every occurrence.
+  struct LocaleSelection {
+    bool present = false;
+    bool utf8 = false;
+  };
+  struct LocaleVariableInfo {
+    QString name;
+    LocaleSelection selection;
+  };
+  LocaleVariableInfo variables[3] = {
+      {QStringLiteral("LC_ALL"), {}},
+      {QStringLiteral("LC_CTYPE"), {}},
+      {QStringLiteral("LANG"), {}},
   };
 
   QStringList sanitized;
   sanitized.reserve(baseEnvironment.size() + 3);
-  LocaleVariable effectiveAuthority = LocaleVariable::None;
-  bool effectiveAuthorityIsUtf8 = false;
   for (const QString &entry : baseEnvironment) {
     const auto split = splitEntry(entry);
     if (!split.has_value()) {
@@ -213,21 +251,19 @@ TerminalLaunchPolicy::childEnvironment(const QStringList &baseEnvironment) {
     }
 
     bool isLocaleVariable = false;
-    for (const auto &variable : localeVariables) {
+    for (auto &variable : variables) {
       if (split->name == variable.name) {
         isLocaleVariable = true;
-        // First occurrence wins as the deterministic decision input; the
-        // repair below removes every occurrence of the variable it forces.
-        if (effectiveAuthority == LocaleVariable::None) {
-          effectiveAuthority = variable.kind;
-          effectiveAuthorityIsUtf8 = selectsUtf8(split->value);
+        if (!variable.selection.present) {
+          variable.selection.present = true;
+          variable.selection.utf8 = selectsUtf8(split->value);
         }
         break;
       }
     }
     if (isLocaleVariable) {
       // Kept for now; the authority repair below rewrites exactly the
-      // variables that must be forced.
+      // variable that must be forced.
       sanitized.append(entry);
       continue;
     }
@@ -238,29 +274,22 @@ TerminalLaunchPolicy::childEnvironment(const QStringList &baseEnvironment) {
     sanitized.append(entry);
   }
 
-  // AGENT-GUARD: Effective precedence, not string presence, is the
-  // guarantee. A UTF-8 LANG must not mask a non-UTF-8 LC_ALL, and a UTF-8
-  // LC_ALL must not cause an unnecessary rewrite of LC_CTYPE/LANG. The
-  // forced replacement keeps the inherited variable's authority while making
-  // the child emit UTF-8 bytes the renderer can decode.
-  switch (effectiveAuthority) {
-  case LocaleVariable::LcAll:
-  case LocaleVariable::LcType:
-  case LocaleVariable::Lang:
-    if (!effectiveAuthorityIsUtf8) {
-      for (const auto &variable : localeVariables) {
-        if (variable.kind == effectiveAuthority) {
-          appendForcedEntry(sanitized, variable.name, kUtf8FallbackLocale);
-          break;
-        }
-      }
+  const LocaleVariableInfo *authority = nullptr;
+  for (const auto &variable : variables) {
+    if (variable.selection.present) {
+      authority = &variable;
+      break;
     }
-    break;
-  case LocaleVariable::None:
+  }
+  if (authority == nullptr) {
     // Minimal sessions legitimately carry no locale selection; this is a
     // fallback, not an error.
     appendForcedEntry(sanitized, QStringLiteral("LANG"), kUtf8FallbackLocale);
-    break;
+  } else if (!authority->selection.utf8) {
+    // The effective authority is replaced in place, keeping its precedence
+    // position of power while making the child emit UTF-8 bytes the renderer
+    // can decode.
+    appendForcedEntry(sanitized, authority->name, kUtf8FallbackLocale);
   }
 
   appendForcedEntry(sanitized, kTermVariable, kTermValue);
