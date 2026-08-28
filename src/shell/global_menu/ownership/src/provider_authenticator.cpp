@@ -17,7 +17,9 @@ namespace
 // assigned by the bus daemon for the lifetime of one connection, so the
 // credential lookup below proves the registering process owns the identity;
 // a well-known name can be re-owned later, which would silently change who
-// the issued proof names.
+// the issued proof names. Grammar and the 255-byte maximum follow the D-Bus
+// specification's bus-name rules: elements of [A-Za-z0-9_-] separated by
+// periods.
 bool isValidUniqueName(const QString &name)
 {
     if (name.isEmpty() || !name.startsWith(u':')) {
@@ -42,7 +44,7 @@ bool isValidUniqueName(const QString &name)
         }
         const QChar c = body.at(i);
         const bool allowed = (c >= u'0' && c <= u'9') || (c >= u'a' && c <= u'z')
-            || (c >= u'A' && c <= u'Z') || c == u'_';
+            || (c >= u'A' && c <= u'Z') || c == u'_' || c == u'-';
         if (!allowed) {
             return false;
         }

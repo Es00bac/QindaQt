@@ -80,8 +80,9 @@ decides which provider may become authoritative:
   generation, or the attempt fails with `focus-changed`. This closes the
   sample-lookup race where focus moves mid-check.
 - The registering peer must present a syntactically valid D-Bus unique name
-  (the `:1.42` shape: leading colon, dot-separated `[A-Za-z0-9_]` elements,
-  bounded length). Well-known names are refused at the ownership boundary
+  (the `:1.42` shape: leading colon, at least two dot-separated
+  `[A-Za-z0-9_-]` elements, at most 255 bytes per the D-Bus bus-name
+  maximum). Well-known names are refused at the ownership boundary
   even when the credential seam resolves them, because a well-known name can
   be re-owned later and silently change who a proof names.
 - An accepted authentication returns an `AuthenticatedProvider` proof — an
@@ -154,17 +155,23 @@ must capture the observed window/epoch/revision at request time and run
 `InvocationGuard` on that captured lineage before executing anything;
 looking up a "current" tree by id at execution time would recreate the
 request/content race the guard exists to close.
-`GlobalMenuApplet.qml` renders entries as focusable, checkable
-`AbstractButton` delegates that bind `checkable`/`checked` into the button
-and the accessible state, share one named activation path between pointer
-click, keyboard (Space/Return), and assistive-technology press, and lay
-entries out in a `Row` or a real `Column` for vertical panels. Overflow is
-bounded and geometry-aware: a clamped `maximumVisibleEntries` cap combined
-with the assigned width (horizontal) or height (vertical) determines the
-presented entries, and the muted "+N" indicator — exposed to assistive
-technology as "N more menu entries" — is part of the implicit geometry in
-both orientations so a constrained panel can never clip the affordance
-away. G0 wires no live publisher anywhere in the shell, so `available`
+`GlobalMenuApplet.qml` renders entries as focusable `AbstractButton`
+delegates that carry the provider-owned checked state in the accessible
+attributes: the button itself never toggles locally, so interactive
+activation (pointer, keyboard, or assistive-technology press through the
+attached accessible signal) requests the action and the provider republishes
+new truth instead of presentation inverting state on its own. Entries lay
+out in a `Row` or a real `Column` for vertical panels. Overflow follows a
+measured geometry contract: the fit loops consume strict upper bounds built
+from real font metrics (`TextMetrics` plus a fixed safety margin) of the
+labels and the "+N" indicator, iterate against the assigned width
+(horizontal) or height (vertical), and reserve the indicator inside the
+extent — so no real label or affordance can ever be clipped by the limit.
+Hosts below the documented minimum extent degrade to indicator-only (and
+the indicator hides itself when even it cannot fit) rather than painting
+partial content inside the clipped root. A clamped
+`maximumVisibleEntries` acts as the count cap on top of the measured fit.
+G0 wires no live publisher anywhere in the shell, so `available`
 stays false in production.
 
 ## Non-goals
@@ -181,12 +188,18 @@ stays false in production.
 ## Verification
 
 Focused gates: `qindaqt.global-menu-protocol`,
-`qindaqt.global-menu-ownership`, `qindaqt.global-menu-exporter`,
+`qindaqt.global-menu-ownership` (authentication and proof issuance),
+`qindaqt.global-menu-ownership-lineage` (selector lineage and guarded
+invocation), `qindaqt.global-menu-exporter`,
 `qindaqt.global-menu-qt-widgets-adapter` (offscreen),
 `qindaqt.global-menu-applet-access`,
 `qindaqt.global-menu-composition` (authenticate → adopt → export → invoke
-over the public seams), and `qindaqt.global-menu-applet-qml-offscreen`
-(keyboard, vertical, overflow, and submenu-honesty cases). Live export,
+over the public seams), `qindaqt.global-menu-applet-qml-offscreen`
+(behavior/activation cases),
+`qindaqt.global-menu-applet-qml-accessibility-offscreen` (real accessible
+press and provider-owned checked state), and
+`qindaqt.global-menu-applet-qml-overflow-offscreen` (measured-geometry
+overflow, vertical layout, and below-minimum host cases). Live export,
 focus handoff, and installed-session qualification remain unbuilt and
 unclaimed until the transport milestone passes the nested-session matrix in
 the [testing harness](../development/testing-harness.md).
