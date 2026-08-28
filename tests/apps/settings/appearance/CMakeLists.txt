@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 qt_add_executable(qindaqt_appearance_values_tests tst_appearance_values.cpp)
+target_compile_definitions(
+    qindaqt_appearance_values_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
 target_link_libraries(
     qindaqt_appearance_values_tests
-    PRIVATE qindaqt_settings_appearance Qt6::Test
+    PRIVATE qindaqt_settings_appearance qindaqt_settings Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_appearance_values_tests)
 add_test(NAME qindaqt.appearance-values COMMAND qindaqt_appearance_values_tests)
@@ -22,7 +26,8 @@ add_test(NAME qindaqt.appearance-preview
          COMMAND qindaqt_appearance_preview_tests)
 
 qt_add_executable(qindaqt_appearance_model_tests
-                  tst_appearance_settings_model.cpp)
+                  tst_appearance_settings_model.cpp
+                  tst_appearance_settings_model_adversarial.cpp)
 target_compile_definitions(
     qindaqt_appearance_model_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
@@ -35,7 +40,9 @@ qindaqt_enable_warnings(qindaqt_appearance_model_tests)
 add_test(NAME qindaqt.appearance-settings-model
          COMMAND qindaqt_appearance_model_tests)
 
-qt_add_executable(qindaqt_appearance_page_tests tst_appearance_page.cpp)
+qt_add_executable(qindaqt_appearance_page_tests
+                  tst_appearance_page.cpp
+                  appearance_page_traversal_test.cpp)
 target_compile_definitions(
     qindaqt_appearance_page_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"

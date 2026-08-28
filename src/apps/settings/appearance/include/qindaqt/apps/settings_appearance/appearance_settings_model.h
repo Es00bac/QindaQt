@@ -7,6 +7,7 @@
 #include "qindaqt/design_tokens/token_facade.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QSet>
 #include <QVariantMap>
 #include <QVector>
@@ -42,6 +43,11 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(bool applyAvailable READ applyAvailable NOTIFY stateChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY stateChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY stateChanged)
+    Q_PROPERTY(QVariantList saveResults READ saveResults NOTIFY saveResultsChanged)
+    Q_PROPERTY(QString saveResultsText READ saveResultsText
+                   NOTIFY saveResultsChanged)
+    Q_PROPERTY(bool saveResultsHaveFailure READ saveResultsHaveFailure
+                   NOTIFY saveResultsChanged)
     Q_PROPERTY(QVariantMap draft READ draft NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors READ fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes READ installedThemes CONSTANT)
@@ -51,8 +57,12 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(QString fallbackNotice READ fallbackNotice NOTIFY previewChanged)
 
 public:
-    // The facade pointer may be null in focused model tests; publication is a
-    // preview affordance and never a precondition for truthful state.
+    // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
+    // thread. `client` must outlive the model. `previewFacade`, when non-null,
+    // must belong to the same thread; it is guarded so facade destruction
+    // before the model disables preview publication rather than dangling.
+    // The facade may be null in focused model tests because preview
+    // publication is never a precondition for truthful settings state.
     // AGENT-NOTE: The client type is spelled out fully because the unqualified
     //-looking `Services::SettingsClient` names the namespace, not the class.
     explicit AppearanceSettingsModel(
@@ -73,6 +83,9 @@ public:
     [[nodiscard]] bool applyAvailable() const;
     [[nodiscard]] QString statusText() const;
     [[nodiscard]] QString errorText() const;
+    [[nodiscard]] QVariantList saveResults() const;
+    [[nodiscard]] QString saveResultsText() const;
+    [[nodiscard]] bool saveResultsHaveFailure() const noexcept;
     [[nodiscard]] QVariantMap draft() const;
     [[nodiscard]] QVariantMap fieldErrors() const;
     [[nodiscard]] QVariantList installedThemes() const;
@@ -95,6 +108,7 @@ Q_SIGNALS:
     void stateChanged();
     void draftChanged();
     void previewChanged();
+    void saveResultsChanged();
 
 private:
     enum class State { Loading, Ready, Saving, Conflict, Unavailable };
@@ -102,6 +116,20 @@ private:
     struct CommitIntent final {
         QString key;
         QVariant value;
+    };
+
+    enum class SaveResultState {
+        NotAttempted,
+        Applied,
+        Conflict,
+        Failed,
+        Uncertain,
+    };
+
+    struct SaveResult final {
+        QString key;
+        SaveResultState state = SaveResultState::NotAttempted;
+        QString message;
     };
 
     void handleClientState();
@@ -118,12 +146,18 @@ private:
     [[nodiscard]] bool startApplySequence();
     void writeNextQueuedKey();
     void abortSequence();
+    void beginSaveResults();
+    void updateSaveResult(const QString &key, SaveResultState state,
+                          QString message = {});
+    void clearSaveResults();
+    [[nodiscard]] static QString saveResultStateToken(SaveResultState state);
+    [[nodiscard]] static QString saveResultStateLabel(SaveResultState state);
     [[nodiscard]] QSet<QString> installedThemeIds() const;
 
     QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AppearancePreview m_preview;
     Qt::ColorScheme m_platformScheme;
-    DesignTokens::TokenFacade *m_previewFacade = nullptr;
+    QPointer<DesignTokens::TokenFacade> m_previewFacade;
 
     State m_state = State::Loading;
     AppearanceValues m_confirmed;
@@ -139,7 +173,9 @@ private:
     bool m_sequenceActive = false;
     bool m_waitingFinalSnapshot = false;
     bool m_conflictIntent = false;
+    QSet<QString> m_dirtyKeys;
     QList<CommitIntent> m_queue;
+    QList<SaveResult> m_saveResults;
 };
 
 } // namespace QindaQt::Apps::SettingsAppearance

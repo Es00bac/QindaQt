@@ -613,5 +613,15 @@ void AppearanceSettingsModelTests::invalidSnapshotTypeFailsClosed()
     QTRY_VERIFY(model.ready());
 }
 
-QTEST_GUILESS_MAIN(AppearanceSettingsModelTests)
+int runAppearanceSettingsModelAdversarialTests(int argc, char **argv);
+
+int main(int argc, char **argv)
+{
+    QCoreApplication application(argc, argv);
+    AppearanceSettingsModelTests ordinary;
+    int status = QTest::qExec(&ordinary, argc, argv);
+    status |= runAppearanceSettingsModelAdversarialTests(argc, argv);
+    return status;
+}
+
 #include "tst_appearance_settings_model.moc"

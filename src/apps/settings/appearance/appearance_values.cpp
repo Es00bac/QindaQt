@@ -160,8 +160,16 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
     if (!requireString(AppearanceKeys::Theme, &decoded.themeId)) {
         return std::nullopt;
     }
+    if (decoded.themeId.isEmpty()) {
+        return fail(QLatin1String(AppearanceKeys::Theme),
+                    QStringLiteral("expected a non-empty string value"));
+    }
     if (!requireString(AppearanceKeys::FontFamily, &decoded.fontFamily)) {
         return std::nullopt;
+    }
+    if (decoded.fontFamily.isEmpty()) {
+        return fail(QLatin1String(AppearanceKeys::FontFamily),
+                    QStringLiteral("expected a non-empty string value"));
     }
     if (!requireString(AppearanceKeys::Wallpaper, &decoded.wallpaper)) {
         return std::nullopt;

@@ -50,7 +50,9 @@ ColumnLayout {
             error: root.appearanceSettings.fieldErrors[
                        "appearance.wallpaper"] !== undefined
             accessibleName: qsTr("Wallpaper image path")
-            onTextEdited: text => root.setDraft("appearance.wallpaper", text)
+            // TextInput::textEdited() has no signal argument in Qt 6.
+            onTextEdited: root.setDraft("appearance.wallpaper",
+                                        wallpaperField.text)
         }
     }
 

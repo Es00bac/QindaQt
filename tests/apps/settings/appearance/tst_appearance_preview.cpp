@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_preview.h"
+#include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QtTest>
+#include <QFile>
+#include <QTemporaryDir>
+
+#include <optional>
 
 using namespace QindaQt::Apps::SettingsAppearance;
 using QindaQt::Themes::ThemeLoader;
@@ -11,7 +16,7 @@ using QindaQt::Themes::ThemeSpec;
 
 namespace {
 
-QVector<ThemeSpec> loadBuiltInThemes()
+std::optional<QVector<ThemeSpec>> loadBuiltInThemes(QString *error)
 {
     QVector<ThemeSpec> themes;
     for (const auto *file : {"/data/themes/qinda-dark.json",
@@ -22,9 +27,13 @@ QVector<ThemeSpec> loadBuiltInThemes()
         const auto loaded =
             ThemeLoader::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR)
                                   + QLatin1String(file));
-        if (loaded.ok) {
-            themes.append(loaded.theme);
+        if (!loaded.ok) {
+            if (error != nullptr) {
+                *error = loaded.error;
+            }
+            return std::nullopt;
         }
+        themes.append(loaded.theme);
     }
     return themes;
 }
@@ -35,15 +44,35 @@ class AppearancePreviewTests final : public QObject {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
     void configuredThemeWinsOverSchemePreference();
     void schemePreferenceResolvesMissingTheme();
     void systemSchemeFollowsPlatformValue();
     void everyBuiltInThemeProducesCompletePreviewMaps();
     void highContrastVariantSetsQstInput();
+    void userDirectoryMergesWithoutHidingBuiltIns();
 
 private:
-    QVector<ThemeSpec> m_themes = loadBuiltInThemes();
+    QVector<ThemeSpec> m_themes;
 };
+
+void AppearancePreviewTests::initTestCase()
+{
+    QString error;
+    const auto loaded = loadBuiltInThemes(&error);
+    QVERIFY2(loaded.has_value(), qPrintable(error));
+    m_themes = *loaded;
+    QCOMPARE(m_themes.size(), 5);
+    QSet<QString> ids;
+    for (const ThemeSpec &theme : m_themes) {
+        ids.insert(theme.id);
+    }
+    QCOMPARE(ids, QSet<QString>({QStringLiteral("qinda-dark"),
+                                QStringLiteral("qinda-light"),
+                                QStringLiteral("qinda-dusk"),
+                                QStringLiteral("qinda-high-contrast"),
+                                QStringLiteral("qinda-macos")}));
+}
 
 void AppearancePreviewTests::configuredThemeWinsOverSchemePreference()
 {
@@ -139,6 +168,34 @@ void AppearancePreviewTests::highContrastVariantSetsQstInput()
 
     const auto darkTheme = preview.themes().at(0);
     QVERIFY(!preview.accessibilityInputs(values, darkTheme).highContrast);
+}
+
+void AppearancePreviewTests::userDirectoryMergesWithoutHidingBuiltIns()
+{
+    QTemporaryDir userDirectory;
+    QVERIFY(userDirectory.isValid());
+    const QString userTheme = userDirectory.filePath(
+        QStringLiteral("qinda-macos.json"));
+    QVERIFY(QFile::copy(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-macos.json"),
+        userTheme));
+
+    QString error;
+    const auto merged = loadAppearanceThemeDirectories(
+        {userDirectory.path(),
+         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")},
+        &error);
+    QVERIFY2(merged.has_value(), qPrintable(error));
+    QCOMPARE(merged->size(), 5);
+    QSet<QString> ids;
+    for (const ThemeSpec &theme : *merged) {
+        ids.insert(theme.id);
+    }
+    QVERIFY(ids.contains(QStringLiteral("qinda-dark")));
+    QVERIFY(ids.contains(QStringLiteral("qinda-light")));
+    QVERIFY(ids.contains(QStringLiteral("qinda-dusk")));
+    QVERIFY(ids.contains(QStringLiteral("qinda-high-contrast")));
+    QVERIFY(ids.contains(QStringLiteral("qinda-macos")));
 }
 
 QTEST_GUILESS_MAIN(AppearancePreviewTests)

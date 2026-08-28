@@ -31,4 +31,5 @@ install(
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/themes/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+    COMPONENT SettingsAppearanceRuntime
 )

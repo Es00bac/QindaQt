@@ -592,21 +592,33 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.appearance-(values|preview|settings-model|page)$' \
   --output-on-failure
 ctest --test-dir build/dev \
-  -R '^qindaqt\.settings-app-(offscreen|rejects-unknown-route|desktop-identity)$' \
+  -R '^qindaqt\.settings-app-(offscreen|rejects-unknown-route|desktop-identity|route-construction|installed-routes)$' \
   --output-on-failure
 ```
 
-The four Appearance rows cover strict typed values, all built-in QST preview
-maps, per-key Settings1 sequencing, same-lineage conflict recovery, uncertain
+The four Appearance rows cover strict typed values and enum metatypes, exact
+active-v2 defaults/constraints plus v1 migration fallback, all five built-in
+QST preview maps, per-key Settings1 sequencing, same-lineage conflict/Revert,
+clean and partially dirty external rebase, exact outbound keys, uncertain
 no-replay, owner loss, owner/epoch replacement in the reply-to-snapshot gap,
-confirmed diagnostics, and fail-closed snapshots. The offscreen page row uses
-the ordinary click/toggle paths for theme selection, validates action and
-failure-state wiring, and proves accessible status roles plus initial focus and
-Tab traversal. The desktop-identity row is non-vacuous: it checks source and
-desktop-entry/install contracts and requires the freshly built executable to
-embed `org.qindaqt.Settings` before any window construction.
+confirmed diagnostics, later-key partial-failure results, and fail-closed
+snapshots. The offscreen page row uses ordinary click, toggle, and typed-text
+paths, validates action/result/failure-state wiring, and proves accessible
+status roles plus full visible forward/reverse traversal at 420×320. The
+desktop-identity row is non-vacuous: it checks source and desktop-entry/install
+contracts and requires the freshly built executable to embed
+`org.qindaqt.Settings` before any window construction.
 
-This is private fake-transport and offscreen software-renderer evidence. It
+Two Settings application rows close the executable/package boundary. The
+full-root row launches both routes with only the active model and an unavailable
+private bus; each must remain constructed until the bounded harness timeout.
+The installed row stages the explicit `SettingsAppearanceRuntime` component,
+removes host display/Wayland/QML/library overrides, and repeats both launches.
+It proves the installed `lib/qt6/qml` import root, relative Tokens RUNPATH,
+complete Controls/Tokens/Appearance payload, and merged built-in theme search.
+
+This is private fake-transport, sanitized installed-runtime, and offscreen
+software-renderer evidence. It
 does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.

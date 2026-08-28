@@ -21,6 +21,29 @@ T.Page {
 
     title: qsTr("Appearance")
 
+    Keys.onPressed: event => {
+        const pageStep = Math.max(1, formViewport.height - Tokens.space["5"])
+        if (event.key === Qt.Key_PageDown) {
+            formViewport.contentY = Math.min(
+                        Math.max(0, formViewport.contentHeight - formViewport.height),
+                        formViewport.contentY + pageStep)
+            event.accepted = true
+        } else if (event.key === Qt.Key_PageUp) {
+            formViewport.contentY = Math.max(0,
+                                             formViewport.contentY - pageStep)
+            event.accepted = true
+        } else if (event.key === Qt.Key_Home
+                   && (event.modifiers & Qt.ControlModifier)) {
+            formViewport.contentY = 0
+            event.accepted = true
+        } else if (event.key === Qt.Key_End
+                   && (event.modifiers & Qt.ControlModifier)) {
+            formViewport.contentY = Math.max(
+                        0, formViewport.contentHeight - formViewport.height)
+            event.accepted = true
+        }
+    }
+
     background: Rectangle {
         color: Tokens.bg.base
     }
@@ -68,6 +91,20 @@ T.Page {
         }
 
         Label {
+            objectName: "appearanceSaveResults"
+            Layout.fillWidth: true
+            visible: root.appearanceSettings.saveResultsText.length > 0
+            text: root.appearanceSettings.saveResultsText
+            wrapMode: Text.Wrap
+            textFormat: Text.PlainText
+            color: root.appearanceSettings.saveResultsHaveFailure
+                   ? Tokens.status.warning.foreground : Tokens.fg.muted
+            Accessible.role: root.appearanceSettings.saveResultsHaveFailure
+                             ? Accessible.AlertMessage : Accessible.StaticText
+            Accessible.name: text
+        }
+
+        Label {
             objectName: "appearanceThemeFallback"
             Layout.fillWidth: true
             visible: root.appearanceSettings.fallbackNotice.length > 0
@@ -80,11 +117,57 @@ T.Page {
         }
 
         Flickable {
+            id: formViewport
             objectName: "appearanceFormViewport"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
             contentHeight: formSurface.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            activeFocusOnTab: false
+
+            T.ScrollBar.vertical: T.ScrollBar {
+                policy: T.ScrollBar.AsNeeded
+                activeFocusOnTab: false
+                Accessible.name: qsTr("Appearance settings scroll position")
+            }
+
+            function revealItem(focusedItem) {
+                if (focusedItem === null || focusedItem === undefined
+                        || focusedItem === formViewport) {
+                    return
+                }
+                let cursor = focusedItem
+                let belongsToForm = false
+                while (cursor !== null && cursor !== undefined) {
+                    if (cursor === formSurface) {
+                        belongsToForm = true
+                        break
+                    }
+                    cursor = cursor.parent
+                }
+                if (!belongsToForm) {
+                    return
+                }
+                const position = focusedItem.mapToItem(formSurface, 0, 0)
+                const margin = Tokens.space["2"]
+                const top = position.y - margin
+                const bottom = position.y + focusedItem.height + margin
+                if (top < contentY) {
+                    contentY = Math.max(0, top)
+                } else if (bottom > contentY + height) {
+                    contentY = Math.min(Math.max(0, contentHeight - height),
+                                        bottom - height)
+                }
+            }
+
+            function revealActiveFocus() {
+                if (root.Window.window !== null) {
+                    revealItem(root.Window.window.activeFocusItem)
+                }
+            }
+
+            onHeightChanged: Qt.callLater(revealActiveFocus)
 
             FormSurface {
                 id: formSurface
@@ -110,6 +193,14 @@ T.Page {
                         editorBusy: root.editorBusy
                     }
                 }
+            }
+        }
+
+        Connections {
+            target: root.Window.window
+            enabled: root.Window.window !== null
+            function onActiveFocusItemChanged() {
+                formViewport.revealActiveFocus()
             }
         }
 

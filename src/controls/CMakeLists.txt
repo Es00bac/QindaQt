@@ -57,6 +57,7 @@ foreach(qml_file deploy_path IN ZIP_LISTS
         FILES "${qml_file}"
         DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls/${deploy_directory}"
         RENAME "${deploy_name}"
+        COMPONENT SettingsAppearanceRuntime
     )
 endforeach()
 
@@ -88,12 +89,16 @@ install(
     TARGETS qindaqt_controls_qml qindaqt_controls_qmlplugin
     EXPORT QindaQtTargets
     RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT SettingsAppearanceRuntime
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT SettingsAppearanceRuntime
     ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT SettingsAppearanceRuntime
 )
 install(
     FILES
         "${QINDAQT_CONTROLS_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_CONTROLS_QML_OUTPUT_DIRECTORY}/qindaqt_controls.qmltypes"
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT SettingsAppearanceRuntime
 )

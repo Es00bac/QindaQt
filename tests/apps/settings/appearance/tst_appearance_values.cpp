@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
+#include "qindaqt/settings/settings_schema.h"
 
 #include <QtTest>
 
 using namespace QindaQt::Apps::SettingsAppearance;
+using QindaQt::Settings::SettingValueType;
+using QindaQt::Settings::SettingsSchema;
 
 namespace {
 
@@ -82,6 +85,16 @@ void AppearanceValuesTests::decodeRejectsWrongTypesAndUnknownTokens()
     QVERIFY(error.contains(QLatin1String(AppearanceKeys::Theme)));
 
     values = validMap();
+    values[QLatin1String(AppearanceKeys::Theme)] = QString{};
+    QVERIFY(!AppearanceValues::fromVariantMap(values, &error).has_value());
+    QVERIFY(error.contains(QLatin1String(AppearanceKeys::Theme)));
+
+    values = validMap();
+    values[QLatin1String(AppearanceKeys::FontFamily)] = QString{};
+    QVERIFY(!AppearanceValues::fromVariantMap(values, &error).has_value());
+    QVERIFY(error.contains(QLatin1String(AppearanceKeys::FontFamily)));
+
+    values = validMap();
     values[QLatin1String(AppearanceKeys::ColorScheme)] =
         QStringLiteral("sepia");
     QVERIFY(!AppearanceValues::fromVariantMap(values, &error).has_value());
@@ -151,14 +164,49 @@ void AppearanceValuesTests::validationRequiresInstalledThemesAndBounds()
 
 void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
 {
-    // AGENT-GUARD: The scoped keys are a public contract with
-    // data/settings/schema-v2.json and the qindaqt-settings route scope.
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"),
+        nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+
+    // AGENT-GUARD: Read the shipped schema rather than comparing a hand-made
+    // list with itself. Every client-scoped key must be defined by the
+    // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
     QCOMPARE(keys.size(), 10);
-    QCOMPARE(keys.count(QLatin1String(AppearanceKeys::Theme)), 1);
-    QVERIFY(keys.contains(QLatin1String(AppearanceKeys::FontSubpixelOrder)));
-    QVERIFY(keys.contains(QLatin1String(AppearanceKeys::WallpaperMode)));
+    for (const QString &key : keys) {
+        QVERIFY2(schema->definition(key) != nullptr, qPrintable(key));
+    }
     QVERIFY(!keys.contains(QStringLiteral("appearance.accentColor")));
+
+    const auto *scheme = schema->definition(
+        QLatin1String(AppearanceKeys::ColorScheme));
+    QVERIFY(scheme != nullptr);
+    QVERIFY(scheme->type == SettingValueType::String);
+    QCOMPARE(scheme->defaultValue.toString(), QStringLiteral("system"));
+    QCOMPARE(scheme->allowedValues,
+             QStringList({QStringLiteral("system"), QStringLiteral("light"),
+                          QStringLiteral("dark")}));
+
+    const auto *wallpaperMode = schema->definition(
+        QLatin1String(AppearanceKeys::WallpaperMode));
+    QVERIFY(wallpaperMode != nullptr);
+    QVERIFY(wallpaperMode->type == SettingValueType::String);
+    QCOMPARE(wallpaperMode->defaultValue.toString(), QStringLiteral("scaled"));
+    QCOMPARE(wallpaperMode->allowedValues,
+             QStringList({QStringLiteral("scaled"), QStringLiteral("centered"),
+                          QStringLiteral("tiled")}));
+
+    const auto *uiScale = schema->definition(
+        QLatin1String(AppearanceKeys::UiScale));
+    QVERIFY(uiScale != nullptr);
+    QVERIFY(uiScale->type == SettingValueType::Number);
+    QCOMPARE(uiScale->defaultValue.toDouble(), 1.0);
+    QVERIFY(uiScale->minimum.has_value());
+    QVERIFY(uiScale->maximum.has_value());
+    QCOMPARE(*uiScale->minimum, 0.5);
+    QCOMPARE(*uiScale->maximum, 3.0);
 }
 
 QTEST_GUILESS_MAIN(AppearanceValuesTests)

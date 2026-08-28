@@ -48,7 +48,8 @@ ColumnLayout {
             error: root.appearanceSettings.fieldErrors["fonts.family"]
                    !== undefined
             accessibleName: qsTr("Font family")
-            onTextEdited: text => root.setDraft("fonts.family", text)
+            // TextInput::textEdited() has no signal argument in Qt 6.
+            onTextEdited: root.setDraft("fonts.family", fontFamilyField.text)
         }
     }
 

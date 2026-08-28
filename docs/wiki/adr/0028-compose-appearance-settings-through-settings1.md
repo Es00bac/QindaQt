@@ -51,6 +51,11 @@ without it.
    revision. The accepted recovery contract is unchanged: owner loss forbids
    writes, uncertain writes are never replayed automatically, and conflicts
    require explicit user intent against a fresh baseline.
+   User intent is per key: untouched fields rebase to every fresh snapshot,
+   while explicitly edited fields remain until applied or reverted. The model
+   retains one bounded result per captured key (Applied, Failed, Conflict,
+   Uncertain, or Not attempted), so non-atomic partial success is visible and
+   accessible rather than collapsed into one global diagnostic.
 3. Theme resolution is explicit: the configured theme id wins when installed;
    otherwise the built-in dark/light theme matching the scheme preference
    (`system` follows the platform color scheme) is previewed, clearly labeled
@@ -66,6 +71,11 @@ without it.
    to the engine-owned `Tokens` singleton before page QML loads and on every
    draft/confirmed change. QML remains read-only over tokens and never
    touches the settings client.
+6. Theme search directories merge in precedence order instead of replacing the
+   complete catalog at the first successful directory. The installed runtime
+   resolves QML only from its own prefix and uses a relative loader path for
+   the directly linked Tokens backing library; a clean staged route launch is
+   the package-layout proof.
 
 ## Consequences
 
@@ -79,9 +89,13 @@ without it.
   mirrored in `AppearanceKeys`.
 - Font family remains free text: font discovery/application is a separate
   platform outcome, so this route neither enumerates nor applies host fonts.
+- A later-key failure leaves earlier Applied results visible and later queued
+  keys explicitly Not attempted. Revert and a new explicit Apply are the only
+  result-ledger reset boundaries; automatic snapshots cannot erase that truth.
 - Verification: `qindaqt.appearance-values`, `qindaqt.appearance-preview`,
   `qindaqt.appearance-settings-model`, `qindaqt.appearance-page`, plus the
-  existing settings-app and Settings1 suites; documentation gates as usual.
+  existing settings-app and Settings1 suites, full-root route construction,
+  and sanitized staged-install route launches; documentation gates as usual.
 
 ## Revisit when
 

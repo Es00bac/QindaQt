@@ -12,7 +12,10 @@ target_sources(
         appearance_preview.cpp
         appearance_qml_composition.cpp
         appearance_settings_model.cpp
+        appearance_settings_model_draft.cpp
         appearance_settings_model_preview.cpp
+        appearance_settings_model_results.cpp
+        appearance_theme_catalog.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -21,6 +24,7 @@ target_sources(
             include/qindaqt/apps/settings_appearance/appearance_preview.h
             include/qindaqt/apps/settings_appearance/appearance_qml_composition.h
             include/qindaqt/apps/settings_appearance/appearance_settings_model.h
+            include/qindaqt/apps/settings_appearance/appearance_theme_catalog.h
 )
 target_link_libraries(
     qindaqt_settings_appearance
@@ -74,14 +78,18 @@ qindaqt_enable_warnings(qindaqt_settings_appearance_qml)
 install(
     TARGETS qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
     RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
+        COMPONENT SettingsAppearanceRuntime
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
+        COMPONENT SettingsAppearanceRuntime
     ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
+        COMPONENT SettingsAppearanceRuntime
 )
 install(
     FILES
         "${QINDAQT_APPEARANCE_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_APPEARANCE_QML_OUTPUT_DIRECTORY}/qindaqt_settings_appearance.qmltypes"
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
+    COMPONENT SettingsAppearanceRuntime
 )
 install(
     FILES
@@ -91,4 +99,5 @@ install(
         qml/AppearanceThemeSection.qml
         qml/SegmentedChoiceRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
+    COMPONENT SettingsAppearanceRuntime
 )

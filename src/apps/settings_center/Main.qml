@@ -5,7 +5,9 @@ import QindaQt.SettingsApp.Appearance
 
 ApplicationWindow {
     id: root
-    required property var quietingSettings
+    // Only the active route's model is supplied. The inactive Loader must not
+    // force construction of or retain the other domain's authority object.
+    property var quietingSettings: undefined
     property var appearanceSettings: undefined
     required property string route
     visible: true

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
+#include "appearance_page_traversal_test.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -42,6 +43,9 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(bool applyAvailable MEMBER applyAvailable NOTIFY stateChanged)
     Q_PROPERTY(QString statusText MEMBER statusText NOTIFY stateChanged)
     Q_PROPERTY(QString errorText MEMBER errorText NOTIFY stateChanged)
+    Q_PROPERTY(QString saveResultsText MEMBER saveResultsText NOTIFY stateChanged)
+    Q_PROPERTY(bool saveResultsHaveFailure MEMBER saveResultsHaveFailure
+                   NOTIFY stateChanged)
     Q_PROPERTY(QVariantMap draft MEMBER draft NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors MEMBER fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes MEMBER installedThemes CONSTANT)
@@ -92,6 +96,8 @@ public:
     bool configuredThemeInstalled = true;
     QString statusText = QStringLiteral("Loading appearance settings…");
     QString errorText;
+    QString saveResultsText;
+    bool saveResultsHaveFailure = false;
     QString resolvedThemeId = QStringLiteral("qinda-dark");
     QString fallbackNotice;
     QVariantMap draft;
@@ -235,6 +241,28 @@ QAccessible::Role roleOf(QQuickItem *item_)
     return interface->role();
 }
 
+void typeAscii(QWindow *window, const QString &text)
+{
+    for (const QChar character : text) {
+        Qt::KeyboardModifiers modifiers;
+        int key = 0;
+        if (character.isLetter()) {
+            const QChar upper = character.toUpper();
+            key = int(Qt::Key_A) + upper.unicode() - QChar('A').unicode();
+            if (character.isUpper()) {
+                modifiers |= Qt::ShiftModifier;
+            }
+        } else if (character == QLatin1Char('/')) {
+            key = Qt::Key_Slash;
+        } else if (character == QLatin1Char('.')) {
+            key = Qt::Key_Period;
+        } else {
+            qFatal("unsupported focused text-test character");
+        }
+        QTest::keyClick(window, Qt::Key(key), modifiers);
+    }
+}
+
 } // namespace
 
 class AppearancePageTests final : public QObject {
@@ -243,9 +271,11 @@ class AppearancePageTests final : public QObject {
 private slots:
     void themeCardsRenderSelectAndGate();
     void toggleHandlersForwardAuthoritativeCheckedValues();
+    void textEditorsForwardOrdinaryUserInput();
     void actionRowWiresApplyRevertRetryClose();
     void statusFallbackAndAccessibilityTruth();
-    void initialFocusAndTabTraversal();
+    void saveResultSummaryIsAccessibleAndTruthful();
+    void fullForwardAndReverseTraversalKeepsEditorsVisible();
 
 private:
     static void makeReady(StubAppearanceModel &model, bool dirty)
@@ -344,6 +374,38 @@ void AppearancePageTests::toggleHandlersForwardAuthoritativeCheckedValues()
              QStringLiteral("dark"));
 }
 
+void AppearancePageTests::textEditorsForwardOrdinaryUserInput()
+{
+    const auto scene = createScene([](StubAppearanceModel &model) {
+        model.installedThemes = QVariantList{};
+        model.draft = defaultDraftMap();
+        makeReady(model, false);
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+
+    auto *fontFamily = item(scene.root, "appearanceFontFamilyField");
+    auto *wallpaper = item(scene.root, "appearanceWallpaperField");
+    QVERIFY(fontFamily != nullptr);
+    QVERIFY(wallpaper != nullptr);
+
+    fontFamily->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(fontFamily->hasActiveFocus());
+    QTest::keyClick(scene.view.get(), Qt::Key_A, Qt::ControlModifier);
+    typeAscii(scene.view.get(), QStringLiteral("inter"));
+    QTRY_VERIFY(!scene.model->draftKeys.isEmpty());
+    QCOMPARE(scene.model->draftKeys.constLast(), QStringLiteral("fonts.family"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(),
+             QStringLiteral("inter"));
+
+    wallpaper->forceActiveFocus(Qt::OtherFocusReason);
+    QTRY_VERIFY(wallpaper->hasActiveFocus());
+    typeAscii(scene.view.get(), QStringLiteral("/wallpaper.png"));
+    QTRY_COMPARE(scene.model->draftKeys.constLast(),
+                 QStringLiteral("appearance.wallpaper"));
+    QCOMPARE(scene.model->draftValues.constLast().toString(),
+             QStringLiteral("/wallpaper.png"));
+}
+
 void AppearancePageTests::actionRowWiresApplyRevertRetryClose()
 {
     const auto scene = createScene([](StubAppearanceModel &model) {
@@ -427,7 +489,28 @@ void AppearancePageTests::statusFallbackAndAccessibilityTruth()
              QStringLiteral("Configured theme 'ghost' is not installed; previewing 'qinda-dark'"));
 }
 
-void AppearancePageTests::initialFocusAndTabTraversal()
+void AppearancePageTests::saveResultSummaryIsAccessibleAndTruthful()
+{
+    const auto scene = createScene([](StubAppearanceModel &model) {
+        model.installedThemes = QVariantList{};
+        model.draft = defaultDraftMap();
+        makeReady(model, true);
+        model.saveResultsHaveFailure = true;
+        model.saveResultsText = QStringLiteral(
+            "Save results: appearance.theme — Applied; fonts.pointSize — Failed: disk full");
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+    auto *summary = item(scene.root, "appearanceSaveResults");
+    QVERIFY(summary != nullptr);
+    QVERIFY(summary->isVisible());
+    QCOMPARE(roleOf(summary), QAccessible::AlertMessage);
+    QVERIFY(summary->property("text").toString().contains(
+        QStringLiteral("appearance.theme — Applied")));
+    QVERIFY(summary->property("text").toString().contains(
+        QStringLiteral("fonts.pointSize — Failed")));
+}
+
+void AppearancePageTests::fullForwardAndReverseTraversalKeepsEditorsVisible()
 {
     const auto scene = createScene([](StubAppearanceModel &model) {
         model.installedThemes = QVariantList{themeEntry(
@@ -435,26 +518,13 @@ void AppearancePageTests::initialFocusAndTabTraversal()
             QStringLiteral("dark"),
             previewTokensFor(QStringLiteral("qinda-dark.json")))};
         model.draft = defaultDraftMap();
-        makeReady(model, false);
+        makeReady(model, true);
     });
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
-
-    QQuickItem *firstCard = nullptr;
-    QVERIFY2(QTest::qWaitFor(
-                 [&]() {
-                     firstCard = item(scene.root,
-                                      "appearanceThemeCard_qinda-dark");
-                     return firstCard != nullptr;
-                 },
-                 1'000),
-             qPrintable(QStringLiteral("first theme card missing; descendants: %1")
-                            .arg(descendantObjectNames(scene.root))));
-    QTRY_VERIFY(firstCard->hasActiveFocus());
-
-    // The default tab chain leaves the theme grid toward the form controls.
-    QTest::keyClick(scene.view.get(), Qt::Key_Tab);
-    QVERIFY(!firstCard->hasActiveFocus());
-    QVERIFY(scene.view->activeFocusItem() != nullptr);
+    QString traversalError;
+    QVERIFY2(verifyFullAppearanceTraversal(*scene.view, scene.root,
+                                           &traversalError),
+             qPrintable(traversalError));
 }
 
 QTEST_MAIN(AppearancePageTests)

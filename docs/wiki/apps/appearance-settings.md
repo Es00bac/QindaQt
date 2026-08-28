@@ -25,7 +25,10 @@ One page covers the appearance preference set stored through Settings1:
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
 semantics for the scheme and enum choices, an explicit initial focus on the
-first theme card, and a visible focus chain through the draft action row.
+first theme card, and a visible focus chain through the draft action row. The
+form has a visible vertical scrollbar, Page Up/Page Down and Ctrl+Home/Ctrl+End
+scrolling, and automatic focus reveal; every forward and reverse Tab stop stays
+inside the compact 420×320 viewport.
 
 ## Truthful state surface
 
@@ -45,9 +48,13 @@ truth as the DND controller, extended to a draft workflow:
   commit at a time in fixed key order. The model waits for each fresh
   authoritative snapshot before the next key, so no write uses a stale base
   revision. Per-key outcomes are reported truthfully; the sequence is never
-  claimed to be atomic.
+  claimed to be atomic. A bounded accessible result ledger names every key in
+  the captured sequence as Applied, Failed, Conflict, Uncertain, or Not
+  attempted, so a later-key failure cannot hide an earlier durable success.
 - **Revert** — discards the draft and republishes the confirmed generation.
-  Revert is refused while a commit sequence is in flight.
+  Revert is refused while a commit sequence is in flight. From an answerable
+  Conflict it also clears conflict intent, confirmed diagnostics, and the
+  previous result ledger before returning to clean Ready.
 - **Conflict** — a rejected key whose authority differs stops the sequence,
   keeps the draft, and requires an explicit re-Apply (or Revert) against the
   refreshed baseline. The controls remain non-editable during the commit-
@@ -63,6 +70,12 @@ truth as the DND controller, extended to a draft workflow:
   visible across automatic rebaselines until a new explicit write dismisses
   them.
 
+Draft intent is tracked per key rather than inferred from one stale draft
+snapshot. Every untouched field rebases to a later same-owner or replacement-
+owner snapshot; only fields the user actually edited survive. If authority
+changes Wallpaper while Theme alone is edited, Apply sends Theme only and
+never restores the stale Wallpaper.
+
 ## Route integration seam
 
 The executable `qindaqt-settings` composes per route:
@@ -71,14 +84,18 @@ The executable `qindaqt-settings` composes per route:
    otherwise exit 2 with the existing diagnostic);
 2. scope one public `SettingsClient` to `AppearanceKeys::scopedKeys()` for
    the appearance route;
-3. load the installed theme catalog from the same search contract as the
-   text editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
-   executable; `--theme-directory` prepends a developer path). With no
-   installed themes the route exits 3 with the catalog diagnostic instead of
-   rendering token-less controls;
+3. merge every theme directory from the same search contract as the text
+   editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
+   executable; `--theme-directory` prepends a developer path). Earlier
+   directories win duplicate IDs, while unique built-ins remain present; an
+   invalid theme fails closed and no themes exits 3 instead of rendering
+   token-less controls;
 4. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
    and only then load `Main.qml`, which instantiates exactly one route
-   component per route with its required model property.
+   component per route with its required model property. The executable adds
+   the generated build QML root only when it is actually running from that
+   build tree; installed/relocated runs use the prefix's `lib/qt6/qml` root
+   and a relative Tokens RUNPATH, never developer import paths.
 
 QML never consumes the settings client or transport directly, and the
 notifications route's model property is never constructed for the appearance
@@ -107,21 +124,30 @@ ctest --test-dir build/dev \
 ```
 
 - `qindaqt.appearance-values` — token round trips, canonical decode, typed
-  rejections, draft validation, scoped-key contract.
+  rejections including empty non-empty-schema strings, draft validation, and
+  exact shipped-schema key/default/constraint contracts.
 - `qindaqt.appearance-preview` — configured-theme precedence, scheme and
   platform fallbacks, complete preview maps for every built-in theme,
-  high-contrast QST input.
+  high-contrast QST input, and an exact five-ID inventory including
+  `qinda-macos`.
 - `qindaqt.appearance-settings-model` — baseline decode, per-key commit
   sequence with fresh-base snapshots, conflict stop/explicit re-apply,
   uncertain no-replay, owner-loss and reply-gap owner/epoch replacement abort,
-  diagnostic retention, fail-closed snapshot decode.
+  diagnostic retention, fail-closed snapshot decode, answerable Conflict
+  Revert, clean/partially dirty authority rebase, exact outbound keys, strict
+  enum metatypes, and later-key partial-failure results.
 - `qindaqt.appearance-page` — offscreen Controls scene: theme-card
-  click selection/gating, zero-argument toggle wiring, action-row wiring,
-  status/error/fallback truth and accessible roles, initial focus and tab
-  traversal.
+  click selection/gating, zero-argument toggle and real text-entry wiring,
+  action-row and per-key result wiring, status/error/fallback truth and
+  accessible roles, plus full visible forward/reverse compact traversal.
 
 The route also inherits the settings-app offscreen and unknown-route gates.
 `qindaqt.settings-app-desktop-identity` proves the built executable embeds the
 installed `org.qindaqt.Settings` desktop identity and declares it before any
 window construction. Settings1 client/service suites remain the authority for
 the generic transport and persistence boundary.
+`qindaqt.settings-app-route-construction` creates both full roots with only the
+active route model and a deliberately unavailable private bus.
+`qindaqt.settings-app-installed-routes` installs the bounded Appearance runtime
+component into a clean prefix and launches both routes with host display,
+Wayland, QML-import, and library-path overrides removed.

@@ -33,6 +33,8 @@ AppearanceSettingsModel::AppearanceSettingsModel(
       m_platformScheme(platformScheme),
       m_previewFacade(previewFacade)
 {
+    Q_ASSERT(m_client.thread() == thread());
+    Q_ASSERT(m_previewFacade.isNull() || m_previewFacade->thread() == thread());
     connect(&m_client, &SettingsClient::stateChanged,
             this, &AppearanceSettingsModel::handleClientState);
     connect(&m_client, &SettingsClient::snapshotChanged,
@@ -134,93 +136,6 @@ QVariantMap AppearanceSettingsModel::fieldErrors() const
     return m_validation.fieldErrors;
 }
 
-bool AppearanceSettingsModel::setDraftValue(const QString &key,
-                                            const QVariant &value)
-{
-    if (!canEdit()) {
-        return false;
-    }
-
-    AppearanceValues next = m_draft;
-    // AGENT-GUARD: Field typing is strict — QVariant silently converts string
-    // "12" to 12.0, and accepting that would let a page bug become a stored
-    // wrong-typed value instead of a rejected draft write.
-    const auto requireDouble = [&value](double *target) {
-        switch (value.metaType().id()) {
-        case QMetaType::Double:
-        case QMetaType::Float:
-        case QMetaType::LongLong:
-        case QMetaType::Int:
-        case QMetaType::UInt:
-        case QMetaType::ULongLong:
-            *target = value.toDouble();
-            return true;
-        default:
-            return false;
-        }
-    };
-    if (key == QLatin1String(AppearanceKeys::Theme)) {
-        if (value.metaType().id() != QMetaType::QString) return false;
-        next.themeId = value.toString();
-    } else if (key == QLatin1String(AppearanceKeys::ColorScheme)) {
-        const auto scheme = colorSchemeFromToken(value.toString());
-        if (!scheme.has_value()) return false;
-        next.colorScheme = *scheme;
-    } else if (key == QLatin1String(AppearanceKeys::FontFamily)) {
-        if (value.metaType().id() != QMetaType::QString) return false;
-        next.fontFamily = value.toString();
-    } else if (key == QLatin1String(AppearanceKeys::FontPointSize)) {
-        if (!requireDouble(&next.fontPointSize)) return false;
-    } else if (key == QLatin1String(AppearanceKeys::FontAntialiasing)) {
-        if (value.metaType().id() != QMetaType::Bool) return false;
-        next.fontAntialiasing = value.toBool();
-    } else if (key == QLatin1String(AppearanceKeys::FontHinting)) {
-        const auto hinting = fontHintingFromToken(value.toString());
-        if (!hinting.has_value()) return false;
-        next.fontHinting = *hinting;
-    } else if (key == QLatin1String(AppearanceKeys::FontSubpixelOrder)) {
-        const auto subpixel = subpixelOrderFromToken(value.toString());
-        if (!subpixel.has_value()) return false;
-        next.fontSubpixelOrder = *subpixel;
-    } else if (key == QLatin1String(AppearanceKeys::Wallpaper)) {
-        if (value.metaType().id() != QMetaType::QString) return false;
-        next.wallpaper = value.toString();
-    } else if (key == QLatin1String(AppearanceKeys::WallpaperMode)) {
-        const auto mode = wallpaperModeFromToken(value.toString());
-        if (!mode.has_value()) return false;
-        next.wallpaperMode = *mode;
-    } else if (key == QLatin1String(AppearanceKeys::UiScale)) {
-        if (!requireDouble(&next.uiScale)) return false;
-    } else {
-        return false;
-    }
-
-    if (next == m_draft) {
-        return true;
-    }
-    m_draft = next;
-    refreshValidationAndPreview();
-    return true;
-}
-
-bool AppearanceSettingsModel::cancelDraft()
-{
-    if (!canEdit() || !draftDirty()) {
-        return false;
-    }
-    m_draft = m_confirmed;
-    refreshValidationAndPreview();
-    return true;
-}
-
-bool AppearanceSettingsModel::applyDraft()
-{
-    if (!applyAvailable()) {
-        return false;
-    }
-    return startApplySequence();
-}
-
 void AppearanceSettingsModel::retry()
 {
     // Do not claim progress before the client actually retries; a repeated
@@ -254,6 +169,10 @@ void AppearanceSettingsModel::handleClientState()
     case ClientState::Unavailable:
     case ClientState::Degraded:
         setAuthorityReady(false);
+        if (m_sequenceActive && !m_queue.isEmpty()) {
+            updateSaveResult(m_queue.first().key, SaveResultState::Uncertain,
+                             m_client.lastError());
+        }
         abortSequence();
         setState(State::Unavailable, m_client.lastError());
         break;
@@ -342,6 +261,7 @@ void AppearanceSettingsModel::handleCommit(const CommitOutcome &outcome)
 
     const CommitIntent intended = m_queue.first();
     if (outcome.status == SettingsWireStatus::Applied) {
+        updateSaveResult(intended.key, SaveResultState::Applied);
         m_queue.removeFirst();
         // AGENT-GUARD: Never write the next key from the commit reply. The
         // client still holds the pre-commit base revision until its automatic
@@ -359,6 +279,7 @@ void AppearanceSettingsModel::handleCommit(const CommitOutcome &outcome)
         if (current == intended.value) {
             // The queued value already is authority; treat the key as done
             // once the matching fresh snapshot confirms it.
+            updateSaveResult(intended.key, SaveResultState::Applied);
             m_queue.removeFirst();
             if (m_queue.isEmpty()) {
                 m_sequenceActive = false;
@@ -366,6 +287,8 @@ void AppearanceSettingsModel::handleCommit(const CommitOutcome &outcome)
             }
             return;
         }
+        updateSaveResult(intended.key, SaveResultState::Conflict,
+                         outcome.message);
         abortSequence();
         m_conflictIntent = true;
         setState(State::Conflict);
@@ -379,6 +302,7 @@ void AppearanceSettingsModel::handleCommit(const CommitOutcome &outcome)
     m_confirmedError =
         outcome.message.isEmpty() ? statusFailureMessage(outcome.status)
                                   : outcome.message.left(MaximumDiagnosticLength);
+    updateSaveResult(intended.key, SaveResultState::Failed, m_confirmedError);
     setState(State::Ready);
 }
 
@@ -386,6 +310,10 @@ void AppearanceSettingsModel::handleUncertain(const QString &message)
 {
     // Timeout, owner replacement, or transport loss during a write is never
     // retried automatically; the user must refresh and re-apply explicitly.
+    if (!m_queue.isEmpty()) {
+        updateSaveResult(m_queue.first().key, SaveResultState::Uncertain,
+                         message.left(MaximumDiagnosticLength));
+    }
     abortSequence();
     setState(State::Unavailable,
              message.isEmpty()
@@ -418,48 +346,6 @@ void AppearanceSettingsModel::setAuthorityReady(bool ready)
     // This explicit notification prevents controls from remaining enabled
     // across the commit-reply-to-snapshot Authenticating interval.
     Q_EMIT stateChanged();
-}
-
-void AppearanceSettingsModel::setConfirmed(AppearanceValues values)
-{
-    const bool baselineBefore = m_hasBaseline;
-    const bool changed = !(m_confirmed == values);
-    m_confirmed = values;
-    if (!baselineBefore) {
-        m_hasBaseline = true;
-        // AGENT-GUARD: Edits are impossible before the first baseline
-        // (canEdit follows ready), so any pre-baseline draft is composed
-        // default guesswork, not user intent. Seed the draft from the first
-        // authoritative snapshot or every page would open falsely dirty.
-        m_draft = values;
-    }
-    if (changed || !baselineBefore) {
-        refreshValidationAndPreview();
-    }
-}
-
-bool AppearanceSettingsModel::startApplySequence()
-{
-    const QVariantMap draftMap = m_draft.toVariantMap();
-    const QVariantMap confirmedMap = m_confirmed.toVariantMap();
-    for (const QString &key : AppearanceKeys::scopedKeys()) {
-        const QVariant next = draftMap.value(key);
-        if (next != confirmedMap.value(key)) {
-            m_queue.append(CommitIntent{key, next});
-        }
-    }
-    if (m_queue.isEmpty()) {
-        return false;
-    }
-    m_sequenceActive = true;
-    m_conflictIntent = false;
-    m_confirmedError.clear();
-    setState(State::Saving);
-    writeNextQueuedKey();
-    // A synchronous write refusal either aborts the sequence with an honest
-    // state change (queued keys cleared) or waits for fresh authority; both
-    // keep Saving honest through the state signal, so report what happened.
-    return m_sequenceActive;
 }
 
 void AppearanceSettingsModel::writeNextQueuedKey()

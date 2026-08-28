@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
+#include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/themes/theme_catalog.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -30,9 +30,24 @@ namespace {
         QStandardPaths::LocateDirectory));
     directories.append(
         QDir(QCoreApplication::applicationDirPath())
-            .absoluteFilePath(QStringLiteral("../share/qindaqt/themes")));
+            .absoluteFilePath(
+                QStringLiteral(QINDAQT_INSTALL_THEME_RELATIVE_PATH)));
     directories.removeDuplicates();
     return directories;
+}
+
+void addSettingsQmlImportPaths(QQmlApplicationEngine &engine)
+{
+    const QString applicationDirectory =
+        QFileInfo(QCoreApplication::applicationFilePath()).absolutePath();
+    const QString buildRoot = QStringLiteral(QINDAQT_BUILD_ROOT);
+    if (applicationDirectory == buildRoot
+        || applicationDirectory.startsWith(buildRoot + QLatin1Char('/'))) {
+        engine.addImportPath(QStringLiteral(QINDAQT_BUILD_QML_IMPORT_PATH));
+    }
+    engine.addImportPath(
+        QDir(applicationDirectory)
+            .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH)));
 }
 
 } // namespace
@@ -70,12 +85,10 @@ int main(int argc, char **argv)
     }
 
     QQmlApplicationEngine engine;
-    // AGENT-NOTE: Build-tree runs resolve sibling QML modules (Tokens,
-    // Controls, SettingsApp.Appearance) from the generated qml directory;
-    // installed prefixes use Qt's default import path instead. Adding a
-    // nonexistent path is harmless, so one unconditional seam covers both.
-    engine.addImportPath(QDir(QCoreApplication::applicationDirPath())
-                             .absoluteFilePath(QStringLiteral("../qml")));
+    // AGENT-GUARD: Build and installed module roots have different layouts.
+    // Never add the compiled build path to a relocated installed executable,
+    // or a staged package can pass by importing uninstalled developer files.
+    addSettingsQmlImportPaths(engine);
 
     if (appearanceRoute) {
         // AGENT-GUARD: The route stack must outlive application.exec(); every
@@ -88,7 +101,6 @@ int main(int argc, char **argv)
             transport,
             QindaQt::Apps::SettingsAppearance::AppearanceKeys::scopedKeys());
 
-        QindaQt::Themes::ThemeCatalog catalog;
         QStringList directories = themeSearchDirectories();
         const QString explicitThemeDirectory =
             parser.value(themeDirectoryOption);
@@ -96,14 +108,10 @@ int main(int argc, char **argv)
             directories.prepend(QFileInfo(explicitThemeDirectory).absoluteFilePath());
         }
         QString catalogError;
-        bool catalogLoaded = false;
-        for (const QString &directory : directories) {
-            if (catalog.loadDirectory(directory, &catalogError)) {
-                catalogLoaded = true;
-                break;
-            }
-        }
-        if (!catalogLoaded) {
+        const auto themes =
+            QindaQt::Apps::SettingsAppearance::loadAppearanceThemeDirectories(
+                directories, &catalogError);
+        if (!themes.has_value()) {
             std::fprintf(stderr, "qindaqt-settings: %s\n", qPrintable(catalogError));
             return 3;
         }
@@ -117,7 +125,7 @@ int main(int argc, char **argv)
         }
 
         QindaQt::Apps::SettingsAppearance::AppearanceSettingsModel
-            appearanceSettings(client, catalog.themes(),
+            appearanceSettings(client, *themes,
                                application.styleHints()->colorScheme(), facade);
         QString clientError;
         if (!client.start(&clientError)) {
