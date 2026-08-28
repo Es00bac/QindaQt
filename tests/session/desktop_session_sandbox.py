@@ -20,6 +20,10 @@ class SandboxContractError(RuntimeError):
 
 
 RUN_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
+# AGENT-GUARD: The sandbox starts from an empty root, so host merged-usr
+# aliases do not exist even when /usr is mounted. Keep these as relative
+# in-sandbox links; binding host /lib* would broaden the evidence boundary.
+MERGED_USR_LIBRARY_ALIASES = (("usr/lib", "/lib"), ("usr/lib", "/lib64"))
 FORBIDDEN_ENVIRONMENT = frozenset(
     {
         "DISPLAY",
@@ -228,6 +232,10 @@ def build_bwrap_argv(spec: SandboxSpec) -> list[str]:
         "--clearenv",
         "--tmpfs",
         "/",
+    ]
+    for source, destination in MERGED_USR_LIBRARY_ALIASES:
+        argv.extend(["--symlink", source, destination])
+    argv.extend([
         "--proc",
         "/proc",
         "--dev",
@@ -274,7 +282,7 @@ def build_bwrap_argv(spec: SandboxSpec) -> list[str]:
         "--bind",
         str(spec.paths.logs.resolve()),
         "/var/log/qindaqt-desktop",
-    ]
+    ])
     for mount in (*spec.system_mounts, spec.stage, spec.tests, spec.probe):
         argv.extend(
             ["--ro-bind", str(mount.source.resolve()), str(mount.destination)]

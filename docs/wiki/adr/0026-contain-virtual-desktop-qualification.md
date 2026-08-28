@@ -34,6 +34,12 @@ writable runtime/log/evidence directories. It never binds host input/uinput,
 the host runtime directory, display/session sockets, home/configuration, or a
 render node.
 
+Because the root is empty, the harness constructs only the conventional
+merged-usr `/lib` and `/lib64` aliases as relative links to the already mounted
+`/usr/lib`. This exposes no additional host path and lets an explicitly
+discovered system or Homebrew executable reach its authenticated ELF
+interpreter without assuming the host root's symlink layout.
+
 The outer harness builds argv and environment from typed values rather than
 inherited environment state. It requires both an explicit manager allocation
 token and a nonblocking per-user cross-worktree advisory lock before starting

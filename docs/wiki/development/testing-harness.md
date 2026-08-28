@@ -935,7 +935,9 @@ Bubblewrap creates PID/network/IPC/UTS/user namespaces, parent-death and new-
 session semantics, an empty root, private `/dev`, `/tmp`, `/run`, machine ID,
 HOME/XDG roots, D-Bus socket, and Wayland socket. Only exact read-only system
 tool roots, stage/source/probe inputs, and bounded writable runtime/log/evidence
-directories are visible. There is no host HOME/config, runtime directory,
+directories are visible. The empty root adds only relative `/lib` and `/lib64`
+merged-usr aliases to its already mounted `/usr/lib`; it does not bind another
+host path. There is no host HOME/config, runtime directory,
 Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
 network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
 owns this trust boundary.

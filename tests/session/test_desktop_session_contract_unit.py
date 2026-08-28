@@ -240,6 +240,13 @@ class SandboxTests(unittest.TestCase):
             self.assertNotIn("/dev/uinput", joined)
             self.assertNotIn("--bind / /", joined)
             self.assertNotIn("--ro-bind / /", joined)
+            aliases = [
+                (argv[index + 1], argv[index + 2])
+                for index, value in enumerate(argv)
+                if value == "--symlink"
+            ]
+            self.assertEqual(aliases, [("usr/lib", "/lib"), ("usr/lib", "/lib64")])
+            self.assertLess(argv.index("/lib64"), argv.index("--proc"))
             remove_run_root(paths, build, "b" * 32)
 
     def test_run_root_cleanup_requires_exact_sentinel(self) -> None:
