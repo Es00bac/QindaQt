@@ -81,7 +81,7 @@ std::optional<FontPreferences> FontPreferencesCodec::fromJsonObject(
         }
         const double pt = val.toDouble();
         if (!isValidPointSize(pt)) {
-            if (error) *error = QStringLiteral("pointSize is out of valid bounds [4.0, 144.0]");
+            if (error) *error = QStringLiteral("pointSize is out of valid bounds [6.0, 36.0]");
             return std::nullopt;
         }
         prefs.setPointSize(pt);

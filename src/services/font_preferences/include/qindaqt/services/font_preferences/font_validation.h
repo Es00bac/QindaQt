@@ -6,8 +6,8 @@
 
 namespace QindaQt::Services::FontPreferences {
 
-inline constexpr double MinPointSize = 4.0;
-inline constexpr double MaxPointSize = 144.0;
+inline constexpr double MinPointSize = 6.0;
+inline constexpr double MaxPointSize = 36.0;
 inline constexpr double DefaultPointSize = 10.0;
 
 inline constexpr double MinLogicalDpi = 48.0;

@@ -32,7 +32,7 @@ graph TD
    case-folded canonical key. Provides `createDefaultFallback()` for baseline
    system typography.
 3. **`FontPreferences` (`font_preferences.h`)**: Validated typography preferences
-   governing standard family, monospace family, point size (`[4.0, 144.0]`),
+   governing standard family, monospace family, point size (`[6.0, 36.0]`),
    antialiasing mode (`none`, `grayscale`, `subpixel`), hinting (`none`, `slight`,
    `medium`, `full`), subpixel ordering (`none`, `rgb`, `bgr`, `vrgb`, `vbgr`),
    and optional logical DPI (`[48.0, 576.0]`).

@@ -20,13 +20,13 @@ bool FontPreferencesCoordinator::refreshCatalog(
 {
     QString localError;
     FontCatalog newCatalog = FontCatalog::create(facts, &localError);
-    if (newCatalog.isEmpty()) {
+    if (!newCatalog.isValid()) {
         if (errorMessage) {
             *errorMessage = localError.isEmpty()
                                 ? QStringLiteral("Failed to generate valid catalog from provided facts")
                                 : localError;
         }
-        // AGENT-GUARD: Retain last known good catalog on failure
+        // AGENT-GUARD: Retain last known good catalog on failure without advancing revision
         return false;
     }
 

@@ -5,6 +5,10 @@ namespace QindaQt::Services::FontPreferences {
 
 namespace {
 
+// AGENT-CONTRACT: Qt's QFont::HintingPreference enum defines PreferNoHinting,
+// PreferVerticalHinting (slight), and PreferFullHinting (full), but lacks an
+// intermediate medium value. Consequently, FontHinting::Medium and FontHinting::Full
+// both map to QFont::PreferFullHinting when adapting to Qt's font rendering pipeline.
 QFont::HintingPreference toQtHinting(FontHinting hinting) noexcept
 {
     switch (hinting) {
