@@ -88,6 +88,14 @@ dock state may retry only until the hard deadline. Application evidence retains
 the compositor-observed `applicationId`, window ID, and title. It never creates
 an expected identity from a title match.
 
+Every readiness probe reserves a fixed one-second lifetime before it starts;
+the driver does not shorten that lifetime to the outer deadline's final
+milliseconds and does not start a probe unless the full lifetime remains. The
+15-second outer cap is therefore never extended. Each consumed stdout snapshot
+is flushed into that attempt's archived process log before schema or topology
+validation, and an outer/probe deadline reports the exact last pending
+observation rather than a raw subprocess timeout.
+
 Before the private run root is removed, every attempt archives all regular
 artifacts, all process logs, combined sandbox output, and exact run/result/
 timeout metadata beneath a fresh build-local

@@ -6,11 +6,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import select
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 from desktop_session_measure import aggregate_pss_kib, read_process_sample
 from desktop_session_process import (
@@ -23,30 +22,21 @@ from desktop_session_process import (
     terminate_processes,
     wait_for_path,
 )
+from desktop_session_readiness import (
+    ReadinessDeadlineExpired,
+    await_complete_snapshot,
+    read_probe_document,
+    remaining_probe_lifetime,
+    require_probe_lifetime,
+)
 from desktop_session_sandbox import FORBIDDEN_ENVIRONMENT, SandboxContractError
 from desktop_session_stage import ResolvedStage, resolve_stage
 from desktop_session_topology import (
-    TopologyContractError,
     desktop_1080p_topology,
     observed_applications,
     validate_boot_evidence,
-    validate_topology_readiness,
 )
 from nested_session_scenario import VirtualOutputSpec, write_virtual_output_config
-
-
-MARKER = "QINDAQT_DESKTOP_SESSION_PROBE="
-READINESS_SECONDS = 15.0
-REQUIRED_METHODS = ("outputs", "shellVisibility", "inputCapabilities", "developmentShellSurfaces", "windows")
-
-
-def _parse_probe(line: str) -> dict[str, Any]:
-    if not line.startswith(MARKER):
-        raise RuntimeError("desktop probe marker was missing")
-    document = json.loads(line.removeprefix(MARKER))
-    if not isinstance(document, dict) or document.get("schemaVersion") != 1:
-        raise RuntimeError("desktop probe returned an invalid document")
-    return document
 
 
 def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list[dict[str, Any]]:
@@ -70,99 +60,6 @@ def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list
              "executable": names[role]}
         )
     return result
-
-
-def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
-    topology = desktop_1080p_topology()
-    expected_services = {item.name for item in topology.services}
-    raw_services = probe.get("services")
-    if not isinstance(raw_services, list):
-        raise RuntimeError("probe service evidence was malformed")
-    services: dict[str, Mapping[str, Any]] = {}
-    for raw in raw_services:
-        if not isinstance(raw, Mapping) or not isinstance(raw.get("name"), str):
-            raise RuntimeError("probe service evidence contained a malformed record")
-        name = str(raw["name"])
-        if name in services or name not in expected_services:
-            raise RuntimeError("probe service evidence had duplicate or unexpected names")
-        services[name] = raw
-    service_pending: str | None = None
-    if set(services) != expected_services:
-        service_pending = "required service ownership is incomplete"
-    else:
-        for name, record in services.items():
-            status = record.get("status")
-            if status == "unavailable":
-                service_pending = f"service {name} is not owned yet"
-                continue
-            if (
-                status != "owned"
-                or not isinstance(record.get("owner"), str)
-                or not str(record["owner"]).startswith(":")
-            ):
-                raise RuntimeError(f"service {name} returned invalid ownership evidence")
-            try:
-                pid = int(str(record.get("pid", "0")), 10)
-            except ValueError as error:
-                raise RuntimeError(f"service {name} returned a malformed PID") from error
-            if pid <= 1:
-                raise RuntimeError(f"service {name} returned an invalid PID")
-    values = {key: probe.get(key) for key in REQUIRED_METHODS}
-    if not all(isinstance(value, Mapping) for value in values.values()):
-        raise RuntimeError("probe method evidence was malformed")
-    for key, value in values.items():
-        if value.get("status") != "ok":
-            raise RuntimeError(f"public D-Bus method {key} returned an error")
-    if service_pending is not None:
-        return service_pending
-    output = values["outputs"]
-    visibility = values["shellVisibility"]
-    try:
-        applications = observed_applications(
-            list(values["windows"].get("windows", []))
-        )
-    except TopologyContractError as error:
-        return str(error)
-    candidate = {
-        "outputs": output.get("outputs", []),
-        "generations": {
-            "outputs": output.get("outputGeneration"),
-            "shellVisibility": visibility.get("outputGeneration"),
-        },
-        "inputDevices": values["inputCapabilities"].get("devices", []),
-        "dockSurfaces": values["developmentShellSurfaces"].get("surfaces", []),
-        "applications": applications,
-    }
-    try:
-        validate_topology_readiness(candidate)
-    except TopologyContractError as error:
-        return str(error)
-    return None
-
-
-def await_complete_snapshot(
-    sample: Callable[[float], Mapping[str, Any]],
-    *,
-    seconds: float = READINESS_SECONDS,
-    monotonic: Callable[[], float] = time.monotonic,
-    sleep: Callable[[float], None] = time.sleep,
-) -> Mapping[str, Any]:
-    """Poll until all public topology inputs are ready in the same snapshot."""
-
-    deadline = monotonic() + seconds
-    last_pending = "no snapshot was sampled"
-    while True:
-        remaining = deadline - monotonic()
-        if remaining <= 0:
-            raise RuntimeError(f"desktop topology readiness timed out: {last_pending}")
-        document = sample(remaining)
-        if monotonic() > deadline:
-            raise RuntimeError(f"desktop topology readiness timed out: {last_pending}")
-        pending = _snapshot_pending(document)
-        if pending is None:
-            return document
-        last_pending = pending
-        sleep(min(0.05, max(0.0, deadline - monotonic())))
 
 
 def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
@@ -277,36 +174,32 @@ def _spawn_probe(
     return probe
 
 
-def _read_probe_document(probe: subprocess.Popen[str], seconds: float) -> Mapping[str, Any]:
-    if probe.stdout is None: raise RuntimeError("desktop probe stdout was unavailable")
-    readable, _, _ = select.select([probe.stdout], [], [], seconds)
-    if not readable:
-        raise RuntimeError("desktop topology readiness timed out waiting for the probe")
-    line = probe.stdout.readline()
-    if not line:
-        raise RuntimeError("desktop probe exited without an evidence marker")
-    return _parse_probe(line)
-
-
 def _await_runtime_snapshot(
     arguments: argparse.Namespace,
     environment: Mapping[str, str],
     state: RuntimeState,
 ) -> tuple[Mapping[str, Any], subprocess.Popen[str]]:
     current: subprocess.Popen[str] | None = None
+    current_deadline = 0.0
     attempt = 0
 
     def sample(remaining: float) -> Mapping[str, Any]:
-        nonlocal current, attempt
+        nonlocal current, current_deadline, attempt
         if current is not None:
             wait_started = time.monotonic()
-            current.wait(timeout=min(1.0, remaining))
+            try:
+                current.wait(timeout=remaining_probe_lifetime(current_deadline))
+            except subprocess.TimeoutExpired as error:
+                raise ReadinessDeadlineExpired(
+                    "probe did not exit within its fixed lifetime"
+                ) from error
             remaining -= time.monotonic() - wait_started
-            if remaining <= 0: raise RuntimeError("desktop topology readiness deadline expired")
             if current.returncode != 0: raise RuntimeError("desktop readiness probe failed")
+        lifetime = require_probe_lifetime(remaining)
         attempt += 1
         current = _spawn_probe(arguments, environment, state, attempt)
-        return _read_probe_document(current, remaining)
+        current_deadline = time.monotonic() + lifetime
+        return read_probe_document(current, current_deadline)
 
     document = await_complete_snapshot(sample)
     if current is None:

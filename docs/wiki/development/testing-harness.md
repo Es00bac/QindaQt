@@ -952,6 +952,13 @@ must match their exact compositor-observed `applicationId`, nonempty window ID,
 and title. A matching title with another application ID is never rewritten into
 QindaQt evidence.
 
+Each probe receives a fixed one-second lifetime, and a new attempt starts only
+when that complete lifetime remains inside the 15-second total cap. The driver
+flushes the exact stdout snapshot into the attempt log before validation. If
+the outer budget or a probe lifetime expires, the failure names the last
+pending topology observation; it never passes a dwindling subsecond outer
+remainder to a new process and loses the causal evidence.
+
 Every invocation reserves a new sentinel-authenticated persistent result root
 at `build/dev/tests/session/desktop-session-results/<run-id>`. Before deleting
 the private run root, a `finally` path copies every artifact and process log,
