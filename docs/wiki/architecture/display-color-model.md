@@ -33,8 +33,8 @@ arbitrary enum casts, oversized lists — fail closed.
 
 | Value | Bound |
 | --- | --- |
-| ICC profile byte size | 128 through 4,194,304 bytes (4 MiB) |
-| ICC header buffer | at least 128 bytes, never larger than the declared total size |
+| ICC profile byte size | 128 through 4,194,304 bytes (4 MiB), exactly equal to the header's declared size |
+| ICC header buffer | at least 128 bytes, never larger than the profile's declared size |
 | Profiles per catalog | 256, deterministic order, unique IDs |
 | Outputs per model | 32 aggregate across capabilities and assignments |
 | Profile ID / stable ID | 1 through 128 chars of `[A-Za-z0-9._:-]` |
@@ -58,25 +58,33 @@ assignment truth.
 `validateIccHeader` accepts an injected byte buffer, never a file. It checks,
 in order: non-empty data; at least the 128-byte ICC header; declared profile
 size within [128, 4 MiB] and not above a supplied total file size; the
-supplied buffer not larger than that total size; the version major byte in
+supplied buffer never larger than the profile's declared size (which also
+bounds it by any consistent total file size); the version major byte in
 the known published generations 2 through 5; the profile/device class among
 the seven standard ICC classes; the data color space `RGB ` or `GRAY`; the
 connection space `XYZ ` or `Lab `; and the `'acsp'` magic at byte 36. A valid
 summary extracts declared size, CMM type, version, class, spaces, and the
 16-byte MD5 profile ID without interpreting profile body tags. Descriptor
 validation additionally checks identifiers, names, file name safety, enum
-ranges, size consistency, and checksum length. The checksum is provenance
-metadata: C0 has no profile body bytes, so digest *computation* is a later
-import lane's obligation.
+ranges, exact size consistency — descriptor byte size, embedded declared
+size, and supplied buffer must all agree — and checksum length. The checksum
+is provenance metadata: C0 has no profile body bytes, so digest *computation*
+is a later import lane's obligation.
 
 ## Deterministic catalog
 
 `normalizeAndSortCatalog` filters descriptors that fail validation,
-deduplicates by profile ID keeping the first occurrence, caps at 256, and
-sorts by origin (BuiltIn first), then case-insensitive display name, then
-exact profile ID. Two models fed the same profiles in different orders
+collapses exact-equal duplicates to one entry, and rejects a duplicate ID
+whose descriptors conflict — both entries, in either input order, so
+publication never depends on input order. It sorts by origin (BuiltIn
+first), then case-insensitive display name, then exact profile ID, and caps
+at 256 after sorting. Two models fed the same profiles in different orders
 therefore publish byte-identical catalogs, and the default sRGB profile is
-the caller's validated choice or deterministically the first sorted entry.
+the caller's choice only when it carries truthful sRGB gamut and sRGB
+transfer semantics, otherwise deterministically the first sorted entry with
+those semantics; when no such entry exists the default is empty and SDR
+fallbacks fail closed with no applied profile rather than publishing a
+non-sRGB default.
 
 ## Assignment intent and degraded truth
 
@@ -89,7 +97,8 @@ snapshots:
 - HDR policy on an output without HDR capability degrades truthfully to SDR
   sRGB; WCG likewise. A capability-clamped applied assignment also falls back
   to the default sRGB profile, never the requested HDR/WCG profile, so
-  published state stays coherent and fail-closed.
+  published state stays coherent and fail-closed. When no truthful sRGB
+  default exists the applied profile is empty, never a non-sRGB profile.
 - A requested profile that is missing degrades with `ProfileNotFound` and
   falls back to the last-known-good assignment while it still resolves,
   otherwise the default sRGB profile.
@@ -100,11 +109,20 @@ snapshots:
 ## Lineage and atomic publication
 
 Every snapshot carries schema version 1, a non-empty service epoch, a
-model-monotonic revision, and a SHA-256 lineage fingerprint over the sorted
-catalog and sorted output states. `validateLineage(epoch, revision)` accepts
+model-monotonic revision, and a SHA-256 lineage fingerprint over one
+schema-tagged, domain-tagged, length-delimited canonical encoding of every
+semantically published snapshot field — catalog metadata and flags,
+per-profile identity/name/description/file/gamut/transfer/header/checksum/
+size/flags, and per-output capabilities, requested and applied assignments,
+active profile, degraded reason, and state flags. Each field is framed as
+`[tag length][tag][payload length][payload]`, so no two distinct published
+states can share a fingerprint, and per-field mutation regressions pin the
+coverage. `validateLineage(epoch, revision)` accepts
 exactly the current pair: stale (older) and out-of-order (newer) foreign
 revisions both fail closed, and revisions are never ordered across epochs.
-`resetEpoch` starts a fresh epoch at revision zero. Mutators validate their
+`resetEpoch` starts a distinct (or generated) epoch at revision zero;
+resetting to the epoch already in force is a no-op that never regresses the
+model-monotonic revision. Mutators validate their
 complete input before touching state; a rejected mutation leaves revision,
 snapshot, and fingerprint byte-identical (atomic reject), which regression
 rows pin by comparing complete snapshots before and after hostile input.
@@ -120,12 +138,16 @@ ctest --test-dir build/<debug|release> \
 ```
 
 Six rows: header validation (magic, truncation, declared-size bounds,
-version bounds, spaces/classes, buffer-size consistency, summary truth),
-catalog (descriptor metadata, path-traversal safety, hostile enum casts,
-deterministic sorting, dedup, capacity), model (epoch/lineage exact
-equality, deterministic fingerprint, degraded HDR/WCG/missing/invalid
-profile fallbacks, output lifecycle, epoch reset, hostile NaN/enum/list
-atomic rejection, 32-output aggregate cap), the source-policy boundary row,
-its poison-negative proof, and an installed staged-header C++ consumer.
-Every row is deterministic model evidence; none is transport, compositor,
-display, or color-application evidence.
+version bounds, spaces/classes, buffer-size consistency against the
+declared size, summary truth), catalog (descriptor metadata, path-traversal
+safety, hostile enum casts, exact declared/descriptor/buffer size
+consistency, the ASCII identifier grammar, deterministic sorting,
+order-independent duplicate handling, capacity), model (epoch/lineage exact
+equality, deterministic fingerprint, full-field fingerprint mutation
+coverage and framing unambiguity, degraded HDR/WCG/missing/invalid profile
+fallbacks, truthful sRGB default semantics with fail-closed absence,
+output lifecycle, epoch reset with same-epoch monotonicity, hostile
+NaN/enum/list atomic rejection, 32-output aggregate cap), the source-policy
+boundary row, its poison-negative proof, and an installed staged-header C++
+consumer. Every row is deterministic model evidence; none is transport,
+compositor, display, or color-application evidence.

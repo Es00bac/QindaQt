@@ -11,6 +11,21 @@
 namespace QindaQt::DisplayColor
 {
 
+namespace
+{
+
+// AGENT-GUARD: a truthful sRGB fallback requires sRGB gamut AND sRGB
+// transfer semantics. Accepting any existing profile as the "default sRGB"
+// would publish incoherent applied color truth — for example a BT.2020
+// profile under a capability-clamped SDR sRGB policy.
+bool hasSrgbSemantics(const IccProfileDescriptor &profile)
+{
+    return profile.gamut == ColorSpaceGamut::Srgb &&
+           profile.transferFunction == TransferFunction::Srgb;
+}
+
+} // namespace
+
 ColorModel::ColorModel(const QString &serviceEpoch)
     : m_serviceEpoch(serviceEpoch.isEmpty() ? QUuid::createUuid().toString(QUuid::WithoutBraces) : serviceEpoch)
 {
@@ -28,6 +43,13 @@ quint64 ColorModel::revision() const
 
 void ColorModel::resetEpoch(const QString &newEpoch)
 {
+    // AGENT-GUARD: resetting to the epoch already in force must never
+    // regress the model-monotonic revision (1 -> 0) inside one epoch; the
+    // request is a no-op. A distinct (or generated) epoch starts fresh
+    // lineage at revision zero.
+    if (!newEpoch.isEmpty() && newEpoch == m_serviceEpoch) {
+        return;
+    }
     m_serviceEpoch = newEpoch.isEmpty() ? QUuid::createUuid().toString(QUuid::WithoutBraces) : newEpoch;
     m_revision = 0;
     reevaluateAllOutputs();
@@ -60,12 +82,16 @@ bool ColorModel::setCatalog(const QList<IccProfileDescriptor> &profiles, const Q
     }
 
     m_catalog.profiles = normalized;
-    if (!defaultSrgbId.isEmpty() && m_profilesById.contains(defaultSrgbId)) {
+    // AGENT-GUARD: the caller's default is honored only when it exists and
+    // carries truthful sRGB gamut/transfer semantics; anything else falls
+    // through to the deterministic first sorted sRGB entry or fails closed
+    // to an empty default.
+    if (!defaultSrgbId.isEmpty() && m_profilesById.contains(defaultSrgbId) &&
+        hasSrgbSemantics(m_profilesById.value(defaultSrgbId))) {
         m_catalog.defaultSrgbProfileId = defaultSrgbId;
-    } else if (!normalized.isEmpty()) {
-        m_catalog.defaultSrgbProfileId = normalized.first().profileId;
     } else {
         m_catalog.defaultSrgbProfileId.clear();
+        refreshDefaultSrgbProfile();
     }
 
     advanceRevision();
@@ -88,10 +114,7 @@ bool ColorModel::registerProfile(const IccProfileDescriptor &profile)
 
     QList<IccProfileDescriptor> profileList = m_profilesById.values();
     m_catalog.profiles = normalizeAndSortCatalog(profileList);
-
-    if (m_catalog.defaultSrgbProfileId.isEmpty() || !m_profilesById.contains(m_catalog.defaultSrgbProfileId)) {
-        m_catalog.defaultSrgbProfileId = profile.profileId;
-    }
+    refreshDefaultSrgbProfile();
 
     advanceRevision();
     reevaluateAllOutputs();
@@ -107,10 +130,7 @@ bool ColorModel::removeProfile(const QString &profileId)
     m_profilesById.remove(profileId);
     QList<IccProfileDescriptor> profileList = m_profilesById.values();
     m_catalog.profiles = normalizeAndSortCatalog(profileList);
-
-    if (m_catalog.defaultSrgbProfileId == profileId) {
-        m_catalog.defaultSrgbProfileId = m_catalog.profiles.isEmpty() ? QString() : m_catalog.profiles.first().profileId;
-    }
+    refreshDefaultSrgbProfile();
 
     advanceRevision();
     reevaluateAllOutputs();
@@ -210,6 +230,29 @@ bool ColorModel::validateLineage(const QString &epoch, quint64 revision) const
         return false;
     }
     return revision == m_revision;
+}
+
+void ColorModel::refreshDefaultSrgbProfile()
+{
+    // Keep an existing default only while it still resolves and still has
+    // truthful sRGB semantics; otherwise deterministically adopt the first
+    // sorted sRGB entry. m_catalog.profiles is sorted at this point, so the
+    // choice is independent of registration order. When no sRGB-semantic
+    // profile exists the default stays empty and SDR fallbacks fail closed
+    // with no applied profile rather than publishing a non-sRGB default.
+    if (!m_catalog.defaultSrgbProfileId.isEmpty()) {
+        const auto it = m_profilesById.find(m_catalog.defaultSrgbProfileId);
+        if (it != m_profilesById.end() && hasSrgbSemantics(*it)) {
+            return;
+        }
+        m_catalog.defaultSrgbProfileId.clear();
+    }
+    for (const auto &profile : m_catalog.profiles) {
+        if (hasSrgbSemantics(profile)) {
+            m_catalog.defaultSrgbProfileId = profile.profileId;
+            return;
+        }
+    }
 }
 
 void ColorModel::reevaluateOutput(const QString &stableId)

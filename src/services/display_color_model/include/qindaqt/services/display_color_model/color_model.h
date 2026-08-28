@@ -26,7 +26,9 @@ class ColorModel final
 public:
     explicit ColorModel(const QString &serviceEpoch = QString());
 
-    // Epoch and lineage management
+    // Epoch and lineage management. resetEpoch starts a distinct (or
+    // generated) epoch at revision zero; resetting to the epoch already in
+    // force is a no-op that never regresses the model-monotonic revision.
     QString serviceEpoch() const;
     quint64 revision() const;
     void resetEpoch(const QString &newEpoch);
@@ -58,6 +60,7 @@ public:
 private:
     void reevaluateOutput(const QString &stableId);
     void reevaluateAllOutputs();
+    void refreshDefaultSrgbProfile();
     void advanceRevision();
     int knownOutputCount() const;
 

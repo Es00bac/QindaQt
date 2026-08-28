@@ -28,7 +28,9 @@ access); stable output IDs are validated by bounded opaque format without
 linking Display1 identity code; the catalog is deterministically ordered;
 assignment intent stays separate from applied truth with explicit degraded
 reasons and sRGB/last-known-good fallbacks; snapshots are atomic and
-fingerprinted with exact epoch/revision lineage equality. Enum ranges,
+fingerprinted with exact epoch/revision lineage equality, and the
+fingerprint's schema-tagged, length-delimited canonical encoding covers
+every semantically published snapshot field. Enum ranges,
 finite luminance, aggregate caps (32 outputs, 256 profiles, 4 MiB profiles),
 and atomic reject-on-invalid are contract, not implementation detail.
 
@@ -43,6 +45,12 @@ and atomic reject-on-invalid are contract, not implementation detail.
 - Truthful degraded states (HDR-on-SDR, missing profile, invalid profile)
   are pinned by tests so a UI lane can expose them without re-deriving
   policy.
+- Truthful fallbacks are contract, pinned by mutation-sensitive tests: the
+  sRGB default requires sRGB gamut/transfer semantics and fails closed when
+  absent, conflicting duplicate profile IDs are rejected order-independently,
+  descriptor and ICC header sizes must agree exactly, identifiers follow the
+  exact `[A-Za-z0-9._:-]` grammar, and a same-epoch reset never regresses the
+  revision.
 - Any new dependency direction from this module requires a new or amended
   ADR.
 

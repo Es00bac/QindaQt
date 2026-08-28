@@ -20,6 +20,8 @@ private Q_SLOTS:
     void testInvalidChecksumLength();
     void testHostileEnumCastsRejected();
     void testRawHeaderLargerThanDeclaredSize();
+    void testDescriptorSizeConsistency();
+    void testIdentifierAsciiGrammar();
     void testCatalogDeterministicSorting();
     void testCatalogDeduplication();
     void testCatalogCapacityCap();
@@ -129,6 +131,54 @@ void ColorCatalogTest::testRawHeaderLargerThanDeclaredSize()
     QCOMPARE(validateProfileDescriptor(desc), ProfileValidationStatus::InvalidSize);
 }
 
+void ColorCatalogTest::testDescriptorSizeConsistency()
+{
+    // AGENT-GUARD: descriptor byte size, the header's embedded declared
+    // size, and the supplied buffer must agree exactly.
+
+    // Equal: descriptor size, declared size and buffer are consistent.
+    {
+        auto desc = createSampleProfile("prof-size-eq", "Equal Sizes", ProfileOrigin::BuiltIn,
+                                        ColorSpaceGamut::Srgb, 512);
+        QCOMPARE(validateProfileDescriptor(desc), ProfileValidationStatus::Valid);
+    }
+
+    // Declared size smaller than descriptor byte size: the header validates
+    // alone but the sizes disagree, so the descriptor must fail closed.
+    {
+        auto desc = createSampleProfile("prof-size-small", "Declared Smaller", ProfileOrigin::BuiltIn,
+                                        ColorSpaceGamut::Srgb, 512);
+        desc.rawHeader = createValidIccHeader(128);
+        QCOMPARE(validateProfileDescriptor(desc), ProfileValidationStatus::InvalidSize);
+    }
+
+    // Declared size larger than descriptor byte size: rejected earlier by
+    // the header's declared-versus-total-size bound.
+    {
+        auto desc = createSampleProfile("prof-size-large", "Declared Larger", ProfileOrigin::BuiltIn,
+                                        ColorSpaceGamut::Srgb, 128);
+        desc.rawHeader = createValidIccHeader(512);
+        QCOMPARE(validateProfileDescriptor(desc), ProfileValidationStatus::InvalidDeclaredSize);
+    }
+}
+
+void ColorCatalogTest::testIdentifierAsciiGrammar()
+{
+    // The documented grammar is exactly [A-Za-z0-9._:-].
+    QVERIFY(validateDisplayStableId("DP-1._:aZ09"));
+    QCOMPARE(validateProfileDescriptor(createSampleProfile("ok.id:1-A_Z", "Grammar OK")),
+             ProfileValidationStatus::Valid);
+
+    // AGENT-GUARD: non-ASCII letters are outside the durable grammar and
+    // must fail closed for both stable IDs and profile IDs.
+    QVERIFY(!validateDisplayStableId(QString::fromUtf8("écran")));
+    QVERIFY(!validateDisplayStableId(QString::fromUtf8("屏幕-1")));
+    {
+        auto desc = createSampleProfile(QString::fromUtf8("profil-é"), "Unicode ID");
+        QCOMPARE(validateProfileDescriptor(desc), ProfileValidationStatus::MalformedMetadata);
+    }
+}
+
 void ColorCatalogTest::testCatalogDeterministicSorting()
 {
     const auto pUserB = createSampleProfile("prof-user-b", "Beta Profile", ProfileOrigin::UserImported);
@@ -156,15 +206,42 @@ void ColorCatalogTest::testCatalogDeterministicSorting()
 
 void ColorCatalogTest::testCatalogDeduplication()
 {
-    const auto p1 = createSampleProfile("prof-dup", "Original Profile", ProfileOrigin::BuiltIn);
-    auto p2 = createSampleProfile("prof-dup", "Duplicate Profile", ProfileOrigin::UserImported);
+    // Exact-equal duplicates collapse to a single entry in any input order.
+    {
+        const auto original = createSampleProfile("prof-dup", "Original Profile", ProfileOrigin::BuiltIn);
+        const auto copy = original;
 
-    const QList<IccProfileDescriptor> input = {p1, p2};
-    const auto result = normalizeAndSortCatalog(input);
+        const auto forward = normalizeAndSortCatalog({original, copy});
+        const auto reverse = normalizeAndSortCatalog({copy, original});
+        QCOMPARE(forward, reverse);
+        QCOMPARE(forward.size(), 1);
+        QCOMPARE(forward.first().profileId, QString("prof-dup"));
+        QCOMPARE(forward.first().displayName, QString("Original Profile"));
+    }
 
-    QCOMPARE(result.size(), 1);
-    QCOMPARE(result.first().profileId, QString("prof-dup"));
-    QCOMPARE(result.first().displayName, QString("Original Profile"));
+    // AGENT-GUARD: conflicting duplicates (same ID, different bytes) are
+    // rejected atomically in both input orders — neither descriptor becomes
+    // catalog truth, so publication never depends on input order.
+    {
+        const auto first = createSampleProfile("prof-conflict", "First Profile", ProfileOrigin::BuiltIn);
+        const auto second = createSampleProfile("prof-conflict", "Second Profile", ProfileOrigin::UserImported);
+
+        const auto forward = normalizeAndSortCatalog({first, second});
+        const auto reverse = normalizeAndSortCatalog({second, first});
+        QCOMPARE(forward, reverse);
+        QVERIFY(forward.isEmpty());
+    }
+
+    // A conflicting pair never evicts an unrelated profile.
+    {
+        const auto conflictA = createSampleProfile("prof-conflict", "Alpha Version");
+        const auto conflictB = createSampleProfile("prof-conflict", "Beta Version");
+        const auto unrelated = createSampleProfile("prof-other", "Unrelated Profile");
+
+        const auto result = normalizeAndSortCatalog({conflictA, unrelated, conflictB});
+        QCOMPARE(result.size(), 1);
+        QCOMPARE(result.first().profileId, QString("prof-other"));
+    }
 }
 
 void ColorCatalogTest::testCatalogCapacityCap()

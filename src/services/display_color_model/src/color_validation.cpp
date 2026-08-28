@@ -4,10 +4,12 @@
 #include "qindaqt/services/display_color_model/color_limits.h"
 
 #include <QtCore/QCryptographicHash>
+#include <QtCore/QHash>
 #include <QtCore/QSet>
 #include <QtCore/QtEndian>
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace QindaQt::DisplayColor
 {
@@ -51,8 +53,16 @@ bool isValidIdentifierString(const QString &id)
     if (id.isEmpty() || id.size() > MaxIdentifierLength) {
         return false;
     }
+    // AGENT-GUARD: the durable identifier grammar is exactly
+    // [A-Za-z0-9._:-]. Unicode letters/digits (e.g. 'écran') are outside
+    // the documented ASCII grammar and must fail closed so identifiers stay
+    // byte-stable across every consumer lane.
     for (const QChar ch : id) {
-        if (!ch.isLetterOrNumber() && ch != u'-' && ch != u'_' && ch != u'.' && ch != u':') {
+        const ushort u = ch.unicode();
+        const bool asciiAlnum = (u >= u'a' && u <= u'z') ||
+                                (u >= u'A' && u <= u'Z') ||
+                                (u >= u'0' && u <= u'9');
+        if (!asciiAlnum && u != u'.' && u != u':' && u != u'-' && u != u'_') {
             return false;
         }
     }
@@ -113,6 +123,91 @@ bool isValidIntentValue(quint32 value)
            value <= static_cast<quint32>(RenderingIntent::AbsoluteColorimetric);
 }
 
+// AGENT-CONTRACT: The lineage fingerprint encoding frames every field as
+// [u16 tag length][tag][u64 payload length][payload]. The frame is fully
+// self-delimiting, so two distinct field tuples can never produce the same
+// byte stream: moving payload bytes between adjacent fields (for example
+// default="a"+profile="bc" versus default="ab"+profile="c") changes the
+// framed stream, where an unframed concatenation would collide on "abc".
+// Tags are fixed ASCII domain identifiers; the schema tag versions the
+// encoding itself so a future field set can never alias this one.
+
+void frameField(QCryptographicHash &hash, QByteArrayView tag, QByteArrayView payload)
+{
+    const quint16 tagLength = qToBigEndian(static_cast<quint16>(tag.size()));
+    hash.addData(QByteArrayView(reinterpret_cast<const char *>(&tagLength), sizeof(tagLength)));
+    hash.addData(tag);
+    const quint64 payloadLength = qToBigEndian(static_cast<quint64>(payload.size()));
+    hash.addData(QByteArrayView(reinterpret_cast<const char *>(&payloadLength), sizeof(payloadLength)));
+    hash.addData(payload);
+}
+
+void frameU32(QCryptographicHash &hash, QByteArrayView tag, quint32 value)
+{
+    const quint32 be = qToBigEndian(value);
+    frameField(hash, tag, QByteArrayView(reinterpret_cast<const char *>(&be), sizeof(be)));
+}
+
+void frameU64(QCryptographicHash &hash, QByteArrayView tag, quint64 value)
+{
+    const quint64 be = qToBigEndian(value);
+    frameField(hash, tag, QByteArrayView(reinterpret_cast<const char *>(&be), sizeof(be)));
+}
+
+void frameDouble(QCryptographicHash &hash, QByteArrayView tag, double value)
+{
+    // IEEE-754 bit pattern framed as u64 keeps the encoding canonical across
+    // platforms; NaN payloads are irrelevant here because published values
+    // were already validated finite.
+    quint64 bits = 0;
+    static_assert(sizeof(bits) == sizeof(value), "double must be 64-bit");
+    std::memcpy(&bits, &value, sizeof(bits));
+    frameU64(hash, tag, bits);
+}
+
+void frameBool(QCryptographicHash &hash, QByteArrayView tag, bool value)
+{
+    const char byte = value ? '\x01' : '\x00';
+    frameField(hash, tag, QByteArrayView(&byte, 1));
+}
+
+void frameString(QCryptographicHash &hash, QByteArrayView tag, const QString &value)
+{
+    const QByteArray utf8 = value.toUtf8();
+    frameField(hash, tag, utf8);
+}
+
+void frameAssignmentFields(QCryptographicHash &hash, const OutputColorAssignment &assignment)
+{
+    frameString(hash, "a.id", assignment.stableId);
+    frameString(hash, "a.profile", assignment.profileId);
+    frameU32(hash, "a.policy", static_cast<quint32>(assignment.policy));
+    frameU32(hash, "a.intent", static_cast<quint32>(assignment.intent));
+    frameBool(hash, "a.sdr-gain", assignment.sdrBrightnessGainApplied);
+    frameDouble(hash, "a.sdr-nits", assignment.sdrBrightnessNits);
+    frameBool(hash, "a.wire", assignment.wireValid);
+}
+
+void frameCapabilitiesFields(QCryptographicHash &hash, const OutputColorCapabilities &capabilities)
+{
+    frameString(hash, "cap.id", capabilities.stableId);
+    frameBool(hash, "cap.wcg", capabilities.supportsWcg);
+    frameBool(hash, "cap.hdr", capabilities.supportsHdr);
+    frameU32(hash, "cap.gamut-count", static_cast<quint32>(capabilities.supportedGamuts.size()));
+    for (const ColorSpaceGamut gamut : capabilities.supportedGamuts) {
+        frameU32(hash, "cap.gamut", static_cast<quint32>(gamut));
+    }
+    frameU32(hash, "cap.transfer-count", static_cast<quint32>(capabilities.supportedTransferFunctions.size()));
+    for (const TransferFunction transfer : capabilities.supportedTransferFunctions) {
+        frameU32(hash, "cap.transfer", static_cast<quint32>(transfer));
+    }
+    frameDouble(hash, "cap.min-nits", capabilities.minLuminanceNits);
+    frameDouble(hash, "cap.max-nits", capabilities.maxLuminanceNits);
+    frameDouble(hash, "cap.full-frame-nits", capabilities.maxFullFrameLuminanceNits);
+    frameBool(hash, "cap.auto-acm", capabilities.autoColorManagementAvailable);
+    frameBool(hash, "cap.wire", capabilities.wireValid);
+}
+
 } // namespace
 
 std::pair<ProfileValidationStatus, IccHeaderSummary> validateIccHeader(
@@ -143,10 +238,12 @@ std::pair<ProfileValidationStatus, IccHeaderSummary> validateIccHeader(
         return {ProfileValidationStatus::InvalidDeclaredSize, summary};
     }
 
-    // AGENT-GUARD: The supplied bytes cannot exceed the declared total profile
-    // size; a header buffer larger than the profile it claims to come from is
-    // inconsistent hostile input, not a truncation.
-    if (totalFileSize > 0 && headerData.size() > static_cast<qsizetype>(totalFileSize)) {
+    // AGENT-GUARD: The supplied bytes cannot exceed the profile's own
+    // declared size; a header buffer larger than the profile it claims to
+    // come from is inconsistent hostile input, not a truncation. The
+    // declared size was already bounded by any consistent total file size
+    // above, so this bound also subsumes the total-size comparison.
+    if (headerData.size() > static_cast<qsizetype>(declaredSize)) {
         return {ProfileValidationStatus::InvalidSize, summary};
     }
 
@@ -234,6 +331,14 @@ ProfileValidationStatus validateProfileDescriptor(const IccProfileDescriptor &de
     const auto [status, summary] = validateIccHeader(descriptor.rawHeader, descriptor.byteSize);
     if (status != ProfileValidationStatus::Valid) {
         return status;
+    }
+
+    // AGENT-GUARD: The descriptor's declared byte size and the header's own
+    // declared profile size must match exactly. A descriptor size smaller or
+    // larger than the embedded declaration is inconsistent provenance for
+    // the same bytes and must fail closed.
+    if (summary.profileSize != descriptor.byteSize) {
+        return ProfileValidationStatus::InvalidSize;
     }
 
     return ProfileValidationStatus::Valid;
@@ -331,33 +436,45 @@ bool validateOutputAssignment(const OutputColorAssignment &assignment)
 
 QList<IccProfileDescriptor> normalizeAndSortCatalog(const QList<IccProfileDescriptor> &profiles)
 {
-    QList<IccProfileDescriptor> validProfiles;
-    validProfiles.reserve(std::min<qsizetype>(profiles.size(), static_cast<qsizetype>(MaxProfilesInCatalog)));
-
-    QSet<QString> seenIds;
+    QHash<QString, IccProfileDescriptor> acceptedById;
+    QSet<QString> conflictedIds;
 
     for (const auto &profile : profiles) {
-        if (validProfiles.size() >= static_cast<int>(MaxProfilesInCatalog)) {
-            break;
-        }
-
         if (validateProfileDescriptor(profile) != ProfileValidationStatus::Valid) {
             continue;
         }
 
-        if (seenIds.contains(profile.profileId)) {
+        if (conflictedIds.contains(profile.profileId)) {
             continue;
         }
 
-        seenIds.insert(profile.profileId);
-        validProfiles.append(profile);
+        const auto existingIt = acceptedById.find(profile.profileId);
+        if (existingIt != acceptedById.end()) {
+            // AGENT-GUARD: duplicate resolution must be independent of input
+            // order. Exact-equal duplicates collapse to one entry; a
+            // conflicting pair (same ID, different bytes) is rejected
+            // atomically — neither descriptor becomes catalog truth — so
+            // two conflicting descriptors can never publish different
+            // catalogs depending on which arrived first.
+            if (!(*existingIt == profile)) {
+                acceptedById.erase(existingIt);
+                conflictedIds.insert(profile.profileId);
+            }
+            continue;
+        }
+
+        acceptedById.insert(profile.profileId, profile);
     }
+
+    QList<IccProfileDescriptor> validProfiles = acceptedById.values();
 
     // AGENT-CONTRACT: Deterministic sorting order ensures catalog representations
     // produce identical serialized snapshots across processes and restarts:
     // 1. Origin (BuiltIn < System < UserImported < EdidDerived)
     // 2. Case-insensitive DisplayName
     // 3. Exact ProfileId
+    // The capacity cap is applied after sorting so even an oversized input
+    // set publishes the same deterministic prefix in any input order.
     std::sort(validProfiles.begin(), validProfiles.end(), [](const IccProfileDescriptor &a, const IccProfileDescriptor &b) {
         if (a.origin != b.origin) {
             return static_cast<quint32>(a.origin) < static_cast<quint32>(b.origin);
@@ -368,6 +485,10 @@ QList<IccProfileDescriptor> normalizeAndSortCatalog(const QList<IccProfileDescri
         }
         return a.profileId < b.profileId;
     });
+
+    if (validProfiles.size() > static_cast<int>(MaxProfilesInCatalog)) {
+        validProfiles.resize(static_cast<int>(MaxProfilesInCatalog));
+    }
 
     return validProfiles;
 }
@@ -380,35 +501,56 @@ QByteArray computeLineageFingerprint(
 {
     QCryptographicHash hash(QCryptographicHash::Sha256);
 
-    hash.addData(serviceEpoch.toUtf8());
-    const quint64 revBe = qToBigEndian(revision);
-    hash.addData(QByteArrayView(reinterpret_cast<const char *>(&revBe), sizeof(revBe)));
-    hash.addData(catalog.defaultSrgbProfileId.toUtf8());
+    // AGENT-GUARD: the fingerprint must cover every semantically published
+    // snapshot field. Catalog profiles are framed in the caller's sorted
+    // catalog order; output states are sorted by stable ID here so the
+    // encoding is deterministic. Omitting any published field (display
+    // name, gamut, capabilities, requested assignment, flags, ...) would
+    // let two different snapshots share one lineage fingerprint, so every
+    // added published field must also be framed and pinned by a mutation
+    // regression.
 
+    frameU32(hash, "schema", 1);
+    frameString(hash, "epoch", serviceEpoch);
+    frameU64(hash, "revision", revision);
+    frameString(hash, "catalog.default", catalog.defaultSrgbProfileId);
+    frameBool(hash, "catalog.wire", catalog.wireValid);
+    frameU32(hash, "catalog.profile-count", static_cast<quint32>(catalog.profiles.size()));
     for (const auto &profile : catalog.profiles) {
-        hash.addData(profile.profileId.toUtf8());
-        hash.addData(profile.checksumSha256);
-        const quint32 originVal = qToBigEndian(static_cast<quint32>(profile.origin));
-        hash.addData(QByteArrayView(reinterpret_cast<const char *>(&originVal), sizeof(originVal)));
+        frameString(hash, "prof.id", profile.profileId);
+        frameString(hash, "prof.name", profile.displayName);
+        frameString(hash, "prof.description", profile.description);
+        frameString(hash, "prof.file", profile.fileName);
+        frameU32(hash, "prof.origin", static_cast<quint32>(profile.origin));
+        frameU32(hash, "prof.gamut", static_cast<quint32>(profile.gamut));
+        frameU32(hash, "prof.transfer", static_cast<quint32>(profile.transferFunction));
+        frameField(hash, "prof.header", profile.rawHeader);
+        frameField(hash, "prof.checksum", profile.checksumSha256);
+        frameU32(hash, "prof.byte-size", profile.byteSize);
+        frameBool(hash, "prof.wire", profile.wireValid);
     }
 
-    // Sort output states by stable ID for deterministic fingerprinting
+    // stable_sort keeps equal-ID entries in input order, so even a hostile
+    // caller-supplied list with duplicate stable IDs fingerprints
+    // deterministically.
     QList<OutputColorState> sortedOutputs = outputs;
-    std::sort(sortedOutputs.begin(), sortedOutputs.end(), [](const OutputColorState &a, const OutputColorState &b) {
+    std::stable_sort(sortedOutputs.begin(), sortedOutputs.end(), [](const OutputColorState &a, const OutputColorState &b) {
         return a.stableId < b.stableId;
     });
 
+    frameU32(hash, "outputs.count", static_cast<quint32>(sortedOutputs.size()));
     for (const auto &out : sortedOutputs) {
-        hash.addData(out.stableId.toUtf8());
-        hash.addData(out.activeProfileId.toUtf8());
-        const quint32 policyVal = qToBigEndian(static_cast<quint32>(out.appliedAssignment.policy));
-        hash.addData(QByteArrayView(reinterpret_cast<const char *>(&policyVal), sizeof(policyVal)));
-        const quint32 intentVal = qToBigEndian(static_cast<quint32>(out.appliedAssignment.intent));
-        hash.addData(QByteArrayView(reinterpret_cast<const char *>(&intentVal), sizeof(intentVal)));
-        const quint32 degradedVal = qToBigEndian(static_cast<quint32>(out.degradedReason));
-        hash.addData(QByteArrayView(reinterpret_cast<const char *>(&degradedVal), sizeof(degradedVal)));
-        const quint8 isDegraded = out.isDegraded ? 1 : 0;
-        hash.addData(QByteArrayView(reinterpret_cast<const char *>(&isDegraded), 1));
+        frameString(hash, "out.id", out.stableId);
+        frameString(hash, "out.role", "capabilities");
+        frameCapabilitiesFields(hash, out.capabilities);
+        frameString(hash, "out.role", "requested");
+        frameAssignmentFields(hash, out.requestedAssignment);
+        frameString(hash, "out.role", "applied");
+        frameAssignmentFields(hash, out.appliedAssignment);
+        frameString(hash, "out.active-profile", out.activeProfileId);
+        frameU32(hash, "out.degraded-reason", static_cast<quint32>(out.degradedReason));
+        frameBool(hash, "out.is-degraded", out.isDegraded);
+        frameBool(hash, "out.wire", out.wireValid);
     }
 
     return hash.result();

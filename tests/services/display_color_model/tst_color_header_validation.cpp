@@ -22,6 +22,7 @@ private Q_SLOTS:
     void testUnsupportedDeviceClasses();
     void testVersionBounds();
     void testHeaderLargerThanTotalFileSize();
+    void testHeaderBufferExceedsDeclaredSize();
     void testHeaderSummaryExtraction();
 };
 
@@ -205,6 +206,19 @@ void ColorHeaderValidationTest::testHeaderLargerThanTotalFileSize()
     QByteArray data = createValidIccHeader(1024);
     data.append(QByteArray(4096, '\0'));
     const auto [status, summary] = validateIccHeader(data, 2048);
+    QCOMPARE(status, ProfileValidationStatus::InvalidSize);
+    QVERIFY(!summary.valid);
+}
+
+void ColorHeaderValidationTest::testHeaderBufferExceedsDeclaredSize()
+{
+    // AGENT-GUARD: the supplied buffer must never exceed the profile's own
+    // declared size. Here the declared size (128) fits the total file size
+    // (512), and the 256-byte buffer fits the file too, so only the
+    // buffer-versus-declared bound rejects this inconsistent input.
+    QByteArray data = createValidIccHeader(128);
+    data.append(QByteArray(128, '\0'));
+    const auto [status, summary] = validateIccHeader(data, 512);
     QCOMPARE(status, ProfileValidationStatus::InvalidSize);
     QVERIFY(!summary.valid);
 }
