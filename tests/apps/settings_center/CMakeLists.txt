@@ -150,6 +150,7 @@ add_test(
             -DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-settings-stage
             -DINSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
             -DINSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}
+            -DINSTALL_QMLDIR=${QT6_INSTALL_QML}
             -DSETTINGS_EXECUTABLE_NAME=qindaqt-settings${CMAKE_EXECUTABLE_SUFFIX}
             -DCONFIGURATION=$<CONFIG>
             -DROUTE_CHECK=${CMAKE_CURRENT_SOURCE_DIR}/check_route_construction.cmake

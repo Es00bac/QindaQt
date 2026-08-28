@@ -64,11 +64,14 @@ Rectangle {
                     routeId: modelData.id
                     category: modelData.category
                     routeDescription: modelData.description
+                    unavailableReason: modelData.unavailableReason
                     active: sidebar.navigation.activeRouteId === modelData.id
-                    available: modelData.available
+                    routeAvailable: modelData.available
 
                     onClicked: {
-                        sidebar.navigation.selectRoute(modelData.id);
+                        if (modelData.available) {
+                            sidebar.navigation.selectRoute(modelData.id);
+                        }
                     }
 
                     Keys.onUpPressed: {

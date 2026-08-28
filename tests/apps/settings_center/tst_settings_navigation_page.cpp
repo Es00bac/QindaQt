@@ -457,6 +457,42 @@ void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
   auto *noticeAccessible = QAccessible::queryAccessibleInterface(notice);
   QVERIFY(noticeAccessible != nullptr);
   QCOMPARE(noticeAccessible->role(), QAccessible::AlertMessage);
+
+  auto *wideBrokenTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsNavButton_broken"));
+  QVERIFY(wideBrokenTab != nullptr);
+  auto *wideBrokenAccessible =
+      QAccessible::queryAccessibleInterface(wideBrokenTab);
+  QVERIFY(wideBrokenAccessible != nullptr);
+  QCOMPARE(wideBrokenAccessible->role(), QAccessible::PageTab);
+  QVERIFY(wideBrokenAccessible->state().selected);
+  QVERIFY(wideBrokenTab->isEnabled());
+  QVERIFY(wideBrokenAccessible->text(QAccessible::Description)
+              .contains(QStringLiteral("Subsystem daemon crashed")));
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), wideBrokenTab);
+
+  window->resize(440, 360);
+  QTRY_VERIFY(rootObj->property("isCompact").toBool());
+  auto *compactBrokenTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsCompactTab_broken"));
+  QVERIFY(compactBrokenTab != nullptr);
+  auto *compactBrokenAccessible =
+      QAccessible::queryAccessibleInterface(compactBrokenTab);
+  QVERIFY(compactBrokenAccessible != nullptr);
+  QCOMPARE(compactBrokenAccessible->role(), QAccessible::PageTab);
+  QVERIFY(compactBrokenAccessible->state().selected);
+  QVERIFY(compactBrokenTab->isEnabled());
+  QVERIFY(compactBrokenAccessible->text(QAccessible::Description)
+              .contains(QStringLiteral("Subsystem daemon crashed")));
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), compactBrokenTab);
+
+  QVERIFY(navigation.selectRoute(QStringLiteral("notifications")));
+  QVERIFY(QMetaObject::invokeMethod(compactBrokenTab, "click"));
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("notifications"));
 }
 
 QTEST_MAIN(SettingsNavigationPageTest)

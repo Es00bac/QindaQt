@@ -718,7 +718,10 @@ Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
 forms, desktop identity, both complete startup roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
-staged with only `SettingsAppearanceRuntime`.
+staged with only `SettingsAppearanceRuntime`. The installed row also withholds
+its required Appearance QML module while the developer tree remains present,
+requires root-construction failure, reinstalls the runtime component, and only
+then proves both complete routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. The two route models use independent Settings1 transports; the
