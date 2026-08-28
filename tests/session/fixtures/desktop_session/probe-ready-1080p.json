@@ -1,0 +1,282 @@
+{
+  "developmentShellSurfaces": {
+    "status": "ok",
+    "surfaces": [
+      {
+        "acceptsFocus": false,
+        "active": false,
+        "anchors": [
+          "left",
+          "top",
+          "right"
+        ],
+        "committed": true,
+        "desiredOutputName": "Virtual-0",
+        "desiredSize": {
+          "height": 30,
+          "width": 0
+        },
+        "exclusiveZone": 30,
+        "geometry": {
+          "height": 30,
+          "width": 1920,
+          "x": 0,
+          "y": 0
+        },
+        "layer": "top",
+        "mapped": true,
+        "margins": {
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0
+        },
+        "outputName": "Virtual-0",
+        "processId": "76",
+        "scope": "dock"
+      },
+      {
+        "acceptsFocus": false,
+        "active": false,
+        "anchors": [
+          "left",
+          "bottom"
+        ],
+        "committed": true,
+        "desiredOutputName": "Virtual-0",
+        "desiredSize": {
+          "height": 54,
+          "width": 998
+        },
+        "exclusiveZone": 54,
+        "geometry": {
+          "height": 54,
+          "width": 998,
+          "x": 461,
+          "y": 1026
+        },
+        "layer": "top",
+        "mapped": true,
+        "margins": {
+          "bottom": 0,
+          "left": 461,
+          "right": 0,
+          "top": 0
+        },
+        "outputName": "Virtual-0",
+        "processId": "76",
+        "scope": "dock"
+      }
+    ]
+  },
+  "inputCapabilities": {
+    "capabilities": [
+      "keyboard",
+      "pointer"
+    ],
+    "consumesEvents": false,
+    "deviceIdStability": "adapter-lifetime",
+    "devices": [
+      {
+        "busType": 0,
+        "capabilities": [
+          "keyboard",
+          "pointer"
+        ],
+        "enabled": true,
+        "id": "input-00000001",
+        "name": "QindaQt Development Input",
+        "productId": 0,
+        "vendorId": 0
+      }
+    ],
+    "eventFamilies": [
+      "pointer",
+      "keyboard",
+      "touch",
+      "tablet"
+    ],
+    "observerActive": true,
+    "schemaVersion": 1,
+    "status": "ok"
+  },
+  "outputs": {
+    "outputGeneration": "1",
+    "outputs": [
+      {
+        "geometry": {
+          "height": 1080,
+          "width": 1920,
+          "x": 0,
+          "y": 0
+        },
+        "internal": false,
+        "manufacturer": "",
+        "model": "",
+        "name": "Virtual-0",
+        "physicalSizeMm": {
+          "height": 0,
+          "width": 0
+        },
+        "priority": 0,
+        "refreshRateMilliHz": 60000,
+        "scale": 1,
+        "transform": "normal",
+        "uuid": "151188aa-ee3d-4720-8c54-693984dc8dfe"
+      }
+    ],
+    "schemaVersion": 1,
+    "status": "ok"
+  },
+  "parentPid": "2",
+  "schemaVersion": 1,
+  "selfPid": "247",
+  "services": [
+    {
+      "name": "org.qindaqt.Compositor",
+      "owner": ":1.3",
+      "pid": "6",
+      "status": "owned"
+    },
+    {
+      "name": "org.qindaqt.Settings1",
+      "owner": ":1.0",
+      "pid": "4",
+      "status": "owned"
+    },
+    {
+      "name": "org.qindaqt.Audio1",
+      "owner": ":1.1",
+      "pid": "5",
+      "status": "owned"
+    },
+    {
+      "name": "org.freedesktop.Notifications",
+      "owner": ":1.12",
+      "pid": "75",
+      "status": "owned"
+    }
+  ],
+  "shellVisibility": {
+    "epoch": "106491f1-5613-402a-9185-743ba194ca4f",
+    "outputGeneration": "1",
+    "outputs": [
+      {
+        "geometry": {
+          "height": 1080,
+          "width": 1920,
+          "x": 0,
+          "y": 0
+        },
+        "id": "Virtual-0",
+        "scale": 1
+      }
+    ],
+    "revision": "3",
+    "schemaVersion": 1,
+    "scope": {
+      "activityId": "00000000-0000-0000-0000-000000000000",
+      "workspaceId": "e505928d-7735-46cc-801d-a98201e8b023"
+    },
+    "status": "ok",
+    "windows": [
+      {
+        "active": true,
+        "activityIds": [],
+        "frameGeometry": {
+          "height": 457,
+          "width": 562,
+          "x": 679,
+          "y": 311
+        },
+        "hidden": false,
+        "id": "2934652b-5786-4aa8-ad08-29ae6d63181e",
+        "maximized": false,
+        "minimized": false,
+        "onAllWorkspaces": false,
+        "outputId": "Virtual-0",
+        "workspaceIds": [
+          "e505928d-7735-46cc-801d-a98201e8b023"
+        ]
+      },
+      {
+        "active": false,
+        "activityIds": [],
+        "frameGeometry": {
+          "height": 717,
+          "width": 922,
+          "x": 499,
+          "y": 181
+        },
+        "hidden": false,
+        "id": "fc2bb781-5a92-4df1-91e0-ccf43dfcd5a3",
+        "maximized": false,
+        "minimized": false,
+        "onAllWorkspaces": false,
+        "outputId": "Virtual-0",
+        "workspaceIds": [
+          "e505928d-7735-46cc-801d-a98201e8b023"
+        ]
+      }
+    ]
+  },
+  "windows": {
+    "status": "ok",
+    "windows": [
+      {
+        "active": true,
+        "applicationId": "qindaqt-settings",
+        "containerId": "",
+        "decorationClass": "QindaQt::Decoration::QindaDecoration",
+        "geometry": {
+          "height": 457,
+          "width": 562,
+          "x": 679,
+          "y": 311
+        },
+        "id": "2934652b-5786-4aa8-ad08-29ae6d63181e",
+        "keepAbove": false,
+        "keepBelow": false,
+        "minimized": false,
+        "serverDecorated": true,
+        "skipSwitcher": false,
+        "skipTaskbar": false,
+        "stackIndex": 1,
+        "targetGeometry": {
+          "height": 457,
+          "width": 562,
+          "x": 679,
+          "y": 311
+        },
+        "title": "QindaQt Settings — Notifications"
+      },
+      {
+        "active": false,
+        "applicationId": "org.qindaqt.TextEditor",
+        "containerId": "",
+        "decorationClass": "QindaQt::Decoration::QindaDecoration",
+        "geometry": {
+          "height": 717,
+          "width": 922,
+          "x": 499,
+          "y": 181
+        },
+        "id": "fc2bb781-5a92-4df1-91e0-ccf43dfcd5a3",
+        "keepAbove": false,
+        "keepBelow": false,
+        "minimized": false,
+        "serverDecorated": true,
+        "skipSwitcher": false,
+        "skipTaskbar": false,
+        "stackIndex": 0,
+        "targetGeometry": {
+          "height": 717,
+          "width": 922,
+          "x": 499,
+          "y": 181
+        },
+        "title": "Untitled — QindaQt Text Editor"
+      }
+    ]
+  }
+}

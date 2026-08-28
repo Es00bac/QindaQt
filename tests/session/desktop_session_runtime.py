@@ -84,6 +84,7 @@ def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str,
             "processes": processes,
             "services": _service_evidence(probe, pids),
             "outputs": output.get("outputs", []),
+            "visibilityOutputs": visibility.get("outputs", []),
             "generations": {
                 "outputs": output.get("outputGeneration"),
                 "shellVisibility": visibility.get("outputGeneration"),

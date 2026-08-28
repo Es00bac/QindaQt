@@ -100,7 +100,9 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_measure.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_output.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_process.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_readiness.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_runtime.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_sandbox.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage.py"
@@ -113,8 +115,10 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_contract_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_output_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_package.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_process_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_readiness_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)

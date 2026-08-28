@@ -949,8 +949,10 @@ snapshots until all public topology inputs are valid at once or the 15-second
 deadline expires. An incomplete app/dock startup state may retry; a malformed
 service or any public method error fails immediately. Settings and Text Editor
 must match their exact compositor-observed `applicationId`, nonempty window ID,
-and title. A matching title with another application ID is never rewritten into
-QindaQt evidence.
+and title. Settings requires the installed application's production Qt identity
+`qindaqt-settings`; its `org.qindaqt.Settings.desktop` launcher filename is not
+compositor identity. Text Editor requires `org.qindaqt.TextEditor`. A matching
+title with another application ID is never rewritten into QindaQt evidence.
 
 Each probe receives a fixed one-second lifetime, and a new attempt starts only
 when that complete lifetime remains inside the 15-second total cap. The driver
@@ -973,9 +975,9 @@ The immutable S1 evidence model requires:
 | --- | --- |
 | Processes | `kwin_wayland`, `qindaqt-session`, notification host, shell, Settings1, Audio1, Settings, Text Editor, probe, and private bus with unique PID/role/parent bindings |
 | Services | Unique owners and exact executable-bound PIDs for Compositor1, Settings1, Audio1, and freedesktop Notifications |
-| Display | One `Virtual-1` output at `(0,0)`, `1920x1080`, scale 1; equal canonical nonzero Outputs/ShellVisibility generation |
-| Input | Exactly one combined `QindaQt Development Input`; no host input node |
-| Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1`, with canonical client `processId` equal to the authenticated current production-shell PID |
+| Display | One output at `(0,0)`, `1920x1080`, scale 1; derive its canonical KWin virtual-backend identity `Virtual-<zero-based decimal index>` from the exact Outputs inventory; require the ShellVisibility inventory to carry the same identity, geometry, and scale; require equal canonical nonzero generations |
+| Input | Exactly one enabled `QindaQt Development Input` whose production `capabilities` array contains exactly `keyboard` and `pointer`; no invented per-capability booleans and no host input node |
+| Shell | At least one compositor-observed `scope=dock` surface mapped and committed with current and desired output identities equal to the one derived from Outputs/ShellVisibility, with canonical client `processId` equal to the authenticated current production-shell PID |
 | Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
 | Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
 

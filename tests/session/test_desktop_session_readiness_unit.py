@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import unittest
 from io import StringIO
+from pathlib import Path
 
 from desktop_session_readiness import (
     MARKER,
@@ -19,6 +20,13 @@ from test_desktop_session_topology_unit import ready_probe
 
 
 class ReadinessProbeTests(unittest.TestCase):
+    def test_archived_ready_snapshot_matches_producer_schema(self) -> None:
+        fixture = Path(__file__).parent / "fixtures/desktop_session/probe-ready-1080p.json"
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        self.assertEqual(
+            await_complete_snapshot(lambda _: snapshot, seconds=1), snapshot
+        )
+
     def test_near_outer_deadline_never_shrinks_probe_lifetime(self) -> None:
         self.assertEqual(
             require_probe_lifetime(PROBE_LIFETIME_SECONDS),
@@ -43,7 +51,7 @@ class ReadinessProbeTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             RuntimeError,
-            "mapped test application was missing: org.qindaqt.Settings; "
+            "mapped test application was missing: qindaqt-settings; "
             "no complete probe lifetime remains",
         ):
             await_complete_snapshot(sample, seconds=2, sleep=lambda _: None)

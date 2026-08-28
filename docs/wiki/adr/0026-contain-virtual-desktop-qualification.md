@@ -71,9 +71,19 @@ its exact run ID, build parent, and sentinel all match.
 
 S1 embeds one immutable `1920x1080@1` topology: KWin compositor, production
 session/shell/notification graph, Settings1, Audio1, Settings and Text Editor
-applications, the public-D-Bus probe, one `Virtual-1` output, matching nonzero
-output/visibility generations, one combined development input device, and at
-least one mapped and committed production `dock` layer surface on that output.
+applications, the public-D-Bus probe, one output whose identity is the
+canonical `Virtual-<zero-based decimal index>` published by KWin's virtual
+backend, matching nonzero output/visibility generations, one combined
+development input device, and at least one mapped and committed production
+`dock` layer surface on that output. The row derives the connector identity
+from the one-item Outputs inventory rather than assuming an ordinal, then
+requires ShellVisibility and every consumed dock current/desired output
+reference to match it exactly. The name must use canonical decimal spelling
+and remain within ShellVisibility's 512-character identifier bound.
+Input evidence consumes the production Compositor1 device schema: the sole
+device is enabled, named `QindaQt Development Input`, and carries exactly the
+`keyboard` and `pointer` strings in its `capabilities` array. Test-only
+per-capability booleans are not accepted.
 Every consumed dock record must carry a canonical positive decimal-string
 client PID equal to the externally authenticated current production-shell PID;
 a foreign or stale replacement surface cannot satisfy the row. An unavailable
@@ -87,6 +97,12 @@ reply fails immediately; an absent startup service or incomplete application/
 dock state may retry only until the hard deadline. Application evidence retains
 the compositor-observed `applicationId`, window ID, and title. It never creates
 an expected identity from a title match.
+
+The Settings window's required compositor-observed application ID is
+`qindaqt-settings`, matching the installed production executable's Qt
+application identity. `org.qindaqt.Settings.desktop` is package-launcher
+metadata and is not rewritten into compositor evidence. The Text Editor
+continues to require `org.qindaqt.TextEditor`.
 
 Every readiness probe reserves a fixed one-second lifetime before it starts;
 the driver does not shorten that lifetime to the outer deadline's final

@@ -139,6 +139,7 @@ def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
         return str(error)
     candidate = {
         "outputs": output.get("outputs", []),
+        "visibilityOutputs": visibility.get("outputs", []),
         "generations": {
             "outputs": output.get("outputGeneration"),
             "shellVisibility": visibility.get("outputGeneration"),

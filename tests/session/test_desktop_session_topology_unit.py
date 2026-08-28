@@ -14,7 +14,7 @@ from desktop_session_topology import (
 )
 
 
-def valid_evidence() -> dict[str, object]:
+def valid_evidence(output_name: str = "Virtual-0") -> dict[str, object]:
     topology = desktop_1080p_topology()
     pids = {item.role: 100 + index for index, item in enumerate(topology.processes)}
     processes = {
@@ -51,7 +51,14 @@ def valid_evidence() -> dict[str, object]:
         "services": services,
         "outputs": [
             {
-                "name": "Virtual-1",
+                "name": output_name,
+                "geometry": {"x": 0, "y": 0, "width": 1920, "height": 1080},
+                "scale": 1.0,
+            }
+        ],
+        "visibilityOutputs": [
+            {
+                "id": output_name,
                 "geometry": {"x": 0, "y": 0, "width": 1920, "height": 1080},
                 "scale": 1.0,
             }
@@ -60,23 +67,23 @@ def valid_evidence() -> dict[str, object]:
         "inputDevices": [
             {
                 "name": "QindaQt Development Input",
-                "keyboard": True,
-                "pointer": True,
+                "enabled": True,
+                "capabilities": ["keyboard", "pointer"],
             }
         ],
         "dockSurfaces": [
             {
                 "scope": "dock",
                 "processId": str(pids["shell"]),
-                "outputName": "Virtual-1",
-                "desiredOutputName": "Virtual-1",
+                "outputName": output_name,
+                "desiredOutputName": output_name,
                 "mapped": True,
                 "committed": True,
             }
         ],
         "applications": [
             {
-                "appId": "org.qindaqt.Settings",
+                "appId": "qindaqt-settings",
                 "processRole": "settings-app",
                 "windowId": "settings-window",
                 "windowTitle": "QindaQt Settings",
@@ -129,6 +136,7 @@ def ready_probe() -> dict[str, object]:
         "shellVisibility": {
             "status": "ok",
             "outputGeneration": evidence["generations"]["shellVisibility"],  # type: ignore[index]
+            "outputs": evidence["visibilityOutputs"],
         },
         "inputCapabilities": {
             "status": "ok", "devices": evidence["inputDevices"],
@@ -186,6 +194,23 @@ class TopologyTests(unittest.TestCase):
             with self.subTest(generations=generations):
                 evidence = valid_evidence()
                 evidence["generations"] = generations
+                with self.assertRaises(TopologyContractError):
+                    validate_boot_evidence(evidence)
+
+    def test_input_device_uses_exact_production_capability_shape(self) -> None:
+        for mutation in ("legacy-booleans", "disabled", "partial", "extra-device"):
+            with self.subTest(mutation=mutation):
+                evidence = valid_evidence()
+                device = evidence["inputDevices"][0]  # type: ignore[index]
+                if mutation == "legacy-booleans":
+                    del device["capabilities"]
+                    device.update({"keyboard": True, "pointer": True})
+                elif mutation == "disabled":
+                    device["enabled"] = False
+                elif mutation == "partial":
+                    device["capabilities"] = ["keyboard"]
+                else:
+                    evidence["inputDevices"].append(copy.deepcopy(device))  # type: ignore[union-attr]
                 with self.assertRaises(TopologyContractError):
                     validate_boot_evidence(evidence)
 
@@ -264,13 +289,19 @@ class TopologyTests(unittest.TestCase):
             {"id": "fake-editor", "applicationId": "org.attacker.Other",
              "title": "QindaQt Text Editor"},
         ]
-        with self.assertRaisesRegex(TopologyContractError, "org.qindaqt.Settings"):
+        with self.assertRaisesRegex(TopologyContractError, "qindaqt-settings"):
+            observed_applications(windows)
+
+    def test_desktop_file_id_is_not_the_observed_settings_identity(self) -> None:
+        windows = ready_probe()["windows"]["windows"]  # type: ignore[index]
+        windows[0]["applicationId"] = "org.qindaqt.Settings"
+        with self.assertRaisesRegex(TopologyContractError, "qindaqt-settings"):
             observed_applications(windows)
 
     def test_observed_application_identity_and_declared_role_are_preserved(self) -> None:
         windows = ready_probe()["windows"]["windows"]  # type: ignore[index]
         applications = observed_applications(windows)
-        self.assertEqual(applications[0]["appId"], "org.qindaqt.Settings")
+        self.assertEqual(applications[0]["appId"], "qindaqt-settings")
         self.assertEqual(applications[0]["windowId"], "settings-window")
         self.assertEqual(applications[0]["processRole"], "settings-app")
         evidence = valid_evidence()

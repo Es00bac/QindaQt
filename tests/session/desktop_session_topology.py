@@ -7,6 +7,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from desktop_session_output import OutputInventoryError, validate_output_inventory
+
 
 class TopologyContractError(ValueError):
     """Boot evidence does not describe the complete accepted topology."""
@@ -34,7 +36,6 @@ class ApplicationExpectation:
 
 @dataclass(frozen=True)
 class OutputExpectation:
-    name: str
     width: int
     height: int
     scale: float
@@ -43,7 +44,6 @@ class OutputExpectation:
 @dataclass(frozen=True)
 class DockExpectation:
     scope: str
-    output_name: str
     minimum_count: int
 
 
@@ -71,7 +71,7 @@ def desktop_1080p_topology() -> BootTopology:
     return BootTopology(
         schema_version=1,
         topology_id="qindaqt.desktop.virtual.1080p.v1",
-        output=OutputExpectation("Virtual-1", 1920, 1080, 1.0),
+        output=OutputExpectation(1920, 1080, 1.0),
         processes=(
             ProcessExpectation("private-bus", "dbus-daemon", None),
             ProcessExpectation("compositor", "kwin_wayland", None),
@@ -97,7 +97,7 @@ def desktop_1080p_topology() -> BootTopology:
             ServiceExpectation("org.freedesktop.Notifications", "notification"),
         ),
         applications=(
-            ApplicationExpectation("org.qindaqt.Settings", "settings-app", "Settings"),
+            ApplicationExpectation("qindaqt-settings", "settings-app", "Settings"),
             ApplicationExpectation(
                 "org.qindaqt.TextEditor", "editor-app", "QindaQt Text Editor"
             ),
@@ -105,7 +105,7 @@ def desktop_1080p_topology() -> BootTopology:
         # AGENT-CONTRACT: Notification Live broadens its development-only,
         # compositor-owned surface inventory to the production shell's `dock`
         # scope. S1 must fail, not infer panel mapping from ordinary windows.
-        dock=DockExpectation("dock", "Virtual-1", 1),
+        dock=DockExpectation("dock", 1),
     )
 
 
@@ -231,22 +231,15 @@ def _validate_services(
             raise TopologyContractError(f"service {expected.name} owner executable is wrong")
 
 
-def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> None:
-    outputs = _sequence(evidence.get("outputs"), "evidence.outputs")
-    if len(outputs) != 1:
-        raise TopologyContractError("S1 requires exactly one output")
-    output = _mapping(outputs[0], "outputs[0]")
-    geometry = _mapping(output.get("geometry"), "outputs[0].geometry")
+def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> str:
     expected = topology.output
-    if (
-        output.get("name") != expected.name
-        or geometry.get("x") != 0
-        or geometry.get("y") != 0
-        or geometry.get("width") != expected.width
-        or geometry.get("height") != expected.height
-        or output.get("scale") != expected.scale
-    ):
-        raise TopologyContractError("the output is not exact 1920x1080@1 Virtual-1")
+    try:
+        output_name = validate_output_inventory(
+            evidence, width=expected.width, height=expected.height,
+            scale=expected.scale,
+        )
+    except OutputInventoryError as error:
+        raise TopologyContractError(str(error)) from None
     generations = _mapping(evidence.get("generations"), "evidence.generations")
     output_generation = _canonical_generation(
         generations.get("outputs"), "generations.outputs"
@@ -256,6 +249,7 @@ def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> Non
     )
     if output_generation != visibility_generation:
         raise TopologyContractError("output and shell visibility generations differ")
+    return output_name
 
 
 def _canonical_process_id(value: Any) -> int:
@@ -265,17 +259,21 @@ def _canonical_process_id(value: Any) -> int:
     return process_id
 
 
-def _validate_input_and_dock(evidence: Mapping[str, Any], topology: BootTopology, shell_pid: int | None = None) -> None:
+def _validate_input_and_dock(
+    evidence: Mapping[str, Any], topology: BootTopology, output_name: str,
+    shell_pid: int | None = None,
+) -> None:
     devices = _sequence(evidence.get("inputDevices"), "evidence.inputDevices")
-    development = [
-        item
-        for item in devices
-        if isinstance(item, Mapping)
-        and item.get("name") == "QindaQt Development Input"
-        and item.get("keyboard") is True
-        and item.get("pointer") is True
-    ]
-    if len(development) != 1:
+    if len(devices) != 1 or not isinstance(devices[0], Mapping):
+        raise TopologyContractError("exactly one combined development input is required")
+    device = devices[0]
+    capabilities = _sequence(device.get("capabilities"), "inputDevices[0].capabilities")
+    if (
+        device.get("name") != "QindaQt Development Input"
+        or device.get("enabled") is not True
+        or len(capabilities) != 2
+        or set(capabilities) != {"keyboard", "pointer"}
+    ):
         raise TopologyContractError("exactly one combined development input is required")
     dock_surfaces: list[Mapping[str, Any]] = []
     for item in _sequence(evidence.get("dockSurfaces"), "evidence.dockSurfaces"):
@@ -290,8 +288,8 @@ def _validate_input_and_dock(evidence: Mapping[str, Any], topology: BootTopology
     matched = [
         item
         for item in dock_surfaces
-        if item.get("outputName") == topology.dock.output_name
-        and item.get("desiredOutputName") == topology.dock.output_name
+        if item.get("outputName") == output_name
+        and item.get("desiredOutputName") == output_name
         and item.get("mapped") is True
         and item.get("committed") is True
     ]
@@ -335,8 +333,8 @@ def validate_topology_readiness(evidence: Mapping[str, Any]) -> None:
     """Validate the simultaneous public inputs that can become ready asynchronously."""
 
     topology = desktop_1080p_topology()
-    _validate_output(evidence, topology)
-    _validate_input_and_dock(evidence, topology)
+    output_name = _validate_output(evidence, topology)
+    _validate_input_and_dock(evidence, topology, output_name)
     _validate_applications(evidence, topology)
 
 
@@ -421,8 +419,8 @@ def validate_boot_evidence(document: Any) -> None:
         raise TopologyContractError("containment did not fail closed")
     pids = _validate_processes(evidence, topology)
     _validate_services(evidence, topology, pids)
-    _validate_output(evidence, topology)
-    _validate_input_and_dock(evidence, topology, pids["shell"])
+    output_name = _validate_output(evidence, topology)
+    _validate_input_and_dock(evidence, topology, output_name, pids["shell"])
     _validate_applications(evidence, topology)
     _validate_measurements(evidence)
     _validate_cleanup(evidence, topology, pids)
