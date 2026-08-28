@@ -50,6 +50,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("clock"),
         QStringLiteral("notification-center"),
         QStringLiteral("power"),
+        QStringLiteral("clipboard"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {
