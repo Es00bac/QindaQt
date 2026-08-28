@@ -9,7 +9,7 @@ does not own Bluetooth audio nodes (PipeWire does).
 
 The exact wire contract is in the [Bluetooth1 reference](../reference/bluetooth1-v1.md).
 The authority split and Agent1 pairing deferral are recorded in
-[ADR-0026](../adr/0026-keep-pairing-and-trust-authority-in-bluez.md).
+[ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
 
 ## Module shape
 
@@ -56,7 +56,7 @@ root constructs the deterministic in-memory adapter. It reports an empty
 inventory, so an activated B0 process truthfully publishes
 `Unavailable/no-adapter` instead of fabricated devices; qualification
 populates it through its private header. The future BluezQt adapter replaces
-it behind the same port with no consumer change (ADR-0026). No BlueZ, rfkill,
+it behind the same port with no consumer change (ADR-0037). No BlueZ, rfkill,
 or host Bluetooth contact exists in this slice.
 
 ## Operations and discovery leases

@@ -1,8 +1,11 @@
-# ADR-0026: Keep Bluetooth pairing and trust authority in BlueZ
+# ADR-0037: Keep Bluetooth pairing and trust authority in BlueZ
 
 - Status: Accepted
 - Date: 2026-08-28
 - Supersedes: none
+- Number note: authored during the B0 repair as "ADR-0026" before the
+  manager's parallel ADR allocation reserved 0026/0027 for public main; renumbered
+  verbatim to the reserved Bluetooth number in the follow-up descendant.
 
 ## Context
 

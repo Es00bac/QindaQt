@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     // B0 platform adapter: deterministic and initially empty, so an activated
     // process without the BluezQt runtime lane publishes a truthful
     // Unavailable/no-adapter snapshot instead of fabricated inventory. See
-    // ADR-0026 for the replacement boundary.
+    // ADR-0037 for the replacement boundary.
     auto backend = makeDeterministicAdapterBackend();
     ResidentBluetoothService service(std::move(backend), sessionConnection);
     const ServiceStartStatus status = service.start();

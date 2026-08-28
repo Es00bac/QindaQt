@@ -132,7 +132,7 @@ implemented; do not use placeholder modules to bypass a boundary.
   inventory, adapter power, bounded caller-scoped discovery leases, and
   paired-device connect/disconnect only, and pairing prompts belong to a
   separate Agent1 outcome. See [Bluetooth service](bluetooth-service.md) and
-  [ADR-0026](../adr/0026-keep-pairing-and-trust-authority-in-bluez.md).
+  [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,
