@@ -127,8 +127,6 @@ implementation.
 
 ## Qualification boundary
 
-## Qualification boundary
-
 Focused protocol tests cover exact registered signatures, real-writer
 signature emission, meta-type round trips, ordering, lease bounds, and the
 hostile malformed matrix (addresses, RSSI, battery, role, capability bits,
@@ -147,9 +145,6 @@ bus connection, private-bus service composition, client-driven executable
 activation with fresh epochs across independent buses, and a staged-install
 gate with a linked installed consumer.
 
-**Current status:** this B0 slice is source-complete but not yet built,
-executed, or activated; those gates run in the manager's serialized runtime
-lane. No evidence in this page claims an executed build, test, activation, or
-hardware qualification. Real-adapter behavior, pairing UX (Agent1), Bluetooth
-audio correlation, suspend/resume, hotplug churn, and the future UI remain
-later outcomes.
+That evidence does not qualify real-adapter behavior, pairing UX (Agent1),
+Bluetooth audio correlation, suspend/resume, hotplug churn, memory/CPU
+budgets, or the future UI. Those remain hardware and integrated-session gates.

@@ -316,13 +316,18 @@ void BluetoothProtocolTests::rejectsOversizedCollections()
 
     Snapshot oversized = validSnapshot();
     Device device = oversized.devices[0];
+    oversized.devices.clear();
     for (int index = 0; index <= kMaxDevices; ++index) {
         device.handle.serial = 1000 + static_cast<quint64>(index);
-        device.address = QStringLiteral("AA:BB:CC:33:44:%1").arg(56 + index, 2, 10,
-                                                                 QLatin1Char('0'));
+        device.address = QStringLiteral("AA:BB:CC:33:%1:%2")
+                             .arg((index / 256) & 0xFF, 2, 16, QLatin1Char('0'))
+                             .arg(index % 256, 2, 16, QLatin1Char('0'))
+                             .toUpper();
         oversized.devices.push_back(device);
     }
     oversized.wireValid = false;
+    QCOMPARE(validateSnapshot(oversized).reasonCode, QStringLiteral("oversized-payload"));
+    oversized.wireValid = true;
     QCOMPARE(validateSnapshot(oversized).reasonCode, QStringLiteral("oversized-payload"));
 }
 

@@ -15,6 +15,8 @@ set_tests_properties(
     qindaqt.bluetooth-client PROPERTIES TIMEOUT 20 LABELS "service;bluetooth"
 )
 
+find_program(QINDAQT_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
+
 qt_add_executable(
     qindaqt_bluetooth_qt_transport_tests
     tst_qt_bluetooth_transport.cpp
@@ -33,6 +35,11 @@ target_link_libraries(
         Qt6::DBus
         Qt6::Test
 )
+target_compile_definitions(
+    qindaqt_bluetooth_qt_transport_tests
+    PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}"
+)
 qindaqt_enable_warnings(qindaqt_bluetooth_qt_transport_tests)
 add_test(NAME qindaqt.bluetooth-qt-transport COMMAND qindaqt_bluetooth_qt_transport_tests)
 set_tests_properties(
@@ -40,7 +47,6 @@ set_tests_properties(
     PROPERTIES TIMEOUT 20 LABELS "service;bluetooth;dbus"
 )
 
-find_program(QINDAQT_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
 qt_add_executable(qindaqt_bluetooth_activation_tests tst_bluetooth_activation.cpp)
 target_link_libraries(
     qindaqt_bluetooth_activation_tests
