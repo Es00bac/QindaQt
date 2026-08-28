@@ -85,6 +85,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.
+- [QindaQt.AppShell 1.0](apps/application-shell.md) documents the narrow shared
+  lifecycle, action/menu, injected integration, portal, focus, accessibility,
+  and installed-consumer boundary for first-party QML applications.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when
