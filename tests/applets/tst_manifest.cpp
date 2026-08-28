@@ -74,7 +74,7 @@ void ManifestTest::roundTripsEveryFirstPartyManifest()
     const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/applets"));
     const QStringList fileNames =
         directory.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    QCOMPARE(fileNames.size(), 6);
+    QCOMPARE(fileNames.size(), 7);
     for (const QString &fileName : fileNames) {
         const ManifestLoadResult loaded = ManifestLoader::fromFile(directory.filePath(fileName));
         QVERIFY2(loaded.ok, qPrintable(loaded.error));
