@@ -47,6 +47,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   Power1, shell-action, fail-closed backlight, and session-bound activation
   architecture; PB-0 pure candidates exist while every resident/platform slice
   remains pending.
+- [Network service](architecture/network-service.md) records the pure Network1
+  N0 boundary: secret-free values and identity, lineage-gated atomic snapshots,
+  bounded scan leases, intent admission, and the fake-transport client seam,
+  while every resident, adapter, and UI slice remains pending.
 - [Pure brightness model](architecture/brightness-model.md) fixes the PB-0
   stable-ID fixture, mirror collapse, raw-range math, owner-loss behavior, and
   transport-free composition boundary.
@@ -102,6 +106,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   identity/registry rules, topology projection, codecs, and transaction states.
 - [Power1 version 1](reference/power1-v1.md) documents bounded Power values,
   privacy-preserving handles, canonical codecs, and fail-closed validation.
+- [Network1 version 1](reference/network1-v1.md) documents secret-free network
+  values, derived identity, lineage rules, scan leases, canonical codecs, and
+  intent admission.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.

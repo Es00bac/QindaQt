@@ -32,6 +32,7 @@ nav:
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
       - Pure brightness model: architecture/brightness-model.md
+      - Network service: architecture/network-service.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
       - Font preferences: architecture/font-preferences.md
@@ -58,6 +59,7 @@ nav:
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
       - Bluetooth1 protocol 1: reference/bluetooth1-v1.md
+      - Network1 version 1: reference/network1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
