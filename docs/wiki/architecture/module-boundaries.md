@@ -23,6 +23,7 @@ tests, and the wiki page describing its contract.
 | `src/shell_visibility_protocol` | Shared size, collection, identifier, and scale limits for the compositor-to-shell visibility wire contract | Qt Core value types only; producer and consumer must never duplicate these limits |
 | `src/shell_visibility` | Pure, batch-atomic window-aware panel visibility and reservation decisions | Public `profiles` values and Qt Core; never KWin objects, timers, QML, or layer-shell side effects |
 | `src/shell_visibility_client` | Owner-bound asynchronous D-Bus snapshot transport, coalescing, timeout/backoff, and safe-fallback publication | Public `shell_visibility` values plus Qt Core/DBus; never panel geometry, QML, or KWin objects |
+| `src/shell/status_notifier` | Pure StatusNotifier item values, bounded payload validation, exact-owner keyed registry with generation fencing, validated request intents, and deterministic accessible presentation | Qt Core value types only; never D-Bus connections or name ownership, action execution, QML, or platform objects |
 | `src/shell_surface` | Backend-neutral panel and notification logical-surface planning, persistent panel live-set reconciliation, Qt output inventory, and private LayerShellQt adapters | Public `profiles` and `shell_layout` values, Qt Gui/Quick, and LayerShellQt only in adapters; never catalogs, applets, settings, or QML policy |
 | `src/shell_orchestration` | Exact output matching, pure cross-module inventory assembly, tokenized reveal/hold interaction state, and runtime panel-plan coordination | Public profile/layout/visibility/surface values and Qt Core; never D-Bus, KWin, LayerShellQt, or QML |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
@@ -115,6 +116,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   shell QML receives only a default-output facade and settings-opening action.
   See [Audio service](audio-service.md) and
   [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
+- StatusNotifier items are owned by their bus unique name, never a well-known
+  name, and reach the tray only through bounded validation and an injected
+  transport seam; the tray records request intents instead of executing them.
+  See [Status notifier tray](../shell/status-tray.md) and
+  [ADR-0026](../adr/0026-status-notifier-exact-owner-foundation.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,

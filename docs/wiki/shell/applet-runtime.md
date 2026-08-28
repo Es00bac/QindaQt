@@ -72,7 +72,9 @@ fixtures rather than connecting to live clock or notification state.
 Launcher, task-list, global-menu, and status-tray manifests remain accepted
 contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
-layout fidelity, but they are not counted as delivered features.
+layout fidelity, but they are not counted as delivered features. The
+status-tray value and ownership foundation is documented in
+[Status notifier tray](status-tray.md).
 
 ## Startup and failure behavior
 
