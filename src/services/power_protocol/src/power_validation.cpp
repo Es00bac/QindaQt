@@ -50,6 +50,11 @@ bool validWarning(const WarningLevel value) {
          static_cast<quint32>(WarningLevel::Action);
 }
 
+bool validBatteryLevel(const BatteryLevel value) {
+  return static_cast<quint32>(value) <=
+         static_cast<quint32>(BatteryLevel::Full);
+}
+
 bool validBacklightKind(const BacklightKind value) {
   return static_cast<quint32>(value) <=
          static_cast<quint32>(BacklightKind::Raw);
@@ -95,7 +100,7 @@ bool validEstimate(const bool known, const qint64 value) {
 }
 
 bool validHandle(const Handle &handle, const quint64 epoch) {
-  return handle.epoch == epoch &&
+  return epoch != 0 && handle.epoch == epoch &&
          boundedRequiredText(handle.opaqueId, kMaxOpaqueIdUtf8Bytes);
 }
 
@@ -155,6 +160,8 @@ ValidationResult validateSupply(const PowerSupply &supply,
       !isBoundedText(supply.vendor, kMaxNameUtf8Bytes) ||
       !isBoundedText(supply.model, kMaxNameUtf8Bytes) ||
       !validKnownPercentage(supply.percentageKnown, supply.percentage) ||
+      !validBatteryLevel(supply.level) ||
+      (supply.percentageKnown && supply.level != BatteryLevel::None) ||
       !validChargeState(supply.state) ||
       !validKnownNonNegative(supply.energyKnown, supply.energyWattHours,
                              kMaximumEnergyWattHours) ||
@@ -172,7 +179,9 @@ ValidationResult validateSupply(const PowerSupply &supply,
   if (!supply.present &&
       (supply.percentageKnown || supply.energyKnown || supply.rateKnown ||
        supply.timeToEmptyKnown || supply.timeToFullKnown ||
-       supply.state != ChargeState::Unknown)) {
+       supply.state != ChargeState::Unknown ||
+       supply.level != BatteryLevel::Unknown ||
+       supply.warning != WarningLevel::Unknown)) {
     return rejected("inconsistent-absent-supply");
   }
   return accepted();
@@ -211,10 +220,12 @@ ValidationResult validateSnapshot(const Snapshot &snapshot) {
   const CompositeBattery &composite = snapshot.composite;
   if (composite.sourceCount > static_cast<quint32>(kMaxPowerSupplies) ||
       !validKnownPercentage(composite.percentageKnown, composite.percentage) ||
+      !validBatteryLevel(composite.level) ||
+      (composite.percentageKnown && composite.level != BatteryLevel::None) ||
       !validChargeState(composite.state) ||
       !(composite.netRateKnown
-            ? finiteRange(composite.netRateWatts, -kMaximumRateWatts,
-                          kMaximumRateWatts)
+            ? finiteRange(composite.netRateWatts, -kMaximumAggregateRateWatts,
+                          kMaximumAggregateRateWatts)
             : composite.netRateWatts == 0.0) ||
       !validEstimate(composite.timeToEmptyKnown,
                      composite.timeToEmptySeconds) ||
@@ -225,7 +236,9 @@ ValidationResult validateSnapshot(const Snapshot &snapshot) {
   if (!composite.present &&
       (composite.sourceCount != 0 || composite.percentageKnown ||
        composite.netRateKnown || composite.timeToEmptyKnown ||
-       composite.timeToFullKnown || composite.state != ChargeState::Unknown)) {
+       composite.timeToFullKnown || composite.state != ChargeState::Unknown ||
+       composite.level != BatteryLevel::Unknown ||
+       composite.warning != WarningLevel::Unknown)) {
     return rejected("inconsistent-absent-composite");
   }
   if (composite.present && composite.sourceCount == 0) {

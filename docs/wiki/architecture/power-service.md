@@ -12,11 +12,12 @@ The durable choices are split across
 [ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md).
 
 The PB-0 candidate now fixes bounded values, hostile-input validation,
-canonical byte codecs, and fixed QtDBus structures in
-[`power_protocol`](../reference/power1-v1.md). It remains candidate evidence:
-no executable maturity is claimed until focused builds/tests and independent
-exact-commit review pass. Aggregation and brightness composition remain the
-next two PB-0 commit boundaries.
+canonical byte codecs, fixed QtDBus structures, and deterministic pure battery
+aggregation in [`power_protocol`](../reference/power1-v1.md). Protocol tests
+have focused executable evidence; aggregation remains candidate evidence until
+its focused build/tests and independent exact-commit review pass. No service
+maturity is claimed. Pure brightness composition remains the final PB-0 commit
+boundary.
 
 ## Authority map
 
@@ -67,7 +68,7 @@ composition separate:
 
 | Module | Cohesive responsibility |
 | --- | --- |
-| `power_protocol` | Bounded values, codecs, validation, result lineage |
+| `power_protocol` | Bounded values, codecs, validation, result lineage, pure battery aggregation |
 | `power_service` | Resident ownership and collaborator orchestration only |
 | `power_client` | Exact-owner asynchronous snapshots and operations |
 | `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown |

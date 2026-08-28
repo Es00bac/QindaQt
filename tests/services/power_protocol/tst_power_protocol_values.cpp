@@ -36,6 +36,11 @@ void PowerProtocolValuesTests::exposesFixedPrivacyPreservingStructures() {
   registerDBusTypes();
   QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()),
            "(ts)");
+  QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<PowerSupply>()),
+           "((ts)ussbbduubddbdbxbxu)");
+  QCOMPARE(
+      QDBusMetaType::typeToSignature(QMetaType::fromType<CompositeBattery>()),
+      "(bubduubdbxbxu)");
   QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Inhibitor>()),
            "(ssss)");
   const QByteArray snapshotSignature =
@@ -149,6 +154,21 @@ void PowerProtocolValuesTests::
 
   snapshot = TestData::validSnapshot();
   snapshot.composite.netRateWatts = std::numeric_limits<double>::infinity();
+  QCOMPARE(validateSnapshot(snapshot).reasonCode,
+           QStringLiteral("invalid-composite-battery"));
+
+  snapshot = TestData::validSnapshot();
+  snapshot.supplies[0].level = static_cast<BatteryLevel>(99);
+  QCOMPARE(validateSnapshot(snapshot).reasonCode,
+           QStringLiteral("invalid-power-supply"));
+
+  snapshot = TestData::validSnapshot();
+  snapshot.supplies[0].level = BatteryLevel::Low;
+  QCOMPARE(validateSnapshot(snapshot).reasonCode,
+           QStringLiteral("invalid-power-supply"));
+
+  snapshot = TestData::validSnapshot();
+  snapshot.composite.level = BatteryLevel::High;
   QCOMPARE(validateSnapshot(snapshot).reasonCode,
            QStringLiteral("invalid-composite-battery"));
 }

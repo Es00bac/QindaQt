@@ -35,6 +35,8 @@ inline constexpr double kMinimumPercentage = 0.0;
 inline constexpr double kMaximumPercentage = 100.0;
 inline constexpr double kMaximumEnergyWattHours = 1'000'000.0;
 inline constexpr double kMaximumRateWatts = 1'000'000.0;
+inline constexpr double kMaximumAggregateRateWatts =
+    kMaximumRateWatts * static_cast<double>(kMaxPowerSupplies);
 inline constexpr qint64 kMaximumEstimateSeconds = 10LL * 365 * 24 * 60 * 60;
 inline constexpr quint32 kNormalizedBrightnessMaximum = 10'000;
 inline constexpr quint32 kMaximumRawBrightness = 1'000'000'000;

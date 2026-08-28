@@ -53,6 +53,18 @@ enum class WarningLevel : quint32 {
   Action = 5,
 };
 
+// Coarse upstream battery truth is retained only when an exact percentage is
+// absent. The numeric values are Power1 wire values, not UPower enum ordinals.
+enum class BatteryLevel : quint32 {
+  Unknown = 0,
+  None = 1,
+  Low = 2,
+  Critical = 3,
+  Normal = 4,
+  High = 5,
+  Full = 6,
+};
+
 enum class BacklightKind : quint32 {
   Firmware = 0,
   Platform = 1,
@@ -125,6 +137,7 @@ struct PowerSupply {
   bool present = true;
   bool percentageKnown = false;
   double percentage = 0.0;
+  BatteryLevel level = BatteryLevel::Unknown;
   ChargeState state = ChargeState::Unknown;
   bool energyKnown = false;
   double energyWattHours = 0.0;
@@ -145,6 +158,7 @@ struct CompositeBattery {
   quint32 sourceCount = 0;
   bool percentageKnown = false;
   double percentage = 0.0;
+  BatteryLevel level = BatteryLevel::Unknown;
   ChargeState state = ChargeState::Unknown;
   bool netRateKnown = false;
   // Positive means aggregate charging; negative means aggregate discharge.
@@ -279,6 +293,7 @@ Q_DECLARE_METATYPE(QindaQt::Power::Capabilities)
 Q_DECLARE_METATYPE(QindaQt::Power::SupplyKind)
 Q_DECLARE_METATYPE(QindaQt::Power::ChargeState)
 Q_DECLARE_METATYPE(QindaQt::Power::WarningLevel)
+Q_DECLARE_METATYPE(QindaQt::Power::BatteryLevel)
 Q_DECLARE_METATYPE(QindaQt::Power::BacklightKind)
 Q_DECLARE_METATYPE(QindaQt::Power::BacklightStatus)
 Q_DECLARE_METATYPE(QindaQt::Power::BacklightReason)

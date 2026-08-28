@@ -17,3 +17,12 @@ target_link_libraries(
 qindaqt_enable_warnings(qindaqt_power_protocol_codec_tests)
 add_test(NAME qindaqt.power-protocol-codec COMMAND qindaqt_power_protocol_codec_tests)
 set_tests_properties(qindaqt.power-protocol-codec PROPERTIES LABELS "service;power;pure")
+
+qt_add_executable(qindaqt_power_aggregation_tests tst_power_aggregation.cpp)
+target_link_libraries(
+    qindaqt_power_aggregation_tests
+    PRIVATE QindaQt::PowerProtocol Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_power_aggregation_tests)
+add_test(NAME qindaqt.power-aggregation-model COMMAND qindaqt_power_aggregation_tests)
+set_tests_properties(qindaqt.power-aggregation-model PROPERTIES LABELS "service;power;pure")

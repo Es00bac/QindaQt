@@ -6,9 +6,10 @@ connect to an upstream daemon or compositor, read hardware, or expose a user
 interface. Those are later slices in the
 [Power and brightness architecture](../architecture/power-service.md).
 
-The source currently forms a PB-0 candidate. Until its focused binaries pass
-and an independent exact-commit review accepts it, this page is a protocol
-contract rather than executable Power1 evidence.
+The source currently forms a PB-0 candidate. Its protocol boundary has focused
+executable evidence; deterministic aggregation remains candidate evidence until
+its focused binaries pass and an independent exact-commit review accepts it.
+Neither boundary is executable `Power1` service evidence.
 
 ## Identity and lineage
 
@@ -55,11 +56,14 @@ connector/ambiguous-topology truth.
 
 ### Scalar values
 
-Percentages are finite doubles from 0 through 100. Per-supply energy and rate
-values are finite and nonnegative; the composite net rate is positive while
-charging and negative while discharging. Time estimates are nonnegative
-upstream truth and are never recomputed by PB-0. Unknown numeric values clear
-their corresponding `known` flag and carry canonical zero.
+Percentages are finite doubles from 0 through 100. Exact percentage truth uses
+`BatteryLevel::None`; when exact truth is absent, the closed coarse-level
+vocabulary is `Unknown`, `None`, `Low`, `Critical`, `Normal`, `High`, and
+`Full`. Per-supply energy and rate values are finite and nonnegative; the
+composite net rate is positive while charging and negative while discharging.
+Time estimates are nonnegative upstream truth and are never recomputed by PB-0.
+Unknown numeric values clear their corresponding `known` flag and carry
+canonical zero.
 
 Keyboard brightness exposes exact raw current/maximum integers plus a 0–10000
 normalized integer. Internal brightness remains exact raw observed/maximum
@@ -80,6 +84,7 @@ integers. No wire percentage substitutes for these device values.
 | Wayland socket name | 108 UTF-8 bytes |
 | Percentage | finite 0 through 100 |
 | Energy / absolute rate | finite 0 through 1,000,000 Wh/W |
+| Composite absolute net rate | finite 0 through 8,000,000 W |
 | Time estimate | 0 through 315,360,000 seconds |
 | Normalized / raw brightness | 10,000 / 1,000,000,000 |
 
@@ -103,6 +108,34 @@ typed `CodecError` and leaves the caller's prior destination unchanged. QtDBus
 operators likewise expose only closed structures and bounded arrays; semantic
 publication still requires `validateSnapshot` or `validateOperationResult`.
 
+## Deterministic aggregate battery
+
+`aggregatePowerSupplies` is a pure, reentrant operation over one complete
+candidate list. It rejects more than eight supplies, invalid values, a zero or
+mixed epoch, duplicate opaque handles, and nonfinite or out-of-range aggregate
+arithmetic. Any failure returns a canonical empty value; a later publisher must
+retain its prior accepted snapshot.
+
+Valid absent supplies do not contribute. If no supply is present, the aggregate
+is canonically absent. Otherwise `sourceCount` is the number of present
+supplies. Percentage is energy-weighted when every present source has known
+energy and positive full energy; failing that, it is the arithmetic mean only
+when every present source has exact percentage truth. A set lacking complete
+exact truth retains the worst available coarse level in the fixed order
+`Critical`, `Low`, `Normal`, `High`, `Full`, `None`, then `Unknown`.
+
+Charging and pending-charge rates contribute positively; discharging and
+pending-discharge rates contribute negatively; empty and fully charged sources
+contribute zero. Unknown state or rate makes the aggregate net rate unknown.
+The sign of a known nonzero sum fixes aggregate charging/discharging state;
+zero or unknown rate uses the closed, enumeration-independent precedence
+`Discharging`, `Charging`, `PendingDischarge`, `PendingCharge`, all-full,
+all-empty, then `Unknown`.
+Warning severity is `Action`, `Critical`, `Low`, `Discharging`, `None`, then
+`Unknown`. Time-to-empty/full is published only for the matching aggregate
+state and only when every present source supplies the same known upstream
+estimate; PB-0 never derives one from energy or rate.
+
 ## Compatibility and scope
 
 Unknown enum values, capability bits, nonfinite/out-of-range numbers, mixed or
@@ -113,5 +146,6 @@ byte layout requires a compatibility decision and normally a new version.
 
 PB-0 intentionally contains no service, client, D-Bus connection, UPower,
 power-profiles-daemon, logind, Wayland, sysfs, hardware, session, Settings,
-QML, or UI behavior. Aggregate-battery policy and brightness composition are
-separate pure modules documented by the subsequent PB-0 commits.
+QML, or UI behavior. Aggregate-battery policy is the pure `power_aggregation`
+collaborator described above. Brightness composition remains a separate pure
+module documented by the subsequent PB-0 commit.

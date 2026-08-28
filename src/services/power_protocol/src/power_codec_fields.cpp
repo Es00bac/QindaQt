@@ -42,6 +42,7 @@ void writeSupply(Writer &writer, const PowerSupply &supply) {
   writer.boolean(supply.present);
   writer.boolean(supply.percentageKnown);
   writer.real(supply.percentage);
+  writer.u32(static_cast<quint32>(supply.level));
   writer.u32(static_cast<quint32>(supply.state));
   writer.boolean(supply.energyKnown);
   writer.real(supply.energyWattHours);
@@ -57,6 +58,7 @@ void writeSupply(Writer &writer, const PowerSupply &supply) {
 
 bool readSupply(Reader &reader, PowerSupply &supply) {
   quint32 kind = 0;
+  quint32 level = 0;
   quint32 state = 0;
   quint32 warning = 0;
   if (!readHandle(reader, supply.handle) || !reader.u32(kind) ||
@@ -64,8 +66,8 @@ bool readSupply(Reader &reader, PowerSupply &supply) {
       !reader.text(supply.model, kMaxNameUtf8Bytes) ||
       !reader.boolean(supply.present) ||
       !reader.boolean(supply.percentageKnown) ||
-      !reader.real(supply.percentage) || !reader.u32(state) ||
-      !reader.boolean(supply.energyKnown) ||
+      !reader.real(supply.percentage) || !reader.u32(level) ||
+      !reader.u32(state) || !reader.boolean(supply.energyKnown) ||
       !reader.real(supply.energyWattHours) ||
       !reader.real(supply.energyFullWattHours) ||
       !reader.boolean(supply.rateKnown) ||
@@ -77,6 +79,7 @@ bool readSupply(Reader &reader, PowerSupply &supply) {
     return false;
   }
   supply.kind = static_cast<SupplyKind>(kind);
+  supply.level = static_cast<BatteryLevel>(level);
   supply.state = static_cast<ChargeState>(state);
   supply.warning = static_cast<WarningLevel>(warning);
   return true;
@@ -87,6 +90,7 @@ void writeComposite(Writer &writer, const CompositeBattery &composite) {
   writer.u32(composite.sourceCount);
   writer.boolean(composite.percentageKnown);
   writer.real(composite.percentage);
+  writer.u32(static_cast<quint32>(composite.level));
   writer.u32(static_cast<quint32>(composite.state));
   writer.boolean(composite.netRateKnown);
   writer.real(composite.netRateWatts);
@@ -98,13 +102,14 @@ void writeComposite(Writer &writer, const CompositeBattery &composite) {
 }
 
 bool readComposite(Reader &reader, CompositeBattery &composite) {
+  quint32 level = 0;
   quint32 state = 0;
   quint32 warning = 0;
   if (!reader.boolean(composite.present) ||
       !reader.u32(composite.sourceCount) ||
       !reader.boolean(composite.percentageKnown) ||
-      !reader.real(composite.percentage) || !reader.u32(state) ||
-      !reader.boolean(composite.netRateKnown) ||
+      !reader.real(composite.percentage) || !reader.u32(level) ||
+      !reader.u32(state) || !reader.boolean(composite.netRateKnown) ||
       !reader.real(composite.netRateWatts) ||
       !reader.boolean(composite.timeToEmptyKnown) ||
       !reader.i64(composite.timeToEmptySeconds) ||
@@ -112,6 +117,7 @@ bool readComposite(Reader &reader, CompositeBattery &composite) {
       !reader.i64(composite.timeToFullSeconds) || !reader.u32(warning)) {
     return false;
   }
+  composite.level = static_cast<BatteryLevel>(level);
   composite.state = static_cast<ChargeState>(state);
   composite.warning = static_cast<WarningLevel>(warning);
   return true;

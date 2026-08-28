@@ -88,10 +88,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const PowerSupply &value) {
   argument.beginStructure();
   argument << value.handle << static_cast<quint32>(value.kind) << value.vendor
            << value.model << value.present << value.percentageKnown
-           << value.percentage << static_cast<quint32>(value.state)
-           << value.energyKnown << value.energyWattHours
-           << value.energyFullWattHours << value.rateKnown
-           << value.energyRateWatts << value.timeToEmptyKnown
+           << value.percentage << static_cast<quint32>(value.level)
+           << static_cast<quint32>(value.state) << value.energyKnown
+           << value.energyWattHours << value.energyFullWattHours
+           << value.rateKnown << value.energyRateWatts << value.timeToEmptyKnown
            << value.timeToEmptySeconds << value.timeToFullKnown
            << value.timeToFullSeconds << static_cast<quint32>(value.warning);
   argument.endStructure();
@@ -101,17 +101,19 @@ QDBusArgument &operator<<(QDBusArgument &argument, const PowerSupply &value) {
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 PowerSupply &value) {
   quint32 kind = 0;
+  quint32 level = 0;
   quint32 state = 0;
   quint32 warning = 0;
   argument.beginStructure();
   argument >> value.handle >> kind >> value.vendor >> value.model >>
-      value.present >> value.percentageKnown >> value.percentage >> state >>
-      value.energyKnown >> value.energyWattHours >> value.energyFullWattHours >>
-      value.rateKnown >> value.energyRateWatts >> value.timeToEmptyKnown >>
-      value.timeToEmptySeconds >> value.timeToFullKnown >>
-      value.timeToFullSeconds >> warning;
+      value.present >> value.percentageKnown >> value.percentage >> level >>
+      state >> value.energyKnown >> value.energyWattHours >>
+      value.energyFullWattHours >> value.rateKnown >> value.energyRateWatts >>
+      value.timeToEmptyKnown >> value.timeToEmptySeconds >>
+      value.timeToFullKnown >> value.timeToFullSeconds >> warning;
   argument.endStructure();
   value.kind = static_cast<SupplyKind>(kind);
+  value.level = static_cast<BatteryLevel>(level);
   value.state = static_cast<ChargeState>(state);
   value.warning = static_cast<WarningLevel>(warning);
   return argument;
@@ -121,8 +123,9 @@ QDBusArgument &operator<<(QDBusArgument &argument,
                           const CompositeBattery &value) {
   argument.beginStructure();
   argument << value.present << value.sourceCount << value.percentageKnown
-           << value.percentage << static_cast<quint32>(value.state)
-           << value.netRateKnown << value.netRateWatts << value.timeToEmptyKnown
+           << value.percentage << static_cast<quint32>(value.level)
+           << static_cast<quint32>(value.state) << value.netRateKnown
+           << value.netRateWatts << value.timeToEmptyKnown
            << value.timeToEmptySeconds << value.timeToFullKnown
            << value.timeToFullSeconds << static_cast<quint32>(value.warning);
   argument.endStructure();
@@ -131,14 +134,17 @@ QDBusArgument &operator<<(QDBusArgument &argument,
 
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 CompositeBattery &value) {
+  quint32 level = 0;
   quint32 state = 0;
   quint32 warning = 0;
   argument.beginStructure();
   argument >> value.present >> value.sourceCount >> value.percentageKnown >>
-      value.percentage >> state >> value.netRateKnown >> value.netRateWatts >>
-      value.timeToEmptyKnown >> value.timeToEmptySeconds >>
-      value.timeToFullKnown >> value.timeToFullSeconds >> warning;
+      value.percentage >> level >> state >> value.netRateKnown >>
+      value.netRateWatts >> value.timeToEmptyKnown >>
+      value.timeToEmptySeconds >> value.timeToFullKnown >>
+      value.timeToFullSeconds >> warning;
   argument.endStructure();
+  value.level = static_cast<BatteryLevel>(level);
   value.state = static_cast<ChargeState>(state);
   value.warning = static_cast<WarningLevel>(warning);
   return argument;
