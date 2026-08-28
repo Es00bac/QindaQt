@@ -183,29 +183,38 @@ void ClipboardAppletController::onStateChanged(ClientState /*state*/, const QStr
 
 void ClipboardAppletController::onSnapshotChanged(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
-    const bool generationChanged = (snapshot.generation != m_snapshot.generation);
+    const quint32 oldGeneration = m_snapshot.generation;
+    const bool generationChanged = (snapshot.generation != oldGeneration);
     if (generationChanged) {
-        cancelPendingForGeneration(m_snapshot.generation);
-        if (m_isSearchActive) {
-            // Re-run search against new generation if non-empty
-            if (!m_searchQuery.isEmpty() && m_client) {
-                m_activeSearchRequestId = m_client->requestSearch(
-                    m_searchQuery, snapshot.generation, kMaxPresentedEntries);
-            } else {
-                clearSearch();
-            }
-        }
+        cancelPendingForGeneration(oldGeneration);
     }
     m_snapshot = snapshot;
+    if (generationChanged && m_isSearchActive) {
+        // Re-run the live query against the new generation; any reply to the
+        // pre-transition request is fenced out by the query-generation bump.
+        if (!m_searchQuery.isEmpty() && m_client) {
+            dispatchSearch();
+        } else {
+            clearSearch();
+        }
+    }
     reproject();
 }
 
 void ClipboardAppletController::onLockStateChanged(bool locked)
 {
     if (locked) {
+        // AGENT-GUARD: a lock is an authority denial. Presentation must not
+        // merely hide rows behind the locked phase — it must destroy its own
+        // copy of pre-lock content, pending intents, and search state so an
+        // unlock (or a client that never delivers the purged snapshot) can
+        // never redisclose them. The adapter has already purged the model and
+        // raised its generation before this signal fires.
         m_isSearchActive = false;
+        abandonSearch();
         m_searchQuery.clear();
-        m_searchResults.clear();
+        m_snapshot.entries.clear();
+        m_snapshot.totalPayloadBytes = 0;
         m_pendingRequests.clear();
         m_pendingEntries.clear();
         clearFeedback();
@@ -232,10 +241,39 @@ void ClipboardAppletController::onSearchCompleted(
     quint64 requestId,
     const QindaQt::Services::ClipboardModel::SearchOutcome &outcome)
 {
-    if (m_activeSearchRequestId != 0 && requestId < m_activeSearchRequestId) {
-        return; // Stale search result from a previous query
+    // AGENT-GUARD: request ids are unique but unordered by contract. A reply
+    // is accepted only when its id maps to the current internal query
+    // generation; anything else (superseded query, abandoned search, unknown
+    // or duplicated id) is dropped without touching displayed results.
+    if (m_insideSearchDispatch) {
+        // Synchronous seam: the reply fired inside requestSearch() itself,
+        // so it answers the request currently being issued and belongs to
+        // the current query generation. Only the first such reply counts;
+        // any further emissions during the call are dropped as duplicates.
+        if (m_syncSearchReplySeen) {
+            return;
+        }
+        m_syncSearchReplySeen = true;
+        if (outcome.accepted()) {
+            m_searchResults = outcome.matches;
+            m_searchTruncated = outcome.truncated;
+        } else {
+            m_searchResults.clear();
+            m_searchTruncated = false;
+        }
+        reproject();
+        return;
     }
-    m_activeSearchRequestId = requestId;
+
+    const auto it = m_pendingSearchRequests.constFind(requestId);
+    if (it == m_pendingSearchRequests.constEnd()) {
+        return;
+    }
+    const quint64 replyQueryGeneration = it.value();
+    m_pendingSearchRequests.erase(it);
+    if (replyQueryGeneration != m_searchQueryGeneration) {
+        return;
+    }
 
     if (outcome.accepted()) {
         m_searchResults = outcome.matches;
@@ -370,6 +408,38 @@ bool ClipboardAppletController::clearHistory(bool unpinnedOnly)
     return true;
 }
 
+void ClipboardAppletController::dispatchSearch()
+{
+    // Issuing a new query supersedes every earlier reply, whatever numeric
+    // ids the client assigned them.
+    ++m_searchQueryGeneration;
+    m_pendingSearchRequests.clear();
+    if (!m_client) {
+        return;
+    }
+    // The seam may answer synchronously inside requestSearch(); the window
+    // flag lets onSearchCompleted attribute exactly that reply to this
+    // dispatch before the returned id is even known.
+    m_insideSearchDispatch = true;
+    m_syncSearchReplySeen = false;
+    const quint64 requestId = m_client->requestSearch(
+        m_searchQuery, m_snapshot.generation, kMaxPresentedEntries);
+    m_insideSearchDispatch = false;
+    if (!m_syncSearchReplySeen) {
+        m_pendingSearchRequests.insert(requestId, m_searchQueryGeneration);
+    }
+}
+
+void ClipboardAppletController::abandonSearch()
+{
+    // Fence off all in-flight replies: late answers now map to either an
+    // unknown id or an expired query generation.
+    ++m_searchQueryGeneration;
+    m_pendingSearchRequests.clear();
+    m_searchResults.clear();
+    m_searchTruncated = false;
+}
+
 void ClipboardAppletController::setSearchQuery(const QString &query)
 {
     const QString trimmed = query.trimmed().left(kMaxSearchQueryLength);
@@ -385,8 +455,11 @@ void ClipboardAppletController::setSearchQuery(const QString &query)
 
     m_isSearchActive = true;
     if (m_client && m_projection.phase == Phase::Ready) {
-        m_activeSearchRequestId = m_client->requestSearch(
-            m_searchQuery, m_snapshot.generation, kMaxPresentedEntries);
+        dispatchSearch();
+    } else {
+        // Without a dispatch the displayed rows must not keep results of an
+        // earlier query lineage.
+        abandonSearch();
     }
     reproject();
 }
@@ -398,9 +471,7 @@ void ClipboardAppletController::clearSearch()
     }
     m_isSearchActive = false;
     m_searchQuery.clear();
-    m_searchResults.clear();
-    m_searchTruncated = false;
-    m_activeSearchRequestId = 0;
+    abandonSearch();
     reproject();
 }
 

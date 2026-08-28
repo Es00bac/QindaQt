@@ -4,6 +4,8 @@
 
 #include <QtCore/QLocale>
 
+#include <algorithm>
+
 namespace QindaQt::ShellClipboardApplet {
 
 QString ClipboardAppletModel::formatByteSize(qint64 bytes)
@@ -171,16 +173,31 @@ ClipboardAppletProjection ClipboardAppletModel::project(
     proj.totalPayloadBytesFormatted = formatByteSize(snapshot.totalPayloadBytes);
 
     // 3. Select list source (search results vs full history)
+    // AGENT-GUARD: the documented projection order is a stable partition —
+    // every pinned entry first, then every unpinned entry, each class in the
+    // most-recent-first order the snapshot/search results already carry.
+    // Raw MRU order must never leak into rows; a class-relative reorder or
+    // an interleaving of pinned rows is a projection defect.
+    QList<QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor> orderedEntries;
     const auto &sourceList = isSearchActive ? searchResults : snapshot.entries;
+    if (std::any_of(sourceList.cbegin(), sourceList.cend(),
+                    [](const auto &entry) { return entry.pinned; })) {
+        orderedEntries = sourceList;
+        std::stable_partition(
+            orderedEntries.begin(), orderedEntries.end(),
+            [](const auto &entry) { return entry.pinned; });
+    }
+    const auto &orderedList = orderedEntries.isEmpty() ? sourceList : orderedEntries;
+
     proj.isSearchActive = isSearchActive;
     proj.searchQuery = searchQuery;
     proj.searchResultCount = isSearchActive ? static_cast<int>(searchResults.size()) : 0;
     proj.searchTruncated = isSearchActive && searchTruncated;
 
-    const int count = qMin<int>(static_cast<int>(sourceList.size()), kMaxPresentedEntries);
+    const int count = qMin<int>(static_cast<int>(orderedList.size()), kMaxPresentedEntries);
     proj.entryRows.reserve(count);
     for (int i = 0; i < count; ++i) {
-        const auto &desc = sourceList.at(i);
+        const auto &desc = orderedList.at(i);
         const bool pending = pendingEntries.contains({desc.id.generation, desc.id.serial});
         proj.entryRows.append(projectRow(i, desc, pending));
     }

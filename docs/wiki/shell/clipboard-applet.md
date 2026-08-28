@@ -6,7 +6,7 @@ The clipboard panel applet is a bounded presentation and controller surface over
 
 ## Slice status
 
-This WIRED slice registers its presentation projection model, controller facade, public seam adapter, compiled QML module (`QindaQt.Shell.ClipboardApplet`), hostile/boundary tests, and this documentation in the combined build graph.
+This WIRED slice registers its presentation projection model, controller facade, public seam adapter, compiled QML module (`QindaQt.Shell.ClipboardApplet`), relocatable `ClipboardApplet` install component with an installed consumer/package probe, hostile/boundary tests, and this documentation in the combined build graph.
 
 The remaining integration seams are additive and listed in [Applet runtime](applet-runtime.md) terms as:
 
@@ -40,7 +40,7 @@ Phases, exposed as `phaseText`:
 
 `phaseReasonText` maps each phase to fixed, user-friendly explanatory sentences. Diagnostics and raw memory values are never exposed.
 
-Rows: bounded to at most 50 entries (pinned entries first, followed by unpinned in descending recency order). Anything beyond the retention window is truncated deterministically. Each row provides:
+Rows: bounded to `kMaxPresentedEntries` (32) rows. Projection order is a deterministic partition: every pinned entry first, then every unpinned entry, each class in the snapshot's most-recent-first (descending recency) order; search-result projections use the same partition over the model's most-recent-first match reply. Anything beyond the row bound is truncated deterministically after the partition. Each row provides:
 - Entry ID string (`generation:serial`)
 - Sanitized preview text with truncation indicator
 - Source application label
@@ -49,13 +49,27 @@ Rows: bounded to at most 50 entries (pinned entries first, followed by unpinned 
 - Pinned status, admitted timestamp, and pending mutation flag
 - Accessible name and description for assistive technologies
 
+## Privacy, lock purge, and generation fencing
+
+A lock is an authenticated authority denial, not a presentation hint:
+
+- `ClipboardModelClientAdapter::setLocked(true)` denies model privacy *before* the lock becomes observable, so the underlying `ClipboardHistoryModel` purges every entry and raises its generation by exactly one. Unlock restores only the authority the lock itself removed; a privacy denial issued independently by the host survives unlock.
+- The controller destroys its own presentation copy on the same signal: entries, byte totals, pending intents, feedback, and the entire search state (query, matched descriptors, truncated flag, in-flight replies).
+- Because the pre-lock lineage is fenced by the generation bump, pre-lock entry ids never resolve again and an unlock cannot redisclose pre-lock content through any seam.
+
+Search reply freshness uses a controller-internal monotonically increasing query generation. The client seam promises request-id *uniqueness* only, never ordering, so a reply is accepted only when its id maps to the query generation that issued it; replies for superseded, abandoned, or replayed requests are dropped regardless of their numeric ids.
+
+## Packaging
+
+The `ClipboardApplet` install component packages the relocatable public boundary: the shared backing library and generated QML plugin beside `qmldir`, `.qmltypes`, and the QML files under `QindaQt/Shell/ClipboardApplet` in the Qt QML tree; public headers (applet plus the consumed `clipboard_model/clipboard_types.h`) under the include directory; and the applet manifest under `qindaqt/applets`. `qindaqt.clipboard-applet-installed-consumer` installs the component into a fresh stage, links and runs a C++ consumer against only staged files, and imports the staged QML module offscreen.
+
 ## Intent and mutation rules
 
 Supported user operations:
 - `selectEntry(generation, serial)`: Promotes the specified entry to the current active selection.
 - `deleteEntry(generation, serial)`: Removes the specified entry from history.
 - `togglePin(generation, serial)`: Pins or unpins an entry to prevent LRU eviction.
-- `clearHistory()`: Purges all unpinned entries from history.
+- `clearHistory(unpinnedOnly)`: Purges all entries, or only unpinned ones.
 - `setSearchQuery(query)` / `clearSearch()`: Filters visible entries by metadata/preview matching.
 
 All mutations enforce strict generation fencing: if the snapshot generation does not match the intent target generation, the request is refused fail-closed with user feedback and never dispatched.

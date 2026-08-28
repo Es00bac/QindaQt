@@ -36,3 +36,13 @@ install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/applets/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
 )
+
+# AGENT-CONTRACT: additive per-consumer COMPONENT, mirroring the TextEditor
+# precedent in src/controls/CMakeLists.txt. The Clipboard applet's packaged
+# component (tests/shell/clipboard_applet, --component ClipboardApplet) must
+# carry its own manifest; this registry is the manifest's owning install rule.
+install(
+    FILES "${PROJECT_SOURCE_DIR}/data/applets/clipboard.json"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+    COMPONENT ClipboardApplet
+)
