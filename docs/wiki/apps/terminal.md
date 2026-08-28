@@ -149,6 +149,15 @@ mechanical lighten step because QST has no distinct intense roles. This is
 bounded presentation adaptation; a full, settings-backed color-profile system
 is a later slice and is not invented here.
 
+The production adapter installs that document under a unique atomic
+`.colorscheme` cache path, the suffix required by qtermwidget 2.4's custom-file
+loader. Its eight bright groups use the upstream
+`Color0Intense`..`Color7Intense` names. A real-adapter offscreen regression
+renders the selected theme's terminal background and rejects qtermwidget's
+synthetic LF-only selection for a pristine grid, so scheme and Copy
+availability claims are not inferred from document generation or fake
+backends.
+
 ## Desktop integration and verification
 
 `org.qindaqt.Terminal.desktop` registers the ordinary Wayland application with
@@ -181,18 +190,20 @@ quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
 wiring binding), window action identity and action-state truth across
 Running→Exited, readline-safe shortcuts, exit-status severity rendering,
 accessibility and focus metadata, hostile-resize clamping, QST scheme
-documents for all five themes, desktop metadata, positional-argument
+documents for all five themes, real-adapter custom-scheme rendering and blank
+selection truth, desktop metadata, positional-argument
 rejection, and staged installed metadata with installed-prefix theme
 resolution. Every Widgets-linked row sets `QT_QPA_PLATFORM=offscreen`, so
 the selector runs in display-less environments with no display variables
 set. The installed and CLI rows
 exit before any window or session exists.
 
-Serializer-lane qualification that S0 deliberately does not claim: real
-Debug/Release builds, a live shell under the real adapter (UTF-8 rendering,
-keyboard→child byte flow, resize/SIGWINCH, select/copy extraction, real
-signal exits), first-frame and PSS measurements, and any nested-display
-interaction.
+The mandatory exact private-Wayland live lane additionally covers the real
+shell's UTF-8 and ANSI rendering, keyboard-to-child byte flow, resize/SIGWINCH,
+populated select/copy and paste, normal and signal exit truth, restart/close
+teardown, first frame, and aggregate PSS; passing that lane is an integration
+gate for this slice. Physical-display/GPU behavior and host-compositor
+interaction remain outside S0.
 
 ## Bounded S0 deferrals
 

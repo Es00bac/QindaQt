@@ -103,15 +103,20 @@ QString TerminalColorSchemeDocument::render(
   appendSection(document, "Foreground", appearance.terminalForeground);
   appendSection(document, "ForegroundIntense",
                 intenseVariant(appearance.terminalForeground));
-  static constexpr const char *kColorNames[16] = {
-      "Color0",  "Color1",  "Color2",  "Color3",
-      "Color4",  "Color5",  "Color6",  "Color7",
-      "Color8",  "Color9",  "Color10", "Color11",
-      "Color12", "Color13", "Color14", "Color15",
-  };
-  for (int index = 0; index < 16; ++index) {
-    appendSection(document, kColorNames[index], appearance.ansi[index]);
+  // AGENT-CONTRACT (qtermwidget 2.4 ColorScheme::colorNames): Konsole scheme
+  // files encode bright ANSI slots as Color0Intense..Color7Intense. Groups
+  // named Color8..Color15 are ignored and fall back to upstream defaults.
+  for (int index = 0; index < 8; ++index) {
+    const QByteArray name = QStringLiteral("Color%1").arg(index).toLatin1();
+    appendSection(document, name.constData(), appearance.ansi[index]);
   }
+  for (int index = 0; index < 8; ++index) {
+    const QByteArray name =
+        QStringLiteral("Color%1Intense").arg(index).toLatin1();
+    appendSection(document, name.constData(), appearance.ansi[index + 8]);
+  }
+  document += QStringLiteral(
+      "[General]\nDescription=QindaQt generated scheme\nOpacity=1\n");
   return document;
 }
 
