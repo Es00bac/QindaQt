@@ -1,0 +1,327 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import copy
+import unittest
+
+from desktop_session_runtime import await_complete_snapshot
+from desktop_session_topology import (
+    TopologyContractError,
+    desktop_1080p_topology,
+    observed_applications,
+    validate_boot_evidence,
+)
+
+
+def valid_evidence() -> dict[str, object]:
+    topology = desktop_1080p_topology()
+    pids = {item.role: 100 + index for index, item in enumerate(topology.processes)}
+    processes = {
+        item.role: {
+            "pid": pids[item.role],
+            "executable": item.executable,
+            "parentRole": item.parent_role,
+        }
+        for item in topology.processes
+    }
+    services = [
+        {
+            "name": item.name,
+            "owner": f":1.{index + 1}",
+            "pid": pids[item.process_role],
+            "executable": next(
+                process.executable
+                for process in topology.processes
+                if process.role == item.process_role
+            ),
+        }
+        for index, item in enumerate(topology.services)
+    ]
+    return {
+        "schemaVersion": 1,
+        "topology": topology.document(),
+        "containment": {
+            "mode": "bwrap-pid-network-ipc",
+            "hostDisplayReachable": False,
+            "hostSessionBusReachable": False,
+            "hostInputReachable": False,
+        },
+        "processes": processes,
+        "services": services,
+        "outputs": [
+            {
+                "name": "Virtual-1",
+                "geometry": {"x": 0, "y": 0, "width": 1920, "height": 1080},
+                "scale": 1.0,
+            }
+        ],
+        "generations": {"outputs": "7", "shellVisibility": "7"},
+        "inputDevices": [
+            {
+                "name": "QindaQt Development Input",
+                "keyboard": True,
+                "pointer": True,
+            }
+        ],
+        "dockSurfaces": [
+            {
+                "scope": "dock",
+                "outputName": "Virtual-1",
+                "desiredOutputName": "Virtual-1",
+                "mapped": True,
+                "committed": True,
+            }
+        ],
+        "applications": [
+            {
+                "appId": "org.qindaqt.Settings",
+                "processRole": "settings-app",
+                "windowId": "settings-window",
+                "windowTitle": "QindaQt Settings",
+                "mapped": True,
+            },
+            {
+                "appId": "org.qindaqt.TextEditor",
+                "processRole": "editor-app",
+                "windowId": "editor-window",
+                "windowTitle": "QindaQt Text Editor",
+                "mapped": True,
+            },
+        ],
+        "measurements": {"residentPssKiB": 524288, "ceilingKiB": 1048576},
+        "cleanup": {
+            "bounded": True,
+            "survivorPids": [],
+            "terminalPhases": [
+                {
+                    "role": item.role,
+                    "pid": pids[item.role],
+                    "processGroup": pids[item.role],
+                    "executablePath": f"/opt/qindaqt/bin/{item.executable}",
+                    "startTicks": 1000 + index,
+                    "terminalPhase": "already-exited" if index == 0 else "term",
+                }
+                for index, item in enumerate(topology.processes)
+            ],
+        },
+    }
+
+
+def ready_probe() -> dict[str, object]:
+    evidence = valid_evidence()
+    return {
+        "schemaVersion": 1,
+        "services": [
+            {
+                "name": record["name"],
+                "status": "owned",
+                "owner": record["owner"],
+                "pid": str(record["pid"]),
+            }
+            for record in evidence["services"]  # type: ignore[union-attr]
+        ],
+        "outputs": {
+            "status": "ok", "outputs": evidence["outputs"],
+            "outputGeneration": evidence["generations"]["outputs"],  # type: ignore[index]
+        },
+        "shellVisibility": {
+            "status": "ok",
+            "outputGeneration": evidence["generations"]["shellVisibility"],  # type: ignore[index]
+        },
+        "inputCapabilities": {
+            "status": "ok", "devices": evidence["inputDevices"],
+        },
+        "developmentShellSurfaces": {
+            "status": "ok", "surfaces": evidence["dockSurfaces"],
+        },
+        "windows": {
+            "status": "ok",
+            "windows": [
+                {
+                    "id": record["windowId"],
+                    "applicationId": record["appId"],
+                    "title": record["windowTitle"],
+                }
+                for record in evidence["applications"]  # type: ignore[union-attr]
+            ],
+        },
+    }
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += max(seconds, 0.001)
+
+
+class TopologyTests(unittest.TestCase):
+    def test_exact_topology_passes(self) -> None:
+        validate_boot_evidence(valid_evidence())
+
+    def test_missing_resident_process_fails(self) -> None:
+        evidence = valid_evidence()
+        del evidence["processes"]["audio-service"]  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "process roles"):
+            validate_boot_evidence(evidence)
+
+    def test_service_pid_must_match_process(self) -> None:
+        evidence = valid_evidence()
+        evidence["services"][0]["pid"] = 999  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "owner PID"):
+            validate_boot_evidence(evidence)
+
+    def test_generations_must_be_equal_and_nonzero(self) -> None:
+        for generations in (
+            {"outputs": "0", "shellVisibility": "0"},
+            {"outputs": "4", "shellVisibility": "5"},
+            {"outputs": 4, "shellVisibility": "4"},
+        ):
+            with self.subTest(generations=generations):
+                evidence = valid_evidence()
+                evidence["generations"] = generations
+                with self.assertRaises(TopologyContractError):
+                    validate_boot_evidence(evidence)
+
+    def test_dock_cannot_be_inferred_from_an_ordinary_window(self) -> None:
+        evidence = valid_evidence()
+        evidence["dockSurfaces"] = []
+        with self.assertRaisesRegex(TopologyContractError, "dock surface"):
+            validate_boot_evidence(evidence)
+
+    def test_host_reachability_and_survivors_fail(self) -> None:
+        for mutation in ("display", "bus", "input", "survivor"):
+            with self.subTest(mutation=mutation):
+                evidence = copy.deepcopy(valid_evidence())
+                if mutation == "display":
+                    evidence["containment"]["hostDisplayReachable"] = True  # type: ignore[index]
+                elif mutation == "bus":
+                    evidence["containment"]["hostSessionBusReachable"] = True  # type: ignore[index]
+                elif mutation == "input":
+                    evidence["containment"]["hostInputReachable"] = True  # type: ignore[index]
+                else:
+                    evidence["cleanup"]["survivorPids"] = [321]  # type: ignore[index]
+                with self.assertRaises(TopologyContractError):
+                    validate_boot_evidence(evidence)
+
+    def test_matching_titles_with_wrong_application_ids_are_rejected(self) -> None:
+        windows = [
+            {"id": "fake-settings", "applicationId": "org.attacker.Fake",
+             "title": "QindaQt Settings"},
+            {"id": "fake-editor", "applicationId": "org.attacker.Other",
+             "title": "QindaQt Text Editor"},
+        ]
+        with self.assertRaisesRegex(TopologyContractError, "org.qindaqt.Settings"):
+            observed_applications(windows)
+
+    def test_observed_application_identity_and_declared_role_are_preserved(self) -> None:
+        windows = ready_probe()["windows"]["windows"]  # type: ignore[index]
+        applications = observed_applications(windows)
+        self.assertEqual(applications[0]["appId"], "org.qindaqt.Settings")
+        self.assertEqual(applications[0]["windowId"], "settings-window")
+        self.assertEqual(applications[0]["processRole"], "settings-app")
+        evidence = valid_evidence()
+        evidence["applications"][0]["processRole"] = "editor-app"  # type: ignore[index]
+        with self.assertRaisesRegex(TopologyContractError, "not mapped"):
+            validate_boot_evidence(evidence)
+
+    def test_readiness_polls_past_services_then_apps_then_dock(self) -> None:
+        service_pending = ready_probe()
+        service_pending["services"][0]["status"] = "unavailable"  # type: ignore[index]
+        apps_pending = ready_probe()
+        apps_pending["windows"]["windows"] = []  # type: ignore[index]
+        dock_pending = ready_probe()
+        dock_pending["developmentShellSurfaces"]["surfaces"] = []  # type: ignore[index]
+        snapshots = iter((service_pending, apps_pending, dock_pending, ready_probe()))
+        observed = await_complete_snapshot(lambda _: next(snapshots), seconds=1)
+        self.assertEqual(observed, ready_probe())
+
+    def test_readiness_timeout_is_bounded(self) -> None:
+        pending = ready_probe()
+        pending["windows"]["windows"] = []  # type: ignore[index]
+        clock = FakeClock()
+        with self.assertRaisesRegex(RuntimeError, "readiness timed out"):
+            await_complete_snapshot(
+                lambda _: pending, seconds=0.1,
+                monotonic=clock.monotonic, sleep=clock.sleep,
+            )
+
+    def test_snapshot_that_completes_after_deadline_is_rejected(self) -> None:
+        clock = FakeClock()
+
+        def late(_: float) -> dict[str, object]:
+            clock.now = 0.2
+            return ready_probe()
+
+        with self.assertRaisesRegex(RuntimeError, "readiness timed out"):
+            await_complete_snapshot(
+                late, seconds=0.1,
+                monotonic=clock.monotonic, sleep=clock.sleep,
+            )
+
+    def test_public_method_error_fails_without_retry(self) -> None:
+        failed = ready_probe()
+        failed["outputs"] = {"status": "unavailable"}
+        failed["services"][0]["status"] = "unavailable"  # type: ignore[index]
+        calls = 0
+
+        def sample(_: float) -> dict[str, object]:
+            nonlocal calls
+            calls += 1
+            return failed
+
+        with self.assertRaisesRegex(RuntimeError, "public D-Bus method outputs"):
+            await_complete_snapshot(sample, seconds=1)
+        self.assertEqual(calls, 1)
+
+    def test_invalid_service_evidence_fails_without_retry(self) -> None:
+        failed = ready_probe()
+        failed["services"][0]["status"] = "invalid-pid"  # type: ignore[index]
+        calls = 0
+
+        def sample(_: float) -> dict[str, object]:
+            nonlocal calls
+            calls += 1
+            return failed
+
+        with self.assertRaisesRegex(RuntimeError, "invalid ownership"):
+            await_complete_snapshot(sample, seconds=1)
+        self.assertEqual(calls, 1)
+
+    def test_measurement_schema_and_ceiling_are_exact(self) -> None:
+        mutations = (
+            {},
+            {"residentPssKiB": -1, "ceilingKiB": 1048576},
+            {"residentPssKiB": "1", "ceilingKiB": 1048576},
+            {"residentPssKiB": 1, "ceilingKiB": 999},
+            {"residentPssKiB": 1048577, "ceilingKiB": 1048576},
+        )
+        for measurements in mutations:
+            with self.subTest(measurements=measurements):
+                evidence = valid_evidence()
+                evidence["measurements"] = measurements
+                with self.assertRaisesRegex(TopologyContractError, "PSS"):
+                    validate_boot_evidence(evidence)
+
+    def test_cleanup_ledger_must_bind_role_identity_and_terminal_phase(self) -> None:
+        for mutation in ("missing", "pid", "phase"):
+            with self.subTest(mutation=mutation):
+                evidence = valid_evidence()
+                records = evidence["cleanup"]["terminalPhases"]  # type: ignore[index]
+                if mutation == "missing":
+                    records.pop()
+                elif mutation == "pid":
+                    records[0]["pid"] = 999
+                else:
+                    records[0]["terminalPhase"] = "graceful"
+                with self.assertRaises(TopologyContractError):
+                    validate_boot_evidence(evidence)
+
+
+if __name__ == "__main__":
+    unittest.main()

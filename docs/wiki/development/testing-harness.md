@@ -447,9 +447,11 @@ name release and uses D-Bus `DontQueueService`/`DontAllowReplacement`, so it can
 neither queue behind nor evict a competing owner. It joins
 that view with Compositor1 `DevelopmentShellSurfaces`, whose production gate
 rejects before inspecting KWin state and whose development result is restricted
-to the two notification scopes. The driver rejects duplicate roles and proves
-the exact mapped output, committed geometry, center activation, popup
-inactivity, initial focus, and every named forward/reverse focus transition.
+to the two notification scopes plus the whole-desktop `dock` scope. The
+Notification Live driver selects only its two exact roles, rejects duplicates,
+and proves the exact mapped output, committed geometry, center activation,
+popup inactivity, initial focus, and every named forward/reverse focus
+transition.
 Each decoded shell snapshot must repeat the externally authenticated shell PID;
 a later response from a replacement process is rejected rather than reused.
 
@@ -884,6 +886,98 @@ protocol accepted a configuration, mirror visibility in `wl_output`, service
 activation/restart behavior, or physical DRM/GPU/monitor/lid/suspend results.
 D0/D2 own nested protocol/service proof; D8 owns isolated hardware proof. A D1
 handoff must not upgrade unit success into either claim.
+
+## Contained interactive virtual desktop S0+S1
+
+The first whole-desktop harness boundary is selected with:
+
+```sh
+cmake --build build/dev --parallel 1 --target qindaqt-desktop-session-probe
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.(sandbox-unit|package-contract)$'
+```
+
+Building `qindaqt-desktop-session-probe` also builds the exact production graph
+needed by the stage. `desktop.virtual.sandbox-unit` opens no display, bus, or
+session. It checks deterministic typed bubblewrap argv, a fresh environment
+allow-list, private roots and endpoints, absence of host input/runtime mounts,
+cross-worktree locking, staged path/symlink/escape rejection, direct
+Settings1/Audio1 resolution, proc parsers, exact PID identity, PID-reuse safety,
+bounded cleanup phases, complete PSS schema, simultaneous readiness polling,
+observed application identity, fresh result-root authentication, failure-safe
+artifact/log archival, and the complete boot-topology model.
+
+`desktop.virtual.package-contract` performs a CMake install beneath the same
+build root, authenticates the production executables and compositor plugin as
+regular files inside that prefix, validates both service descriptor identities,
+and writes a path manifest. Descriptor `Exec` values are recorded but never
+executed; Settings1 and Audio1 are started directly from the resolved stage.
+CMake discovers Python, bubblewrap, `dbus-daemon`, and `kwin_wayland` and passes
+their exact paths. The harness does not encode `/usr/bin` as executable policy.
+
+The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
+inaccessible to an ordinary CTest invocation: the manager must allocate the
+sole private-runtime lane, no other private session may be active, and the
+caller must then supply the exact acknowledgement:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.boot\.1080p$'
+```
+
+CTest marks the row serial, takes a build-local resource lock, and automatically
+requires the staged-package fixture. The driver additionally takes the per-user
+`/tmp/qindaqt-private-session-<uid>.lock`, which serializes other worktrees.
+Missing manager acknowledgement returns skip code 77 before bubblewrap starts.
+
+Bubblewrap creates PID/network/IPC/UTS/user namespaces, parent-death and new-
+session semantics, an empty root, private `/dev`, `/tmp`, `/run`, machine ID,
+HOME/XDG roots, D-Bus socket, and Wayland socket. Only exact read-only system
+tool roots, stage/source/probe inputs, and bounded writable runtime/log/evidence
+directories are visible. There is no host HOME/config, runtime directory,
+Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
+network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
+owns this trust boundary.
+
+After the required service names appear, the driver reacquires complete probe
+snapshots until all public topology inputs are valid at once or the 15-second
+deadline expires. An incomplete app/dock startup state may retry; a malformed
+service or any public method error fails immediately. Settings and Text Editor
+must match their exact compositor-observed `applicationId`, nonempty window ID,
+and title. A matching title with another application ID is never rewritten into
+QindaQt evidence.
+
+Every invocation reserves a new sentinel-authenticated persistent result root
+at `build/dev/tests/session/desktop-session-results/<run-id>`. Before deleting
+the private run root, a `finally` path copies every artifact and process log,
+combined sandbox output, and `result.json` with run ID, outcome, return code,
+timeout flag, bounded timestamps, and failure text. Existing, symlinked, or
+nonempty destinations fail closed, so a later failure cannot inherit a prior
+attempt's files.
+
+The immutable S1 evidence model requires:
+
+| Area | Exact `1920x1080@1` evidence |
+| --- | --- |
+| Processes | `kwin_wayland`, `qindaqt-session`, notification host, shell, Settings1, Audio1, Settings, Text Editor, probe, and private bus with unique PID/role/parent bindings |
+| Services | Unique owners and exact executable-bound PIDs for Compositor1, Settings1, Audio1, and freedesktop Notifications |
+| Display | One `Virtual-1` output at `(0,0)`, `1920x1080`, scale 1; equal canonical nonzero Outputs/ShellVisibility generation |
+| Input | Exactly one combined `QindaQt Development Input`; no host input node |
+| Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1` |
+| Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
+| Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
+
+The current-base candidate extends Notification Live's development-only
+layer-surface allowlist with the production `dock` scope. The probe calls that
+interface deliberately and the boot row must fail if the method or exact record
+is absent; ordinary `Windows` or `ShellVisibilitySnapshot` data does not prove
+a layer surface. Source/unit/package qualification remains the only valid claim
+until a manager assigns the private lane and the exact boot row passes.
+
+S0+S1 makes no screenshot, input-action, screenshot-baseline, OpenGL/render-
+node, DPI/theme variant, multi-output mutation, idle-CPU threshold, or physical
+device claim. Those rows follow a successful repeatable boot/teardown boundary.
 
 ## Required display matrix
 

@@ -270,13 +270,17 @@ never a public automation API or physical-device claim.
 
 The notification live workflow also joins the filtered compositor-owned
 `DevelopmentShellSurfaces` view with a separately PID-authenticated, read-only
-shell snapshot. The compositor view contains only QindaQt's two notification
-scopes, while the shell view contains bounded presentation/window/focus state
-and no mutation methods. Both are admitted only inside the same explicit
-private development session. The shell fails its development startup if it
-cannot match Compositor1 to the supervisor-provisioned KWin PID and live
-development capabilities. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)
-records this qualification-only boundary.
+shell snapshot. The compositor allowlist contains QindaQt's two notification
+scopes plus the production `dock` scope needed by whole-desktop qualification;
+the Notification Live consumer still selects only its two exact roles. The
+shell view contains bounded presentation/window/focus state and no mutation
+methods. Both are admitted only inside the same explicit private development
+session. The shell fails its development startup if it cannot match
+Compositor1 to the supervisor-provisioned KWin PID and live development
+capabilities. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)
+records the original notification boundary, and
+[ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md) adds the bounded
+`dock` consumer.
 
 Output observation is owned by one GUI-thread inventory collaborator. It
 samples KWin's semantic output order and complete stable field set, validates

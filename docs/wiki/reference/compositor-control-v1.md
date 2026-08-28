@@ -197,8 +197,10 @@ complete valid generation; no partial inventory is retained as policy input.
 desktop or automation API. It is absent from the shell's production behavior
 and returns `control-disabled` before inspecting KWin state unless the launcher
 has admitted an explicit isolated development scenario. The compositor filters
-the result to QindaQt's exact `notification-popup` and
-`notification-center` scopes; it never inventories unrelated user surfaces.
+the result to QindaQt's exact `notification-popup`, `notification-center`, and
+production `dock` qualification scopes; it never inventories unrelated user
+surfaces. Notification Live consumes only its two notification roles, while the
+contained whole-desktop row consumes only `dock`.
 
 Each returned record pairs a live KWin window with its exported, committed
 layer-shell protocol object by their shared Wayland surface. The plugin never

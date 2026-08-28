@@ -31,5 +31,6 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0023](0023-split-power-authority-across-service-and-shell.md) | Accepted | Split platform power observation from shell-owned session-action authority |
 | [ADR-0024](0024-route-brightness-through-power1.md) | Accepted | Route fail-closed internal brightness through a Power1 provider |
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
+| [ADR-0026](0026-contain-virtual-desktop-qualification.md) | Accepted | Contain integrated virtual desktop qualification in a private namespace and exact stage |
 
 Numbers are never reused, including for rejected or superseded records.
