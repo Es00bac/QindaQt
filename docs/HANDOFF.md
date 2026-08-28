@@ -56,7 +56,9 @@ must remain private and nested: it may not move the host cursor, inject host
 input, replace the active compositor, alter host lock configuration, or use the
 live session bus.
 
-In parallel, finish the reusable `QindaQt.Controls 1.0` component qualification
-needed by the first-party Settings application, then begin the pure display
-protocol/identity/topology/transaction boundary from the accepted Display1
-architecture. A source-only handoff or a live worker process is not completion.
+The reusable `QindaQt.Controls 1.0` component set is now integrated after exact
+independent Debug/Release, visual, accessibility-event, package, source-policy,
+and PSS qualification. In parallel with the virtual desktop outcome, finish the
+pure Display1 protocol/identity/topology/transaction boundary and the first
+native application slice. A source-only handoff or a live worker process is not
+completion.

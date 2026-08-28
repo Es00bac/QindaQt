@@ -91,7 +91,7 @@ integrations.
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
 | Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels/notifications, authenticated stack, Settings1-persisted DND with ordinary settings page and fixed route, and fail-closed lock privacy implemented; live shortcut/focus/DND/lock proof, reveal UI, and remaining experiences pending) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1 typed service/client, activation, production WirePlumber adapter, and isolated null-device runtime proof implemented; hardware/UI qualification and other providers pending) |
-| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 token/value and QML publication boundary implemented; controls, app shell, Settings Center routes, responsive/visual matrices, and live accessibility bridge pending) |
+| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls implemented and independently qualified; app shell, complete Settings Center routes, core applications, cross-app matrices, and live accessibility bridge pending) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |
 
 Each milestone lands behind stable module boundaries rather than accumulating
