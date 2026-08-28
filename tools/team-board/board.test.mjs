@@ -66,6 +66,9 @@ test('derives product progress only from outcome state plus stopping-point evide
   assert.equal(board.program.recordedActionableRows, 3);
   assert.equal(board.program.evidencePoints, 175);
   assert.equal(board.program.evidencePercent, 29.17);
+  assert.equal(board.program.evidenceBreadthPoints, 200,
+    'qualified and executable rows both count as integrated footprint');
+  assert.equal(board.program.evidenceBreadthPercent, 33.33);
   assert.equal(board.features.find((feature) => feature.id === 'QQ-004')?.ownerExcluded, true);
   assert.equal(board.workers[0].name, 'Working worker', 'only declared working status is active and sorts first');
   assert.equal(board.workers[1].active, false, 'assigned status is not fabricated as active work');
@@ -94,6 +97,9 @@ test('derives a milestone percentage from weighted evidence-backed sub-outcomes'
   assert.equal(board.features[0].evidencePercent, 42.5);
   assert.equal(board.program.evidencePoints, 42.5);
   assert.equal(board.program.evidencePercent, 42.5);
+  assert.equal(board.program.evidenceBreadthPoints, 80,
+    'recorded qualified/modelled step weight counts once regardless of maturity');
+  assert.equal(board.program.evidenceBreadthPercent, 80);
   assert.equal(board.program.qualified, 0);
 });
 

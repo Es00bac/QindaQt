@@ -240,6 +240,19 @@ function featureWeight(feature) {
   return Number(feature?.evidencePercent) || 0;
 }
 
+// AGENT-CONTRACT: breadth answers "how much of the plan has any integrated
+// evidence?" It deliberately ignores maturity above MODELLED and never counts
+// ABSENT/unrecorded or candidate-only work. Keep it separate from progress so
+// callers cannot add the two percentages together.
+function featureBreadth(feature) {
+  if (feature?.ownerExcluded === true) return 0;
+  if (feature.steps.length === 0) return feature.evidencePercent > 0 ? 100 : 0;
+  return feature.steps.reduce(
+    (sum, step) => sum + (step.evidencePercent > 0 ? step.weight : 0),
+    0,
+  );
+}
+
 function normalizeFeature(raw, index) {
   const id = text(raw?.id);
   if (!FEATURE_ID_PATTERN.test(id)) throw new TypeError(`features[${index}].id must be a QQ source row id`);
@@ -260,7 +273,7 @@ function normalizeFeature(raw, index) {
   const evidencePercent = steps.length > 0
     ? Math.round(steps.reduce((sum, step) => sum + step.contributionPoints, 0) * 100) / 100
     : (evidence.length > 0 ? FEATURE_STATE_WEIGHTS[state] : 0);
-  return Object.freeze({
+  const feature = {
     id,
     title: text(raw?.title, id),
     workspace: text(raw?.workspace, 'Unspecified'),
@@ -273,6 +286,10 @@ function normalizeFeature(raw, index) {
       evidence: Object.freeze(evidence),
     }),
     caveat: plainText(raw?.caveat),
+  };
+  return Object.freeze({
+    ...feature,
+    evidenceBreadthPercent: featureBreadth(feature),
   });
 }
 
@@ -306,6 +323,9 @@ export function buildBoard(data, workers, options = {}) {
   const recordedActionableRows = features.filter((feature) => !feature.ownerExcluded).length;
   const qualified = features.filter((feature) => featureWeight(feature) === 100).length;
   const evidencePoints = Math.round(features.reduce((sum, feature) => sum + featureWeight(feature), 0) * 100) / 100;
+  const evidenceBreadthPoints = Math.round(
+    features.reduce((sum, feature) => sum + featureBreadth(feature), 0) * 100,
+  ) / 100;
   const currentWorkers = workers.map((worker) => Object.freeze({
     ...worker,
     active: workerIsFresh(worker, nowMs, maxWorkerAgeMs),
@@ -334,7 +354,11 @@ export function buildBoard(data, workers, options = {}) {
       qualified,
       evidencePoints,
       evidencePercent: actionableRows > 0 ? Math.round(evidencePoints / actionableRows * 100) / 100 : 0,
+      evidenceBreadthPoints,
+      evidenceBreadthPercent: actionableRows > 0
+        ? Math.round(evidenceBreadthPoints / actionableRows * 100) / 100 : 0,
       formula: 'Each roadmap row is 100 breadth points. Named sub-outcomes contribute their explicit weight × evidence maturity: UNVERIFIED/ABSENT 0, MODELLED 25, WIRED 50, EXECUTABLE 75, QUALIFIED 100. Rows without a breakdown retain the same state score. Only recorded evidence counts; candidate branches and worker activity add zero, and task percentages add zero.',
+      breadthFormula: 'Integrated footprint counts the weight of named outcomes with recorded evidence at MODELLED, WIRED, EXECUTABLE, or QUALIFIED maturity. It excludes ABSENT/unrecorded and candidate-only work. It is coverage, not completion, and is never added to the maturity score.',
     }),
     features: Object.freeze([...features].sort((left, right) => left.id.localeCompare(right.id))),
     workers: Object.freeze(orderedWorkers),
