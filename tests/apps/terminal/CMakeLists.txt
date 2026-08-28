@@ -113,6 +113,7 @@ add_test(
             "-DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-terminal-stage"
             "-DINSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
             "-DINSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+            "-DQTERMWIDGET_LIBRARY=$<TARGET_FILE:qtermwidget6>"
             "-DCONFIGURATION=$<CONFIG>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_terminal.cmake"
 )
