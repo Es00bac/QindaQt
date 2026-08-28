@@ -26,6 +26,7 @@ set(
     qindaqt-audio-service
     qindaqt-settings
     qindaqt-editor
+    qindaqt_app_shell
     qindaqt_tokens_qml
     qindaqt_tokens_qmlplugin
     qindaqt_controls_qml
@@ -180,6 +181,14 @@ if(
         LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/kwin/plugins"
         COMPONENT DesktopVirtual
     )
+    # The editor links the AppShell C++ boundary directly. Its production
+    # RPATH resolves this shared library from the QML module directory, so the
+    # whole-desktop component must stage the same runtime artifact.
+    install(
+        TARGETS qindaqt_app_shell
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+        COMPONENT DesktopVirtual
+    )
     install(
         TARGETS qindaqt_decoration
         LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR}"
@@ -275,6 +284,37 @@ if(
             SKIP_RETURN_CODE 77
             LABELS "integration;session;display;wayland;layer-shell;security"
     )
+
+    if(QINDAQT_WESTON AND QINDAQT_WESTON_SCREENSHOOTER)
+        add_test(
+            NAME desktop.virtual.interactive.1080p
+            COMMAND
+                "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
+                --outer
+                --interactive
+                --build-root "${CMAKE_BINARY_DIR}"
+                --source-root "${PROJECT_SOURCE_DIR}"
+                ${_qindaqt_desktop_common_arguments}
+                --probe "$<TARGET_FILE:qindaqt-desktop-session-probe>"
+                --bwrap "${QINDAQT_DESKTOP_BWRAP}"
+                --python "${Python3_EXECUTABLE}"
+                --dbus-daemon "${QINDAQT_DESKTOP_DBUS_DAEMON}"
+                --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
+                --weston "${QINDAQT_WESTON}"
+                --weston-screenshooter "${QINDAQT_WESTON_SCREENSHOOTER}"
+        )
+        set_tests_properties(
+            desktop.virtual.interactive.1080p
+            PROPERTIES
+                TIMEOUT 90
+                RUN_SERIAL TRUE
+                RESOURCE_LOCK qindaqt-private-session
+                FIXTURES_REQUIRED desktop_virtual_stage
+                SKIP_RETURN_CODE 77
+                LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot"
+        )
+    endif()
 endif()
 
 unset(_qindaqt_desktop_targets)

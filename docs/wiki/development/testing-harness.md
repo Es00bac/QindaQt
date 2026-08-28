@@ -1235,6 +1235,59 @@ S0+S1 makes no screenshot, input-action, screenshot-baseline, OpenGL/render-
 node, DPI/theme variant, multi-output mutation, idle-CPU threshold, or physical
 device claim. Those rows follow a successful repeatable boot/teardown boundary.
 
+### Private interactive 1080p S2
+
+The additive S2 row keeps S1 unchanged and is selected under the same allocated
+private-runtime lane:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.interactive\.1080p$'
+```
+
+The sandbox starts a Weston 15 headless/pixman kiosk parent at exact
+`1920x1080@1` on `qindaqt-parent-wayland`. KWin's windowed backend connects to
+that endpoint and publishes a different `qindaqt-<run-id>` child socket for all
+QindaQt clients. The topology therefore requires one canonical KWin
+`WL-<zero-based decimal index>` output while retaining every S1 service,
+application, dock, resource, and teardown assertion. Both compositor processes
+are PID/path/start-time authenticated, but the 1,024 MiB product PSS aggregate
+continues to cover QindaQt production roles rather than the test parent.
+
+After simultaneous readiness, a second probe sends exactly Meta+N through the
+scenario-gated QindaQt development input device. Success requires the stable
+device identity and one compositor-observed notification-center surface mapped
+and committed by the authenticated shell PID on the exact output. It never
+opens a host input node or uinput. Weston screenshooter then contacts only the
+private parent socket. The fresh image must be a checksum-valid, bounded,
+non-symlink RGB/RGBA PNG at exact 1920x1080 with at least 16 deterministic
+sampled colors. The stable `desktop-1080p.png`, its SHA-256/size/dimensions/color
+evidence, all logs, and the final JSON document are archived in the fresh
+build-local result root before teardown.
+
+The input inventory contains the one combined QindaQt development device plus
+the exact anonymous pointer/keyboard pair forwarded by Weston's fake private
+seat. S2 requires their zero bus/vendor/product metadata, distinct KWin IDs,
+and exact capabilities. Those two devices prove the private parent protocol;
+they do not broaden the sandbox to a host seat.
+
+[ADR-0049](../adr/0049-capture-private-parent-framebuffer.md) owns the narrowly
+enabled parent capture protocol. S2 proves one rendered 1080p frame and one
+private-seat interaction only. It makes no WUXGA, 1440p, fractional-DPI,
+multi-output, theme, GPU/OpenGL, physical input, or screenshot-baseline claim.
+
+The final manager-allocated S2 run `2f7b7ed9d319362f136605b5bedb3181`
+passed this exact row in 5.22 seconds. It recorded `WL-0`, mapped the active
+notification-center at `(1464,46)` with size `440x640`, measured 103,061 KiB
+aggregate production-role PSS, archived a 40,960-byte RGB screenshot with
+SHA-256 `fac9a24de83bb7051a8359e299d1068ddaf18122c1d418e0ad35d65a7f711cf3`,
+and recorded authenticated `term`/`already-exited` phases for all eleven roles
+with no survivor. Direct visual inspection confirmed the screenshot contains
+the QindaQt global bar, two docks, Text Editor, Settings Notifications route,
+and the open notification center. The unchanged S1 row passed immediately
+afterward in 1.46 seconds against the same staged graph.
+
 ## Clipboard C0 model proof
 
 The focused Clipboard C0 selector is:

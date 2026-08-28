@@ -49,6 +49,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0045](0045-fence-network1-pure-boundary.md) | Accepted | Fence Network1 owner, lineage, lease, secret, and pure-module contracts |
 | [ADR-0046](0046-display-color-c0-model-boundary.md) | Proposed | Keep display color as a pure bounded model first |
 | [ADR-0048](0048-settings-center-navigation-and-route-ownership.md) | Accepted | Keep Settings navigation typed and route authority local |
+| [ADR-0049](0049-capture-private-parent-framebuffer.md) | Accepted | Capture one private Weston parent framebuffer after private-seat interaction |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

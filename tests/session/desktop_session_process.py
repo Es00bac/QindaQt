@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from desktop_session_topology import desktop_1080p_topology
+from desktop_session_topology import BootTopology, desktop_1080p_topology
 
 
 class ProcessContractError(RuntimeError):
@@ -99,10 +99,12 @@ def _proc_record(pid: int) -> tuple[str, int]:
     return executable, int(fields[1], 10)
 
 
-def process_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
+def process_evidence(
+    probe: Mapping[str, Any], topology: BootTopology | None = None
+) -> tuple[dict[str, Any], dict[str, int]]:
     """Bind each exact topology role to one live executable and parent role."""
 
-    topology = desktop_1080p_topology()
+    topology = topology or desktop_1080p_topology()
     by_executable = {item.executable: item for item in topology.processes}
     observed: dict[str, tuple[int, int]] = {}
     for entry in Path("/proc").iterdir():

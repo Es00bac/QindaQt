@@ -109,11 +109,32 @@ def desktop_1080p_topology() -> BootTopology:
     )
 
 
-def observed_applications(windows: Sequence[Any]) -> list[dict[str, Any]]:
+def interactive_1080p_topology() -> BootTopology:
+    """Return the immutable S2 parent-Wayland interaction/capture contract."""
+
+    base = desktop_1080p_topology()
+    return BootTopology(
+        schema_version=1,
+        topology_id="qindaqt.desktop.windowed.1080p.interactive.v1",
+        output=base.output,
+        processes=(
+            ProcessExpectation("parent-compositor", "weston", None),
+            *base.processes,
+        ),
+        services=base.services,
+        applications=base.applications,
+        dock=base.dock,
+    )
+
+
+def observed_applications(
+    windows: Sequence[Any], topology: BootTopology | None = None
+) -> list[dict[str, Any]]:
     """Retain exact compositor identity for the two required application windows."""
 
     result = []
-    for expected in desktop_1080p_topology().applications:
+    contract = topology or desktop_1080p_topology()
+    for expected in contract.applications:
         matches = [
             item for item in windows
             if isinstance(item, Mapping)
@@ -233,10 +254,15 @@ def _validate_services(
 
 def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> str:
     expected = topology.output
+    backend = (
+        "wayland"
+        if topology.topology_id == "qindaqt.desktop.windowed.1080p.interactive.v1"
+        else "virtual"
+    )
     try:
         output_name = validate_output_inventory(
             evidence, width=expected.width, height=expected.height,
-            scale=expected.scale,
+            scale=expected.scale, backend=backend,
         )
     except OutputInventoryError as error:
         raise TopologyContractError(str(error)) from None
@@ -264,9 +290,13 @@ def _validate_input_and_dock(
     shell_pid: int | None = None,
 ) -> None:
     devices = _sequence(evidence.get("inputDevices"), "evidence.inputDevices")
-    if len(devices) != 1 or not isinstance(devices[0], Mapping):
+    development = [
+        item for item in devices
+        if isinstance(item, Mapping) and item.get("name") == "QindaQt Development Input"
+    ]
+    if len(development) != 1:
         raise TopologyContractError("exactly one combined development input is required")
-    device = devices[0]
+    device = development[0]
     capabilities = _sequence(device.get("capabilities"), "inputDevices[0].capabilities")
     if (
         device.get("name") != "QindaQt Development Input"
@@ -274,6 +304,34 @@ def _validate_input_and_dock(
         or len(capabilities) != 2
         or set(capabilities) != {"keyboard", "pointer"}
     ):
+        raise TopologyContractError("exactly one combined development input is required")
+    if topology.topology_id == "qindaqt.desktop.windowed.1080p.interactive.v1":
+        forwarded = [item for item in devices if item is not device]
+        identities = [item.get("id") for item in devices if isinstance(item, Mapping)]
+        private_capabilities = {
+            tuple(item.get("capabilities", []))
+            for item in forwarded if isinstance(item, Mapping)
+        }
+        if (
+            len(devices) != 3 or len(forwarded) != 2
+            or private_capabilities != {("keyboard",), ("pointer",)}
+            or len(set(identities)) != 3
+            or any(
+                not isinstance(item, Mapping)
+                or item.get("name") != ""
+                or item.get("enabled") is not True
+                or item.get("busType") != 0
+                or item.get("vendorId") != 0
+                or item.get("productId") != 0
+                or not isinstance(item.get("id"), str)
+                or not str(item["id"]).startswith("input-")
+                for item in forwarded
+            )
+        ):
+            raise TopologyContractError(
+                "S2 requires the exact private Weston fake-seat input pair"
+            )
+    elif len(devices) != 1:
         raise TopologyContractError("exactly one combined development input is required")
     dock_surfaces: list[Mapping[str, Any]] = []
     for item in _sequence(evidence.get("dockSurfaces"), "evidence.dockSurfaces"):
@@ -332,13 +390,15 @@ def _validate_applications(evidence: Mapping[str, Any], topology: BootTopology) 
             raise TopologyContractError(f"application {expected.app_id} title is unexpected")
 
 
-def validate_topology_readiness(evidence: Mapping[str, Any]) -> None:
+def validate_topology_readiness(
+    evidence: Mapping[str, Any], topology: BootTopology | None = None
+) -> None:
     """Validate the simultaneous public inputs that can become ready asynchronously."""
 
-    topology = desktop_1080p_topology()
-    output_name = _validate_output(evidence, topology)
-    _validate_input_and_dock(evidence, topology, output_name)
-    _validate_applications(evidence, topology)
+    contract = topology or desktop_1080p_topology()
+    output_name = _validate_output(evidence, contract)
+    _validate_input_and_dock(evidence, contract, output_name)
+    _validate_applications(evidence, contract)
 
 
 def _validate_measurements(evidence: Mapping[str, Any]) -> None:
@@ -403,10 +463,12 @@ def _validate_cleanup(
             )
 
 
-def validate_boot_evidence(document: Any) -> None:
+def validate_boot_evidence(
+    document: Any, topology: BootTopology | None = None
+) -> None:
     """Validate one complete evidence object; partial success is never accepted."""
 
-    topology = desktop_1080p_topology()
+    topology = topology or desktop_1080p_topology()
     evidence = _mapping(document, "evidence")
     if evidence.get("schemaVersion") != 1:
         raise TopologyContractError("evidence.schemaVersion must be 1")
