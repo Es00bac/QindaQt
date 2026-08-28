@@ -37,13 +37,19 @@ struct DecodedDescriptorList {
     [[nodiscard]] bool accepted() const noexcept { return error == ClipboardError::None; }
 };
 
-// Canonical metadata-only descriptor codec ("QCBDF"/"QCBDL", format 1).
-// Descriptors carry identity, ticks, pins, source label, preview, format
-// names with byte counts, and the fingerprint — never payload bytes. Decode
-// applies the same hostile-input floor as the value codec plus preview and
-// source-label code-unit bounds. The future Clipboard1 snapshot transport is
-// expected to reuse the list form so presentation never needs its own
-// serialization.
+// Canonical metadata-only descriptor codecs ("QCBD" entry, "QCDL" list,
+// format 1). Descriptors carry identity, ticks, pins, source label, preview,
+// format names with byte counts, and the fingerprint — never payload bytes.
+// Encode and decode share one validation floor: valid identity, nonempty
+// bounded canonical format list with unique names, non-negative per-format
+// and aggregate claimed bytes, sanitized label/preview metadata, consistent
+// truncation flag, and exact fingerprint width. Decode applies the shared
+// hostile-input framing rules plus the same floor, so an accepted encoding
+// always decodes and a refused form never reaches a consumer. The future
+// Clipboard1 snapshot transport is expected to reuse the list form so
+// presentation never needs its own serialization; a descriptor list reports
+// TooManyEntries (not TooManyFormats) when its entry count exceeds the
+// protocol bound.
 [[nodiscard]] EncodedDescriptor encodeDescriptor(const ClipboardEntryDescriptor &descriptor);
 [[nodiscard]] DecodedDescriptor decodeDescriptor(const QByteArray &encoded);
 [[nodiscard]] EncodedDescriptorList encodeDescriptorList(

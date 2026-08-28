@@ -2,24 +2,33 @@
 
 #include <qindaqt/services/clipboard_model/clipboard_history.h>
 
-#include <qindaqt/services/clipboard_model/clipboard_media.h>
+#include <limits>
 
-#include <QtGlobal>
+#include <qindaqt/services/clipboard_model/clipboard_media.h>
 
 #include "clipboard_history_p.h"
 
 namespace QindaQt::Services::ClipboardModel {
 
-using HistoryDetail::derivePreview;
 using HistoryDetail::entryFingerprint;
 
 ClipboardHistoryModel::ClipboardHistoryModel(HistoryLimits limits)
-    : m_limits(limits)
+    : ClipboardHistoryModel(limits, HistoryCounters {})
 {
-    // AGENT-GUARD: every capacity and clamping decision below assumes the
-    // limits passed protocol validation; an invalid instance would let
-    // oversized values into the volatile history.
-    Q_ASSERT(isValidLimits(m_limits));
+}
+
+ClipboardHistoryModel::ClipboardHistoryModel(HistoryLimits limits,
+                                             const HistoryCounters &counters)
+    : m_limits(sanitizeLimits(limits))
+{
+    const HistoryCounters sanitized = sanitizeCounters(counters);
+    m_generation = sanitized.generation;
+    m_nextSerial = sanitized.nextSerial;
+    m_revision = sanitized.revision;
+    // AGENT-GUARD: limits and counters are sanitized, not asserted, so the
+    // protocol ceilings and non-zero lineage hold in Release builds too. No
+    // code path may widen m_limits or reset a lineage counter to zero after
+    // construction; exhaustion must latch through the flags instead.
 }
 
 ClipboardHistoryModel::Gate ClipboardHistoryModel::gateOperation(
@@ -41,7 +50,28 @@ ClipboardHistoryModel::Gate ClipboardHistoryModel::gateOperation(
         gate.refused = true;
         return gate;
     }
+    if (m_generationExhausted || revisionAtCeiling()) {
+        // Fail closed: refusing content operations is always safe, while
+        // wrapping a fixed-width lineage would forge duplicate identities.
+        gate.error = ClipboardError::LineageExhausted;
+        gate.refused = true;
+        return gate;
+    }
     return gate;
+}
+
+bool ClipboardHistoryModel::revisionAtCeiling() const noexcept
+{
+    return m_revision == std::numeric_limits<quint64>::max();
+}
+
+// AGENT-GUARD: only callable after gateOperation() has accepted the caller —
+// the gate refuses LineageExhausted at the ceiling, so this increment can
+// never wrap. Bumping without a passed gate would forge a revision beyond
+// the representable lineage.
+void ClipboardHistoryModel::bumpRevision() noexcept
+{
+    m_revision += 1;
 }
 
 void ClipboardHistoryModel::setHistoryEnabled(bool enabled)
@@ -79,25 +109,22 @@ qsizetype ClipboardHistoryModel::indexOf(EntryId id) const noexcept
     return -1;
 }
 
-qsizetype ClipboardHistoryModel::lastUnpinnedIndex() const noexcept
-{
-    for (qsizetype index = m_entries.size() - 1; index >= 0; --index) {
-        if (!m_entries.at(index).descriptor.pinned) {
-            return index;
-        }
-    }
-    return -1;
-}
-
 void ClipboardHistoryModel::purgeAndRaiseGeneration()
 {
     m_entries.clear();
     m_totalPayloadBytes = 0;
     m_nextSerial = 1;
-    // AGENT-GUARD: this is the only place the generation changes. Every
-    // stale-handle and stale-decision guarantee (including stale admission
-    // refusal) depends on purges being exactly one generation bump wide.
-    m_generation += 1;
+    m_serialExhausted = false;
+    // AGENT-GUARD: destroying content is unconditional — a privacy purge can
+    // never be refused — but the counter itself is fail-closed. At the
+    // 32-bit ceiling the generation stays pinned and every further content
+    // operation refuses with LineageExhausted instead of wrapping to zero
+    // and forging pre-purge identities.
+    if (m_generation == std::numeric_limits<quint32>::max()) {
+        m_generationExhausted = true;
+    } else {
+        m_generation += 1;
+    }
 }
 
 ClipboardEntryDescriptor ClipboardHistoryModel::makeDescriptor(const ClipboardValue &value,

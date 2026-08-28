@@ -33,9 +33,11 @@ enum class ClipboardError {
     NonStorableRefused,
     OversizedValue,
     TooManyFormats,
+    TooManyEntries,
     HistoryDisabled,
     PrivacyDenied,
     StaleGeneration,
+    LineageExhausted,
     UnknownEntry,
     PinnedLimitReached,
     CapacityRefused,
@@ -71,6 +73,24 @@ enum class ClearScope {
 // single validity rule shared by the model constructor and codecs.
 struct HistoryLimits;
 [[nodiscard]] bool isValidLimits(const HistoryLimits &limits) noexcept;
+
+// Release-safe normalization: every out-of-range field is clamped back into
+// the protocol bounds so a constructed model can never hold widened limits.
+[[nodiscard]] HistoryLimits sanitizeLimits(const HistoryLimits &limits) noexcept;
+
+// Diagnostic/test seam for lineage-boundary coverage. Production callers use
+// the defaults; a repaired model always restarts a purged lineage from these
+// sanitized starting points. Zero generations/serials sanitize to 1 because
+// EntryId declares zero invalid.
+struct HistoryCounters {
+    quint32 generation = 1;
+    quint32 nextSerial = 1;
+    quint64 revision = 0;
+
+    friend bool operator==(const HistoryCounters &, const HistoryCounters &) = default;
+};
+
+[[nodiscard]] HistoryCounters sanitizeCounters(const HistoryCounters &counters) noexcept;
 
 struct HistoryLimits {
     int maxEntries = kMaxEntries;
@@ -184,6 +204,18 @@ struct PromoteOutcome {
 
 struct MutationOutcome {
     ClipboardError error = ClipboardError::None;
+
+    [[nodiscard]] bool accepted() const noexcept { return error == ClipboardError::None; }
+};
+
+// Deterministic bounded metadata search over the current, unlocked history.
+// Matches are most-recent-first and capped by the caller-requested maximum
+// (sanitized into [1, kMaxEntries]); truncated reports that more entries
+// matched beyond the cap. Refused searches return no matches.
+struct SearchOutcome {
+    ClipboardError error = ClipboardError::None;
+    QList<ClipboardEntryDescriptor> matches;
+    bool truncated = false;
 
     [[nodiscard]] bool accepted() const noexcept { return error == ClipboardError::None; }
 };

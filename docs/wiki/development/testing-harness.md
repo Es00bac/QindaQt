@@ -1105,6 +1105,38 @@ S0+S1 makes no screenshot, input-action, screenshot-baseline, OpenGL/render-
 node, DPI/theme variant, multi-output mutation, idle-CPU threshold, or physical
 device claim. Those rows follow a successful repeatable boot/teardown boundary.
 
+## Clipboard C0 model proof
+
+The focused Clipboard C0 selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure -R 'clipboard'
+```
+
+Four suites cover the pure model boundary: `clipboard-model-media`
+(canonicalization shapes, allowlist classification and every class
+permutation, label sanitization, limits validity and constructor
+sanitization), `clipboard-model-history` (fail-closed defaults, gate and
+refusal ordering, capacity atomicity under mixed pinned/unpinned byte
+pressure, dedup/pin/eviction determinism, mixed-class precedence
+permutations, purge/authority semantics, pins and clears, byte totals),
+`clipboard-model-history-lineage` (stale-generation fencing,
+counter-exhaustion fail-closed behavior at all three lineage ceilings,
+constructor sanitization, purge-on-privacy-loss and disable behavior, and
+the gated bounded metadata search), and `clipboard-model-codec`
+(value/descriptor round-trips, encode/decode rule symmetry including
+duplicate rejection, and hostile decode mutations: truncation,
+magic/version/flag corruption, oversized declared lengths, duplicate and
+non-canonical media, aggregate-overflow claims, unsanitized metadata).
+
+These are static in-process unit tests on Qt Core values. The C0 boundary
+never touches a host clipboard, Wayland connection, D-Bus daemon, session,
+GUI, file system, or clock. Installed-header/link consumer evidence and
+staged packaged qualification are deliberately deferred to the Clipboard1
+integration slice, which owns the transport, bus surface, and lock-state
+prerequisites; the model's `install(TARGETS …)` export exists but no
+packaged-qualification claim is made for C0 alone.
+
 ## Required display matrix
 
 Single-output scenarios cover:

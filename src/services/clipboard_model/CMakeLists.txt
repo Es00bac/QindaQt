@@ -13,7 +13,9 @@ target_sources(
         src/clipboard_history.cpp
         src/clipboard_history_detail.cpp
         src/clipboard_history_mutations.cpp
+        src/clipboard_history_search.cpp
         src/clipboard_media.cpp
+        src/clipboard_normalize.cpp
         src/clipboard_codec_p.h
         src/clipboard_history_p.h
     PUBLIC

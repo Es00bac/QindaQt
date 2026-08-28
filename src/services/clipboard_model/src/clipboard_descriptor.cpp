@@ -2,12 +2,11 @@
 
 #include <qindaqt/services/clipboard_model/clipboard_descriptor.h>
 
+#include <limits>
+
 #include <qindaqt/services/clipboard_model/clipboard_media.h>
 
 #include <QtCore/QSet>
-#include <QtGlobal>
-
-#include <limits>
 
 #include "clipboard_codec_p.h"
 
@@ -22,35 +21,70 @@ constexpr quint8 kFlagPinned = 0x01;
 constexpr quint8 kFlagPreviewTruncated = 0x02;
 constexpr qsizetype kFingerprintBytes = 32;
 
-ClipboardError validateDescriptorShape(const ClipboardEntryDescriptor &descriptor)
+// AGENT-CONTRACT: this is the single descriptor floor, shared by encode and
+// decode. It enforces the same hostile-input rules the wiki promises: valid
+// generation-tagged identity, nonempty bounded canonical format list with
+// unique names, non-negative per-format and aggregate claimed bytes, exactly
+// one fingerprint width, and producer metadata that already satisfies the
+// model's sanitization contract (labels and previews carry no control or
+// format characters, previews obey the truncation flag). Encode refuses
+// before writing; decode refuses after parsing, before returning.
+ClipboardError validateDescriptor(const ClipboardEntryDescriptor &descriptor)
 {
     if (!descriptor.id.isValid()) {
         return ClipboardError::MalformedData;
     }
-    if (descriptor.sourceLabel.size() > kMaxSourceLabelCodeUnits) {
+    if (descriptor.sourceLabel.size() > kMaxSourceLabelCodeUnits
+        || descriptor.sourceLabel
+            != sanitizeSourceLabel(descriptor.sourceLabel, kMaxSourceLabelCodeUnits)) {
         return ClipboardError::MalformedData;
     }
     if (descriptor.preview.size() > kMaxPreviewCodeUnits) {
         return ClipboardError::MalformedData;
     }
+    for (const QChar ch : descriptor.preview) {
+        const QChar::Category category = ch.category();
+        if (category == QChar::Other_Control || category == QChar::Other_Format) {
+            return ClipboardError::MalformedData;
+        }
+    }
+    // The truncation flag's protocol-checkable content: only the producing
+    // model knows its own clamp width, so an exact-width match is NOT wire-
+    // enforceable for instances with narrowed limits. A flagged empty
+    // preview, however, is impossible under any width and always means a
+    // forged or corrupted form.
+    if (descriptor.previewTruncated && descriptor.preview.isEmpty()) {
+        return ClipboardError::MalformedData;
+    }
     if (descriptor.fingerprint.size() != kFingerprintBytes) {
         return ClipboardError::MalformedData;
+    }
+    if (descriptor.formats.isEmpty()) {
+        return ClipboardError::EmptyValue;
     }
     if (descriptor.formats.size() > kMaxFormatsPerItem) {
         return ClipboardError::TooManyFormats;
     }
     QSet<QString> seenMedia;
+    qint64 aggregateBytes = 0;
     for (const FormatInfo &format : descriptor.formats) {
         if (!isCanonicalMediaType(format.mediaType, kMaxMediaTypeLength)) {
             return ClipboardError::MediaTypeRejected;
-        }
-        if (format.payloadBytes < 0 || format.payloadBytes > kMaxItemPayloadBytes) {
-            return ClipboardError::OversizedValue;
         }
         if (seenMedia.contains(format.mediaType)) {
             return ClipboardError::DuplicateFormat;
         }
         seenMedia.insert(format.mediaType);
+        if (format.payloadBytes < 0) {
+            return ClipboardError::MalformedData;
+        }
+        if (format.payloadBytes > kMaxItemPayloadBytes) {
+            return ClipboardError::OversizedValue;
+        }
+        aggregateBytes += format.payloadBytes;
+        if (aggregateBytes > kMaxItemPayloadBytes) {
+            return ClipboardError::OversizedValue;
+        }
     }
     return ClipboardError::None;
 }
@@ -60,7 +94,7 @@ ClipboardError validateDescriptorShape(const ClipboardEntryDescriptor &descripto
 EncodedDescriptor encodeDescriptor(const ClipboardEntryDescriptor &descriptor)
 {
     EncodedDescriptor result;
-    const ClipboardError shapeError = validateDescriptorShape(descriptor);
+    const ClipboardError shapeError = validateDescriptor(descriptor);
     if (shapeError != ClipboardError::None) {
         result.error = shapeError;
         return result;
@@ -122,14 +156,14 @@ DecodedDescriptor decodeDescriptor(const QByteArray &encoded)
     descriptor.previewTruncated = (flags & kFlagPreviewTruncated) != 0;
     descriptor.sourceLabel = QString::fromUtf8(reader.sized(reader.u16()));
     descriptor.preview = QString::fromUtf8(reader.sized(reader.u16()));
-    if (!reader.ok() || descriptor.sourceLabel.size() > kMaxSourceLabelCodeUnits
-        || descriptor.preview.size() > kMaxPreviewCodeUnits) {
+    if (!reader.ok()) {
         result.error = ClipboardError::MalformedData;
         return result;
     }
     const quint16 formatCount = reader.u16();
-    if (formatCount > kMaxFormatsPerItem) {
-        result.error = ClipboardError::TooManyFormats;
+    if (formatCount == 0 || formatCount > kMaxFormatsPerItem) {
+        result.error = formatCount == 0 ? ClipboardError::EmptyValue
+                                        : ClipboardError::TooManyFormats;
         return result;
     }
     for (quint16 index = 0; index < formatCount; ++index) {
@@ -156,8 +190,14 @@ DecodedDescriptor decodeDescriptor(const QByteArray &encoded)
         descriptor.formats.append(FormatInfo { mediaType, static_cast<qint64>(payloadBytes) });
     }
     descriptor.fingerprint = reader.sized(kFingerprintBytes);
-    if (!reader.ok() || !reader.atEnd() || !descriptor.id.isValid()) {
+    if (!reader.ok() || !reader.atEnd()) {
         result.error = ClipboardError::MalformedData;
+        return result;
+    }
+    // Shared floor: the parsed form must satisfy the identical validation
+    // the encoder used, including aggregate and sanitization rules.
+    result.error = validateDescriptor(descriptor);
+    if (result.error != ClipboardError::None) {
         return result;
     }
     result.descriptor = descriptor;
@@ -168,7 +208,7 @@ EncodedDescriptorList encodeDescriptorList(const QList<ClipboardEntryDescriptor>
 {
     EncodedDescriptorList result;
     if (descriptors.size() > kMaxEntries) {
-        result.error = ClipboardError::TooManyFormats;
+        result.error = ClipboardError::TooManyEntries;
         return result;
     }
     CodecDetail::ByteWriter listWriter;
@@ -206,7 +246,7 @@ DecodedDescriptorList decodeDescriptorList(const QByteArray &encoded)
     }
     const quint16 count = reader.u16();
     if (count > kMaxEntries) {
-        result.error = ClipboardError::TooManyFormats;
+        result.error = ClipboardError::TooManyEntries;
         return result;
     }
     for (quint16 index = 0; index < count; ++index) {

@@ -18,6 +18,22 @@ qindaqt_enable_warnings(qindaqt_clipboard_history_tests)
 add_test(NAME qindaqt.clipboard-model-history COMMAND qindaqt_clipboard_history_tests)
 set_tests_properties(qindaqt.clipboard-model-history PROPERTIES LABELS "service;clipboard")
 
+qt_add_executable(
+    qindaqt_clipboard_history_lineage_tests tst_clipboard_history_lineage.cpp
+)
+target_link_libraries(
+    qindaqt_clipboard_history_lineage_tests
+    PRIVATE QindaQt::ClipboardModel Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_clipboard_history_lineage_tests)
+add_test(
+    NAME qindaqt.clipboard-model-history-lineage
+    COMMAND qindaqt_clipboard_history_lineage_tests
+)
+set_tests_properties(
+    qindaqt.clipboard-model-history-lineage PROPERTIES LABELS "service;clipboard"
+)
+
 qt_add_executable(qindaqt_clipboard_codec_tests tst_clipboard_codec.cpp)
 target_link_libraries(
     qindaqt_clipboard_codec_tests

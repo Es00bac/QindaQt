@@ -51,38 +51,6 @@ bool isAllowedToken(const QString &token)
 
 } // namespace
 
-bool isValidLimits(const HistoryLimits &limits) noexcept
-{
-    if (limits.maxEntries < 1 || limits.maxEntries > kMaxEntries) {
-        return false;
-    }
-    if (limits.maxPinnedEntries < 0
-        || limits.maxPinnedEntries > qMin(kMaxPinnedEntries, limits.maxEntries)) {
-        return false;
-    }
-    if (limits.maxFormatsPerItem < 1 || limits.maxFormatsPerItem > kMaxFormatsPerItem) {
-        return false;
-    }
-    if (limits.maxMediaTypeLength < 4 || limits.maxMediaTypeLength > kMaxMediaTypeLength) {
-        return false;
-    }
-    if (limits.maxSourceLabelCodeUnits < 0
-        || limits.maxSourceLabelCodeUnits > kMaxSourceLabelCodeUnits) {
-        return false;
-    }
-    if (limits.maxPreviewCodeUnits < 1 || limits.maxPreviewCodeUnits > kMaxPreviewCodeUnits) {
-        return false;
-    }
-    if (limits.maxItemPayloadBytes < 1 || limits.maxItemPayloadBytes > kMaxItemPayloadBytes) {
-        return false;
-    }
-    if (limits.maxTotalPayloadBytes < limits.maxItemPayloadBytes
-        || limits.maxTotalPayloadBytes > kMaxTotalPayloadBytes) {
-        return false;
-    }
-    return true;
-}
-
 MediaCanonicalization canonicalizeMediaType(const QString &mediaType, int maxLength)
 {
     MediaCanonicalization result;

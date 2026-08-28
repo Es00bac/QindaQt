@@ -1,4 +1,4 @@
-# ADR-0028: Keep the clipboard history volatile, bounded, and fail-closed
+# ADR-0031: Keep the clipboard history volatile, bounded, and fail-closed
 
 - **Status:** Accepted
 - **Date:** 2026-08-28

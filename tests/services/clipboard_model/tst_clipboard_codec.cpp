@@ -47,6 +47,7 @@ class ClipboardCodecTests final : public QObject
 
 private Q_SLOTS:
     void valueRoundTrips();
+    void valueEncodeIsSymmetricWithDecode();
     void valueDecodeRejectsHostileInput();
     void descriptorRoundTrips();
     void descriptorDecodeRejectsHostileInput();
@@ -67,6 +68,45 @@ void ClipboardCodecTests::valueRoundTrips()
         // Canonical bytes are deterministic: encoding twice is identical.
         QCOMPARE(encodeValue(decoded.value).bytes, encoded.bytes);
     }
+}
+
+void ClipboardCodecTests::valueEncodeIsSymmetricWithDecode()
+{
+    // The encoder must refuse every form its decoder refuses — in
+    // particular duplicates, which previously encoded cleanly and then
+    // failed their own round-trip.
+    ClipboardValue duplicateMedia;
+    duplicateMedia.formats.append({ ClipboardTest::textFormat(),
+                                    QByteArrayLiteral("fixture-a") });
+    duplicateMedia.formats.append({ ClipboardTest::textFormat(),
+                                    QByteArrayLiteral("fixture-b") });
+    QCOMPARE(encodeValue(duplicateMedia).error, ClipboardError::DuplicateFormat);
+
+    ClipboardValue exactDuplicate;
+    exactDuplicate.formats.append({ ClipboardTest::htmlFormat(),
+                                    QByteArrayLiteral("fixture") });
+    exactDuplicate.formats.append({ ClipboardTest::htmlFormat(),
+                                    QByteArrayLiteral("fixture") });
+    QCOMPARE(encodeValue(exactDuplicate).error, ClipboardError::DuplicateFormat);
+
+    // Non-canonical spellings refuse exactly like the decoder.
+    ClipboardValue nonCanonical;
+    nonCanonical.formats.append({ QStringLiteral("TEXT/PLAIN"),
+                                  QByteArrayLiteral("fixture") });
+    QCOMPARE(encodeValue(nonCanonical).error, ClipboardError::MediaTypeRejected);
+
+    // Per-format and aggregate ceilings refuse before any byte is written:
+    // an accepted encoding never exists for oversized input.
+    ClipboardValue oversizedSingle;
+    oversizedSingle.formats.append({ ClipboardTest::textFormat(),
+                                     QByteArray(kMaxItemPayloadBytes + 1, 'x') });
+    QCOMPARE(encodeValue(oversizedSingle).error, ClipboardError::OversizedValue);
+    ClipboardValue oversizedAggregate;
+    oversizedAggregate.formats.append({ ClipboardTest::textFormat(),
+                                        QByteArrayLiteral("fixture-a") });
+    oversizedAggregate.formats.append(
+        { ClipboardTest::uriFormat(), QByteArray(kMaxItemPayloadBytes, 'y') });
+    QCOMPARE(encodeValue(oversizedAggregate).error, ClipboardError::OversizedValue);
 }
 
 void ClipboardCodecTests::valueDecodeRejectsHostileInput()
@@ -202,6 +242,57 @@ void ClipboardCodecTests::descriptorDecodeRejectsHostileInput()
     broken.fingerprint = model.snapshot().entries.first().fingerprint;
     broken.formats.append(FormatInfo { ClipboardTest::textFormat(), 1 });
     QCOMPARE(encodeDescriptor(broken).error, ClipboardError::DuplicateFormat);
+
+    // A zero-format descriptor is an empty value on both sides.
+    ClipboardEntryDescriptor noFormats = model.snapshot().entries.first();
+    noFormats.formats.clear();
+    QCOMPARE(encodeDescriptor(noFormats).error, ClipboardError::EmptyValue);
+
+    // Negative claimed bytes are structurally impossible, not merely large.
+    ClipboardEntryDescriptor negative = model.snapshot().entries.first();
+    negative.formats.first().payloadBytes = -1;
+    QCOMPARE(encodeDescriptor(negative).error, ClipboardError::MalformedData);
+
+    // Aggregate claimed bytes above the per-item ceiling are refused even
+    // when every individual format claims a legal size.
+    ClipboardEntryDescriptor aggregate = model.snapshot().entries.first();
+    aggregate.formats.clear();
+    aggregate.formats.append(FormatInfo { ClipboardTest::textFormat(),
+                                          kMaxItemPayloadBytes / 2 + 1 });
+    aggregate.formats.append(FormatInfo { ClipboardTest::uriFormat(),
+                                          kMaxItemPayloadBytes / 2 + 1 });
+    QCOMPARE(encodeDescriptor(aggregate).error, ClipboardError::OversizedValue);
+
+    // And decode rejects an aggregate claim that is only visible across
+    // formats: a legal two-format blob whose last claimed size is patched
+    // to exactly the per-item ceiling. The size field sits immediately
+    // before the 32-byte fingerprint, so the framing stays perfect and only
+    // the aggregate rule can catch it.
+    ClipboardEntryDescriptor betaDescriptor;
+    betaDescriptor.id = EntryId { 1, 1 };
+    betaDescriptor.formats.append(FormatInfo { ClipboardTest::textFormat(), 20 });
+    betaDescriptor.formats.append(FormatInfo { ClipboardTest::htmlFormat(), 19 });
+    betaDescriptor.fingerprint = QByteArray(32, '\x2f');
+    const EncodedDescriptor twoFormats = encodeDescriptor(betaDescriptor);
+    QVERIFY(twoFormats.accepted());
+    QByteArray patched = twoFormats.bytes;
+    const qsizetype lastSizeOffset = patched.size() - 32 - 4;
+    patched[lastSizeOffset + 2] = '\x10';
+    const DecodedDescriptor aggregateRejected = decodeDescriptor(patched);
+    QCOMPARE(aggregateRejected.error, ClipboardError::OversizedValue);
+
+    // Producer metadata must already satisfy the model sanitization
+    // contract: control and format characters are refused on both sides.
+    ClipboardEntryDescriptor hostileLabel = model.snapshot().entries.first();
+    hostileLabel.sourceLabel = QStringLiteral("bad\nlabel");
+    QCOMPARE(encodeDescriptor(hostileLabel).error, ClipboardError::MalformedData);
+    ClipboardEntryDescriptor hostilePreview = model.snapshot().entries.first();
+    hostilePreview.preview = QStringLiteral("bad\bpreview");
+    QCOMPARE(encodeDescriptor(hostilePreview).error, ClipboardError::MalformedData);
+    ClipboardEntryDescriptor truncatedEmpty = model.snapshot().entries.first();
+    truncatedEmpty.preview.clear();
+    truncatedEmpty.previewTruncated = true;
+    QCOMPARE(encodeDescriptor(truncatedEmpty).error, ClipboardError::MalformedData);
 }
 
 void ClipboardCodecTests::descriptorListRoundTripsAndRejectsHostileInput()
@@ -226,6 +317,19 @@ void ClipboardCodecTests::descriptorListRoundTripsAndRejectsHostileInput()
     const EncodedDescriptorList empty = encodeDescriptorList({});
     QVERIFY(empty.accepted());
     QVERIFY(decodeDescriptorList(empty.bytes).accepted());
+
+    // Entry-count overflow is TooManyEntries, not the format error.
+    QList<ClipboardEntryDescriptor> flood;
+    flood.reserve(kMaxEntries + 1);
+    for (int i = 0; i <= kMaxEntries; ++i) {
+        ClipboardEntryDescriptor entry;
+        entry.id = EntryId { 1, static_cast<quint32>(i + 1) };
+        entry.formats.append(FormatInfo { ClipboardTest::textFormat(), 1 });
+        entry.fingerprint = QByteArray(32, static_cast<char>(i));
+        flood.append(entry);
+    }
+    QCOMPARE(flood.size(), kMaxEntries + 1);
+    QCOMPARE(encodeDescriptorList(flood).error, ClipboardError::TooManyEntries);
 
     QCOMPARE(decodeDescriptorList(QByteArray()).error, ClipboardError::MalformedData);
     QCOMPARE(decodeDescriptorList(withAppendedByte(encoded.bytes)).error,

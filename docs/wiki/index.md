@@ -50,6 +50,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Pure brightness model](architecture/brightness-model.md) fixes the PB-0
   stable-ID fixture, mirror collapse, raw-range math, owner-loss behavior, and
   transport-free composition boundary.
+- [Clipboard service](architecture/clipboard-service.md) records the volatile
+  bounded history model, canonical media policy, privacy/generation fencing,
+  metadata search, and codec seam; the live Wayland adapter remains a later
+  milestone.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, and deterministic transaction model;
   its runtime service and compositor adapter are later milestones.

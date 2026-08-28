@@ -4,6 +4,8 @@
 
 #include <qindaqt/services/clipboard_model/clipboard_media.h>
 
+#include <QtCore/QSet>
+
 #include "clipboard_codec_p.h"
 
 namespace QindaQt::Services::ClipboardModel {
@@ -11,11 +13,20 @@ namespace QindaQt::Services::ClipboardModel {
 namespace {
 constexpr char kValueMagic[] = "QCBV";
 constexpr quint8 kValueVersion = 1;
+
+// AGENT-CONTRACT: encode and decode enforce exactly the same value rules —
+// count ceiling, canonical media, duplicate rejection, non-empty payload,
+// per-item and aggregate size ceilings — in the same error vocabulary. Any
+// rule added to one pass must be added to the other; an accepted encoding
+// that its own decoder refuses would break the canonical round-trip claim.
+// Both passes measure declared sizes before any payload byte is copied or
+// appended, so refusal is allocation-free for payloads.
 } // namespace
 
 EncodedValue encodeValue(const ClipboardValue &value)
 {
     EncodedValue result;
+    // Measure pass: enforce every decoder rule before writing a byte.
     if (value.formats.isEmpty()) {
         result.error = ClipboardError::EmptyValue;
         return result;
@@ -24,24 +35,28 @@ EncodedValue encodeValue(const ClipboardValue &value)
         result.error = ClipboardError::TooManyFormats;
         return result;
     }
+    QSet<QString> seenMedia;
     qint64 totalBytes = 0;
     bool hasPayload = false;
-    CodecDetail::ByteWriter writer;
-    writer.raw(QByteArray(kValueMagic, 4));
-    writer.u8(kValueVersion);
-    writer.u16(static_cast<quint16>(value.formats.size()));
     for (const ClipboardFormat &format : value.formats) {
         if (!isCanonicalMediaType(format.mediaType, kMaxMediaTypeLength)) {
             result.error = ClipboardError::MediaTypeRejected;
             return result;
         }
-        if (!format.payload.isEmpty()) {
+        if (seenMedia.contains(format.mediaType)) {
+            result.error = ClipboardError::DuplicateFormat;
+            return result;
+        }
+        seenMedia.insert(format.mediaType);
+        const qint64 payloadBytes = format.payload.size();
+        if (payloadBytes > kMaxItemPayloadBytes) {
+            result.error = ClipboardError::OversizedValue;
+            return result;
+        }
+        totalBytes += payloadBytes;
+        if (payloadBytes > 0) {
             hasPayload = true;
         }
-        totalBytes += format.payload.size();
-        writer.lengthPrefixedUtf8(format.mediaType);
-        writer.u32(static_cast<quint32>(format.payload.size()));
-        writer.raw(format.payload);
     }
     if (!hasPayload) {
         result.error = ClipboardError::EmptyValue;
@@ -50,6 +65,17 @@ EncodedValue encodeValue(const ClipboardValue &value)
     if (totalBytes > kMaxItemPayloadBytes) {
         result.error = ClipboardError::OversizedValue;
         return result;
+    }
+
+    // Write pass: all rules passed, framing is now bounded by construction.
+    CodecDetail::ByteWriter writer;
+    writer.raw(QByteArray(kValueMagic, 4));
+    writer.u8(kValueVersion);
+    writer.u16(static_cast<quint16>(value.formats.size()));
+    for (const ClipboardFormat &format : value.formats) {
+        writer.lengthPrefixedUtf8(format.mediaType);
+        writer.u32(static_cast<quint32>(format.payload.size()));
+        writer.raw(format.payload);
     }
     result.bytes = writer.buffer();
     return result;

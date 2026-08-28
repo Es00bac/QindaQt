@@ -57,7 +57,7 @@ tests, and the wiki page describing its contract.
 | `src/services/notification_presentation_model` | Privacy-gated baseline/no-replay Active, policy-filtered bounded popup, and in-memory Recent projections; monotonic popup expiry; center state; success-only popup removal; rejection renewal; and bounded busy/error lifetime | Public presentation client plus injected interruption/privacy policies and Qt Core; never Qt Quick/QML, LayerShellQt, host/service implementation, persistence, or platform lock observation |
 | `src/services/notifications` | Bounded notification policy/model plus a separate freedesktop QtDBus adapter | Qt Core for the domain; QtDBus only in the protocol adapter; never QML or Plasma runtime |
 | `src/services/notification_host` | Resident D-Bus ownership, one-shot notification-expiry scheduling, and optional authenticated presentation adapter | Public notification model/adapter and presentation protocol plus Qt Core/DBus; never popup UI, history persistence, sound, token provisioning, or session supervision |
-| `src/services/clipboard_model` | Volatile bounded clipboard history: canonical media classification, privacy/opt-in gating, generation-fenced deterministic admission/eviction/dedup/pinning/clear, and value/descriptor codecs | Qt Core only; never transport, Wayland, host clipboard, D-Bus, persistence, clocks, QObject providers, or QML |
+| `src/services/clipboard_model` | Volatile bounded clipboard history: canonical media classification, privacy/opt-in gating, generation-fenced deterministic admission/eviction/dedup/pinning/clear, bounded metadata search, lineage-exhaustion fencing, and value/descriptor codecs | Qt Core only; never transport, Wayland, host clipboard, D-Bus, persistence, clocks, QObject providers, or QML |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
 | `src/apps/text_editor` | Single-document text policy, bounded local UTF-8 persistence, standard Qt action/menu presentation, and QST-1 adaptation | Public themes/QST-1 plus Qt Core/Gui/Widgets; never shell internals, services, or another app's private code |
@@ -144,7 +144,7 @@ implemented; do not use placeholder modules to bypass a boundary.
   persistence, payload bytes leave it only through an explicit promote, and
   privacy denial purges content behind a generation fence. See
   [Clipboard service](clipboard-service.md) and
-  [ADR-0028](../adr/0028-volatile-bounded-clipboard-history.md).
+  [ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md).
 - Built-in applet QML receives a purpose-specific shell facade, never a general
   shell controller or service model. The notification-center entry can request
   a center toggle and observe open plus read-only Do Not Disturb state, but it

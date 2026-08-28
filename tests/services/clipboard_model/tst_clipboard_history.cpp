@@ -9,39 +9,10 @@
 
 using namespace QindaQt::Services::ClipboardModel;
 
-namespace {
-
-ClipboardHistoryModel enabledModel(const HistoryLimits &limits = HistoryLimits {})
-{
-    ClipboardHistoryModel model(limits);
-    model.setHistoryEnabled(true);
-    model.setPrivacyAllowed(true);
-    return model;
-}
-
-HistoryLimits limitsOf(int entries, qint64 totalBytes)
-{
-    HistoryLimits limits;
-    limits.maxEntries = entries;
-    // Narrowing entries also bounds the pin ceiling, and narrowing the total
-    // must narrow the per-item bound with it: limits must stay valid.
-    limits.maxPinnedEntries = qMin(limits.maxPinnedEntries, entries);
-    limits.maxTotalPayloadBytes = totalBytes;
-    limits.maxItemPayloadBytes = qMin(limits.maxItemPayloadBytes, totalBytes);
-    return limits;
-}
-
-QList<QString> previewOrder(const HistorySnapshot &snapshot)
-{
-    QList<QString> previews;
-    previews.reserve(snapshot.entries.size());
-    for (const ClipboardEntryDescriptor &entry : snapshot.entries) {
-        previews.append(entry.preview);
-    }
-    return previews;
-}
-
-} // namespace
+// Core history semantics: fail-closed defaults, gate and refusal ordering,
+// value admission rules, deterministic eviction/capacity atomicity, dedup,
+// pinning, clearing, and byte-total accounting. Lineage, authority, and
+// gated-read coverage lives in tst_clipboard_history_lineage.cpp.
 
 class ClipboardHistoryTests final : public QObject
 {
@@ -55,11 +26,10 @@ private Q_SLOTS:
     void snapshotOrdersMostRecentFirst();
     void evictionIsDeterministicAndSparesPins();
     void capacityRefusalNeverMutates();
+    void capacityRefusalIsFullyAtomic();
     void dedupMovesToFrontAndKeepsPin();
     void promoteReturnsCopyAndRefreshesRecency();
-    void staleGenerationIsRejectedEverywhere();
-    void privacyLossPurgesAndRaisesGeneration();
-    void disablePurgesAndRaisesGeneration();
+    void mixedClassRefusalsAreOrderIndependent();
     void pinLimitAndScopeClearsAreDeterministic();
     void byteTotalsTrackEveryTransition();
 };
@@ -141,7 +111,7 @@ void ClipboardHistoryTests::admissionRefusalOrderIsDeterministic()
 
 void ClipboardHistoryTests::rejectsEmptyOversizedAndDuplicateValues()
 {
-    ClipboardHistoryModel model = enabledModel();
+    ClipboardHistoryModel model = ClipboardTest::enabledModel();
 
     QCOMPARE(model.admit(ClipboardValue {}, ClipboardTest::kGen,
                          QStringLiteral("fixture-source"), 1)
@@ -175,7 +145,7 @@ void ClipboardHistoryTests::rejectsEmptyOversizedAndDuplicateValues()
     HistoryLimits limits;
     limits.maxItemPayloadBytes = 16;
     limits.maxTotalPayloadBytes = 64;
-    ClipboardHistoryModel smallModel = enabledModel(limits);
+    ClipboardHistoryModel smallModel = ClipboardTest::enabledModel(limits);
     ClipboardValue oversized = ClipboardTest::fixtureAlpha();
     oversized.formats.append({ ClipboardTest::uriFormat(),
                                 QByteArrayLiteral("0123456789abcdef0123456789abcdef") });
@@ -187,7 +157,7 @@ void ClipboardHistoryTests::rejectsEmptyOversizedAndDuplicateValues()
 
 void ClipboardHistoryTests::snapshotOrdersMostRecentFirst()
 {
-    ClipboardHistoryModel model = enabledModel();
+    ClipboardHistoryModel model = ClipboardTest::enabledModel();
     QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), ClipboardTest::kGen,
                         QStringLiteral("fixture-source-a"), 1)
                 .accepted());
@@ -202,7 +172,7 @@ void ClipboardHistoryTests::snapshotOrdersMostRecentFirst()
     QCOMPARE(snapshot.historyEnabled, true);
     QCOMPARE(snapshot.privacyAllowed, true);
     // Most recent first: beta was admitted last.
-    QCOMPARE(previewOrder(snapshot),
+    QCOMPARE(ClipboardTest::previewOrder(snapshot),
              (QList<QString> { QStringLiteral("fixture beta payload"),
                                QStringLiteral("fixture alpha payload") }));
     // Descriptors expose metadata but never payload bytes.
@@ -220,7 +190,7 @@ void ClipboardHistoryTests::snapshotOrdersMostRecentFirst()
 
 void ClipboardHistoryTests::evictionIsDeterministicAndSparesPins()
 {
-    ClipboardHistoryModel model = enabledModel(limitsOf(3, kMaxTotalPayloadBytes));
+    ClipboardHistoryModel model = ClipboardTest::enabledModel(ClipboardTest::limitsOf(3, kMaxTotalPayloadBytes));
     QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("fixture a")),
                         ClipboardTest::kGen, QStringLiteral("s"), 1)
                 .accepted());
@@ -236,7 +206,7 @@ void ClipboardHistoryTests::evictionIsDeterministicAndSparesPins()
     QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("fixture d")),
                         ClipboardTest::kGen, QStringLiteral("s"), 4)
                 .accepted());
-    QVERIFY(!previewOrder(model.snapshot()).contains(QStringLiteral("fixture a")));
+    QVERIFY(!ClipboardTest::previewOrder(model.snapshot()).contains(QStringLiteral("fixture a")));
     QCOMPARE(model.snapshot().entries.size(), 3);
 
     // Pin the now-oldest entry; eviction must skip it.
@@ -245,7 +215,7 @@ void ClipboardHistoryTests::evictionIsDeterministicAndSparesPins()
     QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("fixture e")),
                         ClipboardTest::kGen, QStringLiteral("s"), 5)
                 .accepted());
-    const QList<QString> previews = previewOrder(model.snapshot());
+    const QList<QString> previews = ClipboardTest::previewOrder(model.snapshot());
     QVERIFY(previews.contains(QStringLiteral("fixture b")));
     QVERIFY(!previews.contains(QStringLiteral("fixture c")));
     QCOMPARE(model.snapshot().entries.last().pinned, true);
@@ -253,9 +223,9 @@ void ClipboardHistoryTests::evictionIsDeterministicAndSparesPins()
 
 void ClipboardHistoryTests::capacityRefusalNeverMutates()
 {
-    HistoryLimits limits = limitsOf(2, 64);
+    HistoryLimits limits = ClipboardTest::limitsOf(2, 64);
     limits.maxPinnedEntries = 2;
-    ClipboardHistoryModel model = enabledModel(limits);
+    ClipboardHistoryModel model = ClipboardTest::enabledModel(limits);
     QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("fixture a")),
                         ClipboardTest::kGen, QStringLiteral("s"), 1)
                 .accepted());
@@ -281,9 +251,9 @@ void ClipboardHistoryTests::capacityRefusalNeverMutates()
     // Total-byte pressure with no evictable entry refuses cleanly: a pinned
     // sole entry can never be evicted, and identical content would dedup
     // instead of consuming budget.
-    HistoryLimits byteLimits = limitsOf(kMaxEntries, 1);
+    HistoryLimits byteLimits = ClipboardTest::limitsOf(kMaxEntries, 1);
     byteLimits.maxItemPayloadBytes = 1;
-    ClipboardHistoryModel tiny = enabledModel(byteLimits);
+    ClipboardHistoryModel tiny = ClipboardTest::enabledModel(byteLimits);
     ClipboardValue oneByte;
     oneByte.formats.append({ ClipboardTest::textFormat(), QByteArrayLiteral("x") });
     QVERIFY(tiny.admit(oneByte, ClipboardTest::kGen, QStringLiteral("s"), 1).accepted());
@@ -298,7 +268,7 @@ void ClipboardHistoryTests::capacityRefusalNeverMutates()
 
 void ClipboardHistoryTests::dedupMovesToFrontAndKeepsPin()
 {
-    ClipboardHistoryModel model = enabledModel();
+    ClipboardHistoryModel model = ClipboardTest::enabledModel();
     const AdmitOutcome first = model.admit(ClipboardTest::fixtureAlpha(),
                                            ClipboardTest::kGen,
                                            QStringLiteral("fixture-source-a"), 1);
@@ -318,7 +288,7 @@ void ClipboardHistoryTests::dedupMovesToFrontAndKeepsPin()
     QVERIFY(dedup.accepted());
     QCOMPARE(dedup.entry.id, first.entry.id);
     QCOMPARE(dedup.entry.pinned, true);
-    QCOMPARE(previewOrder(model.snapshot()).first(), QStringLiteral("fixture alpha payload"));
+    QCOMPARE(ClipboardTest::previewOrder(model.snapshot()).first(), QStringLiteral("fixture alpha payload"));
     QCOMPARE(model.snapshot().entries.size(), 2);
     QCOMPARE(model.totalPayloadBytes(), bytesBefore);
     QCOMPARE(model.revision(), revisionBefore + 1);
@@ -336,7 +306,7 @@ void ClipboardHistoryTests::dedupMovesToFrontAndKeepsPin()
 
 void ClipboardHistoryTests::promoteReturnsCopyAndRefreshesRecency()
 {
-    ClipboardHistoryModel model = enabledModel();
+    ClipboardHistoryModel model = ClipboardTest::enabledModel();
     QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), ClipboardTest::kGen,
                         QStringLiteral("s-a"), 1)
                 .accepted());
@@ -350,7 +320,7 @@ void ClipboardHistoryTests::promoteReturnsCopyAndRefreshesRecency()
     QCOMPARE(promoted.value, ClipboardTest::fixtureAlpha());
     QCOMPARE(promoted.entry.id, alphaId);
     QCOMPARE(promoted.entry.lastUsedTick, quint64 { 3 });
-    QCOMPARE(previewOrder(model.snapshot()).first(), QStringLiteral("fixture alpha payload"));
+    QCOMPARE(ClipboardTest::previewOrder(model.snapshot()).first(), QStringLiteral("fixture alpha payload"));
 
     // The returned value is a copy; mutating it cannot touch stored state.
     promoted.value.formats.first().payload.fill('x');
@@ -371,102 +341,11 @@ void ClipboardHistoryTests::promoteReturnsCopyAndRefreshesRecency()
     QCOMPARE(model.promote(alphaId, model.generation(), 7).error, ClipboardError::UnknownEntry);
 }
 
-void ClipboardHistoryTests::staleGenerationIsRejectedEverywhere()
-{
-    ClipboardHistoryModel model = enabledModel();
-    QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), ClipboardTest::kGen,
-                        QStringLiteral("s"), 1)
-                .accepted());
-    const quint32 currentGeneration = model.generation();
-    const quint32 staleGeneration = currentGeneration - 1;
-
-    QCOMPARE(model.admit(ClipboardTest::fixtureBeta(), staleGeneration,
-                         QStringLiteral("s"), 2)
-                 .error,
-             ClipboardError::StaleGeneration);
-    QCOMPARE(model.promote(model.snapshot().entries.first().id, staleGeneration, 3).error,
-             ClipboardError::StaleGeneration);
-    QCOMPARE(model.removeEntry(model.snapshot().entries.first().id, staleGeneration).error,
-             ClipboardError::StaleGeneration);
-    QCOMPARE(model.setPinned(model.snapshot().entries.first().id, true, staleGeneration)
-                 .error,
-             ClipboardError::StaleGeneration);
-    QCOMPARE(model.clear(ClearScope::All, staleGeneration).error,
-             ClipboardError::StaleGeneration);
-    // None of the stale calls mutated anything.
-    QCOMPARE(model.snapshot().entries.size(), 1);
-    QCOMPARE(model.generation(), currentGeneration);
-}
-
-void ClipboardHistoryTests::privacyLossPurgesAndRaisesGeneration()
-{
-    ClipboardHistoryModel model = enabledModel();
-    QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), ClipboardTest::kGen,
-                        QStringLiteral("s"), 1)
-                .accepted());
-    const quint32 generationBefore = model.generation();
-
-    model.setPrivacyAllowed(false);
-    QCOMPARE(model.generation(), generationBefore + 1);
-    QCOMPARE(model.snapshot().entries.size(), 0);
-    QCOMPARE(model.totalPayloadBytes(), qint64 { 0 });
-
-    // Re-stating the denied state is a no-op, not a purge.
-    model.setPrivacyAllowed(false);
-    QCOMPARE(model.generation(), generationBefore + 1);
-
-    model.setPrivacyAllowed(true);
-    QCOMPARE(model.snapshot().entries.size(), 0);
-    // A decision made before the privacy transition is refused even though
-    // privacy is allowed again: the generation moved twice.
-    QCOMPARE(model.admit(ClipboardTest::fixtureAlpha(), generationBefore,
-                         QStringLiteral("s"), 2)
-                 .error,
-             ClipboardError::StaleGeneration);
-    QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), model.generation(),
-                        QStringLiteral("s"), 2)
-                .accepted());
-}
-
-void ClipboardHistoryTests::disablePurgesAndRaisesGeneration()
-{
-    ClipboardHistoryModel model = enabledModel();
-    QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), ClipboardTest::kGen,
-                        QStringLiteral("s"), 1)
-                .accepted());
-    const quint32 generationBefore = model.generation();
-
-    // Enabling twice changes nothing.
-    model.setHistoryEnabled(true);
-    QCOMPARE(model.generation(), generationBefore);
-
-    model.setHistoryEnabled(false);
-    QCOMPARE(model.generation(), generationBefore + 1);
-    QCOMPARE(model.snapshot().entries.size(), 0);
-
-    // With privacy allowed but history disabled, admission is refused as
-    // disabled — the opt-in contract — and stays refused after re-enable
-    // with a fresh generation.
-    model.setPrivacyAllowed(true);
-    QCOMPARE(model.admit(ClipboardTest::fixtureAlpha(), generationBefore,
-                         QStringLiteral("s"), 2)
-                 .error,
-             ClipboardError::HistoryDisabled);
-    model.setHistoryEnabled(true);
-    QCOMPARE(model.admit(ClipboardTest::fixtureAlpha(), generationBefore,
-                         QStringLiteral("s"), 2)
-                 .error,
-             ClipboardError::StaleGeneration);
-    QVERIFY(model.admit(ClipboardTest::fixtureAlpha(), model.generation(),
-                        QStringLiteral("s"), 2)
-                .accepted());
-}
-
 void ClipboardHistoryTests::pinLimitAndScopeClearsAreDeterministic()
 {
-    HistoryLimits limits = limitsOf(kMaxEntries, kMaxTotalPayloadBytes);
+    HistoryLimits limits = ClipboardTest::limitsOf(kMaxEntries, kMaxTotalPayloadBytes);
     limits.maxPinnedEntries = 2;
-    ClipboardHistoryModel model = enabledModel(limits);
+    ClipboardHistoryModel model = ClipboardTest::enabledModel(limits);
     for (int i = 0; i < 3; ++i) {
         QVERIFY(model
                     .admit(ClipboardTest::textValue(QStringLiteral("fixture %1").arg(i)),
@@ -503,9 +382,119 @@ void ClipboardHistoryTests::pinLimitAndScopeClearsAreDeterministic()
              ClipboardError::UnknownEntry);
 }
 
+void ClipboardHistoryTests::capacityRefusalIsFullyAtomic()
+{
+    // Exact reproduction from the failed review: a ten-byte total limit, a
+    // pinned seven-byte item, and an unpinned two-byte item. Admitting four
+    // bytes needs more than the unpinned eviction can free, so the
+    // admission must refuse WITHOUT deleting the two-byte item or moving
+    // any counter.
+    HistoryLimits limits;
+    limits.maxEntries = 8;
+    limits.maxPinnedEntries = 1;
+    limits.maxItemPayloadBytes = 10;
+    limits.maxTotalPayloadBytes = 10;
+    ClipboardHistoryModel model = ClipboardTest::enabledModel(limits);
+
+    QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("1234567")),
+                        ClipboardTest::kGen, QStringLiteral("s"), 1)
+                .accepted());
+    QVERIFY(model.setPinned(model.snapshot().entries.first().id, true, ClipboardTest::kGen)
+                .accepted());
+    QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("89")),
+                        ClipboardTest::kGen, QStringLiteral("s"), 2)
+                .accepted());
+    QCOMPARE(model.totalPayloadBytes(), qint64 { 9 });
+    const quint64 revisionBefore = model.revision();
+    const quint32 generationBefore = model.generation();
+
+    const AdmitOutcome refused =
+        model.admit(ClipboardTest::textValue(QStringLiteral("abcd")),
+                    ClipboardTest::kGen, QStringLiteral("s"), 3);
+    QCOMPARE(refused.error, ClipboardError::CapacityRefused);
+    // Nothing at all changed: both entries survive, bytes and revision are
+    // untouched, and no eviction is left half-applied.
+    QCOMPARE(model.snapshot().entries.size(), 2);
+    QCOMPARE(model.totalPayloadBytes(), qint64 { 9 });
+    QCOMPARE(model.revision(), revisionBefore);
+    QCOMPARE(model.generation(), generationBefore);
+    QVERIFY(model.snapshot().entries.first().pinned);
+    QVERIFY(!model.snapshot().entries.last().pinned);
+    QCOMPARE(model.snapshot().entries.last().preview, QStringLiteral("89"));
+
+    // The success path still frees exactly the unpinned entry and keeps the
+    // pin, proving the atomic refusal was a decision, not a fallback.
+    QVERIFY(model.admit(ClipboardTest::textValue(QStringLiteral("abc")),
+                        ClipboardTest::kGen, QStringLiteral("s"), 4)
+                .accepted());
+    QCOMPARE(model.snapshot().entries.size(), 2);
+    QCOMPARE(model.totalPayloadBytes(), qint64 { 10 });
+    QCOMPARE(model.snapshot().entries.last().pinned, true);
+    QCOMPARE(model.snapshot().entries.last().preview, QStringLiteral("1234567"));
+}
+
+void ClipboardHistoryTests::mixedClassRefusalsAreOrderIndependent()
+{
+    ClipboardHistoryModel model = ClipboardTest::enabledModel();
+
+    const auto admit = [&model](const ClipboardValue &value) {
+        return model.admit(value, ClipboardTest::kGen, QStringLiteral("fixture-source"), 1)
+            .error;
+    };
+
+    // Sensitive must win no matter where it appears in the format list.
+    ClipboardValue unknownThenSensitive;
+    unknownThenSensitive.formats.append(
+        { ClipboardTest::unknownMediaType(), QByteArrayLiteral("fixture") });
+    unknownThenSensitive.formats.append(
+        { ClipboardTest::sensitiveMarker(), QByteArrayLiteral("1") });
+    QCOMPARE(admit(unknownThenSensitive), ClipboardError::SensitiveRefused);
+
+    ClipboardValue oneTimeThenSensitive;
+    oneTimeThenSensitive.formats.append(
+        { ClipboardTest::oneTimeMarker(), QByteArrayLiteral("1") });
+    oneTimeThenSensitive.formats.append(
+        { ClipboardTest::sensitiveMarker(), QByteArrayLiteral("2") });
+    QCOMPARE(admit(oneTimeThenSensitive), ClipboardError::SensitiveRefused);
+
+    // One-time must beat non-storable regardless of order.
+    ClipboardValue unknownThenOneTime;
+    unknownThenOneTime.formats.append(
+        { ClipboardTest::unknownMediaType(), QByteArrayLiteral("fixture") });
+    unknownThenOneTime.formats.append(
+        { ClipboardTest::oneTimeMarker(), QByteArrayLiteral("1") });
+    QCOMPARE(admit(unknownThenOneTime), ClipboardError::OneTimeRefused);
+
+    ClipboardValue oneTimeThenUnknown;
+    oneTimeThenUnknown.formats.append(
+        { ClipboardTest::oneTimeMarker(), QByteArrayLiteral("1") });
+    oneTimeThenUnknown.formats.append(
+        { ClipboardTest::unknownMediaType(), QByteArrayLiteral("fixture") });
+    QCOMPARE(admit(oneTimeThenUnknown), ClipboardError::OneTimeRefused);
+
+    // Any non-storable member refuses a mixed storable value.
+    ClipboardValue storableThenUnknown;
+    storableThenUnknown.formats.append({ ClipboardTest::textFormat(),
+                                         QByteArrayLiteral("fixture") });
+    storableThenUnknown.formats.append(
+        { ClipboardTest::unknownMediaType(), QByteArrayLiteral("fixture") });
+    QCOMPARE(admit(storableThenUnknown), ClipboardError::NonStorableRefused);
+
+    ClipboardValue unknownThenStorable;
+    unknownThenStorable.formats.append(
+        { ClipboardTest::unknownMediaType(), QByteArrayLiteral("fixture") });
+    unknownThenStorable.formats.append({ ClipboardTest::textFormat(),
+                                         QByteArrayLiteral("fixture") });
+    QCOMPARE(admit(unknownThenStorable), ClipboardError::NonStorableRefused);
+
+    // Nothing leaked into the history across the permutations.
+    QCOMPARE(model.snapshot().entries.size(), 0);
+    QCOMPARE(model.revision(), quint64 { 0 });
+}
+
 void ClipboardHistoryTests::byteTotalsTrackEveryTransition()
 {
-    ClipboardHistoryModel model = enabledModel(limitsOf(8, 1024));
+    ClipboardHistoryModel model = ClipboardTest::enabledModel(ClipboardTest::limitsOf(8, 1024));
     const qint64 alphaBytes = ClipboardTest::fixtureAlpha().formats.first().payload.size();
     const qint64 betaBytes =
         ClipboardTest::fixtureBeta().formats.first().payload.size()

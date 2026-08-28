@@ -37,7 +37,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
 | [ADR-0041](0041-adopt-flow-team-delivery-loop.md) | Accepted | Use workgroup queues, exact review loops, prompt integration, and capacity refill |
 | [ADR-0042](0042-launcher-model-without-execution.md) | Accepted | Keep the launcher a pure model whose launch intents never execute |
-| [ADR-0028](0028-volatile-bounded-clipboard-history.md) | Accepted | Keep the clipboard history volatile, bounded, and fail-closed |
+| [ADR-0031](0031-volatile-bounded-clipboard-history.md) | Accepted | Keep the clipboard history volatile, bounded, and fail-closed |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
