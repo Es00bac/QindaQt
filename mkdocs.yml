@@ -54,6 +54,7 @@ nav:
       - Testing harness: development/testing-harness.md
   - Applications:
       - Text Editor: apps/text-editor.md
+      - Settings Appearance route: apps/appearance-settings.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md

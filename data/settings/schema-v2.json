@@ -9,10 +9,31 @@
       "constraints": { "nonEmpty": true }
     },
     {
+      "key": "appearance.colorScheme",
+      "domain": "appearance",
+      "type": "string",
+      "default": "system",
+      "constraints": { "allowedValues": ["system", "light", "dark"] }
+    },
+    {
       "key": "appearance.wallpaper",
       "domain": "appearance",
       "type": "string",
       "default": ""
+    },
+    {
+      "key": "appearance.wallpaperMode",
+      "domain": "appearance",
+      "type": "string",
+      "default": "scaled",
+      "constraints": { "allowedValues": ["scaled", "centered", "tiled"] }
+    },
+    {
+      "key": "appearance.uiScale",
+      "domain": "appearance",
+      "type": "number",
+      "default": 1.0,
+      "constraints": { "minimum": 0.5, "maximum": 3.0 }
     },
     {
       "key": "appearance.accentColor",

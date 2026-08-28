@@ -44,6 +44,7 @@ add_subdirectory(services/notification_presentation_client)
 add_subdirectory(services/notification_presentation_model)
 add_subdirectory(services/notifications)
 add_subdirectory(services/notification_host)
+add_subdirectory(apps/settings/appearance)
 add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
 
