@@ -572,6 +572,29 @@ user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual
 screenshot baselines.
 
+## Current status-notifier foundation proof
+
+The tray's source/unit boundary is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.status-notifier-(values|registry|presentation)$' \
+  --output-on-failure
+```
+
+The three tests discover exactly three CTest rows and cover validated
+item/icon/menu/status values with hostile bounds, the exact-owner keyed
+registry with generation fencing (spoofed owner, stale reply, duplicate
+identity, restart, live-owner rebaseline, generation-fenced loss, bounded
+owner history, capacity overflow, malformed-replacement degradation), watcher
+loss and reconnect rebaseline presentation, typed accepted request intents,
+and a full lifecycle driven through the injected fake transport. The transport
+is a fake by construction: this boundary is strictly source and unit level and
+must not open a session bus, own a name, contact a watcher or item, or render
+a surface. Live watcher binding, item property decoding, DBusMenu revisions,
+a rendered panel tray, and assistive-technology behavior remain separate later
+milestones with their own gates.
+
 ## Current Settings1 and persistent quieting proof
 
 Settings persistence and its consumers are selected with:

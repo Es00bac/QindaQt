@@ -15,6 +15,10 @@ inline constexpr quint32 kSchemaVersion = 1;
 // consumers must never assume values beyond them. Changing a bound is a
 // cross-module contract change, not a local edit.
 inline constexpr qsizetype kMaxItems = 64;
+// AGENT-GUARD: Only live owners occupy tracking slots. Raising or lowering
+// this bound changes a cross-module resource contract; exhaustion fails
+// closed (beginOwnerGeneration returns 0) rather than evicting a live owner.
+inline constexpr qsizetype kMaxTrackedOwners = 256;
 inline constexpr qsizetype kMaxUniqueNameUtf8Bytes = 255;
 inline constexpr qsizetype kMaxObjectPathUtf8Bytes = 255;
 inline constexpr qsizetype kMaxIdentityUtf8Bytes = 256;

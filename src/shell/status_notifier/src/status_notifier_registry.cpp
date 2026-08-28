@@ -4,48 +4,67 @@
 
 #include <qindaqt/shell/status_notifier/status_notifier_limits.h>
 
+#include <QtGlobal>
+
+#include <limits>
+
 namespace QindaQt::StatusNotifier
 {
 namespace
 {
 
-// AGENT-NOTE: There is intentionally no clock, timer, or bus here. Fencing
-// relies only on owner generations handed out by this registry, so tests can
-// script disconnects, restarts, and stale events deterministically.
-bool isLiveGeneration(const StatusNotifierRegistry &registry, const OwnerKey &key)
-{
-    // The liveness flag matters as much as the generation match: after
-    // ownerLost() the registry retains the last allocated generation purely
-    // for fencing, so a stale reply stamped with that generation must still
-    // be rejected instead of resurrecting removed items.
-    return key.generation != 0 && key.generation == registry.currentGeneration(key.uniqueName)
-        && registry.isOwnerLive(key.uniqueName);
-}
+constexpr quint64 kMaxGeneration = std::numeric_limits<quint64>::max();
 
 } // namespace
 
-quint32 StatusNotifierRegistry::beginOwnerGeneration(const QString &uniqueName)
+quint64 StatusNotifierRegistry::beginOwnerGeneration(const QString &uniqueName)
 {
     if (!isValidUniqueBusName(uniqueName)) {
         return 0;
     }
-    const quint32 next = m_generations.value(uniqueName, 0) + 1;
+
+    const bool rebase = isOwnerLive(uniqueName);
+    if (!rebase && m_generations.size() >= kMaxTrackedOwners) {
+        // The owner table is bounded; a new name beyond capacity fails
+        // closed instead of evicting a live owner or growing shell memory.
+        return 0;
+    }
+
+    // AGENT-GUARD: The seed is the only source of generations and must never
+    // wrap. A wrapped or reissued generation could match a stale event still
+    // in flight and resurrect removed items; refusing the begin is safe.
+    if (m_generationSeed == kMaxGeneration) {
+        return 0;
+    }
+    const quint64 next = ++m_generationSeed;
+
+    if (rebase) {
+        // Watcher rebaseline of a still-live name: items of the previous
+        // generation are dropped with their identity claims, so no stale or
+        // unactionable key can remain presented or block re-registration.
+        dropOwnerItems(uniqueName);
+    }
     m_generations.insert(uniqueName, next);
-    m_ownerLive.insert(uniqueName, true);
     return next;
 }
 
-void StatusNotifierRegistry::ownerLost(const QString &uniqueName)
+RegistryOutcome StatusNotifierRegistry::ownerLost(const QString &uniqueName,
+                                                  quint64 expectedGeneration)
 {
-    m_ownerLive.insert(uniqueName, false);
-    for (auto iterator = m_items.begin(); iterator != m_items.end();) {
-        if (iterator.key().uniqueName == uniqueName) {
-            m_identityOwners.remove(iterator.value().identity);
-            iterator = m_items.erase(iterator);
-        } else {
-            ++iterator;
-        }
+    if (!isValidUniqueBusName(uniqueName)) {
+        return reject(RegistryStatus::InvalidOwner, QStringLiteral("owner-not-unique-bus-name"));
     }
+    if (!isOwnerLive(uniqueName) || expectedGeneration != currentGeneration(uniqueName)) {
+        // A loss that names an unknown owner, a departed owner, or an old
+        // generation must not remove a later generation's items.
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
+    }
+
+    dropOwnerItems(uniqueName);
+    // The tracking slot is freed immediately: the globally unique generation
+    // already fences any late event, so no departed-name residue is needed.
+    m_generations.remove(uniqueName);
+    return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
 RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
@@ -55,7 +74,7 @@ RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
     if (!ownerOutcome.accepted) {
         return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
     }
-    if (!isLiveGeneration(*this, key)) {
+    if (!isLiveGeneration(key)) {
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
     }
 
@@ -94,7 +113,7 @@ RegistryOutcome StatusNotifierRegistry::removeItem(const OwnerKey &key)
     if (!ownerOutcome.accepted) {
         return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
     }
-    if (!isLiveGeneration(*this, key)) {
+    if (!isLiveGeneration(key)) {
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
     }
     if (!m_items.contains(key)) {
@@ -105,55 +124,71 @@ RegistryOutcome StatusNotifierRegistry::removeItem(const OwnerKey &key)
 }
 
 RegistryOutcome StatusNotifierRegistry::removeAllForOwner(const QString &uniqueName,
-                                                          quint32 generation)
+                                                          quint64 generation)
 {
     if (!isValidUniqueBusName(uniqueName)) {
         return reject(RegistryStatus::InvalidOwner, QStringLiteral("owner-not-unique-bus-name"));
     }
-    if (generation == 0 || generation != currentGeneration(uniqueName)
-        || !isOwnerLive(uniqueName)) {
+    if (generation == 0 || !isOwnerLive(uniqueName)
+        || generation != currentGeneration(uniqueName)) {
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
     }
 
-    for (auto iterator = m_items.begin(); iterator != m_items.end();) {
-        if (iterator.key().uniqueName == uniqueName) {
-            m_identityOwners.remove(iterator.value().identity);
-            iterator = m_items.erase(iterator);
-        } else {
-            ++iterator;
-        }
-    }
+    dropOwnerItems(uniqueName);
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
-RegistryOutcome StatusNotifierRegistry::evaluateRequest(const OwnerKey &target,
-                                                        RequestKind kind) const
+StatusNotifierRegistry::RequestEvaluation StatusNotifierRegistry::evaluateRequest(
+    const OwnerKey &target, RequestKind kind) const
 {
+    RequestEvaluation evaluation;
+
     switch (kind) {
     case RequestKind::Activate:
     case RequestKind::ContextMenu:
     case RequestKind::SecondaryActivate:
         break;
     default:
-        return reject(RegistryStatus::InvalidRequest, QStringLiteral("unknown-request-kind"));
+        evaluation.outcome = reject(RegistryStatus::InvalidRequest,
+                                    QStringLiteral("unknown-request-kind"));
+        return evaluation;
     }
 
     const ValidationOutcome ownerOutcome = validateOwnerKey(target);
     if (!ownerOutcome.accepted) {
-        return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
+        evaluation.outcome = reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
+        return evaluation;
     }
-    if (!isLiveGeneration(*this, target)) {
-        return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
+    if (!isLiveGeneration(target)) {
+        evaluation.outcome = reject(RegistryStatus::StaleOwner,
+                                    QStringLiteral("generation-not-current"));
+        return evaluation;
     }
-    if (!m_items.contains(target)) {
-        return reject(RegistryStatus::UnknownItem, QStringLiteral("item-not-registered"));
+    const auto item = m_items.constFind(target);
+    if (item == m_items.cend()) {
+        evaluation.outcome = reject(RegistryStatus::UnknownItem,
+                                    QStringLiteral("item-not-registered"));
+        return evaluation;
     }
-    return RegistryOutcome{RegistryStatus::Accepted, {}};
+
+    evaluation.outcome = RegistryOutcome{RegistryStatus::Accepted, {}};
+    evaluation.intent.target = target;
+    evaluation.intent.identity = item->identity;
+    evaluation.intent.kind = kind;
+    return evaluation;
 }
 
 void StatusNotifierRegistry::markInitialPopulationComplete()
 {
     m_initialPopulationComplete = true;
+}
+
+void StatusNotifierRegistry::beginWatcherEpoch()
+{
+    // AGENT-GUARD: A watcher (re)connection must reset the population bit so
+    // presentation falls back to fail-closed Loading; keeping the old bit
+    // would present a pre-reconnect view as complete.
+    m_initialPopulationComplete = false;
 }
 
 bool StatusNotifierRegistry::initialPopulationComplete() const noexcept
@@ -205,14 +240,14 @@ qsizetype StatusNotifierRegistry::count() const noexcept
     return m_items.size();
 }
 
-quint32 StatusNotifierRegistry::currentGeneration(const QString &uniqueName) const
+quint64 StatusNotifierRegistry::currentGeneration(const QString &uniqueName) const
 {
     return m_generations.value(uniqueName, 0);
 }
 
 bool StatusNotifierRegistry::isOwnerLive(const QString &uniqueName) const
 {
-    return m_ownerLive.value(uniqueName, false);
+    return m_generations.contains(uniqueName);
 }
 
 RegistryOutcome StatusNotifierRegistry::reject(RegistryStatus status, QString reasonCode) const
@@ -232,6 +267,30 @@ void StatusNotifierRegistry::forgetItem(const OwnerKey &key)
         m_identityOwners.remove(iterator->identity);
     }
     m_items.erase(iterator);
+}
+
+void StatusNotifierRegistry::dropOwnerItems(const QString &uniqueName)
+{
+    for (auto iterator = m_items.begin(); iterator != m_items.end();) {
+        if (iterator.key().uniqueName == uniqueName) {
+            if (m_identityOwners.value(iterator->identity) == iterator.key()) {
+                m_identityOwners.remove(iterator->identity);
+            }
+            iterator = m_items.erase(iterator);
+        } else {
+            ++iterator;
+        }
+    }
+}
+
+bool StatusNotifierRegistry::isLiveGeneration(const OwnerKey &key) const
+{
+    // Liveness is as important as the generation match: only live owners are
+    // tracked, so a retired or never-seen name always fails here, and the
+    // globally unique seed guarantees a departed owner's generation can
+    // never be reissued to a future owner.
+    return key.generation != 0 && isOwnerLive(key.uniqueName)
+        && key.generation == currentGeneration(key.uniqueName);
 }
 
 } // namespace QindaQt::StatusNotifier

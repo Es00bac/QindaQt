@@ -120,7 +120,7 @@ implemented; do not use placeholder modules to bypass a boundary.
   name, and reach the tray only through bounded validation and an injected
   transport seam; the tray records request intents instead of executing them.
   See [Status notifier tray](../shell/status-tray.md) and
-  [ADR-0026](../adr/0026-status-notifier-exact-owner-foundation.md).
+  [ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,

@@ -187,12 +187,12 @@ private slots:
         ItemDescriptor descriptor = validDescriptor();
         descriptor.toolTip.title = QString(kMaxTitleUtf8Bytes + 1, u'x');
         QCOMPARE(validateToolTip(descriptor.toolTip).reasonCode,
-                 QStringLiteral("unbounded-or-control-text"));
+                 QStringLiteral("blank-or-control-text"));
 
         descriptor = validDescriptor();
         descriptor.toolTip.description = QStringLiteral("line\nbreak");
         QCOMPARE(validateToolTip(descriptor.toolTip).reasonCode,
-                 QStringLiteral("unbounded-or-control-text"));
+                 QStringLiteral("blank-or-control-text"));
 
         descriptor = validDescriptor();
         descriptor.toolTip.pixmaps = {validPixmap(), validPixmap(), validPixmap()};
@@ -240,6 +240,15 @@ private slots:
         menu.entries = {menuItem(7, QStringLiteral("Orphan"))};
         QCOMPARE(validateMenu(menu).reasonCode, QStringLiteral("menu-parent-invalid"));
 
+        // Children may nest only beneath submenus.
+        menu.entries = {menuItem(-1, QStringLiteral("Plain item")),
+                        menuItem(0, QStringLiteral("Child of an item"))};
+        QCOMPARE(validateMenu(menu).reasonCode, QStringLiteral("menu-parent-not-submenu"));
+
+        menu.entries = {menuSeparator(),
+                        menuItem(0, QStringLiteral("Child of a separator"))};
+        QCOMPARE(validateMenu(menu).reasonCode, QStringLiteral("menu-parent-not-submenu"));
+
         // Depth beyond kMaxMenuDepth is rejected even when every entry is
         // individually well-formed.
         menu.entries.clear();
@@ -258,6 +267,28 @@ private slots:
         QCOMPARE(validateMenu(menu).reasonCode, QStringLiteral("menu-node-budget-exceeded"));
     }
 
+    void composedDescriptorGateRejectsHostileMenu()
+    {
+        // AGENT-GUARD: validateItemDescriptor is the single admission gate;
+        // a hostile menu inside an otherwise valid descriptor must be caught
+        // here and by the registry, never only by a direct validateMenu call.
+        ItemDescriptor descriptor = validDescriptor();
+        descriptor.menu.entries = {menuSubMenu(-1, QStringLiteral("Level 0")),
+                                   menuSubMenu(0, QStringLiteral("Level 1")),
+                                   menuSubMenu(1, QStringLiteral("Level 2")),
+                                   menuSubMenu(2, QStringLiteral("Level 3")),
+                                   menuItem(3, QStringLiteral("Too deep"))};
+        const ValidationOutcome outcome = validateItemDescriptor(descriptor);
+        QVERIFY(!outcome.accepted);
+        QCOMPARE(outcome.reasonCode, QStringLiteral("menu-depth-exceeded"));
+
+        descriptor = validDescriptor();
+        descriptor.menu.entries = {menuItem(-1, QStringLiteral("Plain")),
+                                   menuItem(0, QStringLiteral("Nested under item"))};
+        QCOMPARE(validateItemDescriptor(descriptor).reasonCode,
+                 QStringLiteral("menu-parent-not-submenu"));
+    }
+
     void rejectsUnknownCategoryAndStatus()
     {
         ItemDescriptor descriptor = validDescriptor();
@@ -273,10 +304,13 @@ private slots:
         QCOMPARE(statusOutcome.reasonCode, QStringLiteral("unknown-status"));
     }
 
-    void rejectsUnboundedOrControlledIdentityAndTitle()
+    void rejectsUnboundedOrBlankIdentityAndTitle()
     {
         ItemDescriptor descriptor = validDescriptor();
         descriptor.identity.clear();
+        QCOMPARE(validateItemDescriptor(descriptor).reasonCode, QStringLiteral("invalid-identity"));
+
+        descriptor.identity = QStringLiteral("   ");
         QCOMPARE(validateItemDescriptor(descriptor).reasonCode, QStringLiteral("invalid-identity"));
 
         descriptor.identity = QString::fromUtf8("bad\0identity", 12);
@@ -289,12 +323,39 @@ private slots:
         descriptor = validDescriptor();
         descriptor.title = QString(QChar(0x001F));
         QCOMPARE(validateItemDescriptor(descriptor).reasonCode,
-                 QStringLiteral("unbounded-or-control-text"));
+                 QStringLiteral("blank-or-control-text"));
+
+        descriptor = validDescriptor();
+        descriptor.title = QStringLiteral(" \t ");
+        QCOMPARE(validateItemDescriptor(descriptor).reasonCode,
+                 QStringLiteral("blank-or-control-text"));
 
         descriptor = validDescriptor();
         descriptor.title = QString(kMaxTitleUtf8Bytes + 1, u'x');
         QCOMPARE(validateItemDescriptor(descriptor).reasonCode,
-                 QStringLiteral("unbounded-or-control-text"));
+                 QStringLiteral("blank-or-control-text"));
+
+        // An absent title stays valid: the identity is the accessibility
+        // fallback and is locale-independent.
+        descriptor = validDescriptor();
+        descriptor.title.clear();
+        QVERIFY(validateItemDescriptor(descriptor).accepted);
+    }
+
+    void rejectsControlCharactersIncludingC1()
+    {
+        // C1 controls are invisible on screen and must fail like C0.
+        ItemDescriptor descriptor = validDescriptor();
+        descriptor.toolTip.description = QString(QChar(0x0085));
+        QCOMPARE(validateToolTip(descriptor.toolTip).reasonCode,
+                 QStringLiteral("blank-or-control-text"));
+
+        descriptor = validDescriptor();
+        descriptor.identity = QString(QChar(0x009F));
+        QCOMPARE(validateItemDescriptor(descriptor).reasonCode, QStringLiteral("invalid-identity"));
+
+        QVERIFY(!isBoundedSafeText(QString(QChar(0x0080)), 16));
+        QVERIFY(isBoundedSafeText(QStringLiteral("clean"), 16));
     }
 
     void boundedTextCountsUtf8BytesNotCodeUnits()

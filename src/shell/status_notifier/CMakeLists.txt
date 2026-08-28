@@ -15,6 +15,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/shell/status_notifier/status_notifier_event_sink.h
             include/qindaqt/shell/status_notifier/status_notifier_limits.h
             include/qindaqt/shell/status_notifier/status_notifier_presentation.h
             include/qindaqt/shell/status_notifier/status_notifier_registry.h

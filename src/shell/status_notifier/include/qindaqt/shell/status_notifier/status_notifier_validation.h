@@ -40,9 +40,14 @@ struct ValidationOutcome {
 [[nodiscard]] bool isValidUniqueBusName(const QString &value);
 [[nodiscard]] bool isValidObjectPath(const QString &value);
 
-// Rejects text beyond `maxUtf8Bytes` and any embedded NUL or C0 control
-// character; presentation text must never carry raw control bytes.
+// Rejects text beyond `maxUtf8Bytes` and any embedded NUL, C0, DEL, or C1
+// control character; presentation text must never carry raw control bytes.
 [[nodiscard]] bool isBoundedSafeText(const QString &value, qsizetype maxUtf8Bytes);
+
+// Empty is accepted (the field is optional); any nonempty value must be
+// bounded, control-free, and contain non-whitespace content so a hostile
+// source cannot publish blank presentation text.
+[[nodiscard]] bool isAcceptableOptionalText(const QString &value, qsizetype maxUtf8Bytes);
 
 [[nodiscard]] ValidationOutcome validateOwnerKey(const OwnerKey &key);
 [[nodiscard]] ValidationOutcome validatePixmap(const Pixmap &pixmap);

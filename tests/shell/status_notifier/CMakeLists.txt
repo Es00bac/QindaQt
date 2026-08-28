@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# The status-notifier S0 module is wired into the shared build by the
-# integration branch. Until that single add_subdirectory() lands, skip these
-# tests instead of failing configuration.
+# The shared build processes src/ before tests/, so the module target must
+# exist by now. A missing target is a wiring/order defect and must fail the
+# configure instead of silently producing an empty test selection.
 if(NOT TARGET QindaQt::StatusNotifier)
-    return()
+    message(FATAL_ERROR
+        "QindaQt::StatusNotifier is missing; add_subdirectory(src/shell/status_notifier)"
+        " must run before tests/shell/status_notifier")
 endif()
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Test)

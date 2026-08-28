@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <qindaqt/shell/status_notifier/status_notifier_event_sink.h>
 #include <qindaqt/shell/status_notifier/status_notifier_types.h>
 #include <qindaqt/shell/status_notifier/status_notifier_validation.h>
 
@@ -14,69 +15,63 @@
 namespace QindaQt::StatusNotifier
 {
 
-enum class RegistryStatus : quint32 {
-    Accepted = 0,
-    InvalidOwner = 1,
-    InvalidDescriptor = 2,
-    UnknownItem = 3,
-    StaleOwner = 4,
-    DuplicateIdentity = 5,
-    CapacityExceeded = 6,
-    InvalidRequest = 7,
-};
-
-struct RegistryOutcome {
-    RegistryStatus status = RegistryStatus::Accepted;
-    QString reasonCode;
-
-    [[nodiscard]] bool accepted() const noexcept { return status == RegistryStatus::Accepted; }
-
-    friend bool operator==(const RegistryOutcome &, const RegistryOutcome &) = default;
-};
-
-// AGENT-CONTRACT: Exact-owner keyed tray item registry.
+// AGENT-CONTRACT: Exact-owner keyed tray item registry, and the only
+// StatusNotifierEventSink implementation. Transport adapters reach it solely
+// through the narrow sink interface; observation, request evaluation, and
+// degradation acknowledgement exist only on this concrete class.
 //
-// The transport side (an injected adapter; never a live bus inside this
-// module) calls beginOwnerGeneration() when a unique name appears, feeds
-// keyed events, and calls ownerLost() when the name departs. Every event
-// carries an OwnerKey whose generation must equal the owner's current
-// generation, so a reply that races a disconnect or restart is rejected as
-// stale instead of resurrecting removed items. Ownership lives on the bus
-// unique name; a well-known name is rejected as an owner.
-class StatusNotifierRegistry
+// Fencing model: generations come from one globally monotonic counter, so a
+// generation value is never reissued — not after owner loss, bounded-history
+// eviction, or counter-wrap refusal. Only live owners occupy tracking slots;
+// an ownerLost() retires the name immediately and drops its items. Every
+// keyed event (registration, removal, mass removal, loss) must carry the
+// owner's current generation, so a reply that races a disconnect or restart
+// is rejected as stale instead of resurrecting removed items. Ownership lives
+// on the bus unique name; a well-known name is rejected as an owner.
+class StatusNotifierRegistry final : public StatusNotifierEventSink
 {
 public:
+    // A typed accepted request: `intent` is meaningful only when
+    // `outcome.accepted()`. The intent binds the exact owner key (including
+    // its current generation) and the item identity snapshot at acceptance
+    // time; an executor must revalidate before performing anything.
+    struct RequestEvaluation {
+        RegistryOutcome outcome;
+        RequestIntent intent;
+
+        friend bool operator==(const RequestEvaluation &,
+                               const RequestEvaluation &) = default;
+    };
+
     StatusNotifierRegistry() = default;
 
-    // Allocates the next generation for `uniqueName` (first sight is
-    // generation 1). Returns 0 when the name cannot be an owner.
-    [[nodiscard]] quint32 beginOwnerGeneration(const QString &uniqueName);
-
-    // Drops every item of `uniqueName` and invalidates its current generation.
-    // Later events stamped with any previously allocated generation are stale.
-    void ownerLost(const QString &uniqueName);
+    // AGENT-NOTE: Re-basing a still-live name is the watcher-rebaseline
+    // path: the owner's items are dropped deterministically and a fresh
+    // generation is issued, so no presented key can survive unactionable.
+    [[nodiscard]] quint64 beginOwnerGeneration(const QString &uniqueName) override;
+    [[nodiscard]] RegistryOutcome ownerLost(const QString &uniqueName,
+                                            quint64 expectedGeneration) override;
 
     // Registers or replaces the item at `key`. Replacing the same key of a
     // live owner with a valid descriptor is the supported update path; a
     // malformed replacement is rejected and degrades the registry while the
     // last-known-good item stays presented.
-    [[nodiscard]] RegistryOutcome registerItem(const OwnerKey &key, const ItemDescriptor &descriptor);
-    [[nodiscard]] RegistryOutcome removeItem(const OwnerKey &key);
+    [[nodiscard]] RegistryOutcome registerItem(const OwnerKey &key,
+                                               const ItemDescriptor &descriptor) override;
+    [[nodiscard]] RegistryOutcome removeItem(const OwnerKey &key) override;
+    [[nodiscard]] RegistryOutcome removeAllForOwner(const QString &uniqueName,
+                                                    quint64 generation) override;
 
-    // Removes every item of a still-live owner in one event, e.g. when the
-    // source reports all its items unregistered. Generation-fenced like any
-    // other keyed event.
-    [[nodiscard]] RegistryOutcome removeAllForOwner(const QString &uniqueName, quint32 generation);
+    void markInitialPopulationComplete() override;
+    void beginWatcherEpoch() override;
 
-    // Validates a user-visible request intent against exact live ownership.
-    // This never performs the request; it only answers whether the intent
-    // targets an item that the named owner currently presents.
-    [[nodiscard]] RegistryOutcome evaluateRequest(const OwnerKey &target, RequestKind kind) const;
+    // Validates a user-visible request intent against exact live ownership
+    // and returns it bound to the current owner generation and item identity.
+    // This never performs the request; see RequestIntent for the lifetime the
+    // executor must honor.
+    [[nodiscard]] RequestEvaluation evaluateRequest(const OwnerKey &target,
+                                                    RequestKind kind) const;
 
-    // Marks the initial population phase complete (transport observed the
-    // watcher's registered-items state once). Presentation may show Empty
-    // only after this.
-    void markInitialPopulationComplete();
     [[nodiscard]] bool initialPopulationComplete() const noexcept;
 
     [[nodiscard]] bool isDegraded() const noexcept;
@@ -88,17 +83,23 @@ public:
     [[nodiscard]] std::optional<ItemDescriptor> find(const OwnerKey &key) const;
     [[nodiscard]] bool contains(const OwnerKey &key) const;
     [[nodiscard]] qsizetype count() const noexcept;
-    [[nodiscard]] quint32 currentGeneration(const QString &uniqueName) const;
+    [[nodiscard]] quint64 currentGeneration(const QString &uniqueName) const;
     [[nodiscard]] bool isOwnerLive(const QString &uniqueName) const;
 
 private:
     [[nodiscard]] RegistryOutcome reject(RegistryStatus status, QString reasonCode) const;
     void forgetItem(const OwnerKey &key);
+    // Drops every item of the owner and frees its identity claims.
+    void dropOwnerItems(const QString &uniqueName);
+    [[nodiscard]] bool isLiveGeneration(const OwnerKey &key) const;
 
-    QHash<QString, quint32> m_generations;
-    // A departed owner keeps its last allocated generation so stale events
-    // remain fenced; beginOwnerGeneration() always advances beyond it.
-    QHash<QString, bool> m_ownerLive;
+    // AGENT-GUARD: Only live owners appear in m_generations, and the table is
+    // capped at kMaxTrackedOwners; nothing else retains per-owner state, so
+    // owner churn cannot grow registry memory. Generations are drawn from
+    // m_generationSeed, which is globally monotonic — it is never reset, and
+    // exhaustion fails closed instead of wrapping to a stale value.
+    QHash<QString, quint64> m_generations;
+    quint64 m_generationSeed = 0;
     QHash<OwnerKey, ItemDescriptor> m_items;
     // AGENT-GUARD: Reverse index identity -> owning key. It must stay exactly
     // in sync with m_items; every m_items mutation updates both or neither.

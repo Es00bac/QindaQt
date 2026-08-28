@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/shell/status_notifier/status_notifier_presentation.h>
 #include <qindaqt/shell/status_notifier/status_notifier_registry.h>
@@ -16,7 +16,7 @@ const QString kSecondaryOwner = QStringLiteral(":1.11");
 const QString kPrimaryPath = QStringLiteral("/org/qindaqt/StatusNotifierItem");
 const QString kSecondaryPath = QStringLiteral("/org/example/StatusNotifierItem");
 
-OwnerKey key(const QString &owner, const QString &path, quint32 generation)
+OwnerKey key(const QString &owner, const QString &path, quint64 generation)
 {
     OwnerKey value;
     value.uniqueName = owner;
@@ -38,12 +38,19 @@ ItemDescriptor descriptorWith(const QString &identity, const QString &title, Ite
 
 // AGENT-NOTE: The only allowed transport implementations are test fakes and a
 // future exact-owner QtDBus adapter in its own module. This fake scripts
-// events through the public registry API and never touches a bus.
+// events through the narrow StatusNotifierEventSink interface — it cannot
+// reach observation, request evaluation, or degradation acknowledgement — and
+// never touches a bus.
 class FakeStatusNotifierTransport final : public StatusNotifierTransport
 {
 public:
-    void attach(StatusNotifierRegistry *sink) override
+    void attach(StatusNotifierEventSink *sink) override
     {
+        // The interface contract refuses null and re-attachment; the fake
+        // mirrors both rules so the lifetime rules stay exercised.
+        if (sink == nullptr || m_sink != nullptr) {
+            return;
+        }
         m_sink = sink;
     }
 
@@ -61,7 +68,11 @@ public:
 
     void emitOwnerLost(const QString &owner)
     {
-        m_sink->ownerLost(owner);
+        const RegistryOutcome outcome =
+            m_sink->ownerLost(owner, m_allocatedGenerations.value(owner));
+        if (outcome.accepted()) {
+            m_allocatedGenerations.remove(owner);
+        }
     }
 
     [[nodiscard]] RegistryOutcome emitItemRegistered(const QString &owner, const QString &path,
@@ -81,14 +92,19 @@ public:
         m_sink->markInitialPopulationComplete();
     }
 
-    [[nodiscard]] quint32 generation(const QString &owner) const
+    void emitWatcherEpoch()
+    {
+        m_sink->beginWatcherEpoch();
+    }
+
+    [[nodiscard]] quint64 generation(const QString &owner) const
     {
         return m_allocatedGenerations.value(owner);
     }
 
 private:
-    StatusNotifierRegistry *m_sink = nullptr;
-    QHash<QString, quint32> m_allocatedGenerations;
+    StatusNotifierEventSink *m_sink = nullptr;
+    QHash<QString, quint64> m_allocatedGenerations;
 };
 
 } // namespace
@@ -119,7 +135,7 @@ private slots:
         QVERIFY(presentation.items.isEmpty());
     }
 
-    void showsDegradedWhenWatcherIsUnavailable()
+    void watcherLossDegradesButRetainsLastKnownGoodItems()
     {
         StatusNotifierRegistry registry;
         QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
@@ -135,9 +151,15 @@ private slots:
         QCOMPARE(presentation.state, PresentationState::Degraded);
         QCOMPARE(presentation.diagnostic,
                  QStringLiteral("status-notifier-watcher-unavailable"));
-        // A watcher loss presents no items: stale tray entries would invite
-        // activation intents against owners that may no longer exist.
-        QVERIFY(presentation.items.isEmpty());
+        // AGENT-GUARD: The accepted contract keeps last-known-good items
+        // visible and actionable across watcher loss; blanking them here
+        // would contradict ADR-0032 and leave users with an empty tray.
+        QCOMPARE(presentation.items.size(), 1);
+        QCOMPARE(presentation.items.at(0).accessibleName, QStringLiteral("Title"));
+        // Items remain registered, so request intents stay acceptable.
+        QCOMPARE(registry.evaluateRequest(key(kPrimaryOwner, kPrimaryPath, 1),
+                                          RequestKind::Activate).outcome.status,
+                 RegistryStatus::Accepted);
     }
 
     void projectsReadyItemsWithStableOrderAndIdentities()
@@ -152,7 +174,7 @@ private slots:
                                                  ItemStatus::NeedsAttention))
                     .accepted());
         QVERIFY(registry
-                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 1),
+                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 2),
                                   descriptorWith(QStringLiteral("alpha.identity"),
                                                  QString(),
                                                  ItemStatus::Active))
@@ -193,23 +215,52 @@ private slots:
         QCOMPARE(repeat, presentation);
     }
 
+    void injectedTextsFormTheLocalizationBoundary()
+    {
+        StatusNotifierRegistry registry;
+        QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
+        QVERIFY(registry
+                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 1),
+                                  descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
+                                                 ItemStatus::NeedsAttention))
+                    .accepted());
+        registry.markInitialPopulationComplete();
+
+        PresentationTexts localized;
+        localized.statusNeedsAttention = QStringLiteral("benötigt Aufmerksamkeit");
+        localized.keyboardActivate = QStringLiteral("Eingabetaste oder Leertaste");
+        localized.keyboardContextMenu = QStringLiteral("Umschalt+F10");
+
+        const TrayPresentation presentation =
+            projectPresentation(registry, {.transportLive = true}, localized);
+        QCOMPARE(presentation.items.at(0).accessibleStatusText,
+                 QStringLiteral("benötigt Aufmerksamkeit"));
+        QCOMPARE(presentation.items.at(0).keyboardActions.at(0).keyboardDescription,
+                 QStringLiteral("Eingabetaste oder Leertaste"));
+        QCOMPARE(presentation.items.at(0).keyboardActions.at(1).keyboardDescription,
+                 QStringLiteral("Umschalt+F10"));
+
+        // Defaults stay deterministic and independent of injected instances.
+        const TrayPresentation fallback =
+            projectPresentation(registry, {.transportLive = true});
+        QCOMPARE(fallback.items.at(0).accessibleStatusText, QStringLiteral("needs attention"));
+    }
+
     void degradedRegistryKeepsLastKnownGoodItems()
     {
         StatusNotifierRegistry registry;
         QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
-        const OwnerKey owner = key(kPrimaryOwner,
-                                   kPrimaryPath,
-                                   1);
-        QVERIFY(registry.registerItem(owner,
-                                      descriptorWith(QStringLiteral("id"),
-                                                     QStringLiteral("Title"),
-                                                     ItemStatus::Active))
+        const OwnerKey owner = key(kPrimaryOwner, kPrimaryPath, 1);
+        QVERIFY(registry
+                    .registerItem(owner,
+                                  descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
+                                                 ItemStatus::Active))
                     .accepted());
         registry.markInitialPopulationComplete();
 
         ItemDescriptor malformed = descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
                                                   ItemStatus::Active);
-        malformed.identity.clear();
+        malformed.identity = QStringLiteral("   ");
         QVERIFY(!registry.registerItem(owner, malformed).accepted());
 
         const TrayPresentation presentation =
@@ -220,7 +271,7 @@ private slots:
         QCOMPARE(presentation.items.at(0).accessibleName, QStringLiteral("Title"));
     }
 
-    void fakeTransportDrivesFullLifecycle()
+    void fakeTransportDrivesLifecycleIncludingRebaseline()
     {
         StatusNotifierRegistry registry;
         FakeStatusNotifierTransport transport;
@@ -242,23 +293,45 @@ private slots:
                                   transport.generation(kPrimaryOwner));
         for (const RequestKind kind :
              {RequestKind::Activate, RequestKind::ContextMenu, RequestKind::SecondaryActivate}) {
-            QCOMPARE(registry.evaluateRequest(live, kind).status, RegistryStatus::Accepted);
+            QCOMPARE(registry.evaluateRequest(live, kind).outcome.status,
+                     RegistryStatus::Accepted);
+            // A typed accepted intent binds owner, generation, and identity.
+            QCOMPARE(registry.evaluateRequest(live, kind).intent.target, live);
+            QCOMPARE(registry.evaluateRequest(live, kind).intent.identity,
+                     QStringLiteral("identity"));
         }
         QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
                  PresentationState::Ready);
 
+        // Watcher loss: Degraded, items retained and actionable.
+        QCOMPARE(projectPresentation(registry, {.transportLive = false}).state,
+                 PresentationState::Degraded);
+
+        // Watcher reconnect opens a new epoch: fail-closed Loading until the
+        // replacement population is observed, then Ready again.
+        transport.emitWatcherEpoch();
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Loading);
+        transport.emitInitialPopulationComplete();
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Ready);
+        // The pre-reconnect item survived the watcher swap (its owner never
+        // left the bus) and remains actionable under the same generation.
+        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).outcome.status,
+                 RegistryStatus::Accepted);
+
         QVERIFY(transport.emitItemRemoved(kPrimaryOwner, kPrimaryPath).accepted());
         QCOMPARE(registry.count(), qsizetype(0));
-        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).status,
+        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).outcome.status,
                  RegistryStatus::UnknownItem);
         QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
                  PresentationState::Empty);
 
+        // A source restart under the same unique name must be rebased: new
+        // generation, stale pre-restart intents refused, fresh item accepted.
         transport.emitOwnerAppeared(kPrimaryOwner);
-        QVERIFY(transport.generation(kPrimaryOwner) > quint32(1));
-
-        // An intent stamped with the pre-restart generation must be refused.
-        QCOMPARE(registry.evaluateRequest(live, RequestKind::ContextMenu).status,
+        QVERIFY(transport.generation(kPrimaryOwner) > live.generation);
+        QCOMPARE(registry.evaluateRequest(live, RequestKind::ContextMenu).outcome.status,
                  RegistryStatus::StaleOwner);
 
         QVERIFY(transport
@@ -272,6 +345,15 @@ private slots:
         transport.emitOwnerLost(kPrimaryOwner);
         QCOMPARE(registry.count(), qsizetype(0));
 
+        transport.detach();
+        QVERIFY(!transport.isAttached());
+        // Re-attachment after detach works; attaching twice or a null sink is
+        // refused by the contract the fake mirrors.
+        transport.attach(&registry);
+        QVERIFY(transport.isAttached());
+        StatusNotifierEventSink *nullSink = nullptr;
+        transport.attach(nullSink);
+        QVERIFY(transport.isAttached());
         transport.detach();
         QVERIFY(!transport.isAttached());
     }

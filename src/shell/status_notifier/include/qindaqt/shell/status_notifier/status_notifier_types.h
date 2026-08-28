@@ -38,15 +38,37 @@ enum class PresentationState : quint32 {
     Degraded = 3,
 };
 
+enum class RegistryStatus : quint32 {
+    Accepted = 0,
+    InvalidOwner = 1,
+    InvalidDescriptor = 2,
+    UnknownItem = 3,
+    StaleOwner = 4,
+    DuplicateIdentity = 5,
+    CapacityExceeded = 6,
+    InvalidRequest = 7,
+};
+
+struct RegistryOutcome {
+    RegistryStatus status = RegistryStatus::Accepted;
+    QString reasonCode;
+
+    [[nodiscard]] bool accepted() const noexcept { return status == RegistryStatus::Accepted; }
+
+    friend bool operator==(const RegistryOutcome &, const RegistryOutcome &) = default;
+};
+
 // AGENT-NOTE: The exact owner of a tray item is its bus unique name, never a
 // well-known name. Well-known names can change owners while items remain
 // registered, so keying on them would let one source impersonate another.
-// `generation` is the registry-allocated owner generation; events stamped with
-// an older generation are stale and must be rejected by the registry.
+// `generation` is the registry-issued owner generation, drawn from a
+// globally monotonic counter so a value can never be reissued after wrap or
+// eviction; events stamped with an older generation are stale and must be
+// rejected by the registry.
 struct OwnerKey {
     QString uniqueName;
     QString objectPath;
-    quint32 generation = 0;
+    quint64 generation = 0;
 
     [[nodiscard]] bool isValid() const noexcept
     {
@@ -156,6 +178,21 @@ struct TrayPresentation {
     friend bool operator==(const TrayPresentation &, const TrayPresentation &) = default;
 };
 
+// AGENT-CONTRACT: A validated request intent. The registry produces this value
+// only after confirming the target owner's generation is currently live and
+// that the same owner still presents `identity`. It carries an explicit
+// lifetime: it is valid only while that generation remains current, so an
+// executor must revalidate immediately before performing anything. The
+// registry never performs an intent; mapping one onto the owner's own D-Bus
+// object belongs to a later presenter milestone.
+struct RequestIntent {
+    OwnerKey target;
+    QString identity;
+    RequestKind kind = RequestKind::Activate;
+
+    friend bool operator==(const RequestIntent &, const RequestIntent &) = default;
+};
+
 } // namespace QindaQt::StatusNotifier
 
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemCategory)
@@ -172,3 +209,4 @@ Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemDescriptor)
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::KeyboardAction)
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::TrayItemPresentation)
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::TrayPresentation)
+Q_DECLARE_METATYPE(QindaQt::StatusNotifier::RequestIntent)

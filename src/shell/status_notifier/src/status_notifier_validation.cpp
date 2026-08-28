@@ -9,11 +9,12 @@ namespace
 
 bool containsForbiddenControl(const QString &value)
 {
-    // NUL and C0 control characters are never meaningful presentation text.
-    // DEL is included because it is equally invisible to users.
+    // NUL, C0, DEL, and C1 control characters are never meaningful
+    // presentation text; screen readers and painters can render them as
+    // garbage, and NUL can truncate downstream C-based consumers.
     for (const QChar character : value) {
         const char16_t code = character.unicode();
-        if (code <= 0x001F || code == 0x007F) {
+        if (code <= 0x001F || (code >= 0x007F && code <= 0x009F)) {
             return true;
         }
     }
@@ -118,6 +119,14 @@ bool isBoundedSafeText(const QString &value, qsizetype maxUtf8Bytes)
     return !containsForbiddenControl(value);
 }
 
+bool isAcceptableOptionalText(const QString &value, qsizetype maxUtf8Bytes)
+{
+    if (value.isEmpty()) {
+        return true;
+    }
+    return isBoundedSafeText(value, maxUtf8Bytes) && !value.trimmed().isEmpty();
+}
+
 ValidationOutcome validateOwnerKey(const OwnerKey &key)
 {
     if (key.generation == 0) {
@@ -186,15 +195,13 @@ ValidationOutcome validateToolTip(const ToolTipPayload &toolTip)
     if (!icon.accepted) {
         return icon;
     }
-    const ValidationOutcome title =
-        validateText(toolTip.title, kMaxTitleUtf8Bytes, ValidationError::InvalidToolTip);
-    if (!title.accepted) {
-        return title;
+    if (!isAcceptableOptionalText(toolTip.title, kMaxTitleUtf8Bytes)) {
+        return ValidationOutcome::failure(ValidationError::InvalidToolTip,
+                                          QStringLiteral("blank-or-control-text"));
     }
-    const ValidationOutcome description =
-        validateText(toolTip.description, kMaxTextUtf8Bytes, ValidationError::InvalidToolTip);
-    if (!description.accepted) {
-        return description;
+    if (!isAcceptableOptionalText(toolTip.description, kMaxTextUtf8Bytes)) {
+        return ValidationOutcome::failure(ValidationError::InvalidToolTip,
+                                          QStringLiteral("blank-or-control-text"));
     }
     return validatePixmapList(toolTip.pixmaps, kMaxToolTipPixmaps, ValidationError::InvalidToolTip);
 }
@@ -234,6 +241,13 @@ ValidationOutcome validateMenuEntry(const MenuEntry &entry, qsizetype index,
         // self-parents would let a hostile payload build a cycle.
         return ValidationOutcome::failure(ValidationError::InvalidMenu,
                                           QStringLiteral("menu-parent-invalid"));
+    }
+    if (entry.parentId >= 0
+        && entries.at(entry.parentId).kind != MenuEntry::Kind::SubMenu) {
+        // Only submenus may hold children; nesting beneath an ordinary item
+        // or separator has no presentation meaning and is refused outright.
+        return ValidationOutcome::failure(ValidationError::InvalidMenu,
+                                          QStringLiteral("menu-parent-not-submenu"));
     }
 
     const ValidationOutcome label =
@@ -322,16 +336,23 @@ ValidationOutcome validateItemDescriptor(const ItemDescriptor &descriptor)
                                           QStringLiteral("unknown-status"));
     }
 
+    // AGENT-GUARD: This function is the single admission gate for descriptor
+    // values; every payload — including the menu — must be validated here
+    // before the registry can make any part of a descriptor visible. A new
+    // ItemDescriptor member added without a check below is a fail-open
+    // defect of exactly the class Shannon's P1-1 finding describes.
     const qsizetype identityBytes = descriptor.identity.toUtf8().size();
     if (identityBytes == 0 || identityBytes > kMaxIdentityUtf8Bytes
-        || containsForbiddenControl(descriptor.identity)) {
+        || containsForbiddenControl(descriptor.identity)
+        || descriptor.identity.trimmed().isEmpty()) {
         return ValidationOutcome::failure(ValidationError::InvalidIdentity,
                                           QStringLiteral("invalid-identity"));
     }
-    const ValidationOutcome title =
-        validateText(descriptor.title, kMaxTitleUtf8Bytes, ValidationError::InvalidTitle);
-    if (!title.accepted) {
-        return title;
+    if (!isAcceptableOptionalText(descriptor.title, kMaxTitleUtf8Bytes)) {
+        // An absent title falls back to the identity for accessibility; a
+        // whitespace-only title would erase the accessible name instead.
+        return ValidationOutcome::failure(ValidationError::InvalidTitle,
+                                          QStringLiteral("blank-or-control-text"));
     }
     const ValidationOutcome icon = validateIconPayload(descriptor.icon);
     if (!icon.accepted) {
@@ -340,6 +361,10 @@ ValidationOutcome validateItemDescriptor(const ItemDescriptor &descriptor)
     const ValidationOutcome toolTip = validateToolTip(descriptor.toolTip);
     if (!toolTip.accepted) {
         return toolTip;
+    }
+    const ValidationOutcome menu = validateMenu(descriptor.menu);
+    if (!menu.accepted) {
+        return menu;
     }
     return ValidationOutcome::success();
 }

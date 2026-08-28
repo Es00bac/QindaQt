@@ -1,4 +1,4 @@
-# ADR-0026: Key the status-notifier tray on exact unique-name owners
+# ADR-0032: Key the status-notifier tray on exact unique-name owners
 
 - **Status:** Accepted
 - **Date:** 2026-08-28
@@ -29,36 +29,53 @@ trusting rules are:
 - Item ownership is the source's bus **unique name**, never a well-known name.
   Well-known names are rejected as owners at validation.
 - The registry keys items by `(uniqueName, objectPath)` plus a registry-issued
-  owner generation. When a name departs, its items are removed and the
-  generation is retained only to fence: any event stamped with an older or
-  non-current generation is rejected as stale, so a reply that races a
-  disconnect or restart cannot resurrect removed items.
+  owner generation drawn from a globally monotonic counter, so a generation is
+  never reissued. When a name departs — with its expected generation named —
+  its items are removed and its slot is freed; any event stamped with an older
+  or non-current generation is rejected as stale, so a reply that races a
+  disconnect or restart cannot resurrect removed items. Re-basing a still-live
+  name drops that owner's items and reissues a generation, so no presented key
+  is ever stale or unactionable.
 - A user-visible item identity is claimed by at most one live owner.
   Registering a duplicate identity from a different owner is rejected.
 - Every icon, menu, tooltip, and text payload passes bounded, fail-closed
-  validation (byte budgets, dimension and count limits, control-character
-  rejection, flat DBusMenu-style menu entries with depth and cycle rules)
-  before it can reach presentation.
+  validation (byte budgets, dimension and count limits, C0/DEL/C1 and blank
+  control over presentation text, flat DBusMenu-style menu entries with
+  depth, submenu-only-parent, and count rules) at the single descriptor
+  admission gate before any part of it can reach presentation.
 - Activation, context-menu, and secondary-activation requests are validated
-  **intents** against exact live ownership; the module never performs them.
+  **intents** returned bound to the exact owner generation and item identity
+  with an explicit revalidate-before-execution lifetime; the module never
+  performs them.
 - Tray presentation is a pure projection with Loading/Ready/Empty/Degraded
   states and keyboard/accessibility identities, so QML and assistive
-  technology see stable truth even while the registry is degraded.
-- Transport is an injected interface. This module contains no D-Bus code; the
-  only allowed implementations today are test fakes.
+  technology see stable truth even while the registry is degraded. Watcher
+  loss keeps last-known-good items visible and actionable; a watcher
+  (re)connection opens an explicit epoch that returns presentation to
+  fail-closed Loading until the population is re-observed.
+- Transport is an injected interface narrowed to an event sink (owner and
+  item events plus watcher epochs, nothing else). This module contains no
+  D-Bus code; the only allowed implementations today are test fakes.
 
 ## Consequences
 
 - A later QtDBus adapter milestone adds an exact-owner transport in its own
-  module and must report owner departure for every name it watches; without
-  that report the registry cannot fence stale replies.
+  module and must report owner departure with the expected generation for
+  every name it watches; without that report the registry cannot fence stale
+  replies.
+- Owner history is bounded: only live owners occupy tracking slots, capacity
+  exhaustion fails closed, and generations come from a globally monotonic
+  counter so no stale event can ever match a reissued value.
 - The bounds in `status_notifier_limits.h` are a cross-module contract shared
   by every future producer and consumer; changing one is a contract change.
 - Hostile coverage (spoofed owner, stale reply, malformed menu/icon, duplicate
-  identity, restart) is part of the module's acceptance evidence and must be
-  extended alongside any new value type.
+  identity, restart, rebaseline, watcher loss/reconnect) is part of the
+  module's acceptance evidence and must be extended alongside any new value
+  type.
 - Degraded state retains last-known-good items and requires explicit
   acknowledgement so the tray can surface, then clear, a rejection.
+- Presentation text is injected through a localization boundary; the module's
+  defaults are deterministic fallbacks, not the product's localized strings.
 
 ## Revisit when
 
