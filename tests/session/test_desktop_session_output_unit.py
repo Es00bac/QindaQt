@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import unittest
 
 from desktop_session_topology import TopologyContractError, validate_boot_evidence
@@ -50,11 +51,34 @@ class OutputInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(TopologyContractError, "1920x1080"):
             validate_boot_evidence(evidence)
 
+    def test_geometry_and_scale_reject_boolean_substitutions(self) -> None:
+        for inventory in ("outputs", "visibilityOutputs"):
+            for field, value in (("x", False), ("y", False), ("scale", True)):
+                with self.subTest(inventory=inventory, field=field):
+                    evidence = valid_evidence()
+                    record = evidence[inventory][0]  # type: ignore[index]
+                    if field == "scale":
+                        record[field] = value
+                    else:
+                        record["geometry"][field] = value
+                    with self.assertRaisesRegex(TopologyContractError, "1920x1080"):
+                        validate_boot_evidence(evidence)
+
     def test_dock_output_references_bind_to_observed_inventory(self) -> None:
         for field in ("outputName", "desiredOutputName"):
             with self.subTest(field=field):
                 evidence = valid_evidence("Virtual-17")
                 evidence["dockSurfaces"][0][field] = "Virtual-0"  # type: ignore[index]
+                with self.assertRaisesRegex(TopologyContractError, "dock surface"):
+                    validate_boot_evidence(evidence)
+
+    def test_one_valid_dock_cannot_hide_a_phantom_output_record(self) -> None:
+        for field in ("outputName", "desiredOutputName"):
+            with self.subTest(field=field):
+                evidence = valid_evidence("Virtual-17")
+                phantom = copy.deepcopy(evidence["dockSurfaces"][0])  # type: ignore[index]
+                phantom[field] = "Virtual-999999"
+                evidence["dockSurfaces"].append(phantom)  # type: ignore[union-attr]
                 with self.assertRaisesRegex(TopologyContractError, "dock surface"):
                     validate_boot_evidence(evidence)
 

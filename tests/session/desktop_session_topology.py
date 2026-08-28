@@ -280,6 +280,11 @@ def _validate_input_and_dock(
         if not isinstance(item, Mapping) or item.get("scope") != topology.dock.scope:
             continue
         process_id = _canonical_process_id(item.get("processId"))
+        # AGENT-CONTRACT: Reject consumed dock records that contradict output inventory.
+        if (item.get("outputName"), item.get("desiredOutputName")) != (
+            output_name, output_name
+        ):
+            raise TopologyContractError("dock surface output identities differ")
         # AGENT-CONTRACT: Bind every consumed dock record to the separately
         # authenticated current shell; foreign/replaced client PIDs are not proof.
         if shell_pid is not None and process_id != shell_pid:
@@ -288,9 +293,7 @@ def _validate_input_and_dock(
     matched = [
         item
         for item in dock_surfaces
-        if item.get("outputName") == output_name
-        and item.get("desiredOutputName") == output_name
-        and item.get("mapped") is True
+        if item.get("mapped") is True
         and item.get("committed") is True
     ]
     if len(matched) < topology.dock.minimum_count:

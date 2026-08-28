@@ -49,12 +49,20 @@ def _exact_geometry(
 ) -> str:
     output_name = _canonical_name(record.get(name_field), location)
     geometry = _mapping(record.get("geometry"), f"{location}.geometry")
+    geometry_values = tuple(
+        geometry.get(field) for field in ("x", "y", "width", "height")
+    )
+    observed_scale = record.get("scale")
     if (
-        geometry.get("x") != 0
+        any(isinstance(value, bool) or not isinstance(value, int)
+            for value in geometry_values)
+        or isinstance(observed_scale, bool)
+        or not isinstance(observed_scale, (int, float))
+        or geometry.get("x") != 0
         or geometry.get("y") != 0
         or geometry.get("width") != width
         or geometry.get("height") != height
-        or record.get("scale") != scale
+        or observed_scale != scale
     ):
         raise OutputInventoryError("the output is not exact 1920x1080@1")
     return output_name
