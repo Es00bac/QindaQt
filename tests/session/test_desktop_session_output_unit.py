@@ -51,6 +51,15 @@ class OutputInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(TopologyContractError, "1920x1080"):
             validate_boot_evidence(evidence)
 
+    def test_equivalent_float_geometry_passes_for_both_inventories(self) -> None:
+        for inventory in ("outputs", "visibilityOutputs"):
+            with self.subTest(inventory=inventory):
+                evidence = valid_evidence()
+                geometry = evidence[inventory][0]["geometry"]  # type: ignore[index]
+                for field in ("x", "y", "width", "height"):
+                    geometry[field] = float(geometry[field])
+                validate_boot_evidence(evidence)
+
     def test_geometry_and_scale_reject_boolean_substitutions(self) -> None:
         for inventory in ("outputs", "visibilityOutputs"):
             for field, value in (("x", False), ("y", False), ("scale", True)):

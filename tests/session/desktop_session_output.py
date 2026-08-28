@@ -54,7 +54,7 @@ def _exact_geometry(
     )
     observed_scale = record.get("scale")
     if (
-        any(isinstance(value, bool) or not isinstance(value, int)
+        any(isinstance(value, bool) or not isinstance(value, (int, float))
             for value in geometry_values)
         or isinstance(observed_scale, bool)
         or not isinstance(observed_scale, (int, float))
