@@ -2,6 +2,17 @@
 
 ## Current baseline
 
+Manager integration delta after the public baseline below:
+
+- `d0e0809` replays the exact independently accepted Text Editor AppShell
+  migration `75f786e9`. The manager tree builds the seven focused editor
+  targets in 139/139 actions and passes the Text Editor selector 10/10 plus the
+  rebuilt AppShell/File Manager/Appearance adjacent selector 17/17. Source
+  shape checks 1,354 files, documentation validates 90 pages, strict MkDocs
+  and all 16 Team Board tests pass, and only the manager-owned provider-status
+  record remains operationally modified. The later localization/global-menu
+  authority is a nonblocking P3; no portal or live desktop claim is added.
+
 - Branch: public `main`
 - Functional boundary: public milestone `ab36cd8` plus exact accepted
   Appearance Settings S0 candidate `d71fac4` and the privately qualified

@@ -48,6 +48,13 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `d0e0809` — The native QindaQt Text Editor now consumes
+  `QindaQt.AppShell 1.0` through a typed action catalog, fail-closed file
+  selection request/result bridge, lifecycle/integration projection, and
+  consumer-owned native picker adapter. Exact independent Debug/Release,
+  hostile coordinator, component-only package/RPATH, source-policy, adjacent
+  application, documentation, and manager-tree verification pass. This does
+  not claim a real portal transport or global-menu exporter.
 - `d71fac4` — First-party Appearance Settings S0 as an ordinary
   `qindaqt-settings --page appearance` route with validated theme, scheme,
   font, smoothing, wallpaper, and logical-scale intent; per-key Settings1
