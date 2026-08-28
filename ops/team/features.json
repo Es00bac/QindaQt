@@ -259,10 +259,10 @@
           "caveat": "Real portal adapters, remaining application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
         },
         {
-          "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "WIRED",
-          "summary": "A normal first-party qindaqt-settings application and fixed Notifications route use the public Settings1 client boundary, but a complete center shell/navigation system is not integrated.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/architecture/settings-service.md", "summary": "The integrated Notifications settings application route and dependency boundary are documented." }],
-          "caveat": "One focused route does not complete the applet-based Settings Center."
+          "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "EXECUTABLE",
+          "summary": "The native qindaqt-settings application now has a typed bounded route registry, responsive wide and compact navigation, stable per-route lifetime, guarded unavailable-route focus, keyboard and accessibility paths, and a sanitized installed application boundary.",
+          "evidence": [{ "kind": "commit", "reference": "0c9f4b0", "summary": "The independently accepted Settings S1 repair is integrated after exact 0/0/0/0 rereview and fresh manager-tree 9/9 plus direct 6/6 verification." }, { "kind": "test", "reference": "docs/wiki/apps/settings-center.md", "summary": "The owning page records route-registry, navigation, responsive QML, failure, accessibility, package-isolation, and explicit later-route boundaries." }],
+          "caveat": "Settings S1 provides the center shell and route boundary; most platform-service pages, drag-from-configuration customization, cross-app visual matrices, and live assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.05", "title": "Settings pages and live platform-service routes", "weight": 15, "state": "WIRED",
@@ -296,7 +296,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1, the bounded local QindaQt File Manager S0, and the single-session QindaQt Terminal S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts; Text Editor consumes that boundary through a typed fail-closed migration.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The typed responsive Settings Center S1 shell, QindaQt Text Editor S1, bounded local QindaQt File Manager S0, and single-session QindaQt Terminal S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
@@ -305,10 +305,11 @@
           { "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact accepted File Manager S0 runtime/package candidate is integrated after independent review and fresh combined-tree verification." },
           { "kind": "commit", "reference": "d0e0809", "summary": "The exact accepted Text Editor AppShell migration is replayed after independent review and manager-tree verification." },
           { "kind": "commit", "reference": "4f99a7f", "summary": "The independently accepted Terminal S0 replay is integrated after fresh manager-tree build, focused, package, source, and documentation verification." },
+          { "kind": "commit", "reference": "0c9f4b0", "summary": "The accepted Settings Center S1 route/navigation repair is integrated after exact rereview and manager-tree verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, File Manager S0, and Terminal S0 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "Most Settings platform-service routes, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",
