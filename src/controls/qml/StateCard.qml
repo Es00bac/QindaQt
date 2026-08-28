@@ -73,7 +73,7 @@ T.Control {
             // AGENT-CONTRACT: This is the real Qt accessibility announcement
             // path. The paired signal is deterministic offscreen evidence for
             // the identical latest tuple; it is not a substitute AT bridge.
-            Accessible.announce(announcement, politeness)
+            control.Accessible.announce(announcement, politeness)
             control.accessibilityAnnouncementRequested(
                 announcement, control.status, politeness)
         }
