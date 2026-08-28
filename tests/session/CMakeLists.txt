@@ -100,6 +100,8 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_measure.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_capture.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_interactive.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_output.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_process.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_readiness.py"
@@ -114,6 +116,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_plugin_unload.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_contract_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_capture_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_output_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_package.py"
@@ -129,6 +132,7 @@ find_program(QINDAQT_KWIN_WAYLAND kwin_wayland)
 find_program(QINDAQT_XDPYINFO xdpyinfo)
 find_program(QINDAQT_XWAYLAND Xwayland)
 find_program(QINDAQT_WESTON weston)
+find_program(QINDAQT_WESTON_SCREENSHOOTER weston-screenshooter)
 find_program(QINDAQT_DOTOOL dotool)
 find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)

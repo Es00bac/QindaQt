@@ -291,14 +291,14 @@
           "caveat": "Multiple tabs and profiles, settings persistence, shell/global-menu integration, whole-application assistive-technology proof, nested screenshot matrices, and physical display/input qualification remain later slices."
         },
         {
-          "id": "QQ-006.09", "title": "Cross-app responsive, DPI, visual, keyboard, and accessibility qualification", "weight": 4, "state": "MODELLED",
-          "summary": "QST-1 defines semantic accessibility inputs and five-theme values, but complete application matrices and a live assistive-technology bridge are not qualified.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/architecture/design-tokens.md", "summary": "The QST-1 contract records its accessibility inputs and explicit application-level evidence boundary." }],
-          "caveat": "Each first-party app must pass its own responsive, keyboard, screen-reader, and visual evidence."
+          "id": "QQ-006.09", "title": "Cross-app responsive, DPI, visual, keyboard, and accessibility qualification", "weight": 4, "state": "WIRED",
+          "summary": "The integrated private interactive S2 desktop boots the production compositor, shell, resident services, Settings, and Text Editor at 1920x1080, injects Meta+N through the isolated nested seat, and machine-binds the visible notification center to a captured parent frame.",
+          "evidence": [{ "kind": "commit", "reference": "26bb7f5724b548571d8aa13ac0a30eda4ca55149", "summary": "The exact independently accepted S2 replay passes a fresh 2,338-action build, 73/73 units, private boot and interaction rows, complete eight-role PSS accounting, exact screenshot-region evidence, and authenticated zero-survivor teardown." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The S2 contract records the distinct parent/child Wayland sockets, zero pre-input center, exact four-event Meta+N action, 440x640 visible center, bounded framebuffer evidence, 1,024 MiB ceiling, and teardown proof." }],
+          "caveat": "WIRED records one executable 1920x1080 cross-app workflow. WUXGA, 1440p, fractional DPI, theme variants, multi-output, every app's complete keyboard/screen-reader matrix, and physical display/input qualification remain."
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The typed responsive Settings Center S1 shell, QindaQt Text Editor S1, bounded local QindaQt File Manager S0, and single-session QindaQt Terminal S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The typed responsive Settings Center S1 shell, QindaQt Text Editor S1, bounded local QindaQt File Manager S0, and single-session QindaQt Terminal S0 are executable, the installed QindaQt.AppShell 1.0 boundary provides shared contracts, and the private S2 desktop now exercises a real 1920x1080 cross-app interaction and captured frame without host-seat access.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
@@ -308,10 +308,11 @@
           { "kind": "commit", "reference": "d0e0809", "summary": "The exact accepted Text Editor AppShell migration is replayed after independent review and manager-tree verification." },
           { "kind": "commit", "reference": "4f99a7f", "summary": "The independently accepted Terminal S0 replay is integrated after fresh manager-tree build, focused, package, source, and documentation verification." },
           { "kind": "commit", "reference": "0c9f4b0", "summary": "The accepted Settings Center S1 route/navigation repair is integrated after exact rereview and manager-tree verification." },
+          { "kind": "commit", "reference": "26bb7f5724b548571d8aa13ac0a30eda4ca55149", "summary": "The accepted private S2 desktop replay supplies the first executable cross-app screenshot and isolated-input row with all eight production roles below the 1,024 MiB ceiling." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, File Manager S0, and Terminal S0 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "Most Settings platform-service routes, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "Most Settings platform-service routes, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, the wider cross-app DPI/theme/accessibility matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",

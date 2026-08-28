@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import unittest
 
-from desktop_session_runtime import await_complete_snapshot
+from desktop_session_runtime import PRODUCTION_PSS_ROLES, await_complete_snapshot
 from desktop_session_topology import (
     TopologyContractError,
     desktop_1080p_topology,
@@ -170,6 +170,15 @@ class FakeClock:
 
 
 class TopologyTests(unittest.TestCase):
+    def test_product_pss_roles_include_both_visible_applications(self) -> None:
+        self.assertEqual(
+            PRODUCTION_PSS_ROLES,
+            (
+                "compositor", "session", "notification", "shell",
+                "settings-service", "audio-service", "settings-app", "editor-app",
+            ),
+        )
+
     def test_exact_topology_passes(self) -> None:
         validate_boot_evidence(valid_evidence())
 

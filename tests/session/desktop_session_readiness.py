@@ -10,6 +10,7 @@ import time
 from typing import Any, Callable, Mapping, TextIO
 
 from desktop_session_topology import (
+    BootTopology,
     TopologyContractError,
     desktop_1080p_topology,
     observed_applications,
@@ -88,8 +89,10 @@ def read_probe_document(
     return parse_and_archive_probe(line, log)
 
 
-def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
-    topology = desktop_1080p_topology()
+def _snapshot_pending(
+    probe: Mapping[str, Any], topology: BootTopology | None = None
+) -> str | None:
+    topology = topology or desktop_1080p_topology()
     expected_services = {item.name for item in topology.services}
     raw_services = probe.get("services")
     if not isinstance(raw_services, list):
@@ -137,7 +140,9 @@ def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
     output = values["outputs"]
     visibility = values["shellVisibility"]
     try:
-        applications = observed_applications(list(values["windows"].get("windows", [])))
+        applications = observed_applications(
+            list(values["windows"].get("windows", [])), topology
+        )
     except TopologyContractError as error:
         return str(error)
     candidate = {
@@ -152,7 +157,7 @@ def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
         "applications": applications,
     }
     try:
-        validate_topology_readiness(candidate)
+        validate_topology_readiness(candidate, topology)
     except TopologyContractError as error:
         return str(error)
     return None
@@ -161,6 +166,7 @@ def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
 def await_complete_snapshot(
     sample: Callable[[float], Mapping[str, Any]],
     *,
+    topology: BootTopology | None = None,
     seconds: float = READINESS_SECONDS,
     monotonic: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
@@ -181,7 +187,7 @@ def await_complete_snapshot(
             ) from None
         if monotonic() > deadline:
             raise RuntimeError(f"desktop topology readiness timed out: {last_pending}")
-        pending = _snapshot_pending(document)
+        pending = _snapshot_pending(document, topology)
         if pending is None:
             return document
         last_pending = pending

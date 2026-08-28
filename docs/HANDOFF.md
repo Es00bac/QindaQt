@@ -4,6 +4,20 @@
 
 Manager integration delta after the public baseline below:
 
+- `26bb7f5` supplies the exact independently accepted private interactive
+  desktop S2 replay. Astra's immutable Gemini review found P0/P1/P2/P3
+  `0/0/0/0`, completed a fresh 2,338-action build, passed 73/73 desktop-session
+  units and both private boot/interaction rows, and preserved the candidate
+  byte-clean. The combined D4+S2 manager tree completes 2,201/2,201 build
+  actions and passes package, boot, and interactive 3/3 plus 73/73 units. Its
+  private run `831b6c817364cd4765468fa3194f0d96` observes zero active centers
+  before exact `Meta+N`, then a mapped 440x640 center; captures a 1920x1080
+  parent frame with 77 full-frame and 48 bound-region colors; measures 167,633
+  KiB across all eight QindaQt roles under the 1,048,576 KiB ceiling; and
+  records eleven authenticated terminal phases with zero survivors. This
+  advances QQ-006.09 from MODELLED to WIRED without claiming the wider DPI,
+  theme, multi-output, screen-reader, GPU, or physical-device matrix.
+
 - `d7691ac` integrates the exact independently accepted Display D4 public
   QtWayland output-management writer. Galileo's immutable review found
   P0/P1/P2/P3 `0/0/0/0`, verified both lifecycle repairs and both decomposition/
@@ -208,11 +222,11 @@ Integrated evidence:
 
 ## Next outcome
 
-Continue the interactive virtual desktop integration described in
-[Task list](TASK_LIST.md). The combined production graph and private 1920x1080
-boot/topology/PSS/teardown boundary now pass. Exercise the private nested seat,
-collect reviewable screenshots, and prove repeatable teardown across the
-resolution, scale, theme, and multi-output matrix without connecting to the
+Extend the accepted private interactive desktop S2 evidence described in
+[Task list](TASK_LIST.md) across WUXGA, 1440p, representative 125%/150% scales,
+light/dusk/dark themes, and a real multi-output arrangement. Preserve the exact
+private-seat input, machine-bound screenshot region, all-eight-role 1,024 MiB
+ceiling, and authenticated zero-survivor teardown without connecting to the
 host pointer, display, session bus, or user configuration.
 
 The reusable `QindaQt.Controls 1.0` component set is now integrated after exact

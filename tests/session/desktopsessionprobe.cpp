@@ -49,6 +49,12 @@ QJsonObject compositorCall(QDBusInterface &compositor, const QString &method)
     return parseReply(compositor.call(method), method);
 }
 
+QJsonObject compositorCall(QDBusInterface &compositor, const QString &method,
+                           const QByteArray &argument)
+{
+    return parseReply(compositor.call(method, argument), method);
+}
+
 QJsonObject serviceRecord(QDBusConnectionInterface &bus, const QString &name)
 {
     const QDBusReply<QString> owner = bus.serviceOwner(name);
@@ -93,6 +99,108 @@ QJsonObject servicePending(const QString &method)
                        .arg(method));
 }
 
+QJsonObject keyEvent(QLatin1StringView key, bool pressed)
+{
+    return {{QStringLiteral("type"), QStringLiteral("key")},
+            {QStringLiteral("key"), key},
+            {QStringLiteral("pressed"), pressed}};
+}
+
+int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
+                                     const QDBusConnection &connection)
+{
+    if (!requiredServicesOwned(bus)) {
+        QTextStream(stderr) << "required private services are unavailable\n";
+        return 3;
+    }
+    QDBusInterface compositor(QString::fromLatin1(CompositorService),
+                              QString::fromLatin1(CompositorPath),
+                              QString::fromLatin1(CompositorInterface), connection);
+    const QJsonObject before =
+        compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"));
+    const QJsonValue beforeSurfaces = before.value(QStringLiteral("surfaces"));
+    if (before.value(QStringLiteral("status")) != QStringLiteral("ok")
+        || !beforeSurfaces.isArray()) {
+        QTextStream(stderr) << "pre-injection shell-surface evidence is unavailable\n";
+        return 4;
+    }
+    int preInjectionActiveSurfaceCount = 0;
+    for (const QJsonValue &value : beforeSurfaces.toArray()) {
+        const QJsonObject surface = value.toObject();
+        if (surface.value(QStringLiteral("scope")) == QStringLiteral("notification-center")
+            && surface.value(QStringLiteral("mapped")).toBool()
+            && surface.value(QStringLiteral("committed")).toBool()
+            && surface.value(QStringLiteral("active")).toBool()) {
+            ++preInjectionActiveSurfaceCount;
+        }
+    }
+    if (preInjectionActiveSurfaceCount != 0) {
+        QTextStream(stderr) << "notification center was active before private input\n";
+        return 5;
+    }
+    const QJsonArray events{
+        keyEvent(QLatin1StringView("left-meta"), true),
+        keyEvent(QLatin1StringView("n"), true),
+        keyEvent(QLatin1StringView("n"), false),
+        keyEvent(QLatin1StringView("left-meta"), false),
+    };
+    const QJsonObject request{{QStringLiteral("schemaVersion"), 1},
+                              {QStringLiteral("events"), events}};
+    const QJsonObject injected = compositorCall(
+        compositor, QStringLiteral("InjectTestInput"),
+        QJsonDocument(request).toJson(QJsonDocument::Compact));
+    if (injected.value(QStringLiteral("status")) != QStringLiteral("injected")
+        || injected.value(QStringLiteral("eventCount")).toInt(-1) != events.size()
+        || injected.value(QStringLiteral("deviceId"))
+               != QStringLiteral("qindaqt-development-input")) {
+        QTextStream(stderr) << "private development input was not accepted\n";
+        return 6;
+    }
+    // The action travels through KGlobalAccel and the shell, so observe the
+    // compositor-owned surface record instead of assuming synchronous UI work.
+    for (int attempt = 0; attempt != 60; ++attempt) {
+        const QJsonObject inventory =
+            compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"));
+        if (inventory.value(QStringLiteral("status")) != QStringLiteral("ok")
+            || !inventory.value(QStringLiteral("surfaces")).isArray()) {
+            QTextStream(stderr) << "post-injection shell-surface evidence is unavailable\n";
+            return 7;
+        }
+        QJsonObject match;
+        int matches = 0;
+        for (const QJsonValue &value : inventory.value(QStringLiteral("surfaces")).toArray()) {
+            const QJsonObject surface = value.toObject();
+            const QJsonObject geometry = surface.value(QStringLiteral("geometry")).toObject();
+            if (surface.value(QStringLiteral("scope")) == QStringLiteral("notification-center")
+                && surface.value(QStringLiteral("mapped")).toBool()
+                && surface.value(QStringLiteral("committed")).toBool()
+                && surface.value(QStringLiteral("active")).toBool()
+                && geometry.value(QStringLiteral("width")).toInt() == 440
+                && geometry.value(QStringLiteral("height")).toInt() == 640) {
+                match = surface;
+                ++matches;
+            }
+        }
+        if (matches == 1) {
+            const QJsonObject result{
+                {QStringLiteral("action"), QStringLiteral("open-notification-center")},
+                {QStringLiteral("deviceId"), injected.value(QStringLiteral("deviceId"))},
+                {QStringLiteral("eventCount"), events.size()},
+                {QStringLiteral("preInjectionActiveSurfaceCount"),
+                 preInjectionActiveSurfaceCount},
+                {QStringLiteral("surface"), match},
+            };
+            QTextStream(stdout) << "QINDAQT_DESKTOP_SESSION_INTERACTION="
+                                << QJsonDocument(result).toJson(QJsonDocument::Compact)
+                                << '\n';
+            return 0;
+        }
+        QThread::msleep(50);
+    }
+    QTextStream(stderr) << "notification center did not map on the private seat\n";
+    return 8;
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -103,6 +211,14 @@ int main(int argc, char **argv)
     QDBusConnectionInterface *const bus = connection.interface();
     if (!connection.isConnected() || bus == nullptr) {
         QTextStream(stderr) << "private session bus is unavailable\n";
+        return 2;
+    }
+    if (application.arguments().size() == 2
+        && application.arguments().at(1) == QStringLiteral("--open-notification-center")) {
+        return runNotificationCenterInteraction(*bus, connection);
+    }
+    if (application.arguments().size() != 1) {
+        QTextStream(stderr) << "unsupported probe arguments\n";
         return 2;
     }
 

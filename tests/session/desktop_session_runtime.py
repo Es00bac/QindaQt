@@ -8,15 +8,19 @@ import json
 import os
 import subprocess
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
 from desktop_session_measure import aggregate_pss_kib, read_process_sample
+from desktop_session_capture import capture_parent_frame
+from desktop_session_interactive import validate_interactive_evidence
 from desktop_session_process import (
     CleanupRecord,
     ProcessContractError,
     RuntimeState,
     capture_process_identity,
+    identity_is_live,
     process_evidence,
     spawn_logged_process,
     terminate_processes,
@@ -32,21 +36,41 @@ from desktop_session_readiness import (
 from desktop_session_sandbox import FORBIDDEN_ENVIRONMENT, SandboxContractError
 from desktop_session_stage import ResolvedStage, resolve_stage
 from desktop_session_topology import (
+    BootTopology,
     desktop_1080p_topology,
+    interactive_1080p_topology,
     observed_applications,
     validate_boot_evidence,
 )
 from nested_session_scenario import VirtualOutputSpec, write_virtual_output_config
 
 
-def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list[dict[str, Any]]:
+@dataclass(frozen=True)
+class DesktopLaunch:
+    app_environment: dict[str, str]
+    parent_environment: dict[str, str] | None
+    child_socket: str
+
+
+# AGENT-CONTRACT: ADR-0049's product PSS number covers every long-lived QindaQt
+# role present in the qualified desktop, including both visible applications.
+# The private Weston parent and short-lived probes are test infrastructure.
+PRODUCTION_PSS_ROLES = (
+    "compositor", "session", "notification", "shell",
+    "settings-service", "audio-service", "settings-app", "editor-app",
+)
+
+
+def _service_evidence(
+    probe: Mapping[str, Any], pids: Mapping[str, int], topology: BootTopology,
+) -> list[dict[str, Any]]:
     roles = {
         "org.qindaqt.Compositor": "compositor",
         "org.qindaqt.Settings1": "settings-service",
         "org.qindaqt.Audio1": "audio-service",
         "org.freedesktop.Notifications": "notification",
     }
-    names = {item.role: item.executable for item in desktop_1080p_topology().processes}
+    names = {item.role: item.executable for item in topology.processes}
     result: list[dict[str, Any]] = []
     for raw in probe.get("services", []):
         if not isinstance(raw, dict) or raw.get("status") != "owned":
@@ -62,8 +86,10 @@ def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list
     return result
 
 
-def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
-    processes, pids = process_evidence(probe)
+def _build_evidence(
+    probe: Mapping[str, Any], topology: BootTopology,
+) -> tuple[dict[str, Any], dict[str, int]]:
+    processes, pids = process_evidence(probe, topology)
     keys = ("outputs", "shellVisibility", "inputCapabilities",
             "developmentShellSurfaces", "windows")
     values = {key: probe.get(key, {}) for key in keys}
@@ -74,7 +100,7 @@ def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str,
     return (
         {
             "schemaVersion": 1,
-            "topology": desktop_1080p_topology().document(),
+            "topology": topology.document(),
             "containment": {
                 "mode": "bwrap-pid-network-ipc",
                 "hostDisplayReachable": False,
@@ -82,7 +108,7 @@ def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str,
                 "hostInputReachable": False,
             },
             "processes": processes,
-            "services": _service_evidence(probe, pids),
+            "services": _service_evidence(probe, pids, topology),
             "outputs": output.get("outputs", []),
             "visibilityOutputs": visibility.get("outputs", []),
             "generations": {
@@ -92,7 +118,7 @@ def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str,
             "inputDevices": values["inputCapabilities"].get("devices", []),
             "dockSurfaces": values["developmentShellSurfaces"].get("surfaces", []),
             "applications": observed_applications(
-                list(values["windows"].get("windows", []))
+                list(values["windows"].get("windows", [])), topology
             ),
         },
         pids,
@@ -116,7 +142,7 @@ def _start_desktop(
     stage: ResolvedStage,
     environment: dict[str, str],
     state: RuntimeState,
-) -> dict[str, str]:
+) -> DesktopLaunch:
     runtime = Path(environment["XDG_RUNTIME_DIR"])
     bus = spawn_logged_process(
         "dbus-daemon",
@@ -130,15 +156,37 @@ def _start_desktop(
         child = spawn_logged_process(role, [str(stage.executables[role])], environment)
         state.track(child, [stage.executables[role]])
     socket_name = _configure_private_session(environment)
+    compositor_environment = dict(environment)
+    parent_environment: dict[str, str] | None = None
+    if arguments.interactive:
+        parent_socket = "qindaqt-parent-wayland"
+        parent = spawn_logged_process(
+            "parent-compositor",
+            [str(arguments.weston), "--backend=headless", "--renderer=pixman",
+             "--shell=kiosk", "--debug", "--no-config", "--idle-time=0",
+             "--fake-seat", "--width=1920", "--height=1080", "--scale=1",
+             f"--socket={parent_socket}",
+             "--log=/var/log/qindaqt-desktop/parent-compositor-weston.log"],
+            environment,
+        )
+        state.track(parent, [arguments.weston])
+        wait_for_path(runtime / parent_socket, state, 5)
+        compositor_environment["WAYLAND_DISPLAY"] = parent_socket
+        parent_environment = dict(environment)
+        parent_environment["WAYLAND_DISPLAY"] = parent_socket
+    backend_arguments = (
+        ["--windowed"] if arguments.interactive else
+        ["--virtual", "--width", "1920", "--height", "1080", "--scale", "1",
+         "--output-count", "1"]
+    )
     compositor = spawn_logged_process(
         "compositor",
         [str(stage.executables["launcher"]), "--plugin-root",
-         str(stage.compositor_plugin.parents[2]), "--virtual", "--width", "1920",
-         "--height", "1080", "--scale", "1", "--output-count", "1", "--socket",
+         str(stage.compositor_plugin.parents[2]), *backend_arguments, "--socket",
          socket_name, "--test-scenario",
          "/opt/qindaqt-source/tests/scenarios/single-1080p.json", "--session",
          str(stage.executables["session"])],
-        environment,
+        compositor_environment,
     )
     state.track(compositor, [stage.executables["launcher"], arguments.kwin_wayland])
     wait_for_path(runtime / socket_name, state, 15)
@@ -150,7 +198,7 @@ def _start_desktop(
     ):
         child = spawn_logged_process(role, command, app_environment)
         state.track(child, [stage.executables[role]])
-    return app_environment
+    return DesktopLaunch(app_environment, parent_environment, socket_name)
 
 
 def _spawn_probe(
@@ -179,6 +227,7 @@ def _await_runtime_snapshot(
     arguments: argparse.Namespace,
     environment: Mapping[str, str],
     state: RuntimeState,
+    topology: BootTopology,
 ) -> tuple[Mapping[str, Any], subprocess.Popen[str]]:
     current: subprocess.Popen[str] | None = None
     current_deadline = 0.0
@@ -202,7 +251,7 @@ def _await_runtime_snapshot(
         current_deadline = time.monotonic() + lifetime
         return read_probe_document(current, current_deadline)
 
-    document = await_complete_snapshot(sample)
+    document = await_complete_snapshot(sample, topology=topology)
     if current is None:
         raise RuntimeError("desktop readiness completed without a probe")
     return document, current
@@ -210,18 +259,53 @@ def _await_runtime_snapshot(
 
 def _authenticate_processes(
     arguments: argparse.Namespace, stage: ResolvedStage,
-    state: RuntimeState, pids: Mapping[str, int], probe: subprocess.Popen[str]
+    state: RuntimeState, pids: Mapping[str, int], probe: subprocess.Popen[str],
+    topology: BootTopology,
 ) -> None:
     allowed = {
         item.role: [stage.executables[item.role]]
-        for item in desktop_1080p_topology().processes
+        for item in topology.processes
         if item.role in stage.executables
     }
     allowed.update({"private-bus": [arguments.dbus_daemon],
                     "compositor": [arguments.kwin_wayland],
                     "session-probe": [arguments.probe]})
+    if arguments.interactive:
+        allowed["parent-compositor"] = [arguments.weston]
     for role, pid in pids.items():
         state.identities.append(capture_process_identity(role, pid, allowed[role]))
+
+
+def _run_interaction(
+    arguments: argparse.Namespace, environment: Mapping[str, str], state: RuntimeState,
+) -> dict[str, Any]:
+    log = Path("/var/log/qindaqt-desktop/session-interaction.log").open(
+        "w", encoding="utf-8"
+    )
+    try:
+        process = subprocess.Popen(
+            [str(arguments.probe), "--open-notification-center"],
+            env=dict(environment), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=log, text=True, start_new_session=True,
+        )
+    except BaseException:
+        log.close()
+        raise
+    process._qindaqt_log = log  # type: ignore[attr-defined]
+    state.track(process, [arguments.probe])
+    output, _ = process.communicate(timeout=5)
+    # Preserve the exact marker before parsing, just as the readiness probe
+    # does. The final canonical evidence remains separately validated.
+    log.write(output)
+    log.flush()
+    marker = "QINDAQT_DESKTOP_SESSION_INTERACTION="
+    lines = [line for line in output.splitlines() if line.startswith(marker)]
+    if process.returncode != 0 or len(lines) != 1:
+        raise RuntimeError("private-seat interaction did not return exact evidence")
+    document = json.loads(lines[0].removeprefix(marker))
+    if not isinstance(document, dict):
+        raise RuntimeError("private-seat interaction evidence was malformed")
+    return document
 
 
 def _cleanup(state: RuntimeState) -> list[CleanupRecord]:
@@ -271,14 +355,39 @@ def run_inner(arguments: argparse.Namespace) -> int:
     state = RuntimeState()
     evidence: dict[str, Any] | None = None
     cleanup_records: list[CleanupRecord] = []
+    topology = interactive_1080p_topology() if arguments.interactive else desktop_1080p_topology()
     try:
-        app_environment = _start_desktop(arguments, stage, dict(os.environ), state)
-        snapshot, probe = _await_runtime_snapshot(arguments, app_environment, state)
-        evidence, pids = _build_evidence(snapshot)
-        _authenticate_processes(arguments, stage, state, pids, probe)
-        samples = [read_process_sample(pids[role]) for role in (
-            "compositor", "session", "notification", "shell",
-            "settings-service", "audio-service")]
+        launch = _start_desktop(arguments, stage, dict(os.environ), state)
+        snapshot, probe = _await_runtime_snapshot(
+            arguments, launch.app_environment, state, topology
+        )
+        evidence, pids = _build_evidence(snapshot, topology)
+        _authenticate_processes(arguments, stage, state, pids, probe, topology)
+        if arguments.interactive:
+            if launch.parent_environment is None:
+                raise RuntimeError("interactive launch omitted its private parent endpoint")
+            evidence["containment"].update({
+                "parentBackend": "weston-headless-pixman",
+                "qindaqtBackend": "kwin-windowed-qpaint",
+                "parentWaylandSocket": "qindaqt-parent-wayland",
+                "childWaylandSocket": launch.child_socket,
+            })
+            evidence["interaction"] = _run_interaction(
+                arguments, launch.app_environment, state
+            )
+            interaction_surface = evidence["interaction"].get("surface", {})
+            if not isinstance(interaction_surface, Mapping):
+                raise RuntimeError("interactive surface evidence was malformed")
+            interaction_geometry = interaction_surface.get("geometry", {})
+            if not isinstance(interaction_geometry, Mapping):
+                raise RuntimeError("interactive surface geometry was malformed")
+            evidence["capture"] = capture_parent_frame(
+                arguments.weston_screenshooter,
+                launch.parent_environment,
+                Path("/var/lib/qindaqt-evidence"),
+                content_region=interaction_geometry,
+            )
+        samples = [read_process_sample(pids[role]) for role in PRODUCTION_PSS_ROLES]
         pss = aggregate_pss_kib(samples)
         evidence["measurements"] = {"residentPssKiB": pss, "ceilingKiB": 1024 * 1024}
         if pss > 1024 * 1024:
@@ -288,14 +397,24 @@ def run_inner(arguments: argparse.Namespace) -> int:
             raise RuntimeError("desktop session probe failed")
     finally:
         cleanup_records = _cleanup(state)
+    survivor_pids = sorted(
+        identity.pid for identity in state.identities if identity_is_live(identity)
+    )
+    if survivor_pids:
+        raise ProcessContractError(
+            f"authenticated processes survived final observation: {survivor_pids}"
+        )
     if evidence is None:
         raise RuntimeError("desktop evidence was not constructed")
     evidence["cleanup"] = {
         "bounded": True,
-        "survivorPids": [],
+        "survivorPids": survivor_pids,
         "terminalPhases": [record.document() for record in cleanup_records],
     }
-    validate_boot_evidence(evidence)
+    if arguments.interactive:
+        validate_interactive_evidence(evidence)
+    else:
+        validate_boot_evidence(evidence)
     artifact = Path("/var/lib/qindaqt-evidence/desktop-session-evidence.json")
     artifact.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n")
     print("QINDAQT_DESKTOP_SESSION_EVIDENCE=" + json.dumps(evidence, sort_keys=True))

@@ -86,10 +86,20 @@ def _sandbox_path_for(source: Path, mounts: tuple[ReadOnlyMount, ...]) -> str:
 
 def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> SandboxSpec:
     tools = [arguments.python, arguments.dbus_daemon, arguments.kwin_wayland]
+    interactive = getattr(arguments, "interactive", False)
+    if interactive:
+        tools.extend([arguments.weston, arguments.weston_screenshooter])
     mounts = _system_mounts(tools)
     python = _sandbox_path_for(arguments.python, mounts)
     dbus_daemon = _sandbox_path_for(arguments.dbus_daemon, mounts)
     kwin_wayland = _sandbox_path_for(arguments.kwin_wayland, mounts)
+    weston = (
+        _sandbox_path_for(arguments.weston, mounts) if interactive else ""
+    )
+    screenshooter = (
+        _sandbox_path_for(arguments.weston_screenshooter, mounts)
+        if interactive else ""
+    )
     system_path = sorted(
         {str(PurePosixPath(_sandbox_path_for(tool, mounts)).parent) for tool in tools}
     )
@@ -122,6 +132,12 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
         "--kwin-wayland",
         kwin_wayland,
     )
+    if interactive:
+        command += (
+            "--interactive",
+            "--weston", weston,
+            "--weston-screenshooter", screenshooter,
+        )
     return SandboxSpec(
         bwrap=arguments.bwrap,
         run_id=run_id,
@@ -253,11 +269,11 @@ def run_outer(arguments: argparse.Namespace) -> int:
             )
             identity = capture_process_identity("sandbox", process.pid, [arguments.bwrap])
             try:
-                output, _ = process.communicate(timeout=55)
+                output, _ = process.communicate(timeout=70)
             except subprocess.TimeoutExpired:
                 terminate_processes([identity])
                 output, _ = process.communicate(timeout=2)
-                output += "\nsandbox exceeded its 55 second deadline\n"
+                output += "\nsandbox exceeded its 70 second deadline\n"
                 return_code = 1
                 timed_out = True
             else:
@@ -265,7 +281,7 @@ def run_outer(arguments: argparse.Namespace) -> int:
                 timed_out = False
             outcome = "success" if return_code == 0 else ("timeout" if timed_out else "failure")
             failure = None if return_code == 0 else (
-                "sandbox exceeded its 55 second deadline"
+                "sandbox exceeded its 70 second deadline"
                 if timed_out else f"sandbox exited with status {return_code}"
             )
             result = AttemptResult(
@@ -308,6 +324,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--dbus-daemon", type=Path, required=True)
     parser.add_argument("--kwin-wayland", type=Path, required=True)
+    parser.add_argument("--interactive", action="store_true")
+    parser.add_argument("--weston", type=Path)
+    parser.add_argument("--weston-screenshooter", type=Path)
     parser.add_argument("--run-id", default="")
     parser.add_argument("--print-command-json", action="store_true")
     return parser.parse_args()
@@ -316,6 +335,12 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> int:
     arguments = parse_arguments()
     try:
+        if arguments.interactive and (
+            arguments.weston is None or arguments.weston_screenshooter is None
+        ):
+            raise SandboxContractError(
+                "interactive mode requires Weston and weston-screenshooter"
+            )
         return run_outer(arguments) if arguments.outer else run_inner(arguments)
     except (
         json.JSONDecodeError,

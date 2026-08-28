@@ -72,11 +72,11 @@ The repository currently builds and tests:
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
   subset the current virtual backend actually applies;
-- an integrated contained virtual-desktop S0+S1 harness boundary with an
+- an integrated contained virtual-desktop S0+S1+S2 harness boundary with an
   authenticated private bubblewrap stage, exact production package and
-  topology contracts, bounded readiness/resource accounting, durable failure
-  evidence, and identity-safe teardown; its private 1080p boot row remains
-  unqualified pending the exact Settings application-identity integration; and
+  topology contracts, bounded eight-role resource accounting, durable failure
+  evidence, identity-safe teardown, one machine-bound 1920x1080 parent frame,
+  and an exact `Meta+N` interaction confined to the private nested seat; and
 - strict compiler warnings, unit tests, source-shape checks, and this wiki.
 
 The repository now boots a real compositor and has completed its Compositor
@@ -108,7 +108,7 @@ manager-tree integration despite an accepted candidate.
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
 | Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and installed Notification Live are qualified; Global Menu G0 executes in focused tests; Launcher, Task List, Status Notifier tray, Audio/Power applets, and the customization-editor domain are wired source slices; their production transports/hosts, Bluetooth/clipboard applets, reveal UI, and whole-shell qualification remain) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1, Display D0-D4, Bluetooth B0, Network N0, and the pure Display Color C0 boundary execute; PB-0, Clipboard C0, and Font F0 foundations are WIRED; resident Network1/NetworkManager transport/UI, production BlueZ/UI/hardware, live color/font discovery and application, clipboard capture/service/UI, Display durable journal/resident composition/UI/nested convergence, resident Power upstream adapters/UI, hardware qualification, and other providers remain) |
-| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls are independently qualified; Notifications and Appearance are live installed Settings routes; typed responsive Settings Center S1 navigation, Text Editor S1, bounded local File Manager S0, single-session Terminal S0, and the narrow installed QindaQt.AppShell 1.0 action/lifecycle/portal/focus/accessibility boundary are executable; remaining service routes, later File Manager and Terminal capabilities, app migrations, cross-app and nested-session matrices, and live accessibility bridge pending) |
+| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls are independently qualified; Notifications and Appearance are live installed Settings routes; typed responsive Settings Center S1 navigation, Text Editor S1, bounded local File Manager S0, single-session Terminal S0, and the narrow installed QindaQt.AppShell 1.0 action/lifecycle/portal/focus/accessibility boundary are executable; private S2 now supplies one real 1920x1080 cross-app input/screenshot row; remaining service routes, later File Manager and Terminal capabilities, app migrations, the wider DPI/theme/multi-output matrix, and live accessibility bridge remain) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |
 
 Each milestone lands behind stable module boundaries rather than accumulating
