@@ -58,6 +58,7 @@ TerminalPtyBridge::OpenResult TerminalPtyBridge::open() {
   }
 
   m_masterFd = master;
+  m_childOutputClosed = false;
   const int flags = ::fcntl(m_masterFd, F_GETFL, 0);
   if (flags >= 0) {
     // Master-only nonblocking mode: the child never references this open
@@ -153,7 +154,7 @@ void TerminalPtyBridge::flushInput() {
 }
 
 void TerminalPtyBridge::pumpMasterToSink() {
-  if (m_masterFd < 0) {
+  if (m_masterFd < 0 || m_childOutputClosed) {
     return;
   }
   char chunk[8192];
@@ -172,8 +173,20 @@ void TerminalPtyBridge::pumpMasterToSink() {
     if (received < 0 && errno == EINTR) {
       continue;
     }
-    // EAGAIN: drained. EIO: the slave side has no open descriptor (child
-    // exited) — a normal terminal condition, not an error to report.
+    if (received < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      return; // Drained; the notifier stays armed for live output.
+    }
+    // AGENT-GUARD (P1: EIO hot loop): 0 (EOF) or any other errno is
+    // terminal for this generation. Linux reports EIO once the last slave
+    // descriptor is gone and keeps the master POLLHUP-readable forever, so
+    // leaving the notifier enabled here spins the GUI thread. The master is
+    // deliberately NOT closed: closeChildChannel() is its only owner and the
+    // teardown SIGHUP path, and exit truth stays with the session's
+    // ProcessMonitor reap — this quiescence is not an exit publication.
+    m_childOutputClosed = true;
+    if (m_readNotifier != nullptr) {
+      m_readNotifier->setEnabled(false);
+    }
     return;
   }
 }

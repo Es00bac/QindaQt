@@ -25,6 +25,16 @@ namespace QindaQt::Apps::Terminal {
 //    teletype slave; slave write -> widget master read -> emulator).
 // Buffers are bounded (64 KiB, drop-newest) and writes retry EINTR, parking
 // on EAGAIN behind a write notifier.
+//
+// Read-side quiescence contract (P1: EIO hot loop): once pumpMasterToSink()
+// observes a terminal read condition — EOF, Linux EIO after the last slave
+// descriptor closes, or any hard read error — the read notifier is disabled
+// for the rest of the generation. Linux keeps a hung-up master
+// POLLHUP-readable forever, so leaving the notifier armed hot-loops the GUI
+// thread. The master itself is NOT closed: closeChildChannel() is its only
+// owner and the teardown's SIGHUP path, and exit truth stays with the
+// session's ProcessMonitor reap (isChildOutputClosed() is an observation for
+// tests/diagnostics, never an exit signal).
 class TerminalPtyBridge final : public QObject {
   Q_OBJECT
 
@@ -56,6 +66,13 @@ public:
 
   [[nodiscard]] bool isOpen() const { return m_masterFd >= 0; }
 
+  // True once the master read side reported a terminal condition (EOF, EIO
+  // after the last slave closed, or a hard error). Diagnostic/test
+  // observation only: exit truth is the session's ProcessMonitor reap.
+  [[nodiscard]] bool isChildOutputClosed() const {
+    return m_childOutputClosed;
+  }
+
 private:
   void pumpMasterToSink();
   void flushInput();
@@ -64,6 +81,7 @@ private:
   OutputSink m_sink;
   QString m_slavePath;
   int m_masterFd = -1;
+  bool m_childOutputClosed = false;
   QByteArray m_inputBuffer;
   QSocketNotifier *m_readNotifier = nullptr;
   QSocketNotifier *m_writeNotifier = nullptr;

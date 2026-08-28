@@ -43,7 +43,13 @@ public:
   [[nodiscard]] ProcessId shellProcessId() const override {
     return m_childPid;
   }
-  [[nodiscard]] QWidget *terminalWidget() override { return m_widget; }
+  // Defined out of line in the .cpp: QTermWidget is only forward-declared
+  // here (the private dependency must stay invisible to consumers), so the
+  // derived-to-base conversion needs the complete type. AGENT-GUARD: never
+  // give this override an inline body touching m_widget — the AUTOMOC unit
+  // and main.cpp compile without <qtermwidget.h> and would fail the
+  // derived-to-base conversion again (P1 strict-compile defect).
+  [[nodiscard]] QWidget *terminalWidget() override;
 
   void copySelectionToClipboard() override;
   void pasteClipboardToSession() override;
@@ -58,6 +64,7 @@ protected:
 
 private:
   void applyAppearance();
+  void makeWidgetTransportByteTransparent();
   void closeChildChannel();
   void forwardChildOutput(const char *data, int length);
   void flushChildOutputToWidget();
@@ -71,6 +78,10 @@ private:
   int m_widgetSlaveFd = -1;
   QByteArray m_widgetOutputBuffer;
   QSocketNotifier *m_widgetOutputNotifier = nullptr;
+  // Empty when the widget transport is proven byte-transparent; otherwise a
+  // typed diagnostic that makes start() refuse (fail-closed, P2: the second
+  // PTY must never apply a second line-discipline transformation).
+  QString m_transportDiagnostic;
   ProcessId m_childPid = 0;
   bool m_shutdownRequested = false;
 };

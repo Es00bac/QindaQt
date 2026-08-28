@@ -72,7 +72,10 @@ first window is shown — hiding the only window must not end the event loop
 while the escalation is running — and the sole quit path is a queued
 connection that fires only after a clean shutdown. Closing during a pending
 restart cancels the restart instead of launching a child that the quit would
-immediately destroy. Bounds are injected values (default close 3 s, term 1 s,
+immediately destroy, including when the close arrives while the restart's
+teardown is already in flight; every non-refused close routes through the
+session's `beginShutdown`, which is the restart cancellation in that state.
+Bounds are injected values (default close 3 s, term 1 s,
 kill 1 s; 20 ms poll) which makes the sequence deterministic in tests.
 
 ## Rendering adapter boundary
@@ -86,7 +89,16 @@ flag can leak; keyboard and paste bytes are written to the bridge master (the
 only input direction); child output and line-discipline echo are read from the
 bridge master and forwarded into a private duplicate of the widget's teletype
 slave, which the widget's master reader feeds to the emulator; child winsize
-is programmed explicitly from the live emulator grid on widget resize. Each
+is programmed explicitly from the live emulator grid on widget resize. The
+widget transport is byte-transparent: the bridge already delivers
+line-disciplined child output, so the adapter clears output processing
+(`OPOST`) on its teletype duplicate with fail-closed verification, and a
+start attempt fails with a typed diagnostic rather than rendering bytes a
+second line discipline has mutated. The bridge read side is quiescent after
+a terminal read condition (EOF, `EIO` after the last slave closes, or a hard
+error): its notifier is disabled for the rest of the generation while the
+master stays open, because Linux keeps a hung-up master readable forever and
+the retained Exited session must not spin. Each
 descriptor has exactly one writer, buffers are bounded (64 KiB) with
 drop-newest backpressure, and the adapter keeps fork/exec, reaping, and view
 disposal. `qindaqt-terminal` links the adapter; the support library with
@@ -112,7 +124,11 @@ No window action binds a plain `Ctrl+<letter>` readline sequence (`C`, `S`,
 `Q`, `A`, `Z`, `X`, `V`, `R`, `K`, `W`): flow control and shell line editing
 belong to the child program, and stealing them would be a functional
 regression. Copy is enabled only while a selection exists; paste actions
-deactivate safely when no generation is live. The embedded view takes focus
+deactivate safely when no generation is live, so a retained Exited buffer
+never accepts paste. Select All publishes the adapter's real selection
+availability — an empty buffer never enables Copy. The retained Exited view
+keeps scrollback operations (Select All, Clear, and Copy of an existing
+selection) available. The embedded view takes focus
 when published, has `StrongFocus` policy, an accessible name and description,
 and the window exposes its title, session status, and accessible status text.
 Deep screen-reader bridge qualification stays a cross-application milestone
@@ -146,22 +162,30 @@ The focused selector is:
 ctest --test-dir build/dev -R '^qindaqt\.terminal-' --output-on-failure
 ```
 
-It covers hostile program/argument/environment resolution, effective UTF-8
+It covers hostile program/argument/environment resolution with UTF-8 byte
+ceilings, effective UTF-8
 locale precedence with a strict codeset oracle, forced `TERM`/`COLORTERM`,
 real metadata-based executable checks, the real-PTY bridge (input direction,
-output/echo capture, winsize, close), the session state machine (typed start
+output/echo capture, winsize, close, and read-notifier quiescence with
+retained-master bounded liveness after the slave side disappears), the
+session state machine (typed start
 failures, exit-code versus signal versus unknown-exit publication,
 duplicate-exit suppression), the teardown escalation sequence including
 refusal to replace an unkillable generation, ownership retention with
 close/quit/restart refusal while a survivor remains, close-cancels-pending-
-restart, forced destruction of a mid-shutdown session, restart generation
+restart through the session route and the production window route (Restart
+then real close spawns no second generation),
+forced destruction of a mid-shutdown session, restart generation
 replacement, view-disposal ordering, the close/quit wiring contract (the
 quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
-wiring binding), window action identity and action-state truth,
-readline-safe shortcuts, exit-status severity rendering, accessibility and
-focus metadata, hostile-resize clamping, QST scheme documents for all five
-themes, desktop metadata, positional-argument rejection, and staged installed
-metadata with installed-prefix theme resolution. The installed and CLI rows
+wiring binding), window action identity and action-state truth across
+Running→Exited, readline-safe shortcuts, exit-status severity rendering,
+accessibility and focus metadata, hostile-resize clamping, QST scheme
+documents for all five themes, desktop metadata, positional-argument
+rejection, and staged installed metadata with installed-prefix theme
+resolution. Every Widgets-linked row sets `QT_QPA_PLATFORM=offscreen`, so
+the selector runs in display-less environments with no display variables
+set. The installed and CLI rows
 exit before any window or session exists.
 
 Serializer-lane qualification that S0 deliberately does not claim: real

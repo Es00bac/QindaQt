@@ -19,6 +19,14 @@ bool hasControlCharacter(const QString &value) {
   return false;
 }
 
+// AGENT-GUARD (P3-1): every documented bound is a BYTE ceiling because the
+// values become execve/envp bytes. QString::size() counts UTF-16 code units,
+// so a multibyte path can exceed the promised ceiling without tripping the
+// check; always measure the UTF-8 encoding.
+[[nodiscard]] qsizetype utf8ByteLength(const QString &value) {
+  return value.toUtf8().size();
+}
+
 // Environment keys are restricted to the portable subset accepted by every
 // libc. Anything else is dropped rather than repaired: repairing hostile keys
 // could silently change which executable or locale a child picks up.
@@ -46,7 +54,8 @@ std::optional<NameValue> splitEntry(const QString &entry) {
   if (value.contains(QLatin1Char('\n')) || value.contains(QLatin1Char('\r'))) {
     return std::nullopt;
   }
-  if (entry.size() > TerminalLaunchPolicy::kMaxEnvironmentEntryLength) {
+  if (utf8ByteLength(entry) >
+      TerminalLaunchPolicy::kMaxEnvironmentEntryLength) {
     return std::nullopt;
   }
   return NameValue{name, value};
@@ -112,8 +121,9 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
     return {.outcome = {false, QStringLiteral("Shell program is empty")},
             .request = {}};
   }
-  // P3-1: bounded hostile-path contract, mirroring the argument bounds.
-  if (candidate.size() > kMaxProgramLength) {
+  // P3-1: bounded hostile-path contract, mirroring the argument bounds. The
+  // ceiling is UTF-8 bytes (what execve actually receives), not UTF-16 units.
+  if (utf8ByteLength(candidate) > kMaxProgramLength) {
     return {.outcome = {false,
                         QStringLiteral("Shell program path exceeds %1 bytes")
                             .arg(kMaxProgramLength)},
@@ -180,7 +190,7 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
                               .arg(quotedForDiagnostic(argument))},
               .request = {}};
     }
-    if (argument.size() > kMaxArgumentLength) {
+    if (utf8ByteLength(argument) > kMaxArgumentLength) {
       return {.outcome = {false,
                           QStringLiteral("Shell argument exceeds %1 bytes")
                               .arg(kMaxArgumentLength)},
@@ -189,7 +199,7 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
   }
 
   if (!workingDirectory.isEmpty()) {
-    if (workingDirectory.size() > kMaxWorkingDirectoryLength) {
+    if (utf8ByteLength(workingDirectory) > kMaxWorkingDirectoryLength) {
       return {.outcome =
                   {false,
                    QStringLiteral("Working directory path exceeds %1 bytes")

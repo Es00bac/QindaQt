@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -76,13 +77,14 @@ void resetSignalDispositionsAndMask() {
 
 void closeChildDescriptors() {
 #ifdef __linux__
-  // Linux-wide close primitive; the loop below is only an ENOSYS fallback.
+  // Linux-wide close primitive; the loop below is the fallback for every
+  // close_range failure.
   if (::close_range(STDERR_FILENO + 1, ~0U, 0) == 0) {
     return;
   }
-  if (errno != ENOSYS && errno != EINVAL) {
-    return;
-  }
+  // AGENT-GUARD (P3-2): fall through on ANY close_range error — ENOSYS on
+  // old kernels, EINVAL on bounds, but also sandbox/SELinux EPERM. Returning
+  // here would leak every inherited descriptor into the exec'd shell.
 #endif
   for (int fd = STDERR_FILENO + 1; fd < kChildFdScanLimit; ++fd) {
     ::close(fd);
@@ -96,15 +98,18 @@ void closeChildDescriptors() {
 // checked so a partially wired stdio never reaches execve.
 [[noreturn]] void execChildInBridge(const char *slavePath,
                                     const ExecStrings &strings) {
-  // Opening the slave after setsid() acquires it as the controlling
-  // terminal; TIOCSCTTY then asserts it explicitly.
+  // AGENT-CONTRACT (ADR-0040, P3-4): setsid() runs BEFORE the slave opens —
+  // the child becomes a session leader with no controlling terminal, and
+  // opening the slave then acquires it as the controlling TTY; TIOCSCTTY
+  // asserts that explicitly. Reordering the open before setsid silently
+  // breaks this conventional acquisition order and the accepted wording.
+  if (::setsid() == -1) {
+    writeAllToStderr("qindaqt-terminal: cannot create the session\n");
+    ::_exit(126);
+  }
   const int slave = ::open(slavePath, O_RDWR);
   if (slave < 0) {
     writeAllToStderr("qindaqt-terminal: cannot open the terminal device\n");
-    ::_exit(126);
-  }
-  if (::setsid() == -1) {
-    writeAllToStderr("qindaqt-terminal: cannot create the session\n");
     ::_exit(126);
   }
   if (::ioctl(slave, TIOCSCTTY, nullptr) == -1) {
@@ -159,6 +164,7 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
       if (flags >= 0) {
         ::fcntl(m_widgetSlaveFd, F_SETFL, flags | O_NONBLOCK);
       }
+      makeWidgetTransportByteTransparent();
       m_widgetOutputNotifier =
           new QSocketNotifier(m_widgetSlaveFd, QSocketNotifier::Write, this);
       m_widgetOutputNotifier->setEnabled(false);
@@ -197,6 +203,39 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
   applyAppearance();
 }
 
+QWidget *TerminalWidgetAdapter::terminalWidget() { return m_widget; }
+
+void TerminalWidgetAdapter::makeWidgetTransportByteTransparent() {
+  // AGENT-CONTRACT (P2: double line discipline, ADR-0040): the bytes this
+  // adapter writes into the widget's teletype slave are already
+  // line-disciplined child output from the bridge PTY. qtermwidget opens its
+  // PTY with default termios, whose OPOST/ONLCR would transform that output
+  // a second time (LF -> CRLF), so the transport must be byte-transparent.
+  // Fail-closed: when the output processing cannot be cleared AND the
+  // clearing verified, the transport stays unusable and start() refuses with
+  // a typed diagnostic instead of silently rendering mutated bytes.
+  termios settings{};
+  if (::tcgetattr(m_widgetSlaveFd, &settings) != 0) {
+    m_transportDiagnostic = QStringLiteral(
+        "Cannot read the rendering teletype settings");
+    return;
+  }
+  // OPOST off disables every output translation; the cast keeps the bitwise
+  // complement unsigned so -Wsign-conversion stays clean.
+  settings.c_oflag &= static_cast<tcflag_t>(~OPOST);
+  if (::tcsetattr(m_widgetSlaveFd, TCSANOW, &settings) != 0) {
+    m_transportDiagnostic = QStringLiteral(
+        "Cannot clear rendering teletype output processing");
+    return;
+  }
+  termios verified{};
+  if (::tcgetattr(m_widgetSlaveFd, &verified) != 0 ||
+      (verified.c_oflag & OPOST) != 0) {
+    m_transportDiagnostic = QStringLiteral(
+        "Rendering teletype output processing could not be disabled");
+  }
+}
+
 TerminalWidgetAdapter::~TerminalWidgetAdapter() {
   closeChildChannel();
   if (m_widget != nullptr) {
@@ -215,8 +254,11 @@ void TerminalWidgetAdapter::applyAppearance() {
     return;
   }
   // AGENT-NOTE (P3-3): the scheme document is per-instance (pid + counter)
-  // and installed by atomic rename, so concurrent launches cannot race its
-  // contents and a pre-existing symlink cannot redirect truncation.
+  // and installed atomically. The temporary file is created with NewOnly —
+  // an exclusive create that fails instead of truncating through a
+  // pre-planted symlink — and the install removes a crash-stale target
+  // (possible after PID reuse) before renaming, so a stale file can never
+  // make the install fail or race its contents.
   const QString cacheDirectory =
       QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
   if (!cacheDirectory.isEmpty() && QDir().mkpath(cacheDirectory)) {
@@ -228,14 +270,22 @@ void TerminalWidgetAdapter::applyAppearance() {
     const QString temporaryPath = targetPath + QStringLiteral(".tmp");
     {
       QFile schemeFile(temporaryPath);
-      if (schemeFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+      if (schemeFile.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
         const QByteArray document =
             TerminalColorSchemeDocument::render(m_appearance).toUtf8();
         if (schemeFile.write(document) == document.size() &&
-            schemeFile.flush() &&
-            QFile::rename(temporaryPath, targetPath)) {
-          m_schemePath = targetPath;
-          m_widget->setColorScheme(m_schemePath);
+            schemeFile.flush()) {
+          schemeFile.close();
+          // Replace-safe install (P3-3): a stale target can only exist after
+          // PID reuse from a crashed instance of this same pid/counter name,
+          // so removing it first is safe; QFile::rename does not overwrite.
+          if (QFile::exists(targetPath)) {
+            QFile::remove(targetPath);
+          }
+          if (QFile::rename(temporaryPath, targetPath)) {
+            m_schemePath = targetPath;
+            m_widget->setColorScheme(m_schemePath);
+          }
         }
       }
     }
@@ -280,6 +330,11 @@ TerminalSessionBackend::StartOutcome TerminalWidgetAdapter::start(
                                     "Terminal channel is unavailable")
                               : m_bridgeDiagnostic};
   }
+  if (!m_transportDiagnostic.isEmpty()) {
+    // Fail-closed byte-transparency gate (P2: double line discipline): a
+    // transforming transport would corrupt exact child output bytes.
+    return {.ok = false, .diagnostic = m_transportDiagnostic};
+  }
 
   // AGENT-NOTE: All byte conversion and pointer-array construction happens
   // before fork so the child's pre-exec path stays allocation-free (P2-2).
@@ -288,21 +343,29 @@ TerminalSessionBackend::StartOutcome TerminalWidgetAdapter::start(
   // policy.
   ExecStrings strings;
   strings.program = request.program.toLocal8Bit();
-  strings.arguments.reserve(request.arguments.size());
+  strings.arguments.reserve(static_cast<size_t>(request.arguments.size()));
   for (const QString &argument : request.arguments) {
     strings.arguments.push_back(argument.toLocal8Bit());
   }
-  strings.environment.reserve(request.environment.size());
+  strings.environment.reserve(
+      static_cast<size_t>(request.environment.size()));
   for (const QString &entry : request.environment) {
     strings.environment.push_back(entry.toLocal8Bit());
   }
   strings.workingDirectory = request.workingDirectory.toLocal8Bit();
+  // AGENT-GUARD (P1 strict compile): argv/envp alias the QByteArray buffers,
+  // each of which has refcount 1 right after construction. Never append to
+  // arguments/environment after the pointer arrays are built, and never copy
+  // ExecStrings (a copy shares the buffers, and a later non-const data()
+  // would detach and dangle); execChildInBridge takes a const reference, so
+  // no copy exists. The loops iterate non-const QByteArray on purpose: the
+  // non-const data() is the honest char* without a const_cast.
   strings.argv.push_back(strings.program.data());
-  for (const QByteArray &argument : strings.arguments) {
+  for (QByteArray &argument : strings.arguments) {
     strings.argv.push_back(argument.data());
   }
   strings.argv.push_back(nullptr);
-  for (const QByteArray &entry : strings.environment) {
+  for (QByteArray &entry : strings.environment) {
     strings.envp.push_back(entry.data());
   }
   strings.envp.push_back(nullptr);
@@ -416,14 +479,16 @@ void TerminalWidgetAdapter::selectAllInView() {
   // AGENT-GUARD (P1-4): qtermwidget rows are zero-based and it does not clamp
   // the end row, so the end row must be the last valid row
   // (history + screen - 1); the columns value deliberately keeps upstream's
-  // one-past-column convention. The direct path also publishes availability.
+  // one-past-column convention. Availability is the adapter's real
+  // hasSelectedText() answer (P2: a blank buffer must not enable Copy),
+  // never an unconditional true.
   const int lastValidRow =
       m_widget->historyLinesCount() + m_widget->screenLinesCount() - 1;
   m_widget->setSelectionStart(0, 0);
   if (lastValidRow >= 0) {
     m_widget->setSelectionEnd(lastValidRow, m_widget->screenColumnsCount());
   }
-  emit selectionChanged(true);
+  emit selectionChanged(hasSelectedText());
 }
 
 void TerminalWidgetAdapter::clearView() {

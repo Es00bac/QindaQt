@@ -251,14 +251,18 @@ void TerminalWindow::embedTerminalWidget(QWidget *widget) {
 void TerminalWindow::updateViewActionStates() {
   // AGENT-CONTRACT (P2-4): action enabled state must match observable
   // reality. View operations need a live view; copy additionally needs a
-  // selection; Restart is refused while an escalation is in flight and
-  // while a SIGKILL survivor is owned (ShutdownFailed).
+  // selection; paste additionally needs a live generation — the Exited state
+  // deliberately retains the widget for scrollback, but no child exists to
+  // receive pasted input, so paste must gate on Running (P2: Exited paste).
+  // Restart is refused while an escalation is in flight and while a SIGKILL
+  // survivor is owned (ShutdownFailed).
   const auto state = m_session->state();
   const bool viewLive = m_session->terminalWidget() != nullptr &&
                         state != TerminalSession::State::ShuttingDown;
+  const bool generationLive = state == TerminalSession::State::Running;
   m_copyAction->setEnabled(m_hasSelection && viewLive);
-  m_pasteAction->setEnabled(viewLive);
-  m_pasteSelectionAction->setEnabled(viewLive);
+  m_pasteAction->setEnabled(generationLive);
+  m_pasteSelectionAction->setEnabled(generationLive);
   m_selectAllAction->setEnabled(viewLive);
   m_clearAction->setEnabled(viewLive);
   m_restartAction->setEnabled(state != TerminalSession::State::ShuttingDown &&
@@ -381,11 +385,14 @@ void TerminalWindow::requestCloseShutdown() {
 }
 
 void TerminalWindow::closeEvent(QCloseEvent *event) {
-  if (m_session->state() == TerminalSession::State::ShuttingDown) {
-    m_quitRequested = true;
-    event->accept();
-    return;
-  }
+  // AGENT-GUARD (P1: Restart→Close): every non-refused close — including one
+  // that arrives while a Restart's teardown is already in flight — must
+  // reach TerminalSession::beginShutdown(); in ShuttingDown that call is the
+  // cancellation of the pending restart. A ShuttingDown short-circuit here
+  // let completeShutdown() spawn generation 2 right before the queued quit
+  // destroyed it. requestCloseShutdown() is idempotent while ShuttingDown,
+  // so repeated closes stay single-quit; the ShutdownFailed refusal below
+  // must stay first because a survivor is never releasable.
   if (m_session->state() == TerminalSession::State::ShutdownFailed) {
     // P1-2: ownership of the survivor is retained, so closing (and the quit
     // it would trigger) is refused until the child is actually gone.
