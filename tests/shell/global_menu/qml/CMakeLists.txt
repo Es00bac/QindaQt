@@ -27,6 +27,17 @@ set_tests_properties(
 )
 
 add_test(
+    NAME qindaqt.global-menu-applet-qml-vertical-boundary-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuAppletVerticalBoundary.qml"
+)
+set_tests_properties(
+    qindaqt.global-menu-applet-qml-vertical-boundary-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
+add_test(
     NAME qindaqt.global-menu-applet-qml-accessibility-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>

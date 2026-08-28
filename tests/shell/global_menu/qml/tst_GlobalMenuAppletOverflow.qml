@@ -275,52 +275,6 @@ Item {
             verifyFits(appletMinusOne);
         }
 
-        function test_verticalCalculatedEqualityBoundaryFitsExactBudget() {
-            fakeAccess.available = true;
-            fakeAccess.items = [createItem("a0", "File"), createItem("a1", "Edit")];
-            const probe = createApplet({
-                "vertical": true,
-                "height": 1000
-            });
-            const indH = probe.measuredIndicatorHeight();
-            const exactH = 24 + 4 + indH;
-            const appletExact = createApplet({
-                "vertical": true,
-                "height": exactH
-            });
-            const entriesExact = [];
-            collectEntries(appletExact, entriesExact);
-            compare(entriesExact.length, 1);
-            const indExact = findChild(appletExact, "globalMenuOverflowIndicator");
-            verify(indExact && indExact.visible);
-            verifyFits(appletExact);
-            const colExact = findChild(appletExact, "globalMenuVerticalLayout");
-            verify(colExact.implicitHeight + 4 + indExact.height <= appletExact.height + 0.5);
-            verify(indExact.y + indExact.height <= appletExact.height + 0.5);
-            const appletMinusOne = createApplet({
-                "vertical": true,
-                "height": exactH - 1
-            });
-            const entriesMinusOne = [];
-            collectEntries(appletMinusOne, entriesMinusOne);
-            compare(entriesMinusOne.length, 0);
-            verifyFits(appletMinusOne);
-            const appletOnly = createApplet({
-                "vertical": true,
-                "height": indH + 4
-            });
-            const indOnly = findChild(appletOnly, "globalMenuOverflowIndicator");
-            verify(indOnly && indOnly.visible && indOnly.y + indOnly.height <= appletOnly.height + 0.5);
-            verifyFits(appletOnly);
-            const appletHidden = createApplet({
-                "vertical": true,
-                "height": indH + 3
-            });
-            const indHidden = findChild(appletHidden, "globalMenuOverflowIndicator");
-            verify(indHidden && !indHidden.visible);
-            verifyFits(appletHidden);
-        }
-
         name: "GlobalMenuAppletOverflow"
         when: windowShown
     }
