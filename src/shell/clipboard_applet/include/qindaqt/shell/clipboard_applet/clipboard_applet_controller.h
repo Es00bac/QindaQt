@@ -94,6 +94,8 @@ private:
     void reproject();
     void setFeedback(const QString &message, const QString &status = QStringLiteral("error"));
     void cancelPendingForGeneration(quint32 oldGeneration);
+    void dispatchSearch();
+    void abandonSearch();
 
     ClipboardClientInterface *m_client = nullptr;
     QindaQt::Services::ClipboardModel::HistorySnapshot m_snapshot;
@@ -103,7 +105,17 @@ private:
     QString m_searchQuery;
     QList<QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor> m_searchResults;
     bool m_searchTruncated = false;
-    quint64 m_activeSearchRequestId = 0;
+    // AGENT-GUARD: reply freshness is fenced by this controller-internal
+    // monotonically increasing query generation, never by ordering of
+    // client-supplied request ids — the client seam promises uniqueness
+    // only. Every in-flight request id maps to the generation that issued
+    // it; replies carrying any other generation are dropped. A seam that
+    // emits searchCompleted synchronously inside requestSearch() is handled
+    // by the dispatch window below, since its reply precedes the returned id.
+    quint64 m_searchQueryGeneration = 0;
+    QHash<quint64, quint64> m_pendingSearchRequests;
+    bool m_insideSearchDispatch = false;
+    bool m_syncSearchReplySeen = false;
 
     QHash<quint64, PendingRequest> m_pendingRequests;
     QSet<QPair<quint32, quint32>> m_pendingEntries;

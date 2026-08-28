@@ -13,6 +13,8 @@ class TstClipboardAppletSeam : public QObject {
 private Q_SLOTS:
     void testClientSeamContracts();
     void testFailClosedLocking();
+    void testLockPurgesContentAndFencesGeneration();
+    void testIndependentHostDenialSurvivesUnlock();
     void testSearchThroughSeam();
 };
 
@@ -80,6 +82,66 @@ void TstClipboardAppletSeam::testFailClosedLocking()
     // Requests while locked must fail closed
     const quint64 reqId = adapter.requestPromote(admitted.entry.id, 1, 100);
     QVERIFY(reqId > 0);
+}
+
+void TstClipboardAppletSeam::testLockPurgesContentAndFencesGeneration()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "pre-lock-secret" } };
+    const auto admitted = model.admit(val, 1, QStringLiteral("App"), 100);
+    QVERIFY(admitted.accepted());
+    const quint32 generationBeforeLock = model.generation();
+
+    ClipboardModelClientAdapter adapter(&model);
+    QCOMPARE(adapter.snapshot().entries.size(), 1);
+
+    // AGENT-GUARD: the lock must purge the model behind the seam and fence
+    // the generation before the lock is observable, so no later unlock can
+    // redisclose pre-lock content through this seam.
+    QSignalSpy lockSpy(&adapter, &ClipboardClientInterface::lockStateChanged);
+    adapter.setLocked(true);
+    QCOMPARE(lockSpy.size(), 1);
+
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+    QCOMPARE(model.generation(), generationBeforeLock + 1);
+    QVERIFY(model.snapshot().entries.isEmpty());
+    QVERIFY(adapter.snapshot().entries.isEmpty());
+
+    // Unlock restores only the authority the lock removed.
+    adapter.setLocked(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Allowed);
+    QCOMPARE(model.generation(), generationBeforeLock + 1);
+    QVERIFY(adapter.snapshot().entries.isEmpty());
+
+    // Pre-lock ids never resolve again, even against the new generation.
+    const auto promoteRes = model.promote(admitted.entry.id, model.generation(), 200);
+    QCOMPARE(promoteRes.error, ClipboardError::UnknownEntry);
+}
+
+void TstClipboardAppletSeam::testIndependentHostDenialSurvivesUnlock()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardModelClientAdapter adapter(&model);
+
+    // The host denies privacy independently of the lock; the lock must not
+    // claim that denial, so unlock must not silently restore authority.
+    model.setPrivacyAllowed(false);
+    QCOMPARE(model.generation(), 2u);
+
+    adapter.setLocked(true);
+    QCOMPARE(model.generation(), 2u); // already denied: no second purge
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+
+    adapter.setLocked(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied); // host denial survives
+    QCOMPARE(adapter.isLocked(), false);
 }
 
 void TstClipboardAppletSeam::testSearchThroughSeam()
