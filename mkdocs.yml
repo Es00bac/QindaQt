@@ -68,6 +68,7 @@ nav:
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
       - Settings Appearance route: apps/appearance-settings.md
+      - Terminal: apps/terminal.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -111,3 +112,4 @@ nav:
       - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md
       - "ADR-0032: Status-notifier exact-owner foundation": adr/0032-status-notifier-exact-owner-foundation.md
       - "ADR-0047: Pure Font F0 boundary": adr/0047-pure-font-catalog-and-preference-boundary.md
+      - "ADR-0028: Qtermwidget terminal adapter": adr/0028-confine-qtermwidget-behind-terminal-adapter.md
