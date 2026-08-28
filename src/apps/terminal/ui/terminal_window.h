@@ -65,6 +65,7 @@ private:
   void buildMenus();
   void buildStatusBar();
   void embedTerminalWidget(QWidget *widget);
+  void updateViewActionStates();
   void updateStatusForState(TerminalSession::State state);
   void showExitStatus(const TerminalExitStatus &status);
   void reportShutdownOutcome(bool clean, const QString &diagnostic);
@@ -83,6 +84,7 @@ private:
   QAction *m_selectAllAction = nullptr;
   QAction *m_clearAction = nullptr;
   QAction *m_quitAction = nullptr;
+  bool m_hasSelection = false;
   bool m_quitRequested = false;
 };
 

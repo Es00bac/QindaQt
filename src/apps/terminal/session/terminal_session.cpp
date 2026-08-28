@@ -18,16 +18,18 @@ TerminalSession::TerminalSession(BackendFactory backendFactory,
 
 TerminalSession::~TerminalSession() {
   // AGENT-GUARD: Destruction must never silently skip teardown, including a
-  // session already inside beginShutdown()'s bounded sequence (NF-T2): the
+  // session already inside beginShutdown()'s bounded sequence or one that
+  // failed it (P1-2: a SIGKILL survivor stays owned until it is gone). The
   // backend destructor only closes the PTY master (SIGHUP), so an ignoring
-  // child or grandchild could survive. Whenever a captured child may still
+  // child or grandchild could survive; whenever a captured child may still
   // be alive, dispose the backend and then finish the escalation
   // synchronously against the captured process group. Bounded waits are
   // impossible in a destructor, so beginShutdown() remains the only
   // guaranteed-complete route and presentation code must prefer it on window
   // close; this guard exists for forced destruction paths only.
   const bool childMayBeAlive = m_state == State::Running ||
-                               m_state == State::ShuttingDown;
+                               m_state == State::ShuttingDown ||
+                               m_state == State::ShutdownFailed;
   if (childMayBeAlive && m_backend != nullptr) {
     const ProcessId pid = m_backend->shellProcessId();
     m_backend->requestShutdown();
@@ -107,7 +109,10 @@ bool TerminalSession::start(const TerminalLaunchRequest &request) {
 }
 
 bool TerminalSession::restart() {
-  if (m_state == State::ShuttingDown) {
+  if (m_state == State::ShuttingDown || m_state == State::ShutdownFailed) {
+    // While shutting down a second lifecycle request races the escalation;
+    // with a SIGKILL survivor the generation is retained and owned (P1-2),
+    // so replacing it would silently abandon the survivor.
     return false;
   }
   if (m_request.program.isEmpty()) {
@@ -122,6 +127,15 @@ bool TerminalSession::restart() {
 
 void TerminalSession::beginShutdown() {
   if (m_state == State::ShuttingDown) {
+    // P1-3: closing during a pending restart must cancel that restart, or
+    // completeShutdown() would spawn a fresh child right before the queued
+    // application quit destroys it.
+    m_restartAfterShutdown = false;
+    return;
+  }
+  if (m_state == State::ShutdownFailed) {
+    // P1-2: a SIGKILL survivor stays owned; re-running the escalation is
+    // refused instead of pretending the survivor can be released.
     return;
   }
   enterShutdownSequence(false);
@@ -155,6 +169,9 @@ bool TerminalSession::spawnGeneration() {
 
   setState(State::Running);
   emit terminalWidgetChanged(m_backend->terminalWidget());
+  // A fresh view carries no selection; publishing that keeps the
+  // presentation's action state truthful across restarts (P2-4).
+  emit selectionAvailable(false);
   m_pollTimer.start();
   return true;
 }
@@ -176,6 +193,9 @@ void TerminalSession::enterShutdownSequence(bool restartAfterwards) {
     // Presentation detaches the view before the adapter destroys it; the
     // connection is direct, so ordering is synchronous and safe.
     emit viewDisposalRequested();
+    // The view is going away; selection availability must not survive it
+    // (P2-4).
+    emit selectionAvailable(false);
     m_backend->requestShutdown();
   }
   m_pollTimer.start();
@@ -185,16 +205,24 @@ void TerminalSession::completeShutdown(bool clean,
                                        const QString &diagnostic) {
   m_pollTimer.stop();
   m_phase = ShutdownPhase::None;
-  m_backend.reset();
-  m_childPid = 0;
+  if (clean) {
+    // AGENT-GUARD (P1-2): the backend and the captured process-group id may
+    // only be released when the child is confirmed gone. A ShutdownFailed
+    // generation retains both so the survivor stays owned and quit/restart
+    // can be refused honestly.
+    m_backend.reset();
+    m_childPid = 0;
+  }
   setState(clean ? State::ShutdownComplete : State::ShutdownFailed);
-  emit shutdownFinished(clean, diagnostic);
   if (clean && m_restartAfterShutdown) {
     m_restartAfterShutdown = false;
+    // The replacement generation is spawned before the finished signal so
+    // observers never see a "finished" session that is already running.
     spawnGeneration();
   } else {
     m_restartAfterShutdown = false;
   }
+  emit shutdownFinished(clean, diagnostic);
 }
 
 void TerminalSession::advanceShutdownPhase() {
@@ -244,9 +272,18 @@ void TerminalSession::pollTick() {
       const auto info = m_monitor->reap(m_childPid);
       if (info.state == ProcessState::Exited) {
         m_pollTimer.stop();
-        const auto kind = info.signaled ? TerminalExitStatus::Kind::Signal
-                                        : TerminalExitStatus::Kind::Normal;
-        publishExit({kind, info.code, {}});
+        if (info.signaled) {
+          publishExit({TerminalExitStatus::Kind::Signal, info.code, {}});
+        } else if (info.statusKnown) {
+          publishExit({TerminalExitStatus::Kind::Normal, info.code, {}});
+        } else {
+          // P2-5: another reaper consumed the status. Reporting a fabricated
+          // normal exit 0 would violate the exit-truth contract, so the
+          // outcome is surfaced as unknown.
+          publishExit({TerminalExitStatus::Kind::UnknownExit, 0,
+                       QStringLiteral("Exit status was consumed by another "
+                                      "reaper")});
+        }
         setState(State::Exited);
       }
     }

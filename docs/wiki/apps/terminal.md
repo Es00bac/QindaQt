@@ -9,8 +9,10 @@ advanced VT behavior are explicit deferrals, not hidden claims.
 
 Launch policy, session lifecycle, rendering adaptation, and presentation are
 separate owners inside `src/apps/terminal`. The qtermwidget dependency and its
-confined adapter are recorded in
-[ADR-0030](../adr/0030-confine-qtermwidget-behind-terminal-adapter.md).
+confined adapter are recorded in ADR-0030, whose slave-forwarding design was
+superseded by
+[ADR-0040](../adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md)
+—the application-owned child PTY bridge that is the current contract.
 
 ## Shell launch and the no-shell-string contract
 
@@ -37,45 +39,58 @@ non-UTF-8 effective child locale would be rendered wrong.
 
 ## Session lifecycle, exit truth, and teardown guarantee
 
-The application owns the terminal child. The rendering adapter runs the shell
-itself (`setsid`, controlling TTY from the PTY slave, `execve` argv) after the
-widget opens an empty teletype PTY, so QindaQt—not the widget—owns `waitpid`
-exit truth and the process-group identity captured at start. One session owns
-one PTY generation; generations are never reused.
+The application owns the terminal child and its PTY. The rendering adapter
+runs the shell itself (`setsid`, controlling TTY from the bridge PTY slave,
+`execve` argv), so QindaQt—not the widget—owns `waitpid` exit truth and the
+process-group identity captured at start. One session owns one PTY
+generation; generations are never reused.
 
-Exit reporting is typed: `exited (code N)`, `terminated by SIGxxx`, or a
-bounded start-failure diagnostic shown in the status bar with QST danger
-colors. Restart tears the current generation down and starts a fresh one; a
-restart is rejected while a shutdown is already in flight.
+Exit reporting is typed: `exited (code N)`, `terminated by SIGxxx`, `exited
+(status unknown)` when another reaper consumed the `waitpid` status, or a
+bounded start-failure diagnostic shown in the status bar with QST danger or
+warning colors. Restart tears the current generation down and starts a fresh
+one; restarts are rejected while a shutdown is already in flight or while a
+SIGKILL survivor is owned.
 
 Teardown is a bounded escalation, not a hope:
 
-1. The PTY master closes (the kernel delivers `SIGHUP` to the child session).
+1. The bridge PTY master closes (the kernel delivers `SIGHUP` to the child
+   session).
 2. After the close grace elapses, `SIGTERM` is sent to the exact captured
    process group — never to a bare PID, and only after the group leader is
    revalidated, so a recycled PID can never be signaled.
 3. After the term grace, `SIGKILL` to the same group.
 4. If the child somehow survives `SIGKILL`, the session reports a shutdown
-   failure honestly; `start()` refuses to replace that generation.
+   failure honestly, retains the backend and the captured process-group id,
+   and refuses further close, quit, and restart attempts for that generation;
+   `start()` also refuses to replace it.
 
 Window close hides the window, runs the escalation, and only then quits the
 application, so a surviving child can never be orphaned by an early exit. The
 application wiring disables Qt's quit-on-last-window-closed default before the
 first window is shown — hiding the only window must not end the event loop
 while the escalation is running — and the sole quit path is a queued
-connection from the session's terminal state. Bounds are injected values
-(default close 3 s, term 1 s, kill 1 s; 20 ms poll) which makes the sequence
-deterministic in tests.
+connection that fires only after a clean shutdown. Closing during a pending
+restart cancels the restart instead of launching a child that the quit would
+immediately destroy. Bounds are injected values (default close 3 s, term 1 s,
+kill 1 s; 20 ms poll) which makes the sequence deterministic in tests.
 
 ## Rendering adapter boundary
 
-`qtermwidget6` is linked only by the terminal's rendering adapter; no other
-module gains its headers, and tests never link it. The adapter consumes the
-upstream teletype contract pinned by ADR-0030: the widget owns the PTY master,
-emulation, scrollback, selection, and resize (`TIOCSWINSZ`); the adapter owns
-fork/exec, reaping, keyboard forwarding through a bounded (64 KiB) drop-newest
-buffer, and view disposal. `qindaqt-terminal` links the adapter; the support
-library with policy, session, and presentation links Qt and QST only, making
+`qtermwidget6` is linked only by the terminal's rendering adapter, and only as
+a private link dependency; no other module gains its headers, include paths,
+or usage requirements, and tests never link it. Per ADR-0040 the adapter owns
+a second, application-side PTY: the child's controlling TTY and stdio are the
+bridge slave opened by path, so child stdio stays blocking and no descriptor
+flag can leak; keyboard and paste bytes are written to the bridge master (the
+only input direction); child output and line-discipline echo are read from the
+bridge master and forwarded into a private duplicate of the widget's teletype
+slave, which the widget's master reader feeds to the emulator; child winsize
+is programmed explicitly from the live emulator grid on widget resize. Each
+descriptor has exactly one writer, buffers are bounded (64 KiB) with
+drop-newest backpressure, and the adapter keeps fork/exec, reaping, and view
+disposal. `qindaqt-terminal` links the adapter; the support library with
+policy, PTY bridge, session, and presentation links Qt and QST only, making
 the boundary enforceable at link time.
 
 ## Keyboard and accessibility semantics
@@ -132,15 +147,17 @@ ctest --test-dir build/dev -R '^qindaqt\.terminal-' --output-on-failure
 ```
 
 It covers hostile program/argument/environment resolution, effective UTF-8
-locale precedence, forced `TERM`/`COLORTERM`, real metadata-based executable
-checks,
-the session state machine (typed start failures, exit-code versus signal
-publication, duplicate-exit suppression), the teardown escalation sequence
-including refusal to replace an unkillable generation, forced destruction of
-a mid-shutdown session, restart generation replacement,
-view-disposal ordering, the close/quit wiring contract (the
+locale precedence with a strict codeset oracle, forced `TERM`/`COLORTERM`,
+real metadata-based executable checks, the real-PTY bridge (input direction,
+output/echo capture, winsize, close), the session state machine (typed start
+failures, exit-code versus signal versus unknown-exit publication,
+duplicate-exit suppression), the teardown escalation sequence including
+refusal to replace an unkillable generation, ownership retention with
+close/quit/restart refusal while a survivor remains, close-cancels-pending-
+restart, forced destruction of a mid-shutdown session, restart generation
+replacement, view-disposal ordering, the close/quit wiring contract (the
 quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
-wiring binding), window action identity and
+wiring binding), window action identity and action-state truth,
 readline-safe shortcuts, exit-status severity rendering, accessibility and
 focus metadata, hostile-resize clamping, QST scheme documents for all five
 themes, desktop metadata, positional-argument rejection, and staged installed
@@ -149,8 +166,9 @@ exit before any window or session exists.
 
 Serializer-lane qualification that S0 deliberately does not claim: real
 Debug/Release builds, a live shell under the real adapter (UTF-8 rendering,
-keyboard byte flow, `TIOCSWINSZ` on resize, real signal exits), first-frame
-and PSS measurements, and any nested-display interaction.
+keyboard→child byte flow, resize/SIGWINCH, select/copy extraction, real
+signal exits), first-frame and PSS measurements, and any nested-display
+interaction.
 
 ## Bounded S0 deferrals
 
@@ -160,9 +178,6 @@ and PSS measurements, and any nested-display interaction.
 - Search, OSC-8 hyperlinks, click-to-open, and link tooltips stay disabled.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no
   rendering-performance claim is made.
-- Concurrent Terminal instances share one QST scheme file in the cache
-  location; the document is launch-policy-identical for identical settings,
-  and per-instance namespacing is deferred to a later slice.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - A QindaQt-branded icon and global-menu export wait for later branding and

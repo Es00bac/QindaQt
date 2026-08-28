@@ -138,8 +138,10 @@ public:
   void scriptRunningThenExit(ProcessId pid, int runningReaps) {
     m_runningReaps.insert(pid, runningReaps);
   }
-  void setExitDisposition(ProcessState state, bool signaled, int code) {
-    m_exitDisposition = ProcessExitInfo{state, signaled, code};
+  void setExitDisposition(ProcessState state, bool signaled, int code,
+                          bool statusKnown = true) {
+    m_exitDisposition =
+        ProcessExitInfo{state, signaled, code, statusKnown};
   }
   void setDefaultRunning(bool running) { m_defaultRunning = running; }
   [[nodiscard]] const QVector<QPair<ProcessId, int>> &
@@ -198,6 +200,8 @@ private slots:
   void shutdownEscalatesTermThenKillAndReportsFailureHonestly();
   void restartReplacesGenerationWithoutBackendReuse();
   void restartRejectedWhileShuttingDown();
+  void closeCancelsPendingRestartAndSpawnsNothing();
+  void unknownExitIsPublishedInsteadOfFabricatedSuccess();
   void idleShutdownCompletesCleanlyWithoutSignals();
   void disposalOrderIsViewThenBackend();
   void presentationOperationsRouteThroughBackend();
@@ -343,6 +347,16 @@ void TerminalSessionTest::
   // A failed shutdown stays failed: start() may not silently replace a
   // generation whose child may still be alive.
   QVERIFY(!session->start(validRequest()));
+
+  // P1-2: the SIGKILL survivor stays owned. Restart is refused and a second
+  // shutdown request is a no-op — the recorded signals never grow.
+  QVERIFY(!session->restart());
+  QCOMPARE(session->state(), TerminalSession::State::ShutdownFailed);
+  const auto signalsBeforeRefusal =
+      static_cast<int>(harness.monitor.signalsSent().size());
+  session->beginShutdown();
+  pump(100);
+  QCOMPARE(harness.monitor.signalsSent().size(), signalsBeforeRefusal);
 }
 
 void TerminalSessionTest::restartReplacesGenerationWithoutBackendReuse() {
@@ -385,6 +399,47 @@ void TerminalSessionTest::restartRejectedWhileShuttingDown() {
   QVERIFY(!session->start(validRequest()));
   pump(600);
   QCOMPARE(session->state(), TerminalSession::State::ShutdownFailed);
+}
+
+void TerminalSessionTest::closeCancelsPendingRestartAndSpawnsNothing() {
+  // P1-3: closing during a pending restart must cancel the restart; a fresh
+  // child must never be spawned just before the queued quit destroys it.
+  SessionHarness harness;
+  harness.bounds = TeardownBounds{500, 100, 100, 1};
+  harness.monitor.setDefaultRunning(true);
+  harness.monitor.scriptRunningThenExit(kFirstPid, 5);
+  auto session = harness.makeSession();
+  QSignalSpy widgetSpy(session.get(),
+                       &TerminalSession::terminalWidgetChanged);
+  QVERIFY(session->start(validRequest()));
+
+  QVERIFY(session->restart());
+  QCOMPARE(session->state(), TerminalSession::State::ShuttingDown);
+  session->beginShutdown(); // The close path: cancels the pending restart.
+  pump(1500);
+  QCOMPARE(session->state(), TerminalSession::State::ShutdownComplete);
+  QCOMPARE(widgetSpy.count(), 1);
+  QCOMPARE(harness.createdBackends, 1);
+  QVERIFY(session->terminalWidget() == nullptr);
+}
+
+void TerminalSessionTest::
+    unknownExitIsPublishedInsteadOfFabricatedSuccess() {
+  // P2-5: when another reaper consumed the waitpid status, the session must
+  // publish an unknown-exit outcome rather than a fabricated normal exit 0.
+  SessionHarness harness;
+  harness.monitor.scriptRunningThenExit(kFirstPid, 2);
+  harness.monitor.setExitDisposition(ProcessState::Exited, false, 0,
+                                     /*statusKnown=*/false);
+  auto session = harness.makeSession();
+  QSignalSpy exitSpy(session.get(), &TerminalSession::sessionFinished);
+  QVERIFY(session->start(validRequest()));
+  pump(200);
+  QCOMPARE(exitSpy.count(), 1);
+  const auto status = exitSpy.first().first().value<TerminalExitStatus>();
+  QCOMPARE(status.kind, TerminalExitStatus::Kind::UnknownExit);
+  QVERIFY(!status.diagnostic.isEmpty());
+  QCOMPARE(session->state(), TerminalSession::State::Exited);
 }
 
 void TerminalSessionTest::idleShutdownCompletesCleanlyWithoutSignals() {

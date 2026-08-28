@@ -1,10 +1,10 @@
 # ADR-0030: Confine qtermwidget6 behind the Terminal rendering adapter
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0040
 - **Date:** 2026-08-28
 - **Owners:** Terminal application (`src/apps/terminal`)
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** ADR-0040
 
 ## Context
 

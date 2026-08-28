@@ -31,7 +31,7 @@ public:
     Exited,           // Child reaped; backend still displays scrollback.
     ShuttingDown,     // Bounded teardown sequence in progress.
     ShutdownComplete, // Child confirmed gone; backend disposed.
-    ShutdownFailed,   // Child survived the full escalation (honest failure).
+    ShutdownFailed,   // Child survived SIGKILL; ownership retained (P1-2).
   };
 
   using BackendFactory =
@@ -50,11 +50,13 @@ public:
   [[nodiscard]] bool start(const TerminalLaunchRequest &request);
 
   // Teardown-then-start with the last successful request. Rejected while a
-  // shutdown is already in flight or when nothing was ever started.
+  // shutdown is already in flight, while a SIGKILL survivor is owned
+  // (ShutdownFailed), or when nothing was ever started.
   [[nodiscard]] bool restart();
 
-  // Begins the bounded teardown sequence. Safe from any terminal state;
-  // idempotent while already shutting down.
+  // Begins the bounded teardown sequence. A pending restart is cancelled
+  // (close must never launch a fresh child, P1-3). Refused while a SIGKILL
+  // survivor is owned.
   void beginShutdown();
 
   [[nodiscard]] State state() const { return m_state; }

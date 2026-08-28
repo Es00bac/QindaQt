@@ -16,10 +16,11 @@ using ProcessId = qint64;
 // application-owned reap fills in code/signal. See ADR-0030.
 struct TerminalExitStatus final {
   enum class Kind {
-    None,        // No child was started, or it is still running.
-    Normal,      // The child exited; code is the exit status.
-    Signal,      // The child was killed by signal number `code`.
-    StartFailed, // The PTY/child could not be created at all.
+    None,        // No child was started, or it is still running
+    Normal,      // The child exited; code is the exit status
+    Signal,      // The child was killed by signal number `code`
+    UnknownExit, // The child exited but its status was reaped elsewhere
+    StartFailed, // The PTY/child could not be created at all
   };
 
   Kind kind = Kind::None;
