@@ -8,16 +8,69 @@
 using namespace QindaQt::ShellClipboardApplet;
 using namespace QindaQt::Services::ClipboardModel;
 
+// Scripted client seam issuing deliberately unique-but-unordered request ids
+// and delivering replies in caller-chosen order. AGENT-GUARD: the public seam
+// promises id uniqueness only — these ids reproduce the exact disorder a real
+// async transport can produce, which the controller must fence with its own
+// monotonic query generation rather than id arithmetic.
+class UnorderedFakeClient final : public ClipboardClientInterface {
+public:
+    quint64 m_nextSearchRequestId = 0;
+    QList<quint64> m_issuedSearchRequestIds;
+
+    HistorySnapshot m_snapshot;
+    bool m_locked = false;
+
+    [[nodiscard]] ClientState clientState() const noexcept override { return ClientState::Ready; }
+    [[nodiscard]] QString reasonCode() const override { return {}; }
+    [[nodiscard]] QString owner() const override { return QStringLiteral("fake"); }
+    [[nodiscard]] bool isOwnerAvailable() const noexcept override { return true; }
+    [[nodiscard]] bool isLocked() const noexcept override { return m_locked; }
+    [[nodiscard]] HistorySnapshot snapshot() const override { return m_snapshot; }
+
+    quint64 requestPromote(EntryId, quint32, quint64) override { return 0; }
+    quint64 requestRemove(EntryId, quint32) override { return 0; }
+    quint64 requestSetPinned(EntryId, bool, quint32) override { return 0; }
+    quint64 requestClear(ClearScope, quint32) override { return 0; }
+
+    quint64 requestSearch(const QString &, quint32, int) override
+    {
+        // Unique, strictly unordered: even requests descend from 902,
+        // odd requests ascend from 101, so consecutive ids are never
+        // monotonically comparable in either direction.
+        const quint64 id = (m_nextSearchRequestId % 2 == 0)
+            ? quint64(902 - 100 * (m_nextSearchRequestId / 2))
+            : quint64(101 + 100 * (m_nextSearchRequestId / 2));
+        ++m_nextSearchRequestId;
+        m_issuedSearchRequestIds.append(id);
+        return id;
+    }
+
+    void deliverSearchReply(quint64 requestId, const SearchOutcome &outcome)
+    {
+        Q_EMIT searchCompleted(requestId, outcome);
+    }
+
+    void deliverLock(bool locked)
+    {
+        m_locked = locked;
+        Q_EMIT lockStateChanged(locked);
+    }
+};
+
 class TstClipboardAppletController : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
     void testInitialState();
     void testLockGating();
+    void testLockPurgesModelAndPreventsRedisclosure();
+    void testLockPurgesActiveSearchState();
     void testOwnerFencing();
     void testGenerationFencing();
     void testIntentOperations();
     void testSearchLifecycle();
+    void testSearchReplyFreshnessWithUnorderedIds();
     void testFeedbackHandling();
     void testPendingTracking();
     void testRapidStateAndLockTransitions();
@@ -76,11 +129,80 @@ void TstClipboardAppletController::testLockGating()
     QVERIFY(!controller.selectEntry(1, 1));
     QVERIFY(controller.feedbackPresent());
 
-    // Unlock session
+    // Unlock session: the pre-lock entry was purged on lock and must never
+    // reappear; the surface returns ready but empty.
     adapter.setLocked(false);
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
     QCOMPARE(controller.isLocked(), false);
+    QCOMPARE(controller.entryCount(), 0);
+}
+
+void TstClipboardAppletController::testLockPurgesModelAndPreventsRedisclosure()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "pre-lock-secret" } };
+    const auto admitted = model.admit(val, 1, QStringLiteral("PassMgr"), 100);
+    QVERIFY(admitted.accepted());
+    const quint32 generationBeforeLock = model.generation();
+
+    ClipboardModelClientAdapter adapter(&model);
+    ClipboardAppletController controller(&adapter);
     QCOMPARE(controller.entryCount(), 1);
+
+    // The lock is an authority denial: model privacy flips to Denied, every
+    // entry is purged, and the generation advances by exactly one so the
+    // entire pre-lock lineage (ids, pending intents, snapshots) is fenced.
+    adapter.setLocked(true);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+    QCOMPARE(model.generation(), generationBeforeLock + 1);
+    QVERIFY(model.snapshot().entries.isEmpty());
+    QCOMPARE(controller.entryCount(), 0);
+
+    // Unlock restores the authority flag only; purged content cannot return.
+    adapter.setLocked(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Allowed);
+    QCOMPARE(model.generation(), generationBeforeLock + 1);
+    QCOMPARE(controller.entryCount(), 0);
+
+    // A stale pre-lock id is refused even with the new generation number.
+    const auto promoteRes = model.promote(admitted.entry.id, generationBeforeLock + 1, 200);
+    QCOMPARE(promoteRes.error, ClipboardError::UnknownEntry);
+}
+
+void TstClipboardAppletController::testLockPurgesActiveSearchState()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "searchable secret" } };
+    QVERIFY(model.admit(val, 1, QStringLiteral("Notes"), 100).accepted());
+
+    ClipboardModelClientAdapter adapter(&model);
+    ClipboardAppletController controller(&adapter);
+
+    controller.setSearchQuery(QStringLiteral("searchable"));
+    QCOMPARE(controller.isSearchActive(), true);
+    QCOMPARE(controller.searchResultCount(), 1);
+
+    // Locking must drop the query, the matched descriptors, and the
+    // truncated flag — not merely hide them behind the locked phase.
+    adapter.setLocked(true);
+    QCOMPARE(controller.isSearchActive(), false);
+    QCOMPARE(controller.searchQuery(), QString());
+    QCOMPARE(controller.searchResultCount(), 0);
+    QCOMPARE(controller.searchTruncated(), false);
+    QCOMPARE(controller.entryCount(), 0);
+
+    adapter.setLocked(false);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.isSearchActive(), false);
+    QCOMPARE(controller.searchResultCount(), 0);
 }
 
 void TstClipboardAppletController::testOwnerFencing()
@@ -264,19 +386,88 @@ void TstClipboardAppletController::testRapidStateAndLockTransitions()
     ClipboardModelClientAdapter adapter(&model);
     ClipboardAppletController controller(&adapter);
 
-    // Rapid toggle lock
+    quint32 expectedGeneration = model.generation();
+    // Rapid lock/unlock toggles: each lock purges content and fences the
+    // lineage; once locked, the entry can never reappear on later unlocks.
     for (int i = 0; i < 10; ++i) {
         adapter.setLocked(i % 2 == 1);
         QCOMPARE(controller.isLocked(), i % 2 == 1);
         if (controller.isLocked()) {
+            expectedGeneration += 1;
+            QCOMPARE(model.generation(), expectedGeneration);
             QCOMPARE(controller.phaseText(), QStringLiteral("locked"));
             QCOMPARE(controller.entryCount(), 0);
             QVERIFY(!controller.selectEntry(admitted.entry.id.generation, admitted.entry.id.serial));
         } else {
+            QCOMPARE(model.generation(), expectedGeneration);
             QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
-            QCOMPARE(controller.entryCount(), 1);
+            // Only the initial unlocked state still holds the entry; every
+            // unlocked iteration after the first lock sees purged content.
+            QCOMPARE(controller.entryCount(), i == 0 ? 1 : 0);
         }
     }
+}
+
+void TstClipboardAppletController::testSearchReplyFreshnessWithUnorderedIds()
+{
+    UnorderedFakeClient client;
+    client.m_snapshot.generation = 7;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+
+    ClipboardAppletController controller(&client);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+
+    // First query dispatches request id 902; a revision of the query
+    // dispatches id 101 — numerically SMALLER, exactly the disorder the
+    // unique-but-unordered seam contract permits.
+    controller.setSearchQuery(QStringLiteral("alpha"));
+    QCOMPARE(client.m_issuedSearchRequestIds.size(), 1);
+    const quint64 alphaId = client.m_issuedSearchRequestIds.first();
+    QCOMPARE(alphaId, quint64(902));
+
+    controller.setSearchQuery(QStringLiteral("beta"));
+    QCOMPARE(client.m_issuedSearchRequestIds.size(), 2);
+    const quint64 betaId = client.m_issuedSearchRequestIds.at(1);
+    QCOMPARE(betaId, quint64(101));
+    QVERIFY(betaId < alphaId);
+
+    auto matchWith = [](const char *preview) {
+        SearchOutcome outcome;
+        ClipboardEntryDescriptor desc;
+        desc.id = { 7, 3 };
+        desc.preview = QString::fromLatin1(preview);
+        desc.formats = { { QStringLiteral("text/plain"), 4 } };
+        outcome.matches.append(desc);
+        return outcome;
+    };
+
+    // Late reply for the superseded "alpha" query must be dropped even
+    // though its id (902) is numerically larger than the live query's (101).
+    client.deliverSearchReply(alphaId, matchWith("alpha result"));
+    QCOMPARE(controller.searchQuery(), QStringLiteral("beta"));
+    QCOMPARE(controller.searchResultCount(), 0);
+
+    // The live "beta" reply must be accepted.
+    client.deliverSearchReply(betaId, matchWith("beta result"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
+
+    // A duplicated or replayed stale reply must not replace current results.
+    client.deliverSearchReply(alphaId, matchWith("alpha hijack"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
+
+    // A third query supersedes "beta": its late reply is dropped after the
+    // new dispatch, and only the newest reply updates the rows.
+    controller.setSearchQuery(QStringLiteral("gamma"));
+    QCOMPARE(client.m_issuedSearchRequestIds.size(), 3);
+    const quint64 gammaId = client.m_issuedSearchRequestIds.last();
+    client.deliverSearchReply(betaId, matchWith("beta hijack"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
+    client.deliverSearchReply(gammaId, matchWith("gamma result"));
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma result"));
 }
 
 void TstClipboardAppletController::testLineageExhaustionFailsClosed()
