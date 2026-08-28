@@ -179,6 +179,23 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
     }
 
     AppearanceValues next = m_draft;
+    // AGENT-GUARD: Field typing is strict — QVariant silently converts string
+    // "12" to 12.0, and accepting that would let a page bug become a stored
+    // wrong-typed value instead of a rejected draft write.
+    const auto requireDouble = [&value](double *target) {
+        switch (value.metaType().id()) {
+        case QMetaType::Double:
+        case QMetaType::Float:
+        case QMetaType::LongLong:
+        case QMetaType::Int:
+        case QMetaType::UInt:
+        case QMetaType::ULongLong:
+            *target = value.toDouble();
+            return true;
+        default:
+            return false;
+        }
+    };
     if (key == QLatin1String(AppearanceKeys::Theme)) {
         if (value.metaType().id() != QMetaType::QString) return false;
         next.themeId = value.toString();
@@ -190,10 +207,7 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
         if (value.metaType().id() != QMetaType::QString) return false;
         next.fontFamily = value.toString();
     } else if (key == QLatin1String(AppearanceKeys::FontPointSize)) {
-        bool ok = false;
-        const double pointSize = value.toDouble(&ok);
-        if (!ok) return false;
-        next.fontPointSize = pointSize;
+        if (!requireDouble(&next.fontPointSize)) return false;
     } else if (key == QLatin1String(AppearanceKeys::FontAntialiasing)) {
         if (value.metaType().id() != QMetaType::Bool) return false;
         next.fontAntialiasing = value.toBool();
@@ -213,10 +227,7 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
         if (!mode.has_value()) return false;
         next.wallpaperMode = *mode;
     } else if (key == QLatin1String(AppearanceKeys::UiScale)) {
-        bool ok = false;
-        const double scale = value.toDouble(&ok);
-        if (!ok) return false;
-        next.uiScale = scale;
+        if (!requireDouble(&next.uiScale)) return false;
     } else {
         return false;
     }
