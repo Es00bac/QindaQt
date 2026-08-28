@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Terminal
+GenericName=Terminal Emulator
+Comment=Run the configured shell in a terminal session
+Exec=qindaqt-terminal
+Icon=utilities-terminal
+Terminal=false
+Categories=Qt;System;TerminalEmulator;
+StartupNotify=true
+StartupWMClass=qindaqt-terminal

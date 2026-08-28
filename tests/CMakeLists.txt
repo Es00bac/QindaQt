@@ -66,6 +66,7 @@ add_subdirectory(services/clipboard_model)
 add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
 add_subdirectory(apps/file_manager)
+add_subdirectory(apps/terminal)
 
 if(TARGET qindaqt_session_supervisor_support)
     add_subdirectory(session_supervisor)

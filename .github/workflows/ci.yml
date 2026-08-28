@@ -72,13 +72,14 @@ jobs:
             ninja \
             python \
             qt6-base \
-            qt6-declarative
+            qt6-declarative \
+            qtermwidget
 
       - uses: actions/checkout@v4
 
       - name: Record dependency versions
         run: >-
-          pacman -Q cmake extra-cmake-modules kdecoration
+          pacman -Q cmake extra-cmake-modules kdecoration qtermwidget
           qt6-base qt6-declarative
 
       - name: Configure
@@ -128,6 +129,7 @@ jobs:
             qt6-base \
             qt6-declarative \
             qt6-wayland \
+            qtermwidget \
             xorg-xdpyinfo \
             xorg-xwayland
 
@@ -159,8 +161,8 @@ jobs:
       - name: Record production shell stack
         run: >-
           pacman -Q dbus extra-cmake-modules kdecoration kwin
-          kglobalaccel layer-shell-qt libcap qt6-base qt6-declarative qt6-wayland
-          xorg-xwayland
+          kglobalaccel layer-shell-qt libcap qtermwidget qt6-base
+          qt6-declarative qt6-wayland xorg-xwayland
 
       - name: Configure production shell without the binary KWin plugin
         run: >-
