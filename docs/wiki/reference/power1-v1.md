@@ -1,0 +1,117 @@
+# Power1 version 1 values and pure protocol
+
+This page fixes the PB-0 value, validation, canonical-codec, and QtDBus
+boundary reserved for `org.qindaqt.Power1`. PB-0 does not own a bus name,
+connect to an upstream daemon or compositor, read hardware, or expose a user
+interface. Those are later slices in the
+[Power and brightness architecture](../architecture/power-service.md).
+
+The source currently forms a PB-0 candidate. Until its focused binaries pass
+and an independent exact-commit review accepts it, this page is a protocol
+contract rather than executable Power1 evidence.
+
+## Identity and lineage
+
+| Property | Value |
+| --- | --- |
+| Reserved bus name and interface | `org.qindaqt.Power1` |
+| Reserved object path | `/org/qindaqt/Power1` |
+| Protocol version | `1` |
+| Canonical codec version | `1` |
+
+Every snapshot has a nonzero service epoch and monotonic positive revision.
+Every handle is `(epoch, opaque-id)`, uses the snapshot epoch, and is unique
+across supplies, profile holds, keyboard backlights, and internal backlights.
+The opaque ID is derived by a future adapter; a raw UPower object path, sysfs
+path, serial number, UID, or PID is never a public value.
+
+An operation result contains its kind/status and initiating plus observed
+epoch/revision. A success remains in the initiating epoch and cannot observe an
+earlier revision. Once a later service dispatches an operation, timeout or
+authority replacement is `Uncertain`; clients resnapshot and never replay it.
+
+## Bounded snapshot
+
+The snapshot contains fixed fields, never an `a{sv}` bag:
+
+- availability, capability bits, bounded reason and diagnostic;
+- AC/on-battery, lid, dock, and sleep-preparation truth;
+- an optional aggregate battery and at most eight additional battery/UPS
+  values;
+- at most four supported profiles and eight epoch-scoped holds;
+- at most eight sanitized inhibitors containing only `what`, `who`, `why`,
+  and `mode`;
+- at most eight keyboard-backlight and eight internal-backlight values; and
+- the exact child Wayland socket, protocol version, and binding epoch when a
+  provider is bound.
+
+Internal-backlight status is `Ok=0`, `Degraded=1`, or `Unavailable=2`.
+The closed reason vocabulary is `None=0`, `NoBacklight=1`,
+`AmbiguousBacklight=2`, `NoInternalConnector=3`,
+`AmbiguousInternalTopology=4`, `LogindError=5`, `DeviceDisappeared=6`,
+`NonConverged=7`, and `WaylandUnavailable=8`. In particular, the four identity
+reasons preserve the accepted fail-closed no-backlight/ambiguous-device/no-
+connector/ambiguous-topology truth.
+
+### Scalar values
+
+Percentages are finite doubles from 0 through 100. Per-supply energy and rate
+values are finite and nonnegative; the composite net rate is positive while
+charging and negative while discharging. Time estimates are nonnegative
+upstream truth and are never recomputed by PB-0. Unknown numeric values clear
+their corresponding `known` flag and carry canonical zero.
+
+Keyboard brightness exposes exact raw current/maximum integers plus a 0–10000
+normalized integer. Internal brightness remains exact raw observed/maximum
+integers. No wire percentage substitutes for these device values.
+
+### Text and numeric limits
+
+| Field | Version-1 limit |
+| --- | ---: |
+| Supplies / profiles / profile holds | 8 / 4 / 8 |
+| Inhibitors / keyboard devices / internal devices | 8 / 8 / 8 |
+| Canonical payload | 1,048,576 bytes |
+| Opaque ID | 128 UTF-8 bytes |
+| Name, vendor, model, application, profile label | 256 UTF-8 bytes |
+| Profile ID / reason code | 64 UTF-8 bytes |
+| Diagnostic or hold reason | 512 UTF-8 bytes |
+| Inhibitor what / who / why / mode | 128 / 256 / 512 / 32 UTF-8 bytes |
+| Wayland socket name | 108 UTF-8 bytes |
+| Percentage | finite 0 through 100 |
+| Energy / absolute rate | finite 0 through 1,000,000 Wh/W |
+| Time estimate | 0 through 315,360,000 seconds |
+| Normalized / raw brightness | 10,000 / 1,000,000,000 |
+
+Text is strict UTF-8, contains no NUL, control, or format characters, and is
+checked by encoded byte count. Adapter-facing sanitization replaces forbidden
+characters and truncates only at a valid UTF-8 boundary. Inhibitor privacy is
+structural: the public value has exactly four strings and cannot represent UID
+or PID.
+
+## Canonical codec and total decoding
+
+Snapshot magic is `QP1S`; operation-result magic is `QP1R`. Both use
+big-endian Qt 6.0 `QDataStream` primitive encodings, an explicit codec version,
+and length/count prefixes. Encoding the same accepted value produces identical
+bytes. List order is retained.
+
+Decoders reject oversize input before copying it, validate magic and version,
+check every count/length before allocation, require strict UTF-8 and exact end
+of buffer, then run semantic validation on a temporary. A failure returns a
+typed `CodecError` and leaves the caller's prior destination unchanged. QtDBus
+operators likewise expose only closed structures and bounded arrays; semantic
+publication still requires `validateSnapshot` or `validateOperationResult`.
+
+## Compatibility and scope
+
+Unknown enum values, capability bits, nonfinite/out-of-range numbers, mixed or
+duplicate lineage, unknown profile references, inconsistent known flags,
+oversized collections, unsafe text, trailing bytes, and unknown versions fail
+closed. Changing a field, bound, enum meaning, D-Bus structure, or canonical
+byte layout requires a compatibility decision and normally a new version.
+
+PB-0 intentionally contains no service, client, D-Bus connection, UPower,
+power-profiles-daemon, logind, Wayland, sysfs, hardware, session, Settings,
+QML, or UI behavior. Aggregate-battery policy and brightness composition are
+separate pure modules documented by the subsequent PB-0 commits.

@@ -82,6 +82,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   device/stream snapshot, handle lineage, operation results, and bounds.
 - [Display1 version 1](reference/display1-v1.md) documents display value bounds,
   identity/registry rules, topology projection, codecs, and transaction states.
+- [Power1 version 1](reference/power1-v1.md) documents bounded Power values,
+  privacy-preserving handles, canonical codecs, and fail-closed validation.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.

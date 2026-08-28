@@ -11,6 +11,13 @@ The durable choices are split across
 [ADR-0024](../adr/0024-route-brightness-through-power1.md), and
 [ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md).
 
+The PB-0 candidate now fixes bounded values, hostile-input validation,
+canonical byte codecs, and fixed QtDBus structures in
+[`power_protocol`](../reference/power1-v1.md). It remains candidate evidence:
+no executable maturity is claimed until focused builds/tests and independent
+exact-commit review pass. Aggregation and brightness composition remain the
+next two PB-0 commit boundaries.
+
 ## Authority map
 
 | Concern | Truth authority | QindaQt owner |
