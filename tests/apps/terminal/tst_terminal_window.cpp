@@ -104,6 +104,7 @@ struct WindowHarness final {
   NeverExitMonitor neverExit;
   bool survivorScenario = false;
   StubBackend *stub = nullptr;
+  int createdBackends = 0;
 
   std::unique_ptr<TerminalWindow> makeWindow() {
     // The survivor scenario exercises the failed-escalation ownership path
@@ -112,9 +113,11 @@ struct WindowHarness final {
         survivorScenario ? static_cast<ProcessMonitor *>(&neverExit)
                          : static_cast<ProcessMonitor *>(&instantExit);
     StubBackend **created = &stub;
-    TerminalSession::BackendFactory factory = [created]() {
+    int *backends = &createdBackends;
+    TerminalSession::BackendFactory factory = [created, backends]() {
       auto backend = std::make_unique<StubBackend>();
       *created = backend.get();
+      ++*backends;
       return std::unique_ptr<TerminalSessionBackend>(std::move(backend));
     };
     auto session = std::make_unique<TerminalSession>(
@@ -145,6 +148,8 @@ private slots:
   void closeRequestsShutdownBeforeQuitSignal();
   void viewActionStatesTrackSessionTruth();
   void quitIsRefusedWhileSurvivorRemains();
+  void restartThenCloseSpawnsNothingBeforeQuit();
+  void exitedStateDisablesPasteAndKeepsScrollbackOps();
 };
 
 void TerminalWindowTest::windowEmbedsOnlyPublishedWidgets() {
@@ -467,6 +472,83 @@ void TerminalWindowTest::quitIsRefusedWhileSurvivorRemains() {
   QVERIFY(window->isVisible());
   QTest::qWait(50);
   QCOMPARE(quitSpy.count(), 0);
+}
+
+void TerminalWindowTest::restartThenCloseSpawnsNothingBeforeQuit() {
+  // P1 (Dijkstra P1-2 / Church P1-1 / Astra P1-1): the production close
+  // route during a pending Restart must reach
+  // TerminalSession::beginShutdown() — which cancels the restart in
+  // ShuttingDown — so generation 2 is never spawned in front of the queued
+  // application quit. The pre-fix parent short-circuited the ShuttingDown
+  // close in closeEvent, kept the restart flag true, and this row failed
+  // with createdBackends == 2 and a second widget publication.
+  WindowHarness harness; // InstantExitMonitor: generation 1 reaps on tick 1.
+  auto window = harness.makeWindow();
+  QSignalSpy widgetSpy(window->session(),
+                       &TerminalSession::terminalWidgetChanged);
+  QSignalSpy shutdownSpy(window->session(),
+                         &TerminalSession::shutdownFinished);
+  QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
+  QVERIFY(window->session()->start(validRequest()));
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window.get()));
+
+  auto *restart = window->findChild<QAction *>(
+      QStringLiteral("sessionRestartAction"));
+  auto *quit =
+      window->findChild<QAction *>(QStringLiteral("fileQuitAction"));
+  QVERIFY(restart != nullptr && quit != nullptr);
+  restart->trigger(); // Real action route: enterShutdownSequence(true).
+  QCOMPARE(window->session()->state(),
+           TerminalSession::State::ShuttingDown);
+  quit->trigger(); // Real close route: closeEvent while ShuttingDown.
+  QVERIFY(!window->isVisible());
+  window->close(); // Double close while ShuttingDown stays idempotent.
+  QTest::qWait(200);
+
+  QCOMPARE(shutdownSpy.count(), 1);
+  QVERIFY(shutdownSpy.first().first().toBool());
+  QCOMPARE(window->session()->state(),
+           TerminalSession::State::ShutdownComplete);
+  QCOMPARE(harness.createdBackends, 1); // No generation 2, ever.
+  QCOMPARE(widgetSpy.count(), 1);       // One widget publication, ever.
+  QVERIFY(window->session()->terminalWidget() == nullptr);
+  QCOMPARE(quitSpy.count(), 1); // Quit exactly once, after generation 1.
+}
+
+void TerminalWindowTest::exitedStateDisablesPasteAndKeepsScrollbackOps() {
+  // P2 (Dijkstra P2-1 / Astra P2-1): a normal exit deliberately retains the
+  // widget for scrollback. Paste needs a live child and must disable on
+  // Exited; retained-view operations (select all, clear) and copy with a
+  // real selection stay available for the dead generation's buffer.
+  WindowHarness harness;
+  auto window = harness.makeWindow();
+  QVERIFY(window->session()->start(validRequest()));
+  auto *copy =
+      window->findChild<QAction *>(QStringLiteral("editCopyAction"));
+  auto *paste =
+      window->findChild<QAction *>(QStringLiteral("editPasteAction"));
+  auto *pasteSelection = window->findChild<QAction *>(
+      QStringLiteral("editPasteSelectionAction"));
+  auto *selectAll = window->findChild<QAction *>(
+      QStringLiteral("editSelectAllAction"));
+  auto *clear =
+      window->findChild<QAction *>(QStringLiteral("viewClearAction"));
+  QVERIFY(copy && paste && pasteSelection && selectAll && clear);
+
+  QVERIFY(QMetaObject::invokeMethod(window->session(), "selectionAvailable",
+                                    Q_ARG(bool, true)));
+  QVERIFY(paste->isEnabled());
+  QVERIFY(copy->isEnabled());
+
+  QTRY_COMPARE_WITH_TIMEOUT(window->session()->state(),
+                            TerminalSession::State::Exited, 5000);
+  QVERIFY(window->session()->terminalWidget() != nullptr); // Retained view.
+  QVERIFY(!paste->isEnabled());
+  QVERIFY(!pasteSelection->isEnabled());
+  QVERIFY(selectAll->isEnabled());
+  QVERIFY(clear->isEnabled());
+  QVERIFY(copy->isEnabled()); // Selection survives on retained scrollback.
 }
 
 QTEST_MAIN(TerminalWindowTest)

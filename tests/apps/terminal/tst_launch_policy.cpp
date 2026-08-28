@@ -90,6 +90,7 @@ private slots:
   void effectiveLocaleAuthorityIsUtf8UnderHostileInheritance();
   void dropsMalformedEnvironmentEntries();
   void rejectsOversizedEnvironments();
+  void byteBoundsRejectMultibyteValues();
   void clampsHostileViewSizes();
   void executableFileCheckUsesRealMetadata();
 };
@@ -386,6 +387,41 @@ void TerminalLaunchPolicyTest::rejectsOversizedEnvironments() {
   QVERIFY(longEntry.environment.filter(
               QRegularExpression(QStringLiteral("^LONG=")))
               .isEmpty());
+}
+
+void TerminalLaunchPolicyTest::byteBoundsRejectMultibyteValues() {
+  // P3-1: the documented ceilings are byte bounds on the execve/envp bytes.
+  // Every hostile value below stays under the ceiling in UTF-16 code units
+  // while exceeding it in UTF-8 bytes, so a code-unit measurement would
+  // accept it (the pre-fix parent failed this row).
+  const QString multibyte(2048, QChar(0x017F)); // 4096 bytes in UTF-8.
+
+  const auto program = TerminalLaunchPolicy::resolveShell(
+      QStringLiteral("/tmp/") + multibyte, {}, QString(), {});
+  QVERIFY(!program.outcome.ok);
+  QVERIFY(program.outcome.diagnostic.contains(QLatin1String("exceeds")));
+
+  const QString argument = multibyte + QLatin1Char('x'); // 4098 bytes.
+  const auto oversizedArgument = TerminalLaunchPolicy::resolveShell(
+      QCoreApplication::applicationFilePath(), {argument}, QString(), {});
+  QVERIFY(!oversizedArgument.outcome.ok);
+  QVERIFY(oversizedArgument.outcome.diagnostic.contains(
+      QLatin1String("exceeds")));
+
+  const auto workingDirectory = TerminalLaunchPolicy::resolveShell(
+      QCoreApplication::applicationFilePath(), {},
+      QStringLiteral("/tmp/") + multibyte, {});
+  QVERIFY(!workingDirectory.outcome.ok);
+  QVERIFY(workingDirectory.outcome.diagnostic.contains(
+      QLatin1String("exceeds")));
+
+  auto entry = TerminalLaunchPolicy::childEnvironment(
+      {QStringLiteral("BIG=") + multibyte, QStringLiteral("PATH=/usr/bin")});
+  QVERIFY(entry.outcome.ok);
+  QVERIFY(entry.environment.filter(
+              QRegularExpression(QStringLiteral("^BIG=")))
+              .isEmpty());
+  QVERIFY(entry.environment.contains(QStringLiteral("PATH=/usr/bin")));
 }
 
 void TerminalLaunchPolicyTest::clampsHostileViewSizes() {

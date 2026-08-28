@@ -37,13 +37,23 @@ implemented in the qtermwidget-free `session/pty_bridge` unit:
 - child output and line-discipline echo are read from the bridge master and
   forwarded to a private adapter-owned duplicate of the widget's teletype
   slave; slave write → widget master read → emulator is the correct output
-  direction into the renderer;
+  direction into the renderer, and the adapter clears output processing
+  (`OPOST`, verified fail-closed) on that duplicate because the forwarded
+  bytes are already line-disciplined — a transforming slave would mutate
+  exact output a second time;
 - child winsize is programmed explicitly (`TIOCSWINSZ` on the bridge master)
   from the live emulator grid when the widget resizes, so SIGWINCH reaches
   the child;
 - each descriptor has exactly one writer, both directions use bounded
   (64 KiB, drop-newest) buffers with `EINTR` retry, and closing the bridge
-  master is the teardown SIGHUP path.
+  master is the teardown SIGHUP path;
+- once the bridge read side reports a terminal condition (EOF, Linux `EIO`
+  after the last slave descriptor closes, or a hard read error), its read
+  notifier is disabled for the rest of the generation: Linux keeps a hung-up
+  master `POLLHUP`-readable forever, so an armed notifier would spin the GUI
+  thread while a retained Exited session holds the bridge. The master itself
+  stays open — its only closer is the teardown SIGHUP path — and exit truth
+  remains with the session's `waitpid` reap, never with the read side.
 
 `qtermwidget6` remains a mandatory, version-pinned (`2.4...<2.5`) dependency
 of the terminal target, linked **PRIVATE** into the static adapter so no

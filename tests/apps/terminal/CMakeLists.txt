@@ -7,6 +7,13 @@ function(qindaqt_add_terminal_test target source test_name)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(${target})
     add_test(NAME ${test_name} COMMAND ${target})
+    # AGENT-GUARD (P2: headless rows): the support library PUBLIC-links
+    # Qt6::Widgets, so QTEST_MAIN instantiates QApplication in every row
+    # linked this way. Without an explicit offscreen platform each row aborts
+    # in display-less CI before its first assertion. Any new row registered
+    # through this helper inherits the headless-safe environment.
+    set_tests_properties(${test_name}
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endfunction()
 
 qindaqt_add_terminal_test(
@@ -42,10 +49,6 @@ qindaqt_add_terminal_test(
 target_compile_definitions(
     qindaqt_terminal_window_tests
     PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
-set_tests_properties(
-    qindaqt.terminal-window-offscreen
-    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 add_test(

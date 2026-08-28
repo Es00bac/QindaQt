@@ -415,7 +415,11 @@ void TerminalSessionTest::closeCancelsPendingRestartAndSpawnsNothing() {
 
   QVERIFY(session->restart());
   QCOMPARE(session->state(), TerminalSession::State::ShuttingDown);
-  session->beginShutdown(); // The close path: cancels the pending restart.
+  // Session-level cancellation only: this names the contract that
+  // TerminalWindow::closeEvent must route every non-refused close through
+  // (the window-level Restart→Close production route is covered by
+  // restartThenCloseSpawnsNothingBeforeQuit in tst_terminal_window.cpp).
+  session->beginShutdown();
   pump(1500);
   QCOMPARE(session->state(), TerminalSession::State::ShutdownComplete);
   QCOMPARE(widgetSpy.count(), 1);
