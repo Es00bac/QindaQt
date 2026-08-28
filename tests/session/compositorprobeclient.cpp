@@ -2,6 +2,7 @@
 #include "compositorprobeclient.h"
 
 #include <QCoreApplication>
+#include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QElapsedTimer>
@@ -130,6 +131,10 @@ CompositorProbeClient::CompositorProbeClient()
                                                   QString::fromLatin1(ObjectPath),
                                                   QString::fromLatin1(InterfaceName)))
 {
+    QDBusConnection::sessionBus().connect(
+        QString::fromLatin1(ServiceName), QString::fromLatin1(ObjectPath),
+        QString::fromLatin1(InterfaceName), QStringLiteral("OutputsChanged"),
+        this, SLOT(recordOutputsChanged()));
 }
 
 CompositorProbeClient::~CompositorProbeClient() = default;
@@ -185,6 +190,16 @@ std::optional<QJsonArray> CompositorProbeClient::outputs(QString *error)
 std::optional<QJsonArray> CompositorProbeClient::containers(QString *error)
 {
     return arrayReply(QStringLiteral("Containers"), QLatin1StringView("containers"), error);
+}
+
+int CompositorProbeClient::outputsChangedCount() const noexcept
+{
+    return m_outputsChangedCount;
+}
+
+void CompositorProbeClient::recordOutputsChanged()
+{
+    ++m_outputsChangedCount;
 }
 
 std::optional<WindowInventory>

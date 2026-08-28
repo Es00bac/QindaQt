@@ -346,6 +346,23 @@ void KWinInputAdapterTest::requiresBothMutationMarkers()
                                         QByteArrayLiteral("scenario.json")));
     QVERIFY(mutationsEnabledForSession(QByteArrayLiteral("1"),
                                        QByteArrayLiteral("scenario.json")));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        {}, {}, QByteArrayLiteral("virtual")));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        QByteArrayLiteral("1"), {}, QByteArrayLiteral("virtual")));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        {}, QByteArrayLiteral("scenario.json"), QByteArrayLiteral("virtual")));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        QByteArrayLiteral("true"), QByteArrayLiteral("scenario.json"),
+        QByteArrayLiteral("virtual")));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        QByteArrayLiteral("1"), QByteArrayLiteral("scenario.json"), {}));
+    QVERIFY(!developmentVirtualOutputsEnabledForSession(
+        QByteArrayLiteral("1"), QByteArrayLiteral("scenario.json"),
+        QByteArrayLiteral("wayland")));
+    QVERIFY(developmentVirtualOutputsEnabledForSession(
+        QByteArrayLiteral("1"), QByteArrayLiteral("scenario.json"),
+        QByteArrayLiteral("virtual")));
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

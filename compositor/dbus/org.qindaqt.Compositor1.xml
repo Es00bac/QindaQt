@@ -44,6 +44,17 @@
       <arg name="requestJson" type="ay" direction="in"/>
       <arg name="replyJson" type="ay" direction="out"/>
     </method>
+    <method name="AddVirtualOutputForTest">
+      <arg name="name" type="s" direction="in"/>
+      <arg name="width" type="i" direction="in"/>
+      <arg name="height" type="i" direction="in"/>
+      <arg name="scale" type="d" direction="in"/>
+      <arg name="replyJson" type="ay" direction="out"/>
+    </method>
+    <method name="RemoveVirtualOutputForTest">
+      <arg name="name" type="s" direction="in"/>
+      <arg name="replyJson" type="ay" direction="out"/>
+    </method>
     <method name="ReinitializeCompositingForTest">
       <arg name="replyJson" type="ay" direction="out"/>
     </method>

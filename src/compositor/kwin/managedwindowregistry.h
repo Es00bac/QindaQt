@@ -45,7 +45,6 @@ public:
         const QSet<QString> &allowedMissingWindowIds,
         QString *error = nullptr);
     [[nodiscard]] QJsonArray windowsJson() const;
-    [[nodiscard]] QJsonArray outputsJson() const;
     [[nodiscard]] QStringList containerIds() const;
 
 Q_SIGNALS:

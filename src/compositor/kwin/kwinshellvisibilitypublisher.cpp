@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinshellvisibilitypublisher.h"
 
+#include "kwinoutputinventory.h"
 #include "shellvisibilityrefreshscheduler.h"
 #include "shellvisibilitywindowadmission.h"
 #include "managedwindowregistry.h"
 
 #include <activities.h>
 #include <config-kwin.h>
-#include <core/output.h>
 #include <effect/globals.h>
 #include <virtualdesktops.h>
 #include <window.h>
@@ -78,15 +78,19 @@ bool isVisibleUserWindow(const KWin::Window *window)
 
 KWinShellVisibilityPublisher::KWinShellVisibilityPublisher(
     ManagedWindowRegistry &registry,
+    KWinOutputInventory &outputInventory,
     QObject *parent)
     : QObject(parent)
     , m_registry(registry)
+    , m_outputInventory(outputInventory)
     , m_store(QUuid::createUuid().toString(QUuid::WithoutBraces))
     , m_scheduler(std::make_unique<ShellVisibilityRefreshScheduler>(
           [this] { refresh(); }, this))
 {
     auto *const compositorWorkspace = KWin::workspace();
     Q_ASSERT(compositorWorkspace);
+    connect(&outputInventory, &KWinOutputInventory::inventoryChanged,
+            this, &KWinShellVisibilityPublisher::scheduleRefresh);
     connect(compositorWorkspace, &KWin::Workspace::windowAdded,
             this, [this](KWin::Window *window) {
                 trackWindow(window);
@@ -97,13 +101,6 @@ KWinShellVisibilityPublisher::KWinShellVisibilityPublisher(
                 forgetWindow(window);
                 scheduleRefresh();
             });
-    connect(compositorWorkspace, &KWin::Workspace::outputsChanged,
-            this, [this] {
-                rebuildOutputConnections();
-                scheduleRefresh();
-            });
-    connect(compositorWorkspace, &KWin::Workspace::outputOrderChanged,
-            this, &KWinShellVisibilityPublisher::scheduleRefresh);
     connect(compositorWorkspace, &KWin::Workspace::currentDesktopChanged,
             this, [this](KWin::VirtualDesktop *, KWin::Window *) {
                 scheduleRefresh();
@@ -129,7 +126,6 @@ KWinShellVisibilityPublisher::KWinShellVisibilityPublisher(
     for (auto *window : compositorWorkspace->windows()) {
         trackWindow(window);
     }
-    rebuildOutputConnections();
     // The D-Bus object is registered only after construction, so this first
     // synchronous generation cannot race a client and needs no change signal.
     refresh();
@@ -185,23 +181,6 @@ void KWinShellVisibilityPublisher::forgetWindow(KWin::Window *window)
     const auto connections = m_windowConnections.take(window);
     for (const auto &connection : connections) {
         disconnect(connection);
-    }
-}
-
-void KWinShellVisibilityPublisher::rebuildOutputConnections()
-{
-    for (const auto &connection : std::as_const(m_outputConnections)) {
-        disconnect(connection);
-    }
-    m_outputConnections.clear();
-    for (auto *output : KWin::workspace()->outputOrder()) {
-        if (!output) {
-            continue;
-        }
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::geometryChanged,
-                                           this, &KWinShellVisibilityPublisher::scheduleRefresh));
-        m_outputConnections.append(connect(output, &KWin::LogicalOutput::scaleChanged,
-                                           this, &KWinShellVisibilityPublisher::scheduleRefresh));
     }
 }
 
@@ -274,17 +253,18 @@ KWinShellVisibilityPublisher::sample(QString *error) const
         candidate.scope.activityId = QString::fromLatin1(NoActivitiesId);
     }
 
-    for (auto *output : compositorWorkspace->outputOrder()) {
-        if (!output) {
-            if (error) {
-                *error = QStringLiteral("KWin enabled output inventory contains null");
-            }
-            return std::nullopt;
+    if (!m_outputInventory.available() || m_outputInventory.generation() == 0) {
+        if (error) {
+            *error = QStringLiteral("the shared output inventory is unavailable");
         }
-        // KWin and QScreen expose this same integral desktop-logical geometry;
-        // do not derive it independently from geometryF() and fractional scale.
+        return std::nullopt;
+    }
+    candidate.outputGeneration = m_outputInventory.generation();
+    for (const auto &output : m_outputInventory.entries()) {
+        // AGENT-CONTRACT: Visibility derives from the immutable generation
+        // returned by Outputs(), never a second live Workspace sample.
         candidate.outputs.append(
-            {output->name(), static_cast<QRect>(output->geometry()), output->scale()});
+            {output.name, output.visibilityGeometry, output.scale});
     }
 
     for (auto *window : compositorWorkspace->windows()) {

@@ -45,6 +45,7 @@ void CompositorVisibilityWireRoundtripTests::producerPayloadDecodesWithoutLoss()
     QVERIFY2(decoded.ok(), qPrintable(decoded.error.message));
     QCOMPARE(decoded.snapshot->epoch, QStringLiteral("epoch-a"));
     QCOMPARE(decoded.snapshot->revision, quint64(1));
+    QCOMPARE(decoded.snapshot->outputGeneration, quint64(1));
     QCOMPARE(decoded.snapshot->scope.workspaceId, QStringLiteral("workspace-1"));
     QCOMPARE(decoded.snapshot->outputs.constFirst().geometry,
              QRect(-1920, 0, 1920, 1080));

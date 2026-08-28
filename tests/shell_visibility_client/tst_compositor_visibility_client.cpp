@@ -89,6 +89,7 @@ QByteArray snapshotPayload(QString epoch, quint64 revision, int x = 10)
                              {QStringLiteral("schemaVersion"), 1},
                              {QStringLiteral("epoch"), std::move(epoch)},
                              {QStringLiteral("revision"), QString::number(revision)},
+                             {QStringLiteral("outputGeneration"), QStringLiteral("1")},
                              {QStringLiteral("scope"),
                               QJsonObject{{QStringLiteral("workspaceId"),
                                            QStringLiteral("workspace-1")},

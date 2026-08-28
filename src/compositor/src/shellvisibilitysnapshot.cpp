@@ -106,6 +106,10 @@ std::optional<QJsonObject> canonicalState(
     const ShellVisibilitySnapshotCandidate &candidate,
     QString *error)
 {
+    if (candidate.outputGeneration == 0) {
+        fail(error, QStringLiteral("output generation must be non-zero"));
+        return std::nullopt;
+    }
     if (!validIdentifier(candidate.scope.workspaceId)
         || !validIdentifier(candidate.scope.activityId)) {
         fail(error, QStringLiteral("current workspace/activity IDs are not canonical"));
@@ -188,6 +192,8 @@ std::optional<QJsonObject> canonicalState(
     }
 
     return QJsonObject{
+        {QStringLiteral("outputGeneration"),
+         QString::number(candidate.outputGeneration)},
         {QStringLiteral("scope"),
          QJsonObject{{QStringLiteral("workspaceId"), candidate.scope.workspaceId},
                      {QStringLiteral("activityId"), candidate.scope.activityId}}},

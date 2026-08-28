@@ -22,12 +22,18 @@ void SessionEnvironment::apply(const SessionOptions &options)
     qputenv("XDG_SESSION_TYPE", "wayland");
     // AGENT-GUARD: External compositor mutation is a development-harness
     // capability, never an inherited production-session default. The KWin
-    // endpoint additionally verifies both markers before enabling it.
+    // endpoint additionally verifies both markers before enabling it. Output
+    // hotplug has a third marker because KWin's generic virtual-output ABI is
+    // safe only on the explicitly selected virtual backend.
     qunsetenv("QINDAQT_TEST_SCENARIO");
     qunsetenv("QINDAQT_DEVELOPMENT_CONTROL");
+    qunsetenv("QINDAQT_DEVELOPMENT_OUTPUT_BACKEND");
     if (!options.testScenario.isEmpty()) {
         setValue("QINDAQT_TEST_SCENARIO", options.testScenario);
         qputenv("QINDAQT_DEVELOPMENT_CONTROL", "1");
+        if (options.backend == Backend::Virtual) {
+            qputenv("QINDAQT_DEVELOPMENT_OUTPUT_BACKEND", "virtual");
+        }
     }
 
     if (!options.pluginRoot.isEmpty()) {

@@ -113,6 +113,8 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         qindaqt-session-probe
         compositordevelopmentworkflow.cpp
         compositordevelopmentworkflow.h
+        compositoroutputworkflow.cpp
+        compositoroutputworkflow.h
         compositorprobeclient.cpp
         compositorprobeclient.h
         compositorworkflow.cpp

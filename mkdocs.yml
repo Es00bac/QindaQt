@@ -38,7 +38,7 @@ nav:
       - Panel visibility policy: shell/panel-visibility.md
       - Notification presentation: shell/notification-presentation.md
   - Reference:
-      - Compositor control 1.0: reference/compositor-control-v1.md
+      - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
       - Settings1 protocol 1: reference/settings1-v1.md
       - Audio1 version 1: reference/audio1-v1.md

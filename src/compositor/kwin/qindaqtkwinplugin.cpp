@@ -3,7 +3,9 @@
 
 #include "kwincontrolendpoint.h"
 #include "kwindevelopmentinputinjector.h"
+#include "kwindevelopmentoutputseam.h"
 #include "kwininputadapter.h"
+#include "kwinoutputinventory.h"
 #include "kwinhybridsession.h"
 #include "kwinsceneadapter.h"
 #include "kwinshellvisibilitypublisher.h"
@@ -16,6 +18,7 @@
 
 #include <compositor.h>
 #include <input.h>
+#include <main.h>
 
 #include <QDBusConnectionInterface>
 #include <QJsonDocument>
@@ -34,9 +37,13 @@ constexpr auto ObjectPath = "/org/qindaqt/Compositor";
 
 QindaQtKWinPlugin::QindaQtKWinPlugin()
     : m_mutationsEnabled(mutationsEnabledForCurrentSession())
+    , m_developmentVirtualOutputsEnabled(
+          developmentVirtualOutputsEnabledForCurrentSession())
     , m_bus(QDBusConnection::sessionBus())
     , m_registry(std::make_unique<ManagedWindowRegistry>())
-    , m_shellVisibility(std::make_unique<KWinShellVisibilityPublisher>(*m_registry))
+    , m_outputInventory(std::make_unique<KWinOutputInventory>())
+    , m_shellVisibility(std::make_unique<KWinShellVisibilityPublisher>(
+          *m_registry, *m_outputInventory))
     , m_inputAdapter(std::make_unique<KWinInputAdapter>(KWin::input()))
     // AGENT-GUARD: Never construct a production-session injector. A null
     // provider makes the process-level absence explicit in addition to the
@@ -45,12 +52,21 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
                                      ? std::make_unique<KWinDevelopmentInputInjector>(
                                            KWin::input())
                                      : nullptr)
+    // AGENT-GUARD: OutputBackend has no capability query. Construct this
+    // adapter only when the launcher proved the exact virtual backend; other
+    // backends may block in create or be unable to undo the output.
+    , m_developmentOutputSeam(
+          m_developmentVirtualOutputsEnabled
+              ? std::make_unique<KWinDevelopmentOutputSeam>(
+                    KWin::kwinApp()->outputBackend())
+              : nullptr)
     , m_sceneAdapter(std::make_unique<KWinSceneAdapter>(*m_registry))
     , m_bridge(std::make_unique<ContainerControlBridge>(*m_sceneAdapter))
     , m_endpoint(std::make_unique<KWinControlEndpoint>(
-          *m_bridge, *m_registry, *m_inputAdapter, *m_shellVisibility,
-          m_mutationsEnabled,
-          m_developmentInputInjector.get()))
+          *m_bridge, *m_registry, *m_inputAdapter, *m_outputInventory,
+          *m_shellVisibility,
+          m_mutationsEnabled, m_developmentVirtualOutputsEnabled,
+          m_developmentInputInjector.get(), m_developmentOutputSeam.get()))
 {
     m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
     m_shellVisibility->setHybridMaximizedProvider([this](const QString &containerId) {
@@ -129,6 +145,9 @@ QindaQtKWinPlugin::~QindaQtKWinPlugin()
     if (m_registeredService) {
         m_bus.unregisterService(QString::fromLatin1(ServiceName));
     }
+    // Backend removal is synchronous in the launcher-proven VirtualBackend.
+    // Unpublish D-Bus first so teardown signals cannot imply a public success.
+    m_endpoint->shutdownDevelopmentOutputs();
 }
 
 void QindaQtKWinPlugin::releasePublishedContainers()

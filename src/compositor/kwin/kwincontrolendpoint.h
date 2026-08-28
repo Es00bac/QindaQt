@@ -2,6 +2,7 @@
 #pragma once
 
 #include "developmentinputprotocol.h"
+#include "kwindevelopmentoutputseam.h"
 
 #include <QByteArray>
 #include <QJsonArray>
@@ -20,6 +21,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 class ManagedWindowRegistry;
 class KWinInputAdapter;
+class KWinOutputInventory;
 class KWinShellVisibilityPublisher;
 
 class KWinControlEndpoint final : public QObject
@@ -37,9 +39,12 @@ public:
     KWinControlEndpoint(ContainerControlBridge &bridge,
                         ManagedWindowRegistry &registry,
                         KWinInputAdapter &inputAdapter,
+                        KWinOutputInventory &outputInventory,
                         KWinShellVisibilityPublisher &shellVisibility,
                         bool mutationsEnabled,
+                        bool developmentOutputEnabled,
                         DevelopmentInputSink *developmentInputSink = nullptr,
+                        DevelopmentOutputMutator *developmentOutputMutator = nullptr,
                         QObject *parent = nullptr);
 
     // The provider is invoked synchronously by Capabilities() and must not
@@ -59,6 +64,7 @@ public:
     // reconciliation. It deliberately bypasses only the external D-Bus gate;
     // validation, scene rollback, and ownership rules remain identical.
     [[nodiscard]] QByteArray releaseContainerForCompositor(const QString &containerId);
+    void shutdownDevelopmentOutputs();
 
 public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray Capabilities() const;
@@ -76,6 +82,10 @@ public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray Snapshot(const QString &containerId) const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Submit(const QByteArray &requestJson);
     Q_SCRIPTABLE [[nodiscard]] QByteArray InjectTestInput(const QByteArray &requestJson);
+    Q_SCRIPTABLE [[nodiscard]] QByteArray AddVirtualOutputForTest(
+        const QString &name, int width, int height, double scale);
+    Q_SCRIPTABLE [[nodiscard]] QByteArray RemoveVirtualOutputForTest(
+        const QString &name);
     Q_SCRIPTABLE [[nodiscard]] QByteArray ReinitializeCompositingForTest();
 
 Q_SIGNALS:
@@ -89,6 +99,7 @@ private:
     ContainerControlBridge &m_bridge;
     ManagedWindowRegistry &m_registry;
     KWinInputAdapter &m_inputAdapter;
+    KWinOutputInventory &m_outputInventory;
     KWinShellVisibilityPublisher &m_shellVisibility;
     ControlEndpoint *m_coreEndpoint = nullptr;
     HybridDiagnosticsProvider m_hybridDiagnostics;
@@ -96,6 +107,7 @@ private:
     HybridSnapshotProvider m_hybridSnapshot;
     DevelopmentCompositorReinitializer m_developmentCompositorReinitializer;
     DevelopmentInputController m_developmentInput;
+    DevelopmentOutputController m_developmentOutput;
     bool m_mutationsEnabled = false;
 };
 

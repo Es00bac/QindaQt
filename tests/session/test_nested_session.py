@@ -55,12 +55,60 @@ def _close(first: Any, second: float) -> bool:
     )
 
 
+def validate_compositor_outputs(
+    result: dict[str, Any], spec: VirtualOutputSpec
+) -> None:
+    compositor_outputs = result.get("compositorOutputs")
+    if (
+        result.get("compositorService") is not True
+        or result.get("compositorKWinAbi") != KWIN_ABI
+        or result.get("compositorInputObserverActive") is not True
+        or result.get("compositorInputConsumesEvents") is not False
+        or not isinstance(result.get("compositorInputDevices"), list)
+    ):
+        raise RuntimeError("the release-matched compositor output/input endpoint was unavailable")
+    output_generation = result.get("compositorOutputGeneration")
+    if (
+        not isinstance(output_generation, str)
+        or not output_generation.isascii()
+        or not output_generation.isdigit()
+        or output_generation.startswith("0")
+    ):
+        raise RuntimeError("compositor output generation was not canonical")
+    if not isinstance(compositor_outputs, list) or len(compositor_outputs) != spec.output_count:
+        raise RuntimeError(
+            "compositor output inventory did not match the requested enabled output count"
+        )
+    for output in compositor_outputs:
+        geometry = output.get("geometry") if isinstance(output, dict) else None
+        physical_size = output.get("physicalSizeMm") if isinstance(output, dict) else None
+        if (
+            not isinstance(geometry, dict)
+            or not _close(geometry.get("width"), spec.logical_width)
+            or not _close(geometry.get("height"), spec.logical_height)
+            or not _close(output.get("scale"), spec.scale)
+            or not isinstance(output.get("uuid"), str)
+            or not isinstance(output.get("priority"), int)
+            or isinstance(output.get("priority"), bool)
+            or not isinstance(physical_size, dict)
+            or not isinstance(physical_size.get("width"), int)
+            or not isinstance(physical_size.get("height"), int)
+            or not isinstance(output.get("manufacturer"), str)
+            or not isinstance(output.get("model"), str)
+        ):
+            raise RuntimeError(
+                "compositor output geometry/scale did not match "
+                f"{spec.logical_width}x{spec.logical_height}@{spec.scale:g}"
+            )
+
+
 def validate_probe_result(
     result: dict[str, Any],
     spec: VirtualOutputSpec,
     *,
     inspect_compositor_outputs: bool,
     expect_workflow: bool,
+    expect_output_hotplug: bool = False,
     expect_read_only: bool = False,
     expect_hybrid_pointer: bool = False,
 ) -> None:
@@ -91,34 +139,7 @@ def validate_probe_result(
         )
 
     if inspect_compositor_outputs:
-        compositor_outputs = result.get("compositorOutputs")
-        if (
-            result.get("compositorService") is not True
-            or result.get("compositorKWinAbi") != KWIN_ABI
-            or result.get("compositorInputObserverActive") is not True
-            or result.get("compositorInputConsumesEvents") is not False
-            or not isinstance(result.get("compositorInputDevices"), list)
-        ):
-            raise RuntimeError("the release-matched compositor output/input endpoint was unavailable")
-        if (
-            not isinstance(compositor_outputs, list)
-            or len(compositor_outputs) != spec.output_count
-        ):
-            raise RuntimeError(
-                "compositor output inventory did not match the requested enabled output count"
-            )
-        for output in compositor_outputs:
-            geometry = output.get("geometry") if isinstance(output, dict) else None
-            if (
-                not isinstance(geometry, dict)
-                or not _close(geometry.get("width"), spec.logical_width)
-                or not _close(geometry.get("height"), spec.logical_height)
-                or not _close(output.get("scale"), spec.scale)
-            ):
-                raise RuntimeError(
-                    "compositor output geometry/scale did not match "
-                    f"{spec.logical_width}x{spec.logical_height}@{spec.scale:g}"
-                )
+        validate_compositor_outputs(result, spec)
     if expect_workflow and result.get("compositorWorkflow") is not True:
         raise RuntimeError("the compositor container workflow did not pass")
     if expect_workflow and (
@@ -126,12 +147,38 @@ def validate_probe_result(
         or result.get("compositorMutationsEnabled") is not True
     ):
         raise RuntimeError("the development workflow mutation gate was not enabled")
+    if expect_workflow:
+        output_capability = result.get("compositorDevelopmentOutput")
+        if (
+            not isinstance(output_capability, dict)
+            or output_capability.get("enabled") is not True
+            or output_capability.get("available") is not True
+        ):
+            raise RuntimeError("the development virtual-output capability was unavailable")
+    if expect_output_hotplug:
+        evidence = result.get("compositorEvidence")
+        if (
+            not isinstance(evidence, dict)
+            or evidence.get("virtualOutputHotplug") is not True
+            or evidence.get("outputsChangedCount") != 2
+            or evidence.get("sharedVisibilityGeneration") is not True
+        ):
+            raise RuntimeError("the development virtual-output workflow did not pass")
     if expect_read_only and (
         result.get("compositorWorkflow") is not True
         or result.get("compositorControlMode") != "read-only"
         or result.get("compositorMutationsEnabled") is not False
     ):
         raise RuntimeError("the production control endpoint was not proven read-only")
+    if expect_read_only:
+        evidence = result.get("compositorEvidence")
+        if (
+            result.get("compositorDevelopmentOutput") != {}
+            or not isinstance(evidence, dict)
+            or evidence.get("outputRequestsRejectedBeforeParsing") is not True
+            or evidence.get("outputInventoryUnchanged") is not True
+        ):
+            raise RuntimeError("the production output seam was not inert")
     if expect_hybrid_pointer:
         validate_hybrid_pointer_evidence(result)
 
@@ -239,6 +286,7 @@ def main() -> int:
             spec,
             inspect_compositor_outputs=inspect_outputs,
             expect_workflow=arguments.expect_plugin or arguments.expect_hybrid_pointer is not None,
+            expect_output_hotplug=arguments.expect_plugin,
             expect_read_only=arguments.expect_read_only,
             expect_hybrid_pointer=arguments.expect_hybrid_pointer is not None,
         )

@@ -273,6 +273,12 @@ CompositorSnapshotDecodeResult CompositorVisibilitySnapshotDecoder::decode(
     return failure(ErrorCode::InvalidRevision, QStringLiteral("revision"),
                    QStringLiteral("revision must be a canonical decimal string"));
   }
+  if (!canonicalRevision(root.value(QStringLiteral("outputGeneration")),
+                         &snapshot.outputGeneration)) {
+    return failure(ErrorCode::InvalidOutputGeneration,
+                   QStringLiteral("outputGeneration"),
+                   QStringLiteral("output generation must be a canonical non-zero decimal string"));
+  }
   const QJsonValue scopeValue = root.value(QStringLiteral("scope"));
   if (!scopeValue.isObject()) {
     return failure(ErrorCode::InvalidField, QStringLiteral("scope"),

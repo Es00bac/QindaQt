@@ -29,10 +29,12 @@ struct CompositorWorkflowResult final
     QJsonArray inputDevices;
     QJsonObject hybridDiagnostics;
     QJsonObject developmentInputCapabilities;
+    QJsonObject developmentOutputCapabilities;
     bool workflowPassed = false;
     QString failure;
     QJsonObject evidence;
     QJsonArray outputs;
+    QString outputGeneration;
 };
 
 // AGENT-CONTRACT: This probe exercises the public D-Bus boundary against three

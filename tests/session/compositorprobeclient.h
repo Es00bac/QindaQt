@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QObject>
 #include <QRectF>
 #include <QStringList>
 #include <QVariant>
@@ -42,8 +43,10 @@ using WindowInventory = QHash<QString, ObservedWindow>;
 // Test-only client for the public compositor D-Bus surface. Keeping transport,
 // schema checks, and event-loop-aware polling here prevents workflow scenarios
 // from silently reaching through the process boundary they are meant to prove.
-class CompositorProbeClient final
+class CompositorProbeClient final : public QObject
 {
+    Q_OBJECT
+
 public:
     CompositorProbeClient();
     ~CompositorProbeClient();
@@ -60,6 +63,7 @@ public:
     [[nodiscard]] std::optional<QJsonArray> windows(QString *error);
     [[nodiscard]] std::optional<QJsonArray> outputs(QString *error);
     [[nodiscard]] std::optional<QJsonArray> containers(QString *error);
+    [[nodiscard]] int outputsChangedCount() const noexcept;
     [[nodiscard]] std::optional<WindowInventory>
     awaitWindows(const QStringList &titles,
                  const std::function<bool(const WindowInventory &)> &ready, QString *error,
@@ -74,6 +78,10 @@ private:
                                                        QLatin1StringView field, QString *error);
 
     std::unique_ptr<QDBusInterface> m_endpoint;
+    int m_outputsChangedCount = 0;
+
+private Q_SLOTS:
+    void recordOutputsChanged();
 };
 
 [[nodiscard]] bool nearlyEqual(qreal first, qreal second);

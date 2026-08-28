@@ -1,4 +1,4 @@
-# Compositor control protocol 1.0
+# Compositor control protocol 1.1
 
 `org.qindaqt.Compositor1` is QindaQt's experimental compositor inventory and
 development-transaction boundary. Its complete method and signal surface is
@@ -12,7 +12,7 @@ that descriptor, deployment metadata, and the live capability set aligned.
 | Bus name | `org.qindaqt.Compositor` |
 | Object path | `/org/qindaqt/Compositor` |
 | Interface | `org.qindaqt.Compositor1` |
-| Protocol | Major 1, minor 0 |
+| Protocol | Major 1, minor 1 |
 | Payload | UTF-8 JSON carried in D-Bus byte arrays (`ay`) |
 | Revisions | Unsigned decimal JSON strings, never JSON numbers |
 
@@ -38,7 +38,7 @@ keyboard docking.
 | --- | --- | --- |
 | `Capabilities` | None | Protocol, KWin ABI, methods, events, operations, limits, control mode, and optional Hybrid diagnostics |
 | `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
-| `Outputs` | None | Ordered outputs with name, logical frame, scale, numeric refresh rate in mHz, semantic transform, and internal flag |
+| `Outputs` | None | One generation of ordered outputs with stable identity, logical geometry, mode, priority, and display metadata |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
 | `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
 | `Containers` | None | Observable bridge and process-local Hybrid container IDs, actual decimal-string revisions, and explicit authority |
@@ -47,6 +47,8 @@ keyboard docking.
 | `Snapshot` | Container ID | Current schema-versioned bridge or Hybrid snapshot, authority, and revision, or rejection |
 | `Submit` | Request JSON byte array | Bridge transaction committed, rejected, or conflict reply JSON |
 | `InjectTestInput` | Schema-1 event-batch JSON byte array | Development-only normal-chain injection, or a production pre-parse rejection |
+| `AddVirtualOutputForTest` | Name, logical width/height, scale | Virtual-backend-only bounded test output creation, or a pre-parse rejection |
+| `RemoveVirtualOutputForTest` | Name | Removes only a virtual output created by this plugin instance, or rejects |
 | `ReinitializeCompositingForTest` | None | Development-only queued KWin scene reinitialization, or a production pre-runtime rejection |
 
 `DockWindows` currently accepts two live, distinct, independently owned
@@ -69,6 +71,26 @@ Output transforms use these protocol strings: `normal`, `rotate-90`,
 `rotate-180`, `rotate-270`, `flip-x`, `flip-x-90`, `flip-x-180`, and
 `flip-x-270`. `refreshRateMilliHz` is a JSON integer.
 
+`Outputs` returns `status`, schema version 1, decimal-string
+`outputGeneration`, and an `outputs` array. Each entry retains the 1.0 fields
+`name`, `geometry`, `scale`, `refreshRateMilliHz`, `transform`, and `internal`,
+and 1.1 additively supplies `uuid`, unconstrained unsigned 32-bit `priority`,
+`physicalSizeMm`, `manufacturer`, and `model`. `0x0` physical size means KWin
+does not know it; it is not a measurement. Ordering is KWin's semantic
+`Workspace::outputOrder`, including its stable order for equal priorities.
+Names must be unique and nonempty; nonempty UUIDs must also be unique.
+Output names share the shell wire's 512-UTF-16-unit identifier bound. UUID and
+manufacturer text are at most 128 UTF-8 bytes, model text at most 256, and
+physical dimensions are non-negative and at most 10,000 mm per axis. Control,
+format, embedded-null, and malformed-surrogate text rejects the whole sample.
+
+The first accepted projection has generation `"1"`. One generation advances
+only when the complete canonical ordered projection changes, never once per
+KWin signal. Malformed, ambiguous, empty, or over-limit candidates are rejected
+atomically and retain the previous response and generation. The inventory uses
+the shell visibility wire bounds of 64 outputs and scale `(0, 16]` so its
+projection cannot exceed what `ShellVisibilitySnapshot` represents.
+
 For each window, `geometry` is KWin's current acknowledged frame.
 `targetGeometry` is QindaQt's committed planned frame for a container member,
 or KWin's most recent requested bounding frame for an independent window. They
@@ -89,9 +111,9 @@ either skip flag invalidate `Windows` through `WindowsChanged()`.
 ## Shell visibility snapshot
 
 `ShellVisibilitySnapshot` is a separate read-only inventory for panel hiding.
-It samples outputs, user windows, workspace, and activity into one immutable
-generation; clients must not combine the older independent `Windows` and
-`Outputs` reads. A successful payload has this schema:
+It samples user windows, workspace, and activity against one immutable accepted
+`Outputs` generation; clients must not combine the independent `Windows` read
+with it. A successful payload has this schema:
 
 ```json
 {
@@ -99,6 +121,7 @@ generation; clients must not combine the older independent `Windows` and
   "schemaVersion": 1,
   "epoch": "3d975df8-3ee6-4cc5-bf64-3d46cab972d0",
   "revision": "7",
+  "outputGeneration": "12",
   "scope": {"workspaceId": "workspace-1", "activityId": "activity-1"},
   "outputs": [
     {"id": "DP-1", "geometry": {"x": 0, "y": 0, "width": 1920, "height": 1080}, "scale": 1.0}
@@ -198,6 +221,33 @@ In production, the injector object does not exist and `InjectTestInput` returns
 method therefore discloses no parse oracle and is not a production automation
 surface.
 
+## Development virtual-output seam
+
+The typed output methods exist in the D-Bus descriptor for compatibility but
+are advertised in `Capabilities.methods` with a `developmentOutput` bounds
+object only when all three construction facts hold: the launcher supplied an
+explicit test scenario, enabled development control, and selected its exact
+KWin virtual backend. The launcher clears inherited backend proof first. This
+marker is construction metadata in a private test workflow, not caller
+authentication.
+
+Names are 1–128 ASCII bytes, begin with an alphanumeric byte, and thereafter
+use only alphanumerics, `-`, `_`, or `.`. Width and height are logical extents:
+width is 320–16,384, height is 200–16,384, and scale is finite in `[1, 3]`.
+The virtual backend derives the pixel mode from logical size times scale. At
+most eight plugin-owned outputs and 32 total backend outputs are admitted.
+Creation rejects both the requested name and KWin's `Virtual-<requested>`
+connector spelling if either is already present.
+
+The adapter records the requested name to the exact borrowed output pointer
+returned synchronously by KWin. Removal never searches by connector name and
+cannot remove a pre-existing output. Backend failure retains ownership and the
+previous public inventory generation. Plugin teardown unpublishes D-Bus, then
+synchronously removes only still-live owned pointers. In production and every
+non-virtual development session, valid and malformed calls both return the
+same `control-disabled` response before string/number validation or backend
+inspection.
+
 ## Development compositor-restart seam
 
 `ReinitializeCompositingForTest` exists solely to qualify scene-resource
@@ -263,7 +313,7 @@ under `snapshot`. These reads do not make `Submit`, `DockWindows`, or
   transaction; process-local Hybrid commits do not emit it;
 - `WindowsChanged()` covers manageable-window membership, captions, frames,
   minimized/active/task/switcher state, stacking order, and ownership;
-- `OutputsChanged()` follows KWin output-set changes;
+- `OutputsChanged()` follows one newly accepted output inventory generation;
 - `InputCapabilitiesChanged()` follows input-device inventory/lifecycle
   changes; and
 - `ShellVisibilityChanged()` coalesces relevant output, admitted-window,
@@ -280,7 +330,7 @@ A request has this shape:
 
 ```json
 {
-  "protocol": {"major": 1, "minor": 0},
+  "protocol": {"major": 1, "minor": 1},
   "transactionId": "caller-unique-id",
   "containerId": "container-id",
   "expectedRevision": "1",
@@ -290,7 +340,7 @@ A request has this shape:
 
 `transactionId`, `containerId`, and `operations` must be non-empty.
 `expectedRevision` is a decimal string so every `quint64` remains exact. Major
-versions must match; a caller minor newer than 0 is rejected. Unknown operation
+versions must match; a caller minor newer than 1 is rejected. Unknown operation
 fields are rejected rather than ignored.
 
 | Operation | Required fields |

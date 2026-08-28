@@ -21,6 +21,7 @@ class Window;
 namespace QindaQt::Compositor::KWinIntegration {
 
 class ShellVisibilityRefreshScheduler;
+class KWinOutputInventory;
 class ManagedWindowRegistry;
 
 class KWinShellVisibilityPublisher final : public QObject
@@ -31,6 +32,7 @@ public:
     using HybridMaximizedProvider = std::function<bool(const QString &)>;
 
     explicit KWinShellVisibilityPublisher(ManagedWindowRegistry &registry,
+                                          KWinOutputInventory &outputInventory,
                                           QObject *parent = nullptr);
     ~KWinShellVisibilityPublisher() override;
 
@@ -44,7 +46,6 @@ Q_SIGNALS:
 private:
     void trackWindow(KWin::Window *window);
     void forgetWindow(KWin::Window *window);
-    void rebuildOutputConnections();
     void scheduleRefresh();
     void handleFailure(const QString &code, const QString &message);
     void refresh();
@@ -52,10 +53,10 @@ private:
     sample(QString *error) const;
 
     ManagedWindowRegistry &m_registry;
+    KWinOutputInventory &m_outputInventory;
     ShellVisibilitySnapshotStore m_store;
     std::unique_ptr<ShellVisibilityRefreshScheduler> m_scheduler;
     QHash<KWin::Window *, QVector<QMetaObject::Connection>> m_windowConnections;
-    QVector<QMetaObject::Connection> m_outputConnections;
     HybridMaximizedProvider m_hybridMaximized;
     bool m_outage = false;
 };

@@ -51,6 +51,7 @@ private Q_SLOTS:
     void publishesExactCanonicalWireShape();
     void rejectsUnsafeAndAmbiguousGenerationsAtomically();
     void advancesOnlyForChangedValidGenerations();
+    void bindsRevisionToOutputGeneration();
     void enforcesConsumerWireLimits();
     void publishesUnavailableAndRecoversAtANewRevision();
     void revisionExhaustionConvergesToUnavailable();
@@ -68,6 +69,8 @@ void ShellVisibilitySnapshotTest::publishesExactCanonicalWireShape()
     QCOMPARE(snapshot.value(QStringLiteral("epoch")).toString(),
              QStringLiteral("epoch-a"));
     QCOMPARE(snapshot.value(QStringLiteral("revision")).toString(), QStringLiteral("1"));
+    QCOMPARE(snapshot.value(QStringLiteral("outputGeneration")).toString(),
+             QStringLiteral("1"));
     const auto scope = snapshot.value(QStringLiteral("scope")).toObject();
     QCOMPARE(scope.value(QStringLiteral("workspaceId")).toString(),
              QStringLiteral("workspace-1"));
@@ -95,6 +98,22 @@ void ShellVisibilitySnapshotTest::publishesExactCanonicalWireShape()
     QVERIFY(second.value(QStringLiteral("onAllWorkspaces")).toBool());
     QVERIFY(second.value(QStringLiteral("workspaceIds")).toArray().isEmpty());
     QVERIFY(second.value(QStringLiteral("maximized")).toBool());
+}
+
+void ShellVisibilitySnapshotTest::bindsRevisionToOutputGeneration()
+{
+    ShellVisibilitySnapshotStore store(QStringLiteral("epoch-a"));
+    auto candidate = validCandidate();
+    QCOMPARE(store.publish(candidate), ShellVisibilityPublishResult::Published);
+    candidate.outputGeneration = 2;
+    QCOMPARE(store.publish(candidate), ShellVisibilityPublishResult::Published);
+    QCOMPARE(store.revision(), quint64(2));
+    QCOMPARE(parse(store.snapshotJson()).value(QStringLiteral("outputGeneration")).toString(),
+             QStringLiteral("2"));
+    const auto retained = store.snapshotJson();
+    candidate.outputGeneration = 0;
+    QCOMPARE(store.publish(candidate), ShellVisibilityPublishResult::Rejected);
+    QCOMPARE(store.snapshotJson(), retained);
 }
 
 void ShellVisibilitySnapshotTest::rejectsUnsafeAndAmbiguousGenerationsAtomically()

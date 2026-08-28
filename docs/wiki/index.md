@@ -66,7 +66,7 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Profile schema v1](reference/profile-schema-v1.md) and
   [theme schema v1](reference/theme-schema-v1.md) document the data currently
   accepted by the loaders.
-- [Compositor control protocol 1.0](reference/compositor-control-v1.md)
+- [Compositor control protocol 1.1](reference/compositor-control-v1.md)
   documents the experimental D-Bus methods, signals, and transaction boundary.
 - [Notification presentation protocol 1](reference/notification-presentation-v1.md)
   documents the authenticated resident-host-to-shell snapshot boundary.

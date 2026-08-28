@@ -49,6 +49,7 @@ QJsonObject root() {
           {QStringLiteral("schemaVersion"), 1},
           {QStringLiteral("epoch"), QStringLiteral("epoch-a")},
           {QStringLiteral("revision"), QStringLiteral("7")},
+          {QStringLiteral("outputGeneration"), QStringLiteral("4")},
           {QStringLiteral("scope"),
            QJsonObject{{QStringLiteral("workspaceId"),
                         QStringLiteral("workspace-1")},
@@ -83,6 +84,7 @@ void CompositorVisibilitySnapshotTest::decodesACompleteCoherentSnapshot() {
   QVERIFY2(result.ok(), qPrintable(result.error.message));
   QCOMPARE(result.snapshot->epoch, QStringLiteral("epoch-a"));
   QCOMPARE(result.snapshot->revision, quint64(7));
+  QCOMPARE(result.snapshot->outputGeneration, quint64(4));
   QCOMPARE(result.snapshot->outputs.size(), 1);
   QCOMPARE(result.snapshot->outputs[0].id, QStringLiteral("eDP-1"));
   QCOMPARE(result.snapshot->outputs[0].geometry, QRect(0, 0, 1920, 1080));
@@ -169,6 +171,13 @@ void CompositorVisibilitySnapshotTest::rejectsStatusSchemaAndRevisionFailures() 
     document[QStringLiteral("revision")] = badRevision;
     result = CompositorVisibilitySnapshotDecoder::decode(encode(document));
     QCOMPARE(result.error.code, CompositorSnapshotErrorCode::InvalidRevision);
+  }
+  for (const QJsonValue &badGeneration : badRevisions) {
+    document = root();
+    document[QStringLiteral("outputGeneration")] = badGeneration;
+    result = CompositorVisibilitySnapshotDecoder::decode(encode(document));
+    QCOMPARE(result.error.code,
+             CompositorSnapshotErrorCode::InvalidOutputGeneration);
   }
 }
 

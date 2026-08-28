@@ -241,7 +241,8 @@ Hybrid group does not stop attempts for the remaining containers.
 
 The service uses the ordinary user session bus and has no caller
 authentication. Production therefore advertises `controlMode: "read-only"`.
-`DockWindows`, `Submit`, `ReleaseContainer`, `InjectTestInput`, and
+`DockWindows`, `Submit`, `ReleaseContainer`, `InjectTestInput`,
+`AddVirtualOutputForTest`, `RemoveVirtualOutputForTest`, and
 `ReinitializeCompositingForTest` reject with `control-disabled` before request
 parsing, runtime inspection, or mutation. Inventory and snapshots remain
 readable. Only the isolated explicit scenario path enables the
@@ -256,6 +257,27 @@ releases held state before removing the device. Production does not construct
 the injector, and its gate-before-parse reply is identical for malformed and
 oversized input. This is a deterministic nested-session seam, never a public
 automation API or physical-device claim.
+
+Output observation is owned by one GUI-thread inventory collaborator. It
+samples KWin's semantic output order and complete stable field set, validates
+the whole projection against the shared shell-visibility bounds, and advances
+one decimal-string generation only when that canonical projection changes.
+`Outputs` returns the retained generation. Shell visibility copies outputs from
+that same immutable generation and carries its `outputGeneration`, so the two
+surfaces never race independent live Workspace samples. Invalid transitional
+samples retain the prior complete projection and emit no false generation.
+
+Virtual output mutation has a stricter construction gate than the other test
+methods because KWin's public `OutputBackend` ABI has no capability query. The
+launcher clears inherited backend proof and sets it only for an explicit
+scenario using the exact virtual backend. Only then does the plugin construct
+the adapter or advertise the two typed methods. Requests validate bounded ASCII
+names, logical dimensions, scale, owned count, total count, and both KWin's
+requested and `Virtual-`-prefixed name forms before creation. Ownership is the
+requested name mapped to KWin's exact returned `QPointer`, never connector-name
+discovery. D-Bus is unpublished before teardown removes only those live owned
+outputs synchronously. A non-virtual development session gets the same
+pre-parse `control-disabled` response as production.
 
 That same development gate exposes the no-input
 `ReinitializeCompositingForTest` method. It queues
@@ -298,8 +320,8 @@ live coverage includes:
 - virtual 1920x1080, 1920x1200, 2560x1440, 1920x1080 at 1.25 scale, and two
   common 1920x1080 outputs;
 - exact KWin ABI, installed-plugin discovery, method/signal descriptor parity,
-  active non-consuming input observer, and production read-only mutation
-  rejection;
+  active non-consuming input observer, output generation/projection parity,
+  and production read-only mutation rejection;
 - three clients through dock revision 1, page creation revision 2, page
   activation/reactivation revisions 3–4, third-member detach/restore revision
   5, singleton unwrap/restore revision 6, then redock and explicit release;

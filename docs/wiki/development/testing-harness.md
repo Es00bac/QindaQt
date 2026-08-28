@@ -33,6 +33,13 @@ separate development-only `KWin::InputDevice` injector exists only in those
 isolated mutation-enabled sessions and has a bounded event schema; production
 rejects its public method before parsing.
 
+The virtual-output mutation seam is narrower again: only an explicit scenario
+launched with the exact `virtual` backend receives the private backend marker,
+constructs the adapter, and advertises its typed add/remove methods. `wayland`
+and every ordinary session omit the capability and pre-parse reject valid and
+hostile requests identically. This marker is test construction metadata, not
+caller authentication.
+
 Baseline commands are:
 
 ```sh
@@ -499,6 +506,17 @@ exact scale. The runner explicitly reports that names, primary selection,
 positions, refresh rates, transformations, and scenario events were not
 applied. Heterogeneous common modes/scales, transformations, and non-integral
 logical extents fail instead of being misreported as coverage.
+
+The D0 hotplug row starts from the 1920x1080 virtual scenario, records the
+current `outputGeneration`, adds one bounded logical-size output, and requires
+exactly one later accepted generation after coalescing. It treats
+`OutputsChanged` as an invalidation hint, then rereads `Outputs` and
+`ShellVisibilitySnapshot` until both carry the same new `outputGeneration` and
+output set. Removal must converge the same way. A separate launch without the
+exact virtual marker sends both valid and hostile requests and proves identical
+`control-disabled` replies with no accepted inventory generation or backend
+change. This virtual proof makes no DRM, GPU, connector, monitor, lid, or
+physical hotplug claim.
 
 The main plugin workflow discovers three independent windows. It calls atomic
 `DockWindows` at revision 1, creates a third-window page at revision 2,

@@ -93,6 +93,8 @@ void ControlCodecTest::serializesStableReplyAndCapabilities()
     QCOMPARE(capabilities.value(QStringLiteral("interface")).toString(),
              QStringLiteral("org.qindaqt.Compositor1"));
     QVERIFY(capabilities.value(QStringLiteral("transactional")).toBool());
+    QCOMPARE(capabilities.value(QStringLiteral("protocol")).toObject()
+                 .value(QStringLiteral("minor")).toInt(), 1);
     QVERIFY(capabilities.value(QStringLiteral("operations")).toArray()
                 .contains(QStringLiteral("split-window")));
     QCOMPARE(capabilities.value(QStringLiteral("limits")).toObject()

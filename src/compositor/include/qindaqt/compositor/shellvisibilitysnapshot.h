@@ -45,6 +45,9 @@ struct ShellVisibilitySnapshotCandidate final
     ShellVisibilityScopeSnapshot scope;
     QVector<ShellVisibilityOutputSnapshot> outputs;
     QVector<ShellVisibilityWindowSnapshot> windows;
+    // Decimal-string generation of the exact Outputs projection used above.
+    // Kept last so existing aggregate producers retain source compatibility.
+    quint64 outputGeneration = 1;
 };
 
 enum class ShellVisibilityPublishResult {

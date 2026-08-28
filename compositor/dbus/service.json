@@ -6,6 +6,9 @@
   "transport": "user-session-bus",
   "registrationOwner": "release-matched KWin integration plugin",
   "productionControlMode": "read-only",
+  "protocolVersion": "1.1",
+  "outputInventoryGeneration": "decimal string, monotonic per service owner",
+  "developmentOutputMutation": "advertised only in explicit virtual-backend test sessions",
   "mutationPolicy": "enabled only for an explicit isolated development test scenario",
   "authorization": "no caller authentication; production mutation methods are disabled"
 }

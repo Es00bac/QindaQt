@@ -19,6 +19,7 @@ struct CompositorVisibilitySnapshot {
   // acceptance state machine.
   QString epoch;
   quint64 revision = 0;
+  quint64 outputGeneration = 0;
   QVector<LogicalOutputSnapshot> outputs;
   QVector<LogicalWindowSnapshot> windows;
   DesktopScopeSnapshot scope;
@@ -35,6 +36,7 @@ enum class CompositorSnapshotErrorCode {
   UnsupportedSchema,
   InvalidEpoch,
   InvalidRevision,
+  InvalidOutputGeneration,
   CollectionLimitExceeded,
   InvalidField,
   InvalidInventory,

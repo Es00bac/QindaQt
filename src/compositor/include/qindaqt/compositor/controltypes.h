@@ -10,7 +10,7 @@ namespace QindaQt::Compositor {
 struct ProtocolVersion final
 {
     static constexpr quint16 CurrentMajor = 1;
-    static constexpr quint16 CurrentMinor = 0;
+    static constexpr quint16 CurrentMinor = 1;
 
     quint16 major = CurrentMajor;
     quint16 minor = CurrentMinor;

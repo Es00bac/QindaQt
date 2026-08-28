@@ -2,11 +2,15 @@
 #include "compositorworkflow.h"
 
 #include "compositordevelopmentworkflow.h"
+#include "compositoroutputworkflow.h"
 #include "compositorprobeclient.h"
 #include "hybridpointerworkflow.h"
 
 #include <QJsonArray>
+#include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QSet>
+#include <QThread>
 
 #include <algorithm>
 #include <optional>
@@ -42,10 +46,13 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
     result->hybridDiagnostics = capabilities->value(QStringLiteral("hybrid")).toObject();
     result->developmentInputCapabilities =
         capabilities->value(QStringLiteral("developmentInput")).toObject();
-    const QSet<QString> expectedMethods{QStringLiteral("Capabilities"),
+    result->developmentOutputCapabilities =
+        capabilities->value(QStringLiteral("developmentOutput")).toObject();
+    QSet<QString> expectedMethods{QStringLiteral("Capabilities"),
                                         QStringLiteral("Windows"),
                                         QStringLiteral("Outputs"),
                                         QStringLiteral("InputCapabilities"),
+                                        QStringLiteral("ShellVisibilitySnapshot"),
                                         QStringLiteral("Containers"),
                                         QStringLiteral("DockWindows"),
                                         QStringLiteral("InjectTestInput"),
@@ -53,9 +60,19 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
                                         QStringLiteral("ReleaseContainer"),
                                         QStringLiteral("Snapshot"),
                                         QStringLiteral("Submit")};
+    const bool outputSeamAvailable = !result->developmentOutputCapabilities.isEmpty()
+        && result->developmentOutputCapabilities
+               .value(QStringLiteral("enabled")).toBool()
+        && result->developmentOutputCapabilities
+               .value(QStringLiteral("available")).toBool();
+    if (outputSeamAvailable) {
+        expectedMethods.insert(QStringLiteral("AddVirtualOutputForTest"));
+        expectedMethods.insert(QStringLiteral("RemoveVirtualOutputForTest"));
+    }
     const QSet<QString> expectedEvents{
         QStringLiteral("ContainerCommitted"), QStringLiteral("WindowsChanged"),
-        QStringLiteral("OutputsChanged"), QStringLiteral("InputCapabilitiesChanged")};
+        QStringLiteral("OutputsChanged"), QStringLiteral("InputCapabilitiesChanged"),
+        QStringLiteral("ShellVisibilityChanged")};
     if (stringSet(capabilities->value(QStringLiteral("methods"))) != expectedMethods ||
         stringSet(capabilities->value(QStringLiteral("events"))) != expectedEvents) {
         result->failure = QStringLiteral("Capabilities does not match Compositor1 methods/events");
@@ -118,6 +135,12 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
             result->workflowPassed = false;
             return false;
         }
+        if (developmentMode != outputSeamAvailable) {
+            result->failure = QStringLiteral(
+                "Capabilities returned an invalid development output contract");
+            result->workflowPassed = false;
+            return false;
+        }
     }
 
     const auto input = client.call(QStringLiteral("InputCapabilities"), error);
@@ -139,8 +162,11 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
         return false;
     }
 
-    const auto listedOutputs = client.outputs(error);
-    if (!listedOutputs) {
+    const auto outputSnapshot = client.call(QStringLiteral("Outputs"), error);
+    if (!outputSnapshot
+        || outputSnapshot->value(QStringLiteral("status")) != QStringLiteral("ok")
+        || !outputSnapshot->value(QStringLiteral("outputs")).isArray()
+        || !outputSnapshot->value(QStringLiteral("outputGeneration")).isString()) {
         result->failure = *error;
         result->workflowPassed = !workflowRequired;
         return false;
@@ -148,7 +174,9 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
     // AGENT-CONTRACT: The Python scenario runner compares this compositor-side
     // inventory with Qt's client-side modes. Fractional scale cannot be proven
     // from QScreen::devicePixelRatio(), which is integer on this Wayland path.
-    result->outputs = *listedOutputs;
+    result->outputs = outputSnapshot->value(QStringLiteral("outputs")).toArray();
+    result->outputGeneration =
+        outputSnapshot->value(QStringLiteral("outputGeneration")).toString();
     return true;
 }
 
@@ -227,6 +255,7 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
                                          QByteArrayLiteral("not-json"), error);
     const auto reinitializeReply = client.call(
         QStringLiteral("ReinitializeCompositingForTest"), error);
+    const auto outputGateEvidence = exerciseProductionOutputGate(client, error);
     const auto after = client.awaitWindows(
         {titles.primary, titles.secondary, titles.page},
         [&](const WindowInventory &inventory) {
@@ -245,7 +274,8 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
         !rejectedWith(releaseReply, QLatin1StringView("control-disabled")) ||
         !rejectedWith(submitReply, QLatin1StringView("control-disabled")) ||
         !rejectedWith(injectReply, QLatin1StringView("control-disabled")) ||
-        !rejectedWith(reinitializeReply, QLatin1StringView("control-disabled")) || !after ||
+        !rejectedWith(reinitializeReply, QLatin1StringView("control-disabled"))
+        || !outputGateEvidence || !after ||
         !containersAfter || !containersAfter->isEmpty()) {
         result->failure = error->isEmpty()
                               ? QStringLiteral("production mutation gate did not reject atomically")
@@ -258,6 +288,10 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
     result->evidence.insert(QStringLiteral("allMutatorsRejected"), true);
     result->evidence.insert(QStringLiteral("testInputRejectedBeforeParsing"), true);
     result->evidence.insert(QStringLiteral("compositorRestartRejected"), true);
+    for (auto iterator = outputGateEvidence->constBegin();
+         iterator != outputGateEvidence->constEnd(); ++iterator) {
+        result->evidence.insert(iterator.key(), iterator.value());
+    }
     result->evidence.insert(QStringLiteral("threeWindowsUnchanged"), true);
     result->evidence.insert(QStringLiteral("ownershipRemainedClear"), true);
     return true;
@@ -337,6 +371,15 @@ CompositorWorkflowResult exerciseCompositorWorkflow(const QString &primaryTitle,
     if (!evidence) {
         result.failure = error;
         return result;
+    }
+    const auto outputEvidence = exerciseDevelopmentOutputHotplug(client, &error);
+    if (!outputEvidence) {
+        result.failure = error;
+        return result;
+    }
+    for (auto iterator = outputEvidence->constBegin();
+         iterator != outputEvidence->constEnd(); ++iterator) {
+        evidence->insert(iterator.key(), iterator.value());
     }
     evidence->insert(QStringLiteral("inputObserverActive"), result.inputObserverActive);
     for (auto iterator = evidence->constBegin(); iterator != evidence->constEnd(); ++iterator) {

@@ -27,29 +27,6 @@ QJsonObject rectJson(const QRectF &rect)
             {QStringLiteral("height"), rect.height()}};
 }
 
-QString transformName(KWin::OutputTransform::Kind transform)
-{
-    switch (transform) {
-    case KWin::OutputTransform::Normal:
-        return QStringLiteral("normal");
-    case KWin::OutputTransform::Rotate90:
-        return QStringLiteral("rotate-90");
-    case KWin::OutputTransform::Rotate180:
-        return QStringLiteral("rotate-180");
-    case KWin::OutputTransform::Rotate270:
-        return QStringLiteral("rotate-270");
-    case KWin::OutputTransform::FlipX:
-        return QStringLiteral("flip-x");
-    case KWin::OutputTransform::FlipX90:
-        return QStringLiteral("flip-x-90");
-    case KWin::OutputTransform::FlipX180:
-        return QStringLiteral("flip-x-180");
-    case KWin::OutputTransform::FlipX270:
-        return QStringLiteral("flip-x-270");
-    }
-    Q_UNREACHABLE_RETURN(QStringLiteral("normal"));
-}
-
 bool fail(QString *error, QString message)
 {
     if (error) {
@@ -370,22 +347,6 @@ QJsonArray ManagedWindowRegistry::windowsJson() const
                                   {QStringLiteral("stackIndex"),
                                    stackIndices.value(window, -1)},
                                   {QStringLiteral("containerId"), owner(id)}});
-    }
-    return result;
-}
-
-QJsonArray ManagedWindowRegistry::outputsJson() const
-{
-    QJsonArray result;
-    for (const auto *output : KWin::workspace()->outputOrder()) {
-        result.append(QJsonObject{{QStringLiteral("name"), output->name()},
-                                  {QStringLiteral("geometry"), rectJson(output->geometryF())},
-                                  {QStringLiteral("scale"), output->scale()},
-                                  {QStringLiteral("refreshRateMilliHz"),
-                                   static_cast<qint64>(output->refreshRate())},
-                                  {QStringLiteral("transform"),
-                                   transformName(output->transform().kind())},
-                                  {QStringLiteral("internal"), output->isInternal()}});
     }
     return result;
 }

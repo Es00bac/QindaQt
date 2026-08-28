@@ -127,6 +127,32 @@ if(TARGET qindaqt_kwin_input_adapter)
     add_test(NAME compositor.kwin-input-adapter COMMAND qindaqt_kwin_input_adapter_tests)
 
     qt_add_executable(
+        qindaqt_kwin_output_inventory_tests
+        tst_kwinoutputinventory.cpp
+    )
+    target_link_libraries(
+        qindaqt_kwin_output_inventory_tests
+        PRIVATE qindaqt_kwin_output_support Qt6::Test
+    )
+    add_test(
+        NAME compositor.kwin-output-inventory
+        COMMAND qindaqt_kwin_output_inventory_tests
+    )
+
+    qt_add_executable(
+        qindaqt_development_output_protocol_tests
+        tst_kwindevelopmentoutputseam.cpp
+    )
+    target_link_libraries(
+        qindaqt_development_output_protocol_tests
+        PRIVATE qindaqt_kwin_output_support Qt6::Test
+    )
+    add_test(
+        NAME compositor.development-output-protocol
+        COMMAND qindaqt_development_output_protocol_tests
+    )
+
+    qt_add_executable(
         qindaqt_hybrid_chrome_pointer_router_tests
         tst_hybridchromepointerrouter.cpp
     )

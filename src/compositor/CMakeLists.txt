@@ -177,6 +177,29 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_enable_warnings(qindaqt_kwin_development_input)
     endif()
 
+    add_library(qindaqt_kwin_output_support STATIC
+        kwin/kwindevelopmentoutputseam.cpp
+        kwin/kwindevelopmentoutputseam.h
+        kwin/kwinoutputinventory.cpp
+        kwin/kwinoutputinventory.h
+    )
+    target_compile_features(qindaqt_kwin_output_support PUBLIC cxx_std_20)
+    target_include_directories(
+        qindaqt_kwin_output_support
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/kwin"
+    )
+    target_link_libraries(
+        qindaqt_kwin_output_support
+        PUBLIC QindaQt::CompositorBridge KWin::kwin Qt6::Core
+    )
+    set_target_properties(
+        qindaqt_kwin_output_support
+        PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON
+    )
+    if(COMMAND qindaqt_enable_warnings)
+        qindaqt_enable_warnings(qindaqt_kwin_output_support)
+    endif()
+
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins")
     kcoreaddons_add_plugin(
         qindaqt_compositor
@@ -293,6 +316,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             qindaqt_group_context_menu
             qindaqt_kwin_development_input
             qindaqt_kwin_input_adapter
+            qindaqt_kwin_output_support
             KDecoration3::KDecoration
             KWin::kwin
             KF6::GlobalAccel

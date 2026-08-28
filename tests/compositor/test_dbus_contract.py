@@ -21,6 +21,8 @@ EXPECTED_METHODS = {
     "Snapshot",
     "Submit",
     "InjectTestInput",
+    "AddVirtualOutputForTest",
+    "RemoveVirtualOutputForTest",
     "ReinitializeCompositingForTest",
 }
 EXPECTED_SIGNALS = {
@@ -30,6 +32,27 @@ EXPECTED_SIGNALS = {
     "InputCapabilitiesChanged",
     "ShellVisibilityChanged",
 }
+
+
+def validate_method_signature(
+    interface: ET.Element,
+    method_name: str,
+    expected_arguments: list[tuple[str, str, str]],
+) -> None:
+    method = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == method_name
+    )
+    arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in method.findall("arg")
+    ]
+    if arguments != expected_arguments:
+        raise ValueError(
+            f"{method_name} signature drift: "
+            f"expected {expected_arguments}, got {arguments}"
+        )
 
 
 def validate_descriptor(path: Path) -> None:
@@ -69,57 +92,34 @@ def validate_descriptor(path: Path) -> None:
             f"DockWindows signature drift: expected {expected_inputs}, got {inputs}"
         )
 
-    inject = next(
-        element
-        for element in interface.findall("method")
-        if element.get("name") == "InjectTestInput"
+    validate_method_signature(
+        interface,
+        "InjectTestInput",
+        [("requestJson", "ay", "in"), ("replyJson", "ay", "out")],
     )
-    inject_arguments = [
-        (argument.get("name"), argument.get("type"), argument.get("direction"))
-        for argument in inject.findall("arg")
-    ]
-    expected_inject_arguments = [
-        ("requestJson", "ay", "in"),
-        ("replyJson", "ay", "out"),
-    ]
-    if inject_arguments != expected_inject_arguments:
-        raise ValueError(
-            "InjectTestInput signature drift: "
-            f"expected {expected_inject_arguments}, got {inject_arguments}"
-        )
 
-    reinitialize = next(
-        element
-        for element in interface.findall("method")
-        if element.get("name") == "ReinitializeCompositingForTest"
-    )
-    reinitialize_arguments = [
-        (argument.get("name"), argument.get("type"), argument.get("direction"))
-        for argument in reinitialize.findall("arg")
-    ]
-    expected_reinitialize_arguments = [("replyJson", "ay", "out")]
-    if reinitialize_arguments != expected_reinitialize_arguments:
-        raise ValueError(
-            "ReinitializeCompositingForTest signature drift: "
-            f"expected {expected_reinitialize_arguments}, "
-            f"got {reinitialize_arguments}"
-        )
+    expected_output_mutations = {
+        "AddVirtualOutputForTest": [
+            ("name", "s", "in"),
+            ("width", "i", "in"),
+            ("height", "i", "in"),
+            ("scale", "d", "in"),
+            ("replyJson", "ay", "out"),
+        ],
+        "RemoveVirtualOutputForTest": [
+            ("name", "s", "in"),
+            ("replyJson", "ay", "out"),
+        ],
+    }
+    for method_name, expected_arguments in expected_output_mutations.items():
+        validate_method_signature(interface, method_name, expected_arguments)
 
-    visibility = next(
-        element
-        for element in interface.findall("method")
-        if element.get("name") == "ShellVisibilitySnapshot"
+    validate_method_signature(
+        interface, "ReinitializeCompositingForTest", [("replyJson", "ay", "out")]
     )
-    visibility_arguments = [
-        (argument.get("name"), argument.get("type"), argument.get("direction"))
-        for argument in visibility.findall("arg")
-    ]
-    expected_visibility_arguments = [("snapshotJson", "ay", "out")]
-    if visibility_arguments != expected_visibility_arguments:
-        raise ValueError(
-            "ShellVisibilitySnapshot signature drift: "
-            f"expected {expected_visibility_arguments}, got {visibility_arguments}"
-        )
+    validate_method_signature(
+        interface, "ShellVisibilitySnapshot", [("snapshotJson", "ay", "out")]
+    )
 
     visibility_changed = next(
         element
@@ -139,6 +139,7 @@ def validate_service_metadata(path: Path) -> None:
         "interface": "org.qindaqt.Compositor1",
         "transport": "user-session-bus",
         "productionControlMode": "read-only",
+        "protocolVersion": "1.1",
     }
     for key, value in expected.items():
         if document.get(key) != value:

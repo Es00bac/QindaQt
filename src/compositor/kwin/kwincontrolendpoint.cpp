@@ -2,6 +2,7 @@
 #include "kwincontrolendpoint.h"
 
 #include "kwininputadapter.h"
+#include "kwinoutputinventory.h"
 #include "kwinshellvisibilitypublisher.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
@@ -39,24 +40,29 @@ QByteArray response(QString status, QString code = {}, QString message = {})
 KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
                                          ManagedWindowRegistry &registry,
                                          KWinInputAdapter &inputAdapter,
+                                         KWinOutputInventory &outputInventory,
                                          KWinShellVisibilityPublisher &shellVisibility,
                                          bool mutationsEnabled,
+                                         bool developmentOutputEnabled,
                                          DevelopmentInputSink *developmentInputSink,
+                                         DevelopmentOutputMutator *developmentOutputMutator,
                                          QObject *parent)
     : QObject(parent)
     , m_bridge(bridge)
     , m_registry(registry)
     , m_inputAdapter(inputAdapter)
+    , m_outputInventory(outputInventory)
     , m_shellVisibility(shellVisibility)
     , m_coreEndpoint(new ControlEndpoint(bridge, this))
     , m_developmentInput(mutationsEnabled, developmentInputSink)
+    , m_developmentOutput(developmentOutputEnabled, developmentOutputMutator)
     , m_mutationsEnabled(mutationsEnabled)
 {
     connect(m_coreEndpoint, &ControlEndpoint::ContainerCommitted,
             this, &KWinControlEndpoint::ContainerCommitted);
     connect(&registry, &ManagedWindowRegistry::windowsChanged,
             this, &KWinControlEndpoint::WindowsChanged);
-    connect(&registry, &ManagedWindowRegistry::outputsChanged,
+    connect(&outputInventory, &KWinOutputInventory::inventoryChanged,
             this, &KWinControlEndpoint::OutputsChanged);
     connect(&inputAdapter, &KWinInputAdapter::capabilitiesChanged,
             this, &KWinControlEndpoint::InputCapabilitiesChanged);
@@ -113,6 +119,13 @@ QByteArray KWinControlEndpoint::Capabilities() const
                                            : QStringLiteral("read-only"));
     capabilities.insert(QStringLiteral("developmentInput"),
                         m_developmentInput.capabilities());
+    const auto developmentOutput = m_developmentOutput.capabilities();
+    if (developmentOutput.value(QStringLiteral("available")).toBool()) {
+        capabilities.insert(QStringLiteral("developmentOutput"), developmentOutput);
+        methods.append(QStringLiteral("AddVirtualOutputForTest"));
+        methods.append(QStringLiteral("RemoveVirtualOutputForTest"));
+        capabilities.insert(QStringLiteral("methods"), methods);
+    }
     if (m_hybridDiagnostics) {
         capabilities.insert(QStringLiteral("hybrid"), m_hybridDiagnostics());
     }
@@ -131,9 +144,7 @@ QByteArray KWinControlEndpoint::Windows() const
 
 QByteArray KWinControlEndpoint::Outputs() const
 {
-    return ControlCodec::compactJson(
-        {{QStringLiteral("status"), QStringLiteral("ok")},
-         {QStringLiteral("outputs"), m_registry.outputsJson()}});
+    return m_outputInventory.responseJson();
 }
 
 QByteArray KWinControlEndpoint::InputCapabilities() const
@@ -342,6 +353,22 @@ QByteArray KWinControlEndpoint::Submit(const QByteArray &requestJson)
 QByteArray KWinControlEndpoint::InjectTestInput(const QByteArray &requestJson)
 {
     return m_developmentInput.injectTestInput(requestJson);
+}
+
+QByteArray KWinControlEndpoint::AddVirtualOutputForTest(
+    const QString &name, int width, int height, double scale)
+{
+    return m_developmentOutput.addVirtualOutputForTest(name, width, height, scale);
+}
+
+QByteArray KWinControlEndpoint::RemoveVirtualOutputForTest(const QString &name)
+{
+    return m_developmentOutput.removeVirtualOutputForTest(name);
+}
+
+void KWinControlEndpoint::shutdownDevelopmentOutputs()
+{
+    m_developmentOutput.shutdown();
 }
 
 QByteArray KWinControlEndpoint::ReinitializeCompositingForTest()
