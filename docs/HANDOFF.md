@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- `4f99a7f` replays the exact independently accepted Terminal S0 series and
+  its relocatable-qtermwidget package repair onto the current manager tree.
+  Independent exact review found P0/P1/P2/P3 `0/0/0/0`; all 20 production
+  Terminal blobs match the private-Weston-qualified candidate. Fresh manager
+  evidence passes 63/63 build actions, 9/9 registered rows, 7/7 appearance
+  cases, 4/4 real-adapter cases, source shape over 1,383 files, 93-page docs,
+  and strict MkDocs. QQ-006.08 advances from ABSENT to EXECUTABLE; S0 does not
+  claim tabs/profiles, settings persistence, AppShell/global-menu integration,
+  a nested screenshot matrix, or whole-application assistive-technology proof.
+
 - `d0e0809` replays the exact independently accepted Text Editor AppShell
   migration `75f786e9`. The manager tree builds the seven focused editor
   targets in 139/139 actions and passes the Text Editor selector 10/10 plus the
