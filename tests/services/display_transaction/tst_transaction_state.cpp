@@ -8,6 +8,32 @@ using namespace QindaQt::DisplayTransaction;
 namespace Display = QindaQt::Display;
 namespace DisplayTopology = QindaQt::DisplayTopology;
 
+namespace
+{
+
+enum class ReadySnapshotInput {
+    Observation,
+    ExternalIntent,
+    Topology,
+};
+
+CommandResult deliverReadySnapshot(Machine &machine,
+                                   const ReadySnapshotInput input,
+                                   const Display::Snapshot &snapshot)
+{
+    switch (input) {
+    case ReadySnapshotInput::Observation:
+        return machine.observedSnapshot(snapshot);
+    case ReadySnapshotInput::ExternalIntent:
+        return machine.externalIntentObserved(snapshot);
+    case ReadySnapshotInput::Topology:
+        return machine.topologyChanged(snapshot);
+    }
+    Q_UNREACHABLE_RETURN({});
+}
+
+} // namespace
+
 class TransactionStateTests final : public QObject
 {
     Q_OBJECT
@@ -53,7 +79,11 @@ void TransactionStateTests::stageFencesRevisionAndDetectsNoOp()
 void TransactionStateTests::readyInputsEnforceCurrentLineage()
 {
     const Display::Snapshot base = Test::snapshot(false, 2);
-    for (const bool topologyInput : {false, true}) {
+    for (const ReadySnapshotInput input : {
+             ReadySnapshotInput::Observation,
+             ReadySnapshotInput::ExternalIntent,
+             ReadySnapshotInput::Topology,
+         }) {
         Test::FakeClock clock;
         Test::FakePort port;
         Machine machine(clock, port, Test::timing());
@@ -61,11 +91,30 @@ void TransactionStateTests::readyInputsEnforceCurrentLineage()
         const MachineView beforeView = machine.view();
         const Display::Snapshot beforeSnapshot = machine.currentSnapshot();
 
+        const CommandResult unchangedResult = deliverReadySnapshot(machine, input, base);
+        QVERIFY(unchangedResult.accepted);
+        QVERIFY(!unchangedResult.stateChanged);
+        QCOMPARE(machine.view(), beforeView);
+        QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
+
+        const Display::Candidate changedCandidate = Test::changedCandidate(base);
+        const Display::Snapshot changedAtSameRevision =
+            Test::observed(base, changedCandidate, base.revision);
+        QVERIFY(changedAtSameRevision != base);
+        const CommandResult changedAtSameRevisionResult = deliverReadySnapshot(
+            machine, input, changedAtSameRevision);
+        QVERIFY(!changedAtSameRevisionResult.accepted);
+        QVERIFY(!changedAtSameRevisionResult.stateChanged);
+        QCOMPARE(changedAtSameRevisionResult.error, CommandError::InvalidSnapshot);
+        QCOMPARE(machine.view(), beforeView);
+        QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
+        QCOMPARE(port.storeCalls, 0);
+        QCOMPARE(port.clearCalls, 0);
+        QVERIFY(port.requests.isEmpty());
+
         Display::Snapshot older = base;
         older.revision--;
-        const CommandResult olderResult = topologyInput
-            ? machine.topologyChanged(older)
-            : machine.externalIntentObserved(older);
+        const CommandResult olderResult = deliverReadySnapshot(machine, input, older);
         QCOMPARE(olderResult.error, CommandError::InvalidSnapshot);
         QCOMPARE(machine.view(), beforeView);
         QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
@@ -73,20 +122,26 @@ void TransactionStateTests::readyInputsEnforceCurrentLineage()
         Display::Snapshot otherEpoch = base;
         otherEpoch.serviceEpoch = QStringLiteral("other-epoch");
         otherEpoch.revision++;
-        const CommandResult otherEpochResult = topologyInput
-            ? machine.topologyChanged(otherEpoch)
-            : machine.externalIntentObserved(otherEpoch);
+        const CommandResult otherEpochResult = deliverReadySnapshot(
+            machine, input, otherEpoch);
         QCOMPARE(otherEpochResult.error, CommandError::InvalidSnapshot);
         QCOMPARE(machine.view(), beforeView);
         QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
 
-        Display::Snapshot newer = base;
+        Display::Snapshot newer = changedAtSameRevision;
         newer.revision++;
-        const CommandResult newerResult = topologyInput
-            ? machine.topologyChanged(newer)
-            : machine.externalIntentObserved(newer);
+        const CommandResult newerResult = deliverReadySnapshot(machine, input, newer);
         QVERIFY(newerResult.accepted);
+        QVERIFY(newerResult.stateChanged);
+        QCOMPARE(machine.currentSnapshot(), newer);
         QCOMPARE(machine.currentSnapshot().revision, newer.revision);
+
+        const Display::Candidate preChangeCandidate =
+            DisplayTopology::candidateFromSnapshot(base);
+        QCOMPARE(machine.stage(QStringLiteral("stale-pre-change"), preChangeCandidate).error,
+                 CommandError::StaleRevision);
+        QCOMPARE(machine.currentSnapshot(), newer);
+        QCOMPARE(machine.view().state, MachineState::Ready);
     }
 }
 

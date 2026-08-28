@@ -14,8 +14,12 @@ namespace
 bool followsCurrentLineage(const Display::Snapshot &snapshot,
                            const Display::Snapshot &current)
 {
+    // AGENT-CONTRACT: The adapter may redeliver unchanged truth after every
+    // callback/deadline. Changed truth must advance the revision or a candidate
+    // projected before that change can reuse the old fence and stage.
     return snapshot.serviceEpoch == current.serviceEpoch
-        && snapshot.revision >= current.revision;
+        && (snapshot.revision > current.revision
+            || (snapshot.revision == current.revision && snapshot == current));
 }
 
 } // namespace

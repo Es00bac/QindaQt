@@ -20,6 +20,12 @@ built from. A transaction stage is stale unless both equal the current
 snapshot. An owner/service restart changes epoch; revisions from the prior
 epoch are never ordered against the new one.
 
+While the machine is `Ready`, it accepts the current epoch/revision again only
+when the complete snapshot is exactly equal. Any changed contents or
+fingerprint at that same revision are invalid; changed truth in the same epoch
+must use a strictly greater revision. This permits required unchanged
+redelivery without allowing a pre-change candidate to reuse an obsolete fence.
+
 Version-1 readers reject unknown protocol, canonical-codec, registry, or
 journal versions. They do not guess field defaults for a different version.
 Changing a field's meaning, enum mapping, limit, canonical projection, or byte

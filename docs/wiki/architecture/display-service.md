@@ -99,15 +99,19 @@ state from a registry or preference.
 ## Transaction model
 
 The machine stages one class-A candidate only when its base lineage equals the
-current accepted snapshot. Staging performs no side effect. Preview first
-stores a complete pre-image/target journal atomically, then emits one immutable
-token-fenced apply request. A forward timeout or transport-uncertain result is
-resolved through observation; it is never replayed.
+current accepted snapshot. In `Ready`, a redelivered snapshot at the current
+epoch/revision is accepted only when the complete snapshot is exactly equal;
+changed truth must carry a strictly newer revision. This keeps a candidate
+projected before an external change behind the revision fence. Staging performs
+no side effect. Preview first stores a complete pre-image/target journal
+atomically, then emits one immutable token-fenced apply request. A forward
+timeout or transport-uncertain result is resolved through observation; it is
+never replayed.
 
 | State | Accepted progress | Deadline behavior |
 | --- | --- | --- |
 | `Discovering` | `initialize` or `recover` with a valid snapshot/journal | None |
-| `Ready` | stage a valid non-no-op candidate; accept newer observed/external/topology state | None |
+| `Ready` | stage a valid non-no-op candidate; accept exact unchanged redelivery or strictly newer same-epoch observed/external/topology state | None |
 | `Staged` | preview when safety is `Safe`; cancel without mutation; same-set external changes must use `externalIntentObserved`, because ordinary observations are rejected | None |
 | `Applying` | exact-token completion enters observation or uncertainty resolution | Apply timeout enters `ResolvingUncertain` |
 | `Observing` | target fingerprint enters confirmation; pre-image returns ready; other valid observations remain mismatches | Observation timeout begins rollback |
