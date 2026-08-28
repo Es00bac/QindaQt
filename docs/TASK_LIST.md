@@ -7,6 +7,30 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Shell and customization delivery queue
+
+Finish QQ-004 through the durable [Shell queue](../ops/team/queues/shell.md):
+global menu; launcher, task list, tray, and remaining system applets; direct
+WYSIWYG customization; and whole-shell output, DPI, theme, keyboard, and
+accessibility qualification. Existing production panels and notification
+qualification remain preserved integrated foundations.
+
+### Platform services delivery queue
+
+Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
+remaining Display1 transaction UI/writer work, resident Power1 and brightness,
+network, Bluetooth, private clipboard history, display color, font application,
+and portal/policy interoperability. Existing Audio1, Display1 foundations, and
+PB-0 remain preserved integrated foundations.
+
+### First-party experience delivery queue
+
+Finish QQ-006 through the durable
+[First-party queue](../ops/team/queues/first-party.md): complete Settings routes,
+File Manager, Terminal, application migrations, and cross-app responsive, DPI,
+visual, keyboard, and accessibility qualification. QST-1, Controls, AppShell,
+and Text Editor remain preserved integrated foundations.
+
 ### Interactive virtual desktop integration
 
 The integrated QindaQt session must boot beneath an isolated parent Wayland

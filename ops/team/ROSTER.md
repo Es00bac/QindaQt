@@ -1,19 +1,21 @@
 # QindaQt team roster
 
-This is the current static QindaQt delivery team. The manager is outside the
-15-worker ceiling. A worker's name, role, provider, exact model, and reasoning
-level are immutable; a different tuple is a different employee. Assignments,
-feature crews, supervisors, worktrees, and liveness may change.
+This is the stable core QindaQt organization catalog. It records staffing
+intent but is not the live employee boundary and never filters the board. The
+manager is outside the 15-live-process ceiling. A worker's name, role,
+provider, exact model, and reasoning level are immutable; a different tuple is
+a different employee. Assignments, feature crews, supervisors, worktrees, and
+liveness may change.
 
-Historical employee files remain under `workers/` as preserved delivery
-evidence. They are not current roster members unless named below. Never delete
-or rewrite their history to make the roster look smaller.
+Every employee file under `workers/` remains visible as durable delivery
+evidence whether or not the person is listed below. Never delete or rewrite
+history to make the organization look smaller.
 
 `working` is not a roster property. It is a fresh, self-declared runtime state
 in the employee's own Markdown record. Waiting, finished, handoff, paused, and
 stale sessions count as zero live workers.
 
-## Current 15 workers
+## Stable core personas
 
 | Employee | Permanent role | Provider/model | Reasoning | Home crew |
 | --- | --- | --- | --- | --- |
@@ -70,6 +72,6 @@ stale sessions count as zero live workers.
 - Finished workers remain on the team, read the queue and peer threads, and
   take the next suitable outcome or help request. Their status stays truthful
   between invocations.
-- The current team never exceeds 15 workers. Replacing a roster member requires
-  a dated manager note naming the evidence-based reason and preserves both
-  employee records.
+- The manager never runs more than 15 live worker processes. Changing the core
+  catalog requires a dated manager note naming the evidence-based reason and
+  preserves every employee record.

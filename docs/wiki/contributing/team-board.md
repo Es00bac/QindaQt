@@ -9,7 +9,7 @@ worker activity.
 
 The board answers two questions without mixing them:
 
-1. **Who is working now?** A current-roster employee counts only when their own
+1. **Who is working now?** A durable employee record counts only when its owner
    record has parser-valid identity/outcome fields, `- Status: working — ...`,
    and an ISO-dated bullet inside the literal `## Updates` section no more than
    30 minutes old. GPT, Claude, GLM, and all other providers use the same rule.
@@ -18,9 +18,15 @@ The board answers two questions without mixing them:
    task estimates add zero. Only accepted behavior already integrated at the
    manager boundary can move an outcome step.
 
-The current employee boundary is the Markdown table in `ops/team/ROSTER.md`.
-Historical worker records remain durable evidence but do not appear as current
-employees.
+Every valid record under `ops/team/workers/` is visible. `ops/team/ROSTER.md`
+catalogs stable core personas and staffing intent but is not an allowlist. The
+Program Manager enforces the 15-live-process ceiling from direct process,
+ownership, and resource evidence; stale roster prose cannot hide a genuine
+worker or manufacture liveness.
+
+The three workgroup queues under `ops/team/queues/` show how unfinished Shell,
+Platform, and First-party outcomes move from owner to reviewer to integration.
+They are coordination evidence only and never affect the product percentage.
 
 ## Evidence maturity
 
@@ -66,8 +72,8 @@ same integration that records its exact evidence.
 
 ## Verification
 
-Run the board's Node test suite before changing parsing, weighting, roster
-filtering, message confinement, or rendering:
+Run the board's Node test suite before changing parsing, weighting, worker
+visibility, message confinement, or rendering:
 
 ```console
 node --test tools/team-board/board.test.mjs tools/team-board/markdown.dom.test.mjs
@@ -75,3 +81,6 @@ node --test tools/team-board/board.test.mjs tools/team-board/markdown.dom.test.m
 
 Then start an ephemeral server against an isolated or live team root and check
 `/api/board` reconciliation before replacing the long-running local board.
+
+See [Flow team workflow](flow-team-workflow.md) for the delivery/refill loop
+that produces the queue and message evidence.

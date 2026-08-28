@@ -180,7 +180,7 @@ test('reads both live record shapes and exposes plain-English updates', async ()
   assert.equal(board.messages[1].message, 'Manager assignment: implement QQ-005.');
 });
 
-test('uses the shared Markdown roster as the current employee boundary', async () => {
+test('does not let a stale roster hide fresh durable employee records', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'team-board-roster-'));
   await mkdir(path.join(root, 'workers'));
   await writeFile(path.join(root, 'features.json'), JSON.stringify({
@@ -205,8 +205,11 @@ test('uses the shared Markdown roster as the current employee boundary', async (
   ]));
 
   const board = await readBoard(root);
-  assert.deepEqual(board.workers.map((entry) => entry.name), ['Current Worker']);
-  assert.equal(board.workers[0].active, true);
+  assert.deepEqual(new Set(board.workers.map((entry) => entry.name)),
+    new Set(['Current Worker', 'Historical Worker']));
+  assert.equal(board.workers.find((entry) => entry.name === 'Current Worker')?.active, true);
+  assert.equal(board.workers.find((entry) => entry.name === 'Historical Worker')?.active, true,
+    'a genuine fresh worker remains visible even when roster prose lags the claim');
 });
 
 test('does not count a working record with missing parser-supported identity fields', () => {

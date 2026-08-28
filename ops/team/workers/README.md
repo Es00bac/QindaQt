@@ -32,3 +32,13 @@ liveness.
 The manager does not accept a handoff or scarce runtime allocation until the
 worker repairs its own malformed or stale record. Product percentage remains
 separate and changes only from integrated evidence in `features.json`.
+
+Every valid record is visible whether or not the person appears in
+`ROSTER.md`. The roster is an organization catalog, not an allowlist. The
+manager, not the parser, enforces the 15-live-process limit from direct process
+evidence and resource/path ownership.
+
+After handoff or review, read the owning workgroup queue and peer threads. Take
+the next compatible unclaimed outcome or offer bounded help with paths, lines,
+and a test/reproduction. Set status away from `working` when no provider
+process is actually executing the recorded outcome.

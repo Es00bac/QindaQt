@@ -17,8 +17,13 @@ it.
   accountable for the complete outcome.
 - Persona identity is permanent for its lifetime: name, role, provider/model,
   and reasoning level. A changed tuple is a new hire, never a silent reroute.
-- The current team is the 15 people in [ROSTER.md](ROSTER.md). The Program
-  Manager is outside that ceiling.
+- Three stable workgroup managers own the Shell, Platform, and First-party
+  queues. They dispatch whole outcomes, connect peers, keep the queue current,
+  and return accepted candidates to the Program Manager. They do not edit the
+  integration branch or product evidence ledger.
+- [ROSTER.md](ROSTER.md) catalogs the stable core organization. Every durable
+  employee record remains visible; the manager enforces a ceiling of 15
+  observed live worker processes, with the Program Manager outside that limit.
 
 ## Work flow
 
@@ -36,6 +41,27 @@ it.
    the repaired commit.
 7. The Program Manager integrates accepted work promptly, reruns affected
    gates on the combined product, and updates product truth from that evidence.
+
+The manager loop is continuous: set a testable outcome, watch evidence, remove
+an obstacle, connect peers, integrate proven work, and refill capacity. An
+accepted candidate must not sit parked. A blocking review returns its exact
+reproduction to the accountable implementer while the same reviewer remains
+assigned for rereview.
+
+## Delivery queues
+
+`queues/shell.md`, `queues/platform.md`, and `queues/first-party.md` are the
+operational index for unfinished work. Each row records the outcome step,
+state, accountable owner, exact candidate/base and worktree, independent
+reviewer, next executable gate, path/resource collision, concrete help, and
+last observation. Activity prose and estimates never substitute for those
+fields.
+
+At claim, midpoint, material finding, help request, handoff, review, rereview,
+and integration, the accountable person updates both the relevant message
+thread and the queue row. Finished people scan the queue and peer threads
+before becoming idle. Workgroup managers refill compatible lanes; the Program
+Manager resolves shared registries, integration order, and runtime exclusivity.
 
 ## Board truth
 
@@ -64,7 +90,7 @@ it.
 ## Parallelism and quality
 
 - Keep as many useful non-overlapping lanes active as managers can supervise,
-  up to the 15-worker roster. Split only at clear interfaces and ownership
+  up to 15 observed live worker processes. Split only at clear interfaces and ownership
   boundaries.
 - Build capacity is assigned from measured host headroom, not a permanent
   one-worker queue. The manager may run multiple isolated compile-only lanes

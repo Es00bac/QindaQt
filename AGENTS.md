@@ -117,6 +117,19 @@ truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
 - The manager integrates an accepted commit, reruns the affected gates on the
   integrated tree, updates the wiki/task state in the same integration, and
   retires a worktree only after its commit is preserved.
+- Three stable workgroup managers own the Shell, Platform, and First-party
+  delivery queues under `ops/team/queues/`. They keep exact candidate,
+  reviewer, next-gate, collision, resource, and help state current. The Program
+  Manager integrates; workgroup managers refill safe capacity and close loops.
+- A handoff is not a stopping point. After handing off, a worker reads its
+  workgroup queue and relevant peer threads, then claims the next compatible
+  outcome or posts a concrete help offer. The manager immediately routes an
+  accepted candidate to integration and an exact blocking reproduction back
+  to the same implementer/reviewer pair.
+- Every durable employee record is visible to the board. `ROSTER.md` catalogs
+  stable core personas and staffing intent; it is never a visibility switch.
+  The manager enforces the 15-live-process ceiling from observed processes,
+  path/resource ownership, and current worker records.
 - Provider, model, test, process, and completion claims require direct evidence.
   Never infer them from a command line, assignment, exit code, or stale record.
 - Product progress is derived from `ops/team/features.json`, never worker
@@ -127,6 +140,9 @@ truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
 Workers may use the collaboration channel for prompt delivery, but durable
 claims and handoffs still belong on the message board. Coordination must remain
 smaller than the product work it enables.
+
+The complete delivery loop and queue contract are in
+[Flow team workflow](docs/wiki/contributing/flow-team-workflow.md).
 
 ## Verification
 

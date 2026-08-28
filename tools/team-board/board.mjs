@@ -386,22 +386,14 @@ export async function readBoard(teamRoot) {
   // AGENT-NOTE: unlike the flow upstream, this repo keeps a README inside
   // workers/ describing the record convention; it is documentation, never an
   // employee record.
-  let rosterIds = null;
-  try {
-    const roster = await readFile(path.join(teamRoot, 'ROSTER.md'), 'utf8');
-    const currentSection = roster.split(/^## Current \d+ workers\s*$/m)[1]?.split(/^## /m)[0] ?? '';
-    const ids = currentSection.split('\n').flatMap((line) => {
-      const cells = line.split('|').map((cell) => cell.trim()).filter(Boolean);
-      if (cells.length < 2 || cells[0] === 'Employee' || /^-+$/.test(cells[0])) return [];
-      return [cells[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')];
-    });
-    if (ids.length > 0) rosterIds = new Set(ids);
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-  }
+  // AGENT-CONTRACT: Flow/Sloom employee history is the durable organization.
+  // Never use a separately maintained roster as a visibility switch: it can
+  // lag a handoff and hide a genuine worker, reviewer, or help offer. The
+  // manager enforces the live-process capacity ceiling operationally; this
+  // reader shows every valid employee record and lets status + freshness fail
+  // liveness closed.
   const fileNames = (await readdir(workersPath))
     .filter((fileName) => fileName.endsWith('.md') && fileName !== 'README.md')
-    .filter((fileName) => !rosterIds || rosterIds.has(path.basename(fileName, '.md')))
     .sort();
   const workerResults = await Promise.all(fileNames.map(async (fileName) => {
     try {

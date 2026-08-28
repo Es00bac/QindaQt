@@ -4,8 +4,10 @@ This directory contains the durable file-based organization used by the local
 QindaQt Team Board.
 
 - `features.json` is the manager-owned integrated product evidence ledger.
-- `ROSTER.md` is the current employee boundary and immutable persona catalog.
+- `ROSTER.md` catalogs stable core personas and staffing intent; it does not
+  hide other durable employee records from the board.
 - `OPERATING_MODEL.md` defines outcome flow, evidence, and capacity policy.
+- `queues/` contains the Shell, Platform, and First-party delivery queues.
 - `workers/` contains employee-owned status records.
 - `messages/` contains append-only coordination and handoff threads.
 
