@@ -2,24 +2,21 @@
 
 This page defines the accepted architecture for QindaQt power state, session
 power actions, idle reporting, and brightness. Its current maturity is
-**MODELLED**: authority, interfaces, failure behavior, and the implementation
-order have passed independent review, but no `Power1` implementation or
-user-facing power experience is claimed.
+**EXECUTABLE (PB-1)**: the PB-0 pure protocol/aggregation/brightness values
+and the PB-1 Wayland-free resident service/client slice are implemented with
+focused evidence; backlight, idle, session actions, and every live platform
+adapter remain pending as recorded below.
 
 The durable choices are split across
 [ADR-0023](../adr/0023-split-power-authority-across-service-and-shell.md),
 [ADR-0024](../adr/0024-route-brightness-through-power1.md), and
 [ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md).
 
-The PB-0 candidate now fixes bounded values, hostile-input validation,
-canonical byte codecs, fixed QtDBus structures, and deterministic pure battery
-aggregation in [`power_protocol`](../reference/power1-v1.md). Protocol tests
-have focused executable evidence; aggregation passed focused tests and its
-independent review returned bounded proof/arithmetic repairs now carried by a
-non-amended descendant. It remains candidate evidence until that repair is
-rereviewed. No service maturity is claimed. The final pure
-[`brightness_model`](brightness-model.md) boundary has focused executable
-evidence; it remains unqualified until independent exact-commit review passes.
+PB-0 fixed bounded values, hostile-input validation, canonical byte codecs,
+fixed QtDBus structures, and deterministic pure battery aggregation in
+[`power_protocol`](../reference/power1-v1.md). PB-1 added the resident
+`org.qindaqt.Power1` service and asynchronous client described below. No
+backlight, idle, key-inhibitor, or host-upstream maturity is claimed.
 
 ## Authority map
 
@@ -68,18 +65,57 @@ restart. Version 1 persists no power or brightness state in Settings1.
 Planned modules keep values, orchestration, adapters, clients, and pure
 composition separate:
 
-| Module | Cohesive responsibility |
-| --- | --- |
-| `power_protocol` | Bounded values, codecs, validation, result lineage, pure battery aggregation |
-| `power_service` | Resident ownership and collaborator orchestration only |
-| `power_client` | Exact-owner asynchronous snapshots and operations |
-| `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown |
-| `power_idle` | Compositor-idle observation and logind idle hints |
-| [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values |
+| Module | Cohesive responsibility | State |
+| --- | --- | --- |
+| `power_protocol` | Bounded values, codecs, validation, result lineage, pure battery aggregation | PB-0 accepted candidate |
+| `power_service` | Resident ownership and collaborator orchestration only | PB-1 implemented |
+| `power_client` | Exact-owner asynchronous snapshots and operations | PB-1 implemented |
+| `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown | PB-2 |
+| `power_idle` | Compositor-idle observation and logind idle hints | PB-2 |
+| [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 
 The service orchestrator may not own UPower, logind, profile-daemon, Wayland,
 or sysfs transport objects. Power modules do not link Display implementation
 modules. Only the later PB-5 binding may consume the public Display client.
+
+## PB-1 resident service and client
+
+PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
+
+- `power_service` composes three injected collaborator seams — battery
+  (UPower authority: supplies, keyboard backlights, AC truth), profile
+  (power-profiles-daemon authority: profiles and holds), and session (logind
+  authority: lid/dock/sleep truth and sanitized inhibitors). Each seam is a
+  generation-fenced Qt interface; real daemon adapters arrive in later slices
+  and must not leak raw upstream identity through it.
+- The coordinator owns publication and lineage. Every collaborator value is
+  untrusted: text is sanitized and every candidate is validated before
+  publication. Publication is atomic last-known-good — a malformed domain
+  loses only its own content and capability bits while every other accepted
+  domain is retained, and a whole candidate that still fails validation
+  degrades to an empty validated fallback. Public handles are restamped with
+  the published epoch at assembly, so any upstream authority replacement
+  (which advances the nonzero-random epoch) invalidates every earlier handle
+  and completes dispatched operations as `Uncertain` exactly once.
+- The PB-1 process deliberately injects deterministic unavailable
+  collaborators: it owns `org.qindaqt.Power1` and speaks exact Power1 over
+  D-Bus, but publishes an honest `Unavailable/upstream-not-integrated`
+  snapshot with zero capabilities rather than touching host UPower,
+  power-profiles-daemon, or logind. The process exits on constructing-bus
+  loss and keeps no platform handles across a restart.
+- `power_client` binds to the exact unique owner, publishes only
+  `validateSnapshot`-accepted snapshots, coalesces invalidations, fences
+  regressed epochs, equal-revision contradictions, and stale-owner replies,
+  serializes mutations with local preflight, applies bounded request
+  timeouts, and never replays a timed-out or owner-interrupted mutation —
+  those complete exactly once as `Uncertain` and the caller resnapshots.
+- The package installs the executable, private D-Bus activation descriptor
+  paired with a hardened systemd user unit (`Type=dbus`, system-service
+  syscall filter, no device or network families), introspection XML, and the
+  public protocol/client/service headers.
+
+The exact wire method and signal surface is recorded in the
+[Power1 reference](../reference/power1-v1.md).
 
 ## Internal-panel brightness
 
@@ -108,6 +144,12 @@ compositor request. Disappearance closes the subscription and destroys the
 registered protocol device.
 
 ## Session-bound activation
+
+PB-1 installs the private activation descriptor and systemd user unit paired
+to the resident executable. The Wayland-socket environment publication,
+arbiter, retry budget, and supervisor-owned activation above remain the PB-2
+contract; PB-1 performs no environment write and refuses no socket because it
+never opens one.
 
 The existing `qindaqt-session` supervisor owns publication because it is alive
 after the child compositor socket exists. For each generation it:
@@ -145,7 +187,20 @@ replace a foreign binding, preventing reciprocal restart loops.
 | PB-5 | Display-client binding, shortcuts, Power/Brightness Settings routes | PB-2, PB-4, shared app routes |
 | PB-6 | Lid override, idle actions, charge thresholds, DDC/CI | Reserved; later ADRs required |
 
-Deterministic verification starts with hostile codecs, aggregation and model
+PB-1 verification is focused executable evidence: coordinator
+publication/last-known-good/epoch rows, operation validation and exactly-once
+completion rows, fake upstream adversarial rows (oversize, out-of-range,
+duplicate and cross-domain handles, contradictory lid truth, control
+characters, malformed outcomes, stale generations), private-D-Bus residency
+(exact introspection signatures, delayed replies, owner replacement, name
+theft), executable activation against a private `dbus-daemon` (honest
+unavailable truth, constructing-bus-loss exit, fresh epoch on replacement),
+an installed package/consumer gate that proves the descriptor and unit
+resolve the packaged executable and staged public headers compile a clean
+consumer, and a source-policy boundary test that rejects host UPower, logind,
+Wayland, sysfs, process, thread, and sibling-service dependencies.
+
+Deterministic continuation starts with hostile codecs, aggregation and model
 properties; private-bus owner/epoch replacement; fake UPower/profile/logind
 adapters; all-or-nothing inhibitors; LVDS/eDP/DSI counterexamples; exact
 activation API signatures; retry exhaustion; and simultaneous-supervisor
@@ -154,8 +209,9 @@ hardware hotkeys remain release evidence.
 
 ## Non-claims
 
-This contract does not prove an executable service, user interface, physical
-device, session action, inhibitor, idle hint, or brightness mutation. It does
-not complete Platform services. Progress may advance beyond MODELLED only
-after accepted implementation and the evidence tier required by the relevant
-slice.
+This contract does not prove a live UPower, power-profiles-daemon, or logind
+adapter, a backlight mutation, idle hint, session action, inhibitor, physical
+device, user interface, or host-session integration. PB-1's resident process
+honestly reports `upstream-not-integrated` until those adapters land. Progress
+beyond the recorded PB-1 slice requires the evidence tier defined by the
+relevant later slice.
