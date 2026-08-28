@@ -51,6 +51,8 @@ nav:
       - Implementation roadmap: development/implementation-roadmap.md
       - Coding practices: development/coding-practices.md
       - Testing harness: development/testing-harness.md
+  - Applications:
+      - Text Editor: apps/text-editor.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -75,3 +77,4 @@ nav:
       - "ADR-0016: Display1 transaction authority": adr/0016-display1-transaction-authority.md
       - "ADR-0017: Persistent output identity": adr/0017-persistent-output-identity.md
       - "ADR-0021: Isolate Controls visual rows": adr/0021-isolate-controls-visual-rows.md
+      - "ADR-0022: Atomic local text documents": adr/0022-keep-text-documents-local-and-atomic.md

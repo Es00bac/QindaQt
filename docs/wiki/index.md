@@ -79,6 +79,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   device/stream snapshot, handle lineage, operation results, and bounds.
 - [Display1 version 1](reference/display1-v1.md) documents display value bounds,
   identity/registry rules, topology projection, codecs, and transaction states.
+- [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
+  UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
+  boundaries.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when
