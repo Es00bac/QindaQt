@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.qindaqt.Display1
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-display-service
+SystemdService=qindaqt-display-service.service

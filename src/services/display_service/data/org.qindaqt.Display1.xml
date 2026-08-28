@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/qindaqt/Display1">
+  <interface name="org.qindaqt.Display1">
+    <method name="GetSnapshot">
+      <arg name="snapshot" type="(ustaya(ssssssiibbbbbsiiiiduusa(siiub))a(suustttu))" direction="out"/>
+    </method>
+    <method name="Stage">
+      <arg name="transactionId" type="s" direction="in"/>
+      <arg name="candidate" type="(usta(sbbsiiduus))" direction="in"/>
+      <arg name="result" type="(uuusttss)" direction="out"/>
+    </method>
+    <method name="Preview">
+      <arg name="transactionId" type="s" direction="in"/>
+      <arg name="result" type="(uuusttss)" direction="out"/>
+    </method>
+    <method name="Confirm">
+      <arg name="transactionId" type="s" direction="in"/>
+      <arg name="result" type="(uuusttss)" direction="out"/>
+    </method>
+    <method name="Cancel">
+      <arg name="transactionId" type="s" direction="in"/>
+      <arg name="result" type="(uuusttss)" direction="out"/>
+    </method>
+    <signal name="Changed">
+      <arg name="epoch" type="s"/>
+      <arg name="revision" type="t"/>
+      <arg name="available" type="b"/>
+    </signal>
+  </interface>
+</node>

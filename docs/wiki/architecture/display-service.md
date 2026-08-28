@@ -1,10 +1,13 @@
 # Display service
 
 The Display foundation owns bounded display values, privacy-preserving
-identity, pure topology validation, and a deterministic preview/revert model.
-The current D1 milestone is deliberately transport-free: it implements no
-`org.qindaqt.Display1` service, bus name, XML, client, Wayland object, KWin
-adapter, timer, Settings integration, UI, journal file, or compositor mutation.
+identity, pure topology validation, a deterministic preview/revert model, and
+a resident Display1 service foundation. D1 remains transport-free. The bounded
+D2 service slice adds the bus object/process, activation metadata, monotonic
+timer scheduling, and an exact-owner adapter over D0's read-only
+`Compositor1.Outputs` inventory. It does not yet add a public output-management
+writer, durable journal file, lock/logind adapters, Settings integration,
+client, UI, or nested/physical runtime proof.
 
 [ADR-0016](../adr/0016-display1-transaction-authority.md) fixes transaction
 authority. [ADR-0017](../adr/0017-persistent-output-identity.md) fixes persistent
@@ -17,12 +20,15 @@ Pinned KWin 6.6.5 remains the sole live-output and restore authority. It owns
 the active topology and its private `kwinoutputconfig.json` store. QindaQt must
 not read, write, watch, or recreate that store.
 
-The future resident Display1 process will be the only QindaQt production
-writer to KWin's public KDE output-management protocol. It will own preview,
-the monotonic confirmation deadline, rollback journal, restart recovery, and
-topology reconciliation. Settings Center, shell overlays, global shortcuts,
-Color, and brightness consumers will cross typed client boundaries. They do
-not own the timer or apply output configurations directly.
+The resident Display1 process is the only component allowed to become a
+QindaQt production writer to KWin's public KDE output-management protocol. It
+already owns the D1 machine and monotonic confirmation/revert scheduling, but
+the packaged transaction port deliberately rejects journal storage and never
+applies. A later accepted adapter must supply durable journal, public protocol,
+lock/logind, restart recovery, and nested convergence evidence before that
+writer authority is operational. Settings Center, shell overlays, global
+shortcuts, Color, and brightness consumers will cross typed client boundaries.
+They do not own the timer or apply output configurations directly.
 
 Settings1 will own bounded display policy and registry persistence after a
 Settings-owned schema migration. It will not become desired live topology.
@@ -51,6 +57,78 @@ accepted results, `stateChanged` is true exactly when the view or snapshot
 changed; port call counters are not machine state. Unknown versions and enum
 values fail closed. Adding or
 reinterpreting a public value requires protocol/schema compatibility review.
+
+## Resident D2 service foundation
+
+`display_service` is a thread-confined Qt Core/DBus composition layer over the
+four D1 public modules. Its dependencies are constructor-visible:
+
+- an `InventorySource` publishes complete typed D0 inventory frames and
+  transport loss;
+- a `TransactionPort` implements the D1 journal/apply side-effect interface and
+  may report one completion tagged with the exact resident-machine lineage and
+  D1 token;
+- a monotonic clock supplies D1 time; and
+- an epoch factory supplies a bounded restart-unique seed; the model hashes it
+  into a public epoch beside a process-monotonic lineage number for each
+  accepted upstream owner lineage.
+
+The production inventory source watches `org.qindaqt.Compositor`, resolves its
+current unique D-Bus owner, calls `Outputs` on that unique name, and treats
+`OutputsChanged` only as an invalidation hint. It serializes one read, rejects
+late replies after owner replacement, caps JSON at 4 MiB before parsing, then
+converts the complete schema-1 response into bounded values. D0 permits 64
+outputs and scale through 16; Display1 deliberately rejects any sample outside
+its stricter 32-output and 1.0–3.0 limits. Geometry must be exactly integral
+because the Display1 v1 topology values are integral.
+
+One accepted source lineage is `(uniqueOwner, outputGeneration, complete typed
+outputs)`. Display1 derives a bounded public epoch from the factory's
+restart-unique seed and the next process-monotonic machine lineage, then maps
+its public revision to the positive `outputGeneration`. The lineage component
+prevents an A/B/A owner or repeated-seed sequence from republishing any epoch
+already accepted in that process without retaining an attacker-controlled
+history set. At equal generation, only exact typed equality is accepted.
+Changed equal-generation truth, a regression, or a newer generation with
+unchanged contents rejects without partial replacement. An owner change first
+removes the old snapshot/machine, then establishes a fresh epoch; explicit
+transport loss also makes `GetSnapshot` and mutations unavailable. Revisions
+are never ordered across owners.
+
+D0 exposes only enabled outputs and the observed current mode. Projection
+therefore publishes one deterministic `current:WIDTHxHEIGHT@MILLIHERTZ` mode
+per output, canonical first-output primary and contiguous priority, and no
+invented disabled modes or replication relation. D0 supplies no EDID or MST
+material, so D1 connector fallback is the only stable-ID authority in this
+adapter. Runtime compositor UUID remains descriptive adapter metadata and is
+never hashed or copied into the stable ID. The projector accepts only a
+complete `validateSnapshot` value whose `liveFingerprint` is the D1 canonical
+projection fingerprint.
+
+The service model owns routing into the D1 state machine. An active output-set
+change uses `topologyChanged`; a same-set change while `Staged` uses
+`externalIntentObserved`; other active observations use `observedSnapshot`.
+Before constructing each replacement D1 machine, the model advances a
+process-local outer lineage and gives it to the transaction port. A completion
+must match both that lineage and the machine's exact token. This prevents a
+late pre-loss completion from colliding with a token number reused by the new
+machine after owner replacement or transport recovery. The port copies the
+outer lineage beside each apply request; advancing the current lineage never
+retags an already-issued request.
+Stage, preview, confirm, cancel, exact-token completion, tick, safety, suspend,
+and settle calls remain D1 transitions. The resident owns a single-shot Qt
+timer and re-arms it from the injected monotonic deadline. It exports
+`GetSnapshot`, `Stage`, `Preview`, `Confirm`, and `Cancel`, plus a complete-read
+`Changed(epoch, revision, available)` hint. Unavailable reads return a typed
+D-Bus error rather than an invalid placeholder snapshot.
+
+The installed executable starts with safety `Unknown` and an unavailable
+transaction port. Preview therefore fails closed at the D1 safety gate; even
+if an in-process composition supplies `Safe`, the packaged port cannot store a
+journal and fails the next hard gate without an apply request. This is a
+deliberate source-complete stopping point, not a simulated writer. The service
+has no KWin headers/private ABI, Wayland objects, filesystem persistence,
+Settings, QML, or platform lock/session dependency.
 
 ## Identity and registry
 
@@ -126,8 +204,8 @@ never replayed.
 Defaults are a 5-second apply acknowledgement, 2-second observation, 15-second
 confirmation, and 250/500-millisecond rollback backoffs. D1 clamps injected
 zero durations to one millisecond and uses saturating deadline arithmetic. The
-future service provides actual timer scheduling; callers drive D1 with
-`tick()` and an injected monotonic value.
+resident service now schedules these model deadlines with one single-shot Qt
+timer; the D1 machine still sees only `tick()` and the injected monotonic value.
 
 Rollback makes exactly three apply attempts per rollback sequence in one
 process before `Stuck`; an explicit topology settle or service restart begins
@@ -227,9 +305,19 @@ recovery transitions without opening a display. They do not prove that pinned
 KWin accepted a real configuration, that a mirror appears in `wl_output`, or
 that DRM/GPU/monitor/lid/suspend behavior works.
 
-D0 owns the development-only compositor inventory/hotplug seam. D2 owns the
-resident service, public protocol adapter, journal persistence, lock/logind
-integration, and nested hotplug/restart proof. D3 owns a typed async client;
+D2 also has two serial private-D-Bus rows. Each creates a disposable root,
+removes host display/session addresses from the daemon environment, and uses
+only explicitly named connections to its own bus. They prove exact-owner
+asynchronous inventory reads, replacement and stale-reply fences, dirty-read
+coalescing, stop suppression, resident name/object registration, typed
+unavailable errors, `Changed`, deadline fire/re-arm, and teardown. They do not
+open a compositor or display and are not KWin output-management evidence.
+
+D0 owns the development-only compositor inventory/hotplug seam. The current D2
+foundation owns resident read/service lineage and injected transaction
+orchestration. Remaining D2 work owns the real public output-management port,
+journal persistence, lock/logind integration, settled-hotplug policy, and
+nested hotplug/restart proof. D3 owns a typed async client;
 later Settings, shell, Hybrid, application, policy, and hardware lanes consume
 those public boundaries. The required release scenarios remain in the
 [testing harness](../development/testing-harness.md).

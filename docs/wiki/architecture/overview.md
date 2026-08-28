@@ -58,10 +58,14 @@ Cross-process boundaries are versioned from their first external use:
   policy; and
 - `QindaQt.Applets 1.0` for manifest-defined extensions.
 
-`org.qindaqt.Display1` is reserved by the version-1 pure value model but is not
-yet a cross-process runtime. The future focused service will coordinate
-QindaQt display transactions through KWin's public protocol while KWin remains
-live/restore authority. See [Display service](display-service.md).
+`org.qindaqt.Display1` is an activated cross-process read/service foundation.
+Its resident process projects exact-owner D0 inventory through the pure D1
+values and transaction machine, publishes bounded snapshots and invalidation
+hints, and owns monotonic preview/confirm/revert scheduling. The packaged port
+remains deliberately fail-closed: it has no journal persistence or public KWin
+output-management writer, so KWin remains live/restore authority and no
+production display mutation is enabled by this slice. See
+[Display service](display-service.md).
 
 Private Wayland protocols may transport compositor-owned surfaces or efficient
 state, but public desktop integrations prefer freedesktop protocols and D-Bus.
