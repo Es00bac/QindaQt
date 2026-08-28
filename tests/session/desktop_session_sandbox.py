@@ -52,6 +52,8 @@ class SandboxPaths:
     private_cache: Path
     private_state: Path
     machine_id: Path
+    passwd: Path
+    group: Path
     sentinel: Path
 
 
@@ -85,6 +87,14 @@ def _assert_run_id(run_id: str) -> None:
         raise SandboxContractError("run id must be exactly 32 lowercase hexadecimal digits")
 
 
+def _private_identity_documents() -> tuple[str, str]:
+    uid = os.getuid()
+    gid = os.getgid()
+    passwd = f"qindaqt:x:{uid}:{gid}:QindaQt:/home/qindaqt:/usr/sbin/nologin\n"
+    group = f"qindaqt:x:{gid}:\n"
+    return passwd, group
+
+
 def create_run_root(build_root: Path, run_id: str) -> SandboxPaths:
     """Create one authenticated run root beneath the caller's build tree."""
 
@@ -112,7 +122,21 @@ def create_run_root(build_root: Path, run_id: str) -> SandboxPaths:
         directory.mkdir(mode=0o700)
     machine_id = root / "machine-id"
     machine_id.write_text(run_id + "\n", encoding="ascii")
-    return SandboxPaths(root=root, machine_id=machine_id, sentinel=sentinel, **directories)
+    passwd = root / "passwd"
+    group = root / "group"
+    passwd_document, group_document = _private_identity_documents()
+    passwd.write_text(passwd_document, encoding="ascii")
+    group.write_text(group_document, encoding="ascii")
+    passwd.chmod(0o600)
+    group.chmod(0o600)
+    return SandboxPaths(
+        root=root,
+        machine_id=machine_id,
+        passwd=passwd,
+        group=group,
+        sentinel=sentinel,
+        **directories,
+    )
 
 
 def authenticate_run_root(
@@ -134,6 +158,26 @@ def authenticate_run_root(
         raise SandboxContractError("run root sentinel is missing") from error
     if actual != _run_sentinel(run_id, build):
         raise SandboxContractError("run root sentinel does not match this run")
+    passwd_document, group_document = _private_identity_documents()
+    identity_files = {
+        paths.machine_id: run_id + "\n",
+        paths.passwd: passwd_document,
+        paths.group: group_document,
+    }
+    for child, expected in identity_files.items():
+        if (
+            child.parent != root
+            or child.is_symlink()
+            or not child.is_file()
+            or child.stat().st_uid != os.getuid()
+        ):
+            raise SandboxContractError("run root contains an unauthenticated identity file")
+        try:
+            actual = child.read_text(encoding="ascii")
+        except OSError as error:
+            raise SandboxContractError("run identity file is unreadable") from error
+        if actual != expected:
+            raise SandboxContractError("run identity file content does not match this run")
     for child in (paths.artifacts, paths.logs, paths.runtime):
         if child.parent != root or child.is_symlink() or not child.is_dir():
             raise SandboxContractError("run root contains an unauthenticated output directory")
@@ -270,6 +314,12 @@ def build_bwrap_argv(spec: SandboxSpec) -> list[str]:
         "--ro-bind",
         str(spec.paths.machine_id.resolve()),
         "/etc/machine-id",
+        "--ro-bind",
+        str(spec.paths.passwd.resolve()),
+        "/etc/passwd",
+        "--ro-bind",
+        str(spec.paths.group.resolve()),
+        "/etc/group",
         "--dir",
         "/var",
         "--dir",

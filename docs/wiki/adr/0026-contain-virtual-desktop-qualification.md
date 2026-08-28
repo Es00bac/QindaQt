@@ -40,6 +40,12 @@ merged-usr `/lib` and `/lib64` aliases as relative links to the already mounted
 discovered system or Homebrew executable reach its authenticated ELF
 interpreter without assuming the host root's symlink layout.
 
+The empty root also receives fresh caller-owned passwd and group files that
+name only the mapped qualification UID/GID and its private `/home/qindaqt`.
+Their exact paths, ownership, regular-file shape, and contents are authenticated
+with the run root before read-only binding; the host account databases are
+never exposed.
+
 The outer harness builds argv and environment from typed values rather than
 inherited environment state. It requires both an explicit manager allocation
 token and a nonblocking per-user cross-worktree advisory lock before starting

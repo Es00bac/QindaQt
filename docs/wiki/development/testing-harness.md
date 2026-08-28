@@ -937,7 +937,9 @@ HOME/XDG roots, D-Bus socket, and Wayland socket. Only exact read-only system
 tool roots, stage/source/probe inputs, and bounded writable runtime/log/evidence
 directories are visible. The empty root adds only relative `/lib` and `/lib64`
 merged-usr aliases to its already mounted `/usr/lib`; it does not bind another
-host path. There is no host HOME/config, runtime directory,
+host path. Fresh authenticated passwd/group files contain only the mapped
+qualification UID/GID and private home; host account databases are not bound.
+There is no host HOME/config, runtime directory,
 Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
 network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
 owns this trust boundary.
