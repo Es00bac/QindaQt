@@ -22,6 +22,8 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0013](0013-own-qst1-semantic-tokens.md) | Accepted | Own QST-1 derivation and isolate optional Kirigami reuse behind adapters |
 | [ADR-0014](0014-confine-wireplumber-to-glib-worker.md) | Accepted | Confine libwireplumber/GObject ownership to a dedicated GLib worker |
 | [ADR-0015](0015-qualify-function-before-resource-refinement.md) | Accepted | Qualify the isolated virtual desktop before tightening its initial resource ceiling |
+| [ADR-0016](0016-display1-transaction-authority.md) | Accepted | Make Display1 the QindaQt display-transaction authority while KWin owns live state and restore |
+| [ADR-0017](0017-persistent-output-identity.md) | Accepted | Derive privacy-preserving persistent output identities with explicit ambiguity |
 | [ADR-0021](0021-isolate-controls-visual-rows.md) | Accepted | Isolate every Controls visual row in its own process |
 
 Numbers are never reused, including for rejected or superseded records.

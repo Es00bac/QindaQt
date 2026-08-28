@@ -27,6 +27,7 @@ nav:
       - Hybrid constraints: architecture/hybrid-constraints.md
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
+      - Display service: architecture/display-service.md
       - Audio service: architecture/audio-service.md
       - Notification service: architecture/notifications-service.md
       - Window containers: architecture/window-containers.md
@@ -41,6 +42,7 @@ nav:
       - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
       - Settings1 protocol 1: reference/settings1-v1.md
+      - Display1 version 1: reference/display1-v1.md
       - Audio1 version 1: reference/audio1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
@@ -70,4 +72,6 @@ nav:
       - "ADR-0013: Own QST-1 semantic tokens": adr/0013-own-qst1-semantic-tokens.md
       - "ADR-0014: Confined WirePlumber worker": adr/0014-confine-wireplumber-to-glib-worker.md
       - "ADR-0015: Function before resource refinement": adr/0015-qualify-function-before-resource-refinement.md
+      - "ADR-0016: Display1 transaction authority": adr/0016-display1-transaction-authority.md
+      - "ADR-0017: Persistent output identity": adr/0017-persistent-output-identity.md
       - "ADR-0021: Isolate Controls visual rows": adr/0021-isolate-controls-visual-rows.md

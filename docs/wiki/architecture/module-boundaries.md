@@ -33,6 +33,10 @@ tests, and the wiki page describing its contract.
 | `src/services/settings_protocol` | Generic Settings1 constants, typed outcomes, recursive JSON-native codecs, and resource bounds | Qt Core/DBus only; never settings schema/model, shell, or QML |
 | `src/services/settings_service` | D-Bus activation/ownership, user-file lifecycle, copy-on-write persistence, revision authority, and changed-key publication | Public `settings` and settings protocol plus Qt Core/DBus; never shell/QML/lock/presenter authority |
 | `src/services/settings_client` | Activation, exact-owner/epoch asynchronous snapshots and writes, timeout/uncertainty recovery, and DND-scoped state projection | Settings protocol plus Qt Core/DBus; never service persistence, shell presentation, or settings files |
+| `src/services/display_protocol` | Display1 versioned values, hostile-input limits, semantic validation, canonical byte codec, and QtDBus value serialization | Qt Core and serialization-only Qt DBus; never connection/name/service/XML/client/platform state |
+| `src/services/display_identity` | Pure privacy-preserving stable-ID resolution plus schema-v2 registry values and v1 migration | Qt Core only; never EDID acquisition, Settings persistence, runtime UUID authority, or logs of private material |
+| `src/services/display_topology` | Pure candidate validation, normalization, logical geometry, mirror projection, canonical fingerprint, diff, and no-op | Public display protocol plus Qt Core; never KWin, Wayland, stored preferences, or mutation |
+| `src/services/display_transaction` | Pure one-transaction state machine, journal value/codec, rollback/hotplug/recovery truth, and injected clock/port seams | Public display protocol/topology plus Qt Core; never real clocks/timers, files, D-Bus/Wayland, lock/logind, or QObject providers |
 | `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, shell-owned interruption/privacy-policy composition, and global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models/policies, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin window registry, generation-retaining output inventory, development-only virtual-output adapter, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid/shell-visibility limits, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
@@ -87,6 +91,15 @@ implemented; do not use placeholder modules to bypass a boundary.
   shell QML receives only a default-output facade and settings-opening action.
   See [Audio service](audio-service.md) and
   [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
+- Display consumers will depend on a typed Display1 client, not these service
+  implementation modules. D1's dependency direction is protocol → topology →
+  transaction. Identity depends only on Qt Core and is independent of protocol,
+  topology, and transaction.
+  KWin remains live/restore authority, Settings owns later registry/policy
+  persistence, and shell geometry never waits for Display1. See
+  [Display service](display-service.md),
+  [ADR-0016](../adr/0016-display1-transaction-authority.md), and
+  [ADR-0017](../adr/0017-persistent-output-identity.md).
 - Notification interruption policy is injected into the presentation model by
   shell composition. It filters only the popup projection; it cannot mutate the
   host, private wire, Active/Recent retention, or persistent settings. The

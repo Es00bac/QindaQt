@@ -40,6 +40,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Audio service](architecture/audio-service.md) records the typed Audio1
   model/client/service boundary, confined WirePlumber adapter, activation, and
   isolated-runtime qualification.
+- [Display service](architecture/display-service.md) records the pure Display1
+  values, identity/topology boundaries, and deterministic transaction model;
+  its runtime service and compositor adapter are later milestones.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, Settings1-fed interruption policy,
   authenticated lock-state privacy gate, and unqualified boundaries.
@@ -74,6 +77,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   bounded user-settings snapshot and optimistic-commit boundary.
 - [Audio1 protocol version 1](reference/audio1-v1.md) documents the fixed
   device/stream snapshot, handle lineage, operation results, and bounds.
+- [Display1 version 1](reference/display1-v1.md) documents display value bounds,
+  identity/registry rules, topology projection, codecs, and transaction states.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

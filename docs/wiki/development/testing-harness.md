@@ -750,6 +750,24 @@ hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
 Settings/shell UI. Those are later isolated hardware and integrated-session
 gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
+## D1 deterministic display model
+
+The focused `qindaqt.display-*` unit rows cover bounded protocol/codecs,
+privacy-preserving identity and registry migration, topology geometry and the
+accepted fractional rounding table, plus fake-clock/port transaction,
+hotplug, rollback and journal recovery. The adversarial transaction row pins
+wrong-state preservation, journal gates, total per-sequence attempt bounds,
+settle deferral, no-fight recovery, cleanup-only stuck behavior, and observable
+terminal reasons. The exact row-to-contract mapping is in
+[Display1 version 1](../reference/display1-v1.md#deterministic-acceptance-matrix).
+
+These rows are **deterministic model evidence (`Q-det`)**. They use pure Qt
+values and fakes and open no display. They do not prove the pinned KDE output
+protocol accepted a configuration, mirror visibility in `wl_output`, service
+activation/restart behavior, or physical DRM/GPU/monitor/lid/suspend results.
+D0/D2 own nested protocol/service proof; D8 owns isolated hardware proof. A D1
+handoff must not upgrade unit success into either claim.
+
 ## Required display matrix
 
 Single-output scenarios cover:

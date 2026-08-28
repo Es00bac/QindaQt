@@ -16,6 +16,7 @@ system-service state.
 | `qindaqt-settings` | Ordinary notifications settings page and honest async save/conflict/error presentation | Shell internals, settings files, or notification host authority |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
 | Audio service | Bounded typed PipeWire graph snapshots and validated controls through the running WirePlumber authority | Samples, devices, WirePlumber policy, PipeWire configuration, or UI |
+| Display foundation (D1) | Bounded values, privacy-preserving identity/registry, topology validation, and injected-port preview/revert model | A runtime service, KWin/Wayland mutation, Settings persistence, timers, or UI |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |
 | Applet hosts | Applet lifecycle and capability mediation | Unrestricted access to shell internals or the compositor |
 | First-party applications | User-facing file, terminal, editor, viewer, archive, monitor, and software workflows | Desktop-global authority unavailable to third-party clients |
@@ -56,6 +57,11 @@ Cross-process boundaries are versioned from their first external use:
   and active/recent shell models plus an injected shell-local interruption
   policy; and
 - `QindaQt.Applets 1.0` for manifest-defined extensions.
+
+`org.qindaqt.Display1` is reserved by the version-1 pure value model but is not
+yet a cross-process runtime. The future focused service will coordinate
+QindaQt display transactions through KWin's public protocol while KWin remains
+live/restore authority. See [Display service](display-service.md).
 
 Private Wayland protocols may transport compositor-owned surfaces or efficient
 state, but public desktop integrations prefer freedesktop protocols and D-Bus.
@@ -117,3 +123,6 @@ Persistent notification quieting is recorded in
 [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 The Audio1 Qt/GLib ownership boundary is recorded in
 [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
+Display transaction authority and persistent identity are recorded in
+[ADR-0016](../adr/0016-display1-transaction-authority.md) and
+[ADR-0017](../adr/0017-persistent-output-identity.md).
