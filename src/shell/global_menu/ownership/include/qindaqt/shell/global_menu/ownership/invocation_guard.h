@@ -15,6 +15,9 @@ namespace QindaQt::Shell::GlobalMenu::Ownership
 struct InvocationRequest final {
     QUuid windowId;
     QUuid epoch;
+    // The tree revision the requesting UI observed. An older same-epoch
+    // revision is stale after a newer adoption and must fail.
+    quint64 revision = 0;
     QString actionId;
 };
 
@@ -25,21 +28,19 @@ struct InvocationResult final {
     QString reasonCode;
 };
 
-// Authorizes one action invocation against the currently authenticated
-// owner. Any mismatch between the request's (windowId, epoch) and the
-// selector's current lineage is rejected as a stale owner before the action
-// is even looked up, so a request issued against a menu that has since
-// changed owner (focus moved, window closed, provider replaced) can never
-// reach an action that belongs to a different provider. The presented tree
-// must carry that same current lineage: a caller that pairs a current request
-// with an older tree is rejected identically, closing the gap where an action
-// would be authorized against content the current provider never published.
+// Authorizes one action invocation against the currently authenticated owner
+// and its lineage. The request's (windowId, epoch, revision), the presented
+// tree's lineage, and the selector's current lineage must all agree; any
+// mismatch is rejected as `stale-owner` before the action is looked up, so a
+// request issued against a menu that has since changed owner or been
+// republished can never reach an action that belongs to a different provider
+// or to content the current provider never published.
 class InvocationGuard final
 {
 public:
     [[nodiscard]] static InvocationResult evaluate(const ActiveProviderSelector &selector,
-                                                     const Protocol::MenuTree &tree,
-                                                     const InvocationRequest &request);
+                                                   const Protocol::MenuTree &tree,
+                                                   const InvocationRequest &request);
 };
 
 } // namespace QindaQt::Shell::GlobalMenu::Ownership

@@ -26,6 +26,13 @@ MenuTree fixtureTree()
     disabledAction.enabled = false;
     disabledAction.visible = true;
 
+    MenuItem hiddenAction;
+    hiddenAction.id = QStringLiteral("fileHiddenAction");
+    hiddenAction.kind = MenuItemKind::Action;
+    hiddenAction.text = QStringLiteral("Secret");
+    hiddenAction.enabled = true;
+    hiddenAction.visible = false;
+
     MenuItem separator;
     separator.id = QStringLiteral("fileSep1");
     separator.kind = MenuItemKind::Separator;
@@ -34,7 +41,7 @@ MenuTree fixtureTree()
     submenu.id = QStringLiteral("fileMenu");
     submenu.kind = MenuItemKind::Submenu;
     submenu.text = QStringLiteral("File");
-    submenu.children = {enabledAction, separator, disabledAction};
+    submenu.children = {enabledAction, separator, disabledAction, hiddenAction};
 
     MenuTree tree;
     tree.ownerWindowId = QUuid::createUuid();
@@ -52,6 +59,7 @@ class GlobalMenuAppletAccessTests final : public QObject {
 private Q_SLOTS:
     void startsUnavailableWithNoItems();
     void publishTreeMakesAvailableAndProjectsTopLevel();
+    void projectionCarriesHonestKindsAndOmitsHiddenEntries();
     void publishUnavailableClearsItems();
     void publishInvalidTreeFailsClosedToUnavailable();
     void activateAfterInvalidPublishEmitsNothing();
@@ -60,6 +68,7 @@ private Q_SLOTS:
     void activateOnDisabledActionEmitsNothing();
     void activateOnNestedEnabledActionEmits();
     void activateOnSubmenuEmitsNothing();
+    void activateOnHiddenActionEmitsNothing();
 };
 
 void GlobalMenuAppletAccessTests::startsUnavailableWithNoItems()
@@ -85,6 +94,54 @@ void GlobalMenuAppletAccessTests::publishTreeMakesAvailableAndProjectsTopLevel()
     const QVariantMap topLevel = items.first().toMap();
     QCOMPARE(topLevel.value(QStringLiteral("id")).toString(), QStringLiteral("fileMenu"));
     QCOMPARE(topLevel.value(QStringLiteral("text")).toString(), QStringLiteral("File"));
+    QCOMPARE(topLevel.value(QStringLiteral("kind")).toString(), QStringLiteral("submenu"));
+}
+
+void GlobalMenuAppletAccessTests::projectionCarriesHonestKindsAndOmitsHiddenEntries()
+{
+    // A realistic top level: File submenu, an enabled direct action, and a
+    // hidden action. The projection must present all three roles truthfully:
+    // submenu marked as such, action activatable, hidden omitted entirely.
+    const MenuTree base = fixtureTree();
+    const MenuItem nestedEnabledAction = base.items.constFirst().children.at(0);
+    MenuItem direct = nestedEnabledAction;
+    direct.id = QStringLiteral("topLevelDirectAction");
+    const MenuItem nestedDisabledAction = base.items.constFirst().children.at(2);
+    MenuItem hidden = nestedDisabledAction;
+    hidden.enabled = true;
+    hidden.visible = false;
+    hidden.id = QStringLiteral("topLevelHiddenAction");
+
+    MenuTree tree;
+    tree.items = {base.items.constFirst(), direct, hidden};
+
+    GlobalMenuAppletAccess access;
+    access.publishTree(tree);
+    QVERIFY(access.available());
+
+    const QVariantList items = access.items();
+    QCOMPARE(items.size(), 2);
+    const QVariantMap submenuEntry = items.at(0).toMap();
+    QCOMPARE(submenuEntry.value(QStringLiteral("id")).toString(), QStringLiteral("fileMenu"));
+    QCOMPARE(submenuEntry.value(QStringLiteral("kind")).toString(), QStringLiteral("submenu"));
+    QVERIFY(submenuEntry.value(QStringLiteral("enabled")).toBool());
+
+    const QVariantMap actionEntry = items.at(1).toMap();
+    QCOMPARE(actionEntry.value(QStringLiteral("id")).toString(),
+             QStringLiteral("topLevelDirectAction"));
+    QCOMPARE(actionEntry.value(QStringLiteral("kind")).toString(), QStringLiteral("action"));
+    QVERIFY(actionEntry.value(QStringLiteral("enabled")).toBool());
+
+    // The hidden top-level entry is absent, not a disabled ghost.
+    for (const QVariant &entry : items) {
+        QVERIFY(entry.toMap().value(QStringLiteral("id")).toString()
+                != QStringLiteral("topLevelHiddenAction"));
+    }
+
+    // A hidden nested action must not be invocable through its id either.
+    QSignalSpy spy(&access, &GlobalMenuAppletAccess::activationRequested);
+    access.activate(QStringLiteral("fileHiddenAction"));
+    QCOMPARE(spy.count(), 0);
 }
 
 void GlobalMenuAppletAccessTests::publishUnavailableClearsItems()
@@ -172,6 +229,15 @@ void GlobalMenuAppletAccessTests::activateOnSubmenuEmitsNothing()
     access.publishTree(fixtureTree());
     QSignalSpy spy(&access, &GlobalMenuAppletAccess::activationRequested);
     access.activate(QStringLiteral("fileMenu"));
+    QCOMPARE(spy.count(), 0);
+}
+
+void GlobalMenuAppletAccessTests::activateOnHiddenActionEmitsNothing()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+    QSignalSpy spy(&access, &GlobalMenuAppletAccess::activationRequested);
+    access.activate(QStringLiteral("fileHiddenAction"));
     QCOMPARE(spy.count(), 0);
 }
 

@@ -8,14 +8,12 @@ add_library(QindaQt::GlobalMenuProtocol ALIAS qindaqt_global_menu_protocol)
 target_sources(
     qindaqt_global_menu_protocol
     PRIVATE
-        src/menu_delta.cpp
         src/menu_item_lookup.cpp
         src/menu_validation.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
-            include/qindaqt/shell/global_menu/protocol/menu_delta.h
             include/qindaqt/shell/global_menu/protocol/menu_item.h
             include/qindaqt/shell/global_menu/protocol/menu_item_lookup.h
             include/qindaqt/shell/global_menu/protocol/menu_limits.h

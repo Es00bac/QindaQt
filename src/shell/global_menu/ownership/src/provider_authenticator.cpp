@@ -25,7 +25,7 @@ bool isValidRegistration(const MenuProviderRegistration &registration)
 } // namespace
 
 ProviderAuthenticator::ProviderAuthenticator(const ActiveWindowSource &activeWindowSource,
-                                              const CredentialSource &credentialSource)
+                                             const CredentialSource &credentialSource)
     : m_activeWindowSource(activeWindowSource)
     , m_credentialSource(credentialSource)
 {
@@ -39,12 +39,12 @@ AuthenticationResult ProviderAuthenticator::authenticate(
                                      .reasonCode = QStringLiteral("invalid-registration")};
     }
 
-    const std::optional<WindowIdentity> active = m_activeWindowSource.activeWindow();
-    if (!active || !active->isValid()) {
+    const std::optional<ActiveWindowObservation> before = m_activeWindowSource.activeWindow();
+    if (!before || !before->window.isValid()) {
         return AuthenticationResult{.accepted = false,
                                      .reasonCode = QStringLiteral("no-active-window")};
     }
-    if (active->windowId != registration.windowId) {
+    if (before->window.windowId != registration.windowId) {
         return AuthenticationResult{.accepted = false,
                                      .reasonCode = QStringLiteral("not-active-window")};
     }
@@ -55,11 +55,29 @@ AuthenticationResult ProviderAuthenticator::authenticate(
         return AuthenticationResult{.accepted = false,
                                      .reasonCode = QStringLiteral("credential-unavailable")};
     }
-    if (*authenticatedPid != registration.claimedProcessId || *authenticatedPid != active->processId) {
+    if (*authenticatedPid != registration.claimedProcessId
+        || *authenticatedPid != before->window.processId) {
         return AuthenticationResult{.accepted = false, .reasonCode = QStringLiteral("pid-mismatch")};
     }
 
-    return AuthenticationResult{.accepted = true, .reasonCode = QString()};
+    // AGENT-GUARD: focus must be re-read after the (potentially slow)
+    // credential lookup and agree exactly with the first observation. Skipping
+    // this recheck lets a registration that was valid only before a focus
+    // change return accepted — the focus TOCTOU this seam exists to close.
+    const std::optional<ActiveWindowObservation> after = m_activeWindowSource.activeWindow();
+    if (!after || after->window != before->window
+        || after->focusGeneration != before->focusGeneration) {
+        return AuthenticationResult{.accepted = false,
+                                     .reasonCode = QStringLiteral("focus-changed")};
+    }
+
+    return AuthenticationResult{.accepted = true,
+                                 .reasonCode = QString(),
+                                 .proof = AuthenticatedProvider{.window = before->window,
+                                                                 .providerUniqueName =
+                                                                     registration.providerUniqueName,
+                                                                 .focusGeneration =
+                                                                     before->focusGeneration}};
 }
 
 } // namespace QindaQt::Shell::GlobalMenu::Ownership
