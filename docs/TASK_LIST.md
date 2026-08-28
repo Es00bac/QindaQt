@@ -52,6 +52,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `26bb7f5` — Private interactive desktop S2 boots the production compositor,
+  shell, resident services, Settings, and Text Editor beneath an isolated
+  Weston parent at 1920x1080; injects exact `Meta+N` through the private nested
+  seat; observes a 440x640 active notification center; captures and validates
+  its exact framebuffer region; accounts for all eight QindaQt production
+  roles below the 1,024 MiB ceiling; and tears down with zero authenticated
+  survivors. Independent exact review passed P0/P1/P2/P3 `0/0/0/0`, a fresh
+  2,338-action build, 73/73 units, and both private boot/interaction rows.
+  WUXGA, 1440p, fractional scales, theme variants, multi-output, broader
+  accessibility, and physical-device proof remain the next matrix outcome.
+
 - `d7691ac` — Display D4 adds a bounded public QtWayland KDE
   output-management writer with complete/surviving-value mapping, exact
   owner/lineage/request fencing, synchronous-callback deferral, restart and
