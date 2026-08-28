@@ -29,10 +29,59 @@ DesktopEntryParseResult failure(DesktopEntryErrorCode code, int line, QString me
                                    makeError(code, line, std::move(message)) };
 }
 
-bool isKeyCharacter(QChar character)
+bool isAsciiKeyCharacter(QChar character)
 {
-  return character.isLetter() || character.isDigit()
-      || character == QLatin1Char('-');
+  const ushort value = character.unicode();
+  return (value >= 'A' && value <= 'Z')
+      || (value >= 'a' && value <= 'z')
+      || (value >= '0' && value <= '9') || value == '-';
+}
+
+bool isLocaleCharacter(QChar character)
+{
+  return isAsciiKeyCharacter(character) || character == QLatin1Char('_')
+      || character == QLatin1Char('@');
+}
+
+enum class KeySyntax {
+  Plain,
+  Localized,
+  Invalid,
+};
+
+// AGENT-GUARD: Validate both the base and complete locale suffix before the
+// parser skips localized payloads. Skipping on a raw '[' lets malformed or
+// non-ASCII key names bypass the desktop-entry grammar entirely.
+KeySyntax classifyKeySyntax(const QString &key)
+{
+  if (key.isEmpty())
+    return KeySyntax::Invalid;
+
+  const qsizetype localeStart = key.indexOf(QLatin1Char('['));
+  const QString base = localeStart < 0 ? key : key.left(localeStart);
+  if (base.isEmpty())
+    return KeySyntax::Invalid;
+  for (const QChar character : base) {
+    if (!isAsciiKeyCharacter(character))
+      return KeySyntax::Invalid;
+  }
+
+  if (localeStart < 0)
+    return key.contains(QLatin1Char(']')) ? KeySyntax::Invalid : KeySyntax::Plain;
+  if (!key.endsWith(QLatin1Char(']'))
+      || key.indexOf(QLatin1Char('['), localeStart + 1) >= 0
+      || key.indexOf(QLatin1Char(']')) != key.size() - 1)
+    return KeySyntax::Invalid;
+
+  const QString locale = key.mid(localeStart + 1,
+                                 key.size() - localeStart - 2);
+  if (locale.isEmpty())
+    return KeySyntax::Invalid;
+  for (const QChar character : locale) {
+    if (!isLocaleCharacter(character))
+      return KeySyntax::Invalid;
+  }
+  return KeySyntax::Localized;
 }
 
 bool isActionId(const QString &id)
@@ -325,16 +374,15 @@ DesktopEntryParseResult DesktopEntryParser::parse(const QString &text)
     }
 
     const QString key = line.left(separator).trimmed();
-    if (key.contains(QLatin1Char('['))) {
+    const KeySyntax keySyntax = classifyKeySyntax(key);
+    if (keySyntax == KeySyntax::Invalid) {
+      return failure(DesktopEntryErrorCode::InvalidKeyLine, lineNumber + 1,
+                     QStringLiteral("key name does not follow ASCII key grammar"));
+    }
+    if (keySyntax == KeySyntax::Localized) {
       // Locale-suffixed variants are owned by a later locale-selection
       // boundary. Their payload is intentionally not decoded here.
       continue;
-    }
-    for (const QChar character : key) {
-      if (!isKeyCharacter(character)) {
-        return failure(DesktopEntryErrorCode::InvalidKeyLine, lineNumber + 1,
-                       QStringLiteral("key contains an invalid character"));
-      }
     }
 
     const bool inEntryGroup = currentGroup == QLatin1String("Desktop Entry");

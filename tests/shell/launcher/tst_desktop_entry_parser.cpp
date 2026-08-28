@@ -32,6 +32,9 @@ private Q_SLOTS:
   void danglingEscapeIsRejected();
   void unknownEscapeIsRejected();
   void invalidKeyCharacterIsRejected();
+  void emptyKeyNameIsRejected();
+  void truncatedLocaleKeyIsRejected();
+  void nonAsciiKeyNameIsRejected();
   void unknownActionReferenceIsRejected();
   void duplicateActionGroupIsRejected();
   void duplicateRecognizedKeyIsRejected();
@@ -158,6 +161,33 @@ void DesktopEntryParserTest::invalidKeyCharacterIsRejected()
 {
   const auto result = parseText(QStringLiteral(
       "[Desktop Entry]\nType=Application\nNa me=Invalid Key\n"));
+  QVERIFY(!result.ok());
+  QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
+}
+
+void DesktopEntryParserTest::emptyKeyNameIsRejected()
+{
+  EntryTemplate entry;
+  entry.extraBody = QStringLiteral("   =hostile");
+  const auto result = parseText(entry.toText());
+  QVERIFY(!result.ok());
+  QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
+}
+
+void DesktopEntryParserTest::truncatedLocaleKeyIsRejected()
+{
+  EntryTemplate entry;
+  entry.extraBody = QStringLiteral("Name[de=hostile\\x");
+  const auto result = parseText(entry.toText());
+  QVERIFY(!result.ok());
+  QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
+}
+
+void DesktopEntryParserTest::nonAsciiKeyNameIsRejected()
+{
+  EntryTemplate entry;
+  entry.extraBody = QStringLiteral("Nämé=hostile");
+  const auto result = parseText(entry.toText());
   QVERIFY(!result.ok());
   QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
 }

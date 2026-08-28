@@ -20,10 +20,11 @@ freedesktop desktop-entry keys the launcher presents: `Type` (only
 `NoDisplay`, `Hidden`, `Categories`, `Keywords`, and `Actions` with their
 `[Desktop Action <id>]` groups. Unknown keys and locale-suffixed variants such
 as `Name[de]` are ignored without decoding their payload, so an extension's
-escape grammar cannot invalidate a document. Recognized groups reject duplicate
-keys/groups, booleans accept only `true` or `false`, whitespace around `=` is
-ignored, escaped semicolons remain inside list items, and action IDs use the
-bounded ASCII key-name grammar.
+escape grammar cannot invalidate a document. Every key first requires a
+non-empty ASCII key name and, when present, a complete syntactically valid
+locale suffix. Recognized groups reject duplicate keys/groups, booleans accept
+only `true` or `false`, whitespace around `=` is ignored, escaped semicolons
+remain inside list items, and action IDs use the bounded ASCII key-name grammar.
 
 Documents are hostile input. The parser and catalog enforce fixed ceilings
 declared in `launcher_bounds.h` (QString document code units, field lengths,
