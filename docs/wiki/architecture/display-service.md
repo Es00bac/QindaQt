@@ -333,9 +333,10 @@ open a compositor or display and are not KWin output-management evidence.
 
 D0 owns the development-only compositor inventory/hotplug seam. The current D2
 foundation owns resident read/service lineage and injected transaction
-orchestration. Remaining D2 work owns the real public output-management port,
-journal persistence, lock/logind integration, settled-hotplug policy, and
-nested hotplug/restart proof. D3 owns a typed async client;
-later Settings, shell, Hybrid, application, policy, and hardware lanes consume
-those public boundaries. The required release scenarios remain in the
+orchestration. Remaining display work owns the real public output-management
+port, journal persistence, lock/logind integration, settled-hotplug policy,
+and nested hotplug/restart proof. D3 now provides the typed asynchronous client
+and server-projected reversible transaction coordinator; later Settings,
+shell, Hybrid, application, policy, and hardware lanes consume those public
+boundaries. The required release scenarios remain in the
 [testing harness](../development/testing-harness.md).

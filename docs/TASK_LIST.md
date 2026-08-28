@@ -51,6 +51,15 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `c819db8` — Typed asynchronous Display1 client and reversible transaction
+  coordinator with exact-owner activation, validated atomic snapshots,
+  owner/epoch/revision and late-reply fencing, bounded operation completion,
+  installed public/private package proof, and a real private-bus lifecycle.
+  The current-manager replay passed exact Gemini review `0/0/0/0`; fresh
+  strict Debug and Release manager builds each completed 81/81 targeted
+  actions and passed the seven-row D2/D3 selector. The compositor writer,
+  durable journal, Settings UI, nested convergence, hardware, and resource
+  qualification remain later outcomes.
 - `0c9f4b0` — Native Settings Center S1 with a typed bounded route registry,
   stable per-route lifetime, responsive wide/compact navigation, guarded
   unavailable-route focus, keyboard and accessibility paths, sanitized
@@ -135,7 +144,8 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   compositor inventory adapter with restart-unique process lineage, hostile
   A/B/A epoch-reuse rejection, private-D-Bus owner replacement, deadline
   re-arm, and complete observer/name/object teardown. Output mutation remains
-  fail-closed pending the later writer/client/UI slices.
+  fail-closed pending the later writer/UI slices; the typed client is now
+  integrated separately at `c819db8`.
 - `1b4e284` — Installed live notification interaction qualification: real
   `Meta+N` registration/remapping, keyboard/focus traversal, Settings1
   persistence/failure/replacement, Do Not Disturb and critical bypass, shell
