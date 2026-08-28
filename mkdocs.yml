@@ -33,6 +33,7 @@ nav:
       - Pure brightness model: architecture/brightness-model.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
+      - Font preferences: architecture/font-preferences.md
       - Window containers: architecture/window-containers.md
   - Shell:
       - QindaQt.Controls 1.0: shell/controls.md
@@ -109,3 +110,4 @@ nav:
       - "ADR-0043: Customization editor domain": adr/0043-isolate-the-customization-editor-domain.md
       - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md
       - "ADR-0032: Status-notifier exact-owner foundation": adr/0032-status-notifier-exact-owner-foundation.md
+      - "ADR-0042: Pure Font F0 boundary": adr/0042-pure-font-catalog-and-preference-boundary.md
