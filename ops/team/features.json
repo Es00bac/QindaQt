@@ -228,10 +228,10 @@
           "caveat": "Audio, display, power, brightness, Bluetooth, network, clipboard, color, font, and portal pages remain."
         },
         {
-          "id": "QQ-006.06", "title": "QindaQt Text Editor", "weight": 10, "state": "ABSENT",
-          "summary": "A worker-tree vertical slice exists but no Text Editor is integrated on public main.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain part of the incomplete First-party experience milestone." }],
-          "caveat": "Source/static work and design reviews add zero until accepted integration and executable proof."
+          "id": "QQ-006.06", "title": "QindaQt Text Editor", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, and large-document coverage.",
+          "evidence": [{ "kind": "commit", "reference": "1cd5dab", "summary": "The exact accepted Text Editor candidate is integrated after independent review." }, { "kind": "test", "reference": "docs/wiki/apps/text-editor.md", "summary": "The owning page records the eight focused integrated tests plus candidate Release, package, startup, PSS, and large-document evidence." }],
+          "caveat": "S1 does not yet include multiple documents, portals, session restore, print, extensions, rich text, a nested display screenshot matrix, or whole-application assistive-technology qualification."
         },
         {
           "id": "QQ-006.07", "title": "QindaQt File Manager", "weight": 8, "state": "ABSENT",
@@ -253,14 +253,15 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design-token derivation, accessibility overrides, installed C++ consumption, and read-only QML publication are integrated. QindaQt.Controls is also integrated and independently qualified across Debug/Release behavior, five themes, three scales, package consumption, PSS measurement, and real QAccessible announcement events.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The first native application slice is also executable: QindaQt Text Editor S1 opens, edits, conflict-checks, and atomically saves one local UTF-8 document through the installed application boundary.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
-          { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on the manager branch." },
-          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1 and Controls as implemented within the incomplete First-party experience milestone." }
+          { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
+          { "kind": "commit", "reference": "1cd5dab", "summary": "The accepted native Text Editor S1 is integrated after an exact independent review and fresh integrated-tree verification." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, and Text Editor S1 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, app shell, core applications, cross-app responsive/accessibility integration, and live platform-service routes remain."
+      "caveat": "The complete Settings Center, shared app shell, File Manager, Terminal, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",

@@ -32,6 +32,10 @@ desktop.
 
 ## Completed outcomes
 
+- `1cd5dab` — Native QindaQt Text Editor S1 with one local UTF-8 document,
+  optimistic conflict detection, atomic persistence, QST/Controls presentation,
+  keyboard and accessibility metadata, installed packaging, and bounded
+  large-document behavior.
 - `fac2756` — Bounded `org.qindaqt.Audio1` protocol, asynchronous Qt client,
   resident service, confined WirePlumber worker, deterministic reset
   lifecycle, and isolated null-device runtime and package qualification.

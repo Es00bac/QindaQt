@@ -3,10 +3,10 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional commit: `fac2756a65572f37296c0fb6bd38b74aa68574d3`
-- Tree: `2f129e0efdaa9a559a8b36b185c8866a4c53d4ec`
-- Outcome: persistent Settings1, QST-1 semantic design tokens, and bounded
-  Audio1 platform service
+- Functional commit: `1cd5dab`
+- Tree: `ce5abd0717064bebad4a9ae2f1564a0897a7daa9`
+- Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1, and
+  executable native Text Editor S1
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -20,10 +20,18 @@ or widening the theme schema. Audio1 adds a versioned, asynchronous Qt
 boundary over a resident service whose production WirePlumber and GLib handles
 remain confined to one private worker thread. Run generations, owner/epoch/
 revision lineage, and atomic validation prevent stale or malformed backend
-state from reaching future shell and Settings consumers.
+state from reaching future shell and Settings consumers. Display D0/D1 adds a
+revisioned compositor inventory plus bounded protocol, identity, topology, and
+reversible transaction state. Text Editor S1 adds the first native application:
+one local UTF-8 document with optimistic conflict checks and atomic persistence.
 
 Integrated evidence:
 
+- The exact Text Editor candidate passed independent review, then built in the
+  integrated Debug tree and passed all 8/8 focused document, store, controller,
+  large-document, offscreen window, desktop metadata, CLI, and installed-theme
+  tests. Its accepted candidate also passed Release/package proof and measured
+  266 ms startup with 19,511 KiB median PSS.
 - The accepted Audio candidate and the exact integrated functional tree both
   received different-worker review with P1/P2/P3 `0/0/0`.
 - Fresh strict-warning Debug and Release builds passed 749/749 steps each.
