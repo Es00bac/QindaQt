@@ -1,0 +1,24 @@
+[Unit]
+Description=QindaQt Bluetooth service
+After=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.qindaqt.Bluetooth1
+ExecStart=@CMAKE_INSTALL_FULL_LIBEXECDIR@/qindaqt-bluetooth-service
+Restart=no
+
+# Hardening
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+SystemCallFilter=~@clock @debug @module @mount @obsolete @privileged @raw-io @reboot @swap
+UMask=0077
+
+[Install]
+WantedBy=default.target
