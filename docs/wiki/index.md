@@ -31,6 +31,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt.Controls 1.0](shell/controls.md) defines the compiled token-only
   primitives, accessible state behavior, preview integrity, and focused gates
   used by first-party interfaces.
+- [Launcher](shell/launcher.md) records the bounded installed-application
+  model, deterministic categories/search/ranking, launch intents without
+  execution, and the pinned/recent and presentation boundaries.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.

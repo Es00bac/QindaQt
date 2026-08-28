@@ -36,6 +36,7 @@ nav:
   - Shell:
       - QindaQt.Controls 1.0: shell/controls.md
       - Layout profiles: shell/layout-profiles.md
+      - Launcher: shell/launcher.md
       - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
@@ -95,3 +96,4 @@ nav:
       - "ADR-0028: Appearance through Settings1": adr/0028-compose-appearance-settings-through-settings1.md
       - "ADR-0029: File Manager bounded local launch": adr/0029-file-manager-bounded-local-launch.md
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md
+      - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md

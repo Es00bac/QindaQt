@@ -17,6 +17,7 @@ tests, and the wiki page describing its contract.
 | `src/decorations` | Loadable KDecoration3 member-window presentation and standard window actions | KDecoration3 and Qt Gui; it does not infer container topology |
 | `src/profiles` | Layout-profile schema, validation, migration, and built-in profile data | `core` only when shared value types are unavoidable |
 | `src/shell_layout` | Pure expansion, collision-free logical geometry planning, and per-output work areas | Public `profiles` values and Qt Core; never shell surfaces, compositor objects, or physical-pixel conversion |
+| `src/shell/launcher` | Bounded desktop-entry validation, deterministic category/search/ranking, pinned/recent identities, and launch-intent presentation values | Qt Core only; never the filesystem, environment, session bus, process execution, persistence, or QML |
 | `src/shell_customization` | Exclusive editor leases, retained immutable snapshots, manifest-aware mutations, preview/history policy, and atomic candidate validation | Public `profiles`, `applets`, and `shell_layout` values plus Qt Core; never applet execution, shell surfaces, persistence, or settings UI |
 | `src/shell_visibility_protocol` | Shared size, collection, identifier, and scale limits for the compositor-to-shell visibility wire contract | Qt Core value types only; producer and consumer must never duplicate these limits |
 | `src/shell_visibility` | Pure, batch-atomic window-aware panel visibility and reservation decisions | Public `profiles` values and Qt Core; never KWin objects, timers, QML, or layer-shell side effects |
@@ -78,6 +79,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   explicitly. Controls consume complete QST roles without inspecting theme
   identity or adding fallback palette/timing authority; domain state and
   availability remain caller inputs.
+- Launcher presentation consumes the pure launcher model's values and resolves
+  every activation through the catalog's single intent builder. Entry
+  scanning, process execution, and pinned/recent persistence stay in future
+  adapters outside `src/shell/launcher`; they must not move into the model.
+  See [Launcher](../shell/launcher.md) and
+  [ADR-0042](../adr/0042-launcher-model-without-execution.md).
 - First-party QML applications may compose
   [QindaQt.AppShell 1.0](../apps/application-shell.md) around app-owned content.
   The application injects action truth, lifecycle decisions, integration state,
