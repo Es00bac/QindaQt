@@ -105,7 +105,7 @@ void TestNavigationHistory::forwardStackIsClearedByANewNavigation() {
   NavigationHistory history;
   history.reset(QStringLiteral("/a"));
   history.navigateTo(QStringLiteral("/a/b"));
-  history.goBack();
+  QVERIFY(history.goBack().has_value());
   QVERIFY(history.canGoForward());
   history.navigateTo(QStringLiteral("/a/c"));
   QVERIFY(!history.canGoForward());

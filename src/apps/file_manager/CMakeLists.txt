@@ -22,7 +22,11 @@ target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_file_manager_support)
 
-qt_add_executable(qindaqt-file-manager main.cpp)
+qt_add_executable(qindaqt-file-manager
+    main.cpp
+    runtime/qml_component_ready.cpp
+    runtime/qml_component_ready.h
+)
 qt_add_qml_module(
     qindaqt-file-manager
     URI QindaQt.FileManagerApp

@@ -137,7 +137,9 @@ not have to rely on icon shape or color alone.
 `org.qindaqt.FileManager.desktop` registers the ordinary Wayland application
 for `inode/directory` with one `%u` local-folder argument. Multiple folder
 arguments, and a positional argument that is not a folder, are both rejected
-rather than silently opening the wrong location.
+rather than silently opening the wrong location. Positional validation occurs
+before theme discovery so the documented exit and diagnostic remain stable in
+a minimal or deliberately sanitized package environment.
 
 The focused selector is:
 
@@ -160,7 +162,10 @@ that embeds the build QML directory, validates every built-in theme through
 `--check-theme`, and constructs the real File Manager QML root offscreen
 through `--check-qml-root` before exiting deterministically. The executable's
 QML import root and Tokens loader path are relative to its installed location,
-so the same component remains usable after staging or relocation.
+so the same component remains usable after staging or relocation. Token import
+resolution may complete asynchronously even for a local installed module; the
+startup boundary waits at most five seconds and reports either the QML error or
+an explicit timeout before it attempts singleton publication.
 
 ## Bounded S0 deferrals
 

@@ -1,5 +1,7 @@
 execute_process(
-    COMMAND "${FILE_MANAGER_EXECUTABLE}" "${CMAKE_CURRENT_LIST_FILE}"
+    COMMAND "${FILE_MANAGER_EXECUTABLE}"
+            --theme qindaqt-deliberately-missing-theme
+            "${CMAKE_CURRENT_LIST_FILE}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error

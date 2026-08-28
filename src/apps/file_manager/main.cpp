@@ -2,6 +2,7 @@
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
+#include "runtime/qml_component_ready.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_facade.h"
@@ -72,10 +73,7 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
       QtObject { property int revision: Tokens.qstRevision }
   )qml",
                        QUrl(QStringLiteral("inline:qindaqt-file-manager-token-registration.qml")));
-  if (registration.status() == QQmlComponent::Error) {
-    if (error) {
-      *error = registration.errorString();
-    }
+  if (!QindaQt::Apps::FileManager::awaitQmlComponentReady(registration, error)) {
     return nullptr;
   }
   std::unique_ptr<QObject> registrationObject(registration.create());
@@ -129,18 +127,9 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  const auto theme = loadTheme(parser.value(QStringLiteral("theme")),
-                               themeSearchDirectories(parser.value(QStringLiteral("theme-directory"))));
-  if (!theme.ok) {
-    std::fprintf(stderr, "qindaqt-file-manager: %s\n", qPrintable(theme.error));
-    return 3;
-  }
-  if (parser.isSet(QStringLiteral("check-theme"))) {
-    std::printf("%s qst-%d\n", qPrintable(theme.theme.id),
-                QindaQt::DesignTokens::DesignTokens::qstRevision);
-    return 0;
-  }
-
+  // AGENT-GUARD: Validate the folder contract before theme discovery. Desktop
+  // launchers must receive the stable exit 4 for a bad %u even when themes are
+  // absent or the XDG environment is intentionally sanitized by packaging.
   QString startPath = QDir::homePath();
   if (!parser.positionalArguments().isEmpty()) {
     const QFileInfo requested(parser.positionalArguments().first());
@@ -151,6 +140,19 @@ int main(int argc, char **argv) {
                    qPrintable(parser.positionalArguments().first()));
       return 4;
     }
+  }
+
+  const auto theme = loadTheme(
+      parser.value(QStringLiteral("theme")),
+      themeSearchDirectories(parser.value(QStringLiteral("theme-directory"))));
+  if (!theme.ok) {
+    std::fprintf(stderr, "qindaqt-file-manager: %s\n", qPrintable(theme.error));
+    return 3;
+  }
+  if (parser.isSet(QStringLiteral("check-theme"))) {
+    std::printf("%s qst-%d\n", qPrintable(theme.theme.id),
+                QindaQt::DesignTokens::DesignTokens::qstRevision);
+    return 0;
   }
 
   QQmlApplicationEngine engine;
