@@ -106,4 +106,4 @@ nav:
       - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md
       - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
       - "ADR-0043: Customization editor domain": adr/0043-isolate-the-customization-editor-domain.md
-      - "ADR-0026: Canonical menu model": adr/0026-canonical-menu-model-and-authenticated-menu-ownership.md
+      - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md

@@ -5,7 +5,7 @@ panel. QindaQt builds it on a bounded, toolkit-neutral canonical menu/action
 model with a proof-bound authenticated ownership policy, not on the
 desktop-agnostic `com.canonical.AppMenu.Registrar` trust model. The durable
 choices are in
-[ADR-0026](../adr/0026-canonical-menu-model-and-authenticated-menu-ownership.md).
+[ADR-0033](../adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md).
 
 ## Milestone boundary
 

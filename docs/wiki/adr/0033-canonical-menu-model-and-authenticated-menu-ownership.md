@@ -1,10 +1,19 @@
-# ADR-0026: Canonical menu model with authenticated active-window ownership
+# ADR-0033: Canonical menu model with authenticated active-window ownership
 
 - **Status:** Proposed
 - **Date:** 2026-08-28
 - **Owners:** Shell / global menu
 - **Supersedes:** None
 - **Superseded by:** None
+
+## Candidate note
+
+This record was authored as ADR-0026 on an older parallel base. Public `main`
+subsequently took 0026 (contained virtual desktop) and 0027 (AppShell); the
+manager reserved 0033 for Global Menu G0 in
+`ops/team/messages/desktop-experience-coordination/1787926849-manager-parallel-adr-allocation.md`,
+and this descendant renames the file, index, navigation, and prose links
+accordingly. Content is unchanged by the rename.
 
 ## Context
 
