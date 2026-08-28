@@ -101,10 +101,10 @@
           "caveat": "A compositor facts producer, window-operation adapter, QST presentation, and installed keyboard/accessibility proof remain."
         },
         {
-          "id": "QQ-004.11", "title": "Status-notifier tray", "weight": 2, "state": "ABSENT",
-          "summary": "The reviewed StatusNotifier candidate is not yet integrated in this manager checkpoint, so it contributes no product evidence.",
-          "evidence": [],
-          "caveat": "Exact candidate review passed; manager-tree integration and focused combined verification remain."
+          "id": "QQ-004.11", "title": "Status-notifier tray", "weight": 2, "state": "WIRED",
+          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state.",
+          "evidence": [{ "kind": "commit", "reference": "fddf846", "summary": "The independently accepted five-commit tray series is replayed on the manager tree through the interrupted-baseline epoch repair." }, { "kind": "test", "reference": "docs/wiki/shell/status-tray.md", "summary": "Manager verification passes 3/3 registered rows and 17/25/9 direct value, registry, and presentation cases, plus strict source and documentation gates." }],
+          "caveat": "A production StatusNotifierWatcher transport, D-BusMenu adapter, icon renderer, applet registration, shell composition, and installed nested interaction remain."
         },
         {
           "id": "QQ-004.12", "title": "Audio applet", "weight": 2, "state": "WIRED",
