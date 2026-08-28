@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# AGENT-NOTE: This file is the Audio applet A1 standalone build seam. It is
-# deliberately not referenced by src/shell/CMakeLists.txt; the manager wires
-# it in as an additive `add_subdirectory(src/shell/audio_applet)` when the
-# candidate integrates. Everything here stays self-contained so that wiring
-# step cannot change behavior of unrelated shell targets.
+# AGENT-NOTE: The root source registry adds this module only after AudioClient
+# exists. Keep the applet self-contained so presentation cannot reach into the
+# resident service, WirePlumber, or unrelated shell targets.
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick)
+
+set(QINDAQT_AUDIO_APPLET_QML_OUTPUT_DIRECTORY
+    "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/AudioApplet")
 
 qt_add_library(qindaqt_shell_audio_applet STATIC)
 add_library(QindaQt::ShellAudioApplet ALIAS qindaqt_shell_audio_applet)
@@ -27,6 +28,7 @@ qt_add_qml_module(
     qindaqt_shell_audio_applet
     URI QindaQt.Shell.AudioApplet
     VERSION 1.0
+    OUTPUT_DIRECTORY "${QINDAQT_AUDIO_APPLET_QML_OUTPUT_DIRECTORY}"
     QML_FILES
         qml/AudioApplet.qml
         qml/AudioDeviceRow.qml

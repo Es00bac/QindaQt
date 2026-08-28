@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# AGENT-NOTE: Standalone test seam for the Audio applet A1 slice, mirroring
-# the tests/shell convention of compiling the owned library sources directly
-# into each test target. It is deliberately not referenced by
-# tests/shell/CMakeLists.txt; the manager wires it in as an additive
-# `add_subdirectory(audio_applet)` when the candidate integrates.
+# AGENT-NOTE: The root test registry owns this focused seam. Tests compile the
+# applet sources directly so fail-closed presentation behavior remains
+# testable without constructing the QML runtime or resident Audio1 service.
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test)
 
 set(QINDAQT_AUDIO_APPLET_SOURCES
