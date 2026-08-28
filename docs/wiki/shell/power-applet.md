@@ -11,11 +11,12 @@ brightness policy of its own. The accepted authority split lives in
 [Power and brightness architecture](../architecture/power-service.md) and the
 applet resolution rules in [Applet runtime](applet-runtime.md).
 
-Current maturity: **presentation source candidate**. The P1 slice is
-source/static only: it has focused hostile tests and a boundary gate that run
-after the registry seams below are wired, and it claims no compiler, CTest,
-GUI, session, bus, or hardware evidence. It does not advance the Power
-platform milestone (QQ-005.03) by itself.
+Current maturity: **pure presentation model (compiled and verified)**.
+The P1 slice is pure and dependency-light: it has focused hostile tests and a
+boundary gate, compiled under `QINDAQT_BUILD_SHELL`, and verified against
+power/brightness protocol and composition models. It claims no GUI, session,
+bus, or hardware evidence, and does not advance the Power platform milestone
+(QQ-005.03) by itself.
 
 ## Projection contract
 
@@ -84,18 +85,18 @@ Presentation semantics, pinned by hostile tests:
   ever replays a request automatically, matching the Power1 rule that clients
   resnapshot instead of replaying after timeout or authority loss.
 
-## Registry seams (pending, additive)
+## Registry seams
 
-The candidate compiles only after the manager wires these one-line additive
-seams; none is edited by this slice:
+The module is registered through these additive seams:
 
-1. `src/CMakeLists.txt`: `add_subdirectory(shell/power_applet)` guarded like
-   the shell subdirectories.
-2. `tests/CMakeLists.txt`: `add_subdirectory(shell/power_applet)`.
-3. `docs/wiki/architecture/module-boundaries.md`: one source-ownership row.
-4. `docs/wiki/development/testing-harness.md`: test-matrix rows for the three
+1. `src/CMakeLists.txt`: `add_subdirectory(shell/power_applet)` guarded under
+   `QINDAQT_BUILD_SHELL`.
+2. `tests/CMakeLists.txt`: `add_subdirectory(shell/power_applet)` guarded under
+   `QINDAQT_BUILD_SHELL`.
+3. `docs/wiki/architecture/module-boundaries.md`: source-ownership row.
+4. `docs/wiki/development/testing-harness.md`: test-matrix rows for the
    registered tests.
-5. Later applet integration: manifest catalog entry, capability policy, the
+5. Future applet integration: manifest catalog entry, capability policy, the
    compiled built-in registry and QML dispatcher entry, and a shell-private
    facade exposing this model, per [Applet runtime](applet-runtime.md).
 

@@ -312,7 +312,8 @@ BatterySummaryRow projectSummary(const Power::CompositeBattery &composite,
   return row;
 }
 
-BatteryRow projectSupply(const Power::PowerSupply &supply) {
+BatteryRow projectSupply(const Power::PowerSupply &supply,
+                         bool *degraded = nullptr) {
   BatteryRow row;
   row.epoch = supply.handle.epoch;
   row.supplyId = supply.handle.opaqueId;
@@ -324,6 +325,9 @@ BatteryRow projectSupply(const Power::PowerSupply &supply) {
   } else {
     row.title = QStringLiteral("Unknown power supply");
     row.unavailableReason = QStringLiteral("Unidentified power supply");
+    if (degraded != nullptr) {
+      *degraded = true;
+    }
   }
   row.percentageKnown =
       trustedPercentage(supply.percentageKnown, supply.percentage);
@@ -462,7 +466,8 @@ PowerAppletModel projectPowerApplet(const Power::Snapshot &snapshot,
         std::min<qsizetype>(snapshot.supplies.size(),
                             Power::kMaxPowerSupplies);
     for (qsizetype index = 0; index < boundedCount; ++index) {
-      model.supplies.append(projectSupply(snapshot.supplies.at(index)));
+      model.supplies.append(
+          projectSupply(snapshot.supplies.at(index), &degraded));
     }
     sortSuppliesByIdentity(model.supplies);
   }

@@ -13,6 +13,8 @@
 #include <utility>
 
 using namespace QindaQt::Shell::PowerApplet;
+namespace Brightness = QindaQt::Brightness;
+namespace Power = QindaQt::Power;
 
 namespace {
 

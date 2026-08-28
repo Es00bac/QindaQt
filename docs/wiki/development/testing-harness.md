@@ -130,6 +130,17 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
+The pure Power applet presentation model candidate is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.power-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its presentation, control rows, request state, and dependency-policy rows are
+detailed in [Power applet presentation model](../shell/power-applet.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

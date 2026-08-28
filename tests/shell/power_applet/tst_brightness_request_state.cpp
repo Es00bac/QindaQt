@@ -8,6 +8,7 @@
 #include <QtTest>
 
 using namespace QindaQt::Shell::PowerApplet;
+namespace Power = QindaQt::Power;
 
 namespace {
 
