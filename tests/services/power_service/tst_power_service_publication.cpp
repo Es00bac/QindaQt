@@ -39,6 +39,13 @@ void publishValidDomains(FakeBatteryCollaborator &battery,
     session.publish(fixtureSessionFacts());
 }
 
+ProfileFacts fixtureProfileFactsCollidingWithBattery()
+{
+    ProfileFacts facts = fixtureProfileFacts();
+    facts.profiles.holds.first().handle.opaqueId = QStringLiteral("battery-bat0");
+    return facts;
+}
+
 } // namespace
 
 class PowerServicePublicationTests final : public QObject
@@ -49,6 +56,8 @@ private Q_SLOTS:
     void initialSnapshotIsStarting();
     void validDomainsPublishReadySnapshot();
     void malformedBatteryDomainDegradesOnlyThatDomain();
+    void batteryIdentityWinsAcrossFactArrivalOrder_data();
+    void batteryIdentityWinsAcrossFactArrivalOrder();
     void sanitizedHostileTextIsPublishedBounded();
     void allDomainsUnavailablePublishesUnavailable();
     void mixedValidAndUnavailablePublishesDegraded();
@@ -141,6 +150,51 @@ void PowerServicePublicationTests::malformedBatteryDomainDegradesOnlyThatDomain(
     QCOMPARE(degraded.inhibitors.size(), 1);
     QVERIFY(degraded.capabilities.testFlag(Capability::Profiles));
     QVERIFY(validateSnapshot(degraded).accepted);
+}
+
+void PowerServicePublicationTests::batteryIdentityWinsAcrossFactArrivalOrder_data()
+{
+    QTest::addColumn<bool>("profileFactsArriveFirst");
+
+    QTest::newRow("profile-before-battery") << true;
+    QTest::newRow("battery-before-profile") << false;
+}
+
+void PowerServicePublicationTests::batteryIdentityWinsAcrossFactArrivalOrder()
+{
+    QFETCH(bool, profileFactsArriveFirst);
+
+    CoordinatorHarness harness;
+    const ProfileFacts collidingProfiles = fixtureProfileFactsCollidingWithBattery();
+    if (profileFactsArriveFirst) {
+        harness.profiles.publish(collidingProfiles);
+        harness.session.publish(fixtureSessionFacts());
+        harness.battery.publish(fixtureBatteryFacts());
+    } else {
+        harness.battery.publish(fixtureBatteryFacts());
+        harness.session.publish(fixtureSessionFacts());
+        harness.profiles.publish(collidingProfiles);
+    }
+
+    const Snapshot snapshot = harness.coordinator->snapshot();
+    QCOMPARE(snapshot.availability, Availability::Degraded);
+    QCOMPARE(snapshot.reasonCode, QStringLiteral("profile-malformed"));
+    QCOMPARE(snapshot.supplies.size(), 1);
+    QCOMPARE(snapshot.supplies.first().handle.opaqueId,
+             QStringLiteral("battery-bat0"));
+    QCOMPARE(snapshot.keyboardBacklights.size(), 1);
+    QCOMPARE(snapshot.inhibitors.size(), 1);
+    QVERIFY(snapshot.source.onBattery);
+    QVERIFY(snapshot.source.lidPresent);
+    QVERIFY(snapshot.capabilities.testFlag(Capability::Supplies));
+    QVERIFY(snapshot.capabilities.testFlag(Capability::KeyboardBacklight));
+    QVERIFY(snapshot.capabilities.testFlag(Capability::Inhibitors));
+    QVERIFY(snapshot.capabilities.testFlag(Capability::Lid));
+    QVERIFY(!snapshot.capabilities.testFlag(Capability::Profiles));
+    QVERIFY(!snapshot.capabilities.testFlag(Capability::ProfileHolds));
+    QVERIFY(snapshot.profiles.supported.isEmpty());
+    QVERIFY(snapshot.profiles.holds.isEmpty());
+    QVERIFY(validateSnapshot(snapshot).accepted);
 }
 
 void PowerServicePublicationTests::sanitizedHostileTextIsPublishedBounded()
