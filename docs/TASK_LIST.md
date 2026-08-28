@@ -27,10 +27,10 @@ PB-0 remain preserved integrated foundations.
 
 Finish QQ-006 through the durable
 [First-party queue](../ops/team/queues/first-party.md): complete Settings routes,
-later File Manager capabilities, Terminal, application migrations, and
+later File Manager and Terminal capabilities, application migrations, and
 cross-app responsive, DPI, visual, keyboard, and accessibility qualification.
-QST-1, Controls, AppShell, Text Editor, and the read-only local File Manager S0
-remain preserved integrated foundations.
+QST-1, Controls, AppShell, Text Editor, the read-only local File Manager S0, and
+the single-session Terminal S0 remain preserved integrated foundations.
 
 ### Interactive virtual desktop integration
 
@@ -48,6 +48,15 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `4f99a7f` — Native QindaQt Terminal S0 with an owned child PTY, nonblocking
+  teletype bridge, bounded launch policy, deterministic child/PTY teardown,
+  QindaQt theme projection, truthful selection/copy behavior, qtermwidget
+  confined behind one adapter, desktop metadata, and relocatable installed
+  packaging. Exact independent review passed with zero findings; the manager
+  tree passes 63/63 build actions, 9/9 registered rows, 7/7 appearance and 4/4
+  real-adapter cases, source shape, 93-page docs, and strict MkDocs. Multiple
+  tabs/profiles, settings persistence, AppShell/global-menu migration, whole-
+  application accessibility, and the nested screenshot matrix remain later.
 - `d0e0809` — The native QindaQt Text Editor now consumes
   `QindaQt.AppShell 1.0` through a typed action catalog, fail-closed file
   selection request/result bridge, lifecycle/integration projection, and

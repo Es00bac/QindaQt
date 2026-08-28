@@ -280,10 +280,10 @@
           "caveat": "S0 is deliberately read-only and local: file mutation, mounts, trash, search, previews, portals, recovery, nested screenshots, and whole-application assistive-technology qualification remain later slices."
         },
         {
-          "id": "QQ-006.08", "title": "QindaQt Terminal", "weight": 8, "state": "ABSENT",
-          "summary": "No integrated first-party terminal exists.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain incomplete." }],
-          "caveat": "PTY ownership, encoding, selection/clipboard, profiles, accessibility, and process teardown remain."
+          "id": "QQ-006.08", "title": "QindaQt Terminal", "weight": 8, "state": "EXECUTABLE",
+          "summary": "The native Terminal S0 single-session slice is integrated with owned child PTY lifetime, nonblocking teletype bridging, bounded launch policy, QindaQt theme projection, selection/copy truth, qtermwidget confinement, desktop packaging, and deterministic teardown.",
+          "evidence": [{ "kind": "commit", "reference": "4f99a7f", "summary": "The exact independently accepted Terminal manager replay is integrated after a fresh 63/63 build, 9/9 registered rows, 7/7 appearance cases, 4/4 real-adapter cases, relocatable package proof, and strict source/documentation gates." }, { "kind": "test", "reference": "docs/wiki/apps/terminal.md", "summary": "The owning page records the PTY, process, qtermwidget, theme, packaging, and explicit S0 authority boundaries; the unchanged production bytes also retain the accepted private-Weston 40/40 evidence." }],
+          "caveat": "Multiple tabs and profiles, settings persistence, shell/global-menu integration, whole-application assistive-technology proof, nested screenshot matrices, and physical display/input qualification remain later slices."
         },
         {
           "id": "QQ-006.09", "title": "Cross-app responsive, DPI, visual, keyboard, and accessibility qualification", "weight": 4, "state": "MODELLED",
@@ -293,7 +293,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 and the bounded local QindaQt File Manager S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts; Text Editor now consumes that boundary through a typed fail-closed migration.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1, the bounded local QindaQt File Manager S0, and the single-session QindaQt Terminal S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts; Text Editor consumes that boundary through a typed fail-closed migration.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
@@ -301,10 +301,11 @@
           { "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact accepted AppShell S0 candidate is integrated after its repair rereview and fresh combined-tree verification." },
           { "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact accepted File Manager S0 runtime/package candidate is integrated after independent review and fresh combined-tree verification." },
           { "kind": "commit", "reference": "d0e0809", "summary": "The exact accepted Text Editor AppShell migration is replayed after independent review and manager-tree verification." },
-          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, and File Manager S0 as implemented within the incomplete First-party experience milestone." }
+          { "kind": "commit", "reference": "4f99a7f", "summary": "The independently accepted Terminal S0 replay is integrated after fresh manager-tree build, focused, package, source, and documentation verification." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, File Manager S0, and Terminal S0 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, later File Manager capabilities, Terminal, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "The complete Settings Center, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",
