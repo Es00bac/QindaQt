@@ -20,7 +20,7 @@ ResidentDisplayService::ResidentDisplayService(
     std::unique_ptr<TransactionPort> transactionPort,
     std::unique_ptr<DisplayTransaction::MonotonicClock> clock,
     EpochFactory epochFactory, const QDBusConnection &connection, QString serviceName,
-    QObject *parent)
+    DisplayTransaction::Timing timing, QObject *parent)
     : QObject(parent)
     , m_inventorySource(std::move(inventorySource))
     , m_clock(std::move(clock))
@@ -34,14 +34,21 @@ ResidentDisplayService::ResidentDisplayService(
     Q_ASSERT(m_transactionPort != nullptr);
     Display::registerDBusTypes();
     m_model = std::make_unique<DisplayServiceModel>(
-        *m_clock, *m_transactionPort, std::move(epochFactory));
+        *m_clock, *m_transactionPort, std::move(epochFactory), timing);
     m_serviceObject = std::make_unique<DisplayServiceObject>(
         *m_model, [this](const bool changed) { modelTransitioned(changed); });
     m_deadlineTimer = new QTimer(this);
     m_deadlineTimer->setSingleShot(true);
+    m_deadlineTimer->setTimerType(Qt::PreciseTimer);
     QObject::connect(m_deadlineTimer, &QTimer::timeout, this, [this] {
         const DisplayTransaction::CommandResult result = m_model->tick();
         modelTransitioned(result.stateChanged);
+        if (!result.stateChanged) {
+            // AGENT-GUARD: Even a precise timer may observe a clock that has
+            // not reached the model deadline. Keep the deadline live instead
+            // of silently dropping the only tick.
+            armDeadline();
+        }
         if (result.stateChanged) {
             m_serviceObject->notifyChanged();
         }

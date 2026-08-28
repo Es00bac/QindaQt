@@ -43,8 +43,11 @@ class DisplayServiceModel final
 public:
     // clock and port are borrowed on the constructing thread and must outlive
     // the model. EpochFactory is copied and invoked only for a newly accepted
-    // unique-owner lineage. All returned/accessed values are model-owned until
-    // the next call; rejected calls preserve every observable field.
+    // unique-owner lineage; it supplies a bounded, restart-unique seed. The
+    // model combines that seed with a process-monotonic lineage so a repeated
+    // seed cannot republish an accepted public epoch. All returned/accessed
+    // values are model-owned until the next call; rejected calls preserve every
+    // observable field.
     DisplayServiceModel(DisplayTransaction::MonotonicClock &clock,
                         TransactionPort &port,
                         EpochFactory epochFactory,
@@ -59,8 +62,8 @@ public:
     [[nodiscard]] quint64 machineLineage() const noexcept;
 
     InventoryObservationResult observeInventory(const InventoryFrame &frame);
-    // Clears all source-derived and transaction state. The last epoch is kept
-    // only to reject an epoch factory that accidentally reuses it at recovery.
+    // Clears all source-derived and transaction state. The process-monotonic
+    // lineage remains consumed so recovery cannot republish an old epoch.
     [[nodiscard]] bool transportLost();
 
     [[nodiscard]] ServiceOperationResult stage(const QString &transactionId,
@@ -94,7 +97,7 @@ private:
     std::unique_ptr<DisplayTransaction::Machine> m_machine;
     InventoryFrame m_frame;
     QString m_sourceOwner;
-    QString m_lastEpoch;
+    QString m_serviceEpoch;
     quint64 m_machineLineage = 0;
     DisplayTransaction::SafetyState m_safety = DisplayTransaction::SafetyState::Unknown;
 };

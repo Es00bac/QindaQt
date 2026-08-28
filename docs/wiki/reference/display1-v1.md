@@ -173,12 +173,16 @@ plausible revision-zero snapshot or invalid result value.
 
 The current inventory adapter calls `org.qindaqt.Compositor1.Outputs` on its
 resolved unique D-Bus owner and binds one public Display1 epoch to that owner.
-The positive D0 `outputGeneration` is the Display1 revision. Exact typed
-redelivery is accepted at equal generation; changed content at equal
-generation, revision regression, and a newer generation with unchanged content
-all reject atomically. Owner replacement or transport loss discards the public
-snapshot and active machine. A later accepted frame starts a fresh epoch, so
-revisions are never compared across source owners.
+Each accepted public epoch contains a process-monotonic lineage plus a digest
+of a bounded restart-unique factory seed. Repeating a prior seed after another
+owner therefore cannot recreate the earlier public epoch during the process
+lifetime, and the model retains no attacker-controlled epoch history. The
+positive D0 `outputGeneration` is the Display1 revision. Exact typed redelivery
+is accepted at equal generation; changed content at equal generation, revision
+regression, and a newer generation with unchanged content all reject
+atomically. Owner replacement or transport loss discards the public snapshot
+and active machine. A later accepted frame starts a fresh epoch, so revisions
+are never compared across source owners.
 
 Projection is intentionally narrower than full output management. It publishes
 only D0 enabled outputs and one synthesized current mode, requires integral
@@ -394,12 +398,15 @@ qualification.
 | Invalid transition preservation | `qindaqt.display-transaction-invalid-ordering`: wrong transaction, recovery, callback, observation, confirmation, and settle inputs across all twelve states preserve view, snapshot, active journal, and port effects exactly |
 | Journal bytes | `qindaqt.display-transaction-journal`: invariants, canonical round-trip, versions, torn/trailing/oversized bytes, no partial destination |
 | Resident inventory adapter | `qindaqt.display-service-inventory`: exact owner/schema/generation JSON, bounds, privacy-preserving connector projection, current-mode geometry, transform/fractional scale, fingerprint |
-| Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, fresh epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership |
+| Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, hostile A/B/A seed reuse, process-unique epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership |
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
+| Exact-owner async inventory transport | `qindaqt.display-service-inventory-private-bus`: disposable private bus/root, exact-owner read, dirty coalescing, replacement/unavailable, stale-reply rejection, and stop suppression |
+| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, and name/object/port teardown on the same disposable bus |
 
 The D2 service-focused rows add deterministic decoder/projection, owner and
-generation collision, loss/reset, add/remove/change, transaction-port, timer,
-descriptor, staged-install, and public-header-consumer evidence. They still do
-not exercise a display. Nested KWin output-management, restart recovery,
+generation collision, loss/reset, add/remove/change, transaction-port,
+descriptor, staged-install, and public-header-consumer evidence plus isolated
+private-D-Bus source/resident/timer lifecycle proof. They still do not exercise
+a compositor or display. Nested KWin output-management, restart recovery,
 mirror visibility, and physical output rows remain later D2/D8 work in the
 [testing harness](../development/testing-harness.md).

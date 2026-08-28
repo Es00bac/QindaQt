@@ -28,14 +28,17 @@ void DisplayServiceModelTest::fencesOwnerGenerationAndTransportLoss()
     FakeClock clock;
     FakeTransactionPort port;
     QStringList epochs{QStringLiteral("epoch-a"), QStringLiteral("epoch-b"),
-                       QStringLiteral("epoch-c")};
+                       QStringLiteral("epoch-a")};
     DisplayServiceModel model(clock, port, [&epochs] { return epochs.takeFirst(); });
 
     const InventoryFrame initial = frame(1, {output()});
     QCOMPARE(model.observeInventory(initial).status,
              InventoryObservationStatus::AcceptedNewLineage);
     QVERIFY(model.available());
-    QCOMPARE(model.snapshot()->serviceEpoch, QStringLiteral("epoch-a"));
+    const QString firstEpoch = model.snapshot()->serviceEpoch;
+    QVERIFY(!firstEpoch.isEmpty());
+    const Display::Candidate staleFirst =
+        DisplayTopology::candidateFromSnapshot(*model.snapshot());
     QCOMPARE(model.snapshot()->revision, quint64(1));
     QCOMPARE(model.machineLineage(), quint64(1));
     QCOMPARE(model.observeInventory(initial).status,
@@ -57,16 +60,23 @@ void DisplayServiceModelTest::fencesOwnerGenerationAndTransportLoss()
     const InventoryFrame replacement = frame(1, {output()}, QStringLiteral(":1.77"));
     QCOMPARE(model.observeInventory(replacement).status,
              InventoryObservationStatus::AcceptedNewLineage);
-    QCOMPARE(model.snapshot()->serviceEpoch, QStringLiteral("epoch-b"));
+    const QString secondEpoch = model.snapshot()->serviceEpoch;
+    QVERIFY(secondEpoch != firstEpoch);
     QCOMPARE(model.snapshot()->revision, quint64(1));
     QCOMPARE(model.machineLineage(), quint64(2));
     QVERIFY(model.transportLost());
     QVERIFY(!model.available());
     QVERIFY(model.snapshot() == nullptr);
-    QCOMPARE(model.observeInventory(replacement).status,
+    const InventoryFrame recovered = frame(1, {output()}, QStringLiteral(":1.88"));
+    QCOMPARE(model.observeInventory(recovered).status,
              InventoryObservationStatus::AcceptedNewLineage);
-    QCOMPARE(model.snapshot()->serviceEpoch, QStringLiteral("epoch-c"));
+    const QString thirdEpoch = model.snapshot()->serviceEpoch;
+    QVERIFY(thirdEpoch != firstEpoch);
+    QVERIFY(thirdEpoch != secondEpoch);
     QCOMPARE(model.machineLineage(), quint64(3));
+
+    QCOMPARE(model.stage(QStringLiteral("stale-first"), staleFirst).command.error,
+             DisplayTransaction::CommandError::StaleRevision);
 }
 
 void DisplayServiceModelTest::routesAddRemoveChangeAndFencesStaleCandidate()

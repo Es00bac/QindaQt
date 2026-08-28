@@ -768,6 +768,30 @@ activation/restart behavior, or physical DRM/GPU/monitor/lid/suspend results.
 D0/D2 own nested protocol/service proof; D8 owns isolated hardware proof. A D1
 handoff must not upgrade unit success into either claim.
 
+## D2 private Display1 lifecycle proof
+
+The bounded resident/transport rows are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.display-service-(inventory|resident)-private-bus$'
+```
+
+Each row launches only its own `dbus-daemon` beneath a disposable temporary
+root, removes inherited host session/display addresses from that daemon, and
+connects every test participant explicitly to the returned private address.
+The inventory row drives successive unique owners, delayed replies, repeated
+invalidations, and stop while a read is outstanding. The resident row proves
+successful name/object registration, typed unavailable and snapshot replies,
+`Changed`, two successive injected short deadlines, and complete name/object
+plus observer teardown.
+
+These tests are serial isolated-runtime evidence. They never launch KWin,
+Wayland/XWayland, a GUI, or the installed resident process; touch no host
+session bus, display, input, configuration, or hardware; and do not prove a
+KWin output-management apply. Nested protocol convergence remains in the
+matrix below.
+
 ## Required display matrix
 
 Single-output scenarios cover:

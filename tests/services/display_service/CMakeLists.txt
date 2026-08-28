@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test)
+find_program(QINDAQT_DISPLAY_DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
 
 qt_add_executable(
     qindaqt_display_inventory_adapter_tests
@@ -54,9 +55,59 @@ add_test(
     COMMAND qindaqt_display_service_deployment_tests
 )
 
+qt_add_executable(
+    qindaqt_compositor_inventory_source_private_bus_tests
+    tst_compositor_inventory_source_private_bus.cpp
+    support/private_bus_test_support.h
+)
+target_link_libraries(
+    qindaqt_compositor_inventory_source_private_bus_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_compositor_inventory_source_private_bus_tests
+    PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DISPLAY_DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(qindaqt_compositor_inventory_source_private_bus_tests)
+add_test(
+    NAME qindaqt.display-service-inventory-private-bus
+    COMMAND qindaqt_compositor_inventory_source_private_bus_tests
+)
+
+qt_add_executable(
+    qindaqt_resident_display_service_private_bus_tests
+    tst_resident_display_service_private_bus.cpp
+    support/display_service_test_support.h
+    support/private_bus_test_support.h
+)
+target_link_libraries(
+    qindaqt_resident_display_service_private_bus_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_resident_display_service_private_bus_tests
+    PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DISPLAY_DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(qindaqt_resident_display_service_private_bus_tests)
+add_test(
+    NAME qindaqt.display-service-resident-private-bus
+    COMMAND qindaqt_resident_display_service_private_bus_tests
+)
+
 set_tests_properties(
     qindaqt.display-service-inventory
     qindaqt.display-service-model
     qindaqt.display-service-deployment
     PROPERTIES LABELS "service;display" TIMEOUT 20
+)
+
+set_tests_properties(
+    qindaqt.display-service-inventory-private-bus
+    qindaqt.display-service-resident-private-bus
+    PROPERTIES
+        LABELS "service;display;private-dbus;isolated-runtime"
+        TIMEOUT 20
+        RUN_SERIAL TRUE
 )

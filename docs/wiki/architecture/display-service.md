@@ -69,8 +69,9 @@ four D1 public modules. Its dependencies are constructor-visible:
   may report one completion tagged with the exact resident-machine lineage and
   D1 token;
 - a monotonic clock supplies D1 time; and
-- an epoch factory supplies a fresh bounded epoch for each accepted upstream
-  owner lineage.
+- an epoch factory supplies a bounded restart-unique seed; the model hashes it
+  into a public epoch beside a process-monotonic lineage number for each
+  accepted upstream owner lineage.
 
 The production inventory source watches `org.qindaqt.Compositor`, resolves its
 current unique D-Bus owner, calls `Outputs` on that unique name, and treats
@@ -82,14 +83,17 @@ its stricter 32-output and 1.0–3.0 limits. Geometry must be exactly integral
 because the Display1 v1 topology values are integral.
 
 One accepted source lineage is `(uniqueOwner, outputGeneration, complete typed
-outputs)`. Display1 creates a fresh epoch for its first accepted frame and maps
-its public revision to the positive `outputGeneration`. At equal generation,
-only exact typed equality is accepted. Changed equal-generation truth, a
-regression, or a newer generation with unchanged contents rejects without
-partial replacement. An owner change first removes the old snapshot/machine,
-then establishes a fresh epoch; explicit transport loss also makes
-`GetSnapshot` and mutations unavailable. Revisions are never ordered across
-owners.
+outputs)`. Display1 derives a bounded public epoch from the factory's
+restart-unique seed and the next process-monotonic machine lineage, then maps
+its public revision to the positive `outputGeneration`. The lineage component
+prevents an A/B/A owner or repeated-seed sequence from republishing any epoch
+already accepted in that process without retaining an attacker-controlled
+history set. At equal generation, only exact typed equality is accepted.
+Changed equal-generation truth, a regression, or a newer generation with
+unchanged contents rejects without partial replacement. An owner change first
+removes the old snapshot/machine, then establishes a fresh epoch; explicit
+transport loss also makes `GetSnapshot` and mutations unavailable. Revisions
+are never ordered across owners.
 
 D0 exposes only enabled outputs and the observed current mode. Projection
 therefore publishes one deterministic `current:WIDTHxHEIGHT@MILLIHERTZ` mode
@@ -300,6 +304,14 @@ values, identities, geometry, fake clocks/ports, journal bytes, hotplug and
 recovery transitions without opening a display. They do not prove that pinned
 KWin accepted a real configuration, that a mirror appears in `wl_output`, or
 that DRM/GPU/monitor/lid/suspend behavior works.
+
+D2 also has two serial private-D-Bus rows. Each creates a disposable root,
+removes host display/session addresses from the daemon environment, and uses
+only explicitly named connections to its own bus. They prove exact-owner
+asynchronous inventory reads, replacement and stale-reply fences, dirty-read
+coalescing, stop suppression, resident name/object registration, typed
+unavailable errors, `Changed`, deadline fire/re-arm, and teardown. They do not
+open a compositor or display and are not KWin output-management evidence.
 
 D0 owns the development-only compositor inventory/hotplug seam. The current D2
 foundation owns resident read/service lineage and injected transaction

@@ -5,6 +5,7 @@
 #include <qindaqt/services/display_protocol/display_limits.h>
 #include <qindaqt/services/display_protocol/display_validation.h>
 
+#include <QtCore/QCryptographicHash>
 #include <QtCore/QSet>
 
 #include <limits>
@@ -114,6 +115,15 @@ DisplayTransaction::CommandResult unavailableCommand()
             .transactionId = {}};
 }
 
+QString publicEpoch(const QString &restartSeed, const quint64 machineLineage)
+{
+    const QByteArray digest = QCryptographicHash::hash(
+        restartSeed.toUtf8(), QCryptographicHash::Sha256).toHex();
+    return QStringLiteral("d2:%1:%2")
+        .arg(machineLineage)
+        .arg(QString::fromLatin1(digest));
+}
+
 } // namespace
 
 DisplayServiceModel::DisplayServiceModel(DisplayTransaction::MonotonicClock &clock,
@@ -171,18 +181,12 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
                 .reasonCode = QStringLiteral("missing-epoch-factory"),
                 .stateChanged = false};
     }
-    const QString epoch = m_epochFactory();
-    if (!m_lastEpoch.isEmpty() && epoch == m_lastEpoch) {
+    const QString restartSeed = m_epochFactory();
+    if (!Display::isBoundedText(restartSeed,
+                                Display::kMaxServiceEpochUtf8Bytes)) {
         return {.status = InventoryObservationStatus::Rejected,
                 .error = InventoryError::ProjectionFailure,
-                .reasonCode = QStringLiteral("reused-service-epoch"),
-                .stateChanged = false};
-    }
-    const InventoryProjectionResult projection = projectInventory(frame, epoch);
-    if (!projection.accepted()) {
-        return {.status = InventoryObservationStatus::Rejected,
-                .error = projection.error,
-                .reasonCode = projection.reasonCode,
+                .reasonCode = QStringLiteral("invalid-service-epoch-seed"),
                 .stateChanged = false};
     }
     if (m_machineLineage == std::numeric_limits<quint64>::max()) {
@@ -191,8 +195,17 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
                 .reasonCode = QStringLiteral("machine-lineage-exhausted"),
                 .stateChanged = false};
     }
-    ++m_machineLineage;
-    m_port.beginMachineLineage(m_machineLineage);
+    const quint64 nextMachineLineage = m_machineLineage + 1;
+    const QString epoch = publicEpoch(restartSeed, nextMachineLineage);
+    // AGENT-GUARD: Never expose the raw seed or omit the process lineage. A
+    // bounded A/B/A factory sequence must not recreate the first public fence.
+    const InventoryProjectionResult projection = projectInventory(frame, epoch);
+    if (!projection.accepted()) {
+        return {.status = InventoryObservationStatus::Rejected,
+                .error = projection.error,
+                .reasonCode = projection.reasonCode,
+                .stateChanged = false};
+    }
 
     auto machine = std::make_unique<DisplayTransaction::Machine>(m_clock, m_port,
                                                                  m_timing);
@@ -204,10 +217,12 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
                 .reasonCode = QStringLiteral("transaction-initialization-failed"),
                 .stateChanged = false};
     }
+    m_machineLineage = nextMachineLineage;
+    m_port.beginMachineLineage(m_machineLineage);
     m_machine = std::move(machine);
     m_frame = frame;
     m_sourceOwner = frame.uniqueOwner;
-    m_lastEpoch = epoch;
+    m_serviceEpoch = epoch;
     return {.status = InventoryObservationStatus::AcceptedNewLineage,
             .error = InventoryError::None,
             .reasonCode = {},
@@ -259,7 +274,7 @@ InventoryObservationResult DisplayServiceModel::observeInventory(
     }
 
     const InventoryProjectionResult projection =
-        projectInventory(frame, m_lastEpoch);
+        projectInventory(frame, m_serviceEpoch);
     if (!projection.accepted()) {
         return {.status = InventoryObservationStatus::Rejected,
                 .error = projection.error,

@@ -35,12 +35,15 @@ public:
     // The resident takes exclusive ownership of all ports and the clock. It
     // destroys the D1 model before those dependencies, unregisters its bus
     // name/object before destruction, and confines every callback to the
-    // constructing Qt thread. The named connection must remain registered.
+    // constructing Qt thread. Timing is copied into the model; the named
+    // connection must remain registered.
     ResidentDisplayService(std::unique_ptr<InventorySource> inventorySource,
                            std::unique_ptr<TransactionPort> transactionPort,
                            std::unique_ptr<DisplayTransaction::MonotonicClock> clock,
                            EpochFactory epochFactory, const QDBusConnection &connection,
-                           QString serviceName = {}, QObject *parent = nullptr);
+                           QString serviceName = {},
+                           DisplayTransaction::Timing timing = {},
+                           QObject *parent = nullptr);
     ~ResidentDisplayService() override;
 
     [[nodiscard]] ServiceStartStatus start();
