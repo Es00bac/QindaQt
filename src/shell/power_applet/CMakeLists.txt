@@ -1,12 +1,8 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-# Presentation-only Power applet model. AGENT-NOTE: this directory is a
-# worker-owned P1 candidate and is not yet wired into the build. Integration
-# requires exactly one additive line `add_subdirectory(shell/power_applet)`
-# in src/CMakeLists.txt guarded like the existing shell subdirectories, plus
-# the QML/registry seams listed in the P1 handoff. Do not add product code
-# here that reaches beyond public PB-0 values (power_protocol,
-# brightness_model) and Qt Core.
+# Presentation-only Power applet model. AGENT-NOTE: pure presentation projection
+# and request state machine. Do not add product code here that reaches beyond
+# public PB-0 values (power_protocol, brightness_model) and Qt Core.
 
 qt_add_library(qindaqt_shell_power_applet STATIC)
 add_library(QindaQt::ShellPowerApplet ALIAS qindaqt_shell_power_applet)

@@ -1,9 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# AGENT-NOTE: worker-owned P1 candidate; not yet wired into tests/CMakeLists.txt.
-# Integration is one additive `add_subdirectory(shell/power_applet)` line there
-# plus the manager's registry seams named in the P1 handoff.
-
 qt_add_executable(qindaqt_power_applet_presentation_tests
                   tst_power_applet_presentation.cpp)
 target_link_libraries(
