@@ -119,6 +119,22 @@ TerminalWindow::TerminalWindow(std::unique_ptr<TerminalSession> session,
 
 TerminalWindow::~TerminalWindow() = default;
 
+void TerminalWindow::prepareApplicationQuitFlow(QGuiApplication &application) {
+  // AGENT-GUARD: Flipping this single Qt default is what keeps window close
+  // from terminating the event loop during the bounded teardown escalation.
+  // Idempotent by design; the regression row documents that Qt's default is
+  // true so the flip can never silently become a no-op.
+  application.setQuitOnLastWindowClosed(false);
+}
+
+void TerminalWindow::connectQuitAfterCloseShutdown(
+    QCoreApplication &application) const {
+  // The queued connection is deliberate: quit must observe the session's
+  // terminal state, not merely the close intent.
+  QObject::connect(this, &TerminalWindow::closeShutdownFinished, &application,
+                   &QCoreApplication::quit, Qt::QueuedConnection);
+}
+
 void TerminalWindow::buildActions() {
   const auto addTerminalAction = [this](QAction **action,
                                         const QString &objectName,
@@ -162,7 +178,10 @@ void TerminalWindow::buildActions() {
                     QStringLiteral("Close the session and quit"));
 
   connect(m_restartAction, &QAction::triggered, this, [this] {
-    m_session->restart();
+    // A rejected restart has already published its typed failure through
+    // sessionFinished, which the status bar renders; the boolean is the
+    // running-state answer only.
+    static_cast<void>(m_session->restart());
   });
   connect(m_copyAction, &QAction::triggered, this,
           [this] { m_session->copySelectionToClipboard(); });
@@ -235,8 +254,17 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
     text = QStringLiteral("Session running");
     break;
   case TerminalSession::State::Exited:
-    // Exit detail comes from showExitStatus; keep the state line minimal.
-    text = QStringLiteral("Session ended");
+    // AGENT-GUARD: The typed exit status and the Exited state arrive in the
+    // same tick (publishExit runs before setState). Rendering the generic
+    // state text here would overwrite the code/signal/start-failure detail
+    // before the user can read it, so the exit detail is the Exited state's
+    // visible text.
+    if (m_session->lastExit().kind == TerminalExitStatus::Kind::None) {
+      text = QStringLiteral("Session ended");
+    } else {
+      showExitStatus(m_session->lastExit());
+      return;
+    }
     break;
   case TerminalSession::State::ShuttingDown:
     text = QStringLiteral("Closing session…");
@@ -252,6 +280,10 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
     m_statusLabel->setText(text);
     m_statusLabel->setPalette(
         m_appearance.windowPalette); // Neutral states use window palette.
+    // NF-T5: every visible text change must also update the screen-reader
+    // name; showExitStatus does the same for exit severities.
+    m_statusLabel->setAccessibleName(
+        QStringLiteral("Session status: %1").arg(text));
   }
 }
 

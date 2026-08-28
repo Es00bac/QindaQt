@@ -5,6 +5,8 @@
 #include "session/terminal_session_types.h"
 #include "ui/terminal_appearance.h"
 
+#include <QCoreApplication>
+#include <QGuiApplication>
 #include <QLabel>
 #include <QMainWindow>
 #include <QVBoxLayout>
@@ -29,6 +31,22 @@ public:
                           const TerminalViewAppearance &appearance,
                           QWidget *parent = nullptr);
   ~TerminalWindow() override;
+
+  // AGENT-CONTRACT: This is the application wiring seam for teardown-first
+  // quit, and main() must call it before the first window is shown. Qt's
+  // quitOnLastWindowClosed default is true; closing the terminal window
+  // hides it while the bounded session escalation is still running, so the
+  // default would end the event loop before a single escalation tick and
+  // orphan any SIGHUP-immune child. The only permitted quit path is
+  // connectQuitAfterCloseShutdown(), which fires strictly after the session
+  // reached a terminal state. See docs/wiki/apps/terminal.md. The property
+  // is owned by QGuiApplication (QApplication inherits it), not the base
+  // QCoreApplication, hence the parameter type.
+  static void prepareApplicationQuitFlow(QGuiApplication &application);
+
+  // Connects closeShutdownFinished -> QCoreApplication::quit as a queued
+  // connection. Never call quit from any other path.
+  void connectQuitAfterCloseShutdown(QCoreApplication &application) const;
 
   [[nodiscard]] TerminalSession *session() const { return m_session.get(); }
 

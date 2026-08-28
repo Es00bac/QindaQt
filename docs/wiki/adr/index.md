@@ -43,7 +43,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0033](0033-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
 | [ADR-0032](0032-status-notifier-exact-owner-foundation.md) | Accepted | Key the status-notifier tray on exact unique-name owners |
 | [ADR-0047](0047-pure-font-catalog-and-preference-boundary.md) | Accepted | Pure Font F0 catalog, preference, and bootstrap boundary |
-| [ADR-0028](0028-confine-qtermwidget-behind-terminal-adapter.md) | Proposed | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
+| [ADR-0028](0028-confine-qtermwidget-behind-terminal-adapter.md) | Accepted | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

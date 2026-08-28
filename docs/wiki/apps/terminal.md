@@ -27,10 +27,13 @@ never be mistaken for shell-string syntax.
 The child environment is derived, not inherited blindly. Entries with
 malformed keys, newline-bearing values, or oversized entries are dropped, never
 repaired. `TERM=xterm-256color` and `COLORTERM=truecolor` are always forced;
-inherited values for those names never pass through. When no inherited
-`LC_ALL`/`LC_CTYPE`/`LANG` selects a UTF-8 codeset, the policy appends
-`LANG=C.UTF-8`, because the rendering layer decodes child bytes as UTF-8 and a
-non-UTF-8 child locale would otherwise be rendered wrong.
+inherited values for those names never pass through. The effective character
+set follows libc locale precedence `LC_ALL` > `LC_CTYPE` > `LANG`: the first
+variable present in that order must select UTF-8, and when it does not, the
+policy replaces exactly that variable with `C.UTF-8` (when none is present,
+`LANG=C.UTF-8` is appended). A UTF-8 `LANG` therefore cannot mask a non-UTF-8
+`LC_ALL`, because the rendering layer decodes child bytes as UTF-8 and a
+non-UTF-8 effective child locale would be rendered wrong.
 
 ## Session lifecycle, exit truth, and teardown guarantee
 
@@ -56,9 +59,13 @@ Teardown is a bounded escalation, not a hope:
    failure honestly; `start()` refuses to replace that generation.
 
 Window close hides the window, runs the escalation, and only then quits the
-application, so a surviving child can never be orphaned by an early exit.
-Bounds are injected values (default close 3 s, term 1 s, kill 1 s; 20 ms poll)
-which makes the sequence deterministic in tests.
+application, so a surviving child can never be orphaned by an early exit. The
+application wiring disables Qt's quit-on-last-window-closed default before the
+first window is shown — hiding the only window must not end the event loop
+while the escalation is running — and the sole quit path is a queued
+connection from the session's terminal state. Bounds are injected values
+(default close 3 s, term 1 s, kill 1 s; 20 ms poll) which makes the sequence
+deterministic in tests.
 
 ## Rendering adapter boundary
 
@@ -66,7 +73,7 @@ which makes the sequence deterministic in tests.
 module gains its headers, and tests never link it. The adapter consumes the
 upstream teletype contract pinned by ADR-0028: the widget owns the PTY master,
 emulation, scrollback, selection, and resize (`TIOCSWINSZ`); the adapter owns
-fork/exec, reaping, keyboard forwarding through a bounded (64 KiB) drop-oldest
+fork/exec, reaping, keyboard forwarding through a bounded (64 KiB) drop-newest
 buffer, and view disposal. `qindaqt-terminal` links the adapter; the support
 library with policy, session, and presentation links Qt and QST only, making
 the boundary enforceable at link time.
@@ -124,12 +131,16 @@ The focused selector is:
 ctest --test-dir build/dev -R '^qindaqt\.terminal-' --output-on-failure
 ```
 
-It covers hostile program/argument/environment resolution, UTF-8 locale
-fallback, forced `TERM`/`COLORTERM`, real metadata-based executable checks,
+It covers hostile program/argument/environment resolution, effective UTF-8
+locale precedence, forced `TERM`/`COLORTERM`, real metadata-based executable
+checks,
 the session state machine (typed start failures, exit-code versus signal
 publication, duplicate-exit suppression), the teardown escalation sequence
-including refusal to replace an unkillable generation, restart generation
-replacement, view-disposal ordering, window action identity and
+including refusal to replace an unkillable generation, forced destruction of
+a mid-shutdown session, restart generation replacement,
+view-disposal ordering, the close/quit wiring contract (the
+quit-on-last-window-closed flip, no early `aboutToQuit`, and the main-source
+wiring binding), window action identity and
 readline-safe shortcuts, exit-status severity rendering, accessibility and
 focus metadata, hostile-resize clamping, QST scheme documents for all five
 themes, desktop metadata, positional-argument rejection, and staged installed
@@ -149,6 +160,9 @@ and PSS measurements, and any nested-display interaction.
 - Search, OSC-8 hyperlinks, click-to-open, and link tooltips stay disabled.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no
   rendering-performance claim is made.
+- Concurrent Terminal instances share one QST scheme file in the cache
+  location; the document is launch-policy-identical for identical settings,
+  and per-instance namespacing is deferred to a later slice.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - A QindaQt-branded icon and global-menu export wait for later branding and

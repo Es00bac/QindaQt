@@ -1,6 +1,6 @@
 # ADR-0028: Confine qtermwidget6 behind the Terminal rendering adapter
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-28
 - **Owners:** Terminal application (`src/apps/terminal`)
 - **Supersedes:** None
@@ -53,7 +53,14 @@ process group).
 
 The dependency is mandatory for the terminal target and additive for the
 repository: modules outside `src/apps/terminal` gain no qtermwidget include
-paths, and tests use fake backends so they do not link the library.
+paths, and tests use fake backends so they do not link the library. The
+build enforces the audited series fail-closed with
+`find_package(qtermwidget6 2.4...<2.5 REQUIRED)`: upstream publishes
+`AnyNewerVersion` config version files, so the exclusive range rejects an
+unaudited 2.5+ at configure time. Acceptance records that the project
+commits to this dependency for the Terminal application; the dependency
+itself was not provisioned on the authoring host, so executable evidence
+remains the serialized compiler lane's responsibility.
 
 ## Consequences
 

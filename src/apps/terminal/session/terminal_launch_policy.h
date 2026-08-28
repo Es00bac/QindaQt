@@ -62,10 +62,16 @@ public:
 
   // Builds the complete child environment from KEY=VALUE pairs. Entries with
   // malformed keys, newline-bearing values, or oversized entries are dropped,
-  // never repaired; TERM and COLORTERM are forced to the policy values; and a
-  // UTF-8 locale is guaranteed by appending LANG=C.UTF-8 when no inherited
-  // LC_ALL/LC_CTYPE/LANG already selects a UTF-8 codeset. Hostile input can
-  // only shrink the environment, never inject an entry.
+  // never repaired; TERM and COLORTERM are forced to the policy values.
+  //
+  // AGENT-CONTRACT: The child's effective character-set locale follows libc
+  // precedence LC_ALL > LC_CTYPE > LANG. The rendering layer decodes child
+  // bytes as UTF-8 (ADR-0028), so the first locale variable present in that
+  // precedence order must select UTF-8: when it does not, exactly that
+  // variable is replaced with LANG's policy fallback value, and when none is
+  // present LANG=C.UTF-8 is appended. Hostile input can only shrink or
+  // normalize the environment, never inject an entry, and the effective
+  // UTF-8 outcome is what tests assert.
   [[nodiscard]] static EnvironmentResolution
   childEnvironment(const QStringList &baseEnvironment);
 

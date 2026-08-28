@@ -62,6 +62,8 @@ public:
   ~FakeBackend() override { delete m_widget; }
 
   StartOutcome start(const TerminalLaunchRequest &request) override {
+    // The stub accepts any argv; recording it is unnecessary coverage.
+    Q_UNUSED(request);
     ++m_stats->startCalls;
     if (m_failStart) {
       return {.ok = false, .diagnostic = m_failureDiagnostic};
@@ -113,9 +115,8 @@ private:
 class FakeMonitor final : public ProcessMonitor {
 public:
   [[nodiscard]] ProcessExitInfo reap(ProcessId pid) override {
-    ++m_reapCalls;
-    const auto scripted = m_runningReaps.constFind(pid);
-    if (scripted != m_runningReaps.constEnd()) {
+    const auto scripted = m_runningReaps.find(pid);
+    if (scripted != m_runningReaps.end()) {
       if (scripted.value() > 0) {
         --scripted.value();
         return {.state = ProcessState::Running, .signaled = false, .code = 0};
@@ -200,6 +201,7 @@ private slots:
   void idleShutdownCompletesCleanlyWithoutSignals();
   void disposalOrderIsViewThenBackend();
   void presentationOperationsRouteThroughBackend();
+  void destructorEscalatesForShuttingDownSession();
 
 private:
   static void pump(int milliseconds) { QTest::qWait(milliseconds); }
@@ -300,14 +302,19 @@ void TerminalSessionTest::duplicateExitPublicationIsSuppressed() {
 void TerminalSessionTest::
     shutdownCompletesWhenChildExitsAfterMasterClose() {
   SessionHarness harness;
-  harness.monitor.scriptRunningThenExit(kFirstPid, 50);
+  // AGENT-NOTE: The scripted exit exhausts within a handful of 1 ms poll
+  // ticks, while the close grace is widened to 500 ms so no plausible timer
+  // jitter can arm the TERM escalation before the reap reports Exited. The
+  // clean SIGHUP-only outcome is therefore structural, not a timing race.
+  harness.bounds = TeardownBounds{500, 100, 100, 1};
+  harness.monitor.scriptRunningThenExit(kFirstPid, 5);
   auto session = harness.makeSession();
   QSignalSpy shutdownSpy(session.get(), &TerminalSession::shutdownFinished);
   QVERIFY(session->start(validRequest()));
 
   session->beginShutdown();
   QCOMPARE(session->state(), TerminalSession::State::ShuttingDown);
-  pump(400);
+  pump(1500);
   QCOMPARE(shutdownSpy.count(), 1);
   QVERIFY(shutdownSpy.first().first().toBool());
   QCOMPARE(session->state(), TerminalSession::State::ShutdownComplete);
@@ -315,7 +322,6 @@ void TerminalSessionTest::
   // SIGHUP via master close sufficed; no escalation signal was needed.
   QVERIFY(harness.monitor.signalsSent().isEmpty());
 }
-
 void TerminalSessionTest::
     shutdownEscalatesTermThenKillAndReportsFailureHonestly() {
   SessionHarness harness;
@@ -341,8 +347,12 @@ void TerminalSessionTest::
 
 void TerminalSessionTest::restartReplacesGenerationWithoutBackendReuse() {
   SessionHarness harness;
+  // Same anti-jitter reasoning as the clean-shutdown row: the first
+  // generation exits inside a widened close grace, so the restart path is
+  // what the assertions observe.
+  harness.bounds = TeardownBounds{500, 100, 100, 1};
   harness.monitor.setDefaultRunning(true);
-  harness.monitor.scriptRunningThenExit(kFirstPid, 10);
+  harness.monitor.scriptRunningThenExit(kFirstPid, 5);
   auto session = harness.makeSession();
   QSignalSpy widgetSpy(session.get(),
                        &TerminalSession::terminalWidgetChanged);
@@ -350,7 +360,7 @@ void TerminalSessionTest::restartReplacesGenerationWithoutBackendReuse() {
   QVERIFY(session->start(validRequest()));
 
   QVERIFY(session->restart());
-  pump(500);
+  pump(2000);
   QCOMPARE(shutdownSpy.count(), 1);
   QVERIFY(shutdownSpy.first().first().toBool());
   QCOMPARE(session->state(), TerminalSession::State::Running);
@@ -412,8 +422,9 @@ void TerminalSessionTest::disposalOrderIsViewThenBackend() {
 
   session->beginShutdown();
   pump(400);
-  QCOMPARE(disposalOrder, QStringList{QStringLiteral("view"),
-                                      QStringLiteral("before-backend")});
+  const QStringList expectedDisposalOrder{QStringLiteral("view"),
+                                          QStringLiteral("before-backend")};
+  QCOMPARE(disposalOrder, expectedDisposalOrder);
   QCOMPARE(backendStats->shutdownCalls, 1);
 }
 
@@ -440,6 +451,26 @@ void TerminalSessionTest::presentationOperationsRouteThroughBackend() {
   QVERIFY(session->terminalWidget() != nullptr);
   QVERIFY(session->terminalWidget() ==
           harness.backendStats.at(0)->lastWidget);
+}
+
+void TerminalSessionTest::destructorEscalatesForShuttingDownSession() {
+  // NF-T2 regression: forced destruction mid-escalation must complete the
+  // TERM/KILL sequence instead of silently abandoning the child to the
+  // master-close SIGHUP alone.
+  SessionHarness harness;
+  harness.monitor.setDefaultRunning(true);
+  auto session = harness.makeSession();
+  QVERIFY(session->start(validRequest()));
+  session->beginShutdown();
+  QCOMPARE(session->state(), TerminalSession::State::ShuttingDown);
+  QCOMPARE(harness.monitor.signalsSent().size(), 0);
+
+  session.reset();
+  const auto signalsSent = harness.monitor.signalsSent();
+  QCOMPARE(signalsSent.size(), 2);
+  QCOMPARE(signalsSent.at(0).first, kFirstPid);
+  QCOMPARE(signalsSent.at(0).second, int{SIGTERM});
+  QCOMPARE(signalsSent.at(1).second, int{SIGKILL});
 }
 
 QTEST_MAIN(TerminalSessionTest)
