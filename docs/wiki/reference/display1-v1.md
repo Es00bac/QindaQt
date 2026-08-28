@@ -7,6 +7,10 @@ configuration. `display_service` now owns the activated
 `org.qindaqt.Display1` process at `/org/qindaqt/Display1`, reads the integrated
 D0 inventory through an exact-owner adapter, and composes D1 through injected
 ports. Its packaged mutation port remains unavailable and fail-closed.
+The separate D4 [display writer](../architecture/display-writer.md) now maps
+those injected apply values onto a direct public-protocol seam, but is not yet
+composed into the executable because the durable transaction dependencies and
+nested convergence proof remain incomplete.
 
 The authority and dependency rules are in
 [Display service](../architecture/display-service.md),
@@ -407,11 +411,15 @@ qualification.
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
 | Exact-owner async inventory transport | `qindaqt.display-service-inventory-private-bus`: disposable private bus/root, exact-owner read, dirty coalescing, replacement/unavailable, stale-reply rejection, and stop suppression |
 | Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation` and its confirmation clear, and name/object/port teardown on the same disposable bus |
+| D4 writer mapping and serialization | `qindaqt.display-writer-mapper`, `qindaqt.display-writer-port`: exact connector/current-mode translation, structural mutation rejection, exactly-one-in-flight machine/token/request/owner fencing, timeout/stop/lineage loss, hostile synchronous completion, and late-reply suppression |
+| D4 writer boundary/package poison | `qindaqt.display-writer-boundary`, `qindaqt.display-writer-boundary-poison`, `qindaqt.display-writer-installed-boundary-poison`: pinned protocol XML, no private/platform dependency in public headers, staged installed-header consumer, and non-vacuous negative probes |
 
 The D2 service-focused rows add deterministic decoder/projection, owner and
 generation collision, loss/reset, add/remove/change, transaction-port,
 descriptor, staged-install, and public-header-consumer evidence plus isolated
-private-D-Bus source/resident/timer lifecycle proof. They still do not exercise
-a compositor or display. Nested KWin output-management, restart recovery,
-mirror visibility, and physical output rows remain later D2/D8 work in the
+private-D-Bus source/resident/timer lifecycle proof. D4 adds compiled direct
+protocol code, pure mapping, serialization/fence, package, and poison evidence.
+These rows still do not exercise a compositor or display. Nested KWin
+output-management, restart recovery, mirror visibility, and physical output
+rows remain later work in the
 [testing harness](../development/testing-harness.md).

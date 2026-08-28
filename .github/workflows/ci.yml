@@ -73,6 +73,7 @@ jobs:
             python \
             qt6-base \
             qt6-declarative \
+            qt6-wayland \
             qtermwidget
 
       - uses: actions/checkout@v4
@@ -80,7 +81,7 @@ jobs:
       - name: Record dependency versions
         run: >-
           pacman -Q cmake extra-cmake-modules kdecoration qtermwidget
-          qt6-base qt6-declarative
+          qt6-base qt6-declarative qt6-wayland
 
       - name: Configure
         run: >-

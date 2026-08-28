@@ -1124,6 +1124,33 @@ mutation evidence. It opens no display and does not qualify the public writer,
 durable journal, Settings display UI, nested convergence, physical hardware,
 or resource budget.
 
+## D4 bounded public-protocol writer
+
+The D4 writer rows are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-writer'
+```
+
+Debug and Release compile the exact vendored KDE output-device-v2 and
+output-management-v2 client code. The mapper/configuration row mutates
+identity, current-mode, scale, transform, primary, priority, and replication
+fields. The serialized-port row proves one request, machine/token/request/
+owner fencing, hostile synchronous completion, owner and machine-lineage
+replacement, timeout, stop, concurrency, and late/duplicate suppression. The
+boundary rows pin both XML checksums, build a staged consumer from only the
+installed public writer headers, reject a planted private installed header,
+and prove the source checker rejects a planted platform include.
+
+These are deterministic, compile-time, and package-boundary facts. They open
+no display and make no KWin convergence claim. The production executable also
+remains deliberately unwired until durable journal and session/recovery
+dependencies are present. A later contained row must start a private nested
+KWin, apply through this exact public-protocol adapter, observe callback before
+device truth, prove target and rollback convergence, fence hotplug/restart, and
+tear down without any inherited host display or configuration path.
+
 ## Contained interactive virtual desktop S0+S1
 
 The first whole-desktop harness boundary is selected with:
