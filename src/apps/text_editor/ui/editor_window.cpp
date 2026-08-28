@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "editor_window.h"
 
+#include "app_shell/editor_action_catalog.h"
+#include "app_shell/native_file_selection_adapter.h"
+
 #include <QAccessible>
 #include <QAccessibleAnnouncementEvent>
 #include <QAction>
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QKeySequence>
@@ -34,11 +36,18 @@ namespace {
 
 } // namespace
 
-EditorWindow::EditorWindow(DocumentStorePtr store, EditorAppearance appearance,
-                           QWidget *parent)
+EditorWindow::EditorWindow(
+    DocumentStorePtr store, EditorAppearance appearance,
+    std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter,
+    QWidget *parent)
     : QMainWindow(parent),
       m_controller(new DocumentController(std::move(store), this)),
-      m_appearance(std::move(appearance)) {
+      m_appearance(std::move(appearance)),
+      m_appShellBridge(fileSelectionAdapter
+                           ? std::move(fileSelectionAdapter)
+                           : std::make_unique<NativeFileSelectionAdapter>(
+                                 this),
+                       this) {
   setObjectName(QStringLiteral("qindaqtEditorWindow"));
   setAccessibleName(tr("QindaQt Text Editor"));
   resize(920, 680);
@@ -46,6 +55,7 @@ EditorWindow::EditorWindow(DocumentStorePtr store, EditorAppearance appearance,
   createCentralSurface();
   createActions();
   createMenus();
+  publishAppShellProjection();
   connectState();
   applyAppearance();
   updateDocumentPresentation();
@@ -54,6 +64,9 @@ EditorWindow::EditorWindow(DocumentStorePtr store, EditorAppearance appearance,
 
 DocumentController *EditorWindow::controller() const { return m_controller; }
 QPlainTextEdit *EditorWindow::editor() const { return m_editor; }
+QindaQt::AppShell::ApplicationCoordinator &EditorWindow::appShellCoordinator() {
+  return m_appShellBridge.coordinator();
+}
 
 void EditorWindow::createCentralSurface() {
   auto *surface = new QWidget(this);
@@ -173,6 +186,23 @@ void EditorWindow::createActions() {
   connect(QApplication::clipboard(), &QClipboard::dataChanged,
           m_actions.editPaste,
           [this] { m_actions.editPaste->setEnabled(m_editor->canPaste()); });
+
+  m_appShellActionIds = {
+      {QString::fromLatin1(AppShellActionIds::FileNew), m_actions.fileNew},
+      {QString::fromLatin1(AppShellActionIds::FileOpen), m_actions.fileOpen},
+      {QString::fromLatin1(AppShellActionIds::FileSave), m_actions.fileSave},
+      {QString::fromLatin1(AppShellActionIds::FileSaveAs),
+       m_actions.fileSaveAs},
+      {QString::fromLatin1(AppShellActionIds::FileQuit), m_actions.fileQuit},
+      {QString::fromLatin1(AppShellActionIds::EditUndo), m_actions.editUndo},
+      {QString::fromLatin1(AppShellActionIds::EditRedo), m_actions.editRedo},
+      {QString::fromLatin1(AppShellActionIds::EditCut), m_actions.editCut},
+      {QString::fromLatin1(AppShellActionIds::EditCopy), m_actions.editCopy},
+      {QString::fromLatin1(AppShellActionIds::EditPaste),
+       m_actions.editPaste},
+      {QString::fromLatin1(AppShellActionIds::EditSelectAll),
+       m_actions.editSelectAll},
+  };
 }
 
 void EditorWindow::createMenus() {
@@ -196,6 +226,21 @@ void EditorWindow::createMenus() {
   editMenu->addAction(m_actions.editPaste);
   editMenu->addSeparator();
   editMenu->addAction(m_actions.editSelectAll);
+}
+
+void EditorWindow::publishAppShellProjection() {
+  // AGENT-GUARD: This must run after createActions() so the local QAction
+  // enabled states below are already settled, and before any presentation
+  // update runs, so the published snapshot never lags the visible menu.
+  const QindaQt::AppShell::Error published =
+      m_appShellBridge.publishActionCatalog();
+  Q_ASSERT(published.ok());
+  Q_UNUSED(published);
+  for (auto it = m_appShellActionIds.cbegin(); it != m_appShellActionIds.cend();
+       ++it) {
+    (void)m_appShellBridge.setActionEnabled(it.key(), it.value()->isEnabled());
+  }
+  m_appShellBridge.bindActivationTargets(m_appShellActionIds);
 }
 
 void EditorWindow::connectState() {
@@ -231,6 +276,24 @@ void EditorWindow::connectState() {
           &EditorWindow::reloadInteractively);
   connect(m_saveAsButton, &QPushButton::clicked, this,
           [this] { (void)saveAsInteractively(); });
+
+  for (auto it = m_appShellActionIds.cbegin(); it != m_appShellActionIds.cend();
+       ++it) {
+    connect(it.value(), &QAction::enabledChanged, this,
+            [this, id = it.key()](bool enabled) {
+              (void)m_appShellBridge.setActionEnabled(id, enabled);
+            });
+  }
+  connect(&m_appShellBridge.coordinator(),
+          &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
+          this, [this](quint64 requestId, const QString &) {
+            (void)m_appShellBridge.coordinator().resolveQuit(
+                requestId,
+                confirmDiscardOrSave() == PendingAction::Continue);
+          });
+  connect(&m_appShellBridge.coordinator(),
+          &QindaQt::AppShell::ApplicationCoordinator::quitApproved, this,
+          [this](quint64) { m_pendingCloseApproved = true; });
 }
 
 void EditorWindow::applyAppearance() {
@@ -362,16 +425,20 @@ bool EditorWindow::saveInteractively() {
 }
 
 bool EditorWindow::saveAsInteractively() {
-  const QString initial = m_controller->state().isUntitled()
-                              ? QString()
-                              : m_controller->state().path();
-  const QString path = QFileDialog::getSaveFileName(
-      this, tr("Save text document"), initial, tr("All files (*)"));
-  if (path.isEmpty()) {
+  // AGENT-CONTRACT: File selection is mediated by AppShell's fail-closed
+  // portal request (docs/wiki/apps/application-shell.md), so the suggested
+  // name is a bare base name rather than a full initial path.
+  const QString suggestedName =
+      m_controller->state().isUntitled()
+          ? QString()
+          : QFileInfo(m_controller->state().path()).fileName();
+  const std::optional<QString> path =
+      m_appShellBridge.requestSaveFile(suggestedName);
+  if (!path) {
     return false;
   }
 
-  DocumentOperation result = m_controller->saveAs(path, false);
+  DocumentOperation result = m_controller->saveAs(*path, false);
   if (result.error == DocumentError::DestinationExists) {
     const auto answer = QMessageBox::question(
         this, tr("Replace existing file?"),
@@ -380,7 +447,7 @@ bool EditorWindow::saveAsInteractively() {
     if (answer != QMessageBox::Yes) {
       return false;
     }
-    result = m_controller->saveAs(path, true);
+    result = m_controller->saveAs(*path, true);
   }
   if (!result.ok()) {
     showOperationError(tr("Could not save document"), result);
@@ -393,12 +460,11 @@ void EditorWindow::openInteractively() {
   if (confirmDiscardOrSave() == PendingAction::Cancel) {
     return;
   }
-  const QString path = QFileDialog::getOpenFileName(
-      this, tr("Open text document"), {}, tr("All files (*)"));
-  if (path.isEmpty()) {
+  const std::optional<QString> path = m_appShellBridge.requestOpenFile();
+  if (!path) {
     return;
   }
-  const DocumentOperation result = m_controller->openPath(path);
+  const DocumentOperation result = m_controller->openPath(*path);
   if (!result.ok()) {
     showOperationError(tr("Could not open document"), result);
   }
@@ -429,7 +495,19 @@ void EditorWindow::showOperationError(const QString &title,
 }
 
 void EditorWindow::closeEvent(QCloseEvent *event) {
-  if (confirmDiscardOrSave() == PendingAction::Continue) {
+  // AGENT-GUARD: Close consent is mediated by AppShell's quit lifecycle
+  // (docs/wiki/apps/application-shell.md). requestQuit() synchronously emits
+  // quitDecisionRequested, whose connectState() handler runs
+  // confirmDiscardOrSave() and calls resolveQuit() before requestQuit()
+  // returns here — that nested resolveQuit() already clears the
+  // coordinator's pending ID, so requestQuit()'s own return value is stale
+  // by the time we see it and must not be used as the approval signal. Read
+  // the decision only from m_pendingCloseApproved, set by the quitApproved
+  // handler below.
+  m_pendingCloseApproved = false;
+  (void)m_appShellBridge.coordinator().requestQuit(
+      QStringLiteral("window-close"));
+  if (m_pendingCloseApproved) {
     event->accept();
   } else {
     event->ignore();

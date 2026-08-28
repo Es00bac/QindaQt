@@ -182,3 +182,12 @@ Settings1/session client composition, a global-menu exporter, compositor focus,
 live assistive technology, nested-session capture, or physical display/DPI.
 Those become later vertical slices using this boundary; they must not be
 claimed from the module tests alone.
+
+[QindaQt Text Editor](text-editor.md) is the first migrated first-party
+consumer: it publishes its File/Edit actions through `ActionRegistry`, routes
+close consent through `requestQuit`/`resolveQuit`, and mediates Open/Save As
+through a fail-closed-by-default `PortalRequest` adapter. Its
+[AppShell participation](text-editor.md#appshell-participation) section
+records the consumer-side contract and focused test row; a real portal
+backend, a global-menu exporter, and Settings/session hook composition remain
+separate, still-unqualified outcomes.

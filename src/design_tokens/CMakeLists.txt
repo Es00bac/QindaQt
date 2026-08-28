@@ -86,3 +86,16 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT SettingsAppearanceRuntime
 )
+
+# AGENT-CONTRACT: qindaqt_app_shell privately links QindaQt::TokensQml
+# (src/app_shell/CMakeLists.txt), and the Text Editor links qindaqt_app_shell
+# directly, so its narrow single-component staged install
+# (tests/apps/text_editor/run_installed_editor.cmake, --component TextEditor)
+# needs this shared library even though it does not use Settings Appearance's
+# own QML plugin. Additive per-consumer COMPONENT, added here because
+# src/design_tokens is not the Text Editor's owned path.
+install(
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+    COMPONENT TextEditor
+)

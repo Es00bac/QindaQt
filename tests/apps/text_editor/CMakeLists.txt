@@ -48,6 +48,19 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+qindaqt_add_editor_test(
+    qindaqt_editor_app_shell_tests
+    tst_editor_app_shell.cpp
+    qindaqt.editor-app-shell-offscreen
+)
+target_compile_definitions(
+    qindaqt_editor_app_shell_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+    qindaqt.editor-app-shell-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 add_test(
     NAME qindaqt.editor-desktop-metadata
     COMMAND "${CMAKE_COMMAND}"
