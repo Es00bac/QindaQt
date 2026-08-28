@@ -42,6 +42,7 @@ nav:
       - Customization editor domain: shell/customization-editor.md
       - Applet runtime: shell/applet-runtime.md
       - Audio applet: shell/audio-applet.md
+      - Clipboard applet: shell/clipboard-applet.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
