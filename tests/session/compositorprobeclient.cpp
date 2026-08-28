@@ -187,6 +187,13 @@ std::optional<QJsonArray> CompositorProbeClient::outputs(QString *error)
     return arrayReply(QStringLiteral("Outputs"), QLatin1StringView("outputs"), error);
 }
 
+std::optional<QJsonArray>
+CompositorProbeClient::developmentShellSurfaces(QString *error)
+{
+    return arrayReply(QStringLiteral("DevelopmentShellSurfaces"),
+                      QLatin1StringView("surfaces"), error);
+}
+
 std::optional<QJsonArray> CompositorProbeClient::containers(QString *error)
 {
     return arrayReply(QStringLiteral("Containers"), QLatin1StringView("containers"), error);

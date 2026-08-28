@@ -69,8 +69,16 @@ add_test(
     NAME session.nested-scenario-parser
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session_unit.py"
 )
+add_test(
+    NAME session.notification-live-driver-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
+)
 set_tests_properties(
     session.nested-scenario-parser
+    session.notification-live-driver-unit
     PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" LABELS unit
 )
 
@@ -83,6 +91,13 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/hybrid_pointer_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/host_input_consent.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/nested_session_scenario.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/notification_live_arguments.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/notification_live_outer.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/notification_live_process.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/notification_live_restart.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/notification_live_stage.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_notification_live_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session_unit.py"
@@ -94,6 +109,7 @@ add_test(
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
 find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session)
+find_program(QINDAQT_BUSCTL busctl)
 find_program(QINDAQT_KWIN_WAYLAND kwin_wayland)
 find_program(QINDAQT_XDPYINFO xdpyinfo)
 find_program(QINDAQT_XWAYLAND Xwayland)
@@ -230,6 +246,8 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
     endif()
 
     if(TARGET qindaqt_compositor)
+        include("${CMAKE_CURRENT_LIST_DIR}/NotificationLiveTests.cmake")
+
         qt_add_executable(
             qindaqt-plugin-unload-probe
             compositordevelopmentworkflow.h

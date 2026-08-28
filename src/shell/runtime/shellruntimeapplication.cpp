@@ -8,6 +8,7 @@
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
 #include "runtimepanelwindowfactory.h"
+#include "shelldevelopmentevidence.h"
 #include "settingsroutelauncher.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
@@ -355,6 +356,10 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             [this](QScreen *) { scheduleOutputReconcile(); });
     connect(&m_application, &QGuiApplication::primaryScreenChanged, this,
             [this](QScreen *) { scheduleOutputReconcile(); });
+    if (!startDevelopmentEvidence(options, error)) {
+        resetRuntime();
+        return false;
+    }
     return true;
 }
 
@@ -478,6 +483,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_outputDebounce.stop();
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();
+    m_shellDevelopmentEvidence.reset();
     m_notificationWindows.reset();
     m_settingsRouteLauncher.reset();
     m_quietingSettingsBridge.reset();

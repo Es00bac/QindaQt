@@ -42,6 +42,9 @@ void configureParser(QCommandLineParser &parser)
         {QStringLiteral("compositor-pid"),
          QStringLiteral("Expected compositor process id for authenticated session state."),
          QStringLiteral("pid")},
+        {QStringLiteral("development-evidence-predecessor-pid"),
+         QStringLiteral("Expected prior shell owner during a bounded development restart."),
+         QStringLiteral("pid")},
         {QStringLiteral("list"),
          QStringLiteral("List validated profiles, themes, and applets, then exit.")},
     });
@@ -60,17 +63,24 @@ RuntimeOptionsResult optionsFromParser(const QCommandLineParser &parser)
 {
     const QString tokenOption = QStringLiteral("presentation-token-fd");
     const QString compositorOption = QStringLiteral("compositor-pid");
+    const QString predecessorOption =
+        QStringLiteral("development-evidence-predecessor-pid");
     if (parser.values(tokenOption).size() > 1
-        || parser.values(compositorOption).size() > 1) {
+        || parser.values(compositorOption).size() > 1
+        || parser.values(predecessorOption).size() > 1) {
         return {{}, QStringLiteral("notification trust options must not be repeated")};
     }
     const bool hasTokenDescriptor = parser.isSet(tokenOption);
     const bool hasCompositorProcessId = parser.isSet(compositorOption);
+    const bool hasPredecessorProcessId = parser.isSet(predecessorOption);
     // AGENT-CONTRACT: The private presenter token and compositor lineage are a
     // single authority bundle. A partial bundle must not create a presenter or
     // a misleading lock-state trust anchor.
     if (hasTokenDescriptor != hasCompositorProcessId) {
         return {{}, QStringLiteral("presentation token descriptor and compositor pid must be supplied together")};
+    }
+    if (hasPredecessorProcessId && !hasTokenDescriptor) {
+        return {{}, QStringLiteral("development evidence predecessor requires the notification authority bundle")};
     }
 
     RuntimeOptions options;
@@ -100,6 +110,19 @@ RuntimeOptionsResult optionsFromParser(const QCommandLineParser &parser)
             return {{}, QStringLiteral("compositor pid must be a decimal integer greater than 1")};
         }
         options.compositorProcessId = processId;
+    }
+    if (hasPredecessorProcessId) {
+        bool valid = false;
+        const QString processIdText = parser.value(predecessorOption);
+        qint64 processId = 0;
+        if (isStrictDecimal(processIdText)) {
+            processId = processIdText.toLongLong(&valid, 10);
+        }
+        if (!valid || processId <= 1
+            || processId > std::numeric_limits<qint32>::max()) {
+            return {{}, QStringLiteral("development evidence predecessor pid must be a decimal integer greater than 1")};
+        }
+        options.developmentEvidencePredecessorProcessId = processId;
     }
     options.listOnly = parser.isSet(QStringLiteral("list"));
     return {options, {}};

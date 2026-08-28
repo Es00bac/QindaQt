@@ -309,7 +309,7 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.(notifications|notification-(host|presentation))-' \
   --output-on-failure
 ctest --test-dir build/dev \
-  -R '^qindaqt\.notification-(surface-layout|surfaces-offscreen)$' \
+  -R '^qindaqt\.notification-(surface-layout|surfaces-offscreen|focus-offscreen)$' \
   --output-on-failure
 ctest --test-dir build/dev \
   -R '^qindaqt\.notification-center-(entry|applet-offscreen)$' \
@@ -339,9 +339,11 @@ owner-change interruption, stale operation replies, and release. A real
 private-D-Bus test runs the Qt client against successive host owners and verifies
 resynchronization and action activation-token forwarding.
 `qindaqt.session-supervisor` proves the secret is absent from child arguments,
-both descriptor consumers start, one child's exit tears down its sibling, and
-second-child startup failure rolls back the first. These tests open no display
-and inject no input.
+both descriptor consumers start, the notification-host PID remains stable
+across exactly one shell PID replacement, the replacement uses the same
+non-secret compositor argument contract, a second shell exit tears down the
+host, replacement-start failure fails closed, and initial second-child startup
+failure rolls back the first. These tests open no display and inject no input.
 
 `qindaqt.notification-presentation-model` covers first-snapshot baselining
 without popup replay, new/replacement ordering, monotonic expiry, center-open
@@ -386,8 +388,9 @@ body/error rendering and busy control disabling, and keeps overflow actions
 plus Dismiss within a 400-pixel card. It also exercises the center's
 Settings1-backed accessible Do Not Disturb control without synthesizing input.
 At the planner's compact 384x284 result it also proves distinct English header
-controls, an explicit bidirectional focus chain, and bounded busy/error status
-geometry. Translated and right-to-left header layouts remain unqualified.
+controls, Qt Quick's natural bidirectional focus traversal, and bounded
+busy/error status geometry. Translated and right-to-left header layouts remain
+unqualified.
 
 `qindaqt.notification-center-entry` uses an injected shortcut registrar to
 cover the shell-private applet facade, stable action identity, default `Meta+N`
@@ -397,18 +400,124 @@ developer's shortcut registry. `qindaqt.notification-center-applet-offscreen`
 uses the software renderer to cover the disabled-without-facade fallback,
 accessible open/close labels, the narrow toggle request, read-only Do Not
 Disturb state and indicator, and the audited QML entry-point dispatcher.
-`qindaqt.notification-surfaces-offscreen` also covers
-the window-scoped Escape close route and a focusable initial target without
-activating a real surface. None of these tests opens a production surface or
-injects input.
+`qindaqt.notification-surfaces-offscreen` also covers the window-scoped Escape
+close route and a focusable initial target without activating a real surface.
+`qindaqt.notification-focus-offscreen` isolates the enabled natural focus
+cycle, including an action-bearing card and nonempty history, and verifies its
+inverse traversal plus the Qt Accessible roles/names of every required control.
+None of these tests opens a production surface or injects input.
 
-These presentation checks do not start a compositor or inject input. They are
-not evidence for real layer-role mapping, screen placement, visual baselines,
-focus transfer, keyboard navigation, assistive-technology behavior,
-KGlobalAccel registration/remapping or live dispatch, compositor acceptance of
-the center's activate-on-show request, multi-output migration, live Do Not
-Disturb or lock-transition interaction, persistence, sound, multi-seat or
-alternative-locker behavior, or live operation-result interaction.
+These focused presentation checks do not start a compositor or inject input.
+Their separate live counterpart is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^shell\.notification-live\.(1080p|wuxga|1440p|scale-125|scale-150)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
+  -R '^shell\.notification-live\.race-10x$' --output-on-failure
+```
+
+Each live row first installs into a uniquely named child of the active build
+tree and verifies the installed launcher, supervisor, notification host,
+Settings1 service and application, production shell, and exact KWin plugin
+artifact. It then creates a fresh temporary HOME/XDG tree and private
+`dbus-run-session`, with `DISPLAY` and `WAYLAND_DISPLAY` absent before starting
+the staged launcher. The driver refuses any inherited session bus/display and
+never reads or writes host KGlobalAccel state, user configuration, uinput, or
+the active seat. `dbus-run-session` and all nested descendants run in one new
+session/process group; the outer driver refuses its own PID/group as a cleanup
+target and boundedly terminates, kills, and checks disappearance of that exact
+group after success, failure, or timeout. All keys enter KWin through the
+explicit scenario-gated development input device. The settings-route action
+also receives the exact staged settings executable under this private boundary
+and starts it as a normal shell child. Production keeps detached application
+launching, while the live row can prove that no settings process escaped its
+disposable process group.
+
+The shell's only test observation endpoint is the read-only
+`org.qindaqt.ShellDevelopment1.Snapshot()` described by
+[ADR-0020](../adr/0020-authenticate-private-live-evidence.md). It registers only
+after the shell matches Compositor1's bus PID to the supervisor-provisioned
+KWin PID and observes live development-test capabilities. The harness matches
+the endpoint bus PID to the externally observed production shell PID. On the
+one allowed shell restart, the supervisor passes the exact predecessor PID only
+inside development mode; the replacement waits boundedly for only that owner's
+name release and uses D-Bus `DontQueueService`/`DontAllowReplacement`, so it can
+neither queue behind nor evict a competing owner. It joins
+that view with Compositor1 `DevelopmentShellSurfaces`, whose production gate
+rejects before inspecting KWin state and whose development result is restricted
+to the two notification scopes. The driver rejects duplicate roles and proves
+the exact mapped output, committed geometry, center activation, popup
+inactivity, initial focus, and every named forward/reverse focus transition.
+Each decoded shell snapshot must repeat the externally authenticated shell PID;
+a later response from a replacement process is rejected rather than reused.
+
+The primary phase requires private `org.kde.kglobalaccel` ownership by the
+exact nested KWin PID, then uses the real KF6 GlobalAccel registry for default
+`Meta+N`, intentional disablement, `Meta+Shift+N` remapping, old-binding
+non-dispatch, remapped dispatch, and default restoration. It exercises normal
+and critical freedesktop notifications, production DND interaction, Active and
+Recent retention, no replay, Settings routing, and Escape. Separate phases make
+the DND Settings1 transaction visibly Saving, force a confirmed persistence
+rejection, terminate the exact stopped private Settings1 PID to prove uncertain
+fail-quiet state, prove outage last-confirmed truth, and authenticate a fresh
+Settings1 owner. Notification-host action/dismiss busy/error counters are
+observation-only; this matrix does not add a mutation seam to manufacture a
+host operation rejection. Immediately before stopping Settings1, the probe
+re-resolves its bus PID, requires it to match the authenticated PID, requires
+its POSIX session ID to match the disposable driver, and checks every signal
+result. The outer driver applies the same immediate owner/PID/session check
+before terminating the first shell. A stale, recycled, or host-session PID is
+therefore a hard failure rather than a signal target.
+
+The lock phase calls the actual nested KScreenLocker object only after
+Compositor1 and both locker names resolve to one owner and the exact KWin PID.
+All subsequent `Lock()` and `GetActive()` calls address that authenticated
+unique owner directly, preventing a well-known-name ownership change between
+authentication and use.
+KScreenLocker 6.6.5 makes D-Bus `Lock()` immediate, so the harness first writes
+its exact `[Daemon] RequirePassword=false` setting inside the fresh temporary
+`XDG_CONFIG_HOME`. It validates that the resolved config path remains below the
+harness temp root and reads the file back before KWin launches; deletion is
+automatic with that root. This never reads or changes the host's locker
+configuration and never requests or injects a password. The exact contract is
+sourced from KScreenLocker tag `v6.6.5`:
+`settings/kscreenlockersettings.kcfg` defines the `kscreenlockerrc` file,
+`Daemon` group, and `RequirePassword` key; `interface.cpp` selects immediate
+locking for D-Bus callers; and `ksldapp.cpp` handles password-disabled user
+activity.
+It requires all popup, center, status, operation, and history projections to
+clear and remain clear, and a newly submitted critical item remains denied.
+The password-disabled private locker consumes the first development-device key
+as unlock activity, so this row deliberately does not mislabel a synthetic
+locked `Meta+N` as pre-unlock evidence. The item stays resident through the
+double-inactive unlock baseline and must return
+only to Active, never popup/history replay. Unlock activity still enters only
+through KWin's development input device. Finally the harness restarts
+Settings1 and shell independently, requires the notification-host PID to remain
+stable, requires a replacement shell PID and fresh evidence authentication,
+and rejects uncertain-write or notification replay. Before shell termination,
+it starts one private helper whose single D-Bus connection seeds and retains
+ownership of an ordinary host-resident record while DND is enabled. The helper
+PID is authenticated through the private bus before the replacement must report
+exactly Active=1, Popup=0, Recent=0. The replacement probe then asks that exact
+owner to close the ID through the standard host interface and clears its Recent
+projection by keyboard before ending the row. This preserves the production
+owner-only close contract across independently launched probes.
+
+The core rows are exact logical 1920x1080, 1920x1200 WUXGA, and 2560x1440 at
+100%. Fractional rows are reported separately: the virtual-output scenario
+loader writes 125% and 150% into disposable KWin output state and the probe
+accepts them only when Compositor1 reports that exact live scale and the exact
+integral logical geometry. Unsupported or ignored scale therefore fails; it is
+never relabelled as applied evidence. `race-10x` repeats the complete 1080p
+lifecycle on ten fresh private runtimes.
+
+This proves nested compositor keyboard behavior, not physical input, a real
+user lock screen, a screen-reader bridge, multi-seat/session switching,
+alternative lockers, suspend/resume, physical mixed-output behavior, or visual
+screenshot baselines.
 
 ## Current Settings1 and persistent quieting proof
 
@@ -417,7 +526,7 @@ Settings persistence and its consumers are selected with:
 ```sh
 ctest --test-dir build/dev -R '^qindaqt\.settings-' --output-on-failure
 ctest --test-dir build/dev \
-  -R '^qindaqt\.(notification-quieting-settings-bridge|notification-quieting-controls-offscreen|notification-surfaces-offscreen)$' \
+  -R '^qindaqt\.(notification-quieting-settings-bridge|notification-quieting-controls-offscreen|notification-(surfaces|focus)-offscreen)$' \
   --output-on-failure
 ```
 

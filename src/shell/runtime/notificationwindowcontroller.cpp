@@ -9,6 +9,8 @@
 
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QJsonArray>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QStringList>
@@ -37,6 +39,95 @@ void setError(QString *error, QString message)
     if (error != nullptr) {
         *error = std::move(message);
     }
+}
+
+QJsonObject rectEvidence(const QRect &rect)
+{
+    return {{QStringLiteral("x"), rect.x()},
+            {QStringLiteral("y"), rect.y()},
+            {QStringLiteral("width"), rect.width()},
+            {QStringLiteral("height"), rect.height()}};
+}
+
+QString evidenceName(const QQuickItem &item)
+{
+    QString name = item.objectName();
+    if (name.isEmpty()) {
+        return {};
+    }
+    for (const QQuickItem *ancestor = &item; ancestor != nullptr;
+         ancestor = ancestor->parentItem()) {
+        const QVariant notificationId = ancestor->property("notificationId");
+        if (notificationId.isValid()) {
+            name += QStringLiteral("@%1").arg(notificationId.toUInt());
+            break;
+        }
+    }
+    return name;
+}
+
+QJsonArray focusChainEvidence(const QQuickWindow &window, bool forward)
+{
+    QJsonArray result;
+    QQuickItem *const start = window.activeFocusItem();
+    if (start == nullptr) {
+        return result;
+    }
+    QQuickItem *current = start;
+    // AGENT-GUARD: QML controls form a cycle. Bound traversal so a malformed
+    // custom control cannot hang the shell's read-only development snapshot.
+    for (int count = 0; count < 128; ++count) {
+        const QString name = evidenceName(*current);
+        if (!name.isEmpty()) {
+            result.append(name);
+        }
+        current = current->nextItemInFocusChain(forward);
+        if (current == nullptr || current == start) {
+            break;
+        }
+    }
+    return result;
+}
+
+QJsonObject namedItemEvidence(const QQuickWindow &window, const QString &name)
+{
+    const QObject *const object = window.findChild<QObject *>(name);
+    if (object == nullptr) {
+        return {{QStringLiteral("exists"), false}};
+    }
+    return {{QStringLiteral("exists"), true},
+            {QStringLiteral("visible"), object->property("visible").toBool()},
+            {QStringLiteral("enabled"), object->property("enabled").toBool()},
+            {QStringLiteral("text"), object->property("text").toString()}};
+}
+
+QJsonObject windowEvidence(const QQuickWindow *window)
+{
+    if (window == nullptr) {
+        return {{QStringLiteral("exists"), false}};
+    }
+    const QQuickItem *const focusItem = window->activeFocusItem();
+    const QScreen *const screen = window->screen();
+    return {{QStringLiteral("exists"), true},
+            {QStringLiteral("visible"), window->isVisible()},
+            {QStringLiteral("active"), window->isActive()},
+            {QStringLiteral("geometry"), rectEvidence(window->geometry())},
+            {QStringLiteral("outputName"), screen ? screen->name() : QString{}},
+            {QStringLiteral("activeFocusItem"),
+             focusItem ? evidenceName(*focusItem) : QString{}},
+            {QStringLiteral("forwardFocusChain"),
+             focusChainEvidence(*window, true)},
+            {QStringLiteral("reverseFocusChain"),
+             focusChainEvidence(*window, false)},
+            {QStringLiteral("operationStatus"),
+             namedItemEvidence(*window,
+                               QStringLiteral("notificationOperationStatus"))},
+            {QStringLiteral("quietingStatus"),
+             namedItemEvidence(*window,
+                               QStringLiteral("notificationQuietingStatus"))},
+            {QStringLiteral("quietingStateAction"),
+             namedItemEvidence(*window,
+                               QStringLiteral("notificationQuietingStateAction"))}};
 }
 
 } // namespace
@@ -109,6 +200,12 @@ bool NotificationWindowController::reconcile(QScreen *screen, QString *error)
     m_screen = screen;
     updateVisibility();
     return true;
+}
+
+QJsonObject NotificationWindowController::evidence() const
+{
+    return {{QStringLiteral("popup"), windowEvidence(m_popupWindow.get())},
+            {QStringLiteral("center"), windowEvidence(m_centerWindow.get())}};
 }
 
 void NotificationWindowController::reset() noexcept

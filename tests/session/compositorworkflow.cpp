@@ -53,6 +53,7 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
                                         QStringLiteral("Outputs"),
                                         QStringLiteral("InputCapabilities"),
                                         QStringLiteral("ShellVisibilitySnapshot"),
+                                        QStringLiteral("DevelopmentShellSurfaces"),
                                         QStringLiteral("Containers"),
                                         QStringLiteral("DockWindows"),
                                         QStringLiteral("InjectTestInput"),
@@ -256,6 +257,8 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
     const auto reinitializeReply = client.call(
         QStringLiteral("ReinitializeCompositingForTest"), error);
     const auto outputGateEvidence = exerciseProductionOutputGate(client, error);
+    const auto shellSurfacesReply = client.call(
+        QStringLiteral("DevelopmentShellSurfaces"), error);
     const auto after = client.awaitWindows(
         {titles.primary, titles.secondary, titles.page},
         [&](const WindowInventory &inventory) {
@@ -274,8 +277,9 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
         !rejectedWith(releaseReply, QLatin1StringView("control-disabled")) ||
         !rejectedWith(submitReply, QLatin1StringView("control-disabled")) ||
         !rejectedWith(injectReply, QLatin1StringView("control-disabled")) ||
-        !rejectedWith(reinitializeReply, QLatin1StringView("control-disabled"))
-        || !outputGateEvidence || !after ||
+        !rejectedWith(reinitializeReply, QLatin1StringView("control-disabled")) ||
+        !rejectedWith(shellSurfacesReply, QLatin1StringView("control-disabled")) ||
+        !outputGateEvidence || !after ||
         !containersAfter || !containersAfter->isEmpty()) {
         result->failure = error->isEmpty()
                               ? QStringLiteral("production mutation gate did not reject atomically")
@@ -292,6 +296,7 @@ bool exerciseReadOnlyGate(CompositorProbeClient &client, const ProbeWindowTitles
          iterator != outputGateEvidence->constEnd(); ++iterator) {
         result->evidence.insert(iterator.key(), iterator.value());
     }
+    result->evidence.insert(QStringLiteral("developmentShellEvidenceRejected"), true);
     result->evidence.insert(QStringLiteral("threeWindowsUnchanged"), true);
     result->evidence.insert(QStringLiteral("ownershipRemainedClear"), true);
     return true;

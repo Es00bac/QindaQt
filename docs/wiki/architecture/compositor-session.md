@@ -63,13 +63,21 @@ Rootless XWayland is on by default and can be disabled with `--no-xwayland`.
 A `--session` process controls compositor lifetime. Production-shell builds
 default it to `qindaqt-session`, which starts the notification host and shell,
 provisions their private presentation token through separate one-shot inherited
-descriptors, and ends the session if either essential child exits. Because
+descriptors, and keeps the token only in supervisor memory. The notification
+host is session-resident. One unexpected shell exit consumes a fixed
+one-restart budget: the host stays running while a replacement shell receives
+a fresh descriptor containing the same token, the same direct KWin PID, and
+the same profile/theme arguments. Host exit, replacement-start failure, a
+second shell exit, or explicit stop ends the complete session. This contract is
+recorded in
+[ADR-0019](../adr/0019-restart-the-production-shell-once.md). Because
 KWin directly launches this supervisor, it arms a kernel parent-death signal,
 race-checks and validates the direct parent PID, and passes the value to the
 shell with the presentation descriptor. Host and shell also die with their
 supervisor, preventing PID-reuse trust after KWin exits. The shell uses that
 non-secret PID only to authenticate the unique D-Bus owner that publishes
-compositor and KScreenLocker state. An
+compositor and KScreenLocker state; a replacement must authenticate that path
+again and receives no inherited privacy state. An
 explicit `--session` still overrides the default for isolated test probes and
 alternate session compositions; bridge-only builds retain an empty default.
 
@@ -244,19 +252,31 @@ authentication. Production therefore advertises `controlMode: "read-only"`.
 `DockWindows`, `Submit`, `ReleaseContainer`, `InjectTestInput`,
 `AddVirtualOutputForTest`, `RemoveVirtualOutputForTest`, and
 `ReinitializeCompositingForTest` reject with `control-disabled` before request
-parsing, runtime inspection, or mutation. Inventory and snapshots remain
-readable. Only the isolated explicit scenario path enables the
+parsing, runtime inspection, or mutation. The development-only
+`DevelopmentShellSurfaces` inventory likewise rejects before inspecting KWin
+state; it is not one of the production-readable snapshots. Only the isolated
+explicit scenario path enables the
 `development-test` mutation mode. Production Hybrid gestures call typed
 process-local policy instead of enabling D-Bus mutation.
 
 Development test sessions construct one combined keyboard/pointer
 `KWin::InputDevice` and register it with KWin input redirection. The versioned,
-bounded `InjectTestInput` method emits only absolute pointer movement, left
-button, and left Meta/Shift events through the ordinary input chain; shutdown
-releases held state before removing the device. Production does not construct
-the injector, and its gate-before-parse reply is identical for malformed and
-oversized input. This is a deterministic nested-session seam, never a public
-automation API or physical-device claim.
+bounded `InjectTestInput` method emits only the documented absolute pointer,
+left button, and small fixed keyboard allowlist through the ordinary input
+chain; shutdown releases held state before removing the device. Production
+does not construct the injector, and its gate-before-parse reply is identical
+for malformed and oversized input. This is a deterministic nested-session seam,
+never a public automation API or physical-device claim.
+
+The notification live workflow also joins the filtered compositor-owned
+`DevelopmentShellSurfaces` view with a separately PID-authenticated, read-only
+shell snapshot. The compositor view contains only QindaQt's two notification
+scopes, while the shell view contains bounded presentation/window/focus state
+and no mutation methods. Both are admitted only inside the same explicit
+private development session. The shell fails its development startup if it
+cannot match Compositor1 to the supervisor-provisioned KWin PID and live
+development capabilities. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)
+records this qualification-only boundary.
 
 Output observation is owned by one GUI-thread inventory collaborator. It
 samples KWin's semantic output order and complete stable field set, validates

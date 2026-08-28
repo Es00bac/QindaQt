@@ -15,6 +15,7 @@ EXPECTED_METHODS = {
     "Outputs",
     "InputCapabilities",
     "ShellVisibilitySnapshot",
+    "DevelopmentShellSurfaces",
     "Containers",
     "DockWindows",
     "ReleaseContainer",
@@ -113,6 +114,38 @@ def validate_descriptor(path: Path) -> None:
     }
     for method_name, expected_arguments in expected_output_mutations.items():
         validate_method_signature(interface, method_name, expected_arguments)
+
+    surface_evidence = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == "DevelopmentShellSurfaces"
+    )
+    surface_arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in surface_evidence.findall("arg")
+    ]
+    if surface_arguments != [("surfacesJson", "ay", "out")]:
+        raise ValueError(
+            "DevelopmentShellSurfaces signature drift: "
+            f"got {surface_arguments}"
+        )
+
+    reinitialize = next(
+        element
+        for element in interface.findall("method")
+        if element.get("name") == "ReinitializeCompositingForTest"
+    )
+    reinitialize_arguments = [
+        (argument.get("name"), argument.get("type"), argument.get("direction"))
+        for argument in reinitialize.findall("arg")
+    ]
+    expected_reinitialize_arguments = [("replyJson", "ay", "out")]
+    if reinitialize_arguments != expected_reinitialize_arguments:
+        raise ValueError(
+            "ReinitializeCompositingForTest signature drift: "
+            f"expected {expected_reinitialize_arguments}, "
+            f"got {reinitialize_arguments}"
+        )
 
     validate_method_signature(
         interface, "ReinitializeCompositingForTest", [("replyJson", "ay", "out")]

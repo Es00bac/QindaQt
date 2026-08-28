@@ -5,6 +5,9 @@
 #include <QString>
 
 #include <functional>
+#include <memory>
+
+class QProcess;
 
 namespace QindaQt::Shell {
 
@@ -14,12 +17,14 @@ class SettingsRouteLauncher final : public QObject {
 public:
     using Launch = std::function<bool(QString *)>;
     explicit SettingsRouteLauncher(Launch launch = {}, QObject *parent = nullptr);
+    ~SettingsRouteLauncher() override;
     [[nodiscard]] const QString &errorText() const noexcept { return m_error; }
     Q_INVOKABLE bool openNotifications();
 Q_SIGNALS:
     void errorTextChanged();
 private:
     Launch m_launch;
+    std::unique_ptr<QProcess> m_containedProcess;
     QString m_error;
 };
 

@@ -64,6 +64,7 @@ class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
 class NotificationQuietingSettingsBridge;
+class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
 
 class ShellRuntimeApplication final : public QObject {
@@ -82,6 +83,8 @@ private:
     void printCatalog() const;
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
+    [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
+                                                QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
@@ -133,6 +136,7 @@ private:
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
+    std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
     std::unique_ptr<NotificationCenterShortcut> m_notificationCenterShortcut;
     QTimer m_outputDebounce;

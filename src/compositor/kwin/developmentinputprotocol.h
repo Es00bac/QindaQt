@@ -20,6 +20,10 @@ enum class DevelopmentInputEventType {
 enum class DevelopmentInputKey {
     LeftMeta,
     LeftShift,
+    N,
+    Tab,
+    Escape,
+    Space,
     Down,
     Enter,
 };

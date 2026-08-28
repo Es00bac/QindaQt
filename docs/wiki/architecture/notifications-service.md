@@ -179,18 +179,29 @@ post-start service restart policy is not yet implemented.
 
 The executable is built and installable. A production-shell build makes
 `qindaqt-session` the launcher's default `--exit-with-session` process. That
-supervisor generates one token in memory, sends independent copies to host and
-shell over bounded inherited pipes, arms a race-closed parent-death witness,
-captures its direct KWin parent PID, and gives both children their own
-supervisor-death witnesses. Only the descriptor number and non-secret PID
-appear in shell arguments; the token never enters argv, environment, a
-persistent file, a signal, or diagnostics. A standalone host still receives no
-token, so its private object is absent. Reads accept one exact record and time
-out after two seconds. The default
-freedesktop capability remains `body`: the initial action controls do not yet
-provide activation tokens or a qualified end-to-end keyboard/accessibility
-path. Busy and failure state are visible, but no live compositor/input run has
-yet qualified their focus or interaction behavior.
+supervisor generates one token in memory, sends independent copies to the host
+and first shell over bounded inherited pipes, arms a race-closed parent-death
+witness, captures its direct KWin parent PID, and gives both children their own
+supervisor-death witnesses. If the first shell exits, the host and its active
+model remain resident while the supervisor starts exactly one replacement with
+a fresh one-shot descriptor containing the retained token and the same KWin
+PID. The host releases the former presenter's unique-name binding, so the
+replacement must authenticate normally. Restart failure or another shell exit
+ends the session; notification-host restart remains intentionally
+unimplemented. See
+[ADR-0019](../adr/0019-restart-the-production-shell-once.md).
+
+Only the descriptor number and non-secret PID appear in shell arguments; the
+token never enters argv, environment, a persistent file, a signal, or
+diagnostics. A standalone host still receives no token, so its private object
+is absent. Reads accept one exact record and time out after two seconds. The
+default freedesktop capability remains `body`: the initial action controls do
+not yet provide activation tokens or a screen-reader-qualified accessibility
+path. The installed nested workflow qualifies real compositor keyboard focus
+and QML Accessible roles/names without claiming a screen-reader session. Busy,
+confirmed persistence rejection, and uncertain-operation presentation are
+qualified through the production Settings1 DND transaction; no notification-
+host mutation seam exists solely to synthesize a rejected action.
 
 ## Qualification and remaining work
 
@@ -224,8 +235,10 @@ interruption, and release. A second private-bus workflow runs the real Qt client
 transport against two successive resident hosts and proves targeted updates,
 action-token forwarding, loss, new-owner authentication, and new epoch
 acceptance. Descriptor and supervisor tests prove bounded one-shot reads,
-secret-free arguments, two-child startup, coupled shutdown, and second-child
-rollback without opening a display.
+secret-free arguments, two-child startup, resident-host PID continuity across
+one shell PID replacement, fresh-launch failure teardown, exhausted-budget
+shutdown, coupled parent death, and second-child startup rollback without
+opening a display.
 
 Presentation-model tests cover baseline-without-replay, new and replacement
 popups, urgency ordering, monotonic expiry, center-open suppression, popup and
@@ -250,24 +263,30 @@ Pure logical-screen planning tests cover 1080p, WUXGA, 1440p, 200% scale,
 compact clamping, a zero-popup 38-logical-pixel status surface, and minimum
 usable dimensions. Offscreen QML tests exercise active and popup delegates,
 literal plain-text body/error rendering, busy control disabling, and bounded
-action/Dismiss placement. No live/nested display or input test was run for
-these notification surfaces.
+action/Dismiss placement. These focused rows open no display; the separately
+registered `shell.notification-live.*` matrix stages the installed production
+stack on a private bus and nested virtual compositor. It proves exact
+KGlobalAccel dispatch/remapping, compositor-owned notification
+roles/output/geometry, center activation, full forward/reverse keyboard focus,
+Settings1 failure/restart behavior, the resident-host/single-shell-restart
+contract, and actual nested KScreenLocker privacy without touching the host
+desktop. Its development-only read-only observability is specified by
+[ADR-0020](../adr/0020-authenticate-private-live-evidence.md).
 
 The following are not yet implemented:
 
-- live qualification of the production keyboard path, compositor focus
-  acceptance, and complete accessibility behavior;
+- complete accessibility-tree and screen-reader behavior;
 - popup-safe icon/image loading and activation-token acquisition;
-- post-start notification-child restart policy;
+- post-start notification-host restart policy beyond fail-closed session exit;
 - sound, persistent disk history, Do Not Disturb scheduling/inhibition, and
-  live desktop interaction qualification;
-- live lock-transition, multi-seat/session-switching, alternative-locker, and
-  suspend/resume qualification, plus any future least-authority lock-screen
-  presenter;
-- multi-output notification placement and live/nested layer-surface proof;
+  physical desktop interaction qualification;
+- physical-seat/real-desktop lock transition, multi-seat/session-switching,
+  alternative-locker, and suspend/resume qualification, plus any future
+  least-authority lock-screen presenter;
+- multi-output notification placement and physical mixed-output proof;
 - portal routing and third-party `notify-send` qualification; and
 - inline reply/vendor extensions.
 
 These omissions keep the roadmap honest: the supervised production shell has
-an initial user-visible popup/center path, but notifications are not yet a
-complete daily-use desktop feature.
+a nested-qualified popup/center path, but notifications are not yet a complete
+daily-use desktop feature.

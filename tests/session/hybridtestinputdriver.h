@@ -60,6 +60,9 @@ public:
     [[nodiscard]] bool activateFirstContextMenuAction(
         const QPointF &point,
         QString *error);
+    [[nodiscard]] bool pressKey(QLatin1StringView key, QString *error);
+    [[nodiscard]] bool pressChord(const QList<QLatin1StringView> &keys,
+                                  QString *error);
     [[nodiscard]] QString deviceId() const { return m_deviceId; }
     [[nodiscard]] int requestCount() const noexcept { return m_requestCount; }
 

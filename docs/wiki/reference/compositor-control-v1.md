@@ -41,6 +41,7 @@ keyboard docking.
 | `Outputs` | None | One generation of ordered outputs with stable identity, logical geometry, mode, priority, and display metadata |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
 | `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
+| `DevelopmentShellSurfaces` | None | Development-only compositor-owned notification layer-surface evidence, or a production pre-inspection rejection |
 | `Containers` | None | Observable bridge and process-local Hybrid container IDs, actual decimal-string revisions, and explicit authority |
 | `DockWindows` | Two window IDs, orientation, position, ratio | Atomically creates and tiles one bridge-owned two-member container at revision 1 |
 | `ReleaseContainer` | Container ID | Restores and terminates one bridge-owned container |
@@ -190,6 +191,32 @@ exact Qt-output mismatch. Forward gaps are accepted because every payload is a
 complete generation and invalidations may coalesce. Recovery requires a later
 complete valid generation; no partial inventory is retained as policy input.
 
+## Development notification-surface evidence
+
+`DevelopmentShellSurfaces` is a read-only qualification seam, not a supported
+desktop or automation API. It is absent from the shell's production behavior
+and returns `control-disabled` before inspecting KWin state unless the launcher
+has admitted an explicit isolated development scenario. The compositor filters
+the result to QindaQt's exact `notification-popup` and
+`notification-center` scopes; it never inventories unrelated user surfaces.
+
+Each returned record pairs a live KWin window with its exported, committed
+layer-shell protocol object by their shared Wayland surface. The plugin never
+depends on KWin's unexported internal layer-window class. It reports the client PID, scope,
+committed/mapped/active/focus-acceptance state, layer, anchors, margins,
+exclusive zone, desired size, KWin frame geometry, and current plus desired
+output names. A live driver must reject duplicate notification roles and bind
+the PID to the separately authenticated production shell process. The center
+must be active when its keyboard traversal is sampled; the popup must remain
+inactive so an incoming notification cannot steal focus.
+
+The production shell's complementary `org.qindaqt.ShellDevelopment1` snapshot
+is described in [Notification presentation](../shell/notification-presentation.md).
+Both halves are admitted only on a private bus after the shell authenticates
+the exact compositor PID and verifies `controlMode: "development-test"` plus
+enabled mutations. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)
+records why this deliberately narrow cross-process evidence boundary exists.
+
 ## Development input seam
 
 `Capabilities.developmentInput` always describes the fixed input schema with
@@ -208,13 +235,23 @@ of these shapes:
 {"type":"pointer-absolute","x":640.0,"y":350.0}
 {"type":"key","key":"left-meta","pressed":true}
 {"type":"key","key":"left-shift","pressed":true}
+{"type":"key","key":"n","pressed":true}
+{"type":"key","key":"tab","pressed":true}
+{"type":"key","key":"escape","pressed":true}
+{"type":"key","key":"space","pressed":true}
+{"type":"key","key":"down","pressed":true}
+{"type":"key","key":"enter","pressed":true}
 {"type":"button","button":"left","pressed":true}
 ```
 
 Coordinates must be finite logical values between -1,000,000 and 1,000,000.
+The complete key allowlist is left Meta, left Shift, N, Tab, Escape, Space,
+Down, and Enter. The notification live-session rows need the additional
+non-text keys to exercise the production global shortcut, focus traversal,
+activation, dismissal, and lock-screen user-activity paths without host input.
 No other key, button, relative movement, text, delay, or device selector is
 accepted. Success returns `status: "injected"`, the event count, and the fixed
-device ID. Held modifiers/buttons are released before the device is removed.
+device ID. Held keys and buttons are released before the device is removed.
 
 In production, the injector object does not exist and `InjectTestInput` returns
 `control-disabled` before inspecting payload size, JSON syntax, or schema. The

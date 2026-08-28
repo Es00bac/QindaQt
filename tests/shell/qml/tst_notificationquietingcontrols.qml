@@ -103,10 +103,12 @@ Item {
             verify(title.x + title.width <= dnd.x);
             verify(dnd.x + dnd.width <= clear.x);
             verify(clear.x + clear.width <= close.x);
-            compare(dnd.KeyNavigation.tab, clear);
-            compare(dnd.KeyNavigation.backtab, settings);
-            compare(clear.KeyNavigation.tab, close);
-            compare(close.KeyNavigation.tab, settings);
+            // Empty history disables Clear. Natural Qt focus traversal must
+            // skip disabled controls while preserving a reversible cycle.
+            compare(dnd.nextItemInFocusChain(true), close);
+            compare(dnd.nextItemInFocusChain(false), settings);
+            compare(close.nextItemInFocusChain(true), settings);
+            compare(settings.nextItemInFocusChain(true), dnd);
 
             fakePresentation.operationBusy = true;
             tryCompare(status, "visible", true);

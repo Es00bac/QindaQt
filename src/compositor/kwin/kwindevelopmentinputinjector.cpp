@@ -55,6 +55,14 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_LEFTMETA;
     case DevelopmentInputKey::LeftShift:
         return KEY_LEFTSHIFT;
+    case DevelopmentInputKey::N:
+        return KEY_N;
+    case DevelopmentInputKey::Tab:
+        return KEY_TAB;
+    case DevelopmentInputKey::Escape:
+        return KEY_ESC;
+    case DevelopmentInputKey::Space:
+        return KEY_SPACE;
     case DevelopmentInputKey::Down:
         return KEY_DOWN;
     case DevelopmentInputKey::Enter:
@@ -136,6 +144,10 @@ public:
         // scenario can leave compositor modifiers/buttons logically stuck.
         for (const auto key : {DevelopmentInputKey::LeftMeta,
                                DevelopmentInputKey::LeftShift,
+                               DevelopmentInputKey::N,
+                               DevelopmentInputKey::Tab,
+                               DevelopmentInputKey::Escape,
+                               DevelopmentInputKey::Space,
                                DevelopmentInputKey::Down,
                                DevelopmentInputKey::Enter}) {
             if (m_pressedKeys.contains(key)) {

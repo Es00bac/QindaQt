@@ -18,6 +18,7 @@ private slots:
     void rejectsInvalidCompositorProcessIds_data();
     void rejectsInvalidCompositorProcessIds();
     void rejectsRepeatedTrustOptions();
+    void validatesDevelopmentEvidencePredecessor();
 };
 
 void RuntimeOptionsTests::acceptsStandaloneShellModes()
@@ -123,6 +124,33 @@ void RuntimeOptionsTests::rejectsRepeatedTrustOptions()
          QStringLiteral("--presentation-token-fd"), QStringLiteral("8"),
          QStringLiteral("--compositor-pid"), QStringLiteral("42")});
     QVERIFY(!repeatedDescriptor.options.has_value());
+}
+
+void RuntimeOptionsTests::validatesDevelopmentEvidencePredecessor()
+{
+    const auto accepted = parseRuntimeOptions(
+        {QStringLiteral("qindaqt-shell"),
+         QStringLiteral("--presentation-token-fd"), QStringLiteral("7"),
+         QStringLiteral("--compositor-pid"), QStringLiteral("42424"),
+         QStringLiteral("--development-evidence-predecessor-pid"),
+         QStringLiteral("31337")});
+    QVERIFY2(accepted.options.has_value(), qPrintable(accepted.error));
+    QCOMPARE(accepted.options->developmentEvidencePredecessorProcessId,
+             std::optional<qint64>(31'337));
+
+    const auto missingBundle = parseRuntimeOptions(
+        {QStringLiteral("qindaqt-shell"),
+         QStringLiteral("--development-evidence-predecessor-pid"),
+         QStringLiteral("31337")});
+    QVERIFY(!missingBundle.options.has_value());
+
+    const auto invalid = parseRuntimeOptions(
+        {QStringLiteral("qindaqt-shell"),
+         QStringLiteral("--presentation-token-fd"), QStringLiteral("7"),
+         QStringLiteral("--compositor-pid"), QStringLiteral("42424"),
+         QStringLiteral("--development-evidence-predecessor-pid"),
+         QStringLiteral("1")});
+    QVERIFY(!invalid.options.has_value());
 }
 
 QTEST_GUILESS_MAIN(RuntimeOptionsTests)

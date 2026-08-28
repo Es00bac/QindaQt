@@ -140,15 +140,21 @@ Rectangle {
             Button {
                 id: primaryActionButton
                 objectName: "notificationPrimaryAction"
-                required property var modelData
+                required property int index
                 readonly property var notificationAction:
-                    root.actionAt(Number(modelData))
+                    root.actionAt(index)
+                readonly property bool hasNotificationAction:
+                    notificationAction !== null
+                    && notificationAction !== undefined
                 height: 30
                 width: 96
-                enabled: !Boolean(root.presentation.operationBusy)
-                text: String(notificationAction.label)
+                enabled: hasNotificationAction
+                         && !Boolean(root.presentation.operationBusy)
+                text: hasNotificationAction
+                      ? String(notificationAction.label ?? "") : ""
                 focusPolicy: Qt.TabFocus
-                Accessible.name: String(notificationAction.label)
+                Accessible.role: Accessible.Button
+                Accessible.name: text
                 contentItem: Text {
                     text: primaryActionButton.text
                     color: primaryActionButton.palette.buttonText
@@ -157,9 +163,12 @@ Rectangle {
                     elide: Text.ElideRight
                     textFormat: Text.PlainText
                 }
-                onClicked: root.presentation.invokeAction(
-                               root.notificationId,
-                               String(notificationAction.key))
+                onClicked: {
+                    if (hasNotificationAction)
+                        root.presentation.invokeAction(
+                            root.notificationId,
+                            String(notificationAction.key))
+                }
             }
         }
 
@@ -172,6 +181,7 @@ Rectangle {
             enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("More")
             focusPolicy: Qt.TabFocus
+            Accessible.role: Accessible.Button
             Accessible.name: qsTr("More notification actions")
             onClicked: overflowMenu.open()
 
@@ -184,14 +194,18 @@ Rectangle {
 
                     MenuItem {
                         id: overflowActionItem
-                        required property var modelData
+                        required property int index
                         readonly property var notificationAction:
-                            root.actionAt(Number(modelData) +
-                                          root.primaryActionCount)
+                            root.actionAt(index + root.primaryActionCount)
+                        readonly property bool hasNotificationAction:
+                            notificationAction !== null
+                            && notificationAction !== undefined
                         width: 240
-                        enabled: !Boolean(root.presentation.operationBusy)
-                        text: String(notificationAction.label)
-                        Accessible.name: String(notificationAction.label)
+                        enabled: hasNotificationAction
+                                 && !Boolean(root.presentation.operationBusy)
+                        text: hasNotificationAction
+                              ? String(notificationAction.label ?? "") : ""
+                        Accessible.name: text
                         contentItem: Text {
                             text: overflowActionItem.text
                             color: overflowActionItem.palette.buttonText
@@ -199,9 +213,12 @@ Rectangle {
                             elide: Text.ElideRight
                             textFormat: Text.PlainText
                         }
-                        onTriggered: root.presentation.invokeAction(
-                                         root.notificationId,
-                                         String(notificationAction.key))
+                        onTriggered: {
+                            if (hasNotificationAction)
+                                root.presentation.invokeAction(
+                                    root.notificationId,
+                                    String(notificationAction.key))
+                        }
                     }
                 }
             }
@@ -215,6 +232,7 @@ Rectangle {
             enabled: !Boolean(root.presentation.operationBusy)
             text: qsTr("Dismiss")
             focusPolicy: Qt.TabFocus
+            Accessible.role: Accessible.Button
             Accessible.name: qsTr("Dismiss notification")
             onClicked: root.presentation.dismiss(root.notificationId)
         }

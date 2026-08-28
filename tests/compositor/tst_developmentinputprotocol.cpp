@@ -86,6 +86,18 @@ void DevelopmentInputProtocolTest::parsesAndDispatchesAllowlistedEvents()
                      {QStringLiteral("key"), QStringLiteral("left-shift")},
                      {QStringLiteral("pressed"), false}},
          QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("n")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("tab")},
+                     {QStringLiteral("pressed"), false}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("escape")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("space")},
+                     {QStringLiteral("pressed"), false}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
                      {QStringLiteral("key"), QStringLiteral("down")},
                      {QStringLiteral("pressed"), true}},
          QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
@@ -101,28 +113,36 @@ void DevelopmentInputProtocolTest::parsesAndDispatchesAllowlistedEvents()
     DevelopmentInputFailure failure;
     const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
     QVERIFY2(parsed.has_value(), qPrintable(failure.message));
-    QCOMPARE(parsed->events.size(), 7);
+    QCOMPARE(parsed->events.size(), 11);
     QCOMPARE(parsed->events.at(0).position, QPointF(-120.5, 1440.25));
     QCOMPARE(parsed->events.at(1).key, DevelopmentInputKey::LeftMeta);
     QVERIFY(parsed->events.at(1).pressed);
     QCOMPARE(parsed->events.at(2).key, DevelopmentInputKey::LeftShift);
     QVERIFY(!parsed->events.at(2).pressed);
-    QCOMPARE(parsed->events.at(3).key, DevelopmentInputKey::Down);
+    QCOMPARE(parsed->events.at(3).key, DevelopmentInputKey::N);
     QVERIFY(parsed->events.at(3).pressed);
-    QCOMPARE(parsed->events.at(4).key, DevelopmentInputKey::Enter);
+    QCOMPARE(parsed->events.at(4).key, DevelopmentInputKey::Tab);
     QVERIFY(!parsed->events.at(4).pressed);
-    QCOMPARE(parsed->events.at(5).button, DevelopmentInputButton::Left);
-    QCOMPARE(parsed->events.at(6).button, DevelopmentInputButton::Right);
+    QCOMPARE(parsed->events.at(5).key, DevelopmentInputKey::Escape);
+    QVERIFY(parsed->events.at(5).pressed);
+    QCOMPARE(parsed->events.at(6).key, DevelopmentInputKey::Space);
+    QVERIFY(!parsed->events.at(6).pressed);
+    QCOMPARE(parsed->events.at(7).key, DevelopmentInputKey::Down);
+    QVERIFY(parsed->events.at(7).pressed);
+    QCOMPARE(parsed->events.at(8).key, DevelopmentInputKey::Enter);
+    QVERIFY(!parsed->events.at(8).pressed);
+    QCOMPARE(parsed->events.at(9).button, DevelopmentInputButton::Left);
+    QCOMPARE(parsed->events.at(10).button, DevelopmentInputButton::Right);
 
     RecordingSink sink;
     DevelopmentInputController controller(true, &sink);
     const auto reply = decode(controller.injectTestInput(payload));
     QCOMPARE(reply.value(QStringLiteral("status")).toString(), QStringLiteral("injected"));
-    QCOMPARE(reply.value(QStringLiteral("eventCount")).toInteger(), 7);
+    QCOMPARE(reply.value(QStringLiteral("eventCount")).toInteger(), 11);
     QCOMPARE(reply.value(QStringLiteral("deviceId")).toString(),
              QStringLiteral("qindaqt-development-input"));
     QCOMPARE(sink.injections, 1);
-    QCOMPARE(sink.lastBatch.events.size(), 7);
+    QCOMPARE(sink.lastBatch.events.size(), 11);
 }
 
 void DevelopmentInputProtocolTest::rejectsMalformedAndLimitFailures()

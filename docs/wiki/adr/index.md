@@ -24,6 +24,8 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0015](0015-qualify-function-before-resource-refinement.md) | Accepted | Qualify the isolated virtual desktop before tightening its initial resource ceiling |
 | [ADR-0016](0016-display1-transaction-authority.md) | Accepted | Make Display1 the QindaQt display-transaction authority while KWin owns live state and restore |
 | [ADR-0017](0017-persistent-output-identity.md) | Accepted | Derive privacy-preserving persistent output identities with explicit ambiguity |
+| [ADR-0019](0019-restart-the-production-shell-once.md) | Accepted | Restart the production shell once per compositor session |
+| [ADR-0020](0020-authenticate-private-live-evidence.md) | Accepted | Authenticate a private, read-only live-session evidence boundary |
 | [ADR-0021](0021-isolate-controls-visual-rows.md) | Accepted | Isolate every Controls visual row in its own process |
 | [ADR-0022](0022-keep-text-documents-local-and-atomic.md) | Accepted | Keep Text Editor documents local, optimistic, and atomically persisted |
 | [ADR-0023](0023-split-power-authority-across-service-and-shell.md) | Accepted | Split platform power observation from shell-owned session-action authority |

@@ -17,6 +17,9 @@
     <method name="ShellVisibilitySnapshot">
       <arg name="snapshotJson" type="ay" direction="out"/>
     </method>
+    <method name="DevelopmentShellSurfaces">
+      <arg name="surfacesJson" type="ay" direction="out"/>
+    </method>
     <method name="Containers">
       <arg name="containersJson" type="ay" direction="out"/>
     </method>

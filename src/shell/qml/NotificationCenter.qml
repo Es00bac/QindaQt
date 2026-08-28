@@ -16,19 +16,23 @@ Window {
     title: qsTr("Notification center")
     flags: Qt.FramelessWindowHint
 
-    onActiveChanged: {
-        // AGENT-GUARD: seed keyboard navigation only on first activation. Do
-        // not reset focus when a user is already traversing notification cards.
-        if (active && activeFocusItem === null)
-            closeButton.forceActiveFocus(Qt.ActiveWindowFocusReason);
+    function seedInitialFocus() {
+        // AGENT-GUARD: Wayland activation can install an unnamed content item
+        // after activeChanged. Seed on the next event-loop turn, but never
+        // replace a named control that the user has already reached.
+        if (active && (activeFocusItem === null
+                       || activeFocusItem.objectName.length === 0))
+            closeButton.forceActiveFocus(Qt.ActiveWindowFocusReason)
     }
+
+    onActiveChanged: if (active) Qt.callLater(seedInitialFocus)
 
     Shortcut {
         objectName: "notificationCenterCloseShortcut"
         sequence: "Escape"
         context: Qt.WindowShortcut
         enabled: root.visible
-        onActivated: root.presentation.setCenterOpen(false)
+        onActivated: root.presentation.centerOpen = false
     }
 
     Rectangle {
@@ -37,6 +41,10 @@ Window {
         color: root.colors.surface ?? "#222624"
         border.color: root.colors.border ?? "#3c433f"
         border.width: 1
+        // The focused Quick control receives injected/physical keys before a
+        // WindowShortcut is considered on every platform. Handle Escape on
+        // their common content ancestor so closing remains window-scoped.
+        Keys.onEscapePressed: root.presentation.centerOpen = false
 
         Text {
             id: titleText
@@ -64,8 +72,7 @@ Window {
             checked: root.quietingSettings.enabled
             enabled: root.quietingSettings.canToggle
             focusPolicy: Qt.TabFocus
-            KeyNavigation.tab: clearButton
-            KeyNavigation.backtab: settingsButton
+            Accessible.role: Accessible.CheckBox
             Accessible.name: checked ? qsTr("Turn off Do Not Disturb")
                                      : qsTr("Turn on Do Not Disturb")
             Accessible.description: qsTr(
@@ -87,8 +94,7 @@ Window {
             text: qsTr("Clear history")
             enabled: historySection.count > 0
             focusPolicy: Qt.TabFocus
-            KeyNavigation.tab: closeButton
-            KeyNavigation.backtab: doNotDisturbButton
+            Accessible.role: Accessible.Button
             onClicked: root.presentation.clearHistory()
         }
 
@@ -112,10 +118,12 @@ Window {
             height: 36
             text: "×"
             focusPolicy: Qt.TabFocus
-            KeyNavigation.tab: stateAction.visible ? stateAction : settingsButton
-            KeyNavigation.backtab: clearButton
+            // AGENT-GUARD: Keep traversal on Qt Quick's complete natural tab
+            // chain. Header-only KeyNavigation edges trap focus away from the
+            // dynamically instantiated card, retry, and settings controls.
+            Accessible.role: Accessible.Button
             Accessible.name: qsTr("Close notification center")
-            onClicked: root.presentation.setCenterOpen(false)
+            onClicked: root.presentation.centerOpen = false
         }
 
         NotificationListSection {
@@ -187,8 +195,6 @@ Window {
                 text: root.quietingSettings.conflict
                       ? qsTr("Apply my choice") : qsTr("Retry")
                 focusPolicy: Qt.TabFocus
-                KeyNavigation.tab: settingsButton
-                KeyNavigation.backtab: closeButton
                 onClicked: {
                     if (root.quietingSettings.conflict)
                         root.quietingSettings.applyMyChoice()
@@ -202,8 +208,7 @@ Window {
                 objectName: "notificationSettingsRouteButton"
                 text: qsTr("Notification settings…")
                 focusPolicy: Qt.TabFocus
-                KeyNavigation.tab: doNotDisturbButton
-                KeyNavigation.backtab: stateAction.visible ? stateAction : closeButton
+                Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Notification settings")
                 onClicked: root.settingsLauncher.openNotifications()
             }

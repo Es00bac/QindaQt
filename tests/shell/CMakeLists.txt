@@ -71,6 +71,13 @@ add_test(
 )
 
 add_test(
+    NAME qindaqt.notification-focus-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationfocus.qml"
+)
+
+add_test(
     NAME qindaqt.notification-quieting-controls-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
@@ -87,6 +94,7 @@ add_test(
 set_tests_properties(
     qindaqt.decoration-hover
     qindaqt.notification-surfaces-offscreen
+    qindaqt.notification-focus-offscreen
     qindaqt.notification-quieting-controls-offscreen
     qindaqt.notification-center-applet-offscreen
     PROPERTIES

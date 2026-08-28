@@ -62,6 +62,8 @@ public:
 
     [[nodiscard]] std::optional<QJsonArray> windows(QString *error);
     [[nodiscard]] std::optional<QJsonArray> outputs(QString *error);
+    [[nodiscard]] std::optional<QJsonArray> developmentShellSurfaces(
+        QString *error);
     [[nodiscard]] std::optional<QJsonArray> containers(QString *error);
     [[nodiscard]] int outputsChangedCount() const noexcept;
     [[nodiscard]] std::optional<WindowInventory>

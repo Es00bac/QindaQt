@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
+#include <QPointer>
 
 #include <functional>
 #include <optional>
@@ -15,6 +16,10 @@
 namespace QindaQt::Compositor {
 class ContainerControlBridge;
 class ControlEndpoint;
+}
+
+namespace KWin {
+class LayerSurfaceV1Interface;
 }
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -72,6 +77,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray Outputs() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray InputCapabilities() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray ShellVisibilitySnapshot() const;
+    Q_SCRIPTABLE [[nodiscard]] QByteArray DevelopmentShellSurfaces() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray Containers() const;
     Q_SCRIPTABLE [[nodiscard]] QByteArray DockWindows(const QString &targetWindowId,
                                                       const QString &incomingWindowId,
@@ -108,6 +114,7 @@ private:
     DevelopmentCompositorReinitializer m_developmentCompositorReinitializer;
     DevelopmentInputController m_developmentInput;
     DevelopmentOutputController m_developmentOutput;
+    QList<QPointer<KWin::LayerSurfaceV1Interface>> m_developmentLayerSurfaces;
     bool m_mutationsEnabled = false;
 };
 

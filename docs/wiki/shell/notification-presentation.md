@@ -15,7 +15,8 @@ The production path is:
 1. `qindaqt-session` generates one presentation token and sends independent
    copies to the host and shell through inherited one-shot descriptors. It
    also supplies the shell with the kernel-reported PID of its direct KWin
-   parent.
+   parent. The supervisor retains the token only in memory so one replacement
+   shell may receive a fresh descriptor and the same authenticated PID.
 2. The host publishes snapshots through its private, token-bound D-Bus object.
 3. The owner-bound asynchronous shell client authenticates and accepts only a
    coherent owner, epoch, and monotonic revision lineage.
@@ -34,6 +35,28 @@ valid inherited descriptor. A standalone shell or host does not silently open
 the private presentation path. The shell links the public client and model; it
 never links the notification-service implementation.
 
+One unexpected shell exit leaves the notification host resident and consumes
+the supervisor's complete one-restart budget. The host releases the dead
+presenter's unique-name binding; the replacement independently authenticates,
+loads Settings1 state, registers GlobalAccel, and re-establishes exact-PID lock
+privacy. Failure to start it or a later shell exit ends the session. This
+bounded policy is specified by
+[ADR-0019](../adr/0019-restart-the-production-shell-once.md).
+
+Live qualification adds no production automation API. In an explicitly marked
+private nested session, the shell may publish the read-only
+`org.qindaqt.ShellDevelopment1` `Snapshot()` method. Before registering it, the
+shell requires the compositor service to resolve to its supervisor-provisioned
+KWin PID and live Compositor1 capabilities to advertise the development-test
+gate. The snapshot contains bounded production controller/window state, named
+natural focus chains, and counters sampled after relevant QML bindings settle;
+it exposes no command, QML object mutation, notification contents, token, or
+configuration write. The driver separately authenticates the evidence
+service's bus PID as the expected shell PID and joins it with compositor-owned
+layer-surface evidence. Production sessions do not register the endpoint. See
+[ADR-0020](../adr/0020-authenticate-private-live-evidence.md) and the
+[testing harness](../development/testing-harness.md).
+
 ## Model behavior and bounds
 
 The first accepted snapshot for an owner/epoch becomes a baseline. Its entries
@@ -50,9 +73,11 @@ open update Active directly and are not replayed after the center closes.
 When an observed active item disappears, a non-transient copy is prepended to
 Recent. Recent is in memory, capped at 100 entries, and excludes transient
 notifications. It survives a host reconnect only while the same shell process
-continues. It is lost on shell restart and can miss removals that occur while
-the client is disconnected. **Clear history** changes only this local model; it
-does not close active notifications or modify application state.
+continues. It is lost on the supervisor's bounded shell restart; the
+replacement baselines the host's current Active snapshot without replaying it
+as popup or Recent and can miss removals that occur while no presenter is
+bound. **Clear history** changes only this local model; it does not close active
+notifications or modify application state.
 
 ## Do Not Disturb
 
@@ -169,7 +194,9 @@ layer, a 16-logical-pixel top/right margin, zero exclusive zone, on-demand
 keyboard interactivity, and separate `notification-popup` and
 `notification-center` scopes. Popup stacks always disable activate-on-show so
 an incoming notification cannot steal focus. The center alone requests
-activate-on-show when mapped. Preferred sizes are
+activate-on-show when mapped. KWin applies the top margin below any earlier
+exclusive top shell surface, so the final global Y coordinate can exceed 16
+while retaining the requested margin. Preferred sizes are
 400 logical pixels wide for popups and 440 by 640 for the center. Popup height
 is a 38-logical-pixel header plus at most three 146-logical-pixel cards. The
 runtime keeps the 38-pixel header-only surface mapped while an operation is
@@ -204,11 +231,14 @@ service absence and is not forcibly reclaimed. The boundary is recorded in
 
 The center seeds its close button as the initial focus target only after the
 window becomes active and no item already owns focus. A window-scoped Escape
-shortcut closes it without changing the global binding. These are structural
-keyboard paths, not yet a qualified live keyboard experience: no isolated
-nested-Wayland run has proved that the compositor accepts activation, that
-focus traversal works end to end, or that GlobalAccel remapping, conflicts, and
-assistive-technology operation behave correctly.
+shortcut closes it without changing the global binding. The installed nested
+qualification drives default, disabled, and remapped KGlobalAccel bindings
+through KWin's development keyboard device, requires the center to be active,
+and verifies each focus item after every forward and reverse Tab transition.
+It runs the complete chain only while every required control—including Clear
+history and an action-bearing card—is enabled. This is compositor keyboard
+evidence, not physical input, screen-reader, or general assistive-technology
+qualification.
 
 ## Qualification boundary
 
@@ -243,10 +273,12 @@ test proves the applet's disabled fallback, locked-state unavailability,
 accessibility label changes, narrow toggle call, read-only policy indicators,
 and compiled-entry-point dispatch without compositor or pointer input. The
 notification-surface
-offscreen test proves the Settings1-backed accessible quick control, honest
-state/retry projection, fixed settings route, explicit bidirectional focus
-chain, compact busy/error geometry, window-scoped Escape route, and focusable
-initial target without activating a real surface. Separate app QML tests prove
+offscreen tests prove the Settings1-backed accessible quick control, honest
+state/retry projection, fixed settings route, natural bidirectional focus
+traversal with every required control enabled, Qt Accessible role/name
+assertions,
+compact busy/error geometry, window-scoped Escape route, and focusable initial
+target without activating a real surface. Separate app QML tests prove
 the switch role/name/description/checked state and loading/saving/conflict/loss
 routes. Catalog, resolver, and profile tests prove the applet's empty capability
 request and exactly one instance in every stock profile.
@@ -257,20 +289,81 @@ confirmation, bounded service-object retry, and fail-closed stop/restart. A
 private `dbus-daemon` fixture exports the KDE and freedesktop interfaces
 separately on `/ScreenSaver` and verifies exact-owner signal delivery and the
 real asynchronous Qt transport. Supervisor/parser tests cover the inseparable
-token/PID argument bundle. None locks the developer's desktop.
+token/PID argument bundle, resident-host continuity across one replacement
+shell, exhausted-budget teardown, and replacement-start failure. None locks
+the developer's desktop.
 
-This milestone did **not** run a live or nested compositor and did not inject
-input. The following remain unqualified or unimplemented:
+The installed live workflow is selected with:
 
-- real layer-role mapping, placement, compositor activation acceptance, focus
-  traversal, global-shortcut dispatch/remapping, and visual baselines at the
-  reference resolutions;
+```sh
+ctest --test-dir build/dev \
+  -R '^shell\.notification-live\.(1080p|wuxga|1440p|scale-125|scale-150)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
+  -R '^shell\.notification-live\.race-10x$' --output-on-failure
+```
+
+Every row stages the compositor, supervisor, resident notification host,
+Settings1 service/application, production shell, and KWin plugin before
+starting a fresh private D-Bus and virtual Wayland session. The runner refuses
+an inherited display or session bus. It binds Compositor1, KGlobalAccel, and
+both KScreenLocker names to the exact nested KWin PID, and independently binds
+the notification host, Settings1, and shell evidence names to the externally
+observed child PIDs. Input enters only through the compositor's production-
+gated development keyboard device; it never calls host uinput, the active seat,
+or a desktop automation tool. Each shell snapshot repeats the authenticated
+shell PID. Before either deliberate Settings1 or shell termination, the driver
+immediately re-resolves the bus owner PID, requires the same disposable POSIX
+session, and checks the signal result.
+
+The 1080p, WUXGA, and 1440p rows require exact compositor-owned popup/center
+role, output, committed geometry, center activation, popup inactivity, and
+complete keyboard focus evidence. Separate 125% and 150% rows require the live
+output inventory to match the applied fractional scale and integral logical
+extent; they are never merged with the 100% resolution claims. The race row
+repeats the complete 1080p lifecycle ten times on ten fresh buses/sessions.
+
+The production flow proves normal popup visibility, DND suppression with
+Active/Recent retention, critical bypass, and no replay on disable. Its DND
+Settings1 transaction—not a fabricated notification-host failure—provides the
+visible Saving, confirmed-rejection, uncertain-loss, and last-confirmed outage
+cases. Notification action/dismiss busy and error observations remain available
+to the read-only evidence view but are not claimed as an injected rejection
+scenario. Settings1 and shell are then restarted independently: the same host
+PID survives, the shell PID changes, each new owner reauthenticates, DND is
+freshly confirmed, and no uncertain write or active host baseline replays.
+Before terminating the first shell, the Settings1 recovery phase leaves one
+normal record Active in the resident host while DND suppresses its popup. One
+private helper retains the exact notification-sender connection across both
+restart probes; its PID is authenticated before use. The replacement must
+baseline exactly that record as Active=1, Popup=0, Recent=0; the probe then asks
+that same owner to close its exact ID through the standard host path and clears
+the resulting Recent row through the keyboard-focused production control. A
+short-lived or different sender is intentionally insufficient because the
+production service enforces owner-only closure.
+
+The lock phase calls the actual nested KScreenLocker names and requires both
+them and Compositor1 to share KWin's exact bus owner and PID. While locked, a
+resident critical notification and `Meta+N` remain fully private. Unlock is
+driven only as activity through the nested compositor device. Because
+KScreenLocker 6.6.5 makes D-Bus `Lock()` immediate, the harness disables
+password authentication only in its path-checked, read-back temporary
+`XDG_CONFIG_HOME`; it neither reads nor types a host password. After the
+monitor's double-inactive baseline, the resident item returns only to Active
+with no popup or Recent replay. These tests do not lock the developer's
+desktop. Once authenticated, `Lock()` and `GetActive()` are sent to KWin's
+unique owner rather than resolving the well-known locker name again.
+
+The following remain unqualified or unimplemented:
+
+- screenshot-based visual baselines and full accessibility-tree/screen-reader
+  behavior;
 - multi-output placement policy, per-output histories, and output migration;
 - Do Not Disturb scheduling/inhibition, sound, and safe image/icon loading;
 - persistent notification history and live session-bus activation interaction;
-- live lock-transition proof, multi-seat/session switching, alternative-locker
-  support, suspend/resume qualification, and a separately authenticated,
-  data-minimized lock-screen presenter;
+- physical-seat and real-desktop lock interaction, multi-seat/session switching,
+  alternative-locker support, suspend/resume qualification, and a separately
+  authenticated, data-minimized lock-screen presenter;
 - activation-token acquisition, portal routing, inline reply, and vendor
   extensions.
 

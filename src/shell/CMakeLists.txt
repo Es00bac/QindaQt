@@ -84,7 +84,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/runtimeoptions.h
         runtime/runtimepanelwindowfactory.cpp
         runtime/runtimepanelwindowfactory.h
+        runtime/shelldevelopmentevidence.cpp
+        runtime/shelldevelopmentevidence.h
         runtime/shellruntimeapplication.cpp
+        runtime/shellruntimeapplication_development.cpp
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h

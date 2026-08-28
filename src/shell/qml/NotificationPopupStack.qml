@@ -35,7 +35,7 @@ Window {
                 text: qsTr("History")
                 focusPolicy: Qt.TabFocus
                 Accessible.name: qsTr("Open notification center")
-                onClicked: root.presentation.setCenterOpen(true)
+                onClicked: root.presentation.centerOpen = true
             }
 
             NotificationOperationStatus {

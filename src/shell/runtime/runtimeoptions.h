@@ -20,6 +20,7 @@ struct RuntimeOptions {
     QString appletPolicyFile;
     int presentationTokenDescriptor = -1;
     std::optional<qint64> compositorProcessId;
+    std::optional<qint64> developmentEvidencePredecessorProcessId;
     bool listOnly = false;
 };
 

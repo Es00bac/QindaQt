@@ -13,6 +13,13 @@
 
 #include "windowcontainer.h"
 
+#include <core/output.h>
+#include <wayland/layershell_v1.h>
+#include <wayland/output.h>
+#include <wayland_server.h>
+#include <window.h>
+#include <workspace.h>
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -33,6 +40,44 @@ QByteArray response(QString status, QString code = {}, QString message = {})
                                   {QStringLiteral("message"), std::move(message)}});
     }
     return ControlCodec::compactJson(object);
+}
+
+QJsonObject rectEvidence(const QRectF &rect)
+{
+    return {{QStringLiteral("x"), rect.x()},
+            {QStringLiteral("y"), rect.y()},
+            {QStringLiteral("width"), rect.width()},
+            {QStringLiteral("height"), rect.height()}};
+}
+
+QJsonObject marginsEvidence(const QMargins &margins)
+{
+    return {{QStringLiteral("left"), margins.left()},
+            {QStringLiteral("top"), margins.top()},
+            {QStringLiteral("right"), margins.right()},
+            {QStringLiteral("bottom"), margins.bottom()}};
+}
+
+QJsonArray anchorsEvidence(Qt::Edges anchors)
+{
+    QJsonArray result;
+    if (anchors.testFlag(Qt::LeftEdge)) result.append(QStringLiteral("left"));
+    if (anchors.testFlag(Qt::TopEdge)) result.append(QStringLiteral("top"));
+    if (anchors.testFlag(Qt::RightEdge)) result.append(QStringLiteral("right"));
+    if (anchors.testFlag(Qt::BottomEdge)) result.append(QStringLiteral("bottom"));
+    return result;
+}
+
+QString layerName(KWin::LayerSurfaceV1Interface::Layer layer)
+{
+    using Layer = KWin::LayerSurfaceV1Interface::Layer;
+    switch (layer) {
+    case Layer::BackgroundLayer: return QStringLiteral("background");
+    case Layer::BottomLayer: return QStringLiteral("bottom");
+    case Layer::TopLayer: return QStringLiteral("top");
+    case Layer::OverlayLayer: return QStringLiteral("overlay");
+    }
+    return QStringLiteral("unknown");
 }
 
 } // namespace
@@ -68,6 +113,24 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
             this, &KWinControlEndpoint::InputCapabilitiesChanged);
     connect(&shellVisibility, &KWinShellVisibilityPublisher::snapshotChanged,
             this, &KWinControlEndpoint::ShellVisibilityChanged);
+
+    if (m_mutationsEnabled) {
+        KWin::WaylandServer *const server = KWin::waylandServer();
+        auto *const layerShell = server
+            ? server->findChild<KWin::LayerShellV1Interface *>()
+            : nullptr;
+        // AGENT-GUARD: An external KWin plugin must not cast to or call
+        // LayerShellV1Window. That installed header describes an internal class
+        // whose symbols are not exported, so even a successful link produces a
+        // plugin that KWin cannot load. Track the exported protocol objects and
+        // resolve their public Window counterparts through WaylandServer.
+        if (layerShell) {
+            connect(layerShell, &KWin::LayerShellV1Interface::surfaceCreated,
+                    this, [this](KWin::LayerSurfaceV1Interface *surface) {
+                        m_developmentLayerSurfaces.append(surface);
+                    });
+        }
+    }
 }
 
 void KWinControlEndpoint::setHybridDiagnosticsProvider(
@@ -97,6 +160,7 @@ QByteArray KWinControlEndpoint::Capabilities() const
     for (const auto &method : {QStringLiteral("Windows"), QStringLiteral("Outputs"),
                                QStringLiteral("InputCapabilities"),
                                QStringLiteral("ShellVisibilitySnapshot"),
+                               QStringLiteral("DevelopmentShellSurfaces"),
                                QStringLiteral("Containers"), QStringLiteral("DockWindows"),
                                QStringLiteral("ReleaseContainer"),
                                QStringLiteral("InjectTestInput"),
@@ -155,6 +219,73 @@ QByteArray KWinControlEndpoint::InputCapabilities() const
 QByteArray KWinControlEndpoint::ShellVisibilitySnapshot() const
 {
     return m_shellVisibility.snapshotJson();
+}
+
+QByteArray KWinControlEndpoint::DevelopmentShellSurfaces() const
+{
+    // AGENT-GUARD: Layer-shell protocol state can identify user surfaces. The
+    // inventory is available only in the launcher's isolated development mode
+    // and is filtered to QindaQt's two notification scopes.
+    if (!m_mutationsEnabled) {
+        return response(QStringLiteral("rejected"),
+                        QStringLiteral("control-disabled"),
+                        QStringLiteral("development surface evidence is disabled"));
+    }
+    QJsonArray surfaces;
+    KWin::WaylandServer *const server = KWin::waylandServer();
+    if (server == nullptr) {
+        return response(QStringLiteral("unavailable"),
+                        QStringLiteral("wayland-server-unavailable"),
+                        QStringLiteral("KWin Wayland server is unavailable"));
+    }
+    for (const QPointer<KWin::LayerSurfaceV1Interface> &trackedSurface
+         : m_developmentLayerSurfaces) {
+        KWin::LayerSurfaceV1Interface *const surface = trackedSurface.data();
+        KWin::Window *const window = surface
+            ? server->findWindow(surface->surface())
+            : nullptr;
+        if (window == nullptr || window->isDeleted()) {
+            continue;
+        }
+        if (surface->scope() != QStringLiteral("notification-popup")
+            && surface->scope() != QStringLiteral("notification-center")) {
+            continue;
+        }
+        const KWin::LogicalOutput *const output = window->output();
+        const KWin::OutputInterface *const requestedOutput = surface->output();
+        const KWin::LogicalOutput *const desiredOutput = requestedOutput
+            ? requestedOutput->handle()
+            : output;
+        const QSize desiredSize = surface->desiredSize();
+        surfaces.append(
+            QJsonObject{{QStringLiteral("scope"), surface->scope()},
+                        {QStringLiteral("processId"),
+                         QString::number(window->pid())},
+                        {QStringLiteral("committed"), surface->isCommitted()},
+                        {QStringLiteral("mapped"), window->isShown()},
+                        {QStringLiteral("active"), window->isActive()},
+                        {QStringLiteral("acceptsFocus"), surface->acceptsFocus()},
+                        {QStringLiteral("layer"), layerName(surface->layer())},
+                        {QStringLiteral("anchors"),
+                         anchorsEvidence(surface->anchor())},
+                        {QStringLiteral("margins"),
+                         marginsEvidence(surface->margins())},
+                        {QStringLiteral("exclusiveZone"),
+                         surface->exclusiveZone()},
+                        {QStringLiteral("desiredSize"),
+                         QJsonObject{{QStringLiteral("width"), desiredSize.width()},
+                                     {QStringLiteral("height"),
+                                      desiredSize.height()}}},
+                        {QStringLiteral("geometry"),
+                         rectEvidence(window->frameGeometry())},
+                        {QStringLiteral("outputName"),
+                         output ? output->name() : QString{}},
+                        {QStringLiteral("desiredOutputName"),
+                         desiredOutput ? desiredOutput->name() : QString{}}});
+    }
+    return ControlCodec::compactJson(
+        {{QStringLiteral("status"), QStringLiteral("ok")},
+         {QStringLiteral("surfaces"), surfaces}});
 }
 
 QByteArray KWinControlEndpoint::Containers() const

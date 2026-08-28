@@ -3,6 +3,7 @@
 
 #include <QMetaObject>
 #include <QPointer>
+#include <QJsonObject>
 #include <QVariantMap>
 
 #include <memory>
@@ -35,6 +36,9 @@ public:
     ~NotificationWindowController();
 
     [[nodiscard]] bool reconcile(QScreen *screen, QString *error = nullptr);
+    // Development evidence is a read-only projection of the two production
+    // windows. It never creates, focuses, maps, or mutates a surface.
+    [[nodiscard]] QJsonObject evidence() const;
     void reset() noexcept;
 
 private:

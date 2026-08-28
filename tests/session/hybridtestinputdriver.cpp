@@ -290,6 +290,34 @@ bool DevelopmentInputDriver::activateFirstContextMenuAction(
     return true;
 }
 
+bool DevelopmentInputDriver::pressKey(QLatin1StringView key, QString *error)
+{
+    return pressChord({key}, error);
+}
+
+bool DevelopmentInputDriver::pressChord(
+    const QList<QLatin1StringView> &keys, QString *error)
+{
+    if (keys.isEmpty()) {
+        if (error != nullptr) {
+            *error = QStringLiteral("development input chord is empty");
+        }
+        return false;
+    }
+    QJsonArray events;
+    for (const auto key : keys) {
+        events.append(keyEvent(key, true));
+    }
+    for (auto iterator = keys.crbegin(); iterator != keys.crend(); ++iterator) {
+        events.append(keyEvent(*iterator, false));
+    }
+    if (!inject(events, error)) {
+        return false;
+    }
+    processProbeEventsFor(80);
+    return true;
+}
+
 bool DevelopmentInputDriver::inject(const QJsonArray &events, QString *error)
 {
     const QJsonObject request{{QStringLiteral("schemaVersion"), 1},

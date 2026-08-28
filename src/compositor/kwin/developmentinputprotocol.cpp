@@ -91,6 +91,14 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
             event.key = DevelopmentInputKey::LeftMeta;
         } else if (key == QStringLiteral("left-shift")) {
             event.key = DevelopmentInputKey::LeftShift;
+        } else if (key == QStringLiteral("n")) {
+            event.key = DevelopmentInputKey::N;
+        } else if (key == QStringLiteral("tab")) {
+            event.key = DevelopmentInputKey::Tab;
+        } else if (key == QStringLiteral("escape")) {
+            event.key = DevelopmentInputKey::Escape;
+        } else if (key == QStringLiteral("space")) {
+            event.key = DevelopmentInputKey::Space;
         } else if (key == QStringLiteral("down")) {
             event.key = DevelopmentInputKey::Down;
         } else if (key == QStringLiteral("enter")) {

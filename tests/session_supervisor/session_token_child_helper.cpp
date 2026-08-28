@@ -17,6 +17,8 @@ int main(int argc, char *argv[])
          QStringLiteral("descriptor")},
         {QStringLiteral("compositor-pid"), QStringLiteral("Compositor pid"),
          QStringLiteral("pid")},
+        {QStringLiteral("development-evidence-predecessor-pid"),
+         QStringLiteral("Prior shell pid"), QStringLiteral("pid")},
         {QStringLiteral("profile"), QStringLiteral("Profile marker"),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Theme marker"),
@@ -47,9 +49,15 @@ int main(int argc, char *argv[])
     }
     QTextStream(stdout) << "token-channel-ok "
                         << (shellRole ? "shell" : "host") << '\n';
-    const int lifetime = parser.isSet(QStringLiteral("hold"))
+    // The production supervisor always passes --profile to the shell helper,
+    // so this test-only marker lets process tests keep both generations alive
+    // without adding a recovery knob to the production API.
+    const bool hold = parser.isSet(QStringLiteral("hold"))
+        || parser.value(QStringLiteral("profile"))
+               == QLatin1String("test-hold-shell");
+    const int lifetime = hold
         ? 30'000
-        : (parser.isSet(QStringLiteral("quick-exit")) || shellRole ? 20 : 5'000);
+        : (parser.isSet(QStringLiteral("quick-exit")) || shellRole ? 20 : 30'000);
     QTimer::singleShot(lifetime, &application, &QCoreApplication::quit);
     return application.exec();
 }
