@@ -98,6 +98,38 @@ not need realtime scheduling; consequently it is functional layer-shell
 evidence, not scheduler-latency or performance evidence. Do not copy this
 container-only workaround onto a developer or installed desktop.
 
+## Current Power PB-0 pure proof
+
+The dependency-light Power protocol and aggregation candidate is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(power-protocol-|power-aggregation-)' \
+  --output-on-failure --no-tests=error
+```
+
+The protocol rows cover fixed closed values, caps, privacy-preserving D-Bus
+signatures, positive charging time-to-full marshalling, canonical round trips,
+hostile validation, and atomic decoder failure. The aggregation row covers
+absent/single/dual/UPS composition, complete coarse-level and warning
+precedence, both signed rate bounds, charging/discharging pass-through-only
+estimates, every three-source permutation, exact-full exponent spread, the
+eight-source arithmetic bound, and malformed or mixed-lineage input. These are
+pure QtTest rows: they connect to no D-Bus,
+UPower, logind, profile daemon, Wayland compositor, sysfs path, or hardware.
+They are not service, activation, display-provider, or UI evidence.
+
+The separate pure brightness candidate is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.brightness-model-' \
+  --output-on-failure --no-tests=error
+```
+
+Its math, composition, and dependency-policy rows are detailed in the
+[pure brightness model contract](../architecture/brightness-model.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

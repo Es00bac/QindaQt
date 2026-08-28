@@ -11,6 +11,16 @@ The durable choices are split across
 [ADR-0024](../adr/0024-route-brightness-through-power1.md), and
 [ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md).
 
+The PB-0 candidate now fixes bounded values, hostile-input validation,
+canonical byte codecs, fixed QtDBus structures, and deterministic pure battery
+aggregation in [`power_protocol`](../reference/power1-v1.md). Protocol tests
+have focused executable evidence; aggregation passed focused tests and its
+independent review returned bounded proof/arithmetic repairs now carried by a
+non-amended descendant. It remains candidate evidence until that repair is
+rereviewed. No service maturity is claimed. The final pure
+[`brightness_model`](brightness-model.md) boundary has focused executable
+evidence; it remains unqualified until independent exact-commit review passes.
+
 ## Authority map
 
 | Concern | Truth authority | QindaQt owner |
@@ -60,12 +70,12 @@ composition separate:
 
 | Module | Cohesive responsibility |
 | --- | --- |
-| `power_protocol` | Bounded values, codecs, validation, result lineage |
+| `power_protocol` | Bounded values, codecs, validation, result lineage, pure battery aggregation |
 | `power_service` | Resident ownership and collaborator orchestration only |
 | `power_client` | Exact-owner asynchronous snapshots and operations |
 | `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown |
 | `power_idle` | Compositor-idle observation and logind idle hints |
-| `brightness_model` | Pure display/keyboard brightness composition on injected values |
+| [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values |
 
 The service orchestrator may not own UPower, logind, profile-daemon, Wayland,
 or sysfs transport objects. Power modules do not link Display implementation

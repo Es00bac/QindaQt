@@ -42,7 +42,11 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   isolated-runtime qualification.
 - [Power and brightness](architecture/power-service.md) records the accepted
   Power1, shell-action, fail-closed backlight, and session-bound activation
-  architecture; implementation remains pending.
+  architecture; PB-0 pure candidates exist while every resident/platform slice
+  remains pending.
+- [Pure brightness model](architecture/brightness-model.md) fixes the PB-0
+  stable-ID fixture, mirror collapse, raw-range math, owner-loss behavior, and
+  transport-free composition boundary.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, and deterministic transaction model;
   its runtime service and compositor adapter are later milestones.
@@ -82,6 +86,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   device/stream snapshot, handle lineage, operation results, and bounds.
 - [Display1 version 1](reference/display1-v1.md) documents display value bounds,
   identity/registry rules, topology projection, codecs, and transaction states.
+- [Power1 version 1](reference/power1-v1.md) documents bounded Power values,
+  privacy-preserving handles, canonical codecs, and fail-closed validation.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.

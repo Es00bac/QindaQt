@@ -23,6 +23,11 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `3078386` — PB-0 bounded Power1 values/codecs, deterministic aggregate-
+  battery policy, result lineage, and pure brightness composition/math with
+  fail-closed identity, mirror collapse, integer conversion, installed public
+  headers, and focused tests. This is a WIRED pure boundary; resident service,
+  upstream adapters, client, UI, hardware, and mutation remain later slices.
 - `5c914a6` — Narrow installed `QindaQt.AppShell 1.0` shared boundary with
   atomic action/menu values, lifecycle and injected integration state,
   fail-closed portal replies, close consent, focus reporting, truthful

@@ -3,8 +3,8 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional boundary: public `9db68c4` plus accepted AppShell candidate
-  `5c914a6` in this integration change
+- Functional boundary: public AppShell integration `a18b046` plus accepted
+  PB-0 candidate `3078386` in this integration change
 - Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1/D2,
   live notifications, executable native Text Editor S1, and executable shared
   QindaQt.AppShell 1.0 contracts
@@ -32,6 +32,12 @@ teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The exact PB-0 candidate `3078386` passed independent GLM rereview with no
+  P0/P1/P2 finding. The combined tree built all five focused test targets,
+  passed 6/6 Power/Brightness CTest rows and 54/54 direct QtTest cases, and
+  retained 5/5 Display1 and 5/5 AppShell regressions after their binaries were
+  built. Documentation navigation, strict MkDocs, source shape, and whitespace
+  also pass. PB-0 remains a pure WIRED boundary, not a resident service or UI.
 - The exact repaired AppShell candidate `5c914a6` passed independent GLM
   rereview with no blocking finding. The combined tree then built the five
   AppShell targets serially and passed 5/5 action-registry, coordinator,
