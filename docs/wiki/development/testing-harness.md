@@ -909,6 +909,16 @@ session bus, display, input, configuration, or hardware; and do not prove a
 KWin output-management apply. Nested protocol convergence remains in the
 matrix below.
 
+The accepted D2 repair is `241c00b`; current-public-base merge `a5528f8`
+preserves that exact compiled surface. Independent exact reviews reported
+P0/P1/P2/P3 `0/0/0/0` for both commits. The manager's fresh combined-tree
+Debug build completed 68/68 focused steps, and the exact five-row selector
+passed 5/5, including both private-D-Bus rows. Post-test checks found no
+resident Display1 process, matching private daemon, or disposable fixture
+root. Release, ASan+UBSan, staged-package, and linked-consumer evidence remains
+attached to the byte-identical repaired candidate as recorded in the D2
+handoff.
+
 ## Required display matrix
 
 Single-output scenarios cover:

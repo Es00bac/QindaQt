@@ -82,9 +82,14 @@ virtual-output development seam are also integrated after exact review and
 focused integrated-tree verification. The pure Display1 protocol, identity,
 topology, and reversible transaction model are now integrated after the
 same-revision lineage defect was reproduced, repaired, and exactly rereviewed.
-In parallel with the virtual desktop outcome, implement the resident Display1
-service/adapters. Power/Brightness architecture is independently accepted at
-MODELLED only: PB-0 protocol/aggregation/model is the first ungated
-implementation slice, followed by PB-1; PB-2 waits on the routed session-lane
-activation contract. A source-only handoff or a live worker process is not
-completion.
+The resident Display1 service and exact-owner compositor inventory adapter are
+now integrated at `a5528f8` after the A/B/A epoch-reuse defect was repaired and
+two independent exact reviews passed. A fresh combined-tree Debug build passed
+68/68 focused build steps and all five Display1 service tests, including both
+serial private-D-Bus lifecycle rows, with no surviving service or fixture.
+Display1 remains fail-closed for output mutation: D3 client, writer binding,
+persistence, Settings UI, and nested preview/confirm/revert proof are next.
+Power/Brightness architecture is independently accepted at MODELLED only:
+PB-0 protocol/aggregation/model is the first ungated implementation slice,
+followed by PB-1; PB-2 waits on the routed session-lane activation contract. A
+source-only handoff or a live worker process is not completion.

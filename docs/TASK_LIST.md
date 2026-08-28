@@ -23,6 +23,11 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `a5528f8` — Resident `org.qindaqt.Display1` service and exact-owner
+  compositor inventory adapter with restart-unique process lineage, hostile
+  A/B/A epoch-reuse rejection, private-D-Bus owner replacement, deadline
+  re-arm, and complete observer/name/object teardown. Output mutation remains
+  fail-closed pending the later writer/client/UI slices.
 - `1b4e284` — Installed live notification interaction qualification: real
   `Meta+N` registration/remapping, keyboard/focus traversal, Settings1
   persistence/failure/replacement, Do Not Disturb and critical bypass, shell
