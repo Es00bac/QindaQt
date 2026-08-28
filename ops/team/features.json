@@ -197,7 +197,7 @@
       "id": "QQ-006",
       "title": "First-party experience",
       "workspace": "Roadmap milestone",
-      "state": "MODELLED",
+      "state": "EXECUTABLE",
       "steps": [
         {
           "id": "QQ-006.01", "title": "QST-1 semantic design tokens", "weight": 15, "state": "QUALIFIED",
@@ -212,10 +212,10 @@
           "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step."
         },
         {
-          "id": "QQ-006.03", "title": "Shared application-shell contracts", "weight": 10, "state": "ABSENT",
-          "summary": "No integrated shared application-shell boundary yet covers action/menu export, lifecycle, settings/session, file dialogs/portals, errors, keyboard/focus, and accessibility.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The roadmap explicitly lists the app shell as pending." }],
-          "caveat": "A candidate ADR in a worker tree is not public product progress."
+          "id": "QQ-006.03", "title": "Shared application-shell contracts", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, and an installed consumer.",
+          "evidence": [{ "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact independently accepted AppShell S0 candidate is integrated after combined-tree build, 5/5 focused tests, package consumer, source-shape, documentation, and whitespace verification." }, { "kind": "test", "reference": "docs/wiki/apps/application-shell.md", "summary": "The owning page records the action, coordinator, offscreen accessibility/close-consent, source-policy, and installed-consumer evidence." }],
+          "caveat": "Real portal adapters, application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
         },
         {
           "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "WIRED",
@@ -255,15 +255,16 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The first native application slice is also executable: QindaQt Text Editor S1 opens, edits, conflict-checks, and atomically saves one local UTF-8 document through the installed application boundary.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 is executable, and the installed QindaQt.AppShell 1.0 boundary now provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts for first-party applications.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
           { "kind": "commit", "reference": "1cd5dab", "summary": "The accepted native Text Editor S1 is integrated after an exact independent review and fresh integrated-tree verification." },
+          { "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact accepted AppShell S0 candidate is integrated after its repair rereview and fresh combined-tree verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, and Text Editor S1 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, shared app shell, File Manager, Terminal, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "The complete Settings Center, File Manager, Terminal, application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",

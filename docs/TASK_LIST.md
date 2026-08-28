@@ -23,6 +23,12 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `5c914a6` — Narrow installed `QindaQt.AppShell 1.0` shared boundary with
+  atomic action/menu values, lifecycle and injected integration state,
+  fail-closed portal replies, close consent, focus reporting, truthful
+  degraded/unavailable presentation, accessibility identity, and an installed
+  consumer. Real portal adapters, application migrations, and nested/live-AT
+  qualification remain later outcomes.
 - `a5528f8` — Resident `org.qindaqt.Display1` service and exact-owner
   compositor inventory adapter with restart-unique process lineage, hostile
   A/B/A epoch-reuse rejection, private-D-Bus owner replacement, deadline

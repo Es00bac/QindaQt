@@ -3,10 +3,11 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional commit: `1b4e284`
-- Tree: `c154d5cd29bbc6107ae049b9c7a84fda55a2d974`
-- Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1, and
-  live notifications; executable native Text Editor S1
+- Functional boundary: public `9db68c4` plus accepted AppShell candidate
+  `5c914a6` in this integration change
+- Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1/D2,
+  live notifications, executable native Text Editor S1, and executable shared
+  QindaQt.AppShell 1.0 contracts
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -31,6 +32,12 @@ teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The exact repaired AppShell candidate `5c914a6` passed independent GLM
+  rereview with no blocking finding. The combined tree then built the five
+  AppShell targets serially and passed 5/5 action-registry, coordinator,
+  offscreen accessibility/close-consent, source-policy, and clean installed-
+  consumer rows, plus documentation navigation, strict MkDocs, source shape,
+  and whitespace checks.
 - The immutable Notification Live candidate passed an independent five-profile
   private nested matrix and ten repeated 1080p lifecycles. The conflict-resolved
   manager commit then passed an independent exact-tree integration review, a

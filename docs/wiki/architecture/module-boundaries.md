@@ -26,6 +26,7 @@ tests, and the wiki page describing its contract.
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
 | `src/design_tokens` | Immutable QST-1 semantic derivation and a GUI-thread, read-only QML singleton adapter | Public `themes` values plus Qt Core/Gui; Qt QML only in the adapter; never settings, services, shell, applications, or Kirigami |
 | `src/controls` | Compiled `QindaQt.Controls 1.0` token-styled primitives and Qinda-specific form/state presentation | Public `QindaQt.Tokens 1.0` plus Qt Quick, Quick Controls 2, and Layouts; never theme selection, settings, services, shell, applications, LayerShellQt, or Kirigami |
+| `src/app_shell` | Application-owned lifecycle requests, stable action/menu projection, injected integration state, portal-request mediation, and reusable first-party QML window/focus/accessibility presentation | Public QST-1 and `QindaQt.Controls 1.0` plus Qt Core/Gui/QML/Quick; never app domain models, routes, persistence, services, platform portal/dialog code, process exit, shell, compositor, LayerShellQt, or KWin |
 | `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/applet_runtime` | Resolve profile instances through validated manifests, placement, host policy, the compiled built-in registry, and least-authority capability grants | Public `profiles`, `applets`, and `applet_host` values plus Qt Core; never QML, services, or third-party process launch |
@@ -73,6 +74,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   explicitly. Controls consume complete QST roles without inspecting theme
   identity or adding fallback palette/timing authority; domain state and
   availability remain caller inputs.
+- First-party QML applications may compose
+  [QindaQt.AppShell 1.0](../apps/application-shell.md) around app-owned content.
+  The application injects action truth, lifecycle decisions, integration state,
+  portal results, desktop identity, and QST publication; AppShell never discovers
+  or executes those policies. See
+  [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
 - `src/hybrid` owns the process-local session topology; the KWin adapter may
