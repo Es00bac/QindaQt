@@ -22,8 +22,6 @@ T.Control {
     readonly property bool busy: status === StateCard.Busy
     readonly property bool error: status === StateCard.Error
     readonly property bool alert: status === StateCard.Warning || error
-    property int accessibilityRevision: 0
-    property bool accessibilityReady: false
     readonly property int politeAnnouncement: Accessible.Polite
     readonly property int assertiveAnnouncement: Accessible.Assertive
     readonly property var semanticPair: status === StateCard.Success ? Tokens.status.success
@@ -51,25 +49,51 @@ T.Control {
         return qsTr("Information")
     }
 
-    function announceStatus() {
-        if (!accessibilityReady)
-            return
-        const announcement = qsTr("%1: %2 — %3").arg(statusName()).arg(title).arg(message)
-        // AGENT-GUARD: onStatusChanged runs before dependent bindings such as
-        // alert necessarily settle. Derive from status here so a transition
-        // never announces with the previous state's urgency.
-        const isAlert = status === StateCard.Warning || status === StateCard.Error
-        const politeness = isAlert ? assertiveAnnouncement : politeAnnouncement
-        ++accessibilityRevision
-        // AGENT-CONTRACT: This is the real Qt accessibility announcement path.
-        // The paired signal is deterministic offscreen evidence for the same
-        // message/status/politeness tuple; it is not a substitute AT bridge.
-        Accessible.announce(announcement, politeness)
-        accessibilityAnnouncementRequested(announcement, status, politeness)
+    QtObject {
+        id: announcementState
+
+        property bool ready: false
+
+        function schedule() {
+            if (ready)
+                announcementTimer.restart()
+        }
+
+        function publishLatest() {
+            if (!ready)
+                return
+            const announcement = qsTr("%1: %2 — %3")
+                .arg(control.statusName()).arg(control.title).arg(control.message)
+            // Derive urgency from the final tuple, after every binding and
+            // caller mutation in this event turn has settled.
+            const isAlert = control.status === StateCard.Warning
+                || control.status === StateCard.Error
+            const politeness = isAlert ? control.assertiveAnnouncement
+                                       : control.politeAnnouncement
+            // AGENT-CONTRACT: This is the real Qt accessibility announcement
+            // path. The paired signal is deterministic offscreen evidence for
+            // the identical latest tuple; it is not a substitute AT bridge.
+            Accessible.announce(announcement, politeness)
+            control.accessibilityAnnouncementRequested(
+                announcement, control.status, politeness)
+        }
     }
 
-    onStatusChanged: announceStatus()
-    Component.onCompleted: accessibilityReady = true
+    Timer {
+        id: announcementTimer
+        interval: 0
+        repeat: false
+        onTriggered: announcementState.publishLatest()
+    }
+
+    Connections {
+        target: control
+        function onStatusChanged() { announcementState.schedule() }
+        function onTitleChanged() { announcementState.schedule() }
+        function onMessageChanged() { announcementState.schedule() }
+    }
+
+    Component.onCompleted: announcementState.ready = true
 
     padding: Tokens.space["4"]
     // AGENT-GUARD: The inner text column intentionally has a zero preferred

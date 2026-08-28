@@ -28,6 +28,38 @@ qt_add_qml_module(
         qml/TokenSwatch.qml
 )
 
+# Qt owns the deploy-name calculation used by qmldir and QML tooling. Query it
+# once from the module target so installation cannot drift into a hand-maintained
+# second public-type inventory.
+qt_query_qml_module(
+    qindaqt_controls_qml
+    QML_FILES qindaqt_controls_qml_files
+    QML_FILES_DEPLOY_PATHS qindaqt_controls_qml_deploy_paths
+)
+list(LENGTH qindaqt_controls_qml_files qindaqt_controls_qml_file_count)
+list(LENGTH qindaqt_controls_qml_deploy_paths qindaqt_controls_deploy_path_count)
+if(NOT qindaqt_controls_qml_file_count EQUAL qindaqt_controls_deploy_path_count)
+    message(FATAL_ERROR "Controls QML sources and Qt deploy paths must remain one-to-one")
+endif()
+set_property(
+    TARGET qindaqt_controls_qml
+    PROPERTY QINDAQT_QML_DEPLOY_PATHS "${qindaqt_controls_qml_deploy_paths}"
+)
+
+foreach(qml_file deploy_path IN ZIP_LISTS
+        qindaqt_controls_qml_files qindaqt_controls_qml_deploy_paths)
+    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+    cmake_path(GET deploy_path FILENAME deploy_name)
+    # AGENT-CONTRACT: Installed tooling consumes the same relative paths Qt
+    # generated into qmldir. Preserve aliases/subdirectories from Qt's query;
+    # installing only compiled resources is insufficient for qmllint/qmlls.
+    install(
+        FILES "${qml_file}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls/${deploy_directory}"
+        RENAME "${deploy_name}"
+    )
+endforeach()
+
 target_link_libraries(
     qindaqt_controls_qml
     PRIVATE

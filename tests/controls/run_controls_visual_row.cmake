@@ -35,11 +35,10 @@ if(NOT DEFINED QINDAQT_VISUAL_TEST OR NOT EXISTS "${QINDAQT_VISUAL_TEST}")
     message(FATAL_ERROR "QINDAQT_VISUAL_TEST must name the built visual test executable")
 endif()
 
-# AGENT-GUARD: The Qt Quick software backend retains glyph/geometry render
-# state across sequential QQuickWindow lifetimes in one QtTest process even
-# when the QObject geometry is correct. Preserve one process per reviewed row;
-# folding these invocations back into one data-driven process can silently
-# write stale compact pixels while every logical assertion passes.
+# AGENT-GUARD: Preserve one exact process lifetime per reviewed row so selector
+# identity and renderer/window state cannot cross theme/profile boundaries.
+# Pixel settlement is a separate QST-motion-boundary contract in the visual
+# executable; process isolation alone did not fix the rejected compact pixels.
 execute_process(
     COMMAND "${QINDAQT_VISUAL_TEST}" "matchesReviewedBaselines:${QINDAQT_ROW}" -v1
     RESULT_VARIABLE result

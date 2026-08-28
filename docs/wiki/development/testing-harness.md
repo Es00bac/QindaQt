@@ -156,8 +156,9 @@ ctest --test-dir build/dev -R '^qindaqt\.controls-' --output-on-failure
 The focused behavior test publishes complete QST generations and covers all
 public components, direct Qt accessible interfaces, pointer-equivalent keyboard
 actions, disabled/busy/error/degraded state, Information/Warning/Error/Success
-and Busy announcement transitions, required/error FormRow-to-editor association, full
-versus partial/hostile theme previews, compact long-text flow, exact RTL
+and Busy announcement transitions, same-status content announcements,
+status-before-content event-turn coalescing, required/error FormRow-to-editor
+association, full versus partial/hostile theme previews, compact long-text flow, exact RTL
 switch/slider geometry, all five built-in themes, and reduced motion and
 transparency. The source-policy gate rejects theme identities, palette hex
 literals, and forbidden layer/service/framework imports in production QML.
@@ -171,13 +172,17 @@ prevents Qt Quick software-render state from crossing window lifetimes as
 specified by [ADR-0021](../adr/0021-isolate-controls-visual-rows.md). Each row
 waits through a named control's published QST transition duration, then checks
 the applied DPR and pixel dimensions before comparing reviewed PNG fixtures
-under pinned fonts, C locale, offscreen platform, and software rendering. The
+under two required named host-font substitutions, C locale, offscreen platform,
+and software rendering. This is environment determinism rather than a pin of
+repository-owned font bytes. The
 behavior gate separately proves reduced-motion duration projection. The gallery
 includes explicit error, busy, disabled, degraded, checked, and ordinary states
 so those appearances are reviewable in every row.
-The staged consumer removes its previous build-confined prefix,
-installs the current tree, and resolves representative Controls types only from
-that installed QML root. A separate no-threshold benchmark reports the median
+The staged consumer removes its previous build-confined prefix, installs the
+current tree, requires the exact 14 Qt-generated QML deploy paths with no extra
+QML source, and resolves representative Controls properties through strict
+tooling analysis and compiled runtime loading only from that installed QML root.
+Ambient source/build QML paths are absent. A separate no-threshold benchmark reports the median
 PSS delta of a token-plus-controls gallery versus a matched bare Qt Quick
 process from exact `smaps_rollup` PIDs.
 

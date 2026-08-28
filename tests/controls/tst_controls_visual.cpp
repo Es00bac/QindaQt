@@ -65,7 +65,9 @@ void ControlsVisualTests::initTestCase()
 {
     pinDeterministicFonts();
     QVERIFY2(QFontDatabase::families().contains(QStringLiteral("Noto Sans")),
-             "visual fixture requires the pinned Noto Sans family");
+             "visual fixture requires the named Noto Sans host family");
+    QVERIFY2(QFontDatabase::families().contains(QStringLiteral("Noto Sans Mono")),
+             "visual fixture requires the named Noto Sans Mono host family");
 }
 
 void ControlsVisualTests::matchesReviewedBaselines_data()

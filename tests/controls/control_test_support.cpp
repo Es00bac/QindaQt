@@ -107,9 +107,8 @@ bool publishTheme(QQmlEngine &engine,
 void pinDeterministicFonts()
 {
     // AGENT-CONTRACT: Visual fixtures resolve the schema's Inter/JetBrains
-    // names to fonts present in the documented test image. This keeps theme
-    // identity in QST while preventing host font-install order from changing
-    // glyph rasterization.
+    // names to two required host-image Noto families. This is deterministic
+    // environment substitution, not byte-pinned font artifact evidence.
     QFont::insertSubstitution(QStringLiteral("Inter"), QStringLiteral("Noto Sans"));
     QFont::insertSubstitution(QStringLiteral("JetBrains Mono"),
                               QStringLiteral("Noto Sans Mono"));

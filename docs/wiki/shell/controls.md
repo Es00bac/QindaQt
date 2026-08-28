@@ -51,7 +51,7 @@ with the consuming view model.
 | `FormSurface` | Raised, grouped form background with QST spacing and outline. |
 | `SectionHeader` | Wrapping section title and description with one accessible text node. |
 | `FormRow` | Responsive label/helper/error plus editor host. `editor` is required and must be declared inside the row (or explicitly reparented into it): the association does not reparent an inline property object. While associated, the row's required label and current helper/error description intentionally supersede the editor's own `accessibleName` and `accessibleDescription`; its native role and value interface remain intact. |
-| `StateCard` | Information, success, warning, error, and busy presentation with an optional ordinary action. Warning and error expose `AlertMessage`; every post-construction semantic transition uses Qt's accessibility announcement API (assertive for warning/error, polite otherwise). The read-only `politeAnnouncement` and `assertiveAnnouncement` properties expose the exact Qt/QML values rather than assuming they match a C++ enum representation; `accessibilityAnnouncementRequested` mirrors the exact tuple for deterministic offscreen verification, not as a substitute AT bridge. |
+| `StateCard` | Information, success, warning, error, and busy presentation with an optional ordinary action. Warning and error expose `AlertMessage`. Post-construction changes to status, title, or message coalesce through the next event turn, then Qt's accessibility API announces exactly one complete latest status/title/message tuple (assertive for warning/error, polite otherwise). Construction does not announce, and readiness/revision bookkeeping is private. The read-only `politeAnnouncement` and `assertiveAnnouncement` properties expose the exact Qt/QML values rather than assuming they match a C++ enum representation; `accessibilityAnnouncementRequested` mirrors the exact published tuple for deterministic offscreen verification, not as a substitute AT bridge. |
 | `DegradedNotice` | Explicit unavailable capability alert with reason and optional retry action; it never decides whether a service is available. It specializes `StateCard`; consumers may override the generic `title` and use `reason`, `retryText`, and `retryRequested`. Overriding inherited `status`, `message`, or `actionText` would sever the fixed warning and alias bindings and is unsupported. |
 | `ThemeCard` | Keyboard-selectable radio choice. `available` is the caller-owned capability input. No supplied preview means the one complete active QST generation. A supplied preview must contain QST-derived `bg.base`, `bg.raised`, `accent.default`, `fg.default`, and `outline.strong` roles whose RGBA components are finite numbers in the Qt color range. Partial, wrong-typed, non-finite, out-of-range, or otherwise hostile maps disable selection and expose one explicit unavailable preview and accessible description; roles never fall back individually into a hybrid of themes. |
 | `TokenSwatch` | Named semantic-color sample with a caller description; it does not interpret theme identity. |
@@ -114,17 +114,22 @@ Each row verifies its actual device-pixel ratio and captured pixel dimensions
 before comparison and waits through the gallery control's published QST motion
 duration before requesting reviewed frames. The reduced-motion behavior row
 separately proves the transformed duration rather than overriding animation in
-the visual harness. The fixture substitutes the schema's
-`Inter` and `JetBrains Mono` family names with pinned Noto Sans families,
-fixes the C locale, uses Qt's software backend, and stores intentional baseline
-changes in `tests/controls/baselines` for review.
+the visual harness. The fixture substitutes the schema's `Inter` and
+`JetBrains Mono` family names with the required `Noto Sans` and
+`Noto Sans Mono` families from the documented host image, fixes the C locale,
+uses Qt's software backend, and stores intentional baseline changes in
+`tests/controls/baselines` for review. This is named environment substitution,
+not a repository-owned font-byte/hash pin; changing either installed family
+still requires baseline review.
 
 A static gate rejects built-in theme IDs, `sourceThemeId`, palette hex literals,
-and forbidden imports in production control QML. A clean staged-install test
-imports the generated module from its installation prefix with ambient QML
-paths cleared. The Controls backing library resolves the sibling installed
-`QindaQt/Tokens` backing library through a relative runpath, so relocating the
-prefix does not depend on host library paths. The memory gate
+and every production QML import outside `QtQuick`, `QtQuick.Controls`,
+`QtQuick.Layouts`, and `QindaQt.Tokens`. A clean staged-install test requires
+the exact 14 Qt-generated QML deploy paths, runs a strict tooling consumer and
+the compiled runtime import from the staged QML root, and clears ambient source,
+build, and QML import paths. The Controls backing library resolves the sibling
+installed `QindaQt/Tokens` backing library through a relative runpath, so
+relocating the prefix does not depend on host library paths. The memory gate
 runs matched bare-Qt-Quick and token-plus-controls offscreen processes, reads
 five `smaps_rollup` PSS samples from each exact PID over three pairs, and records
 the median delta without inventing a machine-independent threshold.

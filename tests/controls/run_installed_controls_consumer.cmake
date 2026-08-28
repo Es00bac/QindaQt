@@ -2,7 +2,9 @@
 
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY
                           QINDAQT_INSTALL_PREFIX QINDAQT_QML_INSTALL_DIR
-                          QINDAQT_QMLTESTRUNNER QINDAQT_CONSUMER_QML)
+                          QINDAQT_QMLTESTRUNNER QINDAQT_QMLLINT
+                          QINDAQT_QT_QML_IMPORT_ROOT QINDAQT_CONSUMER_QML
+                          QINDAQT_EXPECTED_QML_DEPLOY_PATHS)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed-controls input: ${required}")
     endif()
@@ -34,6 +36,7 @@ if(NOT install_status EQUAL 0)
 endif()
 
 set(import_root "${install_prefix}/${QINDAQT_QML_INSTALL_DIR}")
+set(controls_root "${import_root}/QindaQt/Controls")
 foreach(required_file IN ITEMS
         "${import_root}/QindaQt/Controls/qmldir"
         "${import_root}/QindaQt/Controls/qindaqt_controls.qmltypes"
@@ -42,6 +45,57 @@ foreach(required_file IN ITEMS
         message(FATAL_ERROR "Installed QML payload is missing: ${required_file}")
     endif()
 endforeach()
+
+# Compare the exact staged inventory with the paths queried from Qt's module
+# target. This witnesses both missing source deployment and unintended extras.
+string(REPLACE "|" ";" expected_qml_paths "${QINDAQT_EXPECTED_QML_DEPLOY_PATHS}")
+list(SORT expected_qml_paths)
+list(LENGTH expected_qml_paths expected_qml_count)
+if(NOT expected_qml_count EQUAL 14)
+    message(FATAL_ERROR "Expected exactly 14 generated Controls QML paths, got ${expected_qml_count}")
+endif()
+
+file(GLOB_RECURSE installed_qml_paths
+    RELATIVE "${controls_root}"
+    "${controls_root}/*.qml"
+)
+list(SORT installed_qml_paths)
+if(NOT installed_qml_paths STREQUAL expected_qml_paths)
+    message(FATAL_ERROR
+        "Installed Controls QML inventory does not match the generated paths:\n"
+        "expected=${expected_qml_paths}\ninstalled=${installed_qml_paths}"
+    )
+endif()
+
+set(staged_consumer_directory "${install_prefix}/tooling-consumer")
+file(MAKE_DIRECTORY "${staged_consumer_directory}")
+set(staged_consumer "${staged_consumer_directory}/tst_installed_controls.qml")
+file(COPY_FILE "${QINDAQT_CONSUMER_QML}" "${staged_consumer}" ONLY_IF_DIFFERENT)
+
+cmake_path(NORMAL_PATH QINDAQT_QT_QML_IMPORT_ROOT OUTPUT_VARIABLE qt_qml_import_root)
+execute_process(
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        --unset=QML_IMPORT_PATH
+        --unset=QML2_IMPORT_PATH
+        "${QINDAQT_QMLLINT}"
+        --ignore-settings
+        --bare
+        --max-warnings 0
+        -I "${import_root}"
+        -I "${qt_qml_import_root}"
+        "${staged_consumer}"
+    WORKING_DIRECTORY "${staged_consumer_directory}"
+    RESULT_VARIABLE tooling_status
+    OUTPUT_VARIABLE tooling_output
+    ERROR_VARIABLE tooling_error
+)
+if(NOT tooling_status EQUAL 0)
+    message(FATAL_ERROR
+        "Installed Controls tooling consumer exited ${tooling_status}:\n"
+        "${tooling_output}${tooling_error}"
+    )
+endif()
 
 execute_process(
     COMMAND
@@ -53,7 +107,8 @@ execute_process(
         QML_DISABLE_DISK_CACHE=1
         "${QINDAQT_QMLTESTRUNNER}"
         -import "${import_root}"
-        -input "${QINDAQT_CONSUMER_QML}"
+        -input "${staged_consumer}"
+    WORKING_DIRECTORY "${staged_consumer_directory}"
     RESULT_VARIABLE consumer_status
     OUTPUT_VARIABLE consumer_output
     ERROR_VARIABLE consumer_error
@@ -64,4 +119,7 @@ if(NOT consumer_status EQUAL 0)
         "${consumer_output}${consumer_error}"
     )
 endif()
-message(STATUS "Installed QindaQt.Controls import consumer passed")
+message(STATUS
+    "Installed QindaQt.Controls exact ${expected_qml_count}-file inventory, "
+    "tooling consumer, and runtime import passed"
+)

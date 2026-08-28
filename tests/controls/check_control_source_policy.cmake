@@ -10,12 +10,11 @@ if(NOT qml_count EQUAL 14)
     message(FATAL_ERROR "Expected 14 public Controls QML files, found ${qml_count}")
 endif()
 
-set(forbidden_imports
-    "QindaQt.Settings"
-    "QindaQt.Shell"
-    "QindaQt.AppShell"
-    "LayerShellQt"
-    "org.kde.kirigami"
+set(allowed_imports
+    "QtQuick"
+    "QtQuick.Controls"
+    "QtQuick.Layouts"
+    "QindaQt.Tokens"
 )
 
 foreach(qml IN LISTS qml_files)
@@ -27,9 +26,12 @@ foreach(qml IN LISTS qml_files)
        OR content MATCHES "sourceThemeId")
         message(FATAL_ERROR "Theme identity branch is forbidden in ${qml}")
     endif()
-    foreach(forbidden IN LISTS forbidden_imports)
-        if(content MATCHES "import[ \t]+${forbidden}")
-            message(FATAL_ERROR "Forbidden dependency ${forbidden} in ${qml}")
+    string(REGEX MATCHALL "(^|\n)[ \t]*import[ \t]+[^ \t\r\n;]+" imports "${content}")
+    foreach(import IN LISTS imports)
+        string(REGEX REPLACE "(^|\n)[ \t]*import[ \t]+" "" module "${import}")
+        list(FIND allowed_imports "${module}" allowed_index)
+        if(allowed_index EQUAL -1)
+            message(FATAL_ERROR "Import ${module} is outside the Controls allowlist in ${qml}")
         endif()
     endforeach()
 endforeach()
@@ -64,4 +66,4 @@ if(unknown_row_result EQUAL 0)
     message(FATAL_ERROR "visual-row runner accepted an unknown row selector")
 endif()
 
-message(STATUS "Validated ${qml_count} Controls QML files: token-only, no theme IDs or hex palette literals; visual selector rejects missing/unknown rows")
+message(STATUS "Validated ${qml_count} Controls QML files: exact Qt/QST import allowlist, no theme IDs or hex palette literals; visual selector rejects missing/unknown rows")

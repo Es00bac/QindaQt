@@ -31,7 +31,12 @@ add_dependencies(
     qindaqt_controls_qmlplugin
 )
 
-qt_add_executable(qindaqt_controls_behavior_tests tst_controls_behavior.cpp)
+qt_add_executable(
+    qindaqt_controls_behavior_tests
+    tst_controls_behavior.cpp
+    state_card_accessibility_test.cpp
+    state_card_accessibility_test.h
+)
 target_link_libraries(
     qindaqt_controls_behavior_tests
     PRIVATE qindaqt_controls_test_support Qt6::QuickControls2 Qt6::Test
@@ -136,7 +141,10 @@ add_test(
         "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-controls-stage"
         "-DQINDAQT_QML_INSTALL_DIR=${QT6_INSTALL_QML}"
         "-DQINDAQT_QMLTESTRUNNER=$<TARGET_FILE:Qt6::qmltestrunner>"
+        "-DQINDAQT_QMLLINT=$<TARGET_FILE:Qt6::qmllint>"
+        "-DQINDAQT_QT_QML_IMPORT_ROOT=$<TARGET_FILE_DIR:Qt6::qmllint>/../qml"
         "-DQINDAQT_CONSUMER_QML=${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_installed_controls.qml"
+        "-DQINDAQT_EXPECTED_QML_DEPLOY_PATHS=$<JOIN:$<TARGET_PROPERTY:qindaqt_controls_qml,QINDAQT_QML_DEPLOY_PATHS>,|>"
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_controls_consumer.cmake"
 )

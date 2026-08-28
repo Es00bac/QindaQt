@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "control_test_support.h"
+#include "state_card_accessibility_test.h"
 
 #include "qindaqt/design_tokens/token_facade.h"
 
@@ -28,6 +29,7 @@ using QindaQt::Controls::TestSupport::controlBackground;
 using QindaQt::Controls::TestSupport::item;
 using QindaQt::Controls::TestSupport::objectColor;
 using QindaQt::Controls::TestSupport::waitForMotion;
+using QindaQt::Controls::TestSupport::verifyStateCardAnnouncements;
 using QindaQt::DesignTokens::AccessibilityInputs;
 using QindaQt::DesignTokens::TokenFacade;
 
@@ -324,57 +326,7 @@ void ControlsBehaviorTests::formRowForwardsLabelRequiredAndErrorSemantics()
 void ControlsBehaviorTests::stateCardAnnouncesDynamicSemanticTransitions()
 {
     auto scene = createScene(QStringLiteral("qinda-dark.json"));
-    auto *state = item(scene.root, "stateCard");
-    QSignalSpy announcements(
-        state, SIGNAL(accessibilityAnnouncementRequested(QString,int,int)));
-    QVERIFY(state->property("politeAnnouncement").toInt()
-            != state->property("assertiveAnnouncement").toInt());
-
-    state->setProperty("status", 0); // StateCard.Information
-    QCoreApplication::processEvents();
-    QCOMPARE(accessible(state)->role(), QAccessible::StaticText);
-    announcements.clear();
-    const int initialRevision = state->property("accessibilityRevision").toInt();
-
-    const auto requireTransition = [&](int status,
-                                       QAccessible::Role role,
-                                       const QString &prefix,
-                                       bool assertive) {
-        const auto priorCount = announcements.size();
-        state->setProperty("status", status);
-        QCoreApplication::processEvents();
-        QCOMPARE(accessible(state)->role(), role);
-        QCOMPARE(announcements.size(), priorCount + 1);
-        const QList<QVariant> tuple = announcements.constLast();
-        QVERIFY(tuple.at(0).toString().startsWith(prefix));
-        QVERIFY(tuple.at(0).toString().contains(QStringLiteral("The change was not saved")));
-        QVERIFY(tuple.at(0).toString().contains(QStringLiteral("Review the highlighted value")));
-        QCOMPARE(tuple.at(1).toInt(), status);
-        const char *mapping = assertive ? "assertiveAnnouncement" : "politeAnnouncement";
-        QCOMPARE(tuple.at(2).toInt(), state->property(mapping).toInt());
-    };
-
-    requireTransition(1,
-                      QAccessible::StaticText,
-                      QStringLiteral("Success:"),
-                      false);
-    requireTransition(4,
-                      QAccessible::StaticText,
-                      QStringLiteral("Busy:"),
-                      false);
-    requireTransition(2,
-                      QAccessible::AlertMessage,
-                      QStringLiteral("Warning:"),
-                      true);
-    requireTransition(3,
-                      QAccessible::AlertMessage,
-                      QStringLiteral("Error:"),
-                      true);
-    requireTransition(0,
-                      QAccessible::StaticText,
-                      QStringLiteral("Information:"),
-                      false);
-    QCOMPARE(state->property("accessibilityRevision").toInt(), initialRevision + 5);
+    verifyStateCardAnnouncements(item(scene.root, "stateCard"));
 }
 
 void ControlsBehaviorTests::rtlMirrorsSwitchAndSliderGeometry()
