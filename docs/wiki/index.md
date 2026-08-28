@@ -45,8 +45,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   isolated-runtime qualification.
 - [Power and brightness](architecture/power-service.md) records the accepted
   Power1, shell-action, fail-closed backlight, and session-bound activation
-  architecture; PB-0 pure candidates exist while every resident/platform slice
-  remains pending.
+  architecture; the PB-1 Wayland-free resident service/client and activation
+  package are implemented while live upstream adapters remain pending.
 - [Network service](architecture/network-service.md) records the pure Network1
   N0 boundary: secret-free values and identity, lineage-gated atomic snapshots,
   bounded scan leases, intent admission, and the fake-transport client seam,

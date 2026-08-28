@@ -1,16 +1,18 @@
 # Power1 version 1 values and pure protocol
 
 This page fixes the PB-0 value, validation, canonical-codec, and QtDBus
-boundary reserved for `org.qindaqt.Power1`. PB-0 does not own a bus name,
-connect to an upstream daemon or compositor, read hardware, or expose a user
-interface. Those are later slices in the
-[Power and brightness architecture](../architecture/power-service.md).
+boundary reserved for `org.qindaqt.Power1`, plus the PB-1 executable D-Bus
+method and signal surface. PB-0 does not own a bus name, connect to an
+upstream daemon or compositor, read hardware, or expose a user interface;
+those are later slices in the
+[Power and brightness architecture](../architecture/power-service.md). PB-1
+implements the resident service/client slice Wayland-free with deterministic
+unavailable upstream collaborators.
 
-The source currently forms a PB-0 candidate. Its protocol boundary has focused
-executable evidence; deterministic aggregation remains candidate evidence until
-an independent exact-commit review accepts it. Pure brightness composition is
-a separate focused-build candidate awaiting independent exact-commit review.
-None of these boundaries is executable `Power1` service evidence.
+The PB-0 protocol boundary has focused executable evidence. The PB-1 resident
+service and client have focused executable evidence for publication lineage,
+operation fencing, activation, and packaging; no live upstream daemon,
+backlight, idle, or session-action maturity is claimed.
 
 ## Identity and lineage
 
@@ -151,6 +153,25 @@ duplicate lineage, unknown profile references, inconsistent known flags,
 oversized collections, unsafe text, trailing bytes, and unknown versions fail
 closed. Changing a field, bound, enum meaning, D-Bus structure, or canonical
 byte layout requires a compatibility decision and normally a new version.
+
+## PB-1 executable D-Bus surface
+
+The resident PB-1 object at `/org/qindaqt/Power1` exposes exactly:
+
+| Member | Signature |
+| --- | --- |
+| `GetSnapshot` method | `(uttuuss(bbbbbbb)(bubduubdbxbxu)a((ts)ussbbduubddbdbxbxu)(sa(ss)a((ts)sss)s)a(ssss)a((ts)sbuuub)a((ts)sbuubuuus)(bsut))` out |
+| `SetProfile` method | `s` in, `(uuttttss)` out |
+| `AcquireProfileHold` method | `sss` in, `(uuttttss)` out |
+| `ReleaseProfileHold` method | `(ts)` in, `(uuttttss)` out |
+| `SetKeyboardBrightness` method | `(ts)u` in, `(uuttttss)` out |
+| `Changed` signal | `tt` |
+
+Mutation methods use delayed replies: the reply carries the initiating and
+observed lineage of exactly one dispatched operation and is sent exactly once.
+Snapshots are always `validateSnapshot`-accepted values; a snapshot is never
+an `a{sv}` bag. The installed introspection XML mirrors this table byte for
+byte.
 
 PB-0 intentionally contains no service, client, D-Bus connection, UPower,
 power-profiles-daemon, logind, Wayland, sysfs, hardware, session, Settings,
