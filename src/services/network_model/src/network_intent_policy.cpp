@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/network_model/network_intent_policy.h>
 
+#include <qindaqt/services/network_protocol/network_identity.h>
 #include <qindaqt/services/network_protocol/network_limits.h>
+#include <qindaqt/services/network_protocol/network_validation.h>
 
 #include <algorithm>
 
@@ -67,6 +69,10 @@ IntentVerdict validateConnect(const std::optional<Snapshot> &snapshot,
     return refuse(OperationKind::ConnectKnownNetwork,
                   QStringLiteral("known-network-control-unsupported"));
   }
+  if (!isValidKnownNetworkId(intent.knownNetworkId)) {
+    return refuse(OperationKind::ConnectKnownNetwork,
+                  QStringLiteral("known-network-id-invalid"));
+  }
   const auto network = std::find_if(
       snapshot->knownNetworks.cbegin(), snapshot->knownNetworks.cend(),
       [&intent](const KnownNetwork &candidate) {
@@ -99,6 +105,12 @@ IntentVerdict validateDisconnect(const std::optional<Snapshot> &snapshot,
     return refuse(OperationKind::DisconnectActive,
                   QStringLiteral("active-connection-control-unsupported"));
   }
+  QString normalizedInterface;
+  if (!normalizeInterfaceName(intent.deviceInterface, &normalizedInterface)
+      || normalizedInterface != intent.deviceInterface) {
+    return refuse(OperationKind::DisconnectActive,
+                  QStringLiteral("device-interface-invalid"));
+  }
   const auto device = std::find_if(
       snapshot->devices.cbegin(), snapshot->devices.cend(),
       [&intent](const Device &candidate) {
@@ -127,6 +139,11 @@ IntentVerdict validateSetRadio(const std::optional<Snapshot> &snapshot,
   if (!hasCapability(*snapshot, Capability::RadioControl)) {
     return refuse(OperationKind::SetRadio,
                   QStringLiteral("radio-control-unsupported"));
+  }
+  if (static_cast<quint32>(intent.kind)
+      > static_cast<quint32>(RadioKind::Wwan)) {
+    return refuse(OperationKind::SetRadio,
+                  QStringLiteral("radio-kind-invalid"));
   }
   const Radio *radio = findRadio(*snapshot, intent.kind);
   if (radio == nullptr || !radio->present) {

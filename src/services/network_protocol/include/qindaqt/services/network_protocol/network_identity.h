@@ -6,6 +6,7 @@
 
 #include <QtCore/QByteArrayView>
 #include <QtCore/QString>
+#include <QtCore/QStringView>
 
 namespace QindaQt::Network {
 
@@ -21,6 +22,14 @@ struct SsidIdentity {
   friend bool operator==(const SsidIdentity &, const SsidIdentity &) = default;
 };
 
+// Shared presentation-text predicate for Network1. It accepts well-formed
+// printable Unicode, including supplementary characters, and rejects control,
+// formatting, surrogate, private-use, unassigned, line-separator, and
+// paragraph-separator scalars. SSID normalization and snapshot validation must
+// use this same predicate so an adapter cannot bypass anti-spoof policy by
+// constructing a QString directly.
+[[nodiscard]] bool isPresentationSafeText(QStringView text);
+
 [[nodiscard]] SsidIdentity normalizeSsid(QByteArrayView rawSsid);
 
 // BSSID normalization: exactly seventeen `xx:xx:xx:xx:xx:xx` lowercase hex
@@ -32,10 +41,10 @@ struct SsidIdentity {
 [[nodiscard]] bool normalizeInterfaceName(const QString &rawName,
                                           QString *normalized);
 
-// Privacy-preserving stable known-network identity: the first 32 hex
-// characters of SHA-256 over the raw SSID octets and the security suite.
-// The digest never reveals the SSID text and is stable across scans, so UI
-// and intent only ever exchange opaque ids, never credentials.
+// Stable pseudonymous known-network identity: the complete lowercase SHA-256
+// digest over the raw SSID octets and security suite. This avoids transporting
+// SSID text in intents, but the unsalted digest is not confidentiality against
+// offline guessing of low-entropy SSIDs. It never contains credentials.
 [[nodiscard]] QString knownNetworkId(QByteArrayView rawSsid,
                                      SecuritySuite security);
 

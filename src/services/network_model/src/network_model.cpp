@@ -34,7 +34,7 @@ NetworkModel::ApplyResult NetworkModel::applySnapshot(const Snapshot &candidate)
   if (!validation.accepted) {
     return {false, redactDiagnostic(validation.reasonCode)};
   }
-  const GateDecision decision = gateSnapshot(lineage(), candidate);
+  const GateDecision decision = gateSnapshot(m_lineageHighWater, candidate);
   if (!decision.accepted()) {
     return {false, redactDiagnostic(decision.reasonCode)};
   }
@@ -45,10 +45,13 @@ NetworkModel::ApplyResult NetworkModel::applySnapshot(const Snapshot &candidate)
   ScanLeaseTracker lease;
   if (candidate.scanPhase == ScanPhase::Idle) {
     lease.release();
-  } else {
-    lease.adopt(candidate.scanLease, candidate.epoch);
+  } else if (!lease.adopt(candidate.scanLease, candidate.epoch, m_clock)) {
+    return {false, QStringLiteral("scan-lease-deadline-out-of-bounds")};
   }
+  const Lineage nextLineage{candidate.owner, candidate.epoch,
+                            candidate.revision};
   m_current = std::move(next);
+  m_lineageHighWater = nextLineage;
   m_lease = std::move(lease);
   return {true, {}};
 }

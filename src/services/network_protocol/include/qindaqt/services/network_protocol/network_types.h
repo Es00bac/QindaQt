@@ -110,9 +110,8 @@ struct Device {
 
 // AGENT-GUARD: AccessPoint and KnownNetwork structurally cannot carry a
 // passphrase, PSK, certificate, or any other secret. Network identity is the
-// public SSID text plus a privacy-preserving derived network id; adding a
-// secret-bearing field here breaks the N0 security contract and the secret
-// redaction tests.
+// public SSID text plus a derived correlation pseudonym; adding a secret-bearing
+// field here breaks the N0 security contract and the secret redaction tests.
 struct AccessPoint {
   QString deviceInterface;
   QString ssid;
@@ -143,14 +142,17 @@ struct ActiveConnection {
                          const ActiveConnection &) = default;
 };
 
-// A scan lease is the bounded right to keep a scan result set current. The
-// holder is the exact owner string that granted the lease, so an owner change
+// A scan lease is the bounded right to keep a scan result set current. Its
+// grant epoch binds it to the admitted owner lineage, so an owner change
 // invalidates it without trusting any later cleanup message.
 struct ScanLease {
   QString leaseId;
   quint64 grantedEpoch = 0;
   quint64 grantedRevision = 0;
-  qint64 deadlineEpochMs = 0;
+  // Remaining lifetime at snapshot publication. A cross-process monotonic
+  // epoch is not portable; the consumer converts this bounded duration to its
+  // injected local monotonic deadline only after atomic snapshot admission.
+  qint64 durationMilliseconds = 0;
 
   friend bool operator==(const ScanLease &, const ScanLease &) = default;
 };

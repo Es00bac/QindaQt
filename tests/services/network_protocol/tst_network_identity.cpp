@@ -15,10 +15,12 @@ class NetworkIdentityTests final : public QObject {
 private Q_SLOTS:
   void normalizesPrintableUtf8Ssid();
   void mapsUnprintableOrBinarySsidsToHidden();
+  void mapsUnicodeSpoofControlsAndUnassignedScalarsToHidden();
+  void acceptsPrintableSupplementaryUnicode();
   void rejectsOversizedSsid();
   void normalizesBssid();
   void normalizesInterfaceName();
-  void derivesStablePrivacyPreservingNetworkId();
+  void derivesStablePseudonymousNetworkId();
   void differentSecurityYieldsDifferentNetworkId();
 };
 
@@ -27,6 +29,29 @@ void NetworkIdentityTests::normalizesPrintableUtf8Ssid() {
   QVERIFY(identity.valid);
   QVERIFY(!identity.hidden);
   QCOMPARE(identity.text, QStringLiteral("Café 5G"));
+}
+
+void NetworkIdentityTests::mapsUnicodeSpoofControlsAndUnassignedScalarsToHidden() {
+  const SsidIdentity bidi =
+      normalizeSsid(QByteArray::fromHex("e280ae") + QByteArray("spoof"));
+  QVERIFY(bidi.valid);
+  QVERIFY(bidi.hidden);
+  QVERIFY(bidi.text.isEmpty());
+
+  const SsidIdentity unassigned = normalizeSsid(QString(QChar(0x0378)).toUtf8());
+  QVERIFY(unassigned.valid);
+  QVERIFY(unassigned.hidden);
+
+  QVERIFY(!isPresentationSafeText(QStringLiteral("Cafe\u202e")));
+}
+
+void NetworkIdentityTests::acceptsPrintableSupplementaryUnicode() {
+  const QString text = QStringLiteral("Cafe \U0001f680");
+  const SsidIdentity identity = normalizeSsid(text.toUtf8());
+  QVERIFY(identity.valid);
+  QVERIFY(!identity.hidden);
+  QCOMPARE(identity.text, text);
+  QVERIFY(isPresentationSafeText(text));
 }
 
 void NetworkIdentityTests::mapsUnprintableOrBinarySsidsToHidden() {
@@ -89,7 +114,7 @@ void NetworkIdentityTests::normalizesInterfaceName() {
   QVERIFY(!normalizeInterfaceName(QString(), &normalized));
 }
 
-void NetworkIdentityTests::derivesStablePrivacyPreservingNetworkId() {
+void NetworkIdentityTests::derivesStablePseudonymousNetworkId() {
   const QByteArray ssid("Cafe");
   const QString id = knownNetworkId(ssid, SecuritySuite::Wpa2Personal);
   QCOMPARE(id.size(), 64);

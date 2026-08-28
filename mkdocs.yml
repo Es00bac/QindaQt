@@ -119,3 +119,4 @@ nav:
       - "ADR-0030: Qtermwidget terminal adapter": adr/0030-confine-qtermwidget-behind-terminal-adapter.md
       - "ADR-0040: Terminal child PTY bridge": adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md
       - "ADR-0037: Bluetooth authority in BlueZ": adr/0037-keep-pairing-and-trust-authority-in-bluez.md
+      - "ADR-0045: Network1 pure boundary": adr/0045-fence-network1-pure-boundary.md

@@ -22,6 +22,8 @@ struct ValidationResult {
 // candidate, so any value that fails here is rejected whole.
 [[nodiscard]] bool isBoundedText(const QString &value,
                                  qsizetype maximumUtf8Bytes);
+[[nodiscard]] bool isValidUniqueOwner(const QString &owner);
+[[nodiscard]] bool isValidKnownNetworkId(const QString &id);
 [[nodiscard]] ValidationResult validateRadio(const Radio &radio);
 [[nodiscard]] ValidationResult validateDevice(const Device &device);
 [[nodiscard]] ValidationResult validateAccessPoint(const AccessPoint &point,

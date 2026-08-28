@@ -12,14 +12,19 @@
 namespace QindaQt::Network {
 namespace {
 
-bool isPrintableNonControl(const QString &text) {
-  for (const QChar character : text) {
-    const char32_t code = character.unicode();
-    if (code <= 0x1FU || code == 0x7FU) {
-      return false;
-    }
+bool isRejectedPresentationCategory(const QChar::Category category) {
+  switch (category) {
+  case QChar::Separator_Line:
+  case QChar::Separator_Paragraph:
+  case QChar::Other_Control:
+  case QChar::Other_Format:
+  case QChar::Other_Surrogate:
+  case QChar::Other_PrivateUse:
+  case QChar::Other_NotAssigned:
+    return true;
+  default:
+    return false;
   }
-  return true;
 }
 
 QString digestToHex(const QByteArray &digest) {
@@ -36,6 +41,25 @@ QString digestToHex(const QByteArray &digest) {
 
 } // namespace
 
+bool isPresentationSafeText(const QStringView text) {
+  for (qsizetype index = 0; index < text.size(); ++index) {
+    const QChar first = text.at(index);
+    char32_t scalar = first.unicode();
+    if (first.isHighSurrogate()) {
+      if (index + 1 >= text.size() || !text.at(index + 1).isLowSurrogate()) {
+        return false;
+      }
+      scalar = QChar::surrogateToUcs4(first, text.at(++index));
+    } else if (first.isLowSurrogate()) {
+      return false;
+    }
+    if (isRejectedPresentationCategory(QChar::category(scalar))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 SsidIdentity normalizeSsid(const QByteArrayView rawSsid) {
   SsidIdentity identity;
   if (rawSsid.size() < 0 || rawSsid.size() > kMaxSsidRawBytes) {
@@ -49,7 +73,7 @@ SsidIdentity normalizeSsid(const QByteArrayView rawSsid) {
   QStringDecoder decoder(QStringDecoder::Utf8);
   QString decoded = decoder.decode(rawSsid);
   if (decoder.hasError() || decoded.contains(QChar::Null)
-      || !isPrintableNonControl(decoded)) {
+      || !isPresentationSafeText(decoded)) {
     // AGENT-NOTE: Non-printable or non-UTF-8 SSIDs are legal on the wire but
     // must not reach presentation as mojibake that could be spoofed into a
     // lookalike identity; they are modeled as hidden networks instead.

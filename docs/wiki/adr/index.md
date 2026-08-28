@@ -46,6 +46,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0030](0030-confine-qtermwidget-behind-terminal-adapter.md) | Superseded by ADR-0040 | Confine the qtermwidget6 VT/rendering dependency behind the Terminal rendering adapter |
 | [ADR-0040](0040-own-terminal-child-pty-and-bridge-through-teletype.md) | Accepted | Own the Terminal child PTY and bridge it through the qtermwidget teletype |
 | [ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) | Accepted | Keep Bluetooth pairing and trust authority in BlueZ; defer Agent1 pairing |
+| [ADR-0045](0045-fence-network1-pure-boundary.md) | Accepted | Fence Network1 owner, lineage, lease, secret, and pure-module contracts |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

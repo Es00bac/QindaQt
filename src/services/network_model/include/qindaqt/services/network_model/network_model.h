@@ -35,13 +35,18 @@ public:
   // modify the current state; the returned reason code is already redacted.
   [[nodiscard]] ApplyResult applySnapshot(const Snapshot &candidate);
 
-  // Drops the whole lineage (owner lost, transport down). Idempotent.
+  // Clears published snapshot and lease truth while retaining the lineage
+  // high-water fence for this model lifetime. Owner loss must not make a
+  // retired epoch admissible after A -> B -> A. Idempotent.
   void clear() noexcept;
 
   [[nodiscard]] const std::optional<Snapshot> &snapshot() const noexcept {
     return m_current;
   }
   [[nodiscard]] std::optional<Lineage> lineage() const noexcept;
+  [[nodiscard]] const std::optional<Lineage> &lineageHighWater() const noexcept {
+    return m_lineageHighWater;
+  }
   [[nodiscard]] const ScanLeaseTracker &scanLease() const noexcept {
     return m_lease;
   }
@@ -59,6 +64,7 @@ public:
 private:
   MonotonicClock m_clock;
   std::optional<Snapshot> m_current;
+  std::optional<Lineage> m_lineageHighWater;
   ScanLeaseTracker m_lease;
 };
 

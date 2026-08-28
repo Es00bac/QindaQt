@@ -20,6 +20,7 @@ private Q_SLOTS:
   void rejectsInvalidValuesBeforeEncoding();
   void rejectsHostileSnapshotPayloads();
   void rejectsHostileOperationResultPayloads();
+  void rejectsNonCanonicalBooleanAtomically();
   void decodeFailureLeavesDestinationUntouched();
 };
 
@@ -75,6 +76,36 @@ void NetworkCodecTests::rejectsInvalidValuesBeforeEncoding() {
   OperationResult invalidResult = validOperationResult();
   invalidResult.initiatingRevision = 0;
   QCOMPARE(encodeOperationResult(invalidResult).error, CodecError::InvalidValue);
+
+  invalid.wireValid = false;
+  QCOMPARE(encodeSnapshot(invalid).error, CodecError::InvalidValue);
+
+  invalidResult = validOperationResult();
+  invalidResult.wireValid = false;
+  QCOMPARE(encodeOperationResult(invalidResult).error,
+           CodecError::InvalidValue);
+}
+
+void NetworkCodecTests::rejectsNonCanonicalBooleanAtomically() {
+  const Snapshot shape = validSnapshot();
+  QByteArray hostile = encodeSnapshot(shape).payload;
+  QVERIFY(!hostile.isEmpty());
+
+  qsizetype radioCountOffset = 4 + 4 + 4;
+  radioCountOffset += 4 + shape.owner.toUtf8().size();
+  radioCountOffset += 8 + 8 + 4 + 4 + 4;
+  radioCountOffset += 4 + shape.reasonCode.toUtf8().size();
+  radioCountOffset += 4 + shape.diagnostic.toUtf8().size();
+  const qsizetype radioPresentOffset = radioCountOffset + 4 + 4;
+  QVERIFY(radioPresentOffset < hostile.size());
+  hostile[radioPresentOffset] = char(2);
+
+  Snapshot destination = validSnapshot();
+  destination.revision = 99;
+  const Snapshot before = destination;
+  const DecodeResult rejected = decodeSnapshot(hostile, destination);
+  QCOMPARE(rejected.error, CodecError::InvalidValue);
+  QCOMPARE(destination, before);
 }
 
 void NetworkCodecTests::rejectsHostileSnapshotPayloads() {

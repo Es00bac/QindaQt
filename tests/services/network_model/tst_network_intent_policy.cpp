@@ -106,7 +106,8 @@ void NetworkIntentPolicyTests::rejectsScanWhileBusyOrLeased() {
   QCOMPARE(busy.reasonCode, QStringLiteral("scan-busy"));
 
   ScanLeaseTracker held;
-  held.adopt(ScanLease{QStringLiteral("lease-1"), 41, 7, 500'000}, 41);
+  QVERIFY(held.adopt(ScanLease{QStringLiteral("lease-1"), 41, 7, 120'000},
+                     41, at(0)));
   Snapshot leased = leasedSnapshot();
   const IntentVerdict heldVerdict =
       validateRequestScan(leased, held, at(1'000), RequestScanIntent{30'000});
@@ -115,7 +116,7 @@ void NetworkIntentPolicyTests::rejectsScanWhileBusyOrLeased() {
 
   // An expired lease no longer pins the scan result set.
   const IntentVerdict afterExpiry =
-      validateRequestScan(leased, held, at(600'000), RequestScanIntent{30'000});
+      validateRequestScan(leased, held, at(120'000), RequestScanIntent{30'000});
   QVERIFY2(afterExpiry.allowed, qPrintable(afterExpiry.reasonCode));
 }
 
@@ -126,7 +127,12 @@ void NetworkIntentPolicyTests::validatesConnectIntents() {
   const IntentVerdict unknown =
       validateConnect(snapshot, ConnectIntent{QStringLiteral("deadbeef")});
   QVERIFY(!unknown.allowed);
-  QCOMPARE(unknown.reasonCode, QStringLiteral("unknown-known-network"));
+  QCOMPARE(unknown.reasonCode, QStringLiteral("known-network-id-invalid"));
+
+  const IntentVerdict oversized = validateConnect(
+      snapshot, ConnectIntent{QString(kMaxNetworkIdUtf8Bytes + 1, u'a')});
+  QVERIFY(!oversized.allowed);
+  QCOMPARE(oversized.reasonCode, QStringLiteral("known-network-id-invalid"));
 
   Snapshot active = validSnapshot();
   active.activeConnections = {
@@ -148,6 +154,13 @@ void NetworkIntentPolicyTests::validatesDisconnectIntents() {
       validateDisconnect(snapshot, DisconnectIntent{QStringLiteral("wlan9")});
   QVERIFY(!unknownDevice.allowed);
   QCOMPARE(unknownDevice.reasonCode, QStringLiteral("unknown-device"));
+
+  const IntentVerdict oversizedDevice = validateDisconnect(
+      snapshot,
+      DisconnectIntent{QString(kMaxInterfaceUtf8Bytes + 1, u'w')});
+  QVERIFY(!oversizedDevice.allowed);
+  QCOMPARE(oversizedDevice.reasonCode,
+           QStringLiteral("device-interface-invalid"));
 
   const IntentVerdict idleDevice = validateDisconnect(
       validSnapshot(), DisconnectIntent{QStringLiteral("wlan0")});
@@ -176,6 +189,11 @@ void NetworkIntentPolicyTests::validatesSetRadioIntents() {
       snapshot, SetRadioIntent{RadioKind::Wwan, true});
   QVERIFY(!absent.allowed);
   QCOMPARE(absent.reasonCode, QStringLiteral("radio-absent"));
+
+  const IntentVerdict invalidKind = validateSetRadio(
+      snapshot, SetRadioIntent{static_cast<RadioKind>(99), true});
+  QVERIFY(!invalidKind.allowed);
+  QCOMPARE(invalidKind.reasonCode, QStringLiteral("radio-kind-invalid"));
 }
 
 QTEST_MAIN(NetworkIntentPolicyTests)

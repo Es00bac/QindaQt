@@ -25,11 +25,15 @@ public:
     return m_lease;
   }
 
-  // Adopts a snapshot-published lease. A lease from an epoch other than
-  // `epoch` is refused so a stale snapshot can never resurrect an expired
-  // lease after an owner change.
-  void adopt(const ScanLease &lease, quint64 epoch);
-  void release() noexcept { m_lease.reset(); }
+  // Converts a bounded snapshot-published remaining duration to this
+  // consumer's monotonic clock. Foreign lineage, missing clocks, negative
+  // time, out-of-contract duration, and addition overflow are rejected.
+  [[nodiscard]] bool adopt(const ScanLease &lease, quint64 epoch,
+                           const MonotonicClock &clock);
+  void release() noexcept {
+    m_lease.reset();
+    m_deadlineMs = 0;
+  }
 
   [[nodiscard]] bool active(const MonotonicClock &clock) const;
   [[nodiscard]] bool expired(const MonotonicClock &clock) const;
@@ -37,6 +41,7 @@ public:
 
 private:
   std::optional<ScanLease> m_lease;
+  qint64 m_deadlineMs = 0;
 };
 
 } // namespace QindaQt::Network::Model

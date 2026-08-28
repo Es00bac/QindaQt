@@ -31,7 +31,8 @@ public:
   void u32(const quint32 value) { m_stream << value; }
   void u64(const quint64 value) { m_stream << value; }
   void i64(const qint64 value) { m_stream << value; }
-  void boolean(const bool value) { m_stream << value; }
+  void u8(const quint8 value) { m_stream << value; }
+  void boolean(const bool value) { u8(value ? quint8(1) : quint8(0)); }
   void text(const QString &value) {
     const QByteArray bytes = value.toUtf8();
     if (static_cast<quint64>(bytes.size())
@@ -89,7 +90,19 @@ public:
   bool u32(quint32 &value) { return primitive(value); }
   bool u64(quint64 &value) { return primitive(value); }
   bool i64(qint64 &value) { return primitive(value); }
-  bool boolean(bool &value) { return primitive(value); }
+  bool u8(quint8 &value) { return primitive(value); }
+  bool boolean(bool &value) {
+    quint8 encoded = 0;
+    if (!u8(encoded)) {
+      return false;
+    }
+    if (encoded > 1) {
+      fail(CodecError::InvalidValue);
+      return false;
+    }
+    value = encoded == 1;
+    return true;
+  }
   bool text(QString &value, const qsizetype maximumUtf8Bytes) {
     quint32 size = 0;
     if (!u32(size)) {

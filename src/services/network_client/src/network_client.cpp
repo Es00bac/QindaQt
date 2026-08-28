@@ -5,6 +5,7 @@
 #include <qindaqt/services/network_protocol/network_codec.h>
 #include <qindaqt/services/network_protocol/network_limits.h>
 #include <qindaqt/services/network_protocol/network_redaction.h>
+#include <qindaqt/services/network_protocol/network_validation.h>
 
 #include <utility>
 
@@ -27,7 +28,8 @@ bool isBenignStaleDuplicate(const Model::NetworkModel::ApplyResult result,
 bool ClientTiming::isValid() const noexcept {
     if (requestTimeoutMilliseconds < kMinimumRequestTimeoutMilliseconds
         || requestTimeoutMilliseconds > kMaximumRequestTimeoutMilliseconds
-        || retryMilliseconds.isEmpty()) {
+        || retryMilliseconds.isEmpty()
+        || retryMilliseconds.size() > kMaximumRetryDelays) {
         return false;
     }
     int previous = 0;
@@ -86,6 +88,7 @@ NetworkClient::~NetworkClient() { stop(); }
 
 bool NetworkClient::start(QString *error) {
     if (m_started) {
+        setError(error, {});
         return true;
     }
     if (!m_timing.isValid()) {
@@ -93,14 +96,32 @@ bool NetworkClient::start(QString *error) {
         return false;
     }
     m_started = true;
-    if (!m_transport.start(error)) {
-        const QString message = error != nullptr && !error->isEmpty()
-                                    ? error->left(kMaxDiagnosticUtf8Bytes)
-                                    : QStringLiteral("network transport could not start");
-        publish(ClientState::Unavailable, message);
+    QString transportError;
+    if (!m_transport.start(&transportError)) {
+        const QString message = transportError.isEmpty()
+                                    ? QStringLiteral("network transport could not start")
+                                    : transportError;
+        // AGENT-GUARD: A transport may fail after partial setup or synchronous
+        // owner notification. Roll back every live flag and public baseline so
+        // retry invokes start again and can never inherit Ready truth.
+        m_started = false;
+        m_transportStarted = false;
+        m_refreshTimer.stop();
+        m_timeout.stop();
+        m_request.reset();
+        m_operation.reset();
+        m_model.clear();
+        m_owner.clear();
+        m_dirty = false;
+        m_retryIndex = 0;
+        m_transport.stop();
+        const QString redacted = redactDiagnostic(message);
+        setError(error, redacted);
+        publish(ClientState::Unavailable, redacted);
         return false;
     }
     m_transportStarted = true;
+    setError(error, {});
     publish(ClientState::Connecting);
     return true;
 }
@@ -211,7 +232,7 @@ void NetworkClient::handleOwnerChanged(const QString &owner) {
     // Owner replacement invalidates the whole lineage: last-confirmed data is
     // never shown as current, and A/B/A replays are fenced by the epoch gate.
     m_model.clear();
-    m_owner = owner;
+    m_owner.clear();
     m_dirty = false;
     m_retryIndex = 0;
     if (owner.isEmpty()) {
@@ -220,6 +241,12 @@ void NetworkClient::handleOwnerChanged(const QString &owner) {
         scheduleRetry();
         return;
     }
+    if (!isValidUniqueOwner(owner)) {
+        publish(ClientState::Degraded,
+                QStringLiteral("network service owner is invalid"));
+        return;
+    }
+    m_owner = owner;
     publish(ClientState::Connecting);
     m_refreshTimer.start(kNoDelay);
 }
@@ -248,10 +275,15 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
     m_timeout.stop();
     Snapshot reply;
     const DecodeResult decoded = decodeSnapshot(payload, reply);
+    const bool exactPayloadOwner = decoded.succeeded() && reply.owner == owner;
     const Model::NetworkModel::ApplyResult applied =
-        decoded.succeeded() ? m_model.applySnapshot(reply)
-                            : Model::NetworkModel::ApplyResult{
-                                  false, decoded.reasonCode};
+        exactPayloadOwner
+            ? m_model.applySnapshot(reply)
+            : Model::NetworkModel::ApplyResult{
+                  false,
+                  decoded.succeeded()
+                      ? QStringLiteral("snapshot-payload-owner-mismatch")
+                      : decoded.reasonCode};
     if (applied.accepted) {
         m_retryIndex = 0;
         publish(ClientState::Ready);

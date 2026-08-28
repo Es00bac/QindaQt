@@ -110,13 +110,13 @@ void writeScanLease(Writer &writer, const ScanLease &lease) {
   writer.text(lease.leaseId);
   writer.u64(lease.grantedEpoch);
   writer.u64(lease.grantedRevision);
-  writer.i64(lease.deadlineEpochMs);
+  writer.i64(lease.durationMilliseconds);
 }
 
 bool readScanLease(Reader &reader, ScanLease &lease) {
   return reader.text(lease.leaseId, kMaxLeaseIdUtf8Bytes)
          && reader.u64(lease.grantedEpoch) && reader.u64(lease.grantedRevision)
-         && reader.i64(lease.deadlineEpochMs);
+         && reader.i64(lease.durationMilliseconds);
 }
 
 } // namespace QindaQt::Network::CodecPrivate

@@ -33,6 +33,8 @@ qindaqt_enable_warnings(qindaqt_network_protocol)
 install(
     TARGETS qindaqt_network_protocol
     EXPORT QindaQtTargets
+    ARCHIVE COMPONENT QindaQtNetworkN0
     FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT QindaQtNetworkN0
 )

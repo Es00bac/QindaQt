@@ -27,9 +27,10 @@ struct ClientTiming final {
 
 // Owns one exact Network owner/epoch lineage and its NetworkModel. All calls
 // are asynchronous; timeouts, owner replacement, and teardown fence late
-// replies by token, owner, and lineage. A timed-out or interrupted mutation is
-// reported uncertain and never automatically replayed. Thread-confined to the
-// Qt main loop; the client owns no platform objects beyond its timers.
+// replies by token, exact decoded owner, and a lineage high-water that survives
+// owner loss. A timed-out or interrupted mutation is reported uncertain and
+// never automatically replayed. Thread-confined to the Qt main loop; the
+// client owns no platform objects beyond its timers.
 class NetworkClient final : public QObject {
     Q_OBJECT
 public:

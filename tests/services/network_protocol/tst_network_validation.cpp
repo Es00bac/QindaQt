@@ -7,6 +7,8 @@
 
 #include <QtTest>
 
+#include <limits>
+
 using namespace QindaQt::Network;
 using namespace QindaQt::Network::TestData;
 
@@ -19,10 +21,12 @@ private Q_SLOTS:
   void rejectsUnknownEnumsAndCapabilities();
   void requiresReasonForUnavailableAndDegraded();
   void rejectsDuplicateAndCappedCollections();
+  void rejectsEveryPublicFieldCap();
   void rejectsBadAccessPointIdentity();
   void rejectsBadKnownNetworkIdentity();
   void rejectsActiveConnectionReferencingMissingTruth();
   void rejectsScanLeaseInconsistencies();
+  void rejectsWireInvalidAndSecretBearingValues();
   void validatesOperationResultTruth();
 };
 
@@ -33,6 +37,72 @@ void NetworkValidationTests::acceptsCanonicalSnapshot() {
   Snapshot leased = leasedSnapshot();
   QVERIFY2(validateSnapshot(leased).accepted,
            qPrintable(validateSnapshot(leased).reasonCode));
+}
+
+void NetworkValidationTests::rejectsEveryPublicFieldCap() {
+  Snapshot devices = validSnapshot();
+  devices.devices.clear();
+  devices.accessPoints.clear();
+  devices.activeConnections.clear();
+  for (qsizetype index = 0; index <= kMaxDevices; ++index) {
+    devices.devices.append(Device{QStringLiteral("wl%1").arg(index),
+                                  DeviceKind::Wifi,
+                                  DeviceState::Disconnected});
+  }
+  QVERIFY(!validateSnapshot(devices).accepted);
+
+  Snapshot accessPoints = validSnapshot();
+  accessPoints.accessPoints.clear();
+  for (qsizetype index = 0; index <= kMaxAccessPoints; ++index) {
+    const QString bssid =
+        QStringLiteral("02:00:00:00:%1:%2")
+            .arg((index >> 8) & 0xff, 2, 16, QLatin1Char('0'))
+            .arg(index & 0xff, 2, 16, QLatin1Char('0'));
+    accessPoints.accessPoints.append(AccessPoint{
+        QStringLiteral("wlan0"), QStringLiteral("N%1").arg(index), false,
+        bssid, SecuritySuite::Open, 2'412, 50});
+  }
+  QVERIFY(!validateSnapshot(accessPoints).accepted);
+
+  Snapshot knownNetworks = validSnapshot();
+  knownNetworks.knownNetworks.clear();
+  for (qsizetype index = 0; index <= kMaxKnownNetworks; ++index) {
+    const QByteArray raw = "n" + QByteArray::number(index);
+    knownNetworks.knownNetworks.append(
+        KnownNetwork{knownNetworkId(raw, SecuritySuite::Open),
+                     QString::fromLatin1(raw), false, SecuritySuite::Open,
+                     true});
+  }
+  QVERIFY(!validateSnapshot(knownNetworks).accepted);
+
+  Snapshot reason = validSnapshot();
+  reason.reasonCode = QString(kMaxReasonCodeUtf8Bytes + 1, u'r');
+  QVERIFY(!validateSnapshot(reason).accepted);
+
+  Snapshot owner = validSnapshot();
+  owner.owner = QStringLiteral(":")
+                + QString(kMaxOwnerUtf8Bytes - 3, u'a')
+                + QStringLiteral(".1");
+  QCOMPARE(owner.owner.toUtf8().size(), kMaxOwnerUtf8Bytes);
+  QVERIFY2(validateSnapshot(owner).accepted,
+           qPrintable(validateSnapshot(owner).reasonCode));
+  owner.owner.insert(1, u'a');
+  QVERIFY(!validateSnapshot(owner).accepted);
+
+  Snapshot ssid = validSnapshot();
+  ssid.knownNetworks.first().ssid = QString(kMaxSsidUtf8Bytes + 1, u's');
+  QVERIFY(!validateSnapshot(ssid).accepted);
+
+  Snapshot lease = leasedSnapshot();
+  lease.scanLease.leaseId = QString(kMaxLeaseIdUtf8Bytes + 1, u'l');
+  QVERIFY(!validateSnapshot(lease).accepted);
+
+  Snapshot exactBoundaries = leasedSnapshot(
+      QString(kMaxLeaseIdUtf8Bytes, u'l'));
+  exactBoundaries.reasonCode = QString(kMaxReasonCodeUtf8Bytes, u'r');
+  exactBoundaries.diagnostic = QString(kMaxDiagnosticUtf8Bytes, u'd');
+  QVERIFY2(validateSnapshot(exactBoundaries).accepted,
+           qPrintable(validateSnapshot(exactBoundaries).reasonCode));
 }
 
 void NetworkValidationTests::rejectsLineageViolations() {
@@ -209,9 +279,20 @@ void NetworkValidationTests::rejectsScanLeaseInconsistencies() {
   idleWithLease.scanLease = ScanLease{QStringLiteral("lease-1"), 41, 7, 1'000};
   QVERIFY(!validateSnapshot(idleWithLease).accepted);
 
-  Snapshot leaseWithZeroDeadline = leasedSnapshot();
-  leaseWithZeroDeadline.scanLease.deadlineEpochMs = 0;
-  QVERIFY(!validateSnapshot(leaseWithZeroDeadline).accepted);
+  Snapshot leaseWithShortDuration = leasedSnapshot();
+  leaseWithShortDuration.scanLease.durationMilliseconds =
+      kMinimumScanDeadlineMilliseconds - 1;
+  QVERIFY(!validateSnapshot(leaseWithShortDuration).accepted);
+
+  Snapshot leaseWithLongDuration = leasedSnapshot();
+  leaseWithLongDuration.scanLease.durationMilliseconds =
+      kMaximumScanDeadlineMilliseconds + 1;
+  QVERIFY(!validateSnapshot(leaseWithLongDuration).accepted);
+
+  Snapshot leaseWithMaximumInteger = leasedSnapshot();
+  leaseWithMaximumInteger.scanLease.durationMilliseconds =
+      std::numeric_limits<qint64>::max();
+  QVERIFY(!validateSnapshot(leaseWithMaximumInteger).accepted);
 
   Snapshot leaseFromOtherEpoch = leasedSnapshot();
   leaseFromOtherEpoch.scanLease.grantedEpoch = 40;
@@ -221,9 +302,35 @@ void NetworkValidationTests::rejectsScanLeaseInconsistencies() {
   leaseFromFutureRevision.scanLease.grantedRevision = 8;
   QVERIFY(!validateSnapshot(leaseFromFutureRevision).accepted);
 
+  Snapshot leaseFromZeroRevision = leasedSnapshot();
+  leaseFromZeroRevision.scanLease.grantedRevision = 0;
+  QVERIFY(!validateSnapshot(leaseFromZeroRevision).accepted);
+
   Snapshot leaseWithEmptyId = leasedSnapshot();
   leaseWithEmptyId.scanLease.leaseId = QString();
   QVERIFY(!validateSnapshot(leaseWithEmptyId).accepted);
+}
+
+void NetworkValidationTests::rejectsWireInvalidAndSecretBearingValues() {
+  Snapshot invalidWire = validSnapshot();
+  invalidWire.wireValid = false;
+  QVERIFY(!validateSnapshot(invalidWire).accepted);
+
+  Snapshot bidiSsid = validSnapshot();
+  bidiSsid.knownNetworks.first().ssid = QStringLiteral("Cafe\u202e");
+  QVERIFY(!validateSnapshot(bidiSsid).accepted);
+
+  Snapshot secret = validSnapshot();
+  secret.diagnostic = QStringLiteral("password=quoted-secret");
+  QVERIFY(!validateSnapshot(secret).accepted);
+
+  OperationResult invalidResult = validOperationResult();
+  invalidResult.wireValid = false;
+  QVERIFY(!validateOperationResult(invalidResult).accepted);
+
+  OperationResult secretResult = validOperationResult();
+  secretResult.diagnostic = QStringLiteral("psk: leaked");
+  QVERIFY(!validateOperationResult(secretResult).accepted);
 }
 
 void NetworkValidationTests::validatesOperationResultTruth() {
