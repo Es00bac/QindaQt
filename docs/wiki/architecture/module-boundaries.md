@@ -25,6 +25,7 @@ tests, and the wiki page describing its contract.
 | `src/shell_orchestration` | Exact output matching, pure cross-module inventory assembly, tokenized reveal/hold interaction state, and runtime panel-plan coordination | Public profile/layout/visibility/surface values and Qt Core; never D-Bus, KWin, LayerShellQt, or QML |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
 | `src/design_tokens` | Immutable QST-1 semantic derivation and a GUI-thread, read-only QML singleton adapter | Public `themes` values plus Qt Core/Gui; Qt QML only in the adapter; never settings, services, shell, applications, or Kirigami |
+| `src/controls` | Compiled `QindaQt.Controls 1.0` token-styled primitives and Qinda-specific form/state presentation | Public `QindaQt.Tokens 1.0` plus Qt Quick, Quick Controls 2, and Layouts; never theme selection, settings, services, shell, applications, LayerShellQt, or Kirigami |
 | `src/applets` | Native applet manifest schema, validation, normalization, and catalog discovery | Qt Core only; it does not load or execute applet code |
 | `src/applet_host` | Host selection, capability policy, bounded protocol negotiation, and crash/backoff lifecycle state | `applets` public values and Qt Core; sandbox/process adapters remain separate |
 | `src/applet_runtime` | Resolve profile instances through validated manifests, placement, host policy, the compiled built-in registry, and least-authority capability grants | Public `profiles`, `applets`, and `applet_host` values plus Qt Core; never QML, services, or third-party process launch |
@@ -62,6 +63,10 @@ implemented; do not use placeholder modules to bypass a boundary.
   Settings1 projection remain outside the token module; QML can observe only
   complete generations. See
   [ADR-0013](../adr/0013-own-qst1-semantic-tokens.md).
+- First-party presentation imports [QindaQt.Controls 1.0](../shell/controls.md)
+  explicitly. Controls consume complete QST roles without inspecting theme
+  identity or adding fallback palette/timing authority; domain state and
+  availability remain caller inputs.
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
 - `src/hybrid` owns the process-local session topology; the KWin adapter may

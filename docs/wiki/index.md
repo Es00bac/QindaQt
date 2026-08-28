@@ -28,6 +28,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   dependency direction.
 - [QST-1 semantic design tokens](architecture/design-tokens.md) defines the
   immutable theme/accessibility derivation and read-only QML boundary.
+- [QindaQt.Controls 1.0](shell/controls.md) defines the compiled token-only
+  primitives, accessible state behavior, preview integrity, and focused gates
+  used by first-party interfaces.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.

@@ -145,6 +145,51 @@ display behavior. Those gates begin with the later controls and application
 slices. The exact role/pair contract and measurement policy are in
 [QST-1 semantic design tokens](../architecture/design-tokens.md).
 
+## Current reusable-controls proof
+
+The compiled Controls S2 boundary is selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.controls-' --output-on-failure
+```
+
+The focused behavior test publishes complete QST generations and covers all
+public components, direct Qt accessible interfaces, pointer-equivalent keyboard
+actions, disabled/busy/error/degraded state, Information/Warning/Error/Success
+and Busy announcement transitions, required/error FormRow-to-editor association, full
+versus partial/hostile theme previews, compact long-text flow, exact RTL
+switch/slider geometry, all five built-in themes, and reduced motion and
+transparency. The source-policy gate rejects theme identities, palette hex
+literals, and forbidden layer/service/framework imports in production QML.
+
+Visual rows are five themes by compact/ordinary/large widths at 100%, plus all
+five ordinary-width themes at truthful 125% and 150% device-pixel ratios. The
+25 deterministic CTest names each launch the same executable in a fresh process
+with one exact, validated QtTest data selector. The wrapper rejects missing or
+scale-incompatible rows and requires exactly the requested tagged pass; this
+prevents Qt Quick software-render state from crossing window lifetimes as
+specified by [ADR-0021](../adr/0021-isolate-controls-visual-rows.md). Each row
+waits through a named control's published QST transition duration, then checks
+the applied DPR and pixel dimensions before comparing reviewed PNG fixtures
+under pinned fonts, C locale, offscreen platform, and software rendering. The
+behavior gate separately proves reduced-motion duration projection. The gallery
+includes explicit error, busy, disabled, degraded, checked, and ordinary states
+so those appearances are reviewable in every row.
+The staged consumer removes its previous build-confined prefix,
+installs the current tree, and resolves representative Controls types only from
+that installed QML root. A separate no-threshold benchmark reports the median
+PSS delta of a token-plus-controls gallery versus a matched bare Qt Quick
+process from exact `smaps_rollup` PIDs.
+
+The complete `^qindaqt\.controls-` prefix currently discovers 29 tests: one
+behavior test, the 25 visual rows, source policy, staged installed import, and
+the PSS measurement.
+
+This boundary is software-renderer, package, and process-memory evidence. Live
+AT-SPI, compositor focus, physical DPI/GPU output, Settings/AppShell/service
+composition, and end-user application workflows remain outside S2. See
+[QindaQt.Controls 1.0](../shell/controls.md) for the public contract.
+
 ## Current shell and panel-surface proof
 
 Pure panel planning, editor transactions, visibility policy, owner-bound client,

@@ -31,6 +31,7 @@ nav:
       - Notification service: architecture/notifications-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
+      - QindaQt.Controls 1.0: shell/controls.md
       - Layout profiles: shell/layout-profiles.md
       - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
@@ -69,3 +70,4 @@ nav:
       - "ADR-0013: Own QST-1 semantic tokens": adr/0013-own-qst1-semantic-tokens.md
       - "ADR-0014: Confined WirePlumber worker": adr/0014-confine-wireplumber-to-glib-worker.md
       - "ADR-0015: Function before resource refinement": adr/0015-qualify-function-before-resource-refinement.md
+      - "ADR-0021: Isolate Controls visual rows": adr/0021-isolate-controls-visual-rows.md
