@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# ADR-0028: qtermwidget6 is mandatory for the terminal target and its headers
-# must not leak to any other module. The app support library below stays
-# free of qtermwidget so policy/session/presentation tests link Qt only.
-find_package(qtermwidget6 REQUIRED)
+# ADR-0028 (Accepted): qtermwidget6 is mandatory for the terminal target and
+# its headers must not leak to any other module. The adapter + executable
+# also never reach the build without the library. The audited integration
+# contract is pinned to the 2.4.x series: upstream generates AnyNewerVersion
+# config version files, so the exclusive-range request fails configuration on
+# an unaudited 2.5+ instead of silently admitting it. No support-library test
+# links the library (see tests/apps/terminal).
+find_package(qtermwidget6 2.4...<2.5 REQUIRED)
 
 set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     session/process_liveness.cpp

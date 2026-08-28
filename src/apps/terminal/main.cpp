@@ -75,7 +75,12 @@ int main(int argc, char **argv) {
   application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
   application.setDesktopFileName(QStringLiteral("org.qindaqt.Terminal"));
-
+  // AGENT-GUARD: Without this, hiding the only window on close would end the
+  // event loop before the bounded session escalation fires a single tick and
+  // the teardown guarantee would be defeated (P1 review defect). The queued
+  // closeShutdownFinished -> quit connection below is then the only quit
+  // path, and it runs strictly after the child is confirmed gone.
+  TerminalWindow::prepareApplicationQuitFlow(application);
   QCommandLineParser parser;
   parser.setApplicationDescription(
       QStringLiteral("QindaQt terminal for the configured shell"));
@@ -169,10 +174,7 @@ int main(int argc, char **argv) {
     std::fprintf(stderr, "qindaqt-terminal: %s\n",
                  qPrintable(window.session()->lastExit().diagnostic));
   }
+  window.connectQuitAfterCloseShutdown(application);
   window.show();
-
-  QObject::connect(
-      &window, &TerminalWindow::closeShutdownFinished, &application,
-      &QApplication::quit, Qt::QueuedConnection);
   return application.exec();
 }

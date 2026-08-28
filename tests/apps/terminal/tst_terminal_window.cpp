@@ -9,6 +9,9 @@
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QAction>
+#include <QCoreApplication>
+#include <QFile>
+#include <QGuiApplication>
 #include <QLabel>
 #include <QMetaObject>
 #include <QSignalSpy>
@@ -160,8 +163,10 @@ void TerminalWindowTest::
     const auto action = window->findChild<QAction *>(
         QLatin1String(expectation.objectName));
     QVERIFY2(action != nullptr, expectation.objectName);
-    QCOMPARE(action->shortcut().toString(QKeySequence::NativeText),
-             QLatin1String(expectation.shortcut));
+    // Sequence equality avoids platform string abbreviations
+    // ("Ctrl+Shift+Ins") while still asserting the exact binding.
+    QCOMPARE(action->shortcut(),
+             QKeySequence(QLatin1String(expectation.shortcut)));
     QCOMPARE(action->shortcutContext(), Qt::WindowShortcut);
     QVERIFY(!action->text().isEmpty());
     QVERIFY(!action->statusTip().isEmpty());
@@ -201,6 +206,16 @@ void TerminalWindowTest::
   auto window = harness.makeWindow();
   QVERIFY(window->session()->start(validRequest()));
   QVERIFY(harness.stub != nullptr);
+
+  // Copy is enabled only by an actual selection event, mirroring the real
+  // adapter's copyAvailable forwarding.
+  QVERIFY(!window->findChild<QAction *>(QStringLiteral("editCopyAction"))
+               ->isEnabled());
+  QVERIFY(QMetaObject::invokeMethod(window->session(),
+                                    "selectionAvailable",
+                                    Q_ARG(bool, true)));
+  QVERIFY(window->findChild<QAction *>(QStringLiteral("editCopyAction"))
+              ->isEnabled());
 
   auto *copy =
       window->findChild<QAction *>(QStringLiteral("editCopyAction"));
@@ -300,19 +315,55 @@ void TerminalWindowTest::hostileResizeClampsEmbeddedView() {
 }
 
 void TerminalWindowTest::closeRequestsShutdownBeforeQuitSignal() {
+  // P1 regression, part 1 — the production wiring seam. Qt quits when the
+  // last window closes by default, which would end the event loop during
+  // the bounded teardown escalation; main() must flip it before show().
+  // quitOnLastWindowClosed is a QGuiApplication property, hence the cast.
+  auto *guiApplication =
+      qobject_cast<QGuiApplication *>(QCoreApplication::instance());
+  QVERIFY(guiApplication != nullptr);
+  QVERIFY(guiApplication->quitOnLastWindowClosed());
+  TerminalWindow::prepareApplicationQuitFlow(*guiApplication);
+  QVERIFY(!guiApplication->quitOnLastWindowClosed());
+  TerminalWindow::prepareApplicationQuitFlow(*guiApplication); // Idempotent.
+  QVERIFY(!guiApplication->quitOnLastWindowClosed());
+
+  // P1 regression, part 2 — behavior: a shown window's close must complete
+  // the session teardown without any quit leaving the application early.
   WindowHarness harness;
   auto window = harness.makeWindow();
   QVERIFY(window->session()->start(validRequest()));
   QSignalSpy shutdownSpy(window->session(),
                          &TerminalSession::shutdownFinished);
   QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
+  QSignalSpy aboutToQuitSpy(guiApplication, &QCoreApplication::aboutToQuit);
 
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window.get()));
   window->close();
   QTest::qWait(200);
   QCOMPARE(shutdownSpy.count(), 1);
   QCOMPARE(quitSpy.count(), 1);
   QCOMPARE(window->session()->state(),
            TerminalSession::State::ShutdownComplete);
+  QCOMPARE(aboutToQuitSpy.count(), 0);
+
+  // P1 regression, part 3 — source binding: main() must wire the seam and
+  // the queued quit before the first show, so the wiring cannot silently
+  // regress while this harness cannot execute main() itself.
+  QFile mainSource(QStringLiteral(QINDAQT_SOURCE_DIR
+                                  "/src/apps/terminal/main.cpp"));
+  QVERIFY(mainSource.open(QIODevice::ReadOnly));
+  const QString source = QString::fromUtf8(mainSource.readAll());
+  const qsizetype wiring =
+      source.indexOf(QStringLiteral("prepareApplicationQuitFlow"));
+  const qsizetype quitConnect =
+      source.indexOf(QStringLiteral("connectQuitAfterCloseShutdown"));
+  const qsizetype show = source.indexOf(QStringLiteral("window.show()"));
+  QVERIFY(wiring >= 0);
+  QVERIFY(quitConnect >= 0);
+  QVERIFY(show > wiring);
+  QVERIFY(show > quitConnect);
 }
 
 QTEST_MAIN(TerminalWindowTest)

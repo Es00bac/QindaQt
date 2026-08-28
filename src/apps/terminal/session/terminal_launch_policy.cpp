@@ -10,7 +10,9 @@ namespace {
 
 bool hasControlCharacter(const QString &value) {
   for (const QChar character : value) {
-    if (character.isControl()) {
+    // QChar::isControl was removed in Qt 6.11; the category test is the
+    // replacement for the same Other_Control classification.
+    if (character.category() == QChar::Other_Control) {
       return true;
     }
   }
@@ -58,8 +60,13 @@ bool selectsUtf8(const QString &value) {
 
 void appendForcedEntry(QStringList &environment, const QString &name,
                        const QString &value) {
-  environment.removeAll(name + QLatin1Char('='));
-  environment.append(name + QLatin1Char('=') + value);
+  // AGENT-GUARD: Remove every inherited entry of this variable, not just an
+  // exact "NAME=" match: the child's getenv resolves the FIRST envp entry,
+  // so a surviving inherited value would silently win over the forced one.
+  const QString prefix = name + QLatin1Char('=');
+  environment.removeIf(
+      [&prefix](const QString &entry) { return entry.startsWith(prefix); });
+  environment.append(prefix + value);
 }
 
 [[nodiscard]] QString quotedForDiagnostic(const QString &value) {
@@ -182,18 +189,47 @@ TerminalLaunchPolicy::childEnvironment(const QStringList &baseEnvironment) {
             .environment = {}};
   }
 
+  // Locale authority bookkeeping: the first variable present in libc's
+  // precedence order decides the child's character set, so only that
+  // variable's UTF-8-ness matters.
+  enum class LocaleVariable { None, LcAll, LcType, Lang };
+  const struct {
+    QLatin1String name;
+    LocaleVariable kind;
+  } localeVariables[3] = {
+      {QLatin1String("LC_ALL"), LocaleVariable::LcAll},
+      {QLatin1String("LC_CTYPE"), LocaleVariable::LcType},
+      {QLatin1String("LANG"), LocaleVariable::Lang},
+  };
+
   QStringList sanitized;
   sanitized.reserve(baseEnvironment.size() + 3);
-  bool hasUtf8Locale = false;
+  LocaleVariable effectiveAuthority = LocaleVariable::None;
+  bool effectiveAuthorityIsUtf8 = false;
   for (const QString &entry : baseEnvironment) {
     const auto split = splitEntry(entry);
     if (!split.has_value()) {
       continue;
     }
-    if (split->name == QLatin1String("LC_ALL") ||
-        split->name == QLatin1String("LC_CTYPE") ||
-        split->name == QLatin1String("LANG")) {
-      hasUtf8Locale = hasUtf8Locale || selectsUtf8(split->value);
+
+    bool isLocaleVariable = false;
+    for (const auto &variable : localeVariables) {
+      if (split->name == variable.name) {
+        isLocaleVariable = true;
+        // First occurrence wins as the deterministic decision input; the
+        // repair below removes every occurrence of the variable it forces.
+        if (effectiveAuthority == LocaleVariable::None) {
+          effectiveAuthority = variable.kind;
+          effectiveAuthorityIsUtf8 = selectsUtf8(split->value);
+        }
+        break;
+      }
+    }
+    if (isLocaleVariable) {
+      // Kept for now; the authority repair below rewrites exactly the
+      // variables that must be forced.
+      sanitized.append(entry);
+      continue;
     }
     if (split->name == kTermVariable || split->name == kColorTermVariable) {
       // Forced values are appended below; inherited ones never pass through.
@@ -201,13 +237,32 @@ TerminalLaunchPolicy::childEnvironment(const QStringList &baseEnvironment) {
     }
     sanitized.append(entry);
   }
-  if (!hasUtf8Locale) {
-    // AGENT-CONTRACT: qtermwidget decodes child bytes as UTF-8 (ADR-0028), so
-    // the child must run under a UTF-8 locale or its output would be decoded
-    // wrong. Missing UTF-8 selection in the base environment is a normal
-    // condition (minimal sessions), so this is a fallback, not an error.
+
+  // AGENT-GUARD: Effective precedence, not string presence, is the
+  // guarantee. A UTF-8 LANG must not mask a non-UTF-8 LC_ALL, and a UTF-8
+  // LC_ALL must not cause an unnecessary rewrite of LC_CTYPE/LANG. The
+  // forced replacement keeps the inherited variable's authority while making
+  // the child emit UTF-8 bytes the renderer can decode.
+  switch (effectiveAuthority) {
+  case LocaleVariable::LcAll:
+  case LocaleVariable::LcType:
+  case LocaleVariable::Lang:
+    if (!effectiveAuthorityIsUtf8) {
+      for (const auto &variable : localeVariables) {
+        if (variable.kind == effectiveAuthority) {
+          appendForcedEntry(sanitized, variable.name, kUtf8FallbackLocale);
+          break;
+        }
+      }
+    }
+    break;
+  case LocaleVariable::None:
+    // Minimal sessions legitimately carry no locale selection; this is a
+    // fallback, not an error.
     appendForcedEntry(sanitized, QStringLiteral("LANG"), kUtf8FallbackLocale);
+    break;
   }
+
   appendForcedEntry(sanitized, kTermVariable, kTermValue);
   appendForcedEntry(sanitized, kColorTermVariable, kColorTermValue);
   return {.outcome = {true, {}}, .environment = sanitized};

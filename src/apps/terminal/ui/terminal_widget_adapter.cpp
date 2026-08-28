@@ -288,6 +288,10 @@ void TerminalWidgetAdapter::flushKeyboardBuffer() {
       m_keyboardBuffer.remove(0, written);
       continue;
     }
+    if (written < 0 && errno == EINTR) {
+      // Signal interruption is not channel state; retry the same bytes.
+      continue;
+    }
     if (written < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
       if (m_slaveWriteNotifier != nullptr) {
         m_slaveWriteNotifier->setEnabled(true);

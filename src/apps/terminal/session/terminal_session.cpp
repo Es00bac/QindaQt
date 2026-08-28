@@ -17,14 +17,18 @@ TerminalSession::TerminalSession(BackendFactory backendFactory,
 }
 
 TerminalSession::~TerminalSession() {
-  // AGENT-GUARD: Destruction must never silently skip teardown. If a caller
-  // destroys a Running session without beginShutdown(), the backend destructor
-  // still closes the PTY master (SIGHUP), but an ignoring child could
-  // survive; therefore destroy the backend and then escalate to the captured
-  // process group synchronously. Bounded waits are impossible in a
-  // destructor, so beginShutdown() remains the only guaranteed-complete route
-  // and presentation code must prefer it on window close.
-  if (m_state == State::Running && m_backend != nullptr) {
+  // AGENT-GUARD: Destruction must never silently skip teardown, including a
+  // session already inside beginShutdown()'s bounded sequence (NF-T2): the
+  // backend destructor only closes the PTY master (SIGHUP), so an ignoring
+  // child or grandchild could survive. Whenever a captured child may still
+  // be alive, dispose the backend and then finish the escalation
+  // synchronously against the captured process group. Bounded waits are
+  // impossible in a destructor, so beginShutdown() remains the only
+  // guaranteed-complete route and presentation code must prefer it on window
+  // close; this guard exists for forced destruction paths only.
+  const bool childMayBeAlive = m_state == State::Running ||
+                               m_state == State::ShuttingDown;
+  if (childMayBeAlive && m_backend != nullptr) {
     const ProcessId pid = m_backend->shellProcessId();
     m_backend->requestShutdown();
     if (m_monitor != nullptr && pid > 0 &&
@@ -86,8 +90,12 @@ bool TerminalSession::start(const TerminalLaunchRequest &request) {
     return false;
   }
   if (request.program.isEmpty()) {
+    // A rejected start is a terminal generation outcome, not a silent
+    // return to Idle: the published StartFailed status and the state must
+    // agree, and the session must stay restartable.
     publishExit({TerminalExitStatus::Kind::StartFailed, 0,
                  QStringLiteral("No shell program was resolved")});
+    setState(State::Exited);
     return false;
   }
   if (m_backend != nullptr) {
@@ -105,6 +113,7 @@ bool TerminalSession::restart() {
   if (m_request.program.isEmpty()) {
     publishExit({TerminalExitStatus::Kind::StartFailed, 0,
                  QStringLiteral("No previous session to restart")});
+    setState(State::Exited);
     return false;
   }
   enterShutdownSequence(true);
