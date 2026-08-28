@@ -44,6 +44,7 @@ nav:
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
       - Notification presentation: shell/notification-presentation.md
+      - Power applet presentation: shell/power-applet.md
   - Reference:
       - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
