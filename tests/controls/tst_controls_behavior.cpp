@@ -29,7 +29,7 @@ using QindaQt::Controls::TestSupport::controlBackground;
 using QindaQt::Controls::TestSupport::item;
 using QindaQt::Controls::TestSupport::objectColor;
 using QindaQt::Controls::TestSupport::waitForMotion;
-using QindaQt::Controls::TestSupport::verifyStateCardAnnouncements;
+using QindaQt::Controls::TestSupport::StateCardAccessibilityProbe;
 using QindaQt::DesignTokens::AccessibilityInputs;
 using QindaQt::DesignTokens::TokenFacade;
 
@@ -325,8 +325,10 @@ void ControlsBehaviorTests::formRowForwardsLabelRequiredAndErrorSemantics()
 
 void ControlsBehaviorTests::stateCardAnnouncesDynamicSemanticTransitions()
 {
+    StateCardAccessibilityProbe announcements;
     auto scene = createScene(QStringLiteral("qinda-dark.json"));
-    verifyStateCardAnnouncements(item(scene.root, "stateCard"));
+    announcements.verifyConstructionSilence();
+    announcements.verifyAnnouncements(item(scene.root, "stateCard"));
 }
 
 void ControlsBehaviorTests::rtlMirrorsSwitchAndSliderGeometry()

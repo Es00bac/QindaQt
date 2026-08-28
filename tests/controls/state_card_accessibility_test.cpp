@@ -6,15 +6,77 @@
 #include <QAccessible>
 #include <QCoreApplication>
 #include <QObject>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTest>
 #include <QVariant>
 
 #include <functional>
+#include <utility>
 
 namespace QindaQt::Controls::TestSupport {
+namespace {
 
-void verifyStateCardAnnouncements(QObject *stateCard)
+struct CapturedAnnouncement final {
+    QObject *source = nullptr;
+    QString message;
+    QAccessible::AnnouncementPoliteness politeness =
+        QAccessible::AnnouncementPoliteness::Polite;
+};
+
+struct AnnouncementRecorder final {
+    QList<CapturedAnnouncement> announcements;
+    QAccessible::UpdateHandler previousHandler = nullptr;
+};
+
+AnnouncementRecorder *activeRecorder = nullptr;
+
+void recordAccessibilityUpdate(QAccessibleEvent *event)
+{
+    AnnouncementRecorder *const recorder = activeRecorder;
+    if (recorder != nullptr && event->type() == QAccessible::Announcement) {
+        const auto *announcement = static_cast<QAccessibleAnnouncementEvent *>(event);
+        recorder->announcements.append({event->object(),
+                                        announcement->message(),
+                                        announcement->politeness()});
+    }
+    if (recorder != nullptr && recorder->previousHandler != nullptr) {
+        recorder->previousHandler(event);
+    }
+}
+
+} // namespace
+
+struct StateCardAccessibilityProbe::Impl final {
+    AnnouncementRecorder recorder;
+};
+
+StateCardAccessibilityProbe::StateCardAccessibilityProbe()
+    : impl_(std::make_unique<Impl>())
+{
+    QTest::failOnWarning(QRegularExpression(QStringLiteral(
+        ".*Accessible attached property must be attached to an object deriving "
+        "from Item or Action.*")));
+    if (activeRecorder != nullptr) {
+        qFatal("only one accessibility announcement recorder may be active");
+    }
+    activeRecorder = &impl_->recorder;
+    impl_->recorder.previousHandler =
+        QAccessible::installUpdateHandler(recordAccessibilityUpdate);
+}
+
+StateCardAccessibilityProbe::~StateCardAccessibilityProbe()
+{
+    QAccessible::installUpdateHandler(impl_->recorder.previousHandler);
+    activeRecorder = nullptr;
+}
+
+void StateCardAccessibilityProbe::verifyConstructionSilence() const
+{
+    QCOMPARE(impl_->recorder.announcements.size(), 0);
+}
+
+void StateCardAccessibilityProbe::verifyAnnouncements(QObject *stateCard)
 {
     QSignalSpy announcements(
         stateCard, SIGNAL(accessibilityAnnouncementRequested(QString,int,int)));
@@ -29,19 +91,31 @@ void verifyStateCardAnnouncements(QObject *stateCard)
                                    const QString &expected,
                                    bool assertive) {
         announcements.clear();
+        impl_->recorder.announcements.clear();
         mutate();
         QCOMPARE(announcements.size(), 0);
+        QCOMPARE(impl_->recorder.announcements.size(), 0);
         QTRY_COMPARE(announcements.size(), 1);
+        QTRY_COMPARE(impl_->recorder.announcements.size(), 1);
         // AGENT-GUARD: One extra event drain rejects duplicate timers after the
         // first observed announcement; QTRY_COMPARE alone could return early.
         QCoreApplication::processEvents();
         QCOMPARE(announcements.size(), 1);
+        QCOMPARE(impl_->recorder.announcements.size(), 1);
         QCOMPARE(accessible(stateCard)->role(), role);
         const QList<QVariant> tuple = announcements.constLast();
+        const CapturedAnnouncement &real =
+            impl_->recorder.announcements.constLast();
         QCOMPARE(tuple.at(0).toString(), expected);
+        QCOMPARE(real.source, stateCard);
+        QCOMPARE(real.message, expected);
+        QCOMPARE(real.message, tuple.at(0).toString());
         QCOMPARE(tuple.at(1).toInt(), status);
         const char *mapping = assertive ? "assertiveAnnouncement" : "politeAnnouncement";
         QCOMPARE(tuple.at(2).toInt(), stateCard->property(mapping).toInt());
+        QCOMPARE(real.politeness,
+                 assertive ? QAccessible::AnnouncementPoliteness::Assertive
+                           : QAccessible::AnnouncementPoliteness::Polite);
     };
 
     const QString title = stateCard->property("title").toString();
