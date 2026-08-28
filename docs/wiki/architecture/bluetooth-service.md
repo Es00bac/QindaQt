@@ -33,31 +33,46 @@ epoch are stale.
 Snapshot revisions are monotonic within an epoch. `Changed(epoch, revision)`
 carries no inventory data and only prompts a fetch. The client subscribes to
 the current unique owner rather than the well-known name, rejects late
-replies, coalesces invalidations while a fetch is active, and rejects older
-epochs, regressing revisions, equal-revision content contradictions, and
-malformed snapshots before publication. Public mutation results are always
-queued until after the request ID returns; stop cancels undelivered results
-except for one queued `client-stopped` uncertainty for a still-dispatched
-mutation, and object destruction safely drops that queued delivery. An
-accepted new epoch immediately makes any dispatched mutation uncertain; a
-delayed old-epoch result cannot restore success and is never replayed.
+replies, coalesces invalidations while a fetch is active with bounded backoff
+between retries, and rejects older epochs, regressing revisions,
+equal-revision content contradictions, and malformed snapshots before
+publication. A failed or timed-out fetch revokes mutation authority: the
+retained snapshot is dropped and any dispatched operation completes as
+`Uncertain`, so nothing mutates through state that can no longer be proven
+current. Public mutation results are always queued until after the request ID
+returns; stop cancels undelivered results except for one queued
+`client-stopped` uncertainty for a still-dispatched mutation, and object
+destruction safely drops that queued delivery. An accepted new epoch
+immediately makes any dispatched mutation uncertain; a delayed old-epoch
+result cannot restore success and is never replayed. Facing an initially
+absent service, the client attempts exactly one explicit
+`StartServiceByName` activation and then waits for its owner watcher.
 
 ## Backend port and the B0 deterministic adapter
 
 `bluetooth_model` defines the `AdapterBackend` port: an untrusted,
 Qt-main-thread platform boundary with run generations, immutable inventory
-values, typed operation outcomes, and caller-keyed lease release. The model
-validates every backend value fail-closed and replaces malformed outcomes with
-the protocol-valid `Failed/backend-malformed` classification; raw adapter
-text never reaches D-Bus.
+values, typed operation outcomes, and caller-keyed lease release. `start()`
+returns its generation before that run may publish, so the initial
+publication of every run is queued and generation-fenced. The model
+validates every backend value fail-closed — including lease-table
+consistency with each adapter's discovering flag, adapter existence for
+every lease, duplicate caller/adapter entries, and both lease bounds,
+projected to include dispatched-but-uncompleted lease operations — and
+replaces malformed outcomes with the protocol-valid
+`Failed/backend-malformed` classification; raw adapter text never reaches
+D-Bus.
 
 Until the serialized BluezQt runtime lane opens, the production composition
 root constructs the deterministic in-memory adapter. It reports an empty
 inventory, so an activated B0 process truthfully publishes
 `Unavailable/no-adapter` instead of fabricated devices; qualification
-populates it through its private header. The future BluezQt adapter replaces
-it behind the same port with no consumer change (ADR-0037). No BlueZ, rfkill,
-or host Bluetooth contact exists in this slice.
+populates it through its private header. Device values carry the optional
+battery percentage and GAP role only where the platform reports them
+(`batteryKnown == false` otherwise); the deterministic adapter reports
+neither, and fail-closed validation rejects any fabricated value. The future
+BluezQt adapter replaces it behind the same port with no consumer change
+(ADR-0037). No BlueZ, rfkill, or host Bluetooth contact exists in this slice.
 
 ## Operations and discovery leases
 
@@ -65,30 +80,37 @@ or host Bluetooth contact exists in this slice.
 `Disconnect` return a typed result carrying the initiating epoch/revision. The
 service rejects unavailable state, stale handles, malformed callers, unknown
 kinds, out-of-bound lease counts, discovery or connect on an unpowered
-adapter, connect of an unpaired device, and disconnect of an unconnected one.
-A timeout, owner replacement, backend replacement, or model stop makes a
-dispatched operation `Uncertain`; callers resnapshot and must not retry
-automatically.
+adapter, connect of an unpaired or already-connected device, and disconnect
+of an unconnected one. A timeout, owner replacement, backend replacement,
+model stop, or a failed refetch makes a dispatched operation `Uncertain`;
+callers resnapshot and must not retry automatically.
 
 Discovery leases are caller-scoped (unique bus name), reference-counted per
 adapter, bounded per adapter and in total, and held by the backend because the
-backend owns the discovery session. The resident service subscribes once to
-`NameOwnerChanged` on its constructing bus and releases every lease of a
-caller that vanishes, so bounded discovery cannot leak after client death.
-Powering an adapter off terminates its discovery sessions and connections,
-matching BlueZ truth.
+backend owns the discovery session. Powering an adapter off releases that
+adapter's leases, and backend stop() clears all lease state, so no discovery
+session survives its authority. The resident service subscribes once to
+`NameOwnerChanged` on its constructing bus with the `sss` match signature and
+releases every lease of a unique-name caller that vanishes, so bounded
+discovery cannot leak after client death; relinquishing a well-known alias
+without replacement is not caller loss. Powering an adapter off terminates
+its discovery sessions and connections, matching BlueZ truth.
 
 ## Activation and hardening
 
 The build installs the executable, configured D-Bus activation descriptor,
 canonical introspection XML, and a systemd user unit. The user unit is D-Bus
-named, starts after `bluetooth.service`, restricts address families to
-`AF_UNIX`, bounds tasks, drops capabilities, and enables the available
-filesystem, kernel, namespace, personality, privilege, and syscall hardening.
-It does not start, reconfigure, or supervise BlueZ. The executable binds
+named, restricts address families to `AF_UNIX`, bounds tasks, drops
+capabilities, and enables the available filesystem, kernel, namespace,
+personality, privilege, and syscall hardening. It carries no ordering
+dependency on BlueZ: a user-manager unit cannot order against the
+system-manager BlueZ unit, so the service instead tolerates BlueZ absence by
+design (a truthful `Unavailable/no-adapter` snapshot) and never starts,
+reconfigures, or supervises BlueZ. The executable binds
 `org.freedesktop.DBus.Local.Disconnected` on the exact constructing session
 connection to process exit; a replacement bus must activate a fresh process
-and epoch.
+and epoch. A staged-install test gate verifies the deployed payload and a
+linked installed consumer of the public protocol headers.
 
 Diagnostics are short, control-character-sanitized, and contain no raw
 properties, paths, process environments, Bluetooth keys, or secrets. Stable
@@ -105,16 +127,25 @@ implementation.
 
 ## Qualification boundary
 
-Focused protocol tests cover exact signatures, round trips, ordering, lease
-bounds, and the hostile malformed matrix (addresses, RSSI, capability bits,
+## Qualification boundary
+
+Focused protocol tests cover exact registered signatures, real-writer
+signature emission, meta-type round trips, ordering, lease bounds, and the
+hostile malformed matrix (addresses, RSSI, battery, role, capability bits,
 state contradictions, unstructured reason codes, oversized arrays). Model
-tests cover publication, lineage preservation, policy rejections, lease
-bounds, owner-vanish release, stop/restart epoch invalidation, and
-fail-closed backend handling. Client tests cover exact-owner binding,
-refetch coalescing, stale/malformed reply rejection, timeout uncertainty,
+tests cover publication, lineage preservation, policy rejections including
+already-connected devices, lease bounds with dispatched-lease projection,
+owner-vanish release, stop/restart epoch invalidation including reuse before
+any publication, and fail-closed backend handling. Client tests cover
+exact-owner binding, refetch coalescing, stale/malformed reply rejection,
+timeout uncertainty, mutation-authority revocation after fetch failure,
 queued exactly-once completion, and stop semantics. Private-bus tests cover
-successive owners, paired-device connect round trips, discovery leases, and
-executable activation with fresh epochs across independent buses.
+successive owners, full-fidelity snapshot round trips, a hostile oversized
+wire payload rejected by the bounded decode, paired-device connect round
+trips, discovery leases, release of a vanished lease-holding caller's exact
+bus connection, private-bus service composition, client-driven executable
+activation with fresh epochs across independent buses, and a staged-install
+gate with a linked installed consumer.
 
 **Current status:** this B0 slice is source-complete but not yet built,
 executed, or activated; those gates run in the manager's serialized runtime

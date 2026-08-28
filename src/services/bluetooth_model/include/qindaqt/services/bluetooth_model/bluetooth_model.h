@@ -35,7 +35,10 @@ public:
     explicit BluetoothModel(AdapterBackend *backend, quint64 epochSeed = 0,
                             QObject *parent = nullptr);
 
-    [[nodiscard]] const Snapshot &snapshot() const noexcept;
+    // Returns a copy of the current authoritative snapshot. Publication
+    // replaces the whole value, so a previously fetched copy stays valid for
+    // the caller; only its epoch/serial handles go stale.
+    [[nodiscard]] Snapshot snapshot() const;
     [[nodiscard]] OperationSubmission submit(const OperationRequest &request,
                                              const QString &callerId);
     // Drops every discovery lease held by a vanished caller and stops
@@ -61,6 +64,9 @@ private:
         OperationKind kind = OperationKind::Connect;
         quint64 epoch = 0;
         quint64 revision = 0;
+        // Adapter address for lease operations, used to project
+        // dispatched-but-uncompleted lease holds into the bounds check.
+        QString adapterAddress;
     };
 
     [[nodiscard]] OperationResult immediate(const OperationRequest &request,
@@ -74,7 +80,21 @@ private:
     void publishBackendMalformed();
     [[nodiscard]] Snapshot projectInventory(const BackendInventory &inventory) const;
     [[nodiscard]] bool leaseBoundsRespected(const BackendInventory &inventory) const;
+    // Derives a restart-unique nonzero epoch from 64 bits of system entropy
+    // mixed with wall clock, floored to strictly advance past every epoch
+    // this model has ever issued. Returns 0 only when the 64-bit space is
+    // exhausted; start() refuses to run in that case.
     [[nodiscard]] quint64 advanceEpoch();
+    // Conservative projected lease counts including dispatched but
+    // uncompleted acquire/release operations, per adapter address and total.
+    [[nodiscard]] qsizetype pendingLeaseCount(const QString &adapterAddress) const;
+    [[nodiscard]] qsizetype pendingLeaseCountTotal() const;
+    // Shared identity/lease arithmetic used by request validation and
+    // backend-inventory validation alike.
+    [[nodiscard]] static bool safeCallerId(const QString &callerId);
+    [[nodiscard]] static quint32 adapterLeaseTotal(const BackendInventory &inventory,
+                                                   const QString &adapterAddress);
+    [[nodiscard]] static quint32 totalLeases(const BackendInventory &inventory);
 
     AdapterBackend *m_backend = nullptr;
     Snapshot m_snapshot;
@@ -82,8 +102,10 @@ private:
     QHash<quint64, PendingOperation> m_pending;
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;
+    quint64 m_lastIssuedEpoch = 0;
     bool m_hasInventory = false;
     bool m_running = false;
+    bool m_startedOnce = false;
 };
 
 } // namespace QindaQt::Bluetooth

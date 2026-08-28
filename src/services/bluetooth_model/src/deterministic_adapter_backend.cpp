@@ -46,13 +46,31 @@ quint64 DeterministicAdapterBackend::start()
         ++m_generation;
     }
     m_running = true;
-    publish();
+    // AGENT-GUARD: The port contract requires start() to return the
+    // generation before that run may publish. The model installs the
+    // generation fence only after this returns, so the initial publication
+    // must be queued and generation-fenced, never emitted synchronously.
+    const quint64 runGeneration = m_generation;
+    QMetaObject::invokeMethod(
+        this,
+        [this, runGeneration] {
+            if (m_running && runGeneration == m_generation) {
+                publish();
+            }
+        },
+        Qt::QueuedConnection);
     return m_generation;
 }
 
 void DeterministicAdapterBackend::stop()
 {
     m_running = false;
+    // AGENT-GUARD: Lease holds are caller-scoped state of one backend run.
+    // They must never cross a stop/start boundary, or a restarted backend
+    // would resurrect discovery sessions that no live caller requested.
+    m_leases.clear();
+    m_state.leases.clear();
+    recomputeDiscovery();
 }
 
 void DeterministicAdapterBackend::publish()
@@ -84,6 +102,15 @@ quint32 DeterministicAdapterBackend::leaseTotal(const QString &adapterAddress) c
         if (it.key().adapterAddress == adapterAddress) {
             total += it.value();
         }
+    }
+    return total;
+}
+
+quint32 DeterministicAdapterBackend::leaseTotal() const
+{
+    quint32 total = 0;
+    for (auto it = m_leases.cbegin(); it != m_leases.cend(); ++it) {
+        total += it.value();
     }
     return total;
 }
@@ -146,8 +173,18 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         }
         adapter->powered = request.powered;
         if (!adapter->powered) {
-            // Powering off terminates discovery and every connection on the
-            // adapter, matching the BlueZ truth the snapshot invariants state.
+            // AGENT-GUARD: Powering off terminates the adapter's discovery
+            // sessions and every connection on it, matching the BlueZ truth
+            // the snapshot invariants state. That includes releasing the
+            // adapter's leases: a later power-on must not resurrect
+            // discovery that no surviving lease authorizes.
+            for (auto it = m_leases.begin(); it != m_leases.end();) {
+                if (it.key().adapterAddress == adapter->address) {
+                    it = m_leases.erase(it);
+                } else {
+                    ++it;
+                }
+            }
             for (BackendDevice &device : m_state.devices) {
                 if (device.adapterAddress == adapter->address) {
                     device.connected = false;
@@ -172,7 +209,8 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
                    QStringLiteral("adapter-off"));
             return;
         }
-        if (leaseTotal(request.adapterAddress) >= kMaxDiscoveryLeasesPerAdapter) {
+        if (leaseTotal(request.adapterAddress) >= kMaxDiscoveryLeasesPerAdapter
+            || leaseTotal() >= kMaxDiscoveryLeasesTotal) {
             finish(operationId, BackendOperationStatus::Rejected,
                    QStringLiteral("too-many-leases"));
             return;
@@ -211,6 +249,11 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         if (!device->paired) {
             finish(operationId, BackendOperationStatus::Rejected,
                    QStringLiteral("not-paired"));
+            return;
+        }
+        if (device->connected) {
+            finish(operationId, BackendOperationStatus::Rejected,
+                   QStringLiteral("already-connected"));
             return;
         }
         const BackendAdapter *adapter = findBackendAdapter(m_state, device->adapterAddress);

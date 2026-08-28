@@ -23,11 +23,14 @@ enum class ClientState {
 
 // AGENT-CONTRACT: This QObject is owned and used on one Qt thread. It binds to
 // an exact D-Bus owner, publishes only validated snapshots, serializes
-// mutations, and never replays a timed-out or owner-interrupted mutation. The
-// borrowed transport must share this object's thread and outlive it; all
-// completion/error reporting is asynchronous through signals. stop() cancels
-// undelivered results, then schedules one client-stopped result for a mutation
-// that was still transport-backed; destruction safely drops queued delivery.
+// mutations, and never replays a timed-out or owner-interrupted mutation. A
+// fetch failure or timeout revokes mutation authority: the retained snapshot
+// is dropped and any dispatched operation completes as Uncertain rather than
+// remaining authorized by stale state. The borrowed transport must share this
+// object's thread and outlive it; all completion/error reporting is
+// asynchronous through signals. stop() cancels undelivered results, then
+// schedules one client-stopped result for a mutation that was still
+// transport-backed; destruction safely drops queued delivery.
 class BluetoothClient : public QObject
 {
     Q_OBJECT
@@ -104,6 +107,9 @@ private:
     bool m_fetchInFlight = false;
     bool m_refetchNeeded = false;
     int m_requestTimeoutMs = 5000;
+    // Bounded retry backoff: the refetch interval doubles from 200 ms to a
+    // 2 s cap and resets to the minimum whenever a snapshot is accepted.
+    int m_retryIntervalMs = 200;
 };
 
 } // namespace QindaQt::Bluetooth

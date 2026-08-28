@@ -5,6 +5,7 @@
 #include <qindaqt/services/bluetooth_protocol/bluetooth_dbus.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 
+#include <QtCore/QMetaObject>
 #include <QtDBus/QDBusError>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
@@ -111,8 +112,29 @@ void QtBluetoothTransport::queryInitialOwner()
                 if (!d->running || generation != d->ownerGeneration) {
                     return;
                 }
-                setOwner(reply.isError() ? QString{} : reply.value());
+                if (reply.isError()) {
+                    // AGENT-CONTRACT: An initially absent service must be
+                    // activatable through the client. ServiceUnknown triggers
+                    // exactly one explicit activation attempt; the owner
+                    // watcher delivers the unique name when it appears.
+                    if (reply.error().type() == QDBusError::ServiceUnknown
+                        || reply.error().name() == QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")
+                        || reply.error().name() == QStringLiteral("org.freedesktop.DBus.Error.ServiceUnknown")) {
+                        activateService();
+                    }
+                    return;
+                }
+                setOwner(reply.value());
             });
+}
+
+void QtBluetoothTransport::activateService()
+{
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+    call.setArguments({d->serviceName, quint32(0)});
+    d->connection.asyncCall(call);
 }
 
 void QtBluetoothTransport::onServiceOwnerChanged(const QString &service,
@@ -157,8 +179,18 @@ void QtBluetoothTransport::onChanged(const quint64 epoch, const quint64 revision
 void QtBluetoothTransport::fetchSnapshot(const QString &owner, const quint64 requestId)
 {
     if (!d->running || owner.isEmpty() || owner != d->owner) {
-        Q_EMIT snapshotReply(owner, requestId, false, {},
-                             QStringLiteral("owner-unavailable"));
+        // AGENT-GUARD: BluetoothTransport promises asynchronous completion.
+        // Never emit a transport failure synchronously from the request call;
+        // queue it so callers observe the request/response ordering the
+        // client contract documents.
+        const Snapshot failed;
+        const QString reason = QStringLiteral("owner-unavailable");
+        QMetaObject::invokeMethod(
+            this,
+            [this, owner, requestId, failed, reason] {
+                Q_EMIT snapshotReply(owner, requestId, false, failed, reason);
+            },
+            Qt::QueuedConnection);
         return;
     }
     const QDBusMessage call = QDBusMessage::createMethodCall(
@@ -182,8 +214,13 @@ void QtBluetoothTransport::submitOperation(const QString &owner, const quint64 r
                                            const OperationRequest &request)
 {
     if (!d->running || owner.isEmpty() || owner != d->owner) {
-        Q_EMIT operationReply(owner, requestId, false, {},
-                              QStringLiteral("owner-unavailable"));
+        const QString reason = QStringLiteral("owner-unavailable");
+        QMetaObject::invokeMethod(
+            this,
+            [this, owner, requestId, reason] {
+                Q_EMIT operationReply(owner, requestId, false, OperationResult{}, reason);
+            },
+            Qt::QueuedConnection);
         return;
     }
 
@@ -211,9 +248,16 @@ void QtBluetoothTransport::submitOperation(const QString &owner, const quint64 r
         arguments = {QVariant::fromValue(request.target)};
         break;
     default:
-        Q_EMIT operationReply(owner, requestId, false, {},
-                              QStringLiteral("malformed-reply"));
+    {
+        const QString reason = QStringLiteral("malformed-request");
+        QMetaObject::invokeMethod(
+            this,
+            [this, owner, requestId, reason] {
+                Q_EMIT operationReply(owner, requestId, false, OperationResult{}, reason);
+            },
+            Qt::QueuedConnection);
         return;
+    }
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

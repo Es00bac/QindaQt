@@ -1,7 +1,6 @@
 [Unit]
 Description=QindaQt Bluetooth1 service
 Documentation=https://qindaqt.org/
-After=bluetooth.service
 
 [Service]
 Type=dbus

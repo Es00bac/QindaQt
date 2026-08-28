@@ -34,6 +34,7 @@ public:
 
 private:
     void queryInitialOwner();
+    void activateService();
     void setOwner(const QString &owner);
 
     struct Private;

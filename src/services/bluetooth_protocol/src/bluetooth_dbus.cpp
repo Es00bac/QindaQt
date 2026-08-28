@@ -93,8 +93,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
 {
     argument.beginStructure();
     argument << value.handle << value.adapterHandle << value.address << value.name
-             << static_cast<quint32>(value.deviceClass) << value.paired << value.connected
-             << value.rssiKnown << value.rssi;
+             << static_cast<quint32>(value.deviceClass)
+             << static_cast<quint32>(value.role) << value.paired << value.connected
+             << value.rssiKnown << value.rssi << value.batteryKnown
+             << value.batteryPercent;
     argument.endStructure();
     return argument;
 }
@@ -102,11 +104,14 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
 const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
 {
     quint32 deviceClass = 0;
+    quint32 role = 0;
     argument.beginStructure();
     argument >> value.handle >> value.adapterHandle >> value.address >> value.name
-        >> deviceClass >> value.paired >> value.connected >> value.rssiKnown >> value.rssi;
+        >> deviceClass >> role >> value.paired >> value.connected >> value.rssiKnown
+        >> value.rssi >> value.batteryKnown >> value.batteryPercent;
     argument.endStructure();
     value.deviceClass = static_cast<DeviceClass>(deviceClass);
+    value.role = static_cast<DeviceRole>(role);
     return argument;
 }
 

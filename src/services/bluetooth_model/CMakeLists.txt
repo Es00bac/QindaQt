@@ -9,6 +9,7 @@ target_sources(
     qindaqt_bluetooth_model
     PRIVATE
         src/bluetooth_model.cpp
+        src/bluetooth_model_publication.cpp
         src/deterministic_adapter_backend.cpp
         src/deterministic_backend_factory.cpp
         src/deterministic_adapter_backend.h

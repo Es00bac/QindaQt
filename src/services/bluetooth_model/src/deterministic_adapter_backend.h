@@ -55,6 +55,7 @@ private:
                 const QString &reasonCode);
     void recomputeDiscovery();
     [[nodiscard]] quint32 leaseTotal(const QString &adapterAddress) const;
+    [[nodiscard]] quint32 leaseTotal() const;
 
     BackendInventory m_state;
     QHash<LeaseKey, quint32> m_leases;

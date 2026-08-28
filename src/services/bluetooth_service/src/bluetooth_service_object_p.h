@@ -26,7 +26,7 @@ class BluetoothServiceObject final : public QObject, protected QDBusContext
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Bluetooth1\">"
         "<method name=\"GetSnapshot\"><arg name=\"snapshot\" "
-        "type=\"(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))\" direction=\"out\"/></method>"
+        "type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))\" direction=\"out\"/></method>"
         "<method name=\"SetPowered\"><arg name=\"adapter\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"powered\" type=\"b\" direction=\"in\"/>"
         "<arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
