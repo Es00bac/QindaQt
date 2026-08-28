@@ -169,9 +169,9 @@
         },
         {
           "id": "QQ-005.02", "title": "Display inventory and reversible output transactions", "weight": 18, "state": "EXECUTABLE",
-          "summary": "The revisioned compositor inventory, bounded Display1 protocol, privacy-preserving identity, topology, reversible transaction state machine, resident service, and exact-owner asynchronous adapter are integrated and execute on a disposable private bus.",
-          "evidence": [{ "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor output inventory is integrated with fail-closed production containment." }, { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and same-revision lineage repair are integrated." }, { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The independently accepted D2 resident service and exact-owner adapter are integrated after hostile A/B/A epoch repair." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh combined-tree Debug build and all five service tests pass, including two serial private-D-Bus owner/replacement/deadline/teardown lifecycles; the exact candidate also passed Release, sanitizer, package, and linked-consumer gates." }],
-          "caveat": "D3 client, persistence, writer binding, Settings UI, end-to-end preview/confirm/revert, mixed-output matrices, and physical hardware qualification remain."
+          "summary": "The revisioned compositor inventory, bounded Display1 protocol, privacy-preserving identity, topology, reversible transaction state machine, resident service, exact-owner asynchronous adapter, typed asynchronous client/coordinator, and bounded public QtWayland compositor writer are integrated.",
+          "evidence": [{ "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor output inventory is integrated with fail-closed production containment." }, { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and same-revision lineage repair are integrated." }, { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The independently accepted D2 resident service and exact-owner adapter are integrated after hostile A/B/A epoch repair." }, { "kind": "commit", "reference": "c819db8", "summary": "The exact independently accepted D3 typed asynchronous client and reversible transaction coordinator replay is integrated on the current manager tree." }, { "kind": "commit", "reference": "d7691accc2bbef1048689b7c9fd9e70939b70445", "summary": "The independently accepted D4 writer maps complete and surviving Display1 values to KDE's public output-management protocol with exact lineage, lifecycle, package, and hostile mutation coverage." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh integrated-tree Debug verification builds all 23 executable targets and passes the complete D0-D4 selector 26/26; exact review also passes Release D4 5/5, package poison, docs, shape, hashes, provenance, and residue gates." }],
+          "caveat": "Durable journal and resident writer composition, authenticated lock/logind safety, Settings UI, end-to-end nested preview/confirm/revert convergence, mixed-output matrices, resource proof, and physical hardware qualification remain."
         },
         {
           "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "WIRED",
@@ -217,13 +217,15 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
+        "summary": "The bounded Audio1 stack, Display D0-D4 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
           { "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor inventory is integrated after exact review and integrated-tree focused verification." },
           { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and lineage repair are integrated after exact rereview." },
           { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The accepted D2 resident Display1 service and exact-owner adapter are integrated after two exact PASS reviews and fresh combined-tree verification." },
+          { "kind": "commit", "reference": "c819db8", "summary": "The accepted D3 typed client/coordinator replay is integrated after exact Gemini review and fresh strict Debug/Release manager verification." },
+          { "kind": "commit", "reference": "d7691accc2bbef1048689b7c9fd9e70939b70445", "summary": "The accepted D4 public output-management writer is integrated after exact zero-finding review and fresh 26/26 manager-tree verification." },
           { "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The accepted PB-0 pure values, codecs, aggregation, brightness composition, math, package, and focused tests are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
@@ -232,7 +234,7 @@
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 durable persistence, resident writer composition, transaction UI and nested convergence; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
     },
     {
       "id": "QQ-006",
