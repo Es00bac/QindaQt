@@ -61,6 +61,24 @@ set_tests_properties(
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+# AGENT-CONTRACT: The generic AppShell policy cannot see consumer code. This
+# row owns the editor bridge/window seam and self-tests its forbidden-dependency
+# matcher with a generated poisoned fixture outside the source tree.
+add_test(
+    NAME qindaqt.editor-app-shell-source-policy
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_EDITOR_APP_SHELL_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/apps/text_editor/app_shell"
+        "-DQINDAQT_EDITOR_WINDOW_HEADER=${PROJECT_SOURCE_DIR}/src/apps/text_editor/ui/editor_window.h"
+        "-DQINDAQT_EDITOR_WINDOW_SOURCE=${PROJECT_SOURCE_DIR}/src/apps/text_editor/ui/editor_window.cpp"
+        "-DQINDAQT_EDITOR_POLICY_POISON_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/editor-app-shell-policy-poison"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_editor_app_shell_source_policy.cmake"
+)
+set_tests_properties(
+    qindaqt.editor-app-shell-source-policy
+    PROPERTIES LABELS "editor;app-shell;policy"
+)
+
 add_test(
     NAME qindaqt.editor-desktop-metadata
     COMMAND "${CMAKE_COMMAND}"

@@ -48,6 +48,55 @@ private:
   QString m_path;
 };
 
+// The editor bridge owns the synchronous request lifetime, so these doubles
+// exercise hostile portal outcomes through that consumer boundary instead of
+// merely repeating ApplicationCoordinator's generic unit coverage.
+class CancellingFileSelectionAdapter final : public FileSelectionAdapter {
+public:
+  void presentOpenFile(ApplicationCoordinator &coordinator,
+                       const PortalRequest &request) override {
+    ++openCalls;
+    openResult = coordinator.resolvePortal(request.id, false);
+  }
+
+  void presentSaveFile(ApplicationCoordinator &coordinator,
+                       const PortalRequest &request) override {
+    ++saveCalls;
+    saveResult = coordinator.resolvePortal(request.id, false);
+  }
+
+  int openCalls = 0;
+  int saveCalls = 0;
+  Error openResult;
+  Error saveResult;
+};
+
+class StaleThenExactFileSelectionAdapter final : public FileSelectionAdapter {
+public:
+  explicit StaleThenExactFileSelectionAdapter(QString exactPath)
+      : m_exactPath(std::move(exactPath)) {}
+
+  void presentOpenFile(ApplicationCoordinator &coordinator,
+                       const PortalRequest &request) override {
+    staleResult = coordinator.resolvePortal(
+        request.id + 1, true,
+        {QUrl::fromLocalFile(QStringLiteral("/tmp/stale-editor-result"))});
+    exactResult = coordinator.resolvePortal(request.id, true,
+                                            {QUrl::fromLocalFile(m_exactPath)});
+  }
+
+  void presentSaveFile(ApplicationCoordinator &coordinator,
+                       const PortalRequest &request) override {
+    (void)coordinator.resolvePortal(request.id, false);
+  }
+
+  Error staleResult;
+  Error exactResult;
+
+private:
+  QString m_exactPath;
+};
+
 [[nodiscard]] EditorAppearance appearance() {
   const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
       QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
@@ -70,7 +119,8 @@ private:
     if (menuMap.value(QStringLiteral("id")).toString() != menuId) {
       continue;
     }
-    for (const QVariant &action : menuMap.value(QStringLiteral("actions")).toList()) {
+    for (const QVariant &action :
+         menuMap.value(QStringLiteral("actions")).toList()) {
       const QVariantMap actionMap = action.toMap();
       if (actionMap.value(QStringLiteral("id")).toString() == actionId) {
         return actionMap;
@@ -92,6 +142,8 @@ private slots:
   void activatingKnownActionTriggersTheLocalCommand();
   void closeRoutesThroughAppShellQuitConsent();
   void fileSelectionFailsClosedWithoutARealDialog();
+  void cancelledFileSelectionPreservesStateAndAllowsNextRequest();
+  void stalePortalReplyIsFencedBeforeExactRecovery();
   void injectedAdapterResolvesAnOpenRequest();
 };
 
@@ -127,7 +179,8 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   QCOMPARE(coordinator.replaceActions(catalog).code, ErrorCode::None);
 }
 
-void EditorAppShellTest::publishesAtomicMenuSnapshotWithSyncedInitialProjection() {
+void EditorAppShellTest::
+    publishesAtomicMenuSnapshotWithSyncedInitialProjection() {
   EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   const QVariantList menus = window.appShellCoordinator().menus();
@@ -135,20 +188,20 @@ void EditorAppShellTest::publishesAtomicMenuSnapshotWithSyncedInitialProjection(
 
   const QVariantMap fileNew =
       findAction(menus, QStringLiteral("file"),
-                QString::fromLatin1(AppShellActionIds::FileNew));
+                 QString::fromLatin1(AppShellActionIds::FileNew));
   QVERIFY(!fileNew.isEmpty());
   QVERIFY(fileNew.value(QStringLiteral("enabled")).toBool());
 
   const QVariantMap fileSave =
       findAction(menus, QStringLiteral("file"),
-                QString::fromLatin1(AppShellActionIds::FileSave));
+                 QString::fromLatin1(AppShellActionIds::FileSave));
   QCOMPARE(fileSave.value(QStringLiteral("enabled")).toBool(),
            window.findChild<QAction *>(QStringLiteral("fileSaveAction"))
                ->isEnabled());
 
   const QVariantMap editUndo =
       findAction(menus, QStringLiteral("edit"),
-                QString::fromLatin1(AppShellActionIds::EditUndo));
+                 QString::fromLatin1(AppShellActionIds::EditUndo));
   QVERIFY(!editUndo.value(QStringLiteral("enabled")).toBool());
 }
 
@@ -162,7 +215,7 @@ void EditorAppShellTest::dirtyStateProjectsFileSaveEnabled() {
 
   const QVariantMap fileSave =
       findAction(window.appShellCoordinator().menus(), QStringLiteral("file"),
-                QString::fromLatin1(AppShellActionIds::FileSave));
+                 QString::fromLatin1(AppShellActionIds::FileSave));
   QVERIFY(fileSave.value(QStringLiteral("enabled")).toBool());
 }
 
@@ -207,6 +260,86 @@ void EditorAppShellTest::fileSelectionFailsClosedWithoutARealDialog() {
   QVERIFY(!result.accepted);
   QCOMPARE(result.error.code, ErrorCode::Denied);
   QVERIFY(window.controller()->state().isUntitled());
+}
+
+void EditorAppShellTest::
+    cancelledFileSelectionPreservesStateAndAllowsNextRequest() {
+  auto adapter = std::make_unique<CancellingFileSelectionAdapter>();
+  auto *adapterProbe = adapter.get();
+  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+                      std::move(adapter));
+  QSignalSpy finished(&window.appShellCoordinator(),
+                      &ApplicationCoordinator::portalFinished);
+
+  const auto assertUntitledState = [&window] {
+    QVERIFY(window.controller()->state().isUntitled());
+    QVERIFY(window.controller()->state().text().isEmpty());
+    QVERIFY(!window.controller()->state().isDirty());
+  };
+
+  QVERIFY(window.appShellCoordinator().activateAction(
+      QString::fromLatin1(AppShellActionIds::FileOpen)));
+  QCOMPARE(adapterProbe->openCalls, 1);
+  QCOMPARE(adapterProbe->openResult.code, ErrorCode::None);
+  QCOMPARE(finished.count(), 1);
+  PortalResult result = finished.at(0).at(0).value<PortalResult>();
+  QVERIFY(!result.accepted);
+  QCOMPARE(result.error.code, ErrorCode::Cancelled);
+  QCOMPARE(window.appShellCoordinator().lastErrorCode(), ErrorCode::None);
+  assertUntitledState();
+
+  QVERIFY(window.appShellCoordinator().activateAction(
+      QString::fromLatin1(AppShellActionIds::FileSaveAs)));
+  QCOMPARE(adapterProbe->saveCalls, 1);
+  QCOMPARE(adapterProbe->saveResult.code, ErrorCode::None);
+  QCOMPARE(finished.count(), 2);
+  result = finished.at(1).at(0).value<PortalResult>();
+  QVERIFY(!result.accepted);
+  QCOMPARE(result.error.code, ErrorCode::Cancelled);
+  QCOMPARE(window.appShellCoordinator().lastErrorCode(), ErrorCode::None);
+  assertUntitledState();
+
+  // AGENT-GUARD: Cancellation consumes only its own request. A second Open
+  // must reach the adapter; otherwise the bridge leaked a pending request and
+  // every future chooser action would fail Busy.
+  QVERIFY(window.appShellCoordinator().activateAction(
+      QString::fromLatin1(AppShellActionIds::FileOpen)));
+  QCOMPARE(adapterProbe->openCalls, 2);
+  QCOMPARE(finished.count(), 3);
+  QCOMPARE(window.appShellCoordinator().lastErrorCode(), ErrorCode::None);
+  assertUntitledState();
+}
+
+void EditorAppShellTest::stalePortalReplyIsFencedBeforeExactRecovery() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString path = directory.filePath(QStringLiteral("exact.txt"));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  QCOMPARE(file.write("exact reply only"), qint64(16));
+  file.close();
+
+  auto adapter = std::make_unique<StaleThenExactFileSelectionAdapter>(path);
+  auto *adapterProbe = adapter.get();
+  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+                      std::move(adapter));
+  QSignalSpy finished(&window.appShellCoordinator(),
+                      &ApplicationCoordinator::portalFinished);
+
+  QVERIFY(window.appShellCoordinator().activateAction(
+      QString::fromLatin1(AppShellActionIds::FileOpen)));
+
+  QCOMPARE(adapterProbe->staleResult.code, ErrorCode::StaleRequest);
+  QCOMPARE(adapterProbe->exactResult.code, ErrorCode::None);
+  QCOMPARE(finished.count(), 1);
+  const PortalResult result =
+      finished.constFirst().constFirst().value<PortalResult>();
+  QVERIFY(result.accepted);
+  QCOMPARE(result.urls, QList<QUrl>{QUrl::fromLocalFile(path)});
+  QCOMPARE(window.controller()->state().path(), path);
+  QCOMPARE(window.controller()->state().text(),
+           QStringLiteral("exact reply only"));
+  QCOMPARE(window.appShellCoordinator().lastErrorCode(), ErrorCode::None);
 }
 
 void EditorAppShellTest::injectedAdapterResolvesAnOpenRequest() {
