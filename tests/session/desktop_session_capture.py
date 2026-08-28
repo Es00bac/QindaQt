@@ -10,7 +10,7 @@ import struct
 import subprocess
 import zlib
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 
 class CaptureContractError(ValueError):
@@ -109,7 +109,7 @@ def _decode_png(path: Path) -> tuple[int, int, bytes, int]:
 
 def validate_capture(
     path: Path, *, expected_width: int = 1920, expected_height: int = 1080,
-    minimum_colors: int = 16,
+    minimum_colors: int = 16, content_region: Mapping[str, Any] | None = None,
 ) -> dict[str, object]:
     """Return canonical evidence for one exact, visibly non-uniform PNG."""
 
@@ -125,13 +125,9 @@ def validate_capture(
             x = min(width - 1, column * width // 128)
             start = (y * width + x) * channels
             distinct.add(pixels[start:start + channels])
-            if len(distinct) >= minimum_colors:
-                break
-        if len(distinct) >= minimum_colors:
-            break
     if len(distinct) < minimum_colors:
         raise CaptureContractError("captured framebuffer is visually uniform")
-    return {
+    evidence: dict[str, object] = {
         "tool": "weston-screenshooter",
         "path": "desktop-1080p.png",
         "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -140,10 +136,50 @@ def validate_capture(
         "height": height,
         "sampledDistinctColors": len(distinct),
     }
+    if content_region is not None:
+        expected_keys = {"x", "y", "width", "height"}
+        if set(content_region) != expected_keys or any(
+            isinstance(content_region[key], bool)
+            or not isinstance(content_region[key], int)
+            for key in expected_keys
+        ):
+            raise CaptureContractError("content region has a malformed geometry")
+        x = content_region["x"]
+        y = content_region["y"]
+        region_width = content_region["width"]
+        region_height = content_region["height"]
+        if (
+            x < 0 or y < 0 or region_width <= 0 or region_height <= 0
+            or x + region_width > width or y + region_height > height
+        ):
+            raise CaptureContractError("content region escapes the captured framebuffer")
+        region_digest = hashlib.sha256()
+        for row in range(y, y + region_height):
+            start = (row * width + x) * channels
+            region_digest.update(pixels[start:start + region_width * channels])
+        region_colors: set[bytes] = set()
+        for row in range(64):
+            sample_y = y + min(region_height - 1, row * region_height // 64)
+            for column in range(64):
+                sample_x = x + min(region_width - 1, column * region_width // 64)
+                start = (sample_y * width + sample_x) * channels
+                region_colors.add(pixels[start:start + channels])
+        if len(region_colors) < minimum_colors:
+            raise CaptureContractError("captured content region is visually uniform")
+        evidence["contentRegion"] = {
+            "x": x,
+            "y": y,
+            "width": region_width,
+            "height": region_height,
+            "sampledDistinctColors": len(region_colors),
+            "sha256": region_digest.hexdigest(),
+        }
+    return evidence
 
 
 def capture_parent_frame(
     executable: Path, environment: Mapping[str, str], artifact_directory: Path,
+    *, content_region: Mapping[str, Any],
 ) -> dict[str, object]:
     """Capture only the caller-provided private parent Wayland socket."""
 
@@ -173,4 +209,4 @@ def capture_parent_frame(
     source = created.pop()
     target = artifact_directory / "desktop-1080p.png"
     source.rename(target)
-    return validate_capture(target)
+    return validate_capture(target, content_region=content_region)

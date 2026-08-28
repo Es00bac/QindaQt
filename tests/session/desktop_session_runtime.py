@@ -20,6 +20,7 @@ from desktop_session_process import (
     ProcessContractError,
     RuntimeState,
     capture_process_identity,
+    identity_is_live,
     process_evidence,
     spawn_logged_process,
     terminate_processes,
@@ -49,6 +50,15 @@ class DesktopLaunch:
     app_environment: dict[str, str]
     parent_environment: dict[str, str] | None
     child_socket: str
+
+
+# AGENT-CONTRACT: ADR-0049's product PSS number covers every long-lived QindaQt
+# role present in the qualified desktop, including both visible applications.
+# The private Weston parent and short-lived probes are test infrastructure.
+PRODUCTION_PSS_ROLES = (
+    "compositor", "session", "notification", "shell",
+    "settings-service", "audio-service", "settings-app", "editor-app",
+)
 
 
 def _service_evidence(
@@ -365,14 +375,19 @@ def run_inner(arguments: argparse.Namespace) -> int:
             evidence["interaction"] = _run_interaction(
                 arguments, launch.app_environment, state
             )
+            interaction_surface = evidence["interaction"].get("surface", {})
+            if not isinstance(interaction_surface, Mapping):
+                raise RuntimeError("interactive surface evidence was malformed")
+            interaction_geometry = interaction_surface.get("geometry", {})
+            if not isinstance(interaction_geometry, Mapping):
+                raise RuntimeError("interactive surface geometry was malformed")
             evidence["capture"] = capture_parent_frame(
                 arguments.weston_screenshooter,
                 launch.parent_environment,
                 Path("/var/lib/qindaqt-evidence"),
+                content_region=interaction_geometry,
             )
-        samples = [read_process_sample(pids[role]) for role in (
-            "compositor", "session", "notification", "shell",
-            "settings-service", "audio-service")]
+        samples = [read_process_sample(pids[role]) for role in PRODUCTION_PSS_ROLES]
         pss = aggregate_pss_kib(samples)
         evidence["measurements"] = {"residentPssKiB": pss, "ceilingKiB": 1024 * 1024}
         if pss > 1024 * 1024:
@@ -382,11 +397,18 @@ def run_inner(arguments: argparse.Namespace) -> int:
             raise RuntimeError("desktop session probe failed")
     finally:
         cleanup_records = _cleanup(state)
+    survivor_pids = sorted(
+        identity.pid for identity in state.identities if identity_is_live(identity)
+    )
+    if survivor_pids:
+        raise ProcessContractError(
+            f"authenticated processes survived final observation: {survivor_pids}"
+        )
     if evidence is None:
         raise RuntimeError("desktop evidence was not constructed")
     evidence["cleanup"] = {
         "bounded": True,
-        "survivorPids": [],
+        "survivorPids": survivor_pids,
         "terminalPhases": [record.document() for record in cleanup_records],
     }
     if arguments.interactive:

@@ -40,10 +40,24 @@ class CaptureTests(unittest.TestCase):
             path = Path(directory) / "capture.png"
             write_png(path, 32, 24, varied=True)
             evidence = validate_capture(
-                path, expected_width=32, expected_height=24, minimum_colors=16
+                path, expected_width=32, expected_height=24, minimum_colors=16,
+                content_region={"x": 8, "y": 4, "width": 16, "height": 12},
             )
             self.assertEqual((evidence["width"], evidence["height"]), (32, 24))
             self.assertEqual(len(evidence["sha256"]), 64)
+            self.assertGreaterEqual(
+                evidence["contentRegion"]["sampledDistinctColors"], 16
+            )
+
+    def test_uniform_content_region_fails_inside_a_varied_desktop(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "capture.png"
+            write_png(path, 32, 24, varied=True)
+            with self.assertRaisesRegex(CaptureContractError, "content region"):
+                validate_capture(
+                    path, expected_width=32, expected_height=24, minimum_colors=16,
+                    content_region={"x": 0, "y": 0, "width": 1, "height": 1},
+                )
 
     def test_uniform_frame_and_wrong_dimensions_fail(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

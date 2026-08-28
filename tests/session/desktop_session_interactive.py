@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 from desktop_session_topology import (
@@ -41,17 +42,22 @@ def validate_interactive_evidence(document: Any) -> None:
     output_name = outputs[0]["name"]
 
     containment = _mapping(evidence.get("containment"), "evidence.containment")
+    parent_socket = containment.get("parentWaylandSocket")
+    child_socket = containment.get("childWaylandSocket")
     if (
         containment.get("parentBackend") != "weston-headless-pixman"
         or containment.get("qindaqtBackend") != "kwin-windowed-qpaint"
-        or containment.get("parentWaylandSocket") != "qindaqt-parent-wayland"
-        or not isinstance(containment.get("childWaylandSocket"), str)
-        or not str(containment["childWaylandSocket"]).startswith("qindaqt-")
+        or parent_socket != "qindaqt-parent-wayland"
+        or not isinstance(child_socket, str)
+        or re.fullmatch(r"qindaqt-[0-9a-f]{12}", child_socket) is None
+        or child_socket == parent_socket
     ):
         raise TopologyContractError("interactive containment endpoints are malformed")
 
     interaction = _mapping(evidence.get("interaction"), "evidence.interaction")
-    if set(interaction) != {"action", "deviceId", "eventCount", "surface"}:
+    if set(interaction) != {
+        "action", "deviceId", "eventCount", "preInjectionActiveSurfaceCount", "surface",
+    }:
         raise TopologyContractError("interaction has an unexpected field set")
     surface = _mapping(interaction.get("surface"), "interaction.surface")
     geometry = _mapping(surface.get("geometry"), "interaction.surface.geometry")
@@ -59,6 +65,7 @@ def validate_interactive_evidence(document: Any) -> None:
         interaction.get("action") != "open-notification-center"
         or interaction.get("deviceId") != "qindaqt-development-input"
         or interaction.get("eventCount") != 4
+        or interaction.get("preInjectionActiveSurfaceCount") != 0
         or surface.get("scope") != "notification-center"
         or surface.get("mapped") is not True
         or surface.get("committed") is not True
@@ -73,10 +80,12 @@ def validate_interactive_evidence(document: Any) -> None:
 
     capture = _mapping(evidence.get("capture"), "evidence.capture")
     digest = capture.get("sha256")
+    region = _mapping(capture.get("contentRegion"), "capture.contentRegion")
+    region_digest = region.get("sha256")
     if (
         set(capture) != {
             "tool", "path", "sha256", "byteCount", "width", "height",
-            "sampledDistinctColors",
+            "sampledDistinctColors", "contentRegion",
         }
         or capture.get("tool") != "weston-screenshooter"
         or capture.get("path") != "desktop-1080p.png"
@@ -89,5 +98,14 @@ def validate_interactive_evidence(document: Any) -> None:
         or isinstance(capture.get("sampledDistinctColors"), bool)
         or not isinstance(capture.get("sampledDistinctColors"), int)
         or capture["sampledDistinctColors"] < 16
+        or set(region) != {
+            "x", "y", "width", "height", "sampledDistinctColors", "sha256",
+        }
+        or any(region.get(key) != geometry.get(key) for key in ("x", "y", "width", "height"))
+        or isinstance(region.get("sampledDistinctColors"), bool)
+        or not isinstance(region.get("sampledDistinctColors"), int)
+        or region["sampledDistinctColors"] < 16
+        or not isinstance(region_digest, str) or len(region_digest) != 64
+        or any(character not in "0123456789abcdef" for character in region_digest)
     ):
         raise TopologyContractError("captured desktop evidence is malformed")

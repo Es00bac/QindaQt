@@ -1253,18 +1253,25 @@ QindaQt clients. The topology therefore requires one canonical KWin
 `WL-<zero-based decimal index>` output while retaining every S1 service,
 application, dock, resource, and teardown assertion. Both compositor processes
 are PID/path/start-time authenticated, but the 1,024 MiB product PSS aggregate
-continues to cover QindaQt production roles rather than the test parent.
+covers the eight QindaQt production roles—compositor, session, notification
+host, shell, Settings1, Audio1, Settings, and Text Editor—rather than the test
+parent.
 
-After simultaneous readiness, a second probe sends exactly Meta+N through the
-scenario-gated QindaQt development input device. Success requires the stable
+After simultaneous readiness, a second probe first requires zero active,
+mapped, committed notification-center surfaces, then sends exactly Meta+N
+through the scenario-gated QindaQt development input device. Success requires the stable
 device identity and one compositor-observed notification-center surface mapped
 and committed by the authenticated shell PID on the exact output. It never
 opens a host input node or uinput. Weston screenshooter then contacts only the
 private parent socket. The fresh image must be a checksum-valid, bounded,
-non-symlink RGB/RGBA PNG at exact 1920x1080 with at least 16 deterministic
-sampled colors. The stable `desktop-1080p.png`, its SHA-256/size/dimensions/color
-evidence, all logs, and the final JSON document are archived in the fresh
-build-local result root before teardown.
+non-symlink RGB/RGBA PNG at exact 1920x1080 with at least 16 colors across the
+complete deterministic sample grid. The exact compositor-observed center
+rectangle must independently contain at least 16 sampled colors; its geometry
+and full-region digest are recorded beside the full-frame digest. The stable
+`desktop-1080p.png`, its bounded evidence, all logs, and the final JSON document
+are archived in the fresh build-local result root before teardown. Cleanup
+records the final re-observed authenticated survivor set rather than inserting
+an assumed empty value.
 
 The input inventory contains the one combined QindaQt development device plus
 the exact anonymous pointer/keyboard pair forwarded by Weston's fake private
@@ -1277,16 +1284,21 @@ enabled parent capture protocol. S2 proves one rendered 1080p frame and one
 private-seat interaction only. It makes no WUXGA, 1440p, fractional-DPI,
 multi-output, theme, GPU/OpenGL, physical input, or screenshot-baseline claim.
 
-The final manager-allocated S2 run `2f7b7ed9d319362f136605b5bedb3181`
-passed this exact row in 5.22 seconds. It recorded `WL-0`, mapped the active
-notification-center at `(1464,46)` with size `440x640`, measured 103,061 KiB
-aggregate production-role PSS, archived a 40,960-byte RGB screenshot with
-SHA-256 `fac9a24de83bb7051a8359e299d1068ddaf18122c1d418e0ad35d65a7f711cf3`,
+The current-base repaired S2 run `a005baa7ad090a0a76bbddec59f92b89`
+passed this exact row in 5.23 seconds. It recorded `WL-0`, zero active center
+surfaces before input, then mapped the active notification center at
+`(1464,46)` with size `440x640`. Its complete-frame sample contained 77 colors;
+the exact center rectangle contained 48 and has independent SHA-256
+`fea9e0afd5dd32b1018f3de6b63454069098d879b9fa20eeee5d6e3bb1701e31`.
+The run measured 154,433 KiB across all eight production roles, archived a
+46,231-byte RGB screenshot with SHA-256
+`1eb2ba389c2d98c040e6b627560879c8858f2c432432bd1c180b2462cb47332c`,
 and recorded authenticated `term`/`already-exited` phases for all eleven roles
-with no survivor. Direct visual inspection confirmed the screenshot contains
-the QindaQt global bar, two docks, Text Editor, Settings Notifications route,
-and the open notification center. The unchanged S1 row passed immediately
-afterward in 1.46 seconds against the same staged graph.
+with an independently observed empty survivor set. Direct visual inspection
+confirmed the screenshot contains the QindaQt global bar, two docks, Text
+Editor, Settings Notifications route, and open notification center. The
+unchanged S1 row passed immediately afterward in 1.20 seconds against the same
+staged graph.
 
 ## Clipboard C0 model proof
 
