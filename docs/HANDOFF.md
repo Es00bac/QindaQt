@@ -4,6 +4,17 @@
 
 Manager integration delta after the public baseline below:
 
+- `ea4d986` replays the exact independently accepted Network N0 series onto
+  the Terminal and Bluetooth manager tree with additive shared registries.
+  Independent exact review found P0/P1/P2/P3 `0/0/0/0`, proved all 49 Network
+  leaf blobs byte-identical and all seven shared paths additions-only, and
+  passed Debug/Release 13/13, direct 118/118, eight mutation checks, package,
+  poison, docs, and provenance gates. Fresh manager evidence passes 64/64
+  focused build actions, 13/13 registered rows, source shape over 1,477 files,
+  99-page docs, and strict MkDocs. QQ-005.04 advances ABSENT to EXECUTABLE;
+  resident service, NetworkManager/secret transport, persistence, UI, radio
+  mutation, and hardware qualification remain N1+.
+
 - `c08b32e` replays the exact independently accepted Bluetooth B0 series onto
   the Terminal milestone with additive Terminal/Bluetooth ADR, module, source,
   test, and documentation registries. Independent exact replay review found

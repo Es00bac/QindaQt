@@ -19,11 +19,12 @@ qualification remain preserved integrated foundations.
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 transaction UI/writer work, resident Power1 and brightness,
-network, production BlueZ/UI over the Bluetooth B0 boundary, private clipboard
-history, display color, font application,
+resident Network1/NetworkManager transport over the Network N0 boundary,
+production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
+display color, font application,
 and portal/policy interoperability. Existing Audio1, Display1 foundations, and
-PB-0 remain preserved integrated foundations; Bluetooth B0 is an executable
-deterministic unavailable-backend foundation with private activation proof.
+PB-0 remain preserved integrated foundations; Network N0 and Bluetooth B0 are
+executable bounded foundations without production platform backends or UI.
 
 ### First-party experience delivery queue
 
@@ -50,6 +51,14 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `ea4d986` — Network N0 bounded protocol, canonical identity/codec/redaction,
+  pure lineage/lease/intent model, and injected exact-owner asynchronous client.
+  Exact independent replay review passed `0/0/0/0`, Debug/Release 13/13,
+  direct 118/118, all eight mutation controls, package poison, 49/49 leaf-byte
+  equality, and seven additions-only shared registries. The combined manager
+  tree passes 64/64 focused build actions, 13/13 rows, source shape, 99-page
+  docs, and strict MkDocs. Resident service, NetworkManager/secret transport,
+  persistence, UI, radio mutation, and hardware qualification remain N1+.
 - `c08b32e` — Bluetooth B0 bounded protocol/model/client/resident service with
   exact unique-owner lineage, deterministic least-authority backend, bounded
   discovery leases, activation and owner-loss lifecycle, configured D-Bus and
