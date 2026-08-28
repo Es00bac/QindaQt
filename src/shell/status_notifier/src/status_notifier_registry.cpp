@@ -41,11 +41,23 @@ quint64 StatusNotifierRegistry::beginWatcherEpoch()
         m_stagedPopulationFailure = {};
         return 0;
     }
+    const bool replacesActiveWatcher = m_currentWatcherEpoch != 0;
     m_currentWatcherEpoch = ++m_watcherEpochSeed;
     m_initialPopulationComplete = false;
+    if (replacesActiveWatcher && !m_hasCompletedPopulation) {
+        // AGENT-GUARD: The direct first population is provisional until its
+        // completion event. A replacement watcher must never validate against
+        // an interrupted epoch's identity/capacity claims. With no accepted
+        // LKG snapshot to preserve, discard the abandoned provisional indexes
+        // before admitting the new epoch-local target.
+        m_items.clear();
+        m_identityOwners.clear();
+        m_itemLastSeenEpoch.clear();
+        m_degradedReason.clear();
+    }
     // The first population has no accepted LKG snapshot to protect, so its
-    // events retain the established immediate registry semantics. Every later
-    // watcher stages its complete target beside the published LKG snapshot.
+    // epoch-local events retain the established immediate registry semantics.
+    // Once a snapshot completes, later watchers stage beside published LKG.
     m_reconcilingPopulation = m_hasCompletedPopulation;
     m_stagedItems.clear();
     m_stagedIdentityOwners.clear();

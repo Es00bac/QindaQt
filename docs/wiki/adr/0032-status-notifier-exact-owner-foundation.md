@@ -82,14 +82,18 @@ trusting rules are:
   capacity apply to the staged post-prune target, so a valid key or owner
   handover and a capacity-bound one-for-one replacement publish atomically;
   contradictory or over-capacity targets retain the prior snapshot. Every stale
-  completion, owner, item, and mass-removal event is rejected.
+  completion, owner, item, and mass-removal event is rejected. If watcher
+  replacement interrupts a never-completed initial population, that provisional
+  state is discarded before the new epoch admits anything; it is not LKG and
+  cannot contribute identity, capacity, or degradation state to the target.
 - The bounds in `status_notifier_limits.h` are a cross-module contract shared
   by every future producer and consumer; changing one is a contract change.
 - Hostile coverage (spoofed owner, stale reply, malformed menu/icon, duplicate
   identity, restart, rebaseline, watcher loss/reconnect, empty/partial/full
   epoch reconciliation, path/owner identity handover, capacity-bound atomic
-  replacement, conflicting-target rollback, counter exhaustion, and intent
-  revalidation) is part
+  replacement, interrupted-initial-population replacement, conflicting-target
+  rollback and next-epoch recovery, counter exhaustion, and intent revalidation)
+  is part
   of the module's acceptance evidence and must be extended alongside any new
   value type.
 - Degraded state retains last-known-good items and requires explicit

@@ -591,8 +591,9 @@ owner history, capacity overflow, malformed-replacement degradation, monotonic
 watcher epoch fencing with empty/partial/full reconciliation, atomic same-owner
 and cross-owner identity handover, conflicting-target rollback in both event
 orders, 64-for-64 post-prune replacement in both event orders, generation and
-epoch exhaustion, intent revalidation), watcher loss and reconnect rebaseline
-presentation, typed accepted request intents, and a scripted lifecycle driven
+epoch exhaustion, interrupted-first-population identity/capacity replacement,
+invalid-completion next-epoch recovery, intent revalidation), watcher loss and
+reconnect rebaseline presentation, typed accepted request intents, and a scripted lifecycle driven
 through the injected fake transport. Attachment cases distinguish null-first
 refusal, different-sink reattach refusal, explicit detach state clearing, and
 destructor-triggered detach. The transport is a fake by construction: this

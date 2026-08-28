@@ -54,9 +54,12 @@ Two lifecycle transitions keep presented keys safe:
   index atomically on matching completion. This permits valid path/owner
   identity handover and 64-for-64 replacement without transient duplicate
   claims. A contradictory or over-capacity target cannot complete and leaves
-  the last-known-good set intact. Watcher *loss* is handled at the presentation
-  layer (below) because a watcher departure says nothing about its sources'
-  liveness.
+  the last-known-good set intact. If a replacement watcher interrupts the
+  never-completed first population, that provisional set has never become LKG:
+  its item, identity, capacity, and degradation state are discarded before the
+  replacement target admits events. Watcher *loss* is handled at the
+  presentation layer (below) because a watcher departure says nothing about
+  its sources' liveness.
 
 Both monotonic counters refuse wrap. Owner-generation exhaustion leaves the
 current owner and last-known-good items intact but refuses new generations.
@@ -154,7 +157,8 @@ overflow, watcher-epoch rebaseline with stale completion/arrival/registration/
 removal/loss fencing, empty/partial/full membership reconciliation, atomic
 same-owner and cross-owner identity handover, conflicting handover rollback in
 both event orders, 64-for-64 post-prune replacement in both event orders, and
-both
+interrupted-first-population identity/capacity replacement with stale-epoch and
+Loading assertions, plus both
 generation- and epoch-counter exhaustion,
 malformed-replacement degradation with last-known-good retention, typed
 accepted intents bound to owner/generation/identity, and `revalidateIntent`
