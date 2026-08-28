@@ -127,3 +127,4 @@ nav:
       - "ADR-0045: Network1 pure boundary": adr/0045-fence-network1-pure-boundary.md
       - "ADR-0048: Typed Settings navigation": adr/0048-settings-center-navigation-and-route-ownership.md
       - "ADR-0050: Direct KDE display writer": adr/0050-direct-kde-output-management-writer.md
+      - "ADR-0051: Injected Display journal root": adr/0051-persist-display-journal-in-injected-state-root.md

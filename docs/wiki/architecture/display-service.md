@@ -6,9 +6,11 @@ a resident Display1 service foundation. D1 remains transport-free. The bounded
 D2 service slice adds the bus object/process, activation metadata, monotonic
 timer scheduling, and an exact-owner adapter over D0's read-only
 `Compositor1.Outputs` inventory. D4 now adds a bounded public output-management
-writer module, but the packaged process does not compose it until durable
-journal, lock/logind, and recovery dependencies exist. Settings integration,
-UI, and nested/physical runtime proof also remain later outcomes.
+writer module. D5 adds the separate crash-safe filesystem journal adapter and
+deterministic startup-load seam. The packaged process does not compose these
+adapters until authenticated lock/logind, recovery orchestration, and contained
+nested proof exist. Settings integration, UI, and physical runtime proof also
+remain later outcomes.
 
 [ADR-0016](../adr/0016-display1-transaction-authority.md) fixes transaction
 authority. [ADR-0017](../adr/0017-persistent-output-identity.md) fixes persistent
@@ -26,9 +28,12 @@ QindaQt production writer to KWin's public KDE output-management protocol. It
 already owns the D1 machine and monotonic confirmation/revert scheduling, but
 the packaged transaction port deliberately rejects journal storage and never
 applies. The accepted D4 [compositor writer](display-writer.md) supplies the
-direct public-protocol boundary; later outcomes must still supply durable
-journal, lock/logind, restart recovery, and nested convergence evidence before
-that writer authority is operational. Settings Center, shell overlays, global
+direct public-protocol boundary. The accepted D5 filesystem adapter supplies
+canonical durable load/store/clear behind that writer's journal seam, as fixed
+by [ADR-0051](../adr/0051-persist-display-journal-in-injected-state-root.md).
+Later composition must still supply lock/logind, startup recovery routing, and
+nested convergence evidence before writer authority is operational. Settings
+Center, shell overlays, global
 shortcuts, Color, and brightness consumers will cross typed client boundaries.
 They do not own the timer or apply output configurations directly.
 
@@ -147,8 +152,32 @@ transaction port. Preview therefore fails closed at the D1 safety gate; even
 if an in-process composition supplies `Safe`, the packaged port cannot store a
 journal and fails the next hard gate without an apply request. This is a
 deliberate source-complete stopping point, not a simulated writer. The service
-has no KWin headers/private ABI, Wayland objects, filesystem persistence,
-Settings, QML, or platform lock/session dependency.
+has no KWin headers/private ABI, Wayland objects, direct filesystem access,
+Settings, QML, or platform lock/session dependency. D5 exists as an injectable
+library but is not silently constructed from an environment path.
+
+## Durable journal adapter
+
+`FileJournalStore` implements the D4 `JournalStore` seam without moving
+filesystem policy into D1, D2, or the compositor writer. Its constructor takes
+an existing effective-user-owned state root. It addresses only
+`display1-transaction.journal` and its fixed same-directory temporary name;
+there is no `HOME`, XDG, Settings, or global lookup.
+
+Store accepts only a valid D1 journal, writes its canonical versioned bytes to
+a newly created mode-0600 temporary file, syncs content, atomically renames in
+the same directory, and syncs directory metadata where supported. Load never
+follows links, accepts only a restrictive regular single-link file owned by the
+effective user, enforces the 1 MiB limit, and returns absent/loaded/rejected
+without partially publishing a value. It rejects non-canonical bytes after
+decode. A stale temporary name is ignored by load and safely replaced by the
+next store, which models an interruption before the commit point. Clear never
+deletes an unsafe final entry.
+
+The future resident startup path must call `load()` before enabling writer
+authority, pass a loaded journal to D1 `recover`, and keep rejected or active
+truth until model policy authorizes clear. D5 does not itself choose the state
+root, run recovery, observe lock/session safety, or claim that KWin converged.
 
 ## Identity and registry
 
