@@ -92,6 +92,22 @@ Manager resolves shared registries, integration order, and runtime exclusivity.
 - Keep as many useful non-overlapping lanes active as managers can supervise,
   up to 15 observed live worker processes. Split only at clear interfaces and ownership
   boundaries.
+- Available provider capacity is a delivery resource, not an optional target.
+  Every provider reported `available` must have at least one real, check-in-valid
+  product or exact-review lane unless all safe boundaries for that provider are
+  already occupied. In that exceptional case, the owning manager records the
+  exact collision and the first gate that will release a lane; unexplained idle
+  available capacity is a management defect.
+- A terminal worker result creates an immediate refill event. The manager first
+  preserves the exact commit or dirty-tree handoff, routes its review or repair,
+  then starts the next compatible queued outcome without waiting for a user
+  reminder. A provider failure changes provider truth and its return estimate;
+  the same product boundary is reassigned to an available provider without
+  discarding partial work.
+- Staffing is truthful and outcome-bound: the 15-process ceiling is filled only
+  with independently owned implementation, bounded assistance, reproduction, or
+  exact review that advances a named roadmap step. A profile, process, meeting,
+  or duplicated review created only to raise the board count is prohibited.
 - Build capacity is assigned from measured host headroom, not a permanent
   one-worker queue. The manager may run multiple isolated compile-only lanes
   when each uses a separate worktree/build root and serial `--parallel 1`
@@ -99,6 +115,23 @@ Manager resolves shared registries, integration order, and runtime exclusivity.
   they compete materially. Private nested runtime/session evidence remains
   serialized so sockets, buses, displays, input fixtures, and teardown cannot
   collide. Other lanes continue source, tests/docs, research, and review.
+- Build and review gates are layered to avoid multiplying the same expensive
+  proof. Implementers and exact reviewers compile the owned module targets,
+  focused tests, installed consumer, and only dependency-adjacent targets
+  justified by a changed contract or reproduced defect. They do not run a
+  default whole-repository build merely as a compiler-error search. The
+  Program Manager runs one strict combined-tree build and broad safe test pass
+  for each accepted integration batch. A tiny repair may reuse a reviewed
+  parent's broad evidence when its focused and adjacent negative controls are
+  rerun and the reviewer records the proportional-gate rationale explicitly.
+- Generated build output must live in a manager-assigned scratch root on a
+  volume with measured headroom, never directly on the primary source/home
+  volume. A worktree may expose that root through an untracked `build`
+  redirect, but every alternate `build-*` directory must resolve to the same
+  external scratch volume. Before opening parallel compile lanes, the manager
+  records free-space headroom; after an exact handoff or review, its
+  regenerable build tree is retired. Source, commits, dirty product work, and
+  provider transcripts are never removed as disk cleanup.
 - Fast models handle bounded implementation, fixtures, repetition, and focused
   research. Strong models handle novel architecture, difficult debugging,
   cross-cutting repair, and high-risk review.
