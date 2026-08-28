@@ -58,7 +58,10 @@ live session bus.
 
 The reusable `QindaQt.Controls 1.0` component set is now integrated after exact
 independent Debug/Release, visual, accessibility-event, package, source-policy,
-and PSS qualification. In parallel with the virtual desktop outcome, finish the
-pure Display1 protocol/identity/topology/transaction boundary and the first
-native application slice. A source-only handoff or a live worker process is not
+and PSS qualification. The revisioned compositor output inventory and contained
+virtual-output development seam are also integrated after exact review and
+focused integrated-tree verification. In parallel with the virtual desktop
+outcome, repair and qualify the pure Display1
+protocol/identity/topology/transaction boundary and finish the first native
+application slice. A source-only handoff or a live worker process is not
 completion.
