@@ -77,10 +77,11 @@ The interaction contract is:
 
 The navigation containers expose `PageTabList`; each route exposes `PageTab`,
 an accessible name/description, and truthful selected state. Unavailable tabs
-are disabled and describe their unavailability, while direct activation of an
-unavailable registered route presents an accessible alert instead of content.
-Each domain page remains responsible for its internal focus cycle and control
-semantics.
+remain focusable so assistive technology and Escape-return navigation can
+reach their registered diagnostic, but their activation handler is guarded.
+A registered route already selected by startup or controller authority presents
+an accessible alert instead of content. Each domain page remains responsible
+for its internal focus cycle and control semantics.
 
 ## Verification and stopping point
 
@@ -104,8 +105,11 @@ ctest --test-dir build/dev --output-on-failure \
 - construction starts both route intents against an absent private bus and
   requires each complete root to remain resident; and
 - the installed row stages only `SettingsAppearanceRuntime`, removes host
-  display/Wayland/QML/library overrides, proves both routes from the relocated
-  prefix, and repeats hostile-intent rejection.
+  display/Wayland/QML/library overrides, withholds its required Appearance QML
+  module while the developer tree remains present and requires exit 3, then
+  reinstalls and proves both routes from only the complete relocated prefix;
+  and
+- the same installed row repeats hostile-intent rejection.
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-

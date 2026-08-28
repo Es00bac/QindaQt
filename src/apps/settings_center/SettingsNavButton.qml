@@ -8,9 +8,11 @@ Controls.Button {
     id: control
 
     property bool active: false
+    property bool routeAvailable: true
     property string routeId: ""
     property string category: ""
     property string routeDescription: ""
+    property string unavailableReason: ""
 
     objectName: routeId.length > 0 ? ("settingsNavButton_" + routeId) : "settingsNavButton"
 
@@ -25,8 +27,13 @@ Controls.Button {
 
     Accessible.role: Accessible.PageTab
     Accessible.name: text
-    Accessible.description: available ? routeDescription
-                                      : qsTr("Unavailable. %1").arg(routeDescription)
+    // AGENT-CONTRACT: An unavailable PageTab remains keyboard-focusable so
+    // assistive technology can discover why it is unavailable and Escape can
+    // return from its fail-closed page. Its unavailable diagnostic and guarded
+    // activation express capability without disabling Qt focus.
+    Accessible.description: routeAvailable ? routeDescription
+        : qsTr("Unavailable. %1").arg(unavailableReason.length > 0
+                                      ? unavailableReason : routeDescription)
     Accessible.selected: active
 
     contentItem: RowLayout {
@@ -49,7 +56,7 @@ Controls.Button {
             Text {
                 Layout.fillWidth: true
                 text: control.text
-                color: !control.enabled ? Tokens.fg.disabled
+                color: !control.routeAvailable ? Tokens.fg.disabled
                      : control.active ? Tokens.accent.fg
                      : Tokens.fg.default
                 font.family: Tokens.type.fontFamily
@@ -75,8 +82,8 @@ Controls.Button {
     background: Rectangle {
         radius: Tokens.radius.m
         color: control.active ? Tokens.bg.raised
-             : control.down ? Tokens.state.pressed
-             : control.hovered ? Tokens.state.hover
+             : control.routeAvailable && control.down ? Tokens.state.pressed
+             : control.routeAvailable && control.hovered ? Tokens.state.hover
              : "transparent"
 
         Controls.FocusRing {

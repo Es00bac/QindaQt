@@ -58,17 +58,21 @@ Rectangle {
 
                 delegate: Controls.Button {
                     id: routeTab
+                    property bool routeAvailable: modelData.available
+
                     objectName: "settingsCompactTab_" + modelData.id
                     text: modelData.title
                     emphasized: header.navigation.activeRouteId === modelData.id
-                    available: modelData.available
-                    accessibleDescription: modelData.description
+                    accessibleDescription: routeAvailable ? modelData.description
+                        : qsTr("Unavailable. %1").arg(modelData.unavailableReason)
                     implicitHeight: 32
                     Accessible.role: Accessible.PageTab
                     Accessible.selected: header.navigation.activeRouteId === modelData.id
 
                     onClicked: {
-                        header.navigation.selectRoute(modelData.id);
+                        if (routeAvailable) {
+                            header.navigation.selectRoute(modelData.id);
+                        }
                     }
 
                     Keys.onLeftPressed: {

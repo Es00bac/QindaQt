@@ -37,11 +37,18 @@ namespace {
 }
 
 void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
-  const QString applicationDirectory =
-      QFileInfo(QCoreApplication::applicationFilePath()).absolutePath();
-  const QString buildRoot = QStringLiteral(QINDAQT_BUILD_ROOT);
-  if (applicationDirectory == buildRoot ||
-      applicationDirectory.startsWith(buildRoot + QLatin1Char('/'))) {
+  const QFileInfo applicationFile(QCoreApplication::applicationFilePath());
+  const QString applicationDirectory = applicationFile.absolutePath();
+  const QString applicationPath = applicationFile.canonicalFilePath();
+  const QString buildExecutablePath =
+      QFileInfo(QStringLiteral(QINDAQT_BUILD_EXECUTABLE_PATH))
+          .canonicalFilePath();
+  // AGENT-GUARD: Only the exact build executable may import the developer QML
+  // tree. Installed test stages deliberately live beneath the build root; a
+  // directory-prefix test lets those relocated copies borrow missing modules
+  // and turns package verification into a false positive.
+  if (!buildExecutablePath.isEmpty() &&
+      applicationPath == buildExecutablePath) {
     engine.addImportPath(QStringLiteral(QINDAQT_BUILD_QML_IMPORT_PATH));
   }
   engine.addImportPath(
