@@ -163,6 +163,9 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         )
 
         function(qindaqt_add_shell_surface_runtime_test test_name scenario_name)
+            # AGENT-GUARD: The maximized probe intentionally conflicts with
+            # QindaQt's intelligent shelf. Keep this initial-publication proof
+            # on the never-hidden fixture; live hide transitions are separate.
             add_test(
                 NAME "shell.production-surface.${test_name}"
                 COMMAND
@@ -174,7 +177,9 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
                     "${QINDAQT_DBUS_RUN_SESSION}"
                     "${PROJECT_SOURCE_DIR}/tests/scenarios/${scenario_name}.json"
                     --plugin-root "${_qindaqt_test_plugin_root}"
-                    --profile-dir "${PROJECT_SOURCE_DIR}/data/profiles"
+                    --profile-dir
+                    "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/shell_surface_profiles"
+                    --profile-id "qindaqt-surface-proof"
                     --theme-dir "${PROJECT_SOURCE_DIR}/data/themes"
             )
             set_tests_properties(

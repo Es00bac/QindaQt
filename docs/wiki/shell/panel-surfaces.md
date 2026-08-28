@@ -127,9 +127,12 @@ live/nested notification surface run was performed for this slice. See
 The controller and planner have focused fake-backend tests for valid and
 adversarial layouts. Bounded per-role protocol evidence requires the exact
 output association, initial role layer, and committed layer, anchor mask,
-exclusive edge/zone, and desired size for both default panels under nested KWin
-at 1080p, WUXGA, and 1440p. The matching configure must have observed that
-committed epoch and then
+exclusive edge/zone, and desired size for a deterministic two-panel proof
+profile under nested KWin at 1080p, WUXGA, and 1440p. The fixture retains the
+QindaQt profile's top-bar and centered 52%-width shelf geometry but gives both
+panels `never` hide mode, preventing the probe's maximized client from racing
+the separate intelligent-hide policy. The matching configure must have
+observed that committed epoch and then
 be acknowledged before a non-null buffer attach and its mapping commit. The
 probe snapshots this active mapped epoch while the exact reduced work area is
 live; its separate final trace checks identity stability through teardown.

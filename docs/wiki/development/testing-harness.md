@@ -205,9 +205,16 @@ ctest --test-dir build/dev \
 
 Each row boots a disposable virtual KWin session without enabling compositor
 mutation APIs. A painted ordinary client first maximizes to the complete
-output. The production `qindaqt-shell` then maps exactly two real layer
-surfaces. The bounded client protocol parser associates every role with its
-unique backing `wl_surface` and explicit common `wl_output`. Layer, anchor,
+output. The production `qindaqt-shell` then loads the schema-valid
+`qindaqt-surface-proof` fixture and maps exactly two real layer surfaces. The
+fixture retains QindaQt's qualified top-bar and 52%-width shelf geometry but
+sets both hide modes to `never`. This keeps the initial-publication/work-area
+proof independent from the live intelligent-hide policy that a maximized
+window is expected to trigger. The harness rejects a fixture with another
+identity, panel set, or hide mode before starting KWin.
+
+The bounded client protocol parser associates every role with its unique
+backing `wl_surface` and explicit common `wl_output`. Layer, anchor,
 exclusive-edge/zone, and desired-size setters remain pending until that backing
 surface commits. Each compositor configure snapshots the then-committed role
 epoch; only a `configure -> acknowledge -> non-null buffer attach -> commit`
@@ -233,8 +240,8 @@ object-ID reuse/destroy ambiguity. Relevant malformed or over-bounded input
 fails closed. Rendered settings drop targets, live automatic-hide protocol
 transitions and animation, partial panels, and heterogeneous multi-output
 surface publication remain unclaimed. The production code consumes live
-window-state inventory, but this initial nested matrix predates that transition
-and is not evidence for it.
+window-state inventory, but this deliberately never-hidden nested matrix is not
+evidence for that separate policy and transition boundary.
 
 ## Current notification foundation proof
 

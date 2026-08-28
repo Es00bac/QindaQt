@@ -65,13 +65,44 @@ def _geometry(result: dict[str, Any], name: str) -> dict[str, Any]:
     return geometry
 
 
+def validate_proof_profile(profile_dir: Path, profile_id: str) -> None:
+    """Reject fixtures that reintroduce window-aware hiding into this proof."""
+    # AGENT-GUARD: A maximized client is already mapped when the shell starts.
+    # An intelligent/dodging fixture makes initial publication timing-dependent.
+    profile_path = profile_dir / f"{profile_id}.json"
+    try:
+        profile = _object(
+            json.loads(profile_path.read_text(encoding="utf-8")), "proof profile"
+        )
+    except OSError as error:
+        raise RuntimeError(f"cannot read proof profile {profile_path}: {error}") from error
+    if profile.get("id") != profile_id:
+        raise RuntimeError("proof profile filename and declared id disagree")
+    panels = profile.get("panels")
+    if not isinstance(panels, list) or len(panels) != 2:
+        raise RuntimeError("proof profile must contain exactly two panels")
+    panel_ids: set[str] = set()
+    for index, value in enumerate(panels):
+        panel = _object(value, f"proof profile.panels[{index}]")
+        panel_id = panel.get("id")
+        if not isinstance(panel_id, str) or not panel_id:
+            raise RuntimeError(f"proof profile.panels[{index}].id must be non-empty")
+        if panel.get("hideMode") != "never":
+            raise RuntimeError(
+                f"proof profile panel {panel_id!r} must not race automatic hiding"
+            )
+        panel_ids.add(panel_id)
+    if panel_ids != {"command-bar", "smart-shelf"}:
+        raise RuntimeError("proof profile must contain the expected top bar and shelf")
+
+
 def validate_probe_result(result: dict[str, Any], spec: VirtualOutputSpec) -> None:
     if result.get("passed") is not True or result.get("platform") != "wayland":
         raise RuntimeError(f"probe did not pass on Wayland: {result.get('failure', '')}")
     if result.get("shellStarted") is not True or result.get("shellStopped") is not True:
         raise RuntimeError("production shell lifecycle was not bounded by the probe")
     if result.get("expectedReservation") != EXPECTED_RESERVATION:
-        raise RuntimeError("probe and QindaQt profile reservation contract disagree")
+        raise RuntimeError("probe and surface-proof profile reservation contract disagree")
 
     output = _geometry(result, "outputGeometry")
     if output["width"] != spec.logical_width or output["height"] != spec.logical_height:
@@ -120,6 +151,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("scenario", type=Path)
     parser.add_argument("--plugin-root", type=Path, required=True)
     parser.add_argument("--profile-dir", type=Path, required=True)
+    parser.add_argument("--profile-id", required=True)
     parser.add_argument("--theme-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -152,6 +184,11 @@ def main() -> int:
         if not path.is_dir():
             print(f"{description} is unavailable: {path}", file=sys.stderr)
             return 2
+    try:
+        validate_proof_profile(arguments.profile_dir, arguments.profile_id)
+    except (RuntimeError, json.JSONDecodeError) as error:
+        print(f"invalid shell-surface proof profile: {error}", file=sys.stderr)
+        return 2
 
     with tempfile.TemporaryDirectory(prefix="qindaqt-shell-surface-") as directory:
         environment = isolated_environment(Path(directory))
@@ -160,6 +197,7 @@ def main() -> int:
             {
                 "QINDAQT_SHELL_EXECUTABLE": str(arguments.shell),
                 "QINDAQT_SHELL_PROFILE_DIR": str(arguments.profile_dir),
+                "QINDAQT_SHELL_PROFILE_ID": arguments.profile_id,
                 "QINDAQT_SHELL_THEME_DIR": str(arguments.theme_dir),
             }
         )

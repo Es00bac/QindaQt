@@ -235,10 +235,11 @@ private:
     {
         const QString executable = qEnvironmentVariable("QINDAQT_SHELL_EXECUTABLE");
         const QString profileDirectory = qEnvironmentVariable("QINDAQT_SHELL_PROFILE_DIR");
+        const QString profileId = qEnvironmentVariable("QINDAQT_SHELL_PROFILE_ID").trimmed();
         const QString themeDirectory = qEnvironmentVariable("QINDAQT_SHELL_THEME_DIR");
         if (!QFileInfo(executable).isExecutable() || !QFileInfo(profileDirectory).isDir() ||
-            !QFileInfo(themeDirectory).isDir()) {
-            fail(QStringLiteral("shell executable or catalog directory is unavailable"));
+            profileId.isEmpty() || !QFileInfo(themeDirectory).isDir()) {
+            fail(QStringLiteral("shell executable, profile, or catalog directory is unavailable"));
             return;
         }
 
@@ -250,7 +251,7 @@ private:
         m_shell.setProcessEnvironment(environment);
         m_shell.setProgram(executable);
         m_shell.setArguments({
-            QStringLiteral("--profile"), QStringLiteral("qindaqt"),
+            QStringLiteral("--profile"), profileId,
             QStringLiteral("--theme"), QStringLiteral("qinda-dark"),
             QStringLiteral("--profile-dir"), profileDirectory,
             QStringLiteral("--theme-dir"), themeDirectory,
