@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/services/bluetooth_client/bluetooth_transport.h>
+#include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 
 namespace QindaQt::Tests
 {

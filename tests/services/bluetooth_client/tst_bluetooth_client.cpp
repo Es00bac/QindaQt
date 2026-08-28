@@ -33,6 +33,7 @@ private Q_SLOTS:
     void rejectsStaleAndMalformedOperationReplies();
     void rejectsRequestsThatFailPreflight();
     void queuesExactlyOnceCompletion();
+    void fetchFailureRevokesMutationAuthority();
     void stopCancelsAndMarksTransportBackedUncertain();
 
 private:
@@ -93,7 +94,8 @@ void BluetoothClientTests::rejectsMalformedAndContradictorySnapshots()
     deliverReady(transport, retryId, bluetoothClientSnapshot());
     QCOMPARE(client.state(), ClientState::Ready);
 
-    // Equal revision with different content is a contradiction.
+    // Equal revision with different content is a contradiction and revokes
+    // the retained snapshot.
     Snapshot contradictory = bluetoothClientSnapshot(61, client.snapshot().revision);
     contradictory.adapters[0].name = QStringLiteral("Other adapter");
     transport.emitInvalidated(kOwner(), 61, contradictory.revision);
@@ -101,12 +103,15 @@ void BluetoothClientTests::rejectsMalformedAndContradictorySnapshots()
     deliverReady(transport, contradictionId, contradictory);
     QCOMPARE(client.state(), ClientState::Unavailable);
     QCOMPARE(client.reasonCode(), QStringLiteral("malformed-snapshot"));
+    QVERIFY(!client.hasSnapshot());
 
-    // Regressing revisions and older epochs are rejected as contradictions.
+    // After revocation there is no retained lineage to contradict: the next
+    // protocol-valid snapshot restores authority, even at a lower revision.
     transport.emitInvalidated(kOwner(), 61, 2);
     const quint64 regressId = transport.fetches.last().requestId;
     deliverReady(transport, regressId, bluetoothClientSnapshot(61, 1));
-    QCOMPARE(client.state(), ClientState::Unavailable);
+    QCOMPARE(client.state(), ClientState::Ready);
+    QCOMPARE(client.snapshot().revision, quint64(1));
 }
 
 void BluetoothClientTests::coalescesInvalidationsWhileFetching()
@@ -151,7 +156,9 @@ void BluetoothClientTests::ownerReplacementClearsSnapshotAndMarksUncertain()
     // The exact owner is replaced by a different unique name.
     const QString replacement = QStringLiteral(":1.84");
     transport.setOwner(replacement);
-    QCOMPARE(completions.count(), 1);
+    // AGENT-GUARD under test: the owner-replaced uncertainty is queued, so it
+    // appears on the next event loop turn, never synchronously.
+    QTRY_COMPARE(completions.count(), 1);
     const OperationResult uncertain = completions.takeFirst()[1].value<OperationResult>();
     QCOMPARE(uncertain.status, OperationStatus::Uncertain);
     QCOMPARE(uncertain.reasonCode, QStringLiteral("owner-replaced"));
@@ -266,22 +273,25 @@ void BluetoothClientTests::rejectsRequestsThatFailPreflight()
     deliverReady(transport, transport.fetches.constFirst().requestId,
                  bluetoothClientSnapshot());
 
-    client.connectDevice({.epoch = 60, .serial = 700});
+    const quint64 staleEpochId = client.connectDevice({.epoch = 60, .serial = 700});
+    QVERIFY(staleEpochId != 0);
     QTRY_COMPARE(completions.count(), 1);
     QCOMPARE(completions.takeFirst()[1].value<OperationResult>().reasonCode,
              QStringLiteral("stale-handle"));
 
-    client.disconnectDevice({.epoch = 61, .serial = 424242});
+    const quint64 staleSerialId = client.disconnectDevice({.epoch = 61, .serial = 424242});
+    QVERIFY(staleSerialId != 0);
     QTRY_COMPARE(completions.count(), 1);
     QCOMPARE(completions.takeFirst()[1].value<OperationResult>().reasonCode,
              QStringLiteral("stale-handle"));
 
-    Snapshot off = bluetoothClientSnapshot();
+    Snapshot off = bluetoothClientSnapshot(61, 6);
     off.adapters[0].powered = false;
     off.devices.clear();
     transport.emitInvalidated(kOwner(), 61, 6);
     deliverReady(transport, transport.fetches.last().requestId, off);
-    client.acquireDiscovery({.epoch = 61, .serial = 400});
+    const quint64 offId = client.acquireDiscovery({.epoch = 61, .serial = 400});
+    QVERIFY(offId != 0);
     QTRY_COMPARE(completions.count(), 1);
     QCOMPARE(completions.takeFirst()[1].value<OperationResult>().reasonCode,
              QStringLiteral("adapter-off"));
@@ -300,35 +310,78 @@ void BluetoothClientTests::queuesExactlyOnceCompletion()
     deliverReady(transport, transport.fetches.constFirst().requestId,
                  bluetoothClientSnapshot());
 
-    const quint64 requestId = client.setAdapterPower({.epoch = 61, .serial = 400}, false);
+    const quint64 firstId = client.connectDevice({.epoch = 61, .serial = 700});
     QVERIFY(client.operationPending());
     QCOMPARE(completions.count(), 0);
 
-    transport.emitOperationReply(kOwner(), requestId, true,
-                                 {OperationKind::SetAdapterPower,
+    // A second request while one is in flight completes locally as Busy,
+    // through the same asynchronous queue as every other completion.
+    const quint64 busyId = client.disconnectDevice({.epoch = 61, .serial = 700});
+    QVERIFY(client.operationPending());
+    QTRY_COMPARE(completions.count(), 1);
+    QCOMPARE(completions[0][0].toULongLong(), busyId);
+    const OperationResult busy = completions[0][1].value<OperationResult>();
+    QCOMPARE(busy.status, OperationStatus::Busy);
+    QCOMPARE(busy.reasonCode, QStringLiteral("operation-busy"));
+    QVERIFY(client.operationPending());
+
+    // The dispatched operation completes exactly once, asynchronously.
+    transport.emitOperationReply(kOwner(), firstId, true,
+                                 {OperationKind::Connect,
                                   OperationStatus::Succeeded,
                                   61,
                                   5,
                                   61,
                                   5,
-                                  QStringLiteral("adapter-power-set"),
+                                  QStringLiteral("connected"),
                                   {},
                                   true});
-    // Completion is queued, not emitted synchronously with the request call.
+    QTRY_COMPARE(completions.count(), 2);
+    QCOMPARE(completions[1][0].toULongLong(), firstId);
+    QCOMPARE(completions[1][1].value<OperationResult>().status,
+             OperationStatus::Succeeded);
+    QVERIFY(!client.operationPending());
+
+    // Exactly once: no duplicate delivery ever arrives.
+    QTest::qWait(50);
+    QCOMPARE(completions.count(), 2);
+}
+
+void BluetoothClientTests::fetchFailureRevokesMutationAuthority()
+{
+    FakeBluetoothTransport transport;
+    BluetoothClient client(&transport);
+    QSignalSpy completions(&client, &BluetoothClient::operationCompleted);
+    client.start();
+    transport.setOwner(kOwner());
+    deliverReady(transport, transport.fetches.constFirst().requestId,
+                 bluetoothClientSnapshot());
+    QCOMPARE(client.state(), ClientState::Ready);
+
+    const quint64 requestId = client.setAdapterPower({.epoch = 61, .serial = 400}, false);
+    QVERIFY(client.operationPending());
+
+    // The post-dispatch refetch fails: retained state is no longer provable.
+    transport.emitInvalidated(kOwner(), 61, 6);
+    const quint64 fetchId = transport.fetches.last().requestId;
+    transport.emitSnapshotReply(kOwner(), fetchId, false, Snapshot{},
+                                QStringLiteral("transport-timeout"));
+    QCOMPARE(client.state(), ClientState::Unavailable);
+    QVERIFY(!client.hasSnapshot());
+    // The dispatched mutation completes as Uncertain, never as success.
     QTRY_COMPARE(completions.count(), 1);
     QCOMPARE(completions[0][0].toULongLong(), requestId);
-    // Exactly once: no second delivery arrives.
-    QTest::qWait(50);
-    QCOMPARE(completions.count(), 1);
+    const OperationResult uncertain = completions[0][1].value<OperationResult>();
+    QCOMPARE(uncertain.status, OperationStatus::Uncertain);
+    QCOMPARE(uncertain.reasonCode, QStringLiteral("snapshot-unavailable"));
+    QVERIFY(!client.operationPending());
 
-    // A second operation while one is in flight completes locally as Busy.
-    const quint64 busyId = client.disconnectDevice({.epoch = 61, .serial = 700});
+    // And no new mutation may dispatch against the revoked authority.
+    const quint64 connectId = client.connectDevice({.epoch = 61, .serial = 700});
+    QVERIFY(connectId != 0);
     QTRY_COMPARE(completions.count(), 2);
-    const OperationResult busy = completions.last()[1].value<OperationResult>();
-    QCOMPARE(busy.status, OperationStatus::Busy);
-    QCOMPARE(busy.reasonCode, QStringLiteral("operation-busy"));
-    QCOMPARE(completions.last()[0].toULongLong(), busyId);
-    QVERIFY(client.operationPending());
+    QCOMPARE(completions[1][1].value<OperationResult>().reasonCode,
+             QStringLiteral("unavailable"));
 }
 
 void BluetoothClientTests::stopCancelsAndMarksTransportBackedUncertain()

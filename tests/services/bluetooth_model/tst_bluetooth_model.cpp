@@ -41,10 +41,13 @@ private Q_SLOTS:
     void rejectsStaleHandlesAndPolicyViolations();
     void rejectsMalformedAndMissingCallers();
     void boundsDiscoveryLeases();
+    void dispatchedLeasesReserveCapacity();
     void releasesLeasesWhenOwnerVanishes();
     void stopMakesPendingUncertain();
     void restartAdvancesEpochAndInvalidatesHandles();
+    void reuseBeforePublicationAdvancesEpoch();
     void malformedBackendFailsClosed();
+    void leaseDiscoveringContradictionFailsClosed();
     void rejectsStoppedAndSupersededBackendValues();
     void malformedBackendOutcomesBecomeProtocolValidFailures();
 };
@@ -126,7 +129,12 @@ void BluetoothModelTests::appliesTypedOperationsWithInitiatingLineage()
              QStringLiteral("AA:BB:CC:33:44:55"));
     QCOMPARE(backend.operations[0].request.callerId, QStringLiteral(":1.7"));
 
-    backend.publish(bluetoothInventory());
+    // An intervening publication with changed content advances the revision;
+    // an identical republication would be dropped as equal lineage.
+    BackendInventory changed = bluetoothInventory();
+    changed.devices[0].rssi = -60;
+    backend.publish(changed);
+    QCOMPARE(model.snapshot().revision, revisionAtSubmit + 1);
     backend.finish(submission.operationId,
                    {.status = BackendOperationStatus::Succeeded,
                     .reasonCode = QStringLiteral("connected"),
@@ -174,6 +182,16 @@ void BluetoothModelTests::rejectsStaleHandlesAndPolicyViolations()
         QCOMPARE(submission.immediateResult.initiatingEpoch, kTestEpoch);
     }
     QVERIFY(backend.operations.isEmpty());
+
+    // An already-connected paired device must not be connectable again.
+    BackendInventory connected = bluetoothInventory();
+    connected.devices[0].connected = true;
+    backend.publish(connected);
+    const OperationSubmission already =
+        model.submit({OperationKind::Connect, deviceHandle(model.snapshot()), false},
+                     QStringLiteral(":1.7"));
+    QVERIFY(!already.pending);
+    QCOMPARE(already.immediateResult.reasonCode, QStringLiteral("already-connected"));
 }
 
 void BluetoothModelTests::rejectsMalformedAndMissingCallers()
@@ -208,6 +226,9 @@ void BluetoothModelTests::boundsDiscoveryLeases()
         entry.callerId = QStringLiteral(":1.%1").arg(index);
         inventory.leases.push_back(entry);
     }
+    // The lease table and the discovering flag must agree, or the model
+    // fails the whole inventory closed.
+    inventory.adapters[0].discovering = true;
     backend.publish(inventory);
     const Snapshot snapshot = model.snapshot();
 
@@ -218,6 +239,7 @@ void BluetoothModelTests::boundsDiscoveryLeases()
     QCOMPARE(blocked.immediateResult.reasonCode, QStringLiteral("too-many-leases"));
 
     inventory.leases.clear();
+    inventory.adapters[0].discovering = false;
     backend.publish(inventory);
     const OperationSubmission allowed = model.submit(
         {OperationKind::AcquireDiscovery, adapterHandle(snapshot), false},
@@ -237,6 +259,108 @@ void BluetoothModelTests::boundsDiscoveryLeases()
         QStringLiteral(":1.7"));
     QVERIFY(!off.pending);
     QCOMPARE(off.immediateResult.reasonCode, QStringLiteral("adapter-off"));
+}
+
+void BluetoothModelTests::dispatchedLeasesReserveCapacity()
+{
+    FakeAdapterBackend backend;
+    BluetoothModel model(&backend, kTestEpoch);
+    model.start();
+    BackendInventory inventory = bluetoothInventory();
+    // Five powered adapters let this test isolate the TOTAL lease bound: each
+    // adapter stays below its per-adapter cap while the total cap trips.
+    for (int index = 1; index < 5; ++index) {
+        inventory.adapters.push_back({.address = QStringLiteral("AA:BB:CC:00:11:%1")
+                                                       .arg(22 + index, 2, 10,
+                                                            QLatin1Char('0')),
+                                      .name = QStringLiteral("Adapter %1").arg(index),
+                                      .powered = true,
+                                      .discovering = false});
+    }
+    backend.publish(inventory);
+
+    QList<Handle> adapters;
+    for (const Adapter &adapter : model.snapshot().adapters) {
+        adapters.push_back(adapter.handle);
+    }
+    QCOMPARE(adapters.size(), 5);
+
+    // Dispatched but uncompleted acquisitions must reserve capacity; the
+    // stale published inventory alone shows zero leases here.
+    qsizetype dispatched = 0;
+    for (int adapterIndex = 0; adapterIndex < 4; ++adapterIndex) {
+        for (int leaseIndex = 0; leaseIndex < kMaxDiscoveryLeasesPerAdapter;
+             ++leaseIndex) {
+            const OperationSubmission submission =
+                model.submit({OperationKind::AcquireDiscovery,
+                              adapters[adapterIndex],
+                              false},
+                             QStringLiteral(":1.%1-%2").arg(adapterIndex).arg(leaseIndex));
+            QVERIFY2(submission.pending,
+                     qPrintable(QStringLiteral("acquire %1/%2").arg(adapterIndex)
+                                   .arg(leaseIndex)));
+            ++dispatched;
+        }
+    }
+    QCOMPARE(dispatched, kMaxDiscoveryLeasesTotal);
+
+    // The fifth adapter is below its per-adapter cap but the service total is
+    // exhausted: the acquire must be rejected for the total bound.
+    const OperationSubmission over = model.submit(
+        {OperationKind::AcquireDiscovery, adapters[4], false}, QStringLiteral(":1.999"));
+    QVERIFY(!over.pending);
+    QCOMPARE(over.immediateResult.reasonCode, QStringLiteral("too-many-leases"));
+    QCOMPARE(backend.operations.size(), kMaxDiscoveryLeasesTotal);
+
+    // Completing the dispatched acquisitions frees the projection again.
+    for (const auto &recorded : backend.operations) {
+        backend.finish(recorded.operationId,
+                       {.status = BackendOperationStatus::Succeeded,
+                        .reasonCode = QStringLiteral("lease-acquired"),
+                        .diagnostic = {}});
+    }
+    const OperationSubmission after = model.submit(
+        {OperationKind::AcquireDiscovery, adapters[4], false}, QStringLiteral(":1.999"));
+    QVERIFY(after.pending);
+}
+
+void BluetoothModelTests::reuseBeforePublicationAdvancesEpoch()
+{
+    FakeAdapterBackend backend;
+    BluetoothModel model(&backend, kTestEpoch);
+    model.start();
+    const quint64 firstEpoch = model.snapshot().epoch;
+
+    // AGENT-GUARD under test: stop/start before any inventory publication is
+    // the normal production path and must still advance the epoch.
+    model.stop();
+    model.start();
+    QVERIFY(model.snapshot().epoch != firstEpoch);
+    QVERIFY(model.snapshot().epoch > firstEpoch);
+
+    // Handles minted for the first epoch are stale against the reuse.
+    const OperationSubmission stale = model.submit(
+        {OperationKind::Connect, {firstEpoch, 700}, false}, QStringLiteral(":1.7"));
+    QVERIFY(!stale.pending);
+    QCOMPARE(stale.immediateResult.reasonCode, QStringLiteral("stale-handle"));
+}
+
+void BluetoothModelTests::leaseDiscoveringContradictionFailsClosed()
+{
+    FakeAdapterBackend backend;
+    BluetoothModel model(&backend, kTestEpoch);
+    model.start();
+
+    BackendInventory contradictory = bluetoothInventory();
+    contradictory.adapters[0].discovering = true;
+    QVERIFY(contradictory.leases.isEmpty());
+    backend.publish(contradictory);
+
+    const Snapshot snapshot = model.snapshot();
+    QCOMPARE(snapshot.availability, Availability::Degraded);
+    QCOMPARE(snapshot.reasonCode, QStringLiteral("backend-malformed"));
+    QVERIFY(snapshot.adapters.isEmpty());
+    QVERIFY(validateSnapshot(snapshot).accepted);
 }
 
 void BluetoothModelTests::releasesLeasesWhenOwnerVanishes()
@@ -264,7 +388,7 @@ void BluetoothModelTests::stopMakesPendingUncertain()
     const Snapshot snapshot = model.snapshot();
 
     const OperationSubmission submission =
-        model.submit({OperationKind::Disconnect, deviceHandle(snapshot), false},
+        model.submit({OperationKind::Connect, deviceHandle(snapshot), false},
                      QStringLiteral(":1.7"));
     QVERIFY(submission.pending);
     model.stop();
@@ -278,7 +402,7 @@ void BluetoothModelTests::stopMakesPendingUncertain()
     // A late backend completion for the retired operation is dropped.
     backend.finishForGeneration(backend.generation, submission.operationId,
                                 {.status = BackendOperationStatus::Succeeded,
-                                 .reasonCode = QStringLiteral("disconnected"),
+                                 .reasonCode = QStringLiteral("connected"),
                                  .diagnostic = {}});
     QCOMPARE(completed.count(), 0);
 }

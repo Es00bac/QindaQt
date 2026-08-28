@@ -4,7 +4,7 @@
 <node name="/org/qindaqt/Bluetooth1">
   <interface name="org.qindaqt.Bluetooth1">
     <method name="GetSnapshot">
-      <arg name="snapshot" type="(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))" direction="out"/>
+      <arg name="snapshot" type="(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))" direction="out"/>
     </method>
     <method name="SetPowered">
       <arg name="adapter" type="(tt)" direction="in"/>

@@ -29,6 +29,22 @@ bool validDeviceClass(const DeviceClass value)
     return value >= DeviceClass::Unknown && value <= DeviceClass::Tag;
 }
 
+bool validDeviceRole(const DeviceRole value)
+{
+    return value >= DeviceRole::Unknown && value <= DeviceRole::CentralPeripheral;
+}
+
+bool validBattery(const Device &device)
+{
+    // AGENT-GUARD: Unknown battery is exactly zero; a reported percentage
+    // must stay inside BlueZ's [0, 100] range. Anything else is fabricated
+    // data and fails closed.
+    if (!device.batteryKnown) {
+        return device.batteryPercent == 0;
+    }
+    return device.batteryPercent <= 100;
+}
+
 bool validOperationKind(const OperationKind value)
 {
     return value >= OperationKind::SetAdapterPower && value <= OperationKind::Disconnect;
@@ -210,10 +226,12 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
             return rejected(QStringLiteral("invalid-device-order"));
         }
         if (!validDeviceClass(device.deviceClass)
+            || !validDeviceRole(device.role)
             || !isCanonicalAddress(device.address)
             || deviceAddresses.contains(device.address)
             || !isBoundedText(device.name, kMaxDeviceNameUtf8Bytes)
-            || !validRssi(device)) {
+            || !validRssi(device)
+            || !validBattery(device)) {
             return rejected(QStringLiteral("invalid-device"));
         }
         // AGENT-GUARD: Bluetooth truth invariants. A connected device must be

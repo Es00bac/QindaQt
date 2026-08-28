@@ -11,6 +11,7 @@
 #include <QtCore/QProcess>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusContext>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
@@ -72,12 +73,66 @@ BackendInventory populatedInventory()
                           .address = QStringLiteral("AA:BB:CC:33:44:55"),
                           .name = QStringLiteral("Keyboard"),
                           .deviceClass = DeviceClass::Keyboard,
+                          .role = DeviceRole::Peripheral,
                           .paired = true,
                           .connected = false,
                           .rssiKnown = true,
-                          .rssi = -52}};
+                          .rssi = -52,
+                          .batteryKnown = true,
+                          .batteryPercent = 87}};
     return inventory;
 }
+
+// AGENT-NOTE: A hostile service that exploits the wire's freedom beyond the
+// protocol bounds: the writer will happily marshal more devices than v1
+// allows, so only the client-side bounded decode can catch the payload. A
+// locally built QDBusArgument cannot be demarshalled, so this row is what
+// actually exercises the real-wire bounded decode.
+class HostileSnapshotService final : public QObject, protected QDBusContext
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Bluetooth1")
+
+public:
+    explicit HostileSnapshotService(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+public Q_SLOTS:
+    Q_SCRIPTABLE Snapshot GetSnapshot() const
+    {
+        Snapshot snapshot;
+        snapshot.schemaVersion = kSchemaVersion;
+        snapshot.epoch = 77;
+        snapshot.revision = 1;
+        snapshot.availability = Availability::Ready;
+        snapshot.capabilities = Capability::SetAdapterPower | Capability::DiscoveryLease
+            | Capability::ConnectPaired | Capability::DisconnectPaired;
+        snapshot.reasonCode = QStringLiteral("ready");
+        snapshot.adapters = {{.handle = {.epoch = 77, .serial = 400},
+                              .address = QStringLiteral("AA:BB:CC:00:11:22"),
+                              .name = QStringLiteral("Hostile adapter"),
+                              .powered = true,
+                              .discovering = false}};
+        for (int index = 0; index <= kMaxDevices; ++index) {
+            Device device;
+            device.handle = {.epoch = 77, .serial = static_cast<quint64>(1000 + index)};
+            device.adapterHandle = {.epoch = 77, .serial = 400};
+            device.address = QStringLiteral("AA:BB:CC:33:44:%1")
+                                 .arg(56 + index, 2, 10, QLatin1Char('0'));
+            device.name = QStringLiteral("Hostile %1").arg(index);
+            device.deviceClass = DeviceClass::Unknown;
+            device.role = DeviceRole::Unknown;
+            device.paired = true;
+            snapshot.devices.push_back(device);
+        }
+        return snapshot;
+    }
+
+Q_SIGNALS:
+    Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
+};
 
 } // namespace
 
@@ -87,6 +142,7 @@ class QtBluetoothTransportTests final : public QObject
 
 private Q_SLOTS:
     void successiveOwnersLeasesAndOperations();
+    void hostileOversizedWireSnapshotIsRejected();
 };
 
 void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
@@ -122,7 +178,7 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
              qPrintable(introspectionReply.error().message()));
     const QString introspection = introspectionReply.value();
     QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))\"")));
+        QStringLiteral("type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"AcquireDiscovery\"")));
 
@@ -133,6 +189,10 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
     QTRY_COMPARE(client.state(), ClientState::Ready);
     QCOMPARE(client.snapshot().epoch, quint64(9001));
     QVERIFY(client.owner().startsWith(QLatin1Char(':')));
+    // AGENT-CONTRACT under test: the wire round trip is faithful. The client
+    // snapshot decoded over the real bus must equal the model snapshot value
+    // for value, including battery and role representation.
+    QCOMPARE(client.snapshot(), firstHost->model()->snapshot());
 
     // A paired-device connect round trip through the real adaptor, model, and
     // wire codecs.
@@ -166,25 +226,61 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
         QDBusConnection::connectToBus(bus.address, secondConnectionName);
     QVERIFY(secondConnection.isConnected());
     auto secondBackend = std::make_unique<DeterministicAdapterBackend>();
+    DeterministicAdapterBackend *secondBackendPtr = secondBackend.get();
     auto secondHost = std::make_unique<ResidentBluetoothService>(
         std::move(secondBackend), secondConnection, serviceName, 9002);
     QCOMPARE(secondHost->start(), ServiceStartStatus::Started);
     // The empty replacement backend truthfully publishes no-adapter until its
     // inventory is populated.
     QTRY_COMPARE(client.state(), ClientState::Unavailable);
-    secondBackend->setInventory(populatedInventory());
+    secondBackendPtr->setInventory(populatedInventory());
     QTRY_COMPARE(client.state(), ClientState::Ready);
     QCOMPARE(client.snapshot().epoch, quint64(9002));
     QVERIFY(client.owner() != firstOwner);
     // The old-epoch handle is stale against the new authority.
     const quint64 stale = client.connectDevice(deviceHandle);
-    QTRY_COMPARE(completed.count(), 2);
+    QTRY_COMPARE(completed.count(), 3);
     QCOMPARE(completed.last()[0].toULongLong(), stale);
     QCOMPARE(completed.last()[1].value<OperationResult>().reasonCode,
              QStringLiteral("stale-handle"));
     secondHost->stop();
     secondHost.reset();
     QDBusConnection::disconnectFromBus(secondConnectionName);
+    client.stop();
+}
+
+void QtBluetoothTransportTests::hostileOversizedWireSnapshotIsRejected()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString hostileName = QStringLiteral("org.qindaqt.BluetoothHostile.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+    HostileSnapshotService hostile;
+    QVERIFY(bus.connection.registerObject(QString::fromLatin1(kObjectPath), &hostile,
+                                          QDBusConnection::ExportScriptableSlots
+                                              | QDBusConnection::ExportScriptableSignals));
+    QVERIFY(bus.connection.registerService(hostileName));
+
+    QtBluetoothTransport transport(bus.connection, hostileName);
+    BluetoothClient client(&transport);
+    QSignalSpy snapshots(&client, &BluetoothClient::snapshotChanged);
+    client.start();
+    // The bounded decode of the real wire payload must mark the oversized
+    // array malformed, reject the whole snapshot, and revoke authority.
+    QTRY_COMPARE(client.state(), ClientState::Unavailable);
+    QCOMPARE(client.reasonCode(), QStringLiteral("malformed-snapshot"));
+    QVERIFY(!client.hasSnapshot());
+    QCOMPARE(snapshots.count(), 0);
+
+    // No mutation can dispatch against the hostile payload's authority.
+    const quint64 requestId = client.connectDevice({.epoch = 77, .serial = 1000});
+    QVERIFY(requestId != 0);
+    QTRY_COMPARE(snapshots.count(), 0);
+    QVERIFY(!client.operationPending());
+
+    bus.connection.unregisterObject(QString::fromLatin1(kObjectPath));
+    bus.connection.unregisterService(hostileName);
     client.stop();
 }
 

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "support/fake_adapter_backend.h"
+#include "support/private_bus.h"
 
 #include <qindaqt/services/bluetooth_model/bluetooth_model.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
-#include <qindaqt/services/bluetooth_protocol/bluetooth_validation.h>
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
 
-#include <QtCore/QCoreApplication>
 #include <QtDBus/QDBusConnection>
 #include <QtTest>
 
@@ -22,7 +21,7 @@ class BluetoothServiceTests final : public QObject
 
 private Q_SLOTS:
     void invalidConnectionFailsClosed();
-    void residentCompositionWiresModelToOwner();
+    void privateBusCompositionOwnership();
 };
 
 void BluetoothServiceTests::invalidConnectionFailsClosed()
@@ -42,39 +41,54 @@ void BluetoothServiceTests::invalidConnectionFailsClosed()
     QVERIFY(!service.isRunning());
 }
 
-void BluetoothServiceTests::residentCompositionWiresModelToOwner()
+void BluetoothServiceTests::privateBusCompositionOwnership()
 {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.BluetoothServiceTest.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+
+    const QString firstConnectionName = bus.name + QStringLiteral("-first");
+    QDBusConnection firstConnection =
+        QDBusConnection::connectToBus(bus.address, firstConnectionName);
+    QVERIFY(firstConnection.isConnected());
     auto backend = std::make_unique<FakeAdapterBackend>();
     FakeAdapterBackend *backendPtr = backend.get();
-    QDBusConnection connection = QDBusConnection::sessionBus();
-    if (!connection.isConnected()) {
-        QSKIP("This composition check requires a session bus connection.");
-    }
-    const QString serviceName = QStringLiteral("org.qindaqt.BluetoothServiceTest.%1")
-                                    .arg(QCoreApplication::applicationPid());
-    ResidentBluetoothService service(std::move(backend), connection, serviceName, 7002);
-    QCOMPARE(service.start(), ServiceStartStatus::Started);
-    QVERIFY(service.isRunning());
-    QVERIFY(service.model() != nullptr);
+    auto service = std::make_unique<ResidentBluetoothService>(
+        std::move(backend), firstConnection, serviceName, 7002);
+    QCOMPARE(service->start(), ServiceStartStatus::Started);
+    QVERIFY(service->isRunning());
+    QVERIFY(service->model() != nullptr);
     QCOMPARE(backendPtr->startCalls, 1);
 
     // A second owner of the same well-known name is refused, not stolen.
+    const QString secondConnectionName = bus.name + QStringLiteral("-second");
+    QDBusConnection secondConnection =
+        QDBusConnection::connectToBus(bus.address, secondConnectionName);
+    QVERIFY(secondConnection.isConnected());
     auto secondBackend = std::make_unique<FakeAdapterBackend>();
-    ResidentBluetoothService second(std::move(secondBackend), connection, serviceName,
-                                     7003);
+    ResidentBluetoothService second(std::move(secondBackend), secondConnection,
+                                     serviceName, 7003);
     QCOMPARE(second.start(), ServiceStartStatus::NameAlreadyOwned);
     QVERIFY(!second.isRunning());
-    QVERIFY(second.model() != nullptr);
 
-    service.stop();
-    QVERIFY(!service.isRunning());
+    service->stop();
+    QVERIFY(!service->isRunning());
     QCOMPARE(backendPtr->stopCalls, 1);
+    service.reset();
+    QDBusConnection::disconnectFromBus(firstConnectionName);
 
     // The name is free again after stop, so a new owner can take it.
-    ResidentBluetoothService third(std::make_unique<FakeAdapterBackend>(), connection,
+    const QString thirdConnectionName = bus.name + QStringLiteral("-third");
+    QDBusConnection thirdConnection =
+        QDBusConnection::connectToBus(bus.address, thirdConnectionName);
+    QVERIFY(thirdConnection.isConnected());
+    ResidentBluetoothService third(std::make_unique<FakeAdapterBackend>(), thirdConnection,
                                    serviceName, 7004);
     QCOMPARE(third.start(), ServiceStartStatus::Started);
     third.stop();
+    QDBusConnection::disconnectFromBus(secondConnectionName);
+    QDBusConnection::disconnectFromBus(thirdConnectionName);
 }
 
 QTEST_GUILESS_MAIN(BluetoothServiceTests)

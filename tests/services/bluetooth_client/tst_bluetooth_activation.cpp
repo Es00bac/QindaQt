@@ -14,8 +14,6 @@
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
-#include <QtDBus/QDBusPendingCallWatcher>
-#include <QtDBus/QDBusPendingReply>
 #include <QtTest>
 
 #include <csignal>
@@ -179,24 +177,16 @@ private Q_SLOTS:
 void BluetoothActivationTests::daemonLossExitsAndReplacementStartsFresh()
 {
     registerDBusTypes();
+    // AGENT-CONTRACT under test: the client activates an initially absent
+    // service. No test code calls StartServiceByName; the transport's
+    // ServiceUnknown handling must bring the executable up on a private bus.
     PrivateActivatingBus firstBus;
     QVERIFY(firstBus.start());
-
-    QDBusMessage start = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.DBus"),
-        QStringLiteral("/org/freedesktop/DBus"),
-        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
-    start.setArguments({QString::fromLatin1(kServiceName), quint32(0)});
-    QDBusPendingCallWatcher activation(firstBus.connection.asyncCall(start));
-    QSignalSpy activated(&activation, &QDBusPendingCallWatcher::finished);
-    QTRY_COMPARE_WITH_TIMEOUT(activated.size(), 1, 5000);
-    const QDBusPendingReply<quint32> activationReply = activation;
-    QVERIFY2(!activationReply.isError(), qPrintable(activationReply.error().message()));
 
     QtBluetoothTransport firstTransport(firstBus.connection);
     BluetoothClient firstClient(&firstTransport);
     firstClient.start();
-    QTRY_VERIFY_WITH_TIMEOUT(firstClient.hasSnapshot(), 10000);
+    QTRY_VERIFY_WITH_TIMEOUT(firstClient.hasSnapshot(), 15000);
     const QString firstOwner = firstClient.owner();
     const quint64 firstEpoch = firstClient.snapshot().epoch;
     const pid_t firstPid = firstBus.findServicePid();
@@ -219,17 +209,11 @@ void BluetoothActivationTests::daemonLossExitsAndReplacementStartsFresh()
     // assign the same textual owner as the first independent bus.
     PrivateActivatingBus secondBus;
     QVERIFY(secondBus.start(true));
-    QDBusPendingCallWatcher secondActivation(secondBus.connection.asyncCall(start));
-    QSignalSpy secondActivated(&secondActivation, &QDBusPendingCallWatcher::finished);
-    QTRY_COMPARE_WITH_TIMEOUT(secondActivated.size(), 1, 5000);
-    const QDBusPendingReply<quint32> secondActivationReply = secondActivation;
-    QVERIFY2(!secondActivationReply.isError(),
-             qPrintable(secondActivationReply.error().message()));
 
     QtBluetoothTransport secondTransport(secondBus.connection);
     BluetoothClient secondClient(&secondTransport);
     secondClient.start();
-    QTRY_VERIFY_WITH_TIMEOUT(secondClient.hasSnapshot(), 10000);
+    QTRY_VERIFY_WITH_TIMEOUT(secondClient.hasSnapshot(), 15000);
     const QString secondOwner = secondClient.owner();
     const quint64 secondEpoch = secondClient.snapshot().epoch;
     const pid_t secondPid = secondBus.findServicePid();

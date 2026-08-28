@@ -7,6 +7,8 @@
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_dbus.h>
 
+#include <QtDBus/QDBusConnectionInterface>
+
 #include <utility>
 
 namespace QindaQt::Bluetooth
@@ -45,15 +47,15 @@ ServiceStartStatus ResidentBluetoothService::start()
 
     // AGENT-CONTRACT: Discovery leases are keyed by caller unique names, so
     // the service must observe caller loss on the same bus it serves. The
-    // broadcast subscription is installed once per running lifetime and torn
-    // down on stop; a vanished lease holder drops its leases so bounded
-    // discovery cannot leak after client death.
+    // third connect argument is the D-Bus type signature of the match rule
+    // (sss), not a name list. The subscription is installed once per running
+    // lifetime and torn down on stop; a vanished lease holder drops its
+    // leases so bounded discovery cannot leak after client death.
     if (!m_ownerWatchInstalled) {
         const bool watched = m_connection.connect(
-            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QString{}, QStringLiteral("/org/freedesktop/DBus"),
             QStringLiteral("org.freedesktop.DBus"), QStringLiteral("NameOwnerChanged"),
-            QStringLiteral("name,old_owner,new_owner"), this,
-            SLOT(onNameOwnerChanged(QString,QString,QString)));
+            this, SLOT(onNameOwnerChanged(QString,QString,QString)));
         if (!watched) {
             return ServiceStartStatus::InvalidConnection;
         }
@@ -69,8 +71,10 @@ ServiceStartStatus ResidentBluetoothService::start()
     m_objectRegistered = true;
 
     if (!m_connection.registerService(m_serviceName)) {
-        const bool alreadyOwned = m_connection.lastError().name()
-            == QStringLiteral("org.freedesktop.DBus.Error.NameExists");
+        const bool alreadyOwned = (m_connection.interface() != nullptr
+                                   && m_connection.interface()->isServiceRegistered(m_serviceName))
+            || m_connection.lastError().name()
+                == QStringLiteral("org.freedesktop.DBus.Error.NameExists");
         stop();
         return alreadyOwned ? ServiceStartStatus::NameAlreadyOwned
                             : ServiceStartStatus::NameRegistrationFailed;
@@ -95,10 +99,9 @@ void ResidentBluetoothService::stop()
     }
     if (m_ownerWatchInstalled) {
         m_connection.disconnect(
-            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QString{}, QStringLiteral("/org/freedesktop/DBus"),
             QStringLiteral("org.freedesktop.DBus"), QStringLiteral("NameOwnerChanged"),
-            QStringLiteral("name,old_owner,new_owner"), this,
-            SLOT(onNameOwnerChanged(QString,QString,QString)));
+            this, SLOT(onNameOwnerChanged(QString,QString,QString)));
         m_ownerWatchInstalled = false;
     }
 }
@@ -117,16 +120,18 @@ void ResidentBluetoothService::onNameOwnerChanged(const QString &name,
                                                   const QString &oldOwner,
                                                   const QString &newOwner)
 {
-    // Lease holders are unique names. A unique name never reappears, so an
-    // empty new owner with a nonempty old owner is an unrecoverable client
-    // loss even though the bus reuses the well-known service name.
+    // AGENT-GUARD: Lease holders are unique D-Bus names. A unique name never
+    // reappears, so an empty new owner with a nonempty old owner is an
+    // unrecoverable client loss. A well-known name being relinquished without
+    // replacement is not caller loss: its unique connection stays alive and
+    // its leases must survive the alias release.
     if (!isRunning() || name.isEmpty() || oldOwner.isEmpty() || !newOwner.isEmpty()) {
         return;
     }
-    if (name == m_serviceName) {
+    if (!name.startsWith(QLatin1Char(':'))) {
         return;
     }
-    m_model->ownerVanished(oldOwner);
+    m_model->ownerVanished(name);
 }
 
 } // namespace QindaQt::Bluetooth

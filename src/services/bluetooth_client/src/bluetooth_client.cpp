@@ -12,6 +12,9 @@ namespace QindaQt::Bluetooth
 namespace
 {
 
+constexpr int kMinRetryIntervalMs = 200;
+constexpr int kMaxRetryIntervalMs = 2000;
+
 const Adapter *findAdapter(const Snapshot &snapshot, const Handle &handle)
 {
     for (const Adapter &adapter : snapshot.adapters) {
@@ -148,6 +151,7 @@ void BluetoothClient::stop()
     m_fetchRequestId = 0;
     m_snapshot.reset();
     m_owner.clear();
+    m_retryIntervalMs = kMinRetryIntervalMs;
     m_transport->stop();
     publishState(ClientState::Stopped, {});
 }
@@ -226,6 +230,7 @@ void BluetoothClient::acceptOwner(const QString &owner)
     m_fetchInFlight = false;
     m_refetchNeeded = false;
     m_fetchRequestId = 0;
+    m_retryIntervalMs = kMinRetryIntervalMs;
     m_snapshot.reset();
     m_owner = owner;
     if (m_owner.isEmpty()) {
@@ -258,9 +263,14 @@ void BluetoothClient::requestSnapshot()
 
 void BluetoothClient::scheduleRefetch()
 {
-    if (!m_retryTimer.isActive() && !m_owner.isEmpty()) {
-        m_retryTimer.start();
+    if (m_retryTimer.isActive() || m_owner.isEmpty()) {
+        return;
     }
+    // Bounded exponential backoff: double toward the cap, reset on the next
+    // accepted snapshot, so a dead service cannot spin the bus at a fixed
+    // 200 ms cadence.
+    m_retryTimer.start(m_retryIntervalMs);
+    m_retryIntervalMs = qMin(m_retryIntervalMs * 2, kMaxRetryIntervalMs);
 }
 
 void BluetoothClient::acceptInvalidation(const QString &owner, const quint64 epoch,
@@ -270,7 +280,7 @@ void BluetoothClient::acceptInvalidation(const QString &owner, const quint64 epo
         return;
     }
     if (!m_snapshot.has_value() || epoch != m_snapshot->epoch
-        || revision > m_snapshot->revision) {
+        || revision >= m_snapshot->revision) {
         requestSnapshot();
     }
 }
@@ -303,6 +313,13 @@ void BluetoothClient::acceptSnapshotReply(const QString &owner, const quint64 re
         }
     }
     if (!transportSuccess || !validation.accepted || lineageContradiction) {
+        // AGENT-GUARD: A failed fetch revokes mutation authority. The
+        // retained snapshot can no longer be proven current, so it is
+        // dropped and any dispatched operation completes as Uncertain
+        // instead of being authorized by possibly stale state.
+        m_snapshot.reset();
+        completeUncertain(QStringLiteral("snapshot-unavailable"));
+        m_retryIntervalMs = kMinRetryIntervalMs;
         publishState(ClientState::Unavailable,
                      !transportSuccess ? reasonCode : QStringLiteral("malformed-snapshot"));
         scheduleRefetch();
@@ -310,6 +327,7 @@ void BluetoothClient::acceptSnapshotReply(const QString &owner, const quint64 re
     }
 
     if (exactDuplicate) {
+        m_retryIntervalMs = kMinRetryIntervalMs;
         publishSnapshotState(snapshot);
         if (m_refetchNeeded) {
             requestSnapshot();
@@ -319,6 +337,7 @@ void BluetoothClient::acceptSnapshotReply(const QString &owner, const quint64 re
     const bool authorityReplaced = m_snapshot.has_value()
         && snapshot.epoch != m_snapshot->epoch;
     m_snapshot = snapshot;
+    m_retryIntervalMs = kMinRetryIntervalMs;
     publishSnapshotState(snapshot);
     Q_EMIT snapshotChanged(snapshot);
     if (authorityReplaced) {
@@ -378,9 +397,7 @@ quint64 BluetoothClient::beginOperation(const OperationRequest &request)
                             : OperationStatus::Rejected,
                         rejection));
         return requestId;
-    }
-
-    m_operation = PendingOperation{.requestId = requestId,
+    }    m_operation = PendingOperation{.requestId = requestId,
                                    .request = request,
                                    .epoch = m_snapshot->epoch,
                                    .revision = m_snapshot->revision};
@@ -492,6 +509,10 @@ void BluetoothClient::onFetchTimeout()
     }
     m_fetchInFlight = false;
     m_fetchRequestId = 0;
+    // AGENT-GUARD: A timed-out fetch leaves current state unproven; revoke
+    // mutation authority exactly as for a failed fetch.
+    m_snapshot.reset();
+    completeUncertain(QStringLiteral("snapshot-timeout"));
     publishState(ClientState::Unavailable, QStringLiteral("snapshot-timeout"));
     scheduleRefetch();
 }

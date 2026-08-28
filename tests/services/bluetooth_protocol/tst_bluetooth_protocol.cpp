@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <qindaqt/services/bluetooth_protocol/bluetooth_dbus.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
@@ -12,6 +12,19 @@ using namespace QindaQt::Bluetooth;
 
 namespace
 {
+
+// Locally marshalled arguments are write-only, so they cannot be demarshalled
+// here; positive decode is proven by the private-bus rows against the real
+// service. What this seam does prove is that the registered D-Bus writers
+// execute and emit exactly the canonical ABI signature, which is the drift
+// class that breaks introspection and the shipped XML.
+template<typename T>
+QDBusArgument marshalledArgument(const T &value)
+{
+    QDBusArgument writer;
+    writer << value;
+    return qvariant_cast<QDBusArgument>(QVariant::fromValue(writer));
+}
 
 Snapshot validSnapshot()
 {
@@ -33,10 +46,13 @@ Snapshot validSnapshot()
                          .address = QStringLiteral("AA:BB:CC:33:44:55"),
                          .name = QStringLiteral("Keyboard"),
                          .deviceClass = DeviceClass::Keyboard,
+                         .role = DeviceRole::Peripheral,
                          .paired = true,
                          .connected = false,
                          .rssiKnown = true,
-                         .rssi = -52}};
+                         .rssi = -52,
+                         .batteryKnown = true,
+                         .batteryPercent = 87}};
     return snapshot;
 }
 
@@ -61,12 +77,13 @@ class BluetoothProtocolTests final : public QObject
 
 private Q_SLOTS:
     void fixedSignatures();
-    void roundTripsValues();
+    void realWireMarshallingMatchesCanonicalSignatures();
+    void metaTypeRoundTripPreservesValues();
     void acceptsCanonicalSnapshot();
     void rejectsMalformedLineageAndKinds();
     void rejectsUnsortedDuplicateAndStaleHandles();
     void rejectsNonCanonicalAddresses();
-    void rejectsInvalidRssiAndText();
+    void rejectsInvalidRssiBatteryRoleAndText();
     void rejectsInconsistentDeviceAndAdapterState();
     void rejectsUnknownCapabilityBits();
     void rejectsOversizedCollections();
@@ -78,26 +95,42 @@ private Q_SLOTS:
 void BluetoothProtocolTests::fixedSignatures()
 {
     registerDBusTypes();
-    // AGENT-GUARD: These exact signatures are the Bluetooth1 v1 ABI shared by
-    // the adaptor Q_CLASSINFO introspection and data/org.qindaqt.Bluetooth1.xml.
+    // AGENT-GUARD: These exact signatures are the Bluetooth1 v1 ABI derived
+    // from the registered codecs. They must stay identical to the adaptor
+    // Q_CLASSINFO introspection and data/org.qindaqt.Bluetooth1.xml.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Adapter>()), "((tt)ssbb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
-             "((tt)(tt)ssubbbbn)");
+             "((tt)(tt)ssuubbbnby)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))");
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
 
-void BluetoothProtocolTests::roundTripsValues()
+void BluetoothProtocolTests::realWireMarshallingMatchesCanonicalSignatures()
 {
     registerDBusTypes();
-    const Snapshot original = validSnapshot();
+    // Exercise the actual registered D-Bus writers and compare the produced
+    // wire signature, not just the meta-type registration.
+    QCOMPARE(marshalledArgument(Handle{.epoch = 1, .serial = 2}).currentSignature(),
+             "(tt)");
+    QCOMPARE(marshalledArgument(validSnapshot().adapters.constFirst()).currentSignature(),
+             "((tt)ssbb)");
+    QCOMPARE(marshalledArgument(validSnapshot().devices.constFirst()).currentSignature(),
+             "((tt)(tt)ssuubbbnby)");
+    QCOMPARE(marshalledArgument(validSnapshot()).currentSignature(),
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
+    QCOMPARE(marshalledArgument(validResult()).currentSignature(), "(uuttttss)");
+}
 
-    QVariant marshalled = QVariant::fromValue(original);
-    QVERIFY(marshalled.isValid());
-    const Snapshot decoded = marshalled.value<Snapshot>();
+void BluetoothProtocolTests::metaTypeRoundTripPreservesValues()
+{
+    registerDBusTypes();
+    // Registration-level round trip through Qt's meta-type system (the same
+    // machinery QtDBus uses when moving values across a connection).
+    const Snapshot original = validSnapshot();
+    const Snapshot decoded = QVariant::fromValue(original).value<Snapshot>();
     QCOMPARE(decoded, original);
 
     const OperationResult originalResult = validResult();
@@ -184,7 +217,7 @@ void BluetoothProtocolTests::rejectsNonCanonicalAddresses()
     QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
 }
 
-void BluetoothProtocolTests::rejectsInvalidRssiAndText()
+void BluetoothProtocolTests::rejectsInvalidRssiBatteryRoleAndText()
 {
     Snapshot snapshot = validSnapshot();
     snapshot.devices[0].rssiKnown = false;
@@ -197,6 +230,21 @@ void BluetoothProtocolTests::rejectsInvalidRssiAndText()
 
     snapshot = validSnapshot();
     snapshot.devices[0].rssi = -200;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    // Battery is optional but never fabricatable: unknown must be zero and a
+    // reported percentage must stay within BlueZ's [0, 100] range.
+    snapshot = validSnapshot();
+    snapshot.devices[0].batteryKnown = false;
+    snapshot.devices[0].batteryPercent = 40;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.devices[0].batteryPercent = 101;
+    QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
+
+    snapshot = validSnapshot();
+    snapshot.devices[0].role = static_cast<DeviceRole>(99);
     QCOMPARE(validateSnapshot(snapshot).reasonCode, QStringLiteral("invalid-device"));
 
     snapshot = validSnapshot();
@@ -269,7 +317,7 @@ void BluetoothProtocolTests::rejectsOversizedCollections()
     Snapshot oversized = validSnapshot();
     Device device = oversized.devices[0];
     for (int index = 0; index <= kMaxDevices; ++index) {
-        device.handle.serial = 1000 + index;
+        device.handle.serial = 1000 + static_cast<quint64>(index);
         device.address = QStringLiteral("AA:BB:CC:33:44:%1").arg(56 + index, 2, 10,
                                                                  QLatin1Char('0'));
         oversized.devices.push_back(device);

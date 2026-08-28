@@ -33,6 +33,15 @@ enum class DeviceClass : quint32 {
     Tag = 12,
 };
 
+// GAP connection role. Unknown means the platform did not report one;
+// Bluetooth1 never fabricates a role.
+enum class DeviceRole : quint32 {
+    Unknown = 0,
+    Central = 1,
+    Peripheral = 2,
+    CentralPeripheral = 3,
+};
+
 // AGENT-CONTRACT: These are service-level capability bits only. Bluetooth1 v1
 // deliberately has no per-adapter or per-device capability flags; adapters
 // expose powered/discovering truth and devices expose paired/connected truth.
@@ -91,10 +100,15 @@ struct Device {
     QString address;
     QString name;
     DeviceClass deviceClass = DeviceClass::Unknown;
+    DeviceRole role = DeviceRole::Unknown;
     bool paired = false;
     bool connected = false;
     bool rssiKnown = false;
     qint16 rssi = 0;
+    // Optional battery percentage in the BlueZ-reported range [0, 100].
+    // batteryKnown == false must carry batteryPercent == 0.
+    bool batteryKnown = false;
+    quint8 batteryPercent = 0;
 
     friend bool operator==(const Device &, const Device &) = default;
 };
@@ -153,6 +167,7 @@ Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationStatus)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Handle)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Adapter)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Device)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::DeviceRole)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Snapshot)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationRequest)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationResult)

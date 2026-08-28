@@ -28,8 +28,8 @@ rather than truncating silently.
 | --- | --- | --- |
 | `Handle` | `(tt)` | `epoch`, `serial` |
 | `Adapter` | `((tt)ssbb)` | `handle`, `address`, `name`, `powered`, `discovering` |
-| `Device` | `((tt)(tt)ssubbbbn)` | `handle`, `adapter` handle, `address`, `name`, `deviceClass` (`u`), `paired`, `connected`, `rssiKnown`, `rssi` (`n`) |
-| `Snapshot` | `(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))` | `schemaVersion`, `epoch`, `revision`, `availability`, `capabilities`, `reasonCode`, `diagnostic`, `adapters`, `devices` |
+| `Device` | `((tt)(tt)ssuubbbnby)` | `handle`, `adapter` handle, `address`, `name`, `deviceClass` (`u`), `role` (`u`), `paired`, `connected`, `rssiKnown`, `rssi` (`n`), `batteryKnown`, `batteryPercent` (`y`) |
+| `Snapshot` | `(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))` | `schemaVersion`, `epoch`, `revision`, `availability`, `capabilities`, `reasonCode`, `diagnostic`, `adapters`, `devices` |
 | `OperationResult` | `(uuttttss)` | `kind`, `status`, `initiatingEpoch`, `initiatingRevision`, `observedEpoch`, `observedRevision`, `reasonCode`, `diagnostic` |
 
 ### Enumerations
@@ -39,6 +39,7 @@ rather than truncating silently.
 | `Availability` (`u`) | `Starting=0`, `Ready=1`, `Unavailable=2`, `Degraded=3` |
 | `Capability` (`u`, flags) | `SetAdapterPower=1<<0`, `DiscoveryLease=1<<1`, `ConnectPaired=1<<2`, `DisconnectPaired=1<<3` |
 | `DeviceClass` (`u`) | `Unknown=0`, `Computer=1`, `Phone=2`, `AudioVideo=3`, `Headset=4`, `Headphones=5`, `Keyboard=6`, `Mouse=7`, `Tablet=8`, `Printer=9`, `GameInput=10`, `Wearable=11`, `Tag=12` |
+| `DeviceRole` (`u`) | `Unknown=0`, `Central=1`, `Peripheral=2`, `CentralPeripheral=3` |
 | `OperationKind` (`u`) | `SetAdapterPower=0`, `AcquireDiscovery=1`, `ReleaseDiscovery=2`, `Connect=3`, `Disconnect=4` |
 | `OperationStatus` (`u`) | `Succeeded=0`, `Rejected=1`, `Unsupported=2`, `Failed=3`, `Uncertain=4`, `Busy=5` |
 
@@ -72,6 +73,9 @@ Mutations are asynchronous: the service replies with `result` when the
 operation completes. `AcquireDiscovery`/`ReleaseDiscovery` are attributed to
 the caller's unique bus name; leases are reference-counted per caller and per
 adapter, and every lease of a caller that vanishes from the bus is released.
+Powering an adapter off releases that adapter's leases and terminates its
+connections and discovery sessions; a later power-on never resurrects
+discovery.
 
 ## Validation (fail-closed)
 
@@ -87,6 +91,9 @@ accepted, when any of the following holds:
   (`AA:BB:CC:DD:EE:FF`, uppercase hex pairs);
 - `rssiKnown == false` while `rssi != 0`, or `rssiKnown == true` with RSSI
   outside `[-128, 0]` dBm;
+- `batteryKnown == false` while `batteryPercent != 0`, or `batteryKnown ==
+  true` with a percentage above 100; `role` outside its known values
+  (`Unknown` means the platform did not report one);
 - a device is `connected` while `paired == false` or while its adapter has
   `powered == false`, or references a missing adapter; an adapter is
   `discovering` while `powered == false`;
@@ -104,21 +111,29 @@ restart-unique epoch, so every handle from an earlier epoch is stale.
 
 ## Uncertainty and replacement
 
-Timeout, service-owner replacement, backend authority replacement, and model
-stop make an in-flight operation `Uncertain`. Callers must resnapshot and show
-uncertainty; neither the service nor the client replays an uncertain
-mutation. The client binds to the exact unique owner, coalesces
-`Changed` invalidations while a fetch is active, rejects late or malformed
-replies, clears its snapshot when the owner is replaced, and never replays a
-timed-out operation.
+Timeout, service-owner replacement, backend authority replacement, model
+stop, and a failed or timed-out snapshot refetch make an in-flight operation
+`Uncertain`. A failed refetch also drops the client's retained snapshot, so
+no mutation can dispatch against state that can no longer be proven current.
+Callers must resnapshot and show uncertainty; neither the service nor the
+client replays an uncertain mutation. The client binds to the exact unique
+owner, coalesces `Changed` invalidations while a fetch is active with bounded
+backoff between retries, rejects late or malformed replies, clears its
+snapshot when the owner is replaced, and never replays a timed-out
+operation. A client facing `ServiceUnknown` attempts exactly one explicit
+`StartServiceByName` activation and then waits for the owner watcher; it
+never dispatches methods to a well-known name it has not resolved to a
+unique owner.
 
 ## Reason codes
 
 Stable reason tokens include `starting`, `ready`, `no-adapter`,
 `backend-restarting`, `backend-malformed`, `unavailable`, `stale-handle`,
-`adapter-off`, `not-paired`, `not-connected`, `no-lease`, `too-many-leases`,
+`adapter-off`, `not-paired`, `not-connected`, `already-connected`,
+`no-lease`, `too-many-leases`,
 `too-many-operations`, `malformed-request`, `malformed-caller`,
 `unsupported`, `adapter-power-set`, `lease-acquired`, `lease-released`,
-`connected`, `disconnected`, `authority-replaced`, `model-stopped`, and the
-client-side `owner-replaced`, `operation-timeout`, `client-stopped`,
+`connected`, `disconnected`, `authority-replaced`, `model-stopped`,
+`snapshot-unavailable`, `snapshot-timeout`, and the client-side
+`owner-replaced`, `operation-timeout`, `client-stopped`,
 `malformed-result`, `malformed-snapshot`, and `transport-*` family.

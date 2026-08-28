@@ -17,61 +17,9 @@ namespace QindaQt::Bluetooth
 namespace
 {
 
-constexpr quint64 kFnvOffsetBasis = 14695981039346656037ULL;
-constexpr quint64 kFnvPrime = 1099511628211ULL;
-
-// Stable privacy-safe serials derive from the canonical address, never from
-// list position or a transient platform object ID. Adapters and devices use
-// distinct prefixes so one epoch's serial space cannot collide across kinds.
-quint64 stableSerial(const char prefix, const QString &address)
-{
-    quint64 hash = kFnvOffsetBasis;
-    const QByteArray bytes = address.toUtf8();
-    hash ^= static_cast<quint64>(prefix);
-    hash *= kFnvPrime;
-    for (const char byte : bytes) {
-        hash ^= static_cast<quint64>(static_cast<unsigned char>(byte));
-        hash *= kFnvPrime;
-    }
-    return hash == 0 ? 1 : hash;
-}
-
 bool validBackendReasonCode(const QString &reasonCode)
 {
     return isStructuredReasonCode(reasonCode);
-}
-
-bool safeCallerId(const QString &callerId)
-{
-    if (callerId.isEmpty() || !isBoundedText(callerId, kMaxCallerIdUtf8Bytes)) {
-        return false;
-    }
-    for (const QChar character : callerId) {
-        if (character.category() == QChar::Other_Control) {
-            return false;
-        }
-    }
-    return true;
-}
-
-quint32 adapterLeaseTotal(const BackendInventory &inventory, const QString &adapterAddress)
-{
-    quint32 total = 0;
-    for (const BackendLease &lease : inventory.leases) {
-        if (lease.adapterAddress == adapterAddress) {
-            total += lease.refcount;
-        }
-    }
-    return total;
-}
-
-quint32 totalLeases(const BackendInventory &inventory)
-{
-    quint32 total = 0;
-    for (const BackendLease &lease : inventory.leases) {
-        total += lease.refcount;
-    }
-    return total;
 }
 
 } // namespace
@@ -85,7 +33,12 @@ BluetoothModel::BluetoothModel(AdapterBackend *backend, const quint64 epochSeed,
     qRegisterMetaType<BackendInventory>();
     qRegisterMetaType<BackendOperationOutcome>();
     m_snapshot.schemaVersion = kSchemaVersion;
-    m_snapshot.epoch = epochSeed != 0 ? epochSeed : advanceEpoch();
+    if (epochSeed != 0) {
+        m_snapshot.epoch = epochSeed;
+        m_lastIssuedEpoch = epochSeed;
+    } else {
+        m_snapshot.epoch = advanceEpoch();
+    }
     m_snapshot.revision = 1;
     m_snapshot.availability = Availability::Starting;
     m_snapshot.reasonCode = QStringLiteral("starting");
@@ -96,7 +49,7 @@ BluetoothModel::BluetoothModel(AdapterBackend *backend, const quint64 epochSeed,
             &BluetoothModel::acceptBackendResult);
 }
 
-const Snapshot &BluetoothModel::snapshot() const noexcept
+Snapshot BluetoothModel::snapshot() const
 {
     return m_snapshot;
 }
@@ -106,18 +59,18 @@ void BluetoothModel::start()
     if (m_running) {
         return;
     }
-    const quint64 generation = m_backend->start();
-    if (generation == 0) {
-        return;
-    }
-    if (m_hasInventory) {
-        // AGENT-GUARD: A reused model must never issue handles that an earlier
-        // backend run already issued. Advancing the epoch before the new run
-        // can publish invalidates every outstanding handle and drops the
-        // superseded run's lease/inventory projection.
+    if (m_startedOnce) {
+        // AGENT-GUARD: Reuse always advances the epoch, even when no
+        // inventory was ever accepted. Otherwise a stop/start before the
+        // first publication would silently reuse the epoch and could reissue
+        // handles an earlier run already issued.
+        const quint64 epoch = advanceEpoch();
+        if (epoch == 0) {
+            return;
+        }
         Snapshot restarting;
         restarting.schemaVersion = kSchemaVersion;
-        restarting.epoch = advanceEpoch();
+        restarting.epoch = epoch;
         restarting.revision = 1;
         restarting.availability = Availability::Starting;
         restarting.reasonCode = QStringLiteral("backend-restarting");
@@ -127,8 +80,13 @@ void BluetoothModel::start()
         Q_EMIT snapshotChanged(m_snapshot);
         Q_EMIT invalidated(m_snapshot.epoch, m_snapshot.revision);
     }
+    const quint64 generation = m_backend->start();
+    if (generation == 0) {
+        return;
+    }
     m_backendGeneration = generation;
     m_running = true;
+    m_startedOnce = true;
 }
 
 void BluetoothModel::stop()
@@ -144,15 +102,98 @@ void BluetoothModel::stop()
 
 quint64 BluetoothModel::advanceEpoch()
 {
-    quint64 candidate = (static_cast<quint64>(QDateTime::currentMSecsSinceEpoch()) << 8U)
-        | static_cast<quint64>(QRandomGenerator::global()->generate() & 0xFFU);
+    // AGENT-GUARD: Epoch uniqueness rests on 64 bits of system entropy mixed
+    // with wall clock, not on eight random bits; a same-millisecond process
+    // pair would otherwise collide with probability 1/256. The strict
+    // monotone floor keeps a reused model past every epoch it ever issued
+    // even across a regressing clock.
+    const quint64 random = QRandomGenerator::system()->generate64();
+    const quint64 clock = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch());
+    quint64 candidate = random ^ clock;
     if (candidate == 0) {
         candidate = 1;
     }
-    if (m_snapshot.epoch != 0 && candidate <= m_snapshot.epoch) {
-        candidate = m_snapshot.epoch + 1;
+    if (m_lastIssuedEpoch != 0) {
+        if (m_lastIssuedEpoch == std::numeric_limits<quint64>::max()) {
+            return 0;
+        }
+        if (candidate <= m_lastIssuedEpoch) {
+            candidate = m_lastIssuedEpoch + 1;
+        }
     }
+    m_lastIssuedEpoch = candidate;
     return candidate;
+}
+
+bool BluetoothModel::safeCallerId(const QString &callerId)
+{
+    if (callerId.isEmpty() || !isBoundedText(callerId, kMaxCallerIdUtf8Bytes)) {
+        return false;
+    }
+    if (!callerId.startsWith(QLatin1Char(':'))) {
+        return false;
+    }
+    for (const QChar character : callerId) {
+        const char latin = character.toLatin1();
+        const bool validChar = (latin >= 'a' && latin <= 'z')
+            || (latin >= 'A' && latin <= 'Z')
+            || (latin >= '0' && latin <= '9')
+            || latin == ':' || latin == '.' || latin == '_' || latin == '-';
+        if (!validChar) {
+            return false;
+        }
+    }
+    return true;
+}
+
+quint32 BluetoothModel::adapterLeaseTotal(const BackendInventory &inventory,
+                                          const QString &adapterAddress)
+{
+    quint32 total = 0;
+    for (const BackendLease &lease : inventory.leases) {
+        if (lease.adapterAddress == adapterAddress) {
+            total += lease.refcount;
+        }
+    }
+    return total;
+}
+
+quint32 BluetoothModel::totalLeases(const BackendInventory &inventory)
+{
+    quint32 total = 0;
+    for (const BackendLease &lease : inventory.leases) {
+        total += lease.refcount;
+    }
+    return total;
+}
+
+qsizetype BluetoothModel::pendingLeaseCount(const QString &adapterAddress) const
+{
+    qsizetype net = 0;
+    for (auto it = m_pending.cbegin(); it != m_pending.cend(); ++it) {
+        if (it->adapterAddress != adapterAddress) {
+            continue;
+        }
+        if (it->kind == OperationKind::AcquireDiscovery) {
+            ++net;
+        } else if (it->kind == OperationKind::ReleaseDiscovery) {
+            --net;
+        }
+    }
+    return qMax<qsizetype>(net, 0);
+}
+
+qsizetype BluetoothModel::pendingLeaseCountTotal() const
+{
+    qsizetype net = 0;
+    for (auto it = m_pending.cbegin(); it != m_pending.cend(); ++it) {
+        if (it->kind == OperationKind::AcquireDiscovery) {
+            ++net;
+        } else if (it->kind == OperationKind::ReleaseDiscovery) {
+            --net;
+        }
+    }
+    return qMax<qsizetype>(net, 0);
 }
 
 OperationResult BluetoothModel::immediate(const OperationRequest &request,
@@ -191,14 +232,14 @@ const Device *BluetoothModel::findDevice(const quint64 serial) const
 QString BluetoothModel::validateRequest(const OperationRequest &request,
                                         const QString &callerId) const
 {
-    if (!m_running || m_snapshot.availability != Availability::Ready) {
-        return QStringLiteral("unavailable");
-    }
     if (!safeCallerId(callerId)) {
         return QStringLiteral("malformed-caller");
     }
     if (!request.target.isValid() || request.target.epoch != m_snapshot.epoch) {
         return QStringLiteral("stale-handle");
+    }
+    if (!m_running || m_snapshot.availability != Availability::Ready) {
+        return QStringLiteral("unavailable");
     }
 
     switch (request.kind) {
@@ -222,9 +263,16 @@ QString BluetoothModel::validateRequest(const OperationRequest &request,
         if (!adapter->powered) {
             return QStringLiteral("adapter-off");
         }
-        const QString address = adapter->address;
-        if (adapterLeaseTotal(m_inventory, address) >= kMaxDiscoveryLeasesPerAdapter
-            || totalLeases(m_inventory) >= kMaxDiscoveryLeasesTotal) {
+        // AGENT-GUARD: Bounds must include lease operations dispatched but
+        // not yet completed; otherwise concurrently dispatched acquisitions
+        // overrun the advertised lease caps before the backend publishes.
+        const qsizetype projectedAdapter =
+            qsizetype(adapterLeaseTotal(m_inventory, adapter->address))
+            + pendingLeaseCount(adapter->address);
+        const qsizetype projectedTotal = qsizetype(totalLeases(m_inventory))
+            + pendingLeaseCountTotal();
+        if (projectedAdapter >= kMaxDiscoveryLeasesPerAdapter
+            || projectedTotal >= kMaxDiscoveryLeasesTotal) {
             return QStringLiteral("too-many-leases");
         }
         return {};
@@ -248,6 +296,9 @@ QString BluetoothModel::validateRequest(const OperationRequest &request,
         }
         if (!device->paired) {
             return QStringLiteral("not-paired");
+        }
+        if (device->connected) {
+            return QStringLiteral("already-connected");
         }
         const Adapter *adapter = findAdapter(device->adapterHandle.serial);
         if (adapter == nullptr || !adapter->powered) {
@@ -296,11 +347,19 @@ OperationSubmission BluetoothModel::submit(const OperationRequest &request,
     // AGENT-GUARD: Every pending operation stores the epoch/revision that
     // initiated it. Completion rebuilds the result from this stored lineage so
     // an intervening snapshot publication can never erase the initiator.
+    PendingOperation pending{.kind = request.kind,
+                             .epoch = m_snapshot.epoch,
+                             .revision = m_snapshot.revision,
+                             .adapterAddress = {}};
+    if (request.kind == OperationKind::AcquireDiscovery
+        || request.kind == OperationKind::ReleaseDiscovery) {
+        if (const Adapter *adapter = findAdapter(request.target.serial);
+            adapter != nullptr) {
+            pending.adapterAddress = adapter->address;
+        }
+    }
     const quint64 operationId = m_nextOperationId++;
-    m_pending.insert(operationId,
-                     {.kind = request.kind,
-                      .epoch = m_snapshot.epoch,
-                      .revision = m_snapshot.revision});
+    m_pending.insert(operationId, pending);
 
     BackendRequest backendRequest;
     backendRequest.kind = request.kind;
@@ -343,158 +402,6 @@ void BluetoothModel::makePendingUncertain(const QString &reasonCode)
              .diagnostic = {},
              .wireValid = true});
     }
-}
-
-Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) const
-{
-    Snapshot snapshot;
-    snapshot.schemaVersion = kSchemaVersion;
-    snapshot.epoch = m_snapshot.epoch;
-    snapshot.revision = m_snapshot.revision;
-    if (inventory.adapters.isEmpty()) {
-        snapshot.availability = Availability::Unavailable;
-        snapshot.reasonCode = QStringLiteral("no-adapter");
-        return snapshot;
-    }
-    snapshot.availability = Availability::Ready;
-    snapshot.capabilities = Capabilities::fromInt(
-        static_cast<quint32>(Capability::SetAdapterPower)
-        | static_cast<quint32>(Capability::DiscoveryLease)
-        | static_cast<quint32>(Capability::ConnectPaired)
-        | static_cast<quint32>(Capability::DisconnectPaired));
-    snapshot.reasonCode = QStringLiteral("ready");
-    for (const BackendAdapter &backendAdapter : inventory.adapters) {
-        Adapter adapter;
-        adapter.handle = {.epoch = snapshot.epoch,
-                          .serial = stableSerial('a', backendAdapter.address)};
-        adapter.address = backendAdapter.address;
-        adapter.name = backendAdapter.name;
-        adapter.powered = backendAdapter.powered;
-        adapter.discovering = backendAdapter.discovering;
-        snapshot.adapters.push_back(adapter);
-    }
-    for (const BackendDevice &backendDevice : inventory.devices) {
-        Device device;
-        device.handle = {.epoch = snapshot.epoch,
-                         .serial = stableSerial('d', backendDevice.address)};
-        device.adapterHandle = {.epoch = snapshot.epoch,
-                                .serial = stableSerial('a', backendDevice.adapterAddress)};
-        device.address = backendDevice.address;
-        device.name = backendDevice.name;
-        device.deviceClass = backendDevice.deviceClass;
-        device.paired = backendDevice.paired;
-        device.connected = backendDevice.connected;
-        device.rssiKnown = backendDevice.rssiKnown;
-        device.rssi = backendDevice.rssi;
-        snapshot.devices.push_back(device);
-    }
-    std::sort(snapshot.adapters.begin(), snapshot.adapters.end(),
-              [](const Adapter &left, const Adapter &right) {
-                  return left.handle.serial < right.handle.serial;
-              });
-    std::sort(snapshot.devices.begin(), snapshot.devices.end(),
-              [](const Device &left, const Device &right) {
-                  return left.handle.serial < right.handle.serial;
-              });
-    return snapshot;
-}
-
-bool BluetoothModel::leaseBoundsRespected(const BackendInventory &inventory) const
-{
-    QHash<QString, quint32> perAdapter;
-    quint32 total = 0;
-    for (const BackendLease &lease : inventory.leases) {
-        if (!safeCallerId(lease.callerId) || lease.refcount == 0
-            || !isCanonicalAddress(lease.adapterAddress)) {
-            return false;
-        }
-        perAdapter[lease.adapterAddress] += lease.refcount;
-        total += lease.refcount;
-        if (total > kMaxDiscoveryLeasesTotal) {
-            return false;
-        }
-    }
-    for (auto it = perAdapter.cbegin(); it != perAdapter.cend(); ++it) {
-        if (it.value() > kMaxDiscoveryLeasesPerAdapter) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void BluetoothModel::publishBackendMalformed()
-{
-    if (m_snapshot.revision == std::numeric_limits<quint64>::max()) {
-        return;
-    }
-    Snapshot degraded;
-    degraded.schemaVersion = kSchemaVersion;
-    degraded.epoch = m_snapshot.epoch;
-    degraded.revision = m_snapshot.revision + 1;
-    degraded.availability = Availability::Degraded;
-    degraded.reasonCode = QStringLiteral("backend-malformed");
-    m_inventory = BackendInventory{};
-    makePendingUncertain(QStringLiteral("backend-malformed"));
-    m_snapshot = degraded;
-    m_hasInventory = true;
-    Q_EMIT snapshotChanged(m_snapshot);
-    Q_EMIT invalidated(m_snapshot.epoch, m_snapshot.revision);
-}
-
-void BluetoothModel::acceptInventory(const quint64 generation,
-                                     const BackendInventory &inventory)
-{
-    // AGENT-GUARD: stop() and every later start supersede already queued
-    // backend values. Check the run before validation so stale malformed data
-    // cannot mutate even the fail-closed projection.
-    if (!m_running || generation == 0 || generation != m_backendGeneration) {
-        return;
-    }
-
-    const bool inventorySane = inventory.adapters.size() <= kMaxAdapters
-        && inventory.devices.size() <= kMaxDevices && leaseBoundsRespected(inventory)
-        && std::all_of(inventory.adapters.cbegin(), inventory.adapters.cend(),
-                       [](const BackendAdapter &adapter) {
-                           return isCanonicalAddress(adapter.address)
-                               && isBoundedText(adapter.name, kMaxAdapterNameUtf8Bytes);
-                       })
-        && std::all_of(inventory.devices.cbegin(), inventory.devices.cend(),
-                       [&](const BackendDevice &device) {
-                           const auto adapterIt = std::find_if(
-                               inventory.adapters.cbegin(), inventory.adapters.cend(),
-                               [&](const BackendAdapter &adapter) {
-                                   return adapter.address == device.adapterAddress;
-                               });
-                           return adapterIt != inventory.adapters.cend()
-                               && isCanonicalAddress(device.address)
-                               && isBoundedText(device.name, kMaxDeviceNameUtf8Bytes);
-                       });
-    if (!inventorySane) {
-        publishBackendMalformed();
-        return;
-    }
-
-    Snapshot candidate = projectInventory(inventory);
-    if (validateSnapshot(candidate).accepted) {
-        m_inventory = inventory;
-    } else {
-        publishBackendMalformed();
-        return;
-    }
-
-    if (m_hasInventory && candidate == m_snapshot) {
-        // Equal lineage has one canonical value; a redundant republication of
-        // identical content is dropped without advancing the revision.
-        return;
-    }
-    if (m_snapshot.revision == std::numeric_limits<quint64>::max()) {
-        return;
-    }
-    candidate.revision = m_snapshot.revision + 1;
-    m_snapshot = candidate;
-    m_hasInventory = true;
-    Q_EMIT snapshotChanged(m_snapshot);
-    Q_EMIT invalidated(m_snapshot.epoch, m_snapshot.revision);
 }
 
 void BluetoothModel::acceptBackendResult(const quint64 generation,

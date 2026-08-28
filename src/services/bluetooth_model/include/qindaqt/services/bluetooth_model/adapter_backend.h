@@ -34,19 +34,30 @@ struct BackendDevice {
     QString address;
     QString name;
     DeviceClass deviceClass = DeviceClass::Unknown;
+    DeviceRole role = DeviceRole::Unknown;
     bool paired = false;
     bool connected = false;
     bool rssiKnown = false;
     qint16 rssi = 0;
+    bool batteryKnown = false;
+    quint8 batteryPercent = 0;
 };
 
 // AGENT-CONTRACT: A discovery lease is one caller-scoped reference-counted
 // hold on one adapter's discovery session. The backend owns the lease table
 // because it owns the discovery session; callers are identified by their
 // unique D-Bus name. The backend must honor kMaxDiscoveryLeasesPerAdapter and
-// kMaxDiscoveryLeasesTotal, stop discovery when an adapter's last lease drops,
-// and drop every lease of a vanished caller through releaseOwner(). The model
+// kMaxDiscoveryLeasesTotal, stop discovery when an adapter's last lease
+// drops, release an adapter's leases when that adapter powers off (power-on
+// must not resurrect discovery), and drop every lease it holds in stop()
+// plus all leases of a vanished caller through releaseOwner(). The model
 // re-checks the reported lease table against those bounds and fails closed.
+// start() must return its generation before that run may publish; the first
+// publication of a run is the backend's responsibility and must be fenced by
+// the returned generation. The model resolves public handles to canonical
+// addresses before dispatch. The backend never sees (epoch, serial) lineage;
+// it mutates platform state by address and identifies the mutating caller by
+// unique D-Bus name for discovery-lease accounting.
 struct BackendLease {
     QString callerId;
     QString adapterAddress;
