@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- `0c9f4b0` integrates the exact independently accepted Settings Center S1
+  repair over typed navigation commit `80a91f8`. Noether's immutable rereview
+  found P0/P1/P2/P3 `0/0/0/0`; Debug and Release passed 9/9, the direct page
+  binary passed 6/6 under `QT_FATAL_WARNINGS=1`, the external responsive focus
+  harness passed 5/5, and package-isolation poison, docs, source shape, strict
+  MkDocs, provenance, and cleanliness passed. Fresh manager-tree focused
+  build and the exact 9-row selector plus direct 6/6 pass. QQ-006.04 advances
+  WIRED to EXECUTABLE; most platform pages, drag-from-configuration editing,
+  cross-app visual matrices, and live assistive-technology proof remain.
+
 - `2ae29f3` integrates the exact independently accepted Display Color C0
   series. The GLM repair defeated all eight hostile review reproductions;
   independent Gemini Pro review found P0/P1/P2/P3 `0/0/0/0`, completed strict
