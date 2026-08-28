@@ -4,12 +4,12 @@
 
 - Branch: public `main`
 - Functional boundary: public AppShell integration `a18b046`, PB-0 integration
-  `cbec6fb`, and accepted contained-virtual-desktop candidate `d08747d` in this
-  integration change
+  `cbec6fb`, accepted contained-virtual-desktop candidate `d08747d`, and exact
+  accepted File Manager S0 candidate `3fd3842` in this integration change
 - Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1/D2,
-  live notifications, executable native Text Editor S1, and executable shared
-  QindaQt.AppShell 1.0 contracts, plus the source/unit/package boundary for a
-  private whole-desktop boot harness
+  live notifications, executable native Text Editor S1 and local File Manager
+  S0, and executable shared QindaQt.AppShell 1.0 contracts, plus the
+  source/unit/package boundary for a private whole-desktop boot harness
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -34,6 +34,19 @@ teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The exact File Manager runtime/package repair `3fd3842` passed independent
+  rereview with P0/P1/P2/P3 `0/0/0/1`: fresh strict serial build 138/138,
+  focused File Manager selector 8/8, hostile parent failure on all three
+  repaired seams, real staged `Loading` to `Ready`, bounded timeout/error and
+  nested-loop lifetime probes, exact relative RUNPATH, confined QML/library
+  inventory, strict docs, source shape, and clean provenance. The manager's
+  combined tree separately builds the five focused targets and passes the same
+  8/8 selector plus all 53/53 File Manager, QST/Controls, AppShell, and
+  Power/Brightness rows after a complete installable-tree build. Strict
+  72-page documentation and the 1,098-file source-shape gate also pass. The
+  remaining P3 is a
+  direct repository-owned timeout/Error unit row; the installed runtime row is
+  already non-vacuous and the authority remains read-only/local.
 - The exact repaired contained-virtual-desktop candidate `d08747d` passed an
   independent exact-commit rereview with P0/P1/P2/P3 `0/0/0/0`. On the
   combined tree, all 62/62 focused Python units pass, 14 harness sources

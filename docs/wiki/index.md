@@ -94,6 +94,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt.AppShell 1.0](apps/application-shell.md) documents the narrow shared
   lifecycle, action/menu, injected integration, portal, focus, accessibility,
   and installed-consumer boundary for first-party QML applications.
+- [QindaQt File Manager](apps/file-manager.md) documents the first-party local
+  directory navigation, breadcrumb/history, bounded file-launch, QST-1/Controls
+  presentation, and accessibility boundaries.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

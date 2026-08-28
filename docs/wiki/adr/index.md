@@ -33,6 +33,9 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
 | [ADR-0026](0026-contain-virtual-desktop-qualification.md) | Accepted | Contain integrated virtual desktop qualification in a private namespace and exact stage |
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
+| [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
 | [ADR-0041](0041-adopt-flow-team-delivery-loop.md) | Accepted | Use workgroup queues, exact review loops, prompt integration, and capacity refill |
 
-Numbers are never reused, including for rejected or superseded records.
+Numbers are never reused, including for rejected or superseded records. A gap
+may be reserved by another coordinated outcome and is not available for reuse;
+integration retains every accepted decision in numeric order.

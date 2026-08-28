@@ -27,9 +27,10 @@ PB-0 remain preserved integrated foundations.
 
 Finish QQ-006 through the durable
 [First-party queue](../ops/team/queues/first-party.md): complete Settings routes,
-File Manager, Terminal, application migrations, and cross-app responsive, DPI,
-visual, keyboard, and accessibility qualification. QST-1, Controls, AppShell,
-and Text Editor remain preserved integrated foundations.
+later File Manager capabilities, Terminal, application migrations, and
+cross-app responsive, DPI, visual, keyboard, and accessibility qualification.
+QST-1, Controls, AppShell, Text Editor, and the read-only local File Manager S0
+remain preserved integrated foundations.
 
 ### Interactive virtual desktop integration
 
@@ -47,6 +48,12 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `3fd3842` — Native QindaQt File Manager S0 with bounded local-directory
+  launch intent, asynchronous listing, navigation history, QST/Controls UI,
+  keyboard/accessibility metadata, desktop packaging, and a relocatable
+  component-only installed runtime. The slice is deliberately read-only;
+  mutation, mounts, trash, search, previews, portals, recovery, nested visual
+  matrices, and live assistive-technology qualification remain later work.
 - `d08747d` — Contained virtual-desktop S0+S1 source boundary: authenticated
   bubblewrap sandbox and staging, exact production package contract, bounded
   simultaneous topology/readiness proof, application/output/input/dock

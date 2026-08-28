@@ -236,10 +236,10 @@
           "caveat": "S1 does not yet include multiple documents, portals, session restore, print, extensions, rich text, a nested display screenshot matrix, or whole-application assistive-technology qualification."
         },
         {
-          "id": "QQ-006.07", "title": "QindaQt File Manager", "weight": 8, "state": "ABSENT",
-          "summary": "No integrated first-party file manager exists.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain incomplete." }],
-          "caveat": "File operations, mounts, trash, search, previews, portals, and recovery require a bounded design and implementation."
+          "id": "QQ-006.07", "title": "QindaQt File Manager", "weight": 8, "state": "EXECUTABLE",
+          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime.",
+          "evidence": [{ "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact independently accepted runtime/package repair candidate is integrated after fresh combined-tree build and 8/8 focused verification." }, { "kind": "test", "reference": "docs/wiki/apps/file-manager.md", "summary": "The owning page records the model, presentation, package, containment, failure, and explicit S0 authority boundaries." }],
+          "caveat": "S0 is deliberately read-only and local: file mutation, mounts, trash, search, previews, portals, recovery, nested screenshots, and whole-application assistive-technology qualification remain later slices."
         },
         {
           "id": "QQ-006.08", "title": "QindaQt Terminal", "weight": 8, "state": "ABSENT",
@@ -255,16 +255,17 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 is executable, and the installed QindaQt.AppShell 1.0 boundary now provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts for first-party applications.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 and the bounded local QindaQt File Manager S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts for first-party applications.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
           { "kind": "commit", "reference": "1cd5dab", "summary": "The accepted native Text Editor S1 is integrated after an exact independent review and fresh integrated-tree verification." },
           { "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact accepted AppShell S0 candidate is integrated after its repair rereview and fresh combined-tree verification." },
-          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, and Text Editor S1 as implemented within the incomplete First-party experience milestone." }
+          { "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact accepted File Manager S0 runtime/package candidate is integrated after independent review and fresh combined-tree verification." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, and File Manager S0 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, File Manager, Terminal, application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "The complete Settings Center, later File Manager capabilities, Terminal, application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",
