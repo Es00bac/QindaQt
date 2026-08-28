@@ -116,6 +116,28 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
     QDBusInterface compositor(QString::fromLatin1(CompositorService),
                               QString::fromLatin1(CompositorPath),
                               QString::fromLatin1(CompositorInterface), connection);
+    const QJsonObject before =
+        compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"));
+    const QJsonValue beforeSurfaces = before.value(QStringLiteral("surfaces"));
+    if (before.value(QStringLiteral("status")) != QStringLiteral("ok")
+        || !beforeSurfaces.isArray()) {
+        QTextStream(stderr) << "pre-injection shell-surface evidence is unavailable\n";
+        return 4;
+    }
+    int preInjectionActiveSurfaceCount = 0;
+    for (const QJsonValue &value : beforeSurfaces.toArray()) {
+        const QJsonObject surface = value.toObject();
+        if (surface.value(QStringLiteral("scope")) == QStringLiteral("notification-center")
+            && surface.value(QStringLiteral("mapped")).toBool()
+            && surface.value(QStringLiteral("committed")).toBool()
+            && surface.value(QStringLiteral("active")).toBool()) {
+            ++preInjectionActiveSurfaceCount;
+        }
+    }
+    if (preInjectionActiveSurfaceCount != 0) {
+        QTextStream(stderr) << "notification center was active before private input\n";
+        return 5;
+    }
     const QJsonArray events{
         keyEvent(QLatin1StringView("left-meta"), true),
         keyEvent(QLatin1StringView("n"), true),
@@ -132,13 +154,18 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
         || injected.value(QStringLiteral("deviceId"))
                != QStringLiteral("qindaqt-development-input")) {
         QTextStream(stderr) << "private development input was not accepted\n";
-        return 4;
+        return 6;
     }
     // The action travels through KGlobalAccel and the shell, so observe the
     // compositor-owned surface record instead of assuming synchronous UI work.
     for (int attempt = 0; attempt != 60; ++attempt) {
         const QJsonObject inventory =
             compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"));
+        if (inventory.value(QStringLiteral("status")) != QStringLiteral("ok")
+            || !inventory.value(QStringLiteral("surfaces")).isArray()) {
+            QTextStream(stderr) << "post-injection shell-surface evidence is unavailable\n";
+            return 7;
+        }
         QJsonObject match;
         int matches = 0;
         for (const QJsonValue &value : inventory.value(QStringLiteral("surfaces")).toArray()) {
@@ -159,6 +186,8 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
                 {QStringLiteral("action"), QStringLiteral("open-notification-center")},
                 {QStringLiteral("deviceId"), injected.value(QStringLiteral("deviceId"))},
                 {QStringLiteral("eventCount"), events.size()},
+                {QStringLiteral("preInjectionActiveSurfaceCount"),
+                 preInjectionActiveSurfaceCount},
                 {QStringLiteral("surface"), match},
             };
             QTextStream(stdout) << "QINDAQT_DESKTOP_SESSION_INTERACTION="
@@ -169,7 +198,7 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
         QThread::msleep(50);
     }
     QTextStream(stderr) << "notification center did not map on the private seat\n";
-    return 5;
+    return 8;
 }
 
 } // namespace

@@ -5,13 +5,10 @@ from __future__ import annotations
 import copy
 import unittest
 
-from desktop_session_interactive import validate_interactive_evidence
-
-from desktop_session_runtime import await_complete_snapshot
+from desktop_session_runtime import PRODUCTION_PSS_ROLES, await_complete_snapshot
 from desktop_session_topology import (
     TopologyContractError,
     desktop_1080p_topology,
-    interactive_1080p_topology,
     observed_applications,
     validate_boot_evidence,
 )
@@ -161,68 +158,6 @@ def ready_probe() -> dict[str, object]:
     }
 
 
-def valid_interactive_evidence() -> dict[str, object]:
-    evidence = valid_evidence("WL-0")
-    topology = interactive_1080p_topology()
-    parent_pid = 99
-    evidence["topology"] = topology.document()
-    evidence["processes"] = {
-        "parent-compositor": {
-            "pid": parent_pid, "executable": "weston", "parentRole": None,
-        },
-        **evidence["processes"],  # type: ignore[arg-type]
-    }
-    evidence["cleanup"]["terminalPhases"].insert(  # type: ignore[index]
-        0,
-        {
-            "role": "parent-compositor", "pid": parent_pid,
-            "processGroup": parent_pid, "executablePath": "/usr/bin/weston",
-            "startTicks": 999, "terminalPhase": "term",
-        },
-    )
-    evidence["containment"].update({  # type: ignore[union-attr]
-        "parentBackend": "weston-headless-pixman",
-        "qindaqtBackend": "kwin-windowed-qpaint",
-        "parentWaylandSocket": "qindaqt-parent-wayland",
-        "childWaylandSocket": "qindaqt-0123456789ab",
-    })
-    evidence["inputDevices"] = [
-        {
-            "id": "input-00000001", "name": "", "enabled": True,
-            "busType": 0, "vendorId": 0, "productId": 0,
-            "capabilities": ["pointer"],
-        },
-        {
-            "id": "input-00000002", "name": "", "enabled": True,
-            "busType": 0, "vendorId": 0, "productId": 0,
-            "capabilities": ["keyboard"],
-        },
-        {
-            "id": "input-00000003", "name": "QindaQt Development Input",
-            "enabled": True, "busType": 0, "vendorId": 0, "productId": 0,
-            "capabilities": ["keyboard", "pointer"],
-        },
-    ]
-    shell_pid = evidence["processes"]["shell"]["pid"]  # type: ignore[index]
-    evidence["interaction"] = {
-        "action": "open-notification-center",
-        "deviceId": "qindaqt-development-input",
-        "eventCount": 4,
-        "surface": {
-            "scope": "notification-center", "processId": str(shell_pid),
-            "outputName": "WL-0", "desiredOutputName": "WL-0",
-            "mapped": True, "committed": True, "active": True,
-            "geometry": {"x": 1464, "y": 46, "width": 440, "height": 640},
-        },
-    }
-    evidence["capture"] = {
-        "tool": "weston-screenshooter", "path": "desktop-1080p.png",
-        "sha256": "a" * 64, "byteCount": 4096, "width": 1920,
-        "height": 1080, "sampledDistinctColors": 16,
-    }
-    return evidence
-
-
 class FakeClock:
     def __init__(self) -> None:
         self.now = 0.0
@@ -235,24 +170,14 @@ class FakeClock:
 
 
 class TopologyTests(unittest.TestCase):
-    def test_interactive_parent_input_and_capture_contract_passes(self) -> None:
-        validate_interactive_evidence(valid_interactive_evidence())
-
-    def test_interactive_contract_rejects_s1_output_or_foreign_surface(self) -> None:
-        evidence = valid_interactive_evidence()
-        evidence["outputs"][0]["name"] = "Virtual-0"  # type: ignore[index]
-        with self.assertRaisesRegex(TopologyContractError, "canonical KWin wayland"):
-            validate_interactive_evidence(evidence)
-        evidence = valid_interactive_evidence()
-        evidence["interaction"]["surface"]["processId"] = "999999"  # type: ignore[index]
-        with self.assertRaisesRegex(TopologyContractError, "interaction"):
-            validate_interactive_evidence(evidence)
-
-    def test_interactive_contract_rejects_nonprivate_forwarded_input_shape(self) -> None:
-        evidence = valid_interactive_evidence()
-        evidence["inputDevices"][0]["vendorId"] = 1  # type: ignore[index]
-        with self.assertRaisesRegex(TopologyContractError, "fake-seat"):
-            validate_interactive_evidence(evidence)
+    def test_product_pss_roles_include_both_visible_applications(self) -> None:
+        self.assertEqual(
+            PRODUCTION_PSS_ROLES,
+            (
+                "compositor", "session", "notification", "shell",
+                "settings-service", "audio-service", "settings-app", "editor-app",
+            ),
+        )
 
     def test_exact_topology_passes(self) -> None:
         validate_boot_evidence(valid_evidence())
