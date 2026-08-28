@@ -1,4 +1,4 @@
-# ADR-0026: Compose the Appearance settings route through Settings1 and QST-1
+# ADR-0028: Compose the Appearance settings route through Settings1 and QST-1
 
 - **Status:** Accepted
 - **Date:** 2026-08-28

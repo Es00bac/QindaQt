@@ -38,8 +38,8 @@ Row {
             Accessible.checked: checked
             Accessible.description: root.descriptionPrefix + " "
                                     + choiceButton.modelData.label
-            onToggled: checked => {
-                if (checked) {
+            onToggled: {
+                if (choiceButton.checked) {
                     root.choicePicked(choiceButton.modelData.token)
                 }
             }

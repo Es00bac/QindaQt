@@ -582,6 +582,35 @@ This evidence uses private D-Bus and offscreen software rendering. It does not
 claim a real session bus, live assistive technology, compositor focus,
 KGlobalAccel dispatch, or pointer/keyboard automation.
 
+## Current Appearance Settings S0 proof
+
+The modular Appearance route and its additive Settings Center composition are
+selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.appearance-(values|preview|settings-model|page)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.settings-app-(offscreen|rejects-unknown-route|desktop-identity)$' \
+  --output-on-failure
+```
+
+The four Appearance rows cover strict typed values, all built-in QST preview
+maps, per-key Settings1 sequencing, same-lineage conflict recovery, uncertain
+no-replay, owner loss, owner/epoch replacement in the reply-to-snapshot gap,
+confirmed diagnostics, and fail-closed snapshots. The offscreen page row uses
+the ordinary click/toggle paths for theme selection, validates action and
+failure-state wiring, and proves accessible status roles plus initial focus and
+Tab traversal. The desktop-identity row is non-vacuous: it checks source and
+desktop-entry/install contracts and requires the freshly built executable to
+embed `org.qindaqt.Settings` before any window construction.
+
+This is private fake-transport and offscreen software-renderer evidence. It
+does not prove a live session bus, persisted appearance settings across a
+session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
+nested desktop screenshot. Those integration rows remain later gates.
+
 ## Current compositor proof
 
 The focused live checks are:

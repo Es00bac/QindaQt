@@ -53,7 +53,6 @@ QVariantMap snapshotWire(const QString &epoch, quint64 revision,
 {
     QVariantMap sources;
     const auto keys = AppearanceKeys::scopedKeys();
-    sources.reserve(keys.size());
     for (const auto &key : keys) {
         sources.insert(key, QStringLiteral("user-overrides"));
     }
@@ -116,26 +115,36 @@ QVector<QindaQt::Themes::ThemeSpec> loadFixtureThemes()
 }
 
 // Establish one authoritative baseline: owner plus one answered snapshot.
-void establishBaseline(SequenceTransport &transport, const QString &owner,
-                       const QString &epoch, quint64 revision,
-                       const QVariantMap &values)
+// QTest macros expand `return;`, so these helpers report their outcome as a
+// bool and every caller asserts it before touching the model.
+[[nodiscard]] bool establishBaseline(SequenceTransport &transport,
+                                     const QString &owner, const QString &epoch,
+                                     quint64 revision, const QVariantMap &values)
 {
     Q_EMIT transport.ownerChanged(owner);
-    QTRY_COMPARE(transport.snapshots.size(), 1);
+    if (!QTest::qWaitFor([&transport]() { return !transport.snapshots.isEmpty(); },
+                         5'000)) {
+        return false;
+    }
     const auto request = transport.snapshots.takeFirst();
     Q_EMIT transport.snapshotReceived(request.token, request.owner,
                                       snapshotWire(epoch, revision, values));
+    return true;
 }
 
 // Answer the automatic post-commit refresh so the client returns to Ready.
-void answerRefresh(SequenceTransport &transport, const QString &owner,
-                   const QString &epoch, quint64 revision,
-                   const QVariantMap &values)
+[[nodiscard]] bool answerRefresh(SequenceTransport &transport,
+                                 const QString &epoch, quint64 revision,
+                                 const QVariantMap &values)
 {
-    QTRY_COMPARE(transport.snapshots.size(), 1);
+    if (!QTest::qWaitFor([&transport]() { return !transport.snapshots.isEmpty(); },
+                         5'000)) {
+        return false;
+    }
     const auto request = transport.snapshots.takeFirst();
     Q_EMIT transport.snapshotReceived(request.token, request.owner,
                                       snapshotWire(epoch, revision, values));
+    return true;
 }
 
 } // namespace
@@ -144,35 +153,82 @@ class AppearanceSettingsModelTests final : public QObject {
     Q_OBJECT
 
 private slots:
+    void init();
+    void cleanup();
     void loadingThenReadyWithConfirmedBaseline();
     void draftValidationGatesApplyAndCancelRestores();
     void applySequencesPerKeyCommitsInOrder();
     void conflictStopsSequenceAndRequiresExplicitReapply();
     void uncertainWriteIsNeverReplayed();
     void ownerLossDuringSequenceAbortsWithoutReplay();
+    void ownerReplacementBetweenReplyAndSnapshotDoesNotReplay();
     void confirmedFailureDiagnosticSurvivesRebaseline();
     void invalidSnapshotTypeFailsClosed();
 
 private:
-    [[nodiscard]] AppearanceSettingsModel *makeModel(
-        SequenceTransport &transport, Qt::ColorScheme scheme)
+    // AGENT-GUARD: QTest macros expand `return;`, so this helper reports
+    // failure through the returned pointer and every caller must assert it
+    // before dereferencing. The member client is bound to the member
+    // transport, so makeModel-based tests drive m_transport only, and init()
+    // deletes the prior model BEFORE stopping the shared client so no stale
+    // model stays connected across slots. Construction order is
+    // transport → client → model; init() reverses it explicitly.
+    // The member client ignores same-owner replacements, so every makeModel
+    // call must present a fresh unique owner or no baseline is ever fetched.
+    [[nodiscard]] AppearanceSettingsModel *makeModel(Qt::ColorScheme scheme)
     {
         auto *model = new AppearanceSettingsModel(
             m_client, loadFixtureThemes(), scheme, nullptr, this);
-        QVERIFY(m_client.start());
-        establishBaseline(transport, QStringLiteral(":1.40"),
-                          QStringLiteral("epoch-a"), 7,
-                          defaultAppearanceMap());
-        QTRY_VERIFY(model->ready());
+        if (!m_client.start()) {
+            delete model;
+            return nullptr;
+        }
+        ++m_ownerSequence;
+        const QString owner = QStringLiteral(":1.5%1").arg(m_ownerSequence);
+        if (!establishBaseline(m_transport, owner, QStringLiteral("epoch-a"),
+                               7, defaultAppearanceMap())) {
+            delete model;
+            return nullptr;
+        }
+        if (!QTest::qWaitFor([model]() { return model->ready(); }, 5'000)) {
+            delete model;
+            return nullptr;
+        }
+        m_model = model;
         return model;
     }
 
     SequenceTransport m_transport;
+    int m_ownerSequence = 0;
+    AppearanceSettingsModel *m_model = nullptr;
     SettingsClient m_client{m_transport, AppearanceKeys::scopedKeys(),
                             {.requestTimeoutMilliseconds = 100,
                              .debounceMilliseconds = 0,
                              .retryMilliseconds = {10}}};
 };
+
+void AppearanceSettingsModelTests::init()
+{
+    // Reverse construction order: the model dies while the client is still
+    // alive and connected, so no slot fires into a dangling model.
+    delete m_model;
+    m_model = nullptr;
+    m_client.stop();
+    m_transport.snapshots.clear();
+    m_transport.commits.clear();
+}
+
+void AppearanceSettingsModelTests::cleanup()
+{
+    // The final slot needs the same reverse-order teardown as every slot;
+    // relying on the test object's QObject child cleanup would destroy the
+    // client member before its model child.
+    delete m_model;
+    m_model = nullptr;
+    m_client.stop();
+    m_transport.snapshots.clear();
+    m_transport.commits.clear();
+}
 
 void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
 {
@@ -193,8 +249,8 @@ void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
     QVERIFY(model.loading());
     QVERIFY(!model.canEdit());
     QVERIFY(client.start());
-    establishBaseline(transport, QStringLiteral(":1.41"),
-                      QStringLiteral("epoch"), 3, values);
+    QVERIFY(establishBaseline(transport, QStringLiteral(":1.41"),
+                              QStringLiteral("epoch"), 3, values));
     QTRY_VERIFY(model.ready());
     QVERIFY(model.canEdit());
     QVERIFY(!model.draftDirty());
@@ -211,8 +267,8 @@ void AppearanceSettingsModelTests::loadingThenReadyWithConfirmedBaseline()
 
 void AppearanceSettingsModelTests::draftValidationGatesApplyAndCancelRestores()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(!model->setDraftValue(QStringLiteral("appearance.unknown"), 1));
     QVERIFY(!model->setDraftValue(QLatin1String(AppearanceKeys::UiScale),
@@ -245,8 +301,8 @@ void AppearanceSettingsModelTests::draftValidationGatesApplyAndCancelRestores()
 
 void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Theme),
                                  QStringLiteral("qinda-light")));
@@ -256,8 +312,8 @@ void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
     QVERIFY(model->saving());
 
     // First queued key commits alone; the public client writes one key.
-    QCOMPARE(transport.commits.size(), 1);
-    const auto first = transport.commits.constFirst();
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto first = m_transport.commits.constFirst();
     QCOMPARE(first.operations.size(), 1);
     const auto firstOperation = first.operations.first().toMap();
     QCOMPARE(firstOperation.value(QLatin1StringView(WireContract::FieldKey))
@@ -275,12 +331,12 @@ void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
                    {{QLatin1String(AppearanceKeys::Theme),
                      QStringLiteral("qinda-light")}},
                    QStringLiteral("epoch-a")));
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  8, values);
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"),
+                           8, values));
 
     // Only after fresh authority does the second key go out.
-    QTRY_COMPARE(transport.commits.size(), 2);
-    const auto second = transport.commits.constLast();
+    QTRY_COMPARE(m_transport.commits.size(), 2);
+    const auto second = m_transport.commits.constLast();
     const auto secondOperation = second.operations.first().toMap();
     QCOMPARE(secondOperation.value(QLatin1StringView(WireContract::FieldKey))
                  .toString(),
@@ -295,8 +351,7 @@ void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
         commitWire(SettingsWireStatus::Applied, 8, 9,
                    {{QLatin1String(AppearanceKeys::FontPointSize), 12.0}},
                    QStringLiteral("epoch-a")));
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  9, values);
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 9, values));
 
     QTRY_VERIFY(model->ready());
     QVERIFY(!model->draftDirty());
@@ -305,16 +360,16 @@ void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
 
 void AppearanceSettingsModelTests::conflictStopsSequenceAndRequiresExplicitReapply()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Theme),
                                  QStringLiteral("qinda-light")));
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::FontPointSize),
                                  13.0));
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 1);
-    const auto first = transport.commits.constFirst();
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto first = m_transport.commits.constFirst();
 
     // Someone else changed the theme meanwhile; the reply says Conflict with
     // the authoritative current value and the conflicting revision.
@@ -327,22 +382,26 @@ void AppearanceSettingsModelTests::conflictStopsSequenceAndRequiresExplicitReapp
                    {{QLatin1String(AppearanceKeys::Theme),
                      QStringLiteral("qinda-high-contrast")}},
                    QStringLiteral("epoch-a")));
-    QVERIFY(model->conflict());
-    QCOMPARE(transport.commits.size(), 1);
+    // Conflict intent remains visible through the routine reply-to-snapshot
+    // transition; it is not editable against authority until that fresh
+    // snapshot arrives.
+    QTRY_VERIFY(model->conflict());
+    QVERIFY(!model->canEdit());
+    QCOMPARE(m_transport.commits.size(), 1);
 
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  8, authority);
-    QTRY_VERIFY(model->ready() || model->conflict());
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 8, authority));
+    QTRY_VERIFY(model->conflict());
+    QVERIFY(model->canEdit());
+    QVERIFY(model->applyAvailable());
     // Fresh authority still differs from the draft: conflict intent survives.
-    QVERIFY(model->conflict());
     QCOMPARE(model->errorText(), QString{});
     QCOMPARE(model->statusText(),
              QStringLiteral("Appearance changed elsewhere; current values reloaded"));
 
     // Re-apply is explicit user intent against the fresh baseline.
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 2);
-    const auto retry = transport.commits.constLast();
+    QCOMPARE(m_transport.commits.size(), 2);
+    const auto retry = m_transport.commits.constLast();
     QCOMPARE(retry.operations.first().toMap()
                  .value(QLatin1StringView(WireContract::FieldKey))
                  .toString(),
@@ -355,32 +414,30 @@ void AppearanceSettingsModelTests::conflictStopsSequenceAndRequiresExplicitReapp
                    {{QLatin1String(AppearanceKeys::Theme),
                      QStringLiteral("qinda-light")}},
                    QStringLiteral("epoch-a")));
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  9, authority);
-    QTRY_COMPARE(transport.commits.size(), 3);
-    const auto scaleCommit = transport.commits.constLast();
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 9, authority));
+    QTRY_COMPARE(m_transport.commits.size(), 3);
+    const auto scaleCommit = m_transport.commits.constLast();
     Q_EMIT m_transport.commitReceived(
         scaleCommit.token, scaleCommit.owner,
         commitWire(SettingsWireStatus::Applied, 9, 10,
                    {{QLatin1String(AppearanceKeys::FontPointSize), 13.0}},
                    QStringLiteral("epoch-a")));
     authority[QLatin1String(AppearanceKeys::FontPointSize)] = 13.0;
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  10, authority);
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 10, authority));
     QTRY_VERIFY(model->ready());
     QVERIFY(!model->draftDirty());
 }
 
 void AppearanceSettingsModelTests::uncertainWriteIsNeverReplayed()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Theme),
                                  QStringLiteral("qinda-light")));
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 1);
-    const auto commit = transport.commits.constFirst();
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto commit = m_transport.commits.constFirst();
 
     // Timeout/transport loss during the write is classified uncertain.
     Q_EMIT m_transport.requestFailed(commit.token, commit.owner,
@@ -390,37 +447,37 @@ void AppearanceSettingsModelTests::uncertainWriteIsNeverReplayed()
     QCOMPARE(model->statusText(),
              QStringLiteral("Last confirmed appearance settings retained; refresh to continue"));
     QVERIFY(!model->errorText().isEmpty());
-    QCOMPARE(transport.commits.size(), 1);
+    QCOMPARE(m_transport.commits.size(), 1);
 
     // The client already refreshes authority after an uncertain write.
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  7, defaultAppearanceMap());
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 7,
+                          defaultAppearanceMap()));
     QTRY_VERIFY(model->ready());
-    QCOMPARE(transport.commits.size(), 1);
+    QCOMPARE(m_transport.commits.size(), 1);
 
     // An explicit Retry is a plain refresh, never a resubmit.
     model->retry();
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  7, defaultAppearanceMap());
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 7,
+                          defaultAppearanceMap()));
     QTRY_VERIFY(model->ready());
-    QCOMPARE(transport.commits.size(), 1);
+    QCOMPARE(m_transport.commits.size(), 1);
 
     // Only an explicit new Apply resubmits after an uncertain outcome.
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 2);
+    QCOMPARE(m_transport.commits.size(), 2);
 }
 
 void AppearanceSettingsModelTests::ownerLossDuringSequenceAbortsWithoutReplay()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Theme),
                                  QStringLiteral("qinda-light")));
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::UiScale), 1.5));
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 1);
-    const auto first = transport.commits.constFirst();
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto first = m_transport.commits.constFirst();
 
     auto values = defaultAppearanceMap();
     values[QLatin1String(AppearanceKeys::Theme)] = QStringLiteral("qinda-light");
@@ -430,37 +487,74 @@ void AppearanceSettingsModelTests::ownerLossDuringSequenceAbortsWithoutReplay()
                    {{QLatin1String(AppearanceKeys::Theme),
                      QStringLiteral("qinda-light")}},
                    QStringLiteral("epoch-a")));
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  8, values);
-    QTRY_COMPARE(transport.commits.size(), 2);
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"),
+                           8, values));
+    QTRY_COMPARE(m_transport.commits.size(), 2);
 
     // The owner dies with the second write pending: the queued scale write
     // is dropped, not replayed behind the user's back.
     Q_EMIT m_transport.ownerChanged(QString{});
     QTRY_VERIFY(model->unavailable());
-    QCOMPARE(transport.commits.size(), 2);
+    QCOMPARE(m_transport.commits.size(), 2);
     QVERIFY(model->draftDirty());
 
-    establishBaseline(transport, QStringLiteral(":1.42"),
-                      QStringLiteral("epoch-b"), 0, values);
+    QVERIFY(establishBaseline(m_transport, QStringLiteral(":1.42"),
+                              QStringLiteral("epoch-b"), 0, values));
     QTRY_VERIFY(model->ready());
-    QCOMPARE(transport.commits.size(), 2);
+    QCOMPARE(m_transport.commits.size(), 2);
     QVERIFY(model->draftDirty());
 
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 3);
+    QCOMPARE(m_transport.commits.size(), 3);
+}
+
+void AppearanceSettingsModelTests::ownerReplacementBetweenReplyAndSnapshotDoesNotReplay()
+{
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
+
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Theme),
+                                 QStringLiteral("qinda-light")));
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::UiScale), 1.5));
+    QVERIFY(model->applyDraft());
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto first = m_transport.commits.constFirst();
+
+    Q_EMIT m_transport.commitReceived(
+        first.token, first.owner,
+        commitWire(SettingsWireStatus::Applied, 7, 8,
+                   {{QLatin1String(AppearanceKeys::Theme),
+                     QStringLiteral("qinda-light")}},
+                   QStringLiteral("epoch-a")));
+    QVERIFY(model->saving());
+
+    // Replacement happens after the reply but before the authoritative
+    // refresh. The new lineage may confirm the first value, but must never
+    // receive the queued second write without a fresh explicit Apply.
+    Q_EMIT m_transport.ownerChanged(QStringLiteral(":1.99"));
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-b"), 0,
+                          defaultAppearanceMap()));
+    QTRY_VERIFY(model->ready());
+    QCOMPARE(m_transport.commits.size(), 1);
+    QVERIFY(model->draftDirty());
+    QVERIFY(model->applyAvailable());
+
+    QVERIFY(model->applyDraft());
+    QCOMPARE(m_transport.commits.size(), 2);
+    QCOMPARE(m_transport.commits.constLast().owner, QStringLiteral(":1.99"));
+    QCOMPARE(m_transport.commits.constLast().epoch, QStringLiteral("epoch-b"));
 }
 
 void AppearanceSettingsModelTests::confirmedFailureDiagnosticSurvivesRebaseline()
 {
-    SequenceTransport transport;
-    auto *model = makeModel(transport, Qt::ColorScheme::Light);
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
 
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Wallpaper),
                                  QStringLiteral("/usr/share/wallpapers/mine.jpg")));
     QVERIFY(model->applyDraft());
-    QCOMPARE(transport.commits.size(), 1);
-    const auto commit = transport.commits.constFirst();
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto commit = m_transport.commits.constFirst();
 
     Q_EMIT m_transport.commitReceived(
         commit.token, commit.owner,
@@ -468,16 +562,18 @@ void AppearanceSettingsModelTests::confirmedFailureDiagnosticSurvivesRebaseline(
                    {{QLatin1String(AppearanceKeys::Wallpaper), QString()}},
                    QStringLiteral("epoch-a"),
                    QStringLiteral("durable save failed")));
-    QTRY_VERIFY(model->ready());
+    // Between the reply and the client's automatic rebaseline the surface
+    // shows the same last-confirmed Unavailable truth as the DND controller.
+    QTRY_VERIFY(model->unavailable());
     QCOMPARE(model->errorText(), QStringLiteral("durable save failed"));
     QVERIFY(model->draftDirty());
 
     // Automatic rebaseline keeps the confirmed diagnostic visible.
-    answerRefresh(transport, QStringLiteral(":1.40"), QStringLiteral("epoch-a"),
-                  7, defaultAppearanceMap());
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 7,
+                          defaultAppearanceMap()));
     QTRY_VERIFY(model->ready());
     QCOMPARE(model->errorText(), QStringLiteral("durable save failed"));
-    QCOMPARE(transport.commits.size(), 1);
+    QCOMPARE(m_transport.commits.size(), 1);
 
     // A new explicit write dismisses the stale diagnostic.
     QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Wallpaper),
@@ -486,7 +582,7 @@ void AppearanceSettingsModelTests::confirmedFailureDiagnosticSurvivesRebaseline(
                                  QStringLiteral("/usr/share/wallpapers/other.jpg")));
     QVERIFY(model->applyDraft());
     QCOMPARE(model->errorText(), QString{});
-    QCOMPARE(transport.commits.size(), 2);
+    QCOMPARE(m_transport.commits.size(), 2);
 }
 
 void AppearanceSettingsModelTests::invalidSnapshotTypeFailsClosed()
@@ -512,8 +608,8 @@ void AppearanceSettingsModelTests::invalidSnapshotTypeFailsClosed()
     QVERIFY(!model.canEdit());
 
     // Recovery returns to Ready once a decodable baseline lands.
-    establishBaseline(transport, QStringLiteral(":1.45"),
-                      QStringLiteral("epoch-c"), 2, defaultAppearanceMap());
+    QVERIFY(establishBaseline(transport, QStringLiteral(":1.45"),
+                              QStringLiteral("epoch-c"), 2, defaultAppearanceMap()));
     QTRY_VERIFY(model.ready());
 }
 

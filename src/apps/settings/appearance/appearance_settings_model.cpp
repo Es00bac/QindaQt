@@ -3,9 +3,6 @@
 
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_protocol/settings_wire_status.h"
-#include "qindaqt/themes/theme_spec.h"
-
-#include <QSet>
 
 #include <utility>
 
@@ -76,7 +73,11 @@ bool AppearanceSettingsModel::unavailable() const noexcept
 
 bool AppearanceSettingsModel::canEdit() const noexcept
 {
-    return ready();
+    // A resolved conflict has a fresh authoritative baseline. Keeping the
+    // draft editable lets the user either revise/re-Apply it or Revert, while
+    // Saving/Unavailable and the conflict reply-to-snapshot gap remain
+    // fail-closed.
+    return (ready() || conflict()) && m_authorityReady;
 }
 
 bool AppearanceSettingsModel::draftDirty() const noexcept
@@ -91,7 +92,10 @@ bool AppearanceSettingsModel::draftValid() const noexcept
 
 bool AppearanceSettingsModel::applyAvailable() const
 {
-    return ready() && draftDirty() && draftValid();
+    // A Conflict with a fresh baseline is an answerable state: re-Apply is
+    // the explicit user intent the Settings1 contract requires, so it is
+    // offered beside the normal Ready path.
+    return canEdit() && draftDirty() && draftValid();
 }
 
 QString AppearanceSettingsModel::statusText() const
@@ -128,47 +132,6 @@ QVariantMap AppearanceSettingsModel::draft() const
 QVariantMap AppearanceSettingsModel::fieldErrors() const
 {
     return m_validation.fieldErrors;
-}
-
-QVariantList AppearanceSettingsModel::installedThemes() const
-{
-    QVariantList entries;
-    const auto &themes = m_preview.themes();
-    const auto &maps = m_preview.previewMaps();
-    entries.reserve(themes.size());
-    for (int index = 0; index < themes.size(); ++index) {
-        entries.append(QVariantMap{
-            {QStringLiteral("id"), themes.at(index).id},
-            {QStringLiteral("name"), themes.at(index).name},
-            {QStringLiteral("variant"), themes.at(index).variant},
-            {QStringLiteral("previewTokens"), maps.at(static_cast<size_t>(index))},
-        });
-    }
-    return entries;
-}
-
-QString AppearanceSettingsModel::resolvedThemeId() const
-{
-    if (m_resolution.themeIndex < 0
-        || m_resolution.themeIndex >= m_preview.themes().size()) {
-        return {};
-    }
-    return m_preview.themes().at(m_resolution.themeIndex).id;
-}
-
-bool AppearanceSettingsModel::configuredThemeInstalled() const
-{
-    return m_resolution.configuredInstalled;
-}
-
-QString AppearanceSettingsModel::fallbackNotice() const
-{
-    if (m_resolution.configuredInstalled || m_resolution.themeIndex < 0) {
-        return {};
-    }
-    return QStringLiteral(
-               "Configured theme '%1' is not installed; previewing '%2'")
-        .arg(m_draft.themeId, resolvedThemeId());
 }
 
 bool AppearanceSettingsModel::setDraftValue(const QString &key,
@@ -242,7 +205,7 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
 
 bool AppearanceSettingsModel::cancelDraft()
 {
-    if (!ready() || !draftDirty()) {
+    if (!canEdit() || !draftDirty()) {
         return false;
     }
     m_draft = m_confirmed;
@@ -265,17 +228,6 @@ void AppearanceSettingsModel::retry()
     m_client.refresh();
 }
 
-QSet<QString> AppearanceSettingsModel::installedThemeIds() const
-{
-    QSet<QString> ids;
-    const auto &themes = m_preview.themes();
-    ids.reserve(themes.size());
-    for (const auto &theme : themes) {
-        ids.insert(theme.id);
-    }
-    return ids;
-}
-
 void AppearanceSettingsModel::handleClientState()
 {
     switch (m_client.state()) {
@@ -284,14 +236,24 @@ void AppearanceSettingsModel::handleClientState()
         // Keep Saving/Conflict intent private until that resolves them.
         break;
     case ClientState::Authenticating:
-        // A retained baseline is not authority. Any in-flight sequence dies
-        // here without replay; the draft (user intent) is kept for review.
-        abortSequence();
+        // AGENT-GUARD: The client publishes Authenticating for startup,
+        // replacement, and the routine refresh after every commit reply.
+        // Killing held intent on the routine reply→snapshot transition would
+        // abort every multi-key Apply at its first key, so Saving, the
+        // final-snapshot wait, and unresolved conflict intent survive here.
+        // handleSnapshot() verifies lineage when the fresh authority lands
+        // and aborts explicitly if owner/epoch changed in the gap. Genuine
+        // owner loss always publishes Unavailable, which still aborts.
+        setAuthorityReady(false);
+        if (m_sequenceActive || m_waitingFinalSnapshot || m_conflictIntent) {
+            break;
+        }
         setState(m_hasBaseline ? State::Unavailable : State::Loading,
                  m_client.lastError());
         break;
     case ClientState::Unavailable:
     case ClientState::Degraded:
+        setAuthorityReady(false);
         abortSequence();
         setState(State::Unavailable, m_client.lastError());
         break;
@@ -308,6 +270,7 @@ void AppearanceSettingsModel::handleSnapshot()
     const auto decoded =
         AppearanceValues::fromVariantMap(snapshot->values, &error);
     if (!decoded.has_value()) {
+        setAuthorityReady(false);
         abortSequence();
         setState(State::Unavailable,
                  error.isEmpty()
@@ -315,8 +278,26 @@ void AppearanceSettingsModel::handleSnapshot()
                      : error);
         return;
     }
+    // AGENT-GUARD: Authority that changed owner/epoch between an applied key
+    // and this snapshot is replacement authority. Feeding the remaining
+    // queued intent to it would write stale user intent behind the
+    // replacement's back; abort instead, keep the draft, and let an explicit
+    // re-Apply restate it.
+    const bool lineageChanged =
+        m_hasBaseline && (m_confirmedOwner != snapshot->owner
+                          || m_confirmedEpoch != snapshot->epoch);
+    m_confirmedOwner = snapshot->owner;
+    m_confirmedEpoch = snapshot->epoch;
     setConfirmed(*decoded);
+    setAuthorityReady(true);
 
+    if (lineageChanged
+        && (m_sequenceActive || m_waitingFinalSnapshot || m_conflictIntent)) {
+        abortSequence();
+        m_conflictIntent = false;
+        setState(State::Ready);
+        return;
+    }
     if (m_waitingFinalSnapshot) {
         m_waitingFinalSnapshot = false;
         if (*decoded == m_draft) {
@@ -427,6 +408,18 @@ void AppearanceSettingsModel::setState(State state, QString transientError)
     Q_EMIT stateChanged();
 }
 
+void AppearanceSettingsModel::setAuthorityReady(bool ready)
+{
+    if (m_authorityReady == ready) {
+        return;
+    }
+    m_authorityReady = ready;
+    // canEdit/applyAvailable depend on freshness as well as the visible state.
+    // This explicit notification prevents controls from remaining enabled
+    // across the commit-reply-to-snapshot Authenticating interval.
+    Q_EMIT stateChanged();
+}
+
 void AppearanceSettingsModel::setConfirmed(AppearanceValues values)
 {
     const bool baselineBefore = m_hasBaseline;
@@ -434,39 +427,14 @@ void AppearanceSettingsModel::setConfirmed(AppearanceValues values)
     m_confirmed = values;
     if (!baselineBefore) {
         m_hasBaseline = true;
+        // AGENT-GUARD: Edits are impossible before the first baseline
+        // (canEdit follows ready), so any pre-baseline draft is composed
+        // default guesswork, not user intent. Seed the draft from the first
+        // authoritative snapshot or every page would open falsely dirty.
+        m_draft = values;
     }
     if (changed || !baselineBefore) {
         refreshValidationAndPreview();
-    }
-}
-
-void AppearanceSettingsModel::refreshValidationAndPreview()
-{
-    m_validation = validateAppearanceDraft(m_draft, installedThemeIds());
-    m_resolution = m_preview.resolve(m_draft, m_platformScheme);
-    publishPreviewTokens();
-    // AGENT-NOTE: applyAvailable is a composite of state, draft dirt, and
-    // draft validity but a Q_PROPERTY allows one NOTIFY signal; stateChanged
-    // doubles as its change notification here.
-    Q_EMIT stateChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT previewChanged();
-}
-
-void AppearanceSettingsModel::publishPreviewTokens()
-{
-    if (m_previewFacade == nullptr || m_resolution.themeIndex < 0) {
-        return;
-    }
-    const auto &theme = m_preview.themes().at(m_resolution.themeIndex);
-    // AGENT-GUARD: Publication must always carry one complete immutable
-    // generation derived from the draft; publishing derived roles piecemeal
-    // would let controls render a hybrid of two themes.
-    const auto derived = DesignTokens::DesignTokenDeriver::derive(
-        theme, m_preview.accessibilityInputs(m_draft, theme));
-    if (derived.ok()) {
-        QString error;
-        m_previewFacade->publish(derived.tokens, &error);
     }
 }
 

@@ -19,3 +19,10 @@ set_tests_properties(
     qindaqt.settings-app-rejects-unknown-route PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
+add_test(
+    NAME qindaqt.settings-app-desktop-identity
+    COMMAND "${CMAKE_COMMAND}"
+            -DSETTINGS_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/apps/settings_center
+            -DSETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings>
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_desktop_identity.cmake"
+)

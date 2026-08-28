@@ -53,8 +53,11 @@ class AppearanceSettingsModel final : public QObject {
 public:
     // The facade pointer may be null in focused model tests; publication is a
     // preview affordance and never a precondition for truthful state.
+    // AGENT-NOTE: The client type is spelled out fully because the unqualified
+    //-looking `Services::SettingsClient` names the namespace, not the class.
     explicit AppearanceSettingsModel(
-        Services::SettingsClient &client, QVector<Themes::ThemeSpec> installedThemes,
+        QindaQt::Services::SettingsClient::SettingsClient &client,
+        QVector<Themes::ThemeSpec> installedThemes,
         Qt::ColorScheme platformScheme,
         DesignTokens::TokenFacade *previewFacade = nullptr,
         QObject *parent = nullptr);
@@ -103,10 +106,12 @@ private:
 
     void handleClientState();
     void handleSnapshot();
-    void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
+    void handleCommit(
+        const QindaQt::Services::SettingsClient::CommitOutcome &outcome);
     void handleUncertain(const QString &message);
 
     void setState(State state, QString transientError = {});
+    void setAuthorityReady(bool ready);
     void setConfirmed(AppearanceValues values);
     void refreshValidationAndPreview();
     void publishPreviewTokens();
@@ -115,7 +120,7 @@ private:
     void abortSequence();
     [[nodiscard]] QSet<QString> installedThemeIds() const;
 
-    Services::SettingsClient &m_client;
+    QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AppearancePreview m_preview;
     Qt::ColorScheme m_platformScheme;
     DesignTokens::TokenFacade *m_previewFacade = nullptr;
@@ -125,9 +130,12 @@ private:
     AppearanceValues m_draft;
     QString m_transientError;
     QString m_confirmedError;
+    QString m_confirmedOwner;
+    QString m_confirmedEpoch;
     AppearanceValidation m_validation;
     AppearanceResolution m_resolution;
     bool m_hasBaseline = false;
+    bool m_authorityReady = false;
     bool m_sequenceActive = false;
     bool m_waitingFinalSnapshot = false;
     bool m_conflictIntent = false;

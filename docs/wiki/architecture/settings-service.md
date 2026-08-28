@@ -27,7 +27,7 @@ system-default resolution supplies `false`. Corrupt, wrong-layer, missing,
 stale/unsupported, or invalid migrated input fails startup without mutation.
 The appearance route slice later extended v2 additively with
 `appearance.colorScheme`, `appearance.wallpaperMode`, and `appearance.uiScale`
-(see [ADR-0026](../adr/0026-compose-appearance-settings-through-settings1.md));
+(see [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md));
 the version stays 2 because existing partial documents validate per key and
 the settings-schema version is lineage metadata rather than a wire break.
 

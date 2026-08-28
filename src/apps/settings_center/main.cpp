@@ -42,6 +42,12 @@ int main(int argc, char **argv)
     QGuiApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("qindaqt-settings"));
     application.setOrganizationName(QStringLiteral("QindaQt"));
+    // AGENT-CONTRACT: The installed product identity is the desktop entry
+    // org.qindaqt.Settings (see org.qindaqt.Settings.desktop beside this
+    // file). Wayland window identity and the private readiness harness both
+    // derive from this binding; regressing it mislabels every settings
+    // window. Set before any window exists, matching the text editor.
+    application.setDesktopFileName(QStringLiteral("org.qindaqt.Settings"));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("QindaQt Settings"));

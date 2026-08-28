@@ -6,7 +6,10 @@ ordinary `qindaqt-settings` Qt Quick application. The domain module
 `src/apps/settings/appearance` owns validated appearance values, the QST-1
 preview projection, and the Settings1-backed route model; the executable owns
 only the additive route seam. The durable composition decisions are recorded
-in [ADR-0026](../adr/0026-compose-appearance-settings-through-settings1.md).
+in [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md).
+The route keeps its transaction state machine separate from preview projection
+and divides presentation into Theme, Font, and Desktop-preference QML sections;
+none of those sections imports persistence or platform APIs.
 
 ## What the route offers
 
@@ -47,11 +50,15 @@ truth as the DND controller, extended to a draft workflow:
   Revert is refused while a commit sequence is in flight.
 - **Conflict** — a rejected key whose authority differs stops the sequence,
   keeps the draft, and requires an explicit re-Apply (or Revert) against the
-  refreshed baseline. If authority already equals the draft, the key counts
-  as done.
+  refreshed baseline. The controls remain non-editable during the commit-
+  reply-to-snapshot gap; after the same owner/epoch supplies a fresh snapshot,
+  the retained draft becomes editable again. If authority already equals the
+  draft, the key counts as done.
 - **Uncertain/loss** — timeouts, owner replacement, and bus loss surface the
   last confirmed values, forbid writes, and never replay anything; Retry
   refreshes authority only, and a new explicit Apply is the only resubmit.
+  An owner/epoch replacement between a successful reply and its authoritative
+  snapshot also discards every queued key while retaining the draft.
 - **Confirmed failures** — validation/persistence/rejection diagnostics stay
   visible across automatic rebaselines until a new explicit write dismisses
   them.
@@ -85,7 +92,7 @@ route (and vice versa).
 - No font discovery: the family field is validated text, not a host font
   catalog.
 - No multi-key atomic transactions: the public client exposes single-key
-  writes only; see ADR-0026 for the batch follow-up boundary.
+  writes only; see ADR-0028 for the batch follow-up boundary.
 - No accessibility-domain coupling: text scale, reduced motion, and reduced
   transparency stay in their own route; the preview derives high contrast
   only from the dedicated theme variant.
@@ -106,11 +113,15 @@ ctest --test-dir build/dev \
   high-contrast QST input.
 - `qindaqt.appearance-settings-model` — baseline decode, per-key commit
   sequence with fresh-base snapshots, conflict stop/explicit re-apply,
-  uncertain no-replay, owner-loss abort, diagnostic retention, fail-closed
-  snapshot decode.
+  uncertain no-replay, owner-loss and reply-gap owner/epoch replacement abort,
+  diagnostic retention, fail-closed snapshot decode.
 - `qindaqt.appearance-page` — offscreen Controls scene: theme-card
-  selection/gating, action-row wiring, status/error/fallback truth and
-  accessible roles, initial focus and tab traversal.
+  click selection/gating, zero-argument toggle wiring, action-row wiring,
+  status/error/fallback truth and accessible roles, initial focus and tab
+  traversal.
 
-The route also inherits the settings-app offscreen gates (unknown-route
-rejection) and the Settings1 client/service suites.
+The route also inherits the settings-app offscreen and unknown-route gates.
+`qindaqt.settings-app-desktop-identity` proves the built executable embeds the
+installed `org.qindaqt.Settings` desktop identity and declares it before any
+window construction. Settings1 client/service suites remain the authority for
+the generic transport and persistence boundary.

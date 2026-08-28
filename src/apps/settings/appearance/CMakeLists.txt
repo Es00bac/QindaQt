@@ -12,6 +12,7 @@ target_sources(
         appearance_preview.cpp
         appearance_qml_composition.cpp
         appearance_settings_model.cpp
+        appearance_settings_model_preview.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -23,8 +24,10 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_appearance
-    PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens qindaqt_themes
-           Qt6::Core Qt6::Gui Qt6::Qml
+    # TokenFacade's implementation lives in the shared QindaQt.Tokens QML
+    # module library; the static DesignTokens value library does not carry it.
+    PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml
+           qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml
 )
 target_compile_features(qindaqt_settings_appearance PUBLIC cxx_std_20)
 set_target_properties(
@@ -44,7 +47,10 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_APPEARANCE_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_appearance.qmltypes
     QML_FILES
+        qml/AppearanceDesktopSection.qml
+        qml/AppearanceFontSection.qml
         qml/AppearancePage.qml
+        qml/AppearanceThemeSection.qml
         qml/SegmentedChoiceRow.qml
 )
 target_link_libraries(
@@ -78,6 +84,11 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
 )
 install(
-    FILES qml/AppearancePage.qml qml/SegmentedChoiceRow.qml
+    FILES
+        qml/AppearanceDesktopSection.qml
+        qml/AppearanceFontSection.qml
+        qml/AppearancePage.qml
+        qml/AppearanceThemeSection.qml
+        qml/SegmentedChoiceRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
 )
