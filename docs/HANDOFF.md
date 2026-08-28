@@ -4,6 +4,17 @@
 
 Manager integration delta after the public baseline below:
 
+- `2ae29f3` integrates the exact independently accepted Display Color C0
+  series. The GLM repair defeated all eight hostile review reproductions;
+  independent Gemini Pro review found P0/P1/P2/P3 `0/0/0/0`, completed strict
+  Debug and Release builds, passed 6/6 registered rows and 46/46 direct cases,
+  and preserved the candidate tree exactly. The fresh manager tree builds all
+  1,597/1,597 actions, passes 6/6 registered rows and 46/46 direct cases, and
+  passes documentation, source-shape, strict MkDocs, and diff gates. QQ-005.07 advances
+  ABSENT to EXECUTABLE. C0 remains a pure injected model: live ICC discovery
+  and import, persistent assignment, compositor application, Settings UI,
+  nested HDR/WCG proof, and physical hardware qualification remain later.
+
 - `ea4d986` replays the exact independently accepted Network N0 series onto
   the Terminal and Bluetooth manager tree with additive shared registries.
   Independent exact review found P0/P1/P2/P3 `0/0/0/0`, proved all 49 Network

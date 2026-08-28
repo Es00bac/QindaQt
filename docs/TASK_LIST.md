@@ -51,6 +51,14 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `2ae29f3` — Display Color C0 pure model with strict bounded ICC header and
+  catalog validation, deterministic capability-aware assignment, canonical
+  lineage fingerprinting, and atomic revisioned snapshots. The exact GLM
+  repair passed independent Gemini Pro review with `0/0/0/0`; all eight hostile
+  reproductions are defeated, strict Debug/Release builds pass 6/6 registered
+  rows and 46/46 direct cases, and fresh manager-tree gates pass. Live profile
+  discovery/import, persistence, compositor application, Settings UI, nested
+  HDR/WCG evidence, and physical hardware remain later slices.
 - `ea4d986` — Network N0 bounded protocol, canonical identity/codec/redaction,
   pure lineage/lease/intent model, and injected exact-owner asynchronous client.
   Exact independent replay review passed `0/0/0/0`, Debug/Release 13/13,

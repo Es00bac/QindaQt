@@ -198,10 +198,10 @@
           "caveat": "C0 has no live Wayland capture/offer adapter, resident service/client transport, persistence, production applet, or installed interaction proof."
         },
         {
-          "id": "QQ-005.07", "title": "Display color, ICC, HDR, and WCG settings", "weight": 8, "state": "ABSENT",
-          "summary": "No integrated color provider supports profile discovery/import/assignment or truthful compositor application.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Color remains inside the incomplete Platform services milestone." }],
-          "caveat": "Design-token color math is not display color management."
+          "id": "QQ-005.07", "title": "Display color, ICC, HDR, and WCG settings", "weight": 8, "state": "EXECUTABLE",
+          "summary": "Display Color C0 integrates a pure bounded ICC catalog, strict header validation, capability-aware assignment policy, deterministic lineage fingerprinting, and atomic revisioned snapshots.",
+          "evidence": [{ "kind": "commit", "reference": "2ae29f3", "summary": "The exact GLM-authored repair passed independent Gemini Pro review and is integrated after all eight hostile reproductions were defeated." }, { "kind": "test", "reference": "docs/wiki/architecture/display-color-model.md", "summary": "Strict Debug/Release builds pass 6/6 registered rows and 46/46 direct cases; manager-tree focused verification and documentation gates pass." }],
+          "caveat": "C0 is an executable pure/injected boundary. Live profile discovery/import, persistent assignment, compositor application, Settings UI, nested HDR/WCG proof, and physical hardware qualification remain later slices."
         },
         {
           "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "WIRED",
@@ -217,7 +217,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 adds an executable least-authority protocol/model/client/resident-service boundary; and Network N0 adds an executable bounded protocol/model/injected-client boundary.",
+        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -228,10 +228,11 @@
           { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
           { "kind": "commit", "reference": "ea4d986", "summary": "The independently accepted Network N0 replay is integrated after exact zero-finding review and fresh manager-tree focused verification." },
+          { "kind": "commit", "reference": "2ae29f3", "summary": "The independently accepted Display Color C0 series is integrated after the exact repair defeated all eight hostile review reproductions and passed strict Debug/Release verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; color/font providers; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
     },
     {
       "id": "QQ-006",
