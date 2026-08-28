@@ -1,10 +1,12 @@
-# Display1 version 1 values and pure model
+# Display1 version 1 service and values
 
-This page specifies the version-1 Display values shared by the pure D1
-modules. The constants reserve the future service identity
-`org.qindaqt.Display1` at `/org/qindaqt/Display1`, but D1 does not register a
-bus name, export an object or XML interface, connect a client, open Wayland, or
-apply a configuration. Those runtime artifacts belong to later slices.
+This page specifies the version-1 Display values shared by the pure D1 modules
+and the bounded D2 resident-service surface. D1 still registers no bus name,
+exports no object, connects no client, opens no Wayland object, and applies no
+configuration. `display_service` now owns the activated
+`org.qindaqt.Display1` process at `/org/qindaqt/Display1`, reads the integrated
+D0 inventory through an exact-owner adapter, and composes D1 through injected
+ports. Its packaged mutation port remains unavailable and fail-closed.
 
 The authority and dependency rules are in
 [Display service](../architecture/display-service.md),
@@ -151,6 +153,50 @@ non-mutating rejection of write-only or type-divergent arguments. A positive
 read-only `QDBusArgument` can only come from QtDBus whole-message
 demarshalling, so that path is D2 private-bus integration evidence rather than
 a fabricated unit argument.
+
+## Resident D2 wire surface
+
+| Property | Value |
+| --- | --- |
+| Bus name / interface | `org.qindaqt.Display1` |
+| Object path | `/org/qindaqt/Display1` |
+| Activation | D-Bus activation delegating to `qindaqt-display-service.service` |
+| Process lifetime | Exact constructing session bus; disconnect terminates |
+
+The installed XML exports `GetSnapshot`, `Stage(s, Candidate)`, `Preview(s)`,
+`Confirm(s)`, and `Cancel(s)`. Mutators return `OperationResult`. `Changed(s,
+t, b)` carries epoch, revision, and availability as a complete-read
+invalidation hint; clients must call `GetSnapshot` and never reconstruct output
+state from signal order. When no accepted inventory exists, `GetSnapshot` and
+mutators fail with `org.qindaqt.Display1.Error.Unavailable`; they never return a
+plausible revision-zero snapshot or invalid result value.
+
+The current inventory adapter calls `org.qindaqt.Compositor1.Outputs` on its
+resolved unique D-Bus owner and binds one public Display1 epoch to that owner.
+The positive D0 `outputGeneration` is the Display1 revision. Exact typed
+redelivery is accepted at equal generation; changed content at equal
+generation, revision regression, and a newer generation with unchanged content
+all reject atomically. Owner replacement or transport loss discards the public
+snapshot and active machine. A later accepted frame starts a fresh epoch, so
+revisions are never compared across source owners.
+
+Projection is intentionally narrower than full output management. It publishes
+only D0 enabled outputs and one synthesized current mode, requires integral
+geometry and Display1's 32-output/scale-3 limits, uses connector-fallback stable
+identity because D0 supplies no EDID/MST material, and retains runtime UUID only
+as non-persistent metadata. The first output in D0 semantic order is primary;
+priorities are canonical contiguous order. Replication and disabled-output mode
+inventory are not invented.
+
+The resident owns actual single-shot scheduling for D1 deadlines and routes
+typed inventory changes into the D1 machine. The packaged process has safety
+`Unknown`, so `Stage` may validate but `Preview` rejects `Locked`. If a test or
+later authenticated composition supplies `Safe`, the packaged transaction
+port still cannot persist the hard-gate journal and rejects `JournalFailure`
+without a compositor request. Consequently these methods establish
+service/transaction ownership without claiming a production writer. There is
+no KWin private ABI, Wayland output-management object, journal file, Settings,
+QML, lock client, or logind adapter in this slice.
 
 ## Persistent identity
 
@@ -309,6 +355,14 @@ Callback-before-device-observation and cross-client in-flight ordering remain
 D2 runtime obligations. D1 has no mechanism to swap a disconnected port or
 replay an uncertain forward mutation.
 
+The resident D2 composition adds a process-local machine lineage around the D1
+token. It advances that lineage before every replacement machine, requires the
+transaction port to tag each completion with it, and accepts a completion only
+when both values match. A late callback from a lost owner therefore cannot be
+mistaken for a numerically reused token in a recovered machine. The lineage is
+copied with the apply request and is not recomputed from the port's current
+lineage when the callback arrives.
+
 ## Confirmation classification
 
 `Topology` is class A and maps to `Required`. The closed class-B values are
@@ -339,7 +393,13 @@ qualification.
 | Adversarial transaction ordering | `qindaqt.display-transaction-adversarial`: exact rejected-state preservation, journal gates, total retry bound, settle barrier, set flap/full pre-image, cleanup-only `Stuck`, observation routing, live projection, same-set recovery no-fight, current-topology retry, disabled pre-image survivors, terminal reason and `stateChanged` truth |
 | Invalid transition preservation | `qindaqt.display-transaction-invalid-ordering`: wrong transaction, recovery, callback, observation, confirmation, and settle inputs across all twelve states preserve view, snapshot, active journal, and port effects exactly |
 | Journal bytes | `qindaqt.display-transaction-journal`: invariants, canonical round-trip, versions, torn/trailing/oversized bytes, no partial destination |
+| Resident inventory adapter | `qindaqt.display-service-inventory`: exact owner/schema/generation JSON, bounds, privacy-preserving connector projection, current-mode geometry, transform/fractional scale, fingerprint |
+| Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, fresh epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership |
+| Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
 
-Nested KWin protocol, service activation, restart recovery, mirror visibility,
-and physical output rows belong to D2/D8 and the
+The D2 service-focused rows add deterministic decoder/projection, owner and
+generation collision, loss/reset, add/remove/change, transaction-port, timer,
+descriptor, staged-install, and public-header-consumer evidence. They still do
+not exercise a display. Nested KWin output-management, restart recovery,
+mirror visibility, and physical output rows remain later D2/D8 work in the
 [testing harness](../development/testing-harness.md).
