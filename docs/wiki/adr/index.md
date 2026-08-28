@@ -35,6 +35,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
 | [ADR-0028](0028-compose-appearance-settings-through-settings1.md) | Accepted | Compose the Appearance settings route through Settings1 and QST-1 |
 | [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
+| [ADR-0030](0030-display-color-c0-model-boundary.md) | Proposed | Keep display color as a pure bounded model first |
 | [ADR-0041](0041-adopt-flow-team-delivery-loop.md) | Accepted | Use workgroup queues, exact review loops, prompt integration, and capacity refill |
 | [ADR-0042](0042-launcher-model-without-execution.md) | Accepted | Keep the launcher a pure model whose launch intents never execute |
 | [ADR-0044](0044-inject-task-list-facts-into-the-shell.md) | Accepted | Inject immutable task-list facts rather than importing compositor internals |
