@@ -7,6 +7,9 @@
 #include "support/clipboard_test_data.h"
 
 #include <QtTest>
+#include <QtEndian>
+
+#include <limits>
 
 using namespace QindaQt::Services::ClipboardModel;
 
@@ -37,6 +40,40 @@ QByteArray withAppendedByte(const QByteArray &bytes)
     QByteArray copy = bytes;
     copy.append('Z');
     return copy;
+}
+
+void appendLe16(QByteArray &bytes, quint16 value)
+{
+    char encoded[2];
+    qToLittleEndian(value, encoded);
+    bytes.append(encoded, 2);
+}
+
+void appendLe32(QByteArray &bytes, quint32 value)
+{
+    char encoded[4];
+    qToLittleEndian(value, encoded);
+    bytes.append(encoded, 4);
+}
+
+quint16 readLe16(const QByteArray &bytes, qsizetype offset)
+{
+    Q_ASSERT(offset >= 0 && bytes.size() - offset >= 2);
+    return qFromLittleEndian<quint16>(bytes.constData() + offset);
+}
+
+void appendEncodedFormat(QByteArray &bytes, const QString &mediaType,
+                         const QByteArray &payload)
+{
+    const QByteArray mediaBytes = mediaType.toUtf8();
+    Q_ASSERT(mediaBytes.size()
+             <= static_cast<qsizetype>(std::numeric_limits<quint16>::max()));
+    Q_ASSERT(payload.size()
+             <= static_cast<qsizetype>(std::numeric_limits<quint32>::max()));
+    appendLe16(bytes, static_cast<quint16>(mediaBytes.size()));
+    bytes.append(mediaBytes);
+    appendLe32(bytes, static_cast<quint32>(payload.size()));
+    bytes.append(payload);
 }
 
 } // namespace
@@ -134,6 +171,14 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     tooManyFormats[6] = static_cast<char>(0x03); // little-endian 1017
     QCOMPARE(decodeValue(tooManyFormats).error, ClipboardError::TooManyFormats);
 
+    // The exact seven-byte zero-count form is the decoder equivalent of an
+    // empty ClipboardValue and therefore shares EmptyValue vocabulary.
+    QByteArray zeroFormats("QCBV", 4);
+    zeroFormats.append(char(1));
+    appendLe16(zeroFormats, 0);
+    QCOMPARE(zeroFormats.size(), 7);
+    QCOMPARE(decodeValue(zeroFormats).error, ClipboardError::EmptyValue);
+
     // Declared media length beyond the canonical bound.
     QByteArray longMedia = encoded.bytes;
     longMedia[7] = static_cast<char>(0xff);
@@ -168,6 +213,22 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     swappedToDuplicate.replace(33, 9, "text/html");
     const DecodedValue duplicateRejected = decodeValue(swappedToDuplicate);
     QCOMPARE(duplicateRejected.error, ClipboardError::DuplicateFormat);
+
+    // A framing-perfect multi-format value may not copy the payload that
+    // crosses the aggregate ceiling. The truncated companion proves the
+    // aggregate preflight happens before attempting that hostile read: the
+    // deterministic error remains OversizedValue rather than MalformedData.
+    const QByteArray firstPayload(kMaxItemPayloadBytes / 2 + 1, 'a');
+    const QByteArray secondPayload(kMaxItemPayloadBytes / 2, 'b');
+    QByteArray aggregateOverflow("QCBV", 4);
+    aggregateOverflow.append(char(1));
+    appendLe16(aggregateOverflow, 2);
+    appendEncodedFormat(aggregateOverflow, ClipboardTest::textFormat(), firstPayload);
+    appendEncodedFormat(aggregateOverflow, ClipboardTest::uriFormat(), secondPayload);
+    QCOMPARE(decodeValue(aggregateOverflow).error, ClipboardError::OversizedValue);
+    QByteArray aggregateBeforeCopy = aggregateOverflow;
+    aggregateBeforeCopy.chop(secondPayload.size());
+    QCOMPARE(decodeValue(aggregateBeforeCopy).error, ClipboardError::OversizedValue);
 }
 
 void ClipboardCodecTests::descriptorRoundTrips()
@@ -248,6 +309,18 @@ void ClipboardCodecTests::descriptorDecodeRejectsHostileInput()
     noFormats.formats.clear();
     QCOMPARE(encodeDescriptor(noFormats).error, ClipboardError::EmptyValue);
 
+    // A format list that only claims zero bytes is equally empty. Pin this on
+    // encode and on a framing-perfect decode mutation.
+    ClipboardEntryDescriptor allZero = model.snapshot().entries.first();
+    for (FormatInfo &format : allZero.formats) {
+        format.payloadBytes = 0;
+    }
+    QCOMPARE(encodeDescriptor(allZero).error, ClipboardError::EmptyValue);
+    QByteArray zeroClaim = encoded.bytes;
+    const qsizetype onlySizeOffset = zeroClaim.size() - 32 - 4;
+    zeroClaim.replace(onlySizeOffset, 4, QByteArray(4, '\0'));
+    QCOMPARE(decodeDescriptor(zeroClaim).error, ClipboardError::EmptyValue);
+
     // Negative claimed bytes are structurally impossible, not merely large.
     ClipboardEntryDescriptor negative = model.snapshot().entries.first();
     negative.formats.first().payloadBytes = -1;
@@ -289,10 +362,43 @@ void ClipboardCodecTests::descriptorDecodeRejectsHostileInput()
     ClipboardEntryDescriptor hostilePreview = model.snapshot().entries.first();
     hostilePreview.preview = QStringLiteral("bad\bpreview");
     QCOMPARE(encodeDescriptor(hostilePreview).error, ClipboardError::MalformedData);
+    const QString loneSurrogate(1, QChar(0xd800));
+    QVERIFY(QString::fromUtf8(loneSurrogate.toUtf8()) != loneSurrogate);
+    ClipboardEntryDescriptor nonUtf8Label = model.snapshot().entries.first();
+    nonUtf8Label.sourceLabel = loneSurrogate;
+    QCOMPARE(encodeDescriptor(nonUtf8Label).error, ClipboardError::MalformedData);
+    ClipboardEntryDescriptor nonUtf8Preview = model.snapshot().entries.first();
+    nonUtf8Preview.preview = loneSurrogate;
+    QCOMPARE(encodeDescriptor(nonUtf8Preview).error, ClipboardError::MalformedData);
     ClipboardEntryDescriptor truncatedEmpty = model.snapshot().entries.first();
     truncatedEmpty.preview.clear();
     truncatedEmpty.previewTruncated = true;
     QCOMPARE(encodeDescriptor(truncatedEmpty).error, ClipboardError::MalformedData);
+
+    // Invalid UTF-8 must not be accepted through QString's replacement-
+    // character conversion. These same-length mutations leave all framing
+    // intact but cannot re-encode to their original bytes.
+    const qsizetype metadataOffset = flagsOffset + 1;
+    const qsizetype sourceLength = static_cast<qsizetype>(readLe16(encoded.bytes,
+                                                                   metadataOffset));
+    const qsizetype sourceOffset = metadataOffset + 2;
+    QVERIFY(sourceLength > 0);
+    QByteArray invalidLabel = encoded.bytes;
+    invalidLabel[sourceOffset] = char(0xff);
+    const QByteArray invalidLabelBytes = invalidLabel.mid(sourceOffset, sourceLength);
+    QVERIFY(QString::fromUtf8(invalidLabelBytes).toUtf8() != invalidLabelBytes);
+    QCOMPARE(decodeDescriptor(invalidLabel).error, ClipboardError::MalformedData);
+
+    const qsizetype previewLengthOffset = sourceOffset + sourceLength;
+    const qsizetype previewLength = static_cast<qsizetype>(readLe16(encoded.bytes,
+                                                                    previewLengthOffset));
+    const qsizetype previewOffset = previewLengthOffset + 2;
+    QVERIFY(previewLength > 0);
+    QByteArray invalidPreview = encoded.bytes;
+    invalidPreview[previewOffset] = char(0xff);
+    const QByteArray invalidPreviewBytes = invalidPreview.mid(previewOffset, previewLength);
+    QVERIFY(QString::fromUtf8(invalidPreviewBytes).toUtf8() != invalidPreviewBytes);
+    QCOMPARE(decodeDescriptor(invalidPreview).error, ClipboardError::MalformedData);
 }
 
 void ClipboardCodecTests::descriptorListRoundTripsAndRejectsHostileInput()

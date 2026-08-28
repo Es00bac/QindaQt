@@ -41,11 +41,11 @@ namespace QindaQt::Services::ClipboardModel {
 // AGENT-CONTRACT (revision lineage): revision advances by exactly one per
 // successful CONTENT change (admission, dedup move, promote, pin change,
 // removal, clear that removes at least one entry). It is deliberately a
-// content-only lineage: authority transitions (enable/disable,
-// privacy allow/deny) change no content, advance nothing, and are observed
-// by consumers through the snapshot's historyEnabled/privacyAllowed flags
-// plus the generation bump that accompanies a purging transition. Refusals
-// and no-ops change nothing.
+// within-generation content lineage. Non-purging authority transitions only
+// change the snapshot flags. Purging transitions also destroy content, but
+// intentionally leave the old revision behind because the generation bump
+// invalidates that entire lineage. Consumers observe authority through the
+// snapshot flags plus the generation. Refusals and no-ops change nothing.
 class ClipboardHistoryModel final {
 public:
     // Normalizes limits and counters through sanitizeLimits/sanitizeCounters,
@@ -64,8 +64,9 @@ public:
     // Authority transitions. Disabling an enabled history purges; enabling
     // only raises the flag (content operations still require privacy
     // Allowed). Re-stating the current value is a no-op that neither purges
-    // nor raises the generation. These transitions change no content and do
-    // not advance the content revision.
+    // nor raises the generation. A disabling/denying purge destroys content
+    // and raises the generation without advancing the now-irrelevant old
+    // generation's content revision.
     void setHistoryEnabled(bool enabled);
     void setPrivacyAllowed(bool allowed);
 

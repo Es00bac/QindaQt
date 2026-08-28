@@ -34,6 +34,12 @@ ClipboardError validateDescriptor(const ClipboardEntryDescriptor &descriptor)
     if (!descriptor.id.isValid()) {
         return ClipboardError::MalformedData;
     }
+    if (QString::fromUtf8(descriptor.sourceLabel.toUtf8()) != descriptor.sourceLabel
+        || QString::fromUtf8(descriptor.preview.toUtf8()) != descriptor.preview) {
+        // A QString containing an unpaired surrogate would encode through a
+        // replacement sequence and could not satisfy the canonical decoder.
+        return ClipboardError::MalformedData;
+    }
     if (descriptor.sourceLabel.size() > kMaxSourceLabelCodeUnits
         || descriptor.sourceLabel
             != sanitizeSourceLabel(descriptor.sourceLabel, kMaxSourceLabelCodeUnits)) {
@@ -67,6 +73,7 @@ ClipboardError validateDescriptor(const ClipboardEntryDescriptor &descriptor)
     }
     QSet<QString> seenMedia;
     qint64 aggregateBytes = 0;
+    bool hasPayload = false;
     for (const FormatInfo &format : descriptor.formats) {
         if (!isCanonicalMediaType(format.mediaType, kMaxMediaTypeLength)) {
             return ClipboardError::MediaTypeRejected;
@@ -85,6 +92,12 @@ ClipboardError validateDescriptor(const ClipboardEntryDescriptor &descriptor)
         if (aggregateBytes > kMaxItemPayloadBytes) {
             return ClipboardError::OversizedValue;
         }
+        if (format.payloadBytes > 0) {
+            hasPayload = true;
+        }
+    }
+    if (!hasPayload) {
+        return ClipboardError::EmptyValue;
     }
     return ClipboardError::None;
 }
@@ -154,9 +167,19 @@ DecodedDescriptor decodeDescriptor(const QByteArray &encoded)
     }
     descriptor.pinned = (flags & kFlagPinned) != 0;
     descriptor.previewTruncated = (flags & kFlagPreviewTruncated) != 0;
-    descriptor.sourceLabel = QString::fromUtf8(reader.sized(reader.u16()));
-    descriptor.preview = QString::fromUtf8(reader.sized(reader.u16()));
+    const QByteArray sourceLabelBytes = reader.sized(reader.u16());
+    const QByteArray previewBytes = reader.sized(reader.u16());
     if (!reader.ok()) {
+        result.error = ClipboardError::MalformedData;
+        return result;
+    }
+    descriptor.sourceLabel = QString::fromUtf8(sourceLabelBytes);
+    descriptor.preview = QString::fromUtf8(previewBytes);
+    // AGENT-GUARD: QString substitutes malformed UTF-8 with replacement
+    // characters. Require an exact round trip so distinct hostile byte forms
+    // cannot collapse to one descriptor and re-encode non-canonically.
+    if (descriptor.sourceLabel.toUtf8() != sourceLabelBytes
+        || descriptor.preview.toUtf8() != previewBytes) {
         result.error = ClipboardError::MalformedData;
         return result;
     }

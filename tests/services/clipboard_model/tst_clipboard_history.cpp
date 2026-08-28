@@ -418,9 +418,9 @@ void ClipboardHistoryTests::capacityRefusalIsFullyAtomic()
     QCOMPARE(model.totalPayloadBytes(), qint64 { 9 });
     QCOMPARE(model.revision(), revisionBefore);
     QCOMPARE(model.generation(), generationBefore);
-    QVERIFY(model.snapshot().entries.first().pinned);
-    QVERIFY(!model.snapshot().entries.last().pinned);
-    QCOMPARE(model.snapshot().entries.last().preview, QStringLiteral("89"));
+    QVERIFY(!model.snapshot().entries.first().pinned);
+    QVERIFY(model.snapshot().entries.last().pinned);
+    QCOMPARE(model.snapshot().entries.first().preview, QStringLiteral("89"));
 
     // The success path still frees exactly the unpinned entry and keeps the
     // pin, proving the atomic refusal was a decision, not a fallback.

@@ -94,7 +94,11 @@ DecodedValue decodeValue(const QByteArray &encoded)
         return result;
     }
     const quint16 formatCount = reader.u16();
-    if (formatCount == 0 || formatCount > kMaxFormatsPerItem) {
+    if (formatCount == 0) {
+        result.error = ClipboardError::EmptyValue;
+        return result;
+    }
+    if (formatCount > kMaxFormatsPerItem) {
         result.error = ClipboardError::TooManyFormats;
         return result;
     }
@@ -127,6 +131,14 @@ DecodedValue decodeValue(const QByteArray &encoded)
             result.error = ClipboardError::OversizedValue;
             return result;
         }
+        // AGENT-GUARD: enforce the aggregate ceiling before sized() copies
+        // payload bytes. Moving this check below the read lets a hostile peer
+        // retain up to one individually legal allocation per format before
+        // the decoder eventually refuses the aggregate.
+        if (static_cast<qint64>(payloadLength) > kMaxItemPayloadBytes - totalBytes) {
+            result.error = ClipboardError::OversizedValue;
+            return result;
+        }
         const QByteArray payload = reader.sized(static_cast<qsizetype>(payloadLength));
         if (!reader.ok()) {
             result.error = ClipboardError::MalformedData;
@@ -140,10 +152,6 @@ DecodedValue decodeValue(const QByteArray &encoded)
     }
     if (!hasPayload) {
         result.error = ClipboardError::EmptyValue;
-        return result;
-    }
-    if (totalBytes > kMaxItemPayloadBytes) {
-        result.error = ClipboardError::OversizedValue;
         return result;
     }
     if (!reader.atEnd()) {

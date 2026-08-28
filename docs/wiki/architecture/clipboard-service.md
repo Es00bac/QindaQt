@@ -137,11 +137,12 @@ complete payloads.
   that does not advance the revision.
 - **Revision:** advances by exactly one per successful *content* change
   (admission, dedup move, promote, pin change, removal, clear that removes
-  at least one entry). It is deliberately content-only lineage: authority
-  transitions change no content, advance nothing, and are observed by
-  consumers through the snapshot's `historyEnabled`/`privacyAllowed` flags
-  plus the generation bump that accompanies a purging transition. Refusals
-  and no-ops change nothing.
+  at least one entry) within one generation. Non-purging authority transitions
+  change only the snapshot flags. Disabling or denying authority also purges
+  content, but intentionally leaves the old revision unchanged because the
+  generation bump invalidates that entire lineage. Consumers observe authority
+  through `historyEnabled`/`privacyAllowed` plus the generation; refusals and
+  no-ops change nothing.
 
 ## Bounded metadata search
 
@@ -181,17 +182,19 @@ invents its own serialization:
 Both forms share one validation floor, centralized in a single descriptor
 validator used by encode and decode alike: valid generation-tagged identity,
 nonempty bounded canonical format list with unique names, non-negative
-per-format and aggregate claimed bytes, exact fingerprint width, producer
-metadata that already satisfies the sanitization contract (labels and
-previews carry no control or format characters), and a truncation flag that
-is never paired with an empty preview. The decoders additionally enforce the
-hostile-input framing floor: little-endian fixed framing, unknown version
-refusal, declared lengths trusted only when the remaining buffer satisfies
-them, trailing bytes refused, canonical media re-validated on decode, and
-unknown flag bits refused so future extensions cannot be silently misread by
-an older decoder. The one property deliberately *not* wire-enforced is the
-exact clamp width behind a truncation flag — that width is instance-relative
-and unknowable to a peer.
+per-format and aggregate claimed bytes with at least one nonzero payload claim,
+exact fingerprint width, producer metadata that already satisfies the
+sanitization contract (labels and previews carry no control or format
+characters and encode as canonical UTF-8), and a truncation flag that is never
+paired with an empty preview.
+The decoders additionally enforce the hostile-input framing floor:
+little-endian fixed framing, unknown version refusal, declared lengths trusted
+only when the remaining buffer satisfies them, trailing bytes refused,
+canonical media re-validated on decode, source-label and preview UTF-8 required
+to round-trip byte-for-byte, and unknown flag bits refused so future extensions
+cannot be silently misread by an older decoder. The one property deliberately
+*not* wire-enforced is the exact clamp width behind a truncation flag — that
+width is instance-relative and unknowable to a peer.
 
 ## Boundaries
 
