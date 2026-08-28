@@ -4,14 +4,26 @@
 
 Manager integration delta after the public baseline below:
 
+- `d7691ac` integrates the exact independently accepted Display D4 public
+  QtWayland output-management writer. Galileo's immutable review found
+  P0/P1/P2/P3 `0/0/0/0`, verified both lifecycle repairs and both decomposition/
+  mutation-coverage repairs, and passed Release D4 5/5, Debug D0-D4 26/26,
+  installed package poison, exact protocol hashes, docs, strict MkDocs, shape,
+  provenance, cleanliness, and zero residue. Fresh manager-tree Debug
+  verification built all 23 executable Display targets and passed the complete
+  D0-D4 selector 26/26. The packaged resident remains deliberately fail-closed
+  until durable journal, authenticated lock/logind safety, writer composition,
+  Settings UI, and contained nested convergence land.
+
 - `c819db8` integrates the exact independently accepted Display D3 typed
   asynchronous client and D2 transaction-summary projection replay. Astra's
   immutable Gemini review found P0/P1/P2/P3 `0/0/0/0`; the replay preserves
   all 20 D3 leaf blobs and seven D2 source/test blobs while retaining every
   current-manager shared-registry entry. Fresh manager-tree strict Debug and
   Release builds complete 81/81 targeted actions and pass the exact seven-row
-  D2/D3 selector in each profile. The compositor writer, durable journal,
-  Settings display UI, nested convergence, hardware, and resource proof remain.
+  D2/D3 selector in each profile. D4 now supplies the separately integrated
+  compositor writer; durable journal/resident composition, Settings display
+  UI, nested convergence, hardware, and resource proof remain.
 
 - `0c9f4b0` integrates the exact independently accepted Settings Center S1
   repair over typed navigation commit `80a91f8`. Noether's immutable rereview

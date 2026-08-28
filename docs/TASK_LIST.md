@@ -18,7 +18,8 @@ qualification remain preserved integrated foundations.
 ### Platform services delivery queue
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
-remaining Display1 transaction UI/writer work, resident Power1 and brightness,
+remaining Display1 durable-journal/resident composition, transaction UI and
+nested convergence work, resident Power1 and brightness,
 resident Network1/NetworkManager transport over the Network N0 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
@@ -51,15 +52,25 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `d7691ac` — Display D4 adds a bounded public QtWayland KDE
+  output-management writer with complete/surviving-value mapping, exact
+  owner/lineage/request fencing, synchronous-callback deferral, restart and
+  proxy-lifetime safety, pinned protocol inputs, and an installed poison-tested
+  boundary. Independent review passed `0/0/0/0`; fresh integrated-tree Debug
+  verification built all 23 executable Display targets and passed D0-D4
+  26/26. Durable journal and resident composition, authenticated lock/logind
+  policy, Settings UI, nested convergence, and hardware remain later.
+
 - `c819db8` — Typed asynchronous Display1 client and reversible transaction
   coordinator with exact-owner activation, validated atomic snapshots,
   owner/epoch/revision and late-reply fencing, bounded operation completion,
   installed public/private package proof, and a real private-bus lifecycle.
   The current-manager replay passed exact Gemini review `0/0/0/0`; fresh
   strict Debug and Release manager builds each completed 81/81 targeted
-  actions and passed the seven-row D2/D3 selector. The compositor writer,
-  durable journal, Settings UI, nested convergence, hardware, and resource
-  qualification remain later outcomes.
+  actions and passed the seven-row D2/D3 selector. The separately integrated
+  D4 writer now supplies the public compositor-mutation boundary; durable
+  journal/resident composition, Settings UI, nested convergence, hardware, and
+  resource qualification remain later outcomes.
 - `0c9f4b0` — Native Settings Center S1 with a typed bounded route registry,
   stable per-route lifetime, responsive wide/compact navigation, guarded
   unavailable-route focus, keyboard and accessibility paths, sanitized
@@ -144,8 +155,9 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   compositor inventory adapter with restart-unique process lineage, hostile
   A/B/A epoch-reuse rejection, private-D-Bus owner replacement, deadline
   re-arm, and complete observer/name/object teardown. Output mutation remains
-  fail-closed pending the later writer/UI slices; the typed client is now
-  integrated separately at `c819db8`.
+  fail-closed pending durable journal/resident writer composition and UI; the
+  typed client is integrated separately at `c819db8` and the bounded writer at
+  `d7691ac`.
 - `1b4e284` — Installed live notification interaction qualification: real
   `Meta+N` registration/remapping, keyboard/focus traversal, Settings1
   persistence/failure/replacement, Do Not Disturb and critical bypass, shell
