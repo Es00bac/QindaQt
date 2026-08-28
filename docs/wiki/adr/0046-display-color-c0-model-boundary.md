@@ -1,4 +1,4 @@
-# ADR-0030: Keep display color as a pure bounded model first
+# ADR-0046: Keep display color as a pure bounded model first
 
 - **Status:** Proposed
 - **Date:** 2026-08-28

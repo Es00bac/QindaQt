@@ -23,7 +23,7 @@ by bounded opaque format, not by importing Display1 identity code. A
 source-policy test row rejects forbidden dependencies in every production
 file, and a poison-negative row plants a forbidden include in a disposable
 copy to prove that policy is not vacuous. The decision record is
-[ADR-0030](../adr/0030-display-color-c0-model-boundary.md).
+[ADR-0046](../adr/0046-display-color-c0-model-boundary.md).
 
 ## Values and bounds
 
