@@ -699,6 +699,34 @@ does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.
 
+## Current Settings Center navigation S1 proof
+
+The typed registry/controller, responsive route host, existing route
+regressions, and component-only package boundary are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.(settings-(route-registry|navigation-controller|navigation-page)|settings-app-(offscreen|rejects-(unknown-route|missing-theme)|desktop-identity|route-construction|installed-routes))$'
+```
+
+The three S1 rows cover bounded descriptors, invalid component/availability
+truth, duplicates and capacity, deterministic route/component projection,
+unknown-selection preservation, previous/next/index behavior, 720×520 wide
+and 440×360 compact presentation, exactly one active route Loader, real
+scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
+Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
+The existing rows add Notifications behavior, multiple hostile CLI intent
+forms, desktop identity, both complete startup roots under private-bus loss,
+one missing-theme poison that requires pre-QML exit 3, and a relocated install
+staged with only `SettingsAppearanceRuntime`.
+
+Every route now requires one complete QST-1 generation because navigation is
+token-styled. The two route models use independent Settings1 transports; the
+focused construction rows prove their unavailable startup surface, while the
+Settings1 client suites remain authoritative for exact-owner and reply fencing.
+This proof is offscreen and package-isolated; it does not claim live AT-SPI,
+compositor focus, screen-reader traversal, or the later platform-route matrix.
+
 ## Current compositor proof
 
 The focused live checks are:
