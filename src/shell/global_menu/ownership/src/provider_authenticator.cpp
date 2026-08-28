@@ -87,28 +87,34 @@ AuthenticationResult ProviderAuthenticator::authenticate(
 {
     if (!isValidRegistration(registration)) {
         return AuthenticationResult{.accepted = false,
-                                     .reasonCode = QStringLiteral("invalid-registration")};
+                                     .reasonCode = QStringLiteral("invalid-registration"),
+                                     .proof = std::nullopt};
     }
 
     const std::optional<ActiveWindowObservation> before = m_activeWindowSource.activeWindow();
     if (!before || !before->window.isValid()) {
         return AuthenticationResult{.accepted = false,
-                                     .reasonCode = QStringLiteral("no-active-window")};
+                                     .reasonCode = QStringLiteral("no-active-window"),
+                                     .proof = std::nullopt};
     }
     if (before->window.windowId != registration.windowId) {
         return AuthenticationResult{.accepted = false,
-                                     .reasonCode = QStringLiteral("not-active-window")};
+                                     .reasonCode = QStringLiteral("not-active-window"),
+                                     .proof = std::nullopt};
     }
 
     const std::optional<qint64> authenticatedPid =
         m_credentialSource.processIdForUniqueName(registration.providerUniqueName);
     if (!authenticatedPid) {
         return AuthenticationResult{.accepted = false,
-                                     .reasonCode = QStringLiteral("credential-unavailable")};
+                                     .reasonCode = QStringLiteral("credential-unavailable"),
+                                     .proof = std::nullopt};
     }
     if (*authenticatedPid != registration.claimedProcessId
         || *authenticatedPid != before->window.processId) {
-        return AuthenticationResult{.accepted = false, .reasonCode = QStringLiteral("pid-mismatch")};
+        return AuthenticationResult{.accepted = false,
+                                     .reasonCode = QStringLiteral("pid-mismatch"),
+                                     .proof = std::nullopt};
     }
 
     // AGENT-GUARD: focus must be re-read after the (potentially slow)
@@ -119,7 +125,8 @@ AuthenticationResult ProviderAuthenticator::authenticate(
     if (!after || after->window != before->window
         || after->focusGeneration != before->focusGeneration) {
         return AuthenticationResult{.accepted = false,
-                                     .reasonCode = QStringLiteral("focus-changed")};
+                                     .reasonCode = QStringLiteral("focus-changed"),
+                                     .proof = std::nullopt};
     }
 
     return AuthenticationResult{.accepted = true,

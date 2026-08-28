@@ -50,7 +50,10 @@ class FakeMenuSource final : public MenuSource {
 public:
     MenuTree next;
 
-    [[nodiscard]] MenuSnapshot snapshot() const override { return MenuSnapshot{.tree = next}; }
+    [[nodiscard]] MenuSnapshot snapshot() const override
+    {
+        return MenuSnapshot{.tree = next, .complete = true, .defectCode = {}};
+    }
 };
 
 // The composition-side adapter the shell will own: it backs the exporter's
@@ -153,9 +156,11 @@ void MenuCompositionTests::sameEpochOlderRevisionFailsAfterReadoption()
     ProviderAuthenticator authenticator(fx.windowSource, fx.credentials);
     MenuExporter exporter(fx.menuSource, fx.lineageSource);
 
-    QVERIFY(authenticator.authenticate(fx.registration()).accepted);
-    fx.selector.adopt(authenticator.authenticate(fx.registration()).proof);
-    exporter.refresh();
+    const AuthenticationResult initialAuth = authenticator.authenticate(fx.registration());
+    QVERIFY(initialAuth.accepted);
+    fx.selector.adopt(initialAuth.proof.value());
+    const ExportResult initialExport = exporter.refresh();
+    QCOMPARE(initialExport.outcome, ExportOutcome::Published);
     const MenuTree firstPublication = exporter.lastAccepted().value();
 
     // Content changes; composition re-authenticates and re-adopts, keeping
@@ -198,7 +203,8 @@ void MenuCompositionTests::changedContentWithoutReadoptionFailsClosed()
     const AuthenticationResult auth = authenticator.authenticate(fx.registration());
     QVERIFY(auth.accepted);
     fx.selector.adopt(auth.proof.value());
-    exporter.refresh();
+    const ExportResult initialExport = exporter.refresh();
+    QCOMPARE(initialExport.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     // The replay adversary at composition level: the provider pushes changed
@@ -230,7 +236,8 @@ void MenuCompositionTests::focusGenerationChangeInvalidatesTheWholeComposition()
     const AuthenticationResult auth = authenticator.authenticate(fx.registration());
     QVERIFY(auth.accepted);
     fx.selector.adopt(auth.proof.value());
-    exporter.refresh();
+    const ExportResult initialExport = exporter.refresh();
+    QCOMPARE(initialExport.outcome, ExportOutcome::Published);
     const MenuTree published = exporter.lastAccepted().value();
 
     // Focus moves on: the composition's invalidation seam drops the adoption

@@ -56,11 +56,11 @@ struct AuthenticationResult final {
     // One of: "invalid-registration", "no-active-window", "not-active-window",
     // "credential-unavailable", "pid-mismatch", "focus-changed". Empty when
     // accepted.
-    QString reasonCode;
+    QString reasonCode{};
     // AGENT-CONTRACT: carries an authenticator-issued proof exactly when
     // accepted is true; always empty otherwise. There is no way to obtain or
     // construct a proof outside an accepted authenticate() call.
-    std::optional<AuthenticatedProvider> proof;
+    std::optional<AuthenticatedProvider> proof{};
 };
 
 // Authenticates a provider's claim against two independently sourced facts:

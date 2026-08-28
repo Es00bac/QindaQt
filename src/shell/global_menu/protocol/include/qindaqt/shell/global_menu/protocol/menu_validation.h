@@ -13,10 +13,10 @@ namespace QindaQt::Shell::GlobalMenu::Protocol
 // Audio1 ValidationResult convention. Empty when accepted.
 struct ValidationResult final {
     bool accepted = false;
-    QString reasonCode;
+    QString reasonCode{};
     // Pre-order path to the offending node, e.g. "items[2].children[0]", or
     // empty for a tree-level defect. Diagnostic only; never parsed.
-    QString path;
+    QString path{};
 };
 
 // Validates bounds, structural invariants, and text well-formedness for a

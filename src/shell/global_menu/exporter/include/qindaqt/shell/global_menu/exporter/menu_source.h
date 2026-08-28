@@ -16,9 +16,9 @@ namespace QindaQt::Shell::GlobalMenu::Exporter
 // the complete application menu. `defectCode` is a short stable diagnostic
 // (e.g. "too-deep", "too-many-items", "submenu-cycle"); never parsed.
 struct MenuSnapshot final {
-    Protocol::MenuTree tree;
+    Protocol::MenuTree tree{};
     bool complete = true;
-    QString defectCode;
+    QString defectCode{};
 };
 
 // A toolkit-neutral pull source for one window's menu. The Qt Widgets

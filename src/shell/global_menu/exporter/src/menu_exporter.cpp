@@ -33,6 +33,8 @@ ExportResult MenuExporter::refresh()
         // reach validation or publication — its tree content is undefined
         // and publishing any prefix would misrepresent the application menu.
         return ExportResult{.outcome = ExportOutcome::RejectedIncomplete,
+                             .validation = {},
+                             .changed = false,
                              .defectCode = snapshot.defectCode};
     }
 
@@ -42,12 +44,18 @@ ExportResult MenuExporter::refresh()
         // AGENT-GUARD: never overwrite m_lastAccepted on a rejected pull. A
         // transiently malformed source must not regress a previously good
         // menu out from under the applet/invocation-guard consumers.
-        return ExportResult{.outcome = ExportOutcome::RejectedInvalid, .validation = validation};
+        return ExportResult{.outcome = ExportOutcome::RejectedInvalid,
+                             .validation = validation,
+                             .changed = false,
+                             .defectCode = {}};
     }
 
     const std::optional<ExportLineage> lineage = m_lineageSource.lineageFor(candidate.ownerWindowId);
     if (!lineage) {
-        return ExportResult{.outcome = ExportOutcome::RejectedNoAuthority};
+        return ExportResult{.outcome = ExportOutcome::RejectedNoAuthority,
+                             .validation = {},
+                             .changed = false,
+                             .defectCode = {}};
     }
 
     candidate.epoch = lineage->epoch;
@@ -58,6 +66,7 @@ ExportResult MenuExporter::refresh()
         // stale-rejection comparison meaningless.
         return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
                              .validation = validation,
+                             .changed = false,
                              .defectCode = QStringLiteral("null-epoch")};
     }
 
@@ -72,11 +81,13 @@ ExportResult MenuExporter::refresh()
         if (candidate.revision < m_lastAccepted->revision) {
             return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
                                  .validation = validation,
+                                 .changed = false,
                                  .defectCode = QStringLiteral("regressed-revision")};
         }
         if (contentChanged && candidate.revision == m_lastAccepted->revision) {
             return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
                                  .validation = validation,
+                                 .changed = false,
                                  .defectCode = QStringLiteral("unchanged-revision")};
         }
     }
@@ -89,7 +100,8 @@ ExportResult MenuExporter::refresh()
     m_lastAccepted = candidate;
     return ExportResult{.outcome = changed ? ExportOutcome::Published : ExportOutcome::Unchanged,
                          .validation = validation,
-                         .changed = changed};
+                         .changed = changed,
+                         .defectCode = {}};
 }
 
 std::optional<Protocol::MenuTree> MenuExporter::lastAccepted() const

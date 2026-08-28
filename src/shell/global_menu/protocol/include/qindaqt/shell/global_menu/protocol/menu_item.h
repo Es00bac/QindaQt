@@ -25,21 +25,23 @@ enum class MenuItemKind {
 // of the same menu when the source can provide one (see the Qt Widgets
 // adapter); it is the join key for delta computation and safe invocation.
 struct MenuItem final {
-    QString id;
+    QString id{};
     MenuItemKind kind = MenuItemKind::Action;
-    QString text;
+    QString text{};
     int mnemonicIndex = -1;
-    QString shortcutText;
+    QString shortcutText{};
     bool enabled = true;
     bool visible = true;
     bool checkable = false;
     bool checked = false;
     // Empty means the item is not part of an exclusive (radio) group. Items
     // sharing a non-empty value under the same parent form one group.
-    QString radioGroup;
-    QList<MenuItem> children;
+    QString radioGroup{};
+    QList<MenuItem> children{};
 
-    bool operator==(const MenuItem &) const = default;
+    [[nodiscard]] bool operator==(const MenuItem &other) const;
 };
+
+inline bool MenuItem::operator==(const MenuItem &other) const = default;
 
 } // namespace QindaQt::Shell::GlobalMenu::Protocol

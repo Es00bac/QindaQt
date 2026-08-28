@@ -28,7 +28,7 @@ namespace {
 // object names, '&' mnemonics, QKeySequence shortcuts) plus a checkable
 // exclusive group and a disabled item, so the adapter is proven against
 // every role G0 must support.
-QMenuBar *buildFixtureMenuBar(QObject *parent)
+QMenuBar *buildFixtureMenuBar(QWidget *parent = nullptr)
 {
     auto *menuBar = new QMenuBar();
     menuBar->setParent(parent);
@@ -125,7 +125,7 @@ private Q_SLOTS:
 
 void QMenuBarMenuSourceTests::producesAValidatedTree()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuSnapshot snapshot = source.snapshot();
@@ -136,7 +136,7 @@ void QMenuBarMenuSourceTests::producesAValidatedTree()
 
 void QMenuBarMenuSourceTests::preservesObjectNamesAsIds()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -146,7 +146,7 @@ void QMenuBarMenuSourceTests::preservesObjectNamesAsIds()
 
 void QMenuBarMenuSourceTests::splitsMnemonicFromDisplayText()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -159,7 +159,7 @@ void QMenuBarMenuSourceTests::splitsMnemonicFromDisplayText()
 
 void QMenuBarMenuSourceTests::marksDisabledActionAsDisabled()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -170,7 +170,7 @@ void QMenuBarMenuSourceTests::marksDisabledActionAsDisabled()
 
 void QMenuBarMenuSourceTests::marksInvisibleActionAsInvisible()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -186,7 +186,7 @@ void QMenuBarMenuSourceTests::marksInvisibleActionAsInvisible()
 
 void QMenuBarMenuSourceTests::mapsExclusiveActionGroupToSameRadioGroup()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -207,7 +207,7 @@ void QMenuBarMenuSourceTests::mapsExclusiveActionGroupToSameRadioGroup()
 
 void QMenuBarMenuSourceTests::translatesSeparatorCanonically()
 {
-    QObject owner;
+    QWidget owner;
     QMenuBar *menuBar = buildFixtureMenuBar(&owner);
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuTree tree = source.snapshot().tree;
@@ -239,7 +239,7 @@ void QMenuBarMenuSourceTests::destroyedMenuBarIsIncompleteNotAnEmptyTruth()
 void QMenuBarMenuSourceTests::destroyedSourceKeepsLastGoodTreeThroughExporter()
 {
     const QUuid windowId = QUuid::createUuid();
-    auto *menuBar = buildFixtureMenuBar(this);
+    auto *menuBar = buildFixtureMenuBar(nullptr);
     QMenuBarMenuSource adapter(menuBar, windowId);
 
     FixedLineageSource lineages;
@@ -262,7 +262,7 @@ void QMenuBarMenuSourceTests::destroyedSourceKeepsLastGoodTreeThroughExporter()
 
 void QMenuBarMenuSourceTests::overflowDepthIsIncompleteNotTruncated()
 {
-    QObject owner;
+    QWidget owner;
     auto *menuBar = new QMenuBar();
     menuBar->setParent(&owner);
 
@@ -287,7 +287,7 @@ void QMenuBarMenuSourceTests::overflowDepthIsIncompleteNotTruncated()
 
 void QMenuBarMenuSourceTests::overflowSiblingsAreIncompleteNotTruncated()
 {
-    QObject owner;
+    QWidget owner;
     auto *menuBar = new QMenuBar();
     menuBar->setParent(&owner);
 
@@ -307,7 +307,7 @@ void QMenuBarMenuSourceTests::overflowSiblingsAreIncompleteNotTruncated()
 
 void QMenuBarMenuSourceTests::overflowTotalItemsAreIncompleteNotTruncated()
 {
-    QObject owner;
+    QWidget owner;
     auto *menuBar = new QMenuBar();
     menuBar->setParent(&owner);
 
@@ -331,7 +331,7 @@ void QMenuBarMenuSourceTests::overflowTotalItemsAreIncompleteNotTruncated()
 
 void QMenuBarMenuSourceTests::submenuCycleIsIncomplete()
 {
-    QObject owner;
+    QWidget owner;
     auto *menuBar = new QMenuBar();
     menuBar->setParent(&owner);
 

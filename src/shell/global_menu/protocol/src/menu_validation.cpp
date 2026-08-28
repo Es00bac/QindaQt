@@ -86,7 +86,7 @@ ValidationResult validateNode(const MenuItem &item, int depth, const QString &pa
         if (!separatorIsCanonical) {
             return reject(QStringLiteral("separator-has-content"), path);
         }
-        return ValidationResult{.accepted = true};
+        return ValidationResult{.accepted = true, .reasonCode = {}, .path = {}};
     }
 
     if (item.text.isEmpty() || !isWellFormedBoundedText(item.text, kMaxTextUtf8Bytes)) {
@@ -134,7 +134,7 @@ ValidationResult validateNode(const MenuItem &item, int depth, const QString &pa
         }
     }
 
-    return ValidationResult{.accepted = true};
+    return ValidationResult{.accepted = true, .reasonCode = {}, .path = {}};
 }
 
 } // namespace
@@ -157,7 +157,7 @@ ValidationResult validateMenuTree(const MenuTree &tree)
             checkedRadioGroups.insert(item.radioGroup);
         }
     }
-    return ValidationResult{.accepted = true};
+    return ValidationResult{.accepted = true, .reasonCode = {}, .path = {}};
 }
 
 } // namespace QindaQt::Shell::GlobalMenu::Protocol

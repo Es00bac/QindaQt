@@ -66,7 +66,7 @@ enum class ExportOutcome {
 
 struct ExportResult final {
     ExportOutcome outcome = ExportOutcome::RejectedInvalid;
-    Protocol::ValidationResult validation;
+    Protocol::ValidationResult validation{};
     // Meaningful for Published/Unchanged: whether the accepted snapshot's
     // content differs from the previously accepted content under the same
     // owner. The full-tree delta contract is deferred to the transport
@@ -76,7 +76,7 @@ struct ExportResult final {
     // (source-reported defect) or RejectedStaleLineage
     // ("regressed-revision", "unchanged-revision", "null-epoch"); empty
     // otherwise. Never parsed.
-    QString defectCode;
+    QString defectCode{};
 };
 
 // Pulls, validates, and stamps an authoritative lineage onto a MenuSource's

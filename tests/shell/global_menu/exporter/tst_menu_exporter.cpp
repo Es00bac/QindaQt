@@ -101,7 +101,8 @@ void MenuExporterTests::identicalContentIsUnchangedAndRestamped()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
 
     // A re-adoption advances the revision without changing content: the
     // outcome is Unchanged, but the stored tree must carry the new revision
@@ -127,7 +128,8 @@ void MenuExporterTests::changedContentIsPublishedAsChanged()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
 
     source.next.items.append(action(QStringLiteral("b"), QStringLiteral("Save")));
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 2});
@@ -148,7 +150,8 @@ void MenuExporterTests::invalidPullIsRejectedAndKeepsLastAccepted()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = QUuid::createUuid(), .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     source.next.items.append(action(QStringLiteral("a"), QStringLiteral("Duplicate id")));
@@ -170,7 +173,8 @@ void MenuExporterTests::incompleteSnapshotIsRejectedWholeWithoutValidation()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = QUuid::createUuid(), .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     // The "prefix" content would validate on its own; only the completeness
@@ -195,7 +199,8 @@ void MenuExporterTests::ownerWithoutAuthorityIsRejectedAndKeepsLastAccepted()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = QUuid::createUuid(), .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     // Focus moved: no lineage exists for the newly focused window, so the
@@ -218,7 +223,8 @@ void MenuExporterTests::exportedTreeCarriesTheSelectorLineageVerbatim()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 42});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
 
     QCOMPARE(exporter.lastAccepted()->ownerWindowId, windowId);
     QCOMPARE(exporter.lastAccepted()->epoch, epoch);
@@ -240,7 +246,8 @@ void MenuExporterTests::changedContentUnderUnchangedRevisionIsRejected()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 1});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     source.next.items.append(action(QStringLiteral("b"), QStringLiteral("Save")));
@@ -265,7 +272,8 @@ void MenuExporterTests::regressedRevisionAndNullEpochAreRejected()
     lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 3});
 
     MenuExporter exporter(source, lineages);
-    exporter.refresh();
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
     const MenuTree goodTree = exporter.lastAccepted().value();
 
     // Same content but a regressed revision still violates the binding.
