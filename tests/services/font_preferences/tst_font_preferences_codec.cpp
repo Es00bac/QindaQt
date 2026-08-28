@@ -84,29 +84,69 @@ void tst_FontPreferencesCodec::testSettingsMapRoundTrip()
 
 void tst_FontPreferencesCodec::testMalformedJsonRejection()
 {
+    QString error;
+
+    // String instead of double
     QJsonObject badJson;
     badJson.insert(QStringLiteral("pointSize"), QStringLiteral("not-a-number"));
-
-    QString error;
     auto decoded = FontPreferencesCodec::fromJsonObject(badJson, &error);
     QVERIFY(!decoded.has_value());
     QVERIFY(error.contains(QStringLiteral("pointSize")));
 
-    badJson.insert(QStringLiteral("pointSize"), 9999.0);
-    decoded = FontPreferencesCodec::fromJsonObject(badJson, &error);
-    QVERIFY(!decoded.has_value());
-    QVERIFY(error.contains(QStringLiteral("bounds")));
+    // Point size outside [6.0, 36.0]
+    const QList<double> badPointSizes = {
+        0.0, 4.0, 5.9, 36.1, 50.0, 100.0, 144.0, 9999.0,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity()
+    };
+    for (double badSize : badPointSizes) {
+        badJson.insert(QStringLiteral("pointSize"), badSize);
+        decoded = FontPreferencesCodec::fromJsonObject(badJson, &error);
+        QVERIFY(!decoded.has_value());
+        QVERIFY(error.contains(QStringLiteral("bounds")) || error.contains(QStringLiteral("pointSize")));
+    }
+
+    // Logical DPI outside [48.0, 576.0] or non-finite
+    const QList<double> badDpiValues = {
+        10.0, 47.9, 576.1, 1000.0,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity()
+    };
+    for (double badDpi : badDpiValues) {
+        QJsonObject badDpiJson;
+        badDpiJson.insert(QStringLiteral("logicalDpi"), badDpi);
+        decoded = FontPreferencesCodec::fromJsonObject(badDpiJson, &error);
+        QVERIFY(!decoded.has_value());
+        QVERIFY(error.contains(QStringLiteral("logicalDpi")));
+    }
 }
 
 void tst_FontPreferencesCodec::testMalformedSettingsMapRejection()
 {
+    QString error;
+
     QVariantMap badMap;
     badMap.insert(QStringLiteral("fonts.hinting"), QStringLiteral("invalid-hinting-style"));
-
-    QString error;
     auto decoded = FontPreferencesCodec::fromSettingsMap(badMap, &error);
     QVERIFY(!decoded.has_value());
     QVERIFY(error.contains(QStringLiteral("hinting")));
+
+    // Settings1 schema-key rejection for point sizes outside [6.0, 36.0]
+    const QList<double> badPointSizes = {
+        0.0, 4.0, 5.9, 36.1, 50.0, 100.0, 144.0, 9999.0,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity()
+    };
+    for (double badSize : badPointSizes) {
+        QVariantMap badSettings;
+        badSettings.insert(QStringLiteral("fonts.pointSize"), badSize);
+        decoded = FontPreferencesCodec::fromSettingsMap(badSettings, &error);
+        QVERIFY(!decoded.has_value());
+        QVERIFY(error.contains(QStringLiteral("fonts.pointSize")));
+    }
 }
 
 void tst_FontPreferencesCodec::testAntialiasingTypeFlexibility()

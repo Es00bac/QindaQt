@@ -41,6 +41,10 @@ FontCatalog::FontCatalog(QList<FontFamilyEntry> entries)
     });
 }
 
+// AGENT-GUARD: FontCatalog::create guarantees that a non-empty list of valid facts produces
+// a valid catalog (isValid() == true, familyCount() > 0). An empty catalog is returned if and
+// only if creation fails or facts are empty/invalid. FontPreferencesCoordinator relies on this
+// explicit invariant for atomic LKG retention.
 FontCatalog FontCatalog::create(const QList<FontFact> &facts, QString *errorMessage)
 {
     if (facts.isEmpty()) {

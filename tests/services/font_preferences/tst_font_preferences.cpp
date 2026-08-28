@@ -13,6 +13,7 @@ private Q_SLOTS:
     void testCustomProperties();
     void testPointSizeClamping();
     void testLogicalDpiClamping();
+    void testFloatingPointSpecialValues();
     void testFamilyNormalization();
     void testValidity();
     void testEquality();
@@ -55,12 +56,38 @@ void tst_FontPreferences::testCustomProperties()
 
 void tst_FontPreferences::testPointSizeClamping()
 {
+    QCOMPARE(MinPointSize, 6.0);
+    QCOMPARE(MaxPointSize, 36.0);
+
+    QVERIFY(isValidPointSize(6.0));
+    QVERIFY(isValidPointSize(10.0));
+    QVERIFY(isValidPointSize(36.0));
+
+    // Reject below minimum and above maximum (including legacy 4.0 and 36.0-144.0 ranges)
+    QVERIFY(!isValidPointSize(0.0));
+    QVERIFY(!isValidPointSize(4.0));
+    QVERIFY(!isValidPointSize(5.99));
+    QVERIFY(!isValidPointSize(36.01));
+    QVERIFY(!isValidPointSize(50.0));
+    QVERIFY(!isValidPointSize(100.0));
+    QVERIFY(!isValidPointSize(144.0));
+    QVERIFY(!isValidPointSize(500.0));
+
     FontPreferences prefs;
     prefs.setPointSize(1.0);
-    QCOMPARE(prefs.pointSize(), MinPointSize);
+    QCOMPARE(prefs.pointSize(), 6.0);
+
+    prefs.setPointSize(4.0);
+    QCOMPARE(prefs.pointSize(), 6.0);
+
+    prefs.setPointSize(50.0);
+    QCOMPARE(prefs.pointSize(), 36.0);
+
+    prefs.setPointSize(144.0);
+    QCOMPARE(prefs.pointSize(), 36.0);
 
     prefs.setPointSize(500.0);
-    QCOMPARE(prefs.pointSize(), MaxPointSize);
+    QCOMPARE(prefs.pointSize(), 36.0);
 
     prefs.setPointSize(11.0);
     QCOMPARE(prefs.pointSize(), 11.0);
@@ -68,6 +95,15 @@ void tst_FontPreferences::testPointSizeClamping()
 
 void tst_FontPreferences::testLogicalDpiClamping()
 {
+    QVERIFY(isValidLogicalDpi(48.0));
+    QVERIFY(isValidLogicalDpi(96.0));
+    QVERIFY(isValidLogicalDpi(576.0));
+
+    QVERIFY(!isValidLogicalDpi(0.0));
+    QVERIFY(!isValidLogicalDpi(47.9));
+    QVERIFY(!isValidLogicalDpi(576.1));
+    QVERIFY(!isValidLogicalDpi(1000.0));
+
     FontPreferences prefs;
     prefs.setLogicalDpi(10.0);
     QVERIFY(prefs.logicalDpi().has_value());
@@ -79,6 +115,47 @@ void tst_FontPreferences::testLogicalDpiClamping()
 
     prefs.setLogicalDpi(std::nullopt);
     QVERIFY(!prefs.logicalDpi().has_value());
+}
+
+void tst_FontPreferences::testFloatingPointSpecialValues()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const double negInf = -std::numeric_limits<double>::infinity();
+
+    // Point size validation & clamping for non-finite values
+    QVERIFY(!isValidPointSize(nan));
+    QVERIFY(!isValidPointSize(inf));
+    QVERIFY(!isValidPointSize(negInf));
+
+    QCOMPARE(clampPointSize(nan), DefaultPointSize);
+    QCOMPARE(clampPointSize(inf), DefaultPointSize);
+    QCOMPARE(clampPointSize(negInf), DefaultPointSize);
+
+    // Logical DPI validation & clamping for non-finite values
+    QVERIFY(!isValidLogicalDpi(nan));
+    QVERIFY(!isValidLogicalDpi(inf));
+    QVERIFY(!isValidLogicalDpi(negInf));
+
+    QCOMPARE(clampLogicalDpi(nan), DefaultLogicalDpi);
+    QCOMPARE(clampLogicalDpi(inf), DefaultLogicalDpi);
+    QCOMPARE(clampLogicalDpi(negInf), DefaultLogicalDpi);
+
+    // FontPreferences mutation with special float values
+    FontPreferences prefs;
+    prefs.setPointSize(nan);
+    QCOMPARE(prefs.pointSize(), DefaultPointSize);
+
+    prefs.setPointSize(inf);
+    QCOMPARE(prefs.pointSize(), DefaultPointSize);
+
+    prefs.setLogicalDpi(nan);
+    QVERIFY(prefs.logicalDpi().has_value());
+    QCOMPARE(*prefs.logicalDpi(), DefaultLogicalDpi);
+
+    prefs.setLogicalDpi(negInf);
+    QVERIFY(prefs.logicalDpi().has_value());
+    QCOMPARE(*prefs.logicalDpi(), DefaultLogicalDpi);
 }
 
 void tst_FontPreferences::testFamilyNormalization()

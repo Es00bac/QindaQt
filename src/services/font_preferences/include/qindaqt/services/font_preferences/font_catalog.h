@@ -43,6 +43,10 @@ public:
 
     [[nodiscard]] static FontCatalog createDefaultFallback();
 
+    // AGENT-GUARD: FontCatalog::create returns an empty (invalid) catalog if and only if
+    // fact validation or catalog generation fails. Non-empty valid facts always produce
+    // a non-empty valid catalog.
+    [[nodiscard]] bool isValid() const noexcept { return !m_entries.isEmpty(); }
     [[nodiscard]] bool isEmpty() const noexcept { return m_entries.isEmpty(); }
     [[nodiscard]] int familyCount() const noexcept { return static_cast<int>(m_entries.size()); }
     [[nodiscard]] bool containsFamily(const QString &familyName) const noexcept;

@@ -29,7 +29,7 @@ aliased as `QindaQt::FontPreferences`) under `src/services/font_preferences/`:
    alphabetical ordering by canonical key. Reject invalid, empty, or conflicting
    facts (such as mismatched monospace flags for the same family).
 2. **Validated Preferences**: Provide `FontPreferences` capturing valid family names,
-   bounded point sizes (`[4.0, 144.0]`), antialiasing modes (`none`, `grayscale`,
+   bounded point sizes (`[6.0, 36.0]`), antialiasing modes (`none`, `grayscale`,
    `subpixel`), hinting (`none`, `slight`, `medium`, `full`), subpixel ordering
    (`none`, `rgb`, `bgr`, `vrgb`, `vbgr`), and optional logical DPI (`[48.0, 576.0]`).
 3. **Lossless Codecs**: Provide `FontPreferencesCodec` supporting bidirectional

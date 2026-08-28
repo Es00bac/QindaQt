@@ -126,12 +126,27 @@ void tst_FontPreferencesCoordinator::testUpdateFromSettings()
     QCOMPARE(coordinator.preferences().pointSize(), 11.0);
     QCOMPARE(coordinator.preferences().hinting(), FontHinting::Full);
 
-    // Hostile settings rejection
-    QVariantMap badSettings;
-    badSettings.insert(QStringLiteral("fonts.pointSize"), 9999.0);
-    const bool badOk = coordinator.updateFromSettings(badSettings, &error);
-    QVERIFY(!badOk);
-    QCOMPARE(coordinator.preferences().family(), QStringLiteral("Roboto"));
+    // Hostile settings rejection across 36-144 range, below 6.0, and non-finite floats
+    const QList<double> hostileSizes = {
+        0.0, 4.0, 5.9, 36.1, 50.0, 100.0, 144.0, 9999.0,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity()
+    };
+    for (double badSize : hostileSizes) {
+        const qint64 revBefore = coordinator.revision();
+        const FontPreferences lkgBefore = coordinator.lastKnownGoodPreferences();
+
+        QVariantMap badSettings;
+        badSettings.insert(QStringLiteral("fonts.pointSize"), badSize);
+        const bool badOk = coordinator.updateFromSettings(badSettings, &error);
+
+        QVERIFY(!badOk);
+        QVERIFY(!error.isEmpty());
+        QCOMPARE(coordinator.revision(), revBefore);
+        QCOMPARE(coordinator.preferences(), lkgBefore);
+        QCOMPARE(coordinator.lastKnownGoodPreferences(), lkgBefore);
+    }
 }
 
 void tst_FontPreferencesCoordinator::testResetToDefaults()
