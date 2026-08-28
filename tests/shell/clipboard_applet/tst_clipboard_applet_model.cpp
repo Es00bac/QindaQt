@@ -16,6 +16,7 @@ private Q_SLOTS:
     void testAccessibleName();
     void testRowProjection();
     void testPresentationBounds();
+    void testPinnedFirstPartitionOrdering();
     void testSearchProjection();
     void testEmptyStates();
     void testHostileAndCorruptedDescriptors();
@@ -203,6 +204,58 @@ void TstClipboardAppletModel::testPresentationBounds()
     QCOMPARE(proj.unpinnedCount, 47);
     QCOMPARE(proj.entryRows.size(), kMaxPresentedEntries);
     QCOMPARE(proj.entryRows.first().serial, 1u);
+}
+
+void TstClipboardAppletModel::testPinnedFirstPartitionOrdering()
+{
+    HistorySnapshot snapshot;
+    snapshot.generation = 4;
+    snapshot.historyEnabled = true;
+    snapshot.privacyAllowed = true;
+
+    // MRU order as stored: index 0 is most recent. Pinned entries sit at
+    // unsorted positions so raw MRU and the documented partition disagree.
+    auto addEntry = [&snapshot](quint32 serial, bool pinned, const QString &preview) {
+        ClipboardEntryDescriptor desc;
+        desc.id = { 4, serial };
+        desc.preview = preview;
+        desc.pinned = pinned;
+        desc.formats = { { QStringLiteral("text/plain"), 8 } };
+        snapshot.entries.append(desc);
+    };
+    addEntry(1, false, QStringLiteral("most recent unpinned"));
+    addEntry(2, true, QStringLiteral("second item, pinned"));
+    addEntry(3, false, QStringLiteral("third item"));
+    addEntry(4, true, QStringLiteral("oldest item, pinned"));
+    snapshot.totalPayloadBytes = 32;
+
+    const auto proj = ClipboardAppletModel::project(
+        snapshot, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+
+    // AGENT-GUARD: projection order is a stable partition — all pinned first,
+    // then all unpinned, each class preserving the snapshot's most-recent-
+    // first order. Raw MRU (1,2,3,4) must never leak into rows.
+    QCOMPARE(proj.entryRows.size(), 4);
+    QCOMPARE(proj.entryRows.at(0).serial, 2u);
+    QCOMPARE(proj.entryRows.at(1).serial, 4u);
+    QCOMPARE(proj.entryRows.at(2).serial, 1u);
+    QCOMPARE(proj.entryRows.at(3).serial, 3u);
+    QCOMPARE(proj.entryRows.at(0).pinned, true);
+    QCOMPARE(proj.entryRows.at(1).pinned, true);
+    QCOMPARE(proj.entryRows.at(2).pinned, false);
+    QCOMPARE(proj.entryRows.at(3).pinned, false);
+
+    // The partition also governs search-result projections: matches keep the
+    // model's most-recent-first reply order within each pin class.
+    QList<ClipboardEntryDescriptor> matches;
+    matches.append(snapshot.entries.at(0)); // unpinned, most recent match
+    matches.append(snapshot.entries.at(3)); // pinned, older match
+    const auto searchProj = ClipboardAppletModel::project(
+        snapshot, ClientState::Ready, {}, true, false, true, QStringLiteral("item"),
+        matches, false, {});
+    QCOMPARE(searchProj.entryRows.size(), 2);
+    QCOMPARE(searchProj.entryRows.at(0).serial, 4u); // pinned first
+    QCOMPARE(searchProj.entryRows.at(1).serial, 1u);
 }
 
 void TstClipboardAppletModel::testSearchProjection()

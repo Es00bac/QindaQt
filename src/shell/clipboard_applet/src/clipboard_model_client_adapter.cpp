@@ -58,6 +58,24 @@ void ClipboardModelClientAdapter::setLocked(bool locked)
         return;
     }
     m_locked = locked;
+    // AGENT-GUARD: an authenticated lock must deny model privacy BEFORE the
+    // lock signal is observable, so the model purges every entry and raises
+    // its generation immediately. Unlock must then be unable to redisclose
+    // pre-lock content: the purged lineage is unreachable. Only authority the
+    // lock itself removed is restored; an independent host denial survives
+    // unlock unchanged. Violating the ordering leaks pre-lock content through
+    // a snapshot read between the signal and the purge.
+    if (m_model) {
+        if (locked && !m_privacyDeniedByLock
+            && m_model->privacyState()
+                == QindaQt::Services::ClipboardModel::PrivacyState::Allowed) {
+            m_model->setPrivacyAllowed(false);
+            m_privacyDeniedByLock = true;
+        } else if (!locked && m_privacyDeniedByLock) {
+            m_model->setPrivacyAllowed(true);
+            m_privacyDeniedByLock = false;
+        }
+    }
     Q_EMIT lockStateChanged(m_locked);
     notifyModelChanged();
 }

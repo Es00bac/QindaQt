@@ -31,6 +31,11 @@ target_sources(
 target_link_libraries(qindaqt_clipboard_model PUBLIC Qt6::Core)
 target_compile_features(qindaqt_clipboard_model PUBLIC cxx_std_20)
 set_target_properties(qindaqt_clipboard_model PROPERTIES CXX_EXTENSIONS OFF)
+# AGENT-CONTRACT: additive C1 packaging requirement. The archive itself stays
+# STATIC for every C0 consumer, but it must be position-independent so the
+# C1 Clipboard applet can embed it in its relocatable shared library
+# (src/shell/clipboard_applet). No symbol, ABI, or authority change.
+set_target_properties(qindaqt_clipboard_model PROPERTIES POSITION_INDEPENDENT_CODE ON)
 qindaqt_enable_warnings(qindaqt_clipboard_model)
 
 install(
@@ -38,4 +43,18 @@ install(
     EXPORT QindaQtTargets
     FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+# AGENT-CONTRACT: additive per-consumer COMPONENT, mirroring the TextEditor
+# precedent in src/controls/CMakeLists.txt. The Clipboard applet's public
+# headers include qindaqt/services/clipboard_model/clipboard_types.h, so the
+# packaged ClipboardApplet component must stage those public headers beside
+# its own; the archive is embedded in the applet library and consumers do not
+# relink it. Added here because src/services/clipboard_model is not the
+# Clipboard applet's owned path.
+install(
+    TARGETS qindaqt_clipboard_model
+    FILE_SET HEADERS
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT ClipboardApplet
 )

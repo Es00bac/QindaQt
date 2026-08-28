@@ -54,6 +54,10 @@ private:
     QString m_owner = QStringLiteral("org.qindaqt.ClipboardService");
     bool m_ownerAvailable = true;
     bool m_locked = false;
+    // True only while this adapter itself flipped model privacy Allowed→Denied
+    // on lock, so unlock restores exactly that authority and never an
+    // independent host denial.
+    bool m_privacyDeniedByLock = false;
     quint64 m_nextRequestId = 1;
 };
 
