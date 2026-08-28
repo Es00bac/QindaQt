@@ -1,12 +1,10 @@
+import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
-import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
 
 Item {
     id: testRoot
-    width: 360
-    height: 60
 
     property var theme: ({
         "colors": {
@@ -15,23 +13,30 @@ Item {
         }
     })
 
+    width: 360
+    height: 60
+
     // Mirrors the facade's documented projection shape exactly: top-level
     // entries with {id, kind, text, mnemonicIndex, enabled, checkable,
     // checked}, hidden items and separators already omitted by the facade.
     QtObject {
         id: fakeAccess
+
         property bool available: false
         property var items: []
         property int activateCalls: 0
         property string lastActivatedId: ""
+
         function activate(actionId) {
             ++activateCalls;
             lastActivatedId = actionId;
         }
+
     }
 
     Component {
         id: appletComponent
+
         GlobalMenuComponents.GlobalMenuApplet {
             // Deterministic host geometry: tests override only the axis they
             // constrain. 360 wide fits three realistic entries; 28 tall fits
@@ -41,12 +46,10 @@ Item {
             access: fakeAccess
             theme: testRoot.theme
         }
+
     }
 
     TestCase {
-        name: "GlobalMenuApplet"
-        when: windowShown
-
         function init() {
             fakeAccess.available = false;
             fakeAccess.items = [];
@@ -55,28 +58,45 @@ Item {
         }
 
         function realisticMenuItems() {
-            return [
-                { "id": "fileMenu", "kind": "submenu", "text": "File",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false },
-                { "id": "editMenu", "kind": "submenu", "text": "Edit",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false },
-                { "id": "aboutAction", "kind": "action", "text": "About",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
-            ];
+            return [{
+                "id": "fileMenu",
+                "kind": "submenu",
+                "text": "File",
+                "mnemonicIndex": 0,
+                "enabled": true,
+                "checkable": false,
+                "checked": false
+            }, {
+                "id": "editMenu",
+                "kind": "submenu",
+                "text": "Edit",
+                "mnemonicIndex": 0,
+                "enabled": true,
+                "checkable": false,
+                "checked": false
+            }, {
+                "id": "aboutAction",
+                "kind": "action",
+                "text": "About",
+                "mnemonicIndex": 0,
+                "enabled": true,
+                "checkable": false,
+                "checked": false
+            }];
         }
 
         function collectEntries(node, out) {
-            if (node === null || node === undefined) {
-                return;
-            }
+            if (node === null || node === undefined)
+                return ;
+
             // Only the active layout's delegates count; the mirrored layout
             // stays instantiated but invisible.
-            if (node.visible === false) {
-                return;
-            }
-            if (node.objectName === "globalMenuTopLevelItem") {
+            if (node.visible === false)
+                return ;
+
+            if (node.objectName === "globalMenuTopLevelItem")
                 out.push(node);
-            }
+
             const kids = node.children || [];
             for (let i = 0; i < kids.length; ++i) {
                 collectEntries(kids[i], out);
@@ -84,7 +104,9 @@ Item {
         }
 
         function test_nullAccessShowsUnavailable() {
-            const applet = createTemporaryObject(appletComponent, testRoot, { "access": null });
+            const applet = createTemporaryObject(appletComponent, testRoot, {
+                "access": null
+            });
             verify(applet !== null);
             compare(applet.Accessible.name, "Menu unavailable");
         }
@@ -129,10 +151,15 @@ Item {
 
         function test_clickingEnabledActionActivatesById() {
             fakeAccess.available = true;
-            fakeAccess.items = [
-                { "id": "aboutAction", "kind": "action", "text": "About",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
-            ];
+            fakeAccess.items = [{
+                "id": "aboutAction",
+                "kind": "action",
+                "text": "About",
+                "mnemonicIndex": 0,
+                "enabled": true,
+                "checkable": false,
+                "checked": false
+            }];
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entry = findChild(applet, "globalMenuTopLevelItem");
             verify(entry !== null);
@@ -144,10 +171,15 @@ Item {
 
         function test_disabledActionIsNotClickable() {
             fakeAccess.available = true;
-            fakeAccess.items = [
-                { "id": "quitAction", "kind": "action", "text": "Quit",
-                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false }
-            ];
+            fakeAccess.items = [{
+                "id": "quitAction",
+                "kind": "action",
+                "text": "Quit",
+                "mnemonicIndex": 0,
+                "enabled": false,
+                "checkable": false,
+                "checked": false
+            }];
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entry = findChild(applet, "globalMenuTopLevelItem");
             verify(entry !== null);
@@ -158,20 +190,24 @@ Item {
 
         function test_keyboardActivationOfFocusedAction() {
             fakeAccess.available = true;
-            fakeAccess.items = [
-                { "id": "aboutAction", "kind": "action", "text": "About",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
-            ];
+            fakeAccess.items = [{
+                "id": "aboutAction",
+                "kind": "action",
+                "text": "About",
+                "mnemonicIndex": 0,
+                "enabled": true,
+                "checkable": false,
+                "checked": false
+            }];
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entry = findChild(applet, "globalMenuTopLevelItem");
             verify(entry !== null);
             entry.forceActiveFocus(Qt.TabFocusReason);
             verify(entry.activeFocus);
-            keyClick(entry, Qt.Key_Space);
+            keyClick(Qt.Key_Space);
             compare(fakeAccess.activateCalls, 1);
             compare(fakeAccess.lastActivatedId, "aboutAction");
-
-            keyClick(entry, Qt.Key_Return);
+            keyClick(Qt.Key_Return);
             compare(fakeAccess.activateCalls, 2);
         }
 
@@ -186,20 +222,17 @@ Item {
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 3);
-
             // Enabled action entries take keyboard focus.
             entries[2].forceActiveFocus(Qt.TabFocusReason);
             verify(entries[2].activeFocus);
-            keyClick(entries[2], Qt.Key_Space);
+            keyClick(Qt.Key_Space);
             compare(fakeAccess.activateCalls, 1);
             compare(fakeAccess.lastActivatedId, "aboutAction");
-
             // Disabled submenu delegates refuse focus and never activate.
             entries[0].forceActiveFocus(Qt.TabFocusReason);
             verify(!entries[0].activeFocus);
-            keyClick(entries[0], Qt.Key_Space);
+            keyClick(Qt.Key_Space);
             compare(fakeAccess.activateCalls, 1);
-
             entries[1].forceActiveFocus(Qt.TabFocusReason);
             verify(!entries[1].activeFocus);
             compare(fakeAccess.activateCalls, 1);
@@ -208,9 +241,15 @@ Item {
         function test_keyboardDoesNotActivateDisabledOrSubmenuEntries() {
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
-            fakeAccess.items.push(
-                { "id": "quitAction", "kind": "action", "text": "Quit",
-                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false });
+            fakeAccess.items.push({
+                "id": "quitAction",
+                "kind": "action",
+                "text": "Quit",
+                "mnemonicIndex": 0,
+                "enabled": false,
+                "checkable": false,
+                "checked": false
+            });
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
             collectEntries(applet, entries);
@@ -220,8 +259,8 @@ Item {
             verify(!quitEntry.enabled);
             verify(!submenuEntry.enabled);
             quitEntry.forceActiveFocus(Qt.TabFocusReason);
-            keyClick(quitEntry, Qt.Key_Space);
-            keyClick(submenuEntry, Qt.Key_Space);
+            keyClick(Qt.Key_Space);
+            keyClick(Qt.Key_Space);
             compare(fakeAccess.activateCalls, 0);
         }
 
@@ -251,5 +290,9 @@ Item {
             collectEntries(applet, entries);
             compare(entries.length, 3);
         }
+
+        name: "GlobalMenuApplet"
+        when: windowShown
     }
+
 }
