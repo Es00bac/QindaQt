@@ -69,6 +69,9 @@ void SettingsMigrationTests::migratedDocumentDefaultsDoNotDisturbToFalse()
         SettingsMigration::migrateV1ToV2(v1Document, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
     QVERIFY2(migrated.ok, qPrintable(migrated.error));
     QVERIFY(!migrated.document.values.contains(QStringLiteral("services.doNotDisturb")));
+    QVERIFY(!migrated.document.values.contains(QStringLiteral("appearance.colorScheme")));
+    QVERIFY(!migrated.document.values.contains(QStringLiteral("appearance.wallpaperMode")));
+    QVERIFY(!migrated.document.values.contains(QStringLiteral("appearance.uiScale")));
 
     LayeredSettings settings(*m_v2Schema);
     const auto applied = settings.replaceLayer(migrated.document.layer, migrated.document.values);
@@ -76,6 +79,16 @@ void SettingsMigrationTests::migratedDocumentDefaultsDoNotDisturbToFalse()
     QCOMPARE(settings.value(QStringLiteral("services.doNotDisturb")).toBool(), false);
     QVERIFY(settings.sourceLayer(QStringLiteral("services.doNotDisturb"))
             == std::optional(SettingLayer::SystemDefaults));
+    QCOMPARE(settings.value(QStringLiteral("appearance.colorScheme")).toString(),
+             QStringLiteral("system"));
+    QCOMPARE(settings.value(QStringLiteral("appearance.wallpaperMode")).toString(),
+             QStringLiteral("scaled"));
+    QCOMPARE(settings.value(QStringLiteral("appearance.uiScale")).toDouble(), 1.0);
+    for (const auto *key : {"appearance.colorScheme", "appearance.wallpaperMode",
+                            "appearance.uiScale"}) {
+        QVERIFY(settings.sourceLayer(QString::fromLatin1(key))
+                == std::optional(SettingLayer::SystemDefaults));
+    }
 }
 
 void SettingsMigrationTests::rejectsCorruptOrInvalidV1Input()

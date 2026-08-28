@@ -22,9 +22,27 @@ export const WORKER_CLOCK_SKEW_MS = 5 * 60 * 1_000;
 // into the denominator of the project evidence percentage.
 const FEATURE_ID_PATTERN = /^QQ-\d{3}$/;
 const STEP_ID_PATTERN = /^QQ-\d{3}\.\d{2}$/;
+const PROVIDER_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+const PROVIDER_STATES = new Set(['available', 'degraded', 'unavailable']);
 
 function text(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+// Worker profiles use a deliberately small scalar-only YAML subset. Quoted
+// scalars remain valid profile data, so normalize their outer quotes before
+// comparing status or parsing timestamps; otherwise a formatting-only change
+// can incorrectly remove a live worker from the board.
+function frontMatterText(value, fallback = '') {
+  const normalized = text(value, fallback);
+  if (normalized.length < 2) return normalized;
+  if (normalized.startsWith('"') && normalized.endsWith('"')) {
+    try { return JSON.parse(normalized); } catch { return normalized; }
+  }
+  if (normalized.startsWith("'") && normalized.endsWith("'")) {
+    return normalized.slice(1, -1).replaceAll("''", "'");
+  }
+  return normalized;
 }
 
 function timestamp(value) {
@@ -40,6 +58,32 @@ function normalizeWorkerError(fileName, error) {
   return Object.freeze({
     fileName: path.basename(fileName),
     message: plainText(error instanceof Error ? error.message : String(error), 'Worker record could not be read'),
+  });
+}
+
+function normalizeProvider(raw, index) {
+  const id = text(raw?.id).toLowerCase();
+  if (!PROVIDER_ID_PATTERN.test(id)) {
+    throw new TypeError(`providers[${index}].id must be a stable lowercase identifier`);
+  }
+  const status = text(raw?.status).toLowerCase();
+  if (!PROVIDER_STATES.has(status)) {
+    throw new TypeError(`providers[${index}].status must be available, degraded, or unavailable`);
+  }
+  const updatedAt = text(raw?.updatedAt);
+  if (!timestamp(updatedAt)) throw new TypeError(`providers[${index}].updatedAt must be an ISO timestamp`);
+  const estimatedReturnAt = text(raw?.estimatedReturnAt);
+  if (estimatedReturnAt && !timestamp(estimatedReturnAt)) {
+    throw new TypeError(`providers[${index}].estimatedReturnAt must be empty or an ISO timestamp`);
+  }
+  return Object.freeze({
+    id,
+    name: text(raw?.name, id),
+    status,
+    available: status === 'available',
+    updatedAt,
+    estimatedReturnAt,
+    evidence: plainText(raw?.evidence, 'No capacity evidence recorded'),
   });
 }
 
@@ -161,16 +205,16 @@ export function parseWorkerMarkdown(source, fileName = 'worker.md') {
     const newestDeclared = updates.map((update) => timestamp(update.at)).reduce((left, right) => Math.max(left, right), 0);
     return buildWorkerRecord({
       id: baseName,
-      name: text(fields.name, baseName),
-      role: text(fields.role, 'Unspecified role'),
-      provider: text(fields.provider, 'Unspecified provider'),
-      model: text(fields.model, 'Unspecified model'),
-      reasoning: text(fields.reasoning, 'Unspecified'),
-      status: text(fields.status, 'unknown').toLowerCase(),
-      feature: text(fields.feature, 'No outcome declared'),
-      startedAt: text(fields.started_at),
-      updatedAt: text(fields.updated_at) || (newestDeclared ? new Date(newestDeclared).toISOString() : ''),
-      worktree: text(fields.worktree),
+      name: frontMatterText(fields.name, baseName),
+      role: frontMatterText(fields.role, 'Unspecified role'),
+      provider: frontMatterText(fields.provider, 'Unspecified provider'),
+      model: frontMatterText(fields.model, 'Unspecified model'),
+      reasoning: frontMatterText(fields.reasoning, 'Unspecified'),
+      status: frontMatterText(fields.status, 'unknown').toLowerCase(),
+      feature: frontMatterText(fields.feature, 'No outcome declared'),
+      startedAt: frontMatterText(fields.started_at),
+      updatedAt: frontMatterText(fields.updated_at) || (newestDeclared ? new Date(newestDeclared).toISOString() : ''),
+      worktree: frontMatterText(fields.worktree),
       updates,
       fileName,
     });
@@ -335,6 +379,11 @@ export function buildBoard(data, workers, options = {}) {
     || timestamp(right.updatedAt) - timestamp(left.updatedAt)
     || left.name.localeCompare(right.name)
   ));
+  const providers = (Array.isArray(options.providers) ? options.providers : [])
+    .map(normalizeProvider);
+  if (new Set(providers.map((provider) => provider.id)).size !== providers.length) {
+    throw new TypeError('provider records must have unique ids');
+  }
   const messages = orderedWorkers.flatMap((worker) => worker.updates.map((update, index) => ({
     worker: worker.name,
     at: update.at || worker.updatedAt,
@@ -352,6 +401,8 @@ export function buildBoard(data, workers, options = {}) {
       recordedActionableRows,
       unverifiedRows: sourceRows - features.length + features.filter((feature) => feature.state === 'UNVERIFIED').length,
       qualified,
+      providerCount: providers.length,
+      availableProviders: providers.filter((provider) => provider.available).length,
       evidencePoints,
       evidencePercent: actionableRows > 0 ? Math.round(evidencePoints / actionableRows * 100) / 100 : 0,
       evidenceBreadthPoints,
@@ -362,6 +413,7 @@ export function buildBoard(data, workers, options = {}) {
     }),
     features: Object.freeze([...features].sort((left, right) => left.id.localeCompare(right.id))),
     workers: Object.freeze(orderedWorkers),
+    providers: Object.freeze(providers),
     messages: Object.freeze(messages),
     workerErrors: Object.freeze(Array.isArray(options.workerErrors) ? [...options.workerErrors] : []),
   });
@@ -372,16 +424,24 @@ export function buildBoard(data, workers, options = {}) {
 // ops/team/features.json, in which case the canonical file still defines the
 // program rows while workers and messages come from the requested root.
 const canonicalFeaturesPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ops/team/features.json');
+const canonicalProvidersPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ops/team/providers.json');
 
 export async function readBoard(teamRoot) {
   const featurePath = path.join(teamRoot, 'features.json');
   const workersPath = path.join(teamRoot, 'workers');
   let data;
+  let providerData;
   try {
     data = JSON.parse(await readFile(featurePath, 'utf8'));
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
     data = JSON.parse(await readFile(canonicalFeaturesPath, 'utf8'));
+  }
+  try {
+    providerData = JSON.parse(await readFile(path.join(teamRoot, 'providers.json'), 'utf8'));
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+    providerData = JSON.parse(await readFile(canonicalProvidersPath, 'utf8'));
   }
   // AGENT-NOTE: unlike the flow upstream, this repo keeps a README inside
   // workers/ describing the record convention; it is documentation, never an
@@ -404,5 +464,5 @@ export async function readBoard(teamRoot) {
   }));
   const workers = workerResults.flatMap((result) => result.worker ? [result.worker] : []);
   const workerErrors = workerResults.flatMap((result) => result.error ? [result.error] : []);
-  return buildBoard(data, workers, { workerErrors });
+  return buildBoard(data, workers, { workerErrors, providers: providerData?.providers });
 }

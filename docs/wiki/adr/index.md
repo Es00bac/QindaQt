@@ -33,6 +33,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
 | [ADR-0026](0026-contain-virtual-desktop-qualification.md) | Accepted | Contain integrated virtual desktop qualification in a private namespace and exact stage |
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
+| [ADR-0028](0028-compose-appearance-settings-through-settings1.md) | Accepted | Compose the Appearance settings route through Settings1 and QST-1 |
 | [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
 | [ADR-0041](0041-adopt-flow-team-delivery-loop.md) | Accepted | Use workgroup queues, exact review loops, prompt integration, and capacity refill |
 

@@ -19,3 +19,38 @@ set_tests_properties(
     qindaqt.settings-app-rejects-unknown-route PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
+add_test(
+    NAME qindaqt.settings-app-desktop-identity
+    COMMAND "${CMAKE_COMMAND}"
+            -DSETTINGS_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/apps/settings_center
+            -DSETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings>
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_desktop_identity.cmake"
+)
+add_test(
+    NAME qindaqt.settings-app-route-construction
+    COMMAND "${CMAKE_COMMAND}"
+            -DSETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings>
+            -DTHEME_DIRECTORY=${PROJECT_SOURCE_DIR}/data/themes
+            -DSANDBOX_ROOT=${CMAKE_CURRENT_BINARY_DIR}/route-construction
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_route_construction.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-app-route-construction PROPERTIES
+    LABELS "offscreen;settings;appearance" RUN_SERIAL TRUE TIMEOUT 15
+)
+add_test(
+    NAME qindaqt.settings-app-installed-routes
+    COMMAND "${CMAKE_COMMAND}"
+            -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+            -DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-settings-stage
+            -DINSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
+            -DINSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}
+            -DSETTINGS_EXECUTABLE_NAME=qindaqt-settings${CMAKE_EXECUTABLE_SUFFIX}
+            -DCONFIGURATION=$<CONFIG>
+            -DROUTE_CHECK=${CMAKE_CURRENT_SOURCE_DIR}/check_route_construction.cmake
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_routes.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-app-installed-routes PROPERTIES
+    LABELS "offscreen;settings;appearance;package" RUN_SERIAL TRUE TIMEOUT 90
+)

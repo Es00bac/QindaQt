@@ -97,6 +97,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt File Manager](apps/file-manager.md) documents the first-party local
   directory navigation, breadcrumb/history, bounded file-launch, QST-1/Controls
   presentation, and accessibility boundaries.
+- [Settings Appearance route](apps/appearance-settings.md) documents the
+  first-party appearance settings surface: validated drafts, QST previews,
+  per-key Settings1 commits, and recovery truth.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

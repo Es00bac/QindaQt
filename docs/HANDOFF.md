@@ -3,13 +3,14 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional boundary: public AppShell integration `a18b046`, PB-0 integration
-  `cbec6fb`, accepted contained-virtual-desktop candidate `d08747d`, and exact
-  accepted File Manager S0 candidate `3fd3842` in this integration change
+- Functional boundary: public milestone `ab36cd8` plus exact accepted
+  Appearance Settings S0 candidate `d71fac4` and the privately qualified
+  1920x1080 whole-desktop boot boundary in this integration change
 - Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1/D2,
-  live notifications, executable native Text Editor S1 and local File Manager
-  S0, and executable shared QindaQt.AppShell 1.0 contracts, plus the
-  source/unit/package boundary for a private whole-desktop boot harness
+  live Notifications and Appearance settings routes, executable native Text
+  Editor S1 and local File Manager S0, and executable shared
+  QindaQt.AppShell 1.0 contracts, plus a production-built private whole-desktop
+  boot with exact topology, a 1024 MiB PSS ceiling, and bounded teardown
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -34,6 +35,26 @@ teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The combined production graph built 612/612 targets and the dependency-light
+  integrated suite passed 189/189. The private `desktop.virtual.boot.1080p`
+  row then passed with one `Virtual-0` 1920x1080@1 output, exact compositor,
+  Settings1, Audio1, and Notifications owners, mapped Settings and Text Editor
+  windows, the supervised shell/session process topology, zero teardown
+  survivors, and 88,688 KiB resident PSS against the 1,048,576 KiB ceiling.
+  Cold-boot polling now keeps each probe inside its fixed one-second lifetime:
+  service gaps produce retryable complete snapshots under the outer 15-second
+  budget instead of allowing an inner wait to self-timeout before evidence.
+- The exact Appearance Settings repair `d71fac4` passed independent rereview
+  with P0/P1/P2/P3 `0/0/0/1`. Its six-target warning-clean build and direct
+  suites passed 7/7 values, 8/8 preview, 11/11 plus 6/6 adversarial model,
+  9/9 page, and 10/10 migration checks; registered selectors passed 4/4
+  Appearance, 5/5 Settings application/package, and 1/1 migration rows. The
+  manager's combined tree repeated those registered rows, retained both
+  Notifications and Appearance installed routes, and made `DesktopVirtual`
+  stage the Appearance, Tokens, and Controls transitive runtime instead of
+  publishing an incomplete Settings package. The remaining P3 is later live
+  assistive-technology/nested visual qualification; no host desktop or input
+  was contacted.
 - The exact File Manager runtime/package repair `3fd3842` passed independent
   rereview with P0/P1/P2/P3 `0/0/0/1`: fresh strict serial build 138/138,
   focused File Manager selector 8/8, hostile parent failure on all three
@@ -103,14 +124,12 @@ Integrated evidence:
 
 ## Next outcome
 
-Complete the interactive virtual desktop integration described in
-[Task list](TASK_LIST.md). First integrate and verify the Settings application's
-exact installed identity, build the accepted harness against the combined
-production graph, and pass its private 1920x1080 boot/topology/PSS/teardown row.
-Then exercise the private nested seat, collect reviewable screenshots, and
-prove repeatable teardown across the resolution, scale, theme, and multi-output
-matrix without connecting to the host pointer, display, session bus, or user
-configuration.
+Continue the interactive virtual desktop integration described in
+[Task list](TASK_LIST.md). The combined production graph and private 1920x1080
+boot/topology/PSS/teardown boundary now pass. Exercise the private nested seat,
+collect reviewable screenshots, and prove repeatable teardown across the
+resolution, scale, theme, and multi-output matrix without connecting to the
+host pointer, display, session bus, or user configuration.
 
 The reusable `QindaQt.Controls 1.0` component set is now integrated after exact
 independent Debug/Release, visual, accessibility-event, package, source-policy,

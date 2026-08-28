@@ -224,9 +224,9 @@
           "caveat": "One focused route does not complete the applet-based Settings Center."
         },
         {
-          "id": "QQ-006.05", "title": "Settings pages and live platform-service routes", "weight": 15, "state": "MODELLED",
-          "summary": "The generic schema defines appearance, fonts, displays, input, panels, window-management, accessibility, and service values; only Notifications has a live route.",
-          "evidence": [{ "kind": "source", "reference": "data/settings/schema-v1.json", "summary": "The integrated schema records the settings domains and validation contracts." }],
+          "id": "QQ-006.05", "title": "Settings pages and live platform-service routes", "weight": 15, "state": "WIRED",
+          "summary": "Notifications and Appearance are integrated live Settings routes. Appearance stores a validated per-key draft through Settings1, publishes a complete QST preview, and runs from a sanitized component-only installation; applying wallpaper, scale, font, and color intent remains with later platform consumers.",
+          "evidence": [{ "kind": "commit", "reference": "d71fac4a2c7e8944822b3185aee5bb43acd455c7", "summary": "The independently accepted Appearance Settings S0 candidate is integrated after combined-tree build, route, migration, package, documentation, and source-shape verification." }, { "kind": "test", "reference": "docs/wiki/apps/appearance-settings.md", "summary": "The owning page records four focused Appearance rows, five Settings application/package rows, schema migration coverage, compact keyboard traversal, and the no-replay Settings1 boundary." }],
           "caveat": "Audio, display, power, brightness, Bluetooth, network, clipboard, color, font, and portal pages remain."
         },
         {

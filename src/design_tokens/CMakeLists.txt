@@ -72,8 +72,11 @@ install(
     TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
     EXPORT QindaQtTargets
     RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT SettingsAppearanceRuntime
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT SettingsAppearanceRuntime
     ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT SettingsAppearanceRuntime
     FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 install(
@@ -81,4 +84,5 @@ install(
         "${QINDAQT_TOKENS_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_TOKENS_QML_OUTPUT_DIRECTORY}/qindaqt_tokens.qmltypes"
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+    COMPONENT SettingsAppearanceRuntime
 )

@@ -58,6 +58,7 @@ nav:
       - QindaQt.AppShell 1.0: apps/application-shell.md
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
+      - Settings Appearance route: apps/appearance-settings.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -91,5 +92,6 @@ nav:
       - "ADR-0025: Session-bound Power1 activation": adr/0025-arbitrate-session-bound-power1-activation.md
       - "ADR-0026: Contained virtual desktop": adr/0026-contain-virtual-desktop-qualification.md
       - "ADR-0027: Narrow first-party AppShell": adr/0027-extract-a-narrow-first-party-application-shell.md
+      - "ADR-0028: Appearance through Settings1": adr/0028-compose-appearance-settings-through-settings1.md
       - "ADR-0029: File Manager bounded local launch": adr/0029-file-manager-bounded-local-launch.md
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md

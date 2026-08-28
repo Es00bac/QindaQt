@@ -1,0 +1,44 @@
+{
+  "providers": [
+    {
+      "id": "openai",
+      "name": "OpenAI / Codex",
+      "status": "available",
+      "updatedAt": "2026-08-28T11:13:49-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "All four native collaboration slots are occupied by live QindaQt work, including the Program Manager."
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini Vertex",
+      "status": "available",
+      "updatedAt": "2026-08-28T11:13:49-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "Launcher doctor reports Vertex ADC ready; exact Flash and Pro streams are emitting token and tool events."
+    },
+    {
+      "id": "glm",
+      "name": "Z.AI GLM",
+      "status": "degraded",
+      "updatedAt": "2026-08-28T11:13:49-06:00",
+      "estimatedReturnAt": "2026-08-28T11:30:00-06:00",
+      "evidence": "The authenticated GLM catalog is reachable, but the current exact Flash worker is token-silent; retry after the short cooldown estimate."
+    },
+    {
+      "id": "claude",
+      "name": "Anthropic Claude",
+      "status": "unavailable",
+      "updatedAt": "2026-08-28T11:19:06-06:00",
+      "estimatedReturnAt": "2026-08-28T11:50:00-06:00",
+      "evidence": "The user-provided provider panel shows the current Claude session at 100% used with a 31-minute reset countdown; reprobing is required at reset."
+    },
+    {
+      "id": "kimi",
+      "name": "Moonshot Kimi",
+      "status": "available",
+      "updatedAt": "2026-08-28T11:21:00-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "The user clarified the Kimi five-hour window is 0% used / 100% available. Weekly usage is 99% (full reset estimated 2026-08-29T20:48:00-06:00), so exact K2.7 is reserved for bounded work."
+    }
+  ]
+}

@@ -48,6 +48,13 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `d71fac4` — First-party Appearance Settings S0 as an ordinary
+  `qindaqt-settings --page appearance` route with validated theme, scheme,
+  font, smoothing, wallpaper, and logical-scale intent; per-key Settings1
+  draft/apply/conflict/no-replay truth; complete QST preview; compact
+  keyboard/accessibility traversal; and sanitized installed-route packaging.
+  Applying those preferences to the compositor, displays, fonts, wallpaper,
+  and other applications remains with later platform and convergence slices.
 - `3fd3842` — Native QindaQt File Manager S0 with bounded local-directory
   launch intent, asynchronous listing, navigation history, QST/Controls UI,
   keyboard/accessibility metadata, desktop packaging, and a relocatable

@@ -28,6 +28,21 @@ The three workgroup queues under `ops/team/queues/` show how unfinished Shell,
 Platform, and First-party outcomes move from owner to reviewer to integration.
 They are coordination evidence only and never affect the product percentage.
 
+## Provider capacity
+
+`ops/team/providers.json` records the five stable provider routes: OpenAI/
+Codex, Google Gemini Vertex, Z.AI GLM, Anthropic Claude, and Moonshot Kimi.
+Each record declares `available`, `degraded`, or `unavailable`, the last real
+probe time, evidence, and an estimated return/retry time when capacity is
+impaired. The graphical board renders all five and counts only `available`
+routes in its provider-capacity card.
+
+Return times are estimates, not liveness. Reprobe at or before the recorded
+time, replace the estimate with observed state, and do not list a token-silent,
+quota-rejected, or semantically failed route as available. Provider capacity
+never creates worker liveness or product progress; it explains how much of the
+staffing system can presently be used.
+
 ## Evidence maturity
 
 Each outcome step has a stable product weight and one evidence maturity:

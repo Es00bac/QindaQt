@@ -5,7 +5,6 @@
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusReply>
-#include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -87,6 +86,13 @@ bool requiredServicesOwned(QDBusConnectionInterface &bus)
     return true;
 }
 
+QJsonObject servicePending(const QString &method)
+{
+    return failure(QStringLiteral("service-not-ready"),
+                   QStringLiteral("%1 was not sampled before service ownership completed")
+                       .arg(method));
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -100,20 +106,29 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < 15000 && !requiredServicesOwned(*bus)) {
-        QThread::msleep(25);
-    }
-
-    QDBusInterface compositor(
-        QString::fromLatin1(CompositorService),
-        QString::fromLatin1(CompositorPath),
-        QString::fromLatin1(CompositorInterface), connection);
-    if (!compositor.isValid()) {
-        QTextStream(stderr) << "Compositor1 is unavailable: "
-                            << compositor.lastError().message() << '\n';
-        return 2;
+    // AGENT-GUARD: One probe has a one-second supervisor lifetime. Never wait
+    // here for the desktop's 15-second readiness budget; emit a complete
+    // pending snapshot and let the outer poller start a fresh bounded probe.
+    const bool servicesReady = requiredServicesOwned(*bus);
+    QJsonObject outputs = servicePending(QStringLiteral("Outputs"));
+    QJsonObject inputCapabilities = servicePending(QStringLiteral("InputCapabilities"));
+    QJsonObject shellVisibility = servicePending(QStringLiteral("ShellVisibilitySnapshot"));
+    QJsonObject windows = servicePending(QStringLiteral("Windows"));
+    QJsonObject developmentShellSurfaces =
+        servicePending(QStringLiteral("DevelopmentShellSurfaces"));
+    if (servicesReady) {
+        QDBusInterface compositor(
+            QString::fromLatin1(CompositorService),
+            QString::fromLatin1(CompositorPath),
+            QString::fromLatin1(CompositorInterface), connection);
+        outputs = compositorCall(compositor, QStringLiteral("Outputs"));
+        inputCapabilities =
+            compositorCall(compositor, QStringLiteral("InputCapabilities"));
+        shellVisibility =
+            compositorCall(compositor, QStringLiteral("ShellVisibilitySnapshot"));
+        windows = compositorCall(compositor, QStringLiteral("Windows"));
+        developmentShellSurfaces =
+            compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"));
     }
 
     QJsonArray services;
@@ -128,19 +143,14 @@ int main(int argc, char **argv)
         {QStringLiteral("selfPid"), QString::number(QCoreApplication::applicationPid())},
         {QStringLiteral("parentPid"), QString::number(::getppid())},
         {QStringLiteral("services"), services},
-        {QStringLiteral("outputs"),
-         compositorCall(compositor, QStringLiteral("Outputs"))},
-        {QStringLiteral("inputCapabilities"),
-         compositorCall(compositor, QStringLiteral("InputCapabilities"))},
-        {QStringLiteral("shellVisibility"),
-         compositorCall(compositor, QStringLiteral("ShellVisibilitySnapshot"))},
-        {QStringLiteral("windows"),
-         compositorCall(compositor, QStringLiteral("Windows"))},
+        {QStringLiteral("outputs"), outputs},
+        {QStringLiteral("inputCapabilities"), inputCapabilities},
+        {QStringLiteral("shellVisibility"), shellVisibility},
+        {QStringLiteral("windows"), windows},
         // AGENT-CONTRACT: This later-integrated Notification interface must
         // expose mapped/committed `dock` records. An UnknownMethod reply is a
         // real runtime dependency failure, never permission to infer panels.
-        {QStringLiteral("developmentShellSurfaces"),
-         compositorCall(compositor, QStringLiteral("DevelopmentShellSurfaces"))},
+        {QStringLiteral("developmentShellSurfaces"), developmentShellSurfaces},
     };
     QTextStream stream(stdout);
     stream << "QINDAQT_DESKTOP_SESSION_PROBE="

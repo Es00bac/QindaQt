@@ -346,7 +346,6 @@ class TopologyTests(unittest.TestCase):
     def test_public_method_error_fails_without_retry(self) -> None:
         failed = ready_probe()
         failed["outputs"] = {"status": "unavailable"}
-        failed["services"][0]["status"] = "unavailable"  # type: ignore[index]
         calls = 0
 
         def sample(_: float) -> dict[str, object]:

@@ -126,11 +126,14 @@ def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
     values = {key: probe.get(key) for key in REQUIRED_METHODS}
     if not all(isinstance(value, Mapping) for value in values.values()):
         raise RuntimeError("probe method evidence was malformed")
+    # AGENT-GUARD: Service ownership is the prerequisite for method evidence.
+    # A cold-boot probe must remain a retryable observation instead of turning
+    # expected not-ready method placeholders into a terminal runtime failure.
+    if service_pending is not None:
+        return service_pending
     for key, value in values.items():
         if value.get("status") != "ok":
             raise RuntimeError(f"public D-Bus method {key} returned an error")
-    if service_pending is not None:
-        return service_pending
     output = values["outputs"]
     visibility = values["shellVisibility"]
     try:

@@ -616,6 +616,47 @@ This evidence uses private D-Bus and offscreen software rendering. It does not
 claim a real session bus, live assistive technology, compositor focus,
 KGlobalAccel dispatch, or pointer/keyboard automation.
 
+## Current Appearance Settings S0 proof
+
+The modular Appearance route and its additive Settings Center composition are
+selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.appearance-(values|preview|settings-model|page)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
+  -R '^qindaqt\.settings-app-(offscreen|rejects-unknown-route|desktop-identity|route-construction|installed-routes)$' \
+  --output-on-failure
+```
+
+The four Appearance rows cover strict typed values and enum metatypes, exact
+active-v2 defaults/constraints plus v1 migration fallback, all five built-in
+QST preview maps, per-key Settings1 sequencing, same-lineage conflict/Revert,
+clean and partially dirty external rebase, exact outbound keys, uncertain
+no-replay, owner loss, owner/epoch replacement in the reply-to-snapshot gap,
+confirmed diagnostics, later-key partial-failure results, and fail-closed
+snapshots. The offscreen page row uses ordinary click, toggle, and typed-text
+paths, validates action/result/failure-state wiring, and proves accessible
+status roles plus full visible forward/reverse traversal at 420×320. The
+desktop-identity row is non-vacuous: it checks source and desktop-entry/install
+contracts and requires the freshly built executable to embed
+`org.qindaqt.Settings` before any window construction.
+
+Two Settings application rows close the executable/package boundary. The
+full-root row launches both routes with only the active model and an unavailable
+private bus; each must remain constructed until the bounded harness timeout.
+The installed row stages the explicit `SettingsAppearanceRuntime` component,
+removes host display/Wayland/QML/library overrides, and repeats both launches.
+It proves the installed `lib/qt6/qml` import root, relative Tokens RUNPATH,
+complete Controls/Tokens/Appearance payload, and merged built-in theme search.
+
+This is private fake-transport, sanitized installed-runtime, and offscreen
+software-renderer evidence. It
+does not prove a live session bus, persisted appearance settings across a
+session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
+nested desktop screenshot. Those integration rows remain later gates.
+
 ## Current compositor proof
 
 The focused live checks are:
@@ -1010,10 +1051,14 @@ Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
 network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
 owns this trust boundary.
 
-After the required service names appear, the driver reacquires complete probe
-snapshots until all public topology inputs are valid at once or the 15-second
-deadline expires. An incomplete app/dock startup state may retry; a malformed
-service or any public method error fails immediately. Settings and Text Editor
+Each probe samples service ownership immediately. During cold boot it emits a
+complete schema with explicit `service-not-ready` method placeholders instead
+of consuming the driver's readiness budget internally. The driver treats that
+service-ownership gap as retryable and reacquires complete probe snapshots
+until all public topology inputs are valid at once or the 15-second deadline
+expires. Once every required service is owned, a malformed service or any
+public method error fails immediately. An incomplete app/dock startup state may
+also retry. Settings and Text Editor
 must match their exact compositor-observed `applicationId`, nonempty window ID,
 and title. Settings requires the installed application's production Qt identity
 `org.qindaqt.Settings`, bound by the executable to its installed desktop entry
@@ -1048,12 +1093,13 @@ The immutable S1 evidence model requires:
 | Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
 | Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
 
-The current-base candidate extends Notification Live's development-only
+The integrated boundary extends Notification Live's development-only
 layer-surface allowlist with the production `dock` scope. The probe calls that
 interface deliberately and the boot row must fail if the method or exact record
 is absent; ordinary `Windows` or `ShellVisibilitySnapshot` data does not prove
-a layer surface. Source/unit/package qualification remains the only valid claim
-until a manager assigns the private lane and the exact boot row passes.
+a layer surface. The manager-assigned private 1920x1080 row now passes this
+exact topology/PSS/teardown contract; it does not qualify the later display and
+interaction matrix.
 
 S0+S1 makes no screenshot, input-action, screenshot-baseline, OpenGL/render-
 node, DPI/theme variant, multi-output mutation, idle-CPU threshold, or physical

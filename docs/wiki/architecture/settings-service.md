@@ -25,6 +25,14 @@ replaced with v2; the immutable installed profile is composed from the
 migrated candidate in memory. The new key remains absent so normal
 system-default resolution supplies `false`. Corrupt, wrong-layer, missing,
 stale/unsupported, or invalid migrated input fails startup without mutation.
+The appearance route slice later extended v2 additively with
+`appearance.colorScheme`, `appearance.wallpaperMode`, and `appearance.uiScale`
+(see [ADR-0028](../adr/0028-compose-appearance-settings-through-settings1.md));
+the version stays 2 because existing partial documents validate per key and
+the settings-schema version is lineage metadata rather than a wire break.
+V1 migration leaves those three keys absent from the partial migrated layer;
+typed migration coverage proves active-v2 system defaults resolve them to
+`system`, `scaled`, and `1.0` without manufacturing user overrides.
 
 Object values are recursively normalized at every schema/layer/migration
 ingress to one restart-stable JSON domain. Null has one valid in-memory form,

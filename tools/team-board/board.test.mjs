@@ -75,6 +75,23 @@ test('derives product progress only from outcome state plus stopping-point evide
   assert.match(board.program.formula, /task percentages add zero/);
 });
 
+test('reports provider availability and preserves estimated return evidence', () => {
+  const board = buildBoard({
+    program: { name: 'Fixture', sourceRows: 1 },
+    features: [],
+  }, [], { providers: [
+    { id: 'openai', name: 'OpenAI', status: 'available', updatedAt: '2026-08-28T11:00:00Z', evidence: 'Live workers.' },
+    { id: 'claude', name: 'Claude', status: 'unavailable', updatedAt: '2026-08-28T11:00:00Z', estimatedReturnAt: '2026-08-28T12:00:00Z', evidence: 'Quota reset estimate.' },
+    { id: 'glm', name: 'GLM', status: 'degraded', updatedAt: '2026-08-28T11:00:00Z', estimatedReturnAt: '2026-08-28T11:30:00Z', evidence: 'Token-silent probe.' },
+  ] });
+
+  assert.equal(board.program.providerCount, 3);
+  assert.equal(board.program.availableProviders, 1,
+    'degraded and unavailable routes do not masquerade as available capacity');
+  assert.equal(board.providers[1].estimatedReturnAt, '2026-08-28T12:00:00Z');
+  assert.equal(board.providers[2].status, 'degraded');
+});
+
 test('derives a milestone percentage from weighted evidence-backed sub-outcomes', () => {
   const board = buildBoard({
     program: { name: 'Fixture', sourceRows: 1 },
@@ -122,6 +139,35 @@ test('fails worker liveness closed for stale, missing, and future declarations',
   assert.equal(board.workers.find((entry) => entry.name === 'Stale worker')?.active, false);
   assert.equal(board.workers.find((entry) => entry.name === 'Future worker')?.active, false);
   assert.equal(board.workers.find((entry) => entry.name === 'Finished worker')?.active, false);
+});
+
+test('normalizes quoted frontmatter scalars before liveness evaluation', () => {
+  const parsed = parseWorkerMarkdown(`---
+name: "Quoted worker"
+role: "Engineer"
+provider: "Test"
+model: "test-model"
+reasoning: "high"
+status: "working"
+feature: "QQ-001"
+started_at: "2026-08-26T12:00:00Z"
+updated_at: "2026-08-26T12:29:00Z"
+---
+
+# Quoted worker
+
+## Updates
+
+- 2026-08-26T12:29:00Z — Running a real gate.
+`);
+  const board = buildBoard({
+    program: { name: 'Fixture', sourceRows: 1 },
+    features: [],
+  }, [parsed], { nowMs: Date.parse('2026-08-26T12:30:00Z') });
+
+  assert.equal(parsed.status, 'working');
+  assert.equal(parsed.updatedAt, '2026-08-26T12:29:00Z');
+  assert.equal(board.workers[0].active, true);
 });
 
 test('parses the QindaQt record convention with wrapped bullets and free-form status', () => {

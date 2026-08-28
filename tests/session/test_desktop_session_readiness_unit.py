@@ -87,6 +87,29 @@ class ReadinessProbeTests(unittest.TestCase):
             await_complete_snapshot(sample, seconds=2, sleep=lambda _: None)
         self.assertEqual(calls, 2)
 
+    def test_cold_boot_service_gap_is_retryable_before_method_validation(self) -> None:
+        snapshot = ready_probe()
+        snapshot["services"][0] = {  # type: ignore[index]
+            "name": "org.qindaqt.Compositor",
+            "status": "unavailable",
+        }
+        for method in (
+            "outputs",
+            "shellVisibility",
+            "inputCapabilities",
+            "developmentShellSurfaces",
+            "windows",
+        ):
+            snapshot[method] = {
+                "status": "unavailable",
+                "failure": {"code": "service-not-ready", "message": method},
+            }
+
+        self.assertEqual(
+            _snapshot_pending(snapshot),
+            "service org.qindaqt.Compositor is not owned yet",
+        )
+
     def test_observation_is_archived_before_schema_rejection(self) -> None:
         line = MARKER + json.dumps({"schemaVersion": 2}) + "\n"
         log = StringIO()
