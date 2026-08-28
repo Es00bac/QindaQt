@@ -929,6 +929,39 @@ budgets remain Platform or Release qualification work. Do not substitute the
 older D-Bus bridge workflow for the process-local evidence accepted in
 [ADR-0004](../adr/0004-process-local-hybrid-topology.md).
 
+## Current Network1 N0 proof
+
+The pure Network1 boundary is qualified in fresh strict-warning Debug and
+Release trees with these thirteen registered rows:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.network-(protocol-(identity|validation|codec|redaction)|model-(snapshot-gate|scan-lease|intent-policy|state)|client|adversarial|installed-header-consumer|boundary|boundary-poison)$'
+```
+
+The unit rows cover strict identity/Unicode handling, every public text and
+collection cap, canonical and hostile codecs, fail-closed credential redaction,
+atomic lineage and scan-lease reconciliation, bounded intent traversal, and
+client retry/timeout/uncertainty behavior. The adversarial row preserves the
+exact eight regressions from independent rejection: decoded-owner mismatch,
+real A→B→A retirement, maximum-integer lease duration, diagnostic overflow,
+quoted credential text, bidi SSID spoofing, `wireValid=false`, and sticky state
+after failed transport start.
+
+`qindaqt.network-boundary` scans only the three N0 module roots and must
+find no QtDBus, `QTimer` in protocol/model, NetworkManager, platform-radio,
+secret-store, or UI dependencies. `qindaqt.network-boundary-poison` constructs
+build-confined fixtures containing forbidden QtDBus, `QTimer`, and
+NetworkManager tokens and requires each to fail the same checker. The installed
+consumer row installs only component `QindaQtNetworkN0` into a fresh prefix and
+builds a separate CMake consumer against only the staged headers and imported
+archives, proving the focused package does not depend on unrelated whole-tree
+artifacts.
+
+N0 does not exercise a bus, NetworkManager, physical radios, credentials, or
+UI. Those remain N1+ integration and isolated hardware qualification; host
+network state must never be used as a substitute for this pure proof.
+
 ## Current Audio1 proof
 
 The focused Audio1 boundary is selected with:

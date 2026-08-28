@@ -18,7 +18,10 @@ user interface; those are later slices in the
 Every snapshot carries a nonzero service epoch and positive monotonic revision.
 Within one owner and epoch, revisions must strictly increase. Any owner or
 epoch change requires an epoch strictly greater than every previously observed
-epoch; a same-owner epoch change is rejected. An operation result carries its
+accepted epoch, including after current state is cleared; a same-owner epoch
+change is rejected. Owners are exact valid D-Bus unique-name strings bounded to
+255 UTF-8 bytes. A decoded snapshot owner must equal both the initiating
+request owner and the current transport owner. An operation result carries its
 initiating epoch/revision and kind; a reply that does not match the request's
 lineage is not evidence about that operation.
 
@@ -41,15 +44,18 @@ connection devices are unique.
 
 ## Identity normalization
 
-- SSIDs are at most 32 raw octets. Printable UTF-8 without control characters
-  is published as text; anything else (including empty) is a hidden network
-  whose octets never leave the adapter.
+- SSIDs are at most 32 raw octets. Valid presentation-safe UTF-8 is published
+  as text; anything else (including empty) is a hidden network whose octets
+  never leave the adapter. Unsafe categories are controls, line/paragraph
+  separators, format controls, surrogates, private-use, and unassigned
+  scalars. Safe supplementary Unicode remains representable.
 - BSSIDs are exactly seventeen lowercase `xx:xx:xx:xx:xx:xx` hex characters.
 - Interface names are 1–15 octets of `[A-Za-z0-9._-]` starting alphanumeric,
   matching Linux IFNAMSIZ.
 - A known-network id is the 64-character lowercase hex SHA-256 over the raw
   SSID octets and the security suite; validation accepts only digests of this
-  shape. Security suites are `Open`, `Wep`, `Wpa2Personal`, `Wpa2Enterprise`,
+  shape. It is a correlation pseudonym, not confidentiality for a guessable
+  SSID. Security suites are `Open`, `Wep`, `Wpa2Personal`, `Wpa2Enterprise`,
   `Wpa3Personal`, and `Wpa3Enterprise`.
 
 ## Text and numeric limits
@@ -65,21 +71,23 @@ connection devices are unique.
 | Diagnostic / owner | 512 / 255 UTF-8 bytes |
 | Signal strength | 0 through 100 |
 | Frequency | 0 (unknown) or 2,412 through 7,125 MHz |
-| Scan-lease deadline | 1,000 through 120,000 ms |
-| Request timeout / retry delay | 100–60,000 / ≤ 60,000 ms |
+| Scan-lease remaining duration | 1,000 through 120,000 ms |
+| Request timeout / retry schedule | 100–60,000 ms / at most 8 entries, each ≤ 60,000 ms |
+| Intent wire traversal | depth 8, 16 entries per container, 64 visited nodes |
 
-Text is strict UTF-8 without NUL and is bounded by encoded byte count.
-Frequency accepts only 2.4/5/6 GHz WLAN channels in v1; wired devices leave it
-at zero.
+Text is strict UTF-8 without unsafe presentation scalars and is bounded by
+encoded byte count. Nonzero frequency uses a broad observed 2.4/5/6 GHz range,
+not a regulatory-domain channel allowlist; wired devices leave it at zero.
 
 ## Scan lease truth
 
 An idle snapshot must carry no lease. A non-idle snapshot's lease has a
 nonempty bounded id, the granting epoch equal to the snapshot epoch, a granting
-revision no greater than the snapshot revision, and a nonzero deadline. The
-model adopts a lease only from the snapshot's own epoch; expiry is evaluated
-against an injected monotonic clock, and a live lease makes a second scan
-intent busy.
+revision no greater than the snapshot revision, and a bounded remaining
+duration. The model adopts a lease only from the snapshot's own epoch and
+converts its duration to a local deadline only after admission; invalid clocks
+and integer overflow fail atomically. Expiry is evaluated against the injected
+monotonic clock, and a live lease makes a second scan intent busy.
 
 ## Canonical codec and total decoding
 
@@ -92,7 +100,8 @@ Decoders reject oversize input before copying it, validate magic and version,
 check every count and length against its cap before allocation, require strict
 UTF-8 and the exact end of the buffer, then run semantic validation on a
 temporary. A failure returns a typed `CodecError` and leaves the caller's prior
-destination unchanged; a decoder never publishes a prefix.
+destination unchanged; a decoder never publishes a prefix. Boolean fields use
+only canonical bytes 0 and 1, and the decoded `wireValid` field must be true.
 
 ## Intents and operation results
 
@@ -100,8 +109,10 @@ User intents are the only mutation inputs: `RequestScanIntent` (bounded
 deadline), `ConnectIntent` (known-network id), `DisconnectIntent` (device
 interface), and `SetRadioIntent` (radio kind plus enable). No intent can carry
 a credential; the shared redaction helper recognizes secret-shaped key names
-and nested wire maps, and the client refuses credential-shaped parameter maps
-before transport.
+and bounded nested wire maps, and the client refuses credential-shaped or
+over-budget parameter maps before transport. Public diagnostics pass through
+the same canonical redactor; quoted, unquoted, suffix-shaped, and malformed
+secret fragments cannot enter public state, errors, or signal strings.
 
 Intent admission refuses absent/not-ready snapshots, unsupported capabilities,
 out-of-bounds scan deadlines, busy scans, live leases, unknown networks,

@@ -3,6 +3,7 @@
 
 #include <qindaqt/services/network_protocol/network_identity.h>
 #include <qindaqt/services/network_protocol/network_limits.h>
+#include <qindaqt/services/network_protocol/network_redaction.h>
 
 #include <QtCore/QSet>
 
@@ -21,31 +22,15 @@ bool inRange(const quint32 value, const quint32 maximum) {
   return value <= maximum;
 }
 
-bool isPrintableText(const QString &value) {
-  for (const QChar character : value) {
-    const char32_t code = character.unicode();
-    if (code <= 0x1FU || code == 0x7FU) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool isNormalizedSsidText(const QString &ssid) {
-  return !ssid.isEmpty() && isPrintableText(ssid)
+  return !ssid.isEmpty() && isPresentationSafeText(ssid)
          && isBoundedText(ssid, kMaxSsidUtf8Bytes);
 }
 
-// Known-network ids are exactly the 64 lowercase hex characters produced by
-// knownNetworkId(); anything else is an attacker-chosen opaque handle.
-bool isDerivedNetworkId(const QString &id) {
-  if (id.size() != 64) {
-    return false;
-  }
-  return std::all_of(id.cbegin(), id.cend(), [](const QChar character) {
-    const char16_t code = character.unicode();
-    return (code >= u'0' && code <= u'9') || (code >= u'a' && code <= u'f');
-  });
+bool isCanonicalPublicText(const QString &value,
+                           const qsizetype maximumUtf8Bytes) {
+  return isBoundedText(value, maximumUtf8Bytes)
+         && redactDiagnostic(value) == value;
 }
 
 bool hasUniqueRadioKinds(const QList<Radio> &radios) {
@@ -112,8 +97,49 @@ bool hasUniqueConnectionDevices(const QList<ActiveConnection> &connections) {
 } // namespace
 
 bool isBoundedText(const QString &value, const qsizetype maximumUtf8Bytes) {
-  return !value.contains(QChar::Null)
+  return maximumUtf8Bytes >= 0 && !value.contains(QChar::Null)
+         && isPresentationSafeText(value)
          && value.toUtf8().size() <= maximumUtf8Bytes;
+}
+
+bool isValidUniqueOwner(const QString &owner) {
+  if (!isBoundedText(owner, kMaxOwnerUtf8Bytes) || owner.size() < 4
+      || owner.front() != u':') {
+    return false;
+  }
+  bool sawDot = false;
+  bool segmentHasCharacter = false;
+  for (qsizetype index = 1; index < owner.size(); ++index) {
+    const QChar character = owner.at(index);
+    if (character == u'.') {
+      if (!segmentHasCharacter) {
+        return false;
+      }
+      sawDot = true;
+      segmentHasCharacter = false;
+      continue;
+    }
+    const char16_t code = character.unicode();
+    const bool asciiNameCharacter =
+        (code >= u'A' && code <= u'Z') || (code >= u'a' && code <= u'z')
+        || (code >= u'0' && code <= u'9') || code == u'_'
+        || code == u'-';
+    if (!asciiNameCharacter) {
+      return false;
+    }
+    segmentHasCharacter = true;
+  }
+  return sawDot && segmentHasCharacter;
+}
+
+bool isValidKnownNetworkId(const QString &id) {
+  if (id.size() != kMaxNetworkIdUtf8Bytes) {
+    return false;
+  }
+  return std::all_of(id.cbegin(), id.cend(), [](const QChar character) {
+    const char16_t code = character.unicode();
+    return (code >= u'0' && code <= u'9') || (code >= u'a' && code <= u'f');
+  });
 }
 
 ValidationResult validateRadio(const Radio &radio) {
@@ -186,7 +212,7 @@ ValidationResult validateKnownNetwork(const KnownNetwork &network) {
                static_cast<quint32>(SecuritySuite::Wpa3Enterprise))) {
     return reject(QStringLiteral("known-network-security-out-of-range"));
   }
-  if (!isDerivedNetworkId(network.id)) {
+  if (!isValidKnownNetworkId(network.id)) {
     return reject(QStringLiteral("known-network-id-not-derived"));
   }
   if (network.hidden) {
@@ -226,15 +252,16 @@ ValidationResult validateActiveConnection(const ActiveConnection &connection,
 }
 
 ValidationResult validateSnapshot(const Snapshot &snapshot) {
+  if (!snapshot.wireValid) {
+    return reject(QStringLiteral("snapshot-wire-invalid"));
+  }
   if (snapshot.protocolVersion != kProtocolVersion) {
     return reject(QStringLiteral("snapshot-protocol-version-unsupported"));
   }
   if (snapshot.epoch == 0 || snapshot.revision == 0) {
     return reject(QStringLiteral("snapshot-lineage-invalid"));
   }
-  if (!isBoundedText(snapshot.owner, kMaxOwnerUtf8Bytes)
-      || (snapshot.availability != Availability::Starting
-          && snapshot.owner.isEmpty())) {
+  if (!isValidUniqueOwner(snapshot.owner)) {
     return reject(QStringLiteral("snapshot-owner-invalid"));
   }
   const Capabilities knownCapabilityBits =
@@ -248,8 +275,9 @@ ValidationResult validateSnapshot(const Snapshot &snapshot) {
       || (snapshot.capabilities & ~knownCapabilityBits).toInt() != 0) {
     return reject(QStringLiteral("snapshot-enum-or-capability-out-of-range"));
   }
-  if (!isBoundedText(snapshot.reasonCode, kMaxReasonCodeUtf8Bytes)
-      || !isBoundedText(snapshot.diagnostic, kMaxDiagnosticUtf8Bytes)) {
+  if (!isCanonicalPublicText(snapshot.reasonCode, kMaxReasonCodeUtf8Bytes)
+      || !isCanonicalPublicText(snapshot.diagnostic,
+                                kMaxDiagnosticUtf8Bytes)) {
     return reject(QStringLiteral("snapshot-text-out-of-bounds"));
   }
   if ((snapshot.availability == Availability::Unavailable
@@ -313,17 +341,25 @@ ValidationResult validateSnapshot(const Snapshot &snapshot) {
     if (snapshot.scanLease != ScanLease{}) {
       return reject(QStringLiteral("snapshot-idle-scan-with-lease"));
     }
-  } else if (!isBoundedText(snapshot.scanLease.leaseId, kMaxLeaseIdUtf8Bytes)
+  } else if (!isCanonicalPublicText(snapshot.scanLease.leaseId,
+                                    kMaxLeaseIdUtf8Bytes)
              || snapshot.scanLease.leaseId.isEmpty()
              || snapshot.scanLease.grantedEpoch != snapshot.epoch
+             || snapshot.scanLease.grantedRevision == 0
              || snapshot.scanLease.grantedRevision > snapshot.revision
-             || snapshot.scanLease.deadlineEpochMs == 0) {
+             || snapshot.scanLease.durationMilliseconds
+                    < kMinimumScanDeadlineMilliseconds
+             || snapshot.scanLease.durationMilliseconds
+                    > kMaximumScanDeadlineMilliseconds) {
     return reject(QStringLiteral("snapshot-scan-lease-invalid"));
   }
   return accept();
 }
 
 ValidationResult validateOperationResult(const OperationResult &result) {
+  if (!result.wireValid) {
+    return reject(QStringLiteral("operation-wire-invalid"));
+  }
   if (!inRange(static_cast<quint32>(result.kind),
                static_cast<quint32>(OperationKind::SetRadio))
       || !inRange(static_cast<quint32>(result.status),
@@ -333,8 +369,9 @@ ValidationResult validateOperationResult(const OperationResult &result) {
   if (result.initiatingEpoch == 0 || result.initiatingRevision == 0) {
     return reject(QStringLiteral("operation-lineage-invalid"));
   }
-  if (!isBoundedText(result.reasonCode, kMaxReasonCodeUtf8Bytes)
-      || !isBoundedText(result.diagnostic, kMaxDiagnosticUtf8Bytes)) {
+  if (!isCanonicalPublicText(result.reasonCode, kMaxReasonCodeUtf8Bytes)
+      || !isCanonicalPublicText(result.diagnostic,
+                                kMaxDiagnosticUtf8Bytes)) {
     return reject(QStringLiteral("operation-text-out-of-bounds"));
   }
   if (result.status != OperationStatus::Succeeded && result.reasonCode.isEmpty()) {

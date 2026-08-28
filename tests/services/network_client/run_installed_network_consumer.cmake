@@ -25,6 +25,7 @@ file(REMOVE_RECURSE "${install_prefix}")
 
 set(install_command
     "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}"
+    --component QindaQtNetworkN0
 )
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")

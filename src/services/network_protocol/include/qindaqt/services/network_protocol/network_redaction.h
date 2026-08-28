@@ -26,9 +26,10 @@ namespace QindaQt::Network {
 // depth-bounded so hostile nesting cannot exhaust the stack.
 [[nodiscard]] bool wireContainsSecrets(const QVariantMap &wire);
 
-// Bounded, control-free diagnostic text. Secret-shaped `key=value` fragments
-// and `key: value` fragments are replaced with `key=<redacted>`; the result is
-// clamped to the v1 diagnostic byte cap and never fails closed on its own.
+// Bounded, presentation-safe diagnostic text. Secret-shaped `key=value`
+// fragments and `key: value` fragments are replaced with `key=<redacted>`.
+// Unsafe Unicode fails closed to a fixed public diagnostic, and every result
+// is clamped to the exact v1 UTF-8 byte cap.
 [[nodiscard]] QString redactDiagnostic(QString message);
 
 } // namespace QindaQt::Network

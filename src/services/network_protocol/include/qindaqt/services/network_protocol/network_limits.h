@@ -25,7 +25,9 @@ inline constexpr qsizetype kMaxSerializedBytes = 1'048'576;
 // rather than truncated, so a spoofed advertisement can never collapse onto a
 // different real network identity.
 inline constexpr qsizetype kMaxSsidRawBytes = 32;
-inline constexpr qsizetype kMaxSsidUtf8Bytes = kMaxSsidRawBytes * 4;
+// Presentation text is decoded from those same raw octets, so its encoded
+// form cannot legitimately exceed the raw 802.11 limit.
+inline constexpr qsizetype kMaxSsidUtf8Bytes = kMaxSsidRawBytes;
 inline constexpr qsizetype kMaxBssidUtf8Bytes = 17;
 // Linux interface names are limited to IFNAMSIZ-1 printable octets.
 inline constexpr qsizetype kMaxInterfaceUtf8Bytes = 15;
@@ -37,8 +39,9 @@ inline constexpr qsizetype kMaxDiagnosticUtf8Bytes = 512;
 inline constexpr qsizetype kMaxOwnerUtf8Bytes = 255;
 
 inline constexpr quint32 kMaximumSignalStrength = 100;
-// Zero means "frequency unknown"; otherwise only 2.4/5/6 GHz WLAN channels are
-// representable in v1. Wired devices leave the field at zero.
+// Zero means "frequency unknown". Nonzero values are bounded to the broad
+// observed 2.4/5/6 GHz range; an adapter must not mistake this defensive range
+// check for a regulatory-domain channel allowlist.
 inline constexpr quint32 kMinimumWlanFrequencyMHz = 2'412;
 inline constexpr quint32 kMaximumWlanFrequencyMHz = 7'125;
 
@@ -49,6 +52,14 @@ inline constexpr qint64 kMaximumScanDeadlineMilliseconds = 120'000;
 inline constexpr int kMinimumRequestTimeoutMilliseconds = 100;
 inline constexpr int kMaximumRequestTimeoutMilliseconds = 60'000;
 inline constexpr int kMaximumRetryDelayMilliseconds = 60'000;
+inline constexpr qsizetype kMaximumRetryDelays = 8;
+
+// Defense-in-depth budget for the public secret-recognition helper. Current
+// typed N0 intents use only flat maps, but future transport adapters must fail
+// closed rather than traverse attacker-sized nested QVariant containers.
+inline constexpr int kMaximumIntentWireDepth = 8;
+inline constexpr qsizetype kMaximumIntentWireContainerEntries = 16;
+inline constexpr qsizetype kMaximumIntentWireNodes = 64;
 
 // Canonical byte-codec identity. Any byte-layout change requires a new
 // accepted codec/protocol version; decoders never guess a layout.

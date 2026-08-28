@@ -23,16 +23,20 @@ class FakeNetworkTransport final : public NetworkTransport {
 
 public:
   bool start(QString *error = nullptr) override {
+    ++startCalls;
     if (m_startFails) {
       if (error != nullptr) {
-        *error = QStringLiteral("transport refused");
+        *error = m_startError;
       }
       return false;
     }
     m_running = true;
     return true;
   }
-  void stop() override { m_running = false; }
+  void stop() override {
+    ++stopCalls;
+    m_running = false;
+  }
   void requestSnapshot(const quint64 token, const QString &owner) override {
     snapshotRequests.append(qMakePair(token, owner));
     if (m_autoSnapshot.has_value() && m_running) {
@@ -81,8 +85,11 @@ public:
   };
   QList<QPair<quint64, QString>> snapshotRequests;
   QList<OperationCall> operations;
+  int startCalls = 0;
+  int stopCalls = 0;
   bool m_startFails = false;
   bool m_running = false;
+  QString m_startError = QStringLiteral("transport refused");
   std::optional<QPair<Snapshot, QByteArray>> m_autoSnapshot;
 };
 
@@ -106,7 +113,10 @@ private Q_SLOTS:
   void refetchesAfterInvalidation();
   void toleratesOutOfOrderDuplicateReply();
   void rejectsInvalidSnapshotReply();
+  void rejectsPayloadOwnerMismatchAtomically();
+  void rejectsMalformedOrOversizedOwnerSignal();
   void replacesOwnerAndRejectsAbaReplay();
+  void rejectsRetiredEpochAcrossRealOwnerCycle();
   void timesOutAndNeverReplaysSnapshot();
   void completesOperationAndRefreshes();
   void reportsUncertainOperationOnTimeout();
@@ -114,6 +124,7 @@ private Q_SLOTS:
   void rejectsLocalIntents();
   void tearsDownCleanlyAndIgnoresLateSignals();
   void reportsTransportLoss();
+  void retriesAfterFailedTransportStart();
   void rejectsInvalidTimingConfiguration();
 
 private:
@@ -147,6 +158,37 @@ void NetworkClientTests::reachesReadyBaseline() {
   QVERIFY(client->projection().hasSnapshot);
   QCOMPARE(client->projection().owner, QStringLiteral(":1.23"));
   QCOMPARE(m_transport->snapshotRequests.size(), 1);
+}
+
+void NetworkClientTests::rejectsMalformedOrOversizedOwnerSignal() {
+  std::unique_ptr<NetworkClient> client = makeClient();
+  const quint64 highWater = client->model().lineageHighWater()->epoch;
+
+  m_transport->emitOwner(QString(kMaxOwnerUtf8Bytes + 1, u'a'));
+  QCOMPARE(client->state(), ClientState::Degraded);
+  QVERIFY(!client->model().snapshot().has_value());
+  QCOMPARE(client->model().lineageHighWater()->epoch, highWater);
+  const qsizetype requestCount = m_transport->snapshotRequests.size();
+
+  m_transport->emitOwner(QStringLiteral("not-a-unique-owner"));
+  QCOMPARE(client->state(), ClientState::Degraded);
+  QCOMPARE(m_transport->snapshotRequests.size(), requestCount);
+  QVERIFY(client->lastError().contains(QStringLiteral("owner is invalid")));
+}
+
+void NetworkClientTests::rejectsPayloadOwnerMismatchAtomically() {
+  std::unique_ptr<NetworkClient> client = makeClient();
+  const Model::ModelState before = client->projection();
+
+  Snapshot foreignPayload = validSnapshot();
+  foreignPayload.owner = QStringLiteral(":1.42");
+  foreignPayload.epoch = 42;
+  foreignPayload.revision = 1;
+  m_transport->setAutoSnapshot(foreignPayload);
+  client->refresh();
+  QTRY_VERIFY_WITH_TIMEOUT(client->state() == ClientState::Degraded, 2'000);
+  QCOMPARE(client->projection(), before);
+  QCOMPARE(client->model().lineageHighWater()->epoch, quint64(41));
 }
 
 void NetworkClientTests::refetchesAfterInvalidation() {
@@ -265,6 +307,30 @@ void NetworkClientTests::replacesOwnerAndRejectsAbaReplay() {
   QCOMPARE(client->state(), ClientState::Ready);
 }
 
+void NetworkClientTests::rejectsRetiredEpochAcrossRealOwnerCycle() {
+  std::unique_ptr<NetworkClient> client = makeClient();
+
+  Snapshot ownerB = validSnapshot();
+  ownerB.owner = QStringLiteral(":1.42");
+  ownerB.epoch = 42;
+  ownerB.revision = 1;
+  m_transport->setAutoSnapshot(ownerB);
+  m_transport->emitOwner(ownerB.owner);
+  QTRY_VERIFY_WITH_TIMEOUT(
+      client->model().lineage().has_value()
+          && client->model().lineage()->owner == ownerB.owner,
+      2'000);
+
+  Snapshot retiredA = validSnapshot();
+  retiredA.revision = 500;
+  m_transport->setAutoSnapshot(retiredA);
+  m_transport->emitOwner(retiredA.owner);
+  QTRY_VERIFY_WITH_TIMEOUT(client->state() == ClientState::Degraded, 2'000);
+  QVERIFY(!client->model().snapshot().has_value());
+  QVERIFY(!client->model().lineage().has_value());
+  QCOMPARE(client->model().lineageHighWater()->epoch, quint64(42));
+}
+
 void NetworkClientTests::timesOutAndNeverReplaysSnapshot() {
   std::unique_ptr<NetworkClient> client = makeClient();
   m_transport->clearAutoSnapshot();
@@ -352,7 +418,7 @@ void NetworkClientTests::rejectsLocalIntents() {
   std::unique_ptr<NetworkClient> client = makeClient();
   QString error;
   QVERIFY(!client->connectKnownNetwork(QStringLiteral("deadbeef"), &error));
-  QCOMPARE(error, QStringLiteral("unknown-known-network"));
+  QCOMPARE(error, QStringLiteral("known-network-id-invalid"));
   QCOMPARE(m_transport->operations.size(), 0);
 
   QVERIFY(!client->requestScan(999, &error));
@@ -416,6 +482,33 @@ void NetworkClientTests::reportsTransportLoss() {
   QVERIFY(client->lastError().contains(QStringLiteral("disconnected")));
 }
 
+void NetworkClientTests::retriesAfterFailedTransportStart() {
+  FakeNetworkTransport transport;
+  transport.m_startFails = true;
+  transport.m_startError =
+      QStringLiteral("password=\"transport secret\" could not start");
+  NetworkClient client(transport, Model::MonotonicClock([this] {
+                         return m_now;
+                       }), fastTiming());
+  QString error;
+  QVERIFY(!client.start(&error));
+  QCOMPARE(client.state(), ClientState::Unavailable);
+  QVERIFY(!client.model().snapshot().has_value());
+  QVERIFY(!error.contains(QStringLiteral("transport secret")));
+  QVERIFY(!client.lastError().contains(QStringLiteral("transport secret")));
+  QCOMPARE(transport.startCalls, 1);
+  QCOMPARE(transport.stopCalls, 1);
+
+  transport.m_startFails = false;
+  QVERIFY(client.start(&error));
+  QVERIFY(error.isEmpty());
+  QCOMPARE(transport.startCalls, 2);
+  QVERIFY(transport.m_running);
+  QCOMPARE(client.state(), ClientState::Connecting);
+  client.stop();
+  QCOMPARE(transport.stopCalls, 2);
+}
+
 void NetworkClientTests::rejectsInvalidTimingConfiguration() {
   FakeNetworkTransport transport;
   ClientTiming broken = fastTiming();
@@ -424,6 +517,13 @@ void NetworkClientTests::rejectsInvalidTimingConfiguration() {
   QString error;
   QVERIFY(!client.start(&error));
   QVERIFY(!error.isEmpty());
+
+  ClientTiming tooMany = fastTiming();
+  tooMany.retryMilliseconds =
+      QVector<int>(kMaximumRetryDelays + 1, 100);
+  NetworkClient tooManyClient(transport, {}, tooMany);
+  QVERIFY(!tooManyClient.start(&error));
+  QCOMPARE(transport.startCalls, 0);
 }
 
 QTEST_MAIN(NetworkClientTests)

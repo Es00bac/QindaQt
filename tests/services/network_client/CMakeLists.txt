@@ -9,6 +9,17 @@ qindaqt_enable_warnings(qindaqt_network_client_tests)
 add_test(NAME qindaqt.network-client COMMAND qindaqt_network_client_tests)
 set_tests_properties(qindaqt.network-client PROPERTIES LABELS "service;network;pure")
 
+qt_add_executable(qindaqt_network_adversarial_tests tst_network_adversarial.cpp)
+target_include_directories(qindaqt_network_adversarial_tests
+                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../network_protocol")
+target_link_libraries(qindaqt_network_adversarial_tests
+                      PRIVATE QindaQt::NetworkClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_network_adversarial_tests)
+add_test(NAME qindaqt.network-adversarial
+         COMMAND qindaqt_network_adversarial_tests)
+set_tests_properties(qindaqt.network-adversarial
+                     PROPERTIES LABELS "service;network;pure;hostile")
+
 add_test(
     NAME qindaqt.network-installed-header-consumer
     COMMAND
@@ -43,3 +54,15 @@ add_test(
 )
 set_tests_properties(qindaqt.network-boundary
                      PROPERTIES LABELS "service;network;pure;policy")
+
+add_test(
+    NAME qindaqt.network-boundary-poison
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DBINARY_ROOT=${CMAKE_BINARY_DIR}"
+        "-DPOISON_ROOT=${CMAKE_CURRENT_BINARY_DIR}/boundary-poison"
+        "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary_negative.cmake"
+)
+set_tests_properties(qindaqt.network-boundary-poison
+                     PROPERTIES LABELS "service;network;pure;policy;hostile")

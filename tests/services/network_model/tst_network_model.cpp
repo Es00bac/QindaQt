@@ -3,6 +3,7 @@
 #include "network_protocol_test_data.h"
 
 #include <qindaqt/services/network_model/network_model.h>
+#include <qindaqt/services/network_protocol/network_redaction.h>
 
 #include <QtTest>
 
@@ -20,9 +21,11 @@ private Q_SLOTS:
   void ownerChangeWithNewEpochResetsState();
   void rejectsAbaReplayAtomically();
   void clearReportsUnavailableTruth();
+  void clearRetainsLineageHighWater();
   void publishesScanLeaseTruth();
   void marksBusyFromOperationInFlight();
   void redactsDiagnosticsOnProjection();
+  void rejectsUnredactedSecretAtomically();
   void hidesHiddenSsidInDisplayName();
   void modelRejectsLateLowerRevisionAfterOwnerCycle();
 
@@ -88,7 +91,7 @@ void NetworkModelTests::ownerChangeWithNewEpochResetsState() {
   Snapshot ownerA = validSnapshot();
   ownerA.scanPhase = ScanPhase::Leased;
   ownerA.scanLease = ScanLease{QStringLiteral("lease-a"), ownerA.epoch,
-                                ownerA.revision, 1'000'000};
+                                ownerA.revision, 120'000};
   QVERIFY(model.applySnapshot(ownerA).accepted);
   QVERIFY(model.scanLease().lease().has_value());
 
@@ -126,6 +129,8 @@ void NetworkModelTests::clearReportsUnavailableTruth() {
   model.clear();
   QVERIFY(!model.snapshot().has_value());
   QVERIFY(!model.lineage().has_value());
+  QVERIFY(model.lineageHighWater().has_value());
+  QCOMPARE(model.lineageHighWater()->epoch, quint64(41));
 
   const ModelState projection = model.projection();
   QVERIFY(!projection.hasSnapshot);
@@ -136,11 +141,32 @@ void NetworkModelTests::clearReportsUnavailableTruth() {
   QVERIFY(!model.snapshot().has_value());
 }
 
+void NetworkModelTests::clearRetainsLineageHighWater() {
+  NetworkModel model = makeModel();
+  Snapshot ownerA = validSnapshot();
+  QVERIFY(model.applySnapshot(ownerA).accepted);
+  model.clear();
+
+  Snapshot ownerB = validSnapshot();
+  ownerB.owner = QStringLiteral(":1.42");
+  ownerB.epoch = 42;
+  ownerB.revision = 1;
+  QVERIFY(model.applySnapshot(ownerB).accepted);
+  model.clear();
+
+  Snapshot retiredA = ownerA;
+  retiredA.revision = 500;
+  const NetworkModel::ApplyResult rejected = model.applySnapshot(retiredA);
+  QVERIFY(!rejected.accepted);
+  QCOMPARE(rejected.reasonCode, QStringLiteral("snapshot-epoch-not-newer"));
+  QVERIFY(!model.snapshot().has_value());
+  QCOMPARE(model.lineageHighWater()->epoch, quint64(42));
+}
+
 void NetworkModelTests::publishesScanLeaseTruth() {
   NetworkModel model = makeModel();
   Snapshot leased = leasedSnapshot(QStringLiteral("lease-1"));
-  // Deadline 120'000 against a fake clock at m_now; make it finite relative.
-  leased.scanLease.deadlineEpochMs = m_now + 30'000;
+  leased.scanLease.durationMilliseconds = 30'000;
   QVERIFY2(model.applySnapshot(leased).accepted, "lease adopted");
   QVERIFY(model.scanLease().lease().has_value());
 
@@ -176,8 +202,8 @@ void NetworkModelTests::redactsDiagnosticsOnProjection() {
   Snapshot degraded = validSnapshot();
   degraded.availability = Availability::Degraded;
   degraded.reasonCode = QStringLiteral("partial-inventory");
-  degraded.diagnostic =
-      QStringLiteral("device fetch failed: password=hunter2 ssid=Home");
+  degraded.diagnostic = redactDiagnostic(
+      QStringLiteral("device fetch failed: password=hunter2 ssid=Home"));
   QVERIFY(model.applySnapshot(degraded).accepted);
 
   const ModelState projection = model.projection();
@@ -185,6 +211,19 @@ void NetworkModelTests::redactsDiagnosticsOnProjection() {
   QVERIFY(projection.diagnostic.contains(QStringLiteral("password=<redacted>")));
   QVERIFY(projection.diagnostic.contains(QStringLiteral("ssid=Home")));
   QVERIFY(!projection.diagnostic.contains(QStringLiteral("hunter2")));
+}
+
+void NetworkModelTests::rejectsUnredactedSecretAtomically() {
+  NetworkModel model = makeModel();
+  QVERIFY(model.applySnapshot(validSnapshot()).accepted);
+  const ModelState before = model.projection();
+
+  Snapshot hostile = validSnapshot();
+  hostile.revision = 8;
+  hostile.diagnostic = QStringLiteral("password=do-not-publish");
+  QVERIFY(!model.applySnapshot(hostile).accepted);
+  QCOMPARE(model.projection(), before);
+  QCOMPARE(model.lineageHighWater()->revision, quint64(7));
 }
 
 void NetworkModelTests::hidesHiddenSsidInDisplayName() {

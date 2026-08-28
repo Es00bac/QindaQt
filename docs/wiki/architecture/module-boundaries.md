@@ -58,6 +58,9 @@ tests, and the wiki page describing its contract.
 | `src/services/bluetooth_model` | Adapter backend port, authoritative epoch/serial/lease coordination, operation validation, deterministic B0 platform adapter, and restart lineage | Public Bluetooth1 protocol plus Qt Core/DBus; never QML, shell, BlueZ mutation of pairing/trust, or D-Bus service ownership |
 | `src/services/bluetooth_client` | Exact-owner asynchronous Bluetooth1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty, and stale-reply rejection | Public Bluetooth1 protocol plus Qt Core/DBus; never service implementation, BluezQt, or QML |
 | `src/services/bluetooth_service` | Resident D-Bus object/name ownership, caller-scoped discovery-lease watching, process entry point, and activation/hardening artifacts | Public Bluetooth1 model/protocol plus Qt Core/DBus; never pairing/trust authority, BlueZ supervision, shell/settings UI, or QML |
+| `src/services/network_protocol` | Network1 bounded values, identity normalization, fail-closed validation/redaction, and canonical byte codecs | Qt Core only; never transport state, D-Bus, NetworkManager, platform objects, credentials, or QML |
+| `src/services/network_model` | Pure lineage high-water, scan-lease reconciliation, intent admission, and atomic projection | Public Network1 protocol plus Qt Core; never clocks/timers, transport, platform state, persistence, credentials, or QML |
+| `src/services/network_client` | Exact-owner asynchronous snapshots and operations, bounded timeout/retry, uncertain outcomes, and injected transport composition | Public Network1 protocol/model plus Qt Core; never a concrete transport, D-Bus, NetworkManager, radios, credentials, or QML |
 | `src/services/notification_presentation_protocol` | Versioned presentation values, bounded D-Bus decoding, wire limits, restart lineage, 256-bit presenter-token values, and exact one-shot descriptor records | Qt Core/DBus and Linux descriptor syscalls; never notification policy, child lifecycle, host objects, or shell QML |
 | `src/services/notification_presentation_client` | Unique-owner binding, asynchronous authentication/snapshots, serialized operations, initiating-revision result validation, bounded error normalization, uncertain-result recovery, timeout/backoff, invalidation coalescing, and stale-reply rejection | Public presentation protocol plus Qt Core/DBus; never host/service implementation or QML |
 | `src/services/session_lock_state` | Fail-closed owner/PID-authenticated KWin/KScreenLocker state, asynchronous query/signal fencing, and bounded object-startup retry | Qt Core/DBus and a supervisor-provisioned PID value; never shell, notification, compositor-private, PAM, or QML objects |
@@ -133,6 +136,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   paired-device connect/disconnect only, and pairing prompts belong to a
   separate Agent1 outcome. See [Bluetooth service](bluetooth-service.md) and
   [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
+- Network consumers depend on the typed Network1 client. The dependency
+  direction is protocol → model → client; the client accepts only an injected
+  transport and the pure N0 boundary contains no D-Bus, NetworkManager,
+  platform radio, credential, persistence, or QML authority. See
+  [Network service](network-service.md) and
+  [ADR-0045](../adr/0045-fence-network1-pure-boundary.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,

@@ -11,7 +11,10 @@ foreach(module IN ITEMS network_protocol network_model network_client)
         "${SOURCE_ROOT}/src/services/${module}/*.h"
         "${SOURCE_ROOT}/src/services/${module}/*.cpp"
     )
-    list(APPEND network_sources "${SOURCE_ROOT}/src/services/${module}/CMakeLists.txt")
+    if(EXISTS "${SOURCE_ROOT}/src/services/${module}/CMakeLists.txt")
+        list(APPEND network_sources
+             "${SOURCE_ROOT}/src/services/${module}/CMakeLists.txt")
+    endif()
 
     foreach(source IN LISTS network_sources)
         file(READ "${source}" content)

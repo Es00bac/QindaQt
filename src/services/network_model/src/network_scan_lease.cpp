@@ -1,15 +1,30 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/network_model/network_scan_lease.h>
 
+#include <qindaqt/services/network_protocol/network_limits.h>
+
+#include <limits>
+
 namespace QindaQt::Network::Model {
 
 ScanLeaseTracker::ScanLeaseTracker() = default;
 
-void ScanLeaseTracker::adopt(const ScanLease &lease, const quint64 epoch) {
-  if (lease.grantedEpoch != epoch) {
-    return;
+bool ScanLeaseTracker::adopt(const ScanLease &lease, const quint64 epoch,
+                             const MonotonicClock &clock) {
+  if (lease.grantedEpoch != epoch || !clock
+      || lease.durationMilliseconds < kMinimumScanDeadlineMilliseconds
+      || lease.durationMilliseconds > kMaximumScanDeadlineMilliseconds) {
+    return false;
+  }
+  const qint64 now = clock();
+  if (now < 0
+      || now > std::numeric_limits<qint64>::max()
+                   - lease.durationMilliseconds) {
+    return false;
   }
   m_lease = lease;
+  m_deadlineMs = now + lease.durationMilliseconds;
+  return true;
 }
 
 bool ScanLeaseTracker::active(const MonotonicClock &clock) const {
@@ -21,7 +36,7 @@ bool ScanLeaseTracker::expired(const MonotonicClock &clock) const {
     return false;
   }
   const qint64 now = clock ? clock() : 0;
-  return now >= m_lease->deadlineEpochMs;
+  return now >= m_deadlineMs;
 }
 
 qint64 ScanLeaseTracker::remainingMs(const MonotonicClock &clock) const {
@@ -29,7 +44,7 @@ qint64 ScanLeaseTracker::remainingMs(const MonotonicClock &clock) const {
     return 0;
   }
   const qint64 now = clock ? clock() : 0;
-  return m_lease->deadlineEpochMs - now;
+  return m_deadlineMs - now;
 }
 
 } // namespace QindaQt::Network::Model
