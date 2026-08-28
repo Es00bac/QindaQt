@@ -21,29 +21,10 @@ bool containsForbiddenControl(const QString &value)
     return false;
 }
 
-bool isDigit(QChar character)
-{
-    return character >= u'0' && character <= u'9';
-}
-
 ValidationOutcome validateText(const QString &value, qsizetype maxUtf8Bytes, ValidationError error)
 {
     if (!isBoundedSafeText(value, maxUtf8Bytes)) {
         return ValidationOutcome::failure(error, QStringLiteral("unbounded-or-control-text"));
-    }
-    return ValidationOutcome::success();
-}
-
-ValidationOutcome validatePixmapList(const QList<Pixmap> &pixmaps, qsizetype maxCount, ValidationError error)
-{
-    if (pixmaps.size() > maxCount) {
-        return ValidationOutcome::failure(error, QStringLiteral("pixmap-count-exceeded"));
-    }
-    for (const Pixmap &pixmap : pixmaps) {
-        const ValidationOutcome outcome = validatePixmap(pixmap);
-        if (!outcome.accepted) {
-            return outcome;
-        }
     }
     return ValidationOutcome::success();
 }
@@ -63,35 +44,56 @@ ValidationOutcome ValidationOutcome::failure(ValidationError error, QString reas
 bool isValidUniqueBusName(const QString &value)
 {
     const qsizetype length = value.size();
-    if (length < 3 || length > kMaxUniqueNameUtf8Bytes) {
+    if (length < 4 || length > kMaxUniqueNameUtf8Bytes) {
         return false;
     }
     if (!value.startsWith(u':')) {
         return false;
     }
-    const qsizetype separator = value.indexOf(u'.');
-    if (separator <= 1 || separator == length - 1) {
+
+    qsizetype elementStart = 1;
+    qsizetype dotCount = 0;
+
+    for (qsizetype index = 1; index < length; ++index) {
+        const QChar character = value.at(index);
+        if (character == u'.') {
+            if (index == elementStart) {
+                // Empty element (e.g. leading dot ":.x", consecutive dots "..", etc.)
+                return false;
+            }
+            ++dotCount;
+            elementStart = index + 1;
+        } else {
+            const char16_t code = character.unicode();
+            const bool allowed = (code >= u'a' && code <= u'z')
+                || (code >= u'A' && code <= u'Z')
+                || (code >= u'0' && code <= u'9')
+                || code == u'_' || code == u'-';
+            if (!allowed) {
+                return false;
+            }
+        }
+    }
+
+    if (elementStart == length) {
+        // Trailing dot (e.g. ":1.42.")
         return false;
     }
-    for (qsizetype index = 1; index < length; ++index) {
-        if (index == separator) {
-            continue;
-        }
-        if (!isDigit(value.at(index))) {
-            return false;
-        }
-    }
-    return true;
+
+    return dotCount >= 1;
 }
 
 bool isValidObjectPath(const QString &value)
 {
     const qsizetype length = value.size();
-    if (length < 2 || length > kMaxObjectPathUtf8Bytes) {
+    if (length < 1 || length > kMaxObjectPathUtf8Bytes) {
         return false;
     }
     if (!value.startsWith(u'/')) {
         return false;
+    }
+    if (length == 1) {
+        return true;
     }
     if (value.endsWith(u'/')) {
         return false;
@@ -183,9 +185,32 @@ ValidationOutcome validateIconPayload(const IconPayload &icon)
     if (!movie.accepted) {
         return movie;
     }
-    return validatePixmapList(icon.pixmaps + icon.attentionPixmaps,
-                              kMaxIconPixmaps,
-                              ValidationError::InvalidIcon);
+
+    // AGENT-GUARD: Validate aggregate counts before iterating; do not concatenate lists,
+    // which would allocate and copy hostile payload vectors before refusal.
+    const qsizetype pixmapsCount = icon.pixmaps.size();
+    const qsizetype attentionPixmapsCount = icon.attentionPixmaps.size();
+    if (pixmapsCount < 0 || attentionPixmapsCount < 0
+        || pixmapsCount > kMaxIconPixmaps
+        || attentionPixmapsCount > (kMaxIconPixmaps - pixmapsCount)) {
+        return ValidationOutcome::failure(ValidationError::InvalidIcon,
+                                          QStringLiteral("pixmap-count-exceeded"));
+    }
+
+    for (const Pixmap &pixmap : icon.pixmaps) {
+        const ValidationOutcome outcome = validatePixmap(pixmap);
+        if (!outcome.accepted) {
+            return outcome;
+        }
+    }
+    for (const Pixmap &pixmap : icon.attentionPixmaps) {
+        const ValidationOutcome outcome = validatePixmap(pixmap);
+        if (!outcome.accepted) {
+            return outcome;
+        }
+    }
+
+    return ValidationOutcome::success();
 }
 
 ValidationOutcome validateToolTip(const ToolTipPayload &toolTip)
@@ -203,7 +228,18 @@ ValidationOutcome validateToolTip(const ToolTipPayload &toolTip)
         return ValidationOutcome::failure(ValidationError::InvalidToolTip,
                                           QStringLiteral("blank-or-control-text"));
     }
-    return validatePixmapList(toolTip.pixmaps, kMaxToolTipPixmaps, ValidationError::InvalidToolTip);
+
+    if (toolTip.pixmaps.size() > kMaxToolTipPixmaps) {
+        return ValidationOutcome::failure(ValidationError::InvalidToolTip,
+                                          QStringLiteral("pixmap-count-exceeded"));
+    }
+    for (const Pixmap &pixmap : toolTip.pixmaps) {
+        const ValidationOutcome outcome = validatePixmap(pixmap);
+        if (!outcome.accepted) {
+            return outcome;
+        }
+    }
+    return ValidationOutcome::success();
 }
 
 namespace

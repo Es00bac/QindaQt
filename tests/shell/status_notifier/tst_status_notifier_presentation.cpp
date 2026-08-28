@@ -44,6 +44,16 @@ ItemDescriptor descriptorWith(const QString &identity, const QString &title, Ite
 class FakeStatusNotifierTransport final : public StatusNotifierTransport
 {
 public:
+    explicit FakeStatusNotifierTransport(int *detachCount = nullptr)
+        : m_detachCount(detachCount)
+    {
+    }
+
+    ~FakeStatusNotifierTransport() override
+    {
+        detach();
+    }
+
     void attach(StatusNotifierEventSink *sink) override
     {
         // The interface contract refuses null and re-attachment; the fake
@@ -56,55 +66,96 @@ public:
 
     void detach() override
     {
+        if (m_sink != nullptr && m_detachCount != nullptr) {
+            ++(*m_detachCount);
+        }
         m_sink = nullptr;
+        m_currentEpoch = 0;
+        m_allocatedGenerations.clear();
     }
 
     [[nodiscard]] bool isAttached() const override { return m_sink != nullptr; }
 
-    void emitOwnerAppeared(const QString &owner)
+    [[nodiscard]] quint64 emitWatcherEpoch()
     {
-        m_allocatedGenerations.insert(owner, m_sink->beginOwnerGeneration(owner));
+        if (!m_sink) {
+            return 0;
+        }
+        m_currentEpoch = m_sink->beginWatcherEpoch();
+        return m_currentEpoch;
     }
 
-    void emitOwnerLost(const QString &owner)
+    [[nodiscard]] RegistryOutcome emitInitialPopulationComplete(quint64 epoch = 0)
     {
-        const RegistryOutcome outcome =
-            m_sink->ownerLost(owner, m_allocatedGenerations.value(owner));
+        if (!m_sink) {
+            return RegistryOutcome{RegistryStatus::UnknownItem, {}};
+        }
+        const quint64 targetEpoch = (epoch != 0) ? epoch : m_currentEpoch;
+        return m_sink->markInitialPopulationComplete(targetEpoch);
+    }
+
+    quint64 emitOwnerAppeared(const QString &owner, quint64 epoch = 0)
+    {
+        if (!m_sink) {
+            return 0;
+        }
+        const quint64 targetEpoch = (epoch != 0) ? epoch : m_currentEpoch;
+        const quint64 gen = m_sink->beginOwnerGeneration(targetEpoch, owner);
+        if (gen != 0) {
+            m_allocatedGenerations.insert(owner, gen);
+        }
+        return gen;
+    }
+
+    [[nodiscard]] RegistryOutcome emitOwnerLost(const QString &owner, quint64 epoch = 0, quint64 gen = 0)
+    {
+        if (!m_sink) {
+            return RegistryOutcome{RegistryStatus::UnknownItem, {}};
+        }
+        const quint64 targetEpoch = (epoch != 0) ? epoch : m_currentEpoch;
+        const quint64 targetGen = (gen != 0) ? gen : m_allocatedGenerations.value(owner);
+        const RegistryOutcome outcome = m_sink->ownerLost(targetEpoch, owner, targetGen);
         if (outcome.accepted()) {
             m_allocatedGenerations.remove(owner);
         }
+        return outcome;
     }
 
     [[nodiscard]] RegistryOutcome emitItemRegistered(const QString &owner, const QString &path,
-                                                     const ItemDescriptor &descriptor)
+                                                     const ItemDescriptor &descriptor,
+                                                     quint64 epoch = 0, quint64 gen = 0)
     {
-        return m_sink->registerItem(key(owner, path, m_allocatedGenerations.value(owner)),
-                                    descriptor);
+        if (!m_sink) {
+            return RegistryOutcome{RegistryStatus::UnknownItem, {}};
+        }
+        const quint64 targetEpoch = (epoch != 0) ? epoch : m_currentEpoch;
+        const quint64 targetGen = (gen != 0) ? gen : m_allocatedGenerations.value(owner);
+        return m_sink->registerItem(targetEpoch, key(owner, path, targetGen), descriptor);
     }
 
-    [[nodiscard]] RegistryOutcome emitItemRemoved(const QString &owner, const QString &path)
+    [[nodiscard]] RegistryOutcome emitItemRemoved(const QString &owner, const QString &path,
+                                                  quint64 epoch = 0, quint64 gen = 0)
     {
-        return m_sink->removeItem(key(owner, path, m_allocatedGenerations.value(owner)));
+        if (!m_sink) {
+            return RegistryOutcome{RegistryStatus::UnknownItem, {}};
+        }
+        const quint64 targetEpoch = (epoch != 0) ? epoch : m_currentEpoch;
+        const quint64 targetGen = (gen != 0) ? gen : m_allocatedGenerations.value(owner);
+        return m_sink->removeItem(targetEpoch, key(owner, path, targetGen));
     }
 
-    void emitInitialPopulationComplete()
-    {
-        m_sink->markInitialPopulationComplete();
-    }
-
-    void emitWatcherEpoch()
-    {
-        m_sink->beginWatcherEpoch();
-    }
-
+    [[nodiscard]] quint64 currentEpoch() const { return m_currentEpoch; }
     [[nodiscard]] quint64 generation(const QString &owner) const
     {
         return m_allocatedGenerations.value(owner);
     }
+    [[nodiscard]] StatusNotifierEventSink *sink() const { return m_sink; }
 
 private:
     StatusNotifierEventSink *m_sink = nullptr;
+    quint64 m_currentEpoch = 0;
     QHash<QString, quint64> m_allocatedGenerations;
+    int *m_detachCount = nullptr;
 };
 
 } // namespace
@@ -127,7 +178,8 @@ private slots:
     void showsEmptyAfterPopulationWithNoItems()
     {
         StatusNotifierRegistry registry;
-        registry.markInitialPopulationComplete();
+        const quint64 epoch = registry.beginWatcherEpoch();
+        QVERIFY(registry.markInitialPopulationComplete(epoch).accepted());
         const TrayPresentation presentation =
             projectPresentation(registry, {.transportLive = true});
         QCOMPARE(presentation.state, PresentationState::Empty);
@@ -138,14 +190,17 @@ private slots:
     void watcherLossDegradesButRetainsLastKnownGoodItems()
     {
         StatusNotifierRegistry registry;
-        QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
-        registry.markInitialPopulationComplete();
+        const quint64 epoch = registry.beginWatcherEpoch();
+        QVERIFY(registry.beginOwnerGeneration(epoch, kPrimaryOwner) != 0);
         QVERIFY(registry
-                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 1),
+                    .registerItem(epoch,
+                                  key(kPrimaryOwner, kPrimaryPath, 1),
                                   descriptorWith(QStringLiteral("id"),
                                                  QStringLiteral("Title"),
                                                  ItemStatus::Active))
                     .accepted());
+        QVERIFY(registry.markInitialPopulationComplete(epoch).accepted());
+
         const TrayPresentation presentation =
             projectPresentation(registry, {.transportLive = false});
         QCOMPARE(presentation.state, PresentationState::Degraded);
@@ -165,21 +220,24 @@ private slots:
     void projectsReadyItemsWithStableOrderAndIdentities()
     {
         StatusNotifierRegistry registry;
-        QVERIFY(registry.beginOwnerGeneration(kSecondaryOwner) != 0);
-        QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
+        const quint64 epoch = registry.beginWatcherEpoch();
+        QVERIFY(registry.beginOwnerGeneration(epoch, kSecondaryOwner) != 0);
+        QVERIFY(registry.beginOwnerGeneration(epoch, kPrimaryOwner) != 0);
         QVERIFY(registry
-                    .registerItem(key(kSecondaryOwner, kSecondaryPath, 1),
+                    .registerItem(epoch,
+                                  key(kSecondaryOwner, kSecondaryPath, 1),
                                   descriptorWith(QStringLiteral("zeta.identity"),
                                                  QStringLiteral("Zeta app"),
                                                  ItemStatus::NeedsAttention))
                     .accepted());
         QVERIFY(registry
-                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 2),
+                    .registerItem(epoch,
+                                  key(kPrimaryOwner, kPrimaryPath, 2),
                                   descriptorWith(QStringLiteral("alpha.identity"),
                                                  QString(),
                                                  ItemStatus::Active))
                     .accepted());
-        registry.markInitialPopulationComplete();
+        QVERIFY(registry.markInitialPopulationComplete(epoch).accepted());
 
         const TrayPresentation presentation =
             projectPresentation(registry, {.transportLive = true});
@@ -218,13 +276,15 @@ private slots:
     void injectedTextsFormTheLocalizationBoundary()
     {
         StatusNotifierRegistry registry;
-        QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
+        const quint64 epoch = registry.beginWatcherEpoch();
+        QVERIFY(registry.beginOwnerGeneration(epoch, kPrimaryOwner) != 0);
         QVERIFY(registry
-                    .registerItem(key(kPrimaryOwner, kPrimaryPath, 1),
+                    .registerItem(epoch,
+                                  key(kPrimaryOwner, kPrimaryPath, 1),
                                   descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
                                                  ItemStatus::NeedsAttention))
                     .accepted());
-        registry.markInitialPopulationComplete();
+        QVERIFY(registry.markInitialPopulationComplete(epoch).accepted());
 
         PresentationTexts localized;
         localized.statusNeedsAttention = QStringLiteral("benötigt Aufmerksamkeit");
@@ -249,19 +309,21 @@ private slots:
     void degradedRegistryKeepsLastKnownGoodItems()
     {
         StatusNotifierRegistry registry;
-        QVERIFY(registry.beginOwnerGeneration(kPrimaryOwner) != 0);
+        const quint64 epoch = registry.beginWatcherEpoch();
+        QVERIFY(registry.beginOwnerGeneration(epoch, kPrimaryOwner) != 0);
         const OwnerKey owner = key(kPrimaryOwner, kPrimaryPath, 1);
         QVERIFY(registry
-                    .registerItem(owner,
+                    .registerItem(epoch,
+                                  owner,
                                   descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
                                                  ItemStatus::Active))
                     .accepted());
-        registry.markInitialPopulationComplete();
+        QVERIFY(registry.markInitialPopulationComplete(epoch).accepted());
 
         ItemDescriptor malformed = descriptorWith(QStringLiteral("id"), QStringLiteral("Title"),
-                                                  ItemStatus::Active);
+                                                   ItemStatus::Active);
         malformed.identity = QStringLiteral("   ");
-        QVERIFY(!registry.registerItem(owner, malformed).accepted());
+        QVERIFY(!registry.registerItem(epoch, owner, malformed).accepted());
 
         const TrayPresentation presentation =
             projectPresentation(registry, {.transportLive = true});
@@ -271,12 +333,28 @@ private slots:
         QCOMPARE(presentation.items.at(0).accessibleName, QStringLiteral("Title"));
     }
 
-    void fakeTransportDrivesLifecycleIncludingRebaseline()
+    void fakeTransportDrivesLifecycleIncludingRebaselineAndReconciliation()
     {
         StatusNotifierRegistry registry;
         FakeStatusNotifierTransport transport;
+
+        // Null-first attach test
+        transport.attach(nullptr);
+        QVERIFY(!transport.isAttached());
+
         transport.attach(&registry);
         QVERIFY(transport.isAttached());
+        QCOMPARE(transport.sink(), &registry);
+
+        // Second attach while attached is refused
+        StatusNotifierRegistry secondRegistry;
+        transport.attach(&secondRegistry);
+        QVERIFY(transport.isAttached());
+        QCOMPARE(transport.sink(), &registry);
+
+        // Epoch 1 start
+        const quint64 epoch1 = transport.emitWatcherEpoch();
+        QCOMPARE(epoch1, quint64(1));
 
         transport.emitOwnerAppeared(kPrimaryOwner);
         QVERIFY(transport
@@ -286,7 +364,7 @@ private slots:
                                                        QStringLiteral("Title"),
                                                        ItemStatus::Active))
                     .accepted());
-        transport.emitInitialPopulationComplete();
+        QVERIFY(transport.emitInitialPopulationComplete().accepted());
 
         const OwnerKey live = key(kPrimaryOwner,
                                   kPrimaryPath,
@@ -308,54 +386,97 @@ private slots:
                  PresentationState::Degraded);
 
         // Watcher reconnect opens a new epoch: fail-closed Loading until the
-        // replacement population is observed, then Ready again.
-        transport.emitWatcherEpoch();
+        // replacement population is observed.
+        const quint64 epoch2 = transport.emitWatcherEpoch();
+        QCOMPARE(epoch2, quint64(2));
         QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
                  PresentationState::Loading);
-        transport.emitInitialPopulationComplete();
-        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
-                 PresentationState::Ready);
-        // The pre-reconnect item survived the watcher swap (its owner never
-        // left the bus) and remains actionable under the same generation.
-        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).outcome.status,
-                 RegistryStatus::Accepted);
 
-        QVERIFY(transport.emitItemRemoved(kPrimaryOwner, kPrimaryPath).accepted());
-        QCOMPARE(registry.count(), qsizetype(0));
-        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).outcome.status,
-                 RegistryStatus::UnknownItem);
-        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
-                 PresentationState::Empty);
-
-        // A source restart under the same unique name must be rebased: new
-        // generation, stale pre-restart intents refused, fresh item accepted.
-        transport.emitOwnerAppeared(kPrimaryOwner);
-        QVERIFY(transport.generation(kPrimaryOwner) > live.generation);
-        QCOMPARE(registry.evaluateRequest(live, RequestKind::ContextMenu).outcome.status,
-                 RegistryStatus::StaleOwner);
-
+        // Re-register item in epoch 2 and complete population
         QVERIFY(transport
                     .emitItemRegistered(kPrimaryOwner,
                                         kPrimaryPath,
                                         descriptorWith(QStringLiteral("identity"),
                                                        QStringLiteral("Title"),
+                                                       ItemStatus::Active))
+                    .accepted());
+        QVERIFY(transport.emitInitialPopulationComplete().accepted());
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Ready);
+        // The item remains actionable under the same generation.
+        QCOMPARE(registry.evaluateRequest(live, RequestKind::Activate).outcome.status,
+                 RegistryStatus::Accepted);
+
+        // Watcher reconnect with empty replacement reconciles to Empty
+        const quint64 epoch3 = transport.emitWatcherEpoch();
+        QCOMPARE(epoch3, quint64(3));
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Loading);
+        QVERIFY(transport.emitInitialPopulationComplete().accepted());
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Empty);
+        QCOMPARE(registry.count(), qsizetype(0));
+
+        // Start epoch 4, register item, then remove it
+        const quint64 epoch4 = transport.emitWatcherEpoch();
+        QCOMPARE(epoch4, quint64(4));
+        transport.emitOwnerAppeared(kPrimaryOwner);
+        const quint64 gen4 = transport.generation(kPrimaryOwner);
+        const OwnerKey key4 = key(kPrimaryOwner, kPrimaryPath, gen4);
+        QVERIFY(transport
+                    .emitItemRegistered(kPrimaryOwner,
+                                        kPrimaryPath,
+                                        descriptorWith(QStringLiteral("identity4"),
+                                                       QStringLiteral("Title4"),
+                                                       ItemStatus::Active))
+                    .accepted());
+        QVERIFY(transport.emitInitialPopulationComplete().accepted());
+        QCOMPARE(registry.count(), qsizetype(1));
+
+        QVERIFY(transport.emitItemRemoved(kPrimaryOwner, kPrimaryPath).accepted());
+        QCOMPARE(registry.count(), qsizetype(0));
+        QCOMPARE(registry.evaluateRequest(key4, RequestKind::Activate).outcome.status,
+                 RegistryStatus::UnknownItem);
+        QCOMPARE(projectPresentation(registry, {.transportLive = true}).state,
+                 PresentationState::Empty);
+
+        // Source restart under same unique name: rebase allocation
+        transport.emitOwnerAppeared(kPrimaryOwner);
+        QVERIFY(transport.generation(kPrimaryOwner) > gen4);
+        QCOMPARE(registry.evaluateRequest(key4, RequestKind::ContextMenu).outcome.status,
+                 RegistryStatus::StaleOwner);
+
+        QVERIFY(transport
+                    .emitItemRegistered(kPrimaryOwner,
+                                        kPrimaryPath,
+                                        descriptorWith(QStringLiteral("identity5"),
+                                                       QStringLiteral("Title5"),
                                                        ItemStatus::Passive))
                     .accepted());
         QCOMPARE(registry.count(), qsizetype(1));
-        transport.emitOwnerLost(kPrimaryOwner);
+        QVERIFY(transport.emitOwnerLost(kPrimaryOwner).accepted());
         QCOMPARE(registry.count(), qsizetype(0));
 
+        // Detach and re-attach to a different sink
         transport.detach();
         QVERIFY(!transport.isAttached());
-        // Re-attachment after detach works; attaching twice or a null sink is
-        // refused by the contract the fake mirrors.
-        transport.attach(&registry);
+        QCOMPARE(transport.currentEpoch(), quint64(0));
+        QCOMPARE(transport.generation(kPrimaryOwner), quint64(0));
+        transport.attach(&secondRegistry);
         QVERIFY(transport.isAttached());
-        StatusNotifierEventSink *nullSink = nullptr;
-        transport.attach(nullSink);
-        QVERIFY(transport.isAttached());
+        QCOMPARE(transport.sink(), &secondRegistry);
         transport.detach();
         QVERIFY(!transport.isAttached());
+
+        // Destructor detach is observed after the fake itself is gone, so the
+        // assertion proves the destructor performed the required transition.
+        int destructorDetachCount = 0;
+        {
+            FakeStatusNotifierTransport scopedTransport(&destructorDetachCount);
+            scopedTransport.attach(&registry);
+            QVERIFY(scopedTransport.isAttached());
+        }
+        QCOMPARE(destructorDetachCount, 1);
     }
 };
 

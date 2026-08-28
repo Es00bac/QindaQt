@@ -583,17 +583,22 @@ ctest --test-dir build/dev \
 ```
 
 The three tests discover exactly three CTest rows and cover validated
-item/icon/menu/status values with hostile bounds, the exact-owner keyed
-registry with generation fencing (spoofed owner, stale reply, duplicate
+item/icon/menu/status values with hostile bounds (including canonical unique
+bus names, root object path, in-place aggregate pixmap checks), the exact-owner
+keyed registry with generation fencing (spoofed owner, stale reply, duplicate
 identity, restart, live-owner rebaseline, generation-fenced loss, bounded
-owner history, capacity overflow, malformed-replacement degradation), watcher
-loss and reconnect rebaseline presentation, typed accepted request intents,
-and a full lifecycle driven through the injected fake transport. The transport
-is a fake by construction: this boundary is strictly source and unit level and
-must not open a session bus, own a name, contact a watcher or item, or render
-a surface. Live watcher binding, item property decoding, DBusMenu revisions,
-a rendered panel tray, and assistive-technology behavior remain separate later
-milestones with their own gates.
+owner history, capacity overflow, malformed-replacement degradation, monotonic
+watcher epoch fencing with empty/partial/full reconciliation, generation and
+epoch exhaustion, intent revalidation), watcher loss and reconnect rebaseline
+presentation, typed accepted request intents, and a scripted lifecycle driven
+through the injected fake transport. Attachment cases distinguish null-first
+refusal, different-sink reattach refusal, explicit detach state clearing, and
+destructor-triggered detach. The transport is a fake by construction: this
+boundary is strictly source and unit level and must not open a session bus, own
+a name, contact a watcher or item, or render a surface. Live watcher binding,
+item property decoding, DBusMenu revisions, a rendered panel tray, and
+assistive-technology behavior remain separate later milestones with their own
+gates.
 
 ## Current Settings1 and persistent quieting proof
 

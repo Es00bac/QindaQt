@@ -11,6 +11,7 @@
 #include <QtCore/QString>
 
 #include <optional>
+#include <type_traits>
 
 namespace QindaQt::StatusNotifier
 {
@@ -21,13 +22,14 @@ namespace QindaQt::StatusNotifier
 // degradation acknowledgement exist only on this concrete class.
 //
 // Fencing model: generations come from one globally monotonic counter, so a
-// generation value is never reissued — not after owner loss, bounded-history
-// eviction, or counter-wrap refusal. Only live owners occupy tracking slots;
+// generation value is never reissued after owner loss, slot reuse, or
+// counter-wrap refusal. Only live owners occupy tracking slots;
 // an ownerLost() retires the name immediately and drops its items. Every
 // keyed event (registration, removal, mass removal, loss) must carry the
-// owner's current generation, so a reply that races a disconnect or restart
-// is rejected as stale instead of resurrecting removed items. Ownership lives
-// on the bus unique name; a well-known name is rejected as an owner.
+// current watcher epoch and the owner's current generation, so a reply that
+// races a reconnect, disconnect, or restart is rejected as stale instead of
+// corrupting state or resurrecting removed items. Ownership lives on the bus
+// unique name; a well-known name is rejected as an owner.
 class StatusNotifierRegistry final : public StatusNotifierEventSink
 {
 public:
@@ -43,27 +45,43 @@ public:
                                const RequestEvaluation &) = default;
     };
 
-    StatusNotifierRegistry() = default;
+    // The optional seeds are a deterministic counter-exhaustion test seam.
+    // Production constructs the default zero-seeded singular authority; seed
+    // values are neither persisted state nor transferable between registries.
+    explicit StatusNotifierRegistry(quint64 initialGenerationSeed = 0,
+                                    quint64 initialWatcherEpochSeed = 0);
+
+    StatusNotifierRegistry(const StatusNotifierRegistry &) = delete;
+    StatusNotifierRegistry &operator=(const StatusNotifierRegistry &) = delete;
+    StatusNotifierRegistry(StatusNotifierRegistry &&) = delete;
+    StatusNotifierRegistry &operator=(StatusNotifierRegistry &&) = delete;
+
+    // Starts a new watcher epoch and returns its monotonic identifier.
+    [[nodiscard]] quint64 beginWatcherEpoch() override;
+    // Marks initial population complete for `epoch` and reconciles membership
+    // by pruning any registered items not observed in this epoch.
+    [[nodiscard]] RegistryOutcome markInitialPopulationComplete(quint64 epoch) override;
 
     // AGENT-NOTE: Re-basing a still-live name is the watcher-rebaseline
     // path: the owner's items are dropped deterministically and a fresh
     // generation is issued, so no presented key can survive unactionable.
-    [[nodiscard]] quint64 beginOwnerGeneration(const QString &uniqueName) override;
-    [[nodiscard]] RegistryOutcome ownerLost(const QString &uniqueName,
+    [[nodiscard]] quint64 beginOwnerGeneration(quint64 epoch,
+                                               const QString &uniqueName) override;
+    [[nodiscard]] RegistryOutcome ownerLost(quint64 epoch,
+                                            const QString &uniqueName,
                                             quint64 expectedGeneration) override;
 
     // Registers or replaces the item at `key`. Replacing the same key of a
     // live owner with a valid descriptor is the supported update path; a
     // malformed replacement is rejected and degrades the registry while the
     // last-known-good item stays presented.
-    [[nodiscard]] RegistryOutcome registerItem(const OwnerKey &key,
+    [[nodiscard]] RegistryOutcome registerItem(quint64 epoch,
+                                               const OwnerKey &key,
                                                const ItemDescriptor &descriptor) override;
-    [[nodiscard]] RegistryOutcome removeItem(const OwnerKey &key) override;
-    [[nodiscard]] RegistryOutcome removeAllForOwner(const QString &uniqueName,
+    [[nodiscard]] RegistryOutcome removeItem(quint64 epoch, const OwnerKey &key) override;
+    [[nodiscard]] RegistryOutcome removeAllForOwner(quint64 epoch,
+                                                    const QString &uniqueName,
                                                     quint64 generation) override;
-
-    void markInitialPopulationComplete() override;
-    void beginWatcherEpoch() override;
 
     // Validates a user-visible request intent against exact live ownership
     // and returns it bound to the current owner generation and item identity.
@@ -72,6 +90,12 @@ public:
     [[nodiscard]] RequestEvaluation evaluateRequest(const OwnerKey &target,
                                                     RequestKind kind) const;
 
+    // Revalidates an in-flight RequestIntent immediately prior to dispatch.
+    // Fails closed if the owner generation changed, the owner was lost, the
+    // item was removed, or the identity at the target key changed.
+    [[nodiscard]] RegistryOutcome revalidateIntent(const RequestIntent &intent) const;
+
+    [[nodiscard]] quint64 currentWatcherEpoch() const noexcept;
     [[nodiscard]] bool initialPopulationComplete() const noexcept;
 
     [[nodiscard]] bool isDegraded() const noexcept;
@@ -100,13 +124,25 @@ private:
     // exhaustion fails closed instead of wrapping to a stale value.
     QHash<QString, quint64> m_generations;
     quint64 m_generationSeed = 0;
+    quint64 m_watcherEpochSeed = 0;
+    quint64 m_currentWatcherEpoch = 0;
     QHash<OwnerKey, ItemDescriptor> m_items;
+    QHash<OwnerKey, quint64> m_itemLastSeenEpoch;
     // AGENT-GUARD: Reverse index identity -> owning key. It must stay exactly
     // in sync with m_items; every m_items mutation updates both or neither.
     QHash<QString, OwnerKey> m_identityOwners;
     bool m_initialPopulationComplete = false;
     QString m_degradedReason;
 };
+
+static_assert(!std::is_copy_constructible_v<StatusNotifierRegistry>);
+static_assert(!std::is_copy_assignable_v<StatusNotifierRegistry>);
+static_assert(!std::is_move_constructible_v<StatusNotifierRegistry>);
+static_assert(!std::is_move_assignable_v<StatusNotifierRegistry>);
+static_assert(!std::is_copy_constructible_v<StatusNotifierEventSink>);
+static_assert(!std::is_copy_assignable_v<StatusNotifierEventSink>);
+static_assert(!std::is_move_constructible_v<StatusNotifierEventSink>);
+static_assert(!std::is_move_assignable_v<StatusNotifierEventSink>);
 
 // OwnerKey is hashable so the registry can key items by exact owner. The
 // helper is used unqualified: a locally declared qHash would otherwise shadow

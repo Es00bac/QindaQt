@@ -34,10 +34,13 @@ struct ValidationOutcome {
     [[nodiscard]] static ValidationOutcome failure(ValidationError error, QString reasonCode);
 };
 
-// D-Bus unique bus names are ":<digits>.<digits>" with at least one digit on
-// each side. Well-known names lack the leading colon; rejecting them here is
-// the first spoofed-owner defense.
+// D-Bus unique bus names begin with ':' and contain two or more dot-separated
+// elements composed of [a-zA-Z0-9_-], with length <= 255 bytes. Well-known
+// names lack the leading colon; rejecting them here is the first spoofed-owner
+// defense.
 [[nodiscard]] bool isValidUniqueBusName(const QString &value);
+// Valid D-Bus object path: "/" or non-empty slash-separated elements without
+// trailing slash or consecutive slashes, composed of [a-zA-Z0-9_/], <= 255 bytes.
 [[nodiscard]] bool isValidObjectPath(const QString &value);
 
 // Rejects text beyond `maxUtf8Bytes` and any embedded NUL, C0, DEL, or C1

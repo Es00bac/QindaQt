@@ -62,9 +62,9 @@ struct RegistryOutcome {
 // well-known name. Well-known names can change owners while items remain
 // registered, so keying on them would let one source impersonate another.
 // `generation` is the registry-issued owner generation, drawn from a
-// globally monotonic counter so a value can never be reissued after wrap or
-// eviction; events stamped with an older generation are stale and must be
-// rejected by the registry.
+// globally monotonic counter so a value can never be reissued after owner loss,
+// slot reuse, or wrap refusal; events stamped with an older generation are
+// stale and must be rejected by the registry.
 struct OwnerKey {
     QString uniqueName;
     QString objectPath;
@@ -181,8 +181,9 @@ struct TrayPresentation {
 // AGENT-CONTRACT: A validated request intent. The registry produces this value
 // only after confirming the target owner's generation is currently live and
 // that the same owner still presents `identity`. It carries an explicit
-// lifetime: it is valid only while that generation remains current, so an
-// executor must revalidate immediately before performing anything. The
+// lifetime: it is valid only while that generation remains current and the
+// target key still presents the same identity. An executor must call the
+// registry's revalidateIntent() immediately before performing anything. The
 // registry never performs an intent; mapping one onto the owner's own D-Bus
 // object belongs to a later presenter milestone.
 struct RequestIntent {

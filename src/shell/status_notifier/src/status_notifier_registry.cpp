@@ -17,8 +17,60 @@ constexpr quint64 kMaxGeneration = std::numeric_limits<quint64>::max();
 
 } // namespace
 
-quint64 StatusNotifierRegistry::beginOwnerGeneration(const QString &uniqueName)
+StatusNotifierRegistry::StatusNotifierRegistry(quint64 initialGenerationSeed,
+                                               quint64 initialWatcherEpochSeed)
+    : m_generationSeed(initialGenerationSeed)
+    , m_watcherEpochSeed(initialWatcherEpochSeed)
 {
+}
+
+quint64 StatusNotifierRegistry::beginWatcherEpoch()
+{
+    // AGENT-GUARD: Watcher epochs are monotonic. When a new watcher arrives,
+    // the population bit resets to fail-closed Loading until the replacement
+    // watcher's population is observed and marked complete.
+    if (m_watcherEpochSeed == kMaxGeneration) {
+        // There is no safe epoch value left for the replacement watcher. Drop
+        // the active epoch as well as the population bit so traffic stamped by
+        // the previous watcher cannot mutate state after this failed handoff.
+        m_currentWatcherEpoch = 0;
+        m_initialPopulationComplete = false;
+        return 0;
+    }
+    m_currentWatcherEpoch = ++m_watcherEpochSeed;
+    m_initialPopulationComplete = false;
+    return m_currentWatcherEpoch;
+}
+
+RegistryOutcome StatusNotifierRegistry::markInitialPopulationComplete(quint64 epoch)
+{
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
+    }
+
+    // Reconcile membership: prune any items not seen in the current watcher epoch.
+    for (auto iterator = m_items.begin(); iterator != m_items.end();) {
+        const OwnerKey itemKey = iterator.key();
+        if (m_itemLastSeenEpoch.value(itemKey, 0) < epoch) {
+            if (m_identityOwners.value(iterator->identity) == itemKey) {
+                m_identityOwners.remove(iterator->identity);
+            }
+            m_itemLastSeenEpoch.remove(itemKey);
+            iterator = m_items.erase(iterator);
+        } else {
+            ++iterator;
+        }
+    }
+
+    m_initialPopulationComplete = true;
+    return RegistryOutcome{RegistryStatus::Accepted, {}};
+}
+
+quint64 StatusNotifierRegistry::beginOwnerGeneration(quint64 epoch, const QString &uniqueName)
+{
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return 0;
+    }
     if (!isValidUniqueBusName(uniqueName)) {
         return 0;
     }
@@ -48,9 +100,13 @@ quint64 StatusNotifierRegistry::beginOwnerGeneration(const QString &uniqueName)
     return next;
 }
 
-RegistryOutcome StatusNotifierRegistry::ownerLost(const QString &uniqueName,
+RegistryOutcome StatusNotifierRegistry::ownerLost(quint64 epoch,
+                                                  const QString &uniqueName,
                                                   quint64 expectedGeneration)
 {
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
+    }
     if (!isValidUniqueBusName(uniqueName)) {
         return reject(RegistryStatus::InvalidOwner, QStringLiteral("owner-not-unique-bus-name"));
     }
@@ -67,9 +123,13 @@ RegistryOutcome StatusNotifierRegistry::ownerLost(const QString &uniqueName,
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
-RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
+RegistryOutcome StatusNotifierRegistry::registerItem(quint64 epoch,
+                                                     const OwnerKey &key,
                                                      const ItemDescriptor &descriptor)
 {
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
+    }
     const ValidationOutcome ownerOutcome = validateOwnerKey(key);
     if (!ownerOutcome.accepted) {
         return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
@@ -78,11 +138,17 @@ RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
         return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
     }
 
+    const bool replacesExistingItem = m_items.contains(key);
     const ValidationOutcome descriptorOutcome = validateItemDescriptor(descriptor);
     if (!descriptorOutcome.accepted) {
         // A malformed replacement of a live item degrades the tray but keeps
         // the last-known-good descriptor presented.
-        if (m_items.contains(key)) {
+        if (replacesExistingItem) {
+            // AGENT-GUARD: Membership observation and descriptor admission are
+            // separate facts. A malformed current-epoch replacement proves
+            // the exact key is still present, so reconciliation must retain
+            // its last-known-good descriptor rather than erase it at complete.
+            m_itemLastSeenEpoch.insert(key, epoch);
             m_degradedReason = QStringLiteral("malformed-item-replacement");
         }
         return reject(RegistryStatus::InvalidDescriptor, descriptorOutcome.reasonCode);
@@ -90,10 +156,13 @@ RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
 
     const auto identityOwner = m_identityOwners.constFind(descriptor.identity);
     if (identityOwner != m_identityOwners.cend() && identityOwner.value() != key) {
+        if (replacesExistingItem) {
+            m_itemLastSeenEpoch.insert(key, epoch);
+        }
         return reject(RegistryStatus::DuplicateIdentity, QStringLiteral("identity-claimed"));
     }
 
-    if (!m_items.contains(key) && m_items.size() >= kMaxItems) {
+    if (!replacesExistingItem && m_items.size() >= kMaxItems) {
         m_degradedReason = QStringLiteral("item-capacity-exceeded");
         return reject(RegistryStatus::CapacityExceeded, QStringLiteral("item-capacity-exceeded"));
     }
@@ -103,12 +172,16 @@ RegistryOutcome StatusNotifierRegistry::registerItem(const OwnerKey &key,
         m_identityOwners.remove(existing->identity);
     }
     m_items.insert(key, descriptor);
+    m_itemLastSeenEpoch.insert(key, epoch);
     m_identityOwners.insert(descriptor.identity, key);
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
-RegistryOutcome StatusNotifierRegistry::removeItem(const OwnerKey &key)
+RegistryOutcome StatusNotifierRegistry::removeItem(quint64 epoch, const OwnerKey &key)
 {
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
+    }
     const ValidationOutcome ownerOutcome = validateOwnerKey(key);
     if (!ownerOutcome.accepted) {
         return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
@@ -123,9 +196,13 @@ RegistryOutcome StatusNotifierRegistry::removeItem(const OwnerKey &key)
     return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
-RegistryOutcome StatusNotifierRegistry::removeAllForOwner(const QString &uniqueName,
+RegistryOutcome StatusNotifierRegistry::removeAllForOwner(quint64 epoch,
+                                                          const QString &uniqueName,
                                                           quint64 generation)
 {
+    if (epoch == 0 || epoch != m_currentWatcherEpoch) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("stale-watcher-epoch"));
+    }
     if (!isValidUniqueBusName(uniqueName)) {
         return reject(RegistryStatus::InvalidOwner, QStringLiteral("owner-not-unique-bus-name"));
     }
@@ -178,17 +255,42 @@ StatusNotifierRegistry::RequestEvaluation StatusNotifierRegistry::evaluateReques
     return evaluation;
 }
 
-void StatusNotifierRegistry::markInitialPopulationComplete()
+RegistryOutcome StatusNotifierRegistry::revalidateIntent(const RequestIntent &intent) const
 {
-    m_initialPopulationComplete = true;
+    switch (intent.kind) {
+    case RequestKind::Activate:
+    case RequestKind::ContextMenu:
+    case RequestKind::SecondaryActivate:
+        break;
+    default:
+        return reject(RegistryStatus::InvalidRequest, QStringLiteral("unknown-request-kind"));
+    }
+
+    const ValidationOutcome ownerOutcome = validateOwnerKey(intent.target);
+    if (!ownerOutcome.accepted) {
+        return reject(RegistryStatus::InvalidOwner, ownerOutcome.reasonCode);
+    }
+    if (!isLiveGeneration(intent.target)) {
+        return reject(RegistryStatus::StaleOwner, QStringLiteral("generation-not-current"));
+    }
+
+    const auto item = m_items.constFind(intent.target);
+    if (item == m_items.cend()) {
+        return reject(RegistryStatus::UnknownItem, QStringLiteral("item-not-registered"));
+    }
+
+    // AGENT-GUARD: If the live key was replaced with a different identity, the
+    // in-flight intent is stale and must not be dispatched to the replacement item.
+    if (item->identity != intent.identity) {
+        return reject(RegistryStatus::InvalidRequest, QStringLiteral("identity-mismatch"));
+    }
+
+    return RegistryOutcome{RegistryStatus::Accepted, {}};
 }
 
-void StatusNotifierRegistry::beginWatcherEpoch()
+quint64 StatusNotifierRegistry::currentWatcherEpoch() const noexcept
 {
-    // AGENT-GUARD: A watcher (re)connection must reset the population bit so
-    // presentation falls back to fail-closed Loading; keeping the old bit
-    // would present a pre-reconnect view as complete.
-    m_initialPopulationComplete = false;
+    return m_currentWatcherEpoch;
 }
 
 bool StatusNotifierRegistry::initialPopulationComplete() const noexcept
@@ -266,6 +368,7 @@ void StatusNotifierRegistry::forgetItem(const OwnerKey &key)
     if (m_identityOwners.value(iterator->identity) == key) {
         m_identityOwners.remove(iterator->identity);
     }
+    m_itemLastSeenEpoch.remove(key);
     m_items.erase(iterator);
 }
 
@@ -276,6 +379,7 @@ void StatusNotifierRegistry::dropOwnerItems(const QString &uniqueName)
             if (m_identityOwners.value(iterator->identity) == iterator.key()) {
                 m_identityOwners.remove(iterator->identity);
             }
+            m_itemLastSeenEpoch.remove(iterator.key());
             iterator = m_items.erase(iterator);
         } else {
             ++iterator;

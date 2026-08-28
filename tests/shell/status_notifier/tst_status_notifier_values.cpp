@@ -106,11 +106,13 @@ private slots:
 
         key.uniqueName = QStringLiteral(":1");
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
-        key.uniqueName = QStringLiteral(":a.1");
-        QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
         key.uniqueName = QStringLiteral(":1.");
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
         key.uniqueName = QStringLiteral(":.1");
+        QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
+        key.uniqueName = QStringLiteral(":1..2");
+        QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
+        key.uniqueName = QStringLiteral(":1.2@3");
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
         key.uniqueName = QString();
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidOwnerName);
@@ -128,8 +130,13 @@ private slots:
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidObjectPath);
         key.objectPath = QStringLiteral("/non#ascii");
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidObjectPath);
-        key.objectPath = QStringLiteral("/");
+        key.objectPath = QString();
         QCOMPARE(validateOwnerKey(key).error, ValidationError::InvalidObjectPath);
+
+        // Root path "/" is a canonical, valid D-Bus object path.
+        key = validKey();
+        key.objectPath = QStringLiteral("/");
+        QVERIFY(validateOwnerKey(key).accepted);
     }
 
     void rejectsHostilePixmaps()
@@ -175,9 +182,36 @@ private slots:
         icon.attentionMovieName = QString(1, QChar(0x0001));
         QCOMPARE(validateIconPayload(icon).reasonCode, QStringLiteral("unbounded-or-control-text"));
 
+        // Single list exceeding aggregate limit
         icon = validIcon();
-        while (icon.pixmaps.size() <= int(kMaxIconPixmaps)) {
+        icon.pixmaps.clear();
+        for (qsizetype i = 0; i <= kMaxIconPixmaps; ++i) {
             icon.pixmaps.append(validPixmap());
+        }
+        QCOMPARE(validateIconPayload(icon).reasonCode, QStringLiteral("pixmap-count-exceeded"));
+
+        // Split aggregate boundary: exactly kMaxIconPixmaps total is accepted,
+        // including an uneven split that exercises the subtraction guard.
+        icon = validIcon();
+        icon.pixmaps.clear();
+        icon.attentionPixmaps.clear();
+        for (qsizetype i = 0; i < kMaxIconPixmaps - 1; ++i) {
+            icon.pixmaps.append(validPixmap());
+        }
+        icon.attentionPixmaps.append(validPixmap());
+        QVERIFY(validateIconPayload(icon).accepted);
+
+        // Split aggregate over limit: kMaxIconPixmaps plus one across lists.
+        icon.attentionPixmaps.append(validPixmap());
+        QCOMPARE(validateIconPayload(icon).reasonCode, QStringLiteral("pixmap-count-exceeded"));
+
+        // Large over-limit payload
+        icon = validIcon();
+        icon.pixmaps.clear();
+        icon.attentionPixmaps.clear();
+        for (int i = 0; i < 500; ++i) {
+            icon.pixmaps.append(validPixmap());
+            icon.attentionPixmaps.append(validPixmap());
         }
         QCOMPARE(validateIconPayload(icon).reasonCode, QStringLiteral("pixmap-count-exceeded"));
     }
@@ -375,13 +409,61 @@ private slots:
 
     void uniqueBusNameSyntaxRules()
     {
+        // Valid canonical unique bus names
         QVERIFY(isValidUniqueBusName(QStringLiteral(":1.42")));
         QVERIFY(isValidUniqueBusName(QStringLiteral(":10.1000")));
-        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1.42.43")));
+        QVERIFY(isValidUniqueBusName(QStringLiteral(":1.42.43")));
+        QVERIFY(isValidUniqueBusName(QStringLiteral(":x.y")));
+        QVERIFY(isValidUniqueBusName(QStringLiteral(":a-1.b_2.c-3")));
+        QVERIFY(isValidUniqueBusName(QStringLiteral(":-leading._leading.3")));
+        QVERIFY(isValidUniqueBusName(QStringLiteral(":1.42extra")));
+
+        // Exact 255-byte boundary
+        const QString exact255 = QStringLiteral(":1.") + QString(252, u'a');
+        QCOMPARE(exact255.size(), 255);
+        QVERIFY(isValidUniqueBusName(exact255));
+
+        // 256-byte name fails closed
+        const QString over255 = QStringLiteral(":1.") + QString(253, u'a');
+        QCOMPARE(over255.size(), 256);
+        QVERIFY(!isValidUniqueBusName(over255));
+
+        // Invalid forms
         QVERIFY(!isValidUniqueBusName(QStringLiteral("1.42")));
-        QVERIFY(!isValidUniqueBusName(QStringLiteral(":x.y")));
+        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1")));
+        QVERIFY(!isValidUniqueBusName(QStringLiteral(":.1")));
+        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1.")));
+        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1..2")));
         QVERIFY(!isValidUniqueBusName(QStringLiteral("org.example.Service")));
-        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1.42extra")));
+        QVERIFY(!isValidUniqueBusName(QStringLiteral(":1.42@invalid")));
+        QVERIFY(!isValidUniqueBusName(QString::fromUtf8(":é.owner")));
+    }
+
+    void objectPathSyntaxRules()
+    {
+        // Root path is valid
+        QVERIFY(isValidObjectPath(QStringLiteral("/")));
+        QVERIFY(isValidObjectPath(QStringLiteral("/org/kde/StatusNotifierItem")));
+        QVERIFY(isValidObjectPath(QStringLiteral("/org/qindaqt/Demo_1")));
+        QVERIFY(isValidObjectPath(QStringLiteral("/1/_/three")));
+
+        // Exact 255-byte path
+        const QString exact255 = QStringLiteral("/") + QString(254, u'a');
+        QCOMPARE(exact255.size(), 255);
+        QVERIFY(isValidObjectPath(exact255));
+
+        // 256-byte path fails closed
+        const QString over255 = QStringLiteral("/") + QString(255, u'a');
+        QCOMPARE(over255.size(), 256);
+        QVERIFY(!isValidObjectPath(over255));
+
+        // Invalid object paths
+        QVERIFY(!isValidObjectPath(QStringLiteral("")));
+        QVERIFY(!isValidObjectPath(QStringLiteral("relative/path")));
+        QVERIFY(!isValidObjectPath(QStringLiteral("/double//slash")));
+        QVERIFY(!isValidObjectPath(QStringLiteral("/trailing/")));
+        QVERIFY(!isValidObjectPath(QStringLiteral("/non#ascii")));
+        QVERIFY(!isValidObjectPath(QString::fromUtf8("/nonascii/é")));
     }
 };
 
