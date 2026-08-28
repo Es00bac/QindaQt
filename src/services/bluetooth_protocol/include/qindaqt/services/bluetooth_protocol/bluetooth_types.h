@@ -10,40 +10,48 @@
 namespace QindaQt::Bluetooth
 {
 
-enum class AdapterState : quint32 {
-    Off = 0,
-    On = 1,
+enum class Availability : quint32 {
+    Starting = 0,
+    Ready = 1,
+    Unavailable = 2,
+    Degraded = 3,
 };
 
-enum class AdapterCapability : quint32 {
+enum class DeviceClass : quint32 {
+    Unknown = 0,
+    Computer = 1,
+    Phone = 2,
+    AudioVideo = 3,
+    Headset = 4,
+    Headphones = 5,
+    Keyboard = 6,
+    Mouse = 7,
+    Tablet = 8,
+    Printer = 9,
+    GameInput = 10,
+    Wearable = 11,
+    Tag = 12,
+};
+
+// AGENT-CONTRACT: These are service-level capability bits only. Bluetooth1 v1
+// deliberately has no per-adapter or per-device capability flags; adapters
+// expose powered/discovering truth and devices expose paired/connected truth.
+// Adding an entity-level flag requires a wire-schema revision.
+enum class Capability : quint32 {
     None = 0,
-    Discover = 1U << 0U,
-    Pair = 1U << 1U,
-    Connect = 1U << 2U,
+    SetAdapterPower = 1U << 0U,
+    DiscoveryLease = 1U << 1U,
+    ConnectPaired = 1U << 2U,
+    DisconnectPaired = 1U << 3U,
 };
-Q_DECLARE_FLAGS(AdapterCapabilities, AdapterCapability)
-
-enum class DeviceState : quint32 {
-    Disconnected = 0,
-    Connecting = 1,
-    Connected = 2,
-};
-
-enum class DeviceCapability : quint32 {
-    None = 0,
-    Pair = 1U << 0U,
-    Connect = 1U << 1U,
-    Disconnect = 1U << 2U,
-    Trust = 1U << 3U,
-};
-Q_DECLARE_FLAGS(DeviceCapabilities, DeviceCapability)
+Q_DECLARE_FLAGS(Capabilities, Capability)
 
 enum class OperationKind : quint32 {
-    Pair = 0,
-    Connect = 1,
-    Disconnect = 2,
-    Trust = 3,
-    Untrust = 4,
+    SetAdapterPower = 0,
+    AcquireDiscovery = 1,
+    ReleaseDiscovery = 2,
+    Connect = 3,
+    Disconnect = 4,
 };
 
 enum class OperationStatus : quint32 {
@@ -71,9 +79,8 @@ struct Adapter {
     Handle handle;
     QString address;
     QString name;
-    AdapterState state = AdapterState::Off;
-    bool discoveringActive = false;
-    AdapterCapabilities capabilities;
+    bool powered = false;
+    bool discovering = false;
 
     friend bool operator==(const Adapter &, const Adapter &) = default;
 };
@@ -83,12 +90,11 @@ struct Device {
     Handle adapterHandle;
     QString address;
     QString name;
-    DeviceState state = DeviceState::Disconnected;
-    qint16 rssi = 0;
-    bool rssiKnown = false;
+    DeviceClass deviceClass = DeviceClass::Unknown;
     bool paired = false;
-    bool trusted = false;
-    DeviceCapabilities capabilities;
+    bool connected = false;
+    bool rssiKnown = false;
+    qint16 rssi = 0;
 
     friend bool operator==(const Device &, const Device &) = default;
 };
@@ -97,26 +103,35 @@ struct Snapshot {
     quint32 schemaVersion = 1;
     quint64 epoch = 0;
     quint64 revision = 0;
+    Availability availability = Availability::Starting;
+    Capabilities capabilities;
     QString reasonCode;
     QString diagnostic;
     QList<Adapter> adapters;
     QList<Device> devices;
 
+    // AGENT-GUARD: D-Bus decoding sets this false when an array exceeded its
+    // bound while still consuming the complete argument. Clients must validate
+    // it before publishing any decoded values.
     bool wireValid = true;
 
     friend bool operator==(const Snapshot &, const Snapshot &) = default;
 };
 
+// AGENT-NOTE: OperationRequest is an in-process value. Bluetooth1 v1 method
+// calls carry their typed arguments directly on the wire; this struct is never
+// D-Bus-marshalled and exists so the model, client preflight, and backends
+// share one request vocabulary.
 struct OperationRequest {
-    OperationKind kind = OperationKind::Pair;
-    Handle primary;
-    Handle secondary;
+    OperationKind kind = OperationKind::Connect;
+    Handle target;
+    bool powered = false;
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };
 
 struct OperationResult {
-    OperationKind kind = OperationKind::Pair;
+    OperationKind kind = OperationKind::Connect;
     OperationStatus status = OperationStatus::Failed;
     quint64 initiatingEpoch = 0;
     quint64 initiatingRevision = 0;
@@ -131,12 +146,8 @@ struct OperationResult {
 
 } // namespace QindaQt::Bluetooth
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Bluetooth::AdapterCapabilities)
-Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Bluetooth::DeviceCapabilities)
-Q_DECLARE_METATYPE(QindaQt::Bluetooth::AdapterState)
-Q_DECLARE_METATYPE(QindaQt::Bluetooth::AdapterCapabilities)
-Q_DECLARE_METATYPE(QindaQt::Bluetooth::DeviceState)
-Q_DECLARE_METATYPE(QindaQt::Bluetooth::DeviceCapabilities)
+Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Bluetooth::Capabilities)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::Capabilities)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationKind)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationStatus)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Handle)

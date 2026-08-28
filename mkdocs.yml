@@ -29,6 +29,7 @@ nav:
       - Settings model: architecture/settings-service.md
       - Display service: architecture/display-service.md
       - Audio service: architecture/audio-service.md
+      - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
       - Pure brightness model: architecture/brightness-model.md
       - Notification service: architecture/notifications-service.md
@@ -56,6 +57,7 @@ nav:
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
+      - Bluetooth1 protocol 1: reference/bluetooth1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
@@ -114,3 +116,4 @@ nav:
       - "ADR-0047: Pure Font F0 boundary": adr/0047-pure-font-catalog-and-preference-boundary.md
       - "ADR-0030: Qtermwidget terminal adapter": adr/0030-confine-qtermwidget-behind-terminal-adapter.md
       - "ADR-0040: Terminal child PTY bridge": adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md
+      - "ADR-0026: Bluetooth authority in BlueZ": adr/0026-keep-pairing-and-trust-authority-in-bluez.md

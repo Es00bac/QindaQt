@@ -1,124 +1,124 @@
-# Bluetooth1 protocol version 1
+# Bluetooth1 protocol 1
 
-Bluetooth1 is the bounded control and observation interface exported by
-`qindaqt-bluetooth-service`.
+This page is the canonical wire and value contract for `org.qindaqt.Bluetooth1`
+version 1. The implementation is normative together with this page: the
+introspection XML shipped in `src/services/bluetooth_service/data/`, the
+adaptor's `Q_CLASSINFO` introspection, the codecs in
+`src/services/bluetooth_protocol/src/bluetooth_dbus.cpp`, and the signature
+test in `tests/services/bluetooth_protocol/` must all agree byte-for-byte.
 
-| Property | Value |
-| --- | --- |
-| Bus name | `org.qindaqt.Bluetooth1` |
-| Object path | `/org/qindaqt/Bluetooth1` |
-| Interface | `org.qindaqt.Bluetooth1` |
-| Snapshot schema | `1` |
+The authority boundary — BlueZ owns pairing, trust, keys, device records,
+profiles, and authorization — is recorded in
+[ADR-0026](../adr/0026-keep-pairing-and-trust-authority-in-bluez.md).
 
-The canonical machine-readable interface is installed as
-`org.qindaqt.Bluetooth1.xml`.
+## Service identity
 
-## Scalar meanings
-
-All `t` values are unsigned 64-bit integers; `u` values are unsigned 32-bit
-integers; `s` is UTF-8 string; `b` is boolean; `n` is signed 16-bit integer.
-
-`AdapterState` values are `Off=0` and `On=1`. `AdapterCapability` bits are
-`Discover=1`, `Pair=2`, and `Connect=4`. Device states are `Disconnected=0`,
-`Connecting=1`, and `Connected=2`. Device capability bits are `Pair=1`,
-`Connect=2`, `Disconnect=4`, and `Trust=8`. Operation kinds are `Pair=0`,
-`Connect=1`, `Disconnect=2`, `Trust=3`, and `Untrust=4`. Operation status is
-`Succeeded=0`, `Rejected=1`, `Unsupported=2`, `Failed=3`, `Uncertain=4`, or
-`Busy=5`.
-
-An `OperationResult` kind uses the same enumeration as `OperationRequest`.
+- Bus name: `org.qindaqt.Bluetooth1` (session bus)
+- Object path: `/org/qindaqt/Bluetooth1`
+- Executable: `qindaqt-bluetooth-service` (D-Bus activated, systemd user unit)
+- Schema version: `1`
 
 ## Fixed structures
 
-No Bluetooth1 domain value is an `a{sv}` property bag.
+All structs are fixed typed structures; there is no property bag and no
+`a{sv}`. Arrays are bounded and bounded decoding marks a value malformed
+rather than truncating silently.
 
-| Value | Signature | Fields in order |
+| Value | D-Bus signature | Fields |
 | --- | --- | --- |
-| Handle | `(tt)` | epoch, object serial |
-| Adapter | `((tt)ssunnb)` | handle, address, name, state, capabilities, discovering |
-| Device | `((tt)(tt)ssnnbbbbbuu)` | handle, adapter handle, address, name, state, RSSI, RSSI known, paired, trusted, capabilities |
-| Operation result | `(uuttttss)` | kind, status, initiating epoch, initiating revision, observed epoch, observed revision, reason code, diagnostic |
+| `Handle` | `(tt)` | `epoch`, `serial` |
+| `Adapter` | `((tt)ssbb)` | `handle`, `address`, `name`, `powered`, `discovering` |
+| `Device` | `((tt)(tt)ssubbbbn)` | `handle`, `adapter` handle, `address`, `name`, `deviceClass` (`u`), `paired`, `connected`, `rssiKnown`, `rssi` (`n`) |
+| `Snapshot` | `(uutuussa((tt)ssbb)a((tt)(tt)ssubbbbn))` | `schemaVersion`, `epoch`, `revision`, `availability`, `capabilities`, `reasonCode`, `diagnostic`, `adapters`, `devices` |
+| `OperationResult` | `(uuttttss)` | `kind`, `status`, `initiatingEpoch`, `initiatingRevision`, `observedEpoch`, `observedRevision`, `reasonCode`, `diagnostic` |
 
-The snapshot signature is:
+### Enumerations
 
-```text
-(uttssbba((tt)ssunnb)a((tt)(tt)ssnnbbbbbuu))
-```
+| Enum | Values |
+| --- | --- |
+| `Availability` (`u`) | `Starting=0`, `Ready=1`, `Unavailable=2`, `Degraded=3` |
+| `Capability` (`u`, flags) | `SetAdapterPower=1<<0`, `DiscoveryLease=1<<1`, `ConnectPaired=1<<2`, `DisconnectPaired=1<<3` |
+| `DeviceClass` (`u`) | `Unknown=0`, `Computer=1`, `Phone=2`, `AudioVideo=3`, `Headset=4`, `Headphones=5`, `Keyboard=6`, `Mouse=7`, `Tablet=8`, `Printer=9`, `GameInput=10`, `Wearable=11`, `Tag=12` |
+| `OperationKind` (`u`) | `SetAdapterPower=0`, `AcquireDiscovery=1`, `ReleaseDiscovery=2`, `Connect=3`, `Disconnect=4` |
+| `OperationStatus` (`u`) | `Succeeded=0`, `Rejected=1`, `Unsupported=2`, `Failed=3`, `Uncertain=4`, `Busy=5` |
 
-Its fields are schema version, epoch, revision, reason code, diagnostic, adapters,
-and devices.
+### Limits
 
-An adapter address is a Bluetooth MAC address in canonical form `XX:XX:XX:XX:XX:XX`.
-A device's adapter handle must reference a valid adapter in the same snapshot.
-Arrays are required to be in ascending serial order. RSSI is -127..127 or 0 when
-unknown.
+| Bound | Value |
+| --- | --- |
+| Adapters per snapshot | 8 |
+| Devices per snapshot | 256 |
+| Adapter/device name | 256 UTF-8 bytes |
+| Reason code | 64 UTF-8 bytes |
+| Diagnostic | 512 UTF-8 bytes |
+| In-flight operations | 64 |
+| Discovery leases per adapter | 16 |
+| Total discovery leases | 64 |
+| Caller identity | 64 UTF-8 bytes |
 
 ## Methods and signal
 
-`GetSnapshot() -> Snapshot` returns the current complete bounded snapshot.
+```
+GetSnapshot() -> snapshot
+SetPowered(adapter (tt), powered b) -> result
+AcquireDiscovery(adapter (tt)) -> result
+ReleaseDiscovery(adapter (tt)) -> result
+Connect(device (tt)) -> result
+Disconnect(device (tt)) -> result
+Changed(epoch t, revision t)          (signal)
+```
 
-`Pair(Handle device) -> OperationResult` initiates pairing with a device.
+Mutations are asynchronous: the service replies with `result` when the
+operation completes. `AcquireDiscovery`/`ReleaseDiscovery` are attributed to
+the caller's unique bus name; leases are reference-counted per caller and per
+adapter, and every lease of a caller that vanishes from the bus is released.
 
-`Connect(Handle device) -> OperationResult` connects to a paired device.
+## Validation (fail-closed)
 
-`Disconnect(Handle device) -> OperationResult` disconnects from a device.
+A snapshot or operation result is **invalid**, and never published or
+accepted, when any of the following holds:
 
-`Trust(Handle device) -> OperationResult` marks a device as trusted.
+- the schema version is not 1, an enum is outside its known values, or a
+  capability flag outside the four known bits is set;
+- `epoch` or `revision` is zero, a handle's epoch differs from the snapshot
+  epoch, or any serial is zero, repeated anywhere in the snapshot, or not
+  strictly ascending within the adapter and device arrays;
+- an address is not a canonical Bluetooth address
+  (`AA:BB:CC:DD:EE:FF`, uppercase hex pairs);
+- `rssiKnown == false` while `rssi != 0`, or `rssiKnown == true` with RSSI
+  outside `[-128, 0]` dBm;
+- a device is `connected` while `paired == false` or while its adapter has
+  `powered == false`, or references a missing adapter; an adapter is
+  `discovering` while `powered == false`;
+- text exceeds its bound, contains an embedded null, or a diagnostic contains
+  control characters other than newline and tab;
+- a reason code is not structured (`[a-z0-9-]`, nonempty);
+- a decoding exceeded an array bound (`oversized-payload`);
+- capabilities or inventory are present while `availability != Ready`;
+- a succeeded operation result does not carry the initiating epoch and a
+  revision at or after its initiating revision.
 
-`Untrust(Handle device) -> OperationResult` removes trust from a device.
+Serials are derived stably from the canonical address within the current
+epoch; they are not list positions. A service restart produces a new,
+restart-unique epoch, so every handle from an earlier epoch is stale.
 
-`Changed(t epoch, t revision)` is an invalidation hint. Receivers fetch a full
-snapshot and never treat the signal as data. Public clients bind both calls and
-signals to the exact unique owner resolved for the well-known name.
+## Uncertainty and replacement
 
-## Limits
+Timeout, service-owner replacement, backend authority replacement, and model
+stop make an in-flight operation `Uncertain`. Callers must resnapshot and show
+uncertainty; neither the service nor the client replays an uncertain
+mutation. The client binds to the exact unique owner, coalesces
+`Changed` invalidations while a fetch is active, rejects late or malformed
+replies, clears its snapshot when the owner is replaced, and never replays a
+timed-out operation.
 
-| Field | Maximum |
-| --- | ---: |
-| Adapters | 16 |
-| Devices | 256 |
-| Display address | 32 UTF-8 bytes |
-| Display name | 256 UTF-8 bytes |
-| Reason code | 64 UTF-8 bytes |
-| Diagnostic | 512 UTF-8 bytes |
-| Service operations in flight | 64 |
+## Reason codes
 
-The decoder consumes an entire oversized array but marks the value invalid and
-retains at most the limit. Publishers reject it atomically. Text may not contain
-NUL. Diagnostics replace unsafe control characters and truncate on a UTF-8
-boundary. The service never exports raw BlueZ properties or environment, filesystem,
-device data, or secrets.
-
-## Lineage and completion
-
-Epoch identifies one service authority lineage. A service unique-owner change or
-process restart invalidates earlier handles. Revision is monotonic snapshot
-publication within an epoch.
-
-An operation result records both initiating and observed lineage. `Succeeded` is
-valid only in the initiating epoch and at an observed revision no earlier than
-initiation. Once a mutation has been dispatched, service-owner loss returns
-`Uncertain`; clients refetch but never replay it. A late result for an old owner,
-request ID, epoch, revision, or operation kind is ignored or treated as malformed.
-
-The public Qt client returns a nonzero request ID before it emits that request's
-completion. Local rejection, busy/unsupported classification, transport reply,
-timeout, and uncertainty all use the same queued exactly-once completion path.
-
-Common stable reason codes include `unavailable`, `stale-handle`, `device-not-found`,
-`not-paired`, `already-paired`, `already-connected`, `already-disconnected`,
-`already-trusted`, `already-untrusted`, `unsupported`, `too-many-operations`,
-`operation-timeout`, `owner-replaced`, `client-stopped`, and `backend-malformed`.
-Callers must branch on status and reason code rather than diagnostic text.
-
-## Compatibility
-
-Schema version 1 has fixed structures and enum values. New optional behavior is
-advertised with capability bits. Adding fields, changing signatures, changing enum
-meanings, or weakening validation requires a new interface/schema version. Unknown
-versions, enum values, capability bits, malformed lineages, out-of-order/duplicate
-serials, nonfinite/out-of-range RSSI, and oversized payloads fail closed.
-
-See the [Bluetooth service architecture](../architecture/bluetooth-service.md) for
-design principles, handle lineage, backend behavior, activation, and qualification
-scope.
+Stable reason tokens include `starting`, `ready`, `no-adapter`,
+`backend-restarting`, `backend-malformed`, `unavailable`, `stale-handle`,
+`adapter-off`, `not-paired`, `not-connected`, `no-lease`, `too-many-leases`,
+`too-many-operations`, `malformed-request`, `malformed-caller`,
+`unsupported`, `adapter-power-set`, `lease-acquired`, `lease-released`,
+`connected`, `disconnected`, `authority-replaced`, `model-stopped`, and the
+client-side `owner-replaced`, `operation-timeout`, `client-stopped`,
+`malformed-result`, `malformed-snapshot`, and `transport-*` family.
