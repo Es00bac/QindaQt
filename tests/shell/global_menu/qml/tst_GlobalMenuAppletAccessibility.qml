@@ -1,13 +1,15 @@
-import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
+import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
 
 // Accessibility-path suite: activation through the REAL attached accessible
-// signal, truthful Accessible.focusable contract, and provider-owned checked
-// state under interactive activation.
+// signal, focusability truth, and provider-owned checked state under
+// interactive activation.
 Item {
     id: testRoot
+    width: 360
+    height: 60
 
     property var theme: ({
         "colors": {
@@ -16,37 +18,32 @@ Item {
         }
     })
 
-    width: 360
-    height: 60
-
     QtObject {
         id: fakeAccess
-
         property bool available: false
         property var items: []
         property int activateCalls: 0
         property string lastActivatedId: ""
-
         function activate(actionId) {
             ++activateCalls;
             lastActivatedId = actionId;
         }
-
     }
 
     Component {
         id: appletComponent
-
         GlobalMenuComponents.GlobalMenuApplet {
             width: 360
             height: 28
             access: fakeAccess
             theme: testRoot.theme
         }
-
     }
 
     TestCase {
+        name: "GlobalMenuAppletAccessibility"
+        when: windowShown
+
         function init() {
             fakeAccess.available = false;
             fakeAccess.items = [];
@@ -55,43 +52,26 @@ Item {
         }
 
         function realisticMenuItems() {
-            return [{
-                "id": "fileMenu",
-                "kind": "submenu",
-                "text": "File",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": false,
-                "checked": false
-            }, {
-                "id": "editMenu",
-                "kind": "submenu",
-                "text": "Edit",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": false,
-                "checked": false
-            }, {
-                "id": "aboutAction",
-                "kind": "action",
-                "text": "About",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": false,
-                "checked": false
-            }];
+            return [
+                { "id": "fileMenu", "kind": "submenu", "text": "File",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false },
+                { "id": "editMenu", "kind": "submenu", "text": "Edit",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false },
+                { "id": "aboutAction", "kind": "action", "text": "About",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
+            ];
         }
 
         function collectEntries(node, out) {
-            if (node === null || node === undefined)
-                return ;
-
-            if (node.visible === false)
-                return ;
-
-            if (node.objectName === "globalMenuTopLevelItem")
+            if (node === null || node === undefined) {
+                return;
+            }
+            if (node.visible === false) {
+                return;
+            }
+            if (node.objectName === "globalMenuTopLevelItem") {
                 out.push(node);
-
+            }
             const kids = node.children || [];
             for (let i = 0; i < kids.length; ++i) {
                 collectEntries(kids[i], out);
@@ -99,35 +79,31 @@ Item {
         }
 
         function test_accessibleFocusabilityTruth() {
-            // Accessible.focusable must reflect actual delegate focusability:
-            // enabled actions are focusable, while submenus and disabled
-            // actions are not.
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
-            fakeAccess.items.push({
-                "id": "quitAction",
-                "kind": "action",
-                "text": "Quit",
-                "mnemonicIndex": 0,
-                "enabled": false,
-                "checkable": false,
-                "checked": false
-            });
+            fakeAccess.items.push(
+                { "id": "quitAction", "kind": "action", "text": "Quit",
+                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false });
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 4);
-            // Submenu entries (presented visibly, but disabled in G0)
+
+            // Submenu: disabled in G0, Accessible.focusable is false
             verify(!entries[0].enabled);
-            compare(entries[0].Accessible.focusable, false);
+            verify(!entries[0].Accessible.focusable);
+
+            // Submenu: disabled in G0, Accessible.focusable is false
             verify(!entries[1].enabled);
-            compare(entries[1].Accessible.focusable, false);
-            // Enabled action entry
+            verify(!entries[1].Accessible.focusable);
+
+            // Enabled action: enabled, Accessible.focusable is true
             verify(entries[2].enabled);
-            compare(entries[2].Accessible.focusable, true);
-            // Disabled action entry
+            verify(entries[2].Accessible.focusable);
+
+            // Disabled action: disabled, Accessible.focusable is false
             verify(!entries[3].enabled);
-            compare(entries[3].Accessible.focusable, false);
+            verify(!entries[3].Accessible.focusable);
         }
 
         function test_accessiblePressActivationPath() {
@@ -137,24 +113,21 @@ Item {
             // broken connection fails this test.
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
-            fakeAccess.items.push({
-                "id": "quitAction",
-                "kind": "action",
-                "text": "Quit",
-                "mnemonicIndex": 0,
-                "enabled": false,
-                "checkable": false,
-                "checked": false
-            });
+            fakeAccess.items.push(
+                { "id": "quitAction", "kind": "action", "text": "Quit",
+                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false });
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 4);
+
             entries[2].Accessible.pressAction(); // enabled action: About
             compare(fakeAccess.activateCalls, 1);
             compare(fakeAccess.lastActivatedId, "aboutAction");
+
             entries[0].Accessible.pressAction(); // submenu: presented, non-activating
             compare(fakeAccess.activateCalls, 1);
+
             entries[3].Accessible.pressAction(); // disabled action
             compare(fakeAccess.activateCalls, 1);
         }
@@ -165,35 +138,19 @@ Item {
             // the action through the one shared path while the bound,
             // provider-owned `checked` value never locally inverts.
             fakeAccess.available = true;
-            fakeAccess.items = [{
-                "id": "wordWrapAction",
-                "kind": "action",
-                "text": "Word Wrap",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": true,
-                "checked": true
-            }, {
-                "id": "lineNumbersAction",
-                "kind": "action",
-                "text": "Line Numbers",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": true,
-                "checked": false
-            }, {
-                "id": "plainAction",
-                "kind": "action",
-                "text": "Plain",
-                "mnemonicIndex": 0,
-                "enabled": true,
-                "checkable": false,
-                "checked": false
-            }];
+            fakeAccess.items = [
+                { "id": "wordWrapAction", "kind": "action", "text": "Word Wrap",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": true },
+                { "id": "lineNumbersAction", "kind": "action", "text": "Line Numbers",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": false },
+                { "id": "plainAction", "kind": "action", "text": "Plain",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
+            ];
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 3);
+
             // The button itself is not a toggle; the accessible state carries
             // the provider-owned checked truth.
             verify(!entries[0].checkable);
@@ -204,6 +161,7 @@ Item {
             verify(entries[1].Accessible.checkable);
             verify(!entries[1].Accessible.checked);
             verify(!entries[2].Accessible.checkable);
+
             // Initially checked: Space activates without flipping the state.
             entries[0].forceActiveFocus(Qt.TabFocusReason);
             verify(entries[0].activeFocus);
@@ -212,6 +170,7 @@ Item {
             compare(fakeAccess.lastActivatedId, "wordWrapAction");
             verify(entries[0].checked);
             verify(entries[0].Accessible.checked);
+
             // Initially unchecked: same activation, still no local toggle.
             entries[1].forceActiveFocus(Qt.TabFocusReason);
             verify(entries[1].activeFocus);
@@ -221,9 +180,5 @@ Item {
             verify(!entries[1].checked);
             verify(!entries[1].Accessible.checked);
         }
-
-        name: "GlobalMenuAppletAccessibility"
-        when: windowShown
     }
-
 }
