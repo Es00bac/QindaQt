@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.qindaqt.Bluetooth1
+Exec=@CMAKE_INSTALL_FULL_LIBEXECDIR@/qindaqt-bluetooth-service
+User=@QINDAQT_SESSION_USER@
+SystemdService=qindaqt-bluetooth-service.service
