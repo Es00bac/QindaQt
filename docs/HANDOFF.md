@@ -3,10 +3,10 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional commit: `1cd5dab`
-- Tree: `ce5abd0717064bebad4a9ae2f1564a0897a7daa9`
+- Functional commit: `1b4e284`
+- Tree: `c154d5cd29bbc6107ae049b9c7a84fda55a2d974`
 - Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1, and
-  executable native Text Editor S1
+  live notifications; executable native Text Editor S1
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -24,9 +24,19 @@ state from reaching future shell and Settings consumers. Display D0/D1 adds a
 revisioned compositor inventory plus bounded protocol, identity, topology, and
 reversible transaction state. Text Editor S1 adds the first native application:
 one local UTF-8 document with optimistic conflict checks and atomic persistence.
+The installed Notification Live path qualifies the shell shortcut,
+keyboard/focus behavior, Settings1 persistence and replacement, Do Not Disturb,
+critical bypass, shell restart, authenticated private lock privacy, and bounded
+teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The immutable Notification Live candidate passed an independent five-profile
+  private nested matrix and ten repeated 1080p lifecycles. The conflict-resolved
+  manager commit then passed an independent exact-tree integration review, a
+  fresh 1,299-action combined Debug build, 11/11 exact focused regressions, and
+  a fresh installed private 1080p smoke. No matching private process or recent
+  fixture root remained afterward.
 - The exact Text Editor candidate passed independent review, then built in the
   integrated Debug tree and passed all 8/8 focused document, store, controller,
   large-document, offscreen window, desktop metadata, CLI, and installed-theme
@@ -57,12 +67,13 @@ Integrated evidence:
 
 ## Next outcome
 
-Qualify the installed notification shortcut, keyboard/focus, Settings1
-replacement, Do Not Disturb, shell restart, and real nested lock transitions
-at 1080p, WUXGA, and 1440p as described in [Task list](TASK_LIST.md). That lane
-must remain private and nested: it may not move the host cursor, inject host
-input, replace the active compositor, alter host lock configuration, or use the
-live session bus.
+Complete the interactive virtual desktop integration described in
+[Task list](TASK_LIST.md): boot the combined compositor, shell, resident
+services, and test applications under an isolated parent Wayland compositor;
+exercise the private nested seat; collect reviewable screenshots; and prove
+repeatable teardown across the resolution, scale, theme, and multi-output
+matrix without connecting to the host pointer, display, session bus, or user
+configuration.
 
 The reusable `QindaQt.Controls 1.0` component set is now integrated after exact
 independent Debug/Release, visual, accessibility-event, package, source-policy,

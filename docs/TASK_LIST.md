@@ -21,17 +21,13 @@ The initial aggregate idle PSS ceiling is 1,024 MiB. A measured overage remains
 a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
-### Live notification interaction qualification
-
-The installed production shell must prove its notification center shortcut,
-keyboard/focus behavior, Do Not Disturb persistence across settings-service
-replacement, and lock-screen privacy in private nested QindaQt sessions at
-1080p, WUXGA, and 1440p. This outcome is incomplete until those real nested
-paths pass without injecting input into or modifying the developer's active
-desktop.
-
 ## Completed outcomes
 
+- `1b4e284` — Installed live notification interaction qualification: real
+  `Meta+N` registration/remapping, keyboard/focus traversal, Settings1
+  persistence/failure/replacement, Do Not Disturb and critical bypass, shell
+  restart, authenticated private lock privacy, teardown, the complete
+  1080p/WUXGA/1440p/125%/150% matrix, and ten repeated 1080p lifecycles.
 - `1cd5dab` — Native QindaQt Text Editor S1 with one local UTF-8 document,
   optimistic conflict detection, atomic persistence, QST/Controls presentation,
   keyboard and accessibility metadata, installed packaging, and bounded

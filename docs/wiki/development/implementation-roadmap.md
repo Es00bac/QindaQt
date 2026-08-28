@@ -74,13 +74,13 @@ close/ungroup policy, lifecycle synchronization, and grouped plugin-unload
 restoration. Final qualification passed every gate recorded in the
 [testing harness](testing-harness.md), so Hybrid interaction is complete. This
 is not yet a daily-use desktop session: panel windows, the clock, and the
-bounded notification presentation/entry path are implemented, but live
-notification shortcut dispatch, compositor focus acceptance, and Do Not Disturb
-interaction are not yet qualified. Live lock transitions are also not yet
-qualified. Do Not Disturb live desktop interaction remains pending, as do alternative-locker
-and multi-seat support. Audio, power, Bluetooth, menu, task, launcher, tray, and
-clipboard entries remain unavailable or visual fixtures rather than live
-integrations.
+bounded notification presentation/entry path are implemented, and the complete
+installed Notification Live shortcut, focus, Do Not Disturb, service/shell
+replacement, authenticated private-lock, scale, and teardown matrix is
+qualified. Alternative lockers and multi-seat support remain unqualified.
+Audio has a bounded service/runtime slice, while power, Bluetooth, menu, task,
+launcher, tray, and clipboard entries remain unavailable or visual fixtures
+rather than complete live integrations.
 
 ## Milestones
 
@@ -89,7 +89,7 @@ integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels/notifications, authenticated stack, Settings1-persisted DND with ordinary settings page and fixed route, and fail-closed lock privacy implemented; live shortcut/focus/DND/lock proof, reveal UI, and remaining experiences pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and the complete installed Notification Live shortcut/focus/DND/restart/private-lock matrix are qualified; reveal UI, global menu, remaining applets, direct WYSIWYG editing, and whole-shell qualification remain) |
 | Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1 typed stack and isolated null-device proof plus Display D0 inventory and D1 protocol/identity/topology/transaction foundation implemented; Power/Brightness authority, failure policy, and PB-0…PB-5 slice plan accepted at MODELLED; resident Display and Power services, clients/UI, hardware qualification, and other providers pending) |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls are independently qualified, and the lightweight Text Editor S1 local-document slice is implemented; app shell, full Settings Center routes, remaining core applications, cross-app and nested-session matrices, and live accessibility bridge pending) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |

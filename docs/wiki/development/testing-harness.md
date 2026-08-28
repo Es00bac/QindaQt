@@ -514,6 +514,14 @@ integral logical geometry. Unsupported or ignored scale therefore fails; it is
 never relabelled as applied evidence. `race-10x` repeats the complete 1080p
 lifecycle on ten fresh private runtimes.
 
+The exact candidate integrated as `1b4e284` passed all five installed profile
+rows and `race-10x` before independent acceptance. On the conflict-resolved
+manager tree, a fresh 1,299-action Debug build, the 11 exact non-nested
+Notification/Compositor/session regressions, and a new installed 1080p row all
+passed. The manager teardown audit found no matching private process or recent
+fixture root. This combined-tree smoke supplements rather than replaces the
+independently reviewed five-profile and ten-repetition evidence.
+
 This proves nested compositor keyboard behavior, not physical input, a real
 user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual

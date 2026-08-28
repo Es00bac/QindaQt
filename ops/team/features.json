@@ -77,10 +77,10 @@
           "caveat": "Installed end-to-end desktop interaction is measured in QQ-004.05."
         },
         {
-          "id": "QQ-004.05", "title": "Live notification shortcut, focus, DND, restart, and lock interaction", "weight": 10, "state": "WIRED",
-          "summary": "Production components are connected, but the installed private nested workflow has not yet passed the required resolution matrix.",
-          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Live notification interaction qualification is the active incomplete outcome." }],
-          "caveat": "A source-ready worker tree contributes no higher maturity until independently accepted and integrated."
+          "id": "QQ-004.05", "title": "Live notification shortcut, focus, DND, restart, and lock interaction", "weight": 10, "state": "QUALIFIED",
+          "summary": "The installed private nested workflow qualifies real shortcut registration/remapping, keyboard/focus, Settings1 persistence/failure/replacement, Do Not Disturb and critical bypass, shell restart, authenticated lock privacy, and teardown across 1080p, WUXGA, 1440p, 125%, and 150%, plus ten repeated 1080p lifecycles.",
+          "evidence": [{ "kind": "commit", "reference": "1b4e2846e40d31d79ffb03db2229c07ff9bca271", "summary": "The accepted live Notification candidate is integrated after exact candidate and conflict-resolution review." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The five-profile matrix, race-10x, fresh combined build and focused regressions, installed manager smoke, containment, and teardown evidence are recorded." }],
+          "caveat": "Physical input, alternative lockers, multi-seat/session switching, screen-reader integration, and physical mixed-output behavior remain release or whole-shell work."
         },
         {
           "id": "QQ-004.06", "title": "Global application menu", "weight": 10, "state": "ABSENT",
@@ -108,15 +108,15 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "Production LayerShell panel publication and static work areas have an independently reviewed private nested proof at 1080p, WUXGA, and 1440p. Audited clock and notification-center applets execute, and the bounded notification model with center, popups, Settings1-persisted Do Not Disturb, and authenticated lock-state privacy is integrated. Installed live notification interaction remains incomplete.",
+        "summary": "Production LayerShell panel publication and static work areas have independently reviewed private nested proof at 1080p, WUXGA, and 1440p. Audited clock and notification-center applets execute, and the installed Notification Live shortcut, focus, Do Not Disturb, service/shell replacement, authenticated private-lock, scale, race, containment, and teardown matrix is qualified.",
         "evidence": [
           { "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "The deterministic production LayerShell surface proof is integrated on public main; independent and manager verification each passed the 1080p, WUXGA, and 1440p private nested matrix." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Shell and customization In progress and names the integrated production boundaries." },
-          { "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "The public task list names Live notification interaction qualification as the active outcome." },
-          { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff defines the private nested acceptance boundary and host-containment rules." }
+          { "kind": "commit", "reference": "1b4e2846e40d31d79ffb03db2229c07ff9bca271", "summary": "The accepted installed Notification Live workflow and its private qualification harness are integrated." },
+          { "kind": "test", "reference": "docs/HANDOFF.md", "summary": "The public handoff records independent matrix/race evidence and fresh combined-tree verification." }
         ]
       },
-      "caveat": "The production surface/work-area proof is qualified, but live notification shortcut/focus/DND/lock interaction, global menu, reveal UI, task/launcher/tray, WYSIWYG customization, and many remaining experiences are not complete."
+      "caveat": "Production surfaces and installed live notifications are qualified, but global menu, reveal UI, task/launcher/tray, direct WYSIWYG customization, and whole-shell accessibility/mixed-output qualification remain incomplete."
     },
     {
       "id": "QQ-005",
