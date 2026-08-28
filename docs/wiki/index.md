@@ -85,6 +85,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.
+- [QindaQt File Manager](apps/file-manager.md) documents the first-party local
+  directory navigation, breadcrumb/history, bounded file-launch, QST-1/Controls
+  presentation, and accessibility boundaries.
 - [Coding practices](development/coding-practices.md) keeps the implementation
   modular and legible to future agents.
 - [Documentation maintenance](contributing/documentation-policy.md) states when

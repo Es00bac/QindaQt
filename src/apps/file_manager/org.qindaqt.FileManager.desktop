@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt File Manager
+GenericName=File Manager
+Comment=Browse local folders and open files
+Exec=qindaqt-file-manager %u
+Icon=system-file-manager
+Terminal=false
+Categories=Qt;System;FileTools;FileManager;
+MimeType=inode/directory;
+StartupNotify=true
+StartupWMClass=qindaqt-file-manager

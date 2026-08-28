@@ -54,6 +54,7 @@ nav:
       - Testing harness: development/testing-harness.md
   - Applications:
       - Text Editor: apps/text-editor.md
+      - File Manager: apps/file-manager.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -84,3 +85,4 @@ nav:
       - "ADR-0023: Split power authority": adr/0023-split-power-authority-across-service-and-shell.md
       - "ADR-0024: Power1 brightness routing": adr/0024-route-brightness-through-power1.md
       - "ADR-0025: Session-bound Power1 activation": adr/0025-arbitrate-session-bound-power1-activation.md
+      - "ADR-0028: File Manager bounded local launch": adr/0028-file-manager-bounded-local-launch.md

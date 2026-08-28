@@ -53,6 +53,7 @@ add_subdirectory(services/notifications)
 add_subdirectory(services/notification_host)
 add_subdirectory(apps/settings_center)
 add_subdirectory(apps/text_editor)
+add_subdirectory(apps/file_manager)
 
 if(TARGET qindaqt_session_supervisor_support)
     add_subdirectory(session_supervisor)
