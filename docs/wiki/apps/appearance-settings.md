@@ -76,14 +76,18 @@ owner snapshot; only fields the user actually edited survive. If authority
 changes Wallpaper while Theme alone is edited, Apply sends Theme only and
 never restores the stale Wallpaper.
 
-## Route integration seam
+## Settings Center composition seam
 
-The executable `qindaqt-settings` composes per route:
+The executable `qindaqt-settings` composes the two current routes once per
+process so [Settings Center navigation](settings-center.md) can switch pages
+without discarding confirmed state:
 
 1. parse `--page` (`notifications` unchanged, `appearance` additive,
    otherwise exit 2 with the existing diagnostic);
 2. scope one public `SettingsClient` to `AppearanceKeys::scopedKeys()` for
-   the appearance route;
+   the appearance model and a separate client to notification quieting; each
+   client owns an independent `QtSettingsTransport` so their local request
+   tokens cannot collide on one signal source;
 3. merge every theme directory from the same search contract as the text
    editor (`$XDG_DATA_DIRS/qindaqt/themes`, then beside the installed
    executable; `--theme-directory` prepends a developer path). Earlier
@@ -91,15 +95,16 @@ The executable `qindaqt-settings` composes per route:
    invalid theme fails closed and no themes exits 3 instead of rendering
    token-less controls;
 4. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,
-   and only then load `Main.qml`, which instantiates exactly one route
-   component per route with its required model property. The executable adds
+   and only then load `Main.qml`; one presentation-active route host
+   instantiates exactly one route component with its required model property,
+   while both bounded domain models remain alive. The executable adds
    the generated build QML root only when it is actually running from that
    build tree; installed/relocated runs use the prefix's `lib/qt6/qml` root
    and a relative Tokens RUNPATH, never developer import paths.
 
-QML never consumes the settings client or transport directly, and the
-notifications route's model property is never constructed for the appearance
-route (and vice versa).
+QML never consumes either settings client or transport directly. The
+navigation library owns no appearance values or notification policy, and each
+page receives only its own model even though both models share the process.
 
 ## Deliberate non-goals for this slice
 
@@ -146,8 +151,9 @@ The route also inherits the settings-app offscreen and unknown-route gates.
 installed `org.qindaqt.Settings` desktop identity and declares it before any
 window construction. Settings1 client/service suites remain the authority for
 the generic transport and persistence boundary.
-`qindaqt.settings-app-route-construction` creates both full roots with only the
-active route model and a deliberately unavailable private bus.
+`qindaqt.settings-app-route-construction` creates both startup intents with
+both bounded route models and a deliberately unavailable private bus, then
+requires exactly one page Loader to remain active.
 `qindaqt.settings-app-installed-routes` installs the bounded Appearance runtime
 component into a clean prefix and launches both routes with host display,
 Wayland, QML-import, and library-path overrides removed.

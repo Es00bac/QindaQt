@@ -32,6 +32,14 @@ if(NOT install_status EQUAL 0)
     message(FATAL_ERROR "staged Settings install failed:\n${install_output}${install_error}")
 endif()
 
+file(GLOB_RECURSE installed_navigation_archives
+     "${install_prefix}/*qindaqt_settings_navigation*")
+if(installed_navigation_archives)
+    message(FATAL_ERROR
+        "internal Settings navigation library leaked into runtime component: "
+        "${installed_navigation_archives}")
+endif()
+
 set(SETTINGS_EXECUTABLE
     "${install_prefix}/${INSTALL_BINDIR}/${SETTINGS_EXECUTABLE_NAME}")
 set(THEME_DIRECTORY "${install_prefix}/${INSTALL_DATADIR}/qindaqt/themes")

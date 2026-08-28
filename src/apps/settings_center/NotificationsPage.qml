@@ -7,6 +7,7 @@ Page {
     id: root
     required property var quietingSettings
     signal closeRequested()
+    readonly property Item firstFocusTarget: doNotDisturbSwitch
     title: qsTr("Notifications")
 
     Component.onCompleted: doNotDisturbSwitch.forceActiveFocus(Qt.TabFocusReason)
