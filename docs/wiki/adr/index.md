@@ -31,8 +31,8 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0023](0023-split-power-authority-across-service-and-shell.md) | Accepted | Split platform power observation from shell-owned session-action authority |
 | [ADR-0024](0024-route-brightness-through-power1.md) | Accepted | Route fail-closed internal brightness through a Power1 provider |
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
-| [ADR-0028](0028-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
+| [ADR-0029](0029-file-manager-bounded-local-launch.md) | Accepted | Open File Manager files through a bounded local launch intent |
 
-Numbers are never reused, including for rejected or superseded records. Gaps
-(for example ADR-0026/0027) belong to other in-flight outcomes not yet
-integrated on this page's base revision.
+Numbers are never reused, including for rejected or superseded records. A gap
+may be reserved by another coordinated outcome and is not available for reuse;
+integration retains every accepted decision in numeric order.

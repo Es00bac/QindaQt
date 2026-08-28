@@ -1,4 +1,4 @@
-# ADR-0028: Open File Manager files through a bounded local launch intent
+# ADR-0029: Open File Manager files through a bounded local launch intent
 
 - **Status:** Accepted
 - **Date:** 2026-08-28
@@ -36,11 +36,12 @@ process lifetime. A validation failure or a false return from `openUrl()`
 surfaces as a typed `LaunchError` and a bounded, dismissible presentation
 banner; it never blocks navigation or crashes the window.
 
-File Manager S0 also does not import the in-flight `QindaQt.AppShell 1.0`
-module (not on this outcome's public base and not yet independently reviewed
-or integrated). It composes its own minimal `QQmlApplicationEngine` window
-directly against public `QindaQt.Tokens 1.0` and `QindaQt.Controls 1.0`,
-following the same precedent Text Editor S1 set for local persistence.
+The independently accepted and integrated `QindaQt.AppShell 1.0` boundary is
+available on the integration target. File Manager S0 nevertheless keeps its
+already-reviewed direct `QQmlApplicationEngine` composition against public
+`QindaQt.Tokens 1.0` and `QindaQt.Controls 1.0`; adopting AppShell changes
+lifecycle, action, focus, and window behavior and therefore remains a later
+File Manager migration with its own evidence.
 
 ## Consequences
 
@@ -55,20 +56,18 @@ following the same precedent Text Editor S1 set for local persistence.
   accepted; File Manager cannot observe or report the launched application's
   own success or failure. This is a documented boundary, not a defect to
   paper over with a fabricated confirmation.
-- Custom handler selection, a "open with" chooser, portal-mediated launch for
+- Custom handler selection, an "open with" chooser, portal-mediated launch for
   a sandboxed caller, and MIME-type-aware icon/action presentation remain
   later outcomes layered on top of this same validated-path contract.
-- File Manager and Text Editor are now two independent first-party apps each
-  composing their own QST/Controls-or-Widgets presentation directly. This is
-  the second-app evidence ADR-0022 named, but neither app owns a shared
-  window/action boundary yet; `QindaQt.AppShell 1.0` is a separate in-flight
-  candidate outcome, and adopting it here is deliberately deferred to a later
-  File Manager slice rather than folded into this record.
+- File Manager and Text Editor remain independent first-party apps composing
+  their domain presentation directly. AppShell now supplies a shared public
+  window/action boundary, but migrating File Manager is deliberately separate
+  from S0's local-navigation and launch-intent decision.
 
 ## Revisit when
 
-A shell-wide "open with" chooser, sandboxed portal-mediated file launch, or an
-accepted, integrated `QindaQt.AppShell 1.0` public boundary exists. Any of
-those would justify replacing this local `DesktopFileLauncher` (or File
-Manager's bespoke window composition) with the shared contract instead of
-widening this ADR's scope invisibly.
+A shell-wide "open with" chooser, sandboxed portal-mediated file launch, or a
+concrete File Manager AppShell-migration outcome is accepted. Any of those
+would justify replacing this local `DesktopFileLauncher` or bespoke window
+composition through an independently verified slice instead of widening this
+ADR's scope invisibly.

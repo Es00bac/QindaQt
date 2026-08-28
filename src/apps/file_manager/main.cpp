@@ -118,6 +118,9 @@ int main(int argc, char **argv) {
                     QStringLiteral("Additional local theme directory"), QStringLiteral("path")});
   parser.addOption({QStringLiteral("check-theme"),
                     QStringLiteral("Validate the selected theme through QST-1 and exit")});
+  parser.addOption(
+      {QStringLiteral("check-qml-root"),
+       QStringLiteral("Construct the QML root for an installed-package probe and exit")});
   parser.addPositionalArgument(QStringLiteral("folder"),
                                QStringLiteral("Local folder to open"), QStringLiteral("[folder]"));
   parser.process(application);
@@ -151,12 +154,12 @@ int main(int argc, char **argv) {
   }
 
   QQmlApplicationEngine engine;
-  // AGENT-NOTE: The build tree writes QindaQt.Tokens/QindaQt.Controls under
-  // ${CMAKE_BINARY_DIR}/qml (see src/design_tokens/CMakeLists.txt and
-  // src/controls/CMakeLists.txt); a staged/installed run instead finds both
-  // under Qt's own QT6_INSTALL_QML root, which QQmlApplicationEngine already
-  // searches by default.
-  engine.addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
+  // AGENT-GUARD: Resolve the private package prefix from the installed
+  // executable. An absolute build-tree import here makes package probes pass
+  // on a developer machine while shipped clients fail to load Tokens/Controls.
+  engine.addImportPath(
+      QDir(QCoreApplication::applicationDirPath())
+          .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH)));
   QString tokenError;
   if (!registerAndPublishTokens(engine, theme.theme, &tokenError)) {
     std::fprintf(stderr, "qindaqt-file-manager: %s\n", qPrintable(tokenError));
@@ -174,6 +177,10 @@ int main(int argc, char **argv) {
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
   if (engine.rootObjects().isEmpty()) {
     return 3;
+  }
+  if (parser.isSet(QStringLiteral("check-qml-root"))) {
+    std::printf("qml-root-loaded\n");
+    return 0;
   }
   return application.exec();
 }

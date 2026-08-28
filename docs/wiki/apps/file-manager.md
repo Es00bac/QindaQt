@@ -8,14 +8,15 @@ search, thumbnails, portals, and network locations are explicit later slices,
 not silently implied by this page.
 
 The durable local-launch and app-composition choices are recorded in
-[ADR-0028](../adr/0028-file-manager-bounded-local-launch.md).
+[ADR-0029](../adr/0029-file-manager-bounded-local-launch.md).
 
 S0 uses `QindaQt.Tokens 1.0` and `QindaQt.Controls 1.0` QML directly. It is
 the first first-party application to consume the public Controls boundary in
-production rather than only in Controls' own test harness; there is no shared
-`AppShell`/window-composition dependency yet; `QindaQt.AppShell 1.0` is a
-separate in-flight candidate outcome not yet integrated (see
-[Module boundaries](../architecture/module-boundaries.md)).
+production rather than only in Controls' own test harness. The independently
+integrated `QindaQt.AppShell 1.0` boundary is available, but S0 deliberately
+keeps its already-reviewed bespoke composition; migrating this app is a later
+File Manager vertical slice, not an unreviewed addition to local navigation
+(see [Module boundaries](../architecture/module-boundaries.md)).
 
 ## S0 user experience
 
@@ -65,7 +66,7 @@ configured default handler. File Manager owns no MIME database, handler list,
 or launched-process lifetime; a validation failure or a `false` return from
 `openUrl()` becomes a typed `LaunchError` and a dismissible warning banner
 rather than blocking navigation, crashing, or silently doing nothing. See
-[ADR-0028](../adr/0028-file-manager-bounded-local-launch.md) for the full
+[ADR-0029](../adr/0029-file-manager-bounded-local-launch.md) for the full
 rationale and boundary.
 
 ## Ownership, lifetime, and failures
@@ -151,7 +152,15 @@ behavior, `DesktopFileLauncher`'s missing/directory/dangling-symlink/
 unreadable pre-flight rejections and canonical-target resolution,
 `NavigationController`'s dispatch/history/status-mapping/selection-restoration
 contract against injected fakes, desktop metadata, and CLI arity/argument
-validation.
+validation. The package row stages only the `FileManager` component in a clean
+disposable prefix. That component intentionally carries its required Tokens
+and Controls backing libraries, plugins, metadata, and Controls QML sources.
+With ambient QML and library paths cleared, the gate rejects an executable
+that embeds the build QML directory, validates every built-in theme through
+`--check-theme`, and constructs the real File Manager QML root offscreen
+through `--check-qml-root` before exiting deterministically. The executable's
+QML import root and Tokens loader path are relative to its installed location,
+so the same component remains usable after staging or relocation.
 
 ## Bounded S0 deferrals
 
@@ -163,6 +172,7 @@ validation.
   entries show only a name and a muted style for dotfiles.
 - Copy, move, delete, rename, new-folder, mounts, trash, search, thumbnails,
   and any portal-mediated or network location remain explicit later outcomes.
-- `QindaQt.AppShell 1.0` is not consumed; this stays a bespoke window
-  composition, matching Text Editor's own precedent, until an accepted,
-  integrated AppShell boundary and a second consumer justify adopting it.
+- `QindaQt.AppShell 1.0` is not consumed in S0. Its public boundary is already
+  accepted and integrated; adopting its lifecycle/action/window seams is an
+  explicit later File Manager migration with its own interaction and regression
+  evidence rather than a hidden expansion of this local-navigation slice.

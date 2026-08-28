@@ -61,3 +61,38 @@ set_tests_properties(
     qindaqt.file-manager-cli-rejects-non-folder
     PROPERTIES LABELS "file-manager" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+get_target_property(
+    qindaqt_file_manager_expected_controls_paths
+    qindaqt_controls_qml
+    QINDAQT_QML_DEPLOY_PATHS
+)
+string(REPLACE ";" "|" qindaqt_file_manager_expected_controls_paths
+       "${qindaqt_file_manager_expected_controls_paths}")
+
+# AGENT-CONTRACT: This row stages only the FileManager component and clears
+# ambient build/import/library lookup. Its two probes must therefore load the
+# executable, themes, Tokens, Controls, and the real QML root solely from the
+# disposable relocatable prefix.
+add_test(
+    NAME qindaqt.file-manager-installed-runtime
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+        "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
+        "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-file-manager-stage"
+        "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
+        "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+        "-DQINDAQT_QML_INSTALL_DIR=${QT6_INSTALL_QML}"
+        "-DQINDAQT_CONFIGURATION=$<CONFIG>"
+        "-DQINDAQT_TOKENS_LIBRARY_NAME=$<TARGET_FILE_NAME:qindaqt_tokens_qml>"
+        "-DQINDAQT_TOKENS_PLUGIN_NAME=$<TARGET_FILE_NAME:qindaqt_tokens_qmlplugin>"
+        "-DQINDAQT_CONTROLS_LIBRARY_NAME=$<TARGET_FILE_NAME:qindaqt_controls_qml>"
+        "-DQINDAQT_CONTROLS_PLUGIN_NAME=$<TARGET_FILE_NAME:qindaqt_controls_qmlplugin>"
+        "-DQINDAQT_EXPECTED_CONTROLS_PATHS=${qindaqt_file_manager_expected_controls_paths}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_file_manager.cmake"
+)
+set_tests_properties(
+    qindaqt.file-manager-installed-runtime
+    PROPERTIES LABELS "file-manager;package" RUN_SERIAL TRUE TIMEOUT 180
+)
