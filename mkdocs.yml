@@ -32,6 +32,7 @@ nav:
       - Power and brightness: architecture/power-service.md
       - Pure brightness model: architecture/brightness-model.md
       - Notification service: architecture/notifications-service.md
+      - Clipboard service: architecture/clipboard-service.md
       - Window containers: architecture/window-containers.md
   - Shell:
       - QindaQt.Controls 1.0: shell/controls.md
