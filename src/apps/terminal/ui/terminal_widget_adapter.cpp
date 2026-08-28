@@ -116,7 +116,7 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
     const TerminalViewAppearance &appearance, QObject *parent)
     : TerminalSessionBackend(parent), m_appearance(appearance) {
   // AGENT-NOTE: startnow is deliberately 0 and setShellProgram/setArgs are
-  // never used: the widget must not spawn its own child (ADR-0028); this
+  // never used: the widget must not spawn its own child (ADR-0030); this
   // adapter owns fork/execve so exit codes and process-group teardown stay
   // in QindaQt hands.
   m_widget = new QTermWidget(0, nullptr);

@@ -118,7 +118,7 @@ ShellResolution TerminalLaunchPolicy::resolveShell(
   // AGENT-NOTE: The metadata check is advisory defense against typos and
   // hostile CLI values; execve remains the real authority. TOCTOU between
   // this check and execve is irrelevant because the argv is never
-  // interpreted by a shell (ADR-0028).
+  // interpreted by a shell (ADR-0030).
   if (!info.exists()) {
     return {.outcome = {false,
                         QStringLiteral("Shell program does not exist: %1")

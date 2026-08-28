@@ -10,7 +10,7 @@ advanced VT behavior are explicit deferrals, not hidden claims.
 Launch policy, session lifecycle, rendering adaptation, and presentation are
 separate owners inside `src/apps/terminal`. The qtermwidget dependency and its
 confined adapter are recorded in
-[ADR-0028](../adr/0028-confine-qtermwidget-behind-terminal-adapter.md).
+[ADR-0030](../adr/0030-confine-qtermwidget-behind-terminal-adapter.md).
 
 ## Shell launch and the no-shell-string contract
 
@@ -71,7 +71,7 @@ deterministic in tests.
 
 `qtermwidget6` is linked only by the terminal's rendering adapter; no other
 module gains its headers, and tests never link it. The adapter consumes the
-upstream teletype contract pinned by ADR-0028: the widget owns the PTY master,
+upstream teletype contract pinned by ADR-0030: the widget owns the PTY master,
 emulation, scrollback, selection, and resize (`TIOCSWINSZ`); the adapter owns
 fork/exec, reaping, keyboard forwarding through a bounded (64 KiB) drop-newest
 buffer, and view disposal. `qindaqt-terminal` links the adapter; the support

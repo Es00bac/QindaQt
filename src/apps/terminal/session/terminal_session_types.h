@@ -13,7 +13,7 @@ using ProcessId = qint64;
 
 // TerminalExitStatus is the single exit-truth value published by the session.
 // The rendering widget cannot provide exit codes in teletype mode; only the
-// application-owned reap fills in code/signal. See ADR-0028.
+// application-owned reap fills in code/signal. See ADR-0030.
 struct TerminalExitStatus final {
   enum class Kind {
     None,        // No child was started, or it is still running.

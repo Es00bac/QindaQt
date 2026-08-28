@@ -10,7 +10,7 @@ namespace QindaQt::Apps::Terminal {
 
 // AGENT-CONTRACT: TerminalSessionBackend is the boundary between the session
 // lifecycle (policy, state machine, teardown) and the rendering adapter that
-// wraps qtermwidget6 (ADR-0028). Implementations live only in the view
+// wraps qtermwidget6 (ADR-0030). Implementations live only in the view
 // adapter and in test fakes; no implementation may leak widget-library types
 // through this interface. A backend instance is single-use: one start, one
 // child. start() must be called at most once; requestShutdown() may be called
