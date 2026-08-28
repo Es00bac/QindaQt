@@ -106,13 +106,13 @@ GestureTransition GestureStateMachine::handle(const GestureEvent &event)
             QVector<GestureDirective> directives;
             const bool identityChanged =
                 !m_resolvedTarget.has_value() || !(*m_resolvedTarget == event.target);
-            GestureDirective evaluate;
-            evaluate.kind = GestureDirectiveKind::Evaluate;
-            evaluate.target = event.target;
-            directives.append(evaluate);
             if (identityChanged) {
                 // Architecture D3: execute only when the resolved target
                 // identity actually changes, never per pointer-motion event.
+                GestureDirective evaluate;
+                evaluate.kind = GestureDirectiveKind::Evaluate;
+                evaluate.target = event.target;
+                directives.append(evaluate);
                 GestureDirective execute;
                 execute.kind = GestureDirectiveKind::ExecutePending;
                 execute.target = event.target;

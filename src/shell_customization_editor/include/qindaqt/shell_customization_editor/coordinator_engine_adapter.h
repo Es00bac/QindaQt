@@ -5,6 +5,9 @@
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization_editor/editing_engine.h"
 
+#include <QThread>
+#include <QVector>
+
 #include <memory>
 
 namespace QindaQt::ShellCustomizationEditor {
@@ -20,7 +23,9 @@ public:
     // repository's own lease contract. Construction attempts the lease; a
     // null lease degrades to typed EngineUnavailable results instead of
     // throwing, so a losing editor stays presentable.
-    explicit CoordinatorEditingEngine(QindaQt::ShellCustomization::LayoutEditingRepository &repository);
+    CoordinatorEditingEngine(
+        QindaQt::ShellCustomization::LayoutEditingRepository &repository,
+        QVector<QindaQt::Applets::AppletManifest> manifestCatalog = {});
     ~CoordinatorEditingEngine() override;
 
     CoordinatorEditingEngine(const CoordinatorEditingEngine &) = delete;
@@ -30,17 +35,25 @@ public:
     execute(const QindaQt::ShellCustomization::EditingCommand &command) override;
     [[nodiscard]] QindaQt::ShellCustomization::EditingEvaluation
     evaluate(const QindaQt::ShellCustomization::EditingCommand &command) const override;
+    [[nodiscard]] SequenceEvaluation evaluateSequence(
+        const QVector<QindaQt::ShellCustomization::EditingCommand> &commands) const override;
     [[nodiscard]] std::shared_ptr<const QindaQt::ShellCustomization::LayoutEditingSnapshot>
     snapshot() const override;
+    [[nodiscard]] QindaQt::ShellCustomization::LayoutEditingStatus status() const override;
     [[nodiscard]] bool hasPreview() const override;
 
     // False while another coordinator owns the session or the repository is
     // not ready. The presentation binds its read-only banner to this value.
-    [[nodiscard]] bool holdsLease() const noexcept;
+    [[nodiscard]] bool holdsLease() const;
 
 private:
+    [[nodiscard]] bool onOwnerThread() const noexcept;
+    [[nodiscard]] bool ensureCoordinator() const;
+
     QindaQt::ShellCustomization::LayoutEditingRepository &m_repository;
-    std::unique_ptr<QindaQt::ShellCustomization::LayoutEditingCoordinator> m_coordinator;
+    QVector<QindaQt::Applets::AppletManifest> m_manifestCatalog;
+    QThread *m_ownerThread = nullptr;
+    mutable std::unique_ptr<QindaQt::ShellCustomization::LayoutEditingCoordinator> m_coordinator;
 };
 
 } // namespace QindaQt::ShellCustomizationEditor

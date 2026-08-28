@@ -29,9 +29,9 @@ struct Announcement final {
     bool operator==(const Announcement &) const = default;
 };
 
-// Coalesces announcements per event turn: repeated announces of one kind
-// replace the pending one, and drain() publishes exactly the latest tuple of
-// each kind, mirroring the StateCard pattern.
+// Coalesces announcements per event turn to exactly one latest tuple. The
+// later event wins regardless of politeness kind; otherwise one pointer move
+// could publish stale acceptance after a later rejection in the same turn.
 class AnnouncementCenter final {
 public:
     void announce(Announcement announcement);
@@ -39,8 +39,7 @@ public:
     [[nodiscard]] bool hasPending() const noexcept;
 
 private:
-    std::optional<Announcement> m_polite;
-    std::optional<Announcement> m_assertive;
+    std::optional<Announcement> m_pending;
 };
 
 // "Top panel" / "Bottom panel on primary": edge name plus the output selector
@@ -53,8 +52,8 @@ private:
 
 [[nodiscard]] QString zoneDisplayName(const QString &zone);
 
-// Position of the drop target inside the panel (1-based insert position of
-// applets.size() + 1 slots).
+// Position of the drop target inside its zone (1-based insert position among
+// only the applets in that zone).
 [[nodiscard]] int dropPositionInSet(const Profiles::PanelSpec &targetPanel,
                                     const DropTarget &target);
 

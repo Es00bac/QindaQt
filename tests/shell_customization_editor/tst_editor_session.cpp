@@ -2,10 +2,15 @@
 #include "editor_test_fixtures.h"
 
 #include "qindaqt/shell_customization/editing_commands.h"
+#include "qindaqt/shell_customization/layout_editing_coordinator.h"
+#include "qindaqt/shell_customization/layout_editing_repository.h"
+#include "qindaqt/shell_customization_editor/coordinator_engine_adapter.h"
 #include "qindaqt/shell_customization_editor/editor_session.h"
 
+#include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
+#include <QThread>
 #include <QtTest/QtTest>
 
 #include <algorithm>
@@ -45,6 +50,7 @@ public:
         if (requested != m_revision) {
             result.error.code = QindaQt::ShellCustomization::EditingErrorCode::StaleRevision;
             result.error.message = QStringLiteral("stale revision");
+            result.revision = m_revision;
             return result;
         }
         const auto scripted = std::find(m_failures.begin(), m_failures.end(), result.kind);
@@ -52,6 +58,7 @@ public:
             m_failures.erase(scripted);
             result.error.code = QindaQt::ShellCustomization::EditingErrorCode::InvalidCommand;
             result.error.message = QStringLiteral("scripted failure");
+            result.revision = m_revision;
             return result;
         }
         m_revision = m_revision + 1;
@@ -73,6 +80,20 @@ public:
         evaluation.kind = QindaQt::ShellCustomization::commandKind(command);
         evaluation.revision = m_revision;
         if (!m_evaluationAccepted) {
+            evaluation.error.code =
+                QindaQt::ShellCustomization::EditingErrorCode::UnsupportedAppletPlacement;
+            evaluation.error.message = QStringLiteral("scripted rejection");
+        }
+        return evaluation;
+    }
+
+    SequenceEvaluation evaluateSequence(
+        const QVector<QindaQt::ShellCustomization::EditingCommand> &commands) const override
+    {
+        SequenceEvaluation evaluation;
+        evaluation.revision = m_revision;
+        evaluation.accepted = !commands.isEmpty() && m_evaluationAccepted;
+        if (!evaluation.accepted) {
             evaluation.error.code =
                 QindaQt::ShellCustomization::EditingErrorCode::UnsupportedAppletPlacement;
             evaluation.error.message = QStringLiteral("scripted rejection");
@@ -277,6 +298,114 @@ private slots:
         QVERIFY(session.isDirty());
     }
 
+    void productionCrossPanelZoneMoveChainsAndCreatesOneUndoStep()
+    {
+        const Profiles::LayoutProfile initial = profile();
+        LayoutEditingRepository repository(initial, outputs(), manifests());
+        QVERIFY(repository.isReady());
+        CoordinatorEditingEngine engine(repository, manifests());
+        QVERIFY(engine.holdsLease());
+        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
+
+        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
+                                                QStringLiteral("clock-instance"))).ok);
+        QVERIFY(session.beginVisualDrag().ok);
+        const DropTarget target{QStringLiteral("dock"), QStringLiteral("start"),
+                                QStringLiteral("tasks-instance")};
+        QVERIFY2(session.hoverTarget(target).ok,
+                 qPrintable(session.lastOutcome().message));
+        QVERIFY(session.drop().ok);
+        QCOMPARE(repository.snapshot()->revision, quint64{4});
+
+        const Profiles::PanelSpec *dock = panel(repository.snapshot()->profile,
+                                                QStringLiteral("dock"));
+        QVERIFY(dock != nullptr);
+        const auto moved = std::find_if(dock->applets.cbegin(),
+                                        dock->applets.cend(),
+                                        [](const Profiles::AppletSpec &candidate) {
+                                            return candidate.id == QLatin1String("clock-instance");
+                                        });
+        QVERIFY(moved != dock->applets.cend());
+        QCOMPARE(moved->settings.value(QStringLiteral("zone")).toString(),
+                 QStringLiteral("start"));
+
+        QVERIFY(session.undo().ok);
+        QCOMPARE(repository.snapshot()->profile.toJson(), initial.toJson());
+        QVERIFY(!repository.status().canUndo);
+        QVERIFY(repository.status().canRedo);
+    }
+
+    void rejectedReleaseCancelsEarlierAcceptedPreview()
+    {
+        ScriptedEngine engine(profile());
+        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
+
+        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
+                                                QStringLiteral("clock-instance"))).ok);
+        QVERIFY(session.beginVisualDrag().ok);
+        QVERIFY(session.hoverTarget(DropTarget{QStringLiteral("bar"),
+                                               QStringLiteral("start"),
+                                               QStringLiteral("launcher-instance")}).ok);
+        engine.setEvaluationAccepted(false);
+        QVERIFY(session.hoverTarget(DropTarget{QStringLiteral("dock"),
+                                               QStringLiteral("center"),
+                                               QStringLiteral("tasks-instance")}).ok);
+        QVERIFY(session.drop().ok);
+        QCOMPARE(engine.executed().back(), CommandKind::CancelPreview);
+        QVERIFY(!session.isDirty());
+        QVERIFY(!engine.hasPreview());
+    }
+
+    void productionCancelRestoresTheExactPreGestureProfile()
+    {
+        const Profiles::LayoutProfile initial = profile();
+        LayoutEditingRepository repository(initial, outputs(), manifests());
+        CoordinatorEditingEngine engine(repository, manifests());
+        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
+
+        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
+                                                QStringLiteral("clock-instance"))).ok);
+        QVERIFY(session.beginVisualDrag().ok);
+        QVERIFY2(session.hoverTarget(DropTarget{QStringLiteral("dock"),
+                                               QStringLiteral("start"),
+                                               QStringLiteral("tasks-instance")}).ok,
+                 qPrintable(session.lastOutcome().message));
+        QVERIFY(session.cancelGesture().ok);
+        QCOMPARE(repository.snapshot()->profile.toJson(), initial.toJson());
+        QCOMPARE(repository.status(), LayoutEditingStatus{});
+        QVERIFY(!session.isDirty());
+    }
+
+    void returningFromAnInvalidHoverKeepsTheAppliedTargetDroppable()
+    {
+        LayoutEditingRepository repository(profile(), outputs(), manifests());
+        CoordinatorEditingEngine engine(repository, manifests());
+        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
+        const DropTarget accepted{QStringLiteral("dock"), QStringLiteral("start"),
+                                  QStringLiteral("tasks-instance")};
+
+        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
+                                                QStringLiteral("clock-instance"))).ok);
+        QVERIFY(session.beginVisualDrag().ok);
+        QVERIFY(session.hoverTarget(accepted).ok);
+        QVERIFY(session.hoverTarget(DropTarget{QString(), QStringLiteral("start"), {}}).ok);
+        QVERIFY(session.acceptance().has_value());
+        QVERIFY(!session.acceptance()->accepted);
+        QVERIFY(session.hoverTarget(accepted).ok);
+        QVERIFY(session.acceptance().has_value());
+        QVERIFY(session.acceptance()->accepted);
+        QVERIFY(session.drop().ok);
+        QVERIFY(session.isDirty());
+
+        const Profiles::PanelSpec *dock = panel(repository.snapshot()->profile,
+                                                QStringLiteral("dock"));
+        QVERIFY(dock != nullptr);
+        QVERIFY(std::any_of(dock->applets.cbegin(), dock->applets.cend(),
+                            [](const Profiles::AppletSpec &candidate) {
+                                return candidate.id == QLatin1String("clock-instance");
+                            }));
+    }
+
     void applyGestureRejectsStructurallyInvalidIntents()
     {
         ScriptedEngine engine(profile());
@@ -318,7 +447,24 @@ private slots:
         QVERIFY(session.isDirty());
     }
 
-    void revertClearsDirtyWithoutTouchingTheEngine()
+    void applyRefusesAnOpenPreview()
+    {
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        ScriptedEngine engine(profile());
+        EditorSession session(engine, UserProfileStore{directory.path()});
+
+        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
+                                                QStringLiteral("clock-instance"))).ok);
+        QVERIFY(session.beginVisualDrag().ok);
+        const EditorOutcome outcome = session.applyToUserProfile();
+        QVERIFY(!outcome.ok);
+        QCOMPARE(outcome.code, EditorErrorCode::GestureRefused);
+        QVERIFY(QDir(directory.path()).isEmpty());
+        QVERIFY(session.cancelGesture().ok);
+    }
+
+    void revertRequiresHostRebuildWithoutPublishingFalseCleanState()
     {
         ScriptedEngine engine(profile());
         EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
@@ -330,9 +476,52 @@ private slots:
         QVERIFY(session.isDirty());
 
         const quint64 revisionBefore = engine.revision();
-        QVERIFY(session.revert().ok);
-        QVERIFY(!session.isDirty());
+        const EditorOutcome outcome = session.revert();
+        QVERIFY(!outcome.ok);
+        QCOMPARE(outcome.code, EditorErrorCode::RebuildRequired);
+        QVERIFY(session.requiresRebuild());
+        QVERIFY(session.isDirty());
         QCOMPARE(engine.revision(), revisionBefore);
+        QCOMPARE(session.applyToUserProfile().code, EditorErrorCode::RebuildRequired);
+        QCOMPARE(session.undo().code, EditorErrorCode::RebuildRequired);
+    }
+
+    void productionAdapterRetriesALostLeaseOnTheNextAction()
+    {
+        LayoutEditingRepository repository(profile(), outputs(), manifests());
+        auto blocking = repository.tryAcquireCoordinator();
+        QVERIFY(blocking);
+
+        CoordinatorEditingEngine engine(repository, manifests());
+        QVERIFY(!engine.holdsLease());
+        QCOMPARE(engine.status(), LayoutEditingStatus{});
+
+        blocking.reset();
+        QVERIFY(engine.holdsLease());
+        const EditingResult opened = engine.execute(BeginPreviewCommand{0});
+        QVERIFY2(opened.succeeded(), qPrintable(opened.error.message));
+        QVERIFY(engine.hasPreview());
+        QVERIFY(engine.execute(CancelPreviewCommand{1}).succeeded());
+    }
+
+    void productionAdapterRejectsCrossThreadCallsWithoutMutation()
+    {
+        LayoutEditingRepository repository(profile(), outputs(), manifests());
+        CoordinatorEditingEngine engine(repository, manifests());
+        EditingResult crossThread;
+
+        std::unique_ptr<QThread> caller{QThread::create([&] {
+            crossThread = engine.execute(BeginPreviewCommand{0});
+        })};
+        caller->start();
+        QVERIFY(caller->wait());
+
+        QCOMPARE(crossThread.error.code,
+                 QindaQt::ShellCustomization::EditingErrorCode::RepositoryNotReady);
+        QVERIFY(crossThread.error.message.contains(QStringLiteral("owner thread")));
+        QCOMPARE(repository.snapshot()->revision, quint64{0});
+        QVERIFY(!repository.status().previewActive);
+        QVERIFY(engine.holdsLease());
     }
 
     void outputGenerationChangeStalesTheSession()
@@ -372,14 +561,14 @@ private slots:
         const DropTarget target{QStringLiteral("bar"), QStringLiteral("start"),
                                 QStringLiteral("launcher-instance")};
         QVERIFY(session.hoverTarget(target).ok);
-        QVERIFY(session.acceptance().has_value());
-        QVERIFY(session.acceptance()->accepted);
 
         // The accepted hover executed and moved the revision; the highlight
         // computed before the execution must already be gone.
         QVERIFY(!session.acceptance().has_value());
     }
 };
+
+} // namespace
 
 QTEST_MAIN(EditorSessionTest)
 #include "tst_editor_session.moc"

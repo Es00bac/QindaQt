@@ -4,6 +4,8 @@
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization_editor/editing_engine.h"
 
+#include "editing_command_sequence_p.h"
+
 #include <QVariant>
 #include <QVector>
 
@@ -18,13 +20,10 @@ namespace QindaQt::ShellCustomizationEditor {
 
 namespace {
 
-constexpr auto zoneKey = "zone";
-constexpr auto defaultZone = "start";
-
 QString settingsZoneValue(const QVariantMap &settings)
 {
-    const QVariant value = settings.value(QStringLiteral(zoneKey));
-    return value.isValid() ? value.toString() : QStringLiteral(defaultZone);
+    const QVariant value = settings.value(QStringLiteral("zone"));
+    return value.isValid() ? value.toString() : QStringLiteral("start");
 }
 
 // AGENT-NOTE: UpdateAppletSettingsCommand replaces the whole settings map, so
@@ -34,8 +33,15 @@ QString settingsZoneValue(const QVariantMap &settings)
 QVariantMap settingsWithZone(const QVariantMap &source, const QString &zone)
 {
     QVariantMap adjusted = source;
-    adjusted.insert(QStringLiteral(zoneKey), zone);
+    adjusted.insert(QStringLiteral("zone"), zone);
     return adjusted;
+}
+
+GestureEvent gestureEvent(GestureEventKind kind,
+                          bool ok = false,
+                          DropTarget target = {})
+{
+    return {kind, ok, std::move(target)};
 }
 
 } // namespace
@@ -60,7 +66,7 @@ CustomizationIntent EditorSession::gestureIntentFor(const DropTarget &target) co
 QVariantMap EditorSession::draggedSettingsFor(const DropTarget &target) const
 {
     Q_UNUSED(target);
-    const QString zone = m_gestureZone.isEmpty() ? QStringLiteral(defaultZone) : m_gestureZone;
+    const QString zone = m_gestureZone.isEmpty() ? QStringLiteral("start") : m_gestureZone;
     return settingsWithZone(m_sourceSettings, zone);
 }
 
@@ -76,12 +82,14 @@ void EditorSession::discardAcceptance()
 
 bool EditorSession::canUndo() const
 {
-    return m_machine.state() == GestureState::Idle && m_engine.status().canUndo;
+    return !requiresRebuild() && m_machine.state() == GestureState::Idle
+        && m_engine.status().canUndo;
 }
 
 bool EditorSession::canRedo() const
 {
-    return m_machine.state() == GestureState::Idle && m_engine.status().canRedo;
+    return !requiresRebuild() && m_machine.state() == GestureState::Idle
+        && m_engine.status().canRedo;
 }
 
 void EditorSession::evaluateAcceptance(const QVector<EditingCommand> &candidates,
@@ -92,16 +100,11 @@ void EditorSession::evaluateAcceptance(const QVector<EditingCommand> &candidates
     acceptance.revision = observedRevision();
     // Every candidate must be acceptable; a zone-crossing drop is two
     // commands and only one acceptable command would be a half-offer.
-    acceptance.accepted = !candidates.isEmpty();
-    for (const EditingCommand &candidate : candidates) {
-        const EditingEvaluation evaluation = m_engine.evaluate(candidate);
-        acceptance.revision = evaluation.revision;
-        if (!evaluation.accepted()) {
-            acceptance.accepted = false;
-            acceptance.reason = evaluation.error.message;
-            break;
-        }
-    }
+    const SequenceEvaluation evaluation = m_engine.evaluateSequence(candidates);
+    acceptance.accepted = evaluation.accepted;
+    acceptance.reason = evaluation.error.message;
+    acceptance.revision = evaluation.revision;
+    m_currentTargetAccepted = acceptance.accepted;
     m_acceptance = std::move(acceptance);
 }
 
@@ -110,7 +113,8 @@ void EditorSession::rollBackGesture()
     // CancelRequested → execute the demanded CancelPreview → CancelSettled.
     // The machine treats the settle as unconditional (invariant 2: the final
     // revision is reserved), so the bracket always closes here.
-    const GestureTransition cancel = m_machine.handle({GestureEventKind::CancelRequested});
+    const GestureTransition cancel =
+        m_machine.handle(gestureEvent(GestureEventKind::CancelRequested));
     for (const GestureDirective &directive : cancel.directives) {
         if (directive.kind != GestureDirectiveKind::CancelPreview) {
             continue;
@@ -119,12 +123,16 @@ void EditorSession::rollBackGesture()
         command.expectedRevision = m_chainedRevision;
         const EditingResult result = m_engine.execute(command);
         m_chainedRevision = result.revision;
-        m_machine.handle({GestureEventKind::CancelSettled, result.succeeded()});
+        const GestureTransition settled = m_machine.handle(
+            gestureEvent(GestureEventKind::CancelSettled, result.succeeded()));
+        Q_UNUSED(settled);
     }
     m_visualDrag = false;
     m_gestureInstanceId.clear();
     m_gesturePanelId.clear();
     m_gestureZone.clear();
+    m_appliedTarget.reset();
+    m_currentTargetAccepted = false;
     discardAcceptance();
 }
 
@@ -132,9 +140,11 @@ EditorOutcome EditorSession::executePreviewCommands(const QVector<EditingCommand
                                                     const DropTarget &appliedTarget)
 {
     for (const EditingCommand &command : commands) {
-        const EditingResult result = m_engine.execute(command);
+        const EditingResult result =
+            m_engine.execute(Internal::retagCommand(command, m_chainedRevision));
         m_chainedRevision = result.revision;
         if (!result.succeeded()) {
+            m_currentTargetAccepted = false;
             rollBackGesture();
             return EditorOutcome::failure(EditorErrorCode::CommandFailed, result.error.message);
         }
@@ -156,7 +166,8 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
             const EditingResult result = m_engine.execute(command);
             m_chainedRevision = result.revision;
             const GestureTransition after =
-                m_machine.handle({GestureEventKind::PreviewSettled, result.succeeded()});
+                m_machine.handle(
+                    gestureEvent(GestureEventKind::PreviewSettled, result.succeeded()));
             if (!result.succeeded()) {
                 // Abort with a typed reason and no visual drag; there is no
                 // preview to cancel because none opened.
@@ -181,6 +192,8 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
                 if (!executed.ok) {
                     return executed;
                 }
+                m_currentTargetAccepted = true;
+                m_appliedTarget = directive.target;
                 if (plan != nullptr && m_payload.isPalette() && m_gestureInstanceId.isEmpty()) {
                     // The executed insert created this instance; the drag now
                     // continues as moves of that instance.
@@ -197,7 +210,8 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
             const EditingResult result = m_engine.execute(command);
             m_chainedRevision = result.revision;
             const GestureTransition after =
-                m_machine.handle({GestureEventKind::CommitSettled, result.succeeded()});
+                m_machine.handle(
+                    gestureEvent(GestureEventKind::CommitSettled, result.succeeded()));
             if (!result.succeeded()) {
                 // A failed commit must not leave the bracket open: run the
                 // cancel the machine demanded before returning.
@@ -209,7 +223,10 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
                     cancelCommand.expectedRevision = m_chainedRevision;
                     const EditingResult cancelResult = m_engine.execute(cancelCommand);
                     m_chainedRevision = cancelResult.revision;
-                    m_machine.handle({GestureEventKind::CancelSettled, cancelResult.succeeded()});
+                    const GestureTransition settled = m_machine.handle(
+                        gestureEvent(GestureEventKind::CancelSettled,
+                                     cancelResult.succeeded()));
+                    Q_UNUSED(settled);
                 }
                 return EditorOutcome::failure(EditorErrorCode::CommandFailed,
                                               result.error.message);
@@ -223,7 +240,8 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
             const EditingResult result = m_engine.execute(command);
             m_chainedRevision = result.revision;
             const GestureTransition after =
-                m_machine.handle({GestureEventKind::CancelSettled, result.succeeded()});
+                m_machine.handle(
+                    gestureEvent(GestureEventKind::CancelSettled, result.succeeded()));
             if (!result.succeeded()) {
                 return EditorOutcome::failure(EditorErrorCode::CommandFailed,
                                               result.error.message);
@@ -244,15 +262,17 @@ void EditorSession::finishGestureState()
     m_gestureInstanceId.clear();
     m_gesturePanelId.clear();
     m_gestureZone.clear();
+    m_appliedTarget.reset();
+    m_currentTargetAccepted = false;
     discardAcceptance();
 }
 
 EditorOutcome EditorSession::armDrag(const DragPayload &payload)
 {
-    if (m_stale) {
+    if (requiresRebuild()) {
         return EditorOutcome::failure(
-            EditorErrorCode::SessionStale,
-            QStringLiteral("the output inventory changed; rebuild the editor session"));
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
     }
     if (m_machine.state() != GestureState::Idle) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
@@ -266,7 +286,7 @@ EditorOutcome EditorSession::armDrag(const DragPayload &payload)
     // Capture the dragged instance's settings and true location from the
     // snapshot the caller observed; the gesture's commands chain from here.
     m_sourceSettings.clear();
-    m_gestureZone = QStringLiteral(defaultZone);
+    m_gestureZone = QStringLiteral("start");
     if (const auto current = m_engine.snapshot(); current != nullptr && !payload.isPalette()) {
         for (const Profiles::PanelSpec &panel : current->profile.panels) {
             const auto found = std::find_if(panel.applets.cbegin(),
@@ -284,7 +304,8 @@ EditorOutcome EditorSession::armDrag(const DragPayload &payload)
     }
     m_chainedRevision = observedRevision();
 
-    const GestureTransition transition = m_machine.handle({GestureEventKind::Arm});
+    const GestureTransition transition =
+        m_machine.handle(gestureEvent(GestureEventKind::Arm));
     if (transition.refused) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused, transition.reason);
     }
@@ -294,12 +315,13 @@ EditorOutcome EditorSession::armDrag(const DragPayload &payload)
 
 EditorOutcome EditorSession::beginVisualDrag()
 {
-    if (m_stale) {
+    if (requiresRebuild()) {
         return EditorOutcome::failure(
-            EditorErrorCode::SessionStale,
-            QStringLiteral("the output inventory changed; rebuild the editor session"));
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
     }
-    const GestureTransition transition = m_machine.handle({GestureEventKind::ThresholdExceeded});
+    const GestureTransition transition =
+        m_machine.handle(gestureEvent(GestureEventKind::ThresholdExceeded));
     if (transition.refused) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused, transition.reason);
     }
@@ -310,10 +332,10 @@ EditorOutcome EditorSession::beginVisualDrag()
 
 EditorOutcome EditorSession::hoverTarget(const DropTarget &target)
 {
-    if (m_stale) {
+    if (requiresRebuild()) {
         return EditorOutcome::failure(
-            EditorErrorCode::SessionStale,
-            QStringLiteral("the output inventory changed; rebuild the editor session"));
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
     }
 
     GesturePlan plan;
@@ -321,7 +343,7 @@ EditorOutcome EditorSession::hoverTarget(const DropTarget &target)
     plan.target = target;
 
     const IntentValidation validation = validateIntent(plan.intent, target);
-    if (!validation.ok) {
+    if (!validation.ok()) {
         // Structurally invalid targets are painted as rejected; they never
         // reach the engine and never open or move a preview.
         DropAcceptance rejection;
@@ -329,7 +351,17 @@ EditorOutcome EditorSession::hoverTarget(const DropTarget &target)
         rejection.reason = validation.message;
         rejection.target = target;
         rejection.revision = observedRevision();
+        m_currentTargetAccepted = false;
         m_acceptance = std::move(rejection);
+        // Keep the machine aligned with the physical hover without executing
+        // malformed commands. Returning to the prior valid target must then
+        // count as an identity change and trigger a fresh evaluation.
+        const GestureTransition transition = m_machine.handle(
+            gestureEvent(GestureEventKind::HoverChanged, false, target));
+        if (transition.refused) {
+            return EditorOutcome::failure(EditorErrorCode::GestureRefused,
+                                          transition.reason);
+        }
         settle(EditorOutcome::success());
         return m_lastOutcome;
     }
@@ -343,9 +375,19 @@ EditorOutcome EditorSession::hoverTarget(const DropTarget &target)
 
     const QVector<EditingCommand> candidates = translateIntent(plan.intent, target, plan.context);
     const GestureTransition transition =
-        m_machine.handle({GestureEventKind::HoverChanged, false, target});
+        m_machine.handle(gestureEvent(GestureEventKind::HoverChanged, false, target));
     if (transition.refused) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused, transition.reason);
+    }
+
+    if (m_appliedTarget.has_value() && *m_appliedTarget == target) {
+        // Returning from a rejected/off-target hover to the already-applied
+        // provisional target is accepted without replaying a no-op move (the
+        // engine correctly rejects such a replay as NoChange).
+        m_currentTargetAccepted = true;
+        m_acceptance = DropAcceptance{true, {}, target, observedRevision()};
+        settle(EditorOutcome::success());
+        return m_lastOutcome;
     }
 
     const EditorOutcome outcome = runTransition(transition, &plan, candidates);
@@ -355,7 +397,13 @@ EditorOutcome EditorSession::hoverTarget(const DropTarget &target)
 
 EditorOutcome EditorSession::drop()
 {
-    const GestureTransition transition = m_machine.handle({GestureEventKind::Drop});
+    if (m_machine.state() == GestureState::Dragging && !m_currentTargetAccepted) {
+        // Releasing over an off-target or rejected candidate cancels the whole
+        // preview; it must never commit the last provisionally accepted hover.
+        return cancelGesture();
+    }
+    const GestureTransition transition =
+        m_machine.handle(gestureEvent(GestureEventKind::Drop));
     if (transition.refused) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused, transition.reason);
     }
@@ -367,7 +415,8 @@ EditorOutcome EditorSession::drop()
 
 EditorOutcome EditorSession::cancelGesture()
 {
-    const GestureTransition transition = m_machine.handle({GestureEventKind::CancelRequested});
+    const GestureTransition transition =
+        m_machine.handle(gestureEvent(GestureEventKind::CancelRequested));
     if (transition.refused) {
         // Idle: there was nothing to cancel; that is not a failure.
         settle(EditorOutcome::success());

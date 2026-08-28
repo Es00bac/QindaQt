@@ -9,13 +9,13 @@ the Settings window owns the repository, the process, and the presentation.
 - Module: `src/shell_customization_editor` (public headers under
   `include/qindaqt/shell_customization_editor`)
 - Focused tests: `tests/shell_customization_editor`
-- Decision record: [ADR-0026](../adr/0026-isolate-the-customization-editor-domain.md)
+- Decision record: [ADR-0043](../adr/0043-isolate-the-customization-editor-domain.md)
 
 ## Boundary
 
 | Allowed inward dependencies | Never |
 | --- | --- |
-| Public `shell_customization` commands and results, public `profiles` values and loader, Qt Core | Placement/manifest policy (the engine's `evaluate()` is the only acceptance authority), applet execution, shell surfaces, LayerShellQt, D-Bus, QML, Settings1 schema keys |
+| Public `shell_customization` commands and results, public `profiles` values/store, Qt Core | Placement/manifest policy (the engine's sequence evaluation is the only acceptance authority), applet execution, shell surfaces, LayerShellQt, D-Bus, QML, Settings1 schema keys |
 
 The module reuses the fourteen existing `EditingCommand` kinds; it adds no
 command kind and no persisted field. Persisted user profiles are exact strict
@@ -42,15 +42,19 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
   step.
 - **Editing engine seam** (`editing_engine.h`,
   `coordinator_engine_adapter.h`): the session's typed view over the
-  in-process `LayoutEditingRepository` lease. While another coordinator owns
-  the session, every call fails with `RepositoryNotReady` and the editor
-  presents read-only.
+  in-process `LayoutEditingRepository` lease. The adapter is owner-thread
+  confined, retries a lost lease on the next action, exposes status, and
+  evaluates an ordered command sequence on a disposable repository with the
+  same outputs and manifest catalog. Evaluation never publishes live state.
+  While another coordinator owns the session, mutation/evaluation fails with
+  `RepositoryNotReady` and the editor presents read-only.
 - **Editor session** (`editor_session.h`): binds machine, translator, engine
   seam, and persistence. Owns the dirty flag, the applied-profile identity,
   the per-target acceptance highlight, and the deterministic rollback paths.
-- **User profile store** (`user_profile_store.h`): writes applied profiles
-  atomically as `<user-directory>/<profile-id>.json` documents through
-  `QSaveFile`; either the previous or the complete new bytes survive a crash.
+- **User profile store** (`profiles/user_profile_store.h`, with a narrow editor
+  adapter): the profiles module validates, strict-round-trips, and atomically
+  writes `<user-directory>/<profile-id>.json` through `QSaveFile`; either the
+  previous or the complete new bytes survive a crash.
   Layered catalog precedence (user wins on id collision) belongs to the
   profiles module's future catalog work and is deliberately not improvised
   here.
@@ -61,14 +65,15 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
   panel/applet/zone naming, position-in-set values, and the announcement
   wording ("Move clock to Top panel, end zone, position 3 of 4 — accepted /
   rejected: reason"). Acceptance is announced politely, rejection assertively;
-  announcements coalesce to one latest value per politeness kind per event
-  turn.
+  announcements coalesce to exactly one latest tuple per event turn.
 
 ## Gesture rules
 
 1. The visual drag appears only after `BeginPreview` succeeded.
-2. `evaluate()` runs per hover-target change; commands execute only when the
-   resolved target identity changes, and only if the evaluation accepts.
+2. Sequence evaluation and execution run only when the resolved target identity
+   changes. Each command is retagged from the preceding simulated/executed
+   result, so a cross-panel zone move is accepted and executed atomically
+   without weakening optimistic fencing.
 3. Inside a preview, each accepted target change converges the dragged
    instance toward the hovered target; the second move's source is where the
    instance now lives in the preview, not the gesture-start panel.
@@ -76,17 +81,22 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 5. Undo/redo are enabled only while the machine is idle.
 6. An output-generation change closes any open gesture and marks the session
    stale until the host rebuilds it.
+7. Release over an off-target or rejected target cancels the whole preview;
+   it never commits the last accepted provisional target.
 
 ## Apply, revert, and persistence
 
-**Apply** writes the edited snapshot through the user profile store and
-clears the dirty flag; a failed write changes nothing and reports a typed
-`ApplyFailed` reason. **Revert** only discards in-memory edits and reports to
-the host, which rebuilds its repository from the last applied profile. The
-editor never auto-saves, never writes `panels.configuration`, and does not
-own profile selection; committing `panels.layoutProfile` through the public
-Settings1 client stays with the Settings window. Applying a profile takes
-effect at the next shell start until the live-binding slice lands.
+**Apply** is accepted only for an idle, non-preview, non-stale session. It
+writes the committed edited snapshot through the profiles-owned store and
+clears the dirty flag only after success; a failed write changes nothing and
+reports `ApplyFailed`. **Revert** cannot replace the host-owned repository, so
+it preserves dirty truth, rejects further edit/apply work, and returns the
+typed `RebuildRequired` outcome. The host completes Revert by constructing a
+fresh repository from the last applied profile. The editor never auto-saves,
+never writes `panels.configuration`, and does not own profile selection;
+committing `panels.layoutProfile` through the public Settings1 client stays
+with the Settings window. Applying a profile takes effect at the next shell
+start until the live-binding slice lands.
 
 ## Testing
 
@@ -99,6 +109,11 @@ atomic persistence round-tripped through `ProfileLoader`
 accessibility identity (`qindaqt.customize-editor-accessibility`). All suites
 use in-memory or temporary-directory fixtures: no GUI, compositor, session
 bus, or user configuration is touched.
+
+The session suite also composes the production repository adapter and proves a
+cross-panel zone move, exact cancellation, one durable undo boundary, rejected
+release behavior, return from an invalid hover, Apply preview gating, Revert
+truth, and coordinator-lease retry.
 
 Presentation, canvas rendering, an offscreen UI matrix, and live session
 behavior are not provided by this module and remain future slices of the

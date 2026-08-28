@@ -40,30 +40,22 @@ const Profiles::PanelSpec *findPanel(const Profiles::LayoutProfile &profile,
 
 void AnnouncementCenter::announce(Announcement announcement)
 {
-    if (announcement.kind == AnnouncementKind::Polite) {
-        m_polite = std::move(announcement);
-        return;
-    }
-    m_assertive = std::move(announcement);
+    m_pending = std::move(announcement);
 }
 
 QVector<Announcement> AnnouncementCenter::drain()
 {
     QVector<Announcement> published;
-    if (m_assertive.has_value()) {
-        published.append(*m_assertive);
-        m_assertive.reset();
-    }
-    if (m_polite.has_value()) {
-        published.append(*m_polite);
-        m_polite.reset();
+    if (m_pending.has_value()) {
+        published.append(*m_pending);
+        m_pending.reset();
     }
     return published;
 }
 
 bool AnnouncementCenter::hasPending() const noexcept
 {
-    return m_polite.has_value() || m_assertive.has_value();
+    return m_pending.has_value();
 }
 
 QString panelDisplayName(const Profiles::PanelSpec &panel)
@@ -87,18 +79,25 @@ QString zoneDisplayName(const QString &zone)
 
 int dropPositionInSet(const Profiles::PanelSpec &targetPanel, const DropTarget &target)
 {
+    int zonePosition = 0;
+    int zoneCount = 0;
+    bool foundAnchor = false;
+    for (const Profiles::AppletSpec &candidate : targetPanel.applets) {
+        const QString zone = candidate.settings.value(QStringLiteral("zone"),
+                                                      QStringLiteral("start")).toString();
+        if (zone != target.zone) {
+            continue;
+        }
+        ++zoneCount;
+        if (target.beforeAppletId.has_value() && candidate.id == *target.beforeAppletId) {
+            zonePosition = zoneCount;
+            foundAnchor = true;
+        }
+    }
     if (!target.beforeAppletId.has_value()) {
-        return targetPanel.applets.size() + 1;
+        return zoneCount + 1;
     }
-    const auto found = std::find_if(targetPanel.applets.cbegin(),
-                                    targetPanel.applets.cend(),
-                                    [&target](const Profiles::AppletSpec &candidate) {
-                                        return candidate.id == *target.beforeAppletId;
-                                    });
-    if (found == targetPanel.applets.cend()) {
-        return targetPanel.applets.size() + 1;
-    }
-    return static_cast<int>(found - targetPanel.applets.cbegin()) + 1;
+    return foundAnchor ? zonePosition : zoneCount + 1;
 }
 
 QString describeMove(const Profiles::LayoutProfile &profile,
@@ -112,7 +111,17 @@ QString describeMove(const Profiles::LayoutProfile &profile,
         ? panelDisplayName(*panel)
         : (target.panelId.isEmpty() ? QStringLiteral("unknown panel") : target.panelId);
     const int position = panel != nullptr ? dropPositionInSet(*panel, target) : 1;
-    const int total = (panel != nullptr ? panel->applets.size() : 0) + 1;
+    int zoneAppletCount = 0;
+    if (panel != nullptr) {
+        for (const Profiles::AppletSpec &candidate : panel->applets) {
+            const QString zone = candidate.settings.value(QStringLiteral("zone"),
+                                                          QStringLiteral("start")).toString();
+            if (zone == target.zone) {
+                ++zoneAppletCount;
+            }
+        }
+    }
+    const int total = zoneAppletCount + 1;
 
     QString description = QStringLiteral("Move %1 to %2, %3, position %4 of %5")
                               .arg(appletName,

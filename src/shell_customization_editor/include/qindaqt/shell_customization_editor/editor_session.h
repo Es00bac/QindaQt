@@ -26,6 +26,7 @@ enum class EditorErrorCode {
     CommandFailed,
     ApplyFailed,
     SessionStale,
+    RebuildRequired,
 };
 
 struct EditorOutcome final {
@@ -83,8 +84,9 @@ public:
     // Writes the edited profile to the user directory. A failed write keeps
     // the session dirty and changes nothing (architecture D12).
     [[nodiscard]] EditorOutcome applyToUserProfile();
-    // Marks edits discarded; the host rebuilds its repository from the last
-    // applied profile. The engine is deliberately not mutated here.
+    // Requests discard and returns RebuildRequired without publishing a false
+    // clean state. The host must replace this session from the last applied
+    // profile; this instance rejects all further edits and persistence.
     [[nodiscard]] EditorOutcome revert();
     // An output-generation change invalidates any open gesture and the whole
     // session (architecture D16); the host must rebuild after this.
@@ -102,8 +104,12 @@ public:
     [[nodiscard]] bool canUndo() const;
     [[nodiscard]] bool canRedo() const;
     [[nodiscard]] bool isDirty() const noexcept { return m_dirty; }
-    // Set once an output-generation change forced a cancel; the host must
-    // rebuild the session before further edits.
+    // Set once an output-generation change or accepted Revert requires the
+    // host to replace this session before any further edit or Apply.
+    [[nodiscard]] bool requiresRebuild() const noexcept
+    {
+        return m_stale || m_rebuildRequired;
+    }
     [[nodiscard]] bool isStale() const noexcept { return m_stale; }
     [[nodiscard]] const std::optional<DropAcceptance> &acceptance() const noexcept
     {
@@ -143,12 +149,15 @@ private:
     QString m_gestureInstanceId;
     QString m_gesturePanelId;
     QString m_gestureZone;
+    std::optional<DropTarget> m_appliedTarget;
     QVariantMap m_sourceSettings;
     quint64 m_chainedRevision = 0;
     int m_insertCounter = 0;
     bool m_visualDrag = false;
+    bool m_currentTargetAccepted = false;
     bool m_dirty = false;
     bool m_stale = false;
+    bool m_rebuildRequired = false;
     QString m_appliedProfileId;
     std::optional<DropAcceptance> m_acceptance;
     EditorOutcome m_lastOutcome;

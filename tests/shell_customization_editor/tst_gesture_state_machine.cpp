@@ -9,12 +9,12 @@ namespace {
 
 GestureEvent armEvent()
 {
-    return {GestureEventKind::Arm};
+    return {GestureEventKind::Arm, false, {}};
 }
 
 GestureEvent thresholdEvent()
 {
-    return {GestureEventKind::ThresholdExceeded};
+    return {GestureEventKind::ThresholdExceeded, false, {}};
 }
 
 GestureEvent hoverEvent(const DropTarget &target)
@@ -24,7 +24,18 @@ GestureEvent hoverEvent(const DropTarget &target)
 
 GestureEvent settledEvent(GestureEventKind kind, bool ok)
 {
-    return {kind, ok};
+    return {kind, ok, {}};
+}
+
+GestureEvent gestureEventFor(GestureEventKind kind)
+{
+    return {kind, false, {}};
+}
+
+void advance(GestureStateMachine &machine, const GestureEvent &input)
+{
+    const GestureTransition transition = machine.handle(input);
+    Q_UNUSED(transition);
 }
 
 bool hasDirective(const GestureTransition &transition, GestureDirectiveKind kind)
@@ -64,14 +75,15 @@ private slots:
     void openPreviewKeepsDraggingAndResetsOnDrop()
     {
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        machine.handle(thresholdEvent());
+        advance(machine, armEvent());
+        advance(machine, thresholdEvent());
         const GestureTransition opened =
             machine.handle(settledEvent(GestureEventKind::PreviewSettled, true));
         QCOMPARE(opened.state, GestureState::Dragging);
         QVERIFY(opened.directives.isEmpty());
 
-        const GestureTransition drop = machine.handle({GestureEventKind::Drop});
+        const GestureTransition drop =
+            machine.handle(gestureEventFor(GestureEventKind::Drop));
         QCOMPARE(drop.state, GestureState::Committing);
         QVERIFY(hasDirective(drop, GestureDirectiveKind::CommitPreview));
 
@@ -86,11 +98,12 @@ private slots:
         // Invariant 2: Escape reaches Cancelling from Dragging, and the
         // CancelSettled transition is unconditional.
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        machine.handle(thresholdEvent());
-        machine.handle(settledEvent(GestureEventKind::PreviewSettled, true));
+        advance(machine, armEvent());
+        advance(machine, thresholdEvent());
+        advance(machine, settledEvent(GestureEventKind::PreviewSettled, true));
 
-        const GestureTransition cancel = machine.handle({GestureEventKind::CancelRequested});
+        const GestureTransition cancel =
+            machine.handle(gestureEventFor(GestureEventKind::CancelRequested));
         QCOMPARE(cancel.state, GestureState::Cancelling);
         QVERIFY(hasDirective(cancel, GestureDirectiveKind::CancelPreview));
 
@@ -102,8 +115,9 @@ private slots:
     void armClickWithoutThresholdReturnsToIdle()
     {
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        const GestureTransition click = machine.handle({GestureEventKind::Drop});
+        advance(machine, armEvent());
+        const GestureTransition click =
+            machine.handle(gestureEventFor(GestureEventKind::Drop));
         QCOMPARE(click.state, GestureState::Idle);
         QVERIFY(click.directives.isEmpty());
     }
@@ -122,20 +136,20 @@ private slots:
         // Invariant 6: an output-generation change in any non-idle state with
         // an open preview forces the cancel path.
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        machine.handle(thresholdEvent());
-        machine.handle(settledEvent(GestureEventKind::PreviewSettled, true));
+        advance(machine, armEvent());
+        advance(machine, thresholdEvent());
+        advance(machine, settledEvent(GestureEventKind::PreviewSettled, true));
 
         const GestureTransition changed =
-            machine.handle({GestureEventKind::OutputGenerationChanged});
+            machine.handle(gestureEventFor(GestureEventKind::OutputGenerationChanged));
         QCOMPARE(changed.state, GestureState::Cancelling);
         QVERIFY(hasDirective(changed, GestureDirectiveKind::CancelPreview));
 
         // Arming has no preview: the change lands straight in Idle.
         GestureStateMachine armed;
-        armed.handle(armEvent());
+        advance(armed, armEvent());
         const GestureTransition armedChanged =
-            armed.handle({GestureEventKind::OutputGenerationChanged});
+            armed.handle(gestureEventFor(GestureEventKind::OutputGenerationChanged));
         QCOMPARE(armedChanged.state, GestureState::Idle);
         QVERIFY(armedChanged.directives.isEmpty());
     }
@@ -145,9 +159,9 @@ private slots:
         // Architecture D3: evaluate per hover change, execute per resolved
         // target identity change — never per pointer-motion event.
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        machine.handle(thresholdEvent());
-        machine.handle(settledEvent(GestureEventKind::PreviewSettled, true));
+        advance(machine, armEvent());
+        advance(machine, thresholdEvent());
+        advance(machine, settledEvent(GestureEventKind::PreviewSettled, true));
 
         const DropTarget first{QStringLiteral("bar"), QStringLiteral("start"), {}};
         const DropTarget sameAsFirst{QStringLiteral("bar"), QStringLiteral("start"), {}};
@@ -159,7 +173,7 @@ private slots:
         QVERIFY(machine.resolvedTarget().has_value());
 
         const GestureTransition repeatedHover = machine.handle(hoverEvent(sameAsFirst));
-        QVERIFY(hasDirective(repeatedHover, GestureDirectiveKind::Evaluate));
+        QVERIFY(!hasDirective(repeatedHover, GestureDirectiveKind::Evaluate));
         QVERIFY(!hasDirective(repeatedHover, GestureDirectiveKind::ExecutePending));
 
         const GestureTransition changedHover = machine.handle(hoverEvent(second));
@@ -170,10 +184,10 @@ private slots:
     void failedCommitDemandsARollback()
     {
         GestureStateMachine machine;
-        machine.handle(armEvent());
-        machine.handle(thresholdEvent());
-        machine.handle(settledEvent(GestureEventKind::PreviewSettled, true));
-        machine.handle({GestureEventKind::Drop});
+        advance(machine, armEvent());
+        advance(machine, thresholdEvent());
+        advance(machine, settledEvent(GestureEventKind::PreviewSettled, true));
+        advance(machine, gestureEventFor(GestureEventKind::Drop));
 
         const GestureTransition failed =
             machine.handle(settledEvent(GestureEventKind::CommitSettled, false));
@@ -206,15 +220,25 @@ private slots:
 
         const DropTarget target{QStringLiteral("bar"), QStringLiteral("end"),
                                 QStringLiteral("clock-instance")};
+        // Construct the two adapter outputs independently. This catches a
+        // future pointer/keyboard mapping drift instead of comparing one
+        // container with a copy of itself.
         const QVector<GestureEvent> keyboardStream{
             armEvent(),
             thresholdEvent(),
             settledEvent(GestureEventKind::PreviewSettled, true),
             hoverEvent(target),
-            {GestureEventKind::Drop},
+            gestureEventFor(GestureEventKind::Drop),
             settledEvent(GestureEventKind::CommitSettled, true),
         };
-        const QVector<GestureEvent> pointerStream = keyboardStream;
+        const QVector<GestureEvent> pointerStream{
+            {GestureEventKind::Arm, false, {}},
+            {GestureEventKind::ThresholdExceeded, false, {}},
+            {GestureEventKind::PreviewSettled, true, {}},
+            {GestureEventKind::HoverChanged, false, target},
+            {GestureEventKind::Drop, false, {}},
+            {GestureEventKind::CommitSettled, true, {}},
+        };
 
         const auto keyboard = run(keyboardStream);
         const auto pointer = run(pointerStream);

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/applets/api_version.h"
+#include "qindaqt/applets/applet_manifest.h"
 #include "qindaqt/profiles/layout_profile.h"
+#include "qindaqt/shell_layout/panel_layout_types.h"
 #include "qindaqt/shell_customization_editor/editor_intent.h"
 
 #include <QStringList>
@@ -47,6 +50,42 @@ inline Profiles::LayoutProfile profile()
 
     result.panels = {bar, dock};
     return result;
+}
+
+inline QVector<ShellLayout::LogicalOutput> outputs()
+{
+    return {
+        {QStringLiteral("external"), {-1920, 0, 1920, 1200}, 1.0},
+        {QStringLiteral("primary"), {0, 0, 2048, 1152}, 1.25},
+    };
+}
+
+inline Applets::AppletManifest manifest(QString id)
+{
+    Applets::AppletManifest result;
+    result.id = std::move(id);
+    result.name = QStringLiteral("Fixture Applet");
+    result.apiVersion = Applets::ApiVersion::current();
+    result.entryPoint = {Applets::EntryPointKind::Builtin, result.id};
+    result.placementZones = {Applets::PlacementZone::PanelStart,
+                             Applets::PlacementZone::PanelCenter,
+                             Applets::PlacementZone::PanelEnd};
+    result.orientations = {Applets::Orientation::Horizontal,
+                           Applets::Orientation::Vertical};
+    result.sizing.mainAxis = {16, 32, 256, false};
+    result.sizing.crossAxis = {16, 32, 128, false};
+    result.settingsSchema = {
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("properties"), QJsonObject{}},
+    };
+    return result;
+}
+
+inline QVector<Applets::AppletManifest> manifests()
+{
+    return {manifest(QStringLiteral("launcher")),
+            manifest(QStringLiteral("clock")),
+            manifest(QStringLiteral("task-list"))};
 }
 
 inline const Profiles::PanelSpec *panel(const Profiles::LayoutProfile &profile,

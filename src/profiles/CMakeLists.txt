@@ -13,6 +13,7 @@ target_sources(
         src/profile_loader.cpp
         src/profile_types.cpp
         src/profile_validation.cpp
+        src/user_profile_store.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -22,6 +23,7 @@ target_sources(
             include/qindaqt/profiles/profile_loader.h
             include/qindaqt/profiles/profile_types.h
             include/qindaqt/profiles/profile_validation.h
+            include/qindaqt/profiles/user_profile_store.h
 )
 
 target_link_libraries(qindaqt_profiles PUBLIC Qt6::Core)

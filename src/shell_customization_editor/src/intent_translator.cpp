@@ -18,20 +18,17 @@ namespace {
 // lives in the applet settings (profile schema v1). A zone-crossing drop is
 // therefore a move/copy plus an UpdateAppletSettings; CommitPreview collapses
 // both into exactly one durable undo step.
-constexpr auto editorZoneKey = "zone";
-constexpr auto defaultEditorZone = "start";
-
 QVariantMap settingsWithZone(const QVariantMap &settings, const QString &zone)
 {
     QVariantMap adjusted = settings;
-    adjusted.insert(QStringLiteral(editorZoneKey), zone);
+    adjusted.insert(QStringLiteral("zone"), zone);
     return adjusted;
 }
 
 QString settingsZone(const QVariantMap &settings)
 {
-    const QVariant value = settings.value(QStringLiteral(editorZoneKey));
-    return value.isValid() ? value.toString() : QStringLiteral(defaultEditorZone);
+    const QVariant value = settings.value(QStringLiteral("zone"));
+    return value.isValid() ? value.toString() : QStringLiteral("start");
 }
 
 void appendZoneUpdate(QVector<EditingCommand> &commands,

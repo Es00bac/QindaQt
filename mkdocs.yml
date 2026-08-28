@@ -38,6 +38,7 @@ nav:
       - QindaQt.Controls 1.0: shell/controls.md
       - Layout profiles: shell/layout-profiles.md
       - Launcher: shell/launcher.md
+      - Customization editor domain: shell/customization-editor.md
       - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
@@ -100,3 +101,4 @@ nav:
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md
       - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md
       - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
+      - "ADR-0043: Customization editor domain": adr/0043-isolate-the-customization-editor-domain.md

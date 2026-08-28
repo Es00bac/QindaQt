@@ -27,7 +27,7 @@ class AccessibilityNavigationTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void slotStepsWalkTheFlatAnchorList() const
+    void slotStepsStayInsideTheCurrentZone() const
     {
         const Profiles::LayoutProfile source = profile();
 
@@ -36,19 +36,18 @@ private slots:
 
         const auto next = nextSlotInPanel(source, current);
         QVERIFY(next.has_value());
-        QCOMPARE(next->beforeAppletId.value_or(QString()), QStringLiteral("clock-instance"));
+        // The end-zone clock is not a sibling of the start-zone launcher.
+        QVERIFY(!next->beforeAppletId.has_value());
+        QVERIFY(!nextSlotInPanel(source, *next).has_value());
 
-        const auto end = nextSlotInPanel(source, *next);
-        QVERIFY(end.has_value());
-        // Past the last applet the anchor clears: the target appends at the
-        // panel end.
-        QVERIFY(!end->beforeAppletId.has_value());
-
-        QVERIFY(!nextSlotInPanel(source, *end).has_value());
-
-        const auto back = previousSlotInPanel(source, *end);
+        const auto back = previousSlotInPanel(source, *next);
         QVERIFY(back.has_value());
-        QCOMPARE(back->beforeAppletId.value_or(QString()), QStringLiteral("clock-instance"));
+        QCOMPARE(back->beforeAppletId.value_or(QString()), QStringLiteral("launcher-instance"));
+
+        DropTarget mismatched = targetIn(QStringLiteral("bar"), QStringLiteral("start"));
+        mismatched.beforeAppletId = QStringLiteral("clock-instance");
+        QVERIFY(!nextSlotInPanel(source, mismatched).has_value());
+        QVERIFY(!previousSlotInPanel(source, mismatched).has_value());
     }
 
     void zoneStepsStayInsideTheSchemaV1Vocabulary() const
@@ -98,12 +97,15 @@ private slots:
         const Profiles::LayoutProfile source = profile();
 
         const auto stepOnce = steppedPanelEdge(source, QStringLiteral("bar"), 1);
-        QCOMPARE(stepOnce.edge, Profiles::Edge::Right);
+        QCOMPARE(static_cast<int>(stepOnce.edge),
+                 static_cast<int>(Profiles::Edge::Right));
         QCOMPARE(stepOnce.outputId, QStringLiteral("*"));
-        QCOMPARE(stepOnce.alignment, Profiles::Alignment::Fill);
+        QCOMPARE(static_cast<int>(stepOnce.alignment),
+                 static_cast<int>(Profiles::Alignment::Fill));
 
         const auto stepBack = steppedPanelEdge(source, QStringLiteral("bar"), -1);
-        QCOMPARE(stepBack.edge, Profiles::Edge::Left);
+        QCOMPARE(static_cast<int>(stepBack.edge),
+                 static_cast<int>(Profiles::Edge::Left));
     }
 
     void moveDescriptionsFollowTheParityWording() const
@@ -115,16 +117,16 @@ private slots:
         const QString accepted =
             describeMove(source, QStringLiteral("clock"), target, true);
         QCOMPARE(accepted,
-                 QStringLiteral("Move clock to Top panel, end zone, position 2 of 3 — accepted"));
+                 QStringLiteral("Move clock to Top panel, end zone, position 1 of 2 — accepted"));
 
         const QString rejected = describeMove(source, QStringLiteral("clock"), target, false,
                                               QStringLiteral("applet does not support vertical placement"));
         QCOMPARE(rejected,
-                 QStringLiteral("Move clock to Top panel, end zone, position 2 of 3 — rejected: "
+                 QStringLiteral("Move clock to Top panel, end zone, position 1 of 2 — rejected: "
                                 "applet does not support vertical placement"));
     }
 
-    void announcementsCoalesceToOneLatestPerKind() const
+    void announcementsCoalesceToOneLatestTuple() const
     {
         AnnouncementCenter center;
         QVERIFY(!center.hasPending());
@@ -135,14 +137,18 @@ private slots:
         QVERIFY(center.hasPending());
 
         const auto drained = center.drain();
-        // Exactly one latest tuple per kind, assertive first.
-        QCOMPARE(drained.size(), 2);
+        QCOMPARE(drained.size(), 1);
         QCOMPARE(drained.first().kind, AnnouncementKind::Assertive);
         QCOMPARE(drained.first().message, QStringLiteral("rejected"));
-        QCOMPARE(drained.last().kind, AnnouncementKind::Polite);
-        QCOMPARE(drained.last().message, QStringLiteral("second"));
         QVERIFY(!center.hasPending());
         QVERIFY(center.drain().isEmpty());
+
+        center.announce({AnnouncementKind::Assertive, QStringLiteral("old rejection")});
+        center.announce({AnnouncementKind::Polite, QStringLiteral("latest acceptance")});
+        const auto latest = center.drain();
+        QCOMPARE(latest.size(), 1);
+        QCOMPARE(latest.first().kind, AnnouncementKind::Polite);
+        QCOMPARE(latest.first().message, QStringLiteral("latest acceptance"));
     }
 
     void rejectionAnnouncementsAreAssertiveAndAcceptancePolite() const

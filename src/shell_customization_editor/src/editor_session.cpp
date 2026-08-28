@@ -4,6 +4,8 @@
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization_editor/editing_engine.h"
 
+#include "editing_command_sequence_p.h"
+
 #include <QVariant>
 #include <QVector>
 
@@ -18,9 +20,6 @@ using namespace QindaQt::ShellCustomization;
 namespace QindaQt::ShellCustomizationEditor {
 
 namespace {
-
-constexpr auto zoneKey = "zone";
-constexpr auto defaultZone = "start";
 
 // Returns the (panel, applet) pair a move or duplicate gesture operates on.
 bool moveSubject(const CustomizationIntent &intent, QString *panelId, QString *appletId)
@@ -80,17 +79,17 @@ EditorOutcome EditorSession::applyGesture(const CustomizationIntent &intent,
                                           const DropTarget &target,
                                           const QString &newInstanceAppletId)
 {
-    if (m_stale) {
+    if (requiresRebuild()) {
         return EditorOutcome::failure(
-            EditorErrorCode::SessionStale,
-            QStringLiteral("the output inventory changed; rebuild the editor session"));
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
     }
-    if (m_machine.state() != GestureState::Idle) {
+    if (m_machine.state() != GestureState::Idle || m_engine.hasPreview()) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
-                                      QStringLiteral("a customization gesture is already active"));
+                                      QStringLiteral("a customization preview is already active"));
     }
     const IntentValidation validation = validateIntent(intent, target);
-    if (!validation.ok) {
+    if (!validation.ok()) {
         return EditorOutcome::failure(EditorErrorCode::IntentInvalid, validation.message);
     }
 
@@ -133,7 +132,8 @@ EditorOutcome EditorSession::applyGesture(const CustomizationIntent &intent,
     quint64 chained = context.expectedRevision;
     bool previewOpen = false;
     for (const EditingCommand &command : bracketed) {
-        const EditingResult result = m_engine.execute(command);
+        const EditingResult result =
+            m_engine.execute(Internal::retagCommand(command, chained));
         chained = result.revision;
         if (!result.succeeded()) {
             if (previewOpen) {
@@ -159,6 +159,11 @@ EditorOutcome EditorSession::applyGesture(const CustomizationIntent &intent,
 
 EditorOutcome EditorSession::undo()
 {
+    if (requiresRebuild()) {
+        return EditorOutcome::failure(
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
+    }
     // AGENT-GUARD (invariant 3): history controls stay disabled while any
     // gesture is open; interleaving durable history commands with an open
     // provisional bracket would corrupt the one-undo-step-per-gesture rule.
@@ -181,6 +186,11 @@ EditorOutcome EditorSession::undo()
 
 EditorOutcome EditorSession::redo()
 {
+    if (requiresRebuild()) {
+        return EditorOutcome::failure(
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before editing"));
+    }
     if (m_machine.state() != GestureState::Idle) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
                                       QStringLiteral("finish or cancel the active gesture first"));
@@ -200,13 +210,23 @@ EditorOutcome EditorSession::redo()
 
 EditorOutcome EditorSession::applyToUserProfile()
 {
+    if (requiresRebuild()) {
+        return EditorOutcome::failure(
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("rebuild the editor session before applying"));
+    }
+    if (m_machine.state() != GestureState::Idle || m_engine.hasPreview()) {
+        return EditorOutcome::failure(
+            EditorErrorCode::GestureRefused,
+            QStringLiteral("finish or cancel the provisional gesture before applying"));
+    }
     const auto current = m_engine.snapshot();
-    if (current == nullptr) {
+    if (current == nullptr || current->previewActive) {
         return EditorOutcome::failure(EditorErrorCode::EngineUnavailable,
-                                      QStringLiteral("no layout is loaded for editing"));
+                                      QStringLiteral("no committed layout is available for applying"));
     }
     const ProfileStoreResult result = m_store.save(current->profile);
-    if (!result.ok) {
+    if (!result.ok()) {
         // Deterministic rollback: the selection and the dirty flag stay
         // unchanged, and the typed reason is surfaced verbatim.
         settle(EditorOutcome::failure(EditorErrorCode::ApplyFailed, result.message));
@@ -220,24 +240,34 @@ EditorOutcome EditorSession::applyToUserProfile()
 
 EditorOutcome EditorSession::revert()
 {
+    if (requiresRebuild()) {
+        return EditorOutcome::failure(
+            m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
+            QStringLiteral("the editor session already requires a rebuild"));
+    }
     if (m_machine.state() != GestureState::Idle) {
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
                                       QStringLiteral("finish or cancel the active gesture first"));
     }
-    m_dirty = false;
     discardAcceptance();
-    // The host rebuilds its repository from the last applied profile (or its
-    // initial profile when nothing was applied yet); the engine keeps serving
-    // this session until the host swaps the repository.
-    return EditorOutcome::success();
+    m_rebuildRequired = true;
+    // AGENT-GUARD: no collaborator in this domain can replace the repository.
+    // Keep dirty truth observable until the host constructs the replacement;
+    // clearing it here would allow this edited snapshot to be applied later.
+    settle(EditorOutcome::failure(
+        EditorErrorCode::RebuildRequired,
+        QStringLiteral("revert requested; rebuild from the last applied profile")));
+    return m_lastOutcome;
 }
 
 EditorOutcome EditorSession::notifyOutputGenerationChanged()
 {
     if (m_machine.state() != GestureState::Idle) {
-        cancelGesture();
+        const EditorOutcome cancellation = cancelGesture();
+        Q_UNUSED(cancellation);
     }
     m_stale = true;
+    m_machine.reset();
     finishGestureState();
     settle(EditorOutcome::failure(
         EditorErrorCode::SessionStale,

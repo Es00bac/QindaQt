@@ -42,27 +42,44 @@ const Profiles::PanelSpec *findPanel(const Profiles::LayoutProfile &profile,
     return found == profile.panels.cend() ? nullptr : &*found;
 }
 
-// Index of the anchor inside the panel's flat list; size() represents "append
-// at the end" (no anchor).
-qsizetype anchorIndex(const Profiles::PanelSpec &panel, const DropTarget &target)
+QVector<const Profiles::AppletSpec *> appletsInZone(const Profiles::PanelSpec &panel,
+                                                    const QString &zone)
 {
-    if (!target.beforeAppletId.has_value()) {
-        return panel.applets.size();
+    QVector<const Profiles::AppletSpec *> result;
+    for (const Profiles::AppletSpec &candidate : panel.applets) {
+        const QString candidateZone = candidate.settings
+                                          .value(QStringLiteral("zone"),
+                                                 QStringLiteral("start"))
+                                          .toString();
+        if (candidateZone == zone) {
+            result.append(&candidate);
+        }
     }
-    const auto found = std::find_if(panel.applets.cbegin(),
-                                    panel.applets.cend(),
-                                    [&target](const Profiles::AppletSpec &candidate) {
-                                        return candidate.id == *target.beforeAppletId;
-                                    });
-    return found == panel.applets.cend() ? qsizetype{0} : found - panel.applets.cbegin();
+    return result;
 }
 
-std::optional<QString> anchorIdAt(const Profiles::PanelSpec &panel, qsizetype index)
+std::optional<qsizetype> anchorIndex(
+    const QVector<const Profiles::AppletSpec *> &zoneApplets,
+    const DropTarget &target)
 {
-    if (index < 0 || index >= panel.applets.size()) {
-        return std::nullopt;
+    if (!target.beforeAppletId.has_value()) {
+        return zoneApplets.size();
     }
-    return panel.applets.at(index).id;
+    for (qsizetype index = 0; index < zoneApplets.size(); ++index) {
+        if (zoneApplets.at(index)->id == *target.beforeAppletId) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<QString> anchorIdAt(
+    const QVector<const Profiles::AppletSpec *> &zoneApplets,
+    qsizetype index)
+{
+    return index >= 0 && index < zoneApplets.size()
+        ? std::optional<QString>{zoneApplets.at(index)->id}
+        : std::nullopt;
 }
 
 DropTarget clampedTarget(const Profiles::PanelSpec &panel, const DropTarget &current)
@@ -107,12 +124,13 @@ std::optional<DropTarget> nextSlotInPanel(const Profiles::LayoutProfile &profile
     if (panel == nullptr) {
         return std::nullopt;
     }
-    const qsizetype index = anchorIndex(*panel, current);
-    if (index >= panel->applets.size()) {
+    const auto zoneApplets = appletsInZone(*panel, current.zone);
+    const auto index = anchorIndex(zoneApplets, current);
+    if (!index.has_value() || *index >= zoneApplets.size()) {
         return std::nullopt;
     }
     DropTarget target = clampedTarget(*panel, current);
-    target.beforeAppletId = anchorIdAt(*panel, index + 1);
+    target.beforeAppletId = anchorIdAt(zoneApplets, *index + 1);
     return target;
 }
 
@@ -123,13 +141,14 @@ std::optional<DropTarget> previousSlotInPanel(const Profiles::LayoutProfile &pro
     if (panel == nullptr) {
         return std::nullopt;
     }
-    const qsizetype index = anchorIndex(*panel, current);
-    if (index == 0) {
+    const auto zoneApplets = appletsInZone(*panel, current.zone);
+    const auto index = anchorIndex(zoneApplets, current);
+    if (!index.has_value() || *index == 0) {
         // Position 1 is the first slot; there is no earlier anchor.
         return std::nullopt;
     }
     DropTarget target = clampedTarget(*panel, current);
-    target.beforeAppletId = anchorIdAt(*panel, index - 1);
+    target.beforeAppletId = anchorIdAt(zoneApplets, *index - 1);
     return target;
 }
 

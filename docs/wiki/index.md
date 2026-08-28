@@ -69,6 +69,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Layout profiles](shell/layout-profiles.md) explains how QindaQt can present
   QindaQt, GNOME-, Unity-, MATE-, XFCE-, NeXTSTEP-, macOS-, Windows-inspired,
   and user-created workflows without separate shells.
+- [Customization editor domain](shell/customization-editor.md) defines the
+  presentation-independent gesture, revision, rollback, persistence-adapter,
+  keyboard, and accessibility contract for direct layout editing.
 - [Production panel surfaces](shell/panel-surfaces.md) defines the real
   LayerShellQt-backed panel runtime and its current qualification boundary.
 - [Panel visibility policy](shell/panel-visibility.md) defines window-aware

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/shell_customization_editor/editor_intent.h"
 
+#include <cmath>
 #include <utility>
 
 namespace QindaQt::ShellCustomizationEditor {
@@ -97,10 +98,16 @@ IntentValidation validateIntent(const CustomizationIntent &intent, const DropTar
                            QStringLiteral("configured panel must not be blank"));
         }
         const PanelConfiguration &configuration = configure.configuration;
-        if (configuration.rows < 1 || configuration.thickness < 1
-            || configuration.length < 0.0 || configuration.length > 1.0) {
+        const bool enumValuesValid = !Profiles::toString(configuration.layer).isEmpty()
+            && !Profiles::toString(configuration.hideMode).isEmpty();
+        if (!enumValuesValid || configuration.hideMode == Profiles::HideMode::Always
+            || configuration.rows < 1 || configuration.rows > 4
+            || configuration.thickness < 20 || configuration.thickness > 192
+            || !std::isfinite(configuration.length) || configuration.length < 0.1
+            || configuration.length > 1.0) {
             return failure(IntentErrorCode::InvalidConfiguration,
-                           QStringLiteral("panel configuration is outside the profile bounds"));
+                           QStringLiteral("panel configuration is outside the profile-v1 bounds "
+                                          "or requires the deferred reveal slice"));
         }
         return {};
     }
@@ -113,6 +120,11 @@ IntentValidation validateIntent(const CustomizationIntent &intent, const DropTar
         if (move.outputId.trimmed().isEmpty()) {
             return failure(IntentErrorCode::EmptyPanelId,
                            QStringLiteral("moved panel needs an output selector"));
+        }
+        if (Profiles::toString(move.edge).isEmpty()
+            || Profiles::toString(move.alignment).isEmpty()) {
+            return failure(IntentErrorCode::InvalidConfiguration,
+                           QStringLiteral("panel placement uses an unknown edge or alignment"));
         }
         return {};
     }
