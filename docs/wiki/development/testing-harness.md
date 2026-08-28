@@ -117,6 +117,17 @@ mixed-lineage input. These are pure QtTest rows: they connect to no D-Bus,
 UPower, logind, profile daemon, Wayland compositor, sysfs path, or hardware.
 They are not service, activation, display-provider, or UI evidence.
 
+The separate pure brightness candidate is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.brightness-model-' \
+  --output-on-failure --no-tests=error
+```
+
+Its math, composition, and dependency-policy rows are detailed in the
+[pure brightness model contract](../architecture/brightness-model.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

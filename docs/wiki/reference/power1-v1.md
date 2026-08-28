@@ -8,8 +8,9 @@ interface. Those are later slices in the
 
 The source currently forms a PB-0 candidate. Its protocol boundary has focused
 executable evidence; deterministic aggregation remains candidate evidence until
-its focused binaries pass and an independent exact-commit review accepts it.
-Neither boundary is executable `Power1` service evidence.
+an independent exact-commit review accepts it. Pure brightness composition is
+a separate focused-build candidate awaiting independent exact-commit review.
+None of these boundaries is executable `Power1` service evidence.
 
 ## Identity and lineage
 
@@ -147,5 +148,6 @@ byte layout requires a compatibility decision and normally a new version.
 PB-0 intentionally contains no service, client, D-Bus connection, UPower,
 power-profiles-daemon, logind, Wayland, sysfs, hardware, session, Settings,
 QML, or UI behavior. Aggregate-battery policy is the pure `power_aggregation`
-collaborator described above. Brightness composition remains a separate pure
-module documented by the subsequent PB-0 commit.
+collaborator described above. Brightness composition is the separate pure
+[`brightness_model`](../architecture/brightness-model.md) module; it consumes
+these values without gaining transport or mutation authority.

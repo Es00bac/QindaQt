@@ -30,6 +30,7 @@ nav:
       - Display service: architecture/display-service.md
       - Audio service: architecture/audio-service.md
       - Power and brightness: architecture/power-service.md
+      - Pure brightness model: architecture/brightness-model.md
       - Notification service: architecture/notifications-service.md
       - Window containers: architecture/window-containers.md
   - Shell:

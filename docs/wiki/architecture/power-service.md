@@ -16,8 +16,9 @@ canonical byte codecs, fixed QtDBus structures, and deterministic pure battery
 aggregation in [`power_protocol`](../reference/power1-v1.md). Protocol tests
 have focused executable evidence; aggregation remains candidate evidence until
 its focused build/tests and independent exact-commit review pass. No service
-maturity is claimed. Pure brightness composition remains the final PB-0 commit
-boundary.
+maturity is claimed. The final pure
+[`brightness_model`](brightness-model.md) boundary has focused executable
+evidence; it remains unqualified until independent exact-commit review passes.
 
 ## Authority map
 
@@ -73,7 +74,7 @@ composition separate:
 | `power_client` | Exact-owner asynchronous snapshots and operations |
 | `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown |
 | `power_idle` | Compositor-idle observation and logind idle hints |
-| `brightness_model` | Pure display/keyboard brightness composition on injected values |
+| [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values |
 
 The service orchestrator may not own UPower, logind, profile-daemon, Wayland,
 or sysfs transport objects. Power modules do not link Display implementation
