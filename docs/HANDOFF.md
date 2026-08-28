@@ -60,8 +60,9 @@ The reusable `QindaQt.Controls 1.0` component set is now integrated after exact
 independent Debug/Release, visual, accessibility-event, package, source-policy,
 and PSS qualification. The revisioned compositor output inventory and contained
 virtual-output development seam are also integrated after exact review and
-focused integrated-tree verification. In parallel with the virtual desktop
-outcome, repair and qualify the pure Display1
-protocol/identity/topology/transaction boundary and finish the first native
-application slice. A source-only handoff or a live worker process is not
-completion.
+focused integrated-tree verification. The pure Display1 protocol, identity,
+topology, and reversible transaction model are now integrated after the
+same-revision lineage defect was reproduced, repaired, and exactly rereviewed.
+In parallel with the virtual desktop outcome, implement the resident Display1
+service/adapters and finish the first native application slice. A source-only
+handoff or a live worker process is not completion.

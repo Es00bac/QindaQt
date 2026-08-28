@@ -131,10 +131,10 @@
           "caveat": "Physical microphone/speaker, USB/HDMI/Bluetooth/jack/multichannel, suspend/hotplug/resource behavior, and Settings/shell UI remain."
         },
         {
-          "id": "QQ-005.02", "title": "Display inventory and reversible output transactions", "weight": 18, "state": "MODELLED",
-          "summary": "A revisioned Compositor1 output inventory and development-only virtual-output seam are integrated and independently accepted; the Display1 topology/transaction model, resident service, client, Settings UI, and physical output qualification remain incomplete.",
-          "evidence": [{ "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor output inventory is integrated with fail-closed production containment." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The integrated tree passes eight focused inventory, protocol, visibility-lineage, and session-environment selectors; the exact candidate passed its isolated five-profile virtual-output matrix." }],
-          "caveat": "D0 does not implement a user-facing Display1 service or reversible configuration. D1 remains blocked on a reproduced same-revision lineage defect and contributes zero until repaired, accepted, and integrated."
+          "id": "QQ-005.02", "title": "Display inventory and reversible output transactions", "weight": 18, "state": "WIRED",
+          "summary": "The revisioned compositor inventory plus bounded Display1 protocol, privacy-preserving identity, topology, and reversible transaction state machine are integrated after exact independent review.",
+          "evidence": [{ "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor output inventory is integrated with fail-closed production containment." }, { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and same-revision lineage repair are integrated." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The integrated tree passes eight D0 inventory/lineage selectors and eleven D1 protocol/identity/topology/transaction selectors; exact candidates also passed Release, sanitizer, package, and isolated virtual-output evidence." }],
+          "caveat": "D2 resident service/adapters, D3 client, persistence, Settings UI, end-to-end preview/confirm/revert, mixed-output matrices, and physical hardware qualification remain."
         },
         {
           "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "ABSENT",
@@ -180,15 +180,16 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack and isolated null-device runtime/package qualification are integrated. The revisioned compositor output inventory and development-only virtual-output seam are also integrated; user-facing Display1 transactions remain incomplete.",
+        "summary": "The bounded Audio1 stack and isolated null-device runtime/package qualification are integrated. Display D0 inventory and the D1 protocol/identity/topology/transaction foundation are integrated; the resident service/client/UI and end-to-end output mutation remain incomplete.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
           { "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor inventory is integrated after exact review and integrated-tree focused verification." },
+          { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and lineage repair are integrated after exact rereview." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 service/client/transaction UI, power, brightness, Bluetooth, network, clipboard, color/font providers, portals, policy, physical hardware, and Audio UI/hardware qualification remain. This large milestone is not called executable from two bounded platform slices."
+      "caveat": "Display1 service/client/transaction UI, power, brightness, Bluetooth, network, clipboard, color/font providers, portals, policy, physical hardware, and Audio UI/hardware qualification remain. The platform milestone is not called executable from bounded Audio and Display foundations."
     },
     {
       "id": "QQ-006",
