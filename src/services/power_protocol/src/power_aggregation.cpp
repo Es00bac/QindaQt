@@ -158,6 +158,10 @@ AggregationResult aggregatePowerSupplies(const QList<PowerSupply> &supplies) {
     } else if (supply.handle.epoch != epoch) {
       return failed(AggregationError::MixedEpoch, "mixed-supply-epoch");
     }
+    // AGENT-GUARD: Opaque-ID-only deduplication is sound because epoch
+    // unification happens first for every row. Do not move this check before
+    // the mixed-epoch rejection or replace that rejection with pair dedup:
+    // doing so would admit the same logical handle across owner generations.
     if (ids.contains(supply.handle.opaqueId)) {
       return failed(AggregationError::DuplicateHandle,
                     "duplicate-supply-handle");
@@ -192,7 +196,11 @@ AggregationResult aggregatePowerSupplies(const QList<PowerSupply> &supplies) {
     }
     const long double energy = stableSum(std::move(energyValues));
     const long double full = stableSum(std::move(fullValues));
-    const long double percentage = energy * 100.0L / full;
+    // AGENT-GUARD: Divide before scaling. When every source is exactly full,
+    // the two stable sums are bit-identical and this produces exactly 100;
+    // multiplying the large numerator first can round above 100 and falsely
+    // reject a valid full aggregate.
+    const long double percentage = energy / full * 100.0L;
     if (!std::isfinite(percentage) || percentage < kMinimumPercentage ||
         percentage > kMaximumPercentage) {
       return failed(AggregationError::ArithmeticOverflow,

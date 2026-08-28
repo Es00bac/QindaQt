@@ -13,6 +13,7 @@ class PowerProtocolCodecTests final : public QObject {
 
 private Q_SLOTS:
   void snapshotEncodingIsStableAndRoundTrips();
+  void chargingTimeToFullRoundTrips();
   void operationResultRoundTrips();
   void hostileSnapshotNeverReplacesDestination();
   void rejectsOversizedAndInvalidValuesBeforeEncoding();
@@ -33,6 +34,30 @@ void PowerProtocolCodecTests::snapshotEncodingIsStableAndRoundTrips() {
   const DecodeResult result = decodeSnapshot(first.payload, decoded);
   QVERIFY2(result.succeeded(), qPrintable(result.reasonCode));
   QCOMPARE(decoded, expected);
+}
+
+void PowerProtocolCodecTests::chargingTimeToFullRoundTrips() {
+  Snapshot expected = TestData::validSnapshot();
+  expected.composite.state = ChargeState::Charging;
+  expected.composite.netRateWatts = 12.5;
+  expected.composite.timeToEmptyKnown = false;
+  expected.composite.timeToEmptySeconds = 0;
+  expected.composite.timeToFullKnown = true;
+  expected.composite.timeToFullSeconds = 5'400;
+  expected.supplies[0].state = ChargeState::Charging;
+  expected.supplies[0].timeToEmptyKnown = false;
+  expected.supplies[0].timeToEmptySeconds = 0;
+  expected.supplies[0].timeToFullKnown = true;
+  expected.supplies[0].timeToFullSeconds = 5'400;
+
+  const EncodeResult encoded = encodeSnapshot(expected);
+  QVERIFY2(encoded.succeeded(), qPrintable(encoded.reasonCode));
+  Snapshot decoded;
+  const DecodeResult result = decodeSnapshot(encoded.payload, decoded);
+  QVERIFY2(result.succeeded(), qPrintable(result.reasonCode));
+  QCOMPARE(decoded, expected);
+  QCOMPARE(decoded.composite.timeToFullKnown, true);
+  QCOMPARE(decoded.composite.timeToFullSeconds, 5'400);
 }
 
 void PowerProtocolCodecTests::operationResultRoundTrips() {

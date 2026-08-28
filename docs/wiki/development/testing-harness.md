@@ -109,11 +109,13 @@ ctest --test-dir build/dev \
 ```
 
 The protocol rows cover fixed closed values, caps, privacy-preserving D-Bus
-signatures, hostile validation, canonical round trips, and atomic decoder
-failure. The aggregation row covers absent/single/dual/UPS composition,
-coarse-level and warning truth, signed rates, pass-through-only estimates, every
-three-source permutation, the eight-source arithmetic bound, and malformed or
-mixed-lineage input. These are pure QtTest rows: they connect to no D-Bus,
+signatures, positive charging time-to-full marshalling, canonical round trips,
+hostile validation, and atomic decoder failure. The aggregation row covers
+absent/single/dual/UPS composition, complete coarse-level and warning
+precedence, both signed rate bounds, charging/discharging pass-through-only
+estimates, every three-source permutation, exact-full exponent spread, the
+eight-source arithmetic bound, and malformed or mixed-lineage input. These are
+pure QtTest rows: they connect to no D-Bus,
 UPower, logind, profile daemon, Wayland compositor, sysfs path, or hardware.
 They are not service, activation, display-provider, or UI evidence.
 

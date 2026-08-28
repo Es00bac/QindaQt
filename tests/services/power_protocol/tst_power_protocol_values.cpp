@@ -18,6 +18,7 @@ class PowerProtocolValuesTests final : public QObject {
 private Q_SLOTS:
   void acceptsCanonicalSnapshot();
   void exposesFixedPrivacyPreservingStructures();
+  void marshalsChargingTimeToFullThroughFixedDbusStructure();
   void rejectsEveryCollectionBeyondItsCap();
   void enforcesTextBoundsAndSanitization();
   void rejectsUnknownEnumsCapabilitiesAndNonfiniteNumbers();
@@ -54,6 +55,31 @@ void PowerProtocolValuesTests::exposesFixedPrivacyPreservingStructures() {
   const Inhibitor inhibitor{QStringLiteral("sleep"), QStringLiteral("who"),
                             QStringLiteral("why"), QStringLiteral("delay")};
   QCOMPARE(inhibitor.mode, QStringLiteral("delay"));
+}
+
+void PowerProtocolValuesTests::
+    marshalsChargingTimeToFullThroughFixedDbusStructure() {
+  registerDBusTypes();
+  Snapshot snapshot = TestData::validSnapshot();
+  snapshot.composite.state = ChargeState::Charging;
+  snapshot.composite.netRateWatts = 12.5;
+  snapshot.composite.timeToEmptyKnown = false;
+  snapshot.composite.timeToEmptySeconds = 0;
+  snapshot.composite.timeToFullKnown = true;
+  snapshot.composite.timeToFullSeconds = 5'400;
+  snapshot.supplies[0].state = ChargeState::Charging;
+  snapshot.supplies[0].timeToEmptyKnown = false;
+  snapshot.supplies[0].timeToEmptySeconds = 0;
+  snapshot.supplies[0].timeToFullKnown = true;
+  snapshot.supplies[0].timeToFullSeconds = 5'400;
+  QVERIFY(validateSnapshot(snapshot).accepted);
+
+  QDBusArgument argument;
+  QVERIFY(QDBusMetaType::marshall(
+      argument, QMetaType::fromType<CompositeBattery>(), &snapshot.composite));
+  QCOMPARE(
+      QDBusMetaType::typeToSignature(QMetaType::fromType<CompositeBattery>()),
+      "(bubduubdbxbxu)");
 }
 
 void PowerProtocolValuesTests::rejectsEveryCollectionBeyondItsCap() {

@@ -120,9 +120,11 @@ retain its prior accepted snapshot.
 Valid absent supplies do not contribute. If no supply is present, the aggregate
 is canonically absent. Otherwise `sourceCount` is the number of present
 supplies. Percentage is energy-weighted when every present source has known
-energy and positive full energy; failing that, it is the arithmetic mean only
-when every present source has exact percentage truth. A set lacking complete
-exact truth retains the worst available coarse level in the fixed order
+energy and positive full energy. The implementation divides summed energy by
+summed full energy before scaling by 100 so an exactly-full multi-device
+generation remains exactly 100%. Failing that, percentage is the arithmetic
+mean only when every present source has exact percentage truth. A set lacking
+complete exact truth retains the worst available coarse level in the fixed order
 `Critical`, `Low`, `Normal`, `High`, `Full`, `None`, then `Unknown`.
 
 Charging and pending-charge rates contribute positively; discharging and
@@ -136,6 +138,11 @@ Warning severity is `Action`, `Critical`, `Low`, `Discharging`, `None`, then
 `Unknown`. Time-to-empty/full is published only for the matching aggregate
 state and only when every present source supplies the same known upstream
 estimate; PB-0 never derives one from energy or rate.
+
+Opaque-handle uniqueness is checked by ID only after every supply has been
+unified to one nonzero epoch. That ordering is part of the lineage contract:
+same IDs from different owner generations are mixed-epoch input, not distinct
+devices.
 
 ## Compatibility and scope
 

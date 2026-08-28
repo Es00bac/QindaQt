@@ -7,6 +7,8 @@
 #include <QtTest>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <limits>
 
 using namespace QindaQt::Power;
@@ -55,10 +57,12 @@ private Q_SLOTS:
   void dualBatteryUsesEnergyWeighting();
   void upsAndBatteryPreserveRateSign();
   void coarseUnknownLevelAndWarningFailClosed();
+  void coarseLevelAndWarningPrecedenceIsClosed();
   void unknownRateRetainsConservativeState();
   void estimatesArePassedThroughNeverRecomputed();
   void resultIsOrderIndependent();
-  void maximumAggregateRateDoesNotOverflow();
+  void fullEnergyAcrossExponentSpreadStaysAtHundredPercent();
+  void aggregateRateBoundariesDoNotOverflow();
   void rejectsBoundsLineageDuplicatesAndHostileNumbers();
 };
 
@@ -154,6 +158,53 @@ void PowerAggregationTests::coarseUnknownLevelAndWarningFailClosed() {
   QCOMPARE(result.composite.warning, WarningLevel::Action);
 }
 
+void PowerAggregationTests::coarseLevelAndWarningPrecedenceIsClosed() {
+  constexpr std::array levelOrder = {
+      BatteryLevel::Critical, BatteryLevel::Low,  BatteryLevel::Normal,
+      BatteryLevel::High,     BatteryLevel::Full, BatteryLevel::None,
+      BatteryLevel::Unknown,
+  };
+  for (std::size_t index = 0; index + 1 < levelOrder.size(); ++index) {
+    PowerSupply stronger = supply(QStringLiteral("level-stronger"), 0.0,
+                                  ChargeState::Unknown, 0.0);
+    stronger.percentageKnown = false;
+    stronger.level = levelOrder[index];
+    stronger.rateKnown = false;
+    stronger.warning = WarningLevel::Unknown;
+    PowerSupply weaker = stronger;
+    weaker.handle.opaqueId = QStringLiteral("level-weaker");
+    weaker.level = levelOrder[index + 1];
+
+    AggregationResult result = aggregatePowerSupplies({stronger, weaker});
+    QVERIFY(result.succeeded());
+    QCOMPARE(result.composite.level, levelOrder[index]);
+    result = aggregatePowerSupplies({weaker, stronger});
+    QVERIFY(result.succeeded());
+    QCOMPARE(result.composite.level, levelOrder[index]);
+  }
+
+  constexpr std::array warningOrder = {
+      WarningLevel::Action,      WarningLevel::Critical, WarningLevel::Low,
+      WarningLevel::Discharging, WarningLevel::None,     WarningLevel::Unknown,
+  };
+  for (std::size_t index = 0; index + 1 < warningOrder.size(); ++index) {
+    PowerSupply stronger = supply(QStringLiteral("warning-stronger"), 50.0,
+                                  ChargeState::Unknown, 0.0);
+    stronger.rateKnown = false;
+    stronger.warning = warningOrder[index];
+    PowerSupply weaker = stronger;
+    weaker.handle.opaqueId = QStringLiteral("warning-weaker");
+    weaker.warning = warningOrder[index + 1];
+
+    AggregationResult result = aggregatePowerSupplies({stronger, weaker});
+    QVERIFY(result.succeeded());
+    QCOMPARE(result.composite.warning, warningOrder[index]);
+    result = aggregatePowerSupplies({weaker, stronger});
+    QVERIFY(result.succeeded());
+    QCOMPARE(result.composite.warning, warningOrder[index]);
+  }
+}
+
 void PowerAggregationTests::unknownRateRetainsConservativeState() {
   PowerSupply discharging = supply(QStringLiteral("discharging"), 70.0,
                                    ChargeState::Discharging, 2.0);
@@ -188,6 +239,25 @@ void PowerAggregationTests::estimatesArePassedThroughNeverRecomputed() {
   QVERIFY(result.succeeded());
   QCOMPARE(result.composite.timeToEmptyKnown, true);
   QCOMPARE(result.composite.timeToEmptySeconds, 3'600);
+
+  first = supply(QStringLiteral("first"), 60.0, ChargeState::Charging, 4.0);
+  first.timeToFullKnown = true;
+  first.timeToFullSeconds = 1'800;
+  second = supply(QStringLiteral("second"), 40.0, ChargeState::Charging, 6.0);
+  second.timeToFullKnown = true;
+  second.timeToFullSeconds = 2'400;
+  result = aggregatePowerSupplies({first, second});
+  QVERIFY(result.succeeded());
+  QCOMPARE(result.composite.state, ChargeState::Charging);
+  QCOMPARE(result.composite.timeToFullKnown, false);
+  QCOMPARE(result.composite.timeToFullSeconds, 0);
+
+  second.timeToFullSeconds = 1'800;
+  result = aggregatePowerSupplies({first, second});
+  QVERIFY(result.succeeded());
+  QCOMPARE(result.composite.timeToFullKnown, true);
+  QCOMPARE(result.composite.timeToFullSeconds, 1'800);
+  QCOMPARE(result.composite.timeToEmptyKnown, false);
 }
 
 void PowerAggregationTests::resultIsOrderIndependent() {
@@ -214,7 +284,34 @@ void PowerAggregationTests::resultIsOrderIndependent() {
       }));
 }
 
-void PowerAggregationTests::maximumAggregateRateDoesNotOverflow() {
+void PowerAggregationTests::
+    fullEnergyAcrossExponentSpreadStaysAtHundredPercent() {
+  constexpr std::array fullValues = {
+      1.0,
+      std::ldexp(1.0, -6),
+      std::ldexp(1.0, -12),
+      std::ldexp(1.0, -18),
+      std::ldexp(1.0, -30),
+      std::ldexp(1.0, -42),
+      std::ldexp(1.0, -54),
+      std::ldexp(1.0, -63),
+  };
+  QList<PowerSupply> inputs;
+  for (std::size_t index = 0; index < fullValues.size(); ++index) {
+    PowerSupply value = supply(QStringLiteral("full-%1").arg(index), 100.0,
+                               ChargeState::FullyCharged, 0.0);
+    value.energyKnown = true;
+    value.energyWattHours = fullValues[index];
+    value.energyFullWattHours = fullValues[index];
+    inputs.push_back(std::move(value));
+  }
+  const AggregationResult result = aggregatePowerSupplies(inputs);
+  QVERIFY2(result.succeeded(), qPrintable(result.reasonCode));
+  QCOMPARE(result.composite.percentageKnown, true);
+  QCOMPARE(result.composite.percentage, 100.0);
+}
+
+void PowerAggregationTests::aggregateRateBoundariesDoNotOverflow() {
   QList<PowerSupply> inputs;
   for (qsizetype index = 0; index < kMaxPowerSupplies; ++index) {
     inputs.push_back(supply(QStringLiteral("s-%1").arg(index), 50.0,
@@ -223,6 +320,13 @@ void PowerAggregationTests::maximumAggregateRateDoesNotOverflow() {
   const AggregationResult result = aggregatePowerSupplies(inputs);
   QVERIFY(result.succeeded());
   QCOMPARE(result.composite.netRateWatts, kMaximumAggregateRateWatts);
+
+  for (PowerSupply &input : inputs) {
+    input.state = ChargeState::Discharging;
+  }
+  const AggregationResult negative = aggregatePowerSupplies(inputs);
+  QVERIFY(negative.succeeded());
+  QCOMPARE(negative.composite.netRateWatts, -kMaximumAggregateRateWatts);
 }
 
 void PowerAggregationTests::rejectsBoundsLineageDuplicatesAndHostileNumbers() {

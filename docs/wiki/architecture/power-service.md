@@ -14,9 +14,10 @@ The durable choices are split across
 The PB-0 candidate now fixes bounded values, hostile-input validation,
 canonical byte codecs, fixed QtDBus structures, and deterministic pure battery
 aggregation in [`power_protocol`](../reference/power1-v1.md). Protocol tests
-have focused executable evidence; aggregation remains candidate evidence until
-its focused build/tests and independent exact-commit review pass. No service
-maturity is claimed. The final pure
+have focused executable evidence; aggregation passed focused tests and its
+independent review returned bounded proof/arithmetic repairs now carried by a
+non-amended descendant. It remains candidate evidence until that repair is
+rereviewed. No service maturity is claimed. The final pure
 [`brightness_model`](brightness-model.md) boundary has focused executable
 evidence; it remains unqualified until independent exact-commit review passes.
 
