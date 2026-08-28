@@ -1151,6 +1151,31 @@ KWin, apply through this exact public-protocol adapter, observe callback before
 device truth, prove target and rollback convergence, fence hotplug/restart, and
 tear down without any inherited host display or configuration path.
 
+## D5 durable Display1 journal
+
+The isolated filesystem and installed-boundary rows are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-journal'
+```
+
+The filesystem row uses a fresh temporary state root and proves canonical
+store/load/replace/clear, exact mode `0600`, absent truth, stale-temp process
+interruption, and preservation of the prior committed value when failure occurs
+before atomic replacement. Hostile cases include a symlinked root, symlink and
+directory final entries, insecure permissions, oversize and malformed bytes,
+and a nonregular temporary-name collision. The package row stages the exact
+development component, permits only the public value/store header, and proves a
+planted private filesystem header fails the checker.
+
+These tests open no display, session bus, compositor, home directory, or host
+configuration path. They prove the persistence adapter and deterministic
+startup-load seam, not resident startup recovery or compositor convergence.
+The contained D6 matrix must still compose the exact D4 writer and D5 store,
+restart during preview, consume the retained journal through D1 `recover`, and
+observe safe target/pre-image convergence before enabling production mutation.
+
 ## Contained interactive virtual desktop S0+S1
 
 The first whole-desktop harness boundary is selected with:

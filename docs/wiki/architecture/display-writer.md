@@ -10,8 +10,9 @@ support.
 
 D4 is a writer boundary, not a complete production transaction composition.
 The installed Display1 executable still uses an unavailable transaction port
-because the durable journal, authenticated lock state, logind inhibition,
-restart recovery, and nested convergence proof are separate later outcomes.
+even though D5 now provides a separate durable journal implementation, because
+authenticated lock state, logind inhibition, restart composition, and nested
+convergence proof remain separate outcomes.
 The D4 code never touches the host display during build or deterministic tests.
 
 ## Components and dependency direction
@@ -23,7 +24,7 @@ The D4 code never touches the host display during build or deterministic tests.
 | `WriterTransactionPort` | One in-flight request, machine-lineage/token/request/owner fencing, timeout, and exactly-once deferred completion | Journal implementation, Display1 state transitions, compositor inventory |
 | `OutputManagementPort` | Injected asynchronous owner/submit/completion seam | D-Bus, Settings, files, UI |
 | Production adapter | Direct ownership of a private Wayland connection and public KDE output-management objects | KWin private ABI/configuration, libkscreen production authority, physical outputs |
-| `JournalStore` | Injected synchronous store/clear seam needed by the existing Display1 side-effect port | A D4 filesystem implementation |
+| `JournalStore` | Injected synchronous store/clear seam needed by the existing Display1 side-effect port | Filesystem policy; D5 implements it in `display_journal` |
 
 The installed public headers expose only owning Qt values, abstract ports, and
 factories. Generated protocol wrappers, Wayland objects, socket notifiers, and
@@ -114,3 +115,9 @@ real KWin apply, callback-before-observation ordering, post-apply convergence,
 mirror visibility, hotplug recovery, service restart recovery, physical
 monitor behavior, or the packaged Display1 process as an operational writer.
 Those claims require the contained nested matrix before hardware qualification.
+
+The D5 store is deliberately downstream of this module: it derives from the
+installed `JournalStore` interface and is passed to `WriterTransactionPort` by
+the future resident composition. D4 therefore remains independently testable
+with a fake, while D5 owns Linux file operations and canonical startup loading.
+Neither module discovers a user-state path.

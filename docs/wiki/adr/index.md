@@ -50,6 +50,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0046](0046-display-color-c0-model-boundary.md) | Proposed | Keep display color as a pure bounded model first |
 | [ADR-0048](0048-settings-center-navigation-and-route-ownership.md) | Accepted | Keep Settings navigation typed and route authority local |
 | [ADR-0050](0050-direct-kde-output-management-writer.md) | Accepted | Use a direct bounded KDE public output-management writer |
+| [ADR-0051](0051-persist-display-journal-in-injected-state-root.md) | Accepted | Persist canonical Display1 recovery truth in one injected user-state directory |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
