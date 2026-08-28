@@ -105,6 +105,14 @@ Display::Candidate candidateFromSnapshot(const Display::Snapshot &snapshot)
             }
             rootId = root.replicationSourceStableId;
         }
+    }
+    // AGENT-GUARD: Resolve every replica against untranslated live root
+    // coordinates before moving the layout to the origin. Combining these
+    // passes makes the result depend on whether a root precedes its replica.
+    for (Display::CandidateOutput &output : candidate.outputs) {
+        if (!output.enabled) {
+            continue;
+        }
         output.position -= QPoint(minimumX, minimumY);
     }
     std::sort(candidate.outputs.begin(), candidate.outputs.end(),

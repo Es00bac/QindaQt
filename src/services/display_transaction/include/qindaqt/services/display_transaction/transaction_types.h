@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <qindaqt/services/display_protocol/display_limits.h>
 #include <qindaqt/services/display_protocol/display_types.h>
 
 #include <QtCore/QByteArray>
@@ -12,7 +13,7 @@ namespace QindaQt::DisplayTransaction
 {
 
 inline constexpr quint32 kJournalSchemaVersion = 1;
-inline constexpr quint32 kMaximumRevertAttempts = 3;
+inline constexpr quint32 kMaximumRevertAttempts = Display::kMaximumRevertAttempts;
 inline constexpr qsizetype kMaximumJournalBytes = 1'048'576;
 
 enum class MachineState {

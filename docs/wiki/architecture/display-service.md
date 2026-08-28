@@ -108,7 +108,7 @@ resolved through observation; it is never replayed.
 | --- | --- | --- |
 | `Discovering` | `initialize` or `recover` with a valid snapshot/journal | None |
 | `Ready` | stage a valid non-no-op candidate; accept newer observed/external/topology state | None |
-| `Staged` | preview when safety is `Safe`; cancel without mutation | None |
+| `Staged` | preview when safety is `Safe`; cancel without mutation; same-set external changes must use `externalIntentObserved`, because ordinary observations are rejected | None |
 | `Applying` | exact-token completion enters observation or uncertainty resolution | Apply timeout enters `ResolvingUncertain` |
 | `Observing` | target fingerprint enters confirmation; pre-image returns ready; other valid observations remain mismatches | Observation timeout begins rollback |
 | `AwaitingConfirmation` | confirm clears journal; cancel, lock, suspend, topology or external intent resolve safely | Confirmation deadline begins rollback |
@@ -140,7 +140,10 @@ best effort so storage loss cannot suppress the safer rollback attempt.
 `lastTerminalReason`, which remains observable in `Ready` until the next
 successful stage. `TransportUncertain` and `JournalFailure` are distinct from
 `ApplyTimeout` and `RevertFailed`; an invalid transaction ID and a staged
-suspend also have distinct command errors.
+suspend also have distinct command errors. If an uncertain completion arrives
+after rollback was requested, the command reports apply uncertainty while the
+view deliberately retains the pending rollback reason (cancel, lock, suspend,
+or timeout).
 
 ### Side-effect port preconditions
 
@@ -153,6 +156,13 @@ suspend also have distinct command errors.
   after every apply callback and apply deadline, even if revision and contents
   appear unchanged. A changed output set is routed through `topologyChanged`
   in every active state.
+- While a candidate is `Staged`, a same-set change from another client is
+  routed through `externalIntentObserved`; `observedSnapshot` is intentionally
+  invalid there so the adapter cannot leave a stale candidate staged.
+- While the machine is `SettlingTopology`, platform post-hotplug re-application
+  is delivered only through `observedSnapshot`/`topologyChanged`, never
+  `externalIntentObserved`. D2 must not misclassify KWin's own set restoration
+  as a new client intent that abandons rollback.
 - The port serializes platform-side apply ordering. A timeout never authorizes
   it to replay a forward request.
 - Temporary transport loss is represented as `TransportUncertain` or absence
@@ -165,17 +175,18 @@ suspend also have distinct command errors.
 On an output-set change, the machine waits through any repeated change inputs
 until D2 supplies one deterministic settled snapshot. Cancel, lock, and suspend
 are recorded but do not apply before settle; explicitly routed external intent
-is recorded as abandon and clears only after settle. If the original output set
-returns, rollback uses the complete pre-image. For a genuinely changed set, the
-machine computes the intersection with pre-image outputs that were enabled and
-requests only stable ID, mode, scale, and transform. It never treats an empty
-disabled-output mode as a wildcard and never replays enable, position,
-priority, primary, or replication fields from the old set. If the current
-survivor properties already match, the journal clears without a redundant
-apply. `Stuck` continues to accept snapshot/topology updates so retry uses the
-current set. The future adapter owns the accepted 500 ms quiet-window and
-long-churn reporting policy; D1 intentionally models only the explicit settle
-event.
+is recorded as abandon and clears only after settle. The adapter must route
+that intent before entering the settle window; observations during the window
+remain topology truth. If the original output set returns, rollback uses the
+complete pre-image. For a genuinely changed set, the machine computes the
+intersection with pre-image outputs that were enabled and requests only stable
+ID, mode, scale, and transform. It never treats an empty disabled-output mode
+as a wildcard and never replays enable, position, priority, primary, or
+replication fields from the old set. If the current survivor properties
+already match, the journal clears without a redundant apply. `Stuck` continues
+to accept snapshot/topology updates so retry uses the current set. The future
+adapter owns the accepted 500 ms quiet-window and long-churn reporting policy;
+D1 intentionally models only the explicit settle event.
 
 A valid newer external configuration aborts and clears the QindaQt transaction
 without another apply. Recovery follows the same rule: pre-image live clears,

@@ -173,7 +173,8 @@ void Machine::scheduleRevertRetry()
         Private::saturatedDeadline(m_clock.nowMilliseconds(), backoff);
 }
 
-void Machine::enterStuck(const bool cleanupOnly)
+void Machine::enterStuck(const bool cleanupOnly,
+                         const Display::TransactionReason durableReason)
 {
     m_activeToken = 0;
     m_revertRequested = false;
@@ -189,7 +190,11 @@ void Machine::enterStuck(const bool cleanupOnly)
         m_view.revertAttempt = 0;
     }
     m_journal.phase = JournalPhase::Stuck;
-    m_journal.reason = reason;
+    // AGENT-CONTRACT: A cleanup-only live view reports JournalFailure, but a
+    // supplied durable reason remains the crash-recovery instruction.
+    m_journal.reason = durableReason == Display::TransactionReason::None
+        ? reason
+        : durableReason;
     m_journal.revertAttempt = m_view.revertAttempt;
     static_cast<void>(m_port.storeJournal(m_journal));
 }

@@ -16,6 +16,7 @@ private Q_SLOTS:
     void stageFencesRevisionAndDetectsNoOp();
     void previewRequiresSafeAuthorityAndDurableJournal();
     void applyObserveConfirmFlow();
+    void readyInputsEnforceCurrentLineage();
     void rejectedAndTimedOutApplyNeverReplayForward();
     void observationMismatchTimeoutAndInvalidCallbacks();
 };
@@ -47,6 +48,46 @@ void TransactionStateTests::stageFencesRevisionAndDetectsNoOp()
     QCOMPARE(machine.stage(QStringLiteral("other"), Test::changedCandidate(base)).error,
              CommandError::TransactionActive);
     QCOMPARE(machine.view(), staged);
+}
+
+void TransactionStateTests::readyInputsEnforceCurrentLineage()
+{
+    const Display::Snapshot base = Test::snapshot(false, 2);
+    for (const bool topologyInput : {false, true}) {
+        Test::FakeClock clock;
+        Test::FakePort port;
+        Machine machine(clock, port, Test::timing());
+        QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+        const MachineView beforeView = machine.view();
+        const Display::Snapshot beforeSnapshot = machine.currentSnapshot();
+
+        Display::Snapshot older = base;
+        older.revision--;
+        const CommandResult olderResult = topologyInput
+            ? machine.topologyChanged(older)
+            : machine.externalIntentObserved(older);
+        QCOMPARE(olderResult.error, CommandError::InvalidSnapshot);
+        QCOMPARE(machine.view(), beforeView);
+        QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
+
+        Display::Snapshot otherEpoch = base;
+        otherEpoch.serviceEpoch = QStringLiteral("other-epoch");
+        otherEpoch.revision++;
+        const CommandResult otherEpochResult = topologyInput
+            ? machine.topologyChanged(otherEpoch)
+            : machine.externalIntentObserved(otherEpoch);
+        QCOMPARE(otherEpochResult.error, CommandError::InvalidSnapshot);
+        QCOMPARE(machine.view(), beforeView);
+        QCOMPARE(machine.currentSnapshot(), beforeSnapshot);
+
+        Display::Snapshot newer = base;
+        newer.revision++;
+        const CommandResult newerResult = topologyInput
+            ? machine.topologyChanged(newer)
+            : machine.externalIntentObserved(newer);
+        QVERIFY(newerResult.accepted);
+        QCOMPARE(machine.currentSnapshot().revision, newer.revision);
+    }
 }
 
 void TransactionStateTests::previewRequiresSafeAuthorityAndDurableJournal()

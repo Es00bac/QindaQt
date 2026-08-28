@@ -40,6 +40,11 @@ public:
     // state. Callback-first ordering is the D1 port assumption; D2 must prove
     // compositor callback/device ordering and the cross-client in-flight
     // intent window rather than treating fake-port evidence as runtime proof.
+    // While Staged, a same-set external change is routed through
+    // externalIntentObserved (ordinary observedSnapshot is invalid there) so
+    // a stale candidate cannot preview. While SettlingTopology, never route
+    // platform post-hotplug observations through externalIntentObserved; use
+    // observedSnapshot/topologyChanged until explicit topologySettled.
     [[nodiscard]] virtual bool storeJournal(const Journal &journal) = 0;
     [[nodiscard]] virtual bool clearJournal() = 0;
     virtual void requestApply(const ApplyRequest &request) = 0;

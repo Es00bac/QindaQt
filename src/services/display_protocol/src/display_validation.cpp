@@ -213,7 +213,7 @@ ValidationResult validateTransactionSummary(const TransactionSummary &summary)
         || !boundedRequiredText(summary.initiatingEpoch, kMaxServiceEpochUtf8Bytes)
         || summary.baseRevision == 0 || !validTransactionState(summary.state)
         || !validTransactionReason(summary.reason)
-        || summary.revertAttempt > 3) {
+        || summary.revertAttempt > kMaximumRevertAttempts) {
         return rejected("invalid-transaction-summary");
     }
     return accepted();

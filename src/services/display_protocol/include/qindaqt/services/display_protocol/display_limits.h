@@ -15,6 +15,7 @@ inline constexpr qsizetype kMaxModesPerOutput = 128;
 inline constexpr qsizetype kMaxTransactions = 1;
 inline constexpr qsizetype kMaxCandidateOutputs = kMaxOutputs;
 inline constexpr qsizetype kMaxSerializedBytes = 1'048'576;
+inline constexpr quint32 kMaximumRevertAttempts = 3;
 
 inline constexpr qsizetype kMaxStableIdUtf8Bytes = 128;
 inline constexpr qsizetype kMaxConnectorNameUtf8Bytes = 128;

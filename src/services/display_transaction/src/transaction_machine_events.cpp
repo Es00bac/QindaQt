@@ -8,6 +8,17 @@
 
 namespace QindaQt::DisplayTransaction
 {
+namespace
+{
+
+bool followsCurrentLineage(const Display::Snapshot &snapshot,
+                           const Display::Snapshot &current)
+{
+    return snapshot.serviceEpoch == current.serviceEpoch
+        && snapshot.revision >= current.revision;
+}
+
+} // namespace
 
 bool Machine::snapshotMatches(const Display::Snapshot &snapshot,
                               const Display::Candidate &candidate) const
@@ -88,8 +99,7 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
         return topologyChanged(snapshot);
     }
     if (m_view.state == MachineState::Ready) {
-        if (snapshot.serviceEpoch != m_snapshot.serviceEpoch
-            || snapshot.revision < m_snapshot.revision) {
+        if (!followsCurrentLineage(snapshot, m_snapshot)) {
             return rejected(CommandError::InvalidSnapshot);
         }
         const bool changed = snapshot != m_snapshot;
@@ -200,6 +210,9 @@ CommandResult Machine::externalIntentObserved(const Display::Snapshot &snapshot)
                         CommandError::ExternalChange);
     }
     if (m_view.state == MachineState::Ready) {
+        if (!followsCurrentLineage(snapshot, m_snapshot)) {
+            return rejected(CommandError::InvalidSnapshot);
+        }
         const bool changed = snapshot != m_snapshot;
         m_snapshot = snapshot;
         m_view.currentRevision = snapshot.revision;
@@ -211,9 +224,13 @@ CommandResult Machine::externalIntentObserved(const Display::Snapshot &snapshot)
         m_view.reason = Display::TransactionReason::ExternalChange;
         m_cleanupOnlyStuck = true;
         m_survivingProperties.clear();
-        if (m_view.journalActive && !m_port.clearJournal()) {
-            enterStuck(true);
-            return accepted(true, CommandError::JournalFailure);
+        if (m_view.journalActive) {
+            m_journal.reason = Display::TransactionReason::ExternalChange;
+            static_cast<void>(m_port.storeJournal(m_journal));
+            if (!m_port.clearJournal()) {
+                enterStuck(true, Display::TransactionReason::ExternalChange);
+                return accepted(true, CommandError::JournalFailure);
+            }
         }
         finishReady(snapshot);
         return accepted(true, CommandError::ExternalChange);
@@ -222,9 +239,16 @@ CommandResult Machine::externalIntentObserved(const Display::Snapshot &snapshot)
     m_snapshot = snapshot;
     m_view.currentRevision = snapshot.revision;
     m_view.reason = Display::TransactionReason::ExternalChange;
-    if (m_view.journalActive && !m_port.clearJournal()) {
-        enterStuck(true);
-        return accepted(true, CommandError::JournalFailure);
+    if (m_view.journalActive) {
+        // AGENT-GUARD: Persist abandon before clearing. If clear fails or the
+        // process dies between calls, recovery must not replay the pre-image
+        // over external truth.
+        m_journal.reason = Display::TransactionReason::ExternalChange;
+        static_cast<void>(m_port.storeJournal(m_journal));
+        if (!m_port.clearJournal()) {
+            enterStuck(true, Display::TransactionReason::ExternalChange);
+            return accepted(true, CommandError::JournalFailure);
+        }
     }
     finishReady(snapshot);
     return accepted(true, CommandError::ExternalChange);
@@ -239,6 +263,9 @@ CommandResult Machine::topologyChanged(const Display::Snapshot &snapshot)
         return rejected(CommandError::InvalidTransition);
     }
     if (m_view.state == MachineState::Ready) {
+        if (!followsCurrentLineage(snapshot, m_snapshot)) {
+            return rejected(CommandError::InvalidSnapshot);
+        }
         const bool changed = snapshot != m_snapshot;
         m_snapshot = snapshot;
         m_view.currentRevision = snapshot.revision;

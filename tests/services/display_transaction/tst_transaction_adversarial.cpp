@@ -62,6 +62,7 @@ private Q_SLOTS:
     void rollbackBudgetCannotBeRestartedByRepeatedSafetyInputs();
     void settleBarrierDefersEveryActionAndRestoredSetUsesFullPreimage();
     void cleanupOnlyStuckNeverIssuesAnApply();
+    void translatedMirrorRollbackConvergesAfterOriginRestore();
     void uncertaintyAndObservationRoutingAreExplicit();
     void recoveryDoesNotFightExternalTruthAndStuckAdoptsTopology();
     void disabledPreimageAndAlreadyRestoredSurvivorsDoNotApply();
@@ -127,6 +128,48 @@ void TransactionAdversarialTests::rejectedCommandsAndJournalGatesPreserveState()
     QCOMPARE(confirmMachine.activeJournal(), awaitingJournal);
     QCOMPARE(confirmMachine.currentSnapshot(), awaitingSnapshot);
     QCOMPARE(confirmPort.requests.size(), requests);
+}
+
+void TransactionAdversarialTests::translatedMirrorRollbackConvergesAfterOriginRestore()
+{
+    Display::Snapshot base = Test::snapshot(true);
+    base.outputs[0].position = QPoint(100, 50);
+    base.outputs[1].position = QPoint(100, 50);
+    base.outputs[1].replicationSourceStableId = base.outputs[0].stableId;
+    base.liveFingerprint = DisplayTopology::canonicalFingerprint(
+        DisplayTopology::candidateFromSnapshot(base));
+
+    Display::Candidate requested = Test::changedCandidate(base);
+    const DisplayTopology::ValidationResult normalized =
+        DisplayTopology::validateAndNormalize(base, requested);
+    QVERIFY2(normalized.accepted(), qPrintable(normalized.reasonCode));
+
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    Test::previewToAwaitingConfirmation(machine, port, base,
+                                        normalized.normalizedCandidate);
+    QVERIFY(machine.cancel(QStringLiteral("tx")).accepted);
+    const ApplyRequest rollback = port.requests.last();
+    QCOMPARE(rollback.scope, ApplyScope::FullPreimage);
+    QCOMPARE(rollback.candidate.outputs.size(), 2);
+    QCOMPARE(rollback.candidate.outputs[0].position, QPoint(0, 0));
+    QCOMPARE(rollback.candidate.outputs[1].position, QPoint(0, 0));
+    QCOMPARE(rollback.candidate.outputs[1].scale,
+             rollback.candidate.outputs[0].scale);
+
+    QVERIFY(machine.applyCompleted(rollback.token, ApplyOutcome::Applied).accepted);
+    QCOMPARE(machine.view().state, MachineState::RevertingObserve);
+    Display::Snapshot restored = base;
+    restored.revision = base.revision + 2;
+    restored.outputs[0].position = {};
+    restored.outputs[1].position = {};
+    restored.liveFingerprint = DisplayTopology::canonicalFingerprint(
+        DisplayTopology::candidateFromSnapshot(restored));
+    QVERIFY(machine.observedSnapshot(restored).accepted);
+    QCOMPARE(machine.view().state, MachineState::Ready);
+    QVERIFY(!port.journalPresent);
 }
 
 void TransactionAdversarialTests::rollbackBudgetCannotBeRestartedByRepeatedSafetyInputs()

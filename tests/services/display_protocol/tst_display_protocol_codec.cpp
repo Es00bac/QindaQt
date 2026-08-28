@@ -114,12 +114,16 @@ void DisplayProtocolCodecTests::fixedDbusSignaturesAndRejectsNonDemarshallingArg
 {
     registerDBusTypes();
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Mode>()), "(siiub)");
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Output>()),
+             "(ssssssiibbbbbsiiiiduusa(siiub))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<CandidateOutput>()),
              "(sbbsiiduus)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Candidate>()),
              "(usta(sbbsiiduus))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<TransactionSummary>()),
              "(suustttu)");
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
+             "(ustaya(ssssssiibbbbbsiiiiduusa(siiub))a(suustttu))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuusttss)");
 

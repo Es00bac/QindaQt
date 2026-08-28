@@ -57,7 +57,9 @@ private:
     void beginRevert(Display::TransactionReason reason);
     void issueRevertApply();
     void scheduleRevertRetry();
-    void enterStuck(bool cleanupOnly = false);
+    void enterStuck(
+        bool cleanupOnly = false,
+        Display::TransactionReason durableReason = Display::TransactionReason::None);
     void finishReady(const Display::Snapshot &snapshot);
     [[nodiscard]] bool snapshotMatches(const Display::Snapshot &snapshot,
                                        const Display::Candidate &candidate) const;

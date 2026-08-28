@@ -230,6 +230,33 @@ void TransactionRecoveryTests::externalNewerIntentAbortsWithoutFight()
     QCOMPARE(machine.view().state, MachineState::Ready);
     QCOMPARE(port.requests.size(), requestsBefore);
     QVERIFY(!port.journalPresent);
+
+    Test::FakeClock failedClearClock;
+    Test::FakePort failedClearPort;
+    Machine failedClear(failedClearClock, failedClearPort, Test::timing());
+    QVERIFY(failedClear.initialize(base, SafetyState::Safe).accepted);
+    Test::previewToAwaitingConfirmation(failedClear, failedClearPort, base, candidate);
+    failedClearPort.clearSucceeds = false;
+    QCOMPARE(failedClear.externalIntentObserved(external).error,
+             CommandError::JournalFailure);
+    QCOMPARE(failedClear.view().state, MachineState::Stuck);
+    QCOMPARE(failedClear.view().reason, Display::TransactionReason::JournalFailure);
+    QCOMPARE(failedClearPort.journal.reason,
+             Display::TransactionReason::ExternalChange);
+
+    Test::FakeClock restartClock;
+    Test::FakePort restartPort;
+    Machine restart(restartClock, restartPort, Test::timing());
+    const Display::Snapshot changedSet = Test::snapshot(true, 4);
+    QCOMPARE(restart.recover(failedClearPort.journal, changedSet,
+                             SafetyState::Safe).error,
+             CommandError::ExternalChange);
+    QCOMPARE(restart.view().state, MachineState::SettlingTopology);
+    QVERIFY(restartPort.requests.isEmpty());
+    QCOMPARE(restart.topologySettled(changedSet).error,
+             CommandError::ExternalChange);
+    QCOMPARE(restart.view().state, MachineState::Ready);
+    QVERIFY(restartPort.requests.isEmpty());
 }
 
 void TransactionRecoveryTests::crashJournalRecoveryUsesTheSameRevertPath()

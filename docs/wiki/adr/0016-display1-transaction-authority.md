@@ -77,6 +77,10 @@ D2 must supply those adapters without changing this authority split.
   does not prove or silently serialize those windows. The three-attempt bound
   is per rollback sequence in one process; topology settle/restart starts a
   new recovery sequence and no sequence replays the forward candidate.
+- Suspend requested while a forward apply is in flight waits for its callback
+  or the five-second apply deadline. That can outlive logind's default delay
+  inhibitor window; the durable journal therefore permits ordinary rollback
+  recovery after resume instead of claiming convergence before suspension.
 - Direct KDE protocol integration is the production path. libkscreen and
   `kscreen-doctor` may be test/oracle inputs only unless a later ADR changes
   this decision.

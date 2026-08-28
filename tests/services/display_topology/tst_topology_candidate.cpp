@@ -16,6 +16,7 @@ class TopologyCandidateTests final : public QObject
 private Q_SLOTS:
     void enabledPrimaryModeAndPriorityInvariants();
     void mirrorRelationshipsAreClosedAndCanonical();
+    void translatedMirrorProjectionIsOrderIndependent();
     void diffNoOpAndFingerprintAreStable();
     void fractionalWarningNamesTheOutput();
 };
@@ -96,6 +97,45 @@ void TopologyCandidateTests::mirrorRelationshipsAreClosedAndCanonical()
     QVERIFY(baseline.accepted());
     QVERIFY(baseline.noOp);
     QCOMPARE(baseline.fingerprint, liveMirror.liveFingerprint);
+}
+
+void TopologyCandidateTests::translatedMirrorProjectionIsOrderIndependent()
+{
+    Display::Output root = Test::output(
+        QStringLiteral("edid:a"), QStringLiteral("DP-1"), QPoint(100, 50),
+        QSize(1920, 1080), 1.25, true, 1);
+    Display::Output replica = Test::output(
+        QStringLiteral("edid:b"), QStringLiteral("DP-2"), QPoint(610, 320),
+        QSize(1920, 1080), 2.0, false, 2);
+    replica.replicationSourceStableId = root.stableId;
+
+    const Display::Snapshot rootFirst = Test::snapshot({root, replica});
+    const Display::Snapshot replicaFirst = Test::snapshot({replica, root});
+    const Display::Candidate rootFirstProjection = candidateFromSnapshot(rootFirst);
+    const Display::Candidate replicaFirstProjection = candidateFromSnapshot(replicaFirst);
+
+    QCOMPARE(rootFirstProjection.outputs.size(), 2);
+    QCOMPARE(rootFirstProjection, replicaFirstProjection);
+    QCOMPARE(rootFirstProjection.outputs[0].stableId, root.stableId);
+    QCOMPARE(rootFirstProjection.outputs[1].stableId, replica.stableId);
+    QCOMPARE(rootFirstProjection.outputs[0].position, QPoint(0, 0));
+    QCOMPARE(rootFirstProjection.outputs[1].position,
+             rootFirstProjection.outputs[0].position);
+    QCOMPARE(rootFirstProjection.outputs[1].scale,
+             rootFirstProjection.outputs[0].scale);
+    QCOMPARE(canonicalFingerprint(rootFirstProjection),
+             canonicalFingerprint(replicaFirstProjection));
+    QCOMPARE(rootFirst.liveFingerprint, replicaFirst.liveFingerprint);
+
+    const ValidationResult rootFirstBaseline = validateAndNormalize(
+        rootFirst, rootFirstProjection);
+    const ValidationResult replicaFirstBaseline = validateAndNormalize(
+        replicaFirst, replicaFirstProjection);
+    QVERIFY2(rootFirstBaseline.accepted(), qPrintable(rootFirstBaseline.reasonCode));
+    QVERIFY2(replicaFirstBaseline.accepted(), qPrintable(replicaFirstBaseline.reasonCode));
+    QVERIFY(rootFirstBaseline.noOp);
+    QVERIFY(replicaFirstBaseline.noOp);
+    QCOMPARE(rootFirstBaseline.fingerprint, replicaFirstBaseline.fingerprint);
 }
 
 void TopologyCandidateTests::diffNoOpAndFingerprintAreStable()
