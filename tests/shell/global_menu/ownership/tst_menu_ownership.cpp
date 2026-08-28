@@ -10,6 +10,8 @@
 #include <QtCore/QHash>
 #include <QtTest>
 
+#include <type_traits>
+
 using namespace QindaQt::Shell::GlobalMenu;
 using namespace QindaQt::Shell::GlobalMenu::Ownership;
 
@@ -52,12 +54,23 @@ ActiveWindowObservation observation(const QUuid &windowId, qint64 pid, quint64 f
                                     .focusGeneration = focusGeneration};
 }
 
-AuthenticatedProvider authenticated(const QUuid &windowId, quint64 focusGeneration)
+// Issues a real, authenticator-minted proof through the fakes. There is no
+// other way to obtain an AuthenticatedProvider — that is the forgeability
+// property under test.
+AuthenticatedProvider issueProof(const QUuid &windowId, quint64 focusGeneration,
+                                 const QString &uniqueName = QStringLiteral(":1.42"))
 {
-    return AuthenticatedProvider{.window =
-                                     WindowIdentity{.windowId = windowId, .processId = 4242},
-                                  .providerUniqueName = QStringLiteral(":1.42"),
-                                  .focusGeneration = focusGeneration};
+    FakeActiveWindowSource windowSource;
+    windowSource.value = observation(windowId, 4242, focusGeneration);
+    FakeCredentialSource credentials;
+    credentials.knownPids.insert(uniqueName, 4242);
+    ProviderAuthenticator authenticator(windowSource, credentials);
+    const AuthenticationResult result = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = uniqueName,
+                                  .claimedProcessId = 4242});
+    Q_ASSERT(result.accepted);
+    return result.proof.value();
 }
 
 Protocol::MenuTree treeWithOneAction(const QUuid &windowId, const QUuid &epoch, quint64 revision,
@@ -83,6 +96,7 @@ class MenuOwnershipTests final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    void proofTypeIsNotForgeable();
     void authenticatorAcceptsMatchingWindowAndPid();
     void authenticatorRejectsWhenNoActiveWindow();
     void authenticatorRejectsWhenNotActiveWindow();
@@ -90,6 +104,8 @@ private Q_SLOTS:
     void authenticatorRejectsPidMismatchWithClaim();
     void authenticatorRejectsPidMismatchWithActiveWindow();
     void authenticatorRejectsInvalidRegistration();
+    void authenticatorRejectsWellKnownProviderName();
+    void authenticatorRejectsMalformedUniqueName();
     void authenticatorRejectsFocusChangeDuringLookup();
     void authenticatorProofCarriesVerifiedFacts();
 
@@ -111,6 +127,19 @@ private Q_SLOTS:
     void invocationAcceptsCurrentLineage();
 };
 
+void MenuOwnershipTests::proofTypeIsNotForgeable()
+{
+    // Structural proof of the issuance restriction: the type cannot be
+    // default-constructed or aggregate-initialized, so a caller cannot mint
+    // an "accepted" value — only ProviderAuthenticator::authenticate() can.
+    static_assert(!std::is_default_constructible_v<AuthenticatedProvider>);
+    static_assert(!std::is_aggregate_v<AuthenticatedProvider>);
+    // Honest holders may pass an issued proof along by value or reference.
+    static_assert(std::is_copy_constructible_v<AuthenticatedProvider>);
+    static_assert(std::is_move_constructible_v<AuthenticatedProvider>);
+    QVERIFY(true);
+}
+
 void MenuOwnershipTests::authenticatorAcceptsMatchingWindowAndPid()
 {
     const QUuid windowId = QUuid::createUuid();
@@ -122,8 +151,8 @@ void MenuOwnershipTests::authenticatorAcceptsMatchingWindowAndPid()
     ProviderAuthenticator authenticator(windowSource, credentialSource);
     const AuthenticationResult result = authenticator.authenticate(validRegistration(windowId));
     QVERIFY(result.accepted);
-    QCOMPARE(result.proof.window.windowId, windowId);
-    QCOMPARE(result.proof.focusGeneration, quint64(11));
+    QCOMPARE(result.proof->window().windowId, windowId);
+    QCOMPARE(result.proof->focusGeneration(), quint64(11));
 }
 
 void MenuOwnershipTests::authenticatorRejectsWhenNoActiveWindow()
@@ -134,6 +163,7 @@ void MenuOwnershipTests::authenticatorRejectsWhenNoActiveWindow()
     const AuthenticationResult result = authenticator.authenticate(validRegistration(QUuid::createUuid()));
     QVERIFY(!result.accepted);
     QCOMPARE(result.reasonCode, QStringLiteral("no-active-window"));
+    QVERIFY(!result.proof.has_value());
 }
 
 void MenuOwnershipTests::authenticatorRejectsWhenNotActiveWindow()
@@ -148,6 +178,7 @@ void MenuOwnershipTests::authenticatorRejectsWhenNotActiveWindow()
     const AuthenticationResult result = authenticator.authenticate(validRegistration(QUuid::createUuid()));
     QVERIFY(!result.accepted);
     QCOMPARE(result.reasonCode, QStringLiteral("not-active-window"));
+    QVERIFY(!result.proof.has_value());
 }
 
 void MenuOwnershipTests::authenticatorRejectsWhenCredentialUnavailable()
@@ -208,6 +239,58 @@ void MenuOwnershipTests::authenticatorRejectsInvalidRegistration()
     QCOMPARE(result.reasonCode, QStringLiteral("invalid-registration"));
 }
 
+void MenuOwnershipTests::authenticatorRejectsWellKnownProviderName()
+{
+    const QUuid windowId = QUuid::createUuid();
+    FakeActiveWindowSource windowSource;
+    windowSource.value = observation(windowId, 4242, 11);
+    FakeCredentialSource credentialSource;
+    // The credential seam would even resolve a well-known name, but the
+    // ownership boundary must refuse it: a well-known name can be re-owned
+    // later, which would silently change who the proof names.
+    credentialSource.knownPids.insert(QStringLiteral("com.example.Menu"), 4242);
+
+    ProviderAuthenticator authenticator(windowSource, credentialSource);
+    const AuthenticationResult result = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = QStringLiteral("com.example.Menu"),
+                                  .claimedProcessId = 4242});
+    QVERIFY(!result.accepted);
+    QCOMPARE(result.reasonCode, QStringLiteral("invalid-registration"));
+    QVERIFY(!result.proof.has_value());
+}
+
+void MenuOwnershipTests::authenticatorRejectsMalformedUniqueName()
+{
+    const QUuid windowId = QUuid::createUuid();
+    FakeActiveWindowSource windowSource;
+    windowSource.value = observation(windowId, 4242, 11);
+    FakeCredentialSource credentialSource;
+    credentialSource.knownPids.insert(QStringLiteral(":1..42"), 4242);
+
+    ProviderAuthenticator authenticator(windowSource, credentialSource);
+    const AuthenticationResult emptyElement = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = QStringLiteral(":1..42"),
+                                  .claimedProcessId = 4242});
+    QVERIFY(!emptyElement.accepted);
+    QCOMPARE(emptyElement.reasonCode, QStringLiteral("invalid-registration"));
+
+    const AuthenticationResult singleElement = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = QStringLiteral(":onlyelement"),
+                                  .claimedProcessId = 4242});
+    QVERIFY(!singleElement.accepted);
+    QCOMPARE(singleElement.reasonCode, QStringLiteral("invalid-registration"));
+
+    const AuthenticationResult illegalCharacter = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = QStringLiteral(":1.4 2"),
+                                  .claimedProcessId = 4242});
+    QVERIFY(!illegalCharacter.accepted);
+    QCOMPARE(illegalCharacter.reasonCode, QStringLiteral("invalid-registration"));
+}
+
 void MenuOwnershipTests::authenticatorRejectsFocusChangeDuringLookup()
 {
     const QUuid windowId = QUuid::createUuid();
@@ -218,7 +301,10 @@ void MenuOwnershipTests::authenticatorRejectsFocusChangeDuringLookup()
 
     class MutatingSource final : public ActiveWindowSource {
     public:
-        int calls = 0;
+        // AGENT-NOTE: activeWindow() is a const seam; a fake that must count
+        // observations marks the counter mutable rather than weakening the
+        // production contract to non-const.
+        mutable int calls = 0;
         QUuid windowId;
 
         [[nodiscard]] std::optional<ActiveWindowObservation> activeWindow() const override
@@ -251,10 +337,10 @@ void MenuOwnershipTests::authenticatorProofCarriesVerifiedFacts()
     QVERIFY(result.accepted);
     // The proof is the only adoption currency, so its fields must be exactly
     // the verified observations, never the raw claim's process id.
-    QCOMPARE(result.proof.window.windowId, windowId);
-    QCOMPARE(result.proof.window.processId, qint64(4242));
-    QCOMPARE(result.proof.providerUniqueName, QStringLiteral(":1.42"));
-    QCOMPARE(result.proof.focusGeneration, quint64(33));
+    QCOMPARE(result.proof->window().windowId, windowId);
+    QCOMPARE(result.proof->window().processId, qint64(4242));
+    QCOMPARE(result.proof->providerUniqueName(), QStringLiteral(":1.42"));
+    QCOMPARE(result.proof->focusGeneration(), quint64(33));
 }
 
 void MenuOwnershipTests::selectorStartsEmpty()
@@ -265,11 +351,12 @@ void MenuOwnershipTests::selectorStartsEmpty()
 
 void MenuOwnershipTests::selectorAdoptsOnlyProofs()
 {
-    // AGENT-NOTE: the API has no adopt(registration, window) overload; the
-    // type system forces the verified proof to be the adopted value.
+    // AGENT-NOTE: the API has no adopt(registration, window) overload and
+    // AuthenticatedProvider cannot be constructed outside the authenticator;
+    // the type system forces the verified proof to be the adopted value.
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const SelectedProvider selection = selector.current().value();
     QCOMPARE(selection.window.windowId, windowId);
     QCOMPARE(selection.providerUniqueName, QStringLiteral(":1.42"));
@@ -280,12 +367,12 @@ void MenuOwnershipTests::selectorAssignsFreshEpochForNewWindow()
 {
     ActiveProviderSelector selector;
     const QUuid firstWindow = QUuid::createUuid();
-    selector.adopt(authenticated(firstWindow, 11));
+    selector.adopt(issueProof(firstWindow, 11));
     const SelectedProvider firstSelection = selector.current().value();
     QCOMPARE(firstSelection.revision, quint64(1));
 
     const QUuid secondWindow = QUuid::createUuid();
-    selector.adopt(authenticated(secondWindow, 12));
+    selector.adopt(issueProof(secondWindow, 12));
     const SelectedProvider secondSelection = selector.current().value();
     QVERIFY(secondSelection.epoch != firstSelection.epoch);
     QCOMPARE(secondSelection.revision, quint64(1));
@@ -295,10 +382,10 @@ void MenuOwnershipTests::selectorKeepsEpochAndBumpsRevisionForSameWindow()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const QUuid epoch = selector.current()->epoch;
 
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const SelectedProvider selection = selector.current().value();
     QCOMPARE(selection.epoch, epoch);
     QCOMPARE(selection.revision, quint64(2));
@@ -308,7 +395,7 @@ void MenuOwnershipTests::selectorClearRemovesCurrent()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     QVERIFY(selector.current().has_value());
     selector.clear();
     QVERIFY(!selector.current().has_value());
@@ -318,7 +405,7 @@ void MenuOwnershipTests::selectorInvalidatesOnFocusGenerationChange()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     QVERIFY(selector.current().has_value());
 
     // Same generation: no-op.
@@ -346,7 +433,7 @@ void MenuOwnershipTests::invocationRejectsStaleWindow()
 {
     ActiveProviderSelector selector;
     const QUuid ownedWindow = QUuid::createUuid();
-    selector.adopt(authenticated(ownedWindow, 11));
+    selector.adopt(issueProof(ownedWindow, 11));
 
     const QUuid otherWindow = QUuid::createUuid();
     const Protocol::MenuTree tree = treeWithOneAction(otherWindow, QUuid::createUuid(), 1, true);
@@ -361,7 +448,7 @@ void MenuOwnershipTests::invocationRejectsStaleEpoch()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const Protocol::MenuTree tree = treeWithOneAction(windowId, QUuid::createUuid(), 1, true);
     // The request carries an epoch from before the current adoption.
     const InvocationRequest request{
@@ -375,8 +462,8 @@ void MenuOwnershipTests::invocationRejectsSameEpochStaleRevision()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
-    selector.adopt(authenticated(windowId, 11)); // same epoch, revision 2 now
+    selector.adopt(issueProof(windowId, 11));
+    selector.adopt(issueProof(windowId, 11)); // same epoch, revision 2 now
     const QUuid epoch = selector.current()->epoch;
 
     // The tree and request both describe the still-earlier revision 1
@@ -393,7 +480,7 @@ void MenuOwnershipTests::invocationRejectsStaleTree()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const quint64 revision = selector.current()->revision;
     // The request matches the current lineage, but the tree it is paired with
     // was published under an older epoch; the action must not resolve.
@@ -410,7 +497,7 @@ void MenuOwnershipTests::invocationRejectsUnknownAction()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const QUuid epoch = selector.current()->epoch;
     const quint64 revision = selector.current()->revision;
     const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, true);
@@ -425,7 +512,7 @@ void MenuOwnershipTests::invocationRejectsSubmenu()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const QUuid epoch = selector.current()->epoch;
     const quint64 revision = selector.current()->revision;
 
@@ -450,7 +537,7 @@ void MenuOwnershipTests::invocationRejectsDisabledAction()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const QUuid epoch = selector.current()->epoch;
     const quint64 revision = selector.current()->revision;
     const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, /*enabled=*/false);
@@ -465,7 +552,7 @@ void MenuOwnershipTests::invocationAcceptsCurrentLineage()
 {
     ActiveProviderSelector selector;
     const QUuid windowId = QUuid::createUuid();
-    selector.adopt(authenticated(windowId, 11));
+    selector.adopt(issueProof(windowId, 11));
     const QUuid epoch = selector.current()->epoch;
     const quint64 revision = selector.current()->revision;
     const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, /*enabled=*/true);

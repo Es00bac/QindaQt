@@ -33,6 +33,11 @@ Item {
     Component {
         id: appletComponent
         GlobalMenuComponents.GlobalMenuApplet {
+            // Deterministic host geometry: tests override only the axis they
+            // constrain. 360 wide fits three realistic entries; 28 tall fits
+            // one horizontal row.
+            width: 360
+            height: 28
             access: fakeAccess
             theme: testRoot.theme
         }
@@ -118,6 +123,8 @@ Item {
             compare(submenuEntry.Accessible.role, Accessible.MenuItem);
             mouseClick(submenuEntry);
             compare(fakeAccess.activateCalls, 0);
+            submenuEntry.pressAction();
+            compare(fakeAccess.activateCalls, 0);
         }
 
         function test_clickingEnabledActionActivatesById() {
@@ -168,6 +175,25 @@ Item {
             compare(fakeAccess.activateCalls, 2);
         }
 
+        function test_keyboardFocusIsReachableAndSubmenuNeverActivates() {
+            fakeAccess.available = true;
+            fakeAccess.items = realisticMenuItems();
+            const applet = createTemporaryObject(appletComponent, testRoot);
+            const entries = [];
+            collectEntries(applet, entries);
+            compare(entries.length, 3);
+            // Every entry is keyboard-reachable through Tab focus, and focus
+            // walks the presentation order deterministically.
+            for (let i = 0; i < entries.length; ++i) {
+                entries[i].forceActiveFocus(Qt.TabFocusReason);
+                verify(entries[i].activeFocus);
+            }
+            entries[0].forceActiveFocus(Qt.TabFocusReason);
+            keyClick(entries[0], Qt.Key_Space);
+            // The first entry is a submenu: focusable, but never activating.
+            compare(fakeAccess.activateCalls, 0);
+        }
+
         function test_keyboardDoesNotActivateDisabledOrSubmenuEntries() {
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
@@ -188,21 +214,65 @@ Item {
             compare(fakeAccess.activateCalls, 0);
         }
 
-        function test_verticalLayoutStacksEntries() {
+        function test_accessiblePressActivationPath() {
+            // pressAction() is the single named implementation shared by
+            // pointer click, keyboard activation, and the AT-invoked
+            // Accessible.onPressAction handler.
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
-            const applet = createTemporaryObject(
-                               appletComponent, testRoot, { "vertical": true });
-            verify(applet !== null);
-            const layout = findChild(applet, "globalMenuVerticalLayout");
-            verify(layout !== null);
-            verify(layout.visible);
+            fakeAccess.items.push(
+                { "id": "quitAction", "kind": "action", "text": "Quit",
+                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false });
+            const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
-            collectEntries(layout, entries);
+            collectEntries(applet, entries);
+            compare(entries.length, 4);
+
+            entries[2].pressAction(); // enabled action: About
+            compare(fakeAccess.activateCalls, 1);
+            compare(fakeAccess.lastActivatedId, "aboutAction");
+
+            entries[0].pressAction(); // submenu: presented, non-activating
+            compare(fakeAccess.activateCalls, 1);
+
+            entries[3].pressAction(); // disabled action
+            compare(fakeAccess.activateCalls, 1);
+        }
+
+        function test_checkedStateIsBoundToButtonAndAccessibleState() {
+            fakeAccess.available = true;
+            fakeAccess.items = [
+                { "id": "wordWrapAction", "kind": "action", "text": "Word Wrap",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": true },
+                { "id": "lineNumbersAction", "kind": "action", "text": "Line Numbers",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": false },
+                { "id": "plainAction", "kind": "action", "text": "Plain",
+                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
+            ];
+            const applet = createTemporaryObject(appletComponent, testRoot);
+            const entries = [];
+            collectEntries(applet, entries);
             compare(entries.length, 3);
-            // Stacked vertically: each entry starts below the previous one.
-            verify(entries[1].y >= entries[0].y + entries[0].height);
-            verify(entries[2].y >= entries[1].y + entries[1].height);
+
+            verify(entries[0].checkable);
+            verify(entries[0].checked);
+            verify(entries[0].Accessible.checkable);
+            verify(entries[0].Accessible.checked);
+
+            verify(entries[1].checkable);
+            verify(!entries[1].checked);
+            verify(entries[1].Accessible.checkable);
+            verify(!entries[1].Accessible.checked);
+
+            verify(!entries[2].checkable);
+            verify(!entries[2].checked);
+            verify(!entries[2].Accessible.checkable);
+
+            // An accessible press on the checked item still routes through
+            // the one activation path; toggling state stays provider-owned.
+            entries[0].pressAction();
+            compare(fakeAccess.activateCalls, 1);
+            compare(fakeAccess.lastActivatedId, "wordWrapAction");
         }
 
         function test_horizontalIsDefaultLayout() {
@@ -218,26 +288,6 @@ Item {
             compare(entries.length, 3);
             compare(entries[0].y, entries[1].y);
             compare(entries[1].y, entries[2].y);
-        }
-
-        function test_overflowCollapsesIntoBoundedIndicator() {
-            fakeAccess.available = true;
-            const many = [];
-            for (let i = 0; i < 12; ++i) {
-                many.push({ "id": "action" + i, "kind": "action", "text": "Item " + i,
-                            "mnemonicIndex": -1, "enabled": true, "checkable": false,
-                            "checked": false });
-            }
-            fakeAccess.items = many;
-            const applet = createTemporaryObject(appletComponent, testRoot);
-            const indicator = findChild(applet, "globalMenuOverflowIndicator");
-            verify(indicator !== null);
-            verify(indicator.visible);
-            compare(indicator.text, "+4");
-            const entries = [];
-            collectEntries(applet, entries);
-            compare(entries.length, 8);
-            verify(applet.clip);
         }
 
         function test_noOverflowHasNoIndicator() {

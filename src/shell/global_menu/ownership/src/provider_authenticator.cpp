@@ -4,11 +4,53 @@
 
 #include <qindaqt/shell/global_menu/protocol/menu_limits.h>
 
+#include <utility>
+
 namespace QindaQt::Shell::GlobalMenu::Ownership
 {
 
 namespace
 {
+
+// AGENT-CONTRACT: the registration's provider identity must be a D-Bus
+// *unique* name (":1.42" shape) — never a well-known name. Unique names are
+// assigned by the bus daemon for the lifetime of one connection, so the
+// credential lookup below proves the registering process owns the identity;
+// a well-known name can be re-owned later, which would silently change who
+// the issued proof names.
+bool isValidUniqueName(const QString &name)
+{
+    if (name.isEmpty() || !name.startsWith(u':')) {
+        return false;
+    }
+    if (name.toUtf8().size() > Protocol::kMaxProviderUniqueNameUtf8Bytes) {
+        return false;
+    }
+    const QString body = name.sliced(1);
+    int elements = 0;
+    qsizetype elementStart = 0;
+    for (qsizetype i = 0; i <= body.size(); ++i) {
+        if (i == body.size() || body.at(i) == u'.') {
+            const qsizetype elementLength = i - elementStart;
+            if (elementLength == 0) {
+                // Empty element: ":1..42", ":.42", or a trailing dot.
+                return false;
+            }
+            ++elements;
+            elementStart = i + 1;
+            continue;
+        }
+        const QChar c = body.at(i);
+        const bool allowed = (c >= u'0' && c <= u'9') || (c >= u'a' && c <= u'z')
+            || (c >= u'A' && c <= u'Z') || c == u'_';
+        if (!allowed) {
+            return false;
+        }
+    }
+    // D-Bus unique names carry at least two elements (":1.42"), which also
+    // excludes a bare ":" prefix with no identity at all.
+    return elements >= 2;
+}
 
 bool isValidRegistration(const MenuProviderRegistration &registration)
 {
@@ -18,11 +60,18 @@ bool isValidRegistration(const MenuProviderRegistration &registration)
     if (registration.claimedProcessId <= 0) {
         return false;
     }
-    const QString &name = registration.providerUniqueName;
-    return !name.isEmpty() && name.toUtf8().size() <= Protocol::kMaxProviderUniqueNameUtf8Bytes;
+    return isValidUniqueName(registration.providerUniqueName);
 }
 
 } // namespace
+
+AuthenticatedProvider::AuthenticatedProvider(WindowIdentity window, QString providerUniqueName,
+                                             quint64 focusGeneration)
+    : m_window(window)
+    , m_providerUniqueName(std::move(providerUniqueName))
+    , m_focusGeneration(focusGeneration)
+{
+}
 
 ProviderAuthenticator::ProviderAuthenticator(const ActiveWindowSource &activeWindowSource,
                                              const CredentialSource &credentialSource)
@@ -73,11 +122,9 @@ AuthenticationResult ProviderAuthenticator::authenticate(
 
     return AuthenticationResult{.accepted = true,
                                  .reasonCode = QString(),
-                                 .proof = AuthenticatedProvider{.window = before->window,
-                                                                 .providerUniqueName =
-                                                                     registration.providerUniqueName,
-                                                                 .focusGeneration =
-                                                                     before->focusGeneration}};
+                                 .proof = AuthenticatedProvider{
+                                     before->window, registration.providerUniqueName,
+                                     before->focusGeneration}};
 }
 
 } // namespace QindaQt::Shell::GlobalMenu::Ownership

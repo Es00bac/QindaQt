@@ -7,15 +7,19 @@ namespace QindaQt::Shell::GlobalMenu::Ownership
 
 void ActiveProviderSelector::adopt(const AuthenticatedProvider &proof)
 {
-    const bool sameWindowLineage = m_current && m_current->window.windowId == proof.window.windowId;
+    // AGENT-GUARD: `proof` is opaque and authenticator-issued, so the fields
+    // read here are exactly the verified facts — no caller-supplied window or
+    // process id can enter the selection.
+    const QUuid ownerWindowId = proof.window().windowId;
+    const bool sameWindowLineage = m_current && m_current->window.windowId == ownerWindowId;
     const QUuid epoch = sameWindowLineage ? m_current->epoch : QUuid::createUuid();
     const quint64 revision = sameWindowLineage ? m_current->revision + 1 : 1;
 
-    m_current = SelectedProvider{.window = proof.window,
-                                  .providerUniqueName = proof.providerUniqueName,
+    m_current = SelectedProvider{.window = proof.window(),
+                                  .providerUniqueName = proof.providerUniqueName(),
                                   .epoch = epoch,
                                   .revision = revision,
-                                  .focusGeneration = proof.focusGeneration};
+                                  .focusGeneration = proof.focusGeneration()};
 }
 
 void ActiveProviderSelector::clear()

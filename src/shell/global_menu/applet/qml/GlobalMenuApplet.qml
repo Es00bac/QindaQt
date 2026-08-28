@@ -10,30 +10,72 @@ import QtQuick.Controls
 // global menu.
 //
 // AGENT-GUARD: top-level "submenu" entries must stay visibly present but
-// non-activating (disabled, no pointer cursor, no activation call) — G0 has
-// no submenu popup, and rendering them as clickable fakes would pretend an
-// interaction that does not exist. Only enabled "action" entries activate.
+// non-activating (disabled, no activation call) — G0 has no submenu popup,
+// and rendering them as clickable fakes would pretend an interaction that
+// does not exist. Only enabled "action" entries activate.
 Item {
     id: root
 
     required property var access
     required property var theme
     property bool vertical: false
-    // Bounded narrow-panel behavior: entries beyond the limit collapse into a
-    // muted "+N" indicator, and the root clips so a constrained panel can
-    // never paint past its assigned geometry.
+    // Hard cap on presented entries. Values below 1 are clamped so a negative
+    // count can never turn slice()'s negative-index semantics into "show
+    // everything".
     property int maximumVisibleEntries: 8
+    readonly property int clampedEntryLimit: Math.max(1, Math.floor(maximumVisibleEntries))
     readonly property var colors: theme.colors ?? ({})
     readonly property bool available: access !== null && Boolean(access.available)
     readonly property var topLevelItems: available ? (access.items ?? []) : []
-    readonly property var visibleEntries: topLevelItems.slice(0, maximumVisibleEntries)
+
+    // AGENT-NOTE: geometry awareness is a deterministic estimate (~7 px per
+    // glyph at the 12 px label font plus padding), not a rendering-dependent
+    // measurement, so the same item set always collapses identically for the
+    // tests and for production panels of the same assigned size.
+    function estimatedEntryWidth(item) {
+        return Math.max(24, String(item.text ?? "").length * 7 + 24);
+    }
+
+    // Entries that fit the assigned main-axis extent while reserving room for
+    // the +N indicator; at least one entry is always presented so the applet
+    // never renders as bare overflow.
+    function horizontalLimitFor(assignedWidth) {
+        const budget = assignedWidth - 40;
+        let used = 0;
+        let count = 0;
+        for (let i = 0; i < topLevelItems.length; ++i) {
+            const need = estimatedEntryWidth(topLevelItems[i]) + root.spacing;
+            if (used + need > budget) {
+                break;
+            }
+            used += need;
+            ++count;
+        }
+        return Math.max(1, count);
+    }
+
+    function verticalLimitFor(assignedHeight) {
+        const perEntry = 28;
+        const indicatorReserve = topLevelItems.length > 0 ? 28 : 0;
+        return Math.max(1, Math.floor((assignedHeight - indicatorReserve) / perEntry));
+    }
+
+    readonly property int effectiveLimit: Math.min(
+        clampedEntryLimit, vertical ? verticalLimitFor(height) : horizontalLimitFor(width))
+    readonly property var visibleEntries: topLevelItems.slice(0, effectiveLimit)
     readonly property int overflowCount: topLevelItems.length - visibleEntries.length
 
     objectName: "globalMenuApplet"
     implicitWidth: vertical ? 40
                  : available ? row.implicitWidth + (overflowCount > 0 ? overflowIndicator.implicitWidth + spacing : 0)
                  : placeholder.implicitWidth + 16
-    implicitHeight: vertical ? (available ? verticalLayout.implicitHeight : 28) : 28
+    // AGENT-GUARD: the +N indicator is anchored below the vertical column, so
+    // vertical implicit height must include it or the clipped root geometry
+    // would hide the affordance the limit exists to surface.
+    implicitHeight: vertical ? (available ? verticalLayout.implicitHeight
+                                   + (overflowCount > 0 ? overflowIndicator.implicitHeight + 4 : 0)
+                                   : 28)
+                 : 28
     clip: true
     Accessible.role: Accessible.MenuBar
     Accessible.name: available ? qsTr("Application menu") : qsTr("Menu unavailable")
@@ -51,8 +93,12 @@ Item {
         objectName: "globalMenuTopLevelItem"
         focusPolicy: Qt.TabFocus
         enabled: itemEnabled
+        checkable: Boolean(modelData.checkable ?? false)
+        checked: Boolean(modelData.checked ?? false)
         Accessible.role: Accessible.MenuItem
         Accessible.focusable: true
+        Accessible.checkable: Boolean(modelData.checkable ?? false)
+        Accessible.checked: Boolean(modelData.checked ?? false)
         Accessible.name: String(modelData.text ?? "") + (isAction ? "" : qsTr(" (submenu unavailable)"))
 
         contentItem: Text {
@@ -69,16 +115,19 @@ Item {
 
         background: Item {}
 
-        // AGENT-GUARD: AbstractButton suppresses clicked() and keyboard
-        // activation while disabled, but an assistive-technology press action
-        // has no such gate; the explicit enabled check keeps non-activating
-        // entries (disabled actions, G0 submenus) honest.
-        onClicked: root.access.activate(entry.modelData.id)
-        Accessible.onPressAction: {
+        // AGENT-GUARD: one named activation path is shared by pointer click,
+        // keyboard activation, and assistive-technology press. AbstractButton
+        // suppresses clicked() and keyboard activation while disabled, but an
+        // AT press has no such gate; the explicit enabled check keeps
+        // non-activating entries (disabled actions, G0 submenus) honest.
+        function pressAction() {
             if (entry.enabled) {
                 root.access.activate(entry.modelData.id);
             }
         }
+
+        onClicked: entry.pressAction()
+        Accessible.onPressAction: entry.pressAction()
     }
 
     Text {
@@ -126,6 +175,8 @@ Item {
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"
         font.pixelSize: 12
+        Accessible.role: Accessible.StaticText
+        Accessible.name: qsTr("%1 more menu entries").arg(root.overflowCount)
         anchors.left: root.vertical ? undefined : row.right
         anchors.leftMargin: root.spacing
         anchors.verticalCenter: root.vertical ? undefined : row.verticalCenter

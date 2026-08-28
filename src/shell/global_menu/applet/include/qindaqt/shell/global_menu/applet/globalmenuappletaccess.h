@@ -16,6 +16,17 @@ namespace QindaQt::Shell::GlobalMenu
 // re-checked against the current tree here before it leaves this facade. G0
 // wires no live publisher, so `available` stays false and `items` stays
 // empty until a later milestone's transport calls publishTree().
+//
+// AGENT-CONTRACT (threading): an instance lives on, and all publishers and
+// QML must use it on, the Qt GUI thread; there is no internal locking. A
+// publisher on another thread must marshal through the GUI thread first.
+//
+// AGENT-CONTRACT (G1 lineage handoff): `activationRequested` carries only an
+// action id by design. Before executing anything, the shell-side consumer
+// must capture the window/epoch/revision lineage it currently observed for
+// this facade and run Ownership::InvocationGuard against that captured
+// lineage — looking up the action in whatever tree is "current" at execution
+// time would recreate the request/content race the guard exists to close.
 class GlobalMenuAppletAccess final : public QObject
 {
     Q_OBJECT

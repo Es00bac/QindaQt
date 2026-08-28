@@ -22,6 +22,15 @@ namespace
 using Protocol::MenuItem;
 using Protocol::MenuItemKind;
 
+// Stable defect diagnostics published through MenuSnapshot::defectCode.
+// AGENT-NOTE: the distinct codes let tests and support tell hostile menu
+// sizes apart from object-lifetime losses; keep them stable.
+inline constexpr auto kDefectTooDeep = "too-deep";
+inline constexpr auto kDefectTooManyChildren = "too-many-children";
+inline constexpr auto kDefectTooManyItems = "too-many-items";
+inline constexpr auto kDefectSubmenuCycle = "submenu-cycle";
+inline constexpr auto kDefectSourceDestroyed = "source-destroyed";
+
 // Splits Qt's mnemonic convention ('&x' marks 'x' as the mnemonic, '&&' is a
 // literal ampersand) into plain display text plus a UTF-16 offset, matching
 // the canonical model's toolkit-neutral shape.
@@ -66,20 +75,24 @@ QString radioGroupIdFor(const QAction *action)
 }
 
 // Shared mutable traversal budget/state. AGENT-GUARD: every budget breach
-// must abandon the snapshot as incomplete instead of trimming; the exporter
-// treats an incomplete snapshot as a whole-tree rejection.
+// records its distinct defect code and abandons the snapshot as incomplete
+// instead of trimming; the exporter treats an incomplete snapshot as a
+// whole-tree rejection.
 struct WalkState {
     int totalItems = 0;
     QSet<const QMenu *> visitedMenus;
+    QString defectCode;
 };
 
 bool buildItem(const QAction *action, int depth, int &fallbackIdCounter, WalkState &state,
                MenuItem &out)
 {
     if (++state.totalItems > Protocol::kMaxTotalItems) {
+        state.defectCode = QLatin1String(kDefectTooManyItems);
         return false;
     }
     if (depth > Protocol::kMaxDepth) {
+        state.defectCode = QLatin1String(kDefectTooDeep);
         return false;
     }
 
@@ -130,12 +143,14 @@ bool buildItem(const QAction *action, int depth, int &fallbackIdCounter, WalkSta
     // stopping at the revisit would publish a truncated prefix. Fail the
     // whole snapshot instead.
     if (state.visitedMenus.contains(submenu)) {
+        state.defectCode = QLatin1String(kDefectSubmenuCycle);
         return false;
     }
     state.visitedMenus.insert(submenu);
 
     const QList<QAction *> childActions = submenu->actions();
     if (childActions.size() > Protocol::kMaxChildrenPerItem) {
+        state.defectCode = QLatin1String(kDefectTooManyChildren);
         return false;
     }
     for (const QAction *child : childActions) {
@@ -163,6 +178,11 @@ Exporter::MenuSnapshot QMenuBarMenuSource::snapshot() const
     snapshot.tree.ownerWindowId = m_ownerWindowId;
 
     if (!m_menuBar) {
+        // AGENT-GUARD: a destroyed or not-yet-observable menu bar must never
+        // read as a complete EMPTY application menu; the exporter would
+        // otherwise replace its last good tree with authoritative emptiness.
+        snapshot.complete = false;
+        snapshot.defectCode = QLatin1String(kDefectSourceDestroyed);
         return snapshot;
     }
 
@@ -171,14 +191,14 @@ Exporter::MenuSnapshot QMenuBarMenuSource::snapshot() const
     const QList<QAction *> topLevel = m_menuBar->actions();
     if (topLevel.size() > Protocol::kMaxChildrenPerItem) {
         snapshot.complete = false;
-        snapshot.defectCode = QStringLiteral("too-many-children");
+        snapshot.defectCode = QLatin1String(kDefectTooManyChildren);
         return snapshot;
     }
     for (const QAction *action : topLevel) {
         MenuItem item;
         if (!buildItem(action, /*depth=*/1, fallbackIdCounter, state, item)) {
             snapshot.complete = false;
-            snapshot.defectCode = QStringLiteral("menu-traversal-exceeded-bounds");
+            snapshot.defectCode = state.defectCode;
             snapshot.tree.items.clear();
             return snapshot;
         }

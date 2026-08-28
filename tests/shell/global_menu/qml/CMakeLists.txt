@@ -14,3 +14,14 @@ set_tests_properties(
     qindaqt.global-menu-applet-qml-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
+
+add_test(
+    NAME qindaqt.global-menu-applet-qml-overflow-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuAppletOverflow.qml"
+)
+set_tests_properties(
+    qindaqt.global-menu-applet-qml-overflow-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)

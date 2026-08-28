@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#include <qindaqt/shell/global_menu/exporter/menu_exporter.h>
 #include <qindaqt/shell/global_menu/exporter/menu_source.h>
 #include <qindaqt/shell/global_menu/protocol/menu_item_lookup.h>
 #include <qindaqt/shell/global_menu/protocol/menu_limits.h>
@@ -12,7 +13,12 @@
 #include <QMenuBar>
 #include <QTest>
 
+#include <QtCore/QHash>
+
+#include <optional>
+
 using namespace QindaQt::Shell::GlobalMenu;
+using namespace QindaQt::Shell::GlobalMenu::Exporter;
 using namespace QindaQt::Shell::GlobalMenu::Protocol;
 using namespace QindaQt::Shell::GlobalMenu::QtWidgetsAdapter;
 
@@ -79,6 +85,25 @@ QMenuBar *buildFixtureMenuBar(QObject *parent)
 
 } // namespace
 
+namespace {
+
+// Backs the exporter's lineage seam for the retention test below.
+class FixedLineageSource final : public ExportLineageSource {
+public:
+    QHash<QUuid, ExportLineage> lineages;
+
+    [[nodiscard]] std::optional<ExportLineage> lineageFor(const QUuid &ownerWindowId) const override
+    {
+        const auto it = lineages.constFind(ownerWindowId);
+        if (it == lineages.constEnd()) {
+            return std::nullopt;
+        }
+        return *it;
+    }
+};
+
+} // namespace
+
 class QMenuBarMenuSourceTests final : public QObject {
     Q_OBJECT
 
@@ -90,7 +115,8 @@ private Q_SLOTS:
     void marksInvisibleActionAsInvisible();
     void mapsExclusiveActionGroupToSameRadioGroup();
     void translatesSeparatorCanonically();
-    void snapshotIsEmptyAfterMenuBarDestroyed();
+    void destroyedMenuBarIsIncompleteNotAnEmptyTruth();
+    void destroyedSourceKeepsLastGoodTreeThroughExporter();
     void overflowDepthIsIncompleteNotTruncated();
     void overflowSiblingsAreIncompleteNotTruncated();
     void overflowTotalItemsAreIncompleteNotTruncated();
@@ -197,14 +223,41 @@ void QMenuBarMenuSourceTests::translatesSeparatorCanonically()
     QVERIFY(sawSeparator);
 }
 
-void QMenuBarMenuSourceTests::snapshotIsEmptyAfterMenuBarDestroyed()
+void QMenuBarMenuSourceTests::destroyedMenuBarIsIncompleteNotAnEmptyTruth()
 {
     auto *menuBar = new QMenuBar();
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     delete menuBar;
+    // A disappeared source must report incompleteness with its stable
+    // lifetime defect: a complete EMPTY tree would let an exporter replace
+    // its last good menu with authoritative emptiness.
     const MenuSnapshot snapshot = source.snapshot();
-    QVERIFY(snapshot.complete);
-    QVERIFY(snapshot.tree.items.isEmpty());
+    QVERIFY(!snapshot.complete);
+    QCOMPARE(snapshot.defectCode, QStringLiteral("source-destroyed"));
+}
+
+void QMenuBarMenuSourceTests::destroyedSourceKeepsLastGoodTreeThroughExporter()
+{
+    const QUuid windowId = QUuid::createUuid();
+    auto *menuBar = buildFixtureMenuBar(this);
+    QMenuBarMenuSource adapter(menuBar, windowId);
+
+    FixedLineageSource lineages;
+    const QUuid epoch = QUuid::createUuid();
+    lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 1});
+
+    MenuExporter exporter(adapter, lineages);
+    const ExportResult first = exporter.refresh();
+    QCOMPARE(first.outcome, ExportOutcome::Published);
+    const MenuTree goodTree = exporter.lastAccepted().value();
+
+    delete menuBar;
+    menuBar = nullptr;
+
+    const ExportResult second = exporter.refresh();
+    QCOMPARE(second.outcome, ExportOutcome::RejectedIncomplete);
+    QCOMPARE(second.defectCode, QStringLiteral("source-destroyed"));
+    QCOMPARE(exporter.lastAccepted().value(), goodTree);
 }
 
 void QMenuBarMenuSourceTests::overflowDepthIsIncompleteNotTruncated()
@@ -228,6 +281,7 @@ void QMenuBarMenuSourceTests::overflowDepthIsIncompleteNotTruncated()
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuSnapshot snapshot = source.snapshot();
     QVERIFY(!snapshot.complete);
+    QCOMPARE(snapshot.defectCode, QStringLiteral("too-deep"));
     QVERIFY(snapshot.tree.items.isEmpty());
 }
 
@@ -247,6 +301,7 @@ void QMenuBarMenuSourceTests::overflowSiblingsAreIncompleteNotTruncated()
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuSnapshot snapshot = source.snapshot();
     QVERIFY(!snapshot.complete);
+    QCOMPARE(snapshot.defectCode, QStringLiteral("too-many-children"));
     QVERIFY(snapshot.tree.items.isEmpty());
 }
 
@@ -270,6 +325,7 @@ void QMenuBarMenuSourceTests::overflowTotalItemsAreIncompleteNotTruncated()
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuSnapshot snapshot = source.snapshot();
     QVERIFY(!snapshot.complete);
+    QCOMPARE(snapshot.defectCode, QStringLiteral("too-many-items"));
     QVERIFY(snapshot.tree.items.isEmpty());
 }
 
@@ -291,6 +347,7 @@ void QMenuBarMenuSourceTests::submenuCycleIsIncomplete()
     QMenuBarMenuSource source(menuBar, QUuid::createUuid());
     const MenuSnapshot snapshot = source.snapshot();
     QVERIFY(!snapshot.complete);
+    QCOMPARE(snapshot.defectCode, QStringLiteral("submenu-cycle"));
     QVERIFY(snapshot.tree.items.isEmpty());
 }
 
