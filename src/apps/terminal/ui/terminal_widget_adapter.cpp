@@ -37,6 +37,22 @@ constexpr qsizetype kMaxWidgetOutputBufferBytes = 64 * 1024;
 // The comment claims a bounded sweep, not "every descriptor", on purpose.
 constexpr int kChildFdScanLimit = 4096;
 
+bool hasSemanticSelection(const QString &selection) {
+  // AGENT-GUARD (qtermwidget 2.4 live behavior): Select All over a pristine
+  // grid returns one LF even though no cell contains user-visible content.
+  // Treat only line separators as qtermwidget's structural row encoding;
+  // spaces and tabs remain copyable because they can be intentional terminal
+  // output. See docs/wiki/apps/terminal.md#action-and-accessibility-contract.
+  for (const QChar character : selection) {
+    if (character != QLatin1Char('\n') && character != QLatin1Char('\r') &&
+        character != QChar::LineSeparator &&
+        character != QChar::ParagraphSeparator) {
+      return true;
+    }
+  }
+  return false;
+}
+
 struct ExecStrings {
   QByteArray program;
   std::vector<QByteArray> arguments;
@@ -263,9 +279,14 @@ void TerminalWidgetAdapter::applyAppearance() {
       QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
   if (!cacheDirectory.isEmpty() && QDir().mkpath(cacheDirectory)) {
     static int instanceCounter = 0;
-    const QString baseName = QStringLiteral("qindaqt-terminal-scheme-%1-%2.ini")
-                                 .arg(::getpid())
-                                 .arg(++instanceCounter);
+    // AGENT-CONTRACT (qtermwidget 2.4): setColorScheme(path) attempts a
+    // custom-file load only when the final path ends in `.colorscheme`.
+    // Another extension silently selects its built-in white default even
+    // when the file exists and contains a valid Konsole document.
+    const QString baseName =
+        QStringLiteral("qindaqt-terminal-scheme-%1-%2.colorscheme")
+            .arg(::getpid())
+            .arg(++instanceCounter);
     const QString targetPath = QDir(cacheDirectory).filePath(baseName);
     const QString temporaryPath = targetPath + QStringLiteral(".tmp");
     {
@@ -503,7 +524,7 @@ bool TerminalWidgetAdapter::hasSelectedText() const {
   }
   const QString selection =
       const_cast<QTermWidget *>(m_widget)->selectedText(false);
-  return !selection.isEmpty();
+  return hasSemanticSelection(selection);
 }
 
 void TerminalWidgetAdapter::sendTextToSession(const QString &text) {

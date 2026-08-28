@@ -80,13 +80,21 @@ void TerminalAppearanceTest::
         TerminalColorSchemeDocument::render(appearanceForTheme(themeId));
     QVERIFY(document.contains(QLatin1String("[Background]\n")));
     QVERIFY(document.contains(QLatin1String("[Foreground]\n")));
-    for (int index = 0; index < 16; ++index) {
+    for (int index = 0; index < 8; ++index) {
       const QString section =
           QStringLiteral("[Color%1]\n").arg(index);
       QVERIFY2(document.contains(section),
                qPrintable(QStringLiteral("%1 missing %2")
                               .arg(themeId, section)));
+      const QString intenseSection =
+          QStringLiteral("[Color%1Intense]\n").arg(index);
+      QVERIFY2(document.contains(intenseSection),
+               qPrintable(QStringLiteral("%1 missing %2")
+                              .arg(themeId, intenseSection)));
     }
+    QVERIFY(document.contains(
+        QLatin1String("[General]\nDescription=QindaQt generated scheme\n")));
+    QVERIFY(!document.contains(QLatin1String("[Color8]\n")));
     // Each section is followed by Color keys with r,g,b decimal triples.
     QVERIFY(document.contains(QLatin1String("Color=")));
     QVERIFY(!document.contains(QLatin1Char('#')));

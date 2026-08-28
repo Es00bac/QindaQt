@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# The production adapter is a static library whose private qtermwidget link is
+# represented as a link-only final-consumer requirement. Re-import the same
+# pinned target in this sibling directory so the one real-adapter test can
+# resolve that requirement without leaking headers into support tests.
+find_package(qtermwidget6 2.4...<2.5 REQUIRED)
+
 function(qindaqt_add_terminal_test target source test_name)
     qt_add_executable(${target} ${source})
     target_link_libraries(${target} PRIVATE qindaqt_terminal_support Qt6::Test)
@@ -49,6 +55,36 @@ qindaqt_add_terminal_test(
 target_compile_definitions(
     qindaqt_terminal_window_tests
     PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+
+# This is intentionally the only focused test that links the production
+# qtermwidget adapter. It locks down custom-scheme lookup/application and the
+# real widget's blank-grid selection representation; fakes cannot reproduce
+# either upstream boundary.
+qt_add_executable(
+    qindaqt_terminal_widget_adapter_tests
+    tst_terminal_widget_adapter.cpp
+)
+target_link_libraries(
+    qindaqt_terminal_widget_adapter_tests
+    PRIVATE qindaqt_terminal_adapter Qt6::Test
+)
+target_compile_features(qindaqt_terminal_widget_adapter_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_terminal_widget_adapter_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_terminal_widget_adapter_tests)
+target_compile_definitions(
+    qindaqt_terminal_widget_adapter_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+add_test(
+    NAME qindaqt.terminal-widget-adapter-offscreen
+    COMMAND qindaqt_terminal_widget_adapter_tests
+)
+set_tests_properties(
+    qindaqt.terminal-widget-adapter-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 add_test(
