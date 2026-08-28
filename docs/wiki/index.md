@@ -61,6 +61,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, and deterministic transaction model;
   its runtime service and compositor adapter are later milestones.
+- [Display client](architecture/display-client.md) records the exact-owner
+  asynchronous Display1 consumer, atomic publication rules, mutation result
+  fencing, and server-projected reversible transaction coordinator.
 - [Display color model](architecture/display-color-model.md) records the pure
   Display Color C0 values, validated ICC descriptor metadata, deterministic
   catalog and assignment-intent evaluation, and fail-closed snapshot lineage;

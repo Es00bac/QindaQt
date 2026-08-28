@@ -27,6 +27,13 @@ target_link_libraries(
     qindaqt_display_service_model_tests
     PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
 )
+# The model row pins the fail-closed pure transaction-summary projection in
+# the module's private header, mirroring the deployment row's use of source
+# data. It is not installed public API.
+target_include_directories(
+    qindaqt_display_service_model_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/display_service/src"
+)
 qindaqt_enable_warnings(qindaqt_display_service_model_tests)
 add_test(
     NAME qindaqt.display-service-model

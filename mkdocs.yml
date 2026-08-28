@@ -28,6 +28,7 @@ nav:
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
       - Display service: architecture/display-service.md
+      - Display client: architecture/display-client.md
       - Display color model: architecture/display-color-model.md
       - Audio service: architecture/audio-service.md
       - Bluetooth service: architecture/bluetooth-service.md

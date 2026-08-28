@@ -167,8 +167,13 @@ The installed XML exports `GetSnapshot`, `Stage(s, Candidate)`, `Preview(s)`,
 `Confirm(s)`, and `Cancel(s)`. Mutators return `OperationResult`. `Changed(s,
 t, b)` carries epoch, revision, and availability as a complete-read
 invalidation hint; clients must call `GetSnapshot` and never reconstruct output
-state from signal order. When no accepted inventory exists, `GetSnapshot` and
-mutators fail with `org.qindaqt.Display1.Error.Unavailable`; they never return a
+state from signal order. `GetSnapshot` carries the resident's active
+transaction as at most one validated summary projected from the machine view
+with the exact field mapping and fail-closed rule fixed in
+[Display service](../architecture/display-service.md); confirmation readiness
+is read from that summary, never inferred from a Preview result. When no
+accepted inventory exists, `GetSnapshot` and mutators fail with
+`org.qindaqt.Display1.Error.Unavailable`; they never return a
 plausible revision-zero snapshot or invalid result value.
 
 The current inventory adapter calls `org.qindaqt.Compositor1.Outputs` on its
@@ -398,10 +403,10 @@ qualification.
 | Invalid transition preservation | `qindaqt.display-transaction-invalid-ordering`: wrong transaction, recovery, callback, observation, confirmation, and settle inputs across all twelve states preserve view, snapshot, active journal, and port effects exactly |
 | Journal bytes | `qindaqt.display-transaction-journal`: invariants, canonical round-trip, versions, torn/trailing/oversized bytes, no partial destination |
 | Resident inventory adapter | `qindaqt.display-service-inventory`: exact owner/schema/generation JSON, bounds, privacy-preserving connector projection, current-mode geometry, transform/fractional scale, fingerprint |
-| Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, hostile A/B/A seed reuse, process-unique epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership |
+| Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, hostile A/B/A seed reuse, process-unique epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership, zero/one validated public transaction-summary projection through staged/applying/observing/awaiting/reverting/stuck/terminal states with fail-closed invalid views |
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
 | Exact-owner async inventory transport | `qindaqt.display-service-inventory-private-bus`: disposable private bus/root, exact-owner read, dirty coalescing, replacement/unavailable, stale-reply rejection, and stop suppression |
-| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, and name/object/port teardown on the same disposable bus |
+| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation` and its confirmation clear, and name/object/port teardown on the same disposable bus |
 
 The D2 service-focused rows add deterministic decoder/projection, owner and
 generation collision, loss/reset, add/remove/change, transaction-port,

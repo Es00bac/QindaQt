@@ -1081,8 +1081,9 @@ connects every test participant explicitly to the returned private address.
 The inventory row drives successive unique owners, delayed replies, repeated
 invalidations, and stop while a read is outstanding. The resident row proves
 successful name/object registration, typed unavailable and snapshot replies,
-`Changed`, two successive injected short deadlines, and complete name/object
-plus observer teardown.
+`Changed`, two successive injected short deadlines, the validated active
+transaction summary published at `AwaitingConfirmation` and cleared on
+confirmation, and complete name/object plus observer teardown.
 
 These tests are serial isolated-runtime evidence. They never launch KWin,
 Wayland/XWayland, a GUI, or the installed resident process; touch no host

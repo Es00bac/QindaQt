@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/display_service/display_service_model.h>
 
+#include "display_service_projection_p.h"
+
 #include <qindaqt/services/display_protocol/display_limits.h>
 #include <qindaqt/services/display_protocol/display_validation.h>
 
@@ -144,9 +146,26 @@ bool DisplayServiceModel::available() const noexcept
     return m_machine != nullptr;
 }
 
-const Display::Snapshot *DisplayServiceModel::snapshot() const noexcept
+const Display::Snapshot *DisplayServiceModel::snapshot() const
 {
-    return m_machine == nullptr ? nullptr : &m_machine->currentSnapshot();
+    if (m_machine == nullptr) {
+        return nullptr;
+    }
+    // AGENT-CONTRACT: the public snapshot is composed by a single
+    // whole-value copy at this read boundary and then gains at most one
+    // validated active transaction summary projected from the machine view.
+    // Epoch, revision, fingerprint, and outputs stay byte-identical to the
+    // D1 machine's accepted snapshot. AGENT-GUARD: a projection that cannot
+    // produce a complete validated summary must publish none (fail closed);
+    // never publish a partial summary or one bound to another epoch.
+    m_publicSnapshot = m_machine->currentSnapshot();
+    m_publicSnapshot.transactions.clear();
+    if (const std::optional<Display::TransactionSummary> summary =
+            Private::projectedTransactionSummary(
+                m_publicSnapshot, m_machine->view(), m_machine->activeJournal())) {
+        m_publicSnapshot.transactions.push_back(*summary);
+    }
+    return &m_publicSnapshot;
 }
 
 const DisplayTransaction::MachineView *DisplayServiceModel::view() const noexcept
