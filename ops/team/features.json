@@ -204,10 +204,10 @@
           "caveat": "Design-token color math is not display color management."
         },
         {
-          "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "ABSENT",
-          "summary": "No integrated font catalog/application provider proves that first-party apps apply family, size, antialiasing, hinting, or subpixel policy before UI construction.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Font settings remain inside the incomplete Platform services milestone." }],
-          "caveat": "Settings1 keys are prerequisites, not font discovery or confirmed toolkit application."
+          "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "WIRED",
+          "summary": "Font F0 integrates deterministic catalog construction from injected discovery facts, Settings1-aligned typography preferences, lossless codecs, atomic LKG coordination, and a pre-window Qt bootstrap derivation boundary.",
+          "evidence": [{ "kind": "commit", "reference": "174150a", "summary": "The Claude-reviewed Font F0 implementation and Settings1 bounds repair are replayed on the manager tree." }, { "kind": "test", "reference": "docs/wiki/architecture/font-preferences.md", "summary": "Fresh manager verification passes 7/7 focused Font rows and 2/2 Settings1/QST adjacent rows, including the installed consumer and pure-boundary gate." }],
+          "caveat": "F0 is a pure injected-facts boundary. A live discovery provider, Settings route, persistence composition, first-party app bootstrap wiring, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
         },
         {
           "id": "QQ-005.09", "title": "Portal interoperability and desktop policy export", "weight": 12, "state": "ABSENT",

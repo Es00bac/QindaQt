@@ -1,4 +1,4 @@
-# ADR-0042: Pure Font F0 catalog and preference boundary
+# ADR-0047: Pure Font F0 catalog and preference boundary
 
 - **Status:** Accepted
 - **Date:** 2026-08-28

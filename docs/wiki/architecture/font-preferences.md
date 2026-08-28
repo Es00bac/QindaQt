@@ -60,6 +60,6 @@ graph TD
 
 ## See also
 
-- [ADR-0042: Pure Font F0 catalog and preference boundary](../adr/0042-pure-font-catalog-and-preference-boundary.md)
+- [ADR-0047: Pure Font F0 catalog and preference boundary](../adr/0047-pure-font-catalog-and-preference-boundary.md)
 - [Module boundaries](module-boundaries.md)
 - [Design tokens](design-tokens.md)
