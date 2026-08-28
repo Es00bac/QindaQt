@@ -14,6 +14,7 @@ target_sources(
         src/display_service_model.cpp
         src/display_service_object.cpp
         src/display_service_object_p.h
+        src/display_service_projection_p.h
         src/resident_display_service.cpp
     PUBLIC
         FILE_SET HEADERS

@@ -55,7 +55,11 @@ public:
     ~DisplayServiceModel();
 
     [[nodiscard]] bool available() const noexcept;
-    [[nodiscard]] const Display::Snapshot *snapshot() const noexcept;
+    // Returns the accepted machine snapshot composed, by one whole-value copy
+    // at this read boundary, with exactly zero or one validated public
+    // transaction summary projected from the machine view. The pointer is
+    // model-owned and stays valid until the next call on this model.
+    [[nodiscard]] const Display::Snapshot *snapshot() const;
     [[nodiscard]] const DisplayTransaction::MachineView *view() const noexcept;
     [[nodiscard]] const QString &sourceOwner() const noexcept;
     [[nodiscard]] quint64 sourceGeneration() const noexcept;
@@ -100,6 +104,8 @@ private:
     QString m_serviceEpoch;
     quint64 m_machineLineage = 0;
     DisplayTransaction::SafetyState m_safety = DisplayTransaction::SafetyState::Unknown;
+    // Composed lazily by snapshot(); mutable so the read boundary stays const.
+    mutable Display::Snapshot m_publicSnapshot;
 };
 
 } // namespace QindaQt::DisplayService

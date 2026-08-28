@@ -122,6 +122,24 @@ timer and re-arms it from the injected monotonic deadline. It exports
 `Changed(epoch, revision, available)` hint. Unavailable reads return a typed
 D-Bus error rather than an invalid placeholder snapshot.
 
+Every `GetSnapshot` read publishes the machine's accepted snapshot composed,
+by one whole-value copy at the read boundary, with exactly zero or one
+validated public `TransactionSummary` projected from the machine view:
+transaction id, mapped public state, active reason, service-clock
+monotonic deadline, and revert attempt, with the staged candidate's base
+revision as `baseRevision` and the machine's current accepted revision as
+`observedRevision`. `Discovering` and `Ready` publish no summary; the three
+rollback states (`RevertingApply`, `RevertingObserve`, `RevertBackoff`)
+project as the single public `Reverting` state; `Stuck` exposes its
+consumed attempts. The protocol's `PersistingJournal` state is never
+published because journal storage is a synchronous hard gate inside
+preview, not an observable machine state. A projection that cannot produce
+a complete summary validated against the snapshot's own epoch and revision
+publishes none — never a partial or lineage-divergent value — so consumers
+must treat confirmation readiness as exactly "the snapshot carries a
+summary in `AwaitingConfirmation`", never an inference from a Preview
+result.
+
 The installed executable starts with safety `Unknown` and an unavailable
 transaction port. Preview therefore fails closed at the D1 safety gate; even
 if an in-process composition supplies `Safe`, the packaged port cannot store a
