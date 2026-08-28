@@ -9,13 +9,15 @@ or any audio service internal. The service-side architecture is described in
 
 ## Slice status
 
-This slice is source/static: presentation model, controller, QML, hostile
-source tests, and this page. It is deliberately not yet a registered
-production applet. The remaining integration seams are additive and listed in
+This WIRED slice registers its presentation model, controller, compiled QML
+module, hostile tests, and this page in the combined source/test graph. It is
+deliberately not yet a production-hosted applet. The remaining integration
+seams are additive and listed in
 [Applet runtime](applet-runtime.md) terms as:
 
-- an `add_subdirectory`/registry entry so the compiled built-in registry and
-  the QML dispatcher inventory can both see `qindaqt.applets.audio`;
+- a compiled built-in registry and QML dispatcher entry for
+  `qindaqt.applets.audio` (the CMake source registration alone is not that
+  runtime registry);
 - a manifest catalog entry and capability-policy row requesting only the
   audio read/control capabilities this surface actually uses; and
 - shell composition that starts the `AudioClient`, injects the controller
@@ -23,8 +25,8 @@ production applet. The remaining integration seams are additive and listed in
   shell-owned `openAudioSettings()` facade described in the Audio service
   consumer boundary.
 
-Until those seams land, the applet is not part of the production panel and is
-not counted as delivered behavior.
+Until those seams land, the applet is not part of the production panel. The
+ledger credits only its bounded WIRED source behavior, not live interaction.
 
 ## Module shape
 
@@ -128,7 +130,7 @@ a fake transport plus the real public client, clamp-before-dispatch, local
 refusals, pending serialization, rejected/uncertain/success feedback paths,
 stale-prune with ignored late replies, and degraded/unavailable phases.
 
-These are source/static tests only. They do not qualify compiled QML, visual
-tokens, production shell registration, the manifest/policy path, a live
-Audio1 service, or assistive technology. Qualification of those belongs to
-the integration slice that wires the seams above.
+These focused rows and the combined build compile the QML module, but do not
+qualify rendered visual tokens, production shell registration, the
+manifest/policy path, a live Audio1 service, or assistive technology.
+Qualification of those belongs to the production-host slice above.

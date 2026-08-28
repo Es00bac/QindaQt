@@ -83,22 +83,58 @@
           "caveat": "Physical input, alternative lockers, multi-seat/session switching, screen-reader integration, and physical mixed-output behavior remain release or whole-shell work."
         },
         {
-          "id": "QQ-004.06", "title": "Global application menu", "weight": 10, "state": "ABSENT",
-          "summary": "No live application-menu exporter, provider, or user-facing menu surface is integrated; manifest names alone are not product behavior.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/reference/applet-manifest-schema-v1.md", "summary": "The schema names the global-menu package contract." }, { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The roadmap says menu entries remain unavailable or fixtures." }],
-          "caveat": "Qt action/menu export, application discovery, focus ownership, and fallback UI remain."
+          "id": "QQ-004.06", "title": "Global application menu", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The integrated G0 foundation executes a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, a Qt Widgets adapter, applet facade, and responsive keyboard-accessible QML presentation under focused hostile and offscreen tests.",
+          "evidence": [{ "kind": "commit", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The independently accepted Global Menu G0 series and decomposition repair are integrated in the exact 236/236 combined-tree QA checkpoint." }, { "kind": "test", "reference": "docs/wiki/shell/global-menu.md", "summary": "The owning page records seven C++ and four offscreen QML rows, authenticated ownership, measured overflow, accessible focus, and explicit production boundaries." }],
+          "caveat": "G0 is executable source/static behavior, not a live panel feature: D-Bus transport, provider registration, installed QML packaging, applet-registry wiring, submenu popups, and production shell instantiation remain."
         },
         {
-          "id": "QQ-004.07", "title": "Launcher, task list, tray, and remaining system applets", "weight": 14, "state": "ABSENT",
-          "summary": "Live launcher, task, tray, audio, power, Bluetooth, and clipboard applets are not integrated; catalog fixtures contribute no user-outcome credit.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/applet-runtime.md", "summary": "The owning page distinguishes the live built-ins from fixture-only entries." }],
-          "caveat": "Each applet requires a least-authority service boundary, real presentation, and interaction proof."
+          "id": "QQ-004.07", "title": "Launcher", "weight": 2, "state": "WIRED",
+          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, presentation projection, and execution-free launch intents are registered in the combined source and test graph.",
+          "evidence": [{ "kind": "commit", "reference": "d9f1257", "summary": "The accepted Launcher L0 series is integrated with strict parser, model, and hostile-fixture coverage." }, { "kind": "source", "reference": "docs/wiki/shell/launcher.md", "summary": "The owning page records the bounded model and later production-adapter boundary." }],
+          "caveat": "Installed-application scanning, Settings1 persistence, QML presentation, safe process execution, and production shell hosting remain."
         },
         {
-          "id": "QQ-004.08", "title": "Direct WYSIWYG customization and reveal affordances", "weight": 11, "state": "MODELLED",
-          "summary": "Transactional edit policy exists, but the direct drag/drop Settings window, provisional shell binding, and reveal affordance are not integrated.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/layout-profiles.md", "summary": "The owning page explicitly records the missing provisional subscription and Settings editor window." }],
-          "caveat": "Logical edit machinery alone is not the requested user-facing editor."
+          "id": "QQ-004.10", "title": "Task list", "weight": 2, "state": "WIRED",
+          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are registered in the combined source and test graph.",
+          "evidence": [{ "kind": "commit", "reference": "ff56e8c", "summary": "The accepted Task List T0 model and compile repairs are integrated." }, { "kind": "source", "reference": "docs/wiki/shell/task-list.md", "summary": "The owning page records the public-facts boundary and production adapter work still required." }],
+          "caveat": "A compositor facts producer, window-operation adapter, QST presentation, and installed keyboard/accessibility proof remain."
+        },
+        {
+          "id": "QQ-004.11", "title": "Status-notifier tray", "weight": 2, "state": "ABSENT",
+          "summary": "The reviewed StatusNotifier candidate is not yet integrated in this manager checkpoint, so it contributes no product evidence.",
+          "evidence": [],
+          "caveat": "Exact candidate review passed; manager-tree integration and focused combined verification remain."
+        },
+        {
+          "id": "QQ-004.12", "title": "Audio applet", "weight": 2, "state": "WIRED",
+          "summary": "The bounded Audio applet model, controller, and compiled QML module are registered against the public AudioClient boundary with fail-closed focused tests.",
+          "evidence": [{ "kind": "commit", "reference": "85962f1ebbbf66d1b6ae0626925d62fa5e64782a", "summary": "The accepted Audio applet is integrated with URI-correct QML output and focused model/controller tests." }, { "kind": "test", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The frozen combined checkpoint passed 236/236 tests and warning-free source/documentation gates." }],
+          "caveat": "Manifest/policy registration, production shell composition, rendered interaction, and physical-device qualification remain."
+        },
+        {
+          "id": "QQ-004.13", "title": "Power and brightness applet", "weight": 2, "state": "WIRED",
+          "summary": "The pure Power applet presentation projection and brightness request state machine are registered with fail-closed bounds and capability tests.",
+          "evidence": [{ "kind": "commit", "reference": "c113e979", "summary": "The accepted Power applet P1 series and final registry-comment repair are integrated." }, { "kind": "source", "reference": "docs/wiki/shell/power-applet.md", "summary": "The owning page records the registered pure presentation boundary and later client/QML composition." }],
+          "caveat": "A resident Power1 client/service, upstream adapters, QML surface, shell host, and hardware interaction remain."
+        },
+        {
+          "id": "QQ-004.14", "title": "Bluetooth applet", "weight": 2, "state": "ABSENT",
+          "summary": "No integrated Bluetooth applet can inspect, pair, connect, or disconnect devices.",
+          "evidence": [],
+          "caveat": "The platform provider and least-authority presentation path remain."
+        },
+        {
+          "id": "QQ-004.15", "title": "Clipboard applet", "weight": 2, "state": "ABSENT",
+          "summary": "No integrated clipboard applet presents or mutates the bounded history model.",
+          "evidence": [],
+          "caveat": "The resident capture/privacy service and production presentation remain."
+        },
+        {
+          "id": "QQ-004.08", "title": "Direct WYSIWYG customization and reveal affordances", "weight": 11, "state": "WIRED",
+          "summary": "The integrated customization-editor domain connects pointer/keyboard intents, preview/commit/cancel, repository leases, deterministic acceptance, undo/redo dirty truth, atomic user-profile persistence, and accessibility identities to the production customization/profile boundaries.",
+          "evidence": [{ "kind": "commit", "reference": "bccc44f", "summary": "The accepted customization-editor series is integrated after fail-closed lease, dirty-state, persistence, and rollback repairs." }, { "kind": "test", "reference": "docs/wiki/shell/customization-editor.md", "summary": "Six focused suites cover intent, gesture, session, dirty state, persistence, keyboard, and accessibility behavior." }],
+          "caveat": "The Settings drag/drop canvas, provisional live-shell binding, reveal affordance, rendered matrix, and installed session behavior remain."
         },
         {
           "id": "QQ-004.09", "title": "Whole-shell output, DPI, theme, keyboard, and accessibility qualification", "weight": 8, "state": "WIRED",
@@ -108,15 +144,16 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "Production LayerShell panel publication and static work areas have independently reviewed private nested proof at 1080p, WUXGA, and 1440p. Audited clock and notification-center applets execute, and the installed Notification Live shortcut, focus, Do Not Disturb, service/shell replacement, authenticated private-lock, scale, race, containment, and teardown matrix is qualified.",
+        "summary": "Production LayerShell panels and installed Notification Live remain qualified. The integrated tree now also executes the Global Menu G0 foundation and wires bounded Launcher, Task List, Audio applet, Power applet, and customization-editor slices behind explicit later production-host boundaries.",
         "evidence": [
           { "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "The deterministic production LayerShell surface proof is integrated on public main; independent and manager verification each passed the 1080p, WUXGA, and 1440p private nested matrix." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Shell and customization In progress and names the integrated production boundaries." },
           { "kind": "commit", "reference": "1b4e2846e40d31d79ffb03db2229c07ff9bca271", "summary": "The accepted installed Notification Live workflow and its private qualification harness are integrated." },
+          { "kind": "commit", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The frozen combined checkpoint integrates Global Menu, Launcher, Task List, Audio/Power applet, and customization-editor evidence and passes 236/236 tests plus strict source/docs gates." },
           { "kind": "test", "reference": "docs/HANDOFF.md", "summary": "The public handoff records independent matrix/race evidence and fresh combined-tree verification." }
         ]
       },
-      "caveat": "Production surfaces and installed live notifications are qualified, but global menu, reveal UI, task/launcher/tray, direct WYSIWYG customization, and whole-shell accessibility/mixed-output qualification remain incomplete."
+      "caveat": "Production surfaces and installed live notifications are qualified. Global Menu and the new applet/customization slices still need their production transports/hosts and installed interaction; Tray, Bluetooth/clipboard applets, reveal UI, and whole-shell accessibility/mixed-output qualification remain incomplete."
     },
     {
       "id": "QQ-005",
@@ -155,10 +192,10 @@
           "caveat": "A generic boolean setting and applet capability name are prerequisites, not Bluetooth product behavior."
         },
         {
-          "id": "QQ-005.06", "title": "Private bounded clipboard history", "weight": 9, "state": "ABSENT",
-          "summary": "No integrated clipboard/history service provides bounded, searchable, lock-private history while preserving ordinary Wayland clipboard behavior.",
-          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Clipboard remains a later platform outcome." }],
-          "caveat": "The generic clipboardHistory setting does not implement capture, privacy, purge, or UI."
+          "id": "QQ-005.06", "title": "Private bounded clipboard history", "weight": 9, "state": "WIRED",
+          "summary": "Clipboard C0 integrates a volatile bounded history model, canonical MIME/size policy, lock-private projection, metadata-only search, generation fencing, and atomic hostile decode behavior.",
+          "evidence": [{ "kind": "commit", "reference": "7da293d", "summary": "The independently accepted Clipboard C0 series is integrated after atomic decoder publication repair." }, { "kind": "source", "reference": "docs/wiki/architecture/clipboard-service.md", "summary": "The owning page records the model, privacy, validation, codec, and explicit resident-service boundary." }],
+          "caveat": "C0 has no live Wayland capture/offer adapter, resident service/client transport, persistence, production applet, or installed interaction proof."
         },
         {
           "id": "QQ-005.07", "title": "Display color, ICC, HDR, and WCG settings", "weight": 8, "state": "ABSENT",
@@ -180,7 +217,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack and isolated null-device runtime/package qualification are integrated. Display D0 inventory, D1 protocol/identity/topology/transaction foundations, and the D2 resident service/exact-owner adapter are integrated. Power/Brightness now has an integrated pure PB-0 protocol/aggregation/brightness boundary at WIRED maturity.",
+        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 now adds the volatile bounded, lock-private, generation-fenced history model and hostile codec boundary at WIRED maturity.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -188,10 +225,11 @@
           { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and lineage repair are integrated after exact rereview." },
           { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The accepted D2 resident Display1 service and exact-owner adapter are integrated after two exact PASS reviews and fresh combined-tree verification." },
           { "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The accepted PB-0 pure values, codecs, aggregation, brightness composition, math, package, and focused tests are integrated at WIRED maturity." },
+          { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; Bluetooth, network, clipboard, color/font providers, portals, policy, physical hardware, and Audio UI/hardware qualification remain. PB-0 is pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; Bluetooth, network, live clipboard capture/service/UI, color/font providers, portals, policy, physical hardware, and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
     },
     {
       "id": "QQ-006",

@@ -81,9 +81,10 @@ state suffixes `active`, `minimized`, and `urgent` in that order.
 The source/static slice at `src/shell/task_list` implements the values,
 validation, grouping, filtering, presentation projection, and intent
 arbitration described above, with hostile coverage in
-`tests/shell/task_list`. It is deliberately not wired into the shell build,
-consumes no transport, and claims no runtime qualification. Remaining work for
-later slices: a shell-side facts producer fed from public compositor/hybrid
+`tests/shell/task_list`. It is registered in the combined source/test build but
+is deliberately not instantiated by the production shell, consumes no
+transport, and claims no runtime qualification. Remaining work for later
+slices: a shell-side facts producer fed from public compositor/hybrid
 snapshots, the window-operation adapter behind the intent boundary, QST-1
 presentation, and installed keyboard/accessibility qualification per the
 [testing harness](../development/testing-harness.md).

@@ -48,6 +48,14 @@ The repository currently builds and tests:
   policy, a compiled implementation registry, and least-authority grants, plus
   live built-in locale-aware clock and capability-empty notification-center
   entries;
+- registered bounded Launcher and Task List source models; a compiled Audio
+  applet over the public AudioClient seam; a pure Power/brightness applet
+  presentation model; and the source/static Global Menu G0 model, authenticated
+  ownership/export, Qt Widgets adapter, facade, and responsive offscreen QML;
+- a wired presentation-independent customization editor with shared pointer and
+  keyboard intents, preview/commit/cancel, coordinator-lease fencing,
+  undo/redo dirty truth, atomic user-profile persistence, and accessibility
+  identities;
 - a bounded, revisioned notification model, freedesktop Notifications 1.3
   D-Bus adapter, installable resident ownership/expiry host, authenticated
   private presentation server/client, descriptor-only token handoff, and
@@ -83,9 +91,13 @@ bounded notification presentation/entry path are implemented, and the complete
 installed Notification Live shortcut, focus, Do Not Disturb, service/shell
 replacement, authenticated private-lock, scale, and teardown matrix is
 qualified. Alternative lockers and multi-seat support remain unqualified.
-Audio has a bounded service/runtime slice, while power, Bluetooth, menu, task,
-launcher, tray, and clipboard entries remain unavailable or visual fixtures
-rather than complete live integrations.
+Audio has a bounded service/runtime slice and the source tree now contains
+registered Launcher, Task List, Audio applet, Power applet, Global Menu G0,
+Clipboard C0, and customization-editor foundations. These are deliberately
+not all live panel features: their owning pages identify the remaining
+production adapters, transports, hosts, and installed interaction gates.
+Bluetooth and clipboard applets remain absent, and StatusNotifier Tray awaits
+manager-tree integration despite an accepted candidate.
 
 ## Milestones
 
@@ -94,8 +106,8 @@ rather than complete live integrations.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and the complete installed Notification Live shortcut/focus/DND/restart/private-lock matrix are qualified; reveal UI, global menu, remaining applets, direct WYSIWYG editing, and whole-shell qualification remain) |
-| Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1 typed stack and isolated null-device proof plus Display D0 inventory, D1 protocol/identity/topology/transaction foundation, and D2 resident service/exact-owner adapter implemented; PB-0 bounded Power1 values/codecs, deterministic aggregation, and pure brightness composition/math integrated at WIRED; Display client/writer/UI, resident Power service/client/upstream adapters, hardware qualification, and other providers pending) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and installed Notification Live are qualified; Global Menu G0 executes in focused tests; Launcher, Task List, Audio/Power applets, and the customization-editor domain are wired source slices; their production transports/hosts, Tray integration, Bluetooth/clipboard applets, reveal UI, and whole-shell qualification remain) |
+| Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1 and Display D0-D2 execute; PB-0 and Clipboard C0 pure foundations are WIRED; live clipboard capture/service/UI, Display client/writer/UI, resident Power service/client/upstream adapters, hardware qualification, and other providers remain) |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls are independently qualified; Notifications and Appearance are live installed Settings routes; Text Editor S1, bounded local File Manager S0, and the narrow installed QindaQt.AppShell 1.0 action/lifecycle/portal/focus/accessibility boundary are executable; remaining service routes, complete Settings navigation, later File Manager capabilities, Terminal, app migrations, cross-app and nested-session matrices, and live accessibility bridge pending) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |
 
