@@ -78,3 +78,4 @@ nav:
       - "ADR-0017: Persistent output identity": adr/0017-persistent-output-identity.md
       - "ADR-0021: Isolate Controls visual rows": adr/0021-isolate-controls-visual-rows.md
       - "ADR-0022: Atomic local text documents": adr/0022-keep-text-documents-local-and-atomic.md
+      - "ADR-0026: Contained virtual desktop": adr/0026-contain-virtual-desktop-qualification.md

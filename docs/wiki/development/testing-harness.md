@@ -768,6 +768,80 @@ activation/restart behavior, or physical DRM/GPU/monitor/lid/suspend results.
 D0/D2 own nested protocol/service proof; D8 owns isolated hardware proof. A D1
 handoff must not upgrade unit success into either claim.
 
+## Contained interactive virtual desktop S0+S1
+
+The first whole-desktop harness boundary is selected with:
+
+```sh
+cmake --build build/dev --parallel 1 --target qindaqt-desktop-session-probe
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.(sandbox-unit|package-contract)$'
+```
+
+Building `qindaqt-desktop-session-probe` also builds the exact production graph
+needed by the stage. `desktop.virtual.sandbox-unit` opens no display, bus, or
+session. It checks deterministic typed bubblewrap argv, a fresh environment
+allow-list, private roots and endpoints, absence of host input/runtime mounts,
+cross-worktree locking, staged path/symlink/escape rejection, direct
+Settings1/Audio1 resolution, proc parsers, exact PID identity, PID-reuse safety,
+bounded cleanup, and the complete boot-topology model.
+
+`desktop.virtual.package-contract` performs a CMake install beneath the same
+build root, authenticates the production executables and compositor plugin as
+regular files inside that prefix, validates both service descriptor identities,
+and writes a path manifest. Descriptor `Exec` values are recorded but never
+executed; Settings1 and Audio1 are started directly from the resolved stage.
+CMake discovers Python, bubblewrap, `dbus-daemon`, and `kwin_wayland` and passes
+their exact paths. The harness does not encode `/usr/bin` as executable policy.
+
+The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
+inaccessible to an ordinary CTest invocation: the manager must allocate the
+sole private-runtime lane, no other private session may be active, and the
+caller must then supply the exact acknowledgement:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.boot\.1080p$'
+```
+
+CTest marks the row serial, takes a build-local resource lock, and automatically
+requires the staged-package fixture. The driver additionally takes the per-user
+`/tmp/qindaqt-private-session-<uid>.lock`, which serializes other worktrees.
+Missing manager acknowledgement returns skip code 77 before bubblewrap starts.
+
+Bubblewrap creates PID/network/IPC/UTS/user namespaces, parent-death and new-
+session semantics, an empty root, private `/dev`, `/tmp`, `/run`, machine ID,
+HOME/XDG roots, D-Bus socket, and Wayland socket. Only exact read-only system
+tool roots, stage/source/probe inputs, and bounded writable runtime/log/evidence
+directories are visible. There is no host HOME/config, runtime directory,
+Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
+network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
+owns this trust boundary.
+
+The immutable S1 evidence model requires:
+
+| Area | Exact `1920x1080@1` evidence |
+| --- | --- |
+| Processes | `kwin_wayland`, `qindaqt-session`, notification host, shell, Settings1, Audio1, Settings, Text Editor, probe, and private bus with unique PID/role/parent bindings |
+| Services | Unique owners and exact executable-bound PIDs for Compositor1, Settings1, Audio1, and freedesktop Notifications |
+| Display | One `Virtual-1` output at `(0,0)`, `1920x1080`, scale 1; equal canonical nonzero Outputs/ShellVisibility generation |
+| Input | Exactly one combined `QindaQt Development Input`; no host input node |
+| Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1` |
+| Applications | Mapped Settings and QindaQt Text Editor windows |
+| Resource/exit | Aggregate resident PSS measured against 1,024 MiB; exact executable/start-time teardown; zero surviving PIDs and no run root |
+
+The current public base does not yet include Notification Live's development-
+only layer-surface method broadened to the `dock` scope. The probe calls that
+interface deliberately and the boot row must fail if it is absent; ordinary
+`Windows` or `ShellVisibilitySnapshot` data does not prove a layer surface.
+Only source/unit/package qualification is valid before that dependency is
+integrated and a manager assigns the private lane.
+
+S0+S1 makes no screenshot, input-action, screenshot-baseline, OpenGL/render-
+node, DPI/theme variant, multi-output mutation, idle-CPU threshold, or physical
+device claim. Those rows follow a successful repeatable boot/teardown boundary.
+
 ## Required display matrix
 
 Single-output scenarios cover:
