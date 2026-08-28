@@ -186,10 +186,10 @@
           "caveat": "Provider reuse, scan leases, secrets, owner replacement, and offline behavior remain."
         },
         {
-          "id": "QQ-005.05", "title": "Bluetooth devices", "weight": 9, "state": "ABSENT",
-          "summary": "No integrated provider lets users inspect adapters/devices, discover, connect, disconnect, or handle pairing safely.",
-          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Bluetooth remains a later platform outcome." }],
-          "caveat": "A generic boolean setting and applet capability name are prerequisites, not Bluetooth product behavior."
+          "id": "QQ-005.05", "title": "Bluetooth devices", "weight": 9, "state": "EXECUTABLE",
+          "summary": "Bluetooth B0 integrates a bounded Bluetooth1 protocol, deterministic least-authority device model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and installed public package with pairing/trust authority retained in BlueZ.",
+          "evidence": [{ "kind": "commit", "reference": "c08b32e", "summary": "The exact independently accepted Bluetooth B0 manager replay is integrated with all 54 Bluetooth-specific blobs preserved byte-for-byte." }, { "kind": "test", "reference": "docs/wiki/architecture/bluetooth-service.md", "summary": "Fresh manager-tree verification passes the eight source/private-bus rows; exact review passes 9/9 including staged install, 70/70 direct assertions, mutation-sensitive package poison, source shape, and documentation gates." }],
+          "caveat": "B0 uses a deterministic unavailable backend. Production BlueZ transport, physical adapters/rfkill, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings/shell UI, and hardware/resource qualification remain."
         },
         {
           "id": "QQ-005.06", "title": "Private bounded clipboard history", "weight": 9, "state": "WIRED",
@@ -217,7 +217,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 now adds the volatile bounded, lock-private, generation-fenced history model and hostile codec boundary at WIRED maturity.",
+        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model, while Bluetooth B0 adds an executable least-authority protocol/model/client/resident-service boundary with deterministic unavailable backend and private activation proof.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -226,10 +226,11 @@
           { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The accepted D2 resident Display1 service and exact-owner adapter are integrated after two exact PASS reviews and fresh combined-tree verification." },
           { "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The accepted PB-0 pure values, codecs, aggregation, brightness composition, math, package, and focused tests are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
+          { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; Bluetooth, network, live clipboard capture/service/UI, color/font providers, portals, policy, physical hardware, and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; network; live clipboard capture/service/UI; color/font providers; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
     },
     {
       "id": "QQ-006",

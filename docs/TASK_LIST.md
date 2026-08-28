@@ -19,9 +19,11 @@ qualification remain preserved integrated foundations.
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 transaction UI/writer work, resident Power1 and brightness,
-network, Bluetooth, private clipboard history, display color, font application,
+network, production BlueZ/UI over the Bluetooth B0 boundary, private clipboard
+history, display color, font application,
 and portal/policy interoperability. Existing Audio1, Display1 foundations, and
-PB-0 remain preserved integrated foundations.
+PB-0 remain preserved integrated foundations; Bluetooth B0 is an executable
+deterministic unavailable-backend foundation with private activation proof.
 
 ### First-party experience delivery queue
 
@@ -48,6 +50,15 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `c08b32e` — Bluetooth B0 bounded protocol/model/client/resident service with
+  exact unique-owner lineage, deterministic least-authority backend, bounded
+  discovery leases, activation and owner-loss lifecycle, configured D-Bus and
+  systemd packaging, and BlueZ-owned pairing/trust authority. Exact independent
+  replay review passed `0/0/0/0`, 9/9 including staged install, 70/70 direct,
+  package poison, and 54/54 blob identity. The manager tree passes all eight
+  source/private-bus rows plus source shape, 96-page docs, strict MkDocs, and
+  Team Board 17/17. Production BlueZ, physical adapters/rfkill, Agent1 UX,
+  Bluetooth audio, suspend/hotplug, UI, and hardware proof remain later.
 - `4f99a7f` — Native QindaQt Terminal S0 with an owned child PTY, nonblocking
   teletype bridge, bounded launch policy, deterministic child/PTY teardown,
   QindaQt theme projection, truthful selection/copy behavior, qtermwidget

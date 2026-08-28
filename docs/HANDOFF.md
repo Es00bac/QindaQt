@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- `c08b32e` replays the exact independently accepted Bluetooth B0 series onto
+  the Terminal milestone with additive Terminal/Bluetooth ADR, module, source,
+  test, and documentation registries. Independent exact replay review found
+  P0/P1/P2/P3 `0/0/0/0`, proved 54/54 Bluetooth blobs byte-identical, and
+  passed 9/9 rows, 70/70 direct assertions, the staged package and its poison
+  negative. Fresh manager evidence passes all eight source/private-bus rows,
+  source shape over 1,431 files, 96-page docs, strict MkDocs, and Team Board
+  17/17. QQ-005.05 advances ABSENT to EXECUTABLE; production BlueZ, hardware,
+  pairing UX, Bluetooth audio, suspend/hotplug, resource, and UI remain later.
+
 - `4f99a7f` replays the exact independently accepted Terminal S0 series and
   its relocatable-qtermwidget package repair onto the current manager tree.
   Independent exact review found P0/P1/P2/P3 `0/0/0/0`; all 20 production
