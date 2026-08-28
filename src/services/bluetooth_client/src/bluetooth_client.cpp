@@ -397,7 +397,8 @@ quint64 BluetoothClient::beginOperation(const OperationRequest &request)
                             : OperationStatus::Rejected,
                         rejection));
         return requestId;
-    }    m_operation = PendingOperation{.requestId = requestId,
+    }
+    m_operation = PendingOperation{.requestId = requestId,
                                    .request = request,
                                    .epoch = m_snapshot->epoch,
                                    .revision = m_snapshot->revision};

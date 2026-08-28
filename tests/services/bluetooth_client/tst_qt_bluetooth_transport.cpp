@@ -29,7 +29,7 @@ class PrivateBus final
 public:
     bool start()
     {
-        process.setProgram(QStringLiteral("dbus-daemon"));
+        process.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
         process.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
                               QStringLiteral("--nopidfile"),
                               QStringLiteral("--print-address=1")});
@@ -119,8 +119,10 @@ public Q_SLOTS:
             Device device;
             device.handle = {.epoch = 77, .serial = static_cast<quint64>(1000 + index)};
             device.adapterHandle = {.epoch = 77, .serial = 400};
-            device.address = QStringLiteral("AA:BB:CC:33:44:%1")
-                                 .arg(56 + index, 2, 10, QLatin1Char('0'));
+            device.address = QStringLiteral("AA:BB:CC:33:%1:%2")
+                                 .arg((index / 256) & 0xFF, 2, 16, QLatin1Char('0'))
+                                 .arg(index % 256, 2, 16, QLatin1Char('0'))
+                                 .toUpper();
             device.name = QStringLiteral("Hostile %1").arg(index);
             device.deviceClass = DeviceClass::Unknown;
             device.role = DeviceRole::Unknown;
