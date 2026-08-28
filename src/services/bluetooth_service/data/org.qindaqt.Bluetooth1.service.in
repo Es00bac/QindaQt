@@ -1,5 +1,4 @@
 [D-BUS Service]
 Name=org.qindaqt.Bluetooth1
-Exec=@CMAKE_INSTALL_FULL_LIBEXECDIR@/qindaqt-bluetooth-service
-User=@QINDAQT_SESSION_USER@
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-bluetooth-service
 SystemdService=qindaqt-bluetooth-service.service

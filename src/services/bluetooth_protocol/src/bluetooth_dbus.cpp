@@ -74,23 +74,18 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Handle &value)
 QDBusArgument &operator<<(QDBusArgument &argument, const Adapter &value)
 {
     argument.beginStructure();
-    argument << value.handle << value.address << value.name
-             << static_cast<quint32>(value.state) << value.discoveringActive
-             << static_cast<quint32>(value.capabilities.toInt());
+    argument << value.handle << value.address << value.name << value.powered
+             << value.discovering;
     argument.endStructure();
     return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, Adapter &value)
 {
-    quint32 state = 0;
-    quint32 capabilities = 0;
     argument.beginStructure();
-    argument >> value.handle >> value.address >> value.name >> state
-        >> value.discoveringActive >> capabilities;
+    argument >> value.handle >> value.address >> value.name >> value.powered
+        >> value.discovering;
     argument.endStructure();
-    value.state = static_cast<AdapterState>(state);
-    value.capabilities = AdapterCapabilities::fromInt(capabilities);
     return argument;
 }
 
@@ -98,24 +93,20 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
 {
     argument.beginStructure();
     argument << value.handle << value.adapterHandle << value.address << value.name
-             << static_cast<quint32>(value.state) << value.rssi << value.rssiKnown
-             << value.paired << value.trusted
-             << static_cast<quint32>(value.capabilities.toInt());
+             << static_cast<quint32>(value.deviceClass) << value.paired << value.connected
+             << value.rssiKnown << value.rssi;
     argument.endStructure();
     return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
 {
-    quint32 state = 0;
-    quint32 capabilities = 0;
+    quint32 deviceClass = 0;
     argument.beginStructure();
     argument >> value.handle >> value.adapterHandle >> value.address >> value.name
-        >> state >> value.rssi >> value.rssiKnown >> value.paired >> value.trusted
-        >> capabilities;
+        >> deviceClass >> value.paired >> value.connected >> value.rssiKnown >> value.rssi;
     argument.endStructure();
-    value.state = static_cast<DeviceState>(state);
-    value.capabilities = DeviceCapabilities::fromInt(capabilities);
+    value.deviceClass = static_cast<DeviceClass>(deviceClass);
     return argument;
 }
 
@@ -123,7 +114,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value)
 {
     argument.beginStructure();
     argument << value.schemaVersion << value.epoch << value.revision
-             << value.reasonCode << value.diagnostic;
+             << static_cast<quint32>(value.availability)
+             << static_cast<quint32>(value.capabilities.toInt()) << value.reasonCode
+             << value.diagnostic;
     writeArray(argument, value.adapters);
     writeArray(argument, value.devices);
     argument.endStructure();
@@ -132,13 +125,17 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value)
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value)
 {
+    quint32 availability = 0;
+    quint32 capabilities = 0;
     value.wireValid = true;
     argument.beginStructure();
-    argument >> value.schemaVersion >> value.epoch >> value.revision
-        >> value.reasonCode >> value.diagnostic;
+    argument >> value.schemaVersion >> value.epoch >> value.revision >> availability
+        >> capabilities >> value.reasonCode >> value.diagnostic;
     readBoundedArray(argument, value.adapters, kMaxAdapters, value.wireValid);
     readBoundedArray(argument, value.devices, kMaxDevices, value.wireValid);
     argument.endStructure();
+    value.availability = static_cast<Availability>(availability);
+    value.capabilities = Capabilities::fromInt(capabilities);
     return argument;
 }
 
