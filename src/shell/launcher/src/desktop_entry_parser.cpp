@@ -37,10 +37,52 @@ bool isAsciiKeyCharacter(QChar character)
       || (value >= '0' && value <= '9') || value == '-';
 }
 
-bool isLocaleCharacter(QChar character)
+bool isLocaleComponentCharacter(QChar character)
 {
-  return isAsciiKeyCharacter(character) || character == QLatin1Char('_')
-      || character == QLatin1Char('@');
+  return isAsciiKeyCharacter(character);
+}
+
+enum class LocaleComponent {
+  Language,
+  Country,
+  Encoding,
+  Modifier,
+};
+
+bool isLocaleShape(QStringView locale)
+{
+  LocaleComponent component = LocaleComponent::Language;
+  qsizetype componentLength = 0;
+
+  for (const QChar character : locale) {
+    if (character == QLatin1Char('_')) {
+      if (component != LocaleComponent::Language || componentLength == 0)
+        return false;
+      component = LocaleComponent::Country;
+      componentLength = 0;
+      continue;
+    }
+    if (character == QLatin1Char('.')) {
+      if ((component != LocaleComponent::Language
+           && component != LocaleComponent::Country)
+          || componentLength == 0)
+        return false;
+      component = LocaleComponent::Encoding;
+      componentLength = 0;
+      continue;
+    }
+    if (character == QLatin1Char('@')) {
+      if (component == LocaleComponent::Modifier || componentLength == 0)
+        return false;
+      component = LocaleComponent::Modifier;
+      componentLength = 0;
+      continue;
+    }
+    if (!isLocaleComponentCharacter(character))
+      return false;
+    ++componentLength;
+  }
+  return componentLength > 0;
 }
 
 enum class KeySyntax {
@@ -73,15 +115,9 @@ KeySyntax classifyKeySyntax(const QString &key)
       || key.indexOf(QLatin1Char(']')) != key.size() - 1)
     return KeySyntax::Invalid;
 
-  const QString locale = key.mid(localeStart + 1,
-                                 key.size() - localeStart - 2);
-  if (locale.isEmpty())
-    return KeySyntax::Invalid;
-  for (const QChar character : locale) {
-    if (!isLocaleCharacter(character))
-      return KeySyntax::Invalid;
-  }
-  return KeySyntax::Localized;
+  const QStringView locale = QStringView(key).mid(
+      localeStart + 1, key.size() - localeStart - 2);
+  return isLocaleShape(locale) ? KeySyntax::Localized : KeySyntax::Invalid;
 }
 
 bool isActionId(const QString &id)

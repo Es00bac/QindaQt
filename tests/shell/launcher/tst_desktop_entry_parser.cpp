@@ -35,6 +35,10 @@ private Q_SLOTS:
   void emptyKeyNameIsRejected();
   void truncatedLocaleKeyIsRejected();
   void nonAsciiKeyNameIsRejected();
+  void validLocaleShapesSkipPayload_data();
+  void validLocaleShapesSkipPayload();
+  void malformedLocaleShapesAreRejected_data();
+  void malformedLocaleShapesAreRejected();
   void unknownActionReferenceIsRejected();
   void duplicateActionGroupIsRejected();
   void duplicateRecognizedKeyIsRejected();
@@ -187,6 +191,54 @@ void DesktopEntryParserTest::nonAsciiKeyNameIsRejected()
 {
   EntryTemplate entry;
   entry.extraBody = QStringLiteral("Nämé=hostile");
+  const auto result = parseText(entry.toText());
+  QVERIFY(!result.ok());
+  QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
+}
+
+void DesktopEntryParserTest::validLocaleShapesSkipPayload_data()
+{
+  QTest::addColumn<QString>("key");
+
+  QTest::newRow("language") << QStringLiteral("Name[en]");
+  QTest::newRow("country") << QStringLiteral("Name[en_US]");
+  QTest::newRow("encoding") << QStringLiteral("Name[en.UTF-8]");
+  QTest::newRow("modifier") << QStringLiteral("Name[en@latin]");
+  QTest::newRow("full") << QStringLiteral("Name[en_US.UTF-8@latin]");
+}
+
+void DesktopEntryParserTest::validLocaleShapesSkipPayload()
+{
+  QFETCH(QString, key);
+  EntryTemplate entry;
+  entry.extraBody = key + QStringLiteral("=bad\\x");
+  const auto result = parseText(entry.toText());
+  QVERIFY2(result.ok(), qPrintable(result.error.message));
+  QCOMPARE(result.entry->name, QStringLiteral("Fixture App"));
+}
+
+void DesktopEntryParserTest::malformedLocaleShapesAreRejected_data()
+{
+  QTest::addColumn<QString>("key");
+
+  QTest::newRow("missing-language") << QStringLiteral("Name[@]");
+  QTest::newRow("missing-language-country") << QStringLiteral("Name[_US]");
+  QTest::newRow("empty-country") << QStringLiteral("Name[en_]");
+  QTest::newRow("empty-encoding") << QStringLiteral("Name[en.]");
+  QTest::newRow("empty-modifier") << QStringLiteral("Name[en@]");
+  QTest::newRow("repeated-country") << QStringLiteral("Name[en_US_GB]");
+  QTest::newRow("repeated-encoding") << QStringLiteral("Name[en.UTF.8]");
+  QTest::newRow("repeated-modifier") << QStringLiteral("Name[en@latin@formal]");
+  QTest::newRow("country-after-encoding") << QStringLiteral("Name[en.UTF-8_US]");
+  QTest::newRow("country-after-modifier") << QStringLiteral("Name[en@latin_US]");
+  QTest::newRow("encoding-after-modifier") << QStringLiteral("Name[en@latin.UTF-8]");
+}
+
+void DesktopEntryParserTest::malformedLocaleShapesAreRejected()
+{
+  QFETCH(QString, key);
+  EntryTemplate entry;
+  entry.extraBody = key + QStringLiteral("=bad\\x");
   const auto result = parseText(entry.toText());
   QVERIFY(!result.ok());
   QCOMPARE(result.error.code, DesktopEntryErrorCode::InvalidKeyLine);
