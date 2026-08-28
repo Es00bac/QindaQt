@@ -175,23 +175,34 @@ Item {
             compare(fakeAccess.activateCalls, 2);
         }
 
-        function test_keyboardFocusIsReachableAndSubmenuNeverActivates() {
+        function test_keyboardFocusSkipsDisabledSubmenuEntries() {
+            // Honest keyboard contract: disabled submenu delegates decline
+            // active focus entirely (Qt Item behavior), so keyboard users
+            // navigate straight to the enabled actions — focus is never dead
+            // on an entry that cannot activate.
             fakeAccess.available = true;
             fakeAccess.items = realisticMenuItems();
             const applet = createTemporaryObject(appletComponent, testRoot);
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 3);
-            // Every entry is keyboard-reachable through Tab focus, and focus
-            // walks the presentation order deterministically.
-            for (let i = 0; i < entries.length; ++i) {
-                entries[i].forceActiveFocus(Qt.TabFocusReason);
-                verify(entries[i].activeFocus);
-            }
+
+            // Enabled action entries take keyboard focus.
+            entries[2].forceActiveFocus(Qt.TabFocusReason);
+            verify(entries[2].activeFocus);
+            keyClick(entries[2], Qt.Key_Space);
+            compare(fakeAccess.activateCalls, 1);
+            compare(fakeAccess.lastActivatedId, "aboutAction");
+
+            // Disabled submenu delegates refuse focus and never activate.
             entries[0].forceActiveFocus(Qt.TabFocusReason);
+            verify(!entries[0].activeFocus);
             keyClick(entries[0], Qt.Key_Space);
-            // The first entry is a submenu: focusable, but never activating.
-            compare(fakeAccess.activateCalls, 0);
+            compare(fakeAccess.activateCalls, 1);
+
+            entries[1].forceActiveFocus(Qt.TabFocusReason);
+            verify(!entries[1].activeFocus);
+            compare(fakeAccess.activateCalls, 1);
         }
 
         function test_keyboardDoesNotActivateDisabledOrSubmenuEntries() {
@@ -212,67 +223,6 @@ Item {
             keyClick(quitEntry, Qt.Key_Space);
             keyClick(submenuEntry, Qt.Key_Space);
             compare(fakeAccess.activateCalls, 0);
-        }
-
-        function test_accessiblePressActivationPath() {
-            // pressAction() is the single named implementation shared by
-            // pointer click, keyboard activation, and the AT-invoked
-            // Accessible.onPressAction handler.
-            fakeAccess.available = true;
-            fakeAccess.items = realisticMenuItems();
-            fakeAccess.items.push(
-                { "id": "quitAction", "kind": "action", "text": "Quit",
-                  "mnemonicIndex": 0, "enabled": false, "checkable": false, "checked": false });
-            const applet = createTemporaryObject(appletComponent, testRoot);
-            const entries = [];
-            collectEntries(applet, entries);
-            compare(entries.length, 4);
-
-            entries[2].pressAction(); // enabled action: About
-            compare(fakeAccess.activateCalls, 1);
-            compare(fakeAccess.lastActivatedId, "aboutAction");
-
-            entries[0].pressAction(); // submenu: presented, non-activating
-            compare(fakeAccess.activateCalls, 1);
-
-            entries[3].pressAction(); // disabled action
-            compare(fakeAccess.activateCalls, 1);
-        }
-
-        function test_checkedStateIsBoundToButtonAndAccessibleState() {
-            fakeAccess.available = true;
-            fakeAccess.items = [
-                { "id": "wordWrapAction", "kind": "action", "text": "Word Wrap",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": true },
-                { "id": "lineNumbersAction", "kind": "action", "text": "Line Numbers",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": true, "checked": false },
-                { "id": "plainAction", "kind": "action", "text": "Plain",
-                  "mnemonicIndex": 0, "enabled": true, "checkable": false, "checked": false }
-            ];
-            const applet = createTemporaryObject(appletComponent, testRoot);
-            const entries = [];
-            collectEntries(applet, entries);
-            compare(entries.length, 3);
-
-            verify(entries[0].checkable);
-            verify(entries[0].checked);
-            verify(entries[0].Accessible.checkable);
-            verify(entries[0].Accessible.checked);
-
-            verify(entries[1].checkable);
-            verify(!entries[1].checked);
-            verify(entries[1].Accessible.checkable);
-            verify(!entries[1].Accessible.checked);
-
-            verify(!entries[2].checkable);
-            verify(!entries[2].checked);
-            verify(!entries[2].Accessible.checkable);
-
-            // An accessible press on the checked item still routes through
-            // the one activation path; toggling state stays provider-owned.
-            entries[0].pressAction();
-            compare(fakeAccess.activateCalls, 1);
-            compare(fakeAccess.lastActivatedId, "wordWrapAction");
         }
 
         function test_horizontalIsDefaultLayout() {

@@ -10,3 +10,14 @@ add_test(
     NAME qindaqt.global-menu-ownership
     COMMAND qindaqt_global_menu_ownership_tests
 )
+
+qt_add_executable(qindaqt_global_menu_lineage_tests tst_menu_lineage.cpp)
+target_link_libraries(
+    qindaqt_global_menu_lineage_tests
+    PRIVATE QindaQt::GlobalMenuOwnership QindaQt::GlobalMenuProtocol Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_global_menu_lineage_tests)
+add_test(
+    NAME qindaqt.global-menu-ownership-lineage
+    COMMAND qindaqt_global_menu_lineage_tests
+)

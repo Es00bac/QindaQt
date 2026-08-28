@@ -28,52 +28,99 @@ Item {
     readonly property bool available: access !== null && Boolean(access.available)
     readonly property var topLevelItems: available ? (access.items ?? []) : []
 
-    // AGENT-NOTE: geometry awareness is a deterministic estimate (~7 px per
-    // glyph at the 12 px label font plus padding), not a rendering-dependent
-    // measurement, so the same item set always collapses identically for the
-    // tests and for production panels of the same assigned size.
-    function estimatedEntryWidth(item) {
-        return Math.max(24, String(item.text ?? "").length * 7 + 24);
+    // Measured, deterministic geometry contract. AGENT-GUARD: the limit
+    // loops must consume strict UPPER bounds of the real rendered sizes
+    // (font-metric measurement plus safety margin), so a retained delegate
+    // can never be wider/taller than its budget and the +N indicator is
+    // always reserved inside the assigned extent — wide glyphs or exotic
+    // fonts cost accuracy, never correctness. Hosts below the documented
+    // minimum degrade to indicator-only instead of clipping partial labels.
+    TextMetrics {
+        id: entryMetrics
+        font.pixelSize: 12
     }
 
-    // Entries that fit the assigned main-axis extent while reserving room for
-    // the +N indicator; at least one entry is always presented so the applet
-    // never renders as bare overflow.
+    function measuredTextWidth(text) {
+        entryMetrics.text = text;
+        return Math.ceil(entryMetrics.boundingRect.width);
+    }
+
+    function measuredEntryWidth(item) {
+        // Upper bound of label.implicitWidth (actual painted advance) plus
+        // the 12 px entry padding plus a 2 px safety margin.
+        return measuredTextWidth(String(item.text ?? "")) + 14;
+    }
+
+    function measuredIndicatorWidth() {
+        // Worst case: the overflow label grows with the item count.
+        return measuredTextWidth("+" + topLevelItems.length) + 2;
+    }
+
+    function measuredIndicatorHeight() {
+        entryMetrics.text = "+" + topLevelItems.length;
+        return Math.ceil(entryMetrics.boundingRect.height) + 2;
+    }
+
+    // Iteratively fit entries (24 px tall, root.spacing apart) while keeping
+    // the indicator block inside the assigned axis. Returns 0 when the host
+    // is below the documented minimum: the applet then degrades to
+    // indicator-only rather than clipping a partial label.
     function horizontalLimitFor(assignedWidth) {
-        const budget = assignedWidth - 40;
+        const indicatorWidth = measuredIndicatorWidth();
+        if (assignedWidth < indicatorWidth) {
+            return 0;
+        }
+        const budget = assignedWidth - indicatorWidth;
         let used = 0;
         let count = 0;
         for (let i = 0; i < topLevelItems.length; ++i) {
-            const need = estimatedEntryWidth(topLevelItems[i]) + root.spacing;
+            const need = measuredEntryWidth(topLevelItems[i]) + (count > 0 ? root.spacing : 0);
             if (used + need > budget) {
                 break;
             }
             used += need;
             ++count;
         }
-        return Math.max(1, count);
+        return count;
     }
 
     function verticalLimitFor(assignedHeight) {
-        const perEntry = 28;
-        const indicatorReserve = topLevelItems.length > 0 ? 28 : 0;
-        return Math.max(1, Math.floor((assignedHeight - indicatorReserve) / perEntry));
+        const indicatorBlock = measuredIndicatorHeight() + 4;
+        if (assignedHeight < indicatorBlock) {
+            return 0;
+        }
+        const budget = assignedHeight - indicatorBlock;
+        let used = 0;
+        let count = 0;
+        for (let i = 0; i < topLevelItems.length; ++i) {
+            const need = 24 + (count > 0 ? 4 : 0);
+            if (used + need > budget) {
+                break;
+            }
+            used += need;
+            ++count;
+        }
+        return count;
     }
 
     readonly property int effectiveLimit: Math.min(
         clampedEntryLimit, vertical ? verticalLimitFor(height) : horizontalLimitFor(width))
     readonly property var visibleEntries: topLevelItems.slice(0, effectiveLimit)
     readonly property int overflowCount: topLevelItems.length - visibleEntries.length
+    // The indicator must fit its own measured size; otherwise it is hidden
+    // rather than painted partially inside the clipped geometry.
+    readonly property bool indicatorFits: vertical ? height >= measuredIndicatorHeight()
+                                                   : width >= measuredIndicatorWidth()
 
     objectName: "globalMenuApplet"
     implicitWidth: vertical ? 40
-                 : available ? row.implicitWidth + (overflowCount > 0 ? overflowIndicator.implicitWidth + spacing : 0)
+                 : available ? row.implicitWidth + (overflowCount > 0 && indicatorFits ? overflowIndicator.implicitWidth + spacing : 0)
                  : placeholder.implicitWidth + 16
     // AGENT-GUARD: the +N indicator is anchored below the vertical column, so
     // vertical implicit height must include it or the clipped root geometry
     // would hide the affordance the limit exists to surface.
     implicitHeight: vertical ? (available ? verticalLayout.implicitHeight
-                                   + (overflowCount > 0 ? overflowIndicator.implicitHeight + 4 : 0)
+                                   + (overflowCount > 0 && indicatorFits ? overflowIndicator.implicitHeight + 4 : 0)
                                    : 28)
                  : 28
     clip: true
@@ -93,7 +140,13 @@ Item {
         objectName: "globalMenuTopLevelItem"
         focusPolicy: Qt.TabFocus
         enabled: itemEnabled
-        checkable: Boolean(modelData.checkable ?? false)
+        implicitWidth: label.implicitWidth + 12
+        implicitHeight: 24
+        // AGENT-CONTRACT: presentation never owns toggle state. The button
+        // stays non-toggleable so Space/click cannot locally invert `checked`;
+        // the provider-owned value is bound into the accessible state, and an
+        // activation request lets the provider republish new truth.
+        checkable: false
         checked: Boolean(modelData.checked ?? false)
         Accessible.role: Accessible.MenuItem
         Accessible.focusable: true
@@ -102,6 +155,7 @@ Item {
         Accessible.name: String(modelData.text ?? "") + (isAction ? "" : qsTr(" (submenu unavailable)"))
 
         contentItem: Text {
+            id: label
             text: String(entry.modelData.text ?? "")
             textFormat: Text.PlainText
             elide: Text.ElideRight
@@ -142,6 +196,7 @@ Item {
 
     Row {
         id: row
+        objectName: "globalMenuHorizontalLayout"
         anchors.verticalCenter: parent.verticalCenter
         visible: root.available && !root.vertical
         spacing: root.spacing
@@ -170,7 +225,10 @@ Item {
     Text {
         id: overflowIndicator
         objectName: "globalMenuOverflowIndicator"
-        visible: root.available && root.overflowCount > 0
+        // AGENT-GUARD: below the documented host minimum the indicator hides
+        // itself rather than painting partially inside the clipped geometry;
+        // the limit loops reserve its measured size whenever it is shown.
+        visible: root.available && root.overflowCount > 0 && root.indicatorFits
         text: qsTr("+%1").arg(root.overflowCount)
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"

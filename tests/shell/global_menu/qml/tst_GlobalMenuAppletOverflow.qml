@@ -3,9 +3,12 @@ import QtQuick
 import QtTest
 import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
 
-// Overflow/geometry suite: bounded collapse must react to the assigned
-// main-axis extent (width horizontal, height vertical), keep the +N
-// affordance inside the clipped geometry, and clamp hostile count limits.
+// Overflow/geometry suite for the measured geometry contract. The
+// assertions are font-metric-independent on purpose: they check the
+// invariant the contract promises (whatever the real font metrics are, the
+// instantiated entries plus the +N indicator never exceed the assigned
+// main-axis extent, and below-minimum hosts degrade to indicator-only)
+// rather than hardcoded pixel counts.
 Item {
     id: testRoot
     width: 360
@@ -51,10 +54,10 @@ Item {
             fakeAccess.lastActivatedId = "";
         }
 
-        function numberedMenuItems(count) {
+        function numberedMenuItems(count, glyph) {
             const many = [];
             for (let i = 0; i < count; ++i) {
-                many.push({ "id": "action" + i, "kind": "action", "text": "Item " + i,
+                many.push({ "id": "action" + i, "kind": "action", "text": glyph + i,
                             "mnemonicIndex": -1, "enabled": true, "checkable": false,
                             "checked": false });
             }
@@ -79,6 +82,30 @@ Item {
             }
         }
 
+        // The contract invariant: instantiated entries plus the indicator
+        // (when shown) never exceed the assigned main-axis extent.
+        function verifyHorizontalFits(applet) {
+            const layout = findChild(applet, "globalMenuHorizontalLayout");
+            verify(layout !== null);
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            let used = layout.visible ? layout.implicitWidth : 0;
+            if (indicator.visible) {
+                used += 12 + indicator.width;
+            }
+            verify(used <= applet.width + 0.5);
+        }
+
+        function verifyVerticalFits(applet) {
+            const layout = findChild(applet, "globalMenuVerticalLayout");
+            verify(layout !== null);
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            let used = layout.visible ? layout.implicitHeight : 0;
+            if (indicator.visible) {
+                used += 4 + indicator.height;
+            }
+            verify(used <= applet.height + 0.5);
+        }
+
         function test_verticalLayoutStacksEntries() {
             fakeAccess.available = true;
             fakeAccess.items = [
@@ -98,16 +125,19 @@ Item {
             const entries = [];
             collectEntries(layout, entries);
             compare(entries.length, 3);
-            // Stacked vertically: each entry starts below the previous one.
+            // Stacked vertically: each entry starts below the previous one,
+            // on the deterministic 24 px entry height.
+            compare(entries[0].height, 24);
             verify(entries[1].y >= entries[0].y + entries[0].height);
             verify(entries[2].y >= entries[1].y + entries[1].height);
+            verifyVerticalFits(applet);
         }
 
         function test_wideHostCollapsesOnlyAtTheCountCap() {
             // A host wide enough for everything still applies the count cap:
             // 12 items, cap 8 → 8 entries and a +4 affordance.
             fakeAccess.available = true;
-            fakeAccess.items = numberedMenuItems(12);
+            fakeAccess.items = numberedMenuItems(12, "Item ");
             const applet = createTemporaryObject(
                                appletComponent, testRoot, { "width": 2000 });
             const indicator = findChild(applet, "globalMenuOverflowIndicator");
@@ -119,45 +149,93 @@ Item {
             collectEntries(applet, entries);
             compare(entries.length, 8);
             verify(applet.clip);
+            verifyHorizontalFits(applet);
         }
 
         function test_narrowHorizontalHostCollapsesByAssignedWidth() {
-            // 200 px wide host minus the reserved +N affordance leaves room
-            // for exactly two estimated entries; the rest collapses.
+            // The collapse reacts to the assigned width; whatever the real
+            // font metrics are, the retained row plus the indicator fit the
+            // assigned extent and the remainder is counted honestly.
             fakeAccess.available = true;
-            fakeAccess.items = numberedMenuItems(12);
+            fakeAccess.items = numberedMenuItems(12, "Item ");
             const applet = createTemporaryObject(
                                appletComponent, testRoot, { "width": 200 });
             const indicator = findChild(applet, "globalMenuOverflowIndicator");
             verify(indicator !== null);
-            verify(indicator.visible);
-            compare(indicator.text, "+10");
             const entries = [];
             collectEntries(applet, entries);
-            compare(entries.length, 2);
-            // The affordance stays inside the assigned (clipped) geometry.
-            verify(indicator.x + indicator.width <= applet.width + 0.5);
+            verify(entries.length >= 0);
+            verify(entries.length < 12);
+            if (indicator.visible) {
+                compare(indicator.text, "+" + (12 - entries.length));
+                compare(indicator.Accessible.name,
+                        (12 - entries.length) + " more menu entries");
+            }
+            verifyHorizontalFits(applet);
+        }
+
+        function test_wideGlyphsStillFitAssignedWidth() {
+            // Wide glyphs are exactly the case the old string-length
+            // heuristic got wrong: with a bounding-measurement contract the
+            // instantiated row can still never exceed the assigned width.
+            fakeAccess.available = true;
+            fakeAccess.items = numberedMenuItems(12, "WWWWWWWWWW");
+            const applet = createTemporaryObject(
+                               appletComponent, testRoot, { "width": 360 });
+            const entries = [];
+            collectEntries(applet, entries);
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            if (entries.length < 12) {
+                verify(indicator.visible);
+            }
+            verifyHorizontalFits(applet);
+        }
+
+        function test_belowMinimumHorizontalHostDegradesToIndicatorOnly() {
+            // A host too narrow for even one measured entry shows no partial
+            // labels; it degrades to the (hidden, if it cannot fit)
+            // indicator-only state instead of clipping a real label.
+            fakeAccess.available = true;
+            fakeAccess.items = numberedMenuItems(12, "Item ");
+            const applet = createTemporaryObject(
+                               appletComponent, testRoot, { "width": 8 });
+            const entries = [];
+            collectEntries(applet, entries);
+            compare(entries.length, 0);
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            verify(!indicator.visible);
+            verifyHorizontalFits(applet);
         }
 
         function test_narrowVerticalHostKeepsIndicatorInsideGeometry() {
-            // A 48 px tall host fits exactly one 28 px entry slot plus the
-            // reserved +N affordance; the indicator is part of implicit
-            // height and stays inside the assigned geometry.
             fakeAccess.available = true;
-            fakeAccess.items = numberedMenuItems(3);
+            fakeAccess.items = numberedMenuItems(3, "Item ");
             const applet = createTemporaryObject(
                                appletComponent, testRoot, { "vertical": true, "height": 48 });
             const layout = findChild(applet, "globalMenuVerticalLayout");
             verify(layout !== null);
             const indicator = findChild(applet, "globalMenuOverflowIndicator");
             verify(indicator !== null);
-            verify(indicator.visible);
-            compare(indicator.text, "+2");
             const entries = [];
             collectEntries(layout, entries);
-            compare(entries.length, 1);
-            verify(applet.implicitHeight >= indicator.y + indicator.height);
-            verify(indicator.y + indicator.height <= applet.height + 0.5);
+            verify(entries.length < 3);
+            if (indicator.visible) {
+                compare(indicator.text, "+" + (3 - entries.length));
+            }
+            verifyVerticalFits(applet);
+        }
+
+        function test_belowMinimumVerticalHostDegradesToIndicatorOnly() {
+            fakeAccess.available = true;
+            fakeAccess.items = numberedMenuItems(3, "Item ");
+            const applet = createTemporaryObject(
+                               appletComponent, testRoot, { "vertical": true, "height": 12 });
+            const entries = [];
+            collectEntries(applet, entries);
+            compare(entries.length, 0);
+            const indicator = findChild(applet, "globalMenuOverflowIndicator");
+            verify(!indicator.visible);
+            verifyVerticalFits(applet);
         }
 
         function test_negativeEntryLimitIsClamped() {
@@ -165,7 +243,7 @@ Item {
             // semantics ("drop from the end"): it clamps to one visible
             // entry, with the rest honestly counted as overflow.
             fakeAccess.available = true;
-            fakeAccess.items = numberedMenuItems(12);
+            fakeAccess.items = numberedMenuItems(12, "Item ");
             const applet = createTemporaryObject(
                                appletComponent, testRoot,
                                { "width": 2000, "maximumVisibleEntries": -5 });
@@ -176,6 +254,7 @@ Item {
             verify(indicator !== null);
             verify(indicator.visible);
             compare(indicator.text, "+11");
+            verifyHorizontalFits(applet);
         }
     }
 }

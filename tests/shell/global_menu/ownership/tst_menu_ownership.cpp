@@ -5,6 +5,7 @@
 #include <qindaqt/shell/global_menu/ownership/credential_source.h>
 #include <qindaqt/shell/global_menu/ownership/invocation_guard.h>
 #include <qindaqt/shell/global_menu/ownership/provider_authenticator.h>
+#include <qindaqt/shell/global_menu/protocol/menu_limits.h>
 #include <qindaqt/shell/global_menu/protocol/menu_tree.h>
 
 #include <QtCore/QHash>
@@ -54,41 +55,6 @@ ActiveWindowObservation observation(const QUuid &windowId, qint64 pid, quint64 f
                                     .focusGeneration = focusGeneration};
 }
 
-// Issues a real, authenticator-minted proof through the fakes. There is no
-// other way to obtain an AuthenticatedProvider — that is the forgeability
-// property under test.
-AuthenticatedProvider issueProof(const QUuid &windowId, quint64 focusGeneration,
-                                 const QString &uniqueName = QStringLiteral(":1.42"))
-{
-    FakeActiveWindowSource windowSource;
-    windowSource.value = observation(windowId, 4242, focusGeneration);
-    FakeCredentialSource credentials;
-    credentials.knownPids.insert(uniqueName, 4242);
-    ProviderAuthenticator authenticator(windowSource, credentials);
-    const AuthenticationResult result = authenticator.authenticate(
-        MenuProviderRegistration{.windowId = windowId,
-                                  .providerUniqueName = uniqueName,
-                                  .claimedProcessId = 4242});
-    Q_ASSERT(result.accepted);
-    return result.proof.value();
-}
-
-Protocol::MenuTree treeWithOneAction(const QUuid &windowId, const QUuid &epoch, quint64 revision,
-                                     bool enabled)
-{
-    Protocol::MenuItem item;
-    item.id = QStringLiteral("fileNewAction");
-    item.kind = Protocol::MenuItemKind::Action;
-    item.text = QStringLiteral("New");
-    item.enabled = enabled;
-
-    Protocol::MenuTree tree;
-    tree.ownerWindowId = windowId;
-    tree.epoch = epoch;
-    tree.revision = revision;
-    tree.items = {item};
-    return tree;
-}
 
 } // namespace
 
@@ -106,25 +72,12 @@ private Q_SLOTS:
     void authenticatorRejectsInvalidRegistration();
     void authenticatorRejectsWellKnownProviderName();
     void authenticatorRejectsMalformedUniqueName();
+    void authenticatorAcceptsHyphenatedUniqueName();
+    void authenticatorEnforcesUniqueNameByteBoundary();
     void authenticatorRejectsFocusChangeDuringLookup();
     void authenticatorProofCarriesVerifiedFacts();
 
-    void selectorStartsEmpty();
-    void selectorAdoptsOnlyProofs();
-    void selectorAssignsFreshEpochForNewWindow();
-    void selectorKeepsEpochAndBumpsRevisionForSameWindow();
-    void selectorClearRemovesCurrent();
-    void selectorInvalidatesOnFocusGenerationChange();
 
-    void invocationRejectsWithNoActiveProvider();
-    void invocationRejectsStaleWindow();
-    void invocationRejectsStaleEpoch();
-    void invocationRejectsSameEpochStaleRevision();
-    void invocationRejectsStaleTree();
-    void invocationRejectsUnknownAction();
-    void invocationRejectsSubmenu();
-    void invocationRejectsDisabledAction();
-    void invocationAcceptsCurrentLineage();
 };
 
 void MenuOwnershipTests::proofTypeIsNotForgeable()
@@ -291,6 +244,58 @@ void MenuOwnershipTests::authenticatorRejectsMalformedUniqueName()
     QCOMPARE(illegalCharacter.reasonCode, QStringLiteral("invalid-registration"));
 }
 
+void MenuOwnershipTests::authenticatorAcceptsHyphenatedUniqueName()
+{
+    // Hyphen is a legal D-Bus bus-name element character; a daemon-issued
+    // name like ":1.worker-2" must authenticate, not be refused.
+    const QUuid windowId = QUuid::createUuid();
+    const QString name = QStringLiteral(":1.worker-2");
+    FakeActiveWindowSource windowSource;
+    windowSource.value = observation(windowId, 4242, 11);
+    FakeCredentialSource credentialSource;
+    credentialSource.knownPids.insert(name, 4242);
+
+    ProviderAuthenticator authenticator(windowSource, credentialSource);
+    const AuthenticationResult result = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = name,
+                                  .claimedProcessId = 4242});
+    QVERIFY(result.accepted);
+    QCOMPARE(result.proof->providerUniqueName(), name);
+}
+
+void MenuOwnershipTests::authenticatorEnforcesUniqueNameByteBoundary()
+{
+    // D-Bus caps bus names at exactly 255 bytes: 255 is valid, 256 is not.
+    const QUuid windowId = QUuid::createUuid();
+    const QString name255 = QStringLiteral(":1.")
+        + QString(static_cast<int>(Protocol::kMaxProviderUniqueNameUtf8Bytes) - 3, QLatin1Char('a'));
+    QCOMPARE(name255.toUtf8().size(), qsizetype(255));
+    const QString name256 = name255 + QLatin1Char('a');
+    QCOMPARE(name256.toUtf8().size(), qsizetype(256));
+
+    FakeActiveWindowSource windowSource;
+    windowSource.value = observation(windowId, 4242, 11);
+    FakeCredentialSource credentialSource;
+    credentialSource.knownPids.insert(name255, 4242);
+    credentialSource.knownPids.insert(name256, 4242);
+
+    ProviderAuthenticator authenticator(windowSource, credentialSource);
+    const AuthenticationResult atBound = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = name255,
+                                  .claimedProcessId = 4242});
+    QVERIFY(atBound.accepted);
+
+    const AuthenticationResult overBound = authenticator.authenticate(
+        MenuProviderRegistration{.windowId = windowId,
+                                  .providerUniqueName = name256,
+                                  .claimedProcessId = 4242});
+    QVERIFY(!overBound.accepted);
+    QCOMPARE(overBound.reasonCode, QStringLiteral("invalid-registration"));
+    QVERIFY(!overBound.proof.has_value());
+}
+
 void MenuOwnershipTests::authenticatorRejectsFocusChangeDuringLookup()
 {
     const QUuid windowId = QUuid::createUuid();
@@ -341,225 +346,6 @@ void MenuOwnershipTests::authenticatorProofCarriesVerifiedFacts()
     QCOMPARE(result.proof->window().processId, qint64(4242));
     QCOMPARE(result.proof->providerUniqueName(), QStringLiteral(":1.42"));
     QCOMPARE(result.proof->focusGeneration(), quint64(33));
-}
-
-void MenuOwnershipTests::selectorStartsEmpty()
-{
-    ActiveProviderSelector selector;
-    QVERIFY(!selector.current().has_value());
-}
-
-void MenuOwnershipTests::selectorAdoptsOnlyProofs()
-{
-    // AGENT-NOTE: the API has no adopt(registration, window) overload and
-    // AuthenticatedProvider cannot be constructed outside the authenticator;
-    // the type system forces the verified proof to be the adopted value.
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const SelectedProvider selection = selector.current().value();
-    QCOMPARE(selection.window.windowId, windowId);
-    QCOMPARE(selection.providerUniqueName, QStringLiteral(":1.42"));
-    QCOMPARE(selection.focusGeneration, quint64(11));
-}
-
-void MenuOwnershipTests::selectorAssignsFreshEpochForNewWindow()
-{
-    ActiveProviderSelector selector;
-    const QUuid firstWindow = QUuid::createUuid();
-    selector.adopt(issueProof(firstWindow, 11));
-    const SelectedProvider firstSelection = selector.current().value();
-    QCOMPARE(firstSelection.revision, quint64(1));
-
-    const QUuid secondWindow = QUuid::createUuid();
-    selector.adopt(issueProof(secondWindow, 12));
-    const SelectedProvider secondSelection = selector.current().value();
-    QVERIFY(secondSelection.epoch != firstSelection.epoch);
-    QCOMPARE(secondSelection.revision, quint64(1));
-}
-
-void MenuOwnershipTests::selectorKeepsEpochAndBumpsRevisionForSameWindow()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const QUuid epoch = selector.current()->epoch;
-
-    selector.adopt(issueProof(windowId, 11));
-    const SelectedProvider selection = selector.current().value();
-    QCOMPARE(selection.epoch, epoch);
-    QCOMPARE(selection.revision, quint64(2));
-}
-
-void MenuOwnershipTests::selectorClearRemovesCurrent()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    QVERIFY(selector.current().has_value());
-    selector.clear();
-    QVERIFY(!selector.current().has_value());
-}
-
-void MenuOwnershipTests::selectorInvalidatesOnFocusGenerationChange()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    QVERIFY(selector.current().has_value());
-
-    // Same generation: no-op.
-    selector.applyFocusGeneration(11);
-    QVERIFY(selector.current().has_value());
-
-    // Focus moved since authentication: the adoption is dropped.
-    selector.applyFocusGeneration(12);
-    QVERIFY(!selector.current().has_value());
-}
-
-void MenuOwnershipTests::invocationRejectsWithNoActiveProvider()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    const Protocol::MenuTree tree = treeWithOneAction(windowId, QUuid::createUuid(), 1, true);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = tree.epoch, .revision = 1, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("no-active-provider"));
-}
-
-void MenuOwnershipTests::invocationRejectsStaleWindow()
-{
-    ActiveProviderSelector selector;
-    const QUuid ownedWindow = QUuid::createUuid();
-    selector.adopt(issueProof(ownedWindow, 11));
-
-    const QUuid otherWindow = QUuid::createUuid();
-    const Protocol::MenuTree tree = treeWithOneAction(otherWindow, QUuid::createUuid(), 1, true);
-    const InvocationRequest request{
-        .windowId = otherWindow, .epoch = tree.epoch, .revision = 1, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("stale-owner"));
-}
-
-void MenuOwnershipTests::invocationRejectsStaleEpoch()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const Protocol::MenuTree tree = treeWithOneAction(windowId, QUuid::createUuid(), 1, true);
-    // The request carries an epoch from before the current adoption.
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = QUuid::createUuid(), .revision = 1, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("stale-owner"));
-}
-
-void MenuOwnershipTests::invocationRejectsSameEpochStaleRevision()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    selector.adopt(issueProof(windowId, 11)); // same epoch, revision 2 now
-    const QUuid epoch = selector.current()->epoch;
-
-    // The tree and request both describe the still-earlier revision 1
-    // publication: same window, same epoch, but no longer authoritative.
-    const Protocol::MenuTree staleTree = treeWithOneAction(windowId, epoch, 1, true);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = epoch, .revision = 1, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, staleTree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("stale-owner"));
-}
-
-void MenuOwnershipTests::invocationRejectsStaleTree()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const quint64 revision = selector.current()->revision;
-    // The request matches the current lineage, but the tree it is paired with
-    // was published under an older epoch; the action must not resolve.
-    const Protocol::MenuTree staleTree =
-        treeWithOneAction(windowId, QUuid::createUuid(), revision, true);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = selector.current()->epoch, .revision = revision, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, staleTree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("stale-owner"));
-}
-
-void MenuOwnershipTests::invocationRejectsUnknownAction()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const QUuid epoch = selector.current()->epoch;
-    const quint64 revision = selector.current()->revision;
-    const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, true);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = epoch, .revision = revision, .actionId = QStringLiteral("does-not-exist")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("unknown-action"));
-}
-
-void MenuOwnershipTests::invocationRejectsSubmenu()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const QUuid epoch = selector.current()->epoch;
-    const quint64 revision = selector.current()->revision;
-
-    Protocol::MenuItem submenu;
-    submenu.id = QStringLiteral("fileMenu");
-    submenu.kind = Protocol::MenuItemKind::Submenu;
-    submenu.text = QStringLiteral("File");
-    Protocol::MenuTree tree;
-    tree.ownerWindowId = windowId;
-    tree.epoch = epoch;
-    tree.revision = revision;
-    tree.items = {submenu};
-
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = epoch, .revision = revision, .actionId = QStringLiteral("fileMenu")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("not-invocable"));
-}
-
-void MenuOwnershipTests::invocationRejectsDisabledAction()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const QUuid epoch = selector.current()->epoch;
-    const quint64 revision = selector.current()->revision;
-    const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, /*enabled=*/false);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = epoch, .revision = revision, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(!result.accepted);
-    QCOMPARE(result.reasonCode, QStringLiteral("disabled"));
-}
-
-void MenuOwnershipTests::invocationAcceptsCurrentLineage()
-{
-    ActiveProviderSelector selector;
-    const QUuid windowId = QUuid::createUuid();
-    selector.adopt(issueProof(windowId, 11));
-    const QUuid epoch = selector.current()->epoch;
-    const quint64 revision = selector.current()->revision;
-    const Protocol::MenuTree tree = treeWithOneAction(windowId, epoch, revision, /*enabled=*/true);
-    const InvocationRequest request{
-        .windowId = windowId, .epoch = epoch, .revision = revision, .actionId = QStringLiteral("fileNewAction")};
-    const InvocationResult result = InvocationGuard::evaluate(selector, tree, request);
-    QVERIFY(result.accepted);
 }
 
 QTEST_APPLESS_MAIN(MenuOwnershipTests)
