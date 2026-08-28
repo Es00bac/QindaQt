@@ -41,7 +41,7 @@ keyboard docking.
 | `Outputs` | None | One generation of ordered outputs with stable identity, logical geometry, mode, priority, and display metadata |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
 | `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
-| `DevelopmentShellSurfaces` | None | Development-only compositor-owned notification layer-surface evidence, or a production pre-inspection rejection |
+| `DevelopmentShellSurfaces` | None | Development-only compositor-owned allowlisted notification/dock layer-surface evidence, or a production pre-inspection rejection |
 | `Containers` | None | Observable bridge and process-local Hybrid container IDs, actual decimal-string revisions, and explicit authority |
 | `DockWindows` | Two window IDs, orientation, position, ratio | Atomically creates and tiles one bridge-owned two-member container at revision 1 |
 | `ReleaseContainer` | Container ID | Restores and terminates one bridge-owned container |
@@ -191,31 +191,37 @@ exact Qt-output mismatch. Forward gaps are accepted because every payload is a
 complete generation and invalidations may coalesce. Recovery requires a later
 complete valid generation; no partial inventory is retained as policy input.
 
-## Development notification-surface evidence
+## Development qualification-surface evidence
 
 `DevelopmentShellSurfaces` is a read-only qualification seam, not a supported
 desktop or automation API. It is absent from the shell's production behavior
 and returns `control-disabled` before inspecting KWin state unless the launcher
 has admitted an explicit isolated development scenario. The compositor filters
-the result to QindaQt's exact `notification-popup` and
-`notification-center` scopes; it never inventories unrelated user surfaces.
+the result to QindaQt's exact `notification-popup`, `notification-center`, and
+production `dock` qualification scopes; it never inventories unrelated user
+surfaces. Notification Live consumes only its two notification roles, while the
+contained whole-desktop row consumes only `dock`.
 
 Each returned record pairs a live KWin window with its exported, committed
 layer-shell protocol object by their shared Wayland surface. The plugin never
 depends on KWin's unexported internal layer-window class. It reports the client PID, scope,
 committed/mapped/active/focus-acceptance state, layer, anchors, margins,
 exclusive zone, desired size, KWin frame geometry, and current plus desired
-output names. A live driver must reject duplicate notification roles and bind
-the PID to the separately authenticated production shell process. The center
-must be active when its keyboard traversal is sampled; the popup must remain
-inactive so an incoming notification cannot steal focus.
+output names. A live driver must reject duplicate notification roles. Every
+consumed dock record must carry a canonical positive decimal-string PID equal
+to the separately authenticated current production-shell PID; a missing,
+malformed, foreign, or stale replacement identity fails the whole-desktop row.
+The center must be active when its keyboard traversal is sampled; the popup
+must remain inactive so an incoming notification cannot steal focus.
 
 The production shell's complementary `org.qindaqt.ShellDevelopment1` snapshot
 is described in [Notification presentation](../shell/notification-presentation.md).
 Both halves are admitted only on a private bus after the shell authenticates
 the exact compositor PID and verifies `controlMode: "development-test"` plus
 enabled mutations. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)
-records why this deliberately narrow cross-process evidence boundary exists.
+retains the exact two-role Notification Live boundary;
+[ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md) adds only the
+production-dock qualification consumer.
 
 ## Development input seam
 

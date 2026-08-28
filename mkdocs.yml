@@ -87,4 +87,5 @@ nav:
       - "ADR-0023: Split power authority": adr/0023-split-power-authority-across-service-and-shell.md
       - "ADR-0024: Power1 brightness routing": adr/0024-route-brightness-through-power1.md
       - "ADR-0025: Session-bound Power1 activation": adr/0025-arbitrate-session-bound-power1-activation.md
+      - "ADR-0026: Contained virtual desktop": adr/0026-contain-virtual-desktop-qualification.md
       - "ADR-0027: Narrow first-party AppShell": adr/0027-extract-a-narrow-first-party-application-shell.md

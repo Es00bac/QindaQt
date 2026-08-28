@@ -3,11 +3,13 @@
 ## Current baseline
 
 - Branch: public `main`
-- Functional boundary: public AppShell integration `a18b046` plus accepted
-  PB-0 candidate `3078386` in this integration change
+- Functional boundary: public AppShell integration `a18b046`, PB-0 integration
+  `cbec6fb`, and accepted contained-virtual-desktop candidate `d08747d` in this
+  integration change
 - Outcome: qualified QST-1 and Controls, bounded Audio1, Display D0/D1/D2,
   live notifications, executable native Text Editor S1, and executable shared
-  QindaQt.AppShell 1.0 contracts
+  QindaQt.AppShell 1.0 contracts, plus the source/unit/package boundary for a
+  private whole-desktop boot harness
 - State: independently accepted, manager-qualified, and published with a
   documentation-only project-identity descendant
 
@@ -32,6 +34,14 @@ teardown across the required nested resolution and scale matrix.
 
 Integrated evidence:
 
+- The exact repaired contained-virtual-desktop candidate `d08747d` passed an
+  independent exact-commit rereview with P0/P1/P2/P3 `0/0/0/0`. On the
+  combined tree, all 62/62 focused Python units pass, 14 harness sources
+  compile in memory, source shape checks 1,069 files, documentation validates
+  68 pages, strict MkDocs passes, and the staged diff is whitespace-clean.
+  This integrates the authenticated sandbox, package contract, topology,
+  resource, evidence, and teardown boundary only. No compiler, private desktop
+  boot, screenshot, input, or host-session action ran in this merge.
 - The exact PB-0 candidate `3078386` passed independent GLM rereview with no
   P0/P1/P2 finding. The combined tree built all five focused test targets,
   passed 6/6 Power/Brightness CTest rows and 54/54 direct QtTest cases, and
@@ -81,10 +91,11 @@ Integrated evidence:
 ## Next outcome
 
 Complete the interactive virtual desktop integration described in
-[Task list](TASK_LIST.md): boot the combined compositor, shell, resident
-services, and test applications under an isolated parent Wayland compositor;
-exercise the private nested seat; collect reviewable screenshots; and prove
-repeatable teardown across the resolution, scale, theme, and multi-output
+[Task list](TASK_LIST.md). First integrate and verify the Settings application's
+exact installed identity, build the accepted harness against the combined
+production graph, and pass its private 1920x1080 boot/topology/PSS/teardown row.
+Then exercise the private nested seat, collect reviewable screenshots, and
+prove repeatable teardown across the resolution, scale, theme, and multi-output
 matrix without connecting to the host pointer, display, session bus, or user
 configuration.
 

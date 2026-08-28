@@ -225,7 +225,8 @@ QByteArray KWinControlEndpoint::DevelopmentShellSurfaces() const
 {
     // AGENT-GUARD: Layer-shell protocol state can identify user surfaces. The
     // inventory is available only in the launcher's isolated development mode
-    // and is filtered to QindaQt's two notification scopes.
+    // and is filtered to the three qualification scopes accepted by ADR-0020
+    // and ADR-0026. Do not broaden this into a general layer-surface inventory.
     if (!m_mutationsEnabled) {
         return response(QStringLiteral("rejected"),
                         QStringLiteral("control-disabled"),
@@ -248,7 +249,8 @@ QByteArray KWinControlEndpoint::DevelopmentShellSurfaces() const
             continue;
         }
         if (surface->scope() != QStringLiteral("notification-popup")
-            && surface->scope() != QStringLiteral("notification-center")) {
+            && surface->scope() != QStringLiteral("notification-center")
+            && surface->scope() != QStringLiteral("dock")) {
             continue;
         }
         const KWin::LogicalOutput *const output = window->output();

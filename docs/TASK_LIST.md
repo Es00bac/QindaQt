@@ -23,6 +23,12 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `d08747d` — Contained virtual-desktop S0+S1 source boundary: authenticated
+  bubblewrap sandbox and staging, exact production package contract, bounded
+  simultaneous topology/readiness proof, application/output/input/dock
+  identity checks, aggregate 1,024 MiB PSS accounting, authenticated teardown,
+  and failure-safe evidence archival. The registered private 1080p boot row is
+  not yet qualified and contributes no live-desktop or screenshot claim.
 - `3078386` — PB-0 bounded Power1 values/codecs, deterministic aggregate-
   battery policy, result lineage, and pure brightness composition/math with
   fail-closed identity, mirror collapse, integer conversion, installed public

@@ -63,7 +63,12 @@ The repository currently builds and tests:
   session is conclusively unlocked;
 - isolated development-session planning and declarative single-, multi-output,
   mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
-  subset the current virtual backend actually applies; and
+  subset the current virtual backend actually applies;
+- an integrated contained virtual-desktop S0+S1 harness boundary with an
+  authenticated private bubblewrap stage, exact production package and
+  topology contracts, bounded readiness/resource accounting, durable failure
+  evidence, and identity-safe teardown; its private 1080p boot row remains
+  unqualified pending the exact Settings application-identity integration; and
 - strict compiler warnings, unit tests, source-shape checks, and this wiki.
 
 The repository now boots a real compositor and has completed its Compositor
