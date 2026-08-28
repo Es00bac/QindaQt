@@ -38,6 +38,14 @@ public:
     // Null while the backing repository never initialized.
     [[nodiscard]] virtual std::shared_ptr<const QindaQt::ShellCustomization::LayoutEditingSnapshot>
     snapshot() const = 0;
+    // True only when this engine can act as the repository's unique mutation
+    // authority on the calling thread. A readable snapshot is not readiness:
+    // another editor may own the coordinator while that snapshot is visible.
+    [[nodiscard]] virtual bool isReady() const = 0;
+    // The authoritative non-preview profile retained by the coordinator.
+    // Null while isReady() is false or the repository never initialized.
+    [[nodiscard]] virtual std::shared_ptr<const QindaQt::Profiles::LayoutProfile>
+    committedProfile() const = 0;
     [[nodiscard]] virtual QindaQt::ShellCustomization::LayoutEditingStatus status() const = 0;
     [[nodiscard]] virtual bool hasPreview() const = 0;
 };

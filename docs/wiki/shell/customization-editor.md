@@ -47,7 +47,10 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
   evaluates an ordered command sequence on a disposable repository with the
   same outputs and manifest catalog. Evaluation never publishes live state.
   While another coordinator owns the session, mutation/evaluation fails with
-  `RepositoryNotReady` and the editor presents read-only.
+  `RepositoryNotReady` and the editor presents read-only. Snapshot readability
+  is never treated as write authority: the seam exposes unique-lease readiness
+  separately from preview state and exposes the coordinator-retained committed
+  profile only after that lease is held.
 - **Editor session** (`editor_session.h`): binds machine, translator, engine
   seam, and persistence. Owns the canonical applied-profile baseline, its
   identity, the derived dirty flag, the per-target acceptance highlight, and
@@ -87,16 +90,22 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 
 ## Apply, revert, and persistence
 
-**Apply** is accepted only for an idle, non-preview, non-stale session. It
-writes the committed edited snapshot through the profiles-owned store and
-replaces the applied baseline only after success; a failed write changes
-nothing and reports `ApplyFailed`. The session initializes that baseline from
-the constructor's committed repository snapshot. After every successful point
-or drag commit, Undo, and Redo, dirty truth is derived by comparing the full
-canonical schema-v1 profile with the baseline; revisions and history position
-are never treated as proxies for unsaved content. **Revert** cannot replace the
-host-owned repository, so it preserves dirty truth, rejects further edit/apply
-work, and returns the typed `RebuildRequired` outcome. The host completes
+**Apply** is accepted only for an idle, non-preview, non-stale session that
+holds the unique coordinator lease. A losing editor returns typed
+`EngineUnavailable` and writes no profile even though it can still read the
+repository's published snapshot. Apply writes the committed edited snapshot
+through the profiles-owned store and replaces the applied baseline only after
+success; a failed write changes nothing and reports `ApplyFailed`. The session
+initializes that baseline from the coordinator-retained committed profile, not
+the possibly provisional published snapshot. If construction loses the lease
+during a foreign preview, the session fails dirty/read-only and adopts that
+committed baseline only after normal lease retry, before its first successful
+mutation or Apply. After every successful point or drag commit, Undo, and Redo,
+dirty truth is derived by comparing the full canonical schema-v1 profile with
+the baseline; revisions and history position are never treated as proxies for
+unsaved content. **Revert** cannot replace the host-owned repository, so it
+preserves dirty truth, rejects further edit/apply work, and returns the typed
+`RebuildRequired` outcome. The host completes
 Revert by constructing a fresh repository from the last applied profile. The
 editor never auto-saves, never writes `panels.configuration`, and does not own
 profile selection; committing `panels.layoutProfile` through the public
@@ -120,11 +129,14 @@ bus, or user configuration is touched.
 The session suite also composes the production repository adapter and proves
 exact cancellation, rejected release behavior, return from an invalid hover,
 failed-Apply and Revert truth, and coordinator-lease retry. The dirty-history
-suite composes the real repository, adapter, and profile store to prove a
-cross-panel edit followed by Undo returns exactly to the constructor baseline
-without a false close prompt, and that Apply followed by Undo/Redo reports
-dirty/clean against the newly persisted baseline while retaining one durable
-undo boundary.
+suite composes the real repository, adapter, and profile store to prove four
+production lifecycles: cross-panel edit followed by Undo returns exactly to
+the constructor baseline without a false close prompt; Apply followed by
+Undo/Redo reports dirty/clean against the newly persisted baseline while
+retaining one durable undo boundary; Apply under a foreign lease returns
+`EngineUnavailable` without creating a file; and construction during a
+foreign preview followed by cancel/release, edit, and Undo adopts the retained
+committed baseline and returns exact/clean.
 
 Presentation, canvas rendering, an offscreen UI matrix, and live session
 behavior are not provided by this module and remain future slices of the

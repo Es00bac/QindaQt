@@ -59,11 +59,46 @@ EditorSession::EditorSession(EditingEngine &engine, UserProfileStore store)
     : m_engine(engine)
     , m_store(std::move(store))
 {
-    const auto current = m_engine.snapshot();
-    if (current != nullptr && !current->previewActive) {
-        m_appliedProfileId = current->profile.id;
-        m_appliedProfileBaseline = current->profile.toJson();
+    adoptAppliedBaselineIfAvailable();
+    if (!m_appliedProfileBaseline.has_value()) {
+        // A session born while another owner publishes a preview is not
+        // allowed to imply clean truth before it can adopt the committed
+        // baseline under its own lease.
+        refreshDirtyState();
     }
+}
+
+void EditorSession::adoptAppliedBaselineIfAvailable()
+{
+    if (m_appliedProfileBaseline.has_value() || !m_engine.isReady()) {
+        return;
+    }
+    const auto committed = m_engine.committedProfile();
+    if (committed == nullptr) {
+        return;
+    }
+    m_appliedProfileId = committed->id;
+    m_appliedProfileBaseline = committed->toJson();
+    refreshDirtyState();
+}
+
+EditorOutcome EditorSession::ensureReadyWithAppliedBaseline()
+{
+    // AGENT-GUARD: snapshot readability does not confer write authority. A
+    // foreign coordinator may publish a provisional snapshot while this
+    // editor has no lease; every mutation and Apply must fail closed here.
+    if (!m_engine.isReady()) {
+        return EditorOutcome::failure(
+            EditorErrorCode::EngineUnavailable,
+            QStringLiteral("the layout editing session is owned by another window"));
+    }
+    adoptAppliedBaselineIfAvailable();
+    if (!m_appliedProfileBaseline.has_value()) {
+        return EditorOutcome::failure(
+            EditorErrorCode::EngineUnavailable,
+            QStringLiteral("no committed layout is available for editing"));
+    }
+    return EditorOutcome::success();
 }
 
 quint64 EditorSession::observedRevision() const
@@ -96,6 +131,10 @@ EditorOutcome EditorSession::applyGesture(const CustomizationIntent &intent,
     const IntentValidation validation = validateIntent(intent, target);
     if (!validation.ok()) {
         return EditorOutcome::failure(EditorErrorCode::IntentInvalid, validation.message);
+    }
+    const EditorOutcome readiness = ensureReadyWithAppliedBaseline();
+    if (!readiness.ok) {
+        return readiness;
     }
 
     TranslationContext context;
@@ -176,6 +215,10 @@ EditorOutcome EditorSession::undo()
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
                                       QStringLiteral("finish or cancel the active gesture first"));
     }
+    const EditorOutcome readiness = ensureReadyWithAppliedBaseline();
+    if (!readiness.ok) {
+        return readiness;
+    }
     UndoCommand command;
     command.expectedRevision = observedRevision();
     const EditingResult result = m_engine.execute(command);
@@ -200,6 +243,10 @@ EditorOutcome EditorSession::redo()
         return EditorOutcome::failure(EditorErrorCode::GestureRefused,
                                       QStringLiteral("finish or cancel the active gesture first"));
     }
+    const EditorOutcome readiness = ensureReadyWithAppliedBaseline();
+    if (!readiness.ok) {
+        return readiness;
+    }
     RedoCommand command;
     command.expectedRevision = observedRevision();
     const EditingResult result = m_engine.execute(command);
@@ -220,7 +267,16 @@ EditorOutcome EditorSession::applyToUserProfile()
             m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
             QStringLiteral("rebuild the editor session before applying"));
     }
-    if (m_machine.state() != GestureState::Idle || m_engine.hasPreview()) {
+    if (m_machine.state() != GestureState::Idle) {
+        return EditorOutcome::failure(
+            EditorErrorCode::GestureRefused,
+            QStringLiteral("finish or cancel the provisional gesture before applying"));
+    }
+    const EditorOutcome readiness = ensureReadyWithAppliedBaseline();
+    if (!readiness.ok) {
+        return readiness;
+    }
+    if (m_engine.hasPreview()) {
         return EditorOutcome::failure(
             EditorErrorCode::GestureRefused,
             QStringLiteral("finish or cancel the provisional gesture before applying"));

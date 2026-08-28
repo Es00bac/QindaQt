@@ -39,11 +39,14 @@ public:
         const QVector<QindaQt::ShellCustomization::EditingCommand> &commands) const override;
     [[nodiscard]] std::shared_ptr<const QindaQt::ShellCustomization::LayoutEditingSnapshot>
     snapshot() const override;
+    [[nodiscard]] bool isReady() const override;
+    [[nodiscard]] std::shared_ptr<const QindaQt::Profiles::LayoutProfile>
+    committedProfile() const override;
     [[nodiscard]] QindaQt::ShellCustomization::LayoutEditingStatus status() const override;
     [[nodiscard]] bool hasPreview() const override;
 
-    // False while another coordinator owns the session or the repository is
-    // not ready. The presentation binds its read-only banner to this value.
+    // Compatibility spelling for presentation consumers. This is exactly the
+    // EditingEngine readiness contract, not a separate lease probe.
     [[nodiscard]] bool holdsLease() const;
 
 private:

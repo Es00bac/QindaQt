@@ -55,6 +55,16 @@ and Redo compares the complete canonical schema-v1 profile to that baseline.
 Repository revisions and undo-stack position are ordering mechanisms, not
 evidence that the edited content differs from what was applied.
 
+The editor seam distinguishes a readable published snapshot from unique-lease
+readiness. Apply and mutation fail closed unless the adapter owns the
+coordinator. The seam also exposes the coordinator-retained committed profile
+independently of a provisional snapshot, but only to the lease holder. A
+session constructed while a foreign preview is visible therefore remains
+read-only and fails dirty until normal retry acquires the lease; it adopts the
+retained committed value before its first successful edit or Apply. This keeps
+losing windows from writing and prevents a later exact Undo from retaining a
+false dirty state.
+
 ADR numbers are allocated by the manager's shared registry. This record does
 not reserve a subsequent number for the future `org.qindaqt.ShellLayout1`
 cross-process protocol decision.

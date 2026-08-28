@@ -111,6 +111,13 @@ public:
         return current;
     }
 
+    bool isReady() const override { return true; }
+
+    std::shared_ptr<const Profiles::LayoutProfile> committedProfile() const override
+    {
+        return std::make_shared<const Profiles::LayoutProfile>(m_profile);
+    }
+
     QindaQt::ShellCustomization::LayoutEditingStatus status() const override
     {
         QindaQt::ShellCustomization::LayoutEditingStatus value;

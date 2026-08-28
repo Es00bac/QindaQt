@@ -2,11 +2,13 @@
 #include "editor_test_fixtures.h"
 
 #include "qindaqt/profiles/profile_loader.h"
+#include "qindaqt/shell_customization/layout_editing_coordinator.h"
 #include "qindaqt/shell_customization/layout_editing_repository.h"
 #include "qindaqt/shell_customization_editor/coordinator_engine_adapter.h"
 #include "qindaqt/shell_customization_editor/editor_session.h"
 
 #include <QTemporaryDir>
+#include <QDir>
 #include <QtTest/QtTest>
 
 using namespace QindaQt;
@@ -86,6 +88,59 @@ private slots:
 
         QVERIFY(session.redo().ok);
         QCOMPARE(repository.snapshot()->profile.toJson(), applied.toJson());
+        QVERIFY(!session.isDirty());
+    }
+
+    void productionApplyFailsClosedWhileAnotherCoordinatorOwnsTheRepository()
+    {
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        ShellCustomization::LayoutEditingRepository repository(
+            profile(), outputs(), manifests());
+        auto foreignOwner = repository.tryAcquireCoordinator();
+        QVERIFY(foreignOwner);
+        CoordinatorEditingEngine engine(repository, manifests());
+        QVERIFY(!engine.isReady());
+        EditorSession session(engine, UserProfileStore{directory.path()});
+
+        const EditorOutcome apply = session.applyToUserProfile();
+        QVERIFY(!apply.ok);
+        QCOMPARE(apply.code, EditorErrorCode::EngineUnavailable);
+        QVERIFY(QDir(directory.path()).isEmpty());
+        QVERIFY(!engine.isReady());
+    }
+
+    void productionSessionCreatedDuringForeignPreviewAdoptsCommittedBaseline()
+    {
+        const Profiles::LayoutProfile initial = profile();
+        ShellCustomization::LayoutEditingRepository repository(
+            initial, outputs(), manifests());
+        auto foreignOwner = repository.tryAcquireCoordinator();
+        QVERIFY(foreignOwner);
+        QVERIFY(foreignOwner->execute(
+            ShellCustomization::BeginPreviewCommand{0}).succeeded());
+        QVERIFY(repository.snapshot()->previewActive);
+
+        CoordinatorEditingEngine engine(repository, manifests());
+        QVERIFY(!engine.isReady());
+        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
+        QVERIFY(session.appliedProfileId().isEmpty());
+        QVERIFY(session.isDirty());
+
+        QVERIFY(foreignOwner->execute(
+            ShellCustomization::CancelPreviewCommand{1}).succeeded());
+        foreignOwner.reset();
+
+        const EditorOutcome edit = session.applyGesture(
+            removeIntent(QStringLiteral("bar"), QStringLiteral("clock-instance")),
+            DropTarget{QStringLiteral("bar"), QStringLiteral("end"), {}});
+        QVERIFY2(edit.ok, qPrintable(edit.message));
+        QCOMPARE(session.appliedProfileId(), initial.id);
+        QVERIFY(session.isDirty());
+
+        const EditorOutcome undo = session.undo();
+        QVERIFY2(undo.ok, qPrintable(undo.message));
+        QCOMPARE(repository.snapshot()->profile.toJson(), initial.toJson());
         QVERIFY(!session.isDirty());
     }
 };

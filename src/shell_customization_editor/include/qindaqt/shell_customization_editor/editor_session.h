@@ -141,6 +141,8 @@ private:
     void settle(EditorOutcome outcome);
     void discardAcceptance();
     void refreshDirtyState();
+    [[nodiscard]] EditorOutcome ensureReadyWithAppliedBaseline();
+    void adoptAppliedBaselineIfAvailable();
     [[nodiscard]] quint64 observedRevision() const;
     [[nodiscard]] QString nextInstanceId();
 

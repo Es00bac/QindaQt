@@ -332,6 +332,10 @@ EditorOutcome EditorSession::beginVisualDrag()
             m_stale ? EditorErrorCode::SessionStale : EditorErrorCode::RebuildRequired,
             QStringLiteral("rebuild the editor session before editing"));
     }
+    const EditorOutcome readiness = ensureReadyWithAppliedBaseline();
+    if (!readiness.ok) {
+        return readiness;
+    }
     const GestureTransition transition =
         m_machine.handle(gestureEvent(GestureEventKind::ThresholdExceeded));
     if (transition.refused) {

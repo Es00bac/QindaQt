@@ -134,6 +134,20 @@ std::shared_ptr<const LayoutEditingSnapshot> CoordinatorEditingEngine::snapshot(
     return m_repository.snapshot();
 }
 
+bool CoordinatorEditingEngine::isReady() const
+{
+    return onOwnerThread() && ensureCoordinator();
+}
+
+std::shared_ptr<const Profiles::LayoutProfile>
+CoordinatorEditingEngine::committedProfile() const
+{
+    if (!isReady()) {
+        return nullptr;
+    }
+    return m_coordinator->committedProfile();
+}
+
 LayoutEditingStatus CoordinatorEditingEngine::status() const
 {
     if (!onOwnerThread() || !ensureCoordinator()) {
@@ -152,7 +166,7 @@ bool CoordinatorEditingEngine::hasPreview() const
 
 bool CoordinatorEditingEngine::holdsLease() const
 {
-    return onOwnerThread() && ensureCoordinator();
+    return isReady();
 }
 
 bool CoordinatorEditingEngine::onOwnerThread() const noexcept
