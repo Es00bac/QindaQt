@@ -163,7 +163,6 @@ private slots:
 
         QVERIFY(session.drop().ok);
         QCOMPARE(engine.executed().back(), CommandKind::CommitPreview);
-        QVERIFY(session.isDirty());
         QCOMPARE(session.gestureState(), GestureState::Idle);
         QVERIFY(!session.isVisualDragActive());
     }
@@ -295,44 +294,6 @@ private slots:
         QCOMPARE(executed.at(0), CommandKind::BeginPreview);
         QCOMPARE(executed.at(1), CommandKind::RemoveApplet);
         QCOMPARE(executed.at(2), CommandKind::CommitPreview);
-        QVERIFY(session.isDirty());
-    }
-
-    void productionCrossPanelZoneMoveChainsAndCreatesOneUndoStep()
-    {
-        const Profiles::LayoutProfile initial = profile();
-        LayoutEditingRepository repository(initial, outputs(), manifests());
-        QVERIFY(repository.isReady());
-        CoordinatorEditingEngine engine(repository, manifests());
-        QVERIFY(engine.holdsLease());
-        EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
-
-        QVERIFY(session.armDrag(instancePayload(QStringLiteral("bar"),
-                                                QStringLiteral("clock-instance"))).ok);
-        QVERIFY(session.beginVisualDrag().ok);
-        const DropTarget target{QStringLiteral("dock"), QStringLiteral("start"),
-                                QStringLiteral("tasks-instance")};
-        QVERIFY2(session.hoverTarget(target).ok,
-                 qPrintable(session.lastOutcome().message));
-        QVERIFY(session.drop().ok);
-        QCOMPARE(repository.snapshot()->revision, quint64{4});
-
-        const Profiles::PanelSpec *dock = panel(repository.snapshot()->profile,
-                                                QStringLiteral("dock"));
-        QVERIFY(dock != nullptr);
-        const auto moved = std::find_if(dock->applets.cbegin(),
-                                        dock->applets.cend(),
-                                        [](const Profiles::AppletSpec &candidate) {
-                                            return candidate.id == QLatin1String("clock-instance");
-                                        });
-        QVERIFY(moved != dock->applets.cend());
-        QCOMPARE(moved->settings.value(QStringLiteral("zone")).toString(),
-                 QStringLiteral("start"));
-
-        QVERIFY(session.undo().ok);
-        QCOMPARE(repository.snapshot()->profile.toJson(), initial.toJson());
-        QVERIFY(!repository.status().canUndo);
-        QVERIFY(repository.status().canRedo);
     }
 
     void rejectedReleaseCancelsEarlierAcceptedPreview()
@@ -432,7 +393,8 @@ private slots:
         QVERIFY(directoryBlocker.open(QIODevice::WriteOnly));
         directoryBlocker.close();
 
-        ScriptedEngine engine(profile());
+        LayoutEditingRepository repository(profile(), outputs(), manifests());
+        CoordinatorEditingEngine engine(repository, manifests());
         EditorSession session(engine, UserProfileStore{directoryBlocker.fileName()});
 
         QVERIFY(session.applyGesture(
@@ -466,7 +428,8 @@ private slots:
 
     void revertRequiresHostRebuildWithoutPublishingFalseCleanState()
     {
-        ScriptedEngine engine(profile());
+        LayoutEditingRepository repository(profile(), outputs(), manifests());
+        CoordinatorEditingEngine engine(repository, manifests());
         EditorSession session(engine, UserProfileStore{QStringLiteral("/unused")});
 
         QVERIFY(session.applyGesture(
@@ -475,13 +438,13 @@ private slots:
                     .ok);
         QVERIFY(session.isDirty());
 
-        const quint64 revisionBefore = engine.revision();
+        const quint64 revisionBefore = repository.snapshot()->revision;
         const EditorOutcome outcome = session.revert();
         QVERIFY(!outcome.ok);
         QCOMPARE(outcome.code, EditorErrorCode::RebuildRequired);
         QVERIFY(session.requiresRebuild());
         QVERIFY(session.isDirty());
-        QCOMPARE(engine.revision(), revisionBefore);
+        QCOMPARE(repository.snapshot()->revision, revisionBefore);
         QCOMPARE(session.applyToUserProfile().code, EditorErrorCode::RebuildRequired);
         QCOMPARE(session.undo().code, EditorErrorCode::RebuildRequired);
     }

@@ -48,6 +48,13 @@ converging in-drag execution (D3) are enforced by construction here: both
 input paths call one pure translator and one gesture state machine, and the
 focused tests assert sequence identity and the rollback rules.
 
+The session retains the constructor's committed profile as its canonical
+applied baseline and replaces that value only after a successful atomic Apply.
+Dirty state is content-derived: every successful point or drag commit, Undo,
+and Redo compares the complete canonical schema-v1 profile to that baseline.
+Repository revisions and undo-stack position are ordering mechanisms, not
+evidence that the edited content differs from what was applied.
+
 ADR numbers are allocated by the manager's shared registry. This record does
 not reserve a subsequent number for the future `org.qindaqt.ShellLayout1`
 cross-process protocol decision.

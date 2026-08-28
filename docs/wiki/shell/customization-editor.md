@@ -49,8 +49,9 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
   While another coordinator owns the session, mutation/evaluation fails with
   `RepositoryNotReady` and the editor presents read-only.
 - **Editor session** (`editor_session.h`): binds machine, translator, engine
-  seam, and persistence. Owns the dirty flag, the applied-profile identity,
-  the per-target acceptance highlight, and the deterministic rollback paths.
+  seam, and persistence. Owns the canonical applied-profile baseline, its
+  identity, the derived dirty flag, the per-target acceptance highlight, and
+  the deterministic rollback paths.
 - **User profile store** (`profiles/user_profile_store.h`, with a narrow editor
   adapter): the profiles module validates, strict-round-trips, and atomically
   writes `<user-directory>/<profile-id>.json` through `QSaveFile`; either the
@@ -88,32 +89,42 @@ schema-v1 documents (see [Profile schema v1](../reference/profile-schema-v1.md))
 
 **Apply** is accepted only for an idle, non-preview, non-stale session. It
 writes the committed edited snapshot through the profiles-owned store and
-clears the dirty flag only after success; a failed write changes nothing and
-reports `ApplyFailed`. **Revert** cannot replace the host-owned repository, so
-it preserves dirty truth, rejects further edit/apply work, and returns the
-typed `RebuildRequired` outcome. The host completes Revert by constructing a
-fresh repository from the last applied profile. The editor never auto-saves,
-never writes `panels.configuration`, and does not own profile selection;
-committing `panels.layoutProfile` through the public Settings1 client stays
-with the Settings window. Applying a profile takes effect at the next shell
-start until the live-binding slice lands.
+replaces the applied baseline only after success; a failed write changes
+nothing and reports `ApplyFailed`. The session initializes that baseline from
+the constructor's committed repository snapshot. After every successful point
+or drag commit, Undo, and Redo, dirty truth is derived by comparing the full
+canonical schema-v1 profile with the baseline; revisions and history position
+are never treated as proxies for unsaved content. **Revert** cannot replace the
+host-owned repository, so it preserves dirty truth, rejects further edit/apply
+work, and returns the typed `RebuildRequired` outcome. The host completes
+Revert by constructing a fresh repository from the last applied profile. The
+editor never auto-saves, never writes `panels.configuration`, and does not own
+profile selection; committing `panels.layoutProfile` through the public
+Settings1 client stays with the Settings window. Applying a profile takes
+effect at the next shell start until the live-binding slice lands.
 
 ## Testing
 
-`tests/shell_customization_editor` registers five deterministic QtTest
+`tests/shell_customization_editor` registers six deterministic QtTest
 suites: intent translation (`qindaqt.customize-editor-intent`), the gesture
 machine invariants (`qindaqt.customize-editor-gesture-machine`), session
 rollback and gating with a scripted engine (`qindaqt.customize-editor-session`),
+canonical applied-baseline and dirty history through the production composition
+(`qindaqt.customize-editor-dirty-state`),
 atomic persistence round-tripped through `ProfileLoader`
 (`qindaqt.customize-editor-persistence`), and keyboard stepping plus
 accessibility identity (`qindaqt.customize-editor-accessibility`). All suites
 use in-memory or temporary-directory fixtures: no GUI, compositor, session
 bus, or user configuration is touched.
 
-The session suite also composes the production repository adapter and proves a
-cross-panel zone move, exact cancellation, one durable undo boundary, rejected
-release behavior, return from an invalid hover, Apply preview gating, Revert
-truth, and coordinator-lease retry.
+The session suite also composes the production repository adapter and proves
+exact cancellation, rejected release behavior, return from an invalid hover,
+failed-Apply and Revert truth, and coordinator-lease retry. The dirty-history
+suite composes the real repository, adapter, and profile store to prove a
+cross-panel edit followed by Undo returns exactly to the constructor baseline
+without a false close prompt, and that Apply followed by Undo/Redo reports
+dirty/clean against the newly persisted baseline while retaining one durable
+undo boundary.
 
 Presentation, canvas rendering, an offscreen UI matrix, and live session
 behavior are not provided by this module and remain future slices of the

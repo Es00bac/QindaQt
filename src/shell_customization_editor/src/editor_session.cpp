@@ -59,6 +59,11 @@ EditorSession::EditorSession(EditingEngine &engine, UserProfileStore store)
     : m_engine(engine)
     , m_store(std::move(store))
 {
+    const auto current = m_engine.snapshot();
+    if (current != nullptr && !current->previewActive) {
+        m_appliedProfileId = current->profile.id;
+        m_appliedProfileBaseline = current->profile.toJson();
+    }
 }
 
 quint64 EditorSession::observedRevision() const
@@ -152,7 +157,7 @@ EditorOutcome EditorSession::applyGesture(const CustomizationIntent &intent,
     }
     m_chainedRevision = chained;
     discardAcceptance();
-    m_dirty = true;
+    refreshDirtyState();
     settle(EditorOutcome::success());
     return m_lastOutcome;
 }
@@ -179,7 +184,7 @@ EditorOutcome EditorSession::undo()
         settle(EditorOutcome::failure(EditorErrorCode::CommandFailed, result.error.message));
         return m_lastOutcome;
     }
-    m_dirty = true;
+    refreshDirtyState();
     settle(EditorOutcome::success());
     return m_lastOutcome;
 }
@@ -203,7 +208,7 @@ EditorOutcome EditorSession::redo()
         settle(EditorOutcome::failure(EditorErrorCode::CommandFailed, result.error.message));
         return m_lastOutcome;
     }
-    m_dirty = true;
+    refreshDirtyState();
     settle(EditorOutcome::success());
     return m_lastOutcome;
 }
@@ -233,7 +238,8 @@ EditorOutcome EditorSession::applyToUserProfile()
         return m_lastOutcome;
     }
     m_appliedProfileId = current->profile.id;
-    m_dirty = false;
+    m_appliedProfileBaseline = current->profile.toJson();
+    refreshDirtyState();
     settle(EditorOutcome::success());
     return m_lastOutcome;
 }

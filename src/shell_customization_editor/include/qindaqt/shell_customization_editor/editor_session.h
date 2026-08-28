@@ -8,6 +8,7 @@
 #include "qindaqt/shell_customization_editor/intent_translator.h"
 #include "qindaqt/shell_customization_editor/user_profile_store.h"
 
+#include <QJsonObject>
 #include <QString>
 #include <QVariantMap>
 #include <QVector>
@@ -139,6 +140,7 @@ private:
     void finishGestureState();
     void settle(EditorOutcome outcome);
     void discardAcceptance();
+    void refreshDirtyState();
     [[nodiscard]] quint64 observedRevision() const;
     [[nodiscard]] QString nextInstanceId();
 
@@ -159,6 +161,7 @@ private:
     bool m_stale = false;
     bool m_rebuildRequired = false;
     QString m_appliedProfileId;
+    std::optional<QJsonObject> m_appliedProfileBaseline;
     std::optional<DropAcceptance> m_acceptance;
     EditorOutcome m_lastOutcome;
 };

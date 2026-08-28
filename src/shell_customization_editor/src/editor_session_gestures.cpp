@@ -80,6 +80,18 @@ void EditorSession::discardAcceptance()
     m_acceptance.reset();
 }
 
+void EditorSession::refreshDirtyState()
+{
+    const auto current = m_engine.snapshot();
+    // AGENT-GUARD: revisions and history position are not dirty truth. A
+    // committed Undo or Redo can return to the exact applied profile at a new
+    // revision. Compare the complete canonical schema value, and fail dirty if
+    // either side is unavailable or provisional.
+    m_dirty = !m_appliedProfileBaseline.has_value() || current == nullptr
+        || current->previewActive
+        || current->profile.toJson() != *m_appliedProfileBaseline;
+}
+
 bool EditorSession::canUndo() const
 {
     return !requiresRebuild() && m_machine.state() == GestureState::Idle
@@ -231,7 +243,7 @@ EditorOutcome EditorSession::runTransition(const GestureTransition &transition,
                 return EditorOutcome::failure(EditorErrorCode::CommandFailed,
                                               result.error.message);
             }
-            m_dirty = true;
+            refreshDirtyState();
             break;
         }
         case GestureDirectiveKind::CancelPreview: {

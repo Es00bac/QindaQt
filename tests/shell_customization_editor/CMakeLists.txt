@@ -52,6 +52,11 @@ qindaqt_add_shell_customization_editor_test(
     qindaqt.customize-editor-session
 )
 qindaqt_add_shell_customization_editor_test(
+    qindaqt_customize_editor_dirty_state_tests
+    tst_editor_session_dirty_state.cpp
+    qindaqt.customize-editor-dirty-state
+)
+qindaqt_add_shell_customization_editor_test(
     qindaqt_customize_editor_persistence_tests
     tst_user_profile_store.cpp
     qindaqt.customize-editor-persistence
