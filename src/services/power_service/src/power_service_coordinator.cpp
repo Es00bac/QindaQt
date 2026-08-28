@@ -172,12 +172,37 @@ void PowerServiceCoordinator::acceptBatteryFacts(const quint64 generation,
         m_batteryDomain.valid = true;
         m_batteryDomain.state.phase = ServiceStartPhase::FactsObserved;
         m_batteryDomain.state.reasonCode.clear();
+        enforceBatteryIdentityPrecedence();
     } else {
         m_batteryDomain.valid = false;
         m_batteryDomain.state.phase = ServiceStartPhase::DomainDegraded;
         m_batteryDomain.state.reasonCode = QStringLiteral("battery-malformed");
     }
     publishAssembled();
+}
+
+void PowerServiceCoordinator::enforceBatteryIdentityPrecedence()
+{
+    if (!m_batteryDomain.valid || !m_profileDomain.valid) {
+        return;
+    }
+
+    ProfileFacts revalidated;
+    // AGENT-GUARD: Battery and keyboard identities own the shared Power1
+    // handle namespace regardless of fact arrival order. Revalidate retained
+    // profile truth whenever battery facts change; otherwise a profile-first
+    // collision reaches whole-snapshot fallback and erases unrelated valid
+    // battery/session content.
+    if (Assembly::sanitizeProfileFacts(
+            m_profileDomain.facts, m_snapshot.epoch,
+            Assembly::batteryOpaqueIds(m_batteryDomain.facts), revalidated)) {
+        m_profileDomain.facts = std::move(revalidated);
+        return;
+    }
+
+    m_profileDomain.valid = false;
+    m_profileDomain.state.phase = ServiceStartPhase::DomainDegraded;
+    m_profileDomain.state.reasonCode = QStringLiteral("profile-malformed");
 }
 
 void PowerServiceCoordinator::acceptProfileFacts(const quint64 generation,

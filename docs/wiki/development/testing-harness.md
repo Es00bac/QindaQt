@@ -130,11 +130,12 @@ ctest --test-dir build/dev \
 ```
 
 The publication rows cover atomic last-known-good assembly, per-domain
-degradation with retained sibling domains, sanitized hostile text, honest
-unavailable/mixed projections, stale-generation fencing, epoch advance with
-handle restamping, and restart clearing. The operation rows cover exactly-once
-completion, duplicate and late upstream replies, malformed outcome
-replacement, busy caps, stop uncertainty, and current observed lineage.
+degradation with retained sibling domains, battery-over-profile handle
+precedence in both collaborator fact arrival orders, sanitized hostile text,
+honest unavailable/mixed projections, stale-generation fencing, epoch advance
+with handle restamping, and restart clearing. The operation rows cover
+exactly-once completion, duplicate and late upstream replies, malformed
+outcome replacement, busy caps, stop uncertainty, and current observed lineage.
 Residency rows run against a private `dbus-daemon` and cover exact
 introspection signatures, delayed replies, successive owners, and name-theft
 reporting. The activation row launches the real executable through a private

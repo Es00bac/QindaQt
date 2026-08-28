@@ -117,6 +117,7 @@ private:
   [[nodiscard]] QString sanitizeReasonCode(const QString &reasonCode) const;
   void markDomainUnavailable(DomainState &state, quint64 generation,
                              const QString &reasonCode);
+  void enforceBatteryIdentityPrecedence();
   void advanceEpochAndPublish();
   [[nodiscard]] bool advanceEpoch();
   void publishRestarting();
