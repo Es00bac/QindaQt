@@ -49,13 +49,19 @@ enum class ExportOutcome {
     // any, is untouched: a malformed pull never regresses a previously good
     // menu, matching the applet-manifest catalog's atomic-load convention.
     RejectedInvalid,
-    // The source reported an incomplete traversal (overflow, cycle, or
+    // The source reported an incomplete traversal (overflow, cycle, loss, or
     // mid-traversal defect). The last accepted tree is untouched; a bounded
     // prefix is never published.
     RejectedIncomplete,
     // No current lineage exists for the snapshot's owner window, so there is
     // no authority to publish under. The last accepted tree is untouched.
     RejectedNoAuthority,
+    // AGENT-GUARD: the lineage/content binding was violated — changed content
+    // under an unchanged same-epoch revision, a regressed revision, or a null
+    // epoch. Accepting any of these would let a stale request authorize
+    // against semantically changed content. The last accepted tree is
+    // untouched.
+    RejectedStaleLineage,
 };
 
 struct ExportResult final {
@@ -66,7 +72,10 @@ struct ExportResult final {
     // owner. The full-tree delta contract is deferred to the transport
     // milestone; snapshot truth is the only G0 guarantee.
     bool changed = false;
-    // Empty unless the outcome is RejectedIncomplete.
+    // Stable diagnostic when the outcome is RejectedIncomplete
+    // (source-reported defect) or RejectedStaleLineage
+    // ("regressed-revision", "unchanged-revision", "null-epoch"); empty
+    // otherwise. Never parsed.
     QString defectCode;
 };
 

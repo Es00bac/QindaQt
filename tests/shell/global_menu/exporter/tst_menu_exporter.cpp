@@ -64,6 +64,8 @@ private Q_SLOTS:
     void incompleteSnapshotIsRejectedWholeWithoutValidation();
     void ownerWithoutAuthorityIsRejectedAndKeepsLastAccepted();
     void exportedTreeCarriesTheSelectorLineageVerbatim();
+    void changedContentUnderUnchangedRevisionIsRejected();
+    void regressedRevisionAndNullEpochAreRejected();
 };
 
 void MenuExporterTests::firstValidPullIsPublishedUnderAuthoritativeLineage()
@@ -221,6 +223,64 @@ void MenuExporterTests::exportedTreeCarriesTheSelectorLineageVerbatim()
     QCOMPARE(exporter.lastAccepted()->ownerWindowId, windowId);
     QCOMPARE(exporter.lastAccepted()->epoch, epoch);
     QCOMPARE(exporter.lastAccepted()->revision, quint64(42));
+}
+
+void MenuExporterTests::changedContentUnderUnchangedRevisionIsRejected()
+{
+    // The replay adversary: re-push changed content while reusing the
+    // revision a consumer already observed. Accepting it would let a stale
+    // request authorize against semantically changed content.
+    FakeMenuSource source;
+    const QUuid windowId = QUuid::createUuid();
+    source.next.ownerWindowId = windowId;
+    source.next.items = {action(QStringLiteral("a"), QStringLiteral("New"))};
+
+    FakeLineageSource lineages;
+    const QUuid epoch = QUuid::createUuid();
+    lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 1});
+
+    MenuExporter exporter(source, lineages);
+    exporter.refresh();
+    const MenuTree goodTree = exporter.lastAccepted().value();
+
+    source.next.items.append(action(QStringLiteral("b"), QStringLiteral("Save")));
+    // Same epoch, same revision 1, different content.
+    const ExportResult replay = exporter.refresh();
+    QCOMPARE(replay.outcome, ExportOutcome::RejectedStaleLineage);
+    QCOMPARE(replay.defectCode, QStringLiteral("unchanged-revision"));
+    QCOMPARE(exporter.lastAccepted().value(), goodTree);
+    // The retained tree is still the consumer-visible truth, not the replay.
+    QCOMPARE(exporter.lastAccepted()->items.size(), 1);
+}
+
+void MenuExporterTests::regressedRevisionAndNullEpochAreRejected()
+{
+    FakeMenuSource source;
+    const QUuid windowId = QUuid::createUuid();
+    source.next.ownerWindowId = windowId;
+    source.next.items = {action(QStringLiteral("a"), QStringLiteral("New"))};
+
+    FakeLineageSource lineages;
+    const QUuid epoch = QUuid::createUuid();
+    lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 3});
+
+    MenuExporter exporter(source, lineages);
+    exporter.refresh();
+    const MenuTree goodTree = exporter.lastAccepted().value();
+
+    // Same content but a regressed revision still violates the binding.
+    lineages.lineages.insert(windowId, ExportLineage{.epoch = epoch, .revision = 2});
+    const ExportResult regressed = exporter.refresh();
+    QCOMPARE(regressed.outcome, ExportOutcome::RejectedStaleLineage);
+    QCOMPARE(regressed.defectCode, QStringLiteral("regressed-revision"));
+    QCOMPARE(exporter.lastAccepted().value(), goodTree);
+
+    // A null epoch is not a lineage at all.
+    lineages.lineages.insert(windowId, ExportLineage{.epoch = QUuid(), .revision = 4});
+    const ExportResult nullEpoch = exporter.refresh();
+    QCOMPARE(nullEpoch.outcome, ExportOutcome::RejectedStaleLineage);
+    QCOMPARE(nullEpoch.defectCode, QStringLiteral("null-epoch"));
+    QCOMPARE(exporter.lastAccepted().value(), goodTree);
 }
 
 QTEST_APPLESS_MAIN(MenuExporterTests)

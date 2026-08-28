@@ -11,21 +11,44 @@
 #include <QtCore/QUuid>
 #include <QtCore/QtGlobal>
 
+#include <optional>
+
 namespace QindaQt::Shell::GlobalMenu::Ownership
 {
 
-// The verified facts an accepted authentication established. AGENT-CONTRACT:
-// this proof — never the raw registration or any separately supplied window —
-// is the only value ActiveProviderSelector accepts for adoption, so the facts
-// that were checked are provably the facts that become authoritative.
-struct AuthenticatedProvider final {
-    WindowIdentity window;
-    QString providerUniqueName;
-    // The focus generation both successful observations agreed on. Adopting
-    // and later invalidation are keyed on this value.
-    quint64 focusGeneration = 0;
+// The verified facts an accepted authentication established, issued as an
+// opaque capability. AGENT-CONTRACT: construction is reserved to
+// ProviderAuthenticator — the type is deliberately not an aggregate and has
+// no public or default constructor, so no caller can mint "accepted
+// ownership" without the authenticator actually checking it. Defaulted
+// copy/move let honest holders pass the issued proof to the selector; they
+// cannot create a new one.
+class AuthenticatedProvider final
+{
+public:
+    AuthenticatedProvider(const AuthenticatedProvider &) = default;
+    AuthenticatedProvider &operator=(const AuthenticatedProvider &) = default;
+    AuthenticatedProvider(AuthenticatedProvider &&) noexcept = default;
+    AuthenticatedProvider &operator=(AuthenticatedProvider &&) noexcept = default;
+    ~AuthenticatedProvider() = default;
 
-    bool operator==(const AuthenticatedProvider &) const = default;
+    [[nodiscard]] const WindowIdentity &window() const noexcept { return m_window; }
+    [[nodiscard]] const QString &providerUniqueName() const noexcept { return m_providerUniqueName; }
+    // The focus generation both successful observations agreed on. Adoption
+    // and later invalidation are keyed on this value.
+    [[nodiscard]] quint64 focusGeneration() const noexcept { return m_focusGeneration; }
+
+    [[nodiscard]] bool operator==(const AuthenticatedProvider &) const = default;
+
+private:
+    friend class ProviderAuthenticator;
+
+    AuthenticatedProvider(WindowIdentity window, QString providerUniqueName,
+                          quint64 focusGeneration);
+
+    WindowIdentity m_window;
+    QString m_providerUniqueName;
+    quint64 m_focusGeneration = 0;
 };
 
 struct AuthenticationResult final {
@@ -34,8 +57,10 @@ struct AuthenticationResult final {
     // "credential-unavailable", "pid-mismatch", "focus-changed". Empty when
     // accepted.
     QString reasonCode;
-    // Valid only when accepted.
-    AuthenticatedProvider proof;
+    // AGENT-CONTRACT: carries an authenticator-issued proof exactly when
+    // accepted is true; always empty otherwise. There is no way to obtain or
+    // construct a proof outside an accepted authenticate() call.
+    std::optional<AuthenticatedProvider> proof;
 };
 
 // Authenticates a provider's claim against two independently sourced facts:
@@ -43,7 +68,8 @@ struct AuthenticationResult final {
 // owns the registering bus name. Focus is sampled before and after the
 // credential lookup; both samples must agree on window and focus generation
 // or the authentication fails, closing the sample-lookup race where focus
-// moves mid-check. A registration is accepted only when everything agrees.
+// moves mid-check. A registration is accepted only when everything agrees
+// and the peer's unique name is a syntactically valid D-Bus unique name.
 // This is deliberately narrower than `com.canonical.AppMenu.Registrar`'s
 // `RegisterWindow`, which trusts the caller's claimed window id outright; G0
 // authenticates only the currently active window; a per-window registration

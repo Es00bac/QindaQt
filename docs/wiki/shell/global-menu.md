@@ -60,7 +60,13 @@ selector. Owner, epoch, revision, and the invocation guard's expectations
 therefore share one source of truth, and an ordinary public-API flow —
 authenticate, adopt the returned proof, export, invoke — is coherent by
 construction. The exporter never mints lineage itself; a pull whose owner
-has no current authority is rejected without publishing.
+has no current authority is rejected without publishing. Publication
+enforces the lineage/content binding at the accepted-publication authority:
+within one epoch, changed content is accepted only when the revision
+strictly advances, and regressed revisions or null epochs are rejected
+outright as `RejectedStaleLineage` with the last accepted tree retained, so
+a replay that re-pushes changed content under a consumer-observed revision
+cannot become truth.
 
 ## Proof-bound authentication
 
@@ -73,11 +79,17 @@ decides which provider may become authoritative:
   then re-reads focus: both observations must agree on window and focus
   generation, or the attempt fails with `focus-changed`. This closes the
   sample-lookup race where focus moves mid-check.
-- An accepted authentication returns an `AuthenticatedProvider` proof
-  carrying exactly the verified window identity, unique name, and focus
-  generation. `ActiveProviderSelector::adopt` accepts only this proof —
-  the API has no way to adopt separately supplied facts — so the verified
-  identity and the adopted identity cannot diverge.
+- The registering peer must present a syntactically valid D-Bus unique name
+  (the `:1.42` shape: leading colon, dot-separated `[A-Za-z0-9_]` elements,
+  bounded length). Well-known names are refused at the ownership boundary
+  even when the credential seam resolves them, because a well-known name can
+  be re-owned later and silently change who a proof names.
+- An accepted authentication returns an `AuthenticatedProvider` proof — an
+  opaque, non-aggregate capability whose constructor only
+  `ProviderAuthenticator` can call. It carries exactly the verified window
+  identity, unique name, and focus generation. `ActiveProviderSelector::
+  adopt` accepts only this proof, so the verified identity and the adopted
+  identity cannot diverge and no caller can mint accepted ownership.
 - `applyFocusGeneration` is the fail-closed invalidation seam: a generation
   other than the adopted proof's drops the adoption. Shell composition
   calls it on every observed focus change before any export or invocation.
@@ -96,14 +108,17 @@ decides which provider may become authoritative:
 pulls `MenuSnapshot` values through the toolkit-neutral `MenuSource`
 interface. A snapshot carries an explicit completeness verdict: when a
 source detects overflow (depth, siblings, or total items), a submenu cycle,
-or a mid-traversal defect, it marks the snapshot incomplete and the exporter
-rejects it whole — a bounded prefix is never published as if it were the
-complete application menu. Valid snapshots are validated against the
-canonical bounds, stamped with the authoritative lineage, and stored; a
-rejected or incomplete pull keeps the last accepted tree, so a transiently
-malformed source can never regress a previously good menu. Content that is
-identical under a re-advanced lineage reports `Unchanged` but is re-stamped,
-so the published tree never drifts stale against the selector.
+or the loss of its observed widget, it marks the snapshot incomplete with a
+stable defect code (`too-deep`, `too-many-children`, `too-many-items`,
+`submenu-cycle`, `source-destroyed`) and the exporter rejects it whole — a
+bounded prefix or an authoritative empty menu is never published. A
+destroyed source is a lifetime defect, not an empty application menu. Valid
+snapshots are validated against the canonical bounds, stamped with the
+authoritative lineage, and stored; a rejected or incomplete pull keeps the
+last accepted tree, so a transiently malformed source can never regress a
+previously good menu. Content that is identical under a re-advanced lineage
+reports `Unchanged` but is re-stamped, so the published tree never drifts
+stale against the selector.
 
 ## Qt Widgets adapter
 
@@ -129,18 +144,28 @@ snapshot, never to wrong complete truth.
 `NotificationCenterAppletAccess`: shell composition publishes authoritative
 state, and QML only reads the top-level projection and requests an
 activation. The projection is honest by construction: entries carry their
-`kind` ("action" or "submenu"), hidden items and separators are omitted,
-and `activate()` opens only enabled visible actions — top-level submenus
-render visibly but non-activating until the popup milestone, with their
-accessible name saying so. `publishTree` is fail-closed: invalid input
-publishes the unavailable state instead of any part of its content.
-`GlobalMenuApplet.qml` renders entries as focusable `AbstractButton`
-delegates with keyboard (Space/Return) and accessible-press activation,
-lays entries out in a `Row` or a real `Column` for vertical panels, and
-keeps constrained panels bounded: clipping, single-line elision, and a
-`maximumVisibleEntries` limit beyond which a muted "+N" indicator collapses
-the remainder. G0 wires no live publisher anywhere in the shell, so
-`available` stays false in production.
+`kind` ("action" or "submenu") and their checked state, hidden items and
+separators are omitted, and `activate()` opens only enabled visible
+actions — top-level submenus render visibly but non-activating until the
+popup milestone, with their accessible name saying so. `publishTree` is
+fail-closed: invalid input publishes the unavailable state instead of any
+part of its content. The facade is GUI-thread-confined, and its G1 consumer
+must capture the observed window/epoch/revision at request time and run
+`InvocationGuard` on that captured lineage before executing anything;
+looking up a "current" tree by id at execution time would recreate the
+request/content race the guard exists to close.
+`GlobalMenuApplet.qml` renders entries as focusable, checkable
+`AbstractButton` delegates that bind `checkable`/`checked` into the button
+and the accessible state, share one named activation path between pointer
+click, keyboard (Space/Return), and assistive-technology press, and lay
+entries out in a `Row` or a real `Column` for vertical panels. Overflow is
+bounded and geometry-aware: a clamped `maximumVisibleEntries` cap combined
+with the assigned width (horizontal) or height (vertical) determines the
+presented entries, and the muted "+N" indicator — exposed to assistive
+technology as "N more menu entries" — is part of the implicit geometry in
+both orientations so a constrained panel can never clip the affordance
+away. G0 wires no live publisher anywhere in the shell, so `available`
+stays false in production.
 
 ## Non-goals
 

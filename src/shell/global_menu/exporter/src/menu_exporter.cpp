@@ -53,6 +53,34 @@ ExportResult MenuExporter::refresh()
     candidate.epoch = lineage->epoch;
     candidate.revision = lineage->revision;
 
+    if (candidate.epoch.isNull()) {
+        // A null epoch is not a lineage; stamping it would make every
+        // stale-rejection comparison meaningless.
+        return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
+                             .validation = validation,
+                             .defectCode = QStringLiteral("null-epoch")};
+    }
+
+    if (m_lastAccepted.has_value() && m_lastAccepted->ownerWindowId == candidate.ownerWindowId
+        && m_lastAccepted->epoch == candidate.epoch) {
+        // AGENT-GUARD: within one epoch the revision must strictly advance for
+        // every accepted content change and must never regress. Enforcing the
+        // binding here — at the accepted-publication authority — closes the
+        // replay adversary that re-pushes changed content while reusing the
+        // revision a consumer already observed.
+        const bool contentChanged = !sameContent(*m_lastAccepted, candidate);
+        if (candidate.revision < m_lastAccepted->revision) {
+            return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
+                                 .validation = validation,
+                                 .defectCode = QStringLiteral("regressed-revision")};
+        }
+        if (contentChanged && candidate.revision == m_lastAccepted->revision) {
+            return ExportResult{.outcome = ExportOutcome::RejectedStaleLineage,
+                                 .validation = validation,
+                                 .defectCode = QStringLiteral("unchanged-revision")};
+        }
+    }
+
     const bool changed = !m_lastAccepted.has_value() || !sameContent(*m_lastAccepted, candidate);
     // AGENT-GUARD: even an unchanged menu must be re-stamped and stored: a
     // re-advanced lineage (a new adoption in the same epoch) has to reach

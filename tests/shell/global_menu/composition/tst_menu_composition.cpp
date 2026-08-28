@@ -117,6 +117,7 @@ class MenuCompositionTests final : public QObject {
 private Q_SLOTS:
     void ordinaryCompositionProducesAnInvocableExport();
     void sameEpochOlderRevisionFailsAfterReadoption();
+    void changedContentWithoutReadoptionFailsClosed();
     void focusGenerationChangeInvalidatesTheWholeComposition();
     void providerForUnfocusedWindowCannotPublishOrInvoke();
 };
@@ -129,7 +130,7 @@ void MenuCompositionTests::ordinaryCompositionProducesAnInvocableExport()
 
     const AuthenticationResult auth = authenticator.authenticate(fx.registration());
     QVERIFY(auth.accepted);
-    fx.selector.adopt(auth.proof);
+    fx.selector.adopt(auth.proof.value());
 
     const ExportResult exportResult = exporter.refresh();
     QCOMPARE(exportResult.outcome, ExportOutcome::Published);
@@ -162,7 +163,7 @@ void MenuCompositionTests::sameEpochOlderRevisionFailsAfterReadoption()
     fx.menuSource.next.items.append(action(QStringLiteral("fileSaveAction"), QStringLiteral("Save")));
     const AuthenticationResult reauth = authenticator.authenticate(fx.registration());
     QVERIFY(reauth.accepted);
-    fx.selector.adopt(reauth.proof);
+    fx.selector.adopt(reauth.proof.value());
     const ExportResult second = exporter.refresh();
     QCOMPARE(second.outcome, ExportOutcome::Published);
     QVERIFY(second.changed);
@@ -188,6 +189,38 @@ void MenuCompositionTests::sameEpochOlderRevisionFailsAfterReadoption()
     QVERIFY(InvocationGuard::evaluate(fx.selector, current, freshRequest).accepted);
 }
 
+void MenuCompositionTests::changedContentWithoutReadoptionFailsClosed()
+{
+    CompositionFixture fx;
+    ProviderAuthenticator authenticator(fx.windowSource, fx.credentials);
+    MenuExporter exporter(fx.menuSource, fx.lineageSource);
+
+    const AuthenticationResult auth = authenticator.authenticate(fx.registration());
+    QVERIFY(auth.accepted);
+    fx.selector.adopt(auth.proof.value());
+    exporter.refresh();
+    const MenuTree goodTree = exporter.lastAccepted().value();
+
+    // The replay adversary at composition level: the provider pushes changed
+    // content without re-authenticating, so the selector — and therefore the
+    // lineage seam — still reports the revision the consumer already saw.
+    // The exporter must refuse the changed pull and retain the last good
+    // tree instead of silently re-authorizing stale semantics.
+    fx.menuSource.next.items.append(action(QStringLiteral("fileSaveAction"), QStringLiteral("Save")));
+    const ExportResult stale = exporter.refresh();
+    QCOMPARE(stale.outcome, ExportOutcome::RejectedStaleLineage);
+    QCOMPARE(stale.defectCode, QStringLiteral("unchanged-revision"));
+    QCOMPARE(exporter.lastAccepted().value(), goodTree);
+
+    // The retained publication remains invocable; the replayed content never
+    // became truth.
+    const InvocationRequest request{.windowId = goodTree.ownerWindowId,
+                                     .epoch = goodTree.epoch,
+                                     .revision = goodTree.revision,
+                                     .actionId = QStringLiteral("fileNewAction")};
+    QVERIFY(InvocationGuard::evaluate(fx.selector, goodTree, request).accepted);
+}
+
 void MenuCompositionTests::focusGenerationChangeInvalidatesTheWholeComposition()
 {
     CompositionFixture fx;
@@ -196,13 +229,13 @@ void MenuCompositionTests::focusGenerationChangeInvalidatesTheWholeComposition()
 
     const AuthenticationResult auth = authenticator.authenticate(fx.registration());
     QVERIFY(auth.accepted);
-    fx.selector.adopt(auth.proof);
+    fx.selector.adopt(auth.proof.value());
     exporter.refresh();
     const MenuTree published = exporter.lastAccepted().value();
 
     // Focus moves on: the composition's invalidation seam drops the adoption
     // before any export or invocation can run against it.
-    fx.selector.applyFocusGeneration(auth.proof.focusGeneration + 1);
+    fx.selector.applyFocusGeneration(auth.proof->focusGeneration() + 1);
     QVERIFY(!fx.selector.current().has_value());
 
     const InvocationRequest request{.windowId = published.ownerWindowId,
