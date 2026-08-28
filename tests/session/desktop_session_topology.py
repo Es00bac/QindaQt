@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
@@ -106,6 +107,42 @@ def desktop_1080p_topology() -> BootTopology:
         # scope. S1 must fail, not infer panel mapping from ordinary windows.
         dock=DockExpectation("dock", "Virtual-1", 1),
     )
+
+
+def observed_applications(windows: Sequence[Any]) -> list[dict[str, Any]]:
+    """Retain exact compositor identity for the two required application windows."""
+
+    result = []
+    for expected in desktop_1080p_topology().applications:
+        matches = [
+            item for item in windows
+            if isinstance(item, Mapping)
+            and item.get("applicationId") == expected.app_id
+            and expected.window_title_contains in str(item.get("title", ""))
+        ]
+        if len(matches) != 1:
+            raise TopologyContractError(
+                f"mapped test application was missing: {expected.app_id}"
+            )
+        match = matches[0]
+        window_id = match.get("id")
+        if not isinstance(window_id, str) or not window_id:
+            raise TopologyContractError(
+                f"mapped test application has no window ID: {expected.app_id}"
+            )
+        result.append(
+            {
+                # The public inventory has no client PID. Preserve every
+                # available observation and consume the topology role without
+                # inventing a process association the interface cannot prove.
+                "appId": match["applicationId"],
+                "processRole": expected.process_role,
+                "windowId": window_id,
+                "windowTitle": match.get("title"),
+                "mapped": True,
+            }
+        )
+    return result
 
 
 def _mapping(value: Any, location: str) -> Mapping[str, Any]:
@@ -262,10 +299,93 @@ def _validate_applications(evidence: Mapping[str, Any], topology: BootTopology) 
     for expected in topology.applications:
         record = by_id[expected.app_id]
         title = record.get("windowTitle")
-        if record.get("mapped") is not True or not isinstance(title, str):
+        if set(record) != {
+            "appId", "processRole", "windowId", "windowTitle", "mapped"
+        }:
+            raise TopologyContractError(
+                f"application {expected.app_id} has unexpected fields"
+            )
+        if (
+            record.get("processRole") != expected.process_role
+            or record.get("mapped") is not True
+            or not isinstance(record.get("windowId"), str)
+            or not record["windowId"]
+            or not isinstance(title, str)
+        ):
             raise TopologyContractError(f"application {expected.app_id} is not mapped")
         if expected.window_title_contains not in title:
             raise TopologyContractError(f"application {expected.app_id} title is unexpected")
+
+
+def validate_topology_readiness(evidence: Mapping[str, Any]) -> None:
+    """Validate the simultaneous public inputs that can become ready asynchronously."""
+
+    topology = desktop_1080p_topology()
+    _validate_output(evidence, topology)
+    _validate_input_and_dock(evidence, topology)
+    _validate_applications(evidence, topology)
+
+
+def _validate_measurements(evidence: Mapping[str, Any]) -> None:
+    measurements = _mapping(evidence.get("measurements"), "evidence.measurements")
+    if set(measurements) != {"residentPssKiB", "ceilingKiB"}:
+        raise TopologyContractError("measurements must contain the exact PSS field set")
+    resident = measurements["residentPssKiB"]
+    ceiling = measurements["ceilingKiB"]
+    if (
+        isinstance(resident, bool)
+        or not isinstance(resident, int)
+        or resident < 0
+        or isinstance(ceiling, bool)
+        or ceiling != 1_048_576
+        or resident > ceiling
+    ):
+        raise TopologyContractError("resident PSS is malformed or exceeds 1,048,576 KiB")
+
+
+def _validate_cleanup(
+    evidence: Mapping[str, Any], topology: BootTopology, pids: Mapping[str, int]
+) -> None:
+    cleanup = _mapping(evidence.get("cleanup"), "evidence.cleanup")
+    if (
+        set(cleanup) != {"bounded", "survivorPids", "terminalPhases"}
+        or cleanup.get("bounded") is not True
+        or cleanup.get("survivorPids") != []
+    ):
+        raise TopologyContractError("cleanup was not bounded and survivor-free")
+    records = _sequence(cleanup.get("terminalPhases"), "cleanup.terminalPhases")
+    by_role: dict[str, Mapping[str, Any]] = {}
+    for index, raw in enumerate(records):
+        record = _mapping(raw, f"cleanup.terminalPhases[{index}]")
+        role = record.get("role")
+        if not isinstance(role, str) or role in by_role:
+            raise TopologyContractError("cleanup roles must be unique strings")
+        by_role[role] = record
+    if set(by_role) != {item.role for item in topology.processes}:
+        raise TopologyContractError("cleanup roles do not exactly match process roles")
+    for expected in topology.processes:
+        record = by_role[expected.role]
+        if set(record) != {
+            "role", "pid", "processGroup", "executablePath", "startTicks",
+            "terminalPhase",
+        }:
+            raise TopologyContractError(f"cleanup role {expected.role} has unexpected fields")
+        path = Path(str(record["executablePath"]))
+        if (
+            record["pid"] != pids[expected.role]
+            or isinstance(record["processGroup"], bool)
+            or not isinstance(record["processGroup"], int)
+            or record["processGroup"] <= 1
+            or not path.is_absolute()
+            or path.name != expected.executable
+            or isinstance(record["startTicks"], bool)
+            or not isinstance(record["startTicks"], int)
+            or record["startTicks"] <= 0
+            or record["terminalPhase"] not in {"already-exited", "term", "kill"}
+        ):
+            raise TopologyContractError(
+                f"cleanup role {expected.role} has unauthenticated terminal evidence"
+            )
 
 
 def validate_boot_evidence(document: Any) -> None:
@@ -290,6 +410,5 @@ def validate_boot_evidence(document: Any) -> None:
     _validate_output(evidence, topology)
     _validate_input_and_dock(evidence, topology)
     _validate_applications(evidence, topology)
-    cleanup = _mapping(evidence.get("cleanup"), "evidence.cleanup")
-    if cleanup.get("bounded") is not True or cleanup.get("survivorPids") != []:
-        raise TopologyContractError("cleanup was not bounded and survivor-free")
+    _validate_measurements(evidence)
+    _validate_cleanup(evidence, topology, pids)

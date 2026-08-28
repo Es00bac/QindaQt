@@ -50,6 +50,9 @@ hard-coded `/usr/bin` executable dependency.
 Every observed role binds a PID, executable, kernel start time, process group,
 and expected parent role before cleanup. Teardown revalidates executable plus
 start time before bounded TERM-to-KILL signaling; PID reuse is never signaled.
+The preserved cleanup ledger repeats the authenticated role/PID/group/path/
+start-time identity and records only the terminal observation phase:
+`already-exited`, `term`, or `kill`. These phases do not claim graceful exit.
 The PID namespace and `--die-with-parent` remain the final fail-closed boundary
 on assertion, timeout, or driver failure. A run root can be deleted only when
 its exact run ID, build parent, and sentinel all match.
@@ -61,6 +64,21 @@ output/visibility generations, one combined development input device, and at
 least one mapped and committed production `dock` layer surface on that output.
 An unavailable surface-evidence method is a dependency failure; ordinary
 window inventory cannot be substituted.
+
+Service ownership alone is not readiness. One bounded loop reacquires the
+complete public-D-Bus snapshot until output/generation, input, dock, and both
+application records are simultaneously valid. A method or malformed service
+reply fails immediately; an absent startup service or incomplete application/
+dock state may retry only until the hard deadline. Application evidence retains
+the compositor-observed `applicationId`, window ID, and title. It never creates
+an expected identity from a title match.
+
+Before the private run root is removed, every attempt archives all regular
+artifacts, all process logs, combined sandbox output, and exact run/result/
+timeout metadata beneath a fresh build-local
+`desktop-session-results/<run-id>` directory. That persistent directory has its
+own build/run-bound sentinel and may not preexist or be a symlink. Failure and
+timeout paths use the same archive-finally boundary as success.
 
 ## Consequences
 
@@ -77,7 +95,9 @@ window inventory cannot be substituted.
   before the boot row can pass. The harness does not copy that module's private
   implementation.
 - Evidence and logs are copied out before the authenticated run root is
-  removed. A successful row requires zero surviving recorded PIDs.
+  removed, including on timeout and cleanup failure. A successful row requires
+  the exact 1,048,576 KiB PSS schema/ceiling, authenticated terminal-phase
+  records for every topology role, and zero surviving recorded PIDs.
 
 ## Revisit when
 

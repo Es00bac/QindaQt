@@ -111,8 +111,10 @@ def create_run_root(build_root: Path, run_id: str) -> SandboxPaths:
     return SandboxPaths(root=root, machine_id=machine_id, sentinel=sentinel, **directories)
 
 
-def remove_run_root(paths: SandboxPaths, build_root: Path, run_id: str) -> None:
-    """Remove only the exact sentinel-authenticated run root."""
+def authenticate_run_root(
+    paths: SandboxPaths, build_root: Path, run_id: str
+) -> None:
+    """Prove the exact run root and bounded writable directories without mutation."""
 
     _assert_run_id(run_id)
     build = build_root.resolve(strict=True)
@@ -128,7 +130,16 @@ def remove_run_root(paths: SandboxPaths, build_root: Path, run_id: str) -> None:
         raise SandboxContractError("run root sentinel is missing") from error
     if actual != _run_sentinel(run_id, build):
         raise SandboxContractError("run root sentinel does not match this run")
-    shutil.rmtree(root)
+    for child in (paths.artifacts, paths.logs, paths.runtime):
+        if child.parent != root or child.is_symlink() or not child.is_dir():
+            raise SandboxContractError("run root contains an unauthenticated output directory")
+
+
+def remove_run_root(paths: SandboxPaths, build_root: Path, run_id: str) -> None:
+    """Remove only the exact sentinel-authenticated run root."""
+
+    authenticate_run_root(paths, build_root, run_id)
+    shutil.rmtree(paths.root.absolute())
 
 
 def _validate_mount(mount: ReadOnlyMount, label: str) -> None:

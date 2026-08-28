@@ -784,7 +784,9 @@ session. It checks deterministic typed bubblewrap argv, a fresh environment
 allow-list, private roots and endpoints, absence of host input/runtime mounts,
 cross-worktree locking, staged path/symlink/escape rejection, direct
 Settings1/Audio1 resolution, proc parsers, exact PID identity, PID-reuse safety,
-bounded cleanup, and the complete boot-topology model.
+bounded cleanup phases, complete PSS schema, simultaneous readiness polling,
+observed application identity, fresh result-root authentication, failure-safe
+artifact/log archival, and the complete boot-topology model.
 
 `desktop.virtual.package-contract` performs a CMake install beneath the same
 build root, authenticates the production executables and compositor plugin as
@@ -819,6 +821,22 @@ Wayland/X11/session-bus/PipeWire socket, input/uinput node, render node, or
 network namespace. [ADR-0026](../adr/0026-contain-virtual-desktop-qualification.md)
 owns this trust boundary.
 
+After the required service names appear, the driver reacquires complete probe
+snapshots until all public topology inputs are valid at once or the 15-second
+deadline expires. An incomplete app/dock startup state may retry; a malformed
+service or any public method error fails immediately. Settings and Text Editor
+must match their exact compositor-observed `applicationId`, nonempty window ID,
+and title. A matching title with another application ID is never rewritten into
+QindaQt evidence.
+
+Every invocation reserves a new sentinel-authenticated persistent result root
+at `build/dev/tests/session/desktop-session-results/<run-id>`. Before deleting
+the private run root, a `finally` path copies every artifact and process log,
+combined sandbox output, and `result.json` with run ID, outcome, return code,
+timeout flag, bounded timestamps, and failure text. Existing, symlinked, or
+nonempty destinations fail closed, so a later failure cannot inherit a prior
+attempt's files.
+
 The immutable S1 evidence model requires:
 
 | Area | Exact `1920x1080@1` evidence |
@@ -828,8 +846,8 @@ The immutable S1 evidence model requires:
 | Display | One `Virtual-1` output at `(0,0)`, `1920x1080`, scale 1; equal canonical nonzero Outputs/ShellVisibility generation |
 | Input | Exactly one combined `QindaQt Development Input`; no host input node |
 | Shell | At least one compositor-observed `scope=dock` surface mapped and committed on current and desired `Virtual-1` |
-| Applications | Mapped Settings and QindaQt Text Editor windows |
-| Resource/exit | Aggregate resident PSS measured against 1,024 MiB; exact executable/start-time teardown; zero surviving PIDs and no run root |
+| Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
+| Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
 
 The current public base does not yet include Notification Live's development-
 only layer-surface method broadened to the `dock` scope. The probe calls that

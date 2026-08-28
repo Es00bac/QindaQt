@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
+import subprocess
 import tempfile
 import unittest
+from argparse import Namespace
+from contextlib import nullcontext
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path, PurePosixPath
+from unittest.mock import Mock, patch
 
 from desktop_session_measure import (
     MeasurementContractError,
@@ -32,6 +39,14 @@ from desktop_session_stage import (
     StageContractError,
     reset_stage_root,
     resolve_stage,
+)
+from test_desktop_session_nested import (
+    LANE_ENVIRONMENT,
+    LANE_VALUE,
+    AttemptResult,
+    archive_attempt,
+    create_result_root,
+    run_outer,
 )
 
 
@@ -62,6 +77,22 @@ def fake_stage(root: Path) -> None:
     (services / "org.qindaqt.Audio1.service").write_text(
         "[D-BUS Service]\nName=org.qindaqt.Audio1\nExec=/usr/bin/qindaqt-audio-service\n",
         encoding="utf-8",
+    )
+
+
+def outer_arguments(root: Path, run_id: str) -> Namespace:
+    build = root / "build"
+    source = root / "source"
+    build.mkdir()
+    source.mkdir()
+    bwrap = root / "bwrap"
+    executable(bwrap)
+    return Namespace(
+        build_root=build,
+        source_root=source,
+        bwrap=bwrap,
+        run_id=run_id,
+        print_command_json=False,
     )
 
 
@@ -228,6 +259,133 @@ class SandboxTests(unittest.TestCase):
                 with self.assertRaisesRegex(SandboxContractError, "busy"):
                     with PrivateLaneLock(lock):
                         self.fail("second lock acquisition unexpectedly passed")
+
+
+class ResultArchiveTests(unittest.TestCase):
+    def test_fresh_result_copies_every_artifact_log_and_success_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            build = Path(directory) / "build"
+            build.mkdir()
+            run_id = "d" * 32
+            paths = create_run_root(build, run_id)
+            result_root = create_result_root(build, run_id)
+            (paths.artifacts / "evidence.json").write_text("{}\n")
+            (paths.logs / "compositor.log").write_text("compositor\n")
+            (paths.logs / "session-probe-001.log").write_text("probe\n")
+            archive_attempt(
+                paths, result_root, build, run_id, "sandbox\n",
+                AttemptResult("success", 0, False, None, 10, 20),
+            )
+            self.assertEqual(
+                sorted(path.name for path in (result_root / "logs").iterdir()),
+                ["compositor.log", "session-probe-001.log"],
+            )
+            self.assertTrue((result_root / "artifacts/evidence.json").is_file())
+            document = json.loads((result_root / "result.json").read_text())
+            self.assertEqual(document["outcome"], "success")
+            self.assertEqual(document["runId"], run_id)
+            remove_run_root(paths, build, run_id)
+
+    def test_stale_or_symlink_result_destination_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            build = Path(directory) / "build"
+            build.mkdir()
+            stale_id = "e" * 32
+            create_result_root(build, stale_id)
+            with self.assertRaisesRegex(SandboxContractError, "already exists"):
+                create_result_root(build, stale_id)
+            symlink_id = "f" * 32
+            target = Path(directory) / "outside"
+            target.mkdir()
+            (build / "tests/session/desktop-session-results" / symlink_id).symlink_to(
+                target, target_is_directory=True
+            )
+            with self.assertRaisesRegex(SandboxContractError, "already exists"):
+                create_result_root(build, symlink_id)
+
+    def test_archive_rejects_a_tampered_source_run_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            build = Path(directory) / "build"
+            build.mkdir()
+            run_id = "a" * 32
+            paths = create_run_root(build, run_id)
+            result_root = create_result_root(build, run_id)
+            paths.sentinel.write_text("wrong\n")
+            with self.assertRaisesRegex(SandboxContractError, "sentinel"):
+                archive_attempt(
+                    paths, result_root, build, run_id, "",
+                    AttemptResult("failure", 1, False, "cleanup", 10, 20),
+                )
+            shutil.rmtree(paths.root)
+
+    def _run_fake_sandbox(
+        self, root: Path, run_id: str, process: Mock
+    ) -> tuple[int, dict[str, object], Path]:
+        arguments = outer_arguments(root, run_id)
+
+        def write_command(path: Path, _: object) -> None:
+            path.write_text("{}\n")
+
+        with (
+            patch.dict(os.environ, {LANE_ENVIRONMENT: LANE_VALUE}),
+            patch("test_desktop_session_nested._make_spec", return_value=Mock()),
+            patch("test_desktop_session_nested.write_command_evidence", side_effect=write_command),
+            patch("test_desktop_session_nested.build_bwrap_argv", return_value=["/bwrap"]),
+            patch("test_desktop_session_nested.PrivateLaneLock", return_value=nullcontext()),
+            patch("test_desktop_session_nested.subprocess.Popen", return_value=process),
+            patch("test_desktop_session_nested.capture_process_identity", return_value=Mock()),
+            patch("test_desktop_session_nested.terminate_processes", return_value=[]),
+            redirect_stdout(StringIO()),
+        ):
+            status = run_outer(arguments)
+        result_root = (
+            arguments.build_root / "tests/session/desktop-session-results" / run_id
+        )
+        document = json.loads((result_root / "result.json").read_text())
+        return status, document, arguments.build_root
+
+    def test_timeout_is_archived_before_private_root_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            process = Mock(pid=70, returncode=1)
+            process.communicate.side_effect = [
+                subprocess.TimeoutExpired(["/bwrap"], 55),
+                ("partial output\n", None),
+            ]
+            status, document, build = self._run_fake_sandbox(
+                Path(directory), "1" * 32, process
+            )
+            self.assertEqual(status, 1)
+            self.assertEqual(document["outcome"], "timeout")
+            self.assertTrue(document["timedOut"])
+            self.assertFalse(
+                (build / "tests/session/desktop-session-runs" / ("1" * 32)).exists()
+            )
+
+    def test_success_result_is_archived_before_private_root_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            process = Mock(pid=71, returncode=0)
+            process.communicate.return_value = ("complete\n", None)
+            status, document, build = self._run_fake_sandbox(
+                Path(directory), "3" * 32, process
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(document["outcome"], "success")
+            self.assertIsNone(document["failure"])
+            self.assertFalse(
+                (build / "tests/session/desktop-session-runs" / ("3" * 32)).exists()
+            )
+
+    def test_cleanup_failure_output_and_result_are_archived(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            process = Mock(pid=72, returncode=1)
+            process.communicate.return_value = ("exact desktop cleanup failed\n", None)
+            status, document, build = self._run_fake_sandbox(
+                Path(directory), "2" * 32, process
+            )
+            self.assertEqual(status, 1)
+            self.assertEqual(document["outcome"], "failure")
+            result_root = build / "tests/session/desktop-session-results" / ("2" * 32)
+            self.assertIn("exact desktop cleanup failed", (result_root / "sandbox.log").read_text())
 
 
 if __name__ == "__main__":

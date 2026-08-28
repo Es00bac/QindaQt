@@ -6,65 +6,38 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import select
 import subprocess
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from desktop_session_measure import aggregate_pss_kib, read_process_sample
 from desktop_session_process import (
+    CleanupRecord,
     ProcessContractError,
-    ProcessIdentity,
+    RuntimeState,
     capture_process_identity,
+    process_evidence,
+    spawn_logged_process,
     terminate_processes,
+    wait_for_path,
 )
 from desktop_session_sandbox import FORBIDDEN_ENVIRONMENT, SandboxContractError
 from desktop_session_stage import ResolvedStage, resolve_stage
-from desktop_session_topology import desktop_1080p_topology, validate_boot_evidence
+from desktop_session_topology import (
+    TopologyContractError,
+    desktop_1080p_topology,
+    observed_applications,
+    validate_boot_evidence,
+    validate_topology_readiness,
+)
 from nested_session_scenario import VirtualOutputSpec, write_virtual_output_config
 
 
 MARKER = "QINDAQT_DESKTOP_SESSION_PROBE="
-
-
-@dataclass
-class RuntimeState:
-    processes: list[subprocess.Popen[str]] = field(default_factory=list)
-    spawned: list[tuple[subprocess.Popen[str], list[Path]]] = field(default_factory=list)
-    identities: list[ProcessIdentity] = field(default_factory=list)
-
-    def track(self, process: subprocess.Popen[str], allowed: list[Path]) -> None:
-        self.processes.append(process)
-        self.spawned.append((process, allowed))
-
-
-def _spawn(
-    name: str, command: list[str], environment: Mapping[str, str]
-) -> subprocess.Popen[str]:
-    log = Path(f"/var/log/qindaqt-desktop/{name}.log").open("w", encoding="utf-8")
-    process = subprocess.Popen(
-        command,
-        env=dict(environment),
-        stdout=log,
-        stderr=subprocess.STDOUT,
-        text=True,
-        start_new_session=True,
-    )
-    process._qindaqt_log = log  # type: ignore[attr-defined]
-    return process
-
-
-def _wait_for_path(path: Path, state: RuntimeState, seconds: float) -> None:
-    deadline = time.monotonic() + seconds
-    while time.monotonic() < deadline:
-        if path.exists():
-            return
-        failed = [process.pid for process in state.processes if process.poll() is not None]
-        if failed:
-            raise RuntimeError(f"required process exited before {path}: {failed}")
-        time.sleep(0.02)
-    raise RuntimeError(f"timed out waiting for {path}")
+READINESS_SECONDS = 15.0
+REQUIRED_METHODS = ("outputs", "shellVisibility", "inputCapabilities", "developmentShellSurfaces", "windows")
 
 
 def _parse_probe(line: str) -> dict[str, Any]:
@@ -74,53 +47,6 @@ def _parse_probe(line: str) -> dict[str, Any]:
     if not isinstance(document, dict) or document.get("schemaVersion") != 1:
         raise RuntimeError("desktop probe returned an invalid document")
     return document
-
-
-def _proc_record(pid: int) -> tuple[str, int]:
-    process = Path("/proc") / str(pid)
-    executable = (process / "exe").resolve(strict=True).name
-    contents = (process / "stat").read_text(encoding="ascii")
-    closing = contents.rfind(")")
-    fields = contents[closing + 2 :].split()
-    if closing < 2 or len(fields) < 2:
-        raise RuntimeError(f"malformed process stat for PID {pid}")
-    return executable, int(fields[1], 10)
-
-
-def _process_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
-    topology = desktop_1080p_topology()
-    by_executable = {item.executable: item for item in topology.processes}
-    observed: dict[str, tuple[int, int]] = {}
-    for entry in Path("/proc").iterdir():
-        if not entry.name.isdigit():
-            continue
-        try:
-            executable, parent = _proc_record(int(entry.name))
-        except (OSError, RuntimeError, ValueError):
-            continue
-        expectation = by_executable.get(executable)
-        if expectation is not None:
-            if expectation.role in observed:
-                raise RuntimeError(f"multiple processes claimed {expectation.role}")
-            observed[expectation.role] = (int(entry.name), parent)
-    observed["session-probe"] = (
-        int(str(probe.get("selfPid", "0"))),
-        int(str(probe.get("parentPid", "0"))),
-    )
-    if set(observed) != {item.role for item in topology.processes}:
-        raise RuntimeError(f"process topology incomplete: {sorted(observed)}")
-    roles_by_pid = {pid: role for role, (pid, _) in observed.items()}
-    records: dict[str, Any] = {}
-    pids: dict[str, int] = {}
-    for expected in topology.processes:
-        pid, parent_pid = observed[expected.role]
-        records[expected.role] = {
-            "pid": pid,
-            "executable": expected.executable,
-            "parentRole": roles_by_pid.get(parent_pid),
-        }
-        pids[expected.role] = pid
-    return records, pids
 
 
 def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list[dict[str, Any]]:
@@ -146,24 +72,101 @@ def _service_evidence(probe: Mapping[str, Any], pids: Mapping[str, int]) -> list
     return result
 
 
-def _applications(windows: list[Any]) -> list[dict[str, Any]]:
-    result = []
-    for expected in desktop_1080p_topology().applications:
-        match = next(
-            (item for item in windows if isinstance(item, dict)
-             and expected.window_title_contains in str(item.get("title", ""))),
-            None,
+def _snapshot_pending(probe: Mapping[str, Any]) -> str | None:
+    topology = desktop_1080p_topology()
+    expected_services = {item.name for item in topology.services}
+    raw_services = probe.get("services")
+    if not isinstance(raw_services, list):
+        raise RuntimeError("probe service evidence was malformed")
+    services: dict[str, Mapping[str, Any]] = {}
+    for raw in raw_services:
+        if not isinstance(raw, Mapping) or not isinstance(raw.get("name"), str):
+            raise RuntimeError("probe service evidence contained a malformed record")
+        name = str(raw["name"])
+        if name in services or name not in expected_services:
+            raise RuntimeError("probe service evidence had duplicate or unexpected names")
+        services[name] = raw
+    service_pending: str | None = None
+    if set(services) != expected_services:
+        service_pending = "required service ownership is incomplete"
+    else:
+        for name, record in services.items():
+            status = record.get("status")
+            if status == "unavailable":
+                service_pending = f"service {name} is not owned yet"
+                continue
+            if (
+                status != "owned"
+                or not isinstance(record.get("owner"), str)
+                or not str(record["owner"]).startswith(":")
+            ):
+                raise RuntimeError(f"service {name} returned invalid ownership evidence")
+            try:
+                pid = int(str(record.get("pid", "0")), 10)
+            except ValueError as error:
+                raise RuntimeError(f"service {name} returned a malformed PID") from error
+            if pid <= 1:
+                raise RuntimeError(f"service {name} returned an invalid PID")
+    values = {key: probe.get(key) for key in REQUIRED_METHODS}
+    if not all(isinstance(value, Mapping) for value in values.values()):
+        raise RuntimeError("probe method evidence was malformed")
+    for key, value in values.items():
+        if value.get("status") != "ok":
+            raise RuntimeError(f"public D-Bus method {key} returned an error")
+    if service_pending is not None:
+        return service_pending
+    output = values["outputs"]
+    visibility = values["shellVisibility"]
+    try:
+        applications = observed_applications(
+            list(values["windows"].get("windows", []))
         )
-        if match is None:
-            raise RuntimeError(f"mapped test application was missing: {expected.app_id}")
-        result.append(
-            {"appId": expected.app_id, "windowTitle": match.get("title"), "mapped": True}
-        )
-    return result
+    except TopologyContractError as error:
+        return str(error)
+    candidate = {
+        "outputs": output.get("outputs", []),
+        "generations": {
+            "outputs": output.get("outputGeneration"),
+            "shellVisibility": visibility.get("outputGeneration"),
+        },
+        "inputDevices": values["inputCapabilities"].get("devices", []),
+        "dockSurfaces": values["developmentShellSurfaces"].get("surfaces", []),
+        "applications": applications,
+    }
+    try:
+        validate_topology_readiness(candidate)
+    except TopologyContractError as error:
+        return str(error)
+    return None
+
+
+def await_complete_snapshot(
+    sample: Callable[[float], Mapping[str, Any]],
+    *,
+    seconds: float = READINESS_SECONDS,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Mapping[str, Any]:
+    """Poll until all public topology inputs are ready in the same snapshot."""
+
+    deadline = monotonic() + seconds
+    last_pending = "no snapshot was sampled"
+    while True:
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            raise RuntimeError(f"desktop topology readiness timed out: {last_pending}")
+        document = sample(remaining)
+        if monotonic() > deadline:
+            raise RuntimeError(f"desktop topology readiness timed out: {last_pending}")
+        pending = _snapshot_pending(document)
+        if pending is None:
+            return document
+        last_pending = pending
+        sleep(min(0.05, max(0.0, deadline - monotonic())))
 
 
 def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
-    processes, pids = _process_evidence(probe)
+    processes, pids = process_evidence(probe)
     keys = ("outputs", "shellVisibility", "inputCapabilities",
             "developmentShellSurfaces", "windows")
     values = {key: probe.get(key, {}) for key in keys}
@@ -190,7 +193,9 @@ def _build_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str,
             },
             "inputDevices": values["inputCapabilities"].get("devices", []),
             "dockSurfaces": values["developmentShellSurfaces"].get("surfaces", []),
-            "applications": _applications(list(values["windows"].get("windows", []))),
+            "applications": observed_applications(
+                list(values["windows"].get("windows", []))
+            ),
         },
         pids,
     )
@@ -213,21 +218,21 @@ def _start_desktop(
     stage: ResolvedStage,
     environment: dict[str, str],
     state: RuntimeState,
-) -> subprocess.Popen[str]:
+) -> dict[str, str]:
     runtime = Path(environment["XDG_RUNTIME_DIR"])
-    bus = _spawn(
+    bus = spawn_logged_process(
         "dbus-daemon",
         [str(arguments.dbus_daemon), "--session", "--nofork", "--nopidfile",
          f"--address={environment['DBUS_SESSION_BUS_ADDRESS']}"],
         environment,
     )
     state.track(bus, [arguments.dbus_daemon])
-    _wait_for_path(runtime / "bus", state, 5)
+    wait_for_path(runtime / "bus", state, 5)
     for role in ("settings-service", "audio-service"):
-        child = _spawn(role, [str(stage.executables[role])], environment)
+        child = spawn_logged_process(role, [str(stage.executables[role])], environment)
         state.track(child, [stage.executables[role]])
     socket_name = _configure_private_session(environment)
-    compositor = _spawn(
+    compositor = spawn_logged_process(
         "compositor",
         [str(stage.executables["launcher"]), "--plugin-root",
          str(stage.compositor_plugin.parents[2]), "--virtual", "--width", "1920",
@@ -238,21 +243,75 @@ def _start_desktop(
         environment,
     )
     state.track(compositor, [stage.executables["launcher"], arguments.kwin_wayland])
-    _wait_for_path(runtime / socket_name, state, 15)
+    wait_for_path(runtime / socket_name, state, 15)
     app_environment = dict(environment)
     app_environment["WAYLAND_DISPLAY"] = socket_name
     for role, command in (
         ("settings-app", [str(stage.executables["settings-app"]), "--page", "notifications"]),
         ("editor-app", [str(stage.executables["editor-app"])])
     ):
-        child = _spawn(role, command, app_environment)
+        child = spawn_logged_process(role, command, app_environment)
         state.track(child, [stage.executables[role]])
-    probe = subprocess.Popen(
-        [str(arguments.probe)], env=app_environment, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, text=True, start_new_session=True
+    return app_environment
+
+
+def _spawn_probe(
+    arguments: argparse.Namespace,
+    environment: Mapping[str, str],
+    state: RuntimeState,
+    attempt: int,
+) -> subprocess.Popen[str]:
+    log = Path(f"/var/log/qindaqt-desktop/session-probe-{attempt:03d}.log").open(
+        "w", encoding="utf-8"
     )
+    try:
+        probe = subprocess.Popen(
+            [str(arguments.probe)], env=dict(environment), stdout=subprocess.PIPE,
+            stderr=log, text=True, start_new_session=True
+        )
+    except BaseException:
+        log.close()
+        raise
+    probe._qindaqt_log = log  # type: ignore[attr-defined]
     state.track(probe, [arguments.probe])
     return probe
+
+
+def _read_probe_document(probe: subprocess.Popen[str], seconds: float) -> Mapping[str, Any]:
+    if probe.stdout is None: raise RuntimeError("desktop probe stdout was unavailable")
+    readable, _, _ = select.select([probe.stdout], [], [], seconds)
+    if not readable:
+        raise RuntimeError("desktop topology readiness timed out waiting for the probe")
+    line = probe.stdout.readline()
+    if not line:
+        raise RuntimeError("desktop probe exited without an evidence marker")
+    return _parse_probe(line)
+
+
+def _await_runtime_snapshot(
+    arguments: argparse.Namespace,
+    environment: Mapping[str, str],
+    state: RuntimeState,
+) -> tuple[Mapping[str, Any], subprocess.Popen[str]]:
+    current: subprocess.Popen[str] | None = None
+    attempt = 0
+
+    def sample(remaining: float) -> Mapping[str, Any]:
+        nonlocal current, attempt
+        if current is not None:
+            wait_started = time.monotonic()
+            current.wait(timeout=min(1.0, remaining))
+            remaining -= time.monotonic() - wait_started
+            if remaining <= 0: raise RuntimeError("desktop topology readiness deadline expired")
+            if current.returncode != 0: raise RuntimeError("desktop readiness probe failed")
+        attempt += 1
+        current = _spawn_probe(arguments, environment, state, attempt)
+        return _read_probe_document(current, remaining)
+
+    document = await_complete_snapshot(sample)
+    if current is None:
+        raise RuntimeError("desktop readiness completed without a probe")
+    return document, current
 
 
 def _authenticate_processes(
@@ -268,11 +327,10 @@ def _authenticate_processes(
                     "compositor": [arguments.kwin_wayland],
                     "session-probe": [arguments.probe]})
     for role, pid in pids.items():
-        if role != "session-probe" or probe.poll() is None:
-            state.identities.append(capture_process_identity(role, pid, allowed[role]))
+        state.identities.append(capture_process_identity(role, pid, allowed[role]))
 
 
-def _cleanup(state: RuntimeState) -> None:
+def _cleanup(state: RuntimeState) -> list[CleanupRecord]:
     tracked = {identity.pid for identity in state.identities}
     failures: list[str] = []
     for process, allowed in state.spawned:
@@ -289,9 +347,10 @@ def _cleanup(state: RuntimeState) -> None:
             continue
         state.identities.append(identity)
         tracked.add(identity.pid)
+    ledger: list[CleanupRecord] = []
     try:
         if state.identities:
-            terminate_processes(reversed(state.identities))
+            ledger = terminate_processes(reversed(state.identities))
     except ProcessContractError as error:
         failures.append(str(error))
     finally:
@@ -301,6 +360,7 @@ def _cleanup(state: RuntimeState) -> None:
                 log.close()
     if failures:
         raise ProcessContractError("exact desktop cleanup failed: " + "; ".join(failures))
+    return ledger
 
 
 def run_inner(arguments: argparse.Namespace) -> int:
@@ -316,10 +376,12 @@ def run_inner(arguments: argparse.Namespace) -> int:
     )
     state = RuntimeState()
     evidence: dict[str, Any] | None = None
+    cleanup_records: list[CleanupRecord] = []
     try:
-        probe = _start_desktop(arguments, stage, dict(os.environ), state)
-        marker = probe.stdout.readline() if probe.stdout is not None else ""
-        evidence, pids = _build_evidence(_parse_probe(marker))
+        app_environment = _start_desktop(arguments, stage, dict(os.environ), state)
+        snapshot, probe = _await_runtime_snapshot(arguments, app_environment, state)
+        evidence, pids = _build_evidence(snapshot)
+        _authenticate_processes(arguments, stage, state, pids, probe)
         samples = [read_process_sample(pids[role]) for role in (
             "compositor", "session", "notification", "shell",
             "settings-service", "audio-service")]
@@ -327,15 +389,18 @@ def run_inner(arguments: argparse.Namespace) -> int:
         evidence["measurements"] = {"residentPssKiB": pss, "ceilingKiB": 1024 * 1024}
         if pss > 1024 * 1024:
             raise RuntimeError(f"resident PSS exceeded 1024 MiB: {pss} KiB")
-        _authenticate_processes(arguments, stage, state, pids, probe)
         probe.wait(timeout=2)
         if probe.returncode != 0:
             raise RuntimeError("desktop session probe failed")
     finally:
-        _cleanup(state)
+        cleanup_records = _cleanup(state)
     if evidence is None:
         raise RuntimeError("desktop evidence was not constructed")
-    evidence["cleanup"] = {"bounded": True, "survivorPids": []}
+    evidence["cleanup"] = {
+        "bounded": True,
+        "survivorPids": [],
+        "terminalPhases": [record.document() for record in cleanup_records],
+    }
     validate_boot_evidence(evidence)
     artifact = Path("/var/lib/qindaqt-evidence/desktop-session-evidence.json")
     artifact.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n")

@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import secrets
 import shutil
 import subprocess
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -21,6 +24,7 @@ from desktop_session_sandbox import (
     SandboxContractError,
     SandboxSpec,
     build_bwrap_argv,
+    authenticate_run_root,
     create_run_root,
     remove_run_root,
     sandbox_environment,
@@ -31,6 +35,28 @@ from desktop_session_sandbox import (
 SKIP_CODE = 77
 LANE_ENVIRONMENT = "QINDAQT_PRIVATE_RUNTIME_LANE"
 LANE_VALUE = "interactive-virtual-desktop"
+
+
+@dataclass(frozen=True)
+class AttemptResult:
+    outcome: str
+    return_code: int | None
+    timed_out: bool
+    failure: str | None
+    started_unix_ns: int
+    finished_unix_ns: int
+
+    def document(self, run_id: str) -> dict[str, object]:
+        return {
+            "schemaVersion": 1,
+            "runId": run_id,
+            "outcome": self.outcome,
+            "returnCode": self.return_code,
+            "timedOut": self.timed_out,
+            "failure": self.failure,
+            "startedUnixNs": self.started_unix_ns,
+            "finishedUnixNs": self.finished_unix_ns,
+        }
 
 
 def _tool_root(executable: Path) -> Path:
@@ -113,13 +139,84 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
     )
 
 
-def _copy_artifacts(paths: Any, build_root: Path, output: str) -> None:
-    destination = build_root / "tests/session/desktop-session-last"
-    destination.mkdir(parents=True, exist_ok=True)
-    (destination / "sandbox.log").write_text(output, encoding="utf-8")
-    for source in paths.artifacts.glob("*"):
-        if source.is_file() and not source.is_symlink():
-            shutil.copy2(source, destination / source.name)
+def _result_sentinel(build_root: Path, run_id: str) -> str:
+    digest = hashlib.sha256(str(build_root.resolve()).encode()).hexdigest()
+    return f"qindaqt-desktop-result-v1\n{run_id}\n{digest}\n"
+
+
+def create_result_root(build_root: Path, run_id: str) -> Path:
+    """Create one fresh persistent result root; never reuse a prior attempt."""
+
+    if len(run_id) != 32 or any(character not in "0123456789abcdef" for character in run_id):
+        raise SandboxContractError("result run id must be 32 lowercase hexadecimal digits")
+    build = build_root.resolve(strict=True)
+    parent = build / "tests/session/desktop-session-results"
+    parent.mkdir(parents=True, exist_ok=True)
+    if parent.resolve(strict=True) != parent:
+        raise SandboxContractError("result parent must not traverse a symlink")
+    root = parent / run_id
+    if root.exists() or root.is_symlink():
+        raise SandboxContractError(f"result root already exists: {root}")
+    root.mkdir(mode=0o700)
+    (root / ".qindaqt-desktop-result").write_text(
+        _result_sentinel(build, run_id), encoding="ascii"
+    )
+    (root / "artifacts").mkdir(mode=0o700)
+    (root / "logs").mkdir(mode=0o700)
+    return root
+
+
+def _validate_result_root(root: Path, build_root: Path, run_id: str) -> None:
+    build = build_root.resolve(strict=True)
+    expected_parent = build / "tests/session/desktop-session-results"
+    sentinel = root / ".qindaqt-desktop-result"
+    if (
+        root.parent != expected_parent
+        or root.name != run_id
+        or root.is_symlink()
+        or sentinel.is_symlink()
+    ):
+        raise SandboxContractError("result root is outside its exact build/run identity")
+    try:
+        actual = sentinel.read_text(encoding="ascii")
+    except OSError as error:
+        raise SandboxContractError("result sentinel is missing") from error
+    if actual != _result_sentinel(build, run_id):
+        raise SandboxContractError("result sentinel does not match this attempt")
+    for name in ("artifacts", "logs"):
+        child = root / name
+        if child.is_symlink() or not child.is_dir():
+            raise SandboxContractError(f"result {name} destination is not authenticated")
+
+
+def _copy_regular_files(source: Path, destination: Path) -> None:
+    for item in sorted(source.iterdir(), key=lambda path: path.name):
+        if item.is_symlink() or not item.is_file():
+            raise SandboxContractError(f"attempt output is not a regular file: {item}")
+        target = destination / item.name
+        if target.exists() or target.is_symlink():
+            raise SandboxContractError(f"fresh result destination was not empty: {target}")
+        shutil.copy2(item, target)
+
+
+def archive_attempt(
+    paths: Any,
+    result_root: Path,
+    build_root: Path,
+    run_id: str,
+    output: str,
+    result: AttemptResult,
+) -> None:
+    """Copy every artifact/log and exact result metadata before run-root deletion."""
+
+    authenticate_run_root(paths, build_root, run_id)
+    _validate_result_root(result_root, build_root, run_id)
+    _copy_regular_files(paths.artifacts, result_root / "artifacts")
+    _copy_regular_files(paths.logs, result_root / "logs")
+    with (result_root / "sandbox.log").open("x", encoding="utf-8") as stream:
+        stream.write(output)
+    with (result_root / "result.json").open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(result.document(run_id), sort_keys=True, indent=2) + "\n")
 
 
 def run_outer(arguments: argparse.Namespace) -> int:
@@ -127,17 +224,24 @@ def run_outer(arguments: argparse.Namespace) -> int:
         raise SandboxContractError("outer mode requires build/source roots and bubblewrap")
     run_id = arguments.run_id or secrets.token_hex(16)
     paths = create_run_root(arguments.build_root, run_id)
+    result_root: Path | None = None
+    output = ""
+    started = time.time_ns()
+    result = AttemptResult("failure", None, False, "attempt did not complete", started, started)
     try:
+        result_root = create_result_root(arguments.build_root, run_id)
         spec = _make_spec(arguments, run_id, paths)
         write_command_evidence(paths.artifacts / "sandbox-command.json", spec)
         if arguments.print_command_json:
             print(json.dumps({"argv": build_bwrap_argv(spec)}, sort_keys=True))
+            result = AttemptResult("command-only", 0, False, None, started, time.time_ns())
             return 0
         if os.environ.get(LANE_ENVIRONMENT) != LANE_VALUE:
             print(
                 f"desktop runtime skipped: {LANE_ENVIRONMENT}={LANE_VALUE!r} is required",
                 file=sys.stderr,
             )
+            result = AttemptResult("skipped", SKIP_CODE, False, None, started, time.time_ns())
             return SKIP_CODE
         with PrivateLaneLock():
             process = subprocess.Popen(
@@ -154,15 +258,36 @@ def run_outer(arguments: argparse.Namespace) -> int:
                 terminate_processes([identity])
                 output, _ = process.communicate(timeout=2)
                 output += "\nsandbox exceeded its 55 second deadline\n"
-                result = 1
+                return_code = 1
+                timed_out = True
             else:
-                result = process.returncode
-            _copy_artifacts(paths, arguments.build_root, output)
+                return_code = process.returncode
+                timed_out = False
+            outcome = "success" if return_code == 0 else ("timeout" if timed_out else "failure")
+            failure = None if return_code == 0 else (
+                "sandbox exceeded its 55 second deadline"
+                if timed_out else f"sandbox exited with status {return_code}"
+            )
+            result = AttemptResult(
+                outcome, return_code, timed_out, failure, started, time.time_ns()
+            )
             if output:
                 print(output, end="" if output.endswith("\n") else "\n")
-            return result
+            return return_code
+    except BaseException as error:
+        result = AttemptResult(
+            "failure", None, False, f"{type(error).__name__}: {error}",
+            started, time.time_ns(),
+        )
+        raise
     finally:
-        remove_run_root(paths, arguments.build_root, run_id)
+        try:
+            if result_root is not None:
+                archive_attempt(
+                    paths, result_root, arguments.build_root, run_id, output, result
+                )
+        finally:
+            remove_run_root(paths, arguments.build_root, run_id)
 
 
 def parse_arguments() -> argparse.Namespace:

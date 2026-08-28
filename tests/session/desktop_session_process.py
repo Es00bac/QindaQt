@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import os
 import signal
+import subprocess
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping
+
+from desktop_session_topology import desktop_1080p_topology
 
 
 class ProcessContractError(RuntimeError):
@@ -22,6 +25,114 @@ class ProcessIdentity:
     process_group: int
     executable: Path
     start_ticks: int
+
+
+@dataclass(frozen=True)
+class CleanupRecord:
+    role: str
+    pid: int
+    process_group: int
+    executable: Path
+    start_ticks: int
+    terminal_phase: str
+
+    def document(self) -> dict[str, object]:
+        return {
+            "role": self.role,
+            "pid": self.pid,
+            "processGroup": self.process_group,
+            "executablePath": str(self.executable),
+            "startTicks": self.start_ticks,
+            "terminalPhase": self.terminal_phase,
+        }
+
+
+@dataclass
+class RuntimeState:
+    processes: list[subprocess.Popen[str]] = field(default_factory=list)
+    spawned: list[tuple[subprocess.Popen[str], list[Path]]] = field(default_factory=list)
+    identities: list[ProcessIdentity] = field(default_factory=list)
+
+    def track(self, process: subprocess.Popen[str], allowed: list[Path]) -> None:
+        self.processes.append(process)
+        self.spawned.append((process, allowed))
+
+
+def spawn_logged_process(
+    name: str, command: list[str], environment: Mapping[str, str]
+) -> subprocess.Popen[str]:
+    """Start one isolated group with its complete output in the private log root."""
+
+    log = Path(f"/var/log/qindaqt-desktop/{name}.log").open("w", encoding="utf-8")
+    try:
+        process = subprocess.Popen(
+            command, env=dict(environment), stdout=log, stderr=subprocess.STDOUT,
+            text=True, start_new_session=True,
+        )
+    except BaseException:
+        log.close()
+        raise
+    process._qindaqt_log = log  # type: ignore[attr-defined]
+    return process
+
+
+def wait_for_path(path: Path, state: RuntimeState, seconds: float) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if path.exists():
+            return
+        failed = [process.pid for process in state.processes if process.poll() is not None]
+        if failed:
+            raise RuntimeError(f"required process exited before {path}: {failed}")
+        time.sleep(0.02)
+    raise RuntimeError(f"timed out waiting for {path}")
+
+
+def _proc_record(pid: int) -> tuple[str, int]:
+    process = Path("/proc") / str(pid)
+    executable = (process / "exe").resolve(strict=True).name
+    contents = (process / "stat").read_text(encoding="ascii")
+    closing = contents.rfind(")")
+    fields = contents[closing + 2 :].split()
+    if closing < 2 or len(fields) < 2:
+        raise RuntimeError(f"malformed process stat for PID {pid}")
+    return executable, int(fields[1], 10)
+
+
+def process_evidence(probe: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
+    """Bind each exact topology role to one live executable and parent role."""
+
+    topology = desktop_1080p_topology()
+    by_executable = {item.executable: item for item in topology.processes}
+    observed: dict[str, tuple[int, int]] = {}
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            executable, parent = _proc_record(int(entry.name))
+        except (OSError, RuntimeError, ValueError):
+            continue
+        expectation = by_executable.get(executable)
+        if expectation is not None:
+            if expectation.role in observed:
+                raise RuntimeError(f"multiple processes claimed {expectation.role}")
+            observed[expectation.role] = (int(entry.name), parent)
+    observed["session-probe"] = (
+        int(str(probe.get("selfPid", "0"))), int(str(probe.get("parentPid", "0")))
+    )
+    if set(observed) != {item.role for item in topology.processes}:
+        raise RuntimeError(f"process topology incomplete: {sorted(observed)}")
+    roles_by_pid = {pid: role for role, (pid, _) in observed.items()}
+    records: dict[str, Any] = {}
+    pids: dict[str, int] = {}
+    for expected in topology.processes:
+        pid, parent_pid = observed[expected.role]
+        records[expected.role] = {
+            "pid": pid, "executable": expected.executable,
+            "parentRole": roles_by_pid.get(parent_pid),
+        }
+        pids[expected.role] = pid
+    return records, pids
 
 
 def _proc_stat_start_ticks(contents: str) -> int:
@@ -96,11 +207,12 @@ def terminate_processes(
     signal_group: Callable[[int, int], None] = os.killpg,
     monotonic: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
-) -> list[int]:
-    """TERM then KILL exact authenticated groups; return no survivors or fail.
+) -> list[CleanupRecord]:
+    """TERM then KILL exact authenticated groups and report terminal phases.
 
     PID reuse is treated as the original process having exited. A reused PID is
     never signalled because every signal phase revalidates executable/starttime.
+    Phase names identify the bounded observation phase, not graceful exit.
     """
 
     tracked = list(identities)
@@ -143,14 +255,39 @@ def terminate_processes(
             remaining = live()
         return remaining
 
+    phase_by_pid: dict[int, str] = {}
     remaining = live()
+    remaining_pids = {item.pid for item in remaining}
+    for item in tracked:
+        if item.pid not in remaining_pids:
+            phase_by_pid[item.pid] = "already-exited"
     if remaining:
+        before = {item.pid for item in remaining}
         signal_live_groups(signal.SIGTERM)
         remaining = await_absent(term_seconds)
+        after = {item.pid for item in remaining}
+        for pid in before - after:
+            phase_by_pid[pid] = "term"
     if remaining:
+        before = {item.pid for item in remaining}
         signal_live_groups(signal.SIGKILL)
         remaining = await_absent(kill_seconds)
+        after = {item.pid for item in remaining}
+        for pid in before - after:
+            phase_by_pid[pid] = "kill"
     if remaining:
         pids = [item.pid for item in remaining]
         raise ProcessContractError(f"authenticated processes survived teardown: {pids}")
-    return []
+    if set(phase_by_pid) != {item.pid for item in tracked}:
+        raise ProcessContractError("cleanup omitted an authenticated terminal phase")
+    return [
+        CleanupRecord(
+            item.role,
+            item.pid,
+            item.process_group,
+            item.executable,
+            item.start_ticks,
+            phase_by_pid[item.pid],
+        )
+        for item in tracked
+    ]

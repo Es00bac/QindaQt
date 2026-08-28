@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from desktop_session_process import (
+    CleanupRecord,
     ProcessContractError,
     capture_process_identity,
     identity_is_live,
@@ -67,15 +68,15 @@ class ProcessTests(unittest.TestCase):
                 signals.append((group, signum))
                 shutil.rmtree(process)
 
-            self.assertEqual(
-                terminate_processes(
-                    [identity],
-                    proc_root=proc,
-                    signal_group=signal_group,
-                    sleep=lambda _: None,
-                ),
-                [],
+            ledger = terminate_processes(
+                [identity],
+                proc_root=proc,
+                signal_group=signal_group,
+                sleep=lambda _: None,
             )
+            self.assertEqual(len(ledger), 1)
+            self.assertIsInstance(ledger[0], CleanupRecord)
+            self.assertEqual(ledger[0].terminal_phase, "term")
             self.assertEqual(len(signals), 1)
 
     def test_reused_pid_is_never_signalled(self) -> None:
@@ -91,13 +92,37 @@ class ProcessTests(unittest.TestCase):
             fields = ["S"] + ["0"] * 18 + ["103"] + ["0"] * 8
             (process / "stat").write_text("48 (reused) " + " ".join(fields))
             signals: list[tuple[int, int]] = []
-            terminate_processes(
+            ledger = terminate_processes(
                 [identity],
                 proc_root=proc,
                 signal_group=lambda group, signum: signals.append((group, signum)),
                 sleep=lambda _: None,
             )
             self.assertEqual(signals, [])
+            self.assertEqual(ledger[0].terminal_phase, "already-exited")
+
+    def test_kill_phase_is_reported_without_claiming_graceful_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proc = root / "proc"
+            proc.mkdir()
+            executable = root / "service"
+            executable.write_text("x")
+            process = write_process(proc, 50, executable, 104)
+            identity = capture_process_identity("service", 50, [executable], proc_root=proc)
+            signals: list[int] = []
+
+            def signal_group(_: int, signum: int) -> None:
+                signals.append(signum)
+                if len(signals) == 2:
+                    shutil.rmtree(process)
+
+            ledger = terminate_processes(
+                [identity], proc_root=proc, signal_group=signal_group,
+                term_seconds=0, kill_seconds=1, sleep=lambda _: None,
+            )
+            self.assertEqual(ledger[0].terminal_phase, "kill")
+            self.assertNotIn("graceful", ledger[0].document().values())
 
     def test_live_direct_process_that_cannot_be_authenticated_fails_cleanup(self) -> None:
         process = Mock(pid=52)
