@@ -103,7 +103,7 @@
         {
           "id": "QQ-004.11", "title": "Status-notifier tray", "weight": 2, "state": "WIRED",
           "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state.",
-          "evidence": [{ "kind": "commit", "reference": "fddf846", "summary": "The independently accepted five-commit tray series is replayed on the manager tree through the interrupted-baseline epoch repair." }, { "kind": "test", "reference": "docs/wiki/shell/status-tray.md", "summary": "Manager verification passes 3/3 registered rows and 17/25/9 direct value, registry, and presentation cases, plus strict source and documentation gates." }],
+          "evidence": [{ "kind": "commit", "reference": "e885f99", "summary": "The independently accepted five-commit tray series and manager verification are integrated through the interrupted-baseline epoch repair." }, { "kind": "test", "reference": "docs/wiki/shell/status-tray.md", "summary": "Manager verification passes 3/3 registered rows and 17/25/9 direct value, registry, and presentation cases, plus strict source and documentation gates." }],
           "caveat": "A production StatusNotifierWatcher transport, D-BusMenu adapter, icon renderer, applet registration, shell composition, and installed nested interaction remain."
         },
         {
@@ -180,10 +180,10 @@
           "caveat": "WIRED PB-0 has no resident Power1 service/client, upstream UPower/logind integration, session inhibitor, idle policy, UI, hardware proof, or brightness mutation; those remain PB-1 and later."
         },
         {
-          "id": "QQ-005.04", "title": "Network connectivity", "weight": 11, "state": "ABSENT",
-          "summary": "No integrated model lets users see connectivity, scan, connect/disconnect known networks, or control radios.",
-          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Network remains a later platform outcome." }],
-          "caveat": "Provider reuse, scan leases, secrets, owner replacement, and offline behavior remain."
+          "id": "QQ-005.04", "title": "Network connectivity", "weight": 11, "state": "EXECUTABLE",
+          "summary": "Network N0 integrates bounded Network1 values, canonical identity and codecs, fail-closed validation/redaction, pure lineage and scan-lease coordination, intent admission, atomic projection, and an injected exact-owner asynchronous client.",
+          "evidence": [{ "kind": "commit", "reference": "ea4d986", "summary": "The exact independently accepted Network N0 replay is integrated with all 49 Network leaf blobs byte-identical and seven shared paths additions-only." }, { "kind": "test", "reference": "docs/wiki/architecture/network-service.md", "summary": "Fresh manager verification passes 64/64 focused build actions and 13/13 rows; exact review passes Debug/Release 13/13, direct 118/118, eight mutation controls, package poison, docs, and provenance." }],
+          "caveat": "N0 is an executable pure/injected boundary. Resident Network1 service ownership, concrete NetworkManager and secret-agent transport, persistence, Settings/shell UI, physical radio mutation, and hardware qualification remain N1+."
         },
         {
           "id": "QQ-005.05", "title": "Bluetooth devices", "weight": 9, "state": "EXECUTABLE",
@@ -206,7 +206,7 @@
         {
           "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "WIRED",
           "summary": "Font F0 integrates deterministic catalog construction from injected discovery facts, Settings1-aligned typography preferences, lossless codecs, atomic LKG coordination, and a pre-window Qt bootstrap derivation boundary.",
-          "evidence": [{ "kind": "commit", "reference": "174150a", "summary": "The Claude-reviewed Font F0 implementation and Settings1 bounds repair are replayed on the manager tree." }, { "kind": "test", "reference": "docs/wiki/architecture/font-preferences.md", "summary": "Fresh manager verification passes 7/7 focused Font rows and 2/2 Settings1/QST adjacent rows, including the installed consumer and pure-boundary gate." }],
+          "evidence": [{ "kind": "commit", "reference": "0760e08", "summary": "The exact Claude-accepted Font F0 series is integrated with its manager verification and collision-free ADR-0047 identity." }, { "kind": "test", "reference": "docs/wiki/architecture/font-preferences.md", "summary": "Fresh manager verification passes 7/7 focused Font rows and 2/2 Settings1/QST adjacent rows, including the installed consumer and pure-boundary gate." }],
           "caveat": "F0 is a pure injected-facts boundary. A live discovery provider, Settings route, persistence composition, first-party app bootstrap wiring, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
         },
         {
@@ -217,7 +217,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model, while Bluetooth B0 adds an executable least-authority protocol/model/client/resident-service boundary with deterministic unavailable backend and private activation proof.",
+        "summary": "The bounded Audio1 stack, Display D0-D2 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 adds an executable least-authority protocol/model/client/resident-service boundary; and Network N0 adds an executable bounded protocol/model/injected-client boundary.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -227,10 +227,11 @@
           { "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The accepted PB-0 pure values, codecs, aggregation, brightness composition, math, package, and focused tests are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
+          { "kind": "commit", "reference": "ea4d986", "summary": "The independently accepted Network N0 replay is integrated after exact zero-finding review and fresh manager-tree focused verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; network; live clipboard capture/service/UI; color/font providers; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 client/writer/persistence/transaction UI; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; color/font providers; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
     },
     {
       "id": "QQ-006",
