@@ -6,6 +6,8 @@
 
 #include <QtCore/QSet>
 
+#include <utility>
+
 #include "clipboard_codec_p.h"
 
 namespace QindaQt::Services::ClipboardModel {
@@ -20,7 +22,77 @@ constexpr quint8 kValueVersion = 1;
 // rule added to one pass must be added to the other; an accepted encoding
 // that its own decoder refuses would break the canonical round-trip claim.
 // Both passes measure declared sizes before any payload byte is copied or
-// appended, so refusal is allocation-free for payloads.
+// appended, so refusal is allocation-free for payloads. Decode stages all
+// content privately and publishes only after the complete form succeeds;
+// every refusal therefore exposes an empty DecodedValue.
+ClipboardError scanEncodedValue(const QByteArray &encoded)
+{
+    CodecDetail::ByteReader reader(encoded);
+    if (!reader.readMagic(kValueMagic)) {
+        return ClipboardError::MalformedData;
+    }
+    if (reader.u8() != kValueVersion) {
+        return ClipboardError::UnsupportedVersion;
+    }
+    const quint16 formatCount = reader.u16();
+    if (!reader.ok()) {
+        return ClipboardError::MalformedData;
+    }
+    if (formatCount == 0) {
+        return ClipboardError::EmptyValue;
+    }
+    if (formatCount > kMaxFormatsPerItem) {
+        return ClipboardError::TooManyFormats;
+    }
+
+    QSet<QString> seenMedia;
+    qint64 totalBytes = 0;
+    bool hasPayload = false;
+    for (quint16 index = 0; index < formatCount; ++index) {
+        const quint16 mediaLength = reader.u16();
+        if (!reader.ok()) {
+            return ClipboardError::MalformedData;
+        }
+        if (mediaLength == 0 || mediaLength > kMaxMediaTypeLength) {
+            return ClipboardError::MediaTypeRejected;
+        }
+        const QByteArray mediaBytes = reader.sized(mediaLength);
+        if (!reader.ok()) {
+            return ClipboardError::MalformedData;
+        }
+        const QString mediaType = QString::fromUtf8(mediaBytes);
+        if (!isCanonicalMediaType(mediaType, kMaxMediaTypeLength)) {
+            return ClipboardError::MediaTypeRejected;
+        }
+        if (seenMedia.contains(mediaType)) {
+            return ClipboardError::DuplicateFormat;
+        }
+        seenMedia.insert(mediaType);
+
+        const quint32 payloadLength = reader.u32();
+        if (!reader.ok()) {
+            return ClipboardError::MalformedData;
+        }
+        if (payloadLength > static_cast<quint32>(kMaxItemPayloadBytes)
+            || static_cast<qint64>(payloadLength) > kMaxItemPayloadBytes - totalBytes) {
+            return ClipboardError::OversizedValue;
+        }
+        // AGENT-GUARD: scan the payload extent but never call sized() here.
+        // This first pass must remain payload-allocation-free on every refusal.
+        if (!reader.skip(static_cast<qsizetype>(payloadLength))) {
+            return ClipboardError::MalformedData;
+        }
+        totalBytes += static_cast<qint64>(payloadLength);
+        hasPayload = hasPayload || payloadLength > 0;
+    }
+    if (!hasPayload) {
+        return ClipboardError::EmptyValue;
+    }
+    if (!reader.atEnd()) {
+        return ClipboardError::MalformedData;
+    }
+    return ClipboardError::None;
+}
 } // namespace
 
 EncodedValue encodeValue(const ClipboardValue &value)
@@ -84,6 +156,14 @@ EncodedValue encodeValue(const ClipboardValue &value)
 DecodedValue decodeValue(const QByteArray &encoded)
 {
     DecodedValue result;
+    result.error = scanEncodedValue(encoded);
+    if (result.error != ClipboardError::None) {
+        return result;
+    }
+
+    // Materialization is a second pass over the already validated immutable
+    // byte form. Keep the value private until every read succeeds so even a
+    // future scanner/materializer drift cannot leak a partial rejected value.
     CodecDetail::ByteReader reader(encoded);
     if (!reader.readMagic(kValueMagic)) {
         result.error = ClipboardError::MalformedData;
@@ -94,73 +174,36 @@ DecodedValue decodeValue(const QByteArray &encoded)
         return result;
     }
     const quint16 formatCount = reader.u16();
-    if (formatCount == 0) {
-        result.error = ClipboardError::EmptyValue;
+    if (!reader.ok()) {
+        result.error = ClipboardError::MalformedData;
         return result;
     }
-    if (formatCount > kMaxFormatsPerItem) {
-        result.error = ClipboardError::TooManyFormats;
-        return result;
-    }
-    qint64 totalBytes = 0;
-    bool hasPayload = false;
+    ClipboardValue stagedValue;
+    stagedValue.formats.reserve(formatCount);
     for (quint16 index = 0; index < formatCount; ++index) {
         const quint16 mediaLength = reader.u16();
-        if (mediaLength == 0 || mediaLength > kMaxMediaTypeLength) {
-            result.error = ClipboardError::MediaTypeRejected;
-            return result;
-        }
         const QByteArray mediaBytes = reader.sized(mediaLength);
         if (!reader.ok()) {
             result.error = ClipboardError::MalformedData;
             return result;
         }
         const QString mediaType = QString::fromUtf8(mediaBytes);
-        if (!isCanonicalMediaType(mediaType, kMaxMediaTypeLength)) {
-            result.error = ClipboardError::MediaTypeRejected;
-            return result;
-        }
-        for (const ClipboardFormat &existing : result.value.formats) {
-            if (existing.mediaType == mediaType) {
-                result.error = ClipboardError::DuplicateFormat;
-                return result;
-            }
-        }
         const quint32 payloadLength = reader.u32();
-        if (payloadLength > static_cast<quint32>(kMaxItemPayloadBytes)) {
-            result.error = ClipboardError::OversizedValue;
-            return result;
-        }
-        // AGENT-GUARD: enforce the aggregate ceiling before sized() copies
-        // payload bytes. Moving this check below the read lets a hostile peer
-        // retain up to one individually legal allocation per format before
-        // the decoder eventually refuses the aggregate.
-        if (static_cast<qint64>(payloadLength) > kMaxItemPayloadBytes - totalBytes) {
-            result.error = ClipboardError::OversizedValue;
-            return result;
-        }
         const QByteArray payload = reader.sized(static_cast<qsizetype>(payloadLength));
         if (!reader.ok()) {
             result.error = ClipboardError::MalformedData;
             return result;
         }
-        totalBytes += static_cast<qint64>(payloadLength);
-        if (payloadLength > 0) {
-            hasPayload = true;
-        }
-        result.value.formats.append(ClipboardFormat { mediaType, payload });
+        stagedValue.formats.append(ClipboardFormat { mediaType, payload });
     }
-    if (!hasPayload) {
-        result.error = ClipboardError::EmptyValue;
-        return result;
-    }
-    if (!reader.atEnd()) {
+    if (!reader.ok() || !reader.atEnd()) {
         // AGENT-GUARD: trailing bytes mean the peer encoded something this
         // version cannot understand; accepting the prefix would make the
         // canonical form ambiguous for future versions.
         result.error = ClipboardError::MalformedData;
         return result;
     }
+    result.value = std::move(stagedValue);
     return result;
 }
 

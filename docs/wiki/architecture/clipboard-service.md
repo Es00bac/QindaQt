@@ -169,9 +169,11 @@ invents its own serialization:
   and testing. Encode and decode enforce identical rules — count ceiling,
   canonical media, duplicate rejection, non-empty payload, per-item and
   aggregate size ceilings — in the same error vocabulary, and both measure
-  declared sizes before copying or appending payload bytes. An accepted
-  encoding always decodes; large transfers still move by FD and never
-  through this form.
+  declared sizes before copying or appending payload bytes. Decode performs a
+  complete bounds/shape scan before payload materialization and publishes the
+  value only after full success, so every refusal returns empty content rather
+  than a valid prefix. An accepted encoding always decodes; large transfers
+  still move by FD and never through this form.
 - **Descriptor codecs** (`QCBD` entry, `QCDL` list, format 1): metadata-only
   — identity, ticks, pins, sanitized source label, bounded preview, format
   names with byte counts, and the fingerprint. These are the intended basis
@@ -194,7 +196,9 @@ canonical media re-validated on decode, source-label and preview UTF-8 required
 to round-trip byte-for-byte, and unknown flag bits refused so future extensions
 cannot be silently misread by an older decoder. The one property deliberately
 *not* wire-enforced is the exact clamp width behind a truncation flag — that
-width is instance-relative and unknowable to a peer.
+width is instance-relative and unknowable to a peer. Descriptor-list decode
+also stages entries until the entire list succeeds, so a late framing or nested
+entry failure exposes no accepted prefix.
 
 ## Boundaries
 

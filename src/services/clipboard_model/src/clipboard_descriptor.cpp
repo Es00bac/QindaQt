@@ -3,6 +3,7 @@
 #include <qindaqt/services/clipboard_model/clipboard_descriptor.h>
 
 #include <limits>
+#include <utility>
 
 #include <qindaqt/services/clipboard_model/clipboard_media.h>
 
@@ -184,6 +185,10 @@ DecodedDescriptor decodeDescriptor(const QByteArray &encoded)
         return result;
     }
     const quint16 formatCount = reader.u16();
+    if (!reader.ok()) {
+        result.error = ClipboardError::MalformedData;
+        return result;
+    }
     if (formatCount == 0 || formatCount > kMaxFormatsPerItem) {
         result.error = formatCount == 0 ? ClipboardError::EmptyValue
                                         : ClipboardError::TooManyFormats;
@@ -268,10 +273,16 @@ DecodedDescriptorList decodeDescriptorList(const QByteArray &encoded)
         return result;
     }
     const quint16 count = reader.u16();
+    if (!reader.ok()) {
+        result.error = ClipboardError::MalformedData;
+        return result;
+    }
     if (count > kMaxEntries) {
         result.error = ClipboardError::TooManyEntries;
         return result;
     }
+    QList<ClipboardEntryDescriptor> stagedDescriptors;
+    stagedDescriptors.reserve(count);
     for (quint16 index = 0; index < count; ++index) {
         const quint16 blobLength = reader.u16();
         const QByteArray blob = reader.sized(blobLength);
@@ -284,12 +295,13 @@ DecodedDescriptorList decodeDescriptorList(const QByteArray &encoded)
             result.error = decoded.error;
             return result;
         }
-        result.descriptors.append(decoded.descriptor);
+        stagedDescriptors.append(decoded.descriptor);
     }
     if (!reader.atEnd()) {
         result.error = ClipboardError::MalformedData;
         return result;
     }
+    result.descriptors = std::move(stagedDescriptors);
     return result;
 }
 

@@ -127,6 +127,19 @@ public:
         return bytes;
     }
 
+    // Advances over exactly `count` bytes without materializing them. Scanner
+    // passes use this before any payload copy so a hostile aggregate can be
+    // refused without retaining partial content.
+    [[nodiscard]] bool skip(qsizetype count)
+    {
+        if (!m_ok || count < 0 || remaining() < count) {
+            fail();
+            return false;
+        }
+        m_offset += count;
+        return true;
+    }
+
     void fail() { m_ok = false; }
 
 private:

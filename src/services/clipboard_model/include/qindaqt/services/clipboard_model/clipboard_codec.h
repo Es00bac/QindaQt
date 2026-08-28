@@ -26,9 +26,11 @@ struct DecodedValue {
 // list with media names and payloads; decodes under the fixed protocol
 // bounds, rejecting unknown versions, truncation, declared sizes beyond the
 // remaining buffer, trailing bytes, duplicate or non-canonical media names,
-// and values with no formats or no payload bytes. The future Clipboard1
-// transport may reuse this form only for bounded inline payloads; large
-// transfers still move by FD and never through this codec.
+// and values with no formats or no payload bytes. Decode scans the complete
+// form before payload materialization and returns an empty value on every
+// refusal; callers never observe a valid prefix of rejected content. The
+// future Clipboard1 transport may reuse this form only for bounded inline
+// payloads; large transfers still move by FD and never through this codec.
 [[nodiscard]] EncodedValue encodeValue(const ClipboardValue &value);
 [[nodiscard]] DecodedValue decodeValue(const QByteArray &encoded);
 

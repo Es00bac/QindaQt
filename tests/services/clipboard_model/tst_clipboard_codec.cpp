@@ -179,6 +179,13 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     QCOMPARE(zeroFormats.size(), 7);
     QCOMPARE(decodeValue(zeroFormats).error, ClipboardError::EmptyValue);
 
+    QByteArray truncatedFormatCount("QCBV", 4);
+    truncatedFormatCount.append(char(1));
+    const DecodedValue truncatedCountRejected = decodeValue(truncatedFormatCount);
+    QCOMPARE(truncatedCountRejected.error, ClipboardError::MalformedData);
+    QVERIFY(!truncatedCountRejected.accepted());
+    QVERIFY(truncatedCountRejected.value.formats.isEmpty());
+
     // Declared media length beyond the canonical bound.
     QByteArray longMedia = encoded.bytes;
     longMedia[7] = static_cast<char>(0xff);
@@ -186,7 +193,9 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     QCOMPARE(decodeValue(longMedia).error, ClipboardError::MediaTypeRejected);
 
     // Trailing byte after a complete canonical form.
-    QCOMPARE(decodeValue(withAppendedByte(encoded.bytes)).error, ClipboardError::MalformedData);
+    const DecodedValue trailingRejected = decodeValue(withAppendedByte(encoded.bytes));
+    QCOMPARE(trailingRejected.error, ClipboardError::MalformedData);
+    QVERIFY(trailingRejected.value.formats.isEmpty());
 
     // Encode side refuses values the model would refuse.
     QCOMPARE(encodeValue(ClipboardValue {}).error, ClipboardError::EmptyValue);
@@ -213,6 +222,7 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     swappedToDuplicate.replace(33, 9, "text/html");
     const DecodedValue duplicateRejected = decodeValue(swappedToDuplicate);
     QCOMPARE(duplicateRejected.error, ClipboardError::DuplicateFormat);
+    QVERIFY(duplicateRejected.value.formats.isEmpty());
 
     // A framing-perfect multi-format value may not copy the payload that
     // crosses the aggregate ceiling. The truncated companion proves the
@@ -225,10 +235,14 @@ void ClipboardCodecTests::valueDecodeRejectsHostileInput()
     appendLe16(aggregateOverflow, 2);
     appendEncodedFormat(aggregateOverflow, ClipboardTest::textFormat(), firstPayload);
     appendEncodedFormat(aggregateOverflow, ClipboardTest::uriFormat(), secondPayload);
-    QCOMPARE(decodeValue(aggregateOverflow).error, ClipboardError::OversizedValue);
+    const DecodedValue aggregateRejected = decodeValue(aggregateOverflow);
+    QCOMPARE(aggregateRejected.error, ClipboardError::OversizedValue);
+    QVERIFY(aggregateRejected.value.formats.isEmpty());
     QByteArray aggregateBeforeCopy = aggregateOverflow;
     aggregateBeforeCopy.chop(secondPayload.size());
-    QCOMPARE(decodeValue(aggregateBeforeCopy).error, ClipboardError::OversizedValue);
+    const DecodedValue aggregateTruncatedRejected = decodeValue(aggregateBeforeCopy);
+    QCOMPARE(aggregateTruncatedRejected.error, ClipboardError::OversizedValue);
+    QVERIFY(aggregateTruncatedRejected.value.formats.isEmpty());
 }
 
 void ClipboardCodecTests::descriptorRoundTrips()
@@ -279,8 +293,27 @@ void ClipboardCodecTests::descriptorDecodeRejectsHostileInput()
     // interpreted by an older decoder.
     QByteArray unknownFlags = encoded.bytes;
     const qsizetype flagsOffset = 4 + 1 + 4 + 4 + 8 + 8;
+    const qsizetype metadataOffset = flagsOffset + 1;
+    const qsizetype sourceLength = static_cast<qsizetype>(readLe16(encoded.bytes,
+                                                                   metadataOffset));
+    const qsizetype sourceOffset = metadataOffset + 2;
+    const qsizetype previewLengthOffset = sourceOffset + sourceLength;
+    const qsizetype previewLength = static_cast<qsizetype>(readLe16(encoded.bytes,
+                                                                    previewLengthOffset));
+    const qsizetype previewOffset = previewLengthOffset + 2;
+    const qsizetype formatCountOffset = previewOffset + previewLength;
+    QVERIFY(sourceLength > 0);
+    QVERIFY(previewLength > 0);
     unknownFlags[flagsOffset] = char(0x80);
     QCOMPARE(decodeDescriptor(unknownFlags).error, ClipboardError::MalformedData);
+
+    const DecodedDescriptor fiveByteDescriptor = decodeDescriptor(encoded.bytes.left(5));
+    QCOMPARE(fiveByteDescriptor.error, ClipboardError::MalformedData);
+    QVERIFY(!fiveByteDescriptor.accepted());
+    const DecodedDescriptor noFormatCount =
+        decodeDescriptor(encoded.bytes.left(formatCountOffset));
+    QCOMPARE(noFormatCount.error, ClipboardError::MalformedData);
+    QVERIFY(!noFormatCount.accepted());
 
     // A zero generation/serial pair is not a valid identity.
     QByteArray zeroId = encoded.bytes;
@@ -378,22 +411,12 @@ void ClipboardCodecTests::descriptorDecodeRejectsHostileInput()
     // Invalid UTF-8 must not be accepted through QString's replacement-
     // character conversion. These same-length mutations leave all framing
     // intact but cannot re-encode to their original bytes.
-    const qsizetype metadataOffset = flagsOffset + 1;
-    const qsizetype sourceLength = static_cast<qsizetype>(readLe16(encoded.bytes,
-                                                                   metadataOffset));
-    const qsizetype sourceOffset = metadataOffset + 2;
-    QVERIFY(sourceLength > 0);
     QByteArray invalidLabel = encoded.bytes;
     invalidLabel[sourceOffset] = char(0xff);
     const QByteArray invalidLabelBytes = invalidLabel.mid(sourceOffset, sourceLength);
     QVERIFY(QString::fromUtf8(invalidLabelBytes).toUtf8() != invalidLabelBytes);
     QCOMPARE(decodeDescriptor(invalidLabel).error, ClipboardError::MalformedData);
 
-    const qsizetype previewLengthOffset = sourceOffset + sourceLength;
-    const qsizetype previewLength = static_cast<qsizetype>(readLe16(encoded.bytes,
-                                                                    previewLengthOffset));
-    const qsizetype previewOffset = previewLengthOffset + 2;
-    QVERIFY(previewLength > 0);
     QByteArray invalidPreview = encoded.bytes;
     invalidPreview[previewOffset] = char(0xff);
     const QByteArray invalidPreviewBytes = invalidPreview.mid(previewOffset, previewLength);
@@ -424,6 +447,14 @@ void ClipboardCodecTests::descriptorListRoundTripsAndRejectsHostileInput()
     QVERIFY(empty.accepted());
     QVERIFY(decodeDescriptorList(empty.bytes).accepted());
 
+    QByteArray truncatedCount("QCDL", 4);
+    truncatedCount.append(char(1));
+    const DecodedDescriptorList truncatedCountRejected =
+        decodeDescriptorList(truncatedCount);
+    QCOMPARE(truncatedCountRejected.error, ClipboardError::MalformedData);
+    QVERIFY(!truncatedCountRejected.accepted());
+    QVERIFY(truncatedCountRejected.descriptors.isEmpty());
+
     // Entry-count overflow is TooManyEntries, not the format error.
     QList<ClipboardEntryDescriptor> flood;
     flood.reserve(kMaxEntries + 1);
@@ -438,8 +469,10 @@ void ClipboardCodecTests::descriptorListRoundTripsAndRejectsHostileInput()
     QCOMPARE(encodeDescriptorList(flood).error, ClipboardError::TooManyEntries);
 
     QCOMPARE(decodeDescriptorList(QByteArray()).error, ClipboardError::MalformedData);
-    QCOMPARE(decodeDescriptorList(withAppendedByte(encoded.bytes)).error,
-             ClipboardError::MalformedData);
+    const DecodedDescriptorList trailingRejected =
+        decodeDescriptorList(withAppendedByte(encoded.bytes));
+    QCOMPARE(trailingRejected.error, ClipboardError::MalformedData);
+    QVERIFY(trailingRejected.descriptors.isEmpty());
     QCOMPARE(decodeDescriptorList(truncated(encoded.bytes, 8)).error,
              ClipboardError::MalformedData);
     // Flipping a magic byte anywhere in the list must fail the whole form.
