@@ -61,6 +61,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, and deterministic transaction model;
   its runtime service and compositor adapter are later milestones.
+- [Display color model](architecture/display-color-model.md) records the pure
+  Display Color C0 values, validated ICC descriptor metadata, deterministic
+  catalog and assignment-intent evaluation, and fail-closed snapshot lineage;
+  profile import, transport, and application are later milestones.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, Settings1-fed interruption policy,
   authenticated lock-state privacy gate, and unqualified boundaries.
