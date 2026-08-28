@@ -40,6 +40,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0044](0044-inject-task-list-facts-into-the-shell.md) | Accepted | Inject immutable task-list facts rather than importing compositor internals |
 | [ADR-0031](0031-volatile-bounded-clipboard-history.md) | Accepted | Keep the clipboard history volatile, bounded, and fail-closed |
 | [ADR-0043](0043-isolate-the-customization-editor-domain.md) | Accepted | Isolate the customization editor domain as its own module |
+| [ADR-0026](0026-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

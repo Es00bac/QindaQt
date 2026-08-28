@@ -77,6 +77,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Panel visibility policy](shell/panel-visibility.md) defines window-aware
   hiding, reveal/hold priority, and reservation intent without platform side
   effects.
+- [Global application menu](shell/global-menu.md) records the bounded
+  canonical menu/action model, authenticated active-window ownership, and
+  fail-closed export foundation; transport and live wiring remain future
+  milestones.
 - [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
   compiled-implementation gates and records which built-ins are genuinely live.
 - [Testing harness](development/testing-harness.md) defines isolated nested
