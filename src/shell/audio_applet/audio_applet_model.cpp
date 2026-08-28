@@ -116,32 +116,32 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
     // labels stay correct even when the default device falls outside the
     // window; the overflow count explains what was hidden.
     const int deviceBudget = qMax(0, kMaxDeviceRows);
-    for (const Audio::Device &device : snapshot.outputs) {
+    for (const Audio::Device &device : snapshot->outputs) {
         if (model.m_deviceRows.size() >= deviceBudget)
             break;
         model.m_deviceRows.append(
             projectDevice(device, pendingSerials.contains(device.handle.serial)));
     }
-    for (const Audio::Device &device : snapshot.inputs) {
+    for (const Audio::Device &device : snapshot->inputs) {
         if (model.m_deviceRows.size() >= deviceBudget)
             break;
         model.m_deviceRows.append(
             projectDevice(device, pendingSerials.contains(device.handle.serial)));
     }
-    const int totalDevices = static_cast<int>(snapshot.outputs.size())
-        + static_cast<int>(snapshot.inputs.size());
+    const int totalDevices = static_cast<int>(snapshot->outputs.size())
+        + static_cast<int>(snapshot->inputs.size());
     model.m_overflowDeviceCount = qMax(
         0, totalDevices - static_cast<int>(model.m_deviceRows.size()));
 
     const int streamBudget = qMax(0, kMaxStreamRows);
-    for (const Audio::Stream &stream : snapshot.streams) {
+    for (const Audio::Stream &stream : snapshot->streams) {
         if (model.m_streamRows.size() >= streamBudget)
             break;
         model.m_streamRows.append(
             projectStream(stream, pendingSerials.contains(stream.handle.serial)));
     }
     model.m_overflowStreamCount = qMax(
-        0, static_cast<int>(snapshot.streams.size())
+        0, static_cast<int>(snapshot->streams.size())
             - static_cast<int>(model.m_streamRows.size()));
 
     if (const Audio::Device *output =
