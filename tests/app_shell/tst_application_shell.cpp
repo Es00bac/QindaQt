@@ -8,6 +8,7 @@
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QSignalSpy>
 #include <QtTest>
 
 #include <memory>
@@ -80,12 +81,55 @@ void ApplicationShellTest::rendersAccessibleFocusAndDegradedState()
              QStringLiteral("AppShell test application"));
 
     QVERIFY(!notice->isVisible());
+    coordinator->setSettingsState(IntegrationState::Degraded,
+                                  QStringLiteral("Using cached preferences."));
+    QTRY_VERIFY(notice->isVisible());
+    QVERIFY(!coordinator->hasUnavailableIntegration());
+    QTRY_COMPARE(notice->property("title").toString(),
+                 QStringLiteral("Limited capability"));
+    auto *noticeAccessible = QAccessible::queryAccessibleInterface(notice);
+    QVERIFY(noticeAccessible != nullptr);
+    QTRY_COMPARE(noticeAccessible->text(QAccessible::Name),
+                 QStringLiteral("Limited capability"));
+    QVERIFY(coordinator->degradedMessage().contains(QStringLiteral("cached preferences")));
+    QTRY_VERIFY(pageAccessible->text(QAccessible::Description)
+                    .contains(QStringLiteral("cached preferences")));
+
     coordinator->setSettingsState(IntegrationState::Unavailable,
                                   QStringLiteral("Using local defaults."));
-    QTRY_VERIFY(notice->isVisible());
-    QVERIFY(coordinator->degradedMessage().contains(QStringLiteral("local defaults")));
-    QTRY_VERIFY(pageAccessible->text(QAccessible::Description)
-                    .contains(QStringLiteral("local defaults")));
+    QVERIFY(coordinator->hasUnavailableIntegration());
+    QTRY_COMPARE(notice->property("title").toString(),
+                 QStringLiteral("Feature unavailable"));
+    QTRY_COMPARE(noticeAccessible->text(QAccessible::Name),
+                 QStringLiteral("Feature unavailable"));
+
+    QSignalSpy quitDecisions(coordinator,
+                             &ApplicationCoordinator::quitDecisionRequested);
+    window->close();
+    QTRY_COMPARE(quitDecisions.count(), 1);
+    QVERIFY(window->isVisible());
+    QVERIFY(coordinator->quitPending());
+
+    // A second native close while consent is pending remains rejected and
+    // cannot manufacture a second decision ID.
+    window->close();
+    QTRY_COMPARE(coordinator->lastErrorCode(), ErrorCode::Busy);
+    QCOMPARE(quitDecisions.count(), 1);
+    QVERIFY(window->isVisible());
+
+    const quint64 rejectedId = quitDecisions.at(0).at(0).toULongLong();
+    QCOMPARE(coordinator->resolveQuit(rejectedId, false,
+                                      QStringLiteral("Unsaved work"))
+                 .code,
+             ErrorCode::None);
+    QVERIFY(window->isVisible());
+    QVERIFY(!coordinator->quitPending());
+
+    window->close();
+    QTRY_COMPARE(quitDecisions.count(), 2);
+    const quint64 approvedId = quitDecisions.at(1).at(0).toULongLong();
+    QCOMPARE(coordinator->resolveQuit(approvedId, true).code, ErrorCode::None);
+    QTRY_VERIFY(!window->isVisible());
 }
 
 QTEST_MAIN(ApplicationShellTest)

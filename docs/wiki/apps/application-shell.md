@@ -95,6 +95,10 @@ Only the owning composition can set these states. AppShell combines degraded
 and unavailable details into one visible/accessible notice; it does not invent
 fallback data, retry policy, or readiness from elapsed time. A service restart
 must be fenced by the real client before it publishes `Ready` again.
+`hasUnavailableIntegration` is the read-only aggregate used by the QML surface
+to label a genuinely unavailable feature separately from a still-usable,
+limited capability; detailed state and recovery policy remain application
+inputs.
 
 ### File-portal mediation
 

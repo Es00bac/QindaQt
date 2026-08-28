@@ -13,6 +13,7 @@ private slots:
     void applicationOwnsQuitDecision();
     void projectsOnlyConfirmedIntegrationState();
     void serializesAndFencesPortalResults();
+    void rejectsInconsistentPortalResults();
     void rejectsHostilePortalInputsWithoutPublishing();
     void forwardsKnownEnabledActions();
     void boundsFocusIdentity();
@@ -84,6 +85,74 @@ void ApplicationCoordinatorTest::serializesAndFencesPortalResults()
                  .code,
              ErrorCode::None);
     QCOMPARE(finished.count(), 1);
+}
+
+void ApplicationCoordinatorTest::rejectsInconsistentPortalResults()
+{
+    ApplicationCoordinator coordinator;
+    QSignalSpy finished(&coordinator, &ApplicationCoordinator::portalFinished);
+    const quint64 request = coordinator.requestOpenFile(
+        QStringLiteral("Open document"), {QStringLiteral("text/plain")});
+    QVERIFY(request != 0);
+
+    // AGENT-GUARD: A hostile reply must not consume the pending request. The
+    // real portal adapter can then reject malformed backend data and still
+    // deliver a later well-formed result for the same fenced request ID.
+    QCOMPARE(coordinator.resolvePortal(request,
+                                       false,
+                                       {QUrl(QStringLiteral("file:///tmp/rejected"))})
+                 .code,
+             ErrorCode::InvalidArgument);
+    QCOMPARE(coordinator.resolvePortal(request, true, {}).code, ErrorCode::InvalidArgument);
+    QCOMPARE(coordinator.resolvePortal(
+                 request,
+                 true,
+                 {QUrl(QStringLiteral("file:///tmp/failed"))},
+                 makeError(ErrorCode::BackendFailure, QStringLiteral("backend failed")))
+                 .code,
+             ErrorCode::InvalidArgument);
+    QCOMPARE(coordinator.resolvePortal(
+                 request, true, {QUrl(QStringLiteral("relative-document.txt"))})
+                 .code,
+             ErrorCode::InvalidArgument);
+
+    QList<QUrl> flood;
+    for (qsizetype index = 0; index <= MaximumPortalUrlCount; ++index) {
+        flood.append(QUrl(QStringLiteral("file:///tmp/document-%1").arg(index)));
+    }
+    QCOMPARE(coordinator.resolvePortal(request, true, flood).code,
+             ErrorCode::InvalidArgument);
+    const Error overlongError{
+        .code = ErrorCode::BackendFailure,
+        .message = QString(MaximumDiagnosticLength + 1, QLatin1Char('x')),
+        .recoverable = true,
+    };
+    QCOMPARE(coordinator.resolvePortal(
+                 request, false, {}, overlongError)
+                 .code,
+             ErrorCode::InvalidArgument);
+    QCOMPARE(finished.count(), 0);
+
+    QCOMPARE(coordinator.resolvePortal(
+                 request, true, {QUrl(QStringLiteral("file:///tmp/document.txt"))})
+                 .code,
+             ErrorCode::None);
+    QCOMPARE(finished.count(), 1);
+
+    const quint64 folder = coordinator.requestFolder(QStringLiteral("Choose folder"));
+    QVERIFY(folder != 0);
+    QCOMPARE(coordinator.resolvePortal(
+                 folder,
+                 true,
+                 {QUrl(QStringLiteral("file:///tmp/one")),
+                  QUrl(QStringLiteral("file:///tmp/two"))})
+                 .code,
+             ErrorCode::InvalidArgument);
+    QCOMPARE(finished.count(), 1);
+
+    QCOMPARE(coordinator.resolvePortal(folder, false).code, ErrorCode::None);
+    QCOMPARE(finished.count(), 2);
+    QCOMPARE(coordinator.lastErrorCode(), ErrorCode::None);
 }
 
 void ApplicationCoordinatorTest::rejectsHostilePortalInputsWithoutPublishing()

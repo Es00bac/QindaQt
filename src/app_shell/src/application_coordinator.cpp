@@ -150,6 +150,12 @@ void ApplicationCoordinator::setSessionState(IntegrationState state, const QStri
 
 bool ApplicationCoordinator::degraded() const { return !degradedMessage().isEmpty(); }
 
+bool ApplicationCoordinator::hasUnavailableIntegration() const
+{
+    return m_settingsState == IntegrationState::Unavailable
+        || m_sessionState == IntegrationState::Unavailable;
+}
+
 QString ApplicationCoordinator::degradedMessage() const
 {
     QStringList messages;

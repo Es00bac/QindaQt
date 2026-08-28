@@ -110,6 +110,10 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.margins: Tokens.space["4"]
             visible: coordinator.degraded
+            // AGENT-CONTRACT: A degraded integration remains usable. Keep its
+            // visible and accessible title distinct from an unavailable one.
+            title: coordinator.hasUnavailableIntegration
+                   ? qsTr("Feature unavailable") : qsTr("Limited capability")
             reason: coordinator.degradedMessage
             retryText: ""
         }

@@ -33,6 +33,8 @@ class ApplicationCoordinator : public QObject {
     Q_PROPERTY(QindaQt::AppShell::IntegrationState sessionState READ sessionState
                    NOTIFY integrationStateChanged FINAL)
     Q_PROPERTY(bool degraded READ degraded NOTIFY integrationStateChanged FINAL)
+    Q_PROPERTY(bool hasUnavailableIntegration READ hasUnavailableIntegration
+                   NOTIFY integrationStateChanged FINAL)
     Q_PROPERTY(QString degradedMessage READ degradedMessage
                    NOTIFY integrationStateChanged FINAL)
     Q_PROPERTY(bool quitPending READ quitPending NOTIFY quitPendingChanged FINAL)
@@ -67,6 +69,7 @@ public:
     void setSettingsState(IntegrationState state, const QString &detail = {});
     void setSessionState(IntegrationState state, const QString &detail = {});
     [[nodiscard]] bool degraded() const;
+    [[nodiscard]] bool hasUnavailableIntegration() const;
     [[nodiscard]] QString degradedMessage() const;
 
     [[nodiscard]] bool quitPending() const;
