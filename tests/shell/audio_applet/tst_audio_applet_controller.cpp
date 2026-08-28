@@ -143,6 +143,8 @@ OperationResult makeResult(OperationKind kind, OperationStatus status,
 
 class FakeTransport final : public AudioTransport {
 public:
+    explicit FakeTransport(QObject *parent = nullptr) : AudioTransport(parent) {}
+
     struct Fetch {
         QString owner;
         quint64 requestId = 0;

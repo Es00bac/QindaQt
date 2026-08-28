@@ -78,7 +78,8 @@ Snapshot snapshotWithCounts(int outputs, int inputs, int streams)
         | Capability::SetMute;
     quint64 serial = 0;
     for (int i = 0; i < outputs; ++i) {
-        Device device = makeDevice(++serial, DeviceKind::Output,
+        ++serial;
+        Device device = makeDevice(serial, DeviceKind::Output,
                                    QStringLiteral("out%1").arg(serial),
                                    QStringLiteral("Output %1").arg(serial));
         if (serial == 1) {
@@ -89,7 +90,8 @@ Snapshot snapshotWithCounts(int outputs, int inputs, int streams)
     }
     const quint64 firstInputSerial = serial;
     for (int i = 0; i < inputs; ++i) {
-        Device device = makeDevice(++serial, DeviceKind::Input,
+        ++serial;
+        Device device = makeDevice(serial, DeviceKind::Input,
                                    QStringLiteral("in%1").arg(serial),
                                    QStringLiteral("Input %1").arg(serial));
         if (inputs > 0 && serial == firstInputSerial + 1) {
@@ -98,9 +100,11 @@ Snapshot snapshotWithCounts(int outputs, int inputs, int streams)
         }
         snapshot.inputs.append(device);
     }
-    for (int i = 0; i < streams; ++i)
+    for (int i = 0; i < streams; ++i) {
+        ++serial;
         snapshot.streams.append(makeStream(
-            ++serial, QStringLiteral("App %1").arg(serial), {}));
+            serial, QStringLiteral("App %1").arg(serial), {}));
+    }
     return snapshot;
 }
 
