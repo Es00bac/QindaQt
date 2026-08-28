@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <QtTest/QtTest>
+#include <functional>
 #include <limits>
 #include <qindaqt/services/display_color_model/color_limits.h>
 #include <qindaqt/services/display_color_model/color_model.h>
@@ -24,8 +25,12 @@ private Q_SLOTS:
     void testDegradedProfileNotFoundAndLkgFallback();
     void testLineageValidationAndRejection();
     void testDeterministicLineageFingerprint();
+    void testFingerprintFramingNoAmbiguity();
+    void testFingerprintCoversEverySnapshotField();
     void testOutputLifecycleRemoval();
     void testEpochReset();
+    void testSameEpochResetMonotonic();
+    void testDefaultSrgbTruthfulSemantics();
     void testHostileInputsRejectedAtomically();
     void testMaxOutputsAggregateCap();
 };
@@ -264,6 +269,145 @@ void ColorModelTest::testDeterministicLineageFingerprint()
     QCOMPARE(snapA.lineageFingerprint, snapB.lineageFingerprint);
 }
 
+void ColorModelTest::testFingerprintFramingNoAmbiguity()
+{
+    // AGENT-GUARD: the fingerprint encoding is domain-tagged and
+    // length-delimited, so moving payload bytes between adjacent string
+    // fields cannot collide the way an unframed concatenation would:
+    // default="a"+profile="bc" and default="ab"+profile="c" both
+    // concatenate to "abc" but must fingerprint differently.
+    ColorCatalog catalogA;
+    ColorCatalog catalogB;
+    IccProfileDescriptor encodedA;
+    IccProfileDescriptor encodedB;
+    catalogA.defaultSrgbProfileId = "a";
+    catalogB.defaultSrgbProfileId = "ab";
+    encodedA.profileId = "bc";
+    encodedB.profileId = "c";
+    catalogA.profiles = {encodedA};
+    catalogB.profiles = {encodedB};
+
+    QCOMPARE(catalogA.defaultSrgbProfileId + encodedA.profileId,
+             catalogB.defaultSrgbProfileId + encodedB.profileId);
+    QVERIFY(computeLineageFingerprint("same", 0, catalogA, {}) !=
+            computeLineageFingerprint("same", 0, catalogB, {}));
+}
+
+void ColorModelTest::testFingerprintCoversEverySnapshotField()
+{
+    // AGENT-GUARD: every semantically published snapshot field is framed
+    // into the lineage fingerprint. Each block below mutates exactly one
+    // field of an otherwise identical published state and requires a
+    // changed fingerprint; a passing block that newly added fields forget
+    // to frame would silently re-open the equal-fingerprint defect from
+    // the Curie the 3rd review.
+    ColorModel model("epoch-fp");
+    const auto pSrgb = createSampleProfile("srgb-std", "Standard sRGB", ProfileOrigin::System);
+    QVERIFY(model.setCatalog({pSrgb}, "srgb-std"));
+    const auto caps = createSampleCapabilities("DP-1", true, true);
+    QVERIFY(model.updateCapabilities(caps));
+    OutputColorAssignment req;
+    req.stableId = "DP-1";
+    req.profileId = "srgb-std";
+    req.policy = OutputColorPolicy::SdrWcg;
+    req.intent = RenderingIntent::RelativeColorimetric;
+    req.sdrBrightnessGainApplied = true;
+    QVERIFY(model.requestAssignment(req));
+
+    const auto baseline = model.snapshot();
+    const QString epoch = baseline.serviceEpoch;
+    const quint64 revision = baseline.revision;
+    const QByteArray baselineFp = baseline.lineageFingerprint;
+    QVERIFY(!baselineFp.isEmpty());
+    QVERIFY(baseline.outputs.size() == 1);
+    QVERIFY(baseline.catalog.profiles.size() == 1);
+
+    // Recomputation over identical inputs reproduces the published bytes.
+    QCOMPARE(computeLineageFingerprint(epoch, revision, baseline.catalog, baseline.outputs), baselineFp);
+
+    // --- epoch and revision ---
+    QVERIFY(computeLineageFingerprint("other-epoch", revision, baseline.catalog, baseline.outputs) != baselineFp);
+    QVERIFY(computeLineageFingerprint(epoch, revision + 1, baseline.catalog, baseline.outputs) != baselineFp);
+
+    // --- catalog-level fields ---
+    const auto catalogFingerprintOf = [&](const ColorCatalog &catalog) {
+        return computeLineageFingerprint(epoch, revision, catalog, baseline.outputs);
+    };
+    {
+        auto catalog = baseline.catalog;
+        catalog.defaultSrgbProfileId = "other-default";
+        QVERIFY(catalogFingerprintOf(catalog) != baselineFp);
+    }
+    {
+        auto catalog = baseline.catalog;
+        catalog.wireValid = !catalog.wireValid;
+        QVERIFY(catalogFingerprintOf(catalog) != baselineFp);
+    }
+
+    // --- per-profile fields ---
+    const auto mutateProfile = [&](const std::function<void(IccProfileDescriptor &)> &mutate) {
+        auto catalog = baseline.catalog;
+        mutate(catalog.profiles[0]);
+        return computeLineageFingerprint(epoch, revision, catalog, baseline.outputs);
+    };
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.profileId = "mutated-id"; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.displayName = "Mutated Name"; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.description = "Mutated description"; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.fileName = "mutated.icc"; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.origin = ProfileOrigin::EdidDerived; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.gamut = ColorSpaceGamut::AdobeRgb; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.transferFunction = TransferFunction::Hlg; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.rawHeader[40] = p.rawHeader[40] ^ char(0x01); }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.checksumSha256 = QByteArray(32, 'x'); }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.byteSize += 1; }) != baselineFp);
+    QVERIFY(mutateProfile([](IccProfileDescriptor &p) { p.wireValid = !p.wireValid; }) != baselineFp);
+
+    // --- per-output fields ---
+    const auto mutateOutput = [&](const std::function<void(OutputColorState &)> &mutate) {
+        auto outputs = baseline.outputs;
+        mutate(outputs[0]);
+        return computeLineageFingerprint(epoch, revision, baseline.catalog, outputs);
+    };
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.stableId = "DP-2"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.activeProfileId = "other-active"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.degradedReason = DegradedReason::HdrUnsupported; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.isDegraded = !s.isDegraded; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.wireValid = !s.wireValid; }) != baselineFp);
+
+    // capabilities fields
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.stableId = "DP-2"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportsWcg = !s.capabilities.supportsWcg; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportsHdr = !s.capabilities.supportsHdr; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportedGamuts.append(ColorSpaceGamut::AdobeRgb); }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportedGamuts.clear(); }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportedGamuts.removeFirst(); }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportedTransferFunctions.append(TransferFunction::Gamma22); }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.supportedTransferFunctions.clear(); }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.minLuminanceNits += 0.1; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.maxLuminanceNits += 0.1; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.maxFullFrameLuminanceNits += 0.1; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.autoColorManagementAvailable = !s.capabilities.autoColorManagementAvailable; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.capabilities.wireValid = !s.capabilities.wireValid; }) != baselineFp);
+
+    // requested assignment fields
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.stableId = "DP-2"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.profileId = "other-requested"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.policy = OutputColorPolicy::HdrEnabled; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.intent = RenderingIntent::Saturation; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.sdrBrightnessGainApplied = !s.requestedAssignment.sdrBrightnessGainApplied; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.sdrBrightnessNits += 1.0; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.requestedAssignment.wireValid = !s.requestedAssignment.wireValid; }) != baselineFp);
+
+    // applied assignment fields
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.stableId = "DP-2"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.profileId = "other-applied"; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.policy = OutputColorPolicy::AutoColorManagement; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.intent = RenderingIntent::AbsoluteColorimetric; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.sdrBrightnessGainApplied = !s.appliedAssignment.sdrBrightnessGainApplied; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.sdrBrightnessNits += 1.0; }) != baselineFp);
+    QVERIFY(mutateOutput([](OutputColorState &s) { s.appliedAssignment.wireValid = !s.appliedAssignment.wireValid; }) != baselineFp);
+}
+
 void ColorModelTest::testOutputLifecycleRemoval()
 {
     ColorModel model("epoch-1");
@@ -286,6 +430,104 @@ void ColorModelTest::testEpochReset()
     model.resetEpoch("epoch-new");
     QCOMPARE(model.serviceEpoch(), QString("epoch-new"));
     QCOMPARE(model.revision(), 0u);
+}
+
+void ColorModelTest::testSameEpochResetMonotonic()
+{
+    // AGENT-GUARD: resetting to the epoch already in force must never
+    // regress the model-monotonic revision inside that epoch (the exact
+    // 1 -> 0 regression the Curie the 3rd harness reproduced).
+    ColorModel model("epoch-stable");
+    const auto pSrgb = createSampleProfile("srgb-std", "Standard sRGB");
+    model.setCatalog({pSrgb}, "srgb-std");
+    QCOMPARE(model.revision(), 1u);
+
+    model.resetEpoch("epoch-stable");
+    QCOMPARE(model.serviceEpoch(), QString("epoch-stable"));
+    QCOMPARE(model.revision(), 1u);
+    QVERIFY(model.validateLineage("epoch-stable", 1u));
+
+    // Further mutations still advance monotonically from the preserved
+    // revision, so no revision value inside this epoch is ever reused.
+    const auto caps = createSampleCapabilities("DP-1", false, false);
+    QVERIFY(model.updateCapabilities(caps));
+    QCOMPARE(model.revision(), 2u);
+
+    // A genuinely distinct epoch restarts lineage at revision zero.
+    model.resetEpoch("epoch-next");
+    QCOMPARE(model.serviceEpoch(), QString("epoch-next"));
+    QCOMPARE(model.revision(), 0u);
+}
+
+void ColorModelTest::testDefaultSrgbTruthfulSemantics()
+{
+    // AGENT-GUARD: a catalog whose only profile is BT.2020 has no truthful
+    // sRGB fallback: the default fails closed to empty instead of adopting
+    // a non-sRGB profile, and a capability-clamped SDR policy publishes no
+    // applied profile rather than BT.2020 applied truth.
+    {
+        ColorModel model("epoch-1");
+        const auto pBt2020 = createSampleProfile("bt2020", "BT.2020", ProfileOrigin::BuiltIn,
+                                                 ColorSpaceGamut::Bt2020);
+        QVERIFY(model.setCatalog({pBt2020}, "bt2020"));
+        QVERIFY(model.snapshot().catalog.defaultSrgbProfileId.isEmpty());
+
+        const auto caps = createSampleCapabilities("DP-1", false, false);
+        QVERIFY(model.updateCapabilities(caps));
+        OutputColorAssignment request;
+        request.stableId = "DP-1";
+        request.profileId = "bt2020";
+        request.policy = OutputColorPolicy::HdrEnabled;
+        QVERIFY(model.requestAssignment(request));
+
+        const auto state = model.outputState("DP-1");
+        QVERIFY(state.has_value());
+        QVERIFY(state->isDegraded);
+        QCOMPARE(state->degradedReason, DegradedReason::HdrUnsupported);
+        QCOMPARE(state->appliedAssignment.policy, OutputColorPolicy::SdrSrgb);
+        QVERIFY(state->appliedAssignment.profileId.isEmpty());
+        QVERIFY(state->activeProfileId.isEmpty());
+        // Requested intent stays truthful for observers.
+        QCOMPARE(state->requestedAssignment.profileId, QString("bt2020"));
+        QCOMPARE(state->requestedAssignment.policy, OutputColorPolicy::HdrEnabled);
+    }
+
+    // The caller's chosen default is honored only with sRGB gamut/transfer
+    // semantics; a non-sRGB choice deterministically falls to the first
+    // sorted sRGB entry instead.
+    {
+        ColorModel model("epoch-2");
+        const auto pBt2020 = createSampleProfile("a-bt2020", "A BT.2020", ProfileOrigin::BuiltIn,
+                                                 ColorSpaceGamut::Bt2020);
+        const auto pSrgbZ = createSampleProfile("z-srgb", "Z sRGB", ProfileOrigin::BuiltIn);
+        const auto pSrgbA = createSampleProfile("a-srgb", "A sRGB", ProfileOrigin::BuiltIn);
+
+        QVERIFY(model.setCatalog({pBt2020, pSrgbZ, pSrgbA}, "a-bt2020"));
+        QCOMPARE(model.snapshot().catalog.defaultSrgbProfileId, QString("a-srgb"));
+
+        QVERIFY(model.setCatalog({pBt2020, pSrgbZ, pSrgbA}, "z-srgb"));
+        QCOMPARE(model.snapshot().catalog.defaultSrgbProfileId, QString("z-srgb"));
+
+        QVERIFY(model.setCatalog({pBt2020, pSrgbZ, pSrgbA}));
+        QCOMPARE(model.snapshot().catalog.defaultSrgbProfileId, QString("a-srgb"));
+    }
+
+    // Registering an sRGB profile into a default-less catalog installs the
+    // deterministic sRGB default; removing it fails closed again.
+    {
+        ColorModel model("epoch-3");
+        const auto pBt2020 = createSampleProfile("bt2020", "BT.2020", ProfileOrigin::BuiltIn,
+                                                 ColorSpaceGamut::Bt2020);
+        QVERIFY(model.registerProfile(pBt2020));
+        QVERIFY(model.snapshot().catalog.defaultSrgbProfileId.isEmpty());
+
+        const auto pSrgb = createSampleProfile("srgb-std", "Standard sRGB", ProfileOrigin::System);
+        QVERIFY(model.registerProfile(pSrgb));
+        QCOMPARE(model.snapshot().catalog.defaultSrgbProfileId, QString("srgb-std"));
+
+        QVERIFY(model.removeProfile("srgb-std"));
+        QVERIFY(model.snapshot().catalog.defaultSrgbProfileId.isEmpty());
+    }
 }
 
 void ColorModelTest::testHostileInputsRejectedAtomically()

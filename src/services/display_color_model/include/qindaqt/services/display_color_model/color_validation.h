@@ -29,10 +29,16 @@ bool validateOutputCapabilities(const OutputColorCapabilities &capabilities);
 // Output assignment validation
 bool validateOutputAssignment(const OutputColorAssignment &assignment);
 
-// Deterministic catalog normalization: filters invalid, deduplicates by ID, sorts stably
+// Deterministic catalog normalization: filters invalid descriptors,
+// collapses exact-equal duplicates, rejects conflicting duplicate IDs
+// order-independently (neither entry survives), sorts, then caps at the
+// catalog maximum.
 QList<IccProfileDescriptor> normalizeAndSortCatalog(const QList<IccProfileDescriptor> &profiles);
 
-// Pure canonical lineage fingerprint derivation
+// Pure canonical lineage fingerprint derivation. The encoding is
+// schema-tagged, domain-tagged, and length-delimited, and covers every
+// semantically published snapshot field; see the framing contract in the
+// implementation for the exact field set.
 QByteArray computeLineageFingerprint(
     const QString &serviceEpoch,
     quint64 revision,
