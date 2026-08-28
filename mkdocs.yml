@@ -99,4 +99,4 @@ nav:
       - "ADR-0029: File Manager bounded local launch": adr/0029-file-manager-bounded-local-launch.md
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md
       - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md
-      - "ADR-0026: Injected task-list facts": adr/0026-inject-task-list-facts-into-the-shell.md
+      - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
