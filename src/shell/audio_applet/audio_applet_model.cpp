@@ -110,6 +110,12 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
         model.m_phaseReasonCode = QStringLiteral("malformed-snapshot");
         return model;
     }
+    if (phase == Phase::Unavailable || phase == Phase::Loading) {
+        // AGENT-GUARD: fail closed contract: Unavailable and Loading phases
+        // expose no device or stream rows, only phase/reason text. Ready and
+        // Degraded phases show bounded rows within the window.
+        return model;
+    }
 
     // Presentation keeps only rows within the bounded window, in the
     // protocol's ascending-serial order, outputs before inputs. The default
