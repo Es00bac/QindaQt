@@ -99,10 +99,12 @@ the compositor-observed `applicationId`, window ID, and title. It never creates
 an expected identity from a title match.
 
 The Settings window's required compositor-observed application ID is
-`qindaqt-settings`, matching the installed production executable's Qt
-application identity. `org.qindaqt.Settings.desktop` is package-launcher
-metadata and is not rewritten into compositor evidence. The Text Editor
-continues to require `org.qindaqt.TextEditor`.
+`org.qindaqt.Settings`, matching the installed desktop identity that the
+production executable must bind with `QGuiApplication::setDesktopFileName`
+before creating a window. The executable-basename fallback
+`qindaqt-settings` is a product identity defect and is retained only as a
+negative archived observation. The Text Editor continues to require
+`org.qindaqt.TextEditor`.
 
 Every readiness probe reserves a fixed one-second lifetime before it starts;
 the driver does not shorten that lifetime to the outer deadline's final

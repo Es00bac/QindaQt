@@ -950,9 +950,10 @@ deadline expires. An incomplete app/dock startup state may retry; a malformed
 service or any public method error fails immediately. Settings and Text Editor
 must match their exact compositor-observed `applicationId`, nonempty window ID,
 and title. Settings requires the installed application's production Qt identity
-`qindaqt-settings`; its `org.qindaqt.Settings.desktop` launcher filename is not
-compositor identity. Text Editor requires `org.qindaqt.TextEditor`. A matching
-title with another application ID is never rewritten into QindaQt evidence.
+`org.qindaqt.Settings`, bound by the executable to its installed desktop entry
+before window creation. The executable-basename fallback `qindaqt-settings`
+must fail. Text Editor requires `org.qindaqt.TextEditor`. A matching title with
+another application ID is never rewritten into QindaQt evidence.
 
 Each probe receives a fixed one-second lifetime, and a new attempt starts only
 when that complete lifetime remains inside the 15-second total cap. The driver

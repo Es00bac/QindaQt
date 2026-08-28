@@ -97,7 +97,7 @@ def desktop_1080p_topology() -> BootTopology:
             ServiceExpectation("org.freedesktop.Notifications", "notification"),
         ),
         applications=(
-            ApplicationExpectation("qindaqt-settings", "settings-app", "Settings"),
+            ApplicationExpectation("org.qindaqt.Settings", "settings-app", "Settings"),
             ApplicationExpectation(
                 "org.qindaqt.TextEditor", "editor-app", "QindaQt Text Editor"
             ),

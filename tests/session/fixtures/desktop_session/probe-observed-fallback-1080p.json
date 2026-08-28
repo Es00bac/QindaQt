@@ -225,7 +225,7 @@
     "windows": [
       {
         "active": true,
-        "applicationId": "org.qindaqt.Settings",
+        "applicationId": "qindaqt-settings",
         "containerId": "",
         "decorationClass": "QindaQt::Decoration::QindaDecoration",
         "geometry": {

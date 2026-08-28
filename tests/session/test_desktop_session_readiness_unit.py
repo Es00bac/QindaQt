@@ -12,6 +12,7 @@ from desktop_session_readiness import (
     MARKER,
     PROBE_LIFETIME_SECONDS,
     ReadinessDeadlineExpired,
+    _snapshot_pending,
     await_complete_snapshot,
     parse_and_archive_probe,
     require_probe_lifetime,
@@ -26,6 +27,35 @@ class ReadinessProbeTests(unittest.TestCase):
         self.assertEqual(
             await_complete_snapshot(lambda _: snapshot, seconds=1), snapshot
         )
+
+    def test_archived_fallback_snapshot_names_installed_identity_gap(self) -> None:
+        fixture = (
+            Path(__file__).parent
+            / "fixtures/desktop_session/probe-observed-fallback-1080p.json"
+        )
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        self.assertEqual(
+            _snapshot_pending(snapshot),
+            "mapped test application was missing: org.qindaqt.Settings",
+        )
+
+    def test_ready_fixture_changes_only_the_fixed_settings_identity(self) -> None:
+        fixture_root = Path(__file__).parent / "fixtures/desktop_session"
+        observed = json.loads(
+            (fixture_root / "probe-observed-fallback-1080p.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        ready = json.loads(
+            (fixture_root / "probe-ready-1080p.json").read_text(encoding="utf-8")
+        )
+        settings = next(
+            window
+            for window in observed["windows"]["windows"]
+            if window["applicationId"] == "qindaqt-settings"
+        )
+        settings["applicationId"] = "org.qindaqt.Settings"
+        self.assertEqual(observed, ready)
 
     def test_near_outer_deadline_never_shrinks_probe_lifetime(self) -> None:
         self.assertEqual(
@@ -51,7 +81,7 @@ class ReadinessProbeTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             RuntimeError,
-            "mapped test application was missing: qindaqt-settings; "
+            "mapped test application was missing: org.qindaqt.Settings; "
             "no complete probe lifetime remains",
         ):
             await_complete_snapshot(sample, seconds=2, sleep=lambda _: None)

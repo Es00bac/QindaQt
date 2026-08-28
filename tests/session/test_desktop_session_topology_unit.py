@@ -83,7 +83,7 @@ def valid_evidence(output_name: str = "Virtual-0") -> dict[str, object]:
         ],
         "applications": [
             {
-                "appId": "qindaqt-settings",
+                "appId": "org.qindaqt.Settings",
                 "processRole": "settings-app",
                 "windowId": "settings-window",
                 "windowTitle": "QindaQt Settings",
@@ -289,19 +289,19 @@ class TopologyTests(unittest.TestCase):
             {"id": "fake-editor", "applicationId": "org.attacker.Other",
              "title": "QindaQt Text Editor"},
         ]
-        with self.assertRaisesRegex(TopologyContractError, "qindaqt-settings"):
+        with self.assertRaisesRegex(TopologyContractError, "org.qindaqt.Settings"):
             observed_applications(windows)
 
-    def test_desktop_file_id_is_not_the_observed_settings_identity(self) -> None:
+    def test_executable_fallback_is_not_the_installed_settings_identity(self) -> None:
         windows = ready_probe()["windows"]["windows"]  # type: ignore[index]
-        windows[0]["applicationId"] = "org.qindaqt.Settings"
-        with self.assertRaisesRegex(TopologyContractError, "qindaqt-settings"):
+        windows[0]["applicationId"] = "qindaqt-settings"
+        with self.assertRaisesRegex(TopologyContractError, "org.qindaqt.Settings"):
             observed_applications(windows)
 
     def test_observed_application_identity_and_declared_role_are_preserved(self) -> None:
         windows = ready_probe()["windows"]["windows"]  # type: ignore[index]
         applications = observed_applications(windows)
-        self.assertEqual(applications[0]["appId"], "qindaqt-settings")
+        self.assertEqual(applications[0]["appId"], "org.qindaqt.Settings")
         self.assertEqual(applications[0]["windowId"], "settings-window")
         self.assertEqual(applications[0]["processRole"], "settings-app")
         evidence = valid_evidence()
