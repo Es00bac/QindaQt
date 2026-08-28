@@ -42,6 +42,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0043](0043-isolate-the-customization-editor-domain.md) | Accepted | Isolate the customization editor domain as its own module |
 | [ADR-0033](0033-canonical-menu-model-and-authenticated-menu-ownership.md) | Proposed | Own a canonical menu model with authenticated active-window menu ownership |
 | [ADR-0032](0032-status-notifier-exact-owner-foundation.md) | Accepted | Key the status-notifier tray on exact unique-name owners |
+| [ADR-0042](0042-pure-font-catalog-and-preference-boundary.md) | Accepted | Pure Font F0 catalog, preference, and bootstrap boundary |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
