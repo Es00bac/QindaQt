@@ -5,22 +5,29 @@
 namespace QindaQt::Shell::GlobalMenu::Ownership
 {
 
-void ActiveProviderSelector::adoptAuthenticated(const MenuProviderRegistration &registration,
-                                                 const WindowIdentity &window)
+void ActiveProviderSelector::adopt(const AuthenticatedProvider &proof)
 {
-    const bool sameWindowLineage = m_current && m_current->window.windowId == window.windowId;
+    const bool sameWindowLineage = m_current && m_current->window.windowId == proof.window.windowId;
     const QUuid epoch = sameWindowLineage ? m_current->epoch : QUuid::createUuid();
     const quint64 revision = sameWindowLineage ? m_current->revision + 1 : 1;
 
-    m_current = SelectedProvider{.window = window,
-                                  .providerUniqueName = registration.providerUniqueName,
+    m_current = SelectedProvider{.window = proof.window,
+                                  .providerUniqueName = proof.providerUniqueName,
                                   .epoch = epoch,
-                                  .revision = revision};
+                                  .revision = revision,
+                                  .focusGeneration = proof.focusGeneration};
 }
 
 void ActiveProviderSelector::clear()
 {
     m_current.reset();
+}
+
+void ActiveProviderSelector::applyFocusGeneration(quint64 generation)
+{
+    if (m_current && m_current->focusGeneration != generation) {
+        m_current.reset();
+    }
 }
 
 std::optional<SelectedProvider> ActiveProviderSelector::current() const

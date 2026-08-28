@@ -2,7 +2,10 @@
 
 #include <qindaqt/shell/global_menu/qt_widgets_adapter/qmenubar_menu_source.h>
 
+#include <qindaqt/shell/global_menu/exporter/menu_source.h>
 #include <qindaqt/shell/global_menu/protocol/menu_limits.h>
+
+#include <QtCore/QSet>
 
 #include <QtGui/QAction>
 #include <QtGui/QActionGroup>
@@ -62,13 +65,24 @@ QString radioGroupIdFor(const QAction *action)
     return QStringLiteral("qam-group:%1").arg(reinterpret_cast<quintptr>(group));
 }
 
-MenuItem buildSeparator()
-{
-    return MenuItem{.kind = MenuItemKind::Separator};
-}
+// Shared mutable traversal budget/state. AGENT-GUARD: every budget breach
+// must abandon the snapshot as incomplete instead of trimming; the exporter
+// treats an incomplete snapshot as a whole-tree rejection.
+struct WalkState {
+    int totalItems = 0;
+    QSet<const QMenu *> visitedMenus;
+};
 
-MenuItem buildItem(const QAction *action, int depth, int &fallbackIdCounter)
+bool buildItem(const QAction *action, int depth, int &fallbackIdCounter, WalkState &state,
+               MenuItem &out)
 {
+    if (++state.totalItems > Protocol::kMaxTotalItems) {
+        return false;
+    }
+    if (depth > Protocol::kMaxDepth) {
+        return false;
+    }
+
     QMenu *submenu = action->menu();
 
     // AGENT-NOTE: a top-level menu title's QAction is created internally by
@@ -85,40 +99,54 @@ MenuItem buildItem(const QAction *action, int depth, int &fallbackIdCounter)
     }
 
     if (action->isSeparator()) {
-        MenuItem item = buildSeparator();
-        item.id = id;
-        return item;
+        out = MenuItem{.kind = MenuItemKind::Separator};
+        out.id = id;
+        return true;
     }
 
     QString plainText;
     int mnemonicIndex = -1;
     extractMnemonic(action->text(), plainText, mnemonicIndex);
 
-    MenuItem item;
-    item.id = id;
-    item.text = plainText;
-    item.mnemonicIndex = mnemonicIndex;
-    item.shortcutText = action->shortcut().toString(QKeySequence::NativeText);
-    item.enabled = action->isEnabled();
-    item.visible = action->isVisible();
-    item.checkable = action->isCheckable();
-    item.checked = action->isCheckable() && action->isChecked();
-    item.radioGroup = radioGroupIdFor(action);
+    out = MenuItem{};
+    out.id = id;
+    out.text = plainText;
+    out.mnemonicIndex = mnemonicIndex;
+    out.shortcutText = action->shortcut().toString(QKeySequence::NativeText);
+    out.enabled = action->isEnabled();
+    out.visible = action->isVisible();
+    out.checkable = action->isCheckable();
+    out.checked = action->isCheckable() && action->isChecked();
+    out.radioGroup = radioGroupIdFor(action);
 
-    if (submenu) {
-        item.kind = MenuItemKind::Submenu;
-        if (depth < Protocol::kMaxDepth) {
-            const QList<QAction *> childActions = submenu->actions();
-            for (int index = 0;
-                 index < childActions.size() && index < Protocol::kMaxChildrenPerItem; ++index) {
-                item.children.append(buildItem(childActions.at(index), depth + 1, fallbackIdCounter));
-            }
-        }
-    } else {
-        item.kind = MenuItemKind::Action;
+    if (!submenu) {
+        out.kind = MenuItemKind::Action;
+        return true;
     }
 
-    return item;
+    out.kind = MenuItemKind::Submenu;
+    // AGENT-GUARD: revisiting a QMenu means the (public-API constructible)
+    // submenu graph contains a cycle; recursing would loop forever, and
+    // stopping at the revisit would publish a truncated prefix. Fail the
+    // whole snapshot instead.
+    if (state.visitedMenus.contains(submenu)) {
+        return false;
+    }
+    state.visitedMenus.insert(submenu);
+
+    const QList<QAction *> childActions = submenu->actions();
+    if (childActions.size() > Protocol::kMaxChildrenPerItem) {
+        return false;
+    }
+    for (const QAction *child : childActions) {
+        MenuItem childItem;
+        if (!buildItem(child, depth + 1, fallbackIdCounter, state, childItem)) {
+            return false;
+        }
+        out.children.append(childItem);
+    }
+    state.visitedMenus.remove(submenu);
+    return true;
 }
 
 } // namespace
@@ -129,22 +157,34 @@ QMenuBarMenuSource::QMenuBarMenuSource(QMenuBar *menuBar, QUuid ownerWindowId)
 {
 }
 
-Protocol::MenuTree QMenuBarMenuSource::snapshot() const
+Exporter::MenuSnapshot QMenuBarMenuSource::snapshot() const
 {
-    Protocol::MenuTree tree;
-    tree.ownerWindowId = m_ownerWindowId;
+    Exporter::MenuSnapshot snapshot;
+    snapshot.tree.ownerWindowId = m_ownerWindowId;
 
     if (!m_menuBar) {
-        return tree;
+        return snapshot;
     }
 
+    WalkState state;
     int fallbackIdCounter = 0;
     const QList<QAction *> topLevel = m_menuBar->actions();
-    for (int index = 0;
-         index < topLevel.size() && index < Protocol::kMaxChildrenPerItem; ++index) {
-        tree.items.append(buildItem(topLevel.at(index), /*depth=*/1, fallbackIdCounter));
+    if (topLevel.size() > Protocol::kMaxChildrenPerItem) {
+        snapshot.complete = false;
+        snapshot.defectCode = QStringLiteral("too-many-children");
+        return snapshot;
     }
-    return tree;
+    for (const QAction *action : topLevel) {
+        MenuItem item;
+        if (!buildItem(action, /*depth=*/1, fallbackIdCounter, state, item)) {
+            snapshot.complete = false;
+            snapshot.defectCode = QStringLiteral("menu-traversal-exceeded-bounds");
+            snapshot.tree.items.clear();
+            return snapshot;
+        }
+        snapshot.tree.items.append(item);
+    }
+    return snapshot;
 }
 
 } // namespace QindaQt::Shell::GlobalMenu::QtWidgetsAdapter

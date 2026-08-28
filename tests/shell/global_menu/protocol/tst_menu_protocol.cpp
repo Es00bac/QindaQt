@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <qindaqt/shell/global_menu/protocol/menu_delta.h>
 #include <qindaqt/shell/global_menu/protocol/menu_item_lookup.h>
 #include <qindaqt/shell/global_menu/protocol/menu_limits.h>
 #include <qindaqt/shell/global_menu/protocol/menu_validation.h>
@@ -66,11 +65,12 @@ private Q_SLOTS:
     void rejectsActionWithChildren();
     void rejectsTooDeepTree();
     void rejectsTooManyChildren();
+    void rejectsTooManyTotalItems();
     void acceptsEmptyTree();
-
-    void deltaIsEmptyForIdenticalTrees();
-    void deltaReportsInsertRemoveUpdate();
-    void deltaOrdersRemovedThenInsertedThenUpdated();
+    void rejectsUnknownItemKind();
+    void rejectsIsolatedHighSurrogate();
+    void rejectsIsolatedLowSurrogate();
+    void acceptsPairedSurrogateText();
 
     void lookupFindsNestedItemById();
     void lookupReturnsNullForUnknownId();
@@ -232,6 +232,17 @@ void MenuProtocolTests::rejectsTooManyChildren()
     QCOMPARE(result.reasonCode, QStringLiteral("too-many-children"));
 }
 
+void MenuProtocolTests::rejectsTooManyTotalItems()
+{
+    MenuTree tree;
+    for (int index = 0; index < kMaxTotalItems + 1; ++index) {
+        tree.items.append(action(QStringLiteral("item-%1").arg(index), QStringLiteral("Item")));
+    }
+    const ValidationResult result = validateMenuTree(tree);
+    QVERIFY(!result.accepted);
+    QCOMPARE(result.reasonCode, QStringLiteral("too-many-items"));
+}
+
 void MenuProtocolTests::acceptsEmptyTree()
 {
     MenuTree tree;
@@ -239,69 +250,51 @@ void MenuProtocolTests::acceptsEmptyTree()
     QVERIFY(result.accepted);
 }
 
-void MenuProtocolTests::deltaIsEmptyForIdenticalTrees()
+void MenuProtocolTests::rejectsUnknownItemKind()
 {
-    const MenuTree tree = simpleValidTree();
-    const MenuTreeDelta delta = computeMenuTreeDelta(tree, tree);
-    QVERIFY(delta.identical());
+    // A hostile wire value must not slip past the switch on known kinds; in
+    // particular its children must not be treated as traversable content.
+    MenuTree tree;
+    MenuItem hostile = action(QStringLiteral("hostile"), QStringLiteral("Hostile"));
+    hostile.kind = static_cast<MenuItemKind>(99);
+    hostile.children = {action(QStringLiteral("smuggled"), QStringLiteral("Smuggled"))};
+    tree.items = {hostile};
+    const ValidationResult result = validateMenuTree(tree);
+    QVERIFY(!result.accepted);
+    QCOMPARE(result.reasonCode, QStringLiteral("unknown-kind"));
 }
 
-void MenuProtocolTests::deltaReportsInsertRemoveUpdate()
+void MenuProtocolTests::rejectsIsolatedHighSurrogate()
 {
-    MenuTree previous = simpleValidTree();
-    MenuTree next = previous;
-    // Remove the separator, rename New to New Document, and insert Save.
-    next.items[0].children.removeAt(1);
-    next.items[0].children[0].text = QStringLiteral("New Document");
-    next.items[0].children.insert(1, action(QStringLiteral("fileSaveAction"), QStringLiteral("Save")));
-
-    const MenuTreeDelta delta = computeMenuTreeDelta(previous, next);
-    QVERIFY(!delta.identical());
-
-    bool sawRemovedSeparator = false;
-    bool sawInsertedSave = false;
-    bool sawUpdatedNew = false;
-    for (const MenuItemDelta &op : delta.operations) {
-        if (op.op == MenuDeltaOp::Removed && op.id == QStringLiteral("fileSep1")) {
-            sawRemovedSeparator = true;
-        }
-        if (op.op == MenuDeltaOp::Inserted && op.id == QStringLiteral("fileSaveAction")) {
-            sawInsertedSave = true;
-        }
-        if (op.op == MenuDeltaOp::Updated && op.id == QStringLiteral("fileNewAction")) {
-            sawUpdatedNew = true;
-        }
-    }
-    QVERIFY(sawRemovedSeparator);
-    QVERIFY(sawInsertedSave);
-    QVERIFY(sawUpdatedNew);
+    MenuTree tree;
+    QString text = QStringLiteral("Broken ");
+    text.append(QChar(0xD83D)); // high surrogate with no low surrogate after it
+    tree.items = {action(QStringLiteral("a"), text)};
+    const ValidationResult result = validateMenuTree(tree);
+    QVERIFY(!result.accepted);
+    QCOMPARE(result.reasonCode, QStringLiteral("invalid-text"));
 }
 
-void MenuProtocolTests::deltaOrdersRemovedThenInsertedThenUpdated()
+void MenuProtocolTests::rejectsIsolatedLowSurrogate()
 {
-    MenuTree previous = simpleValidTree();
-    MenuTree next = previous;
-    next.items[0].children.removeAt(1);
-    next.items[0].children[0].text = QStringLiteral("New Document");
-    next.items[0].children.insert(1, action(QStringLiteral("fileSaveAction"), QStringLiteral("Save")));
+    MenuTree tree;
+    QString text = QStringLiteral("Broken ");
+    text.append(QChar(0xDE00)); // low surrogate with no high surrogate before it
+    tree.items = {action(QStringLiteral("a"), text)};
+    const ValidationResult result = validateMenuTree(tree);
+    QVERIFY(!result.accepted);
+    QCOMPARE(result.reasonCode, QStringLiteral("invalid-text"));
+}
 
-    const MenuTreeDelta delta = computeMenuTreeDelta(previous, next);
-    bool sawInsertedOrUpdated = false;
-    for (const MenuItemDelta &op : delta.operations) {
-        if (op.op == MenuDeltaOp::Removed) {
-            QVERIFY(!sawInsertedOrUpdated);
-        } else {
-            sawInsertedOrUpdated = true;
-        }
-    }
-    bool sawUpdated = false;
-    for (const MenuItemDelta &op : delta.operations) {
-        if (op.op == MenuDeltaOp::Updated) {
-            sawUpdated = true;
-        } else {
-            QVERIFY(!sawUpdated);
-        }
-    }
+void MenuProtocolTests::acceptsPairedSurrogateText()
+{
+    MenuTree tree;
+    QString text = QStringLiteral("Save ");
+    text.append(QChar(0xD83D));
+    text.append(QChar(0xDE00)); // U+1F600 as a correctly paired surrogate pair
+    tree.items = {action(QStringLiteral("a"), text)};
+    const ValidationResult result = validateMenuTree(tree);
+    QVERIFY(result.accepted);
 }
 
 void MenuProtocolTests::lookupFindsNestedItemById()

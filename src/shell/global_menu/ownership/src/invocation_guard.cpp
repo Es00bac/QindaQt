@@ -9,21 +9,31 @@
 namespace QindaQt::Shell::GlobalMenu::Ownership
 {
 
+namespace
+{
+
+// AGENT-GUARD: request, tree, and selector must carry one identical lineage.
+// Dropping any of the three comparisons lets an invocation authorize against
+// a window, epoch, or revision the current owner never published.
+bool sameLineage(const QUuid &windowId, const QUuid &epoch, quint64 revision,
+                 const SelectedProvider &current)
+{
+    return current.window.windowId == windowId && current.epoch == epoch
+        && current.revision == revision;
+}
+
+} // namespace
+
 InvocationResult InvocationGuard::evaluate(const ActiveProviderSelector &selector,
-                                            const Protocol::MenuTree &tree,
-                                            const InvocationRequest &request)
+                                           const Protocol::MenuTree &tree,
+                                           const InvocationRequest &request)
 {
     const std::optional<SelectedProvider> current = selector.current();
     if (!current) {
         return InvocationResult{.accepted = false, .reasonCode = QStringLiteral("no-active-provider")};
     }
-    if (current->window.windowId != request.windowId || current->epoch != request.epoch) {
-        return InvocationResult{.accepted = false, .reasonCode = QStringLiteral("stale-owner")};
-    }
-    // AGENT-GUARD: the request and the presented tree must both carry the
-    // selector's current lineage. Skipping this comparison would let a caller
-    // authorize an id against content the current owner never published.
-    if (tree.ownerWindowId != current->window.windowId || tree.epoch != current->epoch) {
+    if (!sameLineage(request.windowId, request.epoch, request.revision, *current)
+        || !sameLineage(tree.ownerWindowId, tree.epoch, tree.revision, *current)) {
         return InvocationResult{.accepted = false, .reasonCode = QStringLiteral("stale-owner")};
     }
 

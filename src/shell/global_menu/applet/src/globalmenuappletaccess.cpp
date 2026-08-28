@@ -20,14 +20,21 @@ QVariantList projectTopLevel(const Protocol::MenuTree &tree)
     QVariantList projection;
     projection.reserve(tree.items.size());
     for (const Protocol::MenuItem &item : tree.items) {
-        if (item.kind == Protocol::MenuItemKind::Separator) {
+        // Hidden entries are not presented anywhere in G0, so they are
+        // omitted rather than rendered as disabled ghosts. Separators carry
+        // no activation or label and are likewise not projected.
+        if (item.kind == Protocol::MenuItemKind::Separator || !item.visible) {
             continue;
         }
         QVariantMap entry;
         entry.insert(QStringLiteral("id"), item.id);
+        entry.insert(QStringLiteral("kind"),
+                     item.kind == Protocol::MenuItemKind::Submenu
+                         ? QStringLiteral("submenu")
+                         : QStringLiteral("action"));
         entry.insert(QStringLiteral("text"), item.text);
         entry.insert(QStringLiteral("mnemonicIndex"), item.mnemonicIndex);
-        entry.insert(QStringLiteral("enabled"), item.enabled && item.visible);
+        entry.insert(QStringLiteral("enabled"), item.enabled);
         entry.insert(QStringLiteral("checkable"), item.checkable);
         entry.insert(QStringLiteral("checked"), item.checked);
         projection.append(entry);

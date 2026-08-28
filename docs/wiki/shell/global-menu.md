@@ -2,8 +2,9 @@
 
 The global menu applet presents the focused window's application menu in the
 panel. QindaQt builds it on a bounded, toolkit-neutral canonical menu/action
-model with an authenticated ownership policy, not on the desktop-agnostic
-`com.canonical.AppMenu.Registrar` trust model. The durable choices are in
+model with a proof-bound authenticated ownership policy, not on the
+desktop-agnostic `com.canonical.AppMenu.Registrar` trust model. The durable
+choices are in
 [ADR-0026](../adr/0026-canonical-menu-model-and-authenticated-menu-ownership.md).
 
 ## Milestone boundary
@@ -13,9 +14,11 @@ exporter, Qt Widgets adapter, and applet facade, each with focused hostile
 tests. There is no D-Bus transport, no registrar, no shell-runtime
 instantiation, and no applet-registry wiring yet; the `global-menu` manifest
 still resolves as `implementation-unavailable` (see
-[Applet runtime](applet-runtime.md)). No one should read this page as a live
-feature claim. Wiring the transport, registry entry, and panel instance is the
-next milestone and requires compiler- and session-verified evidence.
+[Applet runtime](applet-runtime.md)), and the QML component is not yet part
+of an installed QML module — the test imports the source tree directly. No
+one should read this page as a live feature claim. Wiring the transport,
+registry entry, installed packaging, and panel instance is the next
+milestone and requires compiler- and session-verified evidence.
 
 ## Canonical model
 
@@ -27,50 +30,80 @@ the owner/epoch/revision lineage used by Display1, Audio1, and Settings1.
 - Text, ids, shortcut text, and radio-group names have fixed UTF-8 byte
   ceilings (menu_limits.h); a tree that exceeds any bound is invalid as a
   whole.
+- Text must be well-formed Unicode: embedded NULs and isolated (unpaired)
+  UTF-16 surrogate code units are rejected, because they are not
+  representable scalar values.
 - `text` never contains a toolkit mnemonic character. The mnemonic position is
   `mnemonicIndex`, a UTF-16 offset into `text`, or -1. Toolkit escaping
   ('&', '_', ...) exists only inside adapters.
-- Ids are unique across a tree and stable across snapshots; they are the join
-  key for deltas and the only trusted invocation key.
+- Ids are unique across a tree and stable across snapshots; they are the
+  only trusted invocation key.
 - Separators carry no content, actions have no children, `checked` requires
-  `checkable`, and a radio group admits at most one checked member per parent.
+  `checkable`, and a radio group admits at most one checked member per
+  parent. A kind outside the three known values rejects the node — its
+  children are never traversed.
 - `validateMenuTree` rejects hostile input as a whole rather than admitting a
   partial tree, matching every other QindaQt wire model.
-- `computeMenuTreeDelta` produces deterministic Removed → Inserted → Updated
-  operations keyed by id, so a consumer that applies them in order never sees
-  a dangling parent.
+- G0 keeps snapshot-only truth: a full-tree delta contract (payload-bearing
+  operations with safe application order) is deferred to the transport
+  milestone, where it will be designed and proven with an
+  apply-to-next-tree test before any consumer exists.
 
-## Authenticated ownership
+## One authoritative lineage
+
+The ownership selector is the single lineage authority. It mints the
+`epoch` (only when the owning window identity changes) and advances the
+`revision` (on every adoption within one epoch); the exporter stamps
+exactly that epoch/revision into each accepted tree through an injected
+`ExportLineageSource` seam, and shell composition backs that seam with the
+selector. Owner, epoch, revision, and the invocation guard's expectations
+therefore share one source of truth, and an ordinary public-API flow —
+authenticate, adopt the returned proof, export, invoke — is coherent by
+construction. The exporter never mints lineage itself; a pull whose owner
+has no current authority is rejected without publishing.
+
+## Proof-bound authentication
 
 `QindaQt::Shell::GlobalMenu::Ownership` (module `QindaQt::GlobalMenuOwnership`)
-decides which provider may publish and which invocation may proceed:
+decides which provider may become authoritative:
 
-- A registration is accepted only when an injected, compositor-authenticated
-  active-window source names that exact window and a bus-daemon credential
-  lookup confirms the registering peer's real OS process equals both the
-  claimed process and the active window's process. Both facts come from
-  injected seams; G0 ships no real adapter and trusts no caller claim.
+- The active-window seam reports compositor-authenticated observations
+  carrying a monotonic `focusGeneration` that changes on every focus move.
+- Authentication reads focus, performs the bus-daemon credential lookup,
+  then re-reads focus: both observations must agree on window and focus
+  generation, or the attempt fails with `focus-changed`. This closes the
+  sample-lookup race where focus moves mid-check.
+- An accepted authentication returns an `AuthenticatedProvider` proof
+  carrying exactly the verified window identity, unique name, and focus
+  generation. `ActiveProviderSelector::adopt` accepts only this proof —
+  the API has no way to adopt separately supplied facts — so the verified
+  identity and the adopted identity cannot diverge.
+- `applyFocusGeneration` is the fail-closed invalidation seam: a generation
+  other than the adopted proof's drops the adoption. Shell composition
+  calls it on every observed focus change before any export or invocation.
 - Only the currently active window can register in G0. Unlike
   `com.canonical.AppMenu.Registrar`, a provider cannot name an arbitrary
-  window id; a per-window registration cache is a later, separately reviewed
-  milestone.
-- `ActiveProviderSelector` assigns the lineage: the epoch changes only when
-  the owning window identity changes; the revision advances on every
-  adoption within one epoch.
-- `InvocationGuard` rejects a request whose (windowId, epoch) — or whose
-  presented tree — no longer matches the current lineage as `stale-owner`
-  before any action lookup, then rejects unknown ids, non-actions, and
-  disabled/invisible items.
+  window id; a per-window registration cache is a later, separately
+  reviewed milestone.
+- `InvocationGuard` requires the request's (windowId, epoch, revision), the
+  presented tree's lineage, and the selector's current lineage to agree
+  exactly; any mismatch is `stale-owner` before any action lookup. It then
+  rejects unknown ids, non-actions, and disabled/invisible items.
 
 ## Export lifecycle
 
 `QindaQt::Shell::GlobalMenu::Exporter` (module `QindaQt::GlobalMenuExporter`)
-pulls snapshots through the toolkit-neutral `MenuSource` interface. The
-exporter — never the source — assigns epoch/revision lineage, validates every
-snapshot against the canonical bounds, and fails closed: a rejected pull keeps
-the last accepted tree, so a transiently malformed source can never regress a
-previously good menu. Identical content under one owner is `Unchanged` and
-does not advance the revision.
+pulls `MenuSnapshot` values through the toolkit-neutral `MenuSource`
+interface. A snapshot carries an explicit completeness verdict: when a
+source detects overflow (depth, siblings, or total items), a submenu cycle,
+or a mid-traversal defect, it marks the snapshot incomplete and the exporter
+rejects it whole — a bounded prefix is never published as if it were the
+complete application menu. Valid snapshots are validated against the
+canonical bounds, stamped with the authoritative lineage, and stored; a
+rejected or incomplete pull keeps the last accepted tree, so a transiently
+malformed source can never regress a previously good menu. Content that is
+identical under a re-advanced lineage reports `Unchanged` but is re-stamped,
+so the published tree never drifts stale against the selector.
 
 ## Qt Widgets adapter
 
@@ -80,24 +113,33 @@ exact shape the integrated Text Editor exposes per
 [ADR-0022](../adr/0022-keep-text-documents-local-and-atomic.md): persistent
 `QAction` object names become ids, '&' mnemonics split into display text plus
 offset, exclusive `QActionGroup` membership becomes a radio group, and
-`QKeySequence` text is carried as bounded shortcut text. It is the only
-target in `global_menu` that links `Qt6::Widgets`; the QtQuick shell never
-gains that dependency. Apps that want delta-stable ids across menu edits must
-set persistent object names; the positional fallback is only stable while
-sibling structure does not change.
+`QKeySequence` text is carried as bounded shortcut text. Visibility is
+carried verbatim so presentation can omit hidden entries honestly. It is the
+only target in `global_menu` that links `Qt6::Widgets`; the QtQuick shell
+never gains that dependency. Apps that want stable ids across menu edits
+must set persistent object names; the positional fallback is only stable
+while sibling structure does not change. The observed widget tree must
+outlive the source, snapshots must run on the Qt GUI thread, and menus must
+not be mutated during a snapshot; violations degrade to an incomplete
+snapshot, never to wrong complete truth.
 
 ## Applet facade and presentation
 
 `GlobalMenuAppletAccess` mirrors
 `NotificationCenterAppletAccess`: shell composition publishes authoritative
-state, and QML only reads the top-level projection and requests an activation.
-Every activation request is re-checked against the published tree inside the
-facade, and `publishTree` is fail-closed — invalid input publishes the
-unavailable state instead of any part of its content. `GlobalMenuApplet.qml`
-renders the same unavailable placeholder as an unprovisioned notification
-center when nothing is published, exposes enabled top-level entries with
-accessible names and roles, and forwards clicks as id-based activation
-requests only. G0 wires no live publisher anywhere in the shell, so
+state, and QML only reads the top-level projection and requests an
+activation. The projection is honest by construction: entries carry their
+`kind` ("action" or "submenu"), hidden items and separators are omitted,
+and `activate()` opens only enabled visible actions — top-level submenus
+render visibly but non-activating until the popup milestone, with their
+accessible name saying so. `publishTree` is fail-closed: invalid input
+publishes the unavailable state instead of any part of its content.
+`GlobalMenuApplet.qml` renders entries as focusable `AbstractButton`
+delegates with keyboard (Space/Return) and accessible-press activation,
+lays entries out in a `Row` or a real `Column` for vertical panels, and
+keeps constrained panels bounded: clipping, single-line elision, and a
+`maximumVisibleEntries` limit beyond which a muted "+N" indicator collapses
+the remainder. G0 wires no live publisher anywhere in the shell, so
 `available` stays false in production.
 
 ## Non-goals
@@ -108,15 +150,18 @@ requests only. G0 wires no live publisher anywhere in the shell, so
 - No private KWin/KDE ABI: compositor integration arrives later through an
   authenticated public seam, mirroring the session-lock observer pattern.
 - No per-window registration, D-Bus transport, legacy-protocol
-  compatibility, or submenu-expanding panel UI in this milestone.
+  compatibility, submenu popups, or payload-bearing menu deltas in this
+  milestone.
 
 ## Verification
 
 Focused gates: `qindaqt.global-menu-protocol`,
 `qindaqt.global-menu-ownership`, `qindaqt.global-menu-exporter`,
 `qindaqt.global-menu-qt-widgets-adapter` (offscreen),
-`qindaqt.global-menu-applet-access`, and
-`qindaqt.global-menu-applet-qml-offscreen`. Live export, focus handoff, and
-installed-session qualification remain unbuilt and unclaimed until the
-transport milestone passes the nested-session matrix in the
-[testing harness](../development/testing-harness.md).
+`qindaqt.global-menu-applet-access`,
+`qindaqt.global-menu-composition` (authenticate → adopt → export → invoke
+over the public seams), and `qindaqt.global-menu-applet-qml-offscreen`
+(keyboard, vertical, overflow, and submenu-honesty cases). Live export,
+focus handoff, and installed-session qualification remain unbuilt and
+unclaimed until the transport milestone passes the nested-session matrix in
+the [testing harness](../development/testing-harness.md).

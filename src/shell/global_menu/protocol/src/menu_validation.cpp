@@ -17,13 +17,23 @@ bool isWellFormedBoundedText(const QString &value, qsizetype maxUtf8Bytes)
     if (value.toUtf8().size() > maxUtf8Bytes) {
         return false;
     }
-    for (const QChar ch : value) {
+    for (qsizetype i = 0; i < value.size(); ++i) {
+        const QChar ch = value.at(i);
         if (ch == QChar(u'\0')) {
             return false;
         }
+        // QString storage does not guarantee paired surrogate encoding; an
+        // isolated surrogate is not a representable Unicode scalar value and
+        // must not enter the canonical model.
+        if (ch.isHighSurrogate()) {
+            if (i + 1 >= value.size() || !value.at(i + 1).isLowSurrogate()) {
+                return false;
+            }
+            ++i;
+        } else if (ch.isLowSurrogate()) {
+            return false;
+        }
     }
-    // QString already guarantees well-formed UTF-16 storage; nothing further
-    // to check beyond the embedded-NUL and byte-length rules above.
     return true;
 }
 
@@ -56,6 +66,18 @@ ValidationResult validateNode(const MenuItem &item, int depth, const QString &pa
         return reject(QStringLiteral("duplicate-id"), path);
     }
     state.seenIds.insert(item.id);
+
+    // AGENT-GUARD: an out-of-range MenuItemKind (hostile cast into the enum)
+    // must reject the node before any content rule runs; its children would
+    // otherwise bypass traversal entirely.
+    switch (item.kind) {
+    case MenuItemKind::Action:
+    case MenuItemKind::Separator:
+    case MenuItemKind::Submenu:
+        break;
+    default:
+        return reject(QStringLiteral("unknown-kind"), path);
+    }
 
     if (item.kind == MenuItemKind::Separator) {
         const bool separatorIsCanonical = item.text.isEmpty() && item.mnemonicIndex == -1

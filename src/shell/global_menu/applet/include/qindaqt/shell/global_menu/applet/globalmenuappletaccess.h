@@ -27,9 +27,13 @@ public:
 
     [[nodiscard]] bool available() const noexcept;
     // Top-level items only, each a QVariantMap with exactly
-    // {id, text, mnemonicIndex, enabled, checkable, checked}. Submenu
-    // expansion is presentation's job in a later milestone; G0 keeps this
-    // facade flat and honest about what it actually offers.
+    // {id, kind, text, mnemonicIndex, enabled, checkable, checked} where
+    // `kind` is "action" or "submenu". Hidden items and separators are
+    // omitted. G0 presents no submenu popup: `activate()` opens only
+    // "action" entries, and presentation must render "submenu" entries as
+    // visibly non-activating until the popup milestone. Submenu expansion is
+    // presentation's job in a later milestone; G0 keeps this facade flat and
+    // honest about what it actually offers.
     [[nodiscard]] QVariantList items() const;
 
     Q_INVOKABLE void activate(const QString &actionId);
