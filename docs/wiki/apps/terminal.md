@@ -163,7 +163,11 @@ backends.
 `org.qindaqt.Terminal.desktop` registers the ordinary Wayland application with
 `Categories=Qt;System;TerminalEmulator;`, no `MimeType`, and
 `StartupWMClass=qindaqt-terminal`. The installed `Terminal` component contains
-the executable, the desktop entry, and the built-in theme data.
+the executable, the desktop entry, and the built-in theme data. `qtermwidget6`
+remains an external dynamically linked package dependency. The staged metadata
+gate resolves that dependency from the exact CMake-imported library file while
+clearing ambient loader and theme roots; a build-tree RPATH or caller-specific
+`LD_LIBRARY_PATH` cannot satisfy the installed-prefix proof.
 
 The focused selector is:
 

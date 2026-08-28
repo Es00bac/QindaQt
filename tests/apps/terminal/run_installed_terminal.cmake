@@ -32,10 +32,26 @@ foreach(relative_path ${required_paths})
     endif()
 endforeach()
 
+# AGENT-CONTRACT: qtermwidget is an external system dependency rather than a
+# Terminal-component payload. The staged probe must use the exact dependency
+# resolved by CMake, because the installed application deliberately has only a
+# relocatable $ORIGIN RPATH and ambient loader paths are not acceptance proof.
+if(NOT IS_ABSOLUTE "${QTERMWIDGET_LIBRARY}" OR
+   NOT EXISTS "${QTERMWIDGET_LIBRARY}")
+    message(FATAL_ERROR
+        "qtermwidget dependency is not an exact existing file: ${QTERMWIDGET_LIBRARY}")
+endif()
+get_filename_component(
+    qtermwidget_library_directory "${QTERMWIDGET_LIBRARY}" DIRECTORY
+)
+
 set(ENV{QT_QPA_PLATFORM} "offscreen")
 # Strip ambient theme roots so only the staged prefix can satisfy resolution.
 set(ENV{XDG_DATA_HOME} "${STAGE_PREFIX}/empty-xdg-data-home")
 set(ENV{HOME} "${STAGE_PREFIX}/empty-home")
+# Strip ambient dynamic-loader state while retaining the one audited external
+# dependency that a normal Linux package manager installs system-wide.
+set(ENV{LD_LIBRARY_PATH} "${qtermwidget_library_directory}")
 file(MAKE_DIRECTORY "${STAGE_PREFIX}/empty-xdg-data-home")
 file(MAKE_DIRECTORY "${STAGE_PREFIX}/empty-home")
 
