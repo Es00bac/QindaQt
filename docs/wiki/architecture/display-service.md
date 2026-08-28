@@ -5,9 +5,10 @@ identity, pure topology validation, a deterministic preview/revert model, and
 a resident Display1 service foundation. D1 remains transport-free. The bounded
 D2 service slice adds the bus object/process, activation metadata, monotonic
 timer scheduling, and an exact-owner adapter over D0's read-only
-`Compositor1.Outputs` inventory. It does not yet add a public output-management
-writer, durable journal file, lock/logind adapters, Settings integration,
-client, UI, or nested/physical runtime proof.
+`Compositor1.Outputs` inventory. D4 now adds a bounded public output-management
+writer module, but the packaged process does not compose it until durable
+journal, lock/logind, and recovery dependencies exist. Settings integration,
+UI, and nested/physical runtime proof also remain later outcomes.
 
 [ADR-0016](../adr/0016-display1-transaction-authority.md) fixes transaction
 authority. [ADR-0017](../adr/0017-persistent-output-identity.md) fixes persistent
@@ -24,9 +25,10 @@ The resident Display1 process is the only component allowed to become a
 QindaQt production writer to KWin's public KDE output-management protocol. It
 already owns the D1 machine and monotonic confirmation/revert scheduling, but
 the packaged transaction port deliberately rejects journal storage and never
-applies. A later accepted adapter must supply durable journal, public protocol,
-lock/logind, restart recovery, and nested convergence evidence before that
-writer authority is operational. Settings Center, shell overlays, global
+applies. The accepted D4 [compositor writer](display-writer.md) supplies the
+direct public-protocol boundary; later outcomes must still supply durable
+journal, lock/logind, restart recovery, and nested convergence evidence before
+that writer authority is operational. Settings Center, shell overlays, global
 shortcuts, Color, and brightness consumers will cross typed client boundaries.
 They do not own the timer or apply output configurations directly.
 
@@ -333,9 +335,9 @@ open a compositor or display and are not KWin output-management evidence.
 
 D0 owns the development-only compositor inventory/hotplug seam. The current D2
 foundation owns resident read/service lineage and injected transaction
-orchestration. Remaining display work owns the real public output-management
-port, journal persistence, lock/logind integration, settled-hotplug policy,
-and nested hotplug/restart proof. D3 now provides the typed asynchronous client
+orchestration. D4 now owns the bounded direct public output-management port;
+remaining display work owns journal persistence, lock/logind integration,
+settled-hotplug policy, and nested hotplug/restart proof. D3 provides the typed asynchronous client
 and server-projected reversible transaction coordinator; later Settings,
 shell, Hybrid, application, policy, and hardware lanes consume those public
 boundaries. The required release scenarios remain in the

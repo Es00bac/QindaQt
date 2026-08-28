@@ -64,6 +64,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Display client](architecture/display-client.md) records the exact-owner
   asynchronous Display1 consumer, atomic publication rules, mutation result
   fencing, and server-projected reversible transaction coordinator.
+- [Display compositor writer](architecture/display-writer.md) records the
+  direct bounded KDE public-protocol adapter, connector/current-mode mapping,
+  and exact in-flight owner/lineage fences without claiming nested convergence.
 - [Display color model](architecture/display-color-model.md) records the pure
   Display Color C0 values, validated ICC descriptor metadata, deterministic
   catalog and assignment-intent evaluation, and fail-closed snapshot lineage;
