@@ -50,6 +50,7 @@ nav:
       - Testing harness: development/testing-harness.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
+      - Team board and progress evidence: contributing/team-board.md
   - Decisions:
       - ADR index: adr/index.md
       - ADR template: adr/template.md
@@ -67,3 +68,4 @@ nav:
       - "ADR-0012: Persistent notification quieting": adr/0012-persist-notification-quieting-through-settings1.md
       - "ADR-0013: Own QST-1 semantic tokens": adr/0013-own-qst1-semantic-tokens.md
       - "ADR-0014: Confined WirePlumber worker": adr/0014-confine-wireplumber-to-glib-worker.md
+      - "ADR-0015: Function before resource refinement": adr/0015-qualify-function-before-resource-refinement.md

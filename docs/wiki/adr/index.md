@@ -21,5 +21,6 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0012](0012-persist-notification-quieting-through-settings1.md) | Accepted | Persist notification quieting through an activatable Settings1 authority |
 | [ADR-0013](0013-own-qst1-semantic-tokens.md) | Accepted | Own QST-1 derivation and isolate optional Kirigami reuse behind adapters |
 | [ADR-0014](0014-confine-wireplumber-to-glib-worker.md) | Accepted | Confine libwireplumber/GObject ownership to a dedicated GLib worker |
+| [ADR-0015](0015-qualify-function-before-resource-refinement.md) | Accepted | Qualify the isolated virtual desktop before tightening its initial resource ceiling |
 
 Numbers are never reused, including for rejected or superseded records.

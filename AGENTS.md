@@ -103,6 +103,12 @@ truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
 - `ops/team/workers/<name>.md` describes one stable employee identity and its
   genuine current state. `working` requires a live process doing the named
   outcome; an assignment, timestamp, or completed handoff is not liveness.
+- Every GPT, Claude, GLM, or other worker must maintain its own live-board
+  record with the exact plain `- Status: working — ...` field, a literal
+  `## Updates` heading, and ISO-8601 update bullets. Refresh at claim, midpoint
+  or material finding, help request/offer, verification, handoff, and status
+  transition. A working claim expires after 30 minutes; the manager does not
+  repair another worker's record or accept a malformed/stale handoff.
 - Candidate handoffs name one exact commit, changed paths, tests with exit
   status/counts, remaining bounded caveats, and the requested next action.
 - A different worker reviews the exact candidate commit before high-confidence
@@ -113,6 +119,10 @@ truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
   retires a worktree only after its commit is preserved.
 - Provider, model, test, process, and completion claims require direct evidence.
   Never infer them from a command line, assignment, exit code, or stale record.
+- Product progress is derived from `ops/team/features.json`, never worker
+  activity. Weighted milestone steps advance only from evidence already
+  integrated on the manager branch; assignments, candidate branches, compiler
+  activity, reviews, and task estimates add zero.
 
 Workers may use the collaboration channel for prompt delivery, but durable
 claims and handoffs still belong on the message board. Coordination must remain

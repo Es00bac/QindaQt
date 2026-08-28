@@ -7,6 +7,20 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Interactive virtual desktop integration
+
+The integrated QindaQt session must boot beneath an isolated parent Wayland
+compositor, render the compositor, shell, resident platform services, and test
+applications, accept synthetic input confined to its private nested seat, and
+produce reviewable screenshots. Acceptance covers 1920x1080, 1920x1200 WUXGA,
+and 2560x1440 with representative 100%, 125%, and 150% scale, light/dusk/dark
+themes, and at least one multi-output arrangement. The workflow must prove that
+it neither connects to nor moves the host desktop pointer.
+
+The initial aggregate idle PSS ceiling is 1,024 MiB. A measured overage remains
+a real defect, but optimization beyond that starting ceiling follows reliable
+end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
+
 ### Live notification interaction qualification
 
 The installed production shell must prove its notification center shortcut,

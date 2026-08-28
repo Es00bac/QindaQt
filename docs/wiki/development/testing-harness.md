@@ -721,6 +721,15 @@ unresponsive clients. Window grouping must exercise all
 DPI, hotplug, overflow, detach, and restoration.
 
 Virtual tests precede hardware checks on Intel, AMD, NVIDIA, hybrid graphics,
-laptops, suspend/resume, touch, and stylus. Performance gates measure the
-500 MiB/1% idle budget, startup, frame pacing, panel reveal, docking latency,
-overview animation, and metrics overhead.
+laptops, suspend/resume, touch, and stylus. The first integrated-session gate is
+a bootable QindaQt desktop under an isolated parent Wayland compositor with a
+private runtime directory, private buses, test-only input devices, and captured
+screenshots. It must exercise 1920x1080, 1920x1200 WUXGA, and 2560x1440 plus the
+required scale/profile/theme variants without connecting to the host seat or
+moving the host pointer. See [ADR-0015](../adr/0015-qualify-function-before-resource-refinement.md).
+
+Performance gates initially measure a 1,024 MiB aggregate idle PSS ceiling and
+1% average idle CPU budget, startup, frame pacing, panel reveal, docking
+latency, overview animation, and metrics overhead. The memory ceiling is a
+bring-up budget, not a reason to block functional integration prematurely;
+measure first, then lower it from evidence after the nested desktop is stable.

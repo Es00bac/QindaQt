@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QindaQt Team Board</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f7f8fb; --card:#fff; --ink:#172033; --muted:#60708a; --line:#dbe1ea; --accent:#1463d8; }
+    :root[data-theme="dark"] { --bg:#10141c; --card:#18202c; --ink:#f2f5fa; --muted:#a9b6c9; --line:#2f3a4c; --accent:#75aeff; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,sans-serif; }
+    main { max-width:1120px; margin:auto; padding:32px 20px 64px; } header { display:flex; align-items:start; justify-content:space-between; gap:16px; } h1 { margin:0; font-size:2rem; } h2 { margin:32px 0 12px; font-size:1.1rem; } p { color:var(--muted); } button { border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px; padding:8px 11px; cursor:pointer; }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:22px; } .card { border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--card); } .value { display:block; font-size:1.8rem; font-weight:750; } .label,.detail { color:var(--muted); font-size:.86rem; } .detail { margin-top:5px; }
+    table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); } th,td { text-align:left; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-size:.8rem; } .badge { border:1px solid var(--line); border-radius:99px; display:inline-block; padding:2px 7px; font-size:.76rem; } .active { color:var(--accent); font-weight:700; } .feed { list-style:none; padding:0; margin:0; } .feed li { padding:11px 0; border-bottom:1px solid var(--line); } .feed small { color:var(--muted); } .warning { color:#c88719; } .error { color:#bd3434; }
+    .milestones { display:grid; gap:14px; } .milestone { border:1px solid var(--line); border-radius:12px; background:var(--card); overflow:hidden; } .milestone summary { cursor:pointer; padding:16px; font-size:1rem; font-weight:700; display:flex; justify-content:space-between; gap:16px; } .milestone .body { padding:0 16px 16px; } .milestone progress { width:100%; height:12px; accent-color:var(--accent); margin-bottom:12px; } .milestone table { font-size:.9rem; } .milestone .weight { white-space:nowrap; } .record-invalid { color:#bd3434; font-weight:700; }
+    .reader { display:grid; grid-template-columns:260px minmax(0,1fr); gap:16px; } .threads,.replies { list-style:none; padding:0; margin:0; } .threads button,.replies button { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line); border-radius:0; } .threads button[aria-current="true"],.replies button[aria-current="true"] { background:var(--accent); color:#fff; } .reader article { min-height:260px; } .markdown { white-space:normal; overflow-wrap:anywhere; } .markdown pre { overflow:auto; padding:12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; } .markdown blockquote { margin:10px 0; padding-left:14px; border-left:3px solid var(--accent); color:var(--muted); } .markdown a { color:var(--accent); } @media (max-width:700px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } th:nth-child(3),td:nth-child(3) { display:none; } .reader { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div><h1>QindaQt Team Board</h1><p id="subtitle">Reading outcome evidence live.</p></div><button id="theme" type="button">Toggle theme</button></header>
+    <section class="grid" aria-label="Outcome evidence summary">
+      <article class="card"><span class="label">Qualified roadmap rows</span><strong class="value" id="qualified">—</strong></article>
+      <article class="card"><span class="label">Reconciled outcome evidence</span><strong class="value" id="progress">—</strong><span class="detail" id="formula"></span></article>
+      <article class="card"><span class="label">Actionable rows recorded</span><strong class="value" id="recorded">—</strong><span class="detail" id="scope"></span></article>
+      <article class="card"><span class="label">Working now</span><strong class="value" id="working">—</strong><span class="detail">Only workers who declare <code>working</code> with a fresh dated update</span></article>
+    </section>
+    <h2>Workers</h2><table><thead><tr><th>Name</th><th>Status</th><th>Outcome</th><th>Last declared update</th><th>Board record</th></tr></thead><tbody id="workers"></tbody></table>
+    <h2>Outcome evidence</h2><table><thead><tr><th>Row</th><th>Progress</th><th>State</th><th>Stopping point</th><th>Caveat</th></tr></thead><tbody id="features"></tbody></table>
+    <h2>Milestone breakdown</h2><div class="milestones" id="milestones"></div>
+    <h2>Message feed</h2><ul class="feed" id="messages"></ul><p id="warnings" class="warning" role="status"></p><p id="error" class="error" role="alert"></p>
+    <h2>Message reader</h2><section class="reader" aria-label="Markdown message reader"><nav class="card"><strong>Threads</strong><ul class="threads" id="threads"></ul></nav><nav class="card"><strong>Replies</strong><ul class="replies" id="replies"></ul></nav><article class="card markdown" id="reader-content"><p>Select a thread reply to read it.</p></article></section>
+  </main>
+  <script type="module">
+    import { messageLabel, renderMarkdown } from '/markdown.js';
+    const byId = (id) => document.getElementById(id);
+    const storedTheme = localStorage.getItem('team-board-theme');
+    if (storedTheme === 'dark') document.documentElement.dataset.theme = 'dark';
+    byId('theme').onclick = () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem('team-board-theme', next); };
+    const safe = (value) => String(value ?? '');
+    const cell = (value, tag = 'td') => { const node = document.createElement(tag); node.textContent = safe(value); return node; };
+    function rows(id, records, makeRow) { const target = byId(id); target.replaceChildren(...records.map(makeRow)); }
+    function render(board) {
+      const p = board.program; byId('subtitle').textContent = `${p.name}: live file read, no cached workflow status.`;
+      byId('qualified').textContent = `${p.qualified} / ${p.actionableRows}`; byId('progress').textContent = `${p.evidencePercent}%`;
+      byId('recorded').textContent = `${p.recordedActionableRows} / ${p.actionableRows}`; byId('working').textContent = board.workers.filter((w) => w.active).length;
+      byId('scope').textContent = `${p.sourceRows} canonical roadmap rows retained · ${p.ownerExcludedRows} owner-excluded`;
+      byId('formula').textContent = p.formula;
+      rows('workers', board.workers, (w) => { const tr = document.createElement('tr'); const validity = w.recordValid ? 'valid' : w.recordIssues.join('; '); tr.append(cell(w.name), cell(w.status), cell(w.feature), cell(w.updatedAt || 'Not declared'), cell(validity)); if (w.active) tr.children[1].className = 'active'; if (!w.recordValid) tr.children[4].className = 'record-invalid'; return tr; });
+      rows('features', board.features.filter((f) => !f.ownerExcluded), (f) => { const tr = document.createElement('tr'); tr.append(cell(f.id + ' — ' + f.title), cell(`${f.evidencePercent}%`), cell(f.state), cell(f.stoppingPoint.summary || 'No stopping-point evidence'), cell(f.caveat || '')); return tr; });
+      const milestoneCards = board.features.filter((f) => !f.ownerExcluded && f.steps.length).map((f) => { const details = document.createElement('details'); details.className = 'milestone'; details.open = ['QQ-004','QQ-005','QQ-006'].includes(f.id); const summary = document.createElement('summary'); const title = document.createElement('span'); title.textContent = `${f.id} — ${f.title}`; const percent = document.createElement('span'); percent.textContent = `${f.evidencePercent}%`; summary.append(title, percent); const body = document.createElement('div'); body.className = 'body'; const bar = document.createElement('progress'); bar.max = 100; bar.value = f.evidencePercent; bar.setAttribute('aria-label', `${f.title} evidence progress`); const table = document.createElement('table'); const head = document.createElement('thead'); const headRow = document.createElement('tr'); ['Step','Weight','Maturity','Contribution','Evidence stopping point','Caveat'].forEach((label) => headRow.append(cell(label, 'th'))); head.append(headRow); const rowsBody = document.createElement('tbody'); f.steps.forEach((step) => { const row = document.createElement('tr'); row.append(cell(`${step.id} — ${step.title}`), cell(`${step.weight}%`), cell(`${step.state} (${step.evidencePercent}%)`), cell(`${step.contributionPoints} points`), cell(step.summary || 'No stopping-point summary'), cell(step.caveat || '')); row.children[1].className = 'weight'; rowsBody.append(row); }); table.append(head, rowsBody); body.append(bar, table); details.append(summary, body); return details; }); byId('milestones').replaceChildren(...milestoneCards);
+      const feed = byId('messages'); feed.replaceChildren(...board.messages.map((m) => { const li = document.createElement('li'); const who = document.createElement('strong'); who.textContent = m.worker + ': '; const body = document.createTextNode(m.message); const time = document.createElement('small'); time.textContent = ' ' + (m.at || ''); li.append(who, body, time); return li; }));
+      const workerErrors = Array.isArray(board.workerErrors) ? board.workerErrors : [];
+      const invalidRecords = board.workers.filter((worker) => !worker.recordValid);
+      const warnings = [...workerErrors.map((entry) => `${entry.fileName} — ${entry.message}`), ...invalidRecords.map((worker) => `${worker.name} — ${worker.recordIssues.join('; ')}`)];
+      byId('warnings').textContent = warnings.length ? `Board excludes malformed employee liveness: ${warnings.join('; ')}` : '';
+    }
+    let messageThreads = [];
+    async function loadMessages() { const response = await fetch('/api/messages', { cache:'no-store' }); if (!response.ok) throw new Error('Message index read failed'); messageThreads = await response.json(); const list = byId('threads'); list.replaceChildren(...messageThreads.map((t, n) => { const li = document.createElement('li'); const b = document.createElement('button'); b.type = 'button'; b.textContent = `${messageLabel(t)} (${t.replies.length})`; b.onclick = () => selectThread(n); li.append(b); return li; })); if (messageThreads.length) selectThread(0); }
+    function selectThread(index) { const thread = messageThreads[index]; byId('threads').querySelectorAll('button').forEach((b, n) => b.setAttribute('aria-current', String(n === index))); const list = byId('replies'); list.replaceChildren(...thread.replies.map((reply, n) => { const li = document.createElement('li'); const b = document.createElement('button'); b.type = 'button'; b.textContent = messageLabel(reply); b.onclick = () => selectReply(index, n); li.append(b); return li; })); if (thread.replies.length) selectReply(index, 0); }
+    async function selectReply(threadIndex, replyIndex) { const thread = messageThreads[threadIndex]; const reply = thread.replies[replyIndex]; byId('replies').querySelectorAll('button').forEach((b, n) => b.setAttribute('aria-current', String(n === replyIndex))); const response = await fetch(`/api/messages/${encodeURIComponent(thread.id)}/${encodeURIComponent(reply.id)}`, { cache:'no-store' }); if (!response.ok) { byId('reader-content').textContent = 'Reply unavailable.'; return; } byId('reader-content').replaceChildren(renderMarkdown(await response.text(), `/api/messages/${encodeURIComponent(thread.id)}/`)); }
+    loadMessages().catch((error) => { byId('error').textContent = error.message; });
+    async function refresh() { try { const response = await fetch('/api/board', { cache:'no-store' }); if (!response.ok) throw new Error('Board read failed'); render(await response.json()); byId('error').textContent = ''; } catch (error) { byId('error').textContent = error.message; } }
+    refresh(); setInterval(refresh, 2000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+# Team board and progress evidence
+
+The QindaQt team board is a live operating view over durable Markdown worker
+records, message threads, and the canonical outcome ledger in
+`ops/team/features.json`. It deliberately separates delivery evidence from
+worker activity.
+
+## Two independent questions
+
+The board answers two questions without mixing them:
+
+1. **Who is working now?** A current-roster employee counts only when their own
+   record has parser-valid identity/outcome fields, `- Status: working — ...`,
+   and an ISO-dated bullet inside the literal `## Updates` section no more than
+   30 minutes old. GPT, Claude, GLM, and all other providers use the same rule.
+2. **How much integrated product evidence exists?** Worker count, messages,
+   assignments, source-ready branches, compiler activity, review prose, and
+   task estimates add zero. Only accepted behavior already integrated at the
+   manager boundary can move an outcome step.
+
+The current employee boundary is the Markdown table in `ops/team/ROSTER.md`.
+Historical worker records remain durable evidence but do not appear as current
+employees.
+
+## Evidence maturity
+
+Each outcome step has a stable product weight and one evidence maturity:
+
+| Maturity | Score | Required stopping point |
+| --- | ---: | --- |
+| `ABSENT` / `UNVERIFIED` | 0 | No accepted integrated implementation evidence |
+| `MODELLED` | 25 | Integrated bounded contract/model with deterministic model evidence, but no production provider/consumer path |
+| `WIRED` | 50 | Integrated production authorities, providers, and consumers are composed, but accepted end-to-end execution is missing |
+| `EXECUTABLE` | 75 | Accepted end-to-end behavior runs inside its declared boundary; named breadth, hardware, UI, or qualification gaps remain |
+| `QUALIFIED` | 100 | The complete declared step, failure behavior, keyboard/accessibility path, persistence where applicable, required matrix, and documentation are independently accepted |
+
+A step contributes `weight × maturity / 100` points to its roadmap row. Step
+weights total 100, so each roadmap row remains equally important to the program
+percentage. Rows without a detailed breakdown use the same maturity score
+directly. Missing stopping-point evidence forces a contribution of zero even
+when a state label claims otherwise.
+
+## Current large-milestone decomposition
+
+QQ-004 Shell and customization measures production panels/work areas; logical
+layout, visibility, and edit transactions; applet hosting; notification
+foundation; installed notification interaction; global menu; launcher/task/
+tray applets; WYSIWYG customization; and whole-shell display/accessibility
+qualification.
+
+QQ-005 Platform services measures audio; display transactions; coherent power
+and brightness; network; Bluetooth; private clipboard history; display color;
+font discovery/application; and portal/policy interoperability. Generic schema
+keys and applet capability names are prerequisites, not platform-service
+progress.
+
+QQ-006 First-party experience measures QST-1 tokens; reusable Controls; shared
+application-shell contracts; Settings Center core/navigation; live settings
+routes; Text Editor; File Manager; Terminal; and cross-app responsive,
+keyboard, visual, DPI, and accessibility qualification.
+
+The full weights, current stages, stopping-point summaries, and caveats live in
+`ops/team/features.json` and are rendered directly by the board. Change a
+weight only when the stable product scope changes; change a stage only in the
+same integration that records its exact evidence.
+
+## Verification
+
+Run the board's Node test suite before changing parsing, weighting, roster
+filtering, message confinement, or rendering:
+
+```console
+node --test tools/team-board/board.test.mjs tools/team-board/markdown.dom.test.mjs
+```
+
+Then start an ephemeral server against an isolated or live team root and check
+`/api/board` reconciliation before replacing the long-running local board.

@@ -1,0 +1,279 @@
+{
+  "program": {
+    "name": "QindaQt",
+    "sourceRows": 7
+  },
+  "features": [
+    {
+      "id": "QQ-001",
+      "title": "Foundation",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Qt Core container domain model with recursive splits, pages, activation, detachment normalization, validation, and schema-versioned JSON persistence; validated profile and theme schemas; the Qt Quick shell preview; the scenario harness; and the documentation policy are complete and recorded in the roadmap.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Foundation as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The testing harness records the standing compiler, unit, documentation, and source-policy gates." }
+        ]
+      },
+      "caveat": ""
+    },
+    {
+      "id": "QQ-002",
+      "title": "Compositor MVP",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Tracked KWin 6.6.5 base, nested Wayland session, rootless XWayland, output/input inventories, the atomic container-control protocol, and dynamic plugin-unload recovery are qualified; the complete live workflow passed ten consecutive stress repetitions.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Compositor MVP as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Debug/Release and repeated private nested workflow evidence is recorded in the testing harness." }
+        ]
+      },
+      "caveat": "Finished user interaction and physical hardware qualification belong to later milestones."
+    },
+    {
+      "id": "QQ-003",
+      "title": "Hybrid interaction",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Process-local pointer/keyboard docking, native-decoration detach, split/page reorganization, focus/transient policy, restore, live decoration proof, and grouped plugin-unload restoration passed final qualification with clean Debug/Release registries, focused suites, ASan+UBSan, and repeated private live workflows.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Hybrid interaction as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The focused Hybrid selectors and private live workflows are the authoritative acceptance record." }
+        ]
+      },
+      "caveat": "Persisted login topology, mixed-DPI migration, and physical input/DRM/GPU coverage remain later Platform or Release gates."
+    },
+    {
+      "id": "QQ-004",
+      "title": "Shell and customization",
+      "workspace": "Roadmap milestone",
+      "state": "EXECUTABLE",
+      "steps": [
+        {
+          "id": "QQ-004.01", "title": "Production panel/dock publication and static work areas", "weight": 15, "state": "QUALIFIED",
+          "summary": "Real LayerShell panels and deterministic static work-area behavior are integrated and independently qualified at 1080p, WUXGA, and 1440p.",
+          "evidence": [{ "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "Integrated production-surface proof passed the three-resolution private nested matrix." }],
+          "caveat": "Physical multi-monitor and hardware qualification remain release work."
+        },
+        {
+          "id": "QQ-004.02", "title": "Window-aware hiding, reveal/hold, and dynamic reservation", "weight": 10, "state": "WIRED",
+          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries but lack complete installed nested interaction proof.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/layout-profiles.md", "summary": "The owning page records implemented layout and editing transactions." }, { "kind": "source", "reference": "docs/wiki/shell/panel-visibility.md", "summary": "The owning page records the implemented window-aware visibility contract." }],
+          "caveat": "The direct WYSIWYG Settings surface is a separate step."
+        },
+        {
+          "id": "QQ-004.03", "title": "Audited clock and notification-center applets", "weight": 8, "state": "EXECUTABLE",
+          "summary": "Validated, compiled clock and notification-center applets run in the production shell through the audited host boundary.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/applet-runtime.md", "summary": "Production resolution and the two live built-ins are documented." }],
+          "caveat": "Several catalog entries remain fixtures and are measured separately."
+        },
+        {
+          "id": "QQ-004.04", "title": "Notification service and presentation foundation", "weight": 14, "state": "EXECUTABLE",
+          "summary": "The bounded host/presentation stack, active/recent center, popups, Settings1 DND, and fail-closed authenticated lock privacy are integrated.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The current buildable state records the integrated notification stack." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Focused model, policy, surface, Settings1, and privacy selectors are recorded." }],
+          "caveat": "Installed end-to-end desktop interaction is measured in QQ-004.05."
+        },
+        {
+          "id": "QQ-004.05", "title": "Live notification shortcut, focus, DND, restart, and lock interaction", "weight": 10, "state": "WIRED",
+          "summary": "Production components are connected, but the installed private nested workflow has not yet passed the required resolution matrix.",
+          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Live notification interaction qualification is the active incomplete outcome." }],
+          "caveat": "A source-ready worker tree contributes no higher maturity until independently accepted and integrated."
+        },
+        {
+          "id": "QQ-004.06", "title": "Global application menu", "weight": 10, "state": "ABSENT",
+          "summary": "No live application-menu exporter, provider, or user-facing menu surface is integrated; manifest names alone are not product behavior.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/reference/applet-manifest-schema-v1.md", "summary": "The schema names the global-menu package contract." }, { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The roadmap says menu entries remain unavailable or fixtures." }],
+          "caveat": "Qt action/menu export, application discovery, focus ownership, and fallback UI remain."
+        },
+        {
+          "id": "QQ-004.07", "title": "Launcher, task list, tray, and remaining system applets", "weight": 14, "state": "ABSENT",
+          "summary": "Live launcher, task, tray, audio, power, Bluetooth, and clipboard applets are not integrated; catalog fixtures contribute no user-outcome credit.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/applet-runtime.md", "summary": "The owning page distinguishes the live built-ins from fixture-only entries." }],
+          "caveat": "Each applet requires a least-authority service boundary, real presentation, and interaction proof."
+        },
+        {
+          "id": "QQ-004.08", "title": "Direct WYSIWYG customization and reveal affordances", "weight": 11, "state": "MODELLED",
+          "summary": "Transactional edit policy exists, but the direct drag/drop Settings window, provisional shell binding, and reveal affordance are not integrated.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/layout-profiles.md", "summary": "The owning page explicitly records the missing provisional subscription and Settings editor window." }],
+          "caveat": "Logical edit machinery alone is not the requested user-facing editor."
+        },
+        {
+          "id": "QQ-004.09", "title": "Whole-shell output, DPI, theme, keyboard, and accessibility qualification", "weight": 8, "state": "WIRED",
+          "summary": "Panel surfaces have three-resolution nested proof and the shell consumes profiles/themes, but whole-shell mixed-DPI, keyboard, accessibility, and profile-family qualification is incomplete.",
+          "evidence": [{ "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Current shell proof and its explicit coverage limits are recorded." }],
+          "caveat": "This is broader than the qualified production-panel slice."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "Production LayerShell panel publication and static work areas have an independently reviewed private nested proof at 1080p, WUXGA, and 1440p. Audited clock and notification-center applets execute, and the bounded notification model with center, popups, Settings1-persisted Do Not Disturb, and authenticated lock-state privacy is integrated. Installed live notification interaction remains incomplete.",
+        "evidence": [
+          { "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "The deterministic production LayerShell surface proof is integrated on public main; independent and manager verification each passed the 1080p, WUXGA, and 1440p private nested matrix." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Shell and customization In progress and names the integrated production boundaries." },
+          { "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "The public task list names Live notification interaction qualification as the active outcome." },
+          { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff defines the private nested acceptance boundary and host-containment rules." }
+        ]
+      },
+      "caveat": "The production surface/work-area proof is qualified, but live notification shortcut/focus/DND/lock interaction, global menu, reveal UI, task/launcher/tray, WYSIWYG customization, and many remaining experiences are not complete."
+    },
+    {
+      "id": "QQ-005",
+      "title": "Platform services",
+      "workspace": "Roadmap milestone",
+      "state": "MODELLED",
+      "steps": [
+        {
+          "id": "QQ-005.01", "title": "Audio device, default, and stream control", "weight": 14, "state": "EXECUTABLE",
+          "summary": "The typed Audio1 stack, resident WirePlumber adapter, lifecycle, package, and isolated null-device runtime are integrated, while physical devices and desktop UI remain unqualified.",
+          "evidence": [{ "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The accepted Audio1 stack is integrated." }, { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "Debug/Release, sanitizer, package, activation, lifecycle, and containment evidence are recorded." }],
+          "caveat": "Physical microphone/speaker, USB/HDMI/Bluetooth/jack/multichannel, suspend/hotplug/resource behavior, and Settings/shell UI remain."
+        },
+        {
+          "id": "QQ-005.02", "title": "Display inventory and reversible output transactions", "weight": 18, "state": "ABSENT",
+          "summary": "No integrated Display service lets users identify, arrange, enable, rotate, scale, mirror, preview, confirm, or revert outputs.",
+          "evidence": [{ "kind": "source", "reference": "docs/HANDOFF.md", "summary": "Display remains the next source-only platform boundary rather than an integrated outcome." }],
+          "caveat": "D0/D1 worker candidates and compile activity add zero until accepted manager integration."
+        },
+        {
+          "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "ABSENT",
+          "summary": "No integrated provider exposes batteries, charging, profiles, inhibitors, safe session power actions, display brightness, or keyboard backlight.",
+          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Power and brightness remain later platform outcomes." }],
+          "caveat": "Current architecture analysis is planning evidence only."
+        },
+        {
+          "id": "QQ-005.04", "title": "Network connectivity", "weight": 11, "state": "ABSENT",
+          "summary": "No integrated model lets users see connectivity, scan, connect/disconnect known networks, or control radios.",
+          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Network remains a later platform outcome." }],
+          "caveat": "Provider reuse, scan leases, secrets, owner replacement, and offline behavior remain."
+        },
+        {
+          "id": "QQ-005.05", "title": "Bluetooth devices", "weight": 9, "state": "ABSENT",
+          "summary": "No integrated provider lets users inspect adapters/devices, discover, connect, disconnect, or handle pairing safely.",
+          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Bluetooth remains a later platform outcome." }],
+          "caveat": "A generic boolean setting and applet capability name are prerequisites, not Bluetooth product behavior."
+        },
+        {
+          "id": "QQ-005.06", "title": "Private bounded clipboard history", "weight": 9, "state": "ABSENT",
+          "summary": "No integrated clipboard/history service provides bounded, searchable, lock-private history while preserving ordinary Wayland clipboard behavior.",
+          "evidence": [{ "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "Clipboard remains a later platform outcome." }],
+          "caveat": "The generic clipboardHistory setting does not implement capture, privacy, purge, or UI."
+        },
+        {
+          "id": "QQ-005.07", "title": "Display color, ICC, HDR, and WCG settings", "weight": 8, "state": "ABSENT",
+          "summary": "No integrated color provider supports profile discovery/import/assignment or truthful compositor application.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Color remains inside the incomplete Platform services milestone." }],
+          "caveat": "Design-token color math is not display color management."
+        },
+        {
+          "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "ABSENT",
+          "summary": "No integrated font catalog/application provider proves that first-party apps apply family, size, antialiasing, hinting, or subpixel policy before UI construction.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Font settings remain inside the incomplete Platform services milestone." }],
+          "caveat": "Settings1 keys are prerequisites, not font discovery or confirmed toolkit application."
+        },
+        {
+          "id": "QQ-005.09", "title": "Portal interoperability and desktop policy export", "weight": 12, "state": "ABSENT",
+          "summary": "No integrated portal boundary qualifies chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or QindaQt appearance export.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Portals and policy remain part of the incomplete Platform services milestone." }],
+          "caveat": "Existing service-specific authentication and the installed KDE portal ecosystem are prerequisites only."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "The bounded org.qindaqt.Audio1 protocol, asynchronous Qt client, resident service, confined WirePlumber worker, deterministic reset lifecycle, and isolated null-device runtime/package qualification are integrated on public main. Display1 transaction and compositor-output candidates are preserved but not integrated.",
+        "evidence": [
+          { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
+          { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
+        ]
+      },
+      "caveat": "Power, brightness, Bluetooth, network, clipboard, display/color/font providers, portals, policy, physical hardware, and Audio UI/hardware qualification remain. This large milestone is not called executable from one integrated provider."
+    },
+    {
+      "id": "QQ-006",
+      "title": "First-party experience",
+      "workspace": "Roadmap milestone",
+      "state": "MODELLED",
+      "steps": [
+        {
+          "id": "QQ-006.01", "title": "QST-1 semantic design tokens", "weight": 15, "state": "QUALIFIED",
+          "summary": "Five-theme semantic derivation, accessibility transforms, installed C++ consumption, and read-only QML publication are integrated and qualified.",
+          "evidence": [{ "kind": "commit", "reference": "05a8636", "summary": "The accepted QST-1 slice is integrated on public main." }],
+          "caveat": "Tokens alone are not reusable controls or an application."
+        },
+        {
+          "id": "QQ-006.02", "title": "Reusable QindaQt.Controls component set", "weight": 15, "state": "ABSENT",
+          "summary": "Controls have candidate evidence but are not yet integrated on public main.",
+          "evidence": [{ "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff names Controls qualification as unfinished parallel work." }],
+          "caveat": "The exact candidate, review, and compiler activity contribute zero until manager integration."
+        },
+        {
+          "id": "QQ-006.03", "title": "Shared application-shell contracts", "weight": 10, "state": "ABSENT",
+          "summary": "No integrated shared application-shell boundary yet covers action/menu export, lifecycle, settings/session, file dialogs/portals, errors, keyboard/focus, and accessibility.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The roadmap explicitly lists the app shell as pending." }],
+          "caveat": "A candidate ADR in a worker tree is not public product progress."
+        },
+        {
+          "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "WIRED",
+          "summary": "A normal first-party qindaqt-settings application and fixed Notifications route use the public Settings1 client boundary, but a complete center shell/navigation system is not integrated.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/architecture/settings-service.md", "summary": "The integrated Notifications settings application route and dependency boundary are documented." }],
+          "caveat": "One focused route does not complete the applet-based Settings Center."
+        },
+        {
+          "id": "QQ-006.05", "title": "Settings pages and live platform-service routes", "weight": 15, "state": "MODELLED",
+          "summary": "The generic schema defines appearance, fonts, displays, input, panels, window-management, accessibility, and service values; only Notifications has a live route.",
+          "evidence": [{ "kind": "source", "reference": "data/settings/schema-v1.json", "summary": "The integrated schema records the settings domains and validation contracts." }],
+          "caveat": "Audio, display, power, brightness, Bluetooth, network, clipboard, color, font, and portal pages remain."
+        },
+        {
+          "id": "QQ-006.06", "title": "QindaQt Text Editor", "weight": 10, "state": "ABSENT",
+          "summary": "A worker-tree vertical slice exists but no Text Editor is integrated on public main.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain part of the incomplete First-party experience milestone." }],
+          "caveat": "Source/static work and design reviews add zero until accepted integration and executable proof."
+        },
+        {
+          "id": "QQ-006.07", "title": "QindaQt File Manager", "weight": 8, "state": "ABSENT",
+          "summary": "No integrated first-party file manager exists.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain incomplete." }],
+          "caveat": "File operations, mounts, trash, search, previews, portals, and recovery require a bounded design and implementation."
+        },
+        {
+          "id": "QQ-006.08", "title": "QindaQt Terminal", "weight": 8, "state": "ABSENT",
+          "summary": "No integrated first-party terminal exists.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Core applications remain incomplete." }],
+          "caveat": "PTY ownership, encoding, selection/clipboard, profiles, accessibility, and process teardown remain."
+        },
+        {
+          "id": "QQ-006.09", "title": "Cross-app responsive, DPI, visual, keyboard, and accessibility qualification", "weight": 4, "state": "MODELLED",
+          "summary": "QST-1 defines semantic accessibility inputs and five-theme values, but complete application matrices and a live assistive-technology bridge are not qualified.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/architecture/design-tokens.md", "summary": "The QST-1 contract records its accessibility inputs and explicit application-level evidence boundary." }],
+          "caveat": "Each first-party app must pass its own responsive, keyboard, screen-reader, and visual evidence."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "QST-1 semantic design-token derivation, accessibility overrides, installed C++ consumption, and the read-only QML singleton are integrated. QindaQt.Controls has complete Debug/focused/visual/package evidence in its worker tree and is still completing Release and exact-candidate gates.",
+        "evidence": [
+          { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks First-party experience In progress with QST-1 implemented." },
+          { "kind": "worker", "reference": "ops/team/messages/native-application-design/", "summary": "Controls work remains candidate evidence and contributes no integrated completion until exact review and manager integration." }
+        ]
+      },
+      "caveat": "The Settings Center, app shell, core applications, responsive/accessibility integration, live platform-service routes, and complete visual qualification remain."
+    },
+    {
+      "id": "QQ-007",
+      "title": "Release qualification",
+      "workspace": "Roadmap milestone",
+      "state": "ABSENT",
+      "stoppingPoint": {
+        "summary": "The next integration threshold is a bootable, interactable, screenshot-qualified QindaQt desktop in a completely private nested Wayland environment. Physical hardware, the initial 1,024 MiB aggregate idle PSS and 1% idle CPU budgets, migrations, distribution packaging, recovery, and upgrade qualification remain planned; existing component-level nested evidence does not satisfy the whole-desktop threshold.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap lists Release qualification as Planned." },
+          { "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "The active product outcome defines isolated boot, interaction, screenshot, resolution/DPI, host-containment, and initial 1,024 MiB PSS acceptance." },
+          { "kind": "decision", "reference": "docs/wiki/adr/0015-qualify-function-before-resource-refinement.md", "summary": "ADR-0015 makes functional virtual-desktop qualification precede aggressive memory refinement." }
+        ]
+      },
+      "caveat": "No whole-desktop nested-session or daily-use release claim exists; this row remains zero until that integrated behavior is executable and evidenced."
+    }
+  ]
+}
