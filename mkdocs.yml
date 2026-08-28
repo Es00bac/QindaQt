@@ -110,4 +110,4 @@ nav:
       - "ADR-0043: Customization editor domain": adr/0043-isolate-the-customization-editor-domain.md
       - "ADR-0033: Canonical menu model": adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md
       - "ADR-0032: Status-notifier exact-owner foundation": adr/0032-status-notifier-exact-owner-foundation.md
-      - "ADR-0042: Pure Font F0 boundary": adr/0042-pure-font-catalog-and-preference-boundary.md
+      - "ADR-0047: Pure Font F0 boundary": adr/0047-pure-font-catalog-and-preference-boundary.md
