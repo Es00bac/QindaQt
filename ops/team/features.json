@@ -251,9 +251,9 @@
         },
         {
           "id": "QQ-006.03", "title": "Shared application-shell contracts", "weight": 10, "state": "EXECUTABLE",
-          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, and an installed consumer.",
-          "evidence": [{ "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact independently accepted AppShell S0 candidate is integrated after combined-tree build, 5/5 focused tests, package consumer, source-shape, documentation, and whitespace verification." }, { "kind": "test", "reference": "docs/wiki/apps/application-shell.md", "summary": "The owning page records the action, coordinator, offscreen accessibility/close-consent, source-policy, and installed-consumer evidence." }],
-          "caveat": "Real portal adapters, application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
+          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, an installed consumer, and a typed Text Editor migration.",
+          "evidence": [{ "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact independently accepted AppShell S0 candidate is integrated after combined-tree build, 5/5 focused tests, package consumer, source-shape, documentation, and whitespace verification." }, { "kind": "test", "reference": "docs/wiki/apps/application-shell.md", "summary": "The owning page records the action, coordinator, offscreen accessibility/close-consent, source-policy, and installed-consumer evidence." }, { "kind": "commit", "reference": "d0e0809", "summary": "The exact independently accepted Text Editor AppShell migration is replayed and passes manager-tree focused, adjacent, package, documentation, and source-policy verification." }],
+          "caveat": "Real portal adapters, remaining application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
         },
         {
           "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "WIRED",
@@ -269,8 +269,8 @@
         },
         {
           "id": "QQ-006.06", "title": "QindaQt Text Editor", "weight": 10, "state": "EXECUTABLE",
-          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, and large-document coverage.",
-          "evidence": [{ "kind": "commit", "reference": "1cd5dab", "summary": "The exact accepted Text Editor candidate is integrated after independent review." }, { "kind": "test", "reference": "docs/wiki/apps/text-editor.md", "summary": "The owning page records the eight focused integrated tests plus candidate Release, package, startup, PSS, and large-document evidence." }],
+          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge.",
+          "evidence": [{ "kind": "commit", "reference": "1cd5dab", "summary": "The exact accepted Text Editor candidate is integrated after independent review." }, { "kind": "test", "reference": "docs/wiki/apps/text-editor.md", "summary": "The owning page records the local-document evidence and the independently accepted AppShell migration, including hostile request lineage, source-policy poison, and component-only package/RPATH proof." }, { "kind": "commit", "reference": "d0e0809", "summary": "The manager replay of exact candidate 75f786e9 passes 10/10 focused and 17/17 adjacent integrated-tree rows." }],
           "caveat": "S1 does not yet include multiple documents, portals, session restore, print, extensions, rich text, a nested display screenshot matrix, or whole-application assistive-technology qualification."
         },
         {
@@ -293,17 +293,18 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 and the bounded local QindaQt File Manager S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts for first-party applications.",
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. QindaQt Text Editor S1 and the bounded local QindaQt File Manager S0 are executable, and the installed QindaQt.AppShell 1.0 boundary provides shared action, lifecycle, portal, focus, error, close-consent, and accessible presentation contracts; Text Editor now consumes that boundary through a typed fail-closed migration.",
         "evidence": [
           { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
           { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
           { "kind": "commit", "reference": "1cd5dab", "summary": "The accepted native Text Editor S1 is integrated after an exact independent review and fresh integrated-tree verification." },
           { "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact accepted AppShell S0 candidate is integrated after its repair rereview and fresh combined-tree verification." },
           { "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact accepted File Manager S0 runtime/package candidate is integrated after independent review and fresh combined-tree verification." },
+          { "kind": "commit", "reference": "d0e0809", "summary": "The exact accepted Text Editor AppShell migration is replayed after independent review and manager-tree verification." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, and File Manager S0 as implemented within the incomplete First-party experience milestone." }
         ]
       },
-      "caveat": "The complete Settings Center, later File Manager capabilities, Terminal, application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
+      "caveat": "The complete Settings Center, later File Manager capabilities, Terminal, remaining application migrations onto AppShell, cross-app responsive/accessibility integration, nested application matrix, and live platform-service routes remain."
     },
     {
       "id": "QQ-007",
