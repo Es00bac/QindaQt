@@ -110,7 +110,7 @@ nav:
       - "ADR-0028: Appearance through Settings1": adr/0028-compose-appearance-settings-through-settings1.md
       - "ADR-0029: File Manager bounded local launch": adr/0029-file-manager-bounded-local-launch.md
       - "ADR-0031: Volatile bounded clipboard history": adr/0031-volatile-bounded-clipboard-history.md
-      - "ADR-0030: Display color pure model first": adr/0030-display-color-c0-model-boundary.md
+      - "ADR-0046: Display color pure model first": adr/0046-display-color-c0-model-boundary.md
       - "ADR-0041: Flow team delivery loop": adr/0041-adopt-flow-team-delivery-loop.md
       - "ADR-0042: Launcher model without execution": adr/0042-launcher-model-without-execution.md
       - "ADR-0044: Injected task-list facts": adr/0044-inject-task-list-facts-into-the-shell.md
