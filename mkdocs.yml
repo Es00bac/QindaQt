@@ -38,6 +38,7 @@ nav:
       - Applet runtime: shell/applet-runtime.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
+      - Global application menu: shell/global-menu.md
       - Notification presentation: shell/notification-presentation.md
   - Reference:
       - Compositor control 1.1: reference/compositor-control-v1.md
@@ -84,3 +85,4 @@ nav:
       - "ADR-0023: Split power authority": adr/0023-split-power-authority-across-service-and-shell.md
       - "ADR-0024: Power1 brightness routing": adr/0024-route-brightness-through-power1.md
       - "ADR-0025: Session-bound Power1 activation": adr/0025-arbitrate-session-bound-power1-activation.md
+      - "ADR-0026: Canonical menu model": adr/0026-canonical-menu-model-and-authenticated-menu-ownership.md
