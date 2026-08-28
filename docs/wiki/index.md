@@ -40,6 +40,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Audio service](architecture/audio-service.md) records the typed Audio1
   model/client/service boundary, confined WirePlumber adapter, activation, and
   isolated-runtime qualification.
+- [Power and brightness](architecture/power-service.md) records the accepted
+  Power1, shell-action, fail-closed backlight, and session-bound activation
+  architecture; implementation remains pending.
 - [Display service](architecture/display-service.md) records the pure Display1
   values, identity/topology boundaries, and deterministic transaction model;
   its runtime service and compositor adapter are later milestones.

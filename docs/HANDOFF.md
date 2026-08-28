@@ -72,5 +72,8 @@ focused integrated-tree verification. The pure Display1 protocol, identity,
 topology, and reversible transaction model are now integrated after the
 same-revision lineage defect was reproduced, repaired, and exactly rereviewed.
 In parallel with the virtual desktop outcome, implement the resident Display1
-service/adapters and finish the first native application slice. A source-only
-handoff or a live worker process is not completion.
+service/adapters. Power/Brightness architecture is independently accepted at
+MODELLED only: PB-0 protocol/aggregation/model is the first ungated
+implementation slice, followed by PB-1; PB-2 waits on the routed session-lane
+activation contract. A source-only handoff or a live worker process is not
+completion.

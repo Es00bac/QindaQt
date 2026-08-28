@@ -54,7 +54,8 @@ desktop.
 
 ## Later outcomes
 
-- Power, brightness, Bluetooth, network, clipboard, display, color, font,
+- Power and brightness implementation from the accepted PB-0…PB-5
+  architecture; Bluetooth, network, clipboard, remaining display, color, font,
   portal, and policy platform services.
 - The complete applet-based settings center and remaining first-party desktop
   experiences.
