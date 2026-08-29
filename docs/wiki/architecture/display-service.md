@@ -263,7 +263,11 @@ timer; the D1 machine still sees only `tick()` and the injected monotonic value.
 Rollback makes exactly three apply attempts per rollback sequence in one
 process before `Stuck`; an explicit topology settle or service restart begins
 a new sequence. Repeated cancel, lock, and suspend inputs during a sequence do
-not reset its counter. Initial journal storage is a hard gate. A failed
+not reset its counter. Initial journal storage is a hard gate. `Unchanged`
+preserves ordinary `Staged` state; `DurabilityUncertain` enters cleanup-only
+`Stuck(JournalFailure)` with the exact Applying journal active and issues no
+forward request. Cancel, preview, and re-stage cannot discard that authority;
+only `retryStuck` with an exact `Durable` clear returns Ready. A failed
 `confirm` clear is rejected while remaining in `AwaitingConfirmation`. If a
 terminal clear fails after pre-image, external, or already-restored survivor
 truth is known, `Stuck(JournalFailure)` is cleanup-only and retry never applies.
@@ -286,8 +290,10 @@ or timeout).
   `Unchanged` guarantees the prior durable value, `Durable` proves the requested
   value/absence crossed every supported barrier, and `DurabilityUncertain`
   records a pathname commit followed by a failed directory barrier. Only
-  `Durable` authorizes a forward apply. Clear uncertainty remains conservative
-  cleanup/recovery failure; it is never collapsed into a lying Boolean.
+  `Durable` authorizes a forward apply. Initial-store uncertainty is retained as
+  cleanup-only active journal authority until an exact durable clear; clear
+  uncertainty remains conservative cleanup/recovery failure. Neither is
+  collapsed into a lying Boolean.
 - `requestApply` copies the request before returning and does not synchronously
   call the machine. It may later produce zero or one completion for the exact
   token; late and duplicate/out-of-order callbacks are rejected.

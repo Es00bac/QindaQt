@@ -34,7 +34,7 @@ public:
     [[nodiscard]] JournalMutationOutcome storeJournal(const Journal &value) override
     {
         ++storeCalls;
-        if (!storeSucceeds) {
+        if (!storeSucceeds || storeOutcome == JournalMutationOutcome::Unchanged) {
             return JournalMutationOutcome::Unchanged;
         }
         journal = value;
@@ -45,7 +45,7 @@ public:
     [[nodiscard]] JournalMutationOutcome clearJournal() override
     {
         ++clearCalls;
-        if (!clearSucceeds) {
+        if (!clearSucceeds || clearOutcome == JournalMutationOutcome::Unchanged) {
             return JournalMutationOutcome::Unchanged;
         }
         journal = {};

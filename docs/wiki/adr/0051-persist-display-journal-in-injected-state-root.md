@@ -45,9 +45,13 @@ pathname commit occurred and prior durable truth remains authoritative.
 `DurabilityUncertain` means rename or unlink committed visible pathname state
 before the following directory barrier failed, so a crash may expose old or
 new truth. D4 forwards this result unchanged. D1 authorizes forward compositor
-apply only for `Durable`; clear uncertainty remains a conservative cleanup/
-recovery failure. The uncertain state is therefore represented without either
-lying about the pathname or applying without proven journal durability.
+apply only for `Durable`. An uncertain initial store retains the exact Applying
+journal and transaction identity in cleanup-only `Stuck`, where ordinary
+cancel/re-stage cannot forget or replace it; `retryStuck` returns Ready only
+after an exact `Durable` clear. Clear uncertainty likewise remains a
+conservative cleanup/recovery failure. The uncertain state is therefore
+represented without either lying about the pathname or applying without proven
+journal durability.
 
 Loads return exactly one of absent, loaded, or rejected. They inspect without
 following links, require an effective-user-owned regular single-link file with

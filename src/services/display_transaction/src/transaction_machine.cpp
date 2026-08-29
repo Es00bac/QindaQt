@@ -194,6 +194,24 @@ void Machine::beginForwardApply()
                          .survivingProperties = {}});
 }
 
+void Machine::retainUncertainJournalForCleanup(Journal journal)
+{
+    // AGENT-GUARD: A post-commit barrier failure means a recovery journal may
+    // exist even though no forward apply was authorized. Keep that authority
+    // in the live machine until an exact Durable clear; ordinary Staged cleanup
+    // would orphan the pathname and let restart recover forgotten work.
+    m_journal = std::move(journal);
+    m_activeToken = 0;
+    m_revertRequested = false;
+    m_abandonAfterSettle = false;
+    m_cleanupOnlyStuck = true;
+    m_view.reason = Display::TransactionReason::JournalFailure;
+    m_view.deadlineMonotonicMilliseconds = 0;
+    m_view.revertAttempt = 0;
+    m_view.journalActive = true;
+    setState(MachineState::Stuck);
+}
+
 void Machine::requestRevert(const Display::TransactionReason reason)
 {
     if (m_view.state == MachineState::Applying) {
@@ -219,8 +237,13 @@ CommandResult Machine::preview(const QString &transactionId)
     }
     Journal durableJournal = m_journal;
     durableJournal.phase = JournalPhase::Applying;
-    if (!Private::journalMutationDurable(m_port.storeJournal(durableJournal))) {
+    const JournalMutationOutcome storeOutcome = m_port.storeJournal(durableJournal);
+    if (storeOutcome == JournalMutationOutcome::Unchanged) {
         return rejected(CommandError::JournalFailure);
+    }
+    if (storeOutcome == JournalMutationOutcome::DurabilityUncertain) {
+        retainUncertainJournalForCleanup(std::move(durableJournal));
+        return accepted(true, CommandError::JournalFailure);
     }
     m_journal = std::move(durableJournal);
     m_view.journalActive = true;
