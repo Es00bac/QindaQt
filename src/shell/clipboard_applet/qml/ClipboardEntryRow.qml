@@ -14,6 +14,10 @@ T.Control {
     required property var controller
 
     property bool isCurrent: false
+    // Honest capability input from the applet surface: mutating intents are
+    // offerable only in the ready phase (a degraded service refuses them, so
+    // dead controls would mislead users). Read-only browsing stays available.
+    property bool actionsAvailable: true
 
     signal selectRequested()
     signal deleteRequested()
@@ -151,12 +155,17 @@ T.Control {
                 objectName: "pinButton"
                 text: entry?.pinned ? qsTr("Unpin") : qsTr("Pin")
                 emphasized: entry?.pinned ?? false
+                // Pending presentation: in-flight mutations show the
+                // Controls busy state (disabled + "Working…") until the
+                // completion lands.
+                busy: entry?.pending ?? false
+                available: rowRoot.actionsAvailable
                 implicitHeight: 32
                 implicitWidth: 64
                 accessibleDescription: entry?.pinned ? qsTr("Unpin entry") : qsTr("Pin entry")
                 onClicked: {
                     if (rowRoot.entry && rowRoot.controller) {
-                        rowRoot.controller.togglePin(rowRoot.entry.generation, rowRoot.entry.serial)
+                        rowRoot.controller.togglePin(rowRoot.entry.generation, rowRoot.serial)
                     }
                 }
             }
@@ -168,6 +177,8 @@ T.Control {
                 text: qsTr("Delete")
                 destructive: true
                 emphasized: false
+                busy: entry?.pending ?? false
+                available: rowRoot.actionsAvailable
                 implicitHeight: 32
                 implicitWidth: 64
                 accessibleDescription: qsTr("Delete this clipboard entry")
@@ -180,24 +191,19 @@ T.Control {
         }
     }
 
+    // AGENT-GUARD: row-body selection must sit BELOW the content item. A
+    // default-stacked MouseArea declared last covers the action buttons and
+    // swallows their pointer events, which is exactly the P1 defect: real
+    // clicks on Pin/Delete never arrived. z: -1 keeps the buttons (real
+    // input-handling items) on top while clicks elsewhere fall through.
     MouseArea {
         id: clickArea
+        objectName: "rowClickArea"
         anchors.fill: parent
-        // Don't intercept clicks destined for buttons
-        propagateComposedEvents: true
+        z: -1
+        enabled: rowRoot.actionsAvailable
         acceptedButtons: Qt.LeftButton
-        onClicked: function(mouse) {
-            // If click is not inside the buttons
-            var pinPos = mapToItem(pinButton, mouse.x, mouse.y)
-            if (pinButton.contains(pinPos)) {
-                mouse.accepted = false
-                return
-            }
-            var delPos = mapToItem(deleteButton, mouse.x, mouse.y)
-            if (deleteButton.contains(delPos)) {
-                mouse.accepted = false
-                return
-            }
+        onClicked: {
             if (rowRoot.entry && rowRoot.controller) {
                 rowRoot.controller.selectEntry(rowRoot.entry.generation, rowRoot.entry.serial)
             }

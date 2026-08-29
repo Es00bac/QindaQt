@@ -58,6 +58,115 @@ public:
     }
 };
 
+// Hostile/async scripted seam for synchronous-flush and completion-injection
+// attacks. Every request id is unique; replies and completions are delivered
+// exactly when the test chooses, including re-entrantly inside dispatch calls
+// (the P1 vector: flushing a queued superseded reply inside requestSearch()).
+class HostileScriptedClient final : public ClipboardClientInterface {
+public:
+    struct RecordedOperation {
+        OperationKind kind = OperationKind::Promote;
+        quint64 requestId = 0;
+        quint64 tick = 0;
+        EntryId id;
+    };
+
+    quint64 m_nextRequestId = 500; // deliberately unrelated to search ids
+    QList<RecordedOperation> m_operations;
+    quint64 m_queuedSearchRequestId = 0;
+    SearchOutcome m_queuedSearchOutcome;
+    bool m_flushQueuedReplyDuringNextSearch = false;
+    bool m_answerSearchSynchronously = false;
+    SearchOutcome m_scriptedSearchOutcome;
+    bool m_completeOperationsSynchronously = false;
+    OperationOutcome m_scriptedCompletion;
+
+    HistorySnapshot m_snapshot;
+    bool m_locked = false;
+
+    [[nodiscard]] ClientState clientState() const noexcept override { return ClientState::Ready; }
+    [[nodiscard]] QString reasonCode() const override { return {}; }
+    [[nodiscard]] QString owner() const override { return QStringLiteral("hostile-fake"); }
+    [[nodiscard]] bool isOwnerAvailable() const noexcept override { return true; }
+    [[nodiscard]] bool isLocked() const noexcept override { return m_locked; }
+    [[nodiscard]] HistorySnapshot snapshot() const override { return m_snapshot; }
+
+    quint64 requestPromote(EntryId id, quint32, quint64 tick) override
+    {
+        return record(OperationKind::Promote, id, tick);
+    }
+    quint64 requestRemove(EntryId id, quint32) override
+    {
+        return record(OperationKind::Remove, id, 0);
+    }
+    quint64 requestSetPinned(EntryId id, bool, quint32) override
+    {
+        return record(OperationKind::SetPinned, id, 0);
+    }
+    quint64 requestClear(ClearScope, quint32) override
+    {
+        return record(OperationKind::Clear, {}, 0);
+    }
+
+    quint64 requestSearch(const QString &, quint32, int) override
+    {
+        const quint64 id = ++m_nextRequestId;
+        if (m_flushQueuedReplyDuringNextSearch) {
+            // Tarski's P1-2 vector: the stale queued reply is flushed
+            // re-entrantly while the new request is being issued, before
+            // the controller can know the new request id.
+            m_flushQueuedReplyDuringNextSearch = false;
+            Q_EMIT searchCompleted(m_queuedSearchRequestId, m_queuedSearchOutcome);
+        }
+        if (m_answerSearchSynchronously) {
+            // Benign synchronous seam: answers with the id of the request
+            // currently being issued, inside the call itself.
+            Q_EMIT searchCompleted(id, m_scriptedSearchOutcome);
+        }
+        return id;
+    }
+
+    void emitSnapshot()
+    {
+        Q_EMIT snapshotChanged(m_snapshot);
+    }
+
+    void queueSearchReply(quint64 requestId, const SearchOutcome &outcome)
+    {
+        m_queuedSearchRequestId = requestId;
+        m_queuedSearchOutcome = outcome;
+    }
+
+    void emitSearchReply(quint64 requestId, const SearchOutcome &outcome)
+    {
+        Q_EMIT searchCompleted(requestId, outcome);
+    }
+
+    void emitCompletion(quint64 requestId, const OperationOutcome &outcome)
+    {
+        Q_EMIT operationCompleted(requestId, outcome);
+    }
+
+private:
+    quint64 record(OperationKind kind, EntryId id, quint64 tick)
+    {
+        const quint64 requestId = ++m_nextRequestId;
+        RecordedOperation recorded;
+        recorded.kind = kind;
+        recorded.requestId = requestId;
+        recorded.tick = tick;
+        recorded.id = id;
+        m_operations.append(recorded);
+
+        if (m_completeOperationsSynchronously) {
+            OperationOutcome completion = m_scriptedCompletion;
+            completion.id = id;
+            Q_EMIT operationCompleted(requestId, completion);
+        }
+        return requestId;
+    }
+};
+
 class TstClipboardAppletController : public QObject {
     Q_OBJECT
 
@@ -71,6 +180,10 @@ private Q_SLOTS:
     void testIntentOperations();
     void testSearchLifecycle();
     void testSearchReplyFreshnessWithUnorderedIds();
+    void testHostileSynchronousFlushCannotDisplaySupersededReply();
+    void testSynchronousCompletionLeavesNoPendingRecord();
+    void testUnknownAndDuplicateCompletionsAreIgnored();
+    void testPromoteTicksAreStrictlyMonotonic();
     void testFeedbackHandling();
     void testPendingTracking();
     void testRapidStateAndLockTransitions();
@@ -331,6 +444,177 @@ void TstClipboardAppletController::testSearchLifecycle()
     const QString hugeQuery(200, QLatin1Char('x'));
     controller.setSearchQuery(hugeQuery);
     QVERIFY(controller.searchQuery().length() <= kMaxSearchQueryLength);
+}
+
+void TstClipboardAppletController::testHostileSynchronousFlushCannotDisplaySupersededReply()
+{
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 3;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+
+    ClipboardAppletController controller(&client);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+
+    auto outcomeWithPreview = [](const char *preview) {
+        SearchOutcome outcome;
+        ClipboardEntryDescriptor desc;
+        desc.id = { 3, 7 };
+        desc.preview = QString::fromLatin1(preview);
+        desc.formats = { { QStringLiteral("text/plain"), 4 } };
+        outcome.matches.append(desc);
+        return outcome;
+    };
+
+    // Dispatch "alpha" (request id 501); the hostile seam holds its reply.
+    controller.setSearchQuery(QStringLiteral("alpha"));
+    const quint64 alphaId = 501;
+
+    // Queue the stale alpha reply and arm the flush: issuing "gamma" (id 502)
+    // will re-entrantly emit the alpha reply inside requestSearch().
+    client.queueSearchReply(alphaId, outcomeWithPreview("alpha stale secret"));
+    client.m_flushQueuedReplyDuringNextSearch = true;
+    controller.setSearchQuery(QStringLiteral("gamma"));
+
+    // The flushed superseded reply must not display anything.
+    QCOMPARE(controller.searchQuery(), QStringLiteral("gamma"));
+    QCOMPARE(controller.searchResultCount(), 0);
+
+    // The real gamma reply — async, correct id — is accepted.
+    const quint64 gammaId = 502;
+    client.emitSearchReply(gammaId, outcomeWithPreview("gamma live result"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma live result"));
+
+    // Replaying the stale alpha reply afterwards still changes nothing.
+    client.emitSearchReply(alphaId, outcomeWithPreview("alpha replay hijack"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma live result"));
+
+    // Benign variant: a seam that ALSO answers the new request synchronously
+    // inside the call still attributes correctly by id.
+    client.m_answerSearchSynchronously = true;
+    client.m_scriptedSearchOutcome = outcomeWithPreview("delta sync result");
+    controller.setSearchQuery(QStringLiteral("delta"));
+    QCOMPARE(controller.searchResultCount(), 1);
+    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("delta sync result"));
+}
+
+void TstClipboardAppletController::testSynchronousCompletionLeavesNoPendingRecord()
+{
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 3;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    ClipboardEntryDescriptor desc;
+    desc.id = { 3, 7 };
+    desc.preview = QStringLiteral("entry");
+    desc.formats = { { QStringLiteral("text/plain"), 5 } };
+    client.m_snapshot.entries.append(desc);
+
+    client.m_completeOperationsSynchronously = true;
+    client.m_scriptedCompletion.code = OperationErrorCode::None;
+
+    ClipboardAppletController controller(&client);
+
+    // Clear-history completing synchronously inside requestClear() must not
+    // leak a permanently pending record.
+    QVERIFY(controller.clearHistory(true));
+    QCOMPARE(controller.pendingOperationCount(), 0);
+
+    // Promote with a synchronous success: marker and record both resolved.
+    QVERIFY(controller.selectEntry(3, 7));
+    QCOMPARE(controller.pendingOperationCount(), 0);
+    QVERIFY(!controller.feedbackPresent());
+
+    // Synchronous refusal: typed feedback appears, still no leaked record.
+    client.m_scriptedCompletion.code = OperationErrorCode::StaleGeneration;
+    client.m_scriptedCompletion.message = QStringLiteral("stale");
+    QVERIFY(controller.deleteEntry(3, 7));
+    QCOMPARE(controller.pendingOperationCount(), 0);
+    QVERIFY(controller.feedbackPresent());
+    QCOMPARE(controller.feedback(), QStringLiteral("stale"));
+}
+
+void TstClipboardAppletController::testUnknownAndDuplicateCompletionsAreIgnored()
+{
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 3;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    ClipboardEntryDescriptor desc;
+    desc.id = { 3, 7 };
+    desc.preview = QStringLiteral("entry");
+    desc.formats = { { QStringLiteral("text/plain"), 5 } };
+    client.m_snapshot.entries.append(desc);
+
+    ClipboardAppletController controller(&client);
+
+    QVERIFY(controller.selectEntry(3, 7));
+    QCOMPARE(controller.pendingOperationCount(), 1);
+    const quint64 issuedId = client.m_operations.first().requestId;
+
+    // Unknown-id completion carrying a VALID entry payload: hostile noise.
+    OperationOutcome injected;
+    injected.code = OperationErrorCode::None;
+    injected.id = { 3, 7 };
+    client.emitCompletion(issuedId + 987654, injected);
+    QCOMPARE(controller.pendingOperationCount(), 1);
+    QVERIFY(!controller.feedbackPresent());
+
+    // The pending marker survived the injection attempt: the same entry is
+    // still in flight and a second intent is refused.
+    QVERIFY(!controller.selectEntry(3, 7));
+
+    // The genuine completion clears exactly its own record.
+    OperationOutcome genuine;
+    genuine.code = OperationErrorCode::None;
+    genuine.id = { 3, 7 };
+    client.emitCompletion(issuedId, genuine);
+    QCOMPARE(controller.pendingOperationCount(), 0);
+    QVERIFY(controller.selectEntry(3, 7));
+    QCOMPARE(controller.pendingOperationCount(), 1);
+
+    // A duplicated completion of an already-consumed id is ignored.
+    client.emitCompletion(issuedId, genuine);
+    QCOMPARE(controller.pendingOperationCount(), 1);
+}
+
+void TstClipboardAppletController::testPromoteTicksAreStrictlyMonotonic()
+{
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 3;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    ClipboardEntryDescriptor desc;
+    desc.id = { 3, 7 };
+    desc.preview = QStringLiteral("entry");
+    desc.admittedTick = 999998;
+    desc.lastUsedTick = 1000000;
+    desc.formats = { { QStringLiteral("text/plain"), 5 } };
+    client.m_snapshot.entries.append(desc);
+
+    client.m_completeOperationsSynchronously = true;
+    client.m_scriptedCompletion.code = OperationErrorCode::None;
+
+    ClipboardAppletController controller(&client);
+
+    QVERIFY(controller.selectEntry(3, 7));
+    QVERIFY(controller.selectEntry(3, 7));
+    const quint64 firstTick = client.m_operations.at(0).tick;
+    const quint64 secondTick = client.m_operations.at(1).tick;
+
+    // Issued ticks rise above every tick observed in the snapshot; wall
+    // clock is never consulted.
+    QVERIFY(firstTick > quint64(1000000));
+    QVERIFY(secondTick > firstTick);
+
+    // A snapshot whose entries carry even higher ticks lifts the floor.
+    client.m_snapshot.entries.first().lastUsedTick = secondTick + 500;
+    client.emitSnapshot();
+    QVERIFY(controller.selectEntry(3, 7));
+    const quint64 thirdTick = client.m_operations.at(2).tick;
+    QVERIFY(thirdTick > secondTick + 500);
 }
 
 void TstClipboardAppletController::testFeedbackHandling()
