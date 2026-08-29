@@ -131,6 +131,8 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
         dbus_daemon,
         "--kwin-wayland",
         kwin_wayland,
+        "--scenario-id",
+        getattr(arguments, "scenario_id", "single-1080p"),
     )
     if interactive:
         command += (
@@ -325,6 +327,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--dbus-daemon", type=Path, required=True)
     parser.add_argument("--kwin-wayland", type=Path, required=True)
     parser.add_argument("--interactive", action="store_true")
+    parser.add_argument("--scenario-id", default="single-1080p")
     parser.add_argument("--weston", type=Path)
     parser.add_argument("--weston-screenshooter", type=Path)
     parser.add_argument("--run-id", default="")
@@ -336,7 +339,8 @@ def main() -> int:
     arguments = parse_arguments()
     try:
         if arguments.interactive and (
-            arguments.weston is None or arguments.weston_screenshooter is None
+            arguments.weston is None
+            or arguments.weston_screenshooter is None
         ):
             raise SandboxContractError(
                 "interactive mode requires Weston and weston-screenshooter"
