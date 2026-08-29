@@ -265,6 +265,7 @@ void PowerServiceCoordinator::acceptBatteryUnavailable(const quint64 generation,
     m_batteryDomain.has = true;
     m_batteryDomain.valid = false;
     markDomainUnavailable(m_batteryDomain.state, generation, reasonCode);
+    enforceBatteryIdentityPrecedence();
     publishAssembled();
 }
 
