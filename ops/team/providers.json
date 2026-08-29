@@ -1,0 +1,44 @@
+{
+  "providers": [
+    {
+      "id": "openai",
+      "name": "OpenAI / Codex",
+      "status": "available",
+      "updatedAt": "2026-08-28T18:34:00-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "Power PB-1 is integrated through milestone b6c4669 and interactive desktop S2 through ed51bda. Four directly observed Codex collaboration processes are live: Program Manager Sol, Hypatia the 4th on the wider desktop matrix, Galileo the 4th on exact D5 rereview, and Marconi Vale on Power applet P2 composition. Faraday the 2nd is preserved at handoff. The user reports 13% Codex weekly capacity remaining with reset 2026-09-03 10:24 MDT."
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini Vertex",
+      "status": "available",
+      "updatedAt": "2026-08-28T18:34:00-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "One directly observed exact gemini-3.7-flash-high process is live in resumed conversation 80a8fa6e-1ce2-4132-9af2-00a58faf5aa1: Elena Prism is repairing Mae Jemison's reproduced stale editable-coordinate binding defect in Display Settings candidate 0666a5a. The init event directly verifies the exact model and worktree."
+    },
+    {
+      "id": "glm",
+      "name": "Z.AI GLM",
+      "status": "available",
+      "updatedAt": "2026-08-28T18:23:00-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "One directly observed exact glm-5.3/high process remains live in retained session 20433: Liskov Rowan is repairing Clipboard C1 asynchronous attribution and real QML interaction proof after Tarski's rejection. Feynman Ridge's duplicate Power review process remains stopped and preserved; it is not counted live."
+    },
+    {
+      "id": "claude",
+      "name": "Anthropic Claude",
+      "status": "available",
+      "updatedAt": "2026-08-28T18:23:00-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "One exact claude-sonnet-5/high process is live: Mae Jemison is independently reviewing Gemini-authored Display Settings candidate 0666a5a in detached worktree /mnt/d/QindaQt/reviews/display-settings-d5-mae. Candidate bytes are read-only; only her terminal exact verdict can authorize integration."
+    },
+    {
+      "id": "kimi",
+      "name": "Moonshot Kimi",
+      "status": "unavailable",
+      "updatedAt": "2026-08-28T12:09:56-06:00",
+      "estimatedReturnAt": "2026-08-29T20:48:00-06:00",
+      "evidence": "Two managed Kimi coding streams terminated with provider.auth_error 403: the weekly seven-day limit is exhausted. Nyra Sol's partial Display D3 work is preserved; Oria Lenn made no product-tree changes."
+    }
+  ]
+}

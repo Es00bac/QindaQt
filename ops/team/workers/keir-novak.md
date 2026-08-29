@@ -1,0 +1,1 @@
+~/work_SPaC3/container-wm-workers/text-editor-appshell-claude-keir/ops/team/workers/keir-novak.md
