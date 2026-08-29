@@ -22,6 +22,12 @@ Item {
         controller?.phaseText === "ready"
             || controller?.phaseText === "degraded"
 
+    // AGENT-GUARD: mutating intents (select/promote, pin, delete, clear) are
+    // dispatched by the controller only in the ready phase; the degraded
+    // service refuses them. Surface that honestly: browsing stays available,
+    // mutating controls are disabled rather than dead-looking.
+    readonly property bool actionsEnabled: controller?.phaseText === "ready"
+
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Clipboard")
     Accessible.description: {
@@ -69,6 +75,10 @@ Item {
                 id: searchField
                 objectName: "clipboardSearchField"
                 Layout.fillWidth: true
+                // Search is refused outside the ready phase; keep the field
+                // visible for context but disabled instead of accepting text
+                // that can never run.
+                enabled: root.actionsEnabled
                 placeholderText: qsTr("Search clipboard history…")
                 text: controller?.searchQuery ?? ""
                 accessibleName: qsTr("Search clipboard history")
@@ -117,6 +127,7 @@ Item {
                 text: qsTr("Clear Unpinned")
                 emphasized: false
                 destructive: false
+                available: root.actionsEnabled
                 implicitHeight: 32
                 accessibleDescription: qsTr("Clear all unpinned clipboard items")
                 onClicked: {
@@ -133,6 +144,7 @@ Item {
                 text: qsTr("Clear All")
                 emphasized: false
                 destructive: true
+                available: root.actionsEnabled
                 implicitHeight: 32
                 accessibleDescription: qsTr("Clear all clipboard items including pinned")
                 onClicked: {
@@ -192,6 +204,17 @@ Item {
             reason: controller?.phaseReasonText ?? ""
         }
 
+        C.Label {
+            id: degradedCapabilitiesLabel
+            objectName: "clipboardDegradedCapabilitiesLabel"
+            Layout.fillWidth: true
+            visible: controller?.phaseText === "degraded"
+            // Keep in sync with the capability gate: degraded keeps read-only
+            // browsing; every mutating control below is disabled.
+            text: qsTr("Browsing stays available while the service is limited; selecting, pinning, deleting, clearing, and search are disabled.")
+            muted: true
+        }
+
         C.StateCard {
             id: feedbackState
             objectName: "clipboardFeedbackState"
@@ -232,10 +255,12 @@ Item {
             model: controller?.entryRows ?? []
 
             delegate: ClipboardEntryRow {
+                objectName: "clipboardEntryRow"
                 width: entriesList.width
                 entry: modelData
                 controller: root.controller
                 isCurrent: ListView.isCurrentItem
+                actionsAvailable: root.actionsEnabled
             }
         }
     }

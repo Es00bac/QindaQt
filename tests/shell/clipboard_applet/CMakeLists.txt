@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test QuickTest)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test Quick QuickTest)
 
 # 1. Model unit tests
 qt_add_executable(qindaqt_clipboard_applet_model_tests tst_clipboard_applet_model.cpp)
@@ -50,11 +50,10 @@ add_test(
     COMMAND qindaqt_clipboard_applet_seam_tests
 )
 
-# AGENT-GUARD: every QML row runs through run_clipboard_applet_qml_test.cmake,
-# which first builds this prerequisite target. A bare qmltestrunner add_test()
-# has no executable prerequisite, so a focused build of the declared C++ test
-# targets leaves the applet/Controls/Tokens QML plugins and the two applet
-# manifest binaries unbuilt and all QML rows fail at import time.
+# AGENT-GUARD: every QML row runs through the compiled harness executable
+# whose build pulls these prerequisites, so a focused build of the declared
+# test targets can never leave QML plugins or the manifest binaries unbuilt
+# (a bare qmltestrunner row has no executable prerequisite at all).
 add_custom_target(
     qindaqt_clipboard_applet_qml_test_prerequisites
     DEPENDS
@@ -65,27 +64,44 @@ add_custom_target(
         qindaqt_applet_catalog_tests
 )
 
+# 4. QML rows through the theme-published compiled harness. The applet's QML
+# consumes QST-1 tokens that exist only after a theme is published; the
+# harness publishes qinda-light before any test, giving the rows real layout
+# for genuine pointer-event delivery and warning-free token evaluation.
+qt_add_executable(qindaqt_clipboard_applet_qml_tests qml_interactive_main.cpp)
+target_link_libraries(
+    qindaqt_clipboard_applet_qml_tests
+    PRIVATE
+        qindaqt_controls_test_support
+        QindaQt::ShellClipboardApplet
+        Qt6::Core
+        Qt6::Quick
+        Qt6::QuickTest
+        Qt6::Test
+)
+target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
+set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
+qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
+add_dependencies(
+    qindaqt_clipboard_applet_qml_tests
+    qindaqt_clipboard_applet_qml_test_prerequisites
+)
+
 function(qindaqt_add_clipboard_applet_qml_test test_name test_input)
     add_test(
         NAME ${test_name}
-        COMMAND
-            "${CMAKE_COMMAND}"
-            "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
-            "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
-            "-DQINDAQT_CONFIGURATION=$<CONFIG>"
-            "-DQINDAQT_PREREQUISITE_TARGET=qindaqt_clipboard_applet_qml_test_prerequisites"
-            "-DQINDAQT_QMLTESTRUNNER=$<TARGET_FILE:Qt6::qmltestrunner>"
-            "-DQINDAQT_QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
-            "-DQINDAQT_TEST_INPUT=${test_input}"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_clipboard_applet_qml_test.cmake"
+        COMMAND qindaqt_clipboard_applet_qml_tests -input "${test_input}"
     )
     set_tests_properties(
         ${test_name}
-        PROPERTIES LABELS "offscreen" TIMEOUT 300
+        PROPERTIES
+            LABELS "offscreen"
+            ENVIRONMENT
+                "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+            TIMEOUT 300
     )
 endfunction()
 
-# 4. QML Offscreen tests (build prerequisites made explicit by the driver)
 qindaqt_add_clipboard_applet_qml_test(
     qindaqt.clipboard-applet-qml-offscreen
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardApplet.qml"
@@ -97,6 +113,10 @@ qindaqt_add_clipboard_applet_qml_test(
 qindaqt_add_clipboard_applet_qml_test(
     qindaqt.clipboard-applet-qml-keyboard-offscreen
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletKeyboard.qml"
+)
+qindaqt_add_clipboard_applet_qml_test(
+    qindaqt.clipboard-applet-qml-interactive-offscreen
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletInteractive.qml"
 )
 
 # 5. Boundary & Source Policy test

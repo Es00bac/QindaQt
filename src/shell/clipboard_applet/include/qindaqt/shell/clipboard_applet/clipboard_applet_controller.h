@@ -36,6 +36,7 @@ class ClipboardAppletController : public QObject {
     Q_PROPERTY(int searchResultCount READ searchResultCount NOTIFY stateReprojected)
     Q_PROPERTY(bool searchTruncated READ searchTruncated NOTIFY stateReprojected)
     Q_PROPERTY(QString emptyReasonText READ emptyReasonText NOTIFY stateReprojected)
+    Q_PROPERTY(int pendingOperationCount READ pendingOperationCount NOTIFY stateReprojected)
     Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
     Q_PROPERTY(QString feedbackStatus READ feedbackStatus NOTIFY feedbackChanged)
@@ -59,6 +60,7 @@ public:
     [[nodiscard]] int searchResultCount() const noexcept;
     [[nodiscard]] bool searchTruncated() const noexcept;
     [[nodiscard]] QString emptyReasonText() const;
+    [[nodiscard]] int pendingOperationCount() const noexcept;
     [[nodiscard]] bool feedbackPresent() const noexcept;
     [[nodiscard]] QString feedback() const;
     [[nodiscard]] QString feedbackStatus() const;
@@ -96,6 +98,9 @@ private:
     void cancelPendingForGeneration(quint32 oldGeneration);
     void dispatchSearch();
     void abandonSearch();
+    void applySearchOutcome(const QindaQt::Services::ClipboardModel::SearchOutcome &outcome);
+    void applyOperationOutcome(const OperationOutcome &outcome);
+    void noteObservedTicks(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
 
     ClipboardClientInterface *m_client = nullptr;
     QindaQt::Services::ClipboardModel::HistorySnapshot m_snapshot;
@@ -109,16 +114,28 @@ private:
     // monotonically increasing query generation, never by ordering of
     // client-supplied request ids — the client seam promises uniqueness
     // only. Every in-flight request id maps to the generation that issued
-    // it; replies carrying any other generation are dropped. A seam that
-    // emits searchCompleted synchronously inside requestSearch() is handled
-    // by the dispatch window below, since its reply precedes the returned id.
+    // it; replies carrying any other generation are dropped.
     quint64 m_searchQueryGeneration = 0;
     QHash<quint64, quint64> m_pendingSearchRequests;
-    bool m_insideSearchDispatch = false;
-    bool m_syncSearchReplySeen = false;
+
+    // AGENT-GUARD: seams may emit operationCompleted/searchCompleted
+    // synchronously INSIDE the dispatch call, before the returned request id
+    // is knowable. Such signals are buffered while m_insideClientCall is set
+    // and attributed afterwards strictly by request id — a hostile or queued
+    // reply for a superseded request flushed during the call can never match
+    // the id of the request being issued and is dropped.
+    bool m_insideClientCall = false;
+    QList<QPair<quint64, QindaQt::Services::ClipboardModel::SearchOutcome>> m_deferredSearchReplies;
+    QList<QPair<quint64, OperationOutcome>> m_deferredCompletions;
 
     QHash<quint64, PendingRequest> m_pendingRequests;
     QSet<QPair<quint32, quint32>> m_pendingEntries;
+
+    // AGENT-GUARD: promote ticks are controller-issued monotonic metadata
+    // the model trusts for recency ordering; wall-clock time can step
+    // backwards. The counter is raised above every tick observed in a
+    // snapshot so issued ticks are strictly increasing across the lineage.
+    quint64 m_nextPromoteTick = 1;
 
     bool m_feedbackPresent = false;
     QString m_feedback;
