@@ -9,6 +9,7 @@ add_library(QindaQt::DisplayJournal ALIAS qindaqt_display_journal)
 target_sources(
     qindaqt_display_journal
     PRIVATE
+        src/file_journal_hooks_p.h
         src/file_journal_store.cpp
     PUBLIC
         FILE_SET HEADERS

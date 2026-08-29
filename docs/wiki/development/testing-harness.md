@@ -1165,9 +1165,15 @@ store/load/replace/clear, exact mode `0600`, absent truth, stale-temp process
 interruption, and preservation of the prior committed value when failure occurs
 before atomic replacement. Hostile cases include a symlinked root, symlink and
 directory final entries, insecure permissions, oversize and malformed bytes,
-and a nonregular temporary-name collision. The package row stages the exact
-development component, permits only the public value/store header, and proves a
-planted private filesystem header fails the checker.
+and a nonregular temporary-name collision. Injected mutation-sensitive rows
+force directory-sync failure after successful rename and unlink, assert the
+typed `DurabilityUncertain` result plus actual visible new/absent pathname, and
+grow the same opened inode to a 1 TiB sparse size between pathname stat and open
+so allocation must reject at the 1 MiB cap. D1 proves uncertain initial store
+issues no apply and uncertain clear remains retryable; D4 proves it forwards
+all three outcomes unchanged. The package row stages the exact development
+component, permits only the public value/store header, and proves a planted
+private filesystem header fails the checker.
 
 These tests open no display, session bus, compositor, home directory, or host
 configuration path. They prove the persistence adapter and deterministic

@@ -37,8 +37,15 @@ public:
     {
         (void)machineLineage;
     }
-    bool storeJournal(const DisplayTransaction::Journal &) override { return false; }
-    bool clearJournal() override { return false; }
+    DisplayTransaction::JournalMutationOutcome storeJournal(
+        const DisplayTransaction::Journal &) override
+    {
+        return DisplayTransaction::JournalMutationOutcome::Unchanged;
+    }
+    DisplayTransaction::JournalMutationOutcome clearJournal() override
+    {
+        return DisplayTransaction::JournalMutationOutcome::Unchanged;
+    }
     void requestApply(const DisplayTransaction::ApplyRequest &) override { }
 
 };

@@ -117,7 +117,7 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
         m_view.currentRevision = snapshot.revision;
         if (snapshotMatches(snapshot, m_staged)) {
             m_journal.phase = JournalPhase::AwaitingConfirmation;
-            if (!m_port.storeJournal(m_journal)) {
+            if (!Private::journalMutationDurable(m_port.storeJournal(m_journal))) {
                 beginRevert(Display::TransactionReason::JournalFailure);
                 return accepted(true, CommandError::JournalFailure);
             }
@@ -127,7 +127,7 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
             return accepted(true);
         }
         if (snapshotMatches(snapshot, m_preimage)) {
-            if (!m_port.clearJournal()) {
+            if (!Private::journalMutationDurable(m_port.clearJournal())) {
                 enterStuck(true);
                 return accepted(true, CommandError::JournalFailure);
             }
@@ -143,7 +143,7 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
         m_snapshot = snapshot;
         m_view.currentRevision = snapshot.revision;
         if (snapshotMatches(snapshot, m_preimage)) {
-            if (!m_port.clearJournal()) {
+            if (!Private::journalMutationDurable(m_port.clearJournal())) {
                 enterStuck(true);
                 return accepted(true, CommandError::JournalFailure);
             }
@@ -168,7 +168,7 @@ CommandResult Machine::observedSnapshot(const Display::Snapshot &snapshot)
         if (!matched) {
             return accepted(changed, CommandError::ObservationMismatch);
         }
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -231,7 +231,7 @@ CommandResult Machine::externalIntentObserved(const Display::Snapshot &snapshot)
         if (m_view.journalActive) {
             m_journal.reason = Display::TransactionReason::ExternalChange;
             static_cast<void>(m_port.storeJournal(m_journal));
-            if (!m_port.clearJournal()) {
+            if (!Private::journalMutationDurable(m_port.clearJournal())) {
                 enterStuck(true, Display::TransactionReason::ExternalChange);
                 return accepted(true, CommandError::JournalFailure);
             }
@@ -249,7 +249,7 @@ CommandResult Machine::externalIntentObserved(const Display::Snapshot &snapshot)
         // over external truth.
         m_journal.reason = Display::TransactionReason::ExternalChange;
         static_cast<void>(m_port.storeJournal(m_journal));
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true, Display::TransactionReason::ExternalChange);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -326,7 +326,7 @@ CommandResult Machine::topologySettled(const Display::Snapshot &snapshot)
     m_snapshot = snapshot;
     m_view.currentRevision = snapshot.revision;
     if (m_abandonAfterSettle) {
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -338,7 +338,7 @@ CommandResult Machine::topologySettled(const Display::Snapshot &snapshot)
                                                 : survivingProperties(snapshot);
     if (originalSetRestored) {
         if (snapshotMatches(snapshot, m_preimage)) {
-            if (!m_port.clearJournal()) {
+            if (!Private::journalMutationDurable(m_port.clearJournal())) {
                 enterStuck(true);
                 return accepted(true, CommandError::JournalFailure);
             }
@@ -349,7 +349,7 @@ CommandResult Machine::topologySettled(const Display::Snapshot &snapshot)
         return accepted(true, CommandError::TopologyChanged);
     }
     if (m_survivingProperties.isEmpty()) {
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -357,7 +357,7 @@ CommandResult Machine::topologySettled(const Display::Snapshot &snapshot)
         return accepted(true, CommandError::TopologyChanged);
     }
     if (snapshotMatchesSurvivingProperties(snapshot)) {
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }

@@ -31,32 +31,34 @@ public:
 class FakePort final : public SideEffectPort
 {
 public:
-    [[nodiscard]] bool storeJournal(const Journal &value) override
+    [[nodiscard]] JournalMutationOutcome storeJournal(const Journal &value) override
     {
         ++storeCalls;
         if (!storeSucceeds) {
-            return false;
+            return JournalMutationOutcome::Unchanged;
         }
         journal = value;
         journalPresent = true;
-        return true;
+        return storeOutcome;
     }
 
-    [[nodiscard]] bool clearJournal() override
+    [[nodiscard]] JournalMutationOutcome clearJournal() override
     {
         ++clearCalls;
         if (!clearSucceeds) {
-            return false;
+            return JournalMutationOutcome::Unchanged;
         }
         journal = {};
         journalPresent = false;
-        return true;
+        return clearOutcome;
     }
 
     void requestApply(const ApplyRequest &request) override { requests.push_back(request); }
 
     bool storeSucceeds = true;
     bool clearSucceeds = true;
+    JournalMutationOutcome storeOutcome = JournalMutationOutcome::Durable;
+    JournalMutationOutcome clearOutcome = JournalMutationOutcome::Durable;
     bool journalPresent = false;
     int storeCalls = 0;
     int clearCalls = 0;

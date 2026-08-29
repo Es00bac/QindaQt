@@ -329,7 +329,10 @@ Default timeouts are:
 
 One machine owns one transaction. Stage is side-effect free and rejects stale,
 invalid, active, and no-op candidates with typed `CommandError`. Preview is
-denied unless safety is exactly `Safe` and durable journal storage succeeds.
+denied unless safety is exactly `Safe` and journal storage returns exactly
+`Durable`. `Unchanged` preserves prior truth; `DurabilityUncertain` means a
+pathname commit preceded a failed directory barrier and never authorizes
+forward apply. Clear uncertainty remains conservative cleanup/recovery failure.
 Only an exact active token can complete an apply. Rejected, transport-uncertain,
 and timed-out forward requests enter observation/rollback and are never
 reissued.

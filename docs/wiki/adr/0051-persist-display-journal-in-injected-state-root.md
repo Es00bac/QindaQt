@@ -39,15 +39,26 @@ Any failure before rename removes only the adapter's temporary name and leaves
 the prior committed journal unchanged. A stale non-directory temporary name is
 safe to unlink on the next store; a directory collision fails closed.
 
+Journal mutation has three outcomes rather than a Boolean. `Unchanged` means no
+pathname commit occurred and prior durable truth remains authoritative.
+`Durable` means the requested value or absence crossed every supported barrier.
+`DurabilityUncertain` means rename or unlink committed visible pathname state
+before the following directory barrier failed, so a crash may expose old or
+new truth. D4 forwards this result unchanged. D1 authorizes forward compositor
+apply only for `Durable`; clear uncertainty remains a conservative cleanup/
+recovery failure. The uncertain state is therefore represented without either
+lying about the pathname or applying without proven journal durability.
+
 Loads return exactly one of absent, loaded, or rejected. They inspect without
 following links, require an effective-user-owned regular single-link file with
 no group/other permissions, enforce the D1 byte ceiling before and during the
-read, decode to a temporary value, and require canonical re-encoding to match
-the stored bytes. A malformed or unsafe journal is retained and reported as
-rejected; it is never silently cleared or quarantined. A stale temporary file
-is ignored, so interruption before rename exposes the preceding committed
-journal or absence. Clear validates the final path, unlinks only that regular
-file, and applies the directory durability barrier.
+read, recheck the opened descriptor's size before allocation, decode to a
+temporary value, and require canonical re-encoding to match the stored bytes.
+A malformed or unsafe journal is retained and reported as rejected; it is
+never silently cleared or quarantined. A stale temporary file is ignored, so
+interruption before rename exposes the preceding committed journal or absence.
+Clear validates the final path, unlinks only that regular file, and applies the
+directory durability barrier.
 
 The resident composition remains the single writer. `load()` supplies the
 deterministic startup seam: the future process passes a loaded value to D1
@@ -62,14 +73,16 @@ claim nested compositor recovery.
 - Atomic replacement preserves a complete prior or new canonical journal
   across ordinary process interruption. Supported Linux filesystems also
   receive file and directory durability barriers.
+- A failed post-commit directory barrier is explicit end to end; it cannot
+  authorize forward apply or masquerade as unchanged durable state.
 - Symlinks, directories, devices, FIFOs, hard links, wrong ownership, loose
   permissions, oversize content, and malformed/non-canonical bytes fail closed.
 - The caller must create/select the QindaQt state root and must serialize
   resident store/load/clear operations. Lock/session policy, startup
   composition, and compositor convergence remain separate boundaries.
-- Exceptional storage hardware errors reported after the atomic commit point
-  remain platform I/O failures; the service must not claim preview safety when
-  `store()` returns false.
+- Exceptional storage errors after the atomic commit point return
+  `DurabilityUncertain`; the service does not claim preview safety and restart
+  recovery resolves whichever canonical pathname state survived.
 
 ## Revisit when
 

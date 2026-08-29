@@ -166,13 +166,17 @@ there is no `HOME`, XDG, Settings, or global lookup.
 
 Store accepts only a valid D1 journal, writes its canonical versioned bytes to
 a newly created mode-0600 temporary file, syncs content, atomically renames in
-the same directory, and syncs directory metadata where supported. Load never
+the same directory, and syncs directory metadata where supported. The typed
+mutation result is `Unchanged` before the pathname commit, `Durable` after a
+successful barrier, or `DurabilityUncertain` when rename/unlink succeeded but
+the following directory barrier failed. Load never
 follows links, accepts only a restrictive regular single-link file owned by the
-effective user, enforces the 1 MiB limit, and returns absent/loaded/rejected
-without partially publishing a value. It rejects non-canonical bytes after
-decode. A stale temporary name is ignored by load and safely replaced by the
-next store, which models an interruption before the commit point. Clear never
-deletes an unsafe final entry.
+effective user, enforces the 1 MiB limit on both pathname and opened-descriptor
+metadata before allocation and again while streaming, and returns absent/
+loaded/rejected without partially publishing a value. It rejects non-canonical
+bytes after decode. A stale temporary name is ignored by load and safely
+replaced by the next store, which models an interruption before the commit
+point. Clear never deletes an unsafe final entry.
 
 The future resident startup path must call `load()` before enabling writer
 authority, pass a loaded journal to D1 `recover`, and keep rejected or active
@@ -278,8 +282,12 @@ or timeout).
 
 ### Side-effect port preconditions
 
-- `storeJournal` and `clearJournal` are synchronous atomic operations. `false`
-  means the prior durable value is unchanged.
+- `storeJournal` and `clearJournal` return one typed journal-mutation outcome.
+  `Unchanged` guarantees the prior durable value, `Durable` proves the requested
+  value/absence crossed every supported barrier, and `DurabilityUncertain`
+  records a pathname commit followed by a failed directory barrier. Only
+  `Durable` authorizes a forward apply. Clear uncertainty remains conservative
+  cleanup/recovery failure; it is never collapsed into a lying Boolean.
 - `requestApply` copies the request before returning and does not synchronously
   call the machine. It may later produce zero or one completion for the exact
   token; late and duplicate/out-of-order callbacks are rejected.
