@@ -1,0 +1,333 @@
+{
+  "program": {
+    "name": "QindaQt",
+    "sourceRows": 7
+  },
+  "features": [
+    {
+      "id": "QQ-001",
+      "title": "Foundation",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Qt Core container domain model with recursive splits, pages, activation, detachment normalization, validation, and schema-versioned JSON persistence; validated profile and theme schemas; the Qt Quick shell preview; the scenario harness; and the documentation policy are complete and recorded in the roadmap.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Foundation as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The testing harness records the standing compiler, unit, documentation, and source-policy gates." }
+        ]
+      },
+      "caveat": ""
+    },
+    {
+      "id": "QQ-002",
+      "title": "Compositor MVP",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Tracked KWin 6.6.5 base, nested Wayland session, rootless XWayland, output/input inventories, the atomic container-control protocol, and dynamic plugin-unload recovery are qualified; the complete live workflow passed ten consecutive stress repetitions.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Compositor MVP as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Debug/Release and repeated private nested workflow evidence is recorded in the testing harness." }
+        ]
+      },
+      "caveat": "Finished user interaction and physical hardware qualification belong to later milestones."
+    },
+    {
+      "id": "QQ-003",
+      "title": "Hybrid interaction",
+      "workspace": "Roadmap milestone",
+      "state": "QUALIFIED",
+      "stoppingPoint": {
+        "summary": "Process-local pointer/keyboard docking, native-decoration detach, split/page reorganization, focus/transient policy, restore, live decoration proof, and grouped plugin-unload restoration passed final qualification with clean Debug/Release registries, focused suites, ASan+UBSan, and repeated private live workflows.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records Hybrid interaction as Complete." },
+          { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The focused Hybrid selectors and private live workflows are the authoritative acceptance record." }
+        ]
+      },
+      "caveat": "Persisted login topology, mixed-DPI migration, and physical input/DRM/GPU coverage remain later Platform or Release gates."
+    },
+    {
+      "id": "QQ-004",
+      "title": "Shell and customization",
+      "workspace": "Roadmap milestone",
+      "state": "EXECUTABLE",
+      "steps": [
+        {
+          "id": "QQ-004.01", "title": "Production panel/dock publication and static work areas", "weight": 15, "state": "QUALIFIED",
+          "summary": "Real LayerShell panels and deterministic static work-area behavior are integrated and independently qualified at 1080p, WUXGA, and 1440p.",
+          "evidence": [{ "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "Integrated production-surface proof passed the three-resolution private nested matrix." }],
+          "caveat": "Physical multi-monitor and hardware qualification remain release work."
+        },
+        {
+          "id": "QQ-004.02", "title": "Window-aware hiding, reveal/hold, and dynamic reservation", "weight": 10, "state": "WIRED",
+          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries but lack complete installed nested interaction proof.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/layout-profiles.md", "summary": "The owning page records implemented layout and editing transactions." }, { "kind": "source", "reference": "docs/wiki/shell/panel-visibility.md", "summary": "The owning page records the implemented window-aware visibility contract." }],
+          "caveat": "The direct WYSIWYG Settings surface is a separate step."
+        },
+        {
+          "id": "QQ-004.03", "title": "Audited clock and notification-center applets", "weight": 8, "state": "EXECUTABLE",
+          "summary": "Validated, compiled clock and notification-center applets run in the production shell through the audited host boundary.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/shell/applet-runtime.md", "summary": "Production resolution and the two live built-ins are documented." }],
+          "caveat": "Several catalog entries remain fixtures and are measured separately."
+        },
+        {
+          "id": "QQ-004.04", "title": "Notification service and presentation foundation", "weight": 14, "state": "EXECUTABLE",
+          "summary": "The bounded host/presentation stack, active/recent center, popups, Settings1 DND, and fail-closed authenticated lock privacy are integrated.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The current buildable state records the integrated notification stack." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Focused model, policy, surface, Settings1, and privacy selectors are recorded." }],
+          "caveat": "Installed end-to-end desktop interaction is measured in QQ-004.05."
+        },
+        {
+          "id": "QQ-004.05", "title": "Live notification shortcut, focus, DND, restart, and lock interaction", "weight": 10, "state": "QUALIFIED",
+          "summary": "The installed private nested workflow qualifies real shortcut registration/remapping, keyboard/focus, Settings1 persistence/failure/replacement, Do Not Disturb and critical bypass, shell restart, authenticated lock privacy, and teardown across 1080p, WUXGA, 1440p, 125%, and 150%, plus ten repeated 1080p lifecycles.",
+          "evidence": [{ "kind": "commit", "reference": "1b4e2846e40d31d79ffb03db2229c07ff9bca271", "summary": "The accepted live Notification candidate is integrated after exact candidate and conflict-resolution review." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The five-profile matrix, race-10x, fresh combined build and focused regressions, installed manager smoke, containment, and teardown evidence are recorded." }],
+          "caveat": "Physical input, alternative lockers, multi-seat/session switching, screen-reader integration, and physical mixed-output behavior remain release or whole-shell work."
+        },
+        {
+          "id": "QQ-004.06", "title": "Global application menu", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The integrated G0 foundation executes a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, a Qt Widgets adapter, applet facade, and responsive keyboard-accessible QML presentation under focused hostile and offscreen tests.",
+          "evidence": [{ "kind": "commit", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The independently accepted Global Menu G0 series and decomposition repair are integrated in the exact 236/236 combined-tree QA checkpoint." }, { "kind": "test", "reference": "docs/wiki/shell/global-menu.md", "summary": "The owning page records seven C++ and four offscreen QML rows, authenticated ownership, measured overflow, accessible focus, and explicit production boundaries." }],
+          "caveat": "G0 is executable source/static behavior, not a live panel feature: D-Bus transport, provider registration, installed QML packaging, applet-registry wiring, submenu popups, and production shell instantiation remain."
+        },
+        {
+          "id": "QQ-004.07", "title": "Launcher", "weight": 2, "state": "WIRED",
+          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, presentation projection, and execution-free launch intents are registered in the combined source and test graph.",
+          "evidence": [{ "kind": "commit", "reference": "d9f1257", "summary": "The accepted Launcher L0 series is integrated with strict parser, model, and hostile-fixture coverage." }, { "kind": "source", "reference": "docs/wiki/shell/launcher.md", "summary": "The owning page records the bounded model and later production-adapter boundary." }],
+          "caveat": "Installed-application scanning, Settings1 persistence, QML presentation, safe process execution, and production shell hosting remain."
+        },
+        {
+          "id": "QQ-004.10", "title": "Task list", "weight": 2, "state": "WIRED",
+          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are registered in the combined source and test graph.",
+          "evidence": [{ "kind": "commit", "reference": "ff56e8c", "summary": "The accepted Task List T0 model and compile repairs are integrated." }, { "kind": "source", "reference": "docs/wiki/shell/task-list.md", "summary": "The owning page records the public-facts boundary and production adapter work still required." }],
+          "caveat": "A compositor facts producer, window-operation adapter, QST presentation, and installed keyboard/accessibility proof remain."
+        },
+        {
+          "id": "QQ-004.11", "title": "Status-notifier tray", "weight": 2, "state": "WIRED",
+          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state.",
+          "evidence": [{ "kind": "commit", "reference": "e885f99", "summary": "The independently accepted five-commit tray series and manager verification are integrated through the interrupted-baseline epoch repair." }, { "kind": "test", "reference": "docs/wiki/shell/status-tray.md", "summary": "Manager verification passes 3/3 registered rows and 17/25/9 direct value, registry, and presentation cases, plus strict source and documentation gates." }],
+          "caveat": "A production StatusNotifierWatcher transport, D-BusMenu adapter, icon renderer, applet registration, shell composition, and installed nested interaction remain."
+        },
+        {
+          "id": "QQ-004.12", "title": "Audio applet", "weight": 2, "state": "WIRED",
+          "summary": "The bounded Audio applet model, controller, and compiled QML module are registered against the public AudioClient boundary with fail-closed focused tests.",
+          "evidence": [{ "kind": "commit", "reference": "85962f1ebbbf66d1b6ae0626925d62fa5e64782a", "summary": "The accepted Audio applet is integrated with URI-correct QML output and focused model/controller tests." }, { "kind": "test", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The frozen combined checkpoint passed 236/236 tests and warning-free source/documentation gates." }],
+          "caveat": "Manifest/policy registration, production shell composition, rendered interaction, and physical-device qualification remain."
+        },
+        {
+          "id": "QQ-004.13", "title": "Power and brightness applet", "weight": 2, "state": "WIRED",
+          "summary": "The pure Power applet presentation projection and brightness request state machine are registered with fail-closed bounds and capability tests.",
+          "evidence": [{ "kind": "commit", "reference": "c113e979", "summary": "The accepted Power applet P1 series and final registry-comment repair are integrated." }, { "kind": "source", "reference": "docs/wiki/shell/power-applet.md", "summary": "The owning page records the registered pure presentation boundary and later client/QML composition." }],
+          "caveat": "A resident Power1 client/service, upstream adapters, QML surface, shell host, and hardware interaction remain."
+        },
+        {
+          "id": "QQ-004.14", "title": "Bluetooth applet", "weight": 2, "state": "ABSENT",
+          "summary": "No integrated Bluetooth applet can inspect, pair, connect, or disconnect devices.",
+          "evidence": [],
+          "caveat": "The platform provider and least-authority presentation path remain."
+        },
+        {
+          "id": "QQ-004.15", "title": "Clipboard applet", "weight": 2, "state": "ABSENT",
+          "summary": "No integrated clipboard applet presents or mutates the bounded history model.",
+          "evidence": [],
+          "caveat": "The resident capture/privacy service and production presentation remain."
+        },
+        {
+          "id": "QQ-004.08", "title": "Direct WYSIWYG customization and reveal affordances", "weight": 11, "state": "WIRED",
+          "summary": "The integrated customization-editor domain connects pointer/keyboard intents, preview/commit/cancel, repository leases, deterministic acceptance, undo/redo dirty truth, atomic user-profile persistence, and accessibility identities to the production customization/profile boundaries.",
+          "evidence": [{ "kind": "commit", "reference": "bccc44f", "summary": "The accepted customization-editor series is integrated after fail-closed lease, dirty-state, persistence, and rollback repairs." }, { "kind": "test", "reference": "docs/wiki/shell/customization-editor.md", "summary": "Six focused suites cover intent, gesture, session, dirty state, persistence, keyboard, and accessibility behavior." }],
+          "caveat": "The Settings drag/drop canvas, provisional live-shell binding, reveal affordance, rendered matrix, and installed session behavior remain."
+        },
+        {
+          "id": "QQ-004.09", "title": "Whole-shell output, DPI, theme, keyboard, and accessibility qualification", "weight": 8, "state": "WIRED",
+          "summary": "Panel surfaces have three-resolution nested proof and the shell consumes profiles/themes, but whole-shell mixed-DPI, keyboard, accessibility, and profile-family qualification is incomplete.",
+          "evidence": [{ "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Current shell proof and its explicit coverage limits are recorded." }],
+          "caveat": "This is broader than the qualified production-panel slice."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "Production LayerShell panels and installed Notification Live remain qualified. The integrated tree now also executes the Global Menu G0 foundation and wires bounded Launcher, Task List, Audio applet, Power applet, and customization-editor slices behind explicit later production-host boundaries.",
+        "evidence": [
+          { "kind": "commit", "reference": "2c52c985f846b083c2aebb7a08f04aa8318a2912", "summary": "The deterministic production LayerShell surface proof is integrated on public main; independent and manager verification each passed the 1080p, WUXGA, and 1440p private nested matrix." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Shell and customization In progress and names the integrated production boundaries." },
+          { "kind": "commit", "reference": "1b4e2846e40d31d79ffb03db2229c07ff9bca271", "summary": "The accepted installed Notification Live workflow and its private qualification harness are integrated." },
+          { "kind": "commit", "reference": "361e601373daf3cbf5f2874b753e7469ca467665", "summary": "The frozen combined checkpoint integrates Global Menu, Launcher, Task List, Audio/Power applet, and customization-editor evidence and passes 236/236 tests plus strict source/docs gates." },
+          { "kind": "test", "reference": "docs/HANDOFF.md", "summary": "The public handoff records independent matrix/race evidence and fresh combined-tree verification." }
+        ]
+      },
+      "caveat": "Production surfaces and installed live notifications are qualified. Global Menu and the new applet/customization slices still need their production transports/hosts and installed interaction; Tray, Bluetooth/clipboard applets, reveal UI, and whole-shell accessibility/mixed-output qualification remain incomplete."
+    },
+    {
+      "id": "QQ-005",
+      "title": "Platform services",
+      "workspace": "Roadmap milestone",
+      "state": "MODELLED",
+      "steps": [
+        {
+          "id": "QQ-005.01", "title": "Audio device, default, and stream control", "weight": 14, "state": "EXECUTABLE",
+          "summary": "The typed Audio1 stack, resident WirePlumber adapter, lifecycle, package, and isolated null-device runtime are integrated, while physical devices and desktop UI remain unqualified.",
+          "evidence": [{ "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The accepted Audio1 stack is integrated." }, { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "Debug/Release, sanitizer, package, activation, lifecycle, and containment evidence are recorded." }],
+          "caveat": "Physical microphone/speaker, USB/HDMI/Bluetooth/jack/multichannel, suspend/hotplug/resource behavior, and Settings/shell UI remain."
+        },
+        {
+          "id": "QQ-005.02", "title": "Display inventory and reversible output transactions", "weight": 18, "state": "EXECUTABLE",
+          "summary": "The revisioned compositor inventory, bounded Display1 protocol, privacy-preserving identity, topology, reversible transaction state machine, resident service, exact-owner asynchronous adapter, typed asynchronous client/coordinator, and bounded public QtWayland compositor writer are integrated.",
+          "evidence": [{ "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor output inventory is integrated with fail-closed production containment." }, { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and same-revision lineage repair are integrated." }, { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The independently accepted D2 resident service and exact-owner adapter are integrated after hostile A/B/A epoch repair." }, { "kind": "commit", "reference": "c819db8", "summary": "The exact independently accepted D3 typed asynchronous client and reversible transaction coordinator replay is integrated on the current manager tree." }, { "kind": "commit", "reference": "d7691accc2bbef1048689b7c9fd9e70939b70445", "summary": "The independently accepted D4 writer maps complete and surviving Display1 values to KDE's public output-management protocol with exact lineage, lifecycle, package, and hostile mutation coverage." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh integrated-tree Debug verification builds all 23 executable targets and passes the complete D0-D4 selector 26/26; exact review also passes Release D4 5/5, package poison, docs, shape, hashes, provenance, and residue gates." }],
+          "caveat": "Durable journal and resident writer composition, authenticated lock/logind safety, Settings UI, end-to-end nested preview/confirm/revert convergence, mixed-output matrices, resource proof, and physical hardware qualification remain."
+        },
+        {
+          "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "EXECUTABLE",
+          "summary": "PB-1 adds the resident Power1 service, exact-owner asynchronous client/transport, package and private activation/residency boundary over PB-0, with fail-closed sibling-domain publication across identity collisions, replacement, battery disappearance, and intrinsic malformed updates.",
+          "evidence": [{ "kind": "commit", "reference": "a8a57a9856666c6293fac6872c27c0be9928d8c4", "summary": "The exact independently accepted PB-1 collision-recovery descendant is integrated on the current manager tree." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh combined-tree build completed 139 incremental actions and the exact PB-1 client/service/package/private-lifecycle selector passes 8/8; exact review also passes Debug/Release 8/8 and seven hostile mutations." }, { "kind": "source", "reference": "docs/wiki/architecture/power-service.md", "summary": "The owning page records resident publication authority, identity precedence and recovery, operation admission, and remaining upstream/UI boundaries." }],
+          "caveat": "PB-1 uses bounded injected/unavailable collaborators. Production UPower/logind/profile/brightness adapters, policy persistence, Settings and shell composition, physical hardware and suspend/hotplug qualification remain later slices."
+        },
+        {
+          "id": "QQ-005.04", "title": "Network connectivity", "weight": 11, "state": "EXECUTABLE",
+          "summary": "Network N0 integrates bounded Network1 values, canonical identity and codecs, fail-closed validation/redaction, pure lineage and scan-lease coordination, intent admission, atomic projection, and an injected exact-owner asynchronous client.",
+          "evidence": [{ "kind": "commit", "reference": "ea4d986", "summary": "The exact independently accepted Network N0 replay is integrated with all 49 Network leaf blobs byte-identical and seven shared paths additions-only." }, { "kind": "test", "reference": "docs/wiki/architecture/network-service.md", "summary": "Fresh manager verification passes 64/64 focused build actions and 13/13 rows; exact review passes Debug/Release 13/13, direct 118/118, eight mutation controls, package poison, docs, and provenance." }],
+          "caveat": "N0 is an executable pure/injected boundary. Resident Network1 service ownership, concrete NetworkManager and secret-agent transport, persistence, Settings/shell UI, physical radio mutation, and hardware qualification remain N1+."
+        },
+        {
+          "id": "QQ-005.05", "title": "Bluetooth devices", "weight": 9, "state": "EXECUTABLE",
+          "summary": "Bluetooth B0 integrates a bounded Bluetooth1 protocol, deterministic least-authority device model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and installed public package with pairing/trust authority retained in BlueZ.",
+          "evidence": [{ "kind": "commit", "reference": "c08b32e", "summary": "The exact independently accepted Bluetooth B0 manager replay is integrated with all 54 Bluetooth-specific blobs preserved byte-for-byte." }, { "kind": "test", "reference": "docs/wiki/architecture/bluetooth-service.md", "summary": "Fresh manager-tree verification passes the eight source/private-bus rows; exact review passes 9/9 including staged install, 70/70 direct assertions, mutation-sensitive package poison, source shape, and documentation gates." }],
+          "caveat": "B0 uses a deterministic unavailable backend. Production BlueZ transport, physical adapters/rfkill, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings/shell UI, and hardware/resource qualification remain."
+        },
+        {
+          "id": "QQ-005.06", "title": "Private bounded clipboard history", "weight": 9, "state": "WIRED",
+          "summary": "Clipboard C0 integrates a volatile bounded history model, canonical MIME/size policy, lock-private projection, metadata-only search, generation fencing, and atomic hostile decode behavior.",
+          "evidence": [{ "kind": "commit", "reference": "7da293d", "summary": "The independently accepted Clipboard C0 series is integrated after atomic decoder publication repair." }, { "kind": "source", "reference": "docs/wiki/architecture/clipboard-service.md", "summary": "The owning page records the model, privacy, validation, codec, and explicit resident-service boundary." }],
+          "caveat": "C0 has no live Wayland capture/offer adapter, resident service/client transport, persistence, production applet, or installed interaction proof."
+        },
+        {
+          "id": "QQ-005.07", "title": "Display color, ICC, HDR, and WCG settings", "weight": 8, "state": "EXECUTABLE",
+          "summary": "Display Color C0 integrates a pure bounded ICC catalog, strict header validation, capability-aware assignment policy, deterministic lineage fingerprinting, and atomic revisioned snapshots.",
+          "evidence": [{ "kind": "commit", "reference": "2ae29f3", "summary": "The exact GLM-authored repair passed independent Gemini Pro review and is integrated after all eight hostile reproductions were defeated." }, { "kind": "test", "reference": "docs/wiki/architecture/display-color-model.md", "summary": "Strict Debug/Release builds pass 6/6 registered rows and 46/46 direct cases; manager-tree focused verification and documentation gates pass." }],
+          "caveat": "C0 is an executable pure/injected boundary. Live profile discovery/import, persistent assignment, compositor application, Settings UI, nested HDR/WCG proof, and physical hardware qualification remain later slices."
+        },
+        {
+          "id": "QQ-005.08", "title": "Font discovery and confirmed first-party application", "weight": 6, "state": "WIRED",
+          "summary": "Font F0 integrates deterministic catalog construction from injected discovery facts, Settings1-aligned typography preferences, lossless codecs, atomic LKG coordination, and a pre-window Qt bootstrap derivation boundary.",
+          "evidence": [{ "kind": "commit", "reference": "0760e08", "summary": "The exact Claude-accepted Font F0 series is integrated with its manager verification and collision-free ADR-0047 identity." }, { "kind": "test", "reference": "docs/wiki/architecture/font-preferences.md", "summary": "Fresh manager verification passes 7/7 focused Font rows and 2/2 Settings1/QST adjacent rows, including the installed consumer and pure-boundary gate." }],
+          "caveat": "F0 is a pure injected-facts boundary. A live discovery provider, Settings route, persistence composition, first-party app bootstrap wiring, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
+        },
+        {
+          "id": "QQ-005.09", "title": "Portal interoperability and desktop policy export", "weight": 12, "state": "ABSENT",
+          "summary": "No integrated portal boundary qualifies chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or QindaQt appearance export.",
+          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Portals and policy remain part of the incomplete Platform services milestone." }],
+          "caveat": "Existing service-specific authentication and the installed KDE portal ecosystem are prerequisites only."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "The bounded Audio1 stack, Display D0-D4 stack, and resident Power/Brightness PB-1 service/client boundary are integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
+        "evidence": [
+          { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
+          { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
+          { "kind": "commit", "reference": "fcc92b0", "summary": "The accepted D0 compositor inventory is integrated after exact review and integrated-tree focused verification." },
+          { "kind": "commit", "reference": "0b76677", "summary": "The accepted D1 foundation and lineage repair are integrated after exact rereview." },
+          { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The accepted D2 resident Display1 service and exact-owner adapter are integrated after two exact PASS reviews and fresh combined-tree verification." },
+          { "kind": "commit", "reference": "c819db8", "summary": "The accepted D3 typed client/coordinator replay is integrated after exact Gemini review and fresh strict Debug/Release manager verification." },
+          { "kind": "commit", "reference": "d7691accc2bbef1048689b7c9fd9e70939b70445", "summary": "The accepted D4 public output-management writer is integrated after exact zero-finding review and fresh 26/26 manager-tree verification." },
+          { "kind": "commit", "reference": "a8a57a9856666c6293fac6872c27c0be9928d8c4", "summary": "The accepted PB-1 resident service/client, package, private lifecycle, collision recovery, and sibling-retention boundary is integrated at EXECUTABLE maturity." },
+          { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
+          { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
+          { "kind": "commit", "reference": "ea4d986", "summary": "The independently accepted Network N0 replay is integrated after exact zero-finding review and fresh manager-tree focused verification." },
+          { "kind": "commit", "reference": "2ae29f3", "summary": "The independently accepted Display Color C0 series is integrated after the exact repair defeated all eight hostile review reproductions and passed strict Debug/Release verification." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
+        ]
+      },
+      "caveat": "Display1 durable persistence, resident writer composition, transaction UI and nested convergence; production Power upstream adapters/policy/UI/hardware; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. Clipboard C0 remains a pure WIRED boundary."
+    },
+    {
+      "id": "QQ-006",
+      "title": "First-party experience",
+      "workspace": "Roadmap milestone",
+      "state": "EXECUTABLE",
+      "steps": [
+        {
+          "id": "QQ-006.01", "title": "QST-1 semantic design tokens", "weight": 15, "state": "QUALIFIED",
+          "summary": "Five-theme semantic derivation, accessibility transforms, installed C++ consumption, and read-only QML publication are integrated and qualified.",
+          "evidence": [{ "kind": "commit", "reference": "05a8636", "summary": "The accepted QST-1 slice is integrated on public main." }],
+          "caveat": "Tokens alone are not reusable controls or an application."
+        },
+        {
+          "id": "QQ-006.02", "title": "Reusable QindaQt.Controls component set", "weight": 15, "state": "QUALIFIED",
+          "summary": "The reusable token-only Controls component set, five-theme and three-scale visual matrix, keyboard/accessibility behavior, package consumer, source policy, and PSS measurement are integrated after exact independent review.",
+          "evidence": [{ "kind": "commit", "reference": "dbbf30c", "summary": "The accepted Controls series is integrated with real QAccessible announcement proof and warning-negative regression." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Independent Debug and Release Controls selectors passed 29/29, including 25 visual rows, behavior, source policy, PSS, and installed import." }],
+          "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step."
+        },
+        {
+          "id": "QQ-006.03", "title": "Shared application-shell contracts", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, an installed consumer, and a typed Text Editor migration.",
+          "evidence": [{ "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact independently accepted AppShell S0 candidate is integrated after combined-tree build, 5/5 focused tests, package consumer, source-shape, documentation, and whitespace verification." }, { "kind": "test", "reference": "docs/wiki/apps/application-shell.md", "summary": "The owning page records the action, coordinator, offscreen accessibility/close-consent, source-policy, and installed-consumer evidence." }, { "kind": "commit", "reference": "d0e0809", "summary": "The exact independently accepted Text Editor AppShell migration is replayed and passes manager-tree focused, adjacent, package, documentation, and source-policy verification." }],
+          "caveat": "Real portal adapters, remaining application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
+        },
+        {
+          "id": "QQ-006.04", "title": "Settings Center core, navigation, and application boundary", "weight": 15, "state": "EXECUTABLE",
+          "summary": "The native qindaqt-settings application now has a typed bounded route registry, responsive wide and compact navigation, stable per-route lifetime, guarded unavailable-route focus, keyboard and accessibility paths, and a sanitized installed application boundary.",
+          "evidence": [{ "kind": "commit", "reference": "0c9f4b0", "summary": "The independently accepted Settings S1 repair is integrated after exact 0/0/0/0 rereview and fresh manager-tree 9/9 plus direct 6/6 verification." }, { "kind": "test", "reference": "docs/wiki/apps/settings-center.md", "summary": "The owning page records route-registry, navigation, responsive QML, failure, accessibility, package-isolation, and explicit later-route boundaries." }],
+          "caveat": "Settings S1 provides the center shell and route boundary; most platform-service pages, drag-from-configuration customization, cross-app visual matrices, and live assistive-technology qualification remain."
+        },
+        {
+          "id": "QQ-006.05", "title": "Settings pages and live platform-service routes", "weight": 15, "state": "WIRED",
+          "summary": "Notifications and Appearance are integrated live Settings routes. Appearance stores a validated per-key draft through Settings1, publishes a complete QST preview, and runs from a sanitized component-only installation; applying wallpaper, scale, font, and color intent remains with later platform consumers.",
+          "evidence": [{ "kind": "commit", "reference": "d71fac4a2c7e8944822b3185aee5bb43acd455c7", "summary": "The independently accepted Appearance Settings S0 candidate is integrated after combined-tree build, route, migration, package, documentation, and source-shape verification." }, { "kind": "test", "reference": "docs/wiki/apps/appearance-settings.md", "summary": "The owning page records four focused Appearance rows, five Settings application/package rows, schema migration coverage, compact keyboard traversal, and the no-replay Settings1 boundary." }],
+          "caveat": "Audio, display, power, brightness, Bluetooth, network, clipboard, color, font, and portal pages remain."
+        },
+        {
+          "id": "QQ-006.06", "title": "QindaQt Text Editor", "weight": 10, "state": "EXECUTABLE",
+          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge.",
+          "evidence": [{ "kind": "commit", "reference": "1cd5dab", "summary": "The exact accepted Text Editor candidate is integrated after independent review." }, { "kind": "test", "reference": "docs/wiki/apps/text-editor.md", "summary": "The owning page records the local-document evidence and the independently accepted AppShell migration, including hostile request lineage, source-policy poison, and component-only package/RPATH proof." }, { "kind": "commit", "reference": "d0e0809", "summary": "The manager replay of exact candidate 75f786e9 passes 10/10 focused and 17/17 adjacent integrated-tree rows." }],
+          "caveat": "S1 does not yet include multiple documents, portals, session restore, print, extensions, rich text, a nested display screenshot matrix, or whole-application assistive-technology qualification."
+        },
+        {
+          "id": "QQ-006.07", "title": "QindaQt File Manager", "weight": 8, "state": "EXECUTABLE",
+          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime.",
+          "evidence": [{ "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact independently accepted runtime/package repair candidate is integrated after fresh combined-tree build and 8/8 focused verification." }, { "kind": "test", "reference": "docs/wiki/apps/file-manager.md", "summary": "The owning page records the model, presentation, package, containment, failure, and explicit S0 authority boundaries." }],
+          "caveat": "S0 is deliberately read-only and local: file mutation, mounts, trash, search, previews, portals, recovery, nested screenshots, and whole-application assistive-technology qualification remain later slices."
+        },
+        {
+          "id": "QQ-006.08", "title": "QindaQt Terminal", "weight": 8, "state": "EXECUTABLE",
+          "summary": "The native Terminal S0 single-session slice is integrated with owned child PTY lifetime, nonblocking teletype bridging, bounded launch policy, QindaQt theme projection, selection/copy truth, qtermwidget confinement, desktop packaging, and deterministic teardown.",
+          "evidence": [{ "kind": "commit", "reference": "4f99a7f", "summary": "The exact independently accepted Terminal manager replay is integrated after a fresh 63/63 build, 9/9 registered rows, 7/7 appearance cases, 4/4 real-adapter cases, relocatable package proof, and strict source/documentation gates." }, { "kind": "test", "reference": "docs/wiki/apps/terminal.md", "summary": "The owning page records the PTY, process, qtermwidget, theme, packaging, and explicit S0 authority boundaries; the unchanged production bytes also retain the accepted private-Weston 40/40 evidence." }],
+          "caveat": "Multiple tabs and profiles, settings persistence, shell/global-menu integration, whole-application assistive-technology proof, nested screenshot matrices, and physical display/input qualification remain later slices."
+        },
+        {
+          "id": "QQ-006.09", "title": "Cross-app responsive, DPI, visual, keyboard, and accessibility qualification", "weight": 4, "state": "WIRED",
+          "summary": "The integrated private interactive S2 desktop boots the production compositor, shell, resident services, Settings, and Text Editor at 1920x1080, injects Meta+N through the isolated nested seat, and machine-binds the visible notification center to a captured parent frame.",
+          "evidence": [{ "kind": "commit", "reference": "26bb7f5724b548571d8aa13ac0a30eda4ca55149", "summary": "The exact independently accepted S2 replay passes a fresh 2,338-action build, 73/73 units, private boot and interaction rows, complete eight-role PSS accounting, exact screenshot-region evidence, and authenticated zero-survivor teardown." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "The S2 contract records the distinct parent/child Wayland sockets, zero pre-input center, exact four-event Meta+N action, 440x640 visible center, bounded framebuffer evidence, 1,024 MiB ceiling, and teardown proof." }],
+          "caveat": "WIRED records one executable 1920x1080 cross-app workflow. WUXGA, 1440p, fractional DPI, theme variants, multi-output, every app's complete keyboard/screen-reader matrix, and physical display/input qualification remain."
+        }
+      ],
+      "stoppingPoint": {
+        "summary": "QST-1 semantic design tokens and QindaQt.Controls are independently qualified. The typed responsive Settings Center S1 shell, QindaQt Text Editor S1, bounded local QindaQt File Manager S0, and single-session QindaQt Terminal S0 are executable, the installed QindaQt.AppShell 1.0 boundary provides shared contracts, and the private S2 desktop now exercises a real 1920x1080 cross-app interaction and captured frame without host-seat access.",
+        "evidence": [
+          { "kind": "commit", "reference": "05a8636", "summary": "The QST-1 semantic token milestone is integrated on public main." },
+          { "kind": "commit", "reference": "dbbf30c", "summary": "The accepted QindaQt.Controls series is integrated on public main." },
+          { "kind": "commit", "reference": "1cd5dab", "summary": "The accepted native Text Editor S1 is integrated after an exact independent review and fresh integrated-tree verification." },
+          { "kind": "commit", "reference": "5c914a6f0179bed659bf9b7201d42986fa57575b", "summary": "The exact accepted AppShell S0 candidate is integrated after its repair rereview and fresh combined-tree verification." },
+          { "kind": "commit", "reference": "3fd38425127d2ecf76485a6e84e675460071f5d8", "summary": "The exact accepted File Manager S0 runtime/package candidate is integrated after independent review and fresh combined-tree verification." },
+          { "kind": "commit", "reference": "d0e0809", "summary": "The exact accepted Text Editor AppShell migration is replayed after independent review and manager-tree verification." },
+          { "kind": "commit", "reference": "4f99a7f", "summary": "The independently accepted Terminal S0 replay is integrated after fresh manager-tree build, focused, package, source, and documentation verification." },
+          { "kind": "commit", "reference": "0c9f4b0", "summary": "The accepted Settings Center S1 route/navigation repair is integrated after exact rereview and manager-tree verification." },
+          { "kind": "commit", "reference": "26bb7f5724b548571d8aa13ac0a30eda4ca55149", "summary": "The accepted private S2 desktop replay supplies the first executable cross-app screenshot and isolated-input row with all eight production roles below the 1,024 MiB ceiling." },
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap records QST-1, Controls, Text Editor S1, File Manager S0, and Terminal S0 as implemented within the incomplete First-party experience milestone." }
+        ]
+      },
+      "caveat": "Most Settings platform-service routes, later File Manager and Terminal capabilities, remaining application migrations onto AppShell, the wider cross-app DPI/theme/accessibility matrix, and live platform-service routes remain."
+    },
+    {
+      "id": "QQ-007",
+      "title": "Release qualification",
+      "workspace": "Roadmap milestone",
+      "state": "ABSENT",
+      "stoppingPoint": {
+        "summary": "The next integration threshold is a bootable, interactable, screenshot-qualified QindaQt desktop in a completely private nested Wayland environment. Physical hardware, the initial 1,024 MiB aggregate idle PSS and 1% idle CPU budgets, migrations, distribution packaging, recovery, and upgrade qualification remain planned; existing component-level nested evidence does not satisfy the whole-desktop threshold.",
+        "evidence": [
+          { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap lists Release qualification as Planned." },
+          { "kind": "source", "reference": "docs/TASK_LIST.md", "summary": "The active product outcome defines isolated boot, interaction, screenshot, resolution/DPI, host-containment, and initial 1,024 MiB PSS acceptance." },
+          { "kind": "decision", "reference": "docs/wiki/adr/0015-qualify-function-before-resource-refinement.md", "summary": "ADR-0015 makes functional virtual-desktop qualification precede aggressive memory refinement." }
+        ]
+      },
+      "caveat": "No whole-desktop nested-session or daily-use release claim exists; this row remains zero until that integrated behavior is executable and evidenced."
+    }
+  ]
+}
