@@ -109,7 +109,6 @@ class VirtualSpecTests(unittest.TestCase):
         self.assertEqual(output_data["mode"]["height"], 1080)
         self.assertEqual(output_data["scale"], 1.25)
 
-
 class HostInputConsentTests(unittest.TestCase):
     def test_non_host_input_workflow_needs_no_consent(self) -> None:
         self.assertIsNone(host_uinput_consent_error(False, {}))

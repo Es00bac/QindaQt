@@ -1300,6 +1300,59 @@ Editor, Settings Notifications route, and open notification center. The
 unchanged S1 row passed immediately afterward in 1.20 seconds against the same
 staged graph.
 
+### Focused contained desktop matrix S3
+
+S3 reuses ADR-0049's private Weston/KWin topology without changing the accepted
+S1 or S2 evidence schemas. Its focused selector is:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.interactive\.matrix\.'
+```
+
+The four approved rows deliberately maximize representative breadth before the
+complete release matrix:
+
+| Row | Applied output | Profile/theme |
+| --- | --- | --- |
+| `single-wuxga` | 1920x1200 at 100% | `xfce-inspired` / `qinda-light` |
+| `single-1440p-125` | 2560x1440 at 125% (2048x1152 logical) | `unity-inspired` / `qinda-dusk` |
+| `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
+| `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |
+
+Together with S2's 1080p/dusk row, this covers WUXGA, 1440p, representative
+125% and 150% scaling, light/dusk/dark, and one executable multi-output
+arrangement. Scenario ids are selected from a closed set. Each scenario's
+common pixel mode, scale, output count, and horizontal positions must be exactly
+representable; another catalog row cannot silently inherit this qualification.
+
+Every run retains distinct private parent/child Wayland sockets, the fake-seat
+pointer/keyboard pair plus the development input device, exact Meta+N surface
+causality, all eight production roles under the 1,048,576 KiB aggregate PSS
+ceiling, authenticated teardown, and a final observed empty survivor set. The
+live session command line must contain the selected profile and theme, while
+Text Editor must receive the same theme explicitly. This binds presentation
+selection to observed production processes rather than copying scenario JSON
+into evidence.
+
+Outputs are matched by their complete `WL-<ordinal>` set across both public
+inventories. Geometry, scale, and horizontal arrangement must agree exactly,
+and an authenticated mapped production dock is required on every output. Weston
+headless retains one private parent framebuffer; screenshooter must create one
+nonuniform PNG bound to the interacted child output in each row.
+For fractional rows the compositor-global logical notification-center geometry
+is converted to the smallest outward-rounded physical rectangle containing the
+complete surface; only that owning output receives the independent region
+digest/color assertion. This admits at most one compositor-owned boundary pixel
+per axis while preventing a pre-interaction or wrong-output frame from satisfying
+the proof.
+
+S3 is not the complete display release gate. Portrait/rotation, mixed output
+modes or scales, negative coordinates, vertical placement, hotplug/reorder/lid
+events, primary transfer, mirroring, GPU/OpenGL/DRM, physical input, perceptual
+baseline comparison, and physical hardware remain unqualified.
+
 ## Clipboard C0 model proof
 
 The focused Clipboard C0 selector is:
