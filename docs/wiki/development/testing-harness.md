@@ -119,6 +119,39 @@ pure QtTest rows: they connect to no D-Bus,
 UPower, logind, profile daemon, Wayland compositor, sysfs path, or hardware.
 They are not service, activation, display-provider, or UI evidence.
 
+## Current Power PB-1 resident proof
+
+The Wayland-free resident service/client slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.power-(service-|client|qt-transport|activation|installed-package)' \
+  --output-on-failure --no-tests=error
+```
+
+The publication rows cover atomic last-known-good assembly, per-domain
+degradation with retained sibling domains, battery-over-profile handle
+precedence in both collaborator fact arrival orders, recovery when a transient
+collision clears through replacement facts or battery unavailability,
+non-resurrection of intrinsically malformed profile facts, sanitized hostile
+text, honest unavailable/mixed projections, stale-generation fencing, epoch
+advance with handle restamping, and restart clearing. The operation rows cover
+exactly-once completion, duplicate and late upstream replies, malformed outcome
+replacement, busy caps, stop uncertainty, and current observed lineage.
+Residency rows run against a private `dbus-daemon` and cover exact
+introspection signatures, delayed replies, successive owners, and name-theft
+reporting. The activation row launches the real executable through a private
+activation descriptor, verifies the honest
+`Unavailable/upstream-not-integrated` snapshot, constructing-bus-loss exit,
+and fresh epoch/owner on an independent second bus. The installed-package row
+stages the public headers, compiles a clean consumer against the built
+libraries, and proves the activation descriptor and systemd unit resolve the
+packaged executable. A source-policy row rejects host UPower, logind,
+Wayland, sysfs, process, thread, and sibling-service dependencies in the
+resident and client modules. No test contacts the user's session bus, host
+daemons, hardware, or a Wayland compositor; those remain PB-2 and release
+gates.
+
 The separate pure brightness candidate is selected with:
 
 ```sh

@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.qindaqt.Power1
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-power-service
+SystemdService=qindaqt-power-service.service
