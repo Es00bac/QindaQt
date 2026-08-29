@@ -40,7 +40,8 @@ public:
         qint64 totalBytes);
     [[nodiscard]] static QString accessibleNameForRow(
         int index,
-        const QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor &desc);
+        const QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor &desc,
+        bool isPending = false);
 };
 
 } // namespace QindaQt::ShellClipboardApplet
