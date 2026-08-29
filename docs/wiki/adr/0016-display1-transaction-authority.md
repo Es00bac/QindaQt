@@ -64,9 +64,12 @@ D2 must supply those adapters without changing this authority split.
 - Initial journal storage and final journal clearing are hard gates. The port
   distinguishes unchanged, durable, and post-pathname-commit durability-
   uncertain outcomes. Only durable initial storage authorizes forward apply;
-  clear uncertainty remains conservative cleanup/recovery failure. Refreshes
-  of an already-durable pre-image during rollback are best effort so a storage
-  outage cannot suppress the rollback attempt.
+  uncertain initial storage retains the Applying journal in cleanup-only
+  `Stuck(JournalFailure)`, blocks ordinary transaction replacement, and returns
+  Ready only after an exact durable clear. Clear uncertainty likewise remains
+  conservative cleanup/recovery failure. Refreshes of an already-durable
+  pre-image during rollback are best effort so a storage outage cannot suppress
+  the rollback attempt.
 - A failed confirmation clear leaves the transaction awaiting confirmation.
   Once safe live truth is known, a failed clear becomes cleanup-only
   `Stuck(JournalFailure)` and retry cannot issue a compositor mutation.

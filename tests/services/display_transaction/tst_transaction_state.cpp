@@ -162,6 +162,7 @@ void TransactionStateTests::previewRequiresSafeAuthorityAndDurableJournal()
     const MachineView safeStaged = machine.view();
     QCOMPARE(machine.preview(QStringLiteral("tx")).error, CommandError::JournalFailure);
     QCOMPARE(machine.view(), safeStaged);
+    QVERIFY(!port.journalPresent);
     QVERIFY(port.requests.isEmpty());
 
     port.storeSucceeds = true;
@@ -181,30 +182,66 @@ void TransactionStateTests::journalDurabilityUncertaintyIsConservative()
     const Display::Candidate candidate = Test::changedCandidate(base);
     QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
     QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
-    const MachineView staged = machine.view();
 
     port.storeOutcome = JournalMutationOutcome::DurabilityUncertain;
-    QCOMPARE(machine.preview(QStringLiteral("tx")).error, CommandError::JournalFailure);
-    QCOMPARE(machine.view(), staged);
+    const CommandResult uncertainPreview = machine.preview(QStringLiteral("tx"));
+    QVERIFY(uncertainPreview.accepted);
+    QVERIFY(uncertainPreview.stateChanged);
+    QCOMPARE(uncertainPreview.error, CommandError::JournalFailure);
+    QCOMPARE(machine.view().state, MachineState::Stuck);
+    QCOMPARE(machine.view().reason, Display::TransactionReason::JournalFailure);
+    QCOMPARE(machine.view().transactionId, QStringLiteral("tx"));
+    QVERIFY(machine.view().journalActive);
+    QCOMPARE(machine.activeJournal().phase, JournalPhase::Applying);
+    QCOMPARE(machine.activeJournal(), port.journal);
     QVERIFY(port.requests.isEmpty());
     QVERIFY(port.journalPresent);
+    QCOMPARE(port.storeCalls, 1);
 
-    port.storeOutcome = JournalMutationOutcome::Durable;
-    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
-    const quint64 token = port.requests.constLast().token;
-    QVERIFY(machine.applyCompleted(token, ApplyOutcome::Applied).accepted);
-    QVERIFY(machine.observedSnapshot(Test::observed(base, candidate, 2)).accepted);
-    QCOMPARE(machine.view().state, MachineState::AwaitingConfirmation);
-    const MachineView awaiting = machine.view();
+    const MachineView cleanup = machine.view();
+    const Journal retained = machine.activeJournal();
+    QCOMPARE(machine.cancel(QStringLiteral("tx")).error, CommandError::InvalidTransition);
+    QCOMPARE(machine.stage(QStringLiteral("replacement"), candidate).error,
+             CommandError::TransactionActive);
+    QCOMPARE(machine.preview(QStringLiteral("tx")).error, CommandError::InvalidTransition);
+    QCOMPARE(machine.view(), cleanup);
+    QCOMPARE(machine.activeJournal(), retained);
+    QCOMPARE(port.storeCalls, 1);
+    QCOMPARE(port.clearCalls, 0);
+    QVERIFY(port.journalPresent);
 
+    port.clearSucceeds = false;
+    const CommandResult unchangedClear = machine.retryStuck();
+    QVERIFY(unchangedClear.accepted);
+    QVERIFY(!unchangedClear.stateChanged);
+    QCOMPARE(unchangedClear.error, CommandError::JournalFailure);
+    QCOMPARE(machine.view(), cleanup);
+    QCOMPARE(machine.activeJournal(), retained);
+    QVERIFY(port.journalPresent);
+
+    port.clearSucceeds = true;
     port.clearOutcome = JournalMutationOutcome::DurabilityUncertain;
-    QCOMPARE(machine.confirm(QStringLiteral("tx")).error, CommandError::JournalFailure);
-    QCOMPARE(machine.view(), awaiting);
+    const CommandResult uncertainClear = machine.retryStuck();
+    QVERIFY(uncertainClear.accepted);
+    QVERIFY(!uncertainClear.stateChanged);
+    QCOMPARE(uncertainClear.error, CommandError::JournalFailure);
+    QCOMPARE(machine.view(), cleanup);
+    QCOMPARE(machine.activeJournal(), retained);
     QVERIFY(!port.journalPresent);
+    QCOMPARE(machine.cancel(QStringLiteral("tx")).error, CommandError::InvalidTransition);
+    QCOMPARE(machine.view(), cleanup);
 
     port.clearOutcome = JournalMutationOutcome::Durable;
-    QVERIFY(machine.confirm(QStringLiteral("tx")).accepted);
+    const CommandResult durableClear = machine.retryStuck();
+    QVERIFY(durableClear.accepted);
+    QVERIFY(durableClear.stateChanged);
     QCOMPARE(machine.view().state, MachineState::Ready);
+    QVERIFY(!machine.view().journalActive);
+    QCOMPARE(machine.view().lastTerminalReason,
+             Display::TransactionReason::JournalFailure);
+    QVERIFY(!port.journalPresent);
+    QCOMPARE(port.clearCalls, 3);
+    QVERIFY(port.requests.isEmpty());
 }
 
 void TransactionStateTests::applyObserveConfirmFlow()
