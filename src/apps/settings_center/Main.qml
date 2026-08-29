@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Controls
 import QindaQt.SettingsApp.Appearance
+import QindaQt.SettingsApp.Display
 
 T.ApplicationWindow {
     id: root
@@ -12,6 +13,7 @@ T.ApplicationWindow {
     required property var navigation
     required property var quietingSettings
     required property var appearanceSettings
+    property var displaySettings: null
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -33,6 +35,11 @@ T.ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+2"
         onActivated: root.navigation.selectRoute("appearance")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+3"
+        onActivated: root.navigation.selectRoute("display")
     }
 
     Shortcut {
@@ -79,8 +86,10 @@ T.ApplicationWindow {
             navigation: root.navigation
             quietingSettings: root.quietingSettings
             appearanceSettings: root.appearanceSettings
+            displaySettings: root.displaySettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
+            displayComponent: displayRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -108,8 +117,10 @@ T.ApplicationWindow {
             navigation: root.navigation
             quietingSettings: root.quietingSettings
             appearanceSettings: root.appearanceSettings
+            displaySettings: root.displaySettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
+            displayComponent: displayRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -128,6 +139,15 @@ T.ApplicationWindow {
         AppearancePage {
             objectName: "appearancePage"
             appearanceSettings: root.appearanceSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: displayRouteComponent
+        DisplayPage {
+            objectName: "displayPage"
+            displaySettings: root.displaySettings
             onCloseRequested: root.close()
         }
     }

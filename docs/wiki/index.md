@@ -128,6 +128,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Appearance route](apps/appearance-settings.md) documents the
   first-party appearance settings surface: validated drafts, QST previews,
   per-key Settings1 commits, and recovery truth.
+- [Settings Display route](apps/display-settings.md) documents the first-party
+  display settings surface: output selection, validated drafts, advertised modes,
+  logical scale, reversible transaction coordinator preview/confirmation, and
+  degraded state handling.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.
