@@ -19,7 +19,7 @@ Rectangle {
     implicitWidth: 200
     implicitHeight: 90
     radius: Tokens.radius.m
-    color: root.selected ? Tokens.bg.highest : Tokens.bg.surface
+    color: root.selected ? Tokens.bg.highest : Tokens.bg.raised
     border.width: root.selected ? Tokens.space["1"] : Tokens.space["1"] / 2
     border.color: root.selected ? Tokens.focus.ring : Tokens.outline.strong
 

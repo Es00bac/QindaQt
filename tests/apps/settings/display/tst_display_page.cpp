@@ -117,10 +117,68 @@ public:
     };
 
     outputs = {selectedOutput};
+    outputsMap[QStringLiteral("edid:dp1")] = selectedOutput;
+    baselineOutputsMap = outputsMap;
+  }
+
+  QMap<QString, QVariantMap> outputsMap;
+  QMap<QString, QVariantMap> baselineOutputsMap;
+
+  void setupTwoOutputs() {
+    QVariantMap mode1{
+        {QStringLiteral("id"), QStringLiteral("3840x2160@60")},
+        {QStringLiteral("label"), QStringLiteral("3840 × 2160 @ 60 Hz")},
+        {QStringLiteral("preferred"), true},
+    };
+    QVariantList modes{mode1};
+
+    QVariantMap out1{
+        {QStringLiteral("stableId"), QStringLiteral("edid:dp1")},
+        {QStringLiteral("connectorName"), QStringLiteral("DP-1")},
+        {QStringLiteral("label"), QStringLiteral("Main Monitor")},
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("primary"), true},
+        {QStringLiteral("modeId"), QStringLiteral("3840x2160@60")},
+        {QStringLiteral("positionX"), 0},
+        {QStringLiteral("positionY"), 0},
+        {QStringLiteral("logicalWidth"), 1920},
+        {QStringLiteral("logicalHeight"), 1080},
+        {QStringLiteral("scale"), 2.0},
+        {QStringLiteral("transform"), QStringLiteral("normal")},
+        {QStringLiteral("modes"), modes},
+    };
+
+    QVariantMap out2{
+        {QStringLiteral("stableId"), QStringLiteral("edid:hdmi1")},
+        {QStringLiteral("connectorName"), QStringLiteral("HDMI-1")},
+        {QStringLiteral("label"), QStringLiteral("Side Monitor")},
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("primary"), false},
+        {QStringLiteral("modeId"), QStringLiteral("1920x1080@60")},
+        {QStringLiteral("positionX"), 1920},
+        {QStringLiteral("positionY"), 0},
+        {QStringLiteral("logicalWidth"), 1920},
+        {QStringLiteral("logicalHeight"), 1080},
+        {QStringLiteral("scale"), 1.0},
+        {QStringLiteral("transform"), QStringLiteral("normal")},
+        {QStringLiteral("modes"), modes},
+    };
+
+    outputsMap.clear();
+    outputsMap[QStringLiteral("edid:dp1")] = out1;
+    outputsMap[QStringLiteral("edid:hdmi1")] = out2;
+    baselineOutputsMap = outputsMap;
+
+    outputs = {out1, out2};
+    selectedOutputId = QStringLiteral("edid:dp1");
+    selectedOutput = out1;
   }
 
   void setSelectedOutputId(const QString &id) {
     selectedOutputId = id;
+    if (outputsMap.contains(id)) {
+      selectedOutput = outputsMap.value(id);
+    }
     Q_EMIT selectedOutputIdChanged(id);
     Q_EMIT selectedOutputChanged();
   }
@@ -181,9 +239,18 @@ public:
   }
 
   Q_INVOKABLE bool setOutputPosition(const QString &stableId, int x, int y) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("positionX")] = x;
-    selectedOutput[QStringLiteral("positionY")] = y;
+    if (outputsMap.contains(stableId)) {
+      auto map = outputsMap.value(stableId);
+      map[QStringLiteral("positionX")] = x;
+      map[QStringLiteral("positionY")] = y;
+      outputsMap[stableId] = map;
+      if (selectedOutputId == stableId) {
+        selectedOutput = map;
+      }
+    } else {
+      selectedOutput[QStringLiteral("positionX")] = x;
+      selectedOutput[QStringLiteral("positionY")] = y;
+    }
     draftDirty = true;
     applyAvailable = true;
     Q_EMIT selectedOutputChanged();
@@ -201,6 +268,11 @@ public:
     ++canceledCount;
     draftDirty = false;
     applyAvailable = false;
+    outputsMap = baselineOutputsMap;
+    if (outputsMap.contains(selectedOutputId)) {
+      selectedOutput = outputsMap.value(selectedOutputId);
+    }
+    Q_EMIT selectedOutputChanged();
     Q_EMIT draftChanged();
     Q_EMIT stateChanged();
     return true;
@@ -250,6 +322,7 @@ private Q_SLOTS:
   void initTestCase();
   void testPageRenderingAndControls();
   void testScaleAndOrientationInteraction();
+  void testArrangementPositionSynchronizationOnSwitchAndRevert();
   void testUnavailableNoticeAndRetry();
   void testPreviewBannerAndTransactionActions();
 
@@ -340,6 +413,55 @@ void DisplayPageTest::testScaleAndOrientationInteraction() {
 
   QMetaObject::invokeMethod(applyBtn, "clicked");
   QCOMPARE(m_model->appliedCount, 1);
+}
+
+void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() {
+  m_model->setupTwoOutputs();
+  m_model->unavailable = false;
+  m_model->inTransaction = false;
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+
+  auto *posXField = findItemByObjectName(pageItem, QStringLiteral("displayPosXField"));
+  auto *posYField = findItemByObjectName(pageItem, QStringLiteral("displayPosYField"));
+  QVERIFY(posXField != nullptr);
+  QVERIFY(posYField != nullptr);
+
+  // 1. Initial output DP-1 position is (0, 0)
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
+  QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
+
+  // 2. Simulate user typing a new X position into posXField
+  posXField->setProperty("text", QStringLiteral("500"));
+  m_model->setOutputPosition(QStringLiteral("edid:dp1"), 500, 0);
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("500"));
+
+  // 3. Switch selected output to HDMI-1 (position (1920, 0))
+  // The focus-safe synchronization must immediately refresh posXField text to "1920"
+  m_model->setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("1920"));
+  QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
+
+  // 4. Switch back to DP-1 (which has drafted position 500)
+  m_model->setSelectedOutputId(QStringLiteral("edid:dp1"));
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("500"));
+
+  // 5. Cancel / revert draft - restores baseline position (0, 0)
+  m_model->cancelDraft();
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
+  QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
 }
 
 void DisplayPageTest::testUnavailableNoticeAndRetry() {

@@ -16,7 +16,7 @@ The Display settings route provides comprehensive monitor and layout management:
 | Output Selector | Output cards with connector name, model, resolution, refresh rate, and primary badge | Projected from authoritative Display1 snapshot |
 | Output State | Enable/Disable switch | Validates that at least one output remains enabled in the proposed topology |
 | Resolution & Mode | Advertised mode dropdown list | Modes advertised by compositor for the selected connector |
-| Scale | Scale factor slider (0.5× – 3.0×) and segmented presets | Validated against protocol scale constraints |
+| Scale | Segmented presets (100% – 300% in fractional increments) | Validated against protocol scale constraints (1.0× to 3.0×) |
 | Transform | Orientation dropdown (0°, 90°, 180°, 270°) | Normal, 90°, 180°, 270° clockwise rotation |
 | Primary Output | "Make Primary" toggle / button | Designates primary output for default desktop surfaces and taskbars |
 | Topology / Position | Position coordinate controls (X, Y) | Validates contiguous, non-overlapping canvas bounds |
