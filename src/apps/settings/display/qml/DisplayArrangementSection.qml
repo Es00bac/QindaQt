@@ -64,6 +64,14 @@ ColumnLayout {
                 text: root.posX.toString()
                 enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
                 Accessible.name: qsTr("Position X coordinate")
+
+                Binding {
+                    target: posXField
+                    property: "text"
+                    value: root.posX.toString()
+                    when: !posXField.activeFocus
+                }
+
                 onEditingFinished: {
                     const parsedX = parseInt(text, 10);
                     if (!isNaN(parsedX) && root.displaySettings.selectedOutputId) {
@@ -85,6 +93,14 @@ ColumnLayout {
                 text: root.posY.toString()
                 enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
                 Accessible.name: qsTr("Position Y coordinate")
+
+                Binding {
+                    target: posYField
+                    property: "text"
+                    value: root.posY.toString()
+                    when: !posYField.activeFocus
+                }
+
                 onEditingFinished: {
                     const parsedY = parseInt(text, 10);
                     if (!isNaN(parsedY) && root.displaySettings.selectedOutputId) {
@@ -92,6 +108,36 @@ ColumnLayout {
                             root.displaySettings.selectedOutputId, root.posX, parsedY);
                     }
                 }
+            }
+        }
+    }
+
+    Connections {
+        target: root.displaySettings
+        function onSelectedOutputIdChanged() {
+            if (posXField.activeFocus) {
+                posXField.focus = false;
+            }
+            if (posYField.activeFocus) {
+                posYField.focus = false;
+            }
+            posXField.text = root.posX.toString();
+            posYField.text = root.posY.toString();
+        }
+        function onSelectedOutputChanged() {
+            if (!posXField.activeFocus) {
+                posXField.text = root.posX.toString();
+            }
+            if (!posYField.activeFocus) {
+                posYField.text = root.posY.toString();
+            }
+        }
+        function onDraftChanged() {
+            if (!posXField.activeFocus) {
+                posXField.text = root.posX.toString();
+            }
+            if (!posYField.activeFocus) {
+                posYField.text = root.posY.toString();
             }
         }
     }
