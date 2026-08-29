@@ -26,12 +26,14 @@ foreach(path IN LISTS applet_files)
     # and the injected client seam. Any direct access to Wayland protocol headers,
     # DBus, host clipboards, compositor internals, or raw system files is strictly
     # refused. The host-clipboard patterns are load-bearing: reading or including
-    # QtGui/QClipboard, QGuiApplication::clipboard, or an external clipboard helper
-    # bypasses the authenticated client seam and re-discloses content behind the
-    # lock/privacy fence. Case matters — lowercase "clipboard" is vocabulary, the
-    # capitalized Qt/GTK symbols are forbidden platform access.
+    # QtGui/QClipboard, the qApp macro, QApplication/QGuiApplication clipboard(),
+    # or an external clipboard helper bypasses the authenticated client seam and
+    # re-discloses content behind the lock/privacy fence. Case matters — lowercase
+    # "clipboard" is vocabulary, the capitalized Qt/GTK symbols and qApp-> usages
+    # are forbidden platform access.
     if(content MATCHES "QDBus|LayerShell|KWin::|QProcess|sysfs|wayland-client|wayland-server"
-       OR content MATCHES "QClipboard|QGuiApplication|qt_clipboard|gtk_clipboard|GtkClipboard"
+       OR content MATCHES "QClipboard|QApplication|QGuiApplication|qt_clipboard|gtk_clipboard|GtkClipboard"
+       OR content MATCHES "qApp->"
        OR content MATCHES "xclip|xsel|wl-copy|wl-paste|X11/Xlib|XGetSelection|XStoreBytes"
        OR content MATCHES "qindaqt/(compositor|platform)/"
        OR content MATCHES "src/(compositor|platform)/")
@@ -55,7 +57,7 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
     # in another pattern. Bodies are numbered variables, not list elements,
     # because realistic C++ bodies contain semicolons that would split a
     # CMake list and silently scramble the staged poison.
-    set(poison_case_count 4)
+    set(poison_case_count 6)
     set(poison_case_0_name "qdbus")
     set(poison_case_0_body "#include <QDBusConnection>\nvoid f() { QDBusConnection::sessionBus(); }\n")
     set(poison_case_1_name "host_clipboard_include")
@@ -64,6 +66,10 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
     set(poison_case_2_body "#include <QGuiApplication>\n#include <QtGui/QClipboard>\nQString f() { return QGuiApplication::clipboard()->text(); }\n")
     set(poison_case_3_name "external_helper")
     set(poison_case_3_body "#include <QProcess>\nvoid f() { QProcess::execute(\"xclip\"); }\n")
+    set(poison_case_4_name "qapplication_clipboard")
+    set(poison_case_4_body "#include <QApplication>\nQString f() { return QApplication::clipboard()->text(); }\n")
+    set(poison_case_5_name "qapp_macro_bypass")
+    set(poison_case_5_body "// qApp->clipboard() reaches the host clipboard without naming a class\nvoid g() { auto c = qApp->clipboard(); }\n")
 
     foreach(poison_index RANGE ${poison_case_count})
         if(poison_index EQUAL poison_case_count)

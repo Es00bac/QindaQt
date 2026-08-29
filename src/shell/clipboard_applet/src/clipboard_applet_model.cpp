@@ -44,11 +44,17 @@ QString ClipboardAppletModel::formatSummary(
 
 QString ClipboardAppletModel::accessibleNameForRow(
     int index,
-    const QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor &desc)
+    const QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor &desc,
+    bool isPending)
 {
     QString details;
     if (desc.pinned) {
         details += QStringLiteral(", pinned");
+    }
+    if (isPending) {
+        // Assistive technology must announce in-flight mutations the same
+        // way sighted users see the busy action buttons.
+        details += QStringLiteral(", operation pending");
     }
     if (!desc.sourceLabel.isEmpty()) {
         details += QStringLiteral(", from %1").arg(desc.sourceLabel);
@@ -106,7 +112,7 @@ ClipboardEntryRow ClipboardAppletModel::projectRow(
         row.primaryMediaType = QStringLiteral("application/octet-stream");
     }
 
-    row.accessibleName = accessibleNameForRow(index, desc);
+    row.accessibleName = accessibleNameForRow(index, desc, isPending);
     row.accessibleDescription = QStringLiteral("%1; size: %2; id: %3")
         .arg(row.formatsSummary, formatByteSize(totalBytes), row.idString);
 
@@ -136,9 +142,16 @@ ClipboardAppletProjection ClipboardAppletModel::project(
     } else if (clientState == ClientState::Stopped || clientState == ClientState::Starting) {
         proj.phase = Phase::Loading;
         proj.phaseReasonText = QStringLiteral("Connecting to clipboard service…");
-    } else if (isLocked || !snapshot.privacyAllowed) {
+    } else if (isLocked) {
         proj.phase = Phase::Locked;
         proj.phaseReasonText = QStringLiteral("Clipboard history is hidden while the session is locked.");
+    } else if (!snapshot.privacyAllowed) {
+        // Same withheld phase, distinct registered reason: privacy denial is
+        // an authority state, not a session lock, and users must be able to
+        // tell them apart. The phase set itself stays the six registered
+        // values; do not add a seventh phase for this.
+        proj.phase = Phase::Locked;
+        proj.phaseReasonText = QStringLiteral("Clipboard history is withheld by privacy policy.");
     } else if (!snapshot.historyEnabled) {
         proj.phase = Phase::Disabled;
         proj.phaseReasonText = QStringLiteral("Clipboard history is disabled.");

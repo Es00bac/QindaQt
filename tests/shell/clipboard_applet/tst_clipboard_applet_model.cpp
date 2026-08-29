@@ -64,12 +64,26 @@ void TstClipboardAppletModel::testPhaseTransitions()
         QCOMPARE(proj.phase, Phase::Loading);
     }
 
-    // 5. Locked when session is locked
+    // 5. Locked when session is locked (registered reason names the lock)
     {
         const auto proj = ClipboardAppletModel::project(
             snapshot, ClientState::Ready, {}, true, true, false, {}, {}, false, {});
         QCOMPARE(proj.phase, Phase::Locked);
         QVERIFY(proj.entryRows.isEmpty());
+        QVERIFY(proj.phaseReasonText.contains(QLatin1String("locked")));
+    }
+
+    // 5a. Same withheld phase for an authority denial, but the registered
+    // reason must distinguish privacy from a session lock.
+    {
+        HistorySnapshot deniedSnap = snapshot;
+        deniedSnap.privacyAllowed = false;
+        const auto proj = ClipboardAppletModel::project(
+            deniedSnap, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+        QCOMPARE(proj.phase, Phase::Locked);
+        QVERIFY(proj.entryRows.isEmpty());
+        QVERIFY(proj.phaseReasonText.contains(QLatin1String("privacy")));
+        QVERIFY(!proj.phaseReasonText.contains(QLatin1String("locked")));
     }
 
     // 6. Locked when privacy is denied in snapshot
@@ -142,6 +156,16 @@ void TstClipboardAppletModel::testAccessibleName()
     QVERIFY(name.contains(QLatin1String("pinned")));
     QVERIFY(name.contains(QLatin1String("from Kate")));
     QVERIFY(name.contains(QLatin1String("Hello world")));
+
+    // P2 regression: in-flight mutations must be announced to assistive
+    // technology, mirroring the busy presentation of the action buttons.
+    QVERIFY(!name.contains(QLatin1String("pending")));
+    const QString pendingName = ClipboardAppletModel::accessibleNameForRow(0, desc, true);
+    QVERIFY(pendingName.contains(QLatin1String("operation pending")));
+
+    // The projection carries the flag into the projected row's name.
+    const ClipboardEntryRow pendingRow = ClipboardAppletModel::projectRow(0, desc, true);
+    QVERIFY(pendingRow.accessibleName.contains(QLatin1String("operation pending")));
 }
 
 void TstClipboardAppletModel::testRowProjection()
