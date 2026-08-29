@@ -6,6 +6,10 @@
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 #include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
+#include "qindaqt/apps/settings_display/display_settings_model.h"
+#include "qindaqt/services/display_client/client.h"
+#include "qindaqt/services/display_client/display_coordinator.h"
+#include "qindaqt/services/display_client/qt_display_transport.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -151,6 +155,14 @@ int main(int argc, char **argv) {
              qPrintable(appearanceClientError));
   }
 
+  QindaQt::DisplayClient::QtDisplayTransport displayTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::DisplayClient::Client displayClient(&displayTransport);
+  QindaQt::DisplayClient::Coordinator displayCoordinator(&displayClient);
+  QindaQt::Apps::SettingsDisplay::DisplaySettingsModel displaySettings(
+      displayClient, displayCoordinator);
+  displayClient.start();
+
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
@@ -163,6 +175,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&quieting))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(&appearanceSettings))},
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(&displaySettings))},
   });
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),

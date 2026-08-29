@@ -215,14 +215,16 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 2);
+  QCOMPARE(registry.count(), 3);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
+  QVERIFY(registry.hasRoute(QStringLiteral("display")));
 
-  // Index ordering: notifications is 0, appearance is 1
+  // Index ordering: notifications is 0, appearance is 1, display is 2
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
   QCOMPARE(registry.indexOf(QStringLiteral("appearance")), 1);
+  QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -239,6 +241,14 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!app->title.isEmpty());
   QVERIFY(!app->description.isEmpty());
   QVERIFY(app->available);
+
+  const auto disp = registry.route(QStringLiteral("display"));
+  QVERIFY(disp.has_value());
+  QCOMPARE(disp->id, QStringLiteral("display"));
+  QCOMPARE(disp->component, SettingsRouteComponent::Display);
+  QVERIFY(!disp->title.isEmpty());
+  QVERIFY(!disp->description.isEmpty());
+  QVERIFY(disp->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {
