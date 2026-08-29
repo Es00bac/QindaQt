@@ -174,10 +174,10 @@
           "caveat": "Durable journal and resident writer composition, authenticated lock/logind safety, Settings UI, end-to-end nested preview/confirm/revert convergence, mixed-output matrices, resource proof, and physical hardware qualification remain."
         },
         {
-          "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "WIRED",
-          "summary": "The accepted PB-0 slice integrates bounded Power1 values/codecs, deterministic multi-supply aggregation, result lineage, and a pure brightness composition/math boundary with fail-closed identity and mirror handling.",
-          "evidence": [{ "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The exact independently accepted PB-0 protocol/aggregation/brightness candidate is integrated." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh combined-tree build passed five targets, 6/6 focused CTest rows and 54/54 direct QtTest cases; Display1 5/5 and AppShell 5/5 regressions also pass." }, { "kind": "source", "reference": "docs/wiki/architecture/power-service.md", "summary": "The owning page records the accepted authority, PB-0 pure boundary, remaining service/client/platform ownership, and later slice order." }],
-          "caveat": "WIRED PB-0 has no resident Power1 service/client, upstream UPower/logind integration, session inhibitor, idle policy, UI, hardware proof, or brightness mutation; those remain PB-1 and later."
+          "id": "QQ-005.03", "title": "Power status/actions and coherent brightness", "weight": 13, "state": "EXECUTABLE",
+          "summary": "PB-1 adds the resident Power1 service, exact-owner asynchronous client/transport, package and private activation/residency boundary over PB-0, with fail-closed sibling-domain publication across identity collisions, replacement, battery disappearance, and intrinsic malformed updates.",
+          "evidence": [{ "kind": "commit", "reference": "a8a57a9856666c6293fac6872c27c0be9928d8c4", "summary": "The exact independently accepted PB-1 collision-recovery descendant is integrated on the current manager tree." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Fresh combined-tree build completed 139 incremental actions and the exact PB-1 client/service/package/private-lifecycle selector passes 8/8; exact review also passes Debug/Release 8/8 and seven hostile mutations." }, { "kind": "source", "reference": "docs/wiki/architecture/power-service.md", "summary": "The owning page records resident publication authority, identity precedence and recovery, operation admission, and remaining upstream/UI boundaries." }],
+          "caveat": "PB-1 uses bounded injected/unavailable collaborators. Production UPower/logind/profile/brightness adapters, policy persistence, Settings and shell composition, physical hardware and suspend/hotplug qualification remain later slices."
         },
         {
           "id": "QQ-005.04", "title": "Network connectivity", "weight": 11, "state": "EXECUTABLE",
@@ -217,7 +217,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D4 stack, and Power/Brightness PB-0 foundation remain integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
+        "summary": "The bounded Audio1 stack, Display D0-D4 stack, and resident Power/Brightness PB-1 service/client boundary are integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 and Network N0 add executable least-authority service/client boundaries; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -226,7 +226,7 @@
           { "kind": "commit", "reference": "a5528f889d60b88b10a91b9b60d8d9e8d6e5e00e", "summary": "The accepted D2 resident Display1 service and exact-owner adapter are integrated after two exact PASS reviews and fresh combined-tree verification." },
           { "kind": "commit", "reference": "c819db8", "summary": "The accepted D3 typed client/coordinator replay is integrated after exact Gemini review and fresh strict Debug/Release manager verification." },
           { "kind": "commit", "reference": "d7691accc2bbef1048689b7c9fd9e70939b70445", "summary": "The accepted D4 public output-management writer is integrated after exact zero-finding review and fresh 26/26 manager-tree verification." },
-          { "kind": "commit", "reference": "30783867d7f2f49c9ad740c90f1c824614510b72", "summary": "The accepted PB-0 pure values, codecs, aggregation, brightness composition, math, package, and focused tests are integrated at WIRED maturity." },
+          { "kind": "commit", "reference": "a8a57a9856666c6293fac6872c27c0be9928d8c4", "summary": "The accepted PB-1 resident service/client, package, private lifecycle, collision recovery, and sibling-retention boundary is integrated at EXECUTABLE maturity." },
           { "kind": "commit", "reference": "7da293d", "summary": "The accepted Clipboard C0 bounded model, privacy projection, codec, and atomic hostile-decode behavior are integrated at WIRED maturity." },
           { "kind": "commit", "reference": "c08b32e", "summary": "The independently accepted Bluetooth B0 replay is integrated after exact zero-finding review and fresh manager-tree source/private-bus verification." },
           { "kind": "commit", "reference": "ea4d986", "summary": "The independently accepted Network N0 replay is integrated after exact zero-finding review and fresh manager-tree focused verification." },
@@ -234,7 +234,7 @@
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 durable persistence, resident writer composition, transaction UI and nested convergence; resident Power1 service/client/upstream adapters/UI; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. PB-0 and Clipboard C0 are pure and intentionally not claimed executable end to end."
+      "caveat": "Display1 durable persistence, resident writer composition, transaction UI and nested convergence; production Power upstream adapters/policy/UI/hardware; production BlueZ transport and Bluetooth UI/hardware; resident Network1/NetworkManager/secret transport and UI; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. Clipboard C0 remains a pure WIRED boundary."
     },
     {
       "id": "QQ-006",

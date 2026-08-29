@@ -19,12 +19,12 @@ qualification remain preserved integrated foundations.
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 durable-journal/resident composition, transaction UI and
-nested convergence work, resident Power1 and brightness,
+nested convergence work, production Power/brightness adapters and UI,
 resident Network1/NetworkManager transport over the Network N0 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
 and portal/policy interoperability. Existing Audio1, Display1 foundations, and
-PB-0 remain preserved integrated foundations; Network N0 and Bluetooth B0 are
+resident Power PB-1 remain preserved integrated foundations; Network N0 and Bluetooth B0 are
 executable bounded foundations without production platform backends or UI.
 
 ### First-party experience delivery queue
@@ -51,6 +51,15 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `a8a57a9` — Resident Power PB-1 service/client, exact-owner asynchronous
+  transport, installed package, private activation/residency lifecycle, and
+  fail-closed multi-domain publication are integrated. Independent exact
+  rereview passed P0/P1/P2/P3 `0/0/0/0`, Debug and Release selectors 8/8,
+  seven hostile mutation paths, and the collision-clear, battery-disappearance
+  and malformed non-resurrection probes. Production UPower/logind/profile/
+  brightness adapters, Settings/shell UI, persistence, policy, hardware and
+  suspend/hotplug qualification remain later outcomes.
 
 - `26bb7f5` — Private interactive desktop S2 boots the production compositor,
   shell, resident services, Settings, and Text Editor beneath an isolated
@@ -154,8 +163,8 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 - `3078386` — PB-0 bounded Power1 values/codecs, deterministic aggregate-
   battery policy, result lineage, and pure brightness composition/math with
   fail-closed identity, mirror collapse, integer conversion, installed public
-  headers, and focused tests. This is a WIRED pure boundary; resident service,
-  upstream adapters, client, UI, hardware, and mutation remain later slices.
+  headers, and focused tests. PB-1 now composes this foundation into the
+  resident executable boundary recorded at `a8a57a9`.
 - `5c914a6` — Narrow installed `QindaQt.AppShell 1.0` shared boundary with
   atomic action/menu values, lifecycle and injected integration state,
   fail-closed portal replies, close consent, focus reporting, truthful
@@ -196,8 +205,9 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Later outcomes
 
-- Power and brightness implementation from the accepted PB-0…PB-5
-  architecture; Bluetooth, network, clipboard, remaining display, color, font,
+- Production Power and brightness adapters, policy, UI, persistence and
+  hardware work from the accepted PB-0…PB-5 architecture; Bluetooth, network,
+  clipboard, remaining display, color, font,
   portal, and policy platform services.
 - The complete applet-based settings center and remaining first-party desktop
   experiences.

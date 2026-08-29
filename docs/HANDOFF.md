@@ -180,6 +180,17 @@ Integrated evidence:
   retained 5/5 Display1 and 5/5 AppShell regressions after their binaries were
   built. Documentation navigation, strict MkDocs, source shape, and whitespace
   also pass. PB-0 remains a pure WIRED boundary, not a resident service or UI.
+- The exact PB-1 collision-recovery descendant
+  `a8a57a9856666c6293fac6872c27c0be9928d8c4` passed Noether the 5th's
+  immutable rereview with P0/P1/P2/P3 `0/0/0/0`. The manager merged it onto
+  the D4+S2 tree without conflict, completed 139 incremental build actions,
+  and passed the exact client/service/package/private-lifecycle selector 8/8.
+  Reviewer probes prove valid profile/session siblings recover both when a
+  colliding battery identity is replaced and when battery facts become
+  unavailable, while intrinsically malformed profiles never resurrect. PB-1
+  is an EXECUTABLE resident injected/unavailable boundary; production UPower,
+  logind, profile and brightness adapters, policy persistence, Settings/shell
+  UI, physical hardware and suspend/hotplug proof remain later work.
 - The exact repaired AppShell candidate `5c914a6` passed independent GLM
   rereview with no blocking finding. The combined tree then built the five
   AppShell targets serially and passed 5/5 action-registry, coordinator,
@@ -245,7 +256,8 @@ Display1 now exposes the fail-closed D3 typed asynchronous client and
 server-projected reversible transaction coordinator. Output mutation remains
 unavailable until the compositor writer, durable persistence, Settings UI, and
 nested preview/confirm/revert convergence proof land.
-Power/Brightness architecture is independently accepted at MODELLED only:
-PB-0 protocol/aggregation/model is the first ungated implementation slice,
-followed by PB-1; PB-2 waits on the routed session-lane activation contract. A
-source-only handoff or a live worker process is not completion.
+Power/Brightness PB-1 is integrated as an EXECUTABLE resident service/client,
+package and private lifecycle boundary over the PB-0 protocol/aggregation/
+brightness foundation. PB-2 production upstream adapters and policy remain
+behind the routed session-lane activation contract. A source-only handoff or a
+live worker process is not completion.
