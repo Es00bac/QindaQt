@@ -314,6 +314,48 @@ if(
                 SKIP_RETURN_CODE 77
                 LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot"
         )
+
+        # AGENT-CONTRACT: Keep this focused S3 set in sync with
+        # desktop_session_matrix.EXECUTABLE_MATRIX_ROWS. These are real private
+        # runs, not catalog validation or a claim to the complete release matrix.
+        set(_qindaqt_desktop_matrix_rows
+            single-wuxga
+            single-1440p-125
+            single-1080p-150
+            dual-1080p-horizontal
+        )
+        foreach(_row IN LISTS _qindaqt_desktop_matrix_rows)
+            add_test(
+                NAME "desktop.virtual.interactive.matrix.${_row}"
+                COMMAND
+                    "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
+                    --outer
+                    --interactive
+                    --scenario-id "${_row}"
+                    --build-root "${CMAKE_BINARY_DIR}"
+                    --source-root "${PROJECT_SOURCE_DIR}"
+                    ${_qindaqt_desktop_common_arguments}
+                    --probe "$<TARGET_FILE:qindaqt-desktop-session-probe>"
+                    --bwrap "${QINDAQT_DESKTOP_BWRAP}"
+                    --python "${Python3_EXECUTABLE}"
+                    --dbus-daemon "${QINDAQT_DESKTOP_DBUS_DAEMON}"
+                    --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
+                    --weston "${QINDAQT_WESTON}"
+                    --weston-screenshooter "${QINDAQT_WESTON_SCREENSHOOTER}"
+            )
+            set_tests_properties(
+                "desktop.virtual.interactive.matrix.${_row}"
+                PROPERTIES
+                    TIMEOUT 120
+                    RUN_SERIAL TRUE
+                    RESOURCE_LOCK qindaqt-private-session
+                    FIXTURES_REQUIRED desktop_virtual_stage
+                    SKIP_RETURN_CODE 77
+                    LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot;matrix"
+            )
+        endforeach()
+        unset(_qindaqt_desktop_matrix_rows)
     endif()
 endif()
 

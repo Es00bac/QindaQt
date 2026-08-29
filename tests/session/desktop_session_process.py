@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from desktop_session_topology import BootTopology, desktop_1080p_topology
+from desktop_session_topology import DesktopTopology, desktop_1080p_topology
 
 
 class ProcessContractError(RuntimeError):
@@ -88,8 +88,8 @@ def wait_for_path(path: Path, state: RuntimeState, seconds: float) -> None:
     raise RuntimeError(f"timed out waiting for {path}")
 
 
-def _proc_record(pid: int) -> tuple[str, int]:
-    process = Path("/proc") / str(pid)
+def _proc_record(pid: int, proc_root: Path = Path("/proc")) -> tuple[str, int]:
+    process = proc_root / str(pid)
     executable = (process / "exe").resolve(strict=True).name
     contents = (process / "stat").read_text(encoding="ascii")
     closing = contents.rfind(")")
@@ -100,25 +100,91 @@ def _proc_record(pid: int) -> tuple[str, int]:
 
 
 def process_evidence(
-    probe: Mapping[str, Any], topology: BootTopology | None = None
+    probe: Mapping[str, Any], topology: DesktopTopology | None = None,
+    *,
+    proc_root: Path = Path("/proc"),
+    role_pid_hints: Mapping[str, int] | None = None,
+    direct_parent_pid: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, int]]:
     """Bind each exact topology role to one live executable and parent role."""
 
     topology = topology or desktop_1080p_topology()
-    by_executable = {item.executable: item for item in topology.processes}
+    by_executable: dict[str, list[Any]] = {}
+    for item in topology.processes:
+        if item.role != "session-probe":
+            by_executable.setdefault(item.executable, []).append(item)
+    compositor_pid = 0
+    for raw in probe.get("services", []):
+        if (
+            isinstance(raw, Mapping)
+            and raw.get("name") == "org.qindaqt.Compositor"
+            and raw.get("status") == "owned"
+        ):
+            try:
+                compositor_pid = int(str(raw.get("pid", "0")), 10)
+            except ValueError:
+                compositor_pid = 0
     observed: dict[str, tuple[int, int]] = {}
-    for entry in Path("/proc").iterdir():
+    for entry in proc_root.iterdir():
         if not entry.name.isdigit():
             continue
         try:
-            executable, parent = _proc_record(int(entry.name))
+            process_id = int(entry.name)
+            executable, parent = _proc_record(process_id, proc_root)
         except (OSError, RuntimeError, ValueError):
             continue
-        expectation = by_executable.get(executable)
-        if expectation is not None:
-            if expectation.role in observed:
-                raise RuntimeError(f"multiple processes claimed {expectation.role}")
-            observed[expectation.role] = (int(entry.name), parent)
+        expectations = by_executable.get(executable, [])
+        if not expectations:
+            continue
+        if len(expectations) == 1:
+            role = expectations[0].role
+        elif {item.role for item in expectations} == {
+            "parent-compositor", "compositor"
+        }:
+            # AGENT-CONTRACT: A fractional S3 run has a raw KWin parent and a
+            # QindaQt KWin child. Only the child owns the separately probed
+            # compositor service; the other exact executable is the parent.
+            hints = role_pid_hints or {}
+            parent_hint = hints.get("parent-compositor", 0)
+            child_hint = hints.get("compositor", 0)
+            if (
+                compositor_pid <= 1
+                or child_hint != compositor_pid
+                or parent_hint <= 1
+                or parent_hint == child_hint
+                or process_id not in {parent_hint, child_hint}
+                or direct_parent_pid is None
+                or direct_parent_pid <= 1
+                or parent != direct_parent_pid
+            ):
+                raise RuntimeError(
+                    "duplicate KWin roles lack exact service, spawn, and ancestry evidence"
+            )
+            role = "compositor" if process_id == child_hint else "parent-compositor"
+        elif {item.role for item in expectations} == {
+            "parent-private-bus", "private-bus"
+        }:
+            hints = role_pid_hints or {}
+            parent_hint = hints.get("parent-private-bus", 0)
+            child_hint = hints.get("private-bus", 0)
+            if (
+                parent_hint <= 1
+                or child_hint <= 1
+                or parent_hint == child_hint
+                or process_id not in {parent_hint, child_hint}
+                or direct_parent_pid is None
+                or direct_parent_pid <= 1
+                or parent != direct_parent_pid
+            ):
+                raise RuntimeError(
+                    "duplicate D-Bus roles lack exact spawn and ancestry evidence"
+                )
+            role = "private-bus" if process_id == child_hint else "parent-private-bus"
+        else:
+            raise RuntimeError(f"executable {executable!r} has ambiguous process roles")
+        if role in observed:
+            raise RuntimeError(f"multiple processes claimed {role}")
+        observed[role] = (process_id, parent)
     observed["session-probe"] = (
         int(str(probe.get("selfPid", "0"))), int(str(probe.get("parentPid", "0")))
     )
