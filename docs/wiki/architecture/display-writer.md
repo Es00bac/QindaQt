@@ -24,7 +24,7 @@ The D4 code never touches the host display during build or deterministic tests.
 | `WriterTransactionPort` | One in-flight request, machine-lineage/token/request/owner fencing, timeout, and exactly-once deferred completion | Journal implementation, Display1 state transitions, compositor inventory |
 | `OutputManagementPort` | Injected asynchronous owner/submit/completion seam | D-Bus, Settings, files, UI |
 | Production adapter | Direct ownership of a private Wayland connection and public KDE output-management objects | KWin private ABI/configuration, libkscreen production authority, physical outputs |
-| `JournalStore` | Injected synchronous store/clear seam needed by the existing Display1 side-effect port | Filesystem policy; D5 implements it in `display_journal` |
+| `JournalStore` | Injected synchronous typed store/clear seam preserving unchanged, durable, and post-commit durability-uncertain truth for Display1 | Filesystem policy; D5 implements it in `display_journal` |
 
 The installed public headers expose only owning Qt values, abstract ports, and
 factories. Generated protocol wrappers, Wayland objects, socket notifiers, and
@@ -120,4 +120,6 @@ The D5 store is deliberately downstream of this module: it derives from the
 installed `JournalStore` interface and is passed to `WriterTransactionPort` by
 the future resident composition. D4 therefore remains independently testable
 with a fake, while D5 owns Linux file operations and canonical startup loading.
-Neither module discovers a user-state path.
+`WriterTransactionPort` forwards the typed mutation outcome unchanged; it never
+turns post-commit uncertainty into Boolean success or failure. Neither module
+discovers a user-state path.

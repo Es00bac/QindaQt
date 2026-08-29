@@ -94,13 +94,13 @@ void WriterTransactionPort::beginMachineLineage(const quint64 machineLineage)
     m_machineLineage = machineLineage;
 }
 
-bool WriterTransactionPort::storeJournal(
+DisplayTransaction::JournalMutationOutcome WriterTransactionPort::storeJournal(
     const DisplayTransaction::Journal &journal)
 {
     return m_journalStore->store(journal);
 }
 
-bool WriterTransactionPort::clearJournal()
+DisplayTransaction::JournalMutationOutcome WriterTransactionPort::clearJournal()
 {
     return m_journalStore->clear();
 }

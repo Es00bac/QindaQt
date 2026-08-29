@@ -219,7 +219,7 @@ CommandResult Machine::preview(const QString &transactionId)
     }
     Journal durableJournal = m_journal;
     durableJournal.phase = JournalPhase::Applying;
-    if (!m_port.storeJournal(durableJournal)) {
+    if (!Private::journalMutationDurable(m_port.storeJournal(durableJournal))) {
         return rejected(CommandError::JournalFailure);
     }
     m_journal = std::move(durableJournal);
@@ -236,7 +236,7 @@ CommandResult Machine::confirm(const QString &transactionId)
     if (!transactionMatches(transactionId)) {
         return rejected(CommandError::UnknownTransaction);
     }
-    if (!m_port.clearJournal()) {
+    if (!Private::journalMutationDurable(m_port.clearJournal())) {
         return rejected(CommandError::JournalFailure);
     }
     const Display::Snapshot confirmed = m_snapshot;

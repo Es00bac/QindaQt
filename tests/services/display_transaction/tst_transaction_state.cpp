@@ -41,6 +41,7 @@ class TransactionStateTests final : public QObject
 private Q_SLOTS:
     void stageFencesRevisionAndDetectsNoOp();
     void previewRequiresSafeAuthorityAndDurableJournal();
+    void journalDurabilityUncertaintyIsConservative();
     void applyObserveConfirmFlow();
     void readyInputsEnforceCurrentLineage();
     void rejectedAndTimedOutApplyNeverReplayForward();
@@ -169,6 +170,41 @@ void TransactionStateTests::previewRequiresSafeAuthorityAndDurableJournal()
     QVERIFY(machine.view().journalActive);
     QCOMPARE(port.requests.size(), 1);
     QCOMPARE(port.requests.first().scope, ApplyScope::ForwardCandidate);
+}
+
+void TransactionStateTests::journalDurabilityUncertaintyIsConservative()
+{
+    Test::FakeClock clock;
+    Test::FakePort port;
+    Machine machine(clock, port, Test::timing());
+    const Display::Snapshot base = Test::snapshot();
+    const Display::Candidate candidate = Test::changedCandidate(base);
+    QVERIFY(machine.initialize(base, SafetyState::Safe).accepted);
+    QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+    const MachineView staged = machine.view();
+
+    port.storeOutcome = JournalMutationOutcome::DurabilityUncertain;
+    QCOMPARE(machine.preview(QStringLiteral("tx")).error, CommandError::JournalFailure);
+    QCOMPARE(machine.view(), staged);
+    QVERIFY(port.requests.isEmpty());
+    QVERIFY(port.journalPresent);
+
+    port.storeOutcome = JournalMutationOutcome::Durable;
+    QVERIFY(machine.preview(QStringLiteral("tx")).accepted);
+    const quint64 token = port.requests.constLast().token;
+    QVERIFY(machine.applyCompleted(token, ApplyOutcome::Applied).accepted);
+    QVERIFY(machine.observedSnapshot(Test::observed(base, candidate, 2)).accepted);
+    QCOMPARE(machine.view().state, MachineState::AwaitingConfirmation);
+    const MachineView awaiting = machine.view();
+
+    port.clearOutcome = JournalMutationOutcome::DurabilityUncertain;
+    QCOMPARE(machine.confirm(QStringLiteral("tx")).error, CommandError::JournalFailure);
+    QCOMPARE(machine.view(), awaiting);
+    QVERIFY(!port.journalPresent);
+
+    port.clearOutcome = JournalMutationOutcome::Durable;
+    QVERIFY(machine.confirm(QStringLiteral("tx")).accepted);
+    QCOMPARE(machine.view().state, MachineState::Ready);
 }
 
 void TransactionStateTests::applyObserveConfirmFlow()

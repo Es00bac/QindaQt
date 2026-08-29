@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/display_journal/file_journal_store.h>
 
+#include "file_journal_hooks_p.h"
+
 #include <qindaqt/services/display_transaction/transaction_journal.h>
 
 #include <QtCore/QByteArray>
@@ -123,7 +125,10 @@ bool writeAll(const int fd, const QByteArray &payload) {
   return true;
 }
 
-bool syncDirectory(const int rootFd) {
+bool syncDirectory(const int rootFd, Private::FileJournalHooks &hooks) {
+  if (const std::optional<bool> injected = hooks.directorySyncResult()) {
+    return *injected;
+  }
   if (::fsync(rootFd) == 0) {
     return true;
   }
@@ -142,7 +147,16 @@ LoadResult rejected(const char *reason) {
 } // namespace
 
 FileJournalStore::FileJournalStore(QString userStateRoot)
-    : m_userStateRoot(std::move(userStateRoot)) {}
+    : FileJournalStore(std::move(userStateRoot),
+                       std::make_shared<Private::FileJournalHooks>()) {}
+
+FileJournalStore::FileJournalStore(
+    QString userStateRoot, std::shared_ptr<Private::FileJournalHooks> hooks)
+    : m_userStateRoot(std::move(userStateRoot)), m_hooks(std::move(hooks)) {
+  Q_ASSERT(m_hooks != nullptr);
+}
+
+FileJournalStore::~FileJournalStore() = default;
 
 LoadResult FileJournalStore::load() const {
   const ScopedFd root = openRoot(m_userStateRoot);
@@ -170,6 +184,7 @@ LoadResult FileJournalStore::load() const {
     return rejected("journal-too-large");
   }
 
+  m_hooks->beforeOpenJournal();
   ScopedFd file(::openat(root.get(), kJournalName,
                          O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK));
   if (file.get() < 0) {
@@ -183,6 +198,11 @@ LoadResult FileJournalStore::load() const {
       openedMetadata.st_uid != ::geteuid() || openedMetadata.st_nlink != 1 ||
       (openedMetadata.st_mode & 0077) != 0) {
     return rejected("journal-replaced-during-open");
+  }
+  if (openedMetadata.st_size < 0 ||
+      static_cast<quint64>(openedMetadata.st_size) >
+          static_cast<quint64>(DisplayTransaction::kMaximumJournalBytes)) {
+    return rejected("journal-too-large");
   }
 
   QByteArray payload;
@@ -223,23 +243,24 @@ LoadResult FileJournalStore::load() const {
           .reasonCode = {}};
 }
 
-bool FileJournalStore::store(const DisplayTransaction::Journal &journal) {
+DisplayTransaction::JournalMutationOutcome
+FileJournalStore::store(const DisplayTransaction::Journal &journal) {
   const DisplayTransaction::JournalEncodeResult encoded =
       DisplayTransaction::encodeJournal(journal);
   if (!encoded.succeeded()) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
   const ScopedFd root = openRoot(m_userStateRoot);
   if (root.get() < 0 || !safeExistingJournal(root.get()) ||
       !removeStaleTemporary(root.get())) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
 
   const int rawTemporary = ::openat(
       root.get(), kTemporaryName,
       O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, S_IRUSR | S_IWUSR);
   if (rawTemporary < 0) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
   ScopedFd temporary(rawTemporary);
   bool prepared = ::fchmod(temporary.get(), S_IRUSR | S_IWUSR) == 0 &&
@@ -247,7 +268,7 @@ bool FileJournalStore::store(const DisplayTransaction::Journal &journal) {
                   ::fsync(temporary.get()) == 0;
   if (!prepared || !retryClose(temporary.release())) {
     static_cast<void>(::unlinkat(root.get(), kTemporaryName, 0));
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
 
   // AGENT-GUARD: The atomic replacement is the commit point. Every failure
@@ -257,29 +278,35 @@ bool FileJournalStore::store(const DisplayTransaction::Journal &journal) {
   if (!safeExistingJournal(root.get()) ||
       ::renameat(root.get(), kTemporaryName, root.get(), kJournalName) != 0) {
     static_cast<void>(::unlinkat(root.get(), kTemporaryName, 0));
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
-  return syncDirectory(root.get());
+  return syncDirectory(root.get(), *m_hooks)
+             ? DisplayTransaction::JournalMutationOutcome::Durable
+             : DisplayTransaction::JournalMutationOutcome::DurabilityUncertain;
 }
 
-bool FileJournalStore::clear() {
+DisplayTransaction::JournalMutationOutcome FileJournalStore::clear() {
   const ScopedFd root = openRoot(m_userStateRoot);
   if (root.get() < 0) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
   struct stat metadata{};
   if (::fstatat(root.get(), kJournalName, &metadata, AT_SYMLINK_NOFOLLOW) !=
       0) {
-    return errno == ENOENT;
+    return errno == ENOENT
+               ? DisplayTransaction::JournalMutationOutcome::Durable
+               : DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
   if (!S_ISREG(metadata.st_mode) || metadata.st_uid != ::geteuid() ||
       metadata.st_nlink != 1 || (metadata.st_mode & 0077) != 0) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
   if (::unlinkat(root.get(), kJournalName, 0) != 0) {
-    return false;
+    return DisplayTransaction::JournalMutationOutcome::Unchanged;
   }
-  return syncDirectory(root.get());
+  return syncDirectory(root.get(), *m_hooks)
+             ? DisplayTransaction::JournalMutationOutcome::Durable
+             : DisplayTransaction::JournalMutationOutcome::DurabilityUncertain;
 }
 
 const QString &FileJournalStore::userStateRoot() const noexcept {

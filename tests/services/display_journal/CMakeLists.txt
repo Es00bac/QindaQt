@@ -15,6 +15,10 @@ target_link_libraries(
         Qt6::Core
         Qt6::Test
 )
+target_include_directories(
+    qindaqt_display_journal_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/display_journal/src"
+)
 qindaqt_enable_warnings(qindaqt_display_journal_tests)
 add_test(NAME qindaqt.display-journal-filesystem COMMAND qindaqt_display_journal_tests)
 set_tests_properties(

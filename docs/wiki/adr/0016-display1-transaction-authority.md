@@ -61,7 +61,10 @@ D2 must supply those adapters without changing this authority split.
 - A successful preview may remain visible after a Display1 crash until the
   service is activated and consumes its journal. Activation and durable
   storage are therefore D2 release requirements.
-- Initial journal storage and final journal clearing are hard gates. Refreshes
+- Initial journal storage and final journal clearing are hard gates. The port
+  distinguishes unchanged, durable, and post-pathname-commit durability-
+  uncertain outcomes. Only durable initial storage authorizes forward apply;
+  clear uncertainty remains conservative cleanup/recovery failure. Refreshes
   of an already-durable pre-image during rollback are best effort so a storage
   outage cannot suppress the rollback attempt.
 - A failed confirmation clear leaves the transaction awaiting confirmation.

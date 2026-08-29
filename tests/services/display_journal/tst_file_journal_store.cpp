@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/display_journal/file_journal_store.h>
 
+#include "file_journal_hooks_p.h"
+
 #include <qindaqt/services/display_topology/topology.h>
 #include <qindaqt/services/display_transaction/transaction_journal.h>
 
@@ -12,6 +14,8 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <optional>
 
 using namespace QindaQt::DisplayJournal;
 namespace Display = QindaQt::Display;
@@ -100,6 +104,30 @@ public:
   }
 };
 
+class InjectedJournalHooks final : public Private::FileJournalHooks {
+public:
+  void beforeOpenJournal() override {
+    if (growPath.isEmpty()) {
+      return;
+    }
+    growthAttempted = true;
+    QFile file(growPath);
+    growthSucceeded = file.open(QIODevice::ReadWrite) && file.resize(1LL << 40);
+    growPath.clear();
+  }
+
+  [[nodiscard]] std::optional<bool> directorySyncResult() override {
+    const std::optional<bool> result = nextDirectorySync;
+    nextDirectorySync.reset();
+    return result;
+  }
+
+  QString growPath;
+  std::optional<bool> nextDirectorySync;
+  bool growthAttempted = false;
+  bool growthSucceeded = false;
+};
+
 } // namespace
 
 class FileJournalStoreTests final : public QObject {
@@ -112,6 +140,8 @@ private Q_SLOTS:
   void rejectsMalformedAndOversizeBytes();
   void precommitFailurePreservesPriorValue();
   void writerPortUsesTheDurableBoundary();
+  void postCommitDirectoryFailureIsExplicit();
+  void openedFileGrowthIsBoundedBeforeReserve();
 };
 
 void FileJournalStoreTests::storesLoadsReplacesAndClears() {
@@ -121,7 +151,8 @@ void FileJournalStoreTests::storesLoadsReplacesAndClears() {
   QCOMPARE(store.load().status, LoadStatus::Absent);
 
   const DisplayTransaction::Journal first = journal(QStringLiteral("first"));
-  QVERIFY(store.store(first));
+  QCOMPARE(store.store(first),
+           DisplayTransaction::JournalMutationOutcome::Durable);
   const QString path = root.filePath(QString::fromLatin1(kJournalName));
   struct stat metadata{};
   QVERIFY(::lstat(QFile::encodeName(path).constData(), &metadata) == 0);
@@ -131,15 +162,16 @@ void FileJournalStoreTests::storesLoadsReplacesAndClears() {
 
   const DisplayTransaction::Journal second =
       journal(QStringLiteral("second"), QPoint(48, 0));
-  QVERIFY(store.store(second));
+  QCOMPARE(store.store(second),
+           DisplayTransaction::JournalMutationOutcome::Durable);
   const LoadResult loaded = store.load();
   QVERIFY(loaded.loaded());
   QCOMPARE(loaded.journal, second);
   QVERIFY(!QFile::exists(root.filePath(QString::fromLatin1(kTemporaryName))));
 
-  QVERIFY(store.clear());
+  QCOMPARE(store.clear(), DisplayTransaction::JournalMutationOutcome::Durable);
   QCOMPARE(store.load().status, LoadStatus::Absent);
-  QVERIFY(store.clear());
+  QCOMPARE(store.clear(), DisplayTransaction::JournalMutationOutcome::Durable);
 }
 
 void FileJournalStoreTests::interruptedTemporaryPreservesCommittedValue() {
@@ -148,7 +180,8 @@ void FileJournalStoreTests::interruptedTemporaryPreservesCommittedValue() {
   FileJournalStore beforeCrash(root.path());
   const DisplayTransaction::Journal committed =
       journal(QStringLiteral("committed"));
-  QVERIFY(beforeCrash.store(committed));
+  QCOMPARE(beforeCrash.store(committed),
+           DisplayTransaction::JournalMutationOutcome::Durable);
 
   const DisplayTransaction::Journal interrupted =
       journal(QStringLiteral("interrupted"), QPoint(96, 0));
@@ -159,7 +192,8 @@ void FileJournalStoreTests::interruptedTemporaryPreservesCommittedValue() {
 
   FileJournalStore afterRestart(root.path());
   QCOMPARE(afterRestart.load().journal, committed);
-  QVERIFY(afterRestart.store(interrupted));
+  QCOMPARE(afterRestart.store(interrupted),
+           DisplayTransaction::JournalMutationOutcome::Durable);
   QCOMPARE(afterRestart.load().journal, interrupted);
   QVERIFY(!QFile::exists(root.filePath(QString::fromLatin1(kTemporaryName))));
 }
@@ -172,7 +206,8 @@ void FileJournalStoreTests::rejectsUnsafeRootsAndEntries() {
   const QString linkedRoot = parent.filePath(QStringLiteral("linked"));
   QVERIFY(QFile::link(realRoot, linkedRoot));
   QCOMPARE(FileJournalStore(linkedRoot).load().status, LoadStatus::Rejected);
-  QVERIFY(!FileJournalStore(linkedRoot).store(journal(QStringLiteral("root"))));
+  QCOMPARE(FileJournalStore(linkedRoot).store(journal(QStringLiteral("root"))),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
 
   FileJournalStore store(realRoot);
   const QString journalPath =
@@ -181,16 +216,20 @@ void FileJournalStoreTests::rejectsUnsafeRootsAndEntries() {
   QVERIFY(writeFixture(outside, QByteArrayLiteral("outside")));
   QVERIFY(QFile::link(outside, journalPath));
   QCOMPARE(store.load().status, LoadStatus::Rejected);
-  QVERIFY(!store.store(journal(QStringLiteral("symlink"))));
-  QVERIFY(!store.clear());
+  QCOMPARE(store.store(journal(QStringLiteral("symlink"))),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
+  QCOMPARE(store.clear(),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
   QFile symlink(journalPath);
   QVERIFY(symlink.remove());
   QCOMPARE(QFile(outside).size(), qsizetype(7));
 
   QVERIFY(QDir().mkdir(journalPath));
   QCOMPARE(store.load().status, LoadStatus::Rejected);
-  QVERIFY(!store.store(journal(QStringLiteral("directory"))));
-  QVERIFY(!store.clear());
+  QCOMPARE(store.store(journal(QStringLiteral("directory"))),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
+  QCOMPARE(store.clear(),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
 }
 
 void FileJournalStoreTests::rejectsMalformedAndOversizeBytes() {
@@ -211,7 +250,8 @@ void FileJournalStoreTests::rejectsMalformedAndOversizeBytes() {
                                           QFileDevice::WriteOwner |
                                           QFileDevice::ReadGroup));
   QCOMPARE(store.load().reasonCode, QStringLiteral("unsafe-journal-file"));
-  QVERIFY(!store.clear());
+  QCOMPARE(store.clear(),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
 }
 
 void FileJournalStoreTests::precommitFailurePreservesPriorValue() {
@@ -219,11 +259,13 @@ void FileJournalStoreTests::precommitFailurePreservesPriorValue() {
   QVERIFY(root.isValid());
   FileJournalStore store(root.path());
   const DisplayTransaction::Journal prior = journal(QStringLiteral("prior"));
-  QVERIFY(store.store(prior));
+  QCOMPARE(store.store(prior),
+           DisplayTransaction::JournalMutationOutcome::Durable);
 
   const QString temporary = root.filePath(QString::fromLatin1(kTemporaryName));
   QVERIFY(QDir().mkdir(temporary));
-  QVERIFY(!store.store(journal(QStringLiteral("replacement"), QPoint(144, 0))));
+  QCOMPARE(store.store(journal(QStringLiteral("replacement"), QPoint(144, 0))),
+           DisplayTransaction::JournalMutationOutcome::Unchanged);
   QCOMPARE(store.load().journal, prior);
 }
 
@@ -236,10 +278,52 @@ void FileJournalStoreTests::writerPortUsesTheDurableBoundary() {
   const DisplayTransaction::Journal value =
       journal(QStringLiteral("writer-port"));
 
-  QVERIFY(writer.storeJournal(value));
+  QCOMPARE(writer.storeJournal(value),
+           DisplayTransaction::JournalMutationOutcome::Durable);
   QCOMPARE(FileJournalStore(root.path()).load().journal, value);
-  QVERIFY(writer.clearJournal());
+  QCOMPARE(writer.clearJournal(),
+           DisplayTransaction::JournalMutationOutcome::Durable);
   QCOMPARE(FileJournalStore(root.path()).load().status, LoadStatus::Absent);
+}
+
+void FileJournalStoreTests::postCommitDirectoryFailureIsExplicit() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  const DisplayTransaction::Journal prior = journal(QStringLiteral("prior"));
+  QCOMPARE(FileJournalStore(root.path()).store(prior),
+           DisplayTransaction::JournalMutationOutcome::Durable);
+
+  auto hooks = std::make_shared<InjectedJournalHooks>();
+  auto store = Private::FileJournalStoreTestAccess::create(root.path(), hooks);
+  const DisplayTransaction::Journal replacement =
+      journal(QStringLiteral("replacement"), QPoint(192, 0));
+  hooks->nextDirectorySync = false;
+  QCOMPARE(store->store(replacement),
+           DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+  QCOMPARE(FileJournalStore(root.path()).load().journal, replacement);
+
+  hooks->nextDirectorySync = false;
+  QCOMPARE(store->clear(),
+           DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+  QCOMPARE(FileJournalStore(root.path()).load().status, LoadStatus::Absent);
+}
+
+void FileJournalStoreTests::openedFileGrowthIsBoundedBeforeReserve() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  const DisplayTransaction::Journal value = journal(QStringLiteral("growth"));
+  FileJournalStore writer(root.path());
+  QCOMPARE(writer.store(value),
+           DisplayTransaction::JournalMutationOutcome::Durable);
+
+  auto hooks = std::make_shared<InjectedJournalHooks>();
+  hooks->growPath = root.filePath(QString::fromLatin1(kJournalName));
+  auto reader = Private::FileJournalStoreTestAccess::create(root.path(), hooks);
+  const LoadResult loaded = reader->load();
+  QVERIFY(hooks->growthAttempted);
+  QVERIFY(hooks->growthSucceeded);
+  QCOMPARE(loaded.status, LoadStatus::Rejected);
+  QCOMPARE(loaded.reasonCode, QStringLiteral("journal-too-large"));
 }
 
 QTEST_GUILESS_MAIN(FileJournalStoreTests)
