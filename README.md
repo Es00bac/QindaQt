@@ -13,8 +13,13 @@ rule is preserved here: the record lives on its own branch, never in `main`.
 
 - `ops/team/features.json` — the canonical outcome ledger. Identical to the
   copy tracked in `main`, which is the authoritative one for tooling.
-- `ops/team/ROSTER.md`, `OPERATING_MODEL.md`, `providers.json` — live team
-  state, newer than the copies in `main`.
+- `ops/team/ROSTER.md`, `OPERATING_MODEL.md`, `providers.json` — the live
+  worktree copies, which diverged from the ones `main` tracks. They are not
+  uniformly newer, so neither side was auto-merged: `providers.json` here is
+  about seven hours fresher and records the remaining Codex capacity and its
+  2026-09-03 reset; `ROSTER.md` here carries more roster rows while `main`'s
+  has the manager's later prose; `OPERATING_MODEL.md` in `main` is the longer
+  and later one. Reconcile by hand before trusting either.
 - `ops/team/messages/**` — every claim, midpoint, handoff, finding, review
   verdict, and integration record, by channel.
 - `ops/team/workers/**` — durable per-worker employee records.
