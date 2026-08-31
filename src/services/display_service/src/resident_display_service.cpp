@@ -164,24 +164,25 @@ DisplayTransaction::CommandResult ResidentDisplayService::prepareForSuspend()
 void ResidentDisplayService::inventoryObserved(const InventoryFrame &frame)
 {
     const InventoryObservationResult result = m_model->observeInventory(frame);
-    if (result.accepted()) {
-        modelTransitioned(result.stateChanged);
-        syncTopologySettleTimer(
-            result.status == InventoryObservationStatus::AcceptedNewLineage
-            || result.status == InventoryObservationStatus::AcceptedChanged);
-        if (result.stateChanged
-            || result.status == InventoryObservationStatus::AcceptedNewLineage) {
+    if (!result.accepted()) {
+        // AGENT-CONTRACT: DisplayServiceModel owns exact-owner replacement and
+        // reports its resulting availability edge through stateChanged. Every
+        // rejected same-owner observation preserves live truth and reports no
+        // change; failed replacement-owner establishment revokes the old
+        // lineage and reports a change. A reason code is diagnostic, never
+        // authority policy.
+        if (result.stateChanged) {
+            modelTransitioned(true);
             m_serviceObject->notifyChanged();
         }
         return;
     }
-    // A contradictory or otherwise rejected complete frame means the prior
-    // snapshot can no longer authorize a mutation. Retain any D5 journal for
-    // recovery, withdraw the public snapshot, and wait for a fresh lineage.
-    if (m_model->transportLost()) {
-        m_deadlineTimer->stop();
-        m_topologySettleTimer->stop();
-        Q_EMIT modelStateChanged();
+    modelTransitioned(result.stateChanged);
+    syncTopologySettleTimer(
+        result.status == InventoryObservationStatus::AcceptedNewLineage
+        || result.status == InventoryObservationStatus::AcceptedChanged);
+    if (result.stateChanged
+        || result.status == InventoryObservationStatus::AcceptedNewLineage) {
         m_serviceObject->notifyChanged();
     }
 }

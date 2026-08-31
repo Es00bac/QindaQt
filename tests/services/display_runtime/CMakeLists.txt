@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test)
+# Runtime test executables link the static DisplayRuntime/DisplayWriter graph;
+# declare the writer's Qt component in this directory so Qt's deferred target
+# finalizer can walk the complete dependency graph without cross-scope gaps.
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test WaylandClient)
 find_program(QINDAQT_DISPLAY_RUNTIME_DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
 
 qt_add_executable(
@@ -72,7 +75,7 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
-        "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
+        "-DMODULE_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../../../src/services/display_runtime"
         "-DSTAGE_DIR=${CMAKE_CURRENT_BINARY_DIR}/boundary-poison-stage"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary_negative.cmake"
 )

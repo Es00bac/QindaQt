@@ -67,13 +67,15 @@ system-bus loss, malformed replies, or failed reacquisition are terminal for
 that process; a fresh activation must establish new authority.
 
 A valid startup journal is passed to D1 `recover` on the first complete D0
-inventory rather than initialized away. If inventory becomes unavailable,
-malformed, contradictory, or changes exact owner, the service captures any
-active journal before discarding the old machine. The next complete lineage
-recovers that journal under a new outer lineage. Rejected journal truth is
-never cleared, and owner/epoch replacement never authorizes forward replay.
-Late writer completions remain fenced by D4's copied machine/token/request/
-owner tuple.
+inventory rather than initialized away. If inventory becomes unavailable or
+changes exact owner, the service captures any active journal before discarding
+the old machine. A stale, contradictory, or malformed complete read from the
+same owner is rejected while preserving the prior public truth and active
+machine; its diagnostic cannot masquerade as an authority-loss edge. The next
+complete lineage after actual loss recovers the journal under a new outer
+lineage. Rejected journal truth is never cleared, and owner/epoch replacement
+never authorizes forward replay. Late writer completions remain fenced by
+D4's copied machine/token/request/owner tuple.
 
 ## Consequences
 

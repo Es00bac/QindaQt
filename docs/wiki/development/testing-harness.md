@@ -1105,7 +1105,7 @@ The bounded resident/transport rows are selected with:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.display-service-(inventory|resident)-private-bus$'
+  -R '^qindaqt\.display-service-(inventory|resident(-inventory-rejection)?)-private-bus$'
 ```
 
 Each row launches only its own `dbus-daemon` beneath a disposable temporary
@@ -1116,7 +1116,13 @@ invalidations, and stop while a read is outstanding. The resident row proves
 successful name/object registration, typed unavailable and snapshot replies,
 `Changed`, two successive injected short deadlines, the validated active
 transaction summary published at `AwaitingConfirmation` and cleared on
-confirmation, and complete name/object plus observer teardown.
+confirmation, and complete name/object plus observer teardown. The dedicated
+resident-rejection row preserves byte-identical public truth, machine lineage,
+and transaction state across regressed, changed-equal, unchanged-new, and
+invalid-projection frames from the same owner while the machine is Staged,
+Applying, Observing, or AwaitingConfirmation; an explicit unavailable edge in
+the same row still withdraws truth. A failed replacement-owner frame separately
+proves the old lineage is withdrawn and its availability edge is published.
 
 These tests are serial isolated-runtime evidence. They never launch KWin,
 Wayland/XWayland, a GUI, or the installed resident process; touch no host
@@ -1220,6 +1226,38 @@ startup-load seam, not resident startup recovery or compositor convergence.
 The contained D6 matrix must still compose the exact D4 writer and D5 store,
 restart during preview, consume the retained journal through D1 `recover`, and
 observe safe target/pre-image convergence before enabling production mutation.
+
+## D6 authenticated Display1 process composition
+
+The exact deterministic/private-bus/package D6 rows are selected with:
+
+```sh
+ctest --test-dir build/dev --parallel 1 --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-runtime-'
+```
+
+The seven rows cover state-root precedence and rejection, D5 load before D4
+writer startup, loaded-journal recovery without forward replay, composed
+writer/lock/logind safety, authenticated suspend and resume descriptor
+lifetime, terminal owner loss, source and installed public-header poison, and
+packaged missing/unsafe/malformed-state rejection before bus authority. The
+boundary-poison stage is disposable and may live in an ordinary in-tree or
+out-of-tree build root; it is guarded against the narrow `display_runtime`
+source module and must still reject every planted dependency.
+
+Run the adjacent D0–D6 contract set, including the resident same-owner rejection
+regression and the lock-authentication dependency, with:
+
+```sh
+ctest --test-dir build/dev --parallel 1 --output-on-failure --no-tests=error \
+  -R '^qindaqt\.(display-(protocol|identity|topology|transaction|service|client|writer|journal|runtime)-|session-lock-)'
+```
+
+These rows use pure values, disposable files, fake ports, and explicitly named
+private D-Bus connections. They open no compositor or display and do not prove
+KWin callback/observation ordering, target or rollback convergence, hotplug,
+restart recovery against live output globals, mirror visibility, physical
+hardware behavior, or the complete contained D6 matrix below.
 
 ## Contained interactive virtual desktop S0+S1
 

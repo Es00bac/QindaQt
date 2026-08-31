@@ -47,9 +47,11 @@ public:
     // unique-owner lineage; it supplies a bounded, restart-unique seed. The
     // model combines that seed with a process-monotonic lineage so a repeated
     // seed cannot republish an accepted public epoch. All returned/accessed
-    // values are model-owned until the next call. Rejected calls preserve live
-    // public truth; a failed first-lineage recovery still consumes its outer
-    // callback fence but publishes no snapshot or machine.
+    // values are model-owned until the next call. Rejected same-owner calls
+    // preserve live public truth. A rejected replacement-owner call reports
+    // stateChanged when it first revokes the old lineage; a failed first-lineage
+    // recovery still consumes its outer callback fence but publishes no
+    // snapshot or machine.
     DisplayServiceModel(DisplayTransaction::MonotonicClock &clock,
                         TransactionPort &port,
                         EpochFactory epochFactory,

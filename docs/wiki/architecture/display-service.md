@@ -98,10 +98,12 @@ prevents an A/B/A owner or repeated-seed sequence from republishing any epoch
 already accepted in that process without retaining an attacker-controlled
 history set. At equal generation, only exact typed equality is accepted.
 Changed equal-generation truth, a regression, or a newer generation with
-unchanged contents rejects without partial replacement. An owner change first
-removes the old snapshot/machine, then establishes a fresh epoch; explicit
-transport loss also makes `GetSnapshot` and mutations unavailable. Revisions
-are never ordered across owners.
+unchanged contents rejects without partial replacement. Every rejected
+same-owner frame preserves the complete public snapshot and any active D1
+transaction; its diagnostic reason is never an authority-loss signal. An owner
+change first removes the old snapshot/machine, then establishes a fresh epoch;
+explicit transport loss also makes `GetSnapshot` and mutations unavailable.
+Revisions are never ordered across owners.
 
 D0 exposes only enabled outputs and the observed current mode. Projection
 therefore publishes one deterministic `current:WIDTHxHEIGHT@MILLIHERTZ` mode
