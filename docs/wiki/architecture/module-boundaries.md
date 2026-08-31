@@ -45,6 +45,7 @@ tests, and the wiki page describing its contract.
 | `src/services/display_client` | Exact-owner asynchronous Display1 activation/snapshots, validated atomic publication, serialized operations, timeout/uncertainty fencing, and server-state-projected reversible transaction coordination | Public display protocol plus Qt Core/DBus; never service implementation, compositor writer, Settings, shell, or QML |
 | `src/services/display_writer` | Fail-closed Display1 apply mapping, narrow compositor configuration validation, exactly-one-in-flight lineage/owner fencing, and a direct private KDE public-protocol adapter | Public display service/protocol/transaction plus Qt Core and private Qt/Wayland client integration; never KWin private ABI/store, libkscreen production authority, journal persistence, Settings, shell, or physical outputs |
 | `src/services/display_journal` | Canonical Display1 journal file load/store/clear, same-directory atomic replacement, restrictive file/root validation, and the deterministic restart-recovery seam | Public display transaction/writer values plus Qt Core and narrow Linux file operations; never environment path discovery, directory selection/creation, compositor/session state, recovery policy, D-Bus, QML, or KWin |
+| `src/services/display_runtime` | Packaged Display1 startup order, explicit user-state-root selection, D1 recovery injection, D4/D5 composition, Wayland-peer-authenticated lock safety, and exact-owner logind delay lifetime | Public display service/transaction/writer boundaries, accepted session-lock service, Qt Core/DBus, and process-local environment inputs; never KWin private ABI/store, Settings, QML, journal format/filesystem implementation, or nested-runtime assertions |
 | `src/services/display_color_model` | Pure Display Color C0 bounded ICC descriptor/header validation, deterministic catalog values, per-output capability/assignment-intent evaluation, degraded truth, and fingerprinted atomic snapshots | Qt Core only; never Display1 sibling modules, ICC/profile file or host access, transport, persistence, compositor, QML, or display hardware |
 | `src/services/power_protocol` | Power1 bounded values, canonical/fixed codecs, hostile validation, result lineage, and deterministic aggregate-battery policy | Qt Core and serialization-only Qt DBus; never a connection, service, upstream daemon, platform object, session, or UI |
 | `src/services/power_service` | Resident Power1 ownership, generation-fenced upstream collaborator seams (battery/profile/session), atomic last-known-good snapshot orchestration, epoch/revision authority, exactly-once operation completion, and the activation package | Public power protocol plus Qt Core/DBus; never host UPower, logind, power-profiles-daemon, Wayland, sysfs, or client implementation dependencies |
@@ -159,11 +160,13 @@ implemented; do not use placeholder modules to bypass a boundary.
   topology, and transaction. The resident service composes those public D1
   boundaries and consumes only D0's public Compositor1 inventory through an
   exact-owner QtDBus adapter; it never links the compositor or its KWin ABI.
+  The separate Display runtime composes D2 with D4, D5, authenticated lock
+  state, and logind; those dependencies do not leak back into D1/D2.
   KWin remains live/restore authority, Settings owns later registry/policy
   persistence, and shell geometry never waits for Display1. See
   [Display service](display-service.md),
   [ADR-0016](../adr/0016-display1-transaction-authority.md), and
-  [ADR-0017](../adr/0017-persistent-output-identity.md).
+  [ADR-0053](../adr/0053-compose-display1-from-authenticated-runtime-authorities.md).
 - Notification interruption policy is injected into the presentation model by
   shell composition. It filters only the popup projection; it cannot mutate the
   host, private wire, Active/Recent retention, or persistent settings. The

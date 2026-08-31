@@ -18,7 +18,7 @@ qualification remain preserved integrated foundations.
 ### Platform services delivery queue
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
-remaining Display1 resident composition and nested convergence work,
+remaining Display1 nested convergence and hardware work,
 production Power/brightness upstream adapters,
 Network UI, persistence, external secret-agent integration, and hardware
 qualification over the resident Network N1 boundary,
@@ -54,6 +54,17 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `9a7872ae` — Display D6 packages the authenticated resident composition of
+  D2 service, D4 public writer, D5 durable journal, compositor peer, lock, and
+  logind authorities. Typed observation disposition preserves live truth and
+  active transactions across benign same-owner rejection while failed owner
+  replacement still withdraws stale authority. Mary Jackson's exact rereview
+  accepted the repaired descendant after both former P1 defects closed.
+  Fresh manager Debug/Release targeted builds complete 197/197 and 228/228;
+  both pass hostile service 19/19, focused D6 7/7, and adjacent
+  D0-D6/session-lock 40/40. Nested convergence, mixed/physical
+  outputs, resources, suspend/hotplug, and hardware qualification remain.
 
 - `fa22af50` — GCC 15.3 strict Release portability repair for the
   customization-editor panel-step value. The accepted two-path change
@@ -109,8 +120,8 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   P0/P1/P2/P3 `0/0/0/0`, strict Debug and Release 12/12, direct lifecycle 4/4,
   adjacent D2/D3 10/10, package, docs, shape, lineage, provenance, and residue
   gates; manager replay built 130/130 focused actions and passed 12/12 plus
-  adjacent client 5/5. Resident startup recovery/writer composition,
-  authenticated lock/logind safety, nested convergence, mixed
+  adjacent client 5/5. D6 now supplies resident startup recovery/writer
+  composition and authenticated lock/logind safety; nested convergence, mixed
   outputs, resource proof, and hardware qualification remain later outcomes.
 
 - `a8a57a9` — Resident Power PB-1 service/client, exact-owner asynchronous
