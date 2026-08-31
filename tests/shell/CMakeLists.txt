@@ -88,6 +88,7 @@ add_test(
     NAME qindaqt.notification-center-applet-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationcenterapplet.qml"
 )
 

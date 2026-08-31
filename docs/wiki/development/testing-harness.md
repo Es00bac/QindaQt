@@ -163,7 +163,7 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
-The pure Power applet presentation model candidate is selected with:
+The production Power applet slice is selected with:
 
 ```sh
 ctest --test-dir build/dev \
@@ -171,8 +171,11 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its presentation, control rows, request state, and dependency-policy rows are
-detailed in [Power applet presentation model](../shell/power-applet.md).
+Its pure projection/control/request rows are joined by public-client controller,
+compiled offscreen keyboard/accessibility, runtime-boundary poison, and
+installed production-package/source-poison rows. No row contacts the host
+session bus, display server, power daemon, or hardware. The exact matrix and
+non-claims are detailed in [Power applet](../shell/power-applet.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories

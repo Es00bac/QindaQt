@@ -8,6 +8,7 @@ Window {
     required property var theme
     required property string surfaceId
     property var notificationCenterAppletAccess: null
+    property var powerAppletAccess: null
 
     visible: false
     color: "transparent"
@@ -20,5 +21,6 @@ Window {
         theme: root.theme
         liveApplets: true
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 }

@@ -9,6 +9,7 @@ Rectangle {
     property bool vertical: false
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var powerAppletAccess: null
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
@@ -37,6 +38,7 @@ Rectangle {
             "system-status": "◉   Wi‑Fi   87%",
             "clock": "Tue 10:42",
             "notification-center": "Notifications",
+            "power": "Power",
             "launcher": "QindaQt"
         };
         return labels[plugin] ?? plugin.replace(/-/g, " ");
@@ -65,6 +67,7 @@ Rectangle {
         vertical: root.vertical
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     Rectangle {

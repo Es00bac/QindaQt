@@ -19,7 +19,7 @@ qualification remain preserved integrated foundations.
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 resident composition and nested convergence work,
-production Power/brightness adapters and UI,
+production Power/brightness upstream adapters,
 resident Network1/NetworkManager transport over the Network N0 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
@@ -52,6 +52,16 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `9e4b7a60` — Production Power applet composition over the public PB-1 client,
+  with separate read/control grants, exact-owner and pending-operation fences,
+  audited manifest/registry/host/profile routing, compiled keyboard-accessible
+  QML, and installed relocation/source-poison proof. Ada Lovelace's exact
+  descendant rereview passed with P0/P1/P2/P3 `0/0/0/0`; fresh manager-tree
+  Debug and Release each build 327/327 focused actions and pass 14/14 combined
+  applet/host/Power rows plus 11/11 direct manifest cases. Live upstream
+  providers, successful host mutations, nested interaction, and physical
+  hardware remain later outcomes.
 
 - `2f429c11` via manager merge `7277771a` — First-class Display Settings route
   over the public D3 client/coordinator with bounded draft/topology validation,

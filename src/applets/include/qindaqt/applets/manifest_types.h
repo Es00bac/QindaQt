@@ -38,6 +38,7 @@ enum class Capability {
     AudioRead,
     AudioControl,
     PowerRead,
+    PowerControl,
     ClipboardRead,
     ClipboardWrite,
     BluetoothRead,

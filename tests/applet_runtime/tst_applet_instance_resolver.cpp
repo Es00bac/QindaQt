@@ -72,8 +72,18 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
 
     const QStringList expectedEntryPoints{
         QStringLiteral("qindaqt.applets.clock"),
-        QStringLiteral("qindaqt.applets.notification-center")};
+        QStringLiteral("qindaqt.applets.notification-center"),
+        QStringLiteral("qindaqt.applets.power")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
+
+    const auto power = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("power")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(power.ready(), qPrintable(power.diagnostic));
+    QCOMPARE(power.entryPoint, QStringLiteral("qindaqt.applets.power"));
+    QCOMPARE(power.grantedCapabilities,
+             QStringList({QStringLiteral("power.control"),
+                          QStringLiteral("power.read")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
