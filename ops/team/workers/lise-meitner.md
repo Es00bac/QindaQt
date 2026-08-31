@@ -1,71 +1,56 @@
 ---
 name: Lise Meitner
-role: Shell notification live-output routing repair implementer
+role: Independent S3 shell-readiness acceptance reviewer
 provider: OpenAI Codex collaboration runtime
 model: GPT-5 Codex; exact serving revision unexposed
 reasoning: exact serving level unexposed
 status: handoff
-feature: Notification center and popup authoritative live-output routing
-started_at: 2026-08-31T03:50:40-06:00
-updated_at: 2026-08-31T04:45:34-06:00
-worktree: /home/cabewse/work_SPaC3/container-wm-workers/shell-notification-output-repair
+feature: Virtual desktop S3 notification-shell readiness acceptance
+started_at: 2026-08-31T14:31:05-06:00
+updated_at: 2026-08-31T15:06:34-06:00
+worktree: /home/cabewse/work_SPaC3/container-wm-workers/virtual-desktop-s3-readiness-review
 ---
 
 # Lise Meitner
 
-- Role: shell notification live-output routing repair implementer.
+- Role: independent immutable-candidate S3 acceptance reviewer.
 - Provider/model: OpenAI Codex collaboration runtime, GPT-5 Codex; exact
   serving revision and reasoning level are unexposed and are not inferred.
-- Status: handoff — exact clean candidate
-  `89557a0a090b6b910621463b4ac97a6d1d054469` is frozen and awaiting a
-  different worker's exact-commit review; no live compiler or runtime process.
-- Exact base: `dad6df1d65afce2e9f18aa6d9d50f70ea02872da`.
-- Branch: `worker/shell-notification-output-repair`.
+- Status: handoff — STATIC+DYNAMIC ACCEPT for exact S3 candidate
+  `4d4b3dc395d80135a8f66f5ffcb2395cf1874c60`; P0/P1/P2/P3 =
+  0/0/0/0 in this independent review, no live process, serialized lane
+  released.
+- Exact candidate: `4d4b3dc395d80135a8f66f5ffcb2395cf1874c60`
+  (tree `86dbb17efba5c619c5aeb33027264b46a09fb7b9`, sole parent
+  `39c83a23143f36c3bfec8686b7cbc0121ea8a418`).
+- Branch: detached exact-candidate review.
 - Worktree:
-  `/home/cabewse/work_SPaC3/container-wm-workers/shell-notification-output-repair`.
-- Product authority: `src/shell/runtime/**`, focused shell-runtime tests under
-  `tests/shell/**`, narrowly affected shell/notification/output-policy wiki
-  documentation, and the smallest additive CMake test seams. Session,
-  compositor, Display, Settings, portal, Network, customization, manager
-  ledgers, and the mutable S3 worktree are prohibited.
+  `/home/cabewse/work_SPaC3/container-wm-workers/virtual-desktop-s3-readiness-review`.
+- Scope: immutable review only; durable board records are the only reviewer
+  mutations. Candidate product bytes are prohibited from editing.
 
 ## Updates
 
-- 2026-08-31T04:45:34-06:00 — Froze clean candidate
-  `89557a0a090b6b910621463b4ac97a6d1d054469` (tree
-  `04a6e6f212d285c7940f5765fe617d98a255d002`, exact parent
-  `dad6df1d65afce2e9f18aa6d9d50f70ea02872da`) after post-commit focused
-  Debug and Release reruns passed 2/2 each. The worktree is clean. Handoff
-  requests a different worker's exact-SHA source/test review before
-  integration, followed by S3's registered live dual-output rerun.
+- 2026-08-31T15:06:34-06:00 — Terminal STATIC+DYNAMIC ACCEPT. Fresh configure
+  and strict serial three-target build passed 882/882 actions. The registered
+  focused selector passed 5/5, gated former-red 1080p@150% plus package passed
+  2/2, and one package-plus-four-row matrix passed 5/5. Fresh archives prove
+  canonical activation/shell/surface 4/4, containment 12/12 false, bounded PSS,
+  real capture hashes/dimensions/content, teardown 4/4 with empty survivors,
+  and exact dual `[WL-1 priority 1, WL-0 priority 2]` authority. Visual capture
+  inspection is coherent. No runtime/compiler survivor or Python cache remains;
+  candidate product bytes are unchanged. Released the serialized lane.
 
-- 2026-08-31T04:41:09-06:00 — Strict Debug and Release production-shell
-  builds are green under GCC 15 with warnings as errors. The focused plus
-  adjacent notification/shell selector passed 20/20 in each configuration,
-  including the two new output rows, offscreen surface/focus/accessibility
-  coverage, presentation policy/model/client/transport, capture, center entry,
-  and runtime catalog. Source shape, documentation validation, strict MkDocs,
-  and diff whitespace are green. No boundary blocker remains; final
-  provenance/residue audit and exact candidate freeze are next.
+- 2026-08-31T14:39:19-06:00 — Program Manager authorized the serialized
+  compiler/CTest/private-runtime lane after the static and preserved-archive
+  audit found no P0-P2. Reverified exact detached HEAD/tree/sole parent, clean
+  product checkout, and no competing compiler, CTest, KWin, Weston, or QindaQt
+  runtime process. Launching the fresh configured build root
+  `/tmp/qindaqt-s3-meitner-readiness-build`; stop-on-first-red applies.
 
-- 2026-08-31T04:24:07-06:00 — Implemented the exact public-authority repair.
-  A new GUI-thread adapter binds the current unique Compositor1 owner, strictly
-  decodes ordered `Outputs()`, withdraws stale order before every invalidation
-  refresh, and retries fail closed. A pure selector joins that frame by exact
-  `outputGeneration` and output-ID set to the accepted visibility snapshot and
-  current Qt inventory; only then does the first semantic output resolve by
-  exact `QScreen` name. Stale `QGuiApplication::primaryScreen()` is absent from
-  the route. The pre-existing 512-line runtime file is decomposed to 390 lines.
-  Strict Debug builds the production shell and both focused targets. Selector
-  plus private-bus owner/invalidation tests pass 2/2, covering transfer,
-  replacement/removal, unchanged primary, no match, owner loss/replacement,
-  strict decode, and the exact stale-WL-0 mutation. Documentation is updated;
-  Release and adjacent shell/notification/docs gates remain.
-
-- 2026-08-31T03:50:40-06:00 — Claimed the exact-base repair after reading the
-  normative module, shell-surface, notification-presentation, and S3 testing
-  contracts plus Dorothy Vaughan's exact dual-output reproduction. The existing
-  shell boundary already receives coherent compositor visibility generations
-  and exact-matches them to Qt screens; I am tracing that public authority into
-  notification reconciliation rather than adding compositor-private access,
-  geometry inference, or a global singleton.
+- 2026-08-31T14:31:05-06:00 — Claimed the independent exact-candidate review.
+  Verified commit, full tree, sole parent, manager ancestry/merge base, exact
+  20-path `+2318/-40` delta, and `git diff --check`. Read the implementer
+  handoff and audited preserved archives: canonical activation/shell/surface
+  4/4, host reachability false 12/12, PSS/captures/teardown 4/4, and dual
+  `[WL-1 priority 1, WL-0 priority 2]` authority.

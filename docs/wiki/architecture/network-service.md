@@ -9,10 +9,11 @@ contract is fixed by [Network1 version 1](../reference/network1-v1.md),
 [ADR-0052](../adr/0052-confine-networkmanager-behind-network1.md).
 
 N1 provides production observation and permitted scan, stored-known-network
-connect, active disconnect, and Wi-Fi/WWAN radio dispatch. It does not claim a
-Settings or shell UI, connection-profile editing, credential entry, an in-
-process secret agent, persistence, or physical Wi-Fi/Ethernet/radio
-qualification.
+connect, active disconnect, and Wi-Fi/WWAN radio dispatch. N1 itself owns no
+Settings or shell UI; the [Network Settings route](../apps/network-settings.md)
+is a separate public-client-only consumer. Neither layer claims connection-
+profile editing, credential entry, an in-process secret agent, persistence, or
+physical Wi-Fi/Ethernet/radio qualification.
 
 ## Authority map
 
@@ -55,6 +56,13 @@ the client or transport. Only the adapter links libnm; public adapter headers
 contain no `NM*`, `GObject`, D-Bus object-path, or connection-setting handle.
 All resident objects are owned by one composition root and confined to its Qt
 thread.
+
+The client publishes one read-only operation-admission predicate in addition
+to mutation-in-flight state. It is false while an authoritative snapshot fetch
+is scheduled or outstanding, including post-operation and invalidation
+refreshes. A consumer that combines this predicate with the model's typed
+intent verdict advertises exactly the operation the client can accept at that
+moment; snapshot scheduling remains private client state.
 
 ## Resident lifecycle and restart fence
 
@@ -165,6 +173,8 @@ prove the checker rejects libnm in the resident service, a reversed transport de
 a NetworkManager secret getter, public NM handles, an `a{sv}` D-Bus wire, and
 an incomplete N1 package registry.
 
-This is deterministic process and software-boundary evidence only. Physical
-Wi-Fi, Ethernet, radios, stored-profile compatibility, external secret agents,
-credential entry, and host policy remain explicit later qualification.
+This is deterministic process and software-boundary evidence only. The
+[Network Settings route](../apps/network-settings.md) adds a secret-free UI
+consumer without expanding N1 authority. Physical Wi-Fi, Ethernet, radios,
+stored-profile compatibility, external secret agents, credential entry, and
+host policy remain explicit later qualification.

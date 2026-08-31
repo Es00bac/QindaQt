@@ -200,6 +200,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         tst_hybridshortcutmanager.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshortcutmanager.cpp"
     )
+    target_compile_features(qindaqt_hybrid_shortcut_manager_tests PRIVATE cxx_std_20)
     target_include_directories(
         qindaqt_hybrid_shortcut_manager_tests
         PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
@@ -268,6 +269,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         tst_hybridgroupstacking.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridgroupstackingpolicy.cpp"
     )
+    target_compile_features(qindaqt_hybrid_group_stacking_tests PRIVATE cxx_std_20)
     target_include_directories(
         qindaqt_hybrid_group_stacking_tests
         PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
@@ -341,6 +343,8 @@ if(TARGET qindaqt_kwin_input_adapter)
             COMMAND qindaqt_${member_policy_test}_tests
         )
     endforeach()
+    target_compile_features(qindaqt_hybridmemberpolicy_tests PRIVATE cxx_std_20)
+    target_compile_features(qindaqt_hybridtransientpolicy_tests PRIVATE cxx_std_20)
 
     qt_add_executable(
         qindaqt_hybrid_chrome_drag_translator_tests
@@ -405,6 +409,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         tst_hybridgroupcontext.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridgroupcontext.cpp"
     )
+    target_compile_features(qindaqt_hybrid_group_context_tests PRIVATE cxx_std_20)
     target_include_directories(
         qindaqt_hybrid_group_context_tests
         PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"

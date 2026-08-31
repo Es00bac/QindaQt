@@ -4,6 +4,69 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted S3 readiness candidate
+  `4d4b3dc395d80135a8f66f5ffcb2395cf1874c60`. The installed private desktop
+  executes WUXGA, 1440p at 125%, 1080p at 150%, light/dusk/dark themes, and
+  dual outputs while booting the production compositor, shell, resident
+  services, Settings, and Text Editor. Its readiness contract joins the exact
+  active GlobalAccel component/action, stable unique shell owner and PID,
+  private closed/hidden center before one Meta+N batch, open/visible center
+  with increased counter after it, and one mapped/committed compositor surface
+  on the desired/actual output. Mina Shah's external Claude source/archive
+  review accepted the immutable candidate at P0/P1/P2/P3 `0/0/0/2`; Lise
+  Meitner's independent fresh static+dynamic review accepted it at `0/0/0/0`
+  after building 882/882 actions and passing focused 5/5, formerly failing
+  1080p@150% plus package 2/2, and package plus the four-row matrix 5/5. Four
+  fresh archives prove canonical activation/shell/surface 4/4, false host
+  reachability 12/12, bounded PSS, nontrivial captures, empty teardown, and
+  exact dual `[WL-1, WL-0]` authority with interaction and capture on WL-1.
+  Fresh merged-tree replay configures successfully, builds 882/882, passes
+  focused 5/5, passes the formerly failing 1080p@150% plus package 2/2 in
+  8.18 seconds, and passes one unretried package-plus-four-row matrix 5/5 in
+  33.94 seconds. Manager run IDs are `666752f4`, `6c6f251d`, `73d82c54`, and
+  `93ab1392`; all retain containment 12/12, PSS below the 1,024 MiB ceiling,
+  byte-authenticated visually coherent captures, empty teardown, and exact
+  WL-1 dual interaction/capture. Final process inspection is empty.
+  QQ-004.09 and QQ-006.09 advance from WIRED to EXECUTABLE. Complete
+  screen-reader/keyboard coverage, heterogeneous mixed scaling, portrait and
+  hotplug/lid behavior, physical input/display, GPU/DRM, and perceptual
+  baselines remain later qualification.
+
+- This integration merges exact independently accepted Network Settings N2
+  repair `6f5d0ba9915851195a4776b3a1e2f224c369a958`. The installed `network`
+  route composes only the public Network1 client into secret-free device,
+  access-point, and saved-profile presentation; exact owner, epoch, revision,
+  and operation fences withdraw stale truth and make displayed action
+  availability identical to request admission. Literal hardware addresses,
+  credentials, text-entry surfaces, radio mutation, and private service
+  implementation remain outside the route. Barbara Liskov's external Claude
+  exact rereview accepted the repaired descendant with P0/P1/P2/P3
+  `0/0/0/3` after directly closing all four former P2 findings. Fresh merged-
+  tree Debug and Release each build **2,036/2,036** and pass the mutation 5/5,
+  affected 14/14, public package/policy 5/5, Network 25/25, and Settings 9/9
+  selectors. Documentation validates 116 pages; strict MkDocs, source shape,
+  JSON, diff, conflict, direct boundary, and poison gates pass. QQ-006.05
+  remains WIRED because other platform-service Settings routes and whole-
+  desktop qualification remain.
+
+- This integration merges exact independently accepted Portal P0 repair
+  `9f59a77aee9cbfd2f4f541b136ecd611e0cda798`. The resident backend owns only
+  the standard `org.freedesktop.impl.portal.Settings` endpoint, projects
+  complete exact-owner Settings1 appearance truth through QST-1 into the
+  standard color-scheme, accent-color, and contrast values, and withdraws
+  readable truth on owner, epoch, bus, or projection loss. Source and staged
+  package metadata are exact Settings-only singletons; OpenURI, installed
+  xdg-desktop-portal 1.20.4 Background, duplicate Settings, extra families,
+  and private headers fail closed. Frances Allen's exact rereview accepted the
+  repaired descendant with P0/P1/P2/P3 `0/0/0/0`; fresh Debug and Release
+  each built 97/97 and passed the contained seven-row selector. The manager
+  merge resolved only additive ADR/navigation conflicts and independently
+  repeats strict Debug and Release **97/97 plus 7/7** each, 114-document
+  validation, strict MkDocs, the 1,715-file source-shape gate, JSON, diff, and
+  conflict checks. QQ-005.09 advances from ABSENT to EXECUTABLE. Host portal
+  selection, toolkit reaction, every non-Settings portal family, and physical
+  distribution qualification remain explicitly outside P0.
+
 - This integration merges exact independently accepted notification live-output
   repair `89557a0a090b6b910621463b4ac97a6d1d054469`. The production shell now
   binds the exact current `org.qindaqt.Compositor` owner, consumes the ordered

@@ -25,6 +25,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Notifications:
   case SettingsRouteComponent::Appearance:
   case SettingsRouteComponent::Display:
+  case SettingsRouteComponent::Network:
     return true;
   }
   return false;
@@ -38,6 +39,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("appearance");
   case SettingsRouteComponent::Display:
     return QStringLiteral("display");
+  case SettingsRouteComponent::Network:
+    return QStringLiteral("network");
   }
   return {};
 }

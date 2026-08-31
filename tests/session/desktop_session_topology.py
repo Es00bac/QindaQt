@@ -3,167 +3,44 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from desktop_session_output import OutputInventoryError, validate_output_inventory
+from desktop_session_topology_model import (
+    ApplicationExpectation,
+    BootTopology,
+    DesktopTopology,
+    DockExpectation,
+    MatrixBootTopology,
+    MatrixOutputExpectation,
+    MatrixPresentationExpectation,
+    OutputExpectation,
+    ProcessExpectation,
+    ServiceExpectation,
+    desktop_1080p_topology,
+    interactive_1080p_topology,
+    interactive_matrix_topology,
+    is_interactive_topology,
+    observed_applications as _observed_applications,
+)
+from desktop_session_output import (
+    OutputInventoryError,
+    validate_matrix_output_inventory,
+    validate_output_inventory,
+)
 
 
 class TopologyContractError(ValueError):
     """Boot evidence does not describe the complete accepted topology."""
 
 
-@dataclass(frozen=True)
-class ProcessExpectation:
-    role: str
-    executable: str
-    parent_role: str | None
-
-
-@dataclass(frozen=True)
-class ServiceExpectation:
-    name: str
-    process_role: str
-
-
-@dataclass(frozen=True)
-class ApplicationExpectation:
-    app_id: str
-    process_role: str
-    window_title_contains: str
-
-
-@dataclass(frozen=True)
-class OutputExpectation:
-    width: int
-    height: int
-    scale: float
-
-
-@dataclass(frozen=True)
-class DockExpectation:
-    scope: str
-    minimum_count: int
-
-
-@dataclass(frozen=True)
-class BootTopology:
-    schema_version: int
-    topology_id: str
-    output: OutputExpectation
-    processes: tuple[ProcessExpectation, ...]
-    services: tuple[ServiceExpectation, ...]
-    applications: tuple[ApplicationExpectation, ...]
-    dock: DockExpectation
-
-    def document(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-def desktop_1080p_topology() -> BootTopology:
-    """Return the immutable S1 process/service/surface contract.
-
-    Executable values are package-relative basenames. Runtime path resolution is
-    owned by ``desktop_session_stage`` and must not be inferred from ``PATH``.
-    """
-
-    return BootTopology(
-        schema_version=1,
-        topology_id="qindaqt.desktop.virtual.1080p.v1",
-        output=OutputExpectation(1920, 1080, 1.0),
-        processes=(
-            ProcessExpectation("private-bus", "dbus-daemon", None),
-            ProcessExpectation("compositor", "kwin_wayland", None),
-            ProcessExpectation("session", "qindaqt-session", "compositor"),
-            ProcessExpectation(
-                "notification", "qindaqt-notification-host", "session"
-            ),
-            ProcessExpectation("shell", "qindaqt-shell", "session"),
-            ProcessExpectation(
-                "settings-service", "qindaqt-settings-service", None
-            ),
-            ProcessExpectation("audio-service", "qindaqt-audio-service", None),
-            ProcessExpectation("settings-app", "qindaqt-settings", None),
-            ProcessExpectation("editor-app", "qindaqt-editor", None),
-            ProcessExpectation(
-                "session-probe", "qindaqt-desktop-session-probe", None
-            ),
-        ),
-        services=(
-            ServiceExpectation("org.qindaqt.Compositor", "compositor"),
-            ServiceExpectation("org.qindaqt.Settings1", "settings-service"),
-            ServiceExpectation("org.qindaqt.Audio1", "audio-service"),
-            ServiceExpectation("org.freedesktop.Notifications", "notification"),
-        ),
-        applications=(
-            ApplicationExpectation("org.qindaqt.Settings", "settings-app", "Settings"),
-            ApplicationExpectation(
-                "org.qindaqt.TextEditor", "editor-app", "QindaQt Text Editor"
-            ),
-        ),
-        # AGENT-CONTRACT: Notification Live broadens its development-only,
-        # compositor-owned surface inventory to the production shell's `dock`
-        # scope. S1 must fail, not infer panel mapping from ordinary windows.
-        dock=DockExpectation("dock", 1),
-    )
-
-
-def interactive_1080p_topology() -> BootTopology:
-    """Return the immutable S2 parent-Wayland interaction/capture contract."""
-
-    base = desktop_1080p_topology()
-    return BootTopology(
-        schema_version=1,
-        topology_id="qindaqt.desktop.windowed.1080p.interactive.v1",
-        output=base.output,
-        processes=(
-            ProcessExpectation("parent-compositor", "weston", None),
-            *base.processes,
-        ),
-        services=base.services,
-        applications=base.applications,
-        dock=base.dock,
-    )
-
-
 def observed_applications(
-    windows: Sequence[Any], topology: BootTopology | None = None
+    windows: Sequence[Any], topology: DesktopTopology | None = None
 ) -> list[dict[str, Any]]:
-    """Retain exact compositor identity for the two required application windows."""
-
-    result = []
-    contract = topology or desktop_1080p_topology()
-    for expected in contract.applications:
-        matches = [
-            item for item in windows
-            if isinstance(item, Mapping)
-            and item.get("applicationId") == expected.app_id
-            and expected.window_title_contains in str(item.get("title", ""))
-        ]
-        if len(matches) != 1:
-            raise TopologyContractError(
-                f"mapped test application was missing: {expected.app_id}"
-            )
-        match = matches[0]
-        window_id = match.get("id")
-        if not isinstance(window_id, str) or not window_id:
-            raise TopologyContractError(
-                f"mapped test application has no window ID: {expected.app_id}"
-            )
-        result.append(
-            {
-                # The public inventory has no client PID. Preserve every
-                # available observation and consume the topology role without
-                # inventing a process association the interface cannot prove.
-                "appId": match["applicationId"],
-                "processRole": expected.process_role,
-                "windowId": window_id,
-                "windowTitle": match.get("title"),
-                "mapped": True,
-            }
-        )
-    return result
+    try:
+        return _observed_applications(windows, topology)
+    except ValueError as error:
+        raise TopologyContractError(str(error)) from None
 
 
 def _mapping(value: Any, location: str) -> Mapping[str, Any]:
@@ -196,7 +73,7 @@ def _canonical_generation(value: Any, location: str) -> str:
 
 
 def _validate_processes(
-    evidence: Mapping[str, Any], topology: BootTopology
+    evidence: Mapping[str, Any], topology: DesktopTopology
 ) -> dict[str, int]:
     observed = _mapping(evidence.get("processes"), "evidence.processes")
     expected_roles = {item.role for item in topology.processes}
@@ -225,7 +102,7 @@ def _validate_processes(
 
 
 def _validate_services(
-    evidence: Mapping[str, Any], topology: BootTopology, pids: Mapping[str, int]
+    evidence: Mapping[str, Any], topology: DesktopTopology, pids: Mapping[str, int]
 ) -> None:
     records = _sequence(evidence.get("services"), "evidence.services")
     by_name: dict[str, Mapping[str, Any]] = {}
@@ -252,18 +129,23 @@ def _validate_services(
             raise TopologyContractError(f"service {expected.name} owner executable is wrong")
 
 
-def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> str:
-    expected = topology.output
-    backend = (
-        "wayland"
-        if topology.topology_id == "qindaqt.desktop.windowed.1080p.interactive.v1"
-        else "virtual"
-    )
+def _validate_output(
+    evidence: Mapping[str, Any], topology: DesktopTopology
+) -> tuple[str, ...]:
+    backend = "wayland" if is_interactive_topology(topology) else "virtual"
     try:
-        output_name = validate_output_inventory(
-            evidence, width=expected.width, height=expected.height,
-            scale=expected.scale, backend=backend,
-        )
+        if isinstance(topology, MatrixBootTopology):
+            output_names = validate_matrix_output_inventory(
+                evidence, expectations=topology.outputs, backend=backend
+            )
+        else:
+            expected = topology.output
+            output_names = (
+                validate_output_inventory(
+                    evidence, width=expected.width, height=expected.height,
+                    scale=expected.scale, backend=backend,
+                ),
+            )
     except OutputInventoryError as error:
         raise TopologyContractError(str(error)) from None
     generations = _mapping(evidence.get("generations"), "evidence.generations")
@@ -275,7 +157,7 @@ def _validate_output(evidence: Mapping[str, Any], topology: BootTopology) -> str
     )
     if output_generation != visibility_generation:
         raise TopologyContractError("output and shell visibility generations differ")
-    return output_name
+    return output_names
 
 
 def _canonical_process_id(value: Any) -> int:
@@ -286,7 +168,8 @@ def _canonical_process_id(value: Any) -> int:
 
 
 def _validate_input_and_dock(
-    evidence: Mapping[str, Any], topology: BootTopology, output_name: str,
+    evidence: Mapping[str, Any], topology: DesktopTopology,
+    output_names: Sequence[str],
     shell_pid: int | None = None,
 ) -> None:
     devices = _sequence(evidence.get("inputDevices"), "evidence.inputDevices")
@@ -305,17 +188,24 @@ def _validate_input_and_dock(
         or set(capabilities) != {"keyboard", "pointer"}
     ):
         raise TopologyContractError("exactly one combined development input is required")
-    if topology.topology_id == "qindaqt.desktop.windowed.1080p.interactive.v1":
+    if is_interactive_topology(topology):
         forwarded = [item for item in devices if item is not device]
         identities = [item.get("id") for item in devices if isinstance(item, Mapping)]
         private_capabilities = {
             tuple(item.get("capabilities", []))
             for item in forwarded if isinstance(item, Mapping)
         }
+        parent = next(
+            item for item in topology.processes if item.role == "parent-compositor"
+        )
+        expected_forwarded = (
+            {("keyboard",)} if parent.executable == "kwin_wayland"
+            else {("keyboard",), ("pointer",)}
+        )
         if (
-            len(devices) != 3 or len(forwarded) != 2
-            or private_capabilities != {("keyboard",), ("pointer",)}
-            or len(set(identities)) != 3
+            len(forwarded) != len(expected_forwarded)
+            or private_capabilities != expected_forwarded
+            or len(set(identities)) != len(devices)
             or any(
                 not isinstance(item, Mapping)
                 or item.get("name") != ""
@@ -329,7 +219,7 @@ def _validate_input_and_dock(
             )
         ):
             raise TopologyContractError(
-                "S2 requires the exact private Weston fake-seat input pair"
+                "interactive input devices do not match the exact private parent fake-seat"
             )
     elif len(devices) != 1:
         raise TopologyContractError("exactly one combined development input is required")
@@ -339,8 +229,10 @@ def _validate_input_and_dock(
             continue
         process_id = _canonical_process_id(item.get("processId"))
         # AGENT-CONTRACT: Reject consumed dock records that contradict output inventory.
-        if (item.get("outputName"), item.get("desiredOutputName")) != (
-            output_name, output_name
+        output_name = item.get("outputName")
+        if (
+            output_name not in output_names
+            or item.get("desiredOutputName") != output_name
         ):
             raise TopologyContractError("dock surface output identities differ")
         # AGENT-CONTRACT: Bind every consumed dock record to the separately
@@ -356,9 +248,13 @@ def _validate_input_and_dock(
     ]
     if len(matched) < topology.dock.minimum_count:
         raise TopologyContractError("no mapped and committed production dock surface was proven")
+    if isinstance(topology, MatrixBootTopology) and set(output_names) - {
+        item.get("outputName") for item in matched
+    }:
+        raise TopologyContractError("every matrix output must have a mapped production dock")
 
 
-def _validate_applications(evidence: Mapping[str, Any], topology: BootTopology) -> None:
+def _validate_applications(evidence: Mapping[str, Any], topology: DesktopTopology) -> None:
     records = _sequence(evidence.get("applications"), "evidence.applications")
     by_id: dict[str, Mapping[str, Any]] = {}
     for index, raw in enumerate(records):
@@ -391,13 +287,13 @@ def _validate_applications(evidence: Mapping[str, Any], topology: BootTopology) 
 
 
 def validate_topology_readiness(
-    evidence: Mapping[str, Any], topology: BootTopology | None = None
+    evidence: Mapping[str, Any], topology: DesktopTopology | None = None
 ) -> None:
     """Validate the simultaneous public inputs that can become ready asynchronously."""
 
     contract = topology or desktop_1080p_topology()
-    output_name = _validate_output(evidence, contract)
-    _validate_input_and_dock(evidence, contract, output_name)
+    output_names = _validate_output(evidence, contract)
+    _validate_input_and_dock(evidence, contract, output_names)
     _validate_applications(evidence, contract)
 
 
@@ -419,7 +315,7 @@ def _validate_measurements(evidence: Mapping[str, Any]) -> None:
 
 
 def _validate_cleanup(
-    evidence: Mapping[str, Any], topology: BootTopology, pids: Mapping[str, int]
+    evidence: Mapping[str, Any], topology: DesktopTopology, pids: Mapping[str, int]
 ) -> None:
     cleanup = _mapping(evidence.get("cleanup"), "evidence.cleanup")
     if (
@@ -464,7 +360,7 @@ def _validate_cleanup(
 
 
 def validate_boot_evidence(
-    document: Any, topology: BootTopology | None = None
+    document: Any, topology: DesktopTopology | None = None
 ) -> None:
     """Validate one complete evidence object; partial success is never accepted."""
 
@@ -484,8 +380,8 @@ def validate_boot_evidence(
         raise TopologyContractError("containment did not fail closed")
     pids = _validate_processes(evidence, topology)
     _validate_services(evidence, topology, pids)
-    output_name = _validate_output(evidence, topology)
-    _validate_input_and_dock(evidence, topology, output_name, pids["shell"])
+    output_names = _validate_output(evidence, topology)
+    _validate_input_and_dock(evidence, topology, output_names, pids["shell"])
     _validate_applications(evidence, topology)
     _validate_measurements(evidence)
     _validate_cleanup(evidence, topology, pids)
