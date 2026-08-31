@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:11:48-06:00
+updated_at: 2026-08-31T17:17:34-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — repairing four confirmed review P2s: release replay, address-shaped names, renamed pairing surface, and filesystem/persistence boundary gaps; executable/private lanes remain released during source repair.
+- Status: working — all four review repairs pass strengthened direct gates; manager confirmed no collision and the serialized strict Debug/Release compiler/CTest lane is claimed for focused B1 verification.
 
 ## Updates
+
+- 2026-08-31T17:17:34-06:00 — Repair source now passes the pure five-file exact include gate with four independent client/persistence/filesystem/network poisons and the runtime seven-file exact include/controller-surface gate with six independent service/renamed-pairing/address/persistence/file/standard-path poisons. Source shape passes 1,779 files; the controller is 487 nonblank lines, below the 500-line review threshold. Direct process inspection found no compiler, CMake, Ninja, CTest, KWin, Weston, shell, or Bluetooth test process beyond the inspection shell. The manager confirmed no collision and released the serialized lane; claimed it for incremental strict Debug then Release presentation/controller builds and exact B1 selectors. Private bus/runtime, compositor, BlueZ, host Bluetooth, hardware, network, and input remain prohibited.
 
 - 2026-08-31T17:11:48-06:00 — Opus terminal review added two boundary P2s: the runtime token denylist accepts a renamed pairing invokable such as `beginPairing(address)`, and both gates' permissive bare-header logic admits filesystem/persistence reach. The descendant will positively enforce the exact controller `Q_PROPERTY`/`Q_INVOKABLE` surface, add renamed-pairing and direct address-accessor poisons, replace permissive include fallback with explicit actual-header allowlists, and add file/persistence/network header poisons. Production dependencies remain protocol/client plus Qt Core/QML/Quick only; unrelated P3 observations stay bounded unless directly touched.
 
