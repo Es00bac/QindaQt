@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:37:36-06:00
+updated_at: 2026-08-31T16:39:43-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — all Debug targets compile; controller CTest stopped 6 pass/3 fail because older lease fixtures omitted the newly required authoritative convergence snapshots, now repairing test expectations only.
+- Status: working — controller replay improved to 8 pass/1 fail; the remaining release-success helper stamps stale initiating revision 5 instead of exact revision 6, now making lineage explicit before immediate replay.
 
 ## Updates
+
+- 2026-08-31T16:39:43-06:00 — The convergence-aligned controller target rebuilt 3/3 and its exact row stopped 8 pass/1 fail in 15.12s. The remaining close-path failure is correct product rejection: ReleaseDiscovery was initiated from authoritative revision 6, but the test helper still stamped initiating revision 5, so the nominal success was uncertain and the lease remained. Parameterized the helper with an explicit initiating revision and set every post-convergence call site to 6; the wire-invalid `no-lease` case now isolates wire invalidity at otherwise exact lineage, while the existing request-state suite retains stale-result rejection coverage. Immediate controller rebuild/replay follows.
 
 - 2026-08-31T16:37:36-06:00 — The QML target rebuilt 3/3 and the final Debug target graph linked 5/5. The exact controller row then stopped 6 pass/3 fail in 15.11s: the new success-convergence regression passed, while three older lease lifecycle tests still expected revision-5 initiating truth to admit release/another mutation immediately after an acquire result observed at revision 6. Production code is unchanged. The fixtures now publish revision-6 `discovering=true` authoritative truth before release or another operation, and the close path publishes revision-7 `discovering=false` truth after release success before expecting controls unblocked. The controller row will rebuild and rerun first.
 
