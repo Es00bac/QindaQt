@@ -55,6 +55,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `fa22af50` — GCC 15.3 strict Release portability repair for the
+  customization-editor panel-step value. The accepted two-path change
+  aggregate-initializes the exact panel/zone/null-anchor tuple and avoids the
+  diagnosed nested-optional inactive-storage move without suppression or
+  semantic drift. Grace Hopper's exact review found P0/P1/P2/P3 `0/0/0/0`,
+  reproduced the parent failure at action 59/85, and passed strict Debug and
+  Release 85/85 builds, the full selector 6/6, and the direct repaired row 3/3
+  in each profile. QQ-004.08 remains WIRED pending its Settings canvas,
+  live-shell binding, reveal presentation, rendered matrix, and installed
+  session outcomes.
+
 - `aebc4fd3` — Resident Network N1 ownership, public Qt transport, confined
   libnm NetworkManager adapter, activation/package lifecycle, exact upstream
   owner-generation retirement, queued delayed-reply dispatch, and conservative
