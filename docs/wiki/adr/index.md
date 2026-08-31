@@ -51,6 +51,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0048](0048-settings-center-navigation-and-route-ownership.md) | Accepted | Keep Settings navigation typed and route authority local |
 | [ADR-0049](0049-capture-private-parent-framebuffer.md) | Accepted | Capture one private Weston parent framebuffer after private-seat interaction |
 | [ADR-0050](0050-direct-kde-output-management-writer.md) | Accepted | Use a direct bounded KDE public output-management writer |
+| [ADR-0052](0052-confine-networkmanager-behind-network1.md) | Accepted | Confine libnm, credentials, and upstream-owner replacement behind resident Network1 |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
