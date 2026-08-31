@@ -18,8 +18,9 @@ class JournalStore
 {
 public:
     virtual ~JournalStore() = default;
-    [[nodiscard]] virtual bool store(const DisplayTransaction::Journal &journal) = 0;
-    [[nodiscard]] virtual bool clear() = 0;
+    [[nodiscard]] virtual DisplayTransaction::JournalMutationOutcome store(
+        const DisplayTransaction::Journal &journal) = 0;
+    [[nodiscard]] virtual DisplayTransaction::JournalMutationOutcome clear() = 0;
 };
 
 class WriterTransactionPort final : public QObject,
@@ -43,13 +44,19 @@ public:
     void stop();
     [[nodiscard]] bool isStarted() const noexcept;
     [[nodiscard]] bool isOutputManagementAvailable() const noexcept;
+    [[nodiscard]] qint64 compositorProcessId() const noexcept;
 
     void setObserver(DisplayService::TransactionPortObserver *observer) override;
     void beginMachineLineage(quint64 machineLineage) override;
-    [[nodiscard]] bool storeJournal(
+    [[nodiscard]] DisplayTransaction::JournalMutationOutcome storeJournal(
         const DisplayTransaction::Journal &journal) override;
-    [[nodiscard]] bool clearJournal() override;
+    [[nodiscard]] DisplayTransaction::JournalMutationOutcome clearJournal() override;
     void requestApply(const DisplayTransaction::ApplyRequest &request) override;
+
+Q_SIGNALS:
+    // D6 combines this edge with authenticated lock and logind authority; it
+    // is not, by itself, permission for a preview.
+    void mutationAuthorityChanged(bool available);
 
 private:
     struct Pending {

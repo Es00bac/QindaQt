@@ -4,6 +4,124 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted notification live-output
+  repair `89557a0a090b6b910621463b4ac97a6d1d054469`. The production shell now
+  binds the exact current `org.qindaqt.Compositor` owner, consumes the ordered
+  public `Compositor1.Outputs()` projection, and joins its generation and exact
+  output-ID set to accepted shell-visibility and Qt inventory truth before
+  resolving notification popup/center surfaces. Owner loss, invalidation,
+  malformed replies, replacement, generation mismatch, and missing exact Qt
+  screens fail closed; stale `QGuiApplication::primaryScreen()` no longer
+  selects notification output. Charles Babbage's immutable review accepted the
+  candidate with P0/P1/P2/P3 `0/0/0/1`: Debug built 297/297 plus 161/161
+  adjacent actions, passed 20/20 and repeated both focused rows 25 times;
+  Release built 458/458 and passed 20/20. The sole documentation-precision P3
+  is corrected in this manager integration. After an initial Debug attempt
+  stopped only because the `/tmp` filesystem filled, exact build-system clean
+  targets reclaimed reproducible old outputs and the fresh merged tree passed
+  Debug and Release **458/458 plus 20/20** each. QQ-004.09 remains WIRED until
+  the preserved S3 worktree proves the real WL-0 to WL-1 layer-surface transfer
+  and completes the wider whole-shell matrix.
+
+- This integration merges exact independently accepted Display D6 repair
+  descendant `9a7872aec60a5e0f8286b3d5af7fa21209e8fd65`. The packaged Display1
+  process now resolves the injected durable journal before mutation authority,
+  authenticates its compositor Wayland peer and lock/logind safety inputs,
+  and composes the public D4 writer through the resident D2 service. Typed
+  observation disposition preserves complete live truth and every Staged-or-
+  later transaction across benign same-owner rejection while still publishing
+  unavailability after a failed replacement-owner establishment. Mary
+  Jackson's same-reviewer rereview accepted the exact descendant with P0/P1
+  `0/0`; Debug and Release each passed 19/19 hostile service assertions, 7/7
+  D6 package/boundary rows, and 40/40 adjacent D0-D6/session-lock rows. The
+  prior in-tree poison and WaylandClient configure defects are closed. Fresh
+  merged-tree Debug and Release targeted builds complete 197/197 and 228/228
+  actions respectively; each passes the same 40/40 adjacent, 7/7 focused, and
+  direct 19/19 hostile gates. The review's unrelated
+  customization Release P2 is already repaired by integrated `fa22af50`.
+  Nested compositor convergence, mixed/physical output behavior, resources,
+  suspend/hotplug, and hardware qualification remain later work.
+
+- This integration merges exact independently accepted customization-editor
+  Release-portability candidate `fa22af5028e8dd4bfd9c0951cf742ea74d4b914f`.
+  The panel-step helper now constructs the complete `DropTarget` value and
+  copies it into the outer optional, removing GCC 15.3's optimization-only
+  inactive-storage diagnostic without suppressing warnings or changing the
+  panel, zone, or null-anchor contract. Grace Hopper's exact review reproduced
+  the parent failure at action 59/85 and found P0/P1/P2/P3 `0/0/0/0`; strict
+  Debug and Release each built 85/85 and passed the complete 6/6
+  customization-editor selector plus the repaired direct row 3/3. Fresh
+  merged-tree verification repeats those affected gates. This portability
+  repair does not advance QQ-004.08 beyond WIRED; the Settings canvas,
+  provisional live-shell binding, reveal UI, rendered matrix, and installed
+  session behavior remain later work.
+
+- This integration merges exact independently accepted Network N1 repair
+  descendant `aebc4fd3d887f09ae28149f9c016a08f28c86a92`. The resident Network1
+  service now composes the N0 model/client with a public Qt transport and a
+  libnm-confined NetworkManager adapter. Exact upstream-owner notifications
+  retire old generations beneath the fact-refresh interval; admitted backend
+  work is queued until the delayed bus reply is owned; definite scan failure
+  removes provisional freshness while uncertain cancellation remains
+  conservative. Katherine Johnson's exact rereview found P0/P1/P2/P3
+  `0/0/0/0`, passed strict Debug and Release 21/21 each, repeated four
+  mutation-sensitive rows ten times each for 40/40, and passed the positive
+  boundary, six-poison negative, and installed lifecycle selector 3/3. Fresh
+  merged-tree Debug and Release each build 111/111 focused actions and pass
+  the complete 21/21 Network selector with host display and bus variables
+  removed. Physical radios, UI, persistence, external secret-agent/credential
+  interaction, distribution policy, and hardware qualification remain later
+  gates.
+
+- This integration merges exact independently accepted Power P2 descendant
+  `9e4b7a60f2bcc9c9229418a47c2c1801a343a876`. The production panel applet
+  composes only the public PB-1 client through a shell-private controller,
+  requests independent `power.read` and `power.control` grants, clears stale
+  truth and pending operations on exact-owner replacement, exposes compiled
+  keyboard-accessible QML, and is discovered through the audited manifest,
+  registry, host, profile, and installed-package seams. Ada Lovelace's exact
+  descendant rereview found P0/P1/P2/P3 `0/0/0/0`; Debug and Release each
+  passed the six applet-integrity rows, eight Power rows, and 11 direct manifest
+  cases. Fresh merged-tree Debug and Release each build 327/327 focused
+  actions and pass the combined 14/14 selector plus 11/11 direct manifest
+  cases. QQ-004.13 advances from WIRED to EXECUTABLE. PB-1 still reports
+  honest `upstream-not-integrated` truth; live providers, successful host
+  mutations, nested interaction, and physical hardware remain later gates.
+
+- The manager merge `7277771a63747bbcec957465e5f0b676e69168d0`
+  integrates exact accepted Display Settings descendant `2f429c11`. The live
+  `display` route composes the public D3 client/coordinator into bounded
+  snapshot, draft, topology-validation, preview, confirm, and revert behavior;
+  preserves authoritative coordinate truth across output replacement and
+  same-output refresh; and exposes keyboard-accessible output selection and
+  integer coordinate commits through the installed Settings application.
+  Katherine's terminal rereview found P0/P1/P2/P3 `0/0/0/0` after the sole
+  documentation-integrity defect was repaired. Exact Debug and Release review
+  each built 328/328 focused actions and passed 12/12 rows, the compiled page
+  passed 10/10, the independent interaction probe passed 7/7, and four hostile
+  mutations were killed. Fresh merged-tree verification builds 328/328 and
+  passes the same combined 12/12 selector. Display resident composition is now
+  integrated by D6; nested preview/confirm/revert convergence remains S3 work; physical
+  displays and assistive-technology integration remain release gates.
+
+- The manager merge of exact accepted candidate `acd0168` integrates Display
+  D5's crash-safe filesystem journal behind the D4 `JournalStore` boundary.
+  The injected effective-user-owned state root, fixed names, canonical bounded
+  codec, mode-0600 exclusive temporary file, file sync, atomic replacement,
+  and directory barrier preserve one complete recovery pre-image without
+  hidden HOME/XDG authority. A typed `DurabilityUncertain` outcome prevents a
+  visible rename or unlink from authorizing forward apply before the directory
+  barrier is proven; even an already-absent clear retries that barrier and the
+  D1 machine remains cleanup-only `Stuck` with zero apply requests until a
+  concrete durable clear. Galileo's terminal exact rereview found P0/P1/P2/P3
+  `0/0/0/0` and passed strict Debug and Release journal/writer/transaction
+  12/12, direct lifecycle 4/4, adjacent service/client 10/10, package poison,
+  docs, strict MkDocs, shape, lineage, provenance, and residue gates. Manager
+  replay builds all 130 focused actions and passes the 12/12 and adjacent 5/5
+  selectors serially. Resident startup recovery/writer composition,
+  authenticated lock/logind safety, nested convergence, mixed
+  outputs, resources, and physical hardware remain D6+.
+
 - `26bb7f5` supplies the exact independently accepted private interactive
   desktop S2 replay. Astra's immutable Gemini review found P0/P1/P2/P3
   `0/0/0/0`, completed a fresh 2,338-action build, passed 73/73 desktop-session
@@ -26,8 +144,8 @@ Manager integration delta after the public baseline below:
   provenance, cleanliness, and zero residue. Fresh manager-tree Debug
   verification built all 23 executable Display targets and passed the complete
   D0-D4 selector 26/26. The packaged resident remains deliberately fail-closed
-  until durable journal, authenticated lock/logind safety, writer composition,
-  Settings UI, and contained nested convergence land.
+  until authenticated lock/logind safety, writer/journal resident composition,
+  and contained nested convergence land.
 
 - `c819db8` integrates the exact independently accepted Display D3 typed
   asynchronous client and D2 transaction-summary projection replay. Astra's
@@ -36,8 +154,9 @@ Manager integration delta after the public baseline below:
   current-manager shared-registry entry. Fresh manager-tree strict Debug and
   Release builds complete 81/81 targeted actions and pass the exact seven-row
   D2/D3 selector in each profile. D4 now supplies the separately integrated
-  compositor writer; durable journal/resident composition, Settings display
-  UI, nested convergence, hardware, and resource proof remain.
+  compositor writer, D5 supplies the durable journal, and the Display Settings
+  route is now integrated; resident composition, nested convergence, hardware,
+  and resource proof remain.
 
 - `0c9f4b0` integrates the exact independently accepted Settings Center S1
   repair over typed navigation commit `80a91f8`. Noether's immutable rereview
@@ -253,9 +372,10 @@ two independent exact reviews passed. A fresh combined-tree Debug build passed
 68/68 focused build steps and all five Display1 service tests, including both
 serial private-D-Bus lifecycle rows, with no surviving service or fixture.
 Display1 now exposes the fail-closed D3 typed asynchronous client and
-server-projected reversible transaction coordinator. Output mutation remains
-unavailable until the compositor writer, durable persistence, Settings UI, and
-nested preview/confirm/revert convergence proof land.
+server-projected reversible transaction coordinator; D4, D5, and the Display
+Settings route are integrated separately. Production output mutation remains
+unavailable until resident writer/journal composition and contained nested
+preview/confirm/revert convergence proof land.
 Power/Brightness PB-1 is integrated as an EXECUTABLE resident service/client,
 package and private lifecycle boundary over the PB-0 protocol/aggregation/
 brightness foundation. PB-2 production upstream adapters and policy remain

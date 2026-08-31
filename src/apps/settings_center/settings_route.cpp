@@ -24,6 +24,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   switch (component) {
   case SettingsRouteComponent::Notifications:
   case SettingsRouteComponent::Appearance:
+  case SettingsRouteComponent::Display:
     return true;
   }
   return false;
@@ -35,6 +36,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("notifications");
   case SettingsRouteComponent::Appearance:
     return QStringLiteral("appearance");
+  case SettingsRouteComponent::Display:
+    return QStringLiteral("display");
   }
   return {};
 }

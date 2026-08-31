@@ -36,12 +36,16 @@ set(production_extra_forbidden
     "QObject"
 )
 
-file(
-    GLOB_RECURSE sources
-    "${SOURCE_ROOT}/src/shell/power_applet/*.h"
-    "${SOURCE_ROOT}/src/shell/power_applet/*.cpp"
-    "${SOURCE_ROOT}/tests/shell/power_applet/*.h"
-    "${SOURCE_ROOT}/tests/shell/power_applet/*.cpp"
+file(GLOB_RECURSE sources
+    "${SOURCE_ROOT}/src/shell/power_applet/include/*.h")
+list(APPEND sources
+    "${SOURCE_ROOT}/src/shell/power_applet/src/brightness_request_state.cpp"
+    "${SOURCE_ROOT}/src/shell/power_applet/src/power_applet_presentation.cpp"
+    "${SOURCE_ROOT}/src/shell/power_applet/src/power_control_rows.cpp"
+    "${SOURCE_ROOT}/src/shell/power_applet/src/power_control_rows_p.h"
+    "${SOURCE_ROOT}/tests/shell/power_applet/tst_brightness_request_state.cpp"
+    "${SOURCE_ROOT}/tests/shell/power_applet/tst_power_applet_controls.cpp"
+    "${SOURCE_ROOT}/tests/shell/power_applet/tst_power_applet_presentation.cpp"
 )
 list(LENGTH sources source_count)
 if(source_count EQUAL 0)

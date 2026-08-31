@@ -24,15 +24,18 @@ public:
     {
         currentMachineLineage = value;
     }
-    bool storeJournal(const DisplayTransaction::Journal &journal) override
+    DisplayTransaction::JournalMutationOutcome storeJournal(
+        const DisplayTransaction::Journal &journal) override
     {
         storedJournals.push_back(journal);
-        return storeSucceeds;
+        return storeSucceeds ? storeOutcome
+                             : DisplayTransaction::JournalMutationOutcome::Unchanged;
     }
-    bool clearJournal() override
+    DisplayTransaction::JournalMutationOutcome clearJournal() override
     {
         ++clearCalls;
-        return clearSucceeds;
+        return clearSucceeds ? clearOutcome
+                             : DisplayTransaction::JournalMutationOutcome::Unchanged;
     }
     void requestApply(const DisplayTransaction::ApplyRequest &request) override
     {
@@ -55,6 +58,10 @@ public:
     int clearCalls = 0;
     bool storeSucceeds = true;
     bool clearSucceeds = true;
+    DisplayTransaction::JournalMutationOutcome storeOutcome =
+        DisplayTransaction::JournalMutationOutcome::Durable;
+    DisplayTransaction::JournalMutationOutcome clearOutcome =
+        DisplayTransaction::JournalMutationOutcome::Durable;
 };
 
 class FakeInventorySource final : public InventorySource

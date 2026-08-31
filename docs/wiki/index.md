@@ -47,10 +47,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   Power1, shell-action, fail-closed backlight, and session-bound activation
   architecture; the PB-1 Wayland-free resident service/client and activation
   package are implemented while live upstream adapters remain pending.
-- [Network service](architecture/network-service.md) records the pure Network1
-  N0 boundary: secret-free values and identity, lineage-gated atomic snapshots,
-  bounded scan leases, intent admission, and the fake-transport client seam,
-  while every resident, adapter, and UI slice remains pending.
+- [Network service](architecture/network-service.md) records the resident
+  Network1 N1 boundary: the unchanged pure N0 values/model/client, exact-owner
+  activating Qt transport, fixed-wire service, confined libnm adapter, and
+  external secret-agent boundary. UI and physical hardware qualification remain.
 - [Pure brightness model](architecture/brightness-model.md) fixes the PB-0
   stable-ID fixture, mirror collapse, raw-range math, owner-loss behavior, and
   transport-free composition boundary.
@@ -59,8 +59,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   metadata search, and codec seam; the live Wayland adapter remains a later
   milestone.
 - [Display service](architecture/display-service.md) records the pure Display1
-  values, identity/topology boundaries, and deterministic transaction model;
-  its runtime service and compositor adapter are later milestones.
+  values, identity/topology boundaries, deterministic transaction model, and
+  the packaged authenticated D2/D4/D5 runtime composition; nested convergence
+  remains a later qualification.
 - [Display client](architecture/display-client.md) records the exact-owner
   asynchronous Display1 consumer, atomic publication rules, mutation result
   fencing, and server-projected reversible transaction coordinator.
@@ -116,9 +117,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   identity/registry rules, topology projection, codecs, and transaction states.
 - [Power1 version 1](reference/power1-v1.md) documents bounded Power values,
   privacy-preserving handles, canonical codecs, and fail-closed validation.
-- [Network1 version 1](reference/network1-v1.md) documents secret-free network
-  values, derived identity, lineage rules, scan leases, canonical codecs, and
-  intent admission.
+- [Network1 version 1](reference/network1-v1.md) documents the fixed resident
+  D-Bus methods plus secret-free values, identity, lineage, scan leases,
+  canonical codecs, intent admission, and error behavior.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.
@@ -131,6 +132,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Appearance route](apps/appearance-settings.md) documents the
   first-party appearance settings surface: validated drafts, QST previews,
   per-key Settings1 commits, and recovery truth.
+- [Settings Display route](apps/display-settings.md) documents the first-party
+  display settings surface: output selection, validated drafts, advertised modes,
+  logical scale, reversible transaction coordinator preview/confirmation, and
+  degraded state handling.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.

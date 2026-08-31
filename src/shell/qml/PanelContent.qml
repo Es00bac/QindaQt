@@ -8,6 +8,7 @@ Item {
     required property var theme
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var powerAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -33,6 +34,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     PanelAppletRow {
@@ -46,6 +48,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     PanelAppletRow {
@@ -60,6 +63,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     PanelAppletColumn {
@@ -73,6 +77,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     PanelAppletColumn {
@@ -86,6 +91,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 
     PanelAppletColumn {
@@ -99,5 +105,6 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        powerAppletAccess: root.powerAppletAccess
     }
 }

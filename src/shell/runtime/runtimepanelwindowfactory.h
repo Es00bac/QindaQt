@@ -24,6 +24,9 @@ class CapabilityPolicy;
 namespace QindaQt::Shell {
 
 class NotificationCenterAppletAccess;
+namespace PowerApplet {
+class PowerAppletController;
+}
 
 class RuntimePanelWindowFactory final : public ShellSurface::PanelWindowFactory {
 public:
@@ -32,7 +35,8 @@ public:
                               QVariantMap theme,
                               const Applets::ManifestCatalog &applets,
                               const AppletHost::CapabilityPolicy &policy,
-                              NotificationCenterAppletAccess *notificationCenterAccess);
+                              NotificationCenterAppletAccess *notificationCenterAccess,
+                              PowerApplet::PowerAppletController *powerAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -46,6 +50,7 @@ private:
     QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
     NotificationCenterAppletAccess *m_notificationCenterAccess = nullptr;
+    PowerApplet::PowerAppletController *m_powerAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

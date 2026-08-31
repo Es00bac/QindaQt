@@ -44,13 +44,15 @@ tests, and the wiki page describing its contract.
 | `src/services/display_service` | Exact-owner D0 inventory decode/projection, Display1 owner/epoch/revision reset model, resident D-Bus object/process, deadline scheduling, and injected transaction-port composition | Public display protocol/identity/topology/transaction plus Qt Core/DBus; never KWin private ABI, Wayland, QML, Settings, filesystem journal, logind, or shell |
 | `src/services/display_client` | Exact-owner asynchronous Display1 activation/snapshots, validated atomic publication, serialized operations, timeout/uncertainty fencing, and server-state-projected reversible transaction coordination | Public display protocol plus Qt Core/DBus; never service implementation, compositor writer, Settings, shell, or QML |
 | `src/services/display_writer` | Fail-closed Display1 apply mapping, narrow compositor configuration validation, exactly-one-in-flight lineage/owner fencing, and a direct private KDE public-protocol adapter | Public display service/protocol/transaction plus Qt Core and private Qt/Wayland client integration; never KWin private ABI/store, libkscreen production authority, journal persistence, Settings, shell, or physical outputs |
+| `src/services/display_journal` | Canonical Display1 journal file load/store/clear, same-directory atomic replacement, restrictive file/root validation, and the deterministic restart-recovery seam | Public display transaction/writer values plus Qt Core and narrow Linux file operations; never environment path discovery, directory selection/creation, compositor/session state, recovery policy, D-Bus, QML, or KWin |
+| `src/services/display_runtime` | Packaged Display1 startup order, explicit user-state-root selection, D1 recovery injection, D4/D5 composition, Wayland-peer-authenticated lock safety, and exact-owner logind delay lifetime | Public display service/transaction/writer boundaries, accepted session-lock service, Qt Core/DBus, and process-local environment inputs; never KWin private ABI/store, Settings, QML, journal format/filesystem implementation, or nested-runtime assertions |
 | `src/services/display_color_model` | Pure Display Color C0 bounded ICC descriptor/header validation, deterministic catalog values, per-output capability/assignment-intent evaluation, degraded truth, and fingerprinted atomic snapshots | Qt Core only; never Display1 sibling modules, ICC/profile file or host access, transport, persistence, compositor, QML, or display hardware |
 | `src/services/power_protocol` | Power1 bounded values, canonical/fixed codecs, hostile validation, result lineage, and deterministic aggregate-battery policy | Qt Core and serialization-only Qt DBus; never a connection, service, upstream daemon, platform object, session, or UI |
 | `src/services/power_service` | Resident Power1 ownership, generation-fenced upstream collaborator seams (battery/profile/session), atomic last-known-good snapshot orchestration, epoch/revision authority, exactly-once operation completion, and the activation package | Public power protocol plus Qt Core/DBus; never host UPower, logind, power-profiles-daemon, Wayland, sysfs, or client implementation dependencies |
 | `src/services/power_client` | Exact-owner asynchronous Power1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty recovery, and stale-reply rejection | Public power protocol plus Qt Core/DBus; never service implementation, upstream daemons, or QML |
 | `src/services/brightness_model` | Pure stable-ID fixture validation, mirror-collapsed display/keyboard composition, and integer raw-range conversion | Public power protocol plus Qt Core; never Display1 headers, connector identity, topology input, transport, persistence, clocks, QML, or mutation |
 | `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, shell-owned interruption/privacy-policy composition, and global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models/policies, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
-| `src/shell/power_applet` | Pure Power applet presentation projection, row sorting, charge/severity mapping, and brightness request state machine | Public power protocol and brightness model plus Qt Core; never QObject, QML, transport, clocks, or persistence |
+| `src/shell/power_applet` | Pure Power applet projection/request values plus a separately linked shell-private `PowerClient` controller and compiled QML renderer | Pure target: public power protocol and brightness model plus Qt Core. Runtime target: pure target, public power client, and Qt QML/Quick; never power-service internals, host daemons, direct platform transport, files, or persistence |
 | `src/shell/global_menu` | Separate focused targets: canonical bounded menu/action values and authenticated active-window provider ownership policy (protocol/policy), the fail-closed export lineage authority, the Qt Widgets menu adapter, and the shell-owned applet facade whose Qt Quick component owns this applet's presentation policy (orientation, overflow, focus, activation surfaces) | Protocol/policy: public protocol values plus Qt Core. Adapter target additionally Qt Gui/Widgets. Applet-presentation target additionally Qt Quick for its own component; never D-Bus transport, KWin objects, or action execution |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin window registry, generation-retaining output inventory, development-only virtual-output adapter, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid/shell-visibility limits, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
@@ -113,6 +115,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
+- Notification surface routing consumes only the public, owner-bound
+  `Compositor1.Outputs` semantic order. The runtime joins its exact
+  `outputGeneration` and output-ID set to the already accepted shell-visibility
+  snapshot and current Qt inventory before resolving a `QScreen`; it never
+  substitutes Qt's platform-local primary-screen guess or compositor-private
+  output objects.
 - `src/hybrid` owns the process-local session topology; the KWin adapter may
   orchestrate its public coordinator but may not duplicate tree mutation or
   expose KWin pointers through it. The older Compositor1 bridge remains a
@@ -142,23 +150,29 @@ implemented; do not use placeholder modules to bypass a boundary.
   paired-device connect/disconnect only, and pairing prompts belong to a
   separate Agent1 outcome. See [Bluetooth service](bluetooth-service.md) and
   [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
-- Network consumers depend on the typed Network1 client. The dependency
-  direction is protocol → model → client; the client accepts only an injected
-  transport and the pure N0 boundary contains no D-Bus, NetworkManager,
-  platform radio, credential, persistence, or QML authority. See
-  [Network service](network-service.md) and
-  [ADR-0045](../adr/0045-fence-network1-pure-boundary.md).
+- Network consumers depend on the typed Network1 client. The N0 direction
+  remains protocol → model → client, with only an injected transport. N1's
+  `network_qt_transport` implements that seam without reversing it;
+  `network_service` owns fixed-wire D-Bus residency and an injected backend;
+  only `network_manager_adapter` links libnm. Its public boundary exports
+  secret-free copies and no NM/GObject handle. NetworkManager profile and
+  credential authority remains external, with credentials supplied only by an
+  external secret agent. See [Network service](network-service.md),
+  [ADR-0045](../adr/0045-fence-network1-pure-boundary.md), and
+  [ADR-0052](../adr/0052-confine-networkmanager-behind-network1.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,
   topology, and transaction. The resident service composes those public D1
   boundaries and consumes only D0's public Compositor1 inventory through an
   exact-owner QtDBus adapter; it never links the compositor or its KWin ABI.
+  The separate Display runtime composes D2 with D4, D5, authenticated lock
+  state, and logind; those dependencies do not leak back into D1/D2.
   KWin remains live/restore authority, Settings owns later registry/policy
   persistence, and shell geometry never waits for Display1. See
   [Display service](display-service.md),
   [ADR-0016](../adr/0016-display1-transaction-authority.md), and
-  [ADR-0017](../adr/0017-persistent-output-identity.md).
+  [ADR-0053](../adr/0053-compose-display1-from-authenticated-runtime-authorities.md).
 - Notification interruption policy is injected into the presentation model by
   shell composition. It filters only the popup projection; it cannot mutate the
   host, private wire, Active/Recent retention, or persistent settings. The
@@ -187,6 +201,10 @@ implemented; do not use placeholder modules to bypass a boundary.
   cannot change interruption policy and receives no notification records,
   operations, or service authority. Its manifest therefore requests no
   capabilities.
+- The Power applet receives only its shell-private controller over the public
+  PowerClient. Manifest/policy `power.read` and `power.control` decisions gate
+  observation and mutation separately; the renderer never sees a transport,
+  service implementation, upstream daemon, or reusable general-power object.
 - Shell-wide presentation shortcuts are shell-owned actions registered through
   a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
   and user remapping; neither profile data nor applet QML may register or

@@ -65,9 +65,13 @@ void WriterTransactionPort::stop()
                        DisplayTransaction::ApplyOutcome::TransportUncertain);
     }
     m_outputManagement->stop();
+    const bool wasAvailable = m_available;
     m_started = false;
     m_available = false;
     m_ownerGeneration = 0;
+    if (wasAvailable) {
+        Q_EMIT mutationAuthorityChanged(false);
+    }
 }
 
 bool WriterTransactionPort::isStarted() const noexcept
@@ -78,6 +82,11 @@ bool WriterTransactionPort::isStarted() const noexcept
 bool WriterTransactionPort::isOutputManagementAvailable() const noexcept
 {
     return m_available;
+}
+
+qint64 WriterTransactionPort::compositorProcessId() const noexcept
+{
+    return m_started ? m_outputManagement->peerProcessId() : 0;
 }
 
 void WriterTransactionPort::setObserver(
@@ -94,13 +103,13 @@ void WriterTransactionPort::beginMachineLineage(const quint64 machineLineage)
     m_machineLineage = machineLineage;
 }
 
-bool WriterTransactionPort::storeJournal(
+DisplayTransaction::JournalMutationOutcome WriterTransactionPort::storeJournal(
     const DisplayTransaction::Journal &journal)
 {
     return m_journalStore->store(journal);
 }
 
-bool WriterTransactionPort::clearJournal()
+DisplayTransaction::JournalMutationOutcome WriterTransactionPort::clearJournal()
 {
     return m_journalStore->clear();
 }
@@ -162,7 +171,12 @@ void WriterTransactionPort::outputManagementOwnerChanged(
         finishPending(DisplayTransaction::ApplyOutcome::TransportUncertain);
     }
     m_ownerGeneration = ownerGeneration;
-    m_available = m_started && available && ownerGeneration != 0;
+    const bool nextAvailable = m_started && available && ownerGeneration != 0;
+    const bool changed = nextAvailable != m_available;
+    m_available = nextAvailable;
+    if (changed) {
+        Q_EMIT mutationAuthorityChanged(m_available);
+    }
 }
 
 void WriterTransactionPort::outputManagementCompleted(

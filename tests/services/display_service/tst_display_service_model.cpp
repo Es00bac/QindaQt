@@ -192,24 +192,26 @@ void DisplayServiceModelTest::fencesLateCompletionAcrossMachineReplacement()
     const quint64 oldLineage = port.requestMachineLineages.constLast();
     const quint64 reusedToken = port.applyRequests.constLast().token;
 
+    // Owner/loss reset preserves the active D5 truth. The replacement machine
+    // recovers and may issue only a rollback, never a second forward preview.
     QVERIFY(model.transportLost());
+    InventoryOutput observedTarget = output();
+    observedTarget.transform = Display::Transform::Rotate180;
     QVERIFY(model.observeInventory(
-                     frame(1, {output()}, QStringLiteral(":1.77")))
+                     frame(1, {observedTarget}, QStringLiteral(":1.77")))
                 .accepted());
-    QVERIFY(model.safetyChanged(DisplayTransaction::SafetyState::Safe).accepted);
-    Display::Candidate second =
-        DisplayTopology::candidateFromSnapshot(*model.snapshot());
-    second.outputs[0].transform = Display::Transform::Rotate90;
-    QVERIFY(model.stage(QStringLiteral("second"), second).command.accepted);
-    QVERIFY(model.preview(QStringLiteral("second")).command.accepted);
+    QCOMPARE(port.applyRequests.size(), 2);
+    QCOMPARE(port.applyRequests.constLast().scope,
+             DisplayTransaction::ApplyScope::FullPreimage);
     QCOMPARE(port.applyRequests.constLast().token, reusedToken);
     QVERIFY(port.requestMachineLineages.constLast() != oldLineage);
+    QCOMPARE(model.view()->state, DisplayTransaction::MachineState::RevertingApply);
 
     const DisplayTransaction::CommandResult stale = model.applyCompleted(
         oldLineage, reusedToken, DisplayTransaction::ApplyOutcome::Applied);
     QVERIFY(!stale.accepted);
     QCOMPARE(stale.error, DisplayTransaction::CommandError::CallbackOutOfOrder);
-    QCOMPARE(model.view()->state, DisplayTransaction::MachineState::Applying);
+    QCOMPARE(model.view()->state, DisplayTransaction::MachineState::RevertingApply);
     QVERIFY(model.applyCompleted(port.requestMachineLineages.constLast(),
                                  reusedToken,
                                  DisplayTransaction::ApplyOutcome::Applied)

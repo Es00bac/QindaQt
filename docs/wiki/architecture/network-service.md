@@ -1,112 +1,170 @@
 # Network service architecture
 
-This page records the accepted shape of QindaQt network connectivity and the
-current **N0 pure boundary** maturity for the Platform services milestone
-(QQ-005.04) tracked in the
-[implementation roadmap](../development/implementation-roadmap.md).
-N0 owns bounded Network1 values, secret-free identity, canonical codecs, the
-lineage-gated model, scan-lease truth, intent admission, and an asynchronous
-client over an injected transport seam. N0 deliberately ships no transport
-implementation: no NetworkManager, BlueZ, D-Bus, socket, real radio, secret
-store, or user interface exists in this slice, and the
-`qindaqt.network-boundary` test fails if one appears. The value, validation,
-and wire contract is fixed in [Network1 version 1](../reference/network1-v1.md)
-and [ADR-0045](../adr/0045-fence-network1-pure-boundary.md).
+QindaQt now has an executable **N1 resident Network1 boundary** for Platform
+milestone QQ-005.04. N0 remains the platform-free protocol/model/client base;
+N1 adds an exact-owner Qt D-Bus transport, a resident
+`org.qindaqt.Network1` service, and a separately linked libnm adapter. The
+contract is fixed by [Network1 version 1](../reference/network1-v1.md),
+[ADR-0045](../adr/0045-fence-network1-pure-boundary.md), and
+[ADR-0052](../adr/0052-confine-networkmanager-behind-network1.md).
+
+N1 provides production observation and permitted scan, stored-known-network
+connect, active disconnect, and Wi-Fi/WWAN radio dispatch. It does not claim a
+Settings or shell UI, connection-profile editing, credential entry, an in-
+process secret agent, persistence, or physical Wi-Fi/Ethernet/radio
+qualification.
 
 ## Authority map
 
-| Concern | Truth authority | QindaQt owner |
+| Concern | Truth authority | QindaQt responsibility |
 | --- | --- | --- |
-| Connectivity, radios, devices, scans | Future NetworkManager adapter | Resident `Network1` service (N1+, not N0) |
-| Known-network credentials | Secret agent outside the model | Never transported through Network1 values |
-| Radio hardware/software state | Adapter observation only | N0 models intent and observed truth; no mutation path is claimed |
-| Scan result freshness | Snapshot-published lease | `network_model` lease tracker |
-| Lineage and stale rejection | Snapshot gate | `network_model` gate, one authority for N0 |
+| Connectivity, radios, devices, access points | NetworkManager via libnm | Normalize, bound, validate, and publish observed truth |
+| Scan, connect, disconnect, radio request | NetworkManager permissions and completion | Admit an N0 intent, dispatch once, then resnapshot |
+| Stored connection profiles | NetworkManager | Reference only by derived known-network id; never edit settings |
+| Credentials | External NetworkManager secret agent | Never request, receive, cache, log, or transport through Network1 |
+| Public owner/epoch/revision | Resident Network1 process | Exact-owner service lineage and atomic revision publication |
+| Scan result freshness | Snapshot-published lease | N0 model converts remaining duration to its local monotonic clock |
 
-## Modules
+## Module composition
+
+```text
+consumer -> network_client -> NetworkTransport
+                                |
+                                v
+                     network_qt_transport -> session D-Bus
+                                                  |
+                                                  v
+network_protocol <- network_model <- network_service (resident owner)
+                                             |
+                                             v
+                              network_manager_adapter -> libnm -> system D-Bus
+```
 
 | Module | Cohesive responsibility |
 | --- | --- |
-| `network_protocol` | Bounded values, SSID/BSSID/interface identity, derived known-network ids, validation, secret redaction, canonical byte codecs |
-| `network_model` | Snapshot lineage gate, scan-lease reconciliation, intent admission, atomic consumer projection |
-| `network_client` | Asynchronous exact-owner client, bounded deadlines and retries, uncertain-outcome reporting, and the injected `NetworkTransport` seam |
+| `network_protocol` | Bounded values, identity, validation, redaction, canonical codecs |
+| `network_model` | Lineage gate, scan-lease reconciliation, intent admission, atomic projection |
+| `network_client` | Async client state, deadlines/retries, uncertain outcomes, injected transport seam |
+| `network_qt_transport` | Activation, exact unique-owner binding, fixed Qt D-Bus mapping, bounded broker errors |
+| `network_service` | Resident name/object, epoch/revision stamping, hostile-backend validation, serialized operations |
+| `network_manager_adapter` | Private libnm observation and typed dispatch through an injectable platform port |
 
-The pure model constructs no timer, file, process, or Qt object; time enters
-only through an injected monotonic clock so tests are deterministic. The client
-owns nothing beyond its `QTimer`s and is thread-confined to the Qt main loop.
+The N0 dependency direction remains protocol → model → client. Qt D-Bus does
+not enter N0. The service depends on the public protocol/model boundary but not
+the client or transport. Only the adapter links libnm; public adapter headers
+contain no `NM*`, `GObject`, D-Bus object-path, or connection-setting handle.
+All resident objects are owned by one composition root and confined to its Qt
+thread.
 
-## Security and least authority
+## Resident lifecycle and restart fence
 
-- Access points, known networks, intents, and operation parameters are
-  structurally secret-free. A `network_protocol` redaction helper is the single
-  secret-recognition authority for diagnostics and bounded parameter maps; it
-  covers quoted, unquoted, suffix-shaped, and malformed credential fragments.
-  Unsafe or unredactable diagnostics fail closed to fixed public text, and the
-  client refuses a credential-shaped parameter map before transport.
-- A known-network id is the SHA-256 digest of the raw SSID octets plus the
-  security suite, so intent exchange uses a stable pseudonym rather than a
-  credential or the SSID of a hidden network. The digest is not a
-  confidentiality boundary for guessable SSIDs.
-- Device identity is the normalized interface name only; no MAC, driver, or
-  persistent system identifier is a public value.
-- Invalid UTF-8 and presentation-dangerous SSIDs become hidden networks rather
-  than spoofable text. Validation rejects controls, line/paragraph separators,
-  format controls (including bidi overrides and zero-width controls),
-  surrogates, private-use, and unassigned scalars while accepting safe
-  supplementary Unicode.
+The installed D-Bus descriptor activates `qindaqt-network-service` for
+`org.qindaqt.Network1`; the matching hardened user systemd unit declares the
+same bus name, restarts failures, restricts address families to `AF_UNIX`, and
+applies read-only system/home and kernel/device protections. The process owns
+exactly `/org/qindaqt/Network1` on the constructing session bus. Partial start
+rolls back object and name registration; stop is idempotent and resolves
+pending work before releasing ownership.
 
-## Lineage and atomicity
+Each process derives a nonzero epoch from the boot-monotonic clock and keeps a
+local high-water. This is deliberately paired with its D-Bus unique owner. An
+initially absent NetworkManager may later appear and become ready. Once a
+nonempty NetworkManager unique owner has been observed, owner loss or
+replacement makes dispatched work uncertain, publishes unavailable truth, and
+retires the process with status 75. The libnm port binds
+`notify::dbus-name-owner` and establishes this admission fence at the owner
+event boundary; its one-second timer refreshes facts only. The watch carries a
+per-start generation and exact `NMClient` identity, so a notification from a
+stopped or replaced client cannot retire a later run. The user unit restarts it, or the Qt
+transport asks D-Bus to activate it after public-owner loss. The next process
+has a new Network1 unique owner and a strictly greater epoch; it never changes
+epoch beneath one surviving public owner. Session-bus disconnect also exits so
+lineage cannot migrate to a new broker.
 
-The snapshot gate accepts a first snapshot with nonzero epoch/revision, demands
-strictly increasing revisions within one owner and epoch, and demands an epoch
-strictly greater than the retained accepted high-water on any owner or epoch
-change. The high-water survives owner loss and current-model clear. A
-same-owner epoch change is rejected as a forged restart; an A/B/A replay of a
-replaced owner's epoch is rejected regardless of content. The model publishes a
-candidate only after validation and gating pass; a rejected candidate leaves
-every observable field untouched.
+## Observation and publication
 
-## Scan leases
+The libnm port polls public NetworkManager facts on the constructing Qt thread;
+authority loss/replacement is event-driven and is not delayed until a poll.
+It publishes only value copies: normalized interface names, presentation-safe
+SSIDs, normalized BSSIDs, derived known-network ids, radio/device/connectivity
+state, permission-derived capabilities, and bounded scan-lease duration.
+Malformed facts are skipped where referential integrity can be repaired and
+cause a degraded reason; an unavailable or wholly invalid backend yields a
+valid empty unavailable snapshot. The service validates a complete candidate
+with N0 before atomically advancing the revision and emitting `Changed`.
 
-A lease is the bounded right to keep one scan result set current. It is granted
-only by an accepted snapshot, carries its granting epoch/revision, and its
-published remaining duration is bounded between one second and two minutes.
-Only after atomic snapshot admission does the consumer convert that duration
-to an injected local monotonic deadline; invalid clocks and overflow are
-rejected. While a live lease is held a second scan intent is refused as busy;
-an expired lease no longer pins results. A lease from a foreign epoch can never
-be adopted, so a stale snapshot cannot resurrect scan truth after an owner
-change.
+The facts type cannot represent passwords, PSKs, certificates, private keys,
+hardware addresses, drivers, UIDs/PIDs, or NetworkManager object paths. The
+adapter never invokes NetworkManager secret getters. Connect activates only a
+stored `NMRemoteConnection`; NetworkManager may consult a separately registered
+secret agent, but neither that exchange nor credential-entry UI crosses
+Network1.
 
-## Client truth
+## Operation lifecycle
 
-The client reports `Unavailable`, `Connecting`, `Ready`, or `Degraded` and
-never shows unconfirmed data as current. Requests carry tokens and the exact
-owner; the decoded snapshot owner must exactly equal both that request owner
-and the current transport owner. Late, duplicated, foreign-owner, or
-retired-token replies are dropped. Owner replacement or bus loss clears current
-state while retaining the lineage high-water and reports unavailability. A
-failed transport start rolls back every live flag, timer, request, operation,
-owner, and public Ready state before a retry calls start again. A mutation that
-times out, fails in transport, or returns a malformed or lineage-mismatched
-reply is reported uncertain exactly once and is never automatically replayed;
-the client refetches the authoritative snapshot instead of manufacturing state.
+The service accepts only the four fixed Network1 methods. Every request carries
+the initiating epoch and revision, is converted to one typed N0 intent, and is
+admitted against the current validated snapshot. Rejection is immediate and
+does not call the backend. At most one admitted operation is in flight; a
+second is returned as busy. The backend deadline is five seconds. Timeout,
+authority replacement, or shutdown cancels the platform request and completes
+the client-visible result exactly once as uncertain; late callbacks are
+generation/operation-id fenced and discarded. No mutation is automatically
+replayed. Accepted backend dispatch is queued for the next turn of the same Qt
+thread. This lets the D-Bus object retain the original delayed call before even
+a synchronous backend failure can complete, while stop, timeout, and authority
+replacement fence a dispatch that has not started.
 
-## Current N0 proof
+A scan deadline is provisional while libnm dispatch is pending. Successful
+dispatch changes `Scanning` to `Leased`. A definite libnm failure clears both
+the in-progress flag and deadline, publishes `Idle` before the failed reply,
+and therefore permits an immediate retry. Cancellation is deliberately
+conservative: NetworkManager may already have accepted the scan, so the
+callback clears `Scanning` but retains the bounded lease until its deadline.
 
-The focused Debug and Release boundary consists of thirteen registered rows:
-identity, validation, codec, redaction, snapshot gate, scan lease, intent
-policy, model, client, adversarial hostile input, isolated installed consumer,
-clean source boundary, and source-policy poison. The adversarial row pins the
-exact-owner payload check, A→B→A retirement, maximum-integer lease rejection,
-diagnostic cap, quoted credential redaction, bidi SSID rejection,
-`wireValid=false` rejection, and failed-start rollback. The poison row must
-prove the checker rejects QtDBus, `QTimer`, and NetworkManager tokens; merely
-passing the clean source scan is insufficient.
+The production dispatch surface is intentionally narrow:
 
-## Remaining boundaries
+- request a Wi-Fi scan with a bounded lease deadline;
+- activate an already stored known-network connection;
+- deactivate the active connection on a named device interface; and
+- request Wi-Fi or WWAN software-radio state and confirm observed state.
 
-Resident service ownership, the NetworkManager-backed adapter behind the
-`NetworkTransport` seam, secret-agent interaction, persistence, Settings UI,
-and physical radio/hardware qualification are later N1+ slices. N0 claims no
-executable end-to-end connectivity.
+NetworkManager remains final policy authority. Permission absence removes the
+corresponding capability, so the service does not advertise an operation it
+cannot attempt.
+
+## Failure and public error behavior
+
+The Qt transport calls only the current exact unique owner, drops replies from
+foreign/retired owners and stale tokens through N0, and translates D-Bus
+failures to stable bounded reason codes. Raw broker or libnm error messages do
+not become public diagnostics. Credential-shaped operation parameters are
+rejected locally before a bus call. Accepted unavailable and degraded
+snapshots retain their honest client state rather than being projected Ready.
+
+## Qualification
+
+The strict Debug and Release Network proof includes the thirteen N0 rows plus
+N1 transport, coordinator, residency, libnm-mapping/dispatch, activation,
+installed-package, boundary, and poison-policy rows. Private-bus tests cover
+exact introspection, unique-owner replacement, malformed/foreign/stale replies,
+delayed and synchronous operation completion, timeout/stop/late exactly-once
+replies, unavailable backend, process activation, broker loss, and fresh higher
+epoch after restart. A private-system-bus concrete-libnm probe proves owner
+loss and A→B→A replacement retire below the one-second fact poll, including a
+production activated-process retirement. Adapter lease-state proof distinguishes
+definite scan failure (`Idle`, immediate retry) from conservative cancellation
+(`Leased`). Tests never touch host networking.
+
+The activation fixture gives the production binary a private session D-Bus and
+a separate empty private system D-Bus. The installed fixture stages
+`QindaQtNetworkN0` and `QindaQtNetworkN1`, builds an external CMake consumer,
+checks the binary and three activation/interface descriptors, and repeats the
+service lifecycle from the staged prefix. Source/package-policy poison cases
+prove the checker rejects libnm in the resident service, a reversed transport dependency,
+a NetworkManager secret getter, public NM handles, an `a{sv}` D-Bus wire, and
+an incomplete N1 package registry.
+
+This is deterministic process and software-boundary evidence only. Physical
+Wi-Fi, Ethernet, radios, stored-profile compatibility, external secret agents,
+credential entry, and host policy remain explicit later qualification.

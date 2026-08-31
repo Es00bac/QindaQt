@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "power",
+  "name": "Power",
+  "description": "Shows bounded Power1 battery truth and offers policy-gated power profile and keyboard-brightness controls.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.power"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 56, "maximum": 120, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["power.read", "power.control"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

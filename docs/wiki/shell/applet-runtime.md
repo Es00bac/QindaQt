@@ -48,9 +48,10 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
-The manifest catalog describes clock, notification center, launcher, task list,
-global menu, and status tray packages. The compiled first-party registry and
-production QML dispatcher currently contain two audited entry points:
+The manifest catalog describes clock, notification center, power, launcher,
+task list, global menu, and status tray packages. The compiled first-party
+registry and production QML dispatcher currently contain three audited entry
+points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -62,12 +63,23 @@ production QML dispatcher currently contain two audited entry points:
   center is open plus read-only Do Not Disturb state. The applet shows a moon
   indicator and includes that state in its accessible label, but cannot change
   interruption policy, read notification records, or invoke notification
-  operations.
+  operations; and
+- `qindaqt.applets.power` renders exact-owner Power1 battery truth, bounded
+  profile choices, and keyboard-brightness controls on either orientation. Its
+  shell-private controller consumes only the public `PowerClient`; `power.read`
+  gates observation and `power.control` gates serialized mutation. Owner loss
+  or replacement clears prior truth and ends a pending request without replay.
+  PB-1 currently supplies honest unavailable truth until its platform
+  collaborators land, so the production applet remains visibly unavailable
+  rather than inventing host state.
 
-The notification-center entry remains a valid compiled applet when the shell
-starts without presentation-token provisioning, but its facade is absent and
-the control is visibly disabled. The preview keeps deterministic static applet
-fixtures rather than connecting to live clock or notification state.
+The notification-center and power entries remain valid compiled applets when
+the shell starts without presentation-token provisioning, but the notification
+facade is absent and its control is visibly disabled. Power access is
+independent of the notification token and fails closed on its own
+capability/client state.
+The preview keeps deterministic static applet fixtures rather than connecting
+to live clock, notification, or power state.
 
 Launcher, task-list, global-menu, and status-tray manifests remain accepted
 contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with

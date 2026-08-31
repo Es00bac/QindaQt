@@ -6,9 +6,12 @@ a resident Display1 service foundation. D1 remains transport-free. The bounded
 D2 service slice adds the bus object/process, activation metadata, monotonic
 timer scheduling, and an exact-owner adapter over D0's read-only
 `Compositor1.Outputs` inventory. D4 now adds a bounded public output-management
-writer module, but the packaged process does not compose it until durable
-journal, lock/logind, and recovery dependencies exist. Settings integration,
-UI, and nested/physical runtime proof also remain later outcomes.
+writer module. D5 adds the separate crash-safe filesystem journal adapter and
+deterministic startup-load seam. D6 now composes the packaged process from D2,
+D4, D5, authenticated session-lock truth, and an exact-owner logind delay
+inhibitor. Deterministic fake/private-bus evidence covers startup and recovery;
+contained nested convergence, Settings integration, UI, and physical runtime
+proof remain later outcomes.
 
 [ADR-0016](../adr/0016-display1-transaction-authority.md) fixes transaction
 authority. [ADR-0017](../adr/0017-persistent-output-identity.md) fixes persistent
@@ -23,12 +26,15 @@ not read, write, watch, or recreate that store.
 
 The resident Display1 process is the only component allowed to become a
 QindaQt production writer to KWin's public KDE output-management protocol. It
-already owns the D1 machine and monotonic confirmation/revert scheduling, but
-the packaged transaction port deliberately rejects journal storage and never
-applies. The accepted D4 [compositor writer](display-writer.md) supplies the
-direct public-protocol boundary; later outcomes must still supply durable
-journal, lock/logind, restart recovery, and nested convergence evidence before
-that writer authority is operational. Settings Center, shell overlays, global
+owns the D1 machine and monotonic confirmation/revert scheduling. The packaged
+D6 runtime now constructs the D4 [compositor writer](display-writer.md) as its
+only `TransactionPort` and injects D5's canonical durable load/store/clear
+adapter, as fixed by
+[ADR-0051](../adr/0051-persist-display-journal-in-injected-state-root.md).
+It admits `Safe` only from authenticated lock, exact-owner logind delay, and
+current D4 authority. This is an operational process composition, not yet a
+claim that nested KWin converges in every required scenario. Settings Center,
+shell overlays, global
 shortcuts, Color, and brightness consumers will cross typed client boundaries.
 They do not own the timer or apply output configurations directly.
 
@@ -92,10 +98,12 @@ prevents an A/B/A owner or repeated-seed sequence from republishing any epoch
 already accepted in that process without retaining an attacker-controlled
 history set. At equal generation, only exact typed equality is accepted.
 Changed equal-generation truth, a regression, or a newer generation with
-unchanged contents rejects without partial replacement. An owner change first
-removes the old snapshot/machine, then establishes a fresh epoch; explicit
-transport loss also makes `GetSnapshot` and mutations unavailable. Revisions
-are never ordered across owners.
+unchanged contents rejects without partial replacement. Every rejected
+same-owner frame preserves the complete public snapshot and any active D1
+transaction; its diagnostic reason is never an authority-loss signal. An owner
+change first removes the old snapshot/machine, then establishes a fresh epoch;
+explicit transport loss also makes `GetSnapshot` and mutations unavailable.
+Revisions are never ordered across owners.
 
 D0 exposes only enabled outputs and the observed current mode. Projection
 therefore publishes one deterministic `current:WIDTHxHEIGHT@MILLIHERTZ` mode
@@ -118,8 +126,10 @@ machine after owner replacement or transport recovery. The port copies the
 outer lineage beside each apply request; advancing the current lineage never
 retags an already-issued request.
 Stage, preview, confirm, cancel, exact-token completion, tick, safety, suspend,
-and settle calls remain D1 transitions. The resident owns a single-shot Qt
-timer and re-arms it from the injected monotonic deadline. It exports
+and settle calls remain D1 transitions. The resident owns one single-shot Qt
+timer for D1 monotonic deadlines and a separate 500 ms single-shot quiet-window
+timer for accepted output-set changes. Every changed complete frame restarts
+the quiet window; only its expiry routes `topologySettled`. It exports
 `GetSnapshot`, `Stage`, `Preview`, `Confirm`, and `Cancel`, plus a complete-read
 `Changed(epoch, revision, available)` hint. Unavailable reads return a typed
 D-Bus error rather than an invalid placeholder snapshot.
@@ -142,13 +152,76 @@ must treat confirmation readiness as exactly "the snapshot carries a
 summary in `AwaitingConfirmation`", never an inference from a Preview
 result.
 
-The installed executable starts with safety `Unknown` and an unavailable
-transaction port. Preview therefore fails closed at the D1 safety gate; even
-if an in-process composition supplies `Safe`, the packaged port cannot store a
-journal and fails the next hard gate without an apply request. This is a
-deliberate source-complete stopping point, not a simulated writer. The service
-has no KWin headers/private ABI, Wayland objects, filesystem persistence,
-Settings, QML, or platform lock/session dependency.
+`display_service` itself still has no KWin headers/private ABI, Wayland objects,
+direct filesystem access, Settings, QML, or platform lock/session dependency.
+The separate `display_runtime` process module owns that composition and keeps
+all collaborators constructor-visible. This preserves D2 as a deterministic
+injectable service rather than turning it into a platform god object.
+
+## Durable journal adapter
+
+`FileJournalStore` implements the D4 `JournalStore` seam without moving
+filesystem policy into D1, D2, or the compositor writer. Its constructor takes
+an existing effective-user-owned state root. It addresses only
+`display1-transaction.journal` and its fixed same-directory temporary name;
+there is no `HOME`, XDG, Settings, or global lookup.
+
+Store accepts only a valid D1 journal, writes its canonical versioned bytes to
+a newly created mode-0600 temporary file, syncs content, atomically renames in
+the same directory, and syncs directory metadata where supported. The typed
+mutation result is `Unchanged` while prior pathname truth remains authoritative,
+`Durable` after a successful barrier, or `DurabilityUncertain` when requested
+pathname truth is visible but its directory barrier failed. Clear applies that
+barrier even when the path is already absent so a retry after uncertain unlink
+cannot report false durability. Load never
+follows links, accepts only a restrictive regular single-link file owned by the
+effective user, enforces the 1 MiB limit on both pathname and opened-descriptor
+metadata before allocation and again while streaming, and returns absent/
+loaded/rejected without partially publishing a value. It rejects non-canonical
+bytes after decode. A stale temporary name is ignored by load and safely
+replaced by the next store, which models an interruption before the commit
+point. Clear never deletes an unsafe final entry.
+
+The D6 startup path calls `load()` before starting D4, passes a loaded journal
+to D1 `recover`, and keeps rejected or active truth until model policy
+authorizes clear. D5 does not itself choose the state root, run recovery,
+observe lock/session safety, or claim that KWin converged.
+
+## Resident D6 process composition
+
+`display_runtime` is the thread-confined process-composition boundary fixed by
+[ADR-0053](../adr/0053-compose-display1-from-authenticated-runtime-authorities.md).
+It owns the D2 resident, D4 writer, authenticated lock/logind safety adapter,
+and their start/stop order; it does not own any of their policy or persistence
+implementations.
+
+Startup selects exactly one state root in this order: explicit `--state-root`,
+systemd's single `STATE_DIRECTORY`, `XDG_STATE_HOME/qindaqt`, then
+`HOME/.local/state/qindaqt`. A selected value must be absolute, clean, bounded,
+and not `/`; D5 then proves existing-directory ownership, permissions, and
+symlink safety. The systemd user unit supplies `StateDirectory=qindaqt` with
+mode `0700`. Missing, ambiguous, unsafe, or rejected state truth terminates
+startup before the Wayland writer opens.
+
+After a valid absent/loaded result, D4 opens its private Wayland connection and
+derives a positive compositor PID with Linux `SO_PEERCRED`. D6 gives only that
+PID to the accepted three-name session-lock monitor. It independently binds
+one exact logind owner, subscribes to that unique sender's `PrepareForSleep`,
+and obtains `Inhibit("sleep", ..., "delay")`. The resident D-Bus service starts
+only after the delay descriptor is held. Its D1 safety becomes `Safe` only
+while D4 is available, the authenticated lock state is unlocked, the current
+delay descriptor is held, and no suspend is pending.
+
+`PrepareForSleep(true)` revokes safety and routes `prepareForSuspend`. D6 holds
+the descriptor through a forward `Applying` request, then releases it as soon
+as that forward state ends; any later rollback remains covered by D5 recovery
+truth. Resume reacquires the descriptor before restoring safety. Session/system
+bus loss, logind owner replacement, failed inhibitor acquisition, invalid
+Wayland peer identity, and writer startup failure are fail-closed; terminal
+session-authority loss makes the process exit rather than reuse an old lineage.
+All callbacks and collaborators remain on the constructing Qt thread. Stop
+detaches the safety observer, withdraws D2, and stops D4 so late replies cannot
+cross the lifetime boundary.
 
 ## Identity and registry
 
@@ -230,7 +303,11 @@ timer; the D1 machine still sees only `tick()` and the injected monotonic value.
 Rollback makes exactly three apply attempts per rollback sequence in one
 process before `Stuck`; an explicit topology settle or service restart begins
 a new sequence. Repeated cancel, lock, and suspend inputs during a sequence do
-not reset its counter. Initial journal storage is a hard gate. A failed
+not reset its counter. Initial journal storage is a hard gate. `Unchanged`
+preserves ordinary `Staged` state; `DurabilityUncertain` enters cleanup-only
+`Stuck(JournalFailure)` with the exact Applying journal active and issues no
+forward request. Cancel, preview, and re-stage cannot discard that authority;
+only `retryStuck` with an exact `Durable` clear returns Ready. A failed
 `confirm` clear is rejected while remaining in `AwaitingConfirmation`. If a
 terminal clear fails after pre-image, external, or already-restored survivor
 truth is known, `Stuck(JournalFailure)` is cleanup-only and retry never applies.
@@ -249,8 +326,15 @@ or timeout).
 
 ### Side-effect port preconditions
 
-- `storeJournal` and `clearJournal` are synchronous atomic operations. `false`
-  means the prior durable value is unchanged.
+- `storeJournal` and `clearJournal` return one typed journal-mutation outcome.
+  `Unchanged` guarantees the prior durable value, `Durable` proves the requested
+  value/absence crossed every supported barrier, and `DurabilityUncertain`
+  records visible requested pathname truth with a failed directory barrier,
+  including an already-absent retry after uncertain unlink. Only `Durable`
+  authorizes a forward apply. Initial-store uncertainty is retained as
+  cleanup-only active journal authority until an exact durable clear; clear
+  uncertainty remains conservative cleanup/recovery failure. Neither is
+  collapsed into a lying Boolean.
 - `requestApply` copies the request before returning and does not synchronously
   call the machine. It may later produce zero or one completion for the exact
   token; late and duplicate/out-of-order callbacks are rejected.
@@ -286,17 +370,17 @@ ID, mode, scale, and transform. It never treats an empty disabled-output mode
 as a wildcard and never replays enable, position, priority, primary, or
 replication fields from the old set. If the current survivor properties
 already match, the journal clears without a redundant apply. `Stuck` continues
-to accept snapshot/topology updates so retry uses the current set. The future
-adapter owns the accepted 500 ms quiet-window and long-churn reporting policy;
-D1 intentionally models only the explicit settle event.
+to accept snapshot/topology updates so retry uses the current set. D2 now owns
+the accepted 500 ms quiet-window; D1 intentionally models only the explicit
+settle event. Long-churn telemetry remains later operational work.
 
 A valid newer external configuration aborts and clears the QindaQt transaction
 without another apply. Recovery follows the same rule: pre-image live clears,
 target live rolls back, a changed set waits for settle, and a same-set layout
 matching neither endpoint is external truth and is not fought. Lock-authority
-loss and suspend input revert. D2 must
-consume the existing authenticated fail-closed session-lock client and a
-logind delay inhibitor; D1 contains neither dependency. Crash recovery loads a
+loss and suspend input revert. D6 consumes the existing authenticated
+fail-closed session-lock client and a logind delay inhibitor; D1/D2 contain
+neither dependency. Crash recovery loads a
 valid journal and enters this same rollback/settle path; a journaled external
 abandon remains abandon across a crash and clears only after the recovered set
 settles.
@@ -325,19 +409,21 @@ recovery transitions without opening a display. They do not prove that pinned
 KWin accepted a real configuration, that a mirror appears in `wl_output`, or
 that DRM/GPU/monitor/lid/suspend behavior works.
 
-D2 also has two serial private-D-Bus rows. Each creates a disposable root,
+D2/D6 also have serial private-D-Bus rows. Each creates a disposable root,
 removes host display/session addresses from the daemon environment, and uses
 only explicitly named connections to its own bus. They prove exact-owner
 asynchronous inventory reads, replacement and stale-reply fences, dirty-read
 coalescing, stop suppression, resident name/object registration, typed
-unavailable errors, `Changed`, deadline fire/re-arm, and teardown. They do not
-open a compositor or display and are not KWin output-management evidence.
+unavailable errors, `Changed`, deadline fire/re-arm, 500 ms settle, D5 recovery,
+authenticated lock/logind delay lifetime, suspend, owner loss, and teardown.
+They do not open a compositor or display and are not KWin output-management
+evidence.
 
-D0 owns the development-only compositor inventory/hotplug seam. The current D2
-foundation owns resident read/service lineage and injected transaction
-orchestration. D4 now owns the bounded direct public output-management port;
-remaining display work owns journal persistence, lock/logind integration,
-settled-hotplug policy, and nested hotplug/restart proof. D3 provides the typed asynchronous client
+D0 owns the development-only compositor inventory/hotplug seam. D2 owns
+resident read/service lineage, transaction orchestration, and settle timing;
+D4 owns the bounded direct public output-management port, D5 owns persistence,
+and D6 owns their authenticated process composition. Remaining display work
+includes contained nested hotplug/restart convergence. D3 provides the typed asynchronous client
 and server-projected reversible transaction coordinator; later Settings,
 shell, Hybrid, application, policy, and hardware lanes consume those public
 boundaries. The required release scenarios remain in the
