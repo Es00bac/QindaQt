@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtimepanelwindowfactory.h"
 
+#include "bluetooth_applet_controller.h"
 #include "notificationcenterappletaccess.h"
 #include "power_applet_controller.h"
 
@@ -37,10 +38,12 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      const Applets::ManifestCatalog &applets,
                                                      const AppletHost::CapabilityPolicy &policy,
                                                      NotificationCenterAppletAccess *notificationCenterAccess,
+                                                     BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
                                                      PowerApplet::PowerAppletController *powerAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
     , m_notificationCenterAccess(notificationCenterAccess)
+    , m_bluetoothAppletAccess(bluetoothAppletAccess)
     , m_powerAppletAccess(powerAppletAccess)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
@@ -105,6 +108,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         {QStringLiteral("surfaceId"), surfaceId},
         {QStringLiteral("notificationCenterAppletAccess"),
          QVariant::fromValue(m_notificationCenterAccess)},
+        {QStringLiteral("bluetoothAppletAccess"),
+         QVariant::fromValue(m_bluetoothAppletAccess)},
         {QStringLiteral("powerAppletAccess"),
          QVariant::fromValue(m_powerAppletAccess)},
     };

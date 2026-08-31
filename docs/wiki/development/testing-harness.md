@@ -177,6 +177,21 @@ installed production-package/source-poison rows. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
+The production Bluetooth applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.bluetooth-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection/request rows are joined by an exact-owner public-client
+controller, compiled offscreen keyboard/accessibility and lease-close proof,
+mutation-sensitive pure/runtime boundary gates, and an installed
+production-package/source-poison row. No row contacts the host session bus,
+display server, BlueZ, a radio, or pairing authority. The exact matrix and
+nonclaims are detailed in [Bluetooth applet](../shell/bluetooth-applet.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

@@ -98,6 +98,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   milestones.
 - [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
   compiled-implementation gates and records which built-ins are genuinely live.
+- [Bluetooth applet](shell/bluetooth-applet.md) records the production
+  public-client-only B1 projection, serialized controls, discovery-lease
+  teardown, compiled accessibility, and explicit pairing/hardware nonclaims.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
