@@ -138,7 +138,8 @@ RequestState beginBluetoothRequest(
     return {.phase = RequestPhase::Pending,
             .operation = operation,
             .initiatingEpoch = snapshot.epoch,
-            .initiatingRevision = snapshot.revision};
+            .initiatingRevision = snapshot.revision,
+            .feedback = {}};
 }
 
 RequestState applyBluetoothResult(const RequestState &request,

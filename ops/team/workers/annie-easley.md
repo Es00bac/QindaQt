@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:20:46-06:00
+updated_at: 2026-08-31T16:25:25-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — serialized compiler/CTest lane claimed for exact repair `5714b2ffa8b2bc393c2c3561a70d749ed8a75845`; configuring fresh strict Debug and Release roots for focused and adjacent B1 qualification.
+- Status: working — strict Debug stopped at action 84/378 on one B1 missing-field warning; applying the exact explicit empty-feedback initializer before rebuilding the failed target.
 
 ## Updates
+
+- 2026-08-31T16:25:25-06:00 — Fresh strict Debug configured successfully with GCC 15.3.0. The serialized build stopped at first red, action 84/378: `bluetooth_request_state.cpp` omitted trailing `RequestState::feedback` from its Pending aggregate and `-Werror=missing-field-initializers` rejected it. No later target or test ran. The exact repair adds `.feedback = {}`; the failed pure target will be rebuilt before resuming the graph. This is an owned B1 source portability repair and changes no behavior or authority boundary.
 
 - 2026-08-31T16:20:46-06:00 — Manager independently confirmed both direct boundary/poison gates and diff checks green, accepted the convergence design for executable qualification, and explicitly confirmed no other worker uses the compiler/CTest lane. Direct process inspection found no CMake, Ninja, CTest, KWin, Weston, or QindaQt desktop process other than the inspection shell itself. Claimed the serialized lane for exact repair `5714b2ffa8b2bc393c2c3561a70d749ed8a75845`; fresh strict Debug/Release roots will run B1 7/7 plus adjacent Bluetooth/client/catalog/resolver/dispatcher/package rows. Private bus, nested compositor, BlueZ, host Bluetooth, hardware, network, and input remain prohibited.
 
