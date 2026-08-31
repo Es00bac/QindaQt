@@ -77,6 +77,7 @@ nav:
       - Settings Center: apps/settings-center.md
       - Settings Appearance route: apps/appearance-settings.md
       - Settings Display route: apps/display-settings.md
+      - Settings Network route: apps/network-settings.md
       - Terminal: apps/terminal.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -131,3 +132,4 @@ nav:
       - "ADR-0050: Direct KDE display writer": adr/0050-direct-kde-output-management-writer.md
       - "ADR-0051: Injected Display journal root": adr/0051-persist-display-journal-in-injected-state-root.md
       - "ADR-0052: Confined NetworkManager adapter": adr/0052-confine-networkmanager-behind-network1.md
+      - "ADR-0055: Network Settings through Network1": adr/0055-compose-network-settings-through-network1.md
