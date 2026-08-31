@@ -113,6 +113,10 @@ private:
     bool m_bluetoothControlGranted = false;
     bool m_expanded = false;
     bool m_releaseAfterPending = false;
+    // AGENT-GUARD: A completed or locally rejected release consumes the
+    // current automatic close/shutdown intent. Only a later explicit action
+    // may clear this block; otherwise a closed popup can replay forever.
+    bool m_automaticReleaseBlocked = false;
     bool m_shuttingDown = false;
     BluetoothAppletModel m_model;
     RequestState m_request;

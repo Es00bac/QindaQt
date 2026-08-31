@@ -188,9 +188,14 @@ ctest --test-dir build/dev \
 Its pure projection/request rows are joined by an exact-owner public-client
 controller, compiled offscreen keyboard/accessibility and lease-close proof,
 mutation-sensitive pure/runtime boundary gates, and an installed
-production-package/source-poison row. No row contacts the host session bus,
-display server, BlueZ, a radio, or pairing authority. The exact matrix and
-nonclaims are detailed in [Bluetooth applet](../shell/bluetooth-applet.md).
+production-package/source-poison row. The boundary rows use exact header
+allowlists, positively close the controller's QML surface, and independently
+poison client/service, renamed pairing, address, persistence, filesystem, and
+adjacent-module escapes. No row contacts the host session bus, display server,
+BlueZ, a radio, or pairing authority. The exact matrix and nonclaims are
+detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
+also clears ambient loader paths and requires CMake's runtime dependency
+resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
 The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
 profile built the production shell plus the focused targets, passed all seven
 registered Bluetooth-applet rows, and passed six adjacent public-client,

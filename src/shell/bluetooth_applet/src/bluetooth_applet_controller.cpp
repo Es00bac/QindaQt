@@ -238,7 +238,11 @@ bool BluetoothAppletController::requestDiscovery(const QString &adapterId,
     const RequestState request = beginBluetoothRequest(
         m_client->snapshot(), operation, m_bluetoothControlGranted,
         m_discoveryLease);
-    return dispatch(request);
+    const bool dispatched = dispatch(request);
+    if (dispatched && !enabled) {
+        m_automaticReleaseBlocked = false;
+    }
+    return dispatched;
 }
 
 bool BluetoothAppletController::requestDeviceConnection(const QString &deviceId,
@@ -262,9 +266,13 @@ bool BluetoothAppletController::requestDeviceConnection(const QString &deviceId,
 
 void BluetoothAppletController::setExpanded(const bool expanded)
 {
+    const bool newlyClosed = m_expanded && !expanded;
     m_expanded = expanded;
     if (expanded) {
         return;
+    }
+    if (newlyClosed || m_shuttingDown) {
+        m_automaticReleaseBlocked = false;
     }
     if (operationPending()) {
         if (m_discoveryLease.has_value()
@@ -280,6 +288,7 @@ void BluetoothAppletController::releaseDiscoveryAfterSerialization()
 {
     if (!m_discoveryLease.has_value()) {
         m_releaseAfterPending = false;
+        m_automaticReleaseBlocked = false;
         return;
     }
     if (!presentationOwnerAvailable()
@@ -291,6 +300,7 @@ void BluetoothAppletController::releaseDiscoveryAfterSerialization()
             m_discoveryLeaseOwner.clear();
             m_discoveryLeaseMinimumRevision = 0;
             m_releaseAfterPending = false;
+            m_automaticReleaseBlocked = false;
             reproject();
         } else {
             m_releaseAfterPending = true;
@@ -305,8 +315,13 @@ void BluetoothAppletController::releaseDiscoveryAfterSerialization()
         m_client->snapshot(), operation, m_bluetoothControlGranted,
         m_discoveryLease);
     m_releaseAfterPending = false;
-    if (!dispatch(request) && !request.feedback.isEmpty()) {
-        publishFeedback(request.feedback);
+    if (dispatch(request)) {
+        m_automaticReleaseBlocked = false;
+    } else {
+        m_automaticReleaseBlocked = true;
+        if (!request.feedback.isEmpty()) {
+            publishFeedback(request.feedback);
+        }
     }
 }
 
@@ -341,24 +356,30 @@ void BluetoothAppletController::handleOperationCompleted(
             m_discoveryLease = operation.target;
             m_discoveryLeaseOwner = initiatingOwner;
             m_discoveryLeaseMinimumRevision = result.observedRevision;
+            m_automaticReleaseBlocked = false;
         } else if (operation.kind == Bluetooth::OperationKind::ReleaseDiscovery) {
             m_discoveryLease.reset();
             m_discoveryLeaseOwner.clear();
             m_discoveryLeaseMinimumRevision = 0;
+            m_automaticReleaseBlocked = false;
         } else if (operation.kind == Bluetooth::OperationKind::SetAdapterPower
                    && !operation.powered && m_discoveryLease == operation.target) {
             m_discoveryLease.reset();
             m_discoveryLeaseOwner.clear();
             m_discoveryLeaseMinimumRevision = 0;
+            m_automaticReleaseBlocked = false;
         }
         publishFeedback({});
     } else {
+        if (operation.kind == Bluetooth::OperationKind::ReleaseDiscovery) {
+            m_automaticReleaseBlocked = true;
+        }
         publishFeedback(completed.feedback);
     }
 
     reproject();
     if ((!m_expanded || m_releaseAfterPending || m_shuttingDown)
-        && !operationPending()) {
+        && !operationPending() && !m_automaticReleaseBlocked) {
         releaseDiscoveryAfterSerialization();
     }
 }
@@ -405,6 +426,7 @@ void BluetoothAppletController::retireLeaseIfAuthorityEnded()
         m_discoveryLeaseOwner.clear();
         m_discoveryLeaseMinimumRevision = 0;
         m_releaseAfterPending = false;
+        m_automaticReleaseBlocked = false;
         return;
     }
     if (!m_client->hasSnapshot()) {
@@ -416,6 +438,7 @@ void BluetoothAppletController::retireLeaseIfAuthorityEnded()
         m_discoveryLeaseOwner.clear();
         m_discoveryLeaseMinimumRevision = 0;
         m_releaseAfterPending = false;
+        m_automaticReleaseBlocked = false;
         return;
     }
     const auto adapter = std::ranges::find_if(
@@ -429,6 +452,7 @@ void BluetoothAppletController::retireLeaseIfAuthorityEnded()
         m_discoveryLeaseOwner.clear();
         m_discoveryLeaseMinimumRevision = 0;
         m_releaseAfterPending = false;
+        m_automaticReleaseBlocked = false;
     }
 }
 
@@ -479,7 +503,8 @@ void BluetoothAppletController::reproject()
     Q_EMIT stateChanged();
 
     if ((!m_expanded || m_releaseAfterPending || m_shuttingDown)
-        && !operationPending() && m_discoveryLease.has_value()) {
+        && !operationPending() && !m_automaticReleaseBlocked
+        && m_discoveryLease.has_value()) {
         releaseDiscoveryAfterSerialization();
     }
 }

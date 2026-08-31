@@ -56,6 +56,8 @@ private Q_SLOTS:
     void grantsGateReadAndControlIndependently();
     void serializesAndPinsPublicOperations();
     void closeReleasesDiscoveryAfterPendingAcquire();
+    void failedCloseReleaseIsNotAutomaticallyReplayed_data();
+    void failedCloseReleaseIsNotAutomaticallyReplayed();
     void malformedReleaseNoLeaseRetainsLease();
     void successWaitsForSnapshotConvergence();
     void ownerReplacementClearsTruthLeaseAndRequestWithoutReplay();
@@ -179,6 +181,93 @@ void BluetoothAppletControllerTests::closeReleasesDiscoveryAfterPendingAcquire()
     QTRY_VERIFY(!controller.discoveryLeaseHeld());
     QTRY_COMPARE(transport.fetches.size(), 3);
     Bluetooth::Snapshot released = bluetoothClientSnapshot(61, 7);
+    released.adapters[0].discovering = false;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, released);
+    QTRY_VERIFY(!controller.operationPending());
+}
+
+void BluetoothAppletControllerTests::failedCloseReleaseIsNotAutomaticallyReplayed_data()
+{
+    QTest::addColumn<Bluetooth::OperationStatus>("status");
+    QTest::addColumn<QString>("reason");
+    QTest::addColumn<QString>("feedbackFragment");
+    QTest::addColumn<bool>("authoritativeEnd");
+
+    QTest::newRow("failed-requires-explicit-retry")
+        << Bluetooth::OperationStatus::Failed
+        << QStringLiteral("release-failed") << QStringLiteral("failed") << false;
+    QTest::newRow("uncertain-waits-for-truth")
+        << Bluetooth::OperationStatus::Uncertain
+        << QStringLiteral("state-unknown") << QStringLiteral("uncertain") << true;
+}
+
+void BluetoothAppletControllerTests::failedCloseReleaseIsNotAutomaticallyReplayed()
+{
+    QFETCH(Bluetooth::OperationStatus, status);
+    QFETCH(QString, reason);
+    QFETCH(QString, feedbackFragment);
+    QFETCH(bool, authoritativeEnd);
+
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport);
+    controller.setExpanded(true);
+
+    QVERIFY(controller.requestDiscovery(QStringLiteral("adapter-61-400"), true));
+    const auto acquire = transport.submissions.constFirst();
+    transport.emitOperationReply(
+        kOwner, acquire.requestId, true,
+        resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("lease-acquired")));
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot acquired = bluetoothClientSnapshot(61, 6);
+    acquired.adapters[0].discovering = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, acquired);
+    QTRY_VERIFY(!controller.operationPending());
+
+    controller.setExpanded(false);
+    QCOMPARE(transport.submissions.size(), 2);
+    const auto release = transport.submissions.constLast();
+    QCOMPARE(release.request.kind, Bluetooth::OperationKind::ReleaseDiscovery);
+    transport.emitOperationReply(
+        kOwner, release.requestId, true,
+        resultFor(release, status, reason, 6, 6));
+
+    QTRY_VERIFY(controller.feedbackPresent());
+    QVERIFY(!controller.operationPending());
+    QVERIFY(controller.discoveryLeaseHeld());
+    QVERIFY(controller.feedback().contains(feedbackFragment));
+    QCOMPARE(transport.submissions.size(), 2);
+    QTRY_COMPARE(transport.fetches.size(), 3);
+
+    Bluetooth::Snapshot observed = bluetoothClientSnapshot(61, 7);
+    observed.adapters[0].discovering = !authoritativeEnd;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, observed);
+    QTRY_COMPARE(controller.serviceRevision(), quint64(7));
+    QCOMPARE(transport.submissions.size(), 2);
+    QVERIFY(controller.feedback().contains(feedbackFragment));
+
+    if (authoritativeEnd) {
+        QVERIFY(!controller.discoveryLeaseHeld());
+        return;
+    }
+
+    QVERIFY(controller.discoveryLeaseHeld());
+    controller.setExpanded(true);
+    controller.setExpanded(false);
+    QCOMPARE(transport.submissions.size(), 3);
+    const auto retry = transport.submissions.constLast();
+    transport.emitOperationReply(
+        kOwner, retry.requestId, true,
+        resultFor(retry, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("lease-released"), 8, 7));
+    QTRY_VERIFY(!controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 4);
+    Bluetooth::Snapshot released = bluetoothClientSnapshot(61, 8);
     released.adapters[0].discovering = false;
     transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
                                 true, released);
