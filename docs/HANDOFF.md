@@ -4,6 +4,21 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Power P2 descendant
+  `9e4b7a60f2bcc9c9229418a47c2c1801a343a876`. The production panel applet
+  composes only the public PB-1 client through a shell-private controller,
+  requests independent `power.read` and `power.control` grants, clears stale
+  truth and pending operations on exact-owner replacement, exposes compiled
+  keyboard-accessible QML, and is discovered through the audited manifest,
+  registry, host, profile, and installed-package seams. Ada Lovelace's exact
+  descendant rereview found P0/P1/P2/P3 `0/0/0/0`; Debug and Release each
+  passed the six applet-integrity rows, eight Power rows, and 11 direct manifest
+  cases. Fresh merged-tree Debug and Release each build 327/327 focused
+  actions and pass the combined 14/14 selector plus 11/11 direct manifest
+  cases. QQ-004.13 advances from WIRED to EXECUTABLE. PB-1 still reports
+  honest `upstream-not-integrated` truth; live providers, successful host
+  mutations, nested interaction, and physical hardware remain later gates.
+
 - The manager merge `7277771a63747bbcec957465e5f0b676e69168d0`
   integrates exact accepted Display Settings descendant `2f429c11`. The live
   `display` route composes the public D3 client/coordinator into bounded

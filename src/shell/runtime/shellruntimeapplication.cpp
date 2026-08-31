@@ -7,6 +7,7 @@
 #include "notificationcentershortcut.h"
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
+#include "powerappletcomposition.h"
 #include "runtimepanelwindowfactory.h"
 #include "shelldevelopmentevidence.h"
 #include "settingsroutelauncher.h"
@@ -200,6 +201,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
+    m_powerApplet =
+        std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     if (m_presentationAccessToken) {
         // Runtime option parsing treats these values as one trust bundle. Keep
         // the assertion fail closed here too so future alternate callers cannot
@@ -281,7 +284,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
-            m_notificationCenterAccess.get());
+            m_notificationCenterAccess.get(), m_powerApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -495,6 +498,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_powerApplet.reset();
     m_notificationCenterAccess.reset();
     m_notificationPresentation.reset();
     m_notificationPrivacyPolicy.reset();

@@ -30,7 +30,7 @@ Schema v1 recognizes narrowly named requests for application launching;
 window read, activation, and management; global-menu and status-item access;
 notification, audio, power, clipboard, Bluetooth, display, and settings access.
 Read and control capabilities are separate where the platform service exposes
-both.
+both; Power applets request `power.read` and `power.control` independently.
 
 The manifest is a request, never a grant. Runtime policy must combine package
 trust, user consent, host isolation, and service availability before exposing a
@@ -40,7 +40,8 @@ authority.
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes launcher,
-task-list, global-menu, status-tray, clock, and notification-center applets.
+task-list, global-menu, status-tray, clock, notification-center, and power
+applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -50,6 +51,12 @@ the audited in-process renderer receives only a private center-toggle/open-state
 facade plus a read-only Do Not Disturb indicator from the shell. It cannot set
 interruption policy. That facade is not a manifest capability and is not
 available to third-party packages.
+
+The Power manifest requests both `power.read` and `power.control`. The audited
+production renderer receives a shell-private controller over the public
+PowerClient. Read denial prevents client observation; control denial keeps
+bounded rows visible but non-adjustable and rejects every mutation before
+dispatch.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

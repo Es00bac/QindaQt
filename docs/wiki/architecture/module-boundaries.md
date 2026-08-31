@@ -51,7 +51,7 @@ tests, and the wiki page describing its contract.
 | `src/services/power_client` | Exact-owner asynchronous Power1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty recovery, and stale-reply rejection | Public power protocol plus Qt Core/DBus; never service implementation, upstream daemons, or QML |
 | `src/services/brightness_model` | Pure stable-ID fixture validation, mirror-collapsed display/keyboard composition, and integer raw-range conversion | Public power protocol plus Qt Core; never Display1 headers, connector identity, topology input, transport, persistence, clocks, QML, or mutation |
 | `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, shell-owned interruption/privacy-policy composition, and global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models/policies, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
-| `src/shell/power_applet` | Pure Power applet presentation projection, row sorting, charge/severity mapping, and brightness request state machine | Public power protocol and brightness model plus Qt Core; never QObject, QML, transport, clocks, or persistence |
+| `src/shell/power_applet` | Pure Power applet projection/request values plus a separately linked shell-private `PowerClient` controller and compiled QML renderer | Pure target: public power protocol and brightness model plus Qt Core. Runtime target: pure target, public power client, and Qt QML/Quick; never power-service internals, host daemons, direct platform transport, files, or persistence |
 | `src/shell/global_menu` | Separate focused targets: canonical bounded menu/action values and authenticated active-window provider ownership policy (protocol/policy), the fail-closed export lineage authority, the Qt Widgets menu adapter, and the shell-owned applet facade whose Qt Quick component owns this applet's presentation policy (orientation, overflow, focus, activation surfaces) | Protocol/policy: public protocol values plus Qt Core. Adapter target additionally Qt Gui/Widgets. Applet-presentation target additionally Qt Quick for its own component; never D-Bus transport, KWin objects, or action execution |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin window registry, generation-retaining output inventory, development-only virtual-output adapter, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid/shell-visibility limits, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
@@ -188,6 +188,10 @@ implemented; do not use placeholder modules to bypass a boundary.
   cannot change interruption policy and receives no notification records,
   operations, or service authority. Its manifest therefore requests no
   capabilities.
+- The Power applet receives only its shell-private controller over the public
+  PowerClient. Manifest/policy `power.read` and `power.control` decisions gate
+  observation and mutation separately; the renderer never sees a transport,
+  service implementation, upstream daemon, or reusable general-power object.
 - Shell-wide presentation shortcuts are shell-owned actions registered through
   a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
   and user remapping; neither profile data nor applet QML may register or

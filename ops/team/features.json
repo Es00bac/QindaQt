@@ -113,10 +113,10 @@
           "caveat": "Manifest/policy registration, production shell composition, rendered interaction, and physical-device qualification remain."
         },
         {
-          "id": "QQ-004.13", "title": "Power and brightness applet", "weight": 2, "state": "WIRED",
-          "summary": "The pure Power applet presentation projection and brightness request state machine are registered with fail-closed bounds and capability tests.",
-          "evidence": [{ "kind": "commit", "reference": "c113e979", "summary": "The accepted Power applet P1 series and final registry-comment repair are integrated." }, { "kind": "source", "reference": "docs/wiki/shell/power-applet.md", "summary": "The owning page records the registered pure presentation boundary and later client/QML composition." }],
-          "caveat": "A resident Power1 client/service, upstream adapters, QML surface, shell host, and hardware interaction remain."
+          "id": "QQ-004.13", "title": "Power and brightness applet", "weight": 2, "state": "EXECUTABLE",
+          "summary": "The production Power applet composes exact-owner PB-1 truth through a shell-private public-client controller, audited manifest/registry/host routing, compiled QML, keyboard/accessibility interaction, and fail-closed request lineage.",
+          "evidence": [{ "kind": "commit", "reference": "9e4b7a60f2bcc9c9229418a47c2c1801a343a876", "summary": "The independently accepted Power P2 descendant integrates production composition and the complete seven-manifest round-trip contract." }, { "kind": "test", "reference": "docs/wiki/shell/power-applet.md", "summary": "Debug and Release each pass 6/6 applet rows, 8/8 Power rows, and 11/11 direct manifest cases plus package and boundary poison gates." }],
+          "caveat": "Live upstream power adapters, successful host brightness/profile mutation, nested panel interaction, and physical-device qualification remain."
         },
         {
           "id": "QQ-004.14", "title": "Bluetooth applet", "weight": 2, "state": "ABSENT",
