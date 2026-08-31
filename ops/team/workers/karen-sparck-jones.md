@@ -4,10 +4,10 @@ role: XDG desktop-portal appearance-policy backend implementer
 provider: OpenAI Codex collaboration runtime
 model: inherited current model; exact serving identifier unexposed
 reasoning: inherited current reasoning level; exact level unexposed
-status: working
+status: handoff
 feature: Production QindaQt Settings portal appearance export P0
 started_at: 2026-08-31T03:41:03-06:00
-updated_at: 2026-08-31T04:12:45-06:00
+updated_at: 2026-08-31T04:37:12-06:00
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/portal-p0
 ---
 
@@ -17,9 +17,9 @@ worktree: /home/cabewse/work_SPaC3/container-wm-workers/portal-p0
 - Provider/model: OpenAI Codex collaboration runtime; inherited current model
   and reasoning level, whose exact serving identifiers are unexposed and are
   not inferred.
-- Status: working — extending the compiled, focused-test-green Settings portal
-  boundary through private-process activation, staged packaging, and strict
-  documentation/source gates.
+- Status: handoff — exact clean candidate
+  `b2271491239401adf1e4fffaed4fa57426e2a9ed` is frozen and ready for a
+  different worker's exact review; Karen is not live after this response.
 - Exact base: `9b3d65542c87b2b977482ed7e72e4425c5332dd6`.
 - Branch: `worker/portal-p0`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/portal-p0`.
@@ -49,3 +49,14 @@ worktree: /home/cabewse/work_SPaC3/container-wm-workers/portal-p0
   input, unknown theme, or stale lineage. Strict Debug compilation passes and
   focused policy/source/private-bus tests pass 3/3. Private-process activation,
   staged packaging/poison, documentation, and Release gates remain underway.
+- 2026-08-31T04:37:12-06:00 — Froze exact clean candidate
+  `b2271491239401adf1e4fffaed4fa57426e2a9ed` over assigned base
+  `9b3d65542c87b2b977482ed7e72e4425c5332dd6`. Strict Debug and Release each
+  pass the complete portal selector 7/7, including private process activation,
+  daemon-loss exit/restart, installed runtime/package validation, and hostile
+  source/installed poison. Documentation validation passes 113 documents,
+  strict MkDocs builds, source shape checks 1,684 files with only pre-existing
+  warnings outside the owned paths, `git diff --check` passes, no fixture
+  process remains, and the product worktree is clean. Requested different-
+  worker review of the immutable SHA; host portal/toolkit integration and all
+  non-Settings portal families remain explicitly unclaimed.
