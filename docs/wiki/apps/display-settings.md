@@ -72,8 +72,8 @@ Inside `qindaqt-settings`:
 Focused test selection:
 
 ```sh
-ctest --test-dir /mnt/d/QindaQt/builds/display-settings-d5-prism/build-dev --output-on-failure \
-  -R '^qindaqt\.display-settings'
+ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
+  -R '^qindaqt\.(display-settings-model|display-settings-model-adversarial|display-page)$'
 ```
 
 - `qindaqt.display-settings-model` verifies snapshot projection, draft edits, scale/transform/position mutations, reset, and full confirm/revert transaction cycles.
