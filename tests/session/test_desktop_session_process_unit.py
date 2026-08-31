@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from desktop_session_process import (
@@ -13,21 +14,89 @@ from desktop_session_process import (
     ProcessContractError,
     capture_process_identity,
     identity_is_live,
+    process_evidence,
     terminate_processes,
 )
 from desktop_session_runtime import RuntimeState, _cleanup
+from desktop_session_topology import ProcessExpectation
 
 
-def write_process(proc: Path, pid: int, executable: Path, start_ticks: int) -> Path:
+def write_process(
+    proc: Path, pid: int, executable: Path, start_ticks: int, parent_pid: int = 0
+) -> Path:
     root = proc / str(pid)
     root.mkdir(parents=True)
     (root / "exe").symlink_to(executable)
     fields = ["S"] + ["0"] * 18 + [str(start_ticks)] + ["0"] * 8
+    fields[1] = str(parent_pid)
     (root / "stat").write_text(f"{pid} (name with spaces) " + " ".join(fields))
     return root
 
 
 class ProcessTests(unittest.TestCase):
+    def test_duplicate_kwin_roles_bind_service_spawn_and_ancestry(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proc = root / "proc"
+            proc.mkdir()
+            executable = root / "kwin_wayland"
+            executable.write_text("x")
+            write_process(proc, 60, executable, 201, parent_pid=2)
+            write_process(proc, 61, executable, 202, parent_pid=2)
+            topology = SimpleNamespace(processes=(
+                ProcessExpectation("parent-compositor", "kwin_wayland", None),
+                ProcessExpectation("compositor", "kwin_wayland", None),
+                ProcessExpectation("session-probe", "probe", None),
+            ))
+            probe = {
+                "selfPid": "62", "parentPid": "2",
+                "services": [{
+                    "name": "org.qindaqt.Compositor", "status": "owned", "pid": "61",
+                }],
+            }
+
+            records, pids = process_evidence(
+                probe,
+                topology,  # type: ignore[arg-type]
+                proc_root=proc,
+                role_pid_hints={"parent-compositor": 60, "compositor": 61},
+                direct_parent_pid=2,
+            )
+
+            self.assertEqual(pids["parent-compositor"], 60)
+            self.assertEqual(pids["compositor"], 61)
+            self.assertIsNone(records["parent-compositor"]["parentRole"])
+
+    def test_duplicate_kwin_roles_reject_service_hint_disagreement(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proc = root / "proc"
+            proc.mkdir()
+            executable = root / "kwin_wayland"
+            executable.write_text("x")
+            write_process(proc, 64, executable, 203, parent_pid=2)
+            write_process(proc, 65, executable, 204, parent_pid=2)
+            topology = SimpleNamespace(processes=(
+                ProcessExpectation("parent-compositor", "kwin_wayland", None),
+                ProcessExpectation("compositor", "kwin_wayland", None),
+                ProcessExpectation("session-probe", "probe", None),
+            ))
+            probe = {
+                "selfPid": "66", "parentPid": "2",
+                "services": [{
+                    "name": "org.qindaqt.Compositor", "status": "owned", "pid": "64",
+                }],
+            }
+
+            with self.assertRaisesRegex(RuntimeError, "service, spawn, and ancestry"):
+                process_evidence(
+                    probe,
+                    topology,  # type: ignore[arg-type]
+                    proc_root=proc,
+                    role_pid_hints={"parent-compositor": 64, "compositor": 65},
+                    direct_parent_pid=2,
+                )
+
     def test_capture_binds_executable_and_starttime(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

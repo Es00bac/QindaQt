@@ -16,6 +16,9 @@ from desktop_session_topology import (
     observed_applications,
     validate_topology_readiness,
 )
+from desktop_session_notification_shell import (
+    notification_shell_pending as _notification_shell_pending,
+)
 
 
 MARKER = "QINDAQT_DESKTOP_SESSION_PROBE="
@@ -27,6 +30,7 @@ REQUIRED_METHODS = (
     "inputCapabilities",
     "developmentShellSurfaces",
     "windows",
+    "notificationShell",
 )
 
 
@@ -135,6 +139,8 @@ def _snapshot_pending(
     if service_pending is not None:
         return service_pending
     for key, value in values.items():
+        if key == "notificationShell":
+            continue
         if value.get("status") != "ok":
             raise RuntimeError(f"public D-Bus method {key} returned an error")
     output = values["outputs"]
@@ -160,7 +166,11 @@ def _snapshot_pending(
         validate_topology_readiness(candidate, topology)
     except TopologyContractError as error:
         return str(error)
-    return None
+    return _notification_shell_pending(
+        values["notificationShell"],
+        dock_surfaces=candidate["dockSurfaces"],
+        outputs=candidate["outputs"],
+    )
 
 
 def await_complete_snapshot(

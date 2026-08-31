@@ -4,6 +4,34 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted S3 readiness candidate
+  `4d4b3dc395d80135a8f66f5ffcb2395cf1874c60`. The installed private desktop
+  executes WUXGA, 1440p at 125%, 1080p at 150%, light/dusk/dark themes, and
+  dual outputs while booting the production compositor, shell, resident
+  services, Settings, and Text Editor. Its readiness contract joins the exact
+  active GlobalAccel component/action, stable unique shell owner and PID,
+  private closed/hidden center before one Meta+N batch, open/visible center
+  with increased counter after it, and one mapped/committed compositor surface
+  on the desired/actual output. Mina Shah's external Claude source/archive
+  review accepted the immutable candidate at P0/P1/P2/P3 `0/0/0/2`; Lise
+  Meitner's independent fresh static+dynamic review accepted it at `0/0/0/0`
+  after building 882/882 actions and passing focused 5/5, formerly failing
+  1080p@150% plus package 2/2, and package plus the four-row matrix 5/5. Four
+  fresh archives prove canonical activation/shell/surface 4/4, false host
+  reachability 12/12, bounded PSS, nontrivial captures, empty teardown, and
+  exact dual `[WL-1, WL-0]` authority with interaction and capture on WL-1.
+  Fresh merged-tree replay configures successfully, builds 882/882, passes
+  focused 5/5, passes the formerly failing 1080p@150% plus package 2/2 in
+  8.18 seconds, and passes one unretried package-plus-four-row matrix 5/5 in
+  33.94 seconds. Manager run IDs are `666752f4`, `6c6f251d`, `73d82c54`, and
+  `93ab1392`; all retain containment 12/12, PSS below the 1,024 MiB ceiling,
+  byte-authenticated visually coherent captures, empty teardown, and exact
+  WL-1 dual interaction/capture. Final process inspection is empty.
+  QQ-004.09 and QQ-006.09 advance from WIRED to EXECUTABLE. Complete
+  screen-reader/keyboard coverage, heterogeneous mixed scaling, portrait and
+  hotplug/lid behavior, physical input/display, GPU/DRM, and perceptual
+  baselines remain later qualification.
+
 - This integration merges exact independently accepted Network Settings N2
   repair `6f5d0ba9915851195a4776b3a1e2f224c369a958`. The installed `network`
   route composes only the public Network1 client into secret-free device,

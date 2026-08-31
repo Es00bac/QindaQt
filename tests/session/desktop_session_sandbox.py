@@ -23,7 +23,7 @@ RUN_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
 # AGENT-GUARD: The sandbox starts from an empty root, so host merged-usr
 # aliases do not exist even when /usr is mounted. Keep these as relative
 # in-sandbox links; binding host /lib* would broaden the evidence boundary.
-MERGED_USR_LIBRARY_ALIASES = (("usr/lib", "/lib"), ("usr/lib", "/lib64"))
+MERGED_USR_LIBRARY_ALIASES = (("usr/lib", "/lib"), ("usr/lib64", "/lib64"))
 FORBIDDEN_ENVIRONMENT = frozenset(
     {
         "DISPLAY",
@@ -205,7 +205,14 @@ def _validate_mount(mount: ReadOnlyMount, label: str) -> None:
 
 
 def sandbox_environment(
-    *, run_id: str, uid: int, stage_bin: str, system_path: Sequence[str]
+    *,
+    run_id: str,
+    uid: int,
+    stage_bin: str,
+    system_path: Sequence[str],
+    library_path: Sequence[str] = (),
+    qt_plugin_path: Sequence[str] = (),
+    qml_import_path: Sequence[str] = (),
 ) -> dict[str, str]:
     """Return a complete environment, never a mutation of the host environment."""
 
@@ -214,6 +221,13 @@ def sandbox_environment(
     path_entries = [stage_bin, *system_path]
     if any(not entry.startswith("/") or ":" in entry for entry in path_entries):
         raise SandboxContractError("PATH entries must be absolute sandbox paths")
+    for name, entries in (
+        ("LD_LIBRARY_PATH", library_path),
+        ("QT_PLUGIN_PATH", qt_plugin_path),
+        ("QML_IMPORT_PATH", qml_import_path),
+    ):
+        if any(not entry.startswith("/") or ":" in entry for entry in entries):
+            raise SandboxContractError(f"{name} entries must be absolute sandbox paths")
     environment = {
         "HOME": "/home/qindaqt",
         "XDG_CONFIG_HOME": "/home/qindaqt/.config",
@@ -235,6 +249,12 @@ def sandbox_environment(
         "QT_QUICK_BACKEND": "software",
         "QINDAQT_SESSION_RUN_ID": run_id,
     }
+    if library_path:
+        environment["LD_LIBRARY_PATH"] = ":".join(library_path)
+    if qt_plugin_path:
+        environment["QT_PLUGIN_PATH"] = ":".join(qt_plugin_path)
+    if qml_import_path:
+        environment["QML_IMPORT_PATH"] = ":".join(qml_import_path)
     overlap = FORBIDDEN_ENVIRONMENT.intersection(environment)
     if overlap:
         raise SandboxContractError(f"sandbox environment admitted forbidden keys: {overlap}")

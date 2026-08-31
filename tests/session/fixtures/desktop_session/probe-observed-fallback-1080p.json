@@ -100,6 +100,24 @@
     "schemaVersion": 1,
     "status": "ok"
   },
+  "notificationShell": {
+    "evidence": {
+      "centerOpenedCount": "0",
+      "centerWindow": {
+        "exists": true,
+        "outputName": "Virtual-0",
+        "visible": false
+      },
+      "owner": ":1.20",
+      "presentation": {
+        "centerOpen": false,
+        "privatePresentationAllowed": true
+      },
+      "servicePid": "76",
+      "shellPid": "76"
+    },
+    "status": "ok"
+  },
   "outputs": {
     "outputGeneration": "1",
     "outputs": [

@@ -101,14 +101,23 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_measure.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_capture.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_evidence.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_host_tools.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_interactive.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_interaction_runtime.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_kwin_capture.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_launch.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_lifecycle.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_matrix.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_output.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_package_contract.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_process.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_readiness.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_runtime.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_sandbox.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology_model.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_parent_wayland_session.py"
@@ -118,10 +127,16 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_contract_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_capture_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_lifecycle_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_matrix_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_output_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_package.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_package_contract_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_process_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_probe_cli.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_readiness_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_runtime_boundary_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_selector_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
@@ -133,6 +148,14 @@ find_program(QINDAQT_XDPYINFO xdpyinfo)
 find_program(QINDAQT_XWAYLAND Xwayland)
 find_program(QINDAQT_WESTON weston)
 find_program(QINDAQT_WESTON_SCREENSHOOTER weston-screenshooter)
+find_program(QINDAQT_KSCREEN_DOCTOR kscreen-doctor)
+find_file(
+    QINDAQT_KSCREEN_WAYLAND_BACKEND
+    NAMES KSC_KWayland.so
+    PATH_SUFFIXES
+        lib/qt6/plugins/kf6/kscreen
+        lib64/qt6/plugins/kf6/kscreen
+)
 find_program(QINDAQT_DOTOOL dotool)
 find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)
