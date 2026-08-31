@@ -50,7 +50,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Network service](architecture/network-service.md) records the resident
   Network1 N1 boundary: the unchanged pure N0 values/model/client, exact-owner
   activating Qt transport, fixed-wire service, confined libnm adapter, and
-  external secret-agent boundary. UI and physical hardware qualification remain.
+  external secret-agent boundary. A separate Settings route consumes the public
+  client; physical hardware qualification remains.
 - [XDG Settings portal appearance backend](architecture/portal-service.md)
   records the standard appearance-only backend, Settings1/QST source truth,
   fail-closed lineage, activation package, and private-bus qualification.
@@ -142,6 +143,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   display settings surface: output selection, validated drafts, advertised modes,
   logical scale, reversible transaction coordinator preview/confirmation, and
   degraded state handling.
+- [Settings Network route](apps/network-settings.md) documents the first-party
+  secret-free Network1 client surface: exact-owner inventory, stale and pending
+  truth, bounded scan/connect/disconnect actions, and installed-route proof.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.
