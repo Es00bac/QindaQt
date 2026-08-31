@@ -7,7 +7,9 @@ add_library(QindaQt::NetworkClient ALIAS qindaqt_network_client)
 
 target_sources(
     qindaqt_network_client
-    PRIVATE src/network_client.cpp
+    PRIVATE
+        src/network_client.cpp
+        src/network_client_admission.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

@@ -8,9 +8,11 @@ Item {
     required property var quietingSettings
     required property var appearanceSettings
     property var displaySettings: null
+    property var networkSettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
+    property Component networkComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -23,6 +25,8 @@ Item {
             ? appearanceLoader
             : navigation.activeRouteComponent === "display"
               ? displayLoader
+            : navigation.activeRouteComponent === "network"
+              ? networkLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -75,6 +79,17 @@ Item {
     }
 
     Loader {
+        id: networkLoader
+        objectName: host.objectNamePrefix + "NetworkLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "network"
+                && host.networkComponent !== null
+        sourceComponent: host.networkComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -84,7 +99,8 @@ Item {
                 && (!host.navigation.activeRouteAvailable
                     || (host.navigation.activeRouteComponent !== "notifications"
                         && host.navigation.activeRouteComponent !== "appearance"
-                        && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
+                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }

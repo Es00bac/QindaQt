@@ -190,6 +190,7 @@ void NetworkClient::refresh() {
         return;
     }
     m_refreshTimer.start(kNoDelay);
+    notifyOperationAdmissionChanged();
 }
 
 bool NetworkClient::requestScan(const qint64 deadlineMilliseconds, QString *error) {
@@ -251,11 +252,11 @@ void NetworkClient::handleOwnerChanged(const QString &owner) {
     }
     m_refreshTimer.stop();
     m_timeout.stop();
+    m_owner.clear();
     abortInFlight(QStringLiteral("network service owner changed during operation"));
     // Owner replacement invalidates the whole lineage: last-confirmed data is
     // never shown as current, and A/B/A replays are fenced by the epoch gate.
     m_model.clear();
-    m_owner.clear();
     m_dirty = false;
     m_retryIndex = 0;
     if (owner.isEmpty()) {
@@ -272,6 +273,7 @@ void NetworkClient::handleOwnerChanged(const QString &owner) {
     m_owner = owner;
     publish(ClientState::Connecting);
     m_refreshTimer.start(kNoDelay);
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::handleInvalidation(const QString &owner) {
@@ -285,6 +287,7 @@ void NetworkClient::handleInvalidation(const QString &owner) {
         return;
     }
     m_refreshTimer.start(kNoDelay);
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
@@ -296,6 +299,13 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
     }
     m_request.reset();
     m_timeout.stop();
+    // Keep admission closed when an invalidation arrived during this fetch.
+    // Scheduling before publication avoids a transient enabled UI between the
+    // two authoritative snapshot requests.
+    if (m_dirty) {
+        m_dirty = false;
+        m_refreshTimer.start(kNoDelay);
+    }
     Snapshot reply;
     const DecodeResult decoded = decodeSnapshot(payload, reply);
     const bool exactPayloadOwner = decoded.succeeded() && reply.owner == owner;
@@ -325,10 +335,7 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
                 QStringLiteral("network snapshot is malformed or regressed"));
         scheduleRetry();
     }
-    if (m_dirty) {
-        m_dirty = false;
-        m_refreshTimer.start(kNoDelay);
-    }
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::handleOperation(const quint64 token, const QString &owner,
@@ -339,10 +346,6 @@ void NetworkClient::handleOperation(const quint64 token, const QString &owner,
         return;
     }
     const Request request = *m_request;
-    m_request.reset();
-    m_timeout.stop();
-    m_operation.reset();
-    Q_EMIT operationInFlightChanged();
     OperationResult result;
     if (!decodeOperationResult(payload, result).succeeded()) {
         finishOperationAsUncertain(
@@ -358,10 +361,16 @@ void NetworkClient::handleOperation(const quint64 token, const QString &owner,
             QStringLiteral("network operation reply lineage mismatch"));
         return;
     }
-    Q_EMIT operationFinished(result);
-    // The authoritative revision follows as an invalidation; fetch it instead
-    // of manufacturing state from the operation reply itself.
+    m_request.reset();
+    m_timeout.stop();
+    m_operation.reset();
+    // Schedule the mandatory authoritative refetch before publishing that the
+    // mutation is no longer in flight. Consumers therefore never observe an
+    // admissible gap between the operation reply and its snapshot refresh.
     refresh();
+    Q_EMIT operationInFlightChanged();
+    Q_EMIT operationFinished(result);
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::handleFailure(const quint64 token, const QString &owner,
@@ -393,9 +402,9 @@ void NetworkClient::handleBusDisconnected() {
     }
     m_refreshTimer.stop();
     m_timeout.stop();
+    m_owner.clear();
     abortInFlight(QStringLiteral("network transport disconnected"));
     m_model.clear();
-    m_owner.clear();
     m_transportStarted = false;
     publish(ClientState::Unavailable, QStringLiteral("network transport disconnected"));
 }
@@ -416,40 +425,8 @@ void NetworkClient::requestSnapshotNow() {
     m_request = Request{token, m_owner, RequestKind::Snapshot, 0, 0,
                         OperationKind::RequestScan};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
+    notifyOperationAdmissionChanged();
     m_transport.requestSnapshot(token, m_owner);
-}
-
-bool NetworkClient::beginOperation(const OperationKind kind,
-                                   const QVariantMap &parameters,
-                                   QString *error) {
-    if (m_state != ClientState::Ready || !m_model.snapshot()
-        || m_request || m_operation) {
-        setError(error,
-                 m_operation || (m_request && m_request->kind == RequestKind::Operation)
-                     ? QStringLiteral("operation-in-flight")
-                     : QStringLiteral("client-not-ready"));
-        return false;
-    }
-    if (wireContainsSecrets(parameters)) {
-        // Structural defense: even a caller bug can never transport a
-        // credential-bearing parameter map through this boundary.
-        setError(error, QStringLiteral("operation-parameters-contain-secrets"));
-        return false;
-    }
-    const quint64 token = nextToken();
-    if (token == 0) {
-        setError(error, QStringLiteral("network request token is exhausted"));
-        return false;
-    }
-    const auto lineage = m_model.lineage();
-    m_operation = Operation{kind, lineage->epoch, lineage->revision};
-    m_request = Request{token, m_owner, RequestKind::Operation, lineage->epoch,
-                        lineage->revision, kind};
-    m_timeout.start(m_timing.requestTimeoutMilliseconds);
-    Q_EMIT operationInFlightChanged();
-    m_transport.requestOperation(token, m_owner, lineage->epoch,
-                                 lineage->revision, kind, parameters);
-    return true;
 }
 
 void NetworkClient::finishOperationAsUncertain(const QString &message) {
@@ -457,12 +434,13 @@ void NetworkClient::finishOperationAsUncertain(const QString &message) {
     m_request.reset();
     const bool hadOperation = m_operation.has_value();
     m_operation.reset();
+    publish(ClientState::Degraded, message);
+    refresh();
     if (hadOperation) {
         Q_EMIT operationInFlightChanged();
     }
-    publish(ClientState::Degraded, message);
     Q_EMIT operationUncertain(m_lastError);
-    refresh();
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::abortInFlight(const QString &reason) {
@@ -474,6 +452,7 @@ void NetworkClient::abortInFlight(const QString &reason) {
         Q_EMIT operationInFlightChanged();
         Q_EMIT operationUncertain(redactDiagnostic(reason));
     }
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::scheduleRetry() {
@@ -486,16 +465,19 @@ void NetworkClient::scheduleRetry() {
         ++m_retryIndex;
     }
     m_refreshTimer.start(m_timing.retryMilliseconds.at(index));
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::publish(const ClientState state, QString error) {
     QString redacted = redactDiagnostic(std::move(error));
     if (m_state == state && m_lastError == redacted) {
+        notifyOperationAdmissionChanged();
         return;
     }
     m_state = state;
     m_lastError = std::move(redacted);
     Q_EMIT stateChanged();
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::setError(QString *output, QString message) const {

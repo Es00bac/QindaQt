@@ -107,11 +107,19 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("display"));
 
-  // selectNext from 2 ("display") wraps to 0 ("notifications")
+  // selectNext from 2 ("display") -> 3 ("network")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
+
+  // selectNext from 3 ("network") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 2 ("display")
+  // selectPrevious from 0 wraps to 3 ("network")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
+
+  // selectPrevious from 3 -> 2 ("display")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("display"));
 
@@ -135,12 +143,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(2));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("display"));
 
+  QVERIFY(controller.selectIndex(3));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(3));
+  QVERIFY(!controller.selectIndex(4));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -198,7 +209,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 3);
+  QCOMPARE(list.size(), 4);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -212,6 +223,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(dispMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("display"));
 
+  const QVariantMap networkMap = list.at(3).toMap();
+  QCOMPARE(networkMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("network"));
+
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
            QStringLiteral("notifications"));
@@ -223,6 +238,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap itemAt2 = controller.routeAt(2);
   QCOMPARE(itemAt2.value(QStringLiteral("id")).toString(),
            QStringLiteral("display"));
+
+  const QVariantMap itemAt3 = controller.routeAt(3);
+  QCOMPARE(itemAt3.value(QStringLiteral("id")).toString(),
+           QStringLiteral("network"));
 
   const QVariantMap itemOutOfBounds = controller.routeAt(5);
   QVERIFY(itemOutOfBounds.isEmpty());
