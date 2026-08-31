@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:47:36-06:00
+updated_at: 2026-08-31T16:56:48-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — strict Debug is green for B1 7/7 and adjacent seams 6/6 at repair milestone `cedb13d`; the serialized lane is moving to a fresh strict Release root with no surviving process.
+- Status: working — fresh strict Debug and Release are both green for B1 7/7 plus adjacent seams 6/6; no compiler/CTest/private process survives, and final docs/static/provenance gates are running.
 
 ## Updates
+
+- 2026-08-31T16:56:48-06:00 — Fresh strict Release configured with GCC 15.3.0 and completed the requested serialized build 378/378, including production `qindaqt-shell` plus all focused B1/public-client/manifest/catalog/resolver binaries. Its B1 selector passed 7/7 and its adjacent selector passed 6/6. Together with the identical Debug counts, both executable profiles are green. Direct inspection after CTest found no compiler, CMake, Ninja, CTest, KWin, Weston, production-shell, or Bluetooth test process beyond the inspection shell. The owning docs now state only this focused public-client/offscreen/package evidence; final mutation-sensitive boundary, JSON, documentation, strict MkDocs, shape, and provenance checks follow.
 
 - 2026-08-31T16:47:36-06:00 — The approved manifest count/presence repair rebuilt, its exact row passed 1/1, and the complete adjacent Debug selector passed 6/6: manifest, catalog, runtime resolver, public Bluetooth client, notification-center dispatcher QML, and shell runtime catalog. Together with B1 7/7, strict Debug is green at `cedb13d`. Direct process inspection found no CMake, Ninja, CTest, KWin, Weston, production shell, or Bluetooth test process beyond the inspection shell itself. Fresh root `/tmp/qindaqt-bluetooth-b1-release-cedb13d` was absent and is now claimed for the same serialized strict Release build/selector matrix; private bus, compositor, BlueZ, host Bluetooth, hardware, network, and input remain out of lane.
 
