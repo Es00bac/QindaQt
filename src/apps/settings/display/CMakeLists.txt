@@ -41,6 +41,7 @@ qt_add_qml_module(
     TYPEINFO qindaqt_settings_display.qmltypes
     QML_FILES
         qml/DisplayArrangementSection.qml
+        qml/DisplayCoordinateField.qml
         qml/DisplayModeSection.qml
         qml/DisplayOutputCard.qml
         qml/DisplayOutputSection.qml
@@ -81,6 +82,7 @@ install(
 install(
     FILES
         qml/DisplayArrangementSection.qml
+        qml/DisplayCoordinateField.qml
         qml/DisplayModeSection.qml
         qml/DisplayOutputCard.qml
         qml/DisplayOutputSection.qml
