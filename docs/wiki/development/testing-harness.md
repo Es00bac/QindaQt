@@ -394,6 +394,9 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.notification-center-(entry|applet-offscreen)$' \
   --output-on-failure
 ctest --test-dir build/dev \
+  -R '^qindaqt\.notification-output-(selector|authority-qt)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
   -R '^qindaqt\.(session-lock-|shell-runtime-options|notification-(privacy-policy|presentation-privacy))' \
   --output-on-failure
 ```
@@ -479,6 +482,16 @@ developer's shortcut registry. `qindaqt.notification-center-applet-offscreen`
 uses the software renderer to cover the disabled-without-facade fallback,
 accessible open/close labels, the narrow toggle request, read-only Do Not
 Disturb state and indicator, and the audited QML entry-point dispatcher.
+`qindaqt.notification-output-selector` deterministically joins the ordered
+public `Compositor1.Outputs` frame to an exact
+`ShellVisibilitySnapshot.outputGeneration` and Qt output-ID set. It covers
+semantic-primary transfer, unchanged primary, replacement/removal, missing
+authority, generation/ID mismatch, strict wire rejection, and the former stale
+`primaryScreen()` mutation. `qindaqt.notification-output-authority-qt` uses a
+fresh private `dbus-daemon` to prove exact-owner binding, invalidation-before-
+refresh, transfer publication, owner loss, and owner replacement. Both are
+display-free; the registered S3 dual-output row remains responsible for the
+real KWin/layer-shell transfer proof.
 `qindaqt.notification-surfaces-offscreen` also covers the window-scoped Escape
 close route and a focusable initial target without activating a real surface.
 `qindaqt.notification-focus-offscreen` isolates the enabled natural focus

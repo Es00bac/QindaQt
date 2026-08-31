@@ -65,6 +65,7 @@ class NotificationCenterShortcut;
 class NotificationWindowController;
 class NotificationQuietingSettingsBridge;
 class PowerAppletComposition;
+class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
 
@@ -87,6 +88,7 @@ private:
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
+    void startNotificationOutputAuthority();
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
     void resetRuntime();
@@ -104,6 +106,7 @@ private:
         m_visibilityTransport;
     std::unique_ptr<ShellVisibilityClient::CompositorVisibilityClient>
         m_visibilityClient;
+    std::unique_ptr<QtCompositorOutputAuthority> m_outputAuthority;
     std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_presentationAccessToken;

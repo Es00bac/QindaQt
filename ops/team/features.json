@@ -138,9 +138,9 @@
         },
         {
           "id": "QQ-004.09", "title": "Whole-shell output, DPI, theme, keyboard, and accessibility qualification", "weight": 8, "state": "WIRED",
-          "summary": "Panel surfaces have three-resolution nested proof and the shell consumes profiles/themes, but whole-shell mixed-DPI, keyboard, accessibility, and profile-family qualification is incomplete.",
-          "evidence": [{ "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Current shell proof and its explicit coverage limits are recorded." }],
-          "caveat": "This is broader than the qualified production-panel slice."
+          "summary": "Panel surfaces have three-resolution nested proof, the shell consumes profiles/themes, and notification surfaces now select the exact current semantic compositor output through a public exact-owner authority with generation and output-set joins. Whole-shell mixed-DPI, keyboard, accessibility, and profile-family qualification remains incomplete.",
+          "evidence": [{ "kind": "commit", "reference": "89557a0a090b6b910621463b4ac97a6d1d054469", "summary": "The independently accepted shell repair replaces stale Qt-primary notification routing with the ordered public Compositor1 output authority and fail-closed reconciliation." }, { "kind": "test", "reference": "docs/wiki/development/testing-harness.md", "summary": "Strict Debug and Release each pass the 20-row adjacent shell selector; the focused selector and private-bus authority rows repeat 25 times, while S3 retains the real dual-output transfer gate." }],
+          "caveat": "The accepted repair closes the diagnosed product route but does not advance this broad step beyond WIRED until S3 proves the live dual-output transfer and the remaining whole-shell matrix."
         }
       ],
       "stoppingPoint": {

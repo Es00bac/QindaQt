@@ -55,6 +55,18 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `89557a0a` — Notification popup and center output selection now consumes the
+  exact-owner ordered public compositor-output authority and accepts it only
+  when generation and complete output-ID sets match accepted shell visibility
+  and Qt inventory. Missing, stale, malformed, replaced, or unmatched truth
+  clears both roles instead of falling back to Qt's stale primary screen.
+  Charles Babbage's independent review accepted the immutable repair with
+  P0/P1/P2/P3 `0/0/0/1`; fresh manager-tree Debug and Release each build
+  458/458 bounded actions and pass the complete 20/20 adjacent selector. The
+  remaining P3 prose precision is corrected here. The real dual-output
+  layer-surface transfer and broader whole-shell matrix remain S3 work, so
+  QQ-004.09 stays WIRED.
+
 - `9a7872ae` — Display D6 packages the authenticated resident composition of
   D2 service, D4 public writer, D5 durable journal, compositor peer, lock, and
   logind authorities. Typed observation disposition preserves live truth and
