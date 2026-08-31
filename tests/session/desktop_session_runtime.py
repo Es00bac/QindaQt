@@ -21,9 +21,7 @@ from desktop_session_evidence import (
     _authenticate_processes,
     _build_evidence,
 )
-from desktop_session_interaction_runtime import (
-    _run_interaction, _secondary_primary_environment, _select_secondary_primary,
-)
+from desktop_session_interaction_runtime import _prepare_secondary_evidence, _run_interaction
 from desktop_session_interactive import validate_interactive_evidence
 from desktop_session_launch import (
     DesktopLaunch,
@@ -281,7 +279,7 @@ def _add_interactive_evidence(
     })
     secondary = scenario is not None and scenario.virtual.output_count == 2
     if secondary:
-        _select_secondary_primary(launch.app_environment, state)
+        _prepare_secondary_evidence(arguments, launch.app_environment, state, evidence)
     interaction = _run_interaction(
         arguments, launch.app_environment, state, secondary_output=secondary
     )

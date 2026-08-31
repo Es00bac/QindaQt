@@ -381,6 +381,21 @@ if(
             dual-1080p-horizontal
         )
         foreach(_row IN LISTS _qindaqt_desktop_matrix_rows)
+            set(_qindaqt_desktop_matrix_tool_arguments)
+            if(_row STREQUAL "dual-1080p-horizontal")
+                if(
+                    NOT QINDAQT_KSCREEN_DOCTOR
+                    OR NOT QINDAQT_KSCREEN_WAYLAND_BACKEND
+                )
+                    continue()
+                endif()
+                list(
+                    APPEND _qindaqt_desktop_matrix_tool_arguments
+                    --kscreen-doctor "${QINDAQT_KSCREEN_DOCTOR}"
+                    --kscreen-wayland-backend
+                    "${QINDAQT_KSCREEN_WAYLAND_BACKEND}"
+                )
+            endif()
             add_test(
                 NAME "desktop.virtual.interactive.matrix.${_row}"
                 COMMAND
@@ -399,6 +414,7 @@ if(
                     --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
                     --weston "${QINDAQT_WESTON}"
                     --weston-screenshooter "${QINDAQT_WESTON_SCREENSHOOTER}"
+                    ${_qindaqt_desktop_matrix_tool_arguments}
             )
             set_tests_properties(
                 "desktop.virtual.interactive.matrix.${_row}"
@@ -411,6 +427,7 @@ if(
                     LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot;matrix"
             )
         endforeach()
+        unset(_qindaqt_desktop_matrix_tool_arguments)
         unset(_qindaqt_desktop_matrix_rows)
     endif()
 endif()

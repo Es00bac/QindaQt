@@ -25,10 +25,10 @@ from desktop_session_sandbox import (
     remove_run_root,
     sandbox_environment,
 )
-from test_desktop_session_nested import (
-    _library_search_roots,
-    _system_mounts,
-    _weston_module_map,
+from desktop_session_host_tools import (
+    library_search_roots,
+    system_mounts,
+    weston_module_map,
 )
 
 
@@ -116,7 +116,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
             for path in (weston, plugins, qml):
                 path.mkdir(parents=True, exist_ok=True)
             (weston / "libexec_weston.so.0").write_text("fixture\n")
-            libraries, plugin_roots, qml_roots = _library_search_roots(
+            libraries, plugin_roots, qml_roots = library_search_roots(
                 [Path(sys.executable), tool]
             )
             self.assertEqual(libraries, [str(lib), str(weston)])
@@ -134,7 +134,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual(environment["LD_LIBRARY_PATH"].split(":"), libraries)
 
     def test_generated_mounts_admit_only_the_host_loader_cache_file(self) -> None:
-        mounts = _system_mounts([Path(sys.executable)])
+        mounts = system_mounts([Path(sys.executable)])
         cache = Path("/etc/ld.so.cache")
         destination = PurePosixPath("/etc/ld.so.cache")
         cache_mounts = [item for item in mounts if item.destination == destination]
@@ -152,7 +152,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
             for path in (weston, backend, shell):
                 executable(path)
             self.assertEqual(
-                _weston_module_map(weston),
+                weston_module_map(weston),
                 f"headless-backend.so={backend};kiosk-shell.so={shell}",
             )
 

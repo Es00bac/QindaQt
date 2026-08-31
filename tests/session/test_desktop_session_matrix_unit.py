@@ -141,6 +141,17 @@ def _add_interaction_evidence(
 ) -> tuple[Any, dict[str, int]]:
     active, geometry = _interaction_geometry(topology)
     shell_pid = evidence["processes"]["shell"]["pid"]  # type: ignore[index]
+    if scenario.virtual.output_count == 2:
+        outputs = evidence["outputs"]  # type: ignore[assignment]
+        evidence["postSelectorOutputs"] = {
+            "schemaVersion": 1,
+            "status": "ok",
+            "outputGeneration": "8",
+            "outputs": [
+                {**copy.deepcopy(outputs[1]), "priority": 1},  # type: ignore[index]
+                {**copy.deepcopy(outputs[0]), "priority": 2},  # type: ignore[index]
+            ],
+        }
     evidence["containment"].update({  # type: ignore[union-attr]
         "parentBackend": (
             "kwin-virtual-qpaint" if scenario.virtual.scale != 1.0
@@ -275,6 +286,17 @@ class DesktopMatrixTests(unittest.TestCase):
         evidence, topology = valid_matrix_evidence("dual-1080p-horizontal")
         evidence["dockSurfaces"].pop()  # type: ignore[union-attr]
         with self.assertRaisesRegex(TopologyContractError, "every matrix output"):
+            validate_interactive_evidence(evidence, topology)
+
+    def test_stale_post_selector_order_fails_before_surface_can_authorize(self) -> None:
+        evidence, topology = valid_matrix_evidence("dual-1080p-horizontal")
+        authority = evidence["postSelectorOutputs"]  # type: ignore[assignment]
+        authority["outputs"].reverse()  # type: ignore[index]
+        authority["outputs"][0]["priority"] = 1  # type: ignore[index]
+        authority["outputs"][1]["priority"] = 2  # type: ignore[index]
+        with self.assertRaisesRegex(
+            TopologyContractError, "not ordered WL-1 then WL-0"
+        ):
             validate_interactive_evidence(evidence, topology)
 
     def test_capture_and_presentation_tampering_fail(self) -> None:
