@@ -6,6 +6,7 @@
 
 #include <qindaqt/services/display_topology/topology.h>
 #include <qindaqt/services/display_transaction/transaction_journal.h>
+#include <qindaqt/services/display_transaction/transaction_machine.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
@@ -55,24 +56,29 @@ Display::Output output() {
           .wireValid = true};
 }
 
+Display::Snapshot snapshot() {
+  Display::Snapshot value{.protocolVersion = Display::kProtocolVersion,
+                          .serviceEpoch = QStringLiteral("epoch"),
+                          .revision = 7,
+                          .liveFingerprint = {},
+                          .outputs = {output()},
+                          .transactions = {},
+                          .wireValid = true};
+  value.liveFingerprint = DisplayTopology::canonicalFingerprint(
+      DisplayTopology::candidateFromSnapshot(value));
+  return value;
+}
+
 DisplayTransaction::Journal journal(const QString &transactionId,
                                     const QPoint targetPosition = {}) {
-  Display::Snapshot snapshot{.protocolVersion = Display::kProtocolVersion,
-                             .serviceEpoch = QStringLiteral("epoch"),
-                             .revision = 7,
-                             .liveFingerprint = {},
-                             .outputs = {output()},
-                             .transactions = {},
-                             .wireValid = true};
-  snapshot.liveFingerprint = DisplayTopology::canonicalFingerprint(
-      DisplayTopology::candidateFromSnapshot(snapshot));
-  Display::Candidate target = DisplayTopology::candidateFromSnapshot(snapshot);
+  const Display::Snapshot current = snapshot();
+  Display::Candidate target = DisplayTopology::candidateFromSnapshot(current);
   target.outputs[0].position = targetPosition;
   return {.schemaVersion = DisplayTransaction::kJournalSchemaVersion,
           .transactionId = transactionId,
           .phase = DisplayTransaction::JournalPhase::AwaitingConfirmation,
           .reason = Display::TransactionReason::TransportUncertain,
-          .preimage = DisplayTopology::candidateFromSnapshot(snapshot),
+          .preimage = DisplayTopology::candidateFromSnapshot(current),
           .target = std::move(target),
           .revertAttempt = 0};
 }
@@ -104,6 +110,38 @@ public:
   }
 };
 
+class FixedClock final : public DisplayTransaction::MonotonicClock {
+public:
+  [[nodiscard]] quint64 nowMilliseconds() const noexcept override { return 1; }
+};
+
+class StoreBackedTransactionPort final
+    : public DisplayTransaction::SideEffectPort {
+public:
+  explicit StoreBackedTransactionPort(
+      QindaQt::DisplayWriter::JournalStore &journalStore)
+      : m_journalStore(journalStore) {}
+
+  [[nodiscard]] DisplayTransaction::JournalMutationOutcome
+  storeJournal(const DisplayTransaction::Journal &value) override {
+    return m_journalStore.store(value);
+  }
+
+  [[nodiscard]] DisplayTransaction::JournalMutationOutcome
+  clearJournal() override {
+    return m_journalStore.clear();
+  }
+
+  void requestApply(const DisplayTransaction::ApplyRequest &) override {
+    ++applyRequests;
+  }
+
+  int applyRequests = 0;
+
+private:
+  QindaQt::DisplayWriter::JournalStore &m_journalStore;
+};
+
 class InjectedJournalHooks final : public Private::FileJournalHooks {
 public:
   void beforeOpenJournal() override {
@@ -117,6 +155,7 @@ public:
   }
 
   [[nodiscard]] std::optional<bool> directorySyncResult() override {
+    ++directorySyncCalls;
     const std::optional<bool> result = nextDirectorySync;
     nextDirectorySync.reset();
     return result;
@@ -126,6 +165,7 @@ public:
   std::optional<bool> nextDirectorySync;
   bool growthAttempted = false;
   bool growthSucceeded = false;
+  int directorySyncCalls = 0;
 };
 
 } // namespace
@@ -141,6 +181,8 @@ private Q_SLOTS:
   void precommitFailurePreservesPriorValue();
   void writerPortUsesTheDurableBoundary();
   void postCommitDirectoryFailureIsExplicit();
+  void absentClearRetriesDirectoryDurabilityBarrier();
+  void machineRetainsCleanupUntilConcreteClearIsDurable();
   void openedFileGrowthIsBoundedBeforeReserve();
 };
 
@@ -306,6 +348,92 @@ void FileJournalStoreTests::postCommitDirectoryFailureIsExplicit() {
   QCOMPARE(store->clear(),
            DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
   QCOMPARE(FileJournalStore(root.path()).load().status, LoadStatus::Absent);
+}
+
+void FileJournalStoreTests::absentClearRetriesDirectoryDurabilityBarrier() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  QCOMPARE(
+      FileJournalStore(root.path()).store(journal(QStringLiteral("clear"))),
+      DisplayTransaction::JournalMutationOutcome::Durable);
+
+  auto hooks = std::make_shared<InjectedJournalHooks>();
+  auto store = Private::FileJournalStoreTestAccess::create(root.path(), hooks);
+  hooks->nextDirectorySync = false;
+  QCOMPARE(store->clear(),
+           DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+  QCOMPARE(FileJournalStore(root.path()).load().status, LoadStatus::Absent);
+  QCOMPARE(hooks->directorySyncCalls, 1);
+
+  hooks->nextDirectorySync = false;
+  QCOMPARE(store->clear(),
+           DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+  QCOMPARE(hooks->directorySyncCalls, 2);
+
+  hooks->nextDirectorySync = true;
+  QCOMPARE(store->clear(), DisplayTransaction::JournalMutationOutcome::Durable);
+  QCOMPARE(hooks->directorySyncCalls, 3);
+}
+
+void FileJournalStoreTests::machineRetainsCleanupUntilConcreteClearIsDurable() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  auto hooks = std::make_shared<InjectedJournalHooks>();
+  auto store = Private::FileJournalStoreTestAccess::create(root.path(), hooks);
+  StoreBackedTransactionPort port(*store);
+  FixedClock clock;
+  DisplayTransaction::Machine machine(clock, port);
+  const Display::Snapshot base = snapshot();
+  Display::Candidate candidate = DisplayTopology::candidateFromSnapshot(base);
+  candidate.outputs[0].scale = 1.25;
+
+  QVERIFY(
+      machine.initialize(base, DisplayTransaction::SafetyState::Safe).accepted);
+  QVERIFY(machine.stage(QStringLiteral("tx"), candidate).accepted);
+  hooks->nextDirectorySync = false;
+  const DisplayTransaction::CommandResult preview =
+      machine.preview(QStringLiteral("tx"));
+  QVERIFY(preview.accepted);
+  QCOMPARE(preview.error, DisplayTransaction::CommandError::JournalFailure);
+  QCOMPARE(machine.view().state, DisplayTransaction::MachineState::Stuck);
+  QVERIFY(machine.view().journalActive);
+  QCOMPARE(port.applyRequests, 0);
+  QCOMPARE(store->load().status, LoadStatus::Loaded);
+  const DisplayTransaction::MachineView cleanup = machine.view();
+  const DisplayTransaction::Journal retained = machine.activeJournal();
+
+  hooks->nextDirectorySync = false;
+  const DisplayTransaction::CommandResult uncertainUnlink =
+      machine.retryStuck();
+  QVERIFY(uncertainUnlink.accepted);
+  QVERIFY(!uncertainUnlink.stateChanged);
+  QCOMPARE(uncertainUnlink.error,
+           DisplayTransaction::CommandError::JournalFailure);
+  QCOMPARE(machine.view(), cleanup);
+  QCOMPARE(machine.activeJournal(), retained);
+  QCOMPARE(store->load().status, LoadStatus::Absent);
+
+  hooks->nextDirectorySync = false;
+  const DisplayTransaction::CommandResult uncertainAbsent =
+      machine.retryStuck();
+  QVERIFY(uncertainAbsent.accepted);
+  QVERIFY(!uncertainAbsent.stateChanged);
+  QCOMPARE(uncertainAbsent.error,
+           DisplayTransaction::CommandError::JournalFailure);
+  QCOMPARE(machine.view(), cleanup);
+  QCOMPARE(machine.activeJournal(), retained);
+
+  hooks->nextDirectorySync = true;
+  const DisplayTransaction::CommandResult durableClear = machine.retryStuck();
+  QVERIFY(durableClear.accepted);
+  QVERIFY(durableClear.stateChanged);
+  QCOMPARE(durableClear.error, DisplayTransaction::CommandError::None);
+  QCOMPARE(machine.view().state, DisplayTransaction::MachineState::Ready);
+  QVERIFY(!machine.view().journalActive);
+  QCOMPARE(machine.view().lastTerminalReason,
+           Display::TransactionReason::JournalFailure);
+  QCOMPARE(port.applyRequests, 0);
+  QCOMPARE(hooks->directorySyncCalls, 4);
 }
 
 void FileJournalStoreTests::openedFileGrowthIsBoundedBeforeReserve() {

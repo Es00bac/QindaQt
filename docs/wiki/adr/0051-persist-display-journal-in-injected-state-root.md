@@ -42,16 +42,18 @@ safe to unlink on the next store; a directory collision fails closed.
 Journal mutation has three outcomes rather than a Boolean. `Unchanged` means no
 pathname commit occurred and prior durable truth remains authoritative.
 `Durable` means the requested value or absence crossed every supported barrier.
-`DurabilityUncertain` means rename or unlink committed visible pathname state
-before the following directory barrier failed, so a crash may expose old or
-new truth. D4 forwards this result unchanged. D1 authorizes forward compositor
+`DurabilityUncertain` means requested pathname truth is visible while its
+directory barrier failed: rename/unlink may have committed in this call, or an
+already-absent clear may be retrying the barrier after an earlier uncertain
+unlink. D4 forwards this result unchanged. D1 authorizes forward compositor
 apply only for `Durable`. An uncertain initial store retains the exact Applying
 journal and transaction identity in cleanup-only `Stuck`, where ordinary
 cancel/re-stage cannot forget or replace it; `retryStuck` returns Ready only
-after an exact `Durable` clear. Clear uncertainty likewise remains a
-conservative cleanup/recovery failure. The uncertain state is therefore
-represented without either lying about the pathname or applying without proven
-journal durability.
+after an exact `Durable` clear. Clear therefore applies the directory barrier
+even when the pathname is already absent; another failed barrier remains
+uncertain, and only a successful or explicitly unsupported barrier proves
+durable absence. The uncertain state is represented without either lying about
+the pathname or applying without proven journal durability.
 
 Loads return exactly one of absent, loaded, or rejected. They inspect without
 following links, require an effective-user-owned regular single-link file with
@@ -62,7 +64,9 @@ A malformed or unsafe journal is retained and reported as rejected; it is
 never silently cleared or quarantined. A stale temporary file is ignored, so
 interruption before rename exposes the preceding committed journal or absence.
 Clear validates the final path, unlinks only that regular file, and applies the
-directory durability barrier.
+directory durability barrier. It also applies that barrier when the final path
+is already absent, because the absence may follow an earlier unlink whose
+barrier failed.
 
 The resident composition remains the single writer. `load()` supplies the
 deterministic startup seam: the future process passes a loaded value to D1

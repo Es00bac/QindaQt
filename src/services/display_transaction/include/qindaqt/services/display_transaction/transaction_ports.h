@@ -14,9 +14,10 @@ enum class JournalMutationOutcome {
     // The requested journal value or absence crossed every supported
     // durability barrier.
     Durable,
-    // The pathname commit occurred, but its directory durability barrier
-    // failed. The state may be old or new after a crash; this must never
-    // authorize a forward compositor mutation.
+    // The requested pathname truth is visible, but its required directory
+    // durability barrier failed. This includes retrying an already-absent path
+    // after an uncertain unlink. The state may be old or new after a crash;
+    // this must never authorize a forward compositor mutation.
     DurabilityUncertain,
 };
 
@@ -41,13 +42,15 @@ public:
     // arguments. storeJournal/clearJournal are synchronous and atomic until
     // their pathname commit point. `Unchanged` guarantees prior durable truth,
     // `Durable` proves the requested truth, and `DurabilityUncertain` means the
-    // pathname changed before a failed durability barrier. Only `Durable`
-    // permits a forward apply; uncertainty remains conservative cleanup or
-    // restart-recovery truth. requestApply accepts one immutable request and
-    // may later produce zero or one applyCompleted callback with the exact
-    // token. A late callback is permitted and will be rejected; timeout never
-    // authorizes replay of a forward request. Disconnect is represented by
-    // TransportUncertain or no callback, never by swapping the port object.
+    // requested pathname truth is visible but its required durability barrier
+    // failed, including an already-absent retry after uncertain unlink. Only
+    // `Durable` permits a forward apply; uncertainty remains conservative
+    // cleanup or restart-recovery truth. requestApply accepts one immutable
+    // request and may later produce zero or one applyCompleted callback with
+    // the exact token. A late callback is permitted and will be rejected;
+    // timeout never authorizes replay of a forward request. Disconnect is
+    // represented by TransportUncertain or no callback, never by swapping the
+    // port object.
     //
     // AGENT-CONTRACT: The machine owner must redeliver the current live
     // snapshot through observedSnapshot after every apply callback and every
