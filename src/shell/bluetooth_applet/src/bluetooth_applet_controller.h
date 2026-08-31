@@ -59,7 +59,7 @@ public:
     [[nodiscard]] QVariantList deviceRows() const;
     [[nodiscard]] bool operationPending() const noexcept
     {
-        return m_requestId != 0 && m_request.pending();
+        return requestInFlight() || m_successConvergence.has_value();
     }
     [[nodiscard]] bool discoveryLeaseHeld() const noexcept
     {
@@ -84,6 +84,16 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
+    struct SuccessConvergence {
+        QString owner;
+        quint64 epoch = 0;
+        quint64 minimumRevision = 0;
+    };
+
+    [[nodiscard]] bool requestInFlight() const noexcept
+    {
+        return m_requestId != 0 && m_request.pending();
+    }
     void reproject();
     void handleOperationCompleted(quint64 requestId,
                                   const Bluetooth::OperationResult &result);
@@ -96,6 +106,7 @@ private:
     [[nodiscard]] bool dispatch(const RequestState &request);
     void releaseDiscoveryAfterSerialization();
     void retireLeaseIfAuthorityEnded();
+    void observeSuccessConvergence();
 
     Bluetooth::BluetoothClient *m_client = nullptr;
     bool m_bluetoothReadGranted = false;
@@ -107,6 +118,7 @@ private:
     RequestState m_request;
     quint64 m_requestId = 0;
     QString m_pendingOwner;
+    std::optional<SuccessConvergence> m_successConvergence;
     std::optional<Bluetooth::Handle> m_discoveryLease;
     QString m_discoveryLeaseOwner;
     quint64 m_discoveryLeaseMinimumRevision = 0;

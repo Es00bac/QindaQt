@@ -53,6 +53,8 @@ private Q_SLOTS:
     void grantsGateReadAndControlIndependently();
     void serializesAndPinsPublicOperations();
     void closeReleasesDiscoveryAfterPendingAcquire();
+    void malformedReleaseNoLeaseRetainsLease();
+    void successWaitsForSnapshotConvergence();
     void ownerReplacementClearsTruthLeaseAndRequestWithoutReplay();
 };
 
@@ -167,6 +169,99 @@ void BluetoothAppletControllerTests::closeReleasesDiscoveryAfterPendingAcquire()
                   QStringLiteral("lease-released"), 7));
     QTRY_VERIFY(!controller.operationPending());
     QVERIFY(!controller.discoveryLeaseHeld());
+}
+
+void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport);
+    controller.setExpanded(true);
+
+    QVERIFY(controller.requestDiscovery(QStringLiteral("adapter-61-400"), true));
+    const auto acquire = transport.submissions.constFirst();
+    transport.emitOperationReply(
+        kOwner, acquire.requestId, true,
+        resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("lease-acquired")));
+    QTRY_VERIFY(controller.discoveryLeaseHeld());
+
+    QVERIFY(controller.requestDiscovery(QStringLiteral("adapter-61-400"), false));
+    QCOMPARE(transport.submissions.size(), 2);
+    const auto release = transport.submissions.constLast();
+    Bluetooth::OperationResult malformed = resultFor(
+        release, Bluetooth::OperationStatus::Failed, QStringLiteral("no-lease"));
+    malformed.wireValid = false;
+
+    // Exercise the controller's final admission boundary directly: an invalid
+    // collaborator result must not acquire lease-lifetime authority merely by
+    // carrying a plausible reason string.
+    Q_EMIT client.operationCompleted(release.requestId, malformed);
+
+    QTRY_VERIFY(!controller.operationPending());
+    QVERIFY(controller.discoveryLeaseHeld());
+    QVERIFY(controller.feedback().contains(QStringLiteral("unreadable")));
+
+    // Retire the client's matching internal request without changing the
+    // controller result; the controller has already consumed this request ID.
+    transport.emitOperationReply(
+        kOwner, release.requestId, true,
+        resultFor(release, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("lease-released"), 7));
+}
+
+void BluetoothAppletControllerTests::successWaitsForSnapshotConvergence()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport);
+
+    QVERIFY(controller.requestDeviceConnection(QStringLiteral("device-61-700"),
+                                                false));
+    QCOMPARE(transport.submissions.size(), 1);
+    const auto disconnect = transport.submissions.constFirst();
+    transport.emitOperationReply(
+        kOwner, disconnect.requestId, true,
+        resultFor(disconnect, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("disconnected"), 6));
+
+    QTRY_VERIFY(controller.operationPending());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    QVariantMap staleDevice = controller.deviceRows().constFirst().toMap();
+    QVERIFY(!staleDevice.value(QStringLiteral("canDisconnect")).toBool());
+    QVERIFY(!controller.requestDeviceConnection(QStringLiteral("device-61-700"),
+                                                 false));
+    QCOMPARE(transport.submissions.size(), 1);
+
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, bluetoothClientSnapshot(61, 5));
+    QVERIFY(controller.operationPending());
+    QCOMPARE(transport.submissions.size(), 1);
+
+    transport.emitInvalidated(kOwner, 61, 6);
+    QCOMPARE(transport.fetches.size(), 3);
+    Bluetooth::Snapshot converged = bluetoothClientSnapshot(61, 6);
+    converged.devices[0].connected = false;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, converged);
+
+    QTRY_VERIFY(!controller.operationPending());
+    QCOMPARE(controller.serviceRevision(), quint64(6));
+    const QVariantMap currentDevice = controller.deviceRows().constFirst().toMap();
+    QVERIFY(currentDevice.value(QStringLiteral("canConnect")).toBool());
+    QVERIFY(!currentDevice.value(QStringLiteral("canDisconnect")).toBool());
+
+    QVERIFY(controller.requestDeviceConnection(QStringLiteral("device-61-700"),
+                                                true));
+    QCOMPARE(transport.submissions.size(), 2);
+    const auto connect = transport.submissions.constLast();
+    transport.emitOperationReply(
+        kOwner, connect.requestId, true,
+        resultFor(connect, Bluetooth::OperationStatus::Rejected,
+                  QStringLiteral("policy-rejected"), 6));
+    QTRY_VERIFY(!controller.operationPending());
 }
 
 void BluetoothAppletControllerTests::ownerReplacementClearsTruthLeaseAndRequestWithoutReplay()

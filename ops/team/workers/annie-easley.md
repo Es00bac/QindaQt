@@ -8,16 +8,20 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:04:03-06:00
+updated_at: 2026-08-31T16:16:57-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — ordinary-merging exact integrated main `74da46345c7a5094d45c756ad8b23ca87591fcd3` into preserved B1 milestone `c2cf9a0066e0175a99b1dfaea0735ae2569794b8`, then running authorized serialized Debug/Release gates.
+- Status: working — both manager-reported operation-lineage defects are repaired with mutation coverage; rerunning static gates before fresh Debug/Release qualification.
 
 ## Updates
+
+- 2026-08-31T16:16:57-06:00 — Manager audit found a second stale-truth mutation window: after valid success at observed revision 6, the controller cleared its request while the public client still exposed initiating snapshot revision 5, re-enabling the same disconnect/power/connect action before the async refetch. Added an exact-owner/epoch/minimum-revision success-convergence fence to pending-equivalent control admission. A controller mutation test proves the old revision cannot dispatch a second disconnect, an equal initiating snapshot cannot clear the fence, and only revision 6 truth with the disconnected device re-enables the now-valid Connect action. Owner/state loss ends the fence uncertain and fail-closed; there is no replay. Static gates are being rerun before compiler use.
+
+- 2026-08-31T16:09:48-06:00 — Ordinary merge `f23b61d91fdf76f6e4cecaa87808a16dd48f116b` now preserves B1 and exact manager main `74da46345c7a5094d45c756ad8b23ca87591fcd3`; the single roadmap conflict retained S3/Network/Portal truth plus B1. Manager static audit then identified that `handleOperationCompleted` trusted raw `no-lease` text after `applyBluetoothResult` could classify the completion uncertain. Removed that raw-string lease retirement, added a controller mutation regression for a wire-invalid matching request with `no-lease`, and clarified that only validated success or authoritative snapshot truth retires the lease. Verification is pending; no private runtime or bus was used.
 
 - 2026-08-31T16:04:03-06:00 — Program Manager explicitly released the compiler/CTest lane after direct process inspection and assigned ordinary merge of exact integrated main `74da46345c7a5094d45c756ad8b23ca87591fcd3` into preserved B1 milestone `c2cf9a0066e0175a99b1dfaea0735ae2569794b8`. Resumed in the existing isolated worktree; scope remains public Bluetooth1/client-only shell composition, with private D-Bus, nested compositor, BlueZ, host Bluetooth, hardware, network, and input lanes prohibited. The next gates are additive seven-file conflict resolution, mutation-sensitive static checks, then fresh serialized strict Debug/Release focused and adjacent rows.
 

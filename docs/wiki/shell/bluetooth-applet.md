@@ -78,6 +78,14 @@ uncertainty. Rejection, unsupported, busy, and failed results remain distinct
 terminal feedback. No result optimistically changes an inventory row, and no
 failure or uncertainty is automatically replayed.
 
+A validated success also does not make the initiating snapshot current. The
+controller retains a pending-equivalent control fence until the same exact
+owner and epoch publish a validated snapshot whose revision reaches the
+result's observed revision. Controls cannot dispatch from the stale initiating
+snapshot while that fence is live. Owner, epoch, or snapshot-authority loss ends
+the fence as uncertainty and leaves presentation fail-closed; no operation is
+replayed.
+
 ## Discovery-lease lifetime
 
 The controller tracks at most one lease obtained by this applet. Merely opening
@@ -93,7 +101,10 @@ release intent until current truth returns rather than claiming that an
 unproven lease disappeared. Shell teardown gives the controller a final
 release-dispatch opportunity before stopping its dedicated client; process/bus
 caller disappearance is the service-side backstop. A failed or uncertain
-release is surfaced and is never replayed automatically.
+release is surfaced and is never replayed automatically. A malformed or stale
+completion that happens to carry a `no-lease` reason cannot retire the tracked
+lease; only exact validated success or current authoritative snapshot truth can
+do so.
 
 The composition, client, controller, and renderer are GUI-thread confined.
 `BluetoothAppletComposition` owns transport → client → controller lifetime;
