@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_ROOT QINDAQT_STAGE
-                          QINDAQT_INSTALL_BINDIR QINDAQT_INSTALL_DATADIR)
+                          QINDAQT_INSTALL_BINDIR QINDAQT_INSTALL_DATADIR
+                          QINDAQT_INSTALL_LIBDIR
+                          QINDAQT_KF6_GLOBALACCEL_LIBRARY
+                          QINDAQT_KF6_GLOBALACCEL_SONAME)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed Bluetooth applet input: ${required}")
     endif()
@@ -25,6 +28,25 @@ if(NOT install_status EQUAL 0)
     message(FATAL_ERROR
         "Bluetooth applet stage install failed:\n${install_output}${install_error}")
 endif()
+
+# The production shell links against KF6 GlobalAccel as a platform dependency.
+# This isolated stage cannot borrow a machine-wide search path, so provide the
+# exact imported artifact selected by the build and let the shell's relative
+# install RUNPATH resolve it from the relocated package.
+cmake_path(IS_ABSOLUTE QINDAQT_KF6_GLOBALACCEL_LIBRARY kf6_is_absolute)
+if(NOT kf6_is_absolute OR NOT EXISTS "${QINDAQT_KF6_GLOBALACCEL_LIBRARY}")
+    message(FATAL_ERROR "Bluetooth applet KF6 runtime artifact is invalid")
+endif()
+if(QINDAQT_KF6_GLOBALACCEL_SONAME MATCHES "[/\\\\]" OR
+   QINDAQT_KF6_GLOBALACCEL_SONAME STREQUAL "")
+    message(FATAL_ERROR "Bluetooth applet KF6 runtime SONAME is invalid")
+endif()
+set(stage_library_dir "${stage}/${QINDAQT_INSTALL_LIBDIR}")
+file(MAKE_DIRECTORY "${stage_library_dir}")
+file(COPY_FILE
+    "${QINDAQT_KF6_GLOBALACCEL_LIBRARY}"
+    "${stage_library_dir}/${QINDAQT_KF6_GLOBALACCEL_SONAME}"
+    ONLY_IF_DIFFERENT)
 
 set(shell "${stage}/${QINDAQT_INSTALL_BINDIR}/qindaqt-shell")
 set(data "${stage}/${QINDAQT_INSTALL_DATADIR}/qindaqt")
@@ -57,6 +79,8 @@ file(CHMOD "${poison}/runtime"
 
 execute_process(
     COMMAND "${QINDAQT_CMAKE}" -E env
+            --unset=LD_LIBRARY_PATH
+            --unset=DYLD_LIBRARY_PATH
             QT_QPA_PLATFORM=offscreen
             QT_QUICK_BACKEND=software
             "XDG_RUNTIME_DIR=${poison}/runtime"

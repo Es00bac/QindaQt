@@ -63,14 +63,15 @@ Bluetooth::OperationResult resultFor(
     const FakeBluetoothTransport::RecordedSubmission &submission,
     const Bluetooth::OperationStatus status,
     const QString &reason,
-    const quint64 revision)
+    const quint64 observedRevision,
+    const quint64 initiatingRevision = 5)
 {
     return {.kind = submission.request.kind,
             .status = status,
             .initiatingEpoch = 61,
-            .initiatingRevision = 5,
+            .initiatingRevision = initiatingRevision,
             .observedEpoch = 61,
-            .observedRevision = revision,
+            .observedRevision = observedRevision,
             .reasonCode = reason,
             .diagnostic = {},
             .wireValid = true};
@@ -157,6 +158,11 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
         kOwner, acquire.requestId, true,
         resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-acquired"), 6));
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot acquired = bluetoothClientSnapshot(61, 6);
+    acquired.adapters[0].discovering = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, acquired);
     QTRY_COMPARE(transport.submissions.size(), 2);
     const auto release = transport.submissions.constLast();
     QCOMPARE(release.request.kind, Bluetooth::OperationKind::ReleaseDiscovery);
@@ -164,8 +170,14 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     transport.emitOperationReply(
         kOwner, release.requestId, true,
         resultFor(release, Bluetooth::OperationStatus::Succeeded,
-                  QStringLiteral("lease-released"), 7));
+                  QStringLiteral("lease-released"), 7, 6));
     QTRY_VERIFY(!controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 3);
+    Bluetooth::Snapshot released = bluetoothClientSnapshot(61, 7);
+    released.adapters[0].discovering = false;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, released);
+    QTRY_VERIFY(!controller.operationPending());
 }
 
 QTEST_MAIN(BluetoothAppletQmlTests)

@@ -135,6 +135,7 @@ set_tests_properties(
 )
 
 if(TARGET qindaqt-shell)
+    find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
     add_test(
         NAME qindaqt.bluetooth-applet-installed-package
         COMMAND
@@ -144,6 +145,9 @@ if(TARGET qindaqt-shell)
             "-DQINDAQT_STAGE=${CMAKE_CURRENT_BINARY_DIR}/installed-bluetooth-applet"
             "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
             "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+            "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+            "-DQINDAQT_KF6_GLOBALACCEL_LIBRARY=$<TARGET_FILE:KF6::GlobalAccel>"
+            "-DQINDAQT_KF6_GLOBALACCEL_SONAME=$<TARGET_SONAME_FILE_NAME:KF6::GlobalAccel>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_bluetooth_applet.cmake"
     )
     set_tests_properties(
