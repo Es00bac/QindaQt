@@ -159,6 +159,12 @@ void BluetoothAppletControllerTests::closeReleasesDiscoveryAfterPendingAcquire()
         kOwner, acquire.requestId, true,
         resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-acquired")));
+    QTRY_VERIFY(controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot acquired = bluetoothClientSnapshot(61, 6);
+    acquired.adapters[0].discovering = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, acquired);
     QTRY_COMPARE(transport.submissions.size(), 2);
     const auto release = transport.submissions.constLast();
     QCOMPARE(release.request.kind, Bluetooth::OperationKind::ReleaseDiscovery);
@@ -169,8 +175,13 @@ void BluetoothAppletControllerTests::closeReleasesDiscoveryAfterPendingAcquire()
         kOwner, release.requestId, true,
         resultFor(release, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-released"), 7));
+    QTRY_VERIFY(!controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 3);
+    Bluetooth::Snapshot released = bluetoothClientSnapshot(61, 7);
+    released.adapters[0].discovering = false;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, released);
     QTRY_VERIFY(!controller.operationPending());
-    QVERIFY(!controller.discoveryLeaseHeld());
 }
 
 void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
@@ -188,6 +199,12 @@ void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
         resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-acquired")));
     QTRY_VERIFY(controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot acquired = bluetoothClientSnapshot(61, 6);
+    acquired.adapters[0].discovering = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, acquired);
+    QTRY_VERIFY(!controller.operationPending());
 
     QVERIFY(controller.requestDiscovery(QStringLiteral("adapter-61-400"), false));
     QCOMPARE(transport.submissions.size(), 2);
@@ -281,6 +298,12 @@ void BluetoothAppletControllerTests::ownerReplacementClearsTruthLeaseAndRequestW
         resultFor(acquire, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-acquired")));
     QTRY_VERIFY(controller.discoveryLeaseHeld());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot acquired = bluetoothClientSnapshot(61, 6);
+    acquired.adapters[0].discovering = true;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, acquired);
+    QTRY_VERIFY(!controller.operationPending());
 
     QVERIFY(controller.requestDeviceConnection(QStringLiteral("device-61-700"),
                                                 false));
