@@ -7,14 +7,17 @@ separately linked shell-private controller borrows the public
 Neither target imports the Bluetooth service/model, BlueZ, BluezQt, Agent1, or
 host-radio APIs.
 
-Current maturity: **production built-in composition (implementation awaiting
-execution evidence)**. The B1 source slice includes the audited
+Current maturity: **qualified production built-in composition (focused
+Debug/Release executable and package evidence)**. The B1 slice includes the audited
 manifest/registry/policy path, stock-profile placement, production shell
 composition, keyboard-accessible compiled QML, static mutation gates, and a
-relocated installed-package test. Bluetooth B0 still composes its deterministic
-empty backend, so a normal activated service truthfully makes the applet
-unavailable until the separately reviewed BluezQt runtime adapter lands. This
-consumer does not advance platform hardware maturity by itself.
+relocated installed-package test. Fresh strict GCC 15.3 Debug and Release roots
+each built the production shell and focused targets, passed the seven-row B1
+selector, and passed six adjacent public-client, manifest, catalog, resolver,
+dispatcher, and shell-catalog rows. Bluetooth B0 still composes its
+deterministic empty backend, so a normal activated service truthfully makes the
+applet unavailable until the separately reviewed BluezQt runtime adapter
+lands. This consumer does not advance platform hardware maturity by itself.
 
 The service authority and pairing exclusion remain those of
 [Bluetooth1](../architecture/bluetooth-service.md) and
