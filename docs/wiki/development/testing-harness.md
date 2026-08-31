@@ -694,6 +694,36 @@ This evidence uses private D-Bus and offscreen software rendering. It does not
 claim a real session bus, live assistive technology, compositor focus,
 KGlobalAccel dispatch, or pointer/keyboard automation.
 
+## Current XDG Settings portal appearance proof
+
+The appearance-only backend is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.portal-' --output-on-failure --no-tests=error
+```
+
+The pure rows cover exact standard enum/RGB projection, all built-in QST
+themes, high-contrast and reduced-transparency inputs, wrong types/tokens,
+unknown themes, nonopaque accent failure, bounded catalog loading, and source
+precedence. Settings1-source rows prove exact owner/epoch replacement, stale
+old-owner replies, withdrawal, and recovery. A real private-bus row checks the
+backend v1 introspection, `ReadAll` filters, `Read` errors, `(ddd)` accent
+signature, bounded change signals, service-name collision, rollback, and
+release.
+
+The process row lets a disposable `dbus-daemon` activate the exact portal and
+Settings1 executables, observes both owners and PIDs, proves read-only standard
+truth, kills the daemon, requires both processes to exit, and repeats on a
+fresh daemon with fresh owners/PIDs. The staged-package row reruns that process
+proof through the installed portal executable and themes, validates the D-Bus
+descriptor, hardened systemd unit, Settings-only `.portal` declaration and
+selector, then proves source and installed-private-header poison rejection.
+Host session-bus variables are removed before every daemon starts. These rows
+do not contact, select, or modify the user's portal frontend or installed
+packages; host/toolkit integration remains a downstream release check. See
+[XDG Settings portal appearance backend](../architecture/portal-service.md).
+
 ## Current Appearance Settings S0 proof
 
 The modular Appearance route and its additive Settings Center composition are
