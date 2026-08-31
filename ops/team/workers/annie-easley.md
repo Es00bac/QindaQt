@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:17:34-06:00
+updated_at: 2026-08-31T17:18:53-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — all four review repairs pass strengthened direct gates; manager confirmed no collision and the serialized strict Debug/Release compiler/CTest lane is claimed for focused B1 verification.
+- Status: working — repaired strict Debug presentation/controller is 2/2 and full B1 is 7/7 green; no process survives and serialized strict Release replay is next.
 
 ## Updates
+
+- 2026-08-31T17:18:53-06:00 — In the existing strict Debug root, the repaired presentation/controller dependency graph rebuilt 16/16 after upstream automatic steps, the exact two registered rows passed 2/2, and the full B1 selector passed 7/7 including all ten strengthened poison mutations and the installed-package row. No process survives. The same two targets and exact seven-row selector now proceed serially in the existing strict Release root; no private runtime is involved.
 
 - 2026-08-31T17:17:34-06:00 — Repair source now passes the pure five-file exact include gate with four independent client/persistence/filesystem/network poisons and the runtime seven-file exact include/controller-surface gate with six independent service/renamed-pairing/address/persistence/file/standard-path poisons. Source shape passes 1,779 files; the controller is 487 nonblank lines, below the 500-line review threshold. Direct process inspection found no compiler, CMake, Ninja, CTest, KWin, Weston, shell, or Bluetooth test process beyond the inspection shell. The manager confirmed no collision and released the serialized lane; claimed it for incremental strict Debug then Release presentation/controller builds and exact B1 selectors. Private bus/runtime, compositor, BlueZ, host Bluetooth, hardware, network, and input remain prohibited.
 
