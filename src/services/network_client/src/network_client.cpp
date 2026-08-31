@@ -23,6 +23,29 @@ bool isBenignStaleDuplicate(const Model::NetworkModel::ApplyResult result,
            && lineage->epoch == reply.epoch;
 }
 
+ClientState stateForAvailability(const Availability availability) {
+    switch (availability) {
+    case Availability::Starting:
+        return ClientState::Connecting;
+    case Availability::Ready:
+        return ClientState::Ready;
+    case Availability::Unavailable:
+        return ClientState::Unavailable;
+    case Availability::Degraded:
+        return ClientState::Degraded;
+    }
+    return ClientState::Degraded;
+}
+
+QString errorForSnapshot(const Snapshot &snapshot) {
+    if (snapshot.availability == Availability::Ready
+        || snapshot.availability == Availability::Starting) {
+        return {};
+    }
+    return snapshot.diagnostic.isEmpty() ? snapshot.reasonCode
+                                         : snapshot.diagnostic;
+}
+
 } // namespace
 
 bool ClientTiming::isValid() const noexcept {
@@ -286,12 +309,17 @@ void NetworkClient::handleSnapshot(const quint64 token, const QString &owner,
                       : decoded.reasonCode};
     if (applied.accepted) {
         m_retryIndex = 0;
-        publish(ClientState::Ready);
+        publish(stateForAvailability(reply.availability),
+                errorForSnapshot(reply));
         Q_EMIT snapshotChanged();
     } else if (isBenignStaleDuplicate(applied, m_model.lineage(), reply)) {
         // Out-of-order duplicate of the already-current lineage: not an error.
         m_retryIndex = 0;
-        publish(ClientState::Ready);
+        const std::optional<Snapshot> &current = m_model.snapshot();
+        if (current.has_value()) {
+            publish(stateForAvailability(current->availability),
+                    errorForSnapshot(*current));
+        }
     } else {
         publish(ClientState::Degraded,
                 QStringLiteral("network snapshot is malformed or regressed"));
