@@ -1459,15 +1459,22 @@ parent.
 
 After simultaneous readiness, a second probe first requires the stable
 `qindaqt_toggle_notification_center` action to expose both its exact default and
-active Meta+N bindings through KGlobalAccel, then requires zero active, mapped,
-committed notification-center surfaces and sends exactly one Meta+N sequence
-through the scenario-gated QindaQt development input device. Binding readiness
-uses a bounded event-loop observation before injection; it never substitutes a
-fixed startup delay or retries a lost input sequence. Success requires the stable
-device identity and one compositor-observed notification-center surface mapped
-and committed by the authenticated shell PID on the exact output. It never
-opens a host input node or uinput. Weston screenshooter then contacts only the
-private parent socket. The fresh image must be a checksum-valid, bounded,
+active Meta+N bindings through KGlobalAccel. Registry metadata alone does not
+qualify: the probe resolves the exact `qindaqt-shell` component object and
+requires a valid active state immediately before input because an inactive
+component can retain bindings without receiving them. The probe subscribes to
+that component's exact action press and release signals, requires zero active,
+mapped, committed notification-center surfaces, and sends exactly one Meta+N
+sequence through the scenario-gated QindaQt development input device. Binding
+readiness uses a bounded event-loop observation before injection; it never
+substitutes a fixed startup delay, direct action invocation, warm-up input, or a
+retry of the target sequence. Success authenticates both ordered per-action
+press/release delivery and one compositor-observed notification-center surface
+mapped and committed by the shell PID on the exact output. A failure therefore
+distinguishes missing KGlobalAccel delivery from delivered input that did not
+map the surface. The probe never opens a host input node or uinput. Weston
+screenshooter then contacts only the private parent socket. The fresh image must
+be a checksum-valid, bounded,
 non-symlink RGB/RGBA PNG at exact 1920x1080 with at least 16 colors across the
 complete deterministic sample grid. The exact compositor-observed center
 rectangle must independently contain at least 16 sampled colors; its geometry
@@ -1476,6 +1483,33 @@ and full-region digest are recorded beside the full-frame digest. The stable
 are archived in the fresh build-local result root before teardown. Cleanup
 records the final re-observed authenticated survivor set rather than inserting
 an assumed empty value.
+
+Shell presentation readiness is a separate authenticated prerequisite. Each
+fixed one-second regular probe takes at most one 250 ms
+`org.qindaqt.ShellDevelopment1.Snapshot()` sample from the unique owner whose
+bus PID is joined to every mapped, committed, positive-size dock after current
+and desired output names converge inside the exact public `Outputs` set. The
+probe calls that sampled unique name and re-resolves the well-known owner after
+the call, so a service replacement cannot splice the old PID to a new
+snapshot. The existing 15-second outer readiness loop owns every retry. After
+public topology is complete it retries only an absent service, the bounded
+service-before-object registration gap, or evidence-bearing privacy, created-
+window, and selected-output convergence. Every other D-Bus, schema, owner,
+PID, canonical counter, geometry, or envelope disagreement fails closed.
+
+Immediately before the sole Meta+N batch, the interaction probe takes one more
+synchronous sample and requires the same authenticated shell PID and unique
+owner, private presentation allowed, a created but closed and hidden center,
+and the selected output. Its baseline `centerOpenedCount` is retained. Success
+then requires that exact owner and PID to report `centerOpen=true`, a visible
+center on the selected output, and a strictly increased counter alongside the
+canonical KGlobalAccel action/component press and release and the compositor
+surface owned by the same PID with matching current and desired outputs. The
+canonical interaction document carries both shell samples and activation
+identity; a standalone diagnostic marker is not acceptance evidence. The probe
+adds no separate ShellDevelopment polling loop: each attempt in the existing
+post-input surface-observation loop takes one bounded sample. No startup sleep,
+warm-up input, direct action call, or second Meta+N attempt is permitted.
 
 The input inventory contains the one combined QindaQt development device plus
 the exact anonymous pointer/keyboard pair forwarded by Weston's fake private

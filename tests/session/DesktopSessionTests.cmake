@@ -65,6 +65,7 @@ if(
         qindaqt-desktop-session-probe
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopsessionprobe.cpp"
     )
     target_link_libraries(
@@ -100,6 +101,8 @@ if(
         desktop.virtual.notification-binding-unit
         PROPERTIES LABELS "unit;session;security;display;input"
     )
+
+    include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopNotificationShellReadinessTests.cmake")
 
     if(QINDAQT_DBUS_RUN_SESSION)
         add_test(
