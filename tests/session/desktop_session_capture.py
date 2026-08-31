@@ -157,16 +157,20 @@ def validate_capture(
         ):
             raise CaptureContractError("content region escapes the captured framebuffer")
         region_digest = hashlib.sha256()
+        region_colors: set[bytes] = set()
         for row in range(y, y + region_height):
             start = (row * width + x) * channels
-            region_digest.update(pixels[start:start + region_width * channels])
-        region_colors: set[bytes] = set()
-        for row in range(64):
-            sample_y = y + min(region_height - 1, row * region_height // 64)
-            for column in range(64):
-                sample_x = x + min(region_width - 1, column * region_width // 64)
-                start = (sample_y * width + sample_x) * channels
-                region_colors.add(pixels[start:start + channels])
+            row_pixels = pixels[start:start + region_width * channels]
+            region_digest.update(row_pixels)
+            # AGENT-GUARD: Inspect the complete bounded region until the
+            # accepted floor is met. A fixed grid can skip thin text/features
+            # at fractional scales and falsely classify a rendered panel as
+            # uniform; lowering the sixteen-color floor would weaken S3.
+            if len(region_colors) < minimum_colors:
+                for offset in range(0, len(row_pixels), channels):
+                    region_colors.add(row_pixels[offset:offset + channels])
+                    if len(region_colors) >= minimum_colors:
+                        break
         if len(region_colors) < minimum_colors:
             raise CaptureContractError("captured content region is visually uniform")
         evidence["contentRegion"] = {

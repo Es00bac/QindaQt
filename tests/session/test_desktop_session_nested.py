@@ -17,6 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from desktop_session_process import capture_process_identity, terminate_processes
+from desktop_session_lifecycle import LIFECYCLE_TRACE_ENVIRONMENT
 from desktop_session_runtime import run_inner
 from desktop_session_sandbox import (
     PrivateLaneLock,
@@ -72,7 +73,14 @@ def _tool_root(executable: Path) -> Path:
 
 def _system_mounts(tools: list[Path]) -> tuple[ReadOnlyMount, ...]:
     roots = sorted({_tool_root(tool) for tool in tools}, key=str)
-    return tuple(ReadOnlyMount(root, PurePosixPath(str(root))) for root in roots)
+    mounts = [ReadOnlyMount(root, PurePosixPath(str(root))) for root in roots]
+    loader_cache = Path("/etc/ld.so.cache")
+    if loader_cache.is_file():
+        # AGENT-GUARD: Mount this one lookup index, never host /etc or /lib*.
+        # The libraries remain constrained to the already read-only /usr roots,
+        # while private runtime paths retain LD_LIBRARY_PATH precedence.
+        mounts.append(ReadOnlyMount(loader_cache, PurePosixPath("/etc/ld.so.cache")))
+    return tuple(mounts)
 
 
 def _sandbox_path_for(source: Path, mounts: tuple[ReadOnlyMount, ...]) -> str:
@@ -82,6 +90,65 @@ def _sandbox_path_for(source: Path, mounts: tuple[ReadOnlyMount, ...]) -> str:
         if resolved == root or root in resolved.parents:
             return str(mount.destination / resolved.relative_to(root))
     raise SandboxContractError(f"tool is not covered by a system mount: {source}")
+
+
+def _library_search_roots(tools: list[Path]) -> tuple[list[str], list[str], list[str]]:
+    """Return sandbox library/plugin/qml roots needed by non-/usr tool prefixes.
+
+    The empty-root sandbox admits only the host loader-cache file, not host
+    /etc or /lib*. A KWin or Weston under a private prefix still needs its
+    libraries, Qt plugins, and QML imports first in the explicit environment.
+    """
+    roots = sorted({_tool_root(tool) for tool in tools}, key=str)
+    library_entries: list[str] = []
+    plugin_entries: list[str] = []
+    qml_entries: list[str] = []
+    for root in roots:
+        if str(root) == "/usr":
+            continue
+        # _tool_root returns the executable's installation prefix (`/usr` or
+        # `<private-root>/usr`), so adding another `usr` here silently empties
+        # the loader search path for every extracted runtime.
+        for lib_dir in (root / "lib", root / "lib64"):
+            if not lib_dir.is_dir():
+                continue
+            library_entries.append(str(PurePosixPath(str(lib_dir))))
+            # Some packages (e.g., weston) ship private shared libraries under
+            # immediate subdirectories of /usr/lib. Include any such directory
+            # that contains a native library, while excluding plugin/qml trees
+            # handled separately below.
+            for child in lib_dir.iterdir():
+                if child.is_dir() and any(child.glob("lib*.so*")):
+                    library_entries.append(str(PurePosixPath(str(child))))
+        plugin_dir = root / "lib" / "qt6" / "plugins"
+        if plugin_dir.is_dir():
+            plugin_entries.append(str(PurePosixPath(str(plugin_dir))))
+        qml_dir = root / "lib" / "qt6" / "qml"
+        if qml_dir.is_dir():
+            qml_entries.append(str(PurePosixPath(str(qml_dir))))
+    return library_entries, plugin_entries, qml_entries
+
+
+def _weston_module_map(weston: Path) -> str:
+    root = _tool_root(weston)
+    modules = (
+        ("headless-backend.so", root / "lib/libweston-15/headless-backend.so"),
+        ("kiosk-shell.so", root / "lib/weston/kiosk-shell.so"),
+    )
+    entries: list[str] = []
+    for name, path in modules:
+        resolved = path.resolve(strict=True)
+        if not resolved.is_file() or root not in resolved.parents:
+            raise SandboxContractError(f"Weston module is outside its tool prefix: {path}")
+        entries.append(f"{name}={PurePosixPath(str(resolved))}")
+    return ";".join(entries)
+
+
+def _enable_lifecycle_diagnostics(environment: dict[str, str]) -> None:
+    if os.environ.get(LIFECYCLE_TRACE_ENVIRONMENT) != "1":
+        return
+    environment[LIFECYCLE_TRACE_ENVIRONMENT] = "1"
+    environment["QT_FORCE_STDERR_LOGGING"] = "1"
 
 
 def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> SandboxSpec:
@@ -103,12 +170,25 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
     system_path = sorted(
         {str(PurePosixPath(_sandbox_path_for(tool, mounts)).parent) for tool in tools}
     )
+    library_path, qt_plugin_path, qml_import_path = _library_search_roots(tools)
     environment = sandbox_environment(
         run_id=run_id,
         uid=os.getuid(),
         stage_bin=f"/opt/qindaqt/{arguments.bin_directory}",
         system_path=system_path,
+        library_path=library_path,
+        qt_plugin_path=qt_plugin_path,
+        qml_import_path=qml_import_path,
     )
+    if interactive:
+        # Weston supports relocatable test packages through this exact module
+        # map. Do not bind over its compiled /usr module directories.
+        environment["WESTON_MODULE_MAP"] = _weston_module_map(arguments.weston)
+    if os.environ.get(LIFECYCLE_TRACE_ENVIRONMENT) == "1":
+        # This exact opt-in exists only to diagnose the essential session child
+        # boundary. It carries no host endpoint and is omitted from acceptance
+        # rows after the lifecycle defect is identified.
+        _enable_lifecycle_diagnostics(environment)
     command = (
         python,
         "/opt/qindaqt-source/tests/session/test_desktop_session_nested.py",
