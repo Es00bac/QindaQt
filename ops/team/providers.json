@@ -4,9 +4,9 @@
       "id": "openai",
       "name": "OpenAI / Codex",
       "status": "available",
-      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "updatedAt": "2026-08-31T05:55:04-06:00",
       "estimatedReturnAt": "",
-      "evidence": "All four native collaboration slots are occupied by the Program Manager plus live Display D6, S3 recovery, and Network N1 review work."
+      "evidence": "The native collaboration runtime is live for the Program Manager, Portal P0 exact reviewer, and resumed S3 implementer; one native slot remains available."
     },
     {
       "id": "gemini",
@@ -20,7 +20,7 @@
       "id": "glm",
       "name": "Z.AI GLM",
       "status": "degraded",
-      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "updatedAt": "2026-08-31T05:55:04-06:00",
       "estimatedReturnAt": "",
       "evidence": "The user reports GLM usage cannot be checked and supplied a z.ai Server Not Found capture; no current GLM process or quota claim is being used."
     },
@@ -28,17 +28,17 @@
       "id": "claude",
       "name": "Anthropic Claude",
       "status": "available",
-      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "updatedAt": "2026-08-31T05:55:04-06:00",
       "estimatedReturnAt": "",
-      "evidence": "A live exact Claude Sonnet 5/high process is independently reviewing the frozen Power P2 candidate in its detached worktree."
+      "evidence": "The user reports some Claude capacity remains and the local Claude Code 2.1.241 route responds; repaired Network Settings N2 is staged for exact rereview after the serialized Portal lane terminates."
     },
     {
       "id": "kimi",
       "name": "Moonshot Kimi",
-      "status": "degraded",
-      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "status": "available",
+      "updatedAt": "2026-08-31T05:55:04-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The active Kimi S3 session terminally exited with provider.rate_limit HTTP 429 (engine overloaded); its preserved worktree was transferred to Codex without restarting the build."
+      "evidence": "The user reports full Kimi availability. No Kimi worker is currently claimed, so this capacity record does not create worker liveness."
     }
   ]
 }
