@@ -96,8 +96,9 @@ registered Launcher, Task List, Audio applet, Power applet, Global Menu G0,
 Clipboard C0, and customization-editor foundations. These are deliberately
 not all live panel features: their owning pages identify the remaining
 production adapters, transports, hosts, and installed interaction gates.
-Bluetooth and clipboard applets remain absent, and StatusNotifier Tray awaits
-manager-tree integration despite an accepted candidate.
+Bluetooth and clipboard applets remain absent. The StatusNotifier foundation
+is integrated; its production watcher/menu/icon transports, applet hosting, and
+installed interaction remain later work.
 
 ## Milestones
 
