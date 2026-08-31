@@ -51,6 +51,7 @@ target_link_libraries(
     qindaqt_settings_navigation_page_test PRIVATE
     QindaQt::SettingsNavigation
     qindaqt_settings_appearance
+    qindaqt_settings_display
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -70,6 +71,7 @@ add_dependencies(
     qindaqt_settings_navigation_page_test
     qindaqt-settings
     qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )

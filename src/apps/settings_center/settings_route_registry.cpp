@@ -104,6 +104,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool appRegistered = registerRoute(appearanceRoute);
   Q_ASSERT(appRegistered);
   Q_UNUSED(appRegistered);
+
+  const SettingsRoute displayRoute{
+      .id = QStringLiteral("display"),
+      .component = SettingsRouteComponent::Display,
+      .title = QCoreApplication::translate("SettingsCenter", "Display"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Monitors, resolution, scaling, and orientation"),
+      .iconName = QStringLiteral("preferences-desktop-display"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool dispRegistered = registerRoute(displayRoute);
+  Q_ASSERT(dispRegistered);
+  Q_UNUSED(dispRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

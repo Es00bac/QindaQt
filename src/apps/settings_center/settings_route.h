@@ -9,6 +9,7 @@ namespace QindaQt::Apps::SettingsCenter {
 enum class SettingsRouteComponent {
   Notifications,
   Appearance,
+  Display,
 };
 
 [[nodiscard]] QString

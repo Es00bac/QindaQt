@@ -63,4 +63,5 @@ endfunction()
 
 require_constructed_route(notifications)
 require_constructed_route(appearance)
-message(STATUS "Both Settings root routes remained constructed under sanitized offscreen authority loss")
+require_constructed_route(display)
+message(STATUS "All Settings root routes remained constructed under sanitized offscreen authority loss")
