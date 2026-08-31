@@ -66,6 +66,23 @@ if(
     qindaqt_enable_warnings(qindaqt-desktop-session-probe)
     add_dependencies(qindaqt-desktop-session-probe ${_qindaqt_desktop_targets})
 
+    if(QINDAQT_DBUS_RUN_SESSION)
+        add_test(
+            NAME desktop.virtual.interaction-probe-cli-unit
+            COMMAND
+                "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_probe_cli.py"
+                --probe "$<TARGET_FILE:qindaqt-desktop-session-probe>"
+                --dbus-run-session "${QINDAQT_DBUS_RUN_SESSION}"
+        )
+        set_tests_properties(
+            desktop.virtual.interaction-probe-cli-unit
+            PROPERTIES
+                ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+                LABELS "unit;session;security;display;input"
+        )
+    endif()
+
     # A dedicated test-only component makes package proof proportional to this
     # vertical slice. It duplicates no production path or target definition;
     # it stages the same artifacts and data at their real install locations.

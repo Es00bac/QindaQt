@@ -106,8 +106,16 @@ QJsonObject keyEvent(QLatin1StringView key, bool pressed)
             {QStringLiteral("pressed"), pressed}};
 }
 
+QJsonObject pointerAbsoluteEvent(double x, double y)
+{
+    return {{QStringLiteral("type"), QStringLiteral("pointer-absolute")},
+            {QStringLiteral("x"), x},
+            {QStringLiteral("y"), y}};
+}
+
 int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
-                                     const QDBusConnection &connection)
+                                     const QDBusConnection &connection,
+                                     const QString &targetOutput = {})
 {
     if (!requiredServicesOwned(bus)) {
         QTextStream(stderr) << "required private services are unavailable\n";
@@ -138,12 +146,45 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
         QTextStream(stderr) << "notification center was active before private input\n";
         return 5;
     }
-    const QJsonArray events{
-        keyEvent(QLatin1StringView("left-meta"), true),
-        keyEvent(QLatin1StringView("n"), true),
-        keyEvent(QLatin1StringView("n"), false),
-        keyEvent(QLatin1StringView("left-meta"), false),
-    };
+    QJsonArray events;
+    if (!targetOutput.isEmpty()) {
+        const QJsonObject outputs = compositorCall(
+            compositor, QStringLiteral("Outputs"));
+        const QJsonValue outputValues = outputs.value(QStringLiteral("outputs"));
+        if (outputs.value(QStringLiteral("status")) != QStringLiteral("ok")
+            || !outputValues.isArray()) {
+            QTextStream(stderr) << "secondary output evidence is unavailable\n";
+            return 6;
+        }
+        QJsonObject targetGeometry;
+        int targetMatches = 0;
+        for (const QJsonValue &value : outputValues.toArray()) {
+            const QJsonObject output = value.toObject();
+            if (output.value(QStringLiteral("name")) == targetOutput) {
+                targetGeometry = output.value(QStringLiteral("geometry")).toObject();
+                ++targetMatches;
+            }
+        }
+        const int x = targetGeometry.value(QStringLiteral("x")).toInt();
+        const int y = targetGeometry.value(QStringLiteral("y")).toInt();
+        const int width = targetGeometry.value(QStringLiteral("width")).toInt();
+        const int height = targetGeometry.value(QStringLiteral("height")).toInt();
+        if (targetMatches != 1 || width <= 0 || height <= 0) {
+            QTextStream(stderr) << "secondary output target is unavailable\n";
+            return 6;
+        }
+        // AGENT-CONTRACT: Moving the private pointer into WL-1 is the fifth
+        // dual-row event. KWin selects global-shortcut presentation from this
+        // seat/output context; the later surface check must still prove that
+        // the shell committed the notification center to that exact output.
+        events.append(pointerAbsoluteEvent(
+            static_cast<double>(x) + static_cast<double>(width) / 2.0,
+            static_cast<double>(y) + static_cast<double>(height) / 2.0));
+    }
+    events.append(keyEvent(QLatin1StringView("left-meta"), true));
+    events.append(keyEvent(QLatin1StringView("n"), true));
+    events.append(keyEvent(QLatin1StringView("n"), false));
+    events.append(keyEvent(QLatin1StringView("left-meta"), false));
     const QJsonObject request{{QStringLiteral("schemaVersion"), 1},
                               {QStringLiteral("events"), events}};
     const QJsonObject injected = compositorCall(
@@ -175,6 +216,9 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
                 && surface.value(QStringLiteral("mapped")).toBool()
                 && surface.value(QStringLiteral("committed")).toBool()
                 && surface.value(QStringLiteral("active")).toBool()
+                && (targetOutput.isEmpty()
+                    || (surface.value(QStringLiteral("outputName")) == targetOutput
+                        && surface.value(QStringLiteral("desiredOutputName")) == targetOutput))
                 && geometry.value(QStringLiteral("width")).toInt() == 440
                 && geometry.value(QStringLiteral("height")).toInt() == 640) {
                 match = surface;
@@ -213,9 +257,15 @@ int main(int argc, char **argv)
         QTextStream(stderr) << "private session bus is unavailable\n";
         return 2;
     }
-    if (application.arguments().size() == 2
-        && application.arguments().at(1) == QStringLiteral("--open-notification-center")) {
-        return runNotificationCenterInteraction(*bus, connection);
+    if (application.arguments().size() == 2) {
+        const QString interaction = application.arguments().at(1);
+        if (interaction == QStringLiteral("--open-notification-center")) {
+            return runNotificationCenterInteraction(*bus, connection);
+        }
+        if (interaction == QStringLiteral("--open-notification-center-secondary")) {
+            return runNotificationCenterInteraction(*bus, connection,
+                                                    QStringLiteral("WL-1"));
+        }
     }
     if (application.arguments().size() != 1) {
         QTextStream(stderr) << "unsupported probe arguments\n";

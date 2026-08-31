@@ -100,6 +100,7 @@ qt_add_executable(
     tst_hybridshutdownrecovery.cpp
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshutdownrecovery.cpp"
 )
+target_compile_features(qindaqt_hybrid_shutdown_recovery_tests PRIVATE cxx_std_20)
 target_include_directories(
     qindaqt_hybrid_shutdown_recovery_tests
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
