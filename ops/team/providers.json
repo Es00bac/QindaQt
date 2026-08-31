@@ -4,9 +4,9 @@
       "id": "openai",
       "name": "OpenAI / Codex",
       "status": "available",
-      "updatedAt": "2026-08-28T11:13:49-06:00",
+      "updatedAt": "2026-08-31T00:17:42-06:00",
       "estimatedReturnAt": "",
-      "evidence": "All four native collaboration slots are occupied by live QindaQt work, including the Program Manager."
+      "evidence": "All four native collaboration slots are occupied by the Program Manager plus live Display D6, S3 recovery, and Network N1 review work."
     },
     {
       "id": "gemini",
@@ -20,25 +20,25 @@
       "id": "glm",
       "name": "Z.AI GLM",
       "status": "degraded",
-      "updatedAt": "2026-08-28T11:13:49-06:00",
-      "estimatedReturnAt": "2026-08-28T11:30:00-06:00",
-      "evidence": "The authenticated GLM catalog is reachable, but the current exact Flash worker is token-silent; retry after the short cooldown estimate."
+      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "The user reports GLM usage cannot be checked and supplied a z.ai Server Not Found capture; no current GLM process or quota claim is being used."
     },
     {
       "id": "claude",
       "name": "Anthropic Claude",
-      "status": "unavailable",
-      "updatedAt": "2026-08-28T11:19:06-06:00",
-      "estimatedReturnAt": "2026-08-28T11:50:00-06:00",
-      "evidence": "The user-provided provider panel shows the current Claude session at 100% used with a 31-minute reset countdown; reprobing is required at reset."
+      "status": "available",
+      "updatedAt": "2026-08-31T00:17:42-06:00",
+      "estimatedReturnAt": "",
+      "evidence": "A live exact Claude Sonnet 5/high process is independently reviewing the frozen Power P2 candidate in its detached worktree."
     },
     {
       "id": "kimi",
       "name": "Moonshot Kimi",
-      "status": "available",
-      "updatedAt": "2026-08-28T11:21:00-06:00",
+      "status": "degraded",
+      "updatedAt": "2026-08-31T00:17:42-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The user clarified the Kimi five-hour window is 0% used / 100% available. Weekly usage is 99% (full reset estimated 2026-08-29T20:48:00-06:00), so exact K2.7 is reserved for bounded work."
+      "evidence": "The active Kimi S3 session terminally exited with provider.rate_limit HTTP 429 (engine overloaded); its preserved worktree was transferred to Codex without restarting the build."
     }
   ]
 }
