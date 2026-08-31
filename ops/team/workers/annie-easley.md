@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:20:02-06:00
+updated_at: 2026-08-31T17:22:02-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — repaired strict Debug and Release are each presentation/controller 2/2 and full B1 7/7 green; compiler/CTest lane is released and final static/docs freeze remains.
+- Status: working — review repairs plus exact staged KF6 loader-path assertion are Debug/Release B1 7/7 green; CTest lane is released and final static/docs/provenance freeze remains.
 
 ## Updates
+
+- 2026-08-31T17:22:02-06:00 — Closed the bounded real portion of K3/Opus RUNPATH feedback without adding a redundant target property: the installed script clears ambient loader variables, uses CMake runtime dependency resolution, and requires the KF6 SONAME to resolve to the exact copied `installed-bluetooth-applet/lib64/libKF6GlobalAccel.so.6` path. Exact installed-package rows passed 1/1 in Debug and Release, followed by full B1 7/7 in both profiles. Direct path inspection confirms both stage-local artifacts. No compiler/CTest/private process survives; the briefly reclaimed CTest lane is immediately released. Remaining work is static/docs/provenance only.
 
 - 2026-08-31T17:20:02-06:00 — The same repaired dependency graph rebuilt 16/16 under strict Release, then exact presentation/controller passed 2/2 and full B1 passed 7/7. Debug and Release therefore have identical green focused counts. Direct inspection found no compiler, CMake, Ninja, CTest, KWin, Weston, shell, or Bluetooth test process beyond the inspection shell; the compiler/CTest lane is immediately released. No private bus/runtime, compositor, BlueZ, host Bluetooth, hardware, network, or input lane was used. Remaining work is documentation/static/provenance freeze only.
 
