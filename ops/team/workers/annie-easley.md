@@ -4,20 +4,22 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: handoff
+status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:33:52-06:00
+updated_at: 2026-08-31T17:46:35-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: handoff — exact policy-repair descendant `5bc0cb09616e77cc0bd20bfd4365494c20811347` is green and awaits final Kimi K3-256k, Kimi K2.7, Claude Sonnet, and Claude Opus rereview; compiler/CTest/private lanes remain released.
+- Status: working — repairing the formally rejected residual lexical controller-surface escapes above exact product `5bc0cb09616e77cc0bd20bfd4365494c20811347`; compiler/CTest/private lanes remain released.
 
 ## Updates
+
+- 2026-08-31T17:46:35-06:00 — Authenticated and fully read the durable Claude Opus 5 record `fd15745d757df3461b4322b09a9c7445252bb7b1` and Kimi K3-256k REJECT `9254507cc9250d740f35a7ca9d23b30fbc320b29`, both parented by exact rejected product `5bc0cb09616e77cc0bd20bfd4365494c20811347`. The manager released a bounded policy/docs repair for three independently valid lexical escapes: comment-glued `Q_INVOKABLE`, backslash-spliced `Q_PROPERTY`, and whitespace/newline between `Q_PROPERTY` and `(`. The repair will retain the prior eight poisons, add three independent controls, and make skip-mode poison reporting truthful. No compiler, CTest, or private runtime lane is claimed.
 
 - 2026-08-31T17:33:52-06:00 — The Program Manager independently reproduced candidate `5bc0cb09616e77cc0bd20bfd4365494c20811347` green at runtime 7+8 poisons, pure 5+4, 117-document validation, 1,779-file shape, JSON/diff/provenance. Product SHA/tree/parent and its exact three changed paths remain frozen. Posted a coordination-only addendum requesting the user-required final independent rereview by Kimi K3-256k, Kimi K2.7, Claude Sonnet, and Claude Opus; no further product change or lane use began.
 
