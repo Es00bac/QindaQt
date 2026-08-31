@@ -2,6 +2,10 @@
 
 # This include owns only the integrated virtual-desktop rows. Existing focused
 # compositor/session matrices remain independent regression boundaries.
+if(TARGET qindaqt-shell AND NOT TARGET KF6::GlobalAccel)
+    find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+endif()
+
 add_test(
     NAME desktop.virtual.sandbox-unit
     COMMAND
@@ -35,6 +39,8 @@ set(
     qindaqt_settings_appearance_qmlplugin
     qindaqt_settings_display_qml
     qindaqt_settings_display_qmlplugin
+    qindaqt_settings_network_qml
+    qindaqt_settings_network_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )
@@ -57,16 +63,43 @@ if(
 )
     qt_add_executable(
         qindaqt-desktop-session-probe
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopsessionprobe.cpp"
     )
     target_link_libraries(
-        qindaqt-desktop-session-probe PRIVATE Qt6::Core Qt6::DBus
+        qindaqt-desktop-session-probe
+        PRIVATE KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui
     )
     set_target_properties(
         qindaqt-desktop-session-probe PROPERTIES CXX_EXTENSIONS OFF
     )
     qindaqt_enable_warnings(qindaqt-desktop-session-probe)
     add_dependencies(qindaqt-desktop-session-probe ${_qindaqt_desktop_targets})
+
+    qt_add_executable(
+        qindaqt-desktop-notification-binding-tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tst_desktopnotificationbinding.cpp"
+    )
+    target_link_libraries(
+        qindaqt-desktop-notification-binding-tests
+        PRIVATE KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui Qt6::Test
+    )
+    set_target_properties(
+        qindaqt-desktop-notification-binding-tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    qindaqt_enable_warnings(qindaqt-desktop-notification-binding-tests)
+    add_test(
+        NAME desktop.virtual.notification-binding-unit
+        COMMAND qindaqt-desktop-notification-binding-tests
+    )
+    set_tests_properties(
+        desktop.virtual.notification-binding-unit
+        PROPERTIES LABELS "unit;session;security;display;input"
+    )
 
     if(QINDAQT_DBUS_RUN_SESSION)
         add_test(
@@ -102,7 +135,7 @@ if(
         COMPONENT DesktopVirtual
     )
 
-    # qindaqt-settings loads both the Appearance and Display routes in
+    # qindaqt-settings loads the Appearance, Display, and Network routes in
     # production. The DesktopVirtual component is intentionally self-contained,
     # so repeat each route's transitive QML payloads just as first-party
     # application components repeat their runtime imports. Omitting any backing library,
@@ -133,6 +166,13 @@ if(
         TYPEINFO _qindaqt_desktop_display_typeinfo
         QML_FILES _qindaqt_desktop_display_qml_files
         QML_FILES_DEPLOY_PATHS _qindaqt_desktop_display_deploy_paths
+    )
+    qt_query_qml_module(
+        qindaqt_settings_network_qml
+        QMLDIR _qindaqt_desktop_network_qmldir
+        TYPEINFO _qindaqt_desktop_network_typeinfo
+        QML_FILES _qindaqt_desktop_network_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_network_deploy_paths
     )
     install(
         TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
@@ -233,6 +273,36 @@ if(
         )
     endforeach()
     install(
+        TARGETS
+            qindaqt_settings_network_qml
+            qindaqt_settings_network_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_network_qmldir}"
+            "${_qindaqt_desktop_network_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_network_qml_files
+            _qindaqt_desktop_network_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    install(
         TARGETS qindaqt_compositor
         LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/kwin/plugins"
         COMPONENT DesktopVirtual
@@ -304,6 +374,11 @@ if(
             --cmake "${CMAKE_COMMAND}"
             --build-root "${CMAKE_BINARY_DIR}"
             ${_qindaqt_desktop_common_arguments}
+            --qml-directory "${QT6_INSTALL_QML}"
+            --network-qml-library
+            "$<TARGET_FILE_NAME:qindaqt_settings_network_qml>"
+            --network-qml-plugin
+            "$<TARGET_FILE_NAME:qindaqt_settings_network_qmlplugin>"
             --configuration "$<CONFIG>"
     )
     set_tests_properties(
