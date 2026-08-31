@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:39:43-06:00
+updated_at: 2026-08-31T16:42:32-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — controller replay improved to 8 pass/1 fail; the remaining release-success helper stamps stale initiating revision 5 instead of exact revision 6, now making lineage explicit before immediate replay.
+- Status: working — Debug controller is 9/9 green; the full B1 selector stopped 5/7 with one QML convergence-fixture gap and one missing staged KF6 runtime dependency, now repairing both without weakening authority or source-poison boundaries.
 
 ## Updates
+
+- 2026-08-31T16:42:32-06:00 — The rebuilt controller passed its exact registered row 1/1 with all nine QtTest cases green. The full serialized Debug B1 selector then exited 8 with 5/7 rows passing: presentation, request-state, controller, boundary, and runtime-boundary passed; offscreen QML expected a release submission before publishing the newly required revision-6 convergence snapshot, and the installed-package row's staged shell could not load `libKF6GlobalAccel.so.6` under source poison. No compiler or CTest process survives. The QML fixture will publish exact authoritative convergence truth, and the package harness will prove a relocatable staged dependency closure rather than borrowing a host/global library path or weakening poison.
 
 - 2026-08-31T16:39:43-06:00 — The convergence-aligned controller target rebuilt 3/3 and its exact row stopped 8 pass/1 fail in 15.12s. The remaining close-path failure is correct product rejection: ReleaseDiscovery was initiated from authoritative revision 6, but the test helper still stamped initiating revision 5, so the nominal success was uncertain and the lease remained. Parameterized the helper with an explicit initiating revision and set every post-convergence call site to 6; the wire-invalid `no-lease` case now isolates wire invalidity at otherwise exact lineage, while the existing request-state suite retains stale-result rejection coverage. Immediate controller rebuild/replay follows.
 
