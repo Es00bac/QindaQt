@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:46:38-06:00
+updated_at: 2026-08-31T16:47:36-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — Debug B1 is 7/7 green; the adjacent selector stopped first row on the stale seven-manifest expectation after Bluetooth correctly made eight, now adding the minimal round-trip inventory assertion.
+- Status: working — strict Debug is green for B1 7/7 and adjacent seams 6/6 at repair milestone `cedb13d`; the serialized lane is moving to a fresh strict Release root with no surviving process.
 
 ## Updates
+
+- 2026-08-31T16:47:36-06:00 — The approved manifest count/presence repair rebuilt, its exact row passed 1/1, and the complete adjacent Debug selector passed 6/6: manifest, catalog, runtime resolver, public Bluetooth client, notification-center dispatcher QML, and shell runtime catalog. Together with B1 7/7, strict Debug is green at `cedb13d`. Direct process inspection found no CMake, Ninja, CTest, KWin, Weston, production shell, or Bluetooth test process beyond the inspection shell itself. Fresh root `/tmp/qindaqt-bluetooth-b1-release-cedb13d` was absent and is now claimed for the same serialized strict Release build/selector matrix; private bus, compositor, BlueZ, host Bluetooth, hardware, network, and input remain out of lane.
 
 - 2026-08-31T16:46:38-06:00 — The repaired QML target rebuilt after clean regeneration, then offscreen passed 1/1 and the installed-package/source-poison row passed 1/1 with the exact staged KF6 artifact and ambient loader paths cleared. Full Debug B1 passed 7/7. The adjacent six-row selector stopped on its first row: `qindaqt.applet-manifest` reported ten QtTest passes and one failure because its complete first-party inventory still expected seven JSON files while Bluetooth correctly adds the eighth; no later adjacent row ran. The minimal repair updates the exact count and asserts `bluetooth.json` is present before the existing parse/round-trip loop.
 
