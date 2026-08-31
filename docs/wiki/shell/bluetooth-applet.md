@@ -166,7 +166,7 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, serialization, exact-owner replacement, typed feedback, and discovery close teardown |
 | `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
-| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and controller property/invokable surface; independent service, renamed-pairing, address-accessor, persistence, file, and standard-path poisons |
+| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and whitespace-normalized controller property/invokable surface; eight independent service, single/wrapped surface, address-accessor, persistence, file, and standard-path poisons |
 | `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
