@@ -191,6 +191,12 @@ mutation-sensitive pure/runtime boundary gates, and an installed
 production-package/source-poison row. No row contacts the host session bus,
 display server, BlueZ, a radio, or pairing authority. The exact matrix and
 nonclaims are detailed in [Bluetooth applet](../shell/bluetooth-applet.md).
+The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
+profile built the production shell plus the focused targets, passed all seven
+registered Bluetooth-applet rows, and passed six adjacent public-client,
+manifest, catalog, resolver, dispatcher, and shell-runtime-catalog rows. This
+is deterministic public-client/offscreen/package evidence only; it adds no
+private-bus, compositor, BlueZ, host-radio, or hardware claim.
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
