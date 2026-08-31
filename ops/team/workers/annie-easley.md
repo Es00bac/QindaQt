@@ -4,20 +4,26 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: handoff
+status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:58:57-06:00
+updated_at: 2026-08-31T17:11:48-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: handoff — exact immutable Bluetooth B1 candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` is clean and awaits independent different-worker review; all compiler/CTest/private lanes are released.
+- Status: working — repairing four confirmed review P2s: release replay, address-shaped names, renamed pairing surface, and filesystem/persistence boundary gaps; executable/private lanes remain released during source repair.
 
 ## Updates
+
+- 2026-08-31T17:11:48-06:00 — Opus terminal review added two boundary P2s: the runtime token denylist accepts a renamed pairing invokable such as `beginPairing(address)`, and both gates' permissive bare-header logic admits filesystem/persistence reach. The descendant will positively enforce the exact controller `Q_PROPERTY`/`Q_INVOKABLE` surface, add renamed-pairing and direct address-accessor poisons, replace permissive include fallback with explicit actual-header allowlists, and add file/persistence/network header poisons. Production dependencies remain protocol/client plus Qt Core/QML/Quick only; unrelated P3 observations stay bounded unless directly touched.
+
+- 2026-08-31T17:11:04-06:00 — Kimi K2.7 independently found that a non-empty sanitized adapter/device name can itself equal a canonical Bluetooth address and pass unchanged into labels/accessibility. The pure target already links the public protocol validation predicate, so this descendant will treat canonical-address-shaped names like empty names and prove ordinal adapter/class device fallbacks without reading or projecting the address field. The pure dependency boundary must remain green.
+
+- 2026-08-31T17:10:08-06:00 — Claude Opus 5 found and the manager confirmed a blocking no-replay violation in exact candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c`: while closed or shutting down, any non-success `ReleaseDiscovery` completion is immediately redispatched from `reproject()`/completion teardown, clearing its feedback and permitting an unbounded automatic mutation loop. Resumed the original isolated branch at clean coordination head `323e3992f5add1cda07d70a0409e3745a9653448`. The repair will retain the lease and typed feedback after exactly one release attempt until explicit later user/lifecycle action or authoritative truth ends it, with no private runtime use.
 
 - 2026-08-31T16:58:57-06:00 — Froze exact candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` (tree `b89ac700456690812da0d7dc2efb8e221a94a3a9`, sole parent `7c09625eb0fb40136651bab414a137867b943d12`). Exact ordinary merge `f23b61d91fdf76f6e4cecaa87808a16dd48f116b` retains parents `f8a85aeee56969e0a6e46970023247a6c70d4c52` and manager main `74da46345c7a5094d45c756ad8b23ca87591fcd3`; the preserved B1 milestone is also an ancestor. Final pure/runtime boundary+poison, three-file JSON parse, 117-document validation, strict MkDocs, 1,779-file source-shape, diff/conflict/prohibited-path/provenance, clean-tree, and process-residue checks pass. The handoff requests independent immutable review; compiler, CTest, private bus/runtime, compositor, BlueZ, radio, hardware, network, and input lanes are released.
 
