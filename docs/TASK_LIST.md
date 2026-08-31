@@ -58,6 +58,29 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `4d4b3dc` — The private S3 desktop executes the production compositor,
+  shell, resident services, Settings, and Text Editor across WUXGA, 1440p at
+  125%, 1080p at 150%, light/dusk/dark themes, and a dual-output arrangement.
+  Exact shell-readiness joins prove the active GlobalAccel component/action,
+  stable unique shell owner and PID, closed/hidden center before the sole
+  private-seat Meta+N batch, open/visible center with an increased counter
+  after it, and one mapped compositor surface on the selected output. Mina
+  Shah's external Claude source/archive review accepted the immutable
+  candidate at P0/P1/P2/P3 `0/0/0/2`; Lise Meitner's independent fresh
+  static+dynamic review accepted it at `0/0/0/0` after an 882/882 build,
+  focused 5/5, formerly failing 1080p@150% 2/2, and package-plus-matrix 5/5.
+  Four fresh archives prove containment 12/12, bounded PSS, nontrivial
+  captures, empty teardown, and exact dual `[WL-1, WL-0]` authority with
+  interaction and capture on WL-1. Fresh merged-tree replay also builds
+  882/882, passes focused 5/5, formerly failing 1080p@150% plus package 2/2,
+  and an unretried package-plus-four-row matrix 5/5; its four captures are
+  byte-authenticated and visually coherent, all PSS values remain below the
+  1,024 MiB ceiling, and final process inspection is empty. This advances
+  QQ-004.09 and QQ-006.09 to
+  EXECUTABLE without claiming complete screen-reader/keyboard coverage,
+  heterogeneous mixed scaling, physical devices, GPU/DRM, hotplug, or
+  perceptual baseline qualification.
+
 - `6f5d0ba9` — The installed Network Settings route composes only the public
   Network1 client into bounded, secret-free inventory and admitted saved-
   profile actions. Barbara Liskov's external Claude exact rereview accepted

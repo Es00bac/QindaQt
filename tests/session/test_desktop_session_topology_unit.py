@@ -6,6 +6,7 @@ import copy
 import unittest
 
 from desktop_session_runtime import PRODUCTION_PSS_ROLES, await_complete_snapshot
+from desktop_session_shell_fixtures import closed_notification_shell
 from desktop_session_topology import (
     TopologyContractError,
     desktop_1080p_topology,
@@ -79,6 +80,7 @@ def valid_evidence(output_name: str = "Virtual-0") -> dict[str, object]:
                 "desiredOutputName": output_name,
                 "mapped": True,
                 "committed": True,
+                "geometry": {"x": 0, "y": 0, "width": 1920, "height": 30},
             }
         ],
         "applications": [
@@ -118,6 +120,7 @@ def valid_evidence(output_name: str = "Virtual-0") -> dict[str, object]:
 
 def ready_probe() -> dict[str, object]:
     evidence = valid_evidence()
+    shell_pid, output_name = evidence["processes"]["shell"]["pid"], evidence["outputs"][0]["name"]  # type: ignore[index]
     return {
         "schemaVersion": 1,
         "services": [
@@ -144,6 +147,7 @@ def ready_probe() -> dict[str, object]:
         "developmentShellSurfaces": {
             "status": "ok", "surfaces": evidence["dockSurfaces"],
         },
+        "notificationShell": closed_notification_shell(shell_pid, output_name),
         "windows": {
             "status": "ok",
             "windows": [

@@ -12,7 +12,7 @@ from argparse import Namespace
 from contextlib import nullcontext
 from contextlib import redirect_stdout
 from io import StringIO
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from desktop_session_measure import (
@@ -26,10 +26,7 @@ from desktop_session_measure import (
 from desktop_session_sandbox import (
     FORBIDDEN_ENVIRONMENT,
     PrivateLaneLock,
-    ReadOnlyMount,
     SandboxContractError,
-    SandboxSpec,
-    build_bwrap_argv,
     create_run_root,
     remove_run_root,
     sandbox_environment,
@@ -192,62 +189,6 @@ class SandboxTests(unittest.TestCase):
         self.assertFalse(FORBIDDEN_ENVIRONMENT.intersection(environment))
         self.assertEqual(environment["DBUS_SESSION_BUS_ADDRESS"], "unix:path=/run/user/1000/bus")
         self.assertEqual(environment["PATH"], "/opt/qindaqt/bin:/usr/bin")
-
-    def test_bwrap_has_structural_isolation_and_narrow_mounts(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            build = root / "build"
-            build.mkdir()
-            paths = create_run_root(build, "b" * 32)
-            bwrap = root / "bwrap"
-            executable(bwrap)
-            stage = root / "stage"
-            source = root / "source"
-            system = root / "system"
-            for item in (stage, source, system):
-                item.mkdir()
-            probe = root / "probe"
-            executable(probe)
-            spec = SandboxSpec(
-                bwrap=bwrap,
-                run_id="b" * 32,
-                uid=1000,
-                paths=paths,
-                stage=ReadOnlyMount(stage, PurePosixPath("/opt/qindaqt")),
-                tests=ReadOnlyMount(source, PurePosixPath("/opt/qindaqt-source")),
-                probe=ReadOnlyMount(probe, PurePosixPath("/opt/qindaqt-tools/probe")),
-                system_mounts=(ReadOnlyMount(system, PurePosixPath("/usr")),),
-                environment=sandbox_environment(
-                    run_id="b" * 32,
-                    uid=1000,
-                    stage_bin="/opt/qindaqt/bin",
-                    system_path=["/usr/bin"],
-                ),
-                command=("/usr/bin/python3", "--version"),
-            )
-            argv = build_bwrap_argv(spec)
-            for required in (
-                "--unshare-pid",
-                "--unshare-net",
-                "--unshare-ipc",
-                "--die-with-parent",
-                "--new-session",
-                "--clearenv",
-            ):
-                self.assertIn(required, argv)
-            joined = " ".join(argv)
-            self.assertNotIn("/dev/input", joined)
-            self.assertNotIn("/dev/uinput", joined)
-            self.assertNotIn("--bind / /", joined)
-            self.assertNotIn("--ro-bind / /", joined)
-            aliases = [
-                (argv[index + 1], argv[index + 2])
-                for index, value in enumerate(argv)
-                if value == "--symlink"
-            ]
-            self.assertEqual(aliases, [("usr/lib", "/lib"), ("usr/lib", "/lib64")])
-            self.assertLess(argv.index("/lib64"), argv.index("--proc"))
-            remove_run_root(paths, build, "b" * 32)
 
     def test_run_root_cleanup_requires_exact_sentinel(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

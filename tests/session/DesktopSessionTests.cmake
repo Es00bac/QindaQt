@@ -2,6 +2,10 @@
 
 # This include owns only the integrated virtual-desktop rows. Existing focused
 # compositor/session matrices remain independent regression boundaries.
+if(TARGET qindaqt-shell AND NOT TARGET KF6::GlobalAccel)
+    find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+endif()
+
 add_test(
     NAME desktop.virtual.sandbox-unit
     COMMAND
@@ -33,6 +37,10 @@ set(
     qindaqt_controls_qmlplugin
     qindaqt_settings_appearance_qml
     qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qml
+    qindaqt_settings_display_qmlplugin
+    qindaqt_settings_network_qml
+    qindaqt_settings_network_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )
@@ -55,16 +63,63 @@ if(
 )
     qt_add_executable(
         qindaqt-desktop-session-probe
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopsessionprobe.cpp"
     )
     target_link_libraries(
-        qindaqt-desktop-session-probe PRIVATE Qt6::Core Qt6::DBus
+        qindaqt-desktop-session-probe
+        PRIVATE KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui
     )
     set_target_properties(
         qindaqt-desktop-session-probe PROPERTIES CXX_EXTENSIONS OFF
     )
     qindaqt_enable_warnings(qindaqt-desktop-session-probe)
     add_dependencies(qindaqt-desktop-session-probe ${_qindaqt_desktop_targets})
+
+    qt_add_executable(
+        qindaqt-desktop-notification-binding-tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tst_desktopnotificationbinding.cpp"
+    )
+    target_link_libraries(
+        qindaqt-desktop-notification-binding-tests
+        PRIVATE KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui Qt6::Test
+    )
+    set_target_properties(
+        qindaqt-desktop-notification-binding-tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    qindaqt_enable_warnings(qindaqt-desktop-notification-binding-tests)
+    add_test(
+        NAME desktop.virtual.notification-binding-unit
+        COMMAND qindaqt-desktop-notification-binding-tests
+    )
+    set_tests_properties(
+        desktop.virtual.notification-binding-unit
+        PROPERTIES LABELS "unit;session;security;display;input"
+    )
+
+    include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopNotificationShellReadinessTests.cmake")
+
+    if(QINDAQT_DBUS_RUN_SESSION)
+        add_test(
+            NAME desktop.virtual.interaction-probe-cli-unit
+            COMMAND
+                "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_probe_cli.py"
+                --probe "$<TARGET_FILE:qindaqt-desktop-session-probe>"
+                --dbus-run-session "${QINDAQT_DBUS_RUN_SESSION}"
+        )
+        set_tests_properties(
+            desktop.virtual.interaction-probe-cli-unit
+            PROPERTIES
+                ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+                LABELS "unit;session;security;display;input"
+        )
+    endif()
 
     # A dedicated test-only component makes package proof proportional to this
     # vertical slice. It duplicates no production path or target definition;
@@ -83,10 +138,10 @@ if(
         COMPONENT DesktopVirtual
     )
 
-    # qindaqt-settings now loads the Appearance route in production. The
-    # DesktopVirtual component is intentionally self-contained, so repeat the
-    # route's transitive QML payloads here just as first-party application
-    # components repeat their runtime imports. Omitting any backing library,
+    # qindaqt-settings loads the Appearance, Display, and Network routes in
+    # production. The DesktopVirtual component is intentionally self-contained,
+    # so repeat each route's transitive QML payloads just as first-party
+    # application components repeat their runtime imports. Omitting any backing library,
     # plugin, qmldir, typeinfo, or source named by qmldir makes the staged
     # desktop differ from the installed application contract.
     qt_query_qml_module(
@@ -107,6 +162,20 @@ if(
         TYPEINFO _qindaqt_desktop_appearance_typeinfo
         QML_FILES _qindaqt_desktop_appearance_qml_files
         QML_FILES_DEPLOY_PATHS _qindaqt_desktop_appearance_deploy_paths
+    )
+    qt_query_qml_module(
+        qindaqt_settings_display_qml
+        QMLDIR _qindaqt_desktop_display_qmldir
+        TYPEINFO _qindaqt_desktop_display_typeinfo
+        QML_FILES _qindaqt_desktop_display_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_display_deploy_paths
+    )
+    qt_query_qml_module(
+        qindaqt_settings_network_qml
+        QMLDIR _qindaqt_desktop_network_qmldir
+        TYPEINFO _qindaqt_desktop_network_typeinfo
+        QML_FILES _qindaqt_desktop_network_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_network_deploy_paths
     )
     install(
         TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
@@ -172,6 +241,66 @@ if(
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    install(
+        TARGETS
+            qindaqt_settings_display_qml
+            qindaqt_settings_display_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_display_qmldir}"
+            "${_qindaqt_desktop_display_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_display_qml_files
+            _qindaqt_desktop_display_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    install(
+        TARGETS
+            qindaqt_settings_network_qml
+            qindaqt_settings_network_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_network_qmldir}"
+            "${_qindaqt_desktop_network_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_network_qml_files
+            _qindaqt_desktop_network_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )
@@ -248,6 +377,11 @@ if(
             --cmake "${CMAKE_COMMAND}"
             --build-root "${CMAKE_BINARY_DIR}"
             ${_qindaqt_desktop_common_arguments}
+            --qml-directory "${QT6_INSTALL_QML}"
+            --network-qml-library
+            "$<TARGET_FILE_NAME:qindaqt_settings_network_qml>"
+            --network-qml-plugin
+            "$<TARGET_FILE_NAME:qindaqt_settings_network_qmlplugin>"
             --configuration "$<CONFIG>"
     )
     set_tests_properties(
@@ -314,6 +448,65 @@ if(
                 SKIP_RETURN_CODE 77
                 LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot"
         )
+
+        # AGENT-CONTRACT: Keep this focused S3 set in sync with
+        # desktop_session_matrix.EXECUTABLE_MATRIX_ROWS. These are real private
+        # runs, not catalog validation or a claim to the complete release matrix.
+        set(_qindaqt_desktop_matrix_rows
+            single-wuxga
+            single-1440p-125
+            single-1080p-150
+            dual-1080p-horizontal
+        )
+        foreach(_row IN LISTS _qindaqt_desktop_matrix_rows)
+            set(_qindaqt_desktop_matrix_tool_arguments)
+            if(_row STREQUAL "dual-1080p-horizontal")
+                if(
+                    NOT QINDAQT_KSCREEN_DOCTOR
+                    OR NOT QINDAQT_KSCREEN_WAYLAND_BACKEND
+                )
+                    continue()
+                endif()
+                list(
+                    APPEND _qindaqt_desktop_matrix_tool_arguments
+                    --kscreen-doctor "${QINDAQT_KSCREEN_DOCTOR}"
+                    --kscreen-wayland-backend
+                    "${QINDAQT_KSCREEN_WAYLAND_BACKEND}"
+                )
+            endif()
+            add_test(
+                NAME "desktop.virtual.interactive.matrix.${_row}"
+                COMMAND
+                    "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
+                    --outer
+                    --interactive
+                    --scenario-id "${_row}"
+                    --build-root "${CMAKE_BINARY_DIR}"
+                    --source-root "${PROJECT_SOURCE_DIR}"
+                    ${_qindaqt_desktop_common_arguments}
+                    --probe "$<TARGET_FILE:qindaqt-desktop-session-probe>"
+                    --bwrap "${QINDAQT_DESKTOP_BWRAP}"
+                    --python "${Python3_EXECUTABLE}"
+                    --dbus-daemon "${QINDAQT_DESKTOP_DBUS_DAEMON}"
+                    --kwin-wayland "${QINDAQT_KWIN_WAYLAND}"
+                    --weston "${QINDAQT_WESTON}"
+                    --weston-screenshooter "${QINDAQT_WESTON_SCREENSHOOTER}"
+                    ${_qindaqt_desktop_matrix_tool_arguments}
+            )
+            set_tests_properties(
+                "desktop.virtual.interactive.matrix.${_row}"
+                PROPERTIES
+                    TIMEOUT 120
+                    RUN_SERIAL TRUE
+                    RESOURCE_LOCK qindaqt-private-session
+                    FIXTURES_REQUIRED desktop_virtual_stage
+                    SKIP_RETURN_CODE 77
+                    LABELS "integration;session;display;wayland;layer-shell;security;input;screenshot;matrix"
+            )
+        endforeach()
+        unset(_qindaqt_desktop_matrix_tool_arguments)
+        unset(_qindaqt_desktop_matrix_rows)
     endif()
 endif()
 

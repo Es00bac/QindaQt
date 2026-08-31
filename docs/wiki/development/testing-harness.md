@@ -1346,8 +1346,11 @@ build root, authenticates the production executables and compositor plugin as
 regular files inside that prefix, validates both service descriptor identities,
 and writes a path manifest. Descriptor `Exec` values are recorded but never
 executed; Settings1 and Audio1 are started directly from the resolved stage.
-CMake discovers Python, bubblewrap, `dbus-daemon`, and `kwin_wayland` and passes
-their exact paths. The harness does not encode `/usr/bin` as executable policy.
+CMake discovers Python, bubblewrap, `dbus-daemon`, `kwin_wayland`, and the
+dual-row `kscreen-doctor` plus `KSC_KWayland.so` backend inputs and passes their
+exact paths. The sandbox binds each discovered installation prefix read-only;
+the outer and inner drivers preserve the exact selector/backend paths instead
+of encoding `/usr/bin` or a distribution-specific Qt plugin directory.
 
 The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
 inaccessible to an ordinary CTest invocation: the manager must allocate the
@@ -1454,13 +1457,24 @@ covers the eight QindaQt production roles—compositor, session, notification
 host, shell, Settings1, Audio1, Settings, and Text Editor—rather than the test
 parent.
 
-After simultaneous readiness, a second probe first requires zero active,
-mapped, committed notification-center surfaces, then sends exactly Meta+N
-through the scenario-gated QindaQt development input device. Success requires the stable
-device identity and one compositor-observed notification-center surface mapped
-and committed by the authenticated shell PID on the exact output. It never
-opens a host input node or uinput. Weston screenshooter then contacts only the
-private parent socket. The fresh image must be a checksum-valid, bounded,
+After simultaneous readiness, a second probe first requires the stable
+`qindaqt_toggle_notification_center` action to expose both its exact default and
+active Meta+N bindings through KGlobalAccel. Registry metadata alone does not
+qualify: the probe resolves the exact `qindaqt-shell` component object and
+requires a valid active state immediately before input because an inactive
+component can retain bindings without receiving them. The probe subscribes to
+that component's exact action press and release signals, requires zero active,
+mapped, committed notification-center surfaces, and sends exactly one Meta+N
+sequence through the scenario-gated QindaQt development input device. Binding
+readiness uses a bounded event-loop observation before injection; it never
+substitutes a fixed startup delay, direct action invocation, warm-up input, or a
+retry of the target sequence. Success authenticates both ordered per-action
+press/release delivery and one compositor-observed notification-center surface
+mapped and committed by the shell PID on the exact output. A failure therefore
+distinguishes missing KGlobalAccel delivery from delivered input that did not
+map the surface. The probe never opens a host input node or uinput. Weston
+screenshooter then contacts only the private parent socket. The fresh image must
+be a checksum-valid, bounded,
 non-symlink RGB/RGBA PNG at exact 1920x1080 with at least 16 colors across the
 complete deterministic sample grid. The exact compositor-observed center
 rectangle must independently contain at least 16 sampled colors; its geometry
@@ -1469,6 +1483,33 @@ and full-region digest are recorded beside the full-frame digest. The stable
 are archived in the fresh build-local result root before teardown. Cleanup
 records the final re-observed authenticated survivor set rather than inserting
 an assumed empty value.
+
+Shell presentation readiness is a separate authenticated prerequisite. Each
+fixed one-second regular probe takes at most one 250 ms
+`org.qindaqt.ShellDevelopment1.Snapshot()` sample from the unique owner whose
+bus PID is joined to every mapped, committed, positive-size dock after current
+and desired output names converge inside the exact public `Outputs` set. The
+probe calls that sampled unique name and re-resolves the well-known owner after
+the call, so a service replacement cannot splice the old PID to a new
+snapshot. The existing 15-second outer readiness loop owns every retry. After
+public topology is complete it retries only an absent service, the bounded
+service-before-object registration gap, or evidence-bearing privacy, created-
+window, and selected-output convergence. Every other D-Bus, schema, owner,
+PID, canonical counter, geometry, or envelope disagreement fails closed.
+
+Immediately before the sole Meta+N batch, the interaction probe takes one more
+synchronous sample and requires the same authenticated shell PID and unique
+owner, private presentation allowed, a created but closed and hidden center,
+and the selected output. Its baseline `centerOpenedCount` is retained. Success
+then requires that exact owner and PID to report `centerOpen=true`, a visible
+center on the selected output, and a strictly increased counter alongside the
+canonical KGlobalAccel action/component press and release and the compositor
+surface owned by the same PID with matching current and desired outputs. The
+canonical interaction document carries both shell samples and activation
+identity; a standalone diagnostic marker is not acceptance evidence. The probe
+adds no separate ShellDevelopment polling loop: each attempt in the existing
+post-input surface-observation loop takes one bounded sample. No startup sleep,
+warm-up input, direct action call, or second Meta+N attempt is permitted.
 
 The input inventory contains the one combined QindaQt development device plus
 the exact anonymous pointer/keyboard pair forwarded by Weston's fake private
@@ -1496,6 +1537,130 @@ confirmed the screenshot contains the QindaQt global bar, two docks, Text
 Editor, Settings Notifications route, and open notification center. The
 unchanged S1 row passed immediately afterward in 1.20 seconds against the same
 staged graph.
+
+### Focused contained desktop matrix S3
+
+S3 reuses ADR-0049's private Weston/KWin topology without changing the accepted
+S1 or S2 evidence schemas. Its focused selector is:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.interactive\.matrix\.'
+```
+
+The four approved rows deliberately maximize representative breadth before the
+complete release matrix:
+
+| Row | Applied output | Profile/theme |
+| --- | --- | --- |
+| `single-wuxga` | 1920x1200 at 100% | `xfce-inspired` / `qinda-light` |
+| `single-1440p-125` | 2560x1440 at 125% (2048x1152 logical) | `unity-inspired` / `qinda-dusk` |
+| `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
+| `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |
+
+Together with S2's 1080p/dusk row, this covers WUXGA, 1440p, representative
+125% and 150% scaling, light/dusk/dark, and one executable multi-output
+arrangement. Scenario ids are selected from a closed set. Each scenario's
+common pixel mode, scale, output count, and horizontal positions must be exactly
+representable; another catalog row cannot silently inherit this qualification.
+
+The harness keeps process launch, private-seat interaction and failure
+diagnostics, canonical evidence assembly, immutable topology models, topology
+validation, capture, and top-level orchestration in separate session modules.
+Their public boundary is the typed scenario/topology plus the authenticated
+process and evidence records; an orchestration edit must not reach around those
+collaborators to infer runtime state from paths, process names, or catalog data.
+Focused runtime-boundary tests are separate from the generic stage, sandbox,
+and archive tests so failures identify the owning contract.
+
+The `DesktopVirtual` install component must carry the complete import closure
+of every Settings route compiled into `Main.qml`. That currently includes the
+Appearance, Display, and Network backing libraries, plugins, `qmldir` files,
+typeinfo, and every QML source named by those module directories, in addition
+to Tokens and Controls. The package contract authenticates the exact Network
+library/plugin pair, metadata, and all five deployed QML files. Missing
+payloads, final-artifact symlinks, escaping symlinks, and traversal mutations
+fail closed. A contained intermediate directory symlink is accepted only when
+every resolved payload remains a regular file inside the same authenticated
+module; it does not weaken stage containment or exact-payload checks. A
+package-only pass is
+insufficient if a required application does not map: topology readiness must observe the installed
+`org.qindaqt.Settings` window before interaction or capture can qualify a row.
+
+Every run retains distinct private parent/child Wayland sockets, the fake-seat
+pointer/keyboard pair plus the development input device, exact Meta+N surface
+causality, all eight production roles under the 1,048,576 KiB aggregate PSS
+ceiling, authenticated teardown, and a final observed empty survivor set. The
+live session command line must contain the selected profile and theme, while
+Text Editor must receive the same theme explicitly. This binds presentation
+selection to observed production processes rather than copying scenario JSON
+into evidence.
+
+Outputs are matched by their complete `WL-<ordinal>` set across both public
+inventories. Geometry, scale, and horizontal arrangement must agree exactly,
+and an authenticated mapped production dock is required on every output. Weston
+headless retains one private parent framebuffer; screenshooter must create one
+nonuniform PNG bound to the interacted child output in each row.
+The dual row additionally runs the exact private
+`kscreen-doctor output.WL-1.primary` selector, then reacquires and archives a
+complete public Outputs envelope before injecting any pointer event. That
+post-selector observation must advance the pre-selector output generation,
+retain the exact topology, and publish ordered authority `[WL-1, WL-0]` with
+priorities `[1, 2]`. The envelope is preserved as canonical
+`postSelectorOutputs` evidence and revalidated after teardown. Only then does
+the harness move the private development pointer into `WL-1` and accept the
+notification center when both desired and actual output are `WL-1`. The
+registered row passing is required evidence; selector success, pointer-routed
+surface placement, or the catalog alone proves nothing.
+For fractional rows the compositor-global logical notification-center geometry
+is converted to the smallest outward-rounded physical rectangle containing the
+complete surface; only that owning output receives the independent region
+digest/color assertion. This admits at most one compositor-owned boundary pixel
+per axis while preventing a pre-interaction or wrong-output frame from satisfying
+the proof.
+
+Exact S3 readiness candidate
+`4d4b3dc395d80135a8f66f5ffcb2395cf1874c60` passed two independent
+different-worker reviews. Claude source/archive review recorded P0/P1/P2/P3
+`0/0/0/2`; its two nonblocking findings are duplicated canonical numeric
+helpers and two test-owned files close to the decomposition threshold. The
+fresh dynamic review recorded `0/0/0/0`, configured the exact detached
+candidate, completed 882/882 strict serial build actions, passed the five
+focused gates, repeated the formerly failing 1080p@150% row with its package
+fixture 2/2, and passed one package-plus-four-row matrix 5/5. The four fresh
+matrix archives recorded aggregate PSS of 184157, 181376, 174795, and 233471
+KiB, 12/12 false host-reachability flags, independently verified capture
+hashes/dimensions/content, bounded empty teardown, and exact dual authority
+`[WL-1, WL-0]` with priorities `[1, 2]` and interaction/capture on `WL-1`.
+The review also confirmed the canonical pre/post shell owner, PID, privacy,
+window, output, counter, shortcut-activation, and compositor-surface joins in
+all four rows.
+
+Fresh manager-tree replay after merging coordination head `5198d73` completed
+the same exact-split configure, strict serial three-target build 882/882, and
+registered focused selector 5/5. The formerly failing 1080p@150% plus package
+gate passed 2/2 in 8.18 seconds as run
+`252e5387a1b6ee1382a3a7edb39258d0`. One unretried package-plus-four-row
+matrix passed 5/5 in 33.94 seconds with runs
+`666752f4269e52104526c3ee34b60cd5`,
+`6c6f251de6a49c2d182ba2446572a823`,
+`73d82c54025c6345d511b6017390d8eb`, and
+`93ab1392f37cee40b1127e3696784698`. Their aggregate PSS values are 181587,
+183622, 172356, and 231414 KiB. All four retain 12/12 false host-reachability
+flags, matching PNG bytes/hashes/dimensions with visually coherent notification
+centers, canonical readiness and mapped/committed/active surface joins, bounded
+teardown with empty survivors, and exact dual `[WL-1, WL-0]` priority order
+with interaction and capture on `WL-1`. The separate former-red archive records
+174184 KiB and the same containment, readiness, capture, and empty-teardown
+contract. Final process inspection found no CTest, KWin, Weston, or QindaQt
+desktop survivor.
+
+S3 is not the complete display release gate. Portrait/rotation, mixed output
+modes or scales, negative coordinates, vertical placement, hotplug/reorder/lid
+events, primary-transfer sequences beyond the one exact dual-row transfer,
+mirroring, GPU/OpenGL/DRM, physical input, perceptual baseline comparison, and
+physical hardware remain unqualified.
 
 ## Clipboard C0 model proof
 
