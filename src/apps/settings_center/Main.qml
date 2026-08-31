@@ -6,6 +6,7 @@ import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Controls
 import QindaQt.SettingsApp.Appearance
 import QindaQt.SettingsApp.Display
+import QindaQt.SettingsApp.Network
 
 T.ApplicationWindow {
     id: root
@@ -14,6 +15,7 @@ T.ApplicationWindow {
     required property var quietingSettings
     required property var appearanceSettings
     property var displaySettings: null
+    property var networkSettings: null
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -40,6 +42,11 @@ T.ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+3"
         onActivated: root.navigation.selectRoute("display")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+4"
+        onActivated: root.navigation.selectRoute("network")
     }
 
     Shortcut {
@@ -87,9 +94,11 @@ T.ApplicationWindow {
             quietingSettings: root.quietingSettings
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
+            networkSettings: root.networkSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
+            networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -118,9 +127,11 @@ T.ApplicationWindow {
             quietingSettings: root.quietingSettings
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
+            networkSettings: root.networkSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
+            networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -148,6 +159,15 @@ T.ApplicationWindow {
         DisplayPage {
             objectName: "displayPage"
             displaySettings: root.displaySettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: networkRouteComponent
+        NetworkPage {
+            objectName: "networkPage"
+            networkSettings: root.networkSettings
             onCloseRequested: root.close()
         }
     }

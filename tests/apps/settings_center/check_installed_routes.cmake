@@ -58,11 +58,26 @@ if(NOT module_in_stage OR NOT IS_DIRECTORY "${appearance_module}")
         "${appearance_module}")
 endif()
 
+set(network_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Network")
+cmake_path(NORMAL_PATH network_module OUTPUT_VARIABLE network_module)
+cmake_path(IS_PREFIX install_prefix "${network_module}" NORMALIZE network_in_stage)
+if(NOT network_in_stage OR NOT IS_DIRECTORY "${network_module}")
+    message(FATAL_ERROR
+        "installed Settings Network module is missing or outside stage: "
+        "${network_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
     message(FATAL_ERROR
         "package poison requires the developer Appearance QML tree to remain present")
+endif()
+set(build_network_module "${build_directory}/qml/QindaQt/SettingsApp/Network")
+if(NOT IS_DIRECTORY "${build_network_module}")
+    message(FATAL_ERROR
+        "package poison requires the developer Network QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")
@@ -107,7 +122,45 @@ if(NOT poison_status EQUAL 3)
         "expected root-construction failure 3 while build QML remained present:\n"
         "${poison_output}${poison_error}")
 endif()
-# Reinstall rather than trusting the rename restoration, then prove the two
+
+# Repeat the developer-tree poison for the Network route. A relocated binary
+# must never borrow the build module even though it remains present.
+set(withheld_network_module "${network_module}.withheld")
+file(RENAME "${network_module}" "${withheld_network_module}")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+            --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
+            --unset=QML_IMPORT_PATH
+            --unset=QML2_IMPORT_PATH
+            --unset=LD_LIBRARY_PATH
+            --unset=QT_PLUGIN_PATH
+            --unset=QT_QPA_PLATFORM_PLUGIN_PATH
+            QT_QPA_PLATFORM=offscreen
+            QT_QUICK_BACKEND=software
+            QML_DISABLE_DISK_CACHE=1
+            DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            XDG_CONFIG_HOME=${poison_sandbox}/config
+            XDG_DATA_HOME=${poison_sandbox}/data
+            XDG_DATA_DIRS=${poison_sandbox}/system-data
+            XDG_CACHE_HOME=${poison_sandbox}/cache
+            XDG_RUNTIME_DIR=${poison_sandbox}/runtime
+            "${SETTINGS_EXECUTABLE}" --page network
+    WORKING_DIRECTORY "${poison_sandbox}"
+    TIMEOUT 3
+    RESULT_VARIABLE network_poison_status
+    OUTPUT_VARIABLE network_poison_output
+    ERROR_VARIABLE network_poison_error
+)
+file(RENAME "${withheld_network_module}" "${network_module}")
+if(NOT network_poison_status EQUAL 3)
+    message(FATAL_ERROR
+        "incomplete installed Settings Network package returned "
+        "${network_poison_status}, expected root-construction failure 3 while "
+        "build QML remained present:\n"
+        "${network_poison_output}${network_poison_error}")
+endif()
+# Reinstall rather than trusting the rename restoration, then prove all four
 # complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}

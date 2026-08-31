@@ -4,6 +4,23 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Network Settings N2
+  repair `6f5d0ba9915851195a4776b3a1e2f224c369a958`. The installed `network`
+  route composes only the public Network1 client into secret-free device,
+  access-point, and saved-profile presentation; exact owner, epoch, revision,
+  and operation fences withdraw stale truth and make displayed action
+  availability identical to request admission. Literal hardware addresses,
+  credentials, text-entry surfaces, radio mutation, and private service
+  implementation remain outside the route. Barbara Liskov's external Claude
+  exact rereview accepted the repaired descendant with P0/P1/P2/P3
+  `0/0/0/3` after directly closing all four former P2 findings. Fresh merged-
+  tree Debug and Release each build **2,036/2,036** and pass the mutation 5/5,
+  affected 14/14, public package/policy 5/5, Network 25/25, and Settings 9/9
+  selectors. Documentation validates 116 pages; strict MkDocs, source shape,
+  JSON, diff, conflict, direct boundary, and poison gates pass. QQ-006.05
+  remains WIRED because other platform-service Settings routes and whole-
+  desktop qualification remain.
+
 - This integration merges exact independently accepted Portal P0 repair
   `9f59a77aee9cbfd2f4f541b136ecd611e0cda798`. The resident backend owns only
   the standard `org.freedesktop.impl.portal.Settings` endpoint, projects

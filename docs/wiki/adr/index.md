@@ -55,6 +55,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0052](0052-confine-networkmanager-behind-network1.md) | Accepted | Confine libnm, credentials, and upstream-owner replacement behind resident Network1 |
 | [ADR-0053](0053-compose-display1-from-authenticated-runtime-authorities.md) | Accepted | Compose Display1 from explicit journal, Wayland-peer, lock, writer, and logind authorities |
 | [ADR-0054](0054-export-appearance-through-the-standard-settings-portal.md) | Accepted | Export confirmed Settings1/QST appearance through the standard Settings portal backend |
+| [ADR-0055](0055-compose-network-settings-through-network1.md) | Accepted | Compose Network settings through public Network1 without credential authority |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
