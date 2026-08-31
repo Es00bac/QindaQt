@@ -59,8 +59,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   metadata search, and codec seam; the live Wayland adapter remains a later
   milestone.
 - [Display service](architecture/display-service.md) records the pure Display1
-  values, identity/topology boundaries, and deterministic transaction model;
-  its runtime service and compositor adapter are later milestones.
+  values, identity/topology boundaries, deterministic transaction model, and
+  the packaged authenticated D2/D4/D5 runtime composition; nested convergence
+  remains a later qualification.
 - [Display client](architecture/display-client.md) records the exact-owner
   asynchronous Display1 consumer, atomic publication rules, mutation result
   fencing, and server-projected reversible transaction coordinator.

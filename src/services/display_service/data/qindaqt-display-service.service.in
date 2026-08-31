@@ -29,6 +29,8 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 TasksMax=16
 UMask=0077
+StateDirectory=qindaqt
+StateDirectoryMode=0700
 
 [Install]
 WantedBy=default.target

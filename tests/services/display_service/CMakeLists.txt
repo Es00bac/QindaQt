@@ -41,6 +41,21 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_display_service_recovery_tests
+    tst_display_service_recovery.cpp
+    support/display_service_test_support.h
+)
+target_link_libraries(
+    qindaqt_display_service_recovery_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_display_service_recovery_tests)
+add_test(
+    NAME qindaqt.display-service-recovery
+    COMMAND qindaqt_display_service_recovery_tests
+)
+
+qt_add_executable(
     qindaqt_display_service_deployment_tests
     tst_display_service_deployment.cpp
     support/display_service_test_support.h
@@ -106,6 +121,7 @@ add_test(
 set_tests_properties(
     qindaqt.display-service-inventory
     qindaqt.display-service-model
+    qindaqt.display-service-recovery
     qindaqt.display-service-deployment
     PROPERTIES LABELS "service;display" TIMEOUT 20
 )

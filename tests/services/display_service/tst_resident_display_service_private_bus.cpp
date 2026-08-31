@@ -64,6 +64,23 @@ QDBusMessage serviceCall(const QString &destination, const QString &method,
     return message;
 }
 
+DisplayTransaction::Journal recoveryJournal(const InventoryFrame &initial)
+{
+    const InventoryProjectionResult projected =
+        projectInventory(initial, QStringLiteral("prior-epoch"));
+    Q_ASSERT(projected.accepted());
+    Display::Candidate target =
+        DisplayTopology::candidateFromSnapshot(projected.snapshot);
+    target.outputs[0].transform = Display::Transform::Rotate180;
+    return {.schemaVersion = DisplayTransaction::kJournalSchemaVersion,
+            .transactionId = QStringLiteral("settle-recovery"),
+            .phase = DisplayTransaction::JournalPhase::AwaitingConfirmation,
+            .reason = Display::TransactionReason::None,
+            .preimage = DisplayTopology::candidateFromSnapshot(projected.snapshot),
+            .target = std::move(target),
+            .revertAttempt = 0};
+}
+
 } // namespace
 
 class ResidentDisplayServicePrivateBusTest final : public QObject
@@ -73,6 +90,7 @@ class ResidentDisplayServicePrivateBusTest final : public QObject
 private Q_SLOTS:
     void registersPublishesTicksAndTearsDown();
     void publishesValidatedTransactionSummaryOverTheBus();
+    void settlesRecoveredTopologyAfterQuietWindow();
 };
 
 void ResidentDisplayServicePrivateBusTest::registersPublishesTicksAndTearsDown()
@@ -367,6 +385,46 @@ void ResidentDisplayServicePrivateBusTest::publishesValidatedTransactionSummaryO
     service.stop();
     QVERIFY(!service.isRunning());
     QDBusConnection::disconnectFromBus(clientName);
+    QDBusConnection::disconnectFromBus(residentName);
+}
+
+void ResidentDisplayServicePrivateBusTest::
+    settlesRecoveredTopologyAfterQuietWindow()
+{
+    PrivateSessionBus bus;
+    QString busError;
+    QVERIFY2(bus.start(&busError), qPrintable(busError));
+    const QString residentName =
+        privateConnectionName(QStringLiteral("settle-resident"));
+    QDBusConnection residentConnection =
+        QDBusConnection::connectToBus(bus.address(), residentName);
+    QVERIFY(residentConnection.isConnected());
+
+    const InventoryFrame prior = frame(1, {output()});
+    auto inventory = std::make_unique<FakeInventorySource>();
+    FakeInventorySource *inventoryPointer = inventory.get();
+    auto port = std::make_unique<FakeTransactionPort>();
+    FakeTransactionPort *portPointer = port.get();
+    ResidentDisplayService service(
+        std::move(inventory), std::move(port), std::make_unique<ElapsedClock>(),
+        [] { return QStringLiteral("settle-restart-seed"); }, residentConnection,
+        QString::fromLatin1(Display::kServiceName), {}, recoveryJournal(prior));
+    QCOMPARE(service.start(), ServiceStartStatus::Started);
+
+    InventoryOutput replacement = output(QStringLiteral("HDMI-A-1"));
+    replacement.runtimeCompositorUuid = QStringLiteral("runtime-replacement");
+    inventoryPointer->publish(frame(1, {replacement}, QStringLiteral(":1.88")));
+    QCOMPARE(service.model()->view()->state,
+             DisplayTransaction::MachineState::SettlingTopology);
+    QCOMPARE(portPointer->clearCalls, 0);
+    QVERIFY(portPointer->applyRequests.isEmpty());
+
+    QTRY_COMPARE_WITH_TIMEOUT(service.model()->view()->state,
+                              DisplayTransaction::MachineState::Ready, 1'500);
+    QCOMPARE(portPointer->clearCalls, 1);
+    QVERIFY(portPointer->applyRequests.isEmpty());
+
+    service.stop();
     QDBusConnection::disconnectFromBus(residentName);
 }
 

@@ -129,3 +129,4 @@ nav:
       - "ADR-0049: Private parent framebuffer capture": adr/0049-capture-private-parent-framebuffer.md
       - "ADR-0050: Direct KDE display writer": adr/0050-direct-kde-output-management-writer.md
       - "ADR-0051: Injected Display journal root": adr/0051-persist-display-journal-in-injected-state-root.md
+      - "ADR-0053: Authenticated Display1 runtime": adr/0053-compose-display1-from-authenticated-runtime-authorities.md

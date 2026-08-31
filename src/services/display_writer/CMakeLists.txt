@@ -2,6 +2,10 @@
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core WaylandClient)
 find_package(Wayland REQUIRED COMPONENTS Client)
+# Qt's Wayland generator adds the protocol definitions as C sources. The
+# project is otherwise C++-only, so enable C at this owning boundary rather
+# than silently producing a static archive with unresolved interface symbols.
+enable_language(C)
 
 qt_add_library(qindaqt_display_writer STATIC)
 add_library(QindaQt::DisplayWriter ALIAS qindaqt_display_writer)
@@ -20,6 +24,14 @@ set_source_files_properties(
     "${CMAKE_CURRENT_BINARY_DIR}/qwayland-kde-output-device-v2.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/qwayland-kde-output-management-v2.cpp"
     PROPERTIES COMPILE_OPTIONS "-Wno-sign-conversion;-Wno-shadow"
+)
+# Wayland's scanner emits C definitions with conversion patterns outside the
+# hand-written warning policy. They must still remain in this static archive so
+# production consumers receive the protocol interface symbols.
+set_source_files_properties(
+    "${CMAKE_CURRENT_BINARY_DIR}/wayland-kde-output-device-v2-protocol.c"
+    "${CMAKE_CURRENT_BINARY_DIR}/wayland-kde-output-management-v2-protocol.c"
+    PROPERTIES COMPILE_OPTIONS "-Wno-conversion;-Wno-sign-conversion;-Wno-shadow"
 )
 
 target_sources(
