@@ -115,6 +115,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).
 - The compositor publishes state and accepts validated atomic commands. The
   shell does not link to KWin private objects.
+- Notification surface routing consumes only the public, owner-bound
+  `Compositor1.Outputs` semantic order. The runtime joins its exact
+  `outputGeneration` and output-ID set to the already accepted shell-visibility
+  snapshot and current Qt inventory before resolving a `QScreen`; it never
+  substitutes Qt's platform-local primary-screen guess or compositor-private
+  output objects.
 - `src/hybrid` owns the process-local session topology; the KWin adapter may
   orchestrate its public coordinator but may not duplicate tree mutation or
   expose KWin pointers through it. The older Compositor1 bridge remains a

@@ -4,6 +4,25 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted notification live-output
+  repair `89557a0a090b6b910621463b4ac97a6d1d054469`. The production shell now
+  binds the exact current `org.qindaqt.Compositor` owner, consumes the ordered
+  public `Compositor1.Outputs()` projection, and joins its generation and exact
+  output-ID set to accepted shell-visibility and Qt inventory truth before
+  resolving notification popup/center surfaces. Owner loss, invalidation,
+  malformed replies, replacement, generation mismatch, and missing exact Qt
+  screens fail closed; stale `QGuiApplication::primaryScreen()` no longer
+  selects notification output. Charles Babbage's immutable review accepted the
+  candidate with P0/P1/P2/P3 `0/0/0/1`: Debug built 297/297 plus 161/161
+  adjacent actions, passed 20/20 and repeated both focused rows 25 times;
+  Release built 458/458 and passed 20/20. The sole documentation-precision P3
+  is corrected in this manager integration. After an initial Debug attempt
+  stopped only because the `/tmp` filesystem filled, exact build-system clean
+  targets reclaimed reproducible old outputs and the fresh merged tree passed
+  Debug and Release **458/458 plus 20/20** each. QQ-004.09 remains WIRED until
+  the preserved S3 worktree proves the real WL-0 to WL-1 layer-surface transfer
+  and completes the wider whole-shell matrix.
+
 - This integration merges exact independently accepted Display D6 repair
   descendant `9a7872aec60a5e0f8286b3d5af7fa21209e8fd65`. The packaged Display1
   process now resolves the injected durable journal before mutation authority,
