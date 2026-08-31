@@ -60,6 +60,11 @@ public:
     [[nodiscard]] bool operationInFlight() const noexcept {
         return m_operation.has_value();
     }
+    // True only when beginOperation can accept a structurally valid,
+    // model-admitted intent immediately. A scheduled or in-flight snapshot
+    // refresh closes admission so consumers cannot advertise a mutation that
+    // this client would reject. Thread-confined like the client itself.
+    [[nodiscard]] bool operationAdmissionReady() const noexcept;
     [[nodiscard]] const Model::NetworkModel &model() const noexcept {
         return m_model;
     }
@@ -72,6 +77,7 @@ Q_SIGNALS:
     void stateChanged();
     void snapshotChanged();
     void operationInFlightChanged();
+    void operationAdmissionChanged();
     void operationFinished(const QindaQt::Network::OperationResult &result);
     void operationUncertain(const QString &redactedMessage);
 
@@ -109,6 +115,7 @@ private:
     void publish(ClientState state, QString error = {});
     void setError(QString *output, QString message) const;
     void abortInFlight(const QString &reason);
+    void notifyOperationAdmissionChanged();
     [[nodiscard]] quint64 nextToken();
 
     NetworkTransport &m_transport;
@@ -126,6 +133,7 @@ private:
     bool m_started = false;
     bool m_transportStarted = false;
     bool m_dirty = false;
+    bool m_lastOperationAdmissionReady = false;
 };
 
 } // namespace QindaQt::Network::Client
