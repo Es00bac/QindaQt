@@ -4,6 +4,24 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Portal P0 repair
+  `9f59a77aee9cbfd2f4f541b136ecd611e0cda798`. The resident backend owns only
+  the standard `org.freedesktop.impl.portal.Settings` endpoint, projects
+  complete exact-owner Settings1 appearance truth through QST-1 into the
+  standard color-scheme, accent-color, and contrast values, and withdraws
+  readable truth on owner, epoch, bus, or projection loss. Source and staged
+  package metadata are exact Settings-only singletons; OpenURI, installed
+  xdg-desktop-portal 1.20.4 Background, duplicate Settings, extra families,
+  and private headers fail closed. Frances Allen's exact rereview accepted the
+  repaired descendant with P0/P1/P2/P3 `0/0/0/0`; fresh Debug and Release
+  each built 97/97 and passed the contained seven-row selector. The manager
+  merge resolved only additive ADR/navigation conflicts and independently
+  repeats strict Debug and Release **97/97 plus 7/7** each, 114-document
+  validation, strict MkDocs, the 1,715-file source-shape gate, JSON, diff, and
+  conflict checks. QQ-005.09 advances from ABSENT to EXECUTABLE. Host portal
+  selection, toolkit reaction, every non-Settings portal family, and physical
+  distribution qualification remain explicitly outside P0.
+
 - This integration merges exact independently accepted notification live-output
   repair `89557a0a090b6b910621463b4ac97a6d1d054469`. The production shell now
   binds the exact current `org.qindaqt.Compositor` owner, consumes the ordered

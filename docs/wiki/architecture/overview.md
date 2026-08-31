@@ -13,6 +13,7 @@ system-service state.
 | `qindaqt-session` | Essential host/shell startup, descriptor-only notification authentication, parent-death-witnessed KWin PID provisioning, and coupled process lifetime | Compositor internals, desktop policy, or token persistence |
 | QindaQt Shell | Panels, docks, overview, task presentation, global menu, privacy-gated notifications UI and a Settings1-fed interruption-policy projection, direct customization, and shell-wide presentation actions | Authoritative window/output/lock state, global-shortcut conflict/remapping policy, settings persistence, or privileged hardware changes |
 | `qindaqt-settings-service` | Active schema v2, v1 migration, copy-on-write user persistence, optimistic revision order, and change notification | Settings presentation, executable attestation, compositor/lock/presenter authority, or session supervision |
+| `xdg-desktop-portal-qindaqt` | Standard Settings-backend projection of confirmed Settings1/QST appearance truth, activation name, and change signals | Portal frontend, settings persistence, consent UI, or any non-Settings portal interface |
 | `qindaqt-settings` | Ordinary notifications settings page and honest async save/conflict/error presentation | Shell internals, settings files, or notification host authority |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
 | Audio service | Bounded typed PipeWire graph snapshots and validated controls through the running WirePlumber authority | Samples, devices, WirePlumber policy, PipeWire configuration, or UI |
@@ -47,6 +48,9 @@ Cross-process boundaries are versioned from their first external use:
   isolated development scenarios because caller authentication is not yet a
   supported security boundary;
 - `org.qindaqt.Settings1` for transactional settings;
+- standard `org.freedesktop.impl.portal.Settings` version 1 at the portal
+  backend object, exporting only QindaQt appearance truth to the external
+  `xdg-desktop-portal` frontend;
 - `org.qindaqt.Audio1` for exact-owner, epoch/revision-bound device and
   application-stream snapshots plus typed controls;
 - `org.qindaqt.Session1` for snapshot and restore coordination;
@@ -125,6 +129,8 @@ Authenticated fail-closed lock privacy is recorded in
 [ADR-0011](../adr/0011-gate-notifications-on-authenticated-lock-state.md).
 Persistent notification quieting is recorded in
 [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
+The standard appearance portal process and source-truth boundary are recorded
+in [ADR-0054](../adr/0054-export-appearance-through-the-standard-settings-portal.md).
 The Audio1 Qt/GLib ownership boundary is recorded in
 [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
 Display transaction authority and persistent identity are recorded in
