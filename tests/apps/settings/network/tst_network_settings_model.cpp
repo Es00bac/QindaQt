@@ -19,6 +19,7 @@ class NetworkSettingsModelTest final : public QObject {
 private Q_SLOTS:
   void projectsBoundedAuthoritativeInventory();
   void dispatchesOnlyAdmittedSecretFreeIntents();
+  void blocksActionsDuringAuthoritativeRefreshes();
   void reportsFailedConnectWithoutCredentialEntry();
   void disablesActionsWhenCapabilitiesDisappear();
   void preservesStaleReadOnlyTruthAfterHostileRefresh();
@@ -91,9 +92,75 @@ void NetworkSettingsModelTest::projectsBoundedAuthoritativeInventory() {
 
   const QVariantList points = fixture.model.accessPoints();
   QCOMPARE(points.size(), 2);
+  for (const QVariant &point : points) {
+    QVERIFY(!point.toMap().contains(QStringLiteral("bssid")));
+  }
   QCOMPARE(points.at(0).toMap().value(QStringLiteral("signalStrength")).toUInt(),
            quint32(88));
   QVERIFY(points.at(0).toMap().value(QStringLiteral("saved")).toBool());
+}
+
+void NetworkSettingsModelTest::blocksActionsDuringAuthoritativeRefreshes() {
+  Fixture fixture;
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.model.ready(), 1'000);
+
+  fixture.transport.clearSnapshot();
+  QVERIFY(fixture.model.requestScan());
+  fixture.transport.finishLast(operationResult(
+      OperationKind::RequestScan, OperationStatus::Succeeded));
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.transport.snapshotRequests.size(), 2,
+                            1'000);
+  QVERIFY(fixture.model.ready());
+  QVERIFY(!fixture.model.busy());
+  QVERIFY(!fixture.client.operationAdmissionReady());
+  QVERIFY(!fixture.model.scanAvailable());
+  QVERIFY(!fixture.model.knownNetworks()
+               .at(1)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
+               .toBool());
+  QVERIFY(!fixture.model.devices()
+               .at(0)
+               .toMap()
+               .value(QStringLiteral("disconnectAvailable"))
+               .toBool());
+
+  const qsizetype operationsBefore = fixture.transport.operations.size();
+  QVERIFY(!fixture.model.requestScan());
+  QVERIFY(!fixture.model.connectKnownNetwork(networkId(u'b')));
+  QVERIFY(!fixture.model.disconnectDevice(QStringLiteral("wlan0")));
+  QCOMPARE(fixture.transport.operations.size(), operationsBefore);
+
+  Snapshot refreshed = readySnapshot(QStringLiteral(":1.20"), 20, 2);
+  fixture.transport.finishLatestSnapshot(refreshed);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), qulonglong(2),
+                            1'000);
+  QVERIFY(fixture.client.operationAdmissionReady());
+  QVERIFY(fixture.model.scanAvailable());
+
+  fixture.transport.clearSnapshot();
+  fixture.transport.invalidate();
+  QVERIFY(!fixture.client.operationAdmissionReady());
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.transport.snapshotRequests.size(), 3,
+                            1'000);
+  QVERIFY(!fixture.model.scanAvailable());
+  QVERIFY(!fixture.model.knownNetworks()
+               .at(1)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
+               .toBool());
+  QVERIFY(!fixture.model.devices()
+               .at(0)
+               .toMap()
+               .value(QStringLiteral("disconnectAvailable"))
+               .toBool());
+
+  refreshed.revision = 3;
+  fixture.transport.finishLatestSnapshot(refreshed);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), qulonglong(3),
+                            1'000);
+  QVERIFY(fixture.client.operationAdmissionReady());
+  QVERIFY(fixture.model.scanAvailable());
 }
 
 void NetworkSettingsModelTest::dispatchesOnlyAdmittedSecretFreeIntents() {
@@ -119,6 +186,7 @@ void NetworkSettingsModelTest::dispatchesOnlyAdmittedSecretFreeIntents() {
   fixture.transport.finishLast(operationResult(
       OperationKind::RequestScan, OperationStatus::Succeeded));
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.client.operationAdmissionReady(), 1'000);
   QVERIFY(fixture.model.operationStatusText().contains(
       QStringLiteral("awaiting fresh results")));
 
@@ -141,6 +209,7 @@ void NetworkSettingsModelTest::dispatchesOnlyAdmittedSecretFreeIntents() {
   fixture.transport.finishLast(operationResult(
       OperationKind::ConnectKnownNetwork, OperationStatus::Succeeded));
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.client.operationAdmissionReady(), 1'000);
 
   QVERIFY(fixture.model.disconnectDevice(QStringLiteral("wlan0")));
   QCOMPARE(fixture.transport.operations.size(), 3);

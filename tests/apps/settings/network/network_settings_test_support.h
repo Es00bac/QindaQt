@@ -125,6 +125,18 @@ public:
 
   void announceOwner(const QString &owner) { Q_EMIT ownerChanged(owner); }
 
+  void invalidate(const QString &owner = QStringLiteral(":1.20")) {
+    Q_EMIT snapshotInvalidated(owner);
+  }
+
+  void finishLatestSnapshot(const Snapshot &snapshot) {
+    Q_ASSERT(!snapshotRequests.isEmpty());
+    const EncodeResult encoded = encodeSnapshot(snapshot);
+    Q_ASSERT(encoded.succeeded());
+    const auto &request = snapshotRequests.constLast();
+    Q_EMIT snapshotReceived(request.first, request.second, encoded.payload);
+  }
+
   void finishLast(const OperationResult &result,
                   const QString &replyOwner = {}) {
     Q_ASSERT(!operations.isEmpty());

@@ -152,6 +152,9 @@ NetworkSettingsModel::NetworkSettingsModel(
           &QindaQt::Network::Client::NetworkClient::operationInFlightChanged,
           this, &NetworkSettingsModel::viewChanged);
   connect(&m_client,
+          &QindaQt::Network::Client::NetworkClient::operationAdmissionChanged,
+          this, &NetworkSettingsModel::viewChanged);
+  connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::operationFinished, this,
           &NetworkSettingsModel::handleOperationFinished);
   connect(&m_client,
@@ -186,7 +189,7 @@ bool NetworkSettingsModel::busy() const noexcept {
 bool NetworkSettingsModel::reloadAvailable() const noexcept { return !busy(); }
 
 bool NetworkSettingsModel::scanAvailable() const {
-  if (!ready() || busy()) {
+  if (!m_client.operationAdmissionReady()) {
     return false;
   }
   return m_client.model()
@@ -298,7 +301,7 @@ QVariantList NetworkSettingsModel::devices() const {
         {QStringLiteral("activeNetworkName"),
          network == nullptr ? QString() : displayName(*network)},
         {QStringLiteral("disconnectAvailable"),
-         ready() && !busy() && verdict.allowed},
+         m_client.operationAdmissionReady() && verdict.allowed},
         {QStringLiteral("disconnectBlockedReason"), verdict.reasonCode},
     });
   }
@@ -321,7 +324,6 @@ QVariantList NetworkSettingsModel::accessPoints() const {
         {QStringLiteral("displayName"),
          QindaQt::Network::Model::accessPointDisplayName(point)},
         {QStringLiteral("hidden"), point.hidden},
-        {QStringLiteral("bssid"), point.bssid},
         {QStringLiteral("security"), static_cast<quint32>(point.security)},
         {QStringLiteral("securityText"), securityText(point.security)},
         {QStringLiteral("frequencyMHz"), point.frequencyMHz},
@@ -351,7 +353,7 @@ QVariantList NetworkSettingsModel::knownNetworks() const {
         {QStringLiteral("activeDeviceInterface"),
          active == nullptr ? QString() : active->deviceInterface},
         {QStringLiteral("connectAvailable"),
-         ready() && !busy() && verdict.allowed},
+         m_client.operationAdmissionReady() && verdict.allowed},
         {QStringLiteral("connectBlockedReason"), verdict.reasonCode},
         {QStringLiteral("mayRequireExternalCredentials"),
          network.security != SecuritySuite::Open},

@@ -14,16 +14,32 @@ foreach(source IN LISTS route_cpp)
         message(FATAL_ERROR
             "Network Settings crossed the public NetworkClient boundary in ${source}")
     endif()
-    if(content MATCHES "Q_INVOKABLE[^;]*(setRadio|[Ss]etPassword|[Pp]rovideSecret|[Ss]etPassphrase|[Ss]etPsk)")
+    if(content MATCHES "Q_SLOT|Q_SLOTS")
         message(FATAL_ERROR
-            "Network Settings exposed a forbidden radio/credential mutation in ${source}")
+            "Network Settings exposed a callable slot outside its closed intent surface in ${source}")
     endif()
+    string(REGEX MATCHALL "Q_INVOKABLE[^;]*\\)" invokables "${content}")
+    set(allowed_invokables
+        "Q_INVOKABLE bool reload()"
+        "Q_INVOKABLE bool requestScan()"
+        "Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId)"
+        "Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface)"
+    )
+    foreach(invokable IN LISTS invokables)
+        string(REGEX REPLACE "[ \t\r\n]+" " " normalized "${invokable}")
+        string(STRIP "${normalized}" normalized)
+        list(FIND allowed_invokables "${normalized}" allowed_index)
+        if(allowed_index EQUAL -1)
+            message(FATAL_ERROR
+                "Network Settings exposed an invokable outside its closed intent surface in ${source}: ${normalized}")
+        endif()
+    endforeach()
 endforeach()
 
 file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
-    if(content MATCHES "TextField|Password|Passphrase|privateKey|SetRadio|radioSettings")
+    if(content MATCHES "TextField|TextInput|TextEdit|TextArea|Password|Passphrase|privateKey|SetRadio|radioSettings")
         message(FATAL_ERROR
             "Network Settings QML gained credential/profile/radio editing in ${source}")
     endif()

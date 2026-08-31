@@ -36,6 +36,33 @@ function(expect_rejection relative_path source_text expected)
     endif()
 endfunction()
 
+function(expect_permitted_surface)
+    file(REMOVE_RECURSE "${poison_root}")
+    file(MAKE_DIRECTORY "${poison_root}/src/apps/settings/network/qml")
+    file(WRITE "${poison_root}/src/apps/settings/network/allowed.h"
+        "class Allowed {\n"
+        "  Q_INVOKABLE bool reload();\n"
+        "  Q_INVOKABLE bool requestScan();\n"
+        "  Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);\n"
+        "  Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);\n"
+        "};\n")
+    file(WRITE "${poison_root}/src/apps/settings/network/qml/Allowed.qml"
+        "import QindaQt.Controls 1.0\nButton { text: \"Permitted\" }\n")
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" "-DSOURCE_ROOT=${poison_root}"
+                -P "${CHECK_SCRIPT}"
+        RESULT_VARIABLE status
+        OUTPUT_VARIABLE output
+        ERROR_VARIABLE error
+    )
+    if(NOT status EQUAL 0)
+        message(FATAL_ERROR
+            "Network Settings boundary rejected its permitted closed surface:\n${output}${error}")
+    endif()
+endfunction()
+
+expect_permitted_surface()
+
 expect_rejection(
     "src/apps/settings/network/poison.cpp"
     "#include <qindaqt/services/network_service/resident_network_service.h>"
@@ -49,12 +76,37 @@ expect_rejection(
 expect_rejection(
     "src/apps/settings/network/poison.h"
     "class Poison { Q_INVOKABLE void setRadio(bool); };"
-    "forbidden radio/credential mutation"
+    "invokable outside its closed intent surface"
 )
 expect_rejection(
     "src/apps/settings/network/qml/Poison.qml"
     "import QindaQt.Controls 1.0\nTextField { objectName: \"networkPassword\" }"
     "gained credential/profile/radio editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/Poison.qml"
+    "import QtQuick\nTextInput { }"
+    "gained credential/profile/radio editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/Poison.qml"
+    "import QtQuick\nTextEdit { }"
+    "gained credential/profile/radio editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/Poison.qml"
+    "import QtQuick.Controls as T\nT.TextArea { }"
+    "gained credential/profile/radio editing"
+)
+expect_rejection(
+    "src/apps/settings/network/poison.h"
+    "class Poison { Q_INVOKABLE void enableWifiRadio(bool); };"
+    "invokable outside its closed intent surface"
+)
+expect_rejection(
+    "src/apps/settings/network/poison.h"
+    "class Poison { Q_INVOKABLE void submitKey(QString); };"
+    "invokable outside its closed intent surface"
 )
 expect_rejection(
     "src/apps/settings/network/CMakeLists.txt"
