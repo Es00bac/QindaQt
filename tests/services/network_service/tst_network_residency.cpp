@@ -63,6 +63,8 @@ class NetworkResidencyTests final : public QObject {
 
 private Q_SLOTS:
   void clientOperatesOverFixedPrivateBusContract();
+  void synchronousBackendCompletionRepliesExactlyOnce();
+  void stopAndTimeoutReplyExactlyOnce();
   void clientProjectsServiceAvailabilityHonestly();
   void introspectionAndNameTheftAreExact();
 };
@@ -100,6 +102,121 @@ void NetworkResidencyTests::clientOperatesOverFixedPrivateBusContract() {
   client.stop();
   resident.stop();
   QDBusConnection::disconnectFromBus(serviceConnectionName);
+}
+
+void NetworkResidencyTests::synchronousBackendCompletionRepliesExactlyOnce() {
+  PrivateBus bus;
+  QVERIFY(bus.start());
+  const QString serviceName = QStringLiteral("org.qindaqt.NetworkTest.s%1")
+                                  .arg(QCoreApplication::applicationPid());
+  const QString serviceConnectionName = bus.name + QStringLiteral("-service");
+  QDBusConnection serviceConnection =
+      QDBusConnection::connectToBus(bus.address, serviceConnectionName);
+  QVERIFY(serviceConnection.isConnected());
+  auto backend = std::make_unique<FakeNetworkBackend>();
+  FakeNetworkBackend *fake = backend.get();
+  fake->synchronousOutcome = BackendOperationOutcome{
+      .status = BackendOperationStatus::Failed,
+      .reasonCode = QStringLiteral("scan-dispatch-failed"),
+      .diagnostic = {}};
+  ResidentNetworkService resident(std::move(backend), serviceConnection,
+                                  serviceName);
+  QCOMPARE(resident.start(), NetworkServiceStartStatus::Started);
+
+  QtNetworkTransport transport(bus.connection, serviceName);
+  NetworkClient client(transport);
+  QSignalSpy finished(&client, &NetworkClient::operationFinished);
+  QVERIFY(client.start());
+  fake->publish(readyNetworkObservation());
+  QTRY_COMPARE_WITH_TIMEOUT(client.state(), ClientState::Ready, 5'000);
+  QVERIFY(client.requestScan(30'000));
+  QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 2'000);
+  QCOMPARE(fake->calls.size(), 1);
+  const OperationResult result =
+      finished.first().at(0).value<OperationResult>();
+  QCOMPARE(result.status, OperationStatus::Failed);
+  QCOMPARE(result.reasonCode, QStringLiteral("scan-dispatch-failed"));
+  QTest::qWait(200);
+  QCOMPARE(finished.size(), 1);
+
+  client.stop();
+  resident.stop();
+  QDBusConnection::disconnectFromBus(serviceConnectionName);
+}
+
+void NetworkResidencyTests::stopAndTimeoutReplyExactlyOnce() {
+  {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.NetworkTest.t%1")
+                                    .arg(QCoreApplication::applicationPid());
+    const QString serviceConnectionName = bus.name + QStringLiteral("-service");
+    QDBusConnection serviceConnection =
+        QDBusConnection::connectToBus(bus.address, serviceConnectionName);
+    auto backend = std::make_unique<FakeNetworkBackend>();
+    FakeNetworkBackend *fake = backend.get();
+    ResidentNetworkService resident(std::move(backend), serviceConnection,
+                                    serviceName, 100);
+    QCOMPARE(resident.start(), NetworkServiceStartStatus::Started);
+    QtNetworkTransport transport(bus.connection, serviceName);
+    NetworkClient client(transport);
+    QSignalSpy finished(&client, &NetworkClient::operationFinished);
+    QVERIFY(client.start());
+    fake->publish(readyNetworkObservation());
+    QTRY_COMPARE_WITH_TIMEOUT(client.state(), ClientState::Ready, 5'000);
+    QVERIFY(client.requestScan(30'000));
+    QTRY_COMPARE_WITH_TIMEOUT(fake->calls.size(), 1, 2'000);
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 2'000);
+    QCOMPARE(finished.first().at(0).value<OperationResult>().status,
+             OperationStatus::Uncertain);
+    QCOMPARE(finished.first().at(0).value<OperationResult>().reasonCode,
+             QStringLiteral("backend-timeout"));
+    QCOMPARE(fake->cancelled, QList<quint64>{fake->calls.first().operationId});
+    BackendOperationOutcome late;
+    late.status = BackendOperationStatus::Succeeded;
+    fake->finish(fake->calls.first().operationId, late);
+    QTest::qWait(100);
+    QCOMPARE(finished.size(), 1);
+    client.stop();
+    resident.stop();
+    QDBusConnection::disconnectFromBus(serviceConnectionName);
+  }
+
+  {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.NetworkTest.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+    const QString serviceConnectionName = bus.name + QStringLiteral("-service");
+    QDBusConnection serviceConnection =
+        QDBusConnection::connectToBus(bus.address, serviceConnectionName);
+    auto backend = std::make_unique<FakeNetworkBackend>();
+    FakeNetworkBackend *fake = backend.get();
+    ResidentNetworkService resident(std::move(backend), serviceConnection,
+                                    serviceName);
+    QCOMPARE(resident.start(), NetworkServiceStartStatus::Started);
+    QtNetworkTransport transport(bus.connection, serviceName);
+    NetworkClient client(transport);
+    QSignalSpy finished(&client, &NetworkClient::operationFinished);
+    QVERIFY(client.start());
+    fake->publish(readyNetworkObservation());
+    QTRY_COMPARE_WITH_TIMEOUT(client.state(), ClientState::Ready, 5'000);
+    QVERIFY(client.requestScan(30'000));
+    QTRY_COMPARE_WITH_TIMEOUT(fake->calls.size(), 1, 2'000);
+    const quint64 operationId = fake->calls.first().operationId;
+    resident.stop();
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 2'000);
+    QCOMPARE(finished.first().at(0).value<OperationResult>().status,
+             OperationStatus::Uncertain);
+    QCOMPARE(fake->cancelled, QList<quint64>{operationId});
+    BackendOperationOutcome late;
+    late.status = BackendOperationStatus::Succeeded;
+    fake->finish(operationId, late);
+    QTest::qWait(100);
+    QCOMPARE(finished.size(), 1);
+    client.stop();
+    QDBusConnection::disconnectFromBus(serviceConnectionName);
+  }
 }
 
 void NetworkResidencyTests::clientProjectsServiceAvailabilityHonestly() {

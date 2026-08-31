@@ -12,6 +12,28 @@
 
 namespace QindaQt::Network::NetworkManager {
 
+struct ScanLeaseState final {
+  void begin(qint64 deadline) noexcept {
+    deadlineMilliseconds = deadline;
+    inProgress = true;
+  }
+
+  void complete(bool succeeded, bool cancelled) noexcept {
+    inProgress = false;
+    if (!succeeded && !cancelled) {
+      // AGENT-GUARD: A definite libnm failure did not mint freshness. A
+      // cancellation is uncertain because NetworkManager may already have
+      // accepted the scan, so only that path conservatively keeps the lease.
+      deadlineMilliseconds = 0;
+    }
+  }
+
+  void applyTo(Facts &facts, qint64 nowMilliseconds) noexcept;
+
+  qint64 deadlineMilliseconds = 0;
+  bool inProgress = false;
+};
+
 class LibnmNetworkManagerPort final : public NetworkManagerPort {
   Q_OBJECT
 
@@ -27,6 +49,7 @@ public:
 
 private:
   struct CallbackState;
+  struct OwnerWatchState;
 
   static void scanFinished(GObject *source, GAsyncResult *result,
                            gpointer userData);
@@ -36,9 +59,15 @@ private:
                                    gpointer userData);
   static void radioFinished(GObject *source, GAsyncResult *result,
                             gpointer userData);
+  static void ownerChanged(GObject *source, GParamSpec *property,
+                           gpointer userData);
+  static void destroyOwnerWatch(gpointer userData, GClosure *closure);
 
   void poll();
   [[nodiscard]] bool ensureClient();
+  [[nodiscard]] bool observeAuthorityOwner(NMClient *client,
+                                           quint64 generation);
+  void disconnectOwnerWatch();
   [[nodiscard]] Facts collectFacts();
   [[nodiscard]] GCancellable *beginAsync(quint64 operationId);
   void completeAsync(quint64 operationId, bool succeeded,
@@ -60,10 +89,11 @@ private:
 
   QTimer m_pollTimer;
   NMClient *m_client = nullptr;
+  gulong m_ownerNotifyHandler = 0;
   QHash<quint64, GCancellable *> m_pending;
   QString m_observedOwner;
-  qint64 m_scanLeaseDeadline = 0;
-  bool m_scanInProgress = false;
+  ScanLeaseState m_scanLease;
+  quint64 m_runGeneration = 0;
   bool m_running = false;
   bool m_authorityRetired = false;
 };

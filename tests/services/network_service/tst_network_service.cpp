@@ -18,6 +18,7 @@ private Q_SLOTS:
   void publishesValidatedAtomicSnapshots();
   void rejectsMalformedBackendAndRedactsDiagnostics();
   void admitsTypedOperationsAndFencesLineage();
+  void immediateStopFencesQueuedDispatchExactlyOnce();
   void timesOutExactlyOnceWithoutReplay();
   void authorityReplacementRequiresFreshPublicOwner();
   void unavailableBackendIsHonest();
@@ -41,6 +42,36 @@ void NetworkServiceTests::publishesValidatedAtomicSnapshots() {
   QCOMPARE(coordinator.snapshot().revision, quint64(2));
   QVERIFY(validateSnapshot(coordinator.snapshot()).accepted);
   QVERIFY(!coordinator.snapshotPayload().isEmpty());
+}
+
+void NetworkServiceTests::immediateStopFencesQueuedDispatchExactlyOnce() {
+  FakeNetworkBackend backend;
+  NetworkServiceCoordinator coordinator(&backend);
+  QSignalSpy completed(&coordinator,
+                       &NetworkServiceCoordinator::operationCompleted);
+  QVERIFY(coordinator.start(QStringLiteral(":1.56")));
+  backend.publish(readyNetworkObservation());
+  NetworkServiceRequest request;
+  request.kind = OperationKind::RequestScan;
+  request.initiatingEpoch = coordinator.snapshot().epoch;
+  request.initiatingRevision = coordinator.snapshot().revision;
+  request.scanDeadlineMilliseconds = 30'000;
+  const OperationSubmission submission = coordinator.submit(request);
+  QVERIFY(submission.pending);
+
+  coordinator.stop();
+  QCOMPARE(completed.size(), 1);
+  QCOMPARE(completed.first().at(1).value<OperationResult>().status,
+           OperationStatus::Uncertain);
+  QCOMPARE(completed.first().at(1).value<OperationResult>().reasonCode,
+           QStringLiteral("service-stopped"));
+  QCOMPARE(backend.cancelled, QList<quint64>{submission.operationId});
+  QTest::qWait(50);
+  QCOMPARE(backend.calls.size(), 0);
+  BackendOperationOutcome late;
+  late.status = BackendOperationStatus::Succeeded;
+  backend.finish(submission.operationId, late);
+  QCOMPARE(completed.size(), 1);
 }
 
 void NetworkServiceTests::rejectsMalformedBackendAndRedactsDiagnostics() {
@@ -82,7 +113,7 @@ void NetworkServiceTests::admitsTypedOperationsAndFencesLineage() {
   scan.scanDeadlineMilliseconds = 30'000;
   const OperationSubmission accepted = coordinator.submit(scan);
   QVERIFY(accepted.pending);
-  QCOMPARE(backend.calls.size(), 1);
+  QTRY_COMPARE_WITH_TIMEOUT(backend.calls.size(), 1, 2'000);
   QCOMPARE(backend.calls.first().request.kind, OperationKind::RequestScan);
   QCOMPARE(backend.calls.first().request.scanDeadlineMilliseconds,
            qint64(30'000));
@@ -100,6 +131,7 @@ void NetworkServiceTests::admitsTypedOperationsAndFencesLineage() {
 
   const OperationSubmission failed = coordinator.submit(scan);
   QVERIFY(failed.pending);
+  QTRY_COMPARE_WITH_TIMEOUT(backend.calls.size(), 2, 2'000);
   BackendOperationOutcome secretFailure;
   secretFailure.status = BackendOperationStatus::Failed;
   secretFailure.reasonCode = QStringLiteral("scan-dispatch-failed");
@@ -140,6 +172,7 @@ void NetworkServiceTests::timesOutExactlyOnceWithoutReplay() {
   request.enable = false;
   const OperationSubmission submission = coordinator.submit(request);
   QVERIFY(submission.pending);
+  QTRY_COMPARE_WITH_TIMEOUT(backend.calls.size(), 1, 2'000);
   QTRY_COMPARE_WITH_TIMEOUT(completed.size(), 1, 2'000);
   QCOMPARE(completed.first().at(1).value<OperationResult>().status,
            OperationStatus::Uncertain);
@@ -168,6 +201,7 @@ void NetworkServiceTests::authorityReplacementRequiresFreshPublicOwner() {
   request.scanDeadlineMilliseconds = 10'000;
   const OperationSubmission submission = coordinator.submit(request);
   QVERIFY(submission.pending);
+  QTRY_COMPARE_WITH_TIMEOUT(backend.calls.size(), 1, 2'000);
   const quint64 retiredGeneration = backend.generation;
   backend.replaceAuthority();
   QCOMPARE(restart.size(), 1);

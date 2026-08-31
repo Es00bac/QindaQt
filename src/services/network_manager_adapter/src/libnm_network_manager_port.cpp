@@ -62,6 +62,11 @@ struct LibnmNetworkManagerPort::CallbackState final {
   bool enable = false;
 };
 
+struct LibnmNetworkManagerPort::OwnerWatchState final {
+  QPointer<LibnmNetworkManagerPort> port;
+  quint64 generation = 0;
+};
+
 LibnmNetworkManagerPort::LibnmNetworkManagerPort(QObject *parent)
     : NetworkManagerPort(parent) {
   m_pollTimer.setInterval(1'000);
@@ -77,6 +82,10 @@ bool LibnmNetworkManagerPort::start() {
   m_running = true;
   m_authorityRetired = false;
   m_observedOwner.clear();
+  ++m_runGeneration;
+  if (m_runGeneration == 0) {
+    ++m_runGeneration;
+  }
   m_pollTimer.start();
   const bool available = ensureClient();
   QTimer::singleShot(0, this, &LibnmNetworkManagerPort::poll);
@@ -88,6 +97,10 @@ void LibnmNetworkManagerPort::stop() {
     return;
   }
   m_running = false;
+  ++m_runGeneration;
+  if (m_runGeneration == 0) {
+    ++m_runGeneration;
+  }
   m_pollTimer.stop();
   for (GCancellable *cancellable : std::as_const(m_pending)) {
     g_cancellable_cancel(cancellable);
@@ -95,12 +108,12 @@ void LibnmNetworkManagerPort::stop() {
   }
   m_pending.clear();
   if (m_client != nullptr) {
+    disconnectOwnerWatch();
     g_object_unref(m_client);
     m_client = nullptr;
   }
   m_observedOwner.clear();
-  m_scanInProgress = false;
-  m_scanLeaseDeadline = 0;
+  m_scanLease = {};
 }
 
 bool LibnmNetworkManagerPort::ensureClient() {
@@ -112,7 +125,63 @@ bool LibnmNetworkManagerPort::ensureClient() {
   if (error != nullptr) {
     g_error_free(error);
   }
+  if (m_client != nullptr) {
+    auto *watch = new OwnerWatchState{this, m_runGeneration};
+    m_ownerNotifyHandler = g_signal_connect_data(
+        m_client, "notify::" NM_CLIENT_DBUS_NAME_OWNER,
+        G_CALLBACK(&LibnmNetworkManagerPort::ownerChanged), watch,
+        &LibnmNetworkManagerPort::destroyOwnerWatch, G_CONNECT_DEFAULT);
+    (void)observeAuthorityOwner(m_client, m_runGeneration);
+  }
   return m_client != nullptr;
+}
+
+void LibnmNetworkManagerPort::disconnectOwnerWatch() {
+  if (m_client != nullptr && m_ownerNotifyHandler != 0) {
+    g_signal_handler_disconnect(m_client, m_ownerNotifyHandler);
+  }
+  m_ownerNotifyHandler = 0;
+}
+
+void LibnmNetworkManagerPort::ownerChanged(GObject *source,
+                                           GParamSpec *property,
+                                           gpointer userData) {
+  Q_UNUSED(property)
+  const auto *watch = static_cast<const OwnerWatchState *>(userData);
+  if (watch->port != nullptr) {
+    (void)watch->port->observeAuthorityOwner(NM_CLIENT(source),
+                                             watch->generation);
+  }
+}
+
+void LibnmNetworkManagerPort::destroyOwnerWatch(gpointer userData,
+                                                GClosure *closure) {
+  Q_UNUSED(closure)
+  delete static_cast<OwnerWatchState *>(userData);
+}
+
+bool LibnmNetworkManagerPort::observeAuthorityOwner(NMClient *client,
+                                                    const quint64 generation) {
+  if (!m_running || m_authorityRetired || client == nullptr ||
+      client != m_client || generation == 0 || generation != m_runGeneration) {
+    return false;
+  }
+  const char *rawOwner = nm_client_get_dbus_name_owner(client);
+  const QString owner =
+      rawOwner == nullptr ? QString{} : QString::fromUtf8(rawOwner);
+  if (!m_observedOwner.isEmpty() &&
+      (owner.isEmpty() || owner != m_observedOwner)) {
+    // AGENT-GUARD: This notification is the admission fence, not a freshness
+    // hint. Set retirement before the signal so reentrant submissions cannot
+    // cross into a replacement NetworkManager beneath the old Network1 epoch.
+    m_authorityRetired = true;
+    Q_EMIT authorityReplaced();
+    return false;
+  }
+  if (m_observedOwner.isEmpty() && !owner.isEmpty()) {
+    m_observedOwner = owner;
+  }
+  return true;
 }
 
 void LibnmNetworkManagerPort::poll() {
@@ -124,20 +193,8 @@ void LibnmNetworkManagerPort::poll() {
     Q_EMIT factsReady(unavailable);
     return;
   }
-  const char *rawOwner = nm_client_get_dbus_name_owner(m_client);
-  const QString owner =
-      rawOwner == nullptr ? QString{} : QString::fromUtf8(rawOwner);
-  if (!m_observedOwner.isEmpty() &&
-      (owner.isEmpty() || owner != m_observedOwner)) {
-    // AGENT-GUARD: N0 rejects same-Network1-owner epoch replacement. Once
-    // an upstream unique owner was observed, loss/replacement retires this
-    // whole process lineage rather than reusing public ownership.
-    m_authorityRetired = true;
-    Q_EMIT authorityReplaced();
+  if (!observeAuthorityOwner(m_client, m_runGeneration)) {
     return;
-  }
-  if (m_observedOwner.isEmpty() && !owner.isEmpty()) {
-    m_observedOwner = owner;
   }
   publishFacts();
 }
@@ -193,9 +250,7 @@ void LibnmNetworkManagerPort::submitScan(
     completeAsync(operationId, false, QStringLiteral("scan-unavailable"));
     return;
   }
-  m_scanInProgress = true;
-  m_scanLeaseDeadline =
-      monotonicMilliseconds() + request.scanDeadlineMilliseconds;
+  m_scanLease.begin(monotonicMilliseconds() + request.scanDeadlineMilliseconds);
   publishFacts();
   auto *state = new CallbackState{this, operationId};
   nm_device_wifi_request_scan_async(NM_DEVICE_WIFI(device), cancellable,
@@ -293,14 +348,19 @@ void LibnmNetworkManagerPort::scanFinished(GObject *source,
   GError *error = nullptr;
   const bool succeeded = nm_device_wifi_request_scan_finish(
                              NM_DEVICE_WIFI(source), result, &error) != FALSE;
+  const bool cancelled =
+      error != nullptr &&
+      g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
   if (error != nullptr) {
     g_error_free(error);
   }
   if (state->port != nullptr) {
-    state->port->m_scanInProgress = false;
+    state->port->m_scanLease.complete(succeeded, cancelled);
+    // Publish Idle before the definite Failed outcome so a caller can retry
+    // immediately after receiving that reply. Cancellation remains Leased.
+    state->port->publishFacts();
     state->port->completeAsync(state->operationId, succeeded,
                                QStringLiteral("scan-dispatch-failed"));
-    state->port->publishFacts();
   }
 }
 

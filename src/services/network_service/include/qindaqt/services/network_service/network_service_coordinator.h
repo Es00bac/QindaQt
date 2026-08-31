@@ -34,6 +34,8 @@ struct OperationSubmission final {
 // are hostile input: malformed observations degrade atomically and malformed
 // outcomes become a protocol-valid failure. Timeout or authority loss resolves
 // a dispatched operation exactly once as Uncertain and never replays it.
+// Accepted backend dispatch is queued onto this object's Qt thread so a D-Bus
+// owner can retain its delayed reply before synchronous backend completion.
 class NetworkServiceCoordinator final : public QObject {
   Q_OBJECT
 

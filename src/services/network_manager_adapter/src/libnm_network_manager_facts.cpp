@@ -147,6 +147,18 @@ qint64 monotonicMilliseconds() { return g_get_monotonic_time() / 1000; }
 
 } // namespace
 
+void ScanLeaseState::applyTo(Facts &facts,
+                             const qint64 nowMilliseconds) noexcept {
+  const qint64 remaining = deadlineMilliseconds - nowMilliseconds;
+  if (remaining >= kMinimumScanDeadlineMilliseconds) {
+    facts.scanPhase = inProgress ? ScanPhase::Scanning : ScanPhase::Leased;
+    facts.scanLeaseRemainingMilliseconds =
+        std::min<qint64>(remaining, kMaximumScanDeadlineMilliseconds);
+    return;
+  }
+  *this = {};
+}
+
 Facts LibnmNetworkManagerPort::collectFacts() {
   Facts facts;
   if (m_client == nullptr || !nm_client_get_nm_running(m_client) ||
@@ -277,16 +289,7 @@ Facts LibnmNetworkManagerPort::collectFacts() {
       (wwanPresent &&
        permitted(m_client, NM_CLIENT_PERMISSION_ENABLE_DISABLE_WWAN));
 
-  const qint64 remaining = m_scanLeaseDeadline - monotonicMilliseconds();
-  if (remaining >= kMinimumScanDeadlineMilliseconds) {
-    facts.scanPhase =
-        m_scanInProgress ? ScanPhase::Scanning : ScanPhase::Leased;
-    facts.scanLeaseRemainingMilliseconds =
-        std::min<qint64>(remaining, kMaximumScanDeadlineMilliseconds);
-  } else {
-    m_scanInProgress = false;
-    m_scanLeaseDeadline = 0;
-  }
+  m_scanLease.applyTo(facts, monotonicMilliseconds());
   return facts;
 }
 

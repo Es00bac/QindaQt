@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "libnm_network_manager_port_p.h"
+
 #include <qindaqt/services/network_manager_adapter/network_manager_backend.h>
+#include <qindaqt/services/network_model/network_model.h>
 #include <qindaqt/services/network_protocol/network_identity.h>
 #include <qindaqt/services/network_protocol/network_validation.h>
 
+#include <QtCore/QElapsedTimer>
+#include <QtCore/QProcess>
+#include <QtCore/QUuid>
+#include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusConnectionInterface>
+#include <QtDBus/QDBusReply>
 #include <QtTest>
 
 #include <algorithm>
@@ -58,6 +67,65 @@ public:
   std::optional<Facts> startFacts;
 };
 
+class PrivateSystemBus final {
+public:
+  bool start() {
+    daemon.setProgram(QStringLiteral("dbus-daemon"));
+    daemon.setArguments(
+        {QStringLiteral("--session"), QStringLiteral("--nofork"),
+         QStringLiteral("--nopidfile"), QStringLiteral("--print-address=1")});
+    daemon.start();
+    if (!daemon.waitForStarted() || !daemon.waitForReadyRead(5'000)) {
+      return false;
+    }
+    address = QString::fromUtf8(daemon.readLine()).trimmed();
+    return !address.isEmpty();
+  }
+
+  ~PrivateSystemBus() {
+    daemon.terminate();
+    if (!daemon.waitForFinished(1'000)) {
+      daemon.kill();
+      daemon.waitForFinished();
+    }
+  }
+
+  QProcess daemon;
+  QString address;
+};
+
+class ScopedEnvironment final {
+public:
+  ScopedEnvironment(const char *name, const QByteArray &value)
+      : m_name(name), m_wasSet(qEnvironmentVariableIsSet(name)),
+        m_original(qgetenv(name)) {
+    qputenv(name, value);
+  }
+  ~ScopedEnvironment() {
+    if (m_wasSet) {
+      qputenv(m_name.constData(), m_original);
+    } else {
+      qunsetenv(m_name.constData());
+    }
+  }
+
+private:
+  QByteArray m_name;
+  bool m_wasSet = false;
+  QByteArray m_original;
+};
+
+QDBusConnectionInterface::RegisterServiceReply registerNetworkManager(
+    const QDBusConnection &connection,
+    const QDBusConnectionInterface::ServiceQueueOptions queueOption) {
+  const QDBusReply<QDBusConnectionInterface::RegisterServiceReply> reply =
+      connection.interface()->registerService(
+          QStringLiteral("org.freedesktop.NetworkManager"), queueOption,
+          QDBusConnectionInterface::AllowReplacement);
+  return reply.isValid() ? reply.value()
+                         : QDBusConnectionInterface::ServiceNotRegistered;
+}
+
 Facts validFacts() {
   Facts facts;
   facts.available = true;
@@ -94,6 +162,8 @@ private Q_SLOTS:
   void degradesMalformedAndUnavailableFacts();
   void dispatchesEveryPermittedIntentThroughInjectedPort();
   void fencesStopAndAuthorityReplacement();
+  void concreteOwnerNotificationFencesLossAndReplacementBelowPoll();
+  void definiteScanFailureClearsLeaseAndAllowsImmediateRetry();
 };
 
 void NetworkManagerAdapterTests::
@@ -236,6 +306,105 @@ void NetworkManagerAdapterTests::fencesStopAndAuthorityReplacement() {
   BackendOperationOutcome late;
   late.status = BackendOperationStatus::Succeeded;
   fake->finish(1, late);
+}
+
+void NetworkManagerAdapterTests::
+    concreteOwnerNotificationFencesLossAndReplacementBelowPoll() {
+  PrivateSystemBus bus;
+  QVERIFY(bus.start());
+  ScopedEnvironment systemBus("DBUS_SYSTEM_BUS_ADDRESS", bus.address.toUtf8());
+  const QString suffix = QUuid::createUuid().toString(QUuid::Id128);
+  const QString aName =
+      QStringLiteral("qindaqt-network-owner-a-%1").arg(suffix);
+  const QString bName =
+      QStringLiteral("qindaqt-network-owner-b-%1").arg(suffix);
+  QDBusConnection ownerA = QDBusConnection::connectToBus(bus.address, aName);
+  QDBusConnection ownerB = QDBusConnection::connectToBus(bus.address, bName);
+  QVERIFY(ownerA.isConnected());
+  QVERIFY(ownerB.isConnected());
+  QCOMPARE(registerNetworkManager(ownerA,
+                                  QDBusConnectionInterface::DontQueueService),
+           QDBusConnectionInterface::ServiceRegistered);
+
+  LibnmNetworkManagerPort port;
+  QSignalSpy facts(&port, &NetworkManagerPort::factsReady);
+  QSignalSpy replaced(&port, &NetworkManagerPort::authorityReplaced);
+  QVERIFY(port.start());
+  QTRY_VERIFY_WITH_TIMEOUT(!facts.isEmpty(), 2'000);
+
+  QElapsedTimer boundary;
+  boundary.start();
+  QVERIFY(ownerA.unregisterService(
+      QStringLiteral("org.freedesktop.NetworkManager")));
+  QTRY_COMPARE_WITH_TIMEOUT(replaced.size(), 1, 500);
+  QVERIFY(boundary.elapsed() < 750);
+  port.stop();
+
+  QCOMPARE(registerNetworkManager(ownerA,
+                                  QDBusConnectionInterface::DontQueueService),
+           QDBusConnectionInterface::ServiceRegistered);
+  QTest::qWait(100);
+  QCOMPARE(replaced.size(), 1);
+  replaced.clear();
+  facts.clear();
+  QVERIFY(port.start());
+  QTRY_VERIFY_WITH_TIMEOUT(!facts.isEmpty(), 2'000);
+  boundary.restart();
+  QCOMPARE(registerNetworkManager(
+               ownerB, QDBusConnectionInterface::ReplaceExistingService),
+           QDBusConnectionInterface::ServiceRegistered);
+  QTRY_COMPARE_WITH_TIMEOUT(replaced.size(), 1, 500);
+  QVERIFY(boundary.elapsed() < 750);
+  port.stop();
+
+  replaced.clear();
+  facts.clear();
+  QVERIFY(port.start());
+  QTRY_VERIFY_WITH_TIMEOUT(!facts.isEmpty(), 2'000);
+  boundary.restart();
+  QCOMPARE(registerNetworkManager(
+               ownerA, QDBusConnectionInterface::ReplaceExistingService),
+           QDBusConnectionInterface::ServiceRegistered);
+  QTRY_COMPARE_WITH_TIMEOUT(replaced.size(), 1, 500);
+  QVERIFY(boundary.elapsed() < 750);
+  port.stop();
+
+  QDBusConnection::disconnectFromBus(aName);
+  QDBusConnection::disconnectFromBus(bName);
+}
+
+void NetworkManagerAdapterTests::
+    definiteScanFailureClearsLeaseAndAllowsImmediateRetry() {
+  constexpr qint64 now = 1'000;
+  ScanLeaseState lease;
+  lease.begin(now + 30'000);
+  Facts scanning;
+  lease.applyTo(scanning, now);
+  QCOMPARE(scanning.scanPhase, ScanPhase::Scanning);
+
+  lease.complete(false, false);
+  Facts failed;
+  lease.applyTo(failed, now);
+  QCOMPARE(failed.scanPhase, ScanPhase::Idle);
+  QCOMPARE(failed.scanLeaseRemainingMilliseconds, qint64(0));
+
+  Model::NetworkModel model;
+  Snapshot snapshot;
+  snapshot.owner = QStringLiteral(":1.80");
+  snapshot.epoch = 80;
+  snapshot.revision = 1;
+  snapshot.availability = Availability::Ready;
+  snapshot.capabilities = Capability::Scan;
+  snapshot.scanPhase = failed.scanPhase;
+  QVERIFY(model.applySnapshot(snapshot).accepted);
+  QVERIFY(model.requestScan(RequestScanIntent{30'000}).allowed);
+
+  lease.begin(now + 30'000);
+  lease.complete(false, true);
+  Facts cancelled;
+  lease.applyTo(cancelled, now);
+  QCOMPARE(cancelled.scanPhase, ScanPhase::Leased);
+  QCOMPARE(cancelled.scanLeaseRemainingMilliseconds, qint64(30'000));
 }
 
 QTEST_GUILESS_MAIN(NetworkManagerAdapterTests)
