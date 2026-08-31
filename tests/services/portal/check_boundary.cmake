@@ -14,9 +14,16 @@ foreach(source IN LISTS portal_sources)
     if(content MATCHES "QtQml|QtQuick|QProcess|NetworkManager|Wayland|KWin")
         message(FATAL_ERROR "Portal gained presentation/platform/process authority in ${source}")
     endif()
-    if(content MATCHES "org\\.freedesktop\\.impl\\.portal\\.(FileChooser|OpenURI|Notification|Inhibit|ScreenCast|RemoteDesktop)")
-        message(FATAL_ERROR "Portal advertises an out-of-scope portal interface in ${source}")
-    endif()
+    string(REGEX MATCHALL
+        "org\\.freedesktop\\.impl\\.portal\\.[A-Z][A-Za-z0-9]*"
+        backend_interfaces "${content}")
+    foreach(backend_interface IN LISTS backend_interfaces)
+        if(NOT backend_interface STREQUAL
+           "org.freedesktop.impl.portal.Settings")
+            message(FATAL_ERROR
+                "Portal imports an out-of-scope standard interface in ${source}: ${backend_interface}")
+        endif()
+    endforeach()
 endforeach()
 
 foreach(policy_file IN ITEMS
@@ -32,23 +39,36 @@ foreach(policy_file IN ITEMS
     endif()
 endforeach()
 
-set(portal_file "${PORTAL_ROOT}/data/qindaqt.portal")
-if(EXISTS "${portal_file}")
-    file(READ "${portal_file}" content)
-    if(NOT content MATCHES "DBusName=org.freedesktop.impl.portal.desktop.qindaqt"
-       OR NOT content MATCHES "Interfaces=org.freedesktop.impl.portal.Settings"
-       OR content MATCHES "Interfaces=[^\n]*(FileChooser|OpenURI|Notification|Inhibit|ScreenCast|RemoteDesktop)")
-        message(FATAL_ERROR "Portal metadata does not expose the exact Settings-only boundary")
-    endif()
+if(DEFINED PORTAL_METADATA_FILE)
+    set(portal_file "${PORTAL_METADATA_FILE}")
+else()
+    set(portal_file "${PORTAL_ROOT}/data/qindaqt.portal")
+endif()
+if(NOT EXISTS "${portal_file}")
+    message(FATAL_ERROR "Portal metadata file is missing: ${portal_file}")
+endif()
+file(READ "${portal_file}" portal_content)
+set(expected_portal_content
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings\nUseIn=QindaQt\n")
+if(NOT portal_content STREQUAL expected_portal_content)
+    message(FATAL_ERROR
+        "Portal .portal differs from exact singleton Settings interface")
 endif()
 
-set(selection_file "${PORTAL_ROOT}/data/qindaqt-portals.conf")
-if(EXISTS "${selection_file}")
-    file(READ "${selection_file}" content)
-    if(NOT content MATCHES "org.freedesktop.impl.portal.Settings=qindaqt"
-       OR content MATCHES "org.freedesktop.impl.portal.(FileChooser|OpenURI|Notification|Inhibit|ScreenCast|RemoteDesktop)=qindaqt")
-        message(FATAL_ERROR "Portal selection config is not Settings-only")
-    endif()
+if(DEFINED PORTAL_SELECTION_FILE)
+    set(selection_file "${PORTAL_SELECTION_FILE}")
+else()
+    set(selection_file "${PORTAL_ROOT}/data/qindaqt-portals.conf")
+endif()
+if(NOT EXISTS "${selection_file}")
+    message(FATAL_ERROR "Portal selection config is missing: ${selection_file}")
+endif()
+file(READ "${selection_file}" selection_content)
+set(expected_selection_content
+    "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\n")
+if(NOT selection_content STREQUAL expected_selection_content)
+    message(FATAL_ERROR
+        "Portal selector differs from exact Settings singleton")
 endif()
 
 if(DEFINED STAGE_ROOT)

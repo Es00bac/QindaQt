@@ -90,18 +90,12 @@ if(NOT unit_content MATCHES "Type=dbus"
    OR NOT unit_content MATCHES "NoNewPrivileges=true")
     message(FATAL_ERROR "Staged portal systemd residency/hardening contract is incomplete")
 endif()
-if(NOT portal_content MATCHES "Interfaces=org.freedesktop.impl.portal.Settings"
-   OR portal_content MATCHES "(FileChooser|OpenURI|Notification|Inhibit|ScreenCast|RemoteDesktop)")
-    message(FATAL_ERROR "Staged .portal metadata is not appearance Settings-only")
-endif()
-if(NOT selection_content MATCHES "org.freedesktop.impl.portal.Settings=qindaqt")
-    message(FATAL_ERROR "Staged portal selection config does not select qindaqt Settings")
-endif()
-
 execute_process(
     COMMAND "${QINDAQT_CMAKE}"
             "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
             "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
+            "-DPORTAL_METADATA_FILE=${portal_metadata}"
+            "-DPORTAL_SELECTION_FILE=${portal_selection}"
             -P "${CHECK_SCRIPT}"
     RESULT_VARIABLE boundary_status
     OUTPUT_VARIABLE boundary_output
@@ -128,6 +122,43 @@ if(NOT lifecycle_status EQUAL 0)
         "Staged portal process lifecycle failed:\n${lifecycle_output}${lifecycle_error}")
 endif()
 
+function(expect_installed_metadata_rejection label expected)
+    execute_process(
+        COMMAND "${QINDAQT_CMAKE}"
+                "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
+                "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
+                "-DPORTAL_METADATA_FILE=${portal_metadata}"
+                "-DPORTAL_SELECTION_FILE=${portal_selection}"
+                -P "${CHECK_SCRIPT}"
+        RESULT_VARIABLE status
+        OUTPUT_VARIABLE output
+        ERROR_VARIABLE error
+    )
+    if(status EQUAL 0)
+        message(FATAL_ERROR
+            "Installed portal checker accepted ${label} Background poison")
+    endif()
+    string(CONCAT combined "${output}" "${error}")
+    if(NOT combined MATCHES "${expected}")
+        message(FATAL_ERROR
+            "Installed ${label} poison was rejected for the wrong reason:\n${combined}")
+    endif()
+endfunction()
+
+# Mutation-sensitive installed controls use a standard interface present in
+# the pinned 1.20.4 dependency. Each artifact must independently reject it.
+file(WRITE "${portal_metadata}"
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Background\nUseIn=QindaQt\n")
+expect_installed_metadata_rejection(
+    ".portal" "exact singleton Settings interface")
+file(WRITE "${portal_metadata}" "${portal_content}")
+
+file(WRITE "${portal_selection}"
+    "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Background=qindaqt\n")
+expect_installed_metadata_rejection(
+    "selector" "exact Settings singleton")
+file(WRITE "${portal_selection}" "${selection_content}")
+
 # Self-guard: a private header planted in the disposable installed namespace
 # must make the same checker fail.
 file(WRITE
@@ -137,6 +168,8 @@ execute_process(
     COMMAND "${QINDAQT_CMAKE}"
             "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
             "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
+            "-DPORTAL_METADATA_FILE=${portal_metadata}"
+            "-DPORTAL_SELECTION_FILE=${portal_selection}"
             -P "${CHECK_SCRIPT}"
     RESULT_VARIABLE poison_status
     OUTPUT_VARIABLE poison_output
