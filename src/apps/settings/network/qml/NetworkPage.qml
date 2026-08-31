@@ -13,8 +13,6 @@ T.Page {
     required property var networkSettings
     signal closeRequested()
 
-    readonly property bool hasInventory: networkSettings.ready
-                                             || networkSettings.stale
     readonly property Item firstFocusTarget: scanButton.enabled ? scanButton
                                                   : reloadButton.enabled ? reloadButton
                                                   : closeButton

@@ -13,7 +13,8 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_network
-    PUBLIC QindaQt::NetworkClient QindaQt::NetworkProtocol Qt6::Core Qt6::Qml
+    PUBLIC QindaQt::NetworkClient QindaQt::NetworkModel
+           QindaQt::NetworkProtocol Qt6::Core
 )
 target_compile_features(qindaqt_settings_network PUBLIC cxx_std_20)
 set_target_properties(

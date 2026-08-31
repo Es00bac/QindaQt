@@ -57,6 +57,13 @@ contain no `NM*`, `GObject`, D-Bus object-path, or connection-setting handle.
 All resident objects are owned by one composition root and confined to its Qt
 thread.
 
+The client publishes one read-only operation-admission predicate in addition
+to mutation-in-flight state. It is false while an authoritative snapshot fetch
+is scheduled or outstanding, including post-operation and invalidation
+refreshes. A consumer that combines this predicate with the model's typed
+intent verdict advertises exactly the operation the client can accept at that
+moment; snapshot scheduling remains private client state.
+
 ## Resident lifecycle and restart fence
 
 The installed D-Bus descriptor activates `qindaqt-network-service` for

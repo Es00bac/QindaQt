@@ -18,8 +18,10 @@ The route presents the current public snapshot in four groups:
 | Saved networks | Derived known-network id, presentation name, security, and capabilities | Connect the existing stored profile when currently admitted |
 | Wi-Fi access points | Presentation-safe SSID, signal, security, saved-network relation, and scan freshness | Read-only |
 
-Connectivity, owner, epoch, revision, and scan state remain visible alongside
-the inventory. Empty states distinguish no observed values from loading,
+Connectivity and scan state remain visible alongside the inventory. The route
+model retains the exact owner, epoch, and revision for lineage gating and
+focused diagnostics; the ordinary page does not render the broker's technical
+owner identifier. Empty states distinguish no observed values from loading,
 service unavailability, retained stale truth, and a failed operation. The
 route never exposes NetworkManager object paths, hardware addresses, private
 service values, or unbounded backend diagnostics.
@@ -42,9 +44,12 @@ Reload asks the public client for authoritative truth. Scan, connect, and
 disconnect carry only public typed identifiers and the initiating lineage.
 The route relies on public intent admission and disables an action when the
 snapshot lacks the corresponding capability, the target is not eligible,
-truth is stale, or another operation is pending. A successful reply triggers a
-refresh and does not optimistically edit any list. Timeout, owner replacement,
-or another uncertain result stays visible and is never automatically replayed.
+truth is stale, another operation is pending, or an authoritative snapshot
+refresh is scheduled or in flight. Both displayed availability and dispatch
+consume the client's same public operation-admission predicate. A successful
+reply triggers a refresh and does not optimistically edit any list. Timeout,
+owner replacement, or another uncertain result stays visible and is never
+automatically replayed.
 
 ## Credential and authority boundary
 

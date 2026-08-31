@@ -3,10 +3,12 @@
 #include "stub_network_settings_model.h"
 
 #include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
+#include <qindaqt/apps/settings_network/network_settings_model.h>
 #include <qindaqt/themes/theme_loader.h>
 
 #include <QtGui/QAccessible>
 #include <QtGui/QAccessibleInterface>
+#include <QtCore/QMetaObject>
 #include <QtQml/QQmlComponent>
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickView>
@@ -52,6 +54,8 @@ private Q_SLOTS:
   void routesScanConnectDisconnectAndReloadIntents();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
   void keepsCompactFocusVisibleAndClosesTheCycle();
+  void supportsDocumentPagingKeys();
+  void stubMatchesRealModelSurface();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -165,7 +169,6 @@ void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {
   m_model->degraded = true;
   m_model->stale = true;
   m_model->scanAvailable = false;
-  m_model->knownNetworks[0].toMap();
   QVariantMap known = m_model->knownNetworks.at(0).toMap();
   known[QStringLiteral("connectAvailable")] = false;
   m_model->knownNetworks[0] = known;
@@ -225,6 +228,62 @@ void NetworkPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
   QTRY_COMPARE(m_view->activeFocusItem(), close);
   QTest::keyClick(m_view.get(), Qt::Key_Tab);
   QTRY_COMPARE(m_view->activeFocusItem(), scan);
+}
+
+void NetworkPageTest::supportsDocumentPagingKeys() {
+  auto [guard, page] = createPage(QSize(420, 320));
+  QVERIFY(page != nullptr);
+  auto *scan = findItem(page, QStringLiteral("networkScanButton"));
+  auto *viewport = findItem(page, QStringLiteral("networkFormViewport"));
+  QVERIFY(scan != nullptr);
+  QVERIFY(viewport != nullptr);
+  scan->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), scan);
+
+  viewport->setProperty("contentY", 0.0);
+  QTest::keyClick(m_view.get(), Qt::Key_PageDown);
+  QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
+  QTest::keyClick(m_view.get(), Qt::Key_End, Qt::ControlModifier);
+  const qreal maximum = qMax(
+      0.0, viewport->property("contentHeight").toReal()
+               - viewport->property("height").toReal());
+  QTRY_COMPARE(viewport->property("contentY").toReal(), maximum);
+  QTest::keyClick(m_view.get(), Qt::Key_PageUp);
+  QTRY_VERIFY(viewport->property("contentY").toReal() < maximum);
+  QTest::keyClick(m_view.get(), Qt::Key_Home, Qt::ControlModifier);
+  QTRY_COMPARE(viewport->property("contentY").toReal(), 0.0);
+}
+
+void NetworkPageTest::stubMatchesRealModelSurface() {
+  const auto propertySurface = [](const QMetaObject &meta) {
+    QStringList surface;
+    for (int index = meta.propertyOffset(); index < meta.propertyCount();
+         ++index) {
+      const QMetaProperty property = meta.property(index);
+      surface.append(QString::fromLatin1(property.name()) + u':'
+                     + QString::fromLatin1(property.typeName()));
+    }
+    surface.sort();
+    return surface;
+  };
+  const auto invokableSurface = [](const QMetaObject &meta) {
+    QStringList surface;
+    for (int index = meta.methodOffset(); index < meta.methodCount(); ++index) {
+      const QMetaMethod method = meta.method(index);
+      if (method.methodType() == QMetaMethod::Method) {
+        surface.append(QString::fromLatin1(method.methodSignature()));
+      }
+    }
+    surface.sort();
+    return surface;
+  };
+
+  QCOMPARE(propertySurface(
+               QindaQt::Apps::SettingsNetwork::NetworkSettingsModel::staticMetaObject),
+           propertySurface(StubNetworkSettingsModel::staticMetaObject));
+  QCOMPARE(invokableSurface(
+               QindaQt::Apps::SettingsNetwork::NetworkSettingsModel::staticMetaObject),
+           invokableSurface(StubNetworkSettingsModel::staticMetaObject));
 }
 
 QTEST_MAIN(NetworkPageTest)
