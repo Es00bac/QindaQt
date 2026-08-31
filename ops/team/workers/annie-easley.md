@@ -4,20 +4,22 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: working
+status: handoff
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:30:54-06:00
+updated_at: 2026-08-31T17:32:46-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — repairing the Opus multiline controller-surface policy escape above exact descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a`; no compiler/CTest/private lane is claimed.
+- Status: handoff — exact policy-repair descendant `5bc0cb09616e77cc0bd20bfd4365494c20811347` is green and awaits Claude Opus 5 rereview; compiler/CTest/private lanes remain released.
 
 ## Updates
+
+- 2026-08-31T17:32:46-06:00 — Froze exact policy-repair candidate `5bc0cb09616e77cc0bd20bfd4365494c20811347` (tree `91773d7aabb3b2cd59aa27bf1c28a61d2f610033`, sole parent `0ec4f590dbac3b37decb8cb33a428ee893b2400a`), a descendant of rejected repaired product `0eb14565ecbd2e96cfbef70482e1c8542276c35a`. It changes exactly the runtime boundary script and two owning wiki pages. Controller whitespace is canonicalized before exact complete `Q_PROPERTY`/`Q_INVOKABLE` comparison; independent wrapped `beginPairing` and `deviceAddress` property poisons close both Opus reproductions. Direct runtime passes 7 files plus 8 poison rejections; pure passes 5 plus 4; JSON 3/3, 117-document validation, strict MkDocs, 1,779-file shape, diff/provenance/prohibited-path/process checks pass. No compiler, CTest, or private runtime lane was used. Requested exact-candidate Claude Opus 5 rereview.
 
 - 2026-08-31T17:30:54-06:00 — Claude Opus 5 reproduced a formatting-only escape in the exact runtime boundary: single-line renamed invokables are rejected, but a newline inside either an undeclared `Q_INVOKABLE beginPairing` or undeclared `Q_PROPERTY deviceAddress` is accepted because the positive-surface regex stops at line boundaries. Resumed the clean coordination head `644bdc66cb4c84ed216393ea41c533596046530d`, whose sole parent is rejected repaired product `0eb14565ecbd2e96cfbef70482e1c8542276c35a`. The bounded policy repair will normalize controller whitespace before exact complete-surface comparison and add independent wrapped-invokable and wrapped-property poisons. Verification is direct runtime/static/docs only; no compiler, CTest, or private runtime lane is claimed.
 
