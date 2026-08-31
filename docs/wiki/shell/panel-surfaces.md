@@ -111,17 +111,27 @@ remain in the Shell/customization milestone.
 
 Notification windows are separate nonexclusive overlay layer surfaces, not
 profile panels or reservation carriers. Their pure planner clamps preferred
-popup/center sizes to primary-output logical geometry, including a 200%-scaled
-1080p mode. A popup stack uses a 38-logical-pixel header and up to three
+popup/center sizes to the compositor's current semantic-primary output logical
+geometry, including a 200%-scaled 1080p mode. The runtime reads the ordered
+public `Compositor1.Outputs` projection from its exact D-Bus owner, withdraws
+the cached order on every invalidation, and accepts a route only when its
+`outputGeneration` and complete output-ID set match the accepted shell-
+visibility generation and current Qt inventory. The first semantic output is
+then resolved by exact `QScreen::name()`; missing authority, cross-generation
+state, or a missing Qt screen removes both notification windows rather than
+falling back to `QGuiApplication::primaryScreen()`. A popup stack uses a
+38-logical-pixel header and up to three
 146-logical-pixel cards. That header remains a valid mapped surface with zero
 cards while an operation is busy or its bounded error is visible. Current
-placement is primary-output-only and top-right. Popup roles disable
+placement is semantic-primary-output-only and top-right. Popup roles disable
 activate-on-show to preserve the non-focus-steal invariant; the center role
 requests activation so its QML can seed keyboard focus and expose an Escape
 close path. The panel resolution matrix below does not prove notification
 mapping, placement, visual appearance, compositor acceptance of that activation
-request, focus traversal, keyboard operation, or mixed-output migration; no
-live/nested notification surface run was performed for this slice. See
+request, focus traversal, keyboard operation, or seat-/active-window placement.
+The focused selector and private-bus adapter rows prove transfer, replacement,
+removal, exact-owner loss/replacement, and fail-closed mismatches without
+starting a compositor; the S3 dual-output row owns the separate live rerun. See
 [Notification presentation](notification-presentation.md).
 
 The controller and planner have focused fake-backend tests for valid and
