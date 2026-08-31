@@ -314,7 +314,7 @@ void BluetoothAppletController::handleOperationCompleted(
     const quint64 requestId,
     const Bluetooth::OperationResult &result)
 {
-    if (requestId != m_requestId || !operationPending()) {
+    if (requestId != m_requestId || !requestInFlight()) {
         return;
     }
     const Bluetooth::OperationRequest operation = m_request.operation;
@@ -327,6 +327,16 @@ void BluetoothAppletController::handleOperationCompleted(
     m_pendingOwner.clear();
     m_request = completed;
     if (completed.phase == RequestPhase::Succeeded) {
+        // AGENT-GUARD: A successful operation result proves acceptance, not
+        // that the client's still-published initiating snapshot has converged.
+        // Keep all controls fenced until same-authority snapshot truth reaches
+        // the result's observed revision; otherwise stale state can dispatch
+        // the same mutation a second time.
+        m_successConvergence = SuccessConvergence{
+            .owner = initiatingOwner,
+            .epoch = result.observedEpoch,
+            .minimumRevision = result.observedRevision,
+        };
         if (operation.kind == Bluetooth::OperationKind::AcquireDiscovery) {
             m_discoveryLease = operation.target;
             m_discoveryLeaseOwner = initiatingOwner;
@@ -343,12 +353,6 @@ void BluetoothAppletController::handleOperationCompleted(
         }
         publishFeedback({});
     } else {
-        if (operation.kind == Bluetooth::OperationKind::ReleaseDiscovery
-            && result.reasonCode == QStringLiteral("no-lease")) {
-            m_discoveryLease.reset();
-            m_discoveryLeaseOwner.clear();
-            m_discoveryLeaseMinimumRevision = 0;
-        }
         publishFeedback(completed.feedback);
     }
 
@@ -356,6 +360,37 @@ void BluetoothAppletController::handleOperationCompleted(
     if ((!m_expanded || m_releaseAfterPending || m_shuttingDown)
         && !operationPending()) {
         releaseDiscoveryAfterSerialization();
+    }
+}
+
+void BluetoothAppletController::observeSuccessConvergence()
+{
+    if (!m_successConvergence.has_value()) {
+        return;
+    }
+    const SuccessConvergence expected = *m_successConvergence;
+    if (!presentationOwnerAvailable()) {
+        m_successConvergence.reset();
+        publishFeedback(tr(
+            "The Bluetooth result is uncertain. Check current state before retrying."));
+        return;
+    }
+    if (m_client->owner() != expected.owner) {
+        m_successConvergence.reset();
+        publishFeedback(tr(
+            "Bluetooth authority changed. Check current state before retrying."));
+        return;
+    }
+    const Bluetooth::Snapshot snapshot = m_client->snapshot();
+    if (snapshot.epoch != expected.epoch) {
+        m_successConvergence.reset();
+        publishFeedback(tr(
+            "Bluetooth authority changed. Check current state before retrying."));
+        return;
+    }
+    if (snapshot.revision >= expected.minimumRevision) {
+        m_successConvergence.reset();
+        clearFeedback();
     }
 }
 
@@ -399,8 +434,9 @@ void BluetoothAppletController::retireLeaseIfAuthorityEnded()
 
 void BluetoothAppletController::reproject()
 {
+    observeSuccessConvergence();
     retireLeaseIfAuthorityEnded();
-    if (operationPending()) {
+    if (requestInFlight()) {
         const bool exact = presentationOwnerAvailable()
             && m_client->owner() == m_pendingOwner;
         const quint64 epoch = exact ? m_client->snapshot().epoch : 0;
