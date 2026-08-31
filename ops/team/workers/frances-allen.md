@@ -1,66 +1,69 @@
 ---
 name: Frances Allen
-role: Portal P0 exact candidate reviewer
+role: Portal P0 repaired exact candidate reviewer
 provider: OpenAI Codex collaboration runtime
 model: inherited current model; exact serving identifier unexposed
 reasoning: inherited current reasoning level; exact level unexposed
 status: handoff
-feature: Production QindaQt Settings portal appearance export P0 exact review
-started_at: 2026-08-31T04:39:58-06:00
-updated_at: 2026-08-31T05:13:17-06:00
-worktree: /home/cabewse/work_SPaC3/container-wm-workers/portal-p0-allen-review
+feature: Production QindaQt Settings portal appearance export P0 repair review
+started_at: 2026-08-31T05:52:47-06:00
+updated_at: 2026-08-31T06:05:35-06:00
+worktree: /home/cabewse/work_SPaC3/container-wm-workers/portal-p0-allen-repair-review
 ---
 
 # Frances Allen
 
-- Role: independent exact-commit reviewer for Portal P0.
+- Role: independent exact-commit rereviewer for Portal P0.
 - Provider/model: OpenAI Codex collaboration runtime; inherited current model
   and reasoning level, whose exact serving identifiers are unexposed and are
   not inferred.
-- Status: handoff — terminally rejected immutable Portal P0 candidate
-  `b2271491239401adf1e4fffaed4fa57426e2a9ed` with P0/P1/P2/P3 = 0/0/1/0;
-  its claimed Settings-only hostile boundary checker accepts an installed
-  standard Background-interface poison. Candidate product bytes and host
-  portal/session state remain untouched.
-- Exact base: `9b3d65542c87b2b977482ed7e72e4425c5332dd6`.
-- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/portal-p0-allen-review`.
+- Status: handoff — terminally accepted repaired descendant
+  `9f59a77aee9cbfd2f4f541b136ecd611e0cda798` with P0/P1/P2/P3 = 0/0/0/0;
+  the former Background-interface escape is closed in source and staged
+  metadata, and all independent acceptance gates pass. The serialized
+  compiler, CTest, and private-bus lane is released.
+- Exact repaired candidate: `9f59a77aee9cbfd2f4f541b136ecd611e0cda798`.
+- Exact tree: `50aa85cf07c83e0271c2e6679db0a61ab3bfdadf`.
+- Sole parent: rejected candidate
+  `b2271491239401adf1e4fffaed4fa57426e2a9ed`.
+- Original base and exact merge base:
+  `9b3d65542c87b2b977482ed7e72e4425c5332dd6`.
+- Worktree:
+  `/home/cabewse/work_SPaC3/container-wm-workers/portal-p0-allen-repair-review`.
 
 ## Updates
 
-- 2026-08-31T05:13:17-06:00 — Posted terminal exact verdict at
-  `ops/team/messages/portal-p0/1788174797-frances-allen-exact-verdict.md`:
-  **REJECT**, P0/P1/P2/P3 = 0/0/1/0. The committed runtime/protocol/package
-  bytes conform and strict Debug/Release portal selectors pass 7/7 each, but a
-  disposable exact reproduction proves the source checker exits 0 after
-  `org.freedesktop.impl.portal.Background` is added to both metadata files.
-  The same partial denylist underlies staged-package validation, so the claimed
-  exact Settings-only hostile proof is not effective. Requested one
-  non-amended implementer descendant that enforces the singleton interface and
-  selector sets, adds source and staged installed poisons, and returns for
-  exact rereview. Docs, shape, retained manifest, provenance, exact-process and
-  private-daemon residue, and detached cleanliness passed. Current manager
-  merge-tree has additive-only coordination conflicts in ADR index and
-  `mkdocs.yml`, not a candidate severity finding.
+- 2026-08-31T06:05:35-06:00 — Posted terminal exact verdict at
+  `ops/team/messages/portal-p0/1788177935-frances-allen-repair-exact-verdict.md`:
+  **ACCEPT**, P0/P1/P2/P3 = 0/0/0/0. Both fresh strict Debug and Release
+  target closures built 97/97 and passed the contained serial portal selector
+  7/7. Complete-byte singleton enforcement accepts exact source/staged bytes
+  and rejects independent source and installed Background poisons; source
+  controls additionally reject OpenURI and duplicate Settings entries in both
+  artifacts. Docs113, pinned strict MkDocs, shape1684, 17-file package and
+  dependency audit, lineage, provenance, residue, and tracked cleanliness all
+  pass. Current manager HEAD `ab203cac213b4bff882151de2398b4c1b46c99cb`
+  has expected additive conflicts in `docs/wiki/adr/index.md` and `mkdocs.yml`;
+  manager must resolve those and rerun integrated gates. Candidate/runtime and
+  host state remain untouched. Serialized compiler/CTest/private-bus lane
+  released at this terminal handoff.
 
-- 2026-08-31T05:09:27-06:00 — Midpoint evidence: completed exact-target
-  strict Debug and Release builds, each followed by the contained serial
-  `^qindaqt\.portal-` selector at 7/7 with host display, Wayland, and session
-  bus variables removed. The earlier accidental all-target Debug command was
-  interrupted and is explicitly non-evidence. Protocol, Settings1/QST
-  lineage, residency, and committed package metadata are conformant so far.
-  A disposable direct hostile probe found one candidate-level test weakness:
-  `check_boundary.cmake` exits 0 after adding the installed standard
-  `org.freedesktop.impl.portal.Background` interface to both `.portal` and
-  selection metadata, despite claiming an exact Settings-only boundary.
-  Documentation, source-shape, staged manifest, provenance, residue, and final
-  finding classification remain in progress; candidate bytes are untouched.
+- 2026-08-31T05:59:18-06:00 — Midpoint evidence: exact identity, sole-parent,
+  and original-base merge lineage pass. The unmodified complete-byte checker
+  accepts the exact Settings-only files; its negative self-proof rejects
+  OpenURI, installed 1.20.4 Background, and duplicate Settings mutations in
+  both `.portal` and selector artifacts. An independent disposable copy with
+  Background added to both files reproduces the former hostile input and now
+  exits 1 for the exact singleton `.portal` reason. Fresh strict Debug exact
+  target build completed 97/97, and the contained serial portal selector
+  passed 7/7 with host display, Wayland, and session-bus variables removed.
+  No candidate or shared-manager bytes were edited; Release and final
+  static/provenance/residue gates remain in progress.
 
-- 2026-08-31T04:39:58-06:00 — Claimed independent exact review of candidate
-  `b2271491239401adf1e4fffaed4fa57426e2a9ed` (tree
-  `20766f3658452c5e81473b7856d86717605e6624`, sole parent and merge-base
-  `9b3d65542c87b2b977482ed7e72e4425c5332dd6`) in detached worktree
-  `/home/cabewse/work_SPaC3/container-wm-workers/portal-p0-allen-review`.
-  Reviewing standard Settings v1 protocol projection, exact Settings1/QST
-  source truth and retirement, activation/install isolation, hostile boundary
-  proofs, fresh strict Debug/Release portal rows, documentation, provenance,
-  residue, and final cleanliness. No host portal or session bus will be used.
+- 2026-08-31T05:52:47-06:00 — Claimed independent exact rereview of repaired
+  descendant `9f59a77aee9cbfd2f4f541b136ecd611e0cda798` (tree
+  `50aa85cf07c83e0271c2e6679db0a61ab3bfdadf`, sole parent rejected candidate
+  `b2271491239401adf1e4fffaed4fa57426e2a9ed`) in a fresh disposable detached
+  worktree. Frances owns the serialized compiler, CTest, and private-bus lane
+  until terminal verdict. Candidate product bytes and the shared manager
+  checkout will not be edited.

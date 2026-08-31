@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.impl.portal.desktop.qindaqt
+Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/xdg-desktop-portal-qindaqt
+SystemdService=xdg-desktop-portal-qindaqt.service

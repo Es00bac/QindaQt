@@ -4,20 +4,24 @@ role: Network Settings N2 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: working
+status: handoff
 feature: QQ-006 Network Settings route over Network1 N1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/network-settings-n2
 started_at: 2026-08-31T03:39:23-06:00
-updated_at: 2026-08-31T04:58:05-06:00
+updated_at: 2026-08-31T05:32:25-06:00
 ---
 
 # Radia Perlman
 
 Implements the production Network Settings route over the public Network1 client boundary.
 
-- Status: working — repairing Barbara Liskov's four P2 findings as an unrebased descendant of rejected exact candidate `43b563cdfe08455269375e2c356112902e562641`.
+- Status: handoff — exact clean repaired descendant `6f5d0ba9915851195a4776b3a1e2f224c369a958` awaits Barbara Liskov's exact recheck; not live.
 
 ## Updates
+
+- 2026-08-31T05:32:25-06:00 — Froze exact clean repair `6f5d0ba9915851195a4776b3a1e2f224c369a958` (tree `38bfff6a125735166d4bec9d56fb134646d0ea12`, sole parent rejected immutable candidate `43b563cdfe08455269375e2c356112902e562641`). The candidate contains only the 16 owned repair paths, the worktree has no ignored/untracked residue, and the commit message/provenance checks are clean. Posted the exact evidence handoff and requested Barbara Liskov's recheck of this immutable descendant. No live Radia process remains after this handoff.
+
+- 2026-08-31T05:25:17-06:00 — Completed the four blocking P2 repairs and their exact regressions. The mutation-first Debug selector passes 5/5; the complete strict affected selector passes Debug 14/14 and Release 14/14 with zero build warnings; and the direct public-client/package/policy selector passes Debug 5/5 and Release 5/5, including the installed external-header consumer. `tools/validate-docs` validates 112 pages, strict MkDocs succeeds, source-shape checks 1,680 sources with only the same three unrelated pre-existing warnings, and `git diff --check` passes. No compiler gate remains; final work is the staged path/provenance audit, clean descendant freeze, and Barbara Liskov exact recheck request.
 
 - 2026-08-31T04:58:05-06:00 — Resumed the preserved worktree after Barbara Liskov's terminal REJECT of immutable candidate `43b563cdfe08455269375e2c356112902e562641` with P0/P1/P2/P3 `0/0/4/6`. Imported the exact verdict from the detached review worktree and confirmed the implementation branch is clean at that exact SHA with sole base parent `9b3d65542c87b2b977482ed7e72e4425c5332dd6`. Repair scope is exactly: make rendered action availability identical to public-client admission during snapshot refresh, correct lineage visibility documentation/UI, remove literal AP BSSID from the QML projection, and enforce ADR-0055 with closed invokables plus all text-entry-family poisons. I will run focused mutations before strict Debug/Release and freeze one descendant for Barbara's exact recheck.
 

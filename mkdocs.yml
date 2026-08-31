@@ -27,6 +27,7 @@ nav:
       - Hybrid constraints: architecture/hybrid-constraints.md
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
+      - XDG Settings portal appearance backend: architecture/portal-service.md
       - Display service: architecture/display-service.md
       - Display client: architecture/display-client.md
       - Display compositor writer: architecture/display-writer.md
@@ -58,6 +59,7 @@ nav:
       - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
       - Settings1 protocol 1: reference/settings1-v1.md
+      - Settings portal backend version 1: reference/portal-settings-backend-v1.md
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
@@ -132,3 +134,4 @@ nav:
       - "ADR-0051: Injected Display journal root": adr/0051-persist-display-journal-in-injected-state-root.md
       - "ADR-0052: Confined NetworkManager adapter": adr/0052-confine-networkmanager-behind-network1.md
       - "ADR-0053: Authenticated Display1 runtime": adr/0053-compose-display1-from-authenticated-runtime-authorities.md
+      - "ADR-0054: Standard Settings portal appearance": adr/0054-export-appearance-through-the-standard-settings-portal.md
