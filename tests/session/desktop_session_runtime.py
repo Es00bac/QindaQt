@@ -22,9 +22,7 @@ from desktop_session_evidence import (
     _build_evidence,
 )
 from desktop_session_interaction_runtime import (
-    _run_interaction,
-    _secondary_primary_environment,
-    _select_secondary_primary,
+    _run_interaction, _secondary_primary_environment, _select_secondary_primary,
 )
 from desktop_session_interactive import validate_interactive_evidence
 from desktop_session_launch import (
