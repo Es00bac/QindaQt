@@ -89,6 +89,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
 endif()
 
 if(QINDAQT_BUILD_SHELL)
+    add_subdirectory(shell/bluetooth_applet)
     add_subdirectory(shell/power_applet)
     add_subdirectory(shell)
 endif()

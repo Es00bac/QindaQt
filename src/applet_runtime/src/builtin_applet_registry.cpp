@@ -17,6 +17,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
     // build, not merely that a manifest has been reviewed. Keep an entry out
     // until its concrete runtime implementation and authority path ship.
     return BuiltinAppletRegistry({
+        QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power"),

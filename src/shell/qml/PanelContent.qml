@@ -8,6 +8,7 @@ Item {
     required property var theme
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
@@ -34,6 +35,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
@@ -48,6 +50,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
@@ -63,6 +66,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
@@ -77,6 +81,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
@@ -91,6 +96,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
@@ -105,6 +111,7 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 }
