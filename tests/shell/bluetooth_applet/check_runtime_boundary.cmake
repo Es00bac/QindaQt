@@ -82,12 +82,15 @@ foreach(path IN LISTS runtime_cpp_sources)
     endforeach()
 endforeach()
 
-# The QML-facing controller is a closed positive surface. A renamed pairing,
-# trust, address, credential, or other invokable cannot evade a token denylist.
+# The QML-facing controller is a closed positive surface. Normalize whitespace
+# first so wrapping cannot hide a renamed property or invokable from the exact
+# complete-surface comparison.
 set(controller_header "${runtime_root}/src/bluetooth_applet_controller.h")
 file(READ "${controller_header}" controller_content)
-string(REGEX MATCHALL "Q_PROPERTY\\([^\r\n]*\\)"
-       actual_properties "${controller_content}")
+string(REGEX REPLACE "[ \t\r\n]+" " "
+       normalized_controller_content "${controller_content}")
+string(REGEX MATCHALL "Q_PROPERTY\\([^\\)]*\\)"
+       actual_properties "${normalized_controller_content}")
 set(expected_properties
     "Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)"
     "Q_PROPERTY(QString diagnostic READ diagnostic NOTIFY stateChanged)"
@@ -106,8 +109,8 @@ if(NOT "${actual_properties}" STREQUAL "${expected_properties}")
     list(APPEND violations
          "${controller_header}: Q_PROPERTY surface differs from exact contract")
 endif()
-string(REGEX MATCHALL "Q_INVOKABLE[ \t]+[^;\r\n]+;"
-       actual_invokables "${controller_content}")
+string(REGEX MATCHALL "Q_INVOKABLE[ ]+[^;]+;"
+       actual_invokables "${normalized_controller_content}")
 set(expected_invokables
     "Q_INVOKABLE void setExpanded(bool expanded);"
     "Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);"
@@ -166,8 +169,8 @@ if(violations)
     message(FATAL_ERROR "Bluetooth applet runtime boundary failed")
 endif()
 
-# Independent negative controls prove service, renamed-pairing, address,
-# persistence, filesystem, and standard-path violations are each rejected.
+# Independent negative controls prove service, single-line and wrapped surface,
+# address, persistence, filesystem, and standard-path violations are rejected.
 if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
     cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
     file(REMOVE_RECURSE "${poison_root}")
@@ -226,6 +229,12 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         "renamed-pairing" "${controller_header_path}"
         "\nQ_INVOKABLE void beginPairing(const QString &address);\n")
     expect_runtime_poison_rejected(
+        "wrapped-pairing" "${controller_header_path}"
+        "\nQ_INVOKABLE void beginPairing(\n const QString &deviceId);\n")
+    expect_runtime_poison_rejected(
+        "wrapped-property" "${controller_header_path}"
+        "\nQ_PROPERTY(QString deviceAddress READ deviceAddress\n NOTIFY stateChanged)\n")
+    expect_runtime_poison_rejected(
         "address-accessor" "${controller_source_path}"
         "\nQString exposedAddress = device.address;\n")
     expect_runtime_poison_rejected(
@@ -241,4 +250,4 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
 endif()
 
 message(STATUS
-    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and 6 poison rejections)")
+    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and 8 poison rejections)")
