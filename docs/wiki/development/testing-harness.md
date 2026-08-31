@@ -189,11 +189,13 @@ Its pure projection/request rows are joined by an exact-owner public-client
 controller, compiled offscreen keyboard/accessibility and lease-close proof,
 mutation-sensitive pure/runtime boundary gates, and an installed
 production-package/source-poison row. The boundary rows use exact header
-allowlists, positively close the controller's whitespace-normalized QML
-surface, and independently poison client/service, single-line and wrapped
-property/invokable additions, address, persistence, filesystem, and
-adjacent-module escapes. No row contacts the host session bus, display server,
-BlueZ, a radio, or pairing authority. The exact matrix and nonclaims are
+allowlists, positively close the controller's line-splice/whitespace-normalized
+QML surface with exact declaration lists plus literal macro-name occurrence
+counts, and independently poison client/service, single-line, wrapped,
+comment-glued, paren-gap, and line-spliced property/invokable additions,
+address, persistence, filesystem, and adjacent-module escapes. No row contacts
+the host session bus, display server, BlueZ, a radio, or pairing authority. The
+exact matrix and nonclaims are
 detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
 also clears ambient loader paths and requires CMake's runtime dependency
 resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.

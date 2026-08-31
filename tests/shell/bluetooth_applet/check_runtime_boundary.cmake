@@ -82,14 +82,19 @@ foreach(path IN LISTS runtime_cpp_sources)
     endforeach()
 endforeach()
 
-# The QML-facing controller is a closed positive surface. Normalize whitespace
-# first so wrapping cannot hide a renamed property or invokable from the exact
-# complete-surface comparison.
+# The QML-facing controller is a closed positive surface. Remove C++ line
+# splices and normalize whitespace first so wrapping cannot hide a renamed
+# property or invokable from the exact complete-surface comparison. Literal
+# macro-name occurrence counts provide an independent fail-closed fence when
+# lexical trivia prevents a declaration regex from matching.
 set(controller_header "${runtime_root}/src/bluetooth_applet_controller.h")
 file(READ "${controller_header}" controller_content)
+string(REPLACE "\\\r\n" "" controller_without_splices "${controller_content}")
+string(REPLACE "\\\n" "" controller_without_splices
+       "${controller_without_splices}")
 string(REGEX REPLACE "[ \t\r\n]+" " "
-       normalized_controller_content "${controller_content}")
-string(REGEX MATCHALL "Q_PROPERTY\\([^\\)]*\\)"
+       normalized_controller_content "${controller_without_splices}")
+string(REGEX MATCHALL "Q_PROPERTY[ ]*\\([^)]*\\)"
        actual_properties "${normalized_controller_content}")
 set(expected_properties
     "Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)"
@@ -105,11 +110,23 @@ set(expected_properties
     "Q_PROPERTY(bool discoveryLeaseHeld READ discoveryLeaseHeld NOTIFY stateChanged)"
     "Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)"
     "Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)")
-if(NOT "${actual_properties}" STREQUAL "${expected_properties}")
+set(canonical_properties "")
+foreach(property IN LISTS actual_properties)
+    string(REGEX REPLACE "^Q_PROPERTY[ ]*\\(" "Q_PROPERTY("
+           canonical_property "${property}")
+    list(APPEND canonical_properties "${canonical_property}")
+endforeach()
+string(REGEX MATCHALL "Q_PROPERTY" property_macro_tokens "${controller_content}")
+string(REGEX MATCHALL "Q_PROPERTY" expected_property_macro_tokens
+       "${expected_properties}")
+list(LENGTH property_macro_tokens actual_property_macro_count)
+list(LENGTH expected_property_macro_tokens expected_property_macro_count)
+if(NOT "${canonical_properties}" STREQUAL "${expected_properties}" OR
+   NOT actual_property_macro_count EQUAL expected_property_macro_count)
     list(APPEND violations
          "${controller_header}: Q_PROPERTY surface differs from exact contract")
 endif()
-string(REGEX MATCHALL "Q_INVOKABLE[ ]+[^;]+;"
+string(REGEX MATCHALL "Q_INVOKABLE([^A-Za-z0-9_]|$)[^;]+;"
        actual_invokables "${normalized_controller_content}")
 set(expected_invokables
     "Q_INVOKABLE void setExpanded(bool expanded);"
@@ -117,7 +134,13 @@ set(expected_invokables
     "Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);"
     "Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId, bool connected);"
     "Q_INVOKABLE void clearFeedback();")
-if(NOT "${actual_invokables}" STREQUAL "${expected_invokables}")
+string(REGEX MATCHALL "Q_INVOKABLE" invokable_macro_tokens "${controller_content}")
+string(REGEX MATCHALL "Q_INVOKABLE" expected_invokable_macro_tokens
+       "${expected_invokables}")
+list(LENGTH invokable_macro_tokens actual_invokable_macro_count)
+list(LENGTH expected_invokable_macro_tokens expected_invokable_macro_count)
+if(NOT "${actual_invokables}" STREQUAL "${expected_invokables}" OR
+   NOT actual_invokable_macro_count EQUAL expected_invokable_macro_count)
     list(APPEND violations
          "${controller_header}: Q_INVOKABLE surface differs from exact contract")
 endif()
@@ -169,8 +192,9 @@ if(violations)
     message(FATAL_ERROR "Bluetooth applet runtime boundary failed")
 endif()
 
-# Independent negative controls prove service, single-line and wrapped surface,
+# Independent negative controls prove service, lexical surface variants,
 # address, persistence, filesystem, and standard-path violations are rejected.
+set(runtime_poison_count 0)
 if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
     cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
     file(REMOVE_RECURSE "${poison_root}")
@@ -214,6 +238,8 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
                 "Bluetooth runtime boundary accepted ${name} poison:\n"
                 "${poison_output}${poison_error}")
         endif()
+        math(EXPR completed_poison_count "${runtime_poison_count} + 1")
+        set(runtime_poison_count "${completed_poison_count}" PARENT_SCOPE)
     endfunction()
 
     set(controller_header_path
@@ -235,6 +261,15 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         "wrapped-property" "${controller_header_path}"
         "\nQ_PROPERTY(QString deviceAddress READ deviceAddress\n NOTIFY stateChanged)\n")
     expect_runtime_poison_rejected(
+        "comment-glued-pairing" "${controller_header_path}"
+        "\nQ_INVOKABLE/*surface-wrap*/void beginPairing(const QString &deviceId);\n")
+    expect_runtime_poison_rejected(
+        "line-spliced-property" "${controller_header_path}"
+        "\nQ_PROPERTY(QString deviceAddress READ deviceAddress \\\n NOTIFY stateChanged)\n")
+    expect_runtime_poison_rejected(
+        "paren-gap-property" "${controller_header_path}"
+        "\nQ_PROPERTY\n(QString deviceAddress READ deviceAddress NOTIFY stateChanged)\n")
+    expect_runtime_poison_rejected(
         "address-accessor" "${controller_source_path}"
         "\nQString exposedAddress = device.address;\n")
     expect_runtime_poison_rejected(
@@ -250,4 +285,4 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
 endif()
 
 message(STATUS
-    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and 8 poison rejections)")
+    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and ${runtime_poison_count} poison rejections)")
