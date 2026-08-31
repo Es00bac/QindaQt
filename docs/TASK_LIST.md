@@ -24,7 +24,9 @@ Network UI, persistence, external secret-agent integration, and hardware
 qualification over the resident Network N1 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
-and portal/policy interoperability. Existing Audio1, Display1 foundations, and
+host portal selection/toolkit reaction, and every non-Settings portal family.
+The standard Settings appearance backend is now an executable integrated
+foundation. Existing Audio1, Display1 foundations, and
 resident Power PB-1 remain preserved integrated foundations; Network N1 now
 owns the confined production NetworkManager transport, while Bluetooth B0 is
 an executable bounded foundation without a production platform backend or UI.
@@ -54,6 +56,18 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `9f59a77a` — The standard Settings v1 portal backend exports confirmed
+  QindaQt Settings1/QST appearance through the standard desktop-portal
+  endpoint, with exact owner/epoch withdrawal, bounded standard values,
+  activation, hardened service packaging, and complete Settings-only source
+  and staged metadata. Frances Allen's exact rereview accepted the repaired
+  descendant at P0/P1/P2/P3 `0/0/0/0` after independently proving the former
+  installed Background escape is closed. Debug and Release review and fresh
+  manager gates each build 97/97 and pass the contained 7/7 selector; docs,
+  strict MkDocs, shape, package, provenance, and residue gates pass. This
+  advances QQ-005.09 from ABSENT to EXECUTABLE without claiming host frontend
+  selection, toolkit reaction, or any non-Settings portal family.
 
 - `89557a0a` — Notification popup and center output selection now consumes the
   exact-owner ordered public compositor-output authority and accepts it only

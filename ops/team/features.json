@@ -210,14 +210,14 @@
           "caveat": "F0 is a pure injected-facts boundary. A live discovery provider, Settings route, persistence composition, first-party app bootstrap wiring, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
         },
         {
-          "id": "QQ-005.09", "title": "Portal interoperability and desktop policy export", "weight": 12, "state": "ABSENT",
-          "summary": "No integrated portal boundary qualifies chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or QindaQt appearance export.",
-          "evidence": [{ "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "Portals and policy remain part of the incomplete Platform services milestone." }],
-          "caveat": "Existing service-specific authentication and the installed KDE portal ecosystem are prerequisites only."
+          "id": "QQ-005.09", "title": "Portal interoperability and desktop policy export", "weight": 12, "state": "EXECUTABLE",
+          "summary": "The standard Settings v1 appearance backend executes a bounded exact-owner Settings1/QST projection through the standard desktop-portal endpoint, activation and installed-package boundary.",
+          "evidence": [{ "kind": "commit", "reference": "9f59a77aee9cbfd2f4f541b136ecd611e0cda798", "summary": "The independently accepted Portal P0 repair enforces an exact Settings-only source and installed metadata contract and closes the prior Background-family escape." }, { "kind": "test", "reference": "docs/wiki/architecture/portal-service.md", "summary": "Strict Debug and Release each build 97/97 and pass the seven-row contained portal selector; source and staged hostile controls reject OpenURI, Background, duplicates, extras and private headers." }],
+          "caveat": "P0 does not qualify host frontend selection, toolkit reaction, chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or any other portal family."
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D6 stack, resident Power/Brightness PB-1 service/client boundary and production shell consumer, and resident Network N1 service with confined NetworkManager transport are integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 adds an executable least-authority service/client boundary; and Display Color C0 adds an executable pure ICC/capability/assignment model.",
+        "summary": "The bounded Audio1 stack, Display D0-D6 stack, resident Power/Brightness PB-1 service/client boundary and production shell consumer, and resident Network N1 service with confined NetworkManager transport are integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 adds an executable least-authority service/client boundary; Display Color C0 adds an executable pure ICC/capability/assignment model; and Portal P0 exports confirmed QindaQt appearance through the standard Settings backend.",
         "evidence": [
           { "kind": "commit", "reference": "fac2756a65572f37296c0fb6bd38b74aa68574d3", "summary": "The bounded Audio1 platform milestone is integrated." },
           { "kind": "source", "reference": "docs/HANDOFF.md", "summary": "The public handoff records Debug/Release, sanitizer, package, activation, lifecycle, documentation, and host-containment evidence." },
@@ -234,10 +234,11 @@
           { "kind": "commit", "reference": "ea4d986", "summary": "The independently accepted Network N0 replay is integrated after exact zero-finding review and fresh manager-tree focused verification." },
           { "kind": "commit", "reference": "aebc4fd3d887f09ae28149f9c016a08f28c86a92", "summary": "The independently accepted Network N1 repair is integrated after all three prior findings were closed under direct and repeated evidence." },
           { "kind": "commit", "reference": "2ae29f3", "summary": "The independently accepted Display Color C0 series is integrated after the exact repair defeated all eight hostile review reproductions and passed strict Debug/Release verification." },
+          { "kind": "commit", "reference": "9f59a77aee9cbfd2f4f541b136ecd611e0cda798", "summary": "The exact independently accepted Portal P0 repair integrates the standard Settings appearance backend at EXECUTABLE maturity." },
           { "kind": "source", "reference": "docs/wiki/development/implementation-roadmap.md", "summary": "The public roadmap marks Platform services In progress." }
         ]
       },
-      "caveat": "Display1 nested convergence and physical/resource qualification; production Power upstream adapters/policy/Settings/hardware; production BlueZ transport and Bluetooth UI/hardware; Network external secret-agent integration, persistence, UI, radio and hardware qualification; live clipboard capture/service/UI; live color/font providers and compositor application; portals; policy; physical hardware; and Audio hardware qualification remain. The Display Settings route is integrated under QQ-006.05; Clipboard C0 remains a pure WIRED boundary."
+      "caveat": "Display1 nested convergence and physical/resource qualification; production Power upstream adapters/policy/Settings/hardware; production BlueZ transport and Bluetooth UI/hardware; Network external secret-agent integration, persistence, UI, radio and hardware qualification; live clipboard capture/service/UI; live color/font providers and compositor application; host portal selection, toolkit reaction and every non-Settings portal family; physical hardware; and Audio hardware qualification remain. The Display Settings route is integrated under QQ-006.05; Clipboard C0 remains a pure WIRED boundary."
     },
     {
       "id": "QQ-006",
