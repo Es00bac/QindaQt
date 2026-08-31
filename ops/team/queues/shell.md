@@ -1,8 +1,9 @@
 # Shell delivery queue
 
-- Workgroup manager: unclaimed
-- Last observation: not yet recorded
+- Workgroup manager: Program Manager pending a dedicated Shell manager refill
+- Last observation: 2026-08-30T23:28:33-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| QQ-004 active shell work | See `features.json` | unclaimed | none | unclaimed | Reconcile live candidate threads and assign exact review | Shell build registries and private nested runtime are shared gates | Read Shell message threads before claiming | not yet recorded |
+| QQ-004.13 Power applet P2 production composition | WIRED integrated foundation; full production composition implemented and final verification active | Marconi Vale | preserved `cc9a790`, recovery branch `worker/power-applet-p2-marconi-recovery` at `/home/cabewse/work_SPaC3/container-wm-workers/power-applet-p2-marconi-recovery`, base `b6c4669` | unclaimed | Finish fresh strict Release, documentation, provenance and clean-tree gates; freeze immutable candidate and assign an exact independent reviewer | Owns public-PowerClient controller, Power QML, manifest/host composition, focused tests/wiki, and smallest additive registry seams; no private runtime or PB-1 internals | A different worker must attack public-boundary-only composition, action fencing, keyboard/accessibility behavior, installed poison, audited host resolution, and exact lineage | A KDE-only filtered prefix removes the mixed-Qt test closure; fresh strict production Debug builds the shell and compiled QML and passes 11/11 combined rows, including eight Power rows plus package/source poison, catalog, runtime resolution, and dispatcher alignment; Release and final evidence remain uncredited until handoff |
+| QQ-004 remaining production shell work | See `features.json` | unclaimed | base `b6c4669`; no worktree | unclaimed | Refill after the Power candidate freezes or a non-overlapping owner is appointed | Shell applet registries and installed package gates are shared coordination points | Read Shell threads and avoid Power-owned paths | No second Shell lane assigned yet |

@@ -52,6 +52,21 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `acd0168` — Display D5 adds a separate crash-safe filesystem journal adapter
+  with an injected, ownership-validated state root; fixed bounded paths;
+  canonical hostile-input decoding; mode-0600 exclusive temporary writes;
+  file and directory durability barriers; atomic replacement; safe load and
+  clear behavior; and typed post-commit durability uncertainty propagated
+  through D4 into D1. An already-absent clear retries the directory barrier,
+  and composed recovery stays cleanup-only `Stuck` with zero compositor apply
+  requests until durable absence is proven. Independent exact rereview passed
+  P0/P1/P2/P3 `0/0/0/0`, strict Debug and Release 12/12, direct lifecycle 4/4,
+  adjacent D2/D3 10/10, package, docs, shape, lineage, provenance, and residue
+  gates; manager replay built 130/130 focused actions and passed 12/12 plus
+  adjacent client 5/5. Resident startup recovery/writer composition,
+  authenticated lock/logind safety, Settings UI, nested convergence, mixed
+  outputs, resource proof, and hardware qualification remain later outcomes.
+
 - `a8a57a9` — Resident Power PB-1 service/client, exact-owner asynchronous
   transport, installed package, private activation/residency lifecycle, and
   fail-closed multi-domain publication are integrated. Independent exact

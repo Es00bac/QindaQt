@@ -18,8 +18,9 @@ class JournalStore
 {
 public:
     virtual ~JournalStore() = default;
-    [[nodiscard]] virtual bool store(const DisplayTransaction::Journal &journal) = 0;
-    [[nodiscard]] virtual bool clear() = 0;
+    [[nodiscard]] virtual DisplayTransaction::JournalMutationOutcome store(
+        const DisplayTransaction::Journal &journal) = 0;
+    [[nodiscard]] virtual DisplayTransaction::JournalMutationOutcome clear() = 0;
 };
 
 class WriterTransactionPort final : public QObject,
@@ -46,9 +47,9 @@ public:
 
     void setObserver(DisplayService::TransactionPortObserver *observer) override;
     void beginMachineLineage(quint64 machineLineage) override;
-    [[nodiscard]] bool storeJournal(
+    [[nodiscard]] DisplayTransaction::JournalMutationOutcome storeJournal(
         const DisplayTransaction::Journal &journal) override;
-    [[nodiscard]] bool clearJournal() override;
+    [[nodiscard]] DisplayTransaction::JournalMutationOutcome clearJournal() override;
     void requestApply(const DisplayTransaction::ApplyRequest &request) override;
 
 private:

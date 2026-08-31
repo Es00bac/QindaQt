@@ -125,10 +125,20 @@ void DisplayWriterPortTests::preservesJournalBoundaryAndStopCompletion()
     port.beginMachineLineage(2);
 
     DisplayTransaction::Journal value;
-    QVERIFY(port.storeJournal(value));
-    QVERIFY(port.clearJournal());
-    QCOMPARE(journalPointer->journals.size(), 1);
-    QCOMPARE(journalPointer->clearCalls, 1);
+    QCOMPARE(port.storeJournal(value),
+             DisplayTransaction::JournalMutationOutcome::Durable);
+    QCOMPARE(port.clearJournal(),
+             DisplayTransaction::JournalMutationOutcome::Durable);
+    journalPointer->storeOutcome =
+        DisplayTransaction::JournalMutationOutcome::DurabilityUncertain;
+    journalPointer->clearOutcome =
+        DisplayTransaction::JournalMutationOutcome::DurabilityUncertain;
+    QCOMPARE(port.storeJournal(value),
+             DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+    QCOMPARE(port.clearJournal(),
+             DisplayTransaction::JournalMutationOutcome::DurabilityUncertain);
+    QCOMPARE(journalPointer->journals.size(), 2);
+    QCOMPARE(journalPointer->clearCalls, 2);
 
     port.requestApply(completeRequest(70));
     port.stop();

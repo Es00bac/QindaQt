@@ -4,6 +4,24 @@
 
 Manager integration delta after the public baseline below:
 
+- The manager merge of exact accepted candidate `acd0168` integrates Display
+  D5's crash-safe filesystem journal behind the D4 `JournalStore` boundary.
+  The injected effective-user-owned state root, fixed names, canonical bounded
+  codec, mode-0600 exclusive temporary file, file sync, atomic replacement,
+  and directory barrier preserve one complete recovery pre-image without
+  hidden HOME/XDG authority. A typed `DurabilityUncertain` outcome prevents a
+  visible rename or unlink from authorizing forward apply before the directory
+  barrier is proven; even an already-absent clear retries that barrier and the
+  D1 machine remains cleanup-only `Stuck` with zero apply requests until a
+  concrete durable clear. Galileo's terminal exact rereview found P0/P1/P2/P3
+  `0/0/0/0` and passed strict Debug and Release journal/writer/transaction
+  12/12, direct lifecycle 4/4, adjacent service/client 10/10, package poison,
+  docs, strict MkDocs, shape, lineage, provenance, and residue gates. Manager
+  replay builds all 130 focused actions and passes the 12/12 and adjacent 5/5
+  selectors serially. Resident startup recovery/writer composition,
+  authenticated lock/logind safety, Settings UI, nested convergence, mixed
+  outputs, resources, and physical hardware remain D6+.
+
 - `26bb7f5` supplies the exact independently accepted private interactive
   desktop S2 replay. Astra's immutable Gemini review found P0/P1/P2/P3
   `0/0/0/0`, completed a fresh 2,338-action build, passed 73/73 desktop-session

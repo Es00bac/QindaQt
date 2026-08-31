@@ -230,7 +230,7 @@ CommandResult Machine::recover(const Journal &journal, const Display::Snapshot &
             static_cast<void>(m_port.storeJournal(m_journal));
             return accepted(true, CommandError::ExternalChange);
         }
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -238,7 +238,7 @@ CommandResult Machine::recover(const Journal &journal, const Display::Snapshot &
         return accepted(true, CommandError::ExternalChange);
     }
     if (snapshotMatches(snapshot, m_preimage)) {
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             enterStuck(true);
             return accepted(true, CommandError::JournalFailure);
         }
@@ -262,7 +262,7 @@ CommandResult Machine::recover(const Journal &journal, const Display::Snapshot &
     // A same-set layout matching neither durable endpoint is external truth.
     // Recovery may remove our stale journal but must not fight that intent.
     m_view.reason = Display::TransactionReason::ExternalChange;
-    if (!m_port.clearJournal()) {
+    if (!Private::journalMutationDurable(m_port.clearJournal())) {
         enterStuck(true);
         return accepted(true, CommandError::JournalFailure);
     }
@@ -276,7 +276,7 @@ CommandResult Machine::retryStuck()
         return rejected(CommandError::InvalidTransition);
     }
     if (m_cleanupOnlyStuck || snapshotMatches(m_snapshot, m_preimage)) {
-        if (!m_port.clearJournal()) {
+        if (!Private::journalMutationDurable(m_port.clearJournal())) {
             return accepted(false, CommandError::JournalFailure);
         }
         const Display::Snapshot current = m_snapshot;
