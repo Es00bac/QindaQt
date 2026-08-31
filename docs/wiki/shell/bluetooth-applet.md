@@ -44,7 +44,9 @@ devices. Rows sort deterministically by opaque handle serial. QML receives
 opaque `adapter-<epoch>-<serial>` and `device-<epoch>-<serial>` row IDs, not
 Bluetooth addresses, object paths, D-Bus owners, or platform handles. A
 reported name is used as the user label; an empty name maps to a deterministic
-class or ordinal label without falling back to the address.
+class or ordinal label without falling back to the address. A non-empty name
+that is itself a canonical Bluetooth address is treated exactly like an empty
+name, so neither labels nor accessibility text expose it.
 
 Every adapter and device row carries a complete accessible name and state
 description. Descriptions spell out power/discovery, paired/connected, and
@@ -104,10 +106,13 @@ release intent until current truth returns rather than claiming that an
 unproven lease disappeared. Shell teardown gives the controller a final
 release-dispatch opportunity before stopping its dedicated client; process/bus
 caller disappearance is the service-side backstop. A failed or uncertain
-release is surfaced and is never replayed automatically. A malformed or stale
-completion that happens to carry a `no-lease` reason cannot retire the tracked
-lease; only exact validated success or current authoritative snapshot truth can
-do so.
+release consumes that close/shutdown intent, retains the lease and feedback,
+and is never replayed automatically. A later explicit Stop action, a new
+open/close cycle, or final shutdown may make one new attempt; current
+authoritative truth may instead prove that the lease ended. A malformed or
+stale completion that happens to carry a `no-lease` reason cannot retire the
+tracked lease; only exact validated success or current authoritative snapshot
+truth can do so.
 
 The composition, client, controller, and renderer are GUI-thread confined.
 `BluetoothAppletComposition` owns transport → client → controller lifetime;
@@ -142,8 +147,9 @@ read access was granted.
    compiled QML, manifest, selected profile, policy, and theme for relocation
    under source-path poison. Its package test supplies the exact build-selected
    KF6 GlobalAccel platform artifact inside the disposable stage, clears
-   ambient loader paths, and requires the shell's relative install RUNPATH to
-   resolve that dependency locally.
+   ambient loader paths, resolves the staged executable's runtime dependencies,
+   and requires the KF6 SONAME to resolve to that exact relocated artifact
+   through the shell's relative install RUNPATH.
 
 ## Focused verification
 
@@ -159,9 +165,9 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-request-state` | All five B0 operations, capability/state admission, exact kind/lineage completion, terminal failure/uncertainty, and no replay |
 | `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, serialization, exact-owner replacement, typed feedback, and discovery close teardown |
 | `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
-| `qindaqt.bluetooth-applet-boundary` | Pure dependency/source policy plus a mutation-sensitive public-client poison |
-| `qindaqt.bluetooth-applet-runtime-boundary` | No service/model/BlueZ/Agent1/pairing/address reach, audited production seams, and a mutation-sensitive service/pairing poison |
-| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 platform dependency resolved by relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
+| `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
+| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and controller property/invokable surface; independent service, renamed-pairing, address-accessor, persistence, file, and standard-path poisons |
+| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
 

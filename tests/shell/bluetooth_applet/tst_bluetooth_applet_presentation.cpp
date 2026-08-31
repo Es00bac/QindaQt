@@ -70,6 +70,7 @@ class BluetoothAppletPresentationTests final : public QObject
 
 private Q_SLOTS:
     void projectsBoundedNonSecretRowsAndAccessibility();
+    void replacesAddressShapedNamesWithSafeFallbacks();
     void failsClosedWithoutExactOwnerOrReadGrant();
     void rejectsMalformedAndUnavailableTruth();
     void controlGrantAndLeaseGateEveryAction();
@@ -113,6 +114,23 @@ void BluetoothAppletPresentationTests::projectsBoundedNonSecretRowsAndAccessibil
     QVERIFY(headphones.canConnect);
     QVERIFY(!headphones.accessibleName.isEmpty());
     QVERIFY(!headphones.accessibleDescription.isEmpty());
+}
+
+void BluetoothAppletPresentationTests::replacesAddressShapedNamesWithSafeFallbacks()
+{
+    Bluetooth::Snapshot snapshot = readySnapshot();
+    snapshot.adapters[0].name = QStringLiteral("  AA:BB:CC:00:11:22  ");
+    snapshot.devices[0].name = QStringLiteral("AA:BB:CC:44:55:66");
+
+    const BluetoothAppletModel model = projectBluetoothApplet(
+        snapshot, true, true, true);
+    QCOMPARE(model.phase, ServicePhase::Ready);
+    QCOMPARE(model.adapters[0].label, QStringLiteral("Bluetooth adapter 1"));
+    QCOMPARE(model.devices[0].label, QStringLiteral("Keyboard"));
+    QVERIFY(!model.adapters[0].accessibleName.contains(
+        QStringLiteral("AA:BB:CC:00:11:22")));
+    QVERIFY(!model.devices[0].accessibleName.contains(
+        QStringLiteral("AA:BB:CC:44:55:66")));
 }
 
 void BluetoothAppletPresentationTests::failsClosedWithoutExactOwnerOrReadGrant()

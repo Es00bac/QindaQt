@@ -13,9 +13,18 @@ set(pure_sources
     "${applet_root}/src/bluetooth_request_state.cpp")
 list(LENGTH pure_sources pure_source_count)
 
-set(allowed_include_roots
-    "qindaqt/shell/bluetooth_applet/"
-    "qindaqt/services/bluetooth_protocol/")
+set(allowed_includes
+    "qindaqt/shell/bluetooth_applet/bluetooth_applet_presentation.h"
+    "qindaqt/shell/bluetooth_applet/bluetooth_applet_types.h"
+    "qindaqt/shell/bluetooth_applet/bluetooth_request_state.h"
+    "qindaqt/services/bluetooth_protocol/bluetooth_limits.h"
+    "qindaqt/services/bluetooth_protocol/bluetooth_types.h"
+    "qindaqt/services/bluetooth_protocol/bluetooth_validation.h"
+    "QtCore/QList"
+    "QtCore/QString"
+    "QtCore/QStringList"
+    "algorithm"
+    "optional")
 set(forbidden
     "BluetoothClient"
     "bluetooth_client"
@@ -55,27 +64,7 @@ foreach(path IN LISTS pure_sources)
     string(REGEX MATCHALL "#[ \t]*include[ \t]*[<\"]([^\">]+)" includes "${content}")
     foreach(include_line IN LISTS includes)
         string(REGEX REPLACE "#[ \t]*include[ \t]*[<\"]" "" include_path "${include_line}")
-        set(allowed FALSE)
-        foreach(root IN LISTS allowed_include_roots)
-            string(FIND "${include_path}" "${root}" position)
-            if(position EQUAL 0)
-                set(allowed TRUE)
-                break()
-            endif()
-        endforeach()
-        if(NOT allowed)
-            string(FIND "${include_path}" "QtCore/" position)
-            if(position EQUAL 0)
-                set(allowed TRUE)
-            endif()
-        endif()
-        if(NOT allowed)
-            string(FIND "${include_path}" "/" position)
-            if(position EQUAL -1)
-                set(allowed TRUE)
-            endif()
-        endif()
-        if(NOT allowed)
+        if(NOT include_path IN_LIST allowed_includes)
             list(APPEND violations "${path}: non-boundary include '${include_path}'")
         endif()
     endforeach()
@@ -88,31 +77,49 @@ if(violations)
     message(FATAL_ERROR "Bluetooth applet pure boundary failed")
 endif()
 
-# Mutation-sensitive negative control: the same policy must reject a planted
-# public-client dependency inside the pure target.
+# Mutation-sensitive negative controls independently prove that the exact
+# header allowlist rejects public-client, persistence, filesystem, and adjacent
+# Qt-module reach.
 if(DEFINED POISON_ROOT AND NOT BLUETOOTH_PURE_POLICY_SKIP_POISON)
     cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
     file(REMOVE_RECURSE "${poison_root}")
-    file(MAKE_DIRECTORY "${poison_root}/src/shell")
-    file(COPY "${applet_root}" DESTINATION "${poison_root}/src/shell")
-    file(APPEND
-         "${poison_root}/src/shell/bluetooth_applet/include/qindaqt/shell/bluetooth_applet/bluetooth_applet_types.h"
-         "#include <qindaqt/services/bluetooth_client/bluetooth_client.h>\n")
-    execute_process(
-        COMMAND "${CMAKE_COMMAND}"
-                "-DSOURCE_ROOT=${poison_root}"
-                -DBLUETOOTH_PURE_POLICY_SKIP_POISON=ON
-                -P "${CMAKE_CURRENT_LIST_FILE}"
-        RESULT_VARIABLE poison_status
-        OUTPUT_VARIABLE poison_output
-        ERROR_VARIABLE poison_error)
+
+    function(expect_pure_poison_rejected name relative_path poison_content)
+        set(case_root "${poison_root}/${name}")
+        file(MAKE_DIRECTORY "${case_root}/src/shell")
+        file(COPY "${applet_root}" DESTINATION "${case_root}/src/shell")
+        file(APPEND "${case_root}/${relative_path}" "${poison_content}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DSOURCE_ROOT=${case_root}"
+                    -DBLUETOOTH_PURE_POLICY_SKIP_POISON=ON
+                    -P "${CMAKE_CURRENT_LIST_FILE}"
+            RESULT_VARIABLE poison_status
+            OUTPUT_VARIABLE poison_output
+            ERROR_VARIABLE poison_error)
+        if(poison_status EQUAL 0)
+            message(FATAL_ERROR
+                "Bluetooth pure boundary accepted ${name} poison:\n"
+                "${poison_output}${poison_error}")
+        endif()
+    endfunction()
+
+    set(types_path
+        "src/shell/bluetooth_applet/include/qindaqt/shell/bluetooth_applet/bluetooth_applet_types.h")
+    set(presentation_path
+        "src/shell/bluetooth_applet/src/bluetooth_applet_presentation.cpp")
+    expect_pure_poison_rejected(
+        "public-client" "${types_path}"
+        "#include <qindaqt/services/bluetooth_client/bluetooth_client.h>\n")
+    expect_pure_poison_rejected(
+        "persistence" "${types_path}" "#include <QtCore/QSettings>\n")
+    expect_pure_poison_rejected(
+        "filesystem" "${presentation_path}" "#include <filesystem>\n")
+    expect_pure_poison_rejected(
+        "adjacent-network" "${presentation_path}"
+        "#include <QtNetwork/QNetworkAccessManager>\n")
     file(REMOVE_RECURSE "${poison_root}")
-    if(poison_status EQUAL 0)
-        message(FATAL_ERROR
-            "Bluetooth pure boundary accepted client poison:\n"
-            "${poison_output}${poison_error}")
-    endif()
 endif()
 
 message(STATUS
-    "Bluetooth applet pure boundary passed (${pure_source_count} files and poison rejection)")
+    "Bluetooth applet pure boundary passed (${pure_source_count} files and 4 poison rejections)")

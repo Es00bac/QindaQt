@@ -15,7 +15,31 @@ set(composition_sources
     "${SOURCE_ROOT}/src/shell/runtime/bluetoothappletcomposition.h"
     "${SOURCE_ROOT}/src/shell/runtime/bluetoothappletcomposition.cpp")
 set(runtime_sources ${applet_runtime_sources} ${composition_sources})
+set(runtime_cpp_sources
+    "${runtime_root}/src/bluetooth_applet_controller.h"
+    "${runtime_root}/src/bluetooth_applet_controller.cpp"
+    ${composition_sources})
 list(LENGTH runtime_sources runtime_source_count)
+
+set(allowed_includes
+    "qindaqt/services/bluetooth_client/bluetooth_client.h"
+    "qindaqt/services/bluetooth_client/qt_bluetooth_transport.h"
+    "qindaqt/shell/bluetooth_applet/bluetooth_applet_types.h"
+    "qindaqt/shell/bluetooth_applet/bluetooth_request_state.h"
+    "qindaqt/shell/bluetooth_applet/bluetooth_applet_presentation.h"
+    "qindaqt/applet_host/capability_policy_loader.h"
+    "qindaqt/applet_host/host_selection.h"
+    "qindaqt/applet_runtime/builtin_applet_registry.h"
+    "qindaqt/applets/manifest_catalog.h"
+    "QtCore/QObject"
+    "QtCore/QVariantList"
+    "QtCore/QVariantMap"
+    "QtDBus/QDBusConnection"
+    "algorithm"
+    "bluetooth_applet_controller.h"
+    "bluetoothappletcomposition.h"
+    "memory"
+    "optional")
 
 set(forbidden_everywhere
     "bluetooth_service"
@@ -44,6 +68,56 @@ foreach(path IN LISTS runtime_sources)
         endif()
     endforeach()
 endforeach()
+
+# Every production C++ include is explicit. This closes bare standard/Qt
+# header escapes such as filesystem, QSettings, QSaveFile, or QStandardPaths.
+foreach(path IN LISTS runtime_cpp_sources)
+    file(READ "${path}" content)
+    string(REGEX MATCHALL "#[ \t]*include[ \t]*[<\"]([^\">]+)" includes "${content}")
+    foreach(include_line IN LISTS includes)
+        string(REGEX REPLACE "#[ \t]*include[ \t]*[<\"]" "" include_path "${include_line}")
+        if(NOT include_path IN_LIST allowed_includes)
+            list(APPEND violations "${path}: non-boundary include '${include_path}'")
+        endif()
+    endforeach()
+endforeach()
+
+# The QML-facing controller is a closed positive surface. A renamed pairing,
+# trust, address, credential, or other invokable cannot evade a token denylist.
+set(controller_header "${runtime_root}/src/bluetooth_applet_controller.h")
+file(READ "${controller_header}" controller_content)
+string(REGEX MATCHALL "Q_PROPERTY\\([^\r\n]*\\)"
+       actual_properties "${controller_content}")
+set(expected_properties
+    "Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)"
+    "Q_PROPERTY(QString diagnostic READ diagnostic NOTIFY stateChanged)"
+    "Q_PROPERTY(QString summaryLabel READ summaryLabel NOTIFY stateChanged)"
+    "Q_PROPERTY(QString accessibleName READ accessibleName NOTIFY stateChanged)"
+    "Q_PROPERTY(QString accessibleDescription READ accessibleDescription NOTIFY stateChanged)"
+    "Q_PROPERTY(quint64 serviceEpoch READ serviceEpoch NOTIFY stateChanged)"
+    "Q_PROPERTY(quint64 serviceRevision READ serviceRevision NOTIFY stateChanged)"
+    "Q_PROPERTY(QVariantList adapterRows READ adapterRows NOTIFY stateChanged)"
+    "Q_PROPERTY(QVariantList deviceRows READ deviceRows NOTIFY stateChanged)"
+    "Q_PROPERTY(bool operationPending READ operationPending NOTIFY stateChanged)"
+    "Q_PROPERTY(bool discoveryLeaseHeld READ discoveryLeaseHeld NOTIFY stateChanged)"
+    "Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)"
+    "Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)")
+if(NOT "${actual_properties}" STREQUAL "${expected_properties}")
+    list(APPEND violations
+         "${controller_header}: Q_PROPERTY surface differs from exact contract")
+endif()
+string(REGEX MATCHALL "Q_INVOKABLE[ \t]+[^;\r\n]+;"
+       actual_invokables "${controller_content}")
+set(expected_invokables
+    "Q_INVOKABLE void setExpanded(bool expanded);"
+    "Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);"
+    "Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);"
+    "Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId, bool connected);"
+    "Q_INVOKABLE void clearFeedback();")
+if(NOT "${actual_invokables}" STREQUAL "${expected_invokables}")
+    list(APPEND violations
+         "${controller_header}: Q_INVOKABLE surface differs from exact contract")
+endif()
 
 # Only the production composition root may construct the public Qt transport.
 # The controller and renderer never see transport or D-Bus vocabulary.
@@ -92,52 +166,79 @@ if(violations)
     message(FATAL_ERROR "Bluetooth applet runtime boundary failed")
 endif()
 
-# Mutation-sensitive negative control rejects both service reach and a pairing
-# invokable planted inside the shell-private controller.
+# Independent negative controls prove service, renamed-pairing, address,
+# persistence, filesystem, and standard-path violations are each rejected.
 if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
     cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
     file(REMOVE_RECURSE "${poison_root}")
-    file(MAKE_DIRECTORY
-         "${poison_root}/src/shell"
-         "${poison_root}/src/shell/runtime"
-         "${poison_root}/src/applet_runtime/src"
-         "${poison_root}/src/shell/qml"
-         "${poison_root}/data/applets"
-         "${poison_root}/data/profiles")
-    file(COPY "${runtime_root}" DESTINATION "${poison_root}/src/shell")
-    file(COPY ${composition_sources}
-         DESTINATION "${poison_root}/src/shell/runtime")
-    file(COPY
-         "${SOURCE_ROOT}/src/applet_runtime/src/builtin_applet_registry.cpp"
-         DESTINATION "${poison_root}/src/applet_runtime/src")
-    file(COPY
-         "${SOURCE_ROOT}/src/shell/qml/BuiltinAppletContent.qml"
-         DESTINATION "${poison_root}/src/shell/qml")
-    file(COPY
-         "${SOURCE_ROOT}/src/shell/runtime/shellruntimeapplication.cpp"
-         DESTINATION "${poison_root}/src/shell/runtime")
-    file(COPY "${SOURCE_ROOT}/data/applets/bluetooth.json"
-         DESTINATION "${poison_root}/data/applets")
-    file(COPY "${SOURCE_ROOT}/data/profiles/qindaqt.json"
-         DESTINATION "${poison_root}/data/profiles")
-    file(APPEND
-         "${poison_root}/src/shell/bluetooth_applet/src/bluetooth_applet_controller.cpp"
-         "\n#include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>\nPairDevice();\n")
-    execute_process(
-        COMMAND "${CMAKE_COMMAND}"
-                "-DSOURCE_ROOT=${poison_root}"
-                -DBLUETOOTH_RUNTIME_POLICY_SKIP_POISON=ON
-                -P "${CMAKE_CURRENT_LIST_FILE}"
-        RESULT_VARIABLE poison_status
-        OUTPUT_VARIABLE poison_output
-        ERROR_VARIABLE poison_error)
+
+    function(expect_runtime_poison_rejected name relative_path poison_content)
+        set(case_root "${poison_root}/${name}")
+        file(MAKE_DIRECTORY
+             "${case_root}/src/shell"
+             "${case_root}/src/shell/runtime"
+             "${case_root}/src/applet_runtime/src"
+             "${case_root}/src/shell/qml"
+             "${case_root}/data/applets"
+             "${case_root}/data/profiles")
+        file(COPY "${runtime_root}" DESTINATION "${case_root}/src/shell")
+        file(COPY ${composition_sources}
+             DESTINATION "${case_root}/src/shell/runtime")
+        file(COPY
+             "${SOURCE_ROOT}/src/applet_runtime/src/builtin_applet_registry.cpp"
+             DESTINATION "${case_root}/src/applet_runtime/src")
+        file(COPY
+             "${SOURCE_ROOT}/src/shell/qml/BuiltinAppletContent.qml"
+             DESTINATION "${case_root}/src/shell/qml")
+        file(COPY
+             "${SOURCE_ROOT}/src/shell/runtime/shellruntimeapplication.cpp"
+             DESTINATION "${case_root}/src/shell/runtime")
+        file(COPY "${SOURCE_ROOT}/data/applets/bluetooth.json"
+             DESTINATION "${case_root}/data/applets")
+        file(COPY "${SOURCE_ROOT}/data/profiles/qindaqt.json"
+             DESTINATION "${case_root}/data/profiles")
+        file(APPEND "${case_root}/${relative_path}" "${poison_content}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DSOURCE_ROOT=${case_root}"
+                    -DBLUETOOTH_RUNTIME_POLICY_SKIP_POISON=ON
+                    -P "${CMAKE_CURRENT_LIST_FILE}"
+            RESULT_VARIABLE poison_status
+            OUTPUT_VARIABLE poison_output
+            ERROR_VARIABLE poison_error)
+        if(poison_status EQUAL 0)
+            message(FATAL_ERROR
+                "Bluetooth runtime boundary accepted ${name} poison:\n"
+                "${poison_output}${poison_error}")
+        endif()
+    endfunction()
+
+    set(controller_header_path
+        "src/shell/bluetooth_applet/src/bluetooth_applet_controller.h")
+    set(controller_source_path
+        "src/shell/bluetooth_applet/src/bluetooth_applet_controller.cpp")
+    set(composition_source_path
+        "src/shell/runtime/bluetoothappletcomposition.cpp")
+    expect_runtime_poison_rejected(
+        "service" "${controller_source_path}"
+        "\n#include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>\n")
+    expect_runtime_poison_rejected(
+        "renamed-pairing" "${controller_header_path}"
+        "\nQ_INVOKABLE void beginPairing(const QString &address);\n")
+    expect_runtime_poison_rejected(
+        "address-accessor" "${controller_source_path}"
+        "\nQString exposedAddress = device.address;\n")
+    expect_runtime_poison_rejected(
+        "persistence" "${controller_source_path}"
+        "\n#include <QtCore/QSettings>\n")
+    expect_runtime_poison_rejected(
+        "filesystem" "${composition_source_path}"
+        "\n#include <QtCore/QSaveFile>\n")
+    expect_runtime_poison_rejected(
+        "standard-paths" "${composition_source_path}"
+        "\n#include <QtCore/QStandardPaths>\n")
     file(REMOVE_RECURSE "${poison_root}")
-    if(poison_status EQUAL 0)
-        message(FATAL_ERROR
-            "Bluetooth runtime boundary accepted service/pairing poison:\n"
-            "${poison_output}${poison_error}")
-    endif()
 endif()
 
 message(STATUS
-    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and poison rejection)")
+    "Bluetooth applet runtime boundary passed (${runtime_source_count} files and 6 poison rejections)")

@@ -61,6 +61,35 @@ foreach(required_path IN ITEMS
     endif()
 endforeach()
 
+# Authenticate the loader path rather than only proving that the process can
+# start. With ambient search paths absent, the KF6 SONAME must resolve to the
+# exact artifact copied beside this relocated shell.
+unset(ENV{LD_LIBRARY_PATH})
+unset(ENV{DYLD_LIBRARY_PATH})
+file(GET_RUNTIME_DEPENDENCIES
+    EXECUTABLES "${shell}"
+    RESOLVED_DEPENDENCIES_VAR resolved_dependencies
+    UNRESOLVED_DEPENDENCIES_VAR unresolved_dependencies)
+set(resolved_kf6_dependency "")
+foreach(resolved_dependency IN LISTS resolved_dependencies)
+    cmake_path(GET resolved_dependency FILENAME dependency_name)
+    if(dependency_name STREQUAL QINDAQT_KF6_GLOBALACCEL_SONAME)
+        if(NOT resolved_kf6_dependency STREQUAL "")
+            message(FATAL_ERROR
+                "Bluetooth applet stage resolved duplicate KF6 runtime artifacts")
+        endif()
+        file(REAL_PATH "${resolved_dependency}" resolved_kf6_dependency)
+    endif()
+endforeach()
+file(REAL_PATH
+    "${stage_library_dir}/${QINDAQT_KF6_GLOBALACCEL_SONAME}"
+    expected_kf6_dependency)
+if(NOT resolved_kf6_dependency STREQUAL expected_kf6_dependency)
+    message(FATAL_ERROR
+        "Staged shell did not resolve KF6 GlobalAccel from its relocated libdir: "
+        "expected ${expected_kf6_dependency}, resolved ${resolved_kf6_dependency}")
+endif()
+
 file(STRINGS "${shell}" compiled_qml
      REGEX "(QindaQt\\.Shell\\.BluetoothApplet|BluetoothApplet\\.qml)")
 if(NOT compiled_qml)
@@ -109,4 +138,5 @@ if(bluetooth_entry EQUAL -1)
         "Staged shell did not resolve the installed Bluetooth manifest:\n${list_output}")
 endif()
 
-message(STATUS "Installed compiled Bluetooth applet and source-poison proof passed")
+message(STATUS
+    "Installed compiled Bluetooth applet, exact KF6 loader path, and source-poison proof passed")

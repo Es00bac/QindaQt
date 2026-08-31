@@ -47,6 +47,16 @@ QString fallbackDeviceLabel(const Bluetooth::DeviceClass deviceClass)
     return QStringLiteral("Bluetooth device");
 }
 
+QString nonAddressLabel(const QString &name, const QString &fallback)
+{
+    const QString trimmed = name.trimmed();
+    // AGENT-GUARD: Display names are untrusted presentation text and may
+    // repeat a canonical hardware address. Never let that spelling cross the
+    // applet boundary even though the protocol legitimately retains it.
+    return trimmed.isEmpty() || Bluetooth::isCanonicalAddress(trimmed)
+        ? fallback : trimmed;
+}
+
 const Bluetooth::Adapter *adapterFor(
     const QList<Bluetooth::Adapter> &adapters,
     const Bluetooth::Handle &handle)
@@ -171,9 +181,9 @@ BluetoothAppletModel projectBluetoothApplet(
         const Bluetooth::Adapter &adapter = adapters.at(index);
         const bool ownsLease = discoveryLease.has_value()
             && *discoveryLease == adapter.handle;
-        const QString label = adapter.name.trimmed().isEmpty()
-            ? QStringLiteral("Bluetooth adapter %1").arg(index + 1)
-            : adapter.name.trimmed();
+        const QString label = nonAddressLabel(
+            adapter.name,
+            QStringLiteral("Bluetooth adapter %1").arg(index + 1));
         model.adapters.append({
             .id = adapterRowId(adapter.handle),
             .label = label,
@@ -209,8 +219,7 @@ BluetoothAppletModel projectBluetoothApplet(
             return model;
         }
         const QString classLabel = fallbackDeviceLabel(device.deviceClass);
-        const QString label = device.name.trimmed().isEmpty()
-            ? classLabel : device.name.trimmed();
+        const QString label = nonAddressLabel(device.name, classLabel);
         model.devices.append({
             .id = deviceRowId(device.handle),
             .adapterId = adapterRowId(device.adapterHandle),
