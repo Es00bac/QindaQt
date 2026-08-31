@@ -131,3 +131,4 @@ nav:
       - "ADR-0050: Direct KDE display writer": adr/0050-direct-kde-output-management-writer.md
       - "ADR-0051: Injected Display journal root": adr/0051-persist-display-journal-in-injected-state-root.md
       - "ADR-0052: Confined NetworkManager adapter": adr/0052-confine-networkmanager-behind-network1.md
+      - "ADR-0053: Authenticated Display1 runtime": adr/0053-compose-display1-from-authenticated-runtime-authorities.md

@@ -104,6 +104,7 @@ public:
     return QindaQt::DisplayWriter::PortStartStatus::ConnectionUnavailable;
   }
   void stop() override {}
+  [[nodiscard]] qint64 peerProcessId() const noexcept override { return 0; }
   [[nodiscard]] QindaQt::DisplayWriter::SubmitStatus
   submit(const QindaQt::DisplayWriter::Configuration &) override {
     return QindaQt::DisplayWriter::SubmitStatus::Unavailable;

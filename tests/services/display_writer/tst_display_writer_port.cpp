@@ -2,6 +2,7 @@
 
 #include "support/display_writer_test_support.h"
 
+#include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
 using namespace QindaQt;
@@ -20,6 +21,7 @@ private Q_SLOTS:
     void fencesHostileSynchronousAndLineageCompletions();
     void mapsTransportSubmissionFailures();
     void rebindsAfterImmediateStopAndRestart();
+    void publishesPeerIdentityAndAuthorityTransitions();
 };
 
 void DisplayWriterPortTests::appliesExactlyOnceAndFencesLateReplies()
@@ -238,6 +240,32 @@ void DisplayWriterPortTests::rebindsAfterImmediateStopAndRestart()
     QTRY_COMPARE(observer.completions.size(), 2);
     QCOMPARE(observer.completions[1],
              (Completion{51, 102, DisplayTransaction::ApplyOutcome::Applied}));
+}
+
+void DisplayWriterPortTests::publishesPeerIdentityAndAuthorityTransitions()
+{
+    auto output = std::make_unique<FakeOutputManagementPort>();
+    auto *outputPointer = output.get();
+    outputPointer->configuredPeerProcessId = 9876;
+    WriterTransactionPort port(std::move(output),
+                               std::make_unique<FakeJournalStore>(), 100);
+    QSignalSpy authority(&port, &WriterTransactionPort::mutationAuthorityChanged);
+
+    QCOMPARE(port.compositorProcessId(), qint64(0));
+    QCOMPARE(port.start(), PortStartStatus::Started);
+    QCOMPARE(port.compositorProcessId(), qint64(9876));
+    outputPointer->publishOwner(1, true);
+    QCOMPARE(authority.size(), 1);
+    QCOMPARE(authority.constFirst().constFirst().toBool(), true);
+
+    outputPointer->publishOwner(1, true);
+    QCOMPARE(authority.size(), 1);
+    outputPointer->publishOwner(2, false);
+    QCOMPARE(authority.size(), 2);
+    QCOMPARE(authority.constLast().constFirst().toBool(), false);
+    port.stop();
+    QCOMPARE(authority.size(), 2);
+    QCOMPARE(port.compositorProcessId(), qint64(0));
 }
 
 QTEST_GUILESS_MAIN(DisplayWriterPortTests)

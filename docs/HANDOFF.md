@@ -4,6 +4,25 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Display D6 repair
+  descendant `9a7872aec60a5e0f8286b3d5af7fa21209e8fd65`. The packaged Display1
+  process now resolves the injected durable journal before mutation authority,
+  authenticates its compositor Wayland peer and lock/logind safety inputs,
+  and composes the public D4 writer through the resident D2 service. Typed
+  observation disposition preserves complete live truth and every Staged-or-
+  later transaction across benign same-owner rejection while still publishing
+  unavailability after a failed replacement-owner establishment. Mary
+  Jackson's same-reviewer rereview accepted the exact descendant with P0/P1
+  `0/0`; Debug and Release each passed 19/19 hostile service assertions, 7/7
+  D6 package/boundary rows, and 40/40 adjacent D0-D6/session-lock rows. The
+  prior in-tree poison and WaylandClient configure defects are closed. Fresh
+  merged-tree Debug and Release targeted builds complete 197/197 and 228/228
+  actions respectively; each passes the same 40/40 adjacent, 7/7 focused, and
+  direct 19/19 hostile gates. The review's unrelated
+  customization Release P2 is already repaired by integrated `fa22af50`.
+  Nested compositor convergence, mixed/physical output behavior, resources,
+  suspend/hotplug, and hardware qualification remain later work.
+
 - This integration merges exact independently accepted customization-editor
   Release-portability candidate `fa22af5028e8dd4bfd9c0951cf742ea74d4b914f`.
   The panel-step helper now constructs the complete `DropTarget` value and
@@ -62,8 +81,8 @@ Manager integration delta after the public baseline below:
   each built 328/328 focused actions and passed 12/12 rows, the compiled page
   passed 10/10, the independent interaction probe passed 7/7, and four hostile
   mutations were killed. Fresh merged-tree verification builds 328/328 and
-  passes the same combined 12/12 selector. Display resident composition and
-  nested preview/confirm/revert convergence remain D6/S3 work; physical
+  passes the same combined 12/12 selector. Display resident composition is now
+  integrated by D6; nested preview/confirm/revert convergence remains S3 work; physical
   displays and assistive-technology integration remain release gates.
 
 - The manager merge of exact accepted candidate `acd0168` integrates Display

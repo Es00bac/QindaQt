@@ -6,16 +6,16 @@ exports no object, connects no client, opens no Wayland object, and applies no
 configuration. `display_service` now owns the activated
 `org.qindaqt.Display1` process at `/org/qindaqt/Display1`, reads the integrated
 D0 inventory through an exact-owner adapter, and composes D1 through injected
-ports. Its packaged mutation port remains unavailable and fail-closed.
-The separate D4 [display writer](../architecture/display-writer.md) now maps
-those injected apply values onto a direct public-protocol seam, but is not yet
-composed into the executable because the durable transaction dependencies and
-nested convergence proof remain incomplete.
+ports. D6 now composes the packaged process with D5 startup truth, the sole D4
+[display writer](../architecture/display-writer.md), Wayland-peer-authenticated
+session-lock state, and an exact-owner logind delay inhibitor. Missing or
+uncertain authority remains fail-closed. Nested convergence proof remains
+separate from this deterministic process evidence.
 
 The authority and dependency rules are in
 [Display service](../architecture/display-service.md),
 [ADR-0016](../adr/0016-display1-transaction-authority.md), and
-[ADR-0017](../adr/0017-persistent-output-identity.md).
+[ADR-0053](../adr/0053-compose-display1-from-authenticated-runtime-authorities.md).
 
 ## Version and lineage
 
@@ -188,10 +188,12 @@ owner therefore cannot recreate the earlier public epoch during the process
 lifetime, and the model retains no attacker-controlled epoch history. The
 positive D0 `outputGeneration` is the Display1 revision. Exact typed redelivery
 is accepted at equal generation; changed content at equal generation, revision
-regression, and a newer generation with unchanged content all reject
-atomically. Owner replacement or transport loss discards the public snapshot
-and active machine. A later accepted frame starts a fresh epoch, so revisions
-are never compared across source owners.
+regression, and a newer generation with unchanged content all reject atomically
+while preserving the complete same-owner public snapshot and any active
+transaction. Rejection diagnostics do not imply authority loss. Owner
+replacement or transport loss discards the public snapshot and active machine.
+A later accepted frame starts a fresh epoch, so revisions are never compared
+across source owners.
 
 Projection is intentionally narrower than full output management. It publishes
 only D0 enabled outputs and one synthesized current mode, requires integral
@@ -201,15 +203,25 @@ as non-persistent metadata. The first output in D0 semantic order is primary;
 priorities are canonical contiguous order. Replication and disabled-output mode
 inventory are not invented.
 
-The resident owns actual single-shot scheduling for D1 deadlines and routes
-typed inventory changes into the D1 machine. The packaged process has safety
-`Unknown`, so `Stage` may validate but `Preview` rejects `Locked`. If a test or
-later authenticated composition supplies `Safe`, the packaged transaction
-port still cannot persist the hard-gate journal and rejects `JournalFailure`
-without a compositor request. Consequently these methods establish
-service/transaction ownership without claiming a production writer. There is
-no KWin private ABI, Wayland output-management object, journal file, Settings,
-QML, lock client, or logind adapter in this slice.
+The resident owns actual single-shot scheduling for D1 deadlines, a separate
+500 ms accepted-inventory topology quiet window, and typed inventory routing.
+The packaged D6 process starts D4 only after D5 reports absent or loaded truth,
+passes loaded truth into D1 recovery, and publishes the resident only after an
+exact-owner logind delay descriptor is held. `Safe` requires D4 availability,
+an authenticated unlocked session, that descriptor, and no pending suspend.
+Otherwise `Stage` may validate but `Preview` rejects `Locked`; journal
+`Unchanged` or `DurabilityUncertain` still prevents every forward request.
+
+The state-root precedence is `--state-root`, single `STATE_DIRECTORY`,
+`XDG_STATE_HOME/qindaqt`, then `HOME/.local/state/qindaqt`; D5 is the final
+directory ownership/permission/symlink authority. Linux `SO_PEERCRED` on D4's
+exact Wayland socket provides the PID used to authenticate the three lock
+names. `PrepareForSleep(true)` revokes safety, requests rollback, and retains
+the delay through an in-flight forward apply. System/session bus loss, logind
+replacement, inhibitor failure, unsafe state truth, writer loss, and invalid
+peer identity fail closed. D1/D2 still contain no KWin private ABI, Wayland
+object, journal file, Settings, QML, lock client, or logind adapter; those
+process dependencies are isolated in `display_runtime`.
 
 ## Persistent identity
 
@@ -415,18 +427,23 @@ qualification.
 | Journal bytes | `qindaqt.display-transaction-journal`: invariants, canonical round-trip, versions, torn/trailing/oversized bytes, no partial destination |
 | Resident inventory adapter | `qindaqt.display-service-inventory`: exact owner/schema/generation JSON, bounds, privacy-preserving connector projection, current-mode geometry, transform/fractional scale, fingerprint |
 | Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, hostile A/B/A seed reuse, process-unique epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership, zero/one validated public transaction-summary projection through staged/applying/observing/awaiting/reverting/stuck/terminal states with fail-closed invalid views |
+| Startup and replacement recovery | `qindaqt.display-service-recovery`, `qindaqt.display-service-model`: valid loaded truth enters D1 recovery before readiness; rejected truth issues zero apply/clear; active truth survives owner loss under a new outer lineage; old-lineage completion is fenced |
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
 | Exact-owner async inventory transport | `qindaqt.display-service-inventory-private-bus`: disposable private bus/root, exact-owner read, dirty coalescing, replacement/unavailable, stale-reply rejection, and stop suppression |
-| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation` and its confirmation clear, and name/object/port teardown on the same disposable bus |
-| D4 writer mapping and serialization | `qindaqt.display-writer-mapper`, `qindaqt.display-writer-port`: exact connector/current-mode translation, structural mutation rejection, exactly-one-in-flight machine/token/request/owner fencing, timeout/stop/lineage loss, hostile synchronous completion, and late-reply suppression |
+| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`, `qindaqt.display-service-resident-inventory-rejection-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation`, 500 ms recovered-set settle/clear, preservation across every same-owner generation/projection rejection from Staged through AwaitingConfirmation, explicit unavailable and failed replacement-owner withdrawal, and name/object/port teardown on disposable buses |
+| D4 writer mapping and serialization | `qindaqt.display-writer-mapper`, `qindaqt.display-writer-port`: exact connector/current-mode translation, structural mutation rejection, exactly-one-in-flight machine/token/request/owner fencing, socket peer identity, authority edges, timeout/stop/lineage loss, hostile synchronous completion, and late-reply suppression |
 | D4 writer boundary/package poison | `qindaqt.display-writer-boundary`, `qindaqt.display-writer-boundary-poison`, `qindaqt.display-writer-installed-boundary-poison`: pinned protocol XML, no private/platform dependency in public headers, staged installed-header consumer, and non-vacuous negative probes |
+| D6 startup and resident composition | `qindaqt.display-runtime-state-root`, `qindaqt.display-runtime-resident-private-bus`: deterministic state-root precedence/rejection; load validation before writer start; loaded-target rollback with zero forward replay; combined writer/delay/lock safety; durability uncertainty; suspend delay; owner/lineage replacement; terminal authority loss; late completion |
+| D6 production safety and package boundary | `qindaqt.display-runtime-session-safety-private-bus`, `qindaqt.display-runtime-boundary`, `qindaqt.display-runtime-boundary-poison`, `qindaqt.display-runtime-installed-boundary-poison`, `qindaqt.display-runtime-process-startup`: matching/mismatching Wayland-peer PID, three-name lock quorum, exact-owner inhibitor lifetime, lock/sleep/resume/owner-loss transitions, D1/D2 dependency poison, installed public-header poison, and packaged missing/unsafe/malformed-state rejection before bus authority |
 
 The D2 service-focused rows add deterministic decoder/projection, owner and
 generation collision, loss/reset, add/remove/change, transaction-port,
 descriptor, staged-install, and public-header-consumer evidence plus isolated
 private-D-Bus source/resident/timer lifecycle proof. D4 adds compiled direct
-protocol code, pure mapping, serialization/fence, package, and poison evidence.
+protocol code, pure mapping, serialization/fence, package, and poison evidence;
+D6 adds deterministic startup/recovery, authenticated safety, and resident
+package composition.
 These rows still do not exercise a compositor or display. Nested KWin
-output-management, restart recovery, mirror visibility, and physical output
+output-management/restart convergence, mirror visibility, and physical output
 rows remain later work in the
 [testing harness](../development/testing-harness.md).

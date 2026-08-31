@@ -131,11 +131,14 @@ QString publicEpoch(const QString &restartSeed, const quint64 machineLineage)
 DisplayServiceModel::DisplayServiceModel(DisplayTransaction::MonotonicClock &clock,
                                          TransactionPort &port,
                                          EpochFactory epochFactory,
-                                         DisplayTransaction::Timing timing)
+                                         DisplayTransaction::Timing timing,
+                                         std::optional<DisplayTransaction::Journal>
+                                             startupJournal)
     : m_clock(clock)
     , m_port(port)
     , m_epochFactory(std::move(epochFactory))
     , m_timing(timing)
+    , m_pendingRecoveryJournal(std::move(startupJournal))
 {
 }
 
@@ -191,14 +194,16 @@ quint64 DisplayServiceModel::machineLineage() const noexcept
 InventoryObservationResult DisplayServiceModel::establishLineage(
     const InventoryFrame &frame)
 {
-    if (m_machine != nullptr) {
-        (void)transportLost();
-    }
+    // AGENT-CONTRACT: owner replacement withdraws the prior lineage before a
+    // replacement frame is trusted. Every failure below must carry that edge
+    // through stateChanged so the resident can publish unavailability without
+    // classifying diagnostic strings.
+    const bool priorTruthInvalidated = m_machine != nullptr && transportLost();
     if (!m_epochFactory) {
         return {.status = InventoryObservationStatus::Rejected,
                 .error = InventoryError::ProjectionFailure,
                 .reasonCode = QStringLiteral("missing-epoch-factory"),
-                .stateChanged = false};
+                .stateChanged = priorTruthInvalidated};
     }
     const QString restartSeed = m_epochFactory();
     if (!Display::isBoundedText(restartSeed,
@@ -206,13 +211,13 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
         return {.status = InventoryObservationStatus::Rejected,
                 .error = InventoryError::ProjectionFailure,
                 .reasonCode = QStringLiteral("invalid-service-epoch-seed"),
-                .stateChanged = false};
+                .stateChanged = priorTruthInvalidated};
     }
     if (m_machineLineage == std::numeric_limits<quint64>::max()) {
         return {.status = InventoryObservationStatus::Rejected,
                 .error = InventoryError::ProjectionFailure,
                 .reasonCode = QStringLiteral("machine-lineage-exhausted"),
-                .stateChanged = false};
+                .stateChanged = priorTruthInvalidated};
     }
     const quint64 nextMachineLineage = m_machineLineage + 1;
     const QString epoch = publicEpoch(restartSeed, nextMachineLineage);
@@ -223,21 +228,28 @@ InventoryObservationResult DisplayServiceModel::establishLineage(
         return {.status = InventoryObservationStatus::Rejected,
                 .error = projection.error,
                 .reasonCode = projection.reasonCode,
-                .stateChanged = false};
+                .stateChanged = priorTruthInvalidated};
     }
 
     auto machine = std::make_unique<DisplayTransaction::Machine>(m_clock, m_port,
                                                                  m_timing);
-    const DisplayTransaction::CommandResult initialized =
-        machine->initialize(projection.snapshot, m_safety);
+    // Recovery may synchronously issue a rollback request. Publish and consume
+    // the outer lineage before entering D1 so that request can never inherit a
+    // prior machine's fence. A failed D1 entry still consumes the lineage.
+    m_machineLineage = nextMachineLineage;
+    m_port.beginMachineLineage(m_machineLineage);
+    const DisplayTransaction::CommandResult initialized = m_pendingRecoveryJournal
+        ? machine->recover(*m_pendingRecoveryJournal, projection.snapshot, m_safety)
+        : machine->initialize(projection.snapshot, m_safety);
     if (!initialized.accepted) {
         return {.status = InventoryObservationStatus::Rejected,
                 .error = InventoryError::ProjectionFailure,
-                .reasonCode = QStringLiteral("transaction-initialization-failed"),
-                .stateChanged = false};
+                .reasonCode = m_pendingRecoveryJournal
+                    ? QStringLiteral("transaction-recovery-failed")
+                    : QStringLiteral("transaction-initialization-failed"),
+                .stateChanged = priorTruthInvalidated};
     }
-    m_machineLineage = nextMachineLineage;
-    m_port.beginMachineLineage(m_machineLineage);
+    m_pendingRecoveryJournal.reset();
     m_machine = std::move(machine);
     m_frame = frame;
     m_sourceOwner = frame.uniqueOwner;
@@ -336,6 +348,11 @@ DisplayTransaction::CommandResult DisplayServiceModel::routeObservation(
 bool DisplayServiceModel::transportLost()
 {
     const bool changed = m_machine != nullptr;
+    if (m_machine != nullptr && m_machine->view().journalActive) {
+        // AGENT-CONTRACT: D0 owner/loss resets live inventory authority, not
+        // D5 recovery truth. The next complete lineage must enter recover().
+        m_pendingRecoveryJournal = m_machine->activeJournal();
+    }
     m_machine.reset();
     m_frame = {};
     m_sourceOwner.clear();

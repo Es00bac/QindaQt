@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace QindaQt::DisplayService
 {
@@ -46,12 +47,17 @@ public:
     // unique-owner lineage; it supplies a bounded, restart-unique seed. The
     // model combines that seed with a process-monotonic lineage so a repeated
     // seed cannot republish an accepted public epoch. All returned/accessed
-    // values are model-owned until the next call; rejected calls preserve every
-    // observable field.
+    // values are model-owned until the next call. Rejected same-owner calls
+    // preserve live public truth. A rejected replacement-owner call reports
+    // stateChanged when it first revokes the old lineage; a failed first-lineage
+    // recovery still consumes its outer callback fence but publishes no
+    // snapshot or machine.
     DisplayServiceModel(DisplayTransaction::MonotonicClock &clock,
                         TransactionPort &port,
                         EpochFactory epochFactory,
-                        DisplayTransaction::Timing timing = {});
+                        DisplayTransaction::Timing timing = {},
+                        std::optional<DisplayTransaction::Journal> startupJournal =
+                            std::nullopt);
     ~DisplayServiceModel();
 
     [[nodiscard]] bool available() const noexcept;
@@ -66,8 +72,9 @@ public:
     [[nodiscard]] quint64 machineLineage() const noexcept;
 
     InventoryObservationResult observeInventory(const InventoryFrame &frame);
-    // Clears all source-derived and transaction state. The process-monotonic
-    // lineage remains consumed so recovery cannot republish an old epoch.
+    // Clears source-derived live state. An active journal is retained as
+    // pending recovery authority; the process-monotonic lineage remains
+    // consumed so recovery cannot republish an old epoch.
     [[nodiscard]] bool transportLost();
 
     [[nodiscard]] ServiceOperationResult stage(const QString &transactionId,
@@ -104,6 +111,10 @@ private:
     QString m_serviceEpoch;
     quint64 m_machineLineage = 0;
     DisplayTransaction::SafetyState m_safety = DisplayTransaction::SafetyState::Unknown;
+    // AGENT-GUARD: This value is authority awaiting a complete replacement
+    // inventory, not a cache. It is consumed only after D1 accepts recover();
+    // owner/loss reset must retain it while journalActive is true.
+    std::optional<DisplayTransaction::Journal> m_pendingRecoveryJournal;
     // Composed lazily by snapshot(); mutable so the read boundary stays const.
     mutable Display::Snapshot m_publicSnapshot;
 };
