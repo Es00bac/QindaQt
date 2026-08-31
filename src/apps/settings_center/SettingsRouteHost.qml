@@ -7,8 +7,10 @@ Item {
     required property var navigation
     required property var quietingSettings
     required property var appearanceSettings
+    property var displaySettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
+    property Component displayComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -19,7 +21,9 @@ Item {
           ? notificationsLoader
           : navigation.activeRouteComponent === "appearance"
             ? appearanceLoader
-            : unavailableLoader
+            : navigation.activeRouteComponent === "display"
+              ? displayLoader
+              : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
     // compact and wide shells may coexist for responsive layout, but inactive
@@ -60,6 +64,17 @@ Item {
     }
 
     Loader {
+        id: displayLoader
+        objectName: host.objectNamePrefix + "DisplayLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "display"
+                && host.displayComponent !== null
+        sourceComponent: host.displayComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -68,7 +83,8 @@ Item {
         active: host.presentationActive
                 && (!host.navigation.activeRouteAvailable
                     || (host.navigation.activeRouteComponent !== "notifications"
-                        && host.navigation.activeRouteComponent !== "appearance"))
+                        && host.navigation.activeRouteComponent !== "appearance"
+                        && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }

@@ -1,14 +1,15 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. S1 contains two real routes: **Notifications** and
-**Appearance**. The shell owns route identity, selection, responsive
+modular settings routes. It contains three real routes: **Notifications**,
+**Appearance**, and **Display**. The shell owns route identity, selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
 The durable ownership choice is [ADR-0048](../adr/0048-settings-center-navigation-and-route-ownership.md).
 Appearance behavior remains documented on the
-[Appearance route](appearance-settings.md); notification quieting and its live
+[Appearance route](appearance-settings.md); Display behavior is documented on
+the [Display route](display-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 
@@ -28,11 +29,11 @@ characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
 must not hide one. The closed component kind is mapped to the compiled
-Notifications or Appearance component. It is not a QML URL, plugin path, or
+Notifications, Appearance, or Display component. It is not a QML URL, plugin path, or
 service locator.
 
-The public command accepts only `--page notifications` and
-`--page appearance`. Unknown, noncanonical, path-like, or otherwise hostile
+The public command accepts `--page notifications`, `--page appearance`, and
+`--page display`. Unknown, noncanonical, path-like, or otherwise hostile
 values exit 2 before any settings transport, route model, or QML root is
 constructed. Registry lookup also rejects unknown runtime selection without
 changing the active or previous route.

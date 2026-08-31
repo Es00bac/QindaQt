@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+  "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/qindaqt/Network1">
+  <interface name="org.qindaqt.Network1">
+    <method name="GetSnapshot">
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
+    <method name="RequestScan">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="deadlineMs" type="x" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
+    <method name="ConnectKnownNetwork">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="knownNetworkId" type="s" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
+    <method name="DisconnectActive">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="deviceInterface" type="s" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
+    <method name="SetRadio">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="radioKind" type="u" direction="in"/>
+      <arg name="enable" type="b" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
+    <signal name="Changed">
+      <arg name="epoch" type="t"/>
+      <arg name="revision" type="t"/>
+    </signal>
+  </interface>
+</node>

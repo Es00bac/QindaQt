@@ -8,10 +8,10 @@ sole live-state and restore authority. [ADR-0050](../adr/0050-direct-kde-output-
 fixes this adapter's exact production path and deliberately narrow identity
 support.
 
-D4 is a writer boundary, not a complete production transaction composition.
-The installed Display1 executable still uses an unavailable transaction port
-because the durable journal, authenticated lock state, logind inhibition,
-restart recovery, and nested convergence proof are separate later outcomes.
+D4 remains a writer boundary rather than a transaction policy owner. The D6
+runtime now composes it as the packaged Display1 process's only mutation port,
+with D5 durability and authenticated lock/logind safety kept in their separate
+modules. Contained nested convergence proof remains a separate outcome.
 The D4 code never touches the host display during build or deterministic tests.
 
 ## Components and dependency direction
@@ -21,9 +21,9 @@ The D4 code never touches the host display during build or deterministic tests.
 | `mapApplyRequest` | Pure translation from one Display1 apply value to a narrow compositor configuration | Protocol objects, current-state discovery, persistence, retries |
 | `validateConfiguration` | Total structural validation at the injected compositor boundary | Availability or output discovery |
 | `WriterTransactionPort` | One in-flight request, machine-lineage/token/request/owner fencing, timeout, and exactly-once deferred completion | Journal implementation, Display1 state transitions, compositor inventory |
-| `OutputManagementPort` | Injected asynchronous owner/submit/completion seam | D-Bus, Settings, files, UI |
+| `OutputManagementPort` | Injected asynchronous owner/submit/completion seam plus live compositor peer PID | D-Bus, Settings, files, UI |
 | Production adapter | Direct ownership of a private Wayland connection and public KDE output-management objects | KWin private ABI/configuration, libkscreen production authority, physical outputs |
-| `JournalStore` | Injected synchronous store/clear seam needed by the existing Display1 side-effect port | A D4 filesystem implementation |
+| `JournalStore` | Injected synchronous typed store/clear seam preserving unchanged, durable, and barrier-uncertain pathname truth for Display1 | Filesystem policy; D5 implements it in `display_journal` |
 
 The installed public headers expose only owning Qt values, abstract ports, and
 factories. Generated protocol wrappers, Wayland objects, socket notifiers, and
@@ -76,6 +76,12 @@ and structurally malformed/unsupported values map to a deterministic rejected
 result. Concrete protocol objects belonging to an invalidated global set are
 released so a later owner is not permanently held behind a stale busy slot.
 
+The production port publishes availability edges to D6 and exposes a positive
+peer PID only while its exact private Wayland connection is live. On Linux that
+identity comes from `SO_PEERCRED` on the Wayland socket; no environment value or
+D-Bus-name claim is accepted. This identity authenticates the session-lock
+quorum but never grants mutation without D1 safety and D5 journal gates.
+
 ## Protocol source and compatibility
 
 The two client XML inputs are copied exactly from Plasma Wayland Protocols
@@ -109,8 +115,17 @@ lineage change, late reply, timeout, concurrent request, stop, and journal seam
 behavior. Boundary and poison rows pin the XML and prove platform/private
 dependencies cannot escape the installed header surface.
 
-These are deterministic and compile-time D4 evidence. They do **not** prove a
+These are deterministic and compile-time D4/D6 evidence. They do **not** prove a
 real KWin apply, callback-before-observation ordering, post-apply convergence,
 mirror visibility, hotplug recovery, service restart recovery, physical
-monitor behavior, or the packaged Display1 process as an operational writer.
-Those claims require the contained nested matrix before hardware qualification.
+monitor behavior or KWin convergence. The packaged Display1 process is now
+composed as an operational writer, but real compositor behavior still requires
+the contained nested matrix before hardware qualification.
+
+The D5 store is deliberately downstream of this module: it derives from the
+installed `JournalStore` interface and is passed to `WriterTransactionPort` by
+D6. D4 therefore remains independently testable
+with a fake, while D5 owns Linux file operations and canonical startup loading.
+`WriterTransactionPort` forwards the typed mutation outcome unchanged; it never
+turns a failed directory barrier, including an already-absent clear retry, into
+Boolean success or failure. Neither module discovers a user-state path.

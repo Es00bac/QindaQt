@@ -118,6 +118,10 @@ public:
     virtual void setObserver(OutputManagementObserver *observer) = 0;
     [[nodiscard]] virtual PortStartStatus start() = 0;
     virtual void stop() = 0;
+    // Positive only while the concrete mutation connection is live. The
+    // Linux production adapter derives this from SO_PEERCRED on the exact
+    // private Wayland socket; no bus name or environment PID is accepted.
+    [[nodiscard]] virtual qint64 peerProcessId() const noexcept = 0;
     [[nodiscard]] virtual SubmitStatus submit(const Configuration &configuration) = 0;
 };
 

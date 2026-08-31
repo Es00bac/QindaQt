@@ -41,6 +41,21 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_display_service_recovery_tests
+    tst_display_service_recovery.cpp
+    support/display_service_test_support.h
+)
+target_link_libraries(
+    qindaqt_display_service_recovery_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_display_service_recovery_tests)
+add_test(
+    NAME qindaqt.display-service-recovery
+    COMMAND qindaqt_display_service_recovery_tests
+)
+
+qt_add_executable(
     qindaqt_display_service_deployment_tests
     tst_display_service_deployment.cpp
     support/display_service_test_support.h
@@ -103,9 +118,33 @@ add_test(
     COMMAND qindaqt_resident_display_service_private_bus_tests
 )
 
+qt_add_executable(
+    qindaqt_resident_display_service_inventory_rejection_private_bus_tests
+    tst_resident_display_service_inventory_rejection_private_bus.cpp
+    support/display_service_test_support.h
+    support/private_bus_test_support.h
+)
+target_link_libraries(
+    qindaqt_resident_display_service_inventory_rejection_private_bus_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_resident_display_service_inventory_rejection_private_bus_tests
+    PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DISPLAY_DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(
+    qindaqt_resident_display_service_inventory_rejection_private_bus_tests
+)
+add_test(
+    NAME qindaqt.display-service-resident-inventory-rejection-private-bus
+    COMMAND qindaqt_resident_display_service_inventory_rejection_private_bus_tests
+)
+
 set_tests_properties(
     qindaqt.display-service-inventory
     qindaqt.display-service-model
+    qindaqt.display-service-recovery
     qindaqt.display-service-deployment
     PROPERTIES LABELS "service;display" TIMEOUT 20
 )
@@ -113,6 +152,7 @@ set_tests_properties(
 set_tests_properties(
     qindaqt.display-service-inventory-private-bus
     qindaqt.display-service-resident-private-bus
+    qindaqt.display-service-resident-inventory-rejection-private-bus
     PROPERTIES
         LABELS "service;display;private-dbus;isolated-runtime"
         TIMEOUT 20

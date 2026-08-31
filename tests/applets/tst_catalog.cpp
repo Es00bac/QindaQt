@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 6);
+    QCOMPARE(catalog.manifests().size(), 7);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -49,6 +49,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("system-tray"),
         QStringLiteral("clock"),
         QStringLiteral("notification-center"),
+        QStringLiteral("power"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {
@@ -71,14 +72,19 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *tray = catalog.findById(QStringLiteral("system-tray"));
     const AppletManifest *notificationCenter =
         catalog.findById(QStringLiteral("notification-center"));
+    const AppletManifest *power = catalog.findById(QStringLiteral("power"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
     QVERIFY(notificationCenter != nullptr);
+    QVERIFY(power != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
     QVERIFY(notificationCenter->capabilities.isEmpty());
+    QVERIFY(power->capabilities
+            == QVector<Capability>({Capability::PowerRead,
+                                    Capability::PowerControl}));
     QVERIFY(notificationCenter->placementZones
             == QVector<PlacementZone>({PlacementZone::PanelStart,
                                        PlacementZone::PanelCenter,

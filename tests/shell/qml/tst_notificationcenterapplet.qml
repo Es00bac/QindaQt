@@ -29,6 +29,11 @@ Item {
         function toggle() { ++toggleCalls; }
     }
 
+    QtObject {
+        id: fakePowerAccess
+        property string batteryLabel: "56%"
+    }
+
     Component {
         id: appletComponent
         ShellComponents.NotificationCenterApplet {
@@ -53,6 +58,7 @@ Item {
             theme: testRoot.theme
             liveApplets: true
             notificationCenterAppletAccess: fakeAccess
+            powerAppletAccess: fakePowerAccess
         }
     }
 
@@ -63,13 +69,17 @@ Item {
             theme: testRoot.theme
             liveApplets: true
             notificationCenterAppletAccess: fakeAccess
+            powerAppletAccess: fakePowerAccess
         }
     }
 
     function runtimeApplet(entryPoint, ready) {
+        const plugin = entryPoint === "qindaqt.applets.notification-center"
+                       ? "notification-center"
+                       : entryPoint === "qindaqt.applets.power"
+                         ? "power" : "clock";
         return {
-            "plugin": entryPoint === "qindaqt.applets.notification-center"
-                      ? "notification-center" : "clock",
+            "plugin": plugin,
             "settings": {},
             "runtime": {
                 "ready": ready,
@@ -161,6 +171,19 @@ Item {
             verify(clock.visible);
             verify(notifications !== null);
             verify(!notifications.visible);
+
+            const powerDispatcher = createTemporaryObject(
+                                      dispatcherComponent, testRoot,
+                                      { "applet": testRoot.runtimeApplet(
+                                          "qindaqt.applets.power", true) });
+            verify(powerDispatcher !== null);
+            verify(powerDispatcher.hasLiveContent);
+            verify(powerDispatcher.powerReady);
+            verify(!powerDispatcher.clockReady);
+            verify(!powerDispatcher.notificationCenterReady);
+            const power = findChild(powerDispatcher, "powerApplet");
+            verify(power !== null);
+            verify(power.visible);
         }
 
         function test_dispatcherFailsClosedForUnregisteredOrUnavailableContent() {
@@ -172,6 +195,7 @@ Item {
             verify(!unknown.hasLiveContent);
             verify(!unknown.clockReady);
             verify(!unknown.notificationCenterReady);
+            verify(!unknown.powerReady);
 
             const unready = createTemporaryObject(
                                 dispatcherComponent, testRoot,

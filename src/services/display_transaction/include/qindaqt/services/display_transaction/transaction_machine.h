@@ -53,6 +53,7 @@ private:
     void setState(MachineState state);
     void clearTransaction();
     void beginForwardApply();
+    void retainUncertainJournalForCleanup(Journal journal);
     void requestRevert(Display::TransactionReason reason);
     void beginRevert(Display::TransactionReason reason);
     void issueRevertApply();

@@ -1,61 +1,91 @@
-# Network1 version 1 values and pure protocol
+# Network1 version 1
 
-This page fixes the N0 value, identity, validation, and canonical-codec
-boundary reserved for `org.qindaqt.Network1`. N0 does not own a bus name,
-contact NetworkManager or any daemon, read a radio, store a secret, or expose a
-user interface; those are later slices in the
+This page fixes the value, canonical-codec, and resident D-Bus contract for
+`org.qindaqt.Network1`. N0 owns the platform-free values, model, and injected
+client transport seam. N1 implements the resident service, Qt D-Bus transport,
+and NetworkManager adapter described in the
 [Network service architecture](../architecture/network-service.md).
 
-## Identity and lineage
+## Endpoint and fixed D-Bus wire
 
 | Property | Value |
 | --- | --- |
-| Reserved bus name and interface | `org.qindaqt.Network1` |
-| Reserved object path | `/org/qindaqt/Network1` |
+| Well-known name and interface | `org.qindaqt.Network1` |
+| Object path | `/org/qindaqt/Network1` |
 | Protocol version | `1` |
 | Canonical codec version | `1` |
+| Install components | `QindaQtNetworkN0`, then `QindaQtNetworkN1` |
+
+The interface contains no property or `a{sv}` bag. Snapshot and operation
+results are canonical N0 byte arrays (`ay`):
+
+| Member | Signature | Result |
+| --- | --- | --- |
+| `GetSnapshot` | `() → (ay)` | canonical `Snapshot` |
+| `RequestScan` | `(t epoch, t revision, x deadlineMs) → (ay)` | canonical `OperationResult` |
+| `ConnectKnownNetwork` | `(t epoch, t revision, s knownNetworkId) → (ay)` | canonical `OperationResult` |
+| `DisconnectActive` | `(t epoch, t revision, s deviceInterface) → (ay)` | canonical `OperationResult` |
+| `SetRadio` | `(t epoch, t revision, u radioKind, b enable) → (ay)` | canonical `OperationResult` |
+| `Changed` | signal `(t epoch, t revision)` | tells clients to refetch |
+
+Mutation methods may hold their D-Bus reply until backend completion or the
+five-second service deadline. Immediate admission failures return a complete
+operation result. An admitted platform dispatch begins on the next same-thread
+event turn, after the resident object has retained the delayed D-Bus call;
+synchronous backend completion therefore still returns exactly once. Stop,
+timeout, or authority retirement before that turn fences the dispatch and
+returns the applicable uncertain result. No method accepts credentials or arbitrary settings. D-Bus
+activation and the user systemd unit both start `qindaqt-network-service`.
+
+## Identity and lineage
 
 Every snapshot carries a nonzero service epoch and positive monotonic revision.
-Within one owner and epoch, revisions must strictly increase. Any owner or
-epoch change requires an epoch strictly greater than every previously observed
-accepted epoch, including after current state is cleared; a same-owner epoch
-change is rejected. Owners are exact valid D-Bus unique-name strings bounded to
-255 UTF-8 bytes. A decoded snapshot owner must equal both the initiating
-request owner and the current transport owner. An operation result carries its
-initiating epoch/revision and kind; a reply that does not match the request's
-lineage is not evidence about that operation.
+Within one owner and epoch, revisions strictly increase. Any owner or epoch
+change requires an epoch greater than every previously accepted epoch,
+including after current state is cleared; a same-owner epoch change is
+rejected. Owners are exact valid D-Bus unique-name strings bounded to 255 UTF-8
+bytes. A decoded snapshot owner must equal both the request owner and current
+transport owner. An operation result must repeat its initiating epoch,
+revision, and kind.
+
+The resident service binds one boot-monotonic epoch to one D-Bus unique owner.
+After the first nonempty upstream owner is observed, NetworkManager
+`dbus-name-owner` notification loss/replacement immediately retires that
+process; the one-second observation poll is not an authority fence. The watch
+is exact-client and per-start-generation fenced. Retirement makes pending work
+uncertain, and relies on systemd restart or fresh D-Bus activation for a new
+Network1 owner and greater epoch. Session-bus disconnect retires the process.
+Clients drop late, duplicate, malformed, foreign-owner, stale-token, and
+retired-lineage replies and never replay a mutation.
 
 ## Snapshot values
 
-The snapshot contains fixed fields, never an `a{sv}` bag: protocol version,
-owner, epoch, revision, availability (`Starting`, `Ready`, `Unavailable`,
-`Degraded`), capability bits, connectivity (`Unknown`, `Offline`, `Portal`,
-`Limited`, `Full`), bounded reason/diagnostic, radios, devices, access points,
-known networks, active connections, and the scan phase plus lease.
+The snapshot contains fixed fields: protocol version, owner, epoch, revision,
+availability (`Starting`, `Ready`, `Unavailable`, `Degraded`), capability bits,
+connectivity (`Unknown`, `Offline`, `Portal`, `Limited`, `Full`), bounded
+reason/diagnostic, radios, devices, access points, known networks, active
+connections, and scan phase/lease.
 
-Unavailable and degraded snapshots must carry a reason code. Capability bits
-are exactly `Connectivity`, `Scan`, `KnownNetworkControl`, `RadioControl`, and
-`ActiveConnectionControl`; unknown bits are rejected.
-
-Referential integrity is structural: an access point must sit on a Wi-Fi
-device; an active connection must reference an existing device and known
-network; radio kinds, device interfaces, per-device BSSIDs, network ids, and
-connection devices are unique.
+Unavailable and degraded snapshots require a reason. Capability bits are
+exactly `Connectivity`, `Scan`, `KnownNetworkControl`, `RadioControl`, and
+`ActiveConnectionControl`; unknown bits are rejected. Referential integrity is
+structural: an access point sits on a Wi-Fi device; an active connection
+references an existing device and known network; radio kinds, device
+interfaces, per-device BSSIDs, network ids, and active device references are
+unique.
 
 ## Identity normalization
 
-- SSIDs are at most 32 raw octets. Valid presentation-safe UTF-8 is published
-  as text; anything else (including empty) is a hidden network whose octets
-  never leave the adapter. Unsafe categories are controls, line/paragraph
-  separators, format controls, surrogates, private-use, and unassigned
-  scalars. Safe supplementary Unicode remains representable.
+- SSIDs are at most 32 raw octets. Presentation-safe UTF-8 is published as
+  text; anything else, including empty, becomes a hidden network whose octets
+  never leave the adapter. Controls, line/paragraph separators, format
+  controls, surrogates, private-use, and unassigned scalars are unsafe.
 - BSSIDs are exactly seventeen lowercase `xx:xx:xx:xx:xx:xx` hex characters.
-- Interface names are 1–15 octets of `[A-Za-z0-9._-]` starting alphanumeric,
-  matching Linux IFNAMSIZ.
-- A known-network id is the 64-character lowercase hex SHA-256 over the raw
-  SSID octets and the security suite; validation accepts only digests of this
-  shape. It is a correlation pseudonym, not confidentiality for a guessable
-  SSID. Security suites are `Open`, `Wep`, `Wpa2Personal`, `Wpa2Enterprise`,
+- Interface names are 1–15 octets of `[A-Za-z0-9._-]`, starting alphanumeric.
+- A known-network id is the 64-character lowercase SHA-256 hex digest over the
+  raw SSID octets and security suite. It is a correlation pseudonym, not
+  confidentiality for a guessable SSID.
+- Security suites are `Open`, `Wep`, `Wpa2Personal`, `Wpa2Enterprise`,
   `Wpa3Personal`, and `Wpa3Enterprise`.
 
 ## Text and numeric limits
@@ -72,55 +102,70 @@ connection devices are unique.
 | Signal strength | 0 through 100 |
 | Frequency | 0 (unknown) or 2,412 through 7,125 MHz |
 | Scan-lease remaining duration | 1,000 through 120,000 ms |
-| Request timeout / retry schedule | 100–60,000 ms / at most 8 entries, each ≤ 60,000 ms |
+| Client request timeout / retry schedule | 100–60,000 ms / at most 8 entries, each ≤60,000 ms |
+| Resident backend-operation timeout | 5,000 ms |
 | Intent wire traversal | depth 8, 16 entries per container, 64 visited nodes |
 
 Text is strict UTF-8 without unsafe presentation scalars and is bounded by
 encoded byte count. Nonzero frequency uses a broad observed 2.4/5/6 GHz range,
-not a regulatory-domain channel allowlist; wired devices leave it at zero.
+not a regulatory-domain allowlist; wired devices leave it zero.
 
 ## Scan lease truth
 
-An idle snapshot must carry no lease. A non-idle snapshot's lease has a
-nonempty bounded id, the granting epoch equal to the snapshot epoch, a granting
-revision no greater than the snapshot revision, and a bounded remaining
-duration. The model adopts a lease only from the snapshot's own epoch and
-converts its duration to a local deadline only after admission; invalid clocks
-and integer overflow fail atomically. Expiry is evaluated against the injected
-monotonic clock, and a live lease makes a second scan intent busy.
+An idle snapshot carries no lease. A non-idle lease has a bounded nonempty id,
+the snapshot epoch, a granting revision no greater than the snapshot revision,
+and a bounded remaining duration. Only after snapshot admission does the
+consumer convert the duration to its injected local monotonic deadline.
+Invalid clocks and overflow fail atomically. A live lease makes a second scan
+intent busy, and a foreign epoch can never revive retired scan truth.
+
+The adapter treats the requested deadline as provisional during scan dispatch.
+A definite libnm failure clears it and publishes `Idle` before returning
+`Failed`, so an immediate retry is admissible. Cancellation is not proof that
+NetworkManager rejected the scan: cancellation publishes `Leased` and retains
+the bounded deadline conservatively, while never replaying the request.
 
 ## Canonical codec and total decoding
 
 Snapshot magic is `QN1S`; operation-result magic is `QN1R`. Both use big-endian
-Qt 6.0 `QDataStream` primitive encodings, an explicit codec version, and
-length/count prefixes. Encoding the same accepted value produces identical
-bytes; list order is retained.
+Qt 6.0 `QDataStream` primitives, an explicit codec version, and length/count
+prefixes. Encoding an accepted value is deterministic and retains list order.
 
-Decoders reject oversize input before copying it, validate magic and version,
-check every count and length against its cap before allocation, require strict
-UTF-8 and the exact end of the buffer, then run semantic validation on a
-temporary. A failure returns a typed `CodecError` and leaves the caller's prior
-destination unchanged; a decoder never publishes a prefix. Boolean fields use
-only canonical bytes 0 and 1, and the decoded `wireValid` field must be true.
+Decoders reject oversize input before copying, validate magic/version, check
+every count and length before allocation, require strict UTF-8 and exact end of
+buffer, then semantically validate a temporary. Failure returns a typed
+`CodecError` without changing the caller's prior destination. Boolean bytes
+are only 0 or 1 and decoded `wireValid` must be true.
 
 ## Intents and operation results
 
-User intents are the only mutation inputs: `RequestScanIntent` (bounded
-deadline), `ConnectIntent` (known-network id), `DisconnectIntent` (device
-interface), and `SetRadioIntent` (radio kind plus enable). No intent can carry
-a credential; the shared redaction helper recognizes secret-shaped key names
-and bounded nested wire maps, and the client refuses credential-shaped or
-over-budget parameter maps before transport. Public diagnostics pass through
-the same canonical redactor; quoted, unquoted, suffix-shaped, and malformed
-secret fragments cannot enter public state, errors, or signal strings.
+Inputs are `RequestScanIntent`, `ConnectIntent` for a known-network id,
+`DisconnectIntent` for a device interface, and `SetRadioIntent` for a radio kind
+and boolean state. No input can carry a credential. The redactor recognizes
+secret-shaped keys and bounded nested maps; both client transport and resident
+service reject credential-shaped or over-budget values before dispatch. Public
+diagnostics pass through the same fail-closed redactor.
 
-Intent admission refuses absent/not-ready snapshots, unsupported capabilities,
-out-of-bounds scan deadlines, busy scans, live leases, unknown networks,
-already-active connections, unknown or idle devices, absent or
-hardware-disabled radios, and redundant radio state, each with a stable reason
-code. A rejected intent changes no state.
+Admission refuses absent/not-ready snapshots, unsupported capabilities,
+invalid scan deadlines, busy/live scans, unknown networks, already-active
+connections, unknown or idle devices, absent/hardware-disabled radios, and
+redundant radio state. Rejection changes no state.
 
 Operation status is `Succeeded`, `Rejected`, `Unsupported`, `Failed`,
-`Uncertain`, or `Busy`. Any status other than `Succeeded` requires a reason.
-Once dispatched, timeout or authority loss is `Uncertain`; clients resnapshot
-and never replay the operation.
+`Uncertain`, or `Busy`; non-success requires a reason. At most one service
+operation is dispatched. Timeout, shutdown, or authority replacement cancels
+it and reports `Uncertain` exactly once. A late callback cannot create a second
+reply. Backend dispatch is queued only to close delayed-reply registration; it
+remains confined to the coordinator's Qt thread and is still covered by the
+five-second deadline. A success means the request dispatch
+completed, not that Network1 manufactured state; clients refetch authoritative
+observation.
+
+## Credential and error boundary
+
+Network1 never requests `GetSecrets`, receives a password/PSK/certificate or
+private key, or exposes NetworkManager setting maps. Connect activates only an
+existing stored connection. If NetworkManager requires credentials, it talks
+to an external registered secret agent outside this interface and process.
+Raw D-Bus/libnm error text is not public; callers see stable bounded reason
+codes. Credential-entry and secret-agent interoperability remain unqualified.

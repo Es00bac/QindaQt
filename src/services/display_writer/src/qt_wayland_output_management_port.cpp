@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <limits>
 #include <memory>
+#include <sys/socket.h>
 #include <utility>
 #include <vector>
 
@@ -67,6 +68,7 @@ public:
         if (m_running) {
             return PortStartStatus::AlreadyStarted;
         }
+        m_peerProcessId = 0;
         m_display = wl_display_connect(nullptr);
         if (m_display == nullptr) {
             return PortStartStatus::ConnectionUnavailable;
@@ -93,6 +95,27 @@ public:
             m_display = nullptr;
             return PortStartStatus::ConnectionUnavailable;
         }
+#if defined(Q_OS_LINUX)
+        struct ucred credentials { };
+        socklen_t credentialSize = sizeof(credentials);
+        if (::getsockopt(displayFd, SOL_SOCKET, SO_PEERCRED, &credentials,
+                         &credentialSize)
+                != 0
+            || credentialSize != sizeof(credentials) || credentials.pid <= 1) {
+            wl_registry_destroy(m_registry);
+            m_registry = nullptr;
+            wl_display_disconnect(m_display);
+            m_display = nullptr;
+            return PortStartStatus::ConnectionUnavailable;
+        }
+        m_peerProcessId = static_cast<qint64>(credentials.pid);
+#else
+        wl_registry_destroy(m_registry);
+        m_registry = nullptr;
+        wl_display_disconnect(m_display);
+        m_display = nullptr;
+        return PortStartStatus::UnsupportedPlatform;
+#endif
         m_readNotifier = std::make_unique<QSocketNotifier>(
             displayFd, QSocketNotifier::Read, this);
         m_writeNotifier = std::make_unique<QSocketNotifier>(
@@ -136,7 +159,13 @@ public:
             wl_display_disconnect(m_display);
         }
         m_display = nullptr;
+        m_peerProcessId = 0;
         m_observer = nullptr;
+    }
+
+    [[nodiscard]] qint64 peerProcessId() const noexcept override
+    {
+        return m_running ? m_peerProcessId : 0;
     }
 
     [[nodiscard]] SubmitStatus submit(
@@ -347,6 +376,7 @@ private:
         }
         abandonPending();
         m_available = false;
+        m_peerProcessId = 0;
         m_ownerGeneration = m_ownerGeneration == std::numeric_limits<quint64>::max()
             ? 1
             : m_ownerGeneration + 1;
@@ -415,6 +445,7 @@ private:
     std::vector<QPointer<ConfigurationProxy>> m_retired;
     quint32 m_managementGlobal = 0;
     quint64 m_ownerGeneration = 0;
+    qint64 m_peerProcessId = 0;
     bool m_running = false;
     bool m_available = false;
 };

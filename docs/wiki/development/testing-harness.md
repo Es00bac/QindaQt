@@ -163,7 +163,7 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
-The pure Power applet presentation model candidate is selected with:
+The production Power applet slice is selected with:
 
 ```sh
 ctest --test-dir build/dev \
@@ -171,8 +171,11 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its presentation, control rows, request state, and dependency-policy rows are
-detailed in [Power applet presentation model](../shell/power-applet.md).
+Its pure projection/control/request rows are joined by public-client controller,
+compiled offscreen keyboard/accessibility, runtime-boundary poison, and
+installed production-package/source-poison rows. No row contacts the host
+session bus, display server, power daemon, or hardware. The exact matrix and
+non-claims are detailed in [Power applet](../shell/power-applet.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
@@ -391,6 +394,9 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.notification-center-(entry|applet-offscreen)$' \
   --output-on-failure
 ctest --test-dir build/dev \
+  -R '^qindaqt\.notification-output-(selector|authority-qt)$' \
+  --output-on-failure
+ctest --test-dir build/dev \
   -R '^qindaqt\.(session-lock-|shell-runtime-options|notification-(privacy-policy|presentation-privacy))' \
   --output-on-failure
 ```
@@ -476,6 +482,16 @@ developer's shortcut registry. `qindaqt.notification-center-applet-offscreen`
 uses the software renderer to cover the disabled-without-facade fallback,
 accessible open/close labels, the narrow toggle request, read-only Do Not
 Disturb state and indicator, and the audited QML entry-point dispatcher.
+`qindaqt.notification-output-selector` deterministically joins the ordered
+public `Compositor1.Outputs` frame to an exact
+`ShellVisibilitySnapshot.outputGeneration` and Qt output-ID set. It covers
+semantic-primary transfer, unchanged primary, replacement/removal, missing
+authority, generation/ID mismatch, strict wire rejection, and the former stale
+`primaryScreen()` mutation. `qindaqt.notification-output-authority-qt` uses a
+fresh private `dbus-daemon` to prove exact-owner binding, invalidation-before-
+refresh, transfer publication, owner loss, and owner replacement. Both are
+display-free; the registered S3 dual-output row remains responsible for the
+real KWin/layer-shell transfer proof.
 `qindaqt.notification-surfaces-offscreen` also covers the window-scoped Escape
 close route and a focusable initial target without activating a real surface.
 `qindaqt.notification-focus-offscreen` isolates the enabled natural focus
@@ -993,38 +1009,50 @@ budgets remain Platform or Release qualification work. Do not substitute the
 older D-Bus bridge workflow for the process-local evidence accepted in
 [ADR-0004](../adr/0004-process-local-hybrid-topology.md).
 
-## Current Network1 N0 proof
+## Current Network1 N0 and N1 proof
 
-The pure Network1 boundary is qualified in fresh strict-warning Debug and
-Release trees with these thirteen registered rows:
+The Network boundary is qualified serially in fresh strict-warning Debug and
+Release trees. The selector includes all thirteen unchanged N0 rows and eight
+N1 rows:
 
 ```sh
-ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.network-(protocol-(identity|validation|codec|redaction)|model-(snapshot-gate|scan-lease|intent-policy|state)|client|adversarial|installed-header-consumer|boundary|boundary-poison)$'
+ctest --test-dir build/dev --output-on-failure --parallel 1 \
+  -R '^qindaqt\.network-'
 ```
 
-The unit rows cover strict identity/Unicode handling, every public text and
-collection cap, canonical and hostile codecs, fail-closed credential redaction,
-atomic lineage and scan-lease reconciliation, bounded intent traversal, and
-client retry/timeout/uncertainty behavior. The adversarial row preserves the
-exact eight regressions from independent rejection: decoded-owner mismatch,
+N0 continues to cover strict identity/Unicode handling, every public cap,
+canonical and hostile codecs, fail-closed credential redaction,
+lineage/lease/intent/model transitions, client owner/request fencing, and
+uncertain non-replay. Its adversarial row pins exact-owner payload matching,
 real A→B→A retirement, maximum-integer lease duration, diagnostic overflow,
-quoted credential text, bidi SSID spoofing, `wireValid=false`, and sticky state
-after failed transport start.
+quoted credential text, bidi SSID spoofing, `wireValid=false`, and failed-start
+rollback. The N0 checker and poison fixtures remain scoped to only protocol,
+model, and client and continue to forbid QtDBus, platform timers in pure
+modules, NetworkManager, platform-radio, secret-store, and UI dependencies.
 
-`qindaqt.network-boundary` scans only the three N0 module roots and must
-find no QtDBus, `QTimer` in protocol/model, NetworkManager, platform-radio,
-secret-store, or UI dependencies. `qindaqt.network-boundary-poison` constructs
-build-confined fixtures containing forbidden QtDBus, `QTimer`, and
-NetworkManager tokens and requires each to fail the same checker. The installed
-consumer row installs only component `QindaQtNetworkN0` into a fresh prefix and
-builds a separate CMake consumer against only the staged headers and imported
-archives, proving the focused package does not depend on unrelated whole-tree
-artifacts.
+N1 adds these rows:
 
-N0 does not exercise a bus, NetworkManager, physical radios, credentials, or
-UI. Those remain N1+ integration and isolated hardware qualification; host
-network state must never be used as a substitute for this pure proof.
+| Row | Evidence |
+| --- | --- |
+| `qindaqt.network-qt-transport` | exact current unique owner, owner replacement, canonical fixed calls, local secret rejection, broker failure normalization |
+| `qindaqt.network-service` | validated atomic publication, malformed fallback, typed admission, queued-dispatch stop fence, timeout/cancel/late-drop, authority replacement |
+| `qindaqt.network-residency` | private-bus object/name ownership, exact introspection, synchronous/delayed/stop/timeout replies exactly once, unavailable backend, name theft |
+| `qindaqt.network-networkmanager-adapter` | deterministic fact normalization and dispatch, concrete libnm sub-poll loss plus A→B→A owner fencing, definite-failure Idle/immediate-retry lease proof, conservative-cancellation lease proof |
+| `qindaqt.network-activation` | production binary on private session/system buses, honest unavailable truth, sub-poll upstream-owner retirement, broker-loss exit, replacement owner and greater epoch |
+| `qindaqt.network-installed-package` | staged N0+N1 components, external CMake consumer, binary/descriptors, installed activation lifecycle |
+| `qindaqt.network-n1-boundary` | dependency/source/package policy for service, transport, and adapter |
+| `qindaqt.network-n1-boundary-poison` | rejects service-side libnm, reversed transport dependency, secret getter, public NM handle, `a{sv}` XML, and incomplete package registration |
+
+Private D-Bus instances and injected fake NetworkManager ports are mandatory.
+The concrete owner probe and activation fixture point
+`DBUS_SYSTEM_BUS_ADDRESS` at isolated private brokers; one owns only the
+NetworkManager bus name to exercise libnm owner notification, and neither
+exposes a host device or profile. The production adapter cannot observe or
+mutate the host. No
+test toggles a host radio, scans a host interface, activates a host profile, or
+requests a credential. The result qualifies the process/software boundary,
+not physical Wi-Fi, Ethernet, radios, external secret agents, credential entry,
+or distribution policy integration.
 
 ## Current Audio1 proof
 
@@ -1105,7 +1133,7 @@ The bounded resident/transport rows are selected with:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.display-service-(inventory|resident)-private-bus$'
+  -R '^qindaqt\.display-service-(inventory|resident(-inventory-rejection)?)-private-bus$'
 ```
 
 Each row launches only its own `dbus-daemon` beneath a disposable temporary
@@ -1116,7 +1144,13 @@ invalidations, and stop while a read is outstanding. The resident row proves
 successful name/object registration, typed unavailable and snapshot replies,
 `Changed`, two successive injected short deadlines, the validated active
 transaction summary published at `AwaitingConfirmation` and cleared on
-confirmation, and complete name/object plus observer teardown.
+confirmation, and complete name/object plus observer teardown. The dedicated
+resident-rejection row preserves byte-identical public truth, machine lineage,
+and transaction state across regressed, changed-equal, unchanged-new, and
+invalid-projection frames from the same owner while the machine is Staged,
+Applying, Observing, or AwaitingConfirmation; an explicit unavailable edge in
+the same row still withdraws truth. A failed replacement-owner frame separately
+proves the old lineage is withdrawn and its availability edge is published.
 
 These tests are serial isolated-runtime evidence. They never launch KWin,
 Wayland/XWayland, a GUI, or the installed resident process; touch no host
@@ -1183,6 +1217,75 @@ dependencies are present. A later contained row must start a private nested
 KWin, apply through this exact public-protocol adapter, observe callback before
 device truth, prove target and rollback convergence, fence hotplug/restart, and
 tear down without any inherited host display or configuration path.
+
+## D5 durable Display1 journal
+
+The isolated filesystem and installed-boundary rows are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-journal'
+```
+
+The filesystem row uses a fresh temporary state root and proves canonical
+store/load/replace/clear, exact mode `0600`, absent truth, stale-temp process
+interruption, and preservation of the prior committed value when failure occurs
+before atomic replacement. Hostile cases include a symlinked root, symlink and
+directory final entries, insecure permissions, oversize and malformed bytes,
+and a nonregular temporary-name collision. Injected mutation-sensitive rows
+force directory-sync failure after successful rename and unlink, assert the
+typed `DurabilityUncertain` result plus actual visible new/absent pathname, and
+grow the same opened inode to a 1 TiB sparse size between pathname stat and open
+so allocation must reject at the 1 MiB cap. A concrete absent-clear sequence
+then fails the directory barrier again while the path is already absent and
+remains uncertain; only a later successful barrier reports `Durable`. D1 proves
+uncertain initial store issues no apply, retains cleanup-only active journal
+authority, rejects cancel/re-stage/re-preview replacement, preserves
+`Unchanged` clear truth, and requires an exact `Durable` clear after uncertain
+unlink before Ready. A composed D1/D5 row drives that authority through the real
+store and repeated barrier failures. D4 proves it forwards all three outcomes
+unchanged. The package row stages the exact development component, permits only
+the public value/store header, and proves a planted private filesystem header
+fails the checker.
+
+These tests open no display, session bus, compositor, home directory, or host
+configuration path. They prove the persistence adapter and deterministic
+startup-load seam, not resident startup recovery or compositor convergence.
+The contained D6 matrix must still compose the exact D4 writer and D5 store,
+restart during preview, consume the retained journal through D1 `recover`, and
+observe safe target/pre-image convergence before enabling production mutation.
+
+## D6 authenticated Display1 process composition
+
+The exact deterministic/private-bus/package D6 rows are selected with:
+
+```sh
+ctest --test-dir build/dev --parallel 1 --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-runtime-'
+```
+
+The seven rows cover state-root precedence and rejection, D5 load before D4
+writer startup, loaded-journal recovery without forward replay, composed
+writer/lock/logind safety, authenticated suspend and resume descriptor
+lifetime, terminal owner loss, source and installed public-header poison, and
+packaged missing/unsafe/malformed-state rejection before bus authority. The
+boundary-poison stage is disposable and may live in an ordinary in-tree or
+out-of-tree build root; it is guarded against the narrow `display_runtime`
+source module and must still reject every planted dependency.
+
+Run the adjacent D0–D6 contract set, including the resident same-owner rejection
+regression and the lock-authentication dependency, with:
+
+```sh
+ctest --test-dir build/dev --parallel 1 --output-on-failure --no-tests=error \
+  -R '^qindaqt\.(display-(protocol|identity|topology|transaction|service|client|writer|journal|runtime)-|session-lock-)'
+```
+
+These rows use pure values, disposable files, fake ports, and explicitly named
+private D-Bus connections. They open no compositor or display and do not prove
+KWin callback/observation ordering, target or rollback convergence, hotplug,
+restart recovery against live output globals, mirror visibility, physical
+hardware behavior, or the complete contained D6 matrix below.
 
 ## Contained interactive virtual desktop S0+S1
 

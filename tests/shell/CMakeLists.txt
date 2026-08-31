@@ -88,6 +88,7 @@ add_test(
     NAME qindaqt.notification-center-applet-offscreen
     COMMAND
         $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationcenterapplet.qml"
 )
 
@@ -102,6 +103,58 @@ set_tests_properties(
 )
 
 if(TARGET qindaqt-shell)
+    qt_add_executable(
+        qindaqt_notification_output_selector_tests
+        tst_notificationoutputselector.cpp
+        notification_output_test_support.h
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/compositoroutputauthority.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/compositoroutputauthority.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationoutputselector.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationoutputselector.h"
+    )
+    target_include_directories(
+        qindaqt_notification_output_selector_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_notification_output_selector_tests
+        PRIVATE
+            QindaQt::ShellLayout
+            QindaQt::ShellVisibility
+            Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_notification_output_selector_tests)
+    add_test(
+        NAME qindaqt.notification-output-selector
+        COMMAND qindaqt_notification_output_selector_tests
+    )
+
+    qt_add_executable(
+        qindaqt_qt_compositor_output_authority_tests
+        tst_qtcompositoroutputauthority.cpp
+        notification_output_test_support.h
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/compositoroutputauthority.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/compositoroutputauthority.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/qtcompositoroutputauthority.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/qtcompositoroutputauthority.h"
+    )
+    target_include_directories(
+        qindaqt_qt_compositor_output_authority_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_qt_compositor_output_authority_tests
+        PRIVATE
+            QindaQt::ShellVisibility
+            Qt6::DBus
+            Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_qt_compositor_output_authority_tests)
+    add_test(
+        NAME qindaqt.notification-output-authority-qt
+        COMMAND qindaqt_qt_compositor_output_authority_tests
+    )
+
     qt_add_executable(
         qindaqt_notification_center_entry_tests
         tst_notificationcenterentry.cpp
