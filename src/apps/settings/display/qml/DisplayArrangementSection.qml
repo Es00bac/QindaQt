@@ -2,7 +2,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -57,26 +56,18 @@ ColumnLayout {
             id: positionRow
             spacing: Tokens.space["2"]
 
-            TextField {
+            DisplayCoordinateField {
                 id: posXField
                 objectName: "displayPosXField"
                 implicitWidth: 100
-                text: root.posX.toString()
+                outputId: root.displaySettings.selectedOutputId
+                authoritativeValue: root.posX
+                coordinateName: qsTr("Position X coordinate")
                 enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
-                Accessible.name: qsTr("Position X coordinate")
-
-                Binding {
-                    target: posXField
-                    property: "text"
-                    value: root.posX.toString()
-                    when: !posXField.activeFocus
-                }
-
-                onEditingFinished: {
-                    const parsedX = parseInt(text, 10);
-                    if (!isNaN(parsedX) && root.displaySettings.selectedOutputId) {
+                onValidCommitRequested: (originOutputId, value) => {
+                    if (originOutputId === root.displaySettings.selectedOutputId) {
                         root.displaySettings.setOutputPosition(
-                            root.displaySettings.selectedOutputId, parsedX, root.posY);
+                            originOutputId, value, root.posY)
                     }
                 }
             }
@@ -86,58 +77,20 @@ ColumnLayout {
                 color: Tokens.fg.muted
             }
 
-            TextField {
+            DisplayCoordinateField {
                 id: posYField
                 objectName: "displayPosYField"
                 implicitWidth: 100
-                text: root.posY.toString()
+                outputId: root.displaySettings.selectedOutputId
+                authoritativeValue: root.posY
+                coordinateName: qsTr("Position Y coordinate")
                 enabled: root.displaySettings.canEdit && !root.editorBusy && root.outputEnabled
-                Accessible.name: qsTr("Position Y coordinate")
-
-                Binding {
-                    target: posYField
-                    property: "text"
-                    value: root.posY.toString()
-                    when: !posYField.activeFocus
-                }
-
-                onEditingFinished: {
-                    const parsedY = parseInt(text, 10);
-                    if (!isNaN(parsedY) && root.displaySettings.selectedOutputId) {
+                onValidCommitRequested: (originOutputId, value) => {
+                    if (originOutputId === root.displaySettings.selectedOutputId) {
                         root.displaySettings.setOutputPosition(
-                            root.displaySettings.selectedOutputId, root.posX, parsedY);
+                            originOutputId, root.posX, value)
                     }
                 }
-            }
-        }
-    }
-
-    Connections {
-        target: root.displaySettings
-        function onSelectedOutputIdChanged() {
-            if (posXField.activeFocus) {
-                posXField.focus = false;
-            }
-            if (posYField.activeFocus) {
-                posYField.focus = false;
-            }
-            posXField.text = root.posX.toString();
-            posYField.text = root.posY.toString();
-        }
-        function onSelectedOutputChanged() {
-            if (!posXField.activeFocus) {
-                posXField.text = root.posX.toString();
-            }
-            if (!posYField.activeFocus) {
-                posYField.text = root.posY.toString();
-            }
-        }
-        function onDraftChanged() {
-            if (!posXField.activeFocus) {
-                posXField.text = root.posX.toString();
-            }
-            if (!posYField.activeFocus) {
-                posYField.text = root.posY.toString();
             }
         }
     }

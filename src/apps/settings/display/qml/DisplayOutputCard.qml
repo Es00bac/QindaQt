@@ -8,7 +8,7 @@ import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
 // Card representing a single monitor / display output in the inventory.
-Rectangle {
+T.AbstractButton {
     id: root
 
     required property var outputData
@@ -18,10 +18,13 @@ Rectangle {
 
     implicitWidth: 200
     implicitHeight: 90
-    radius: Tokens.radius.m
-    color: root.selected ? Tokens.bg.highest : Tokens.bg.raised
-    border.width: root.selected ? Tokens.space["1"] : Tokens.space["1"] / 2
-    border.color: root.selected ? Tokens.focus.ring : Tokens.outline.strong
+    checkable: true
+    autoExclusive: true
+    checked: root.selected
+    enabled: root.canEdit
+    hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    activeFocusOnTab: true
 
     Accessible.role: Accessible.RadioButton
     Accessible.name: qsTr("%1 (%2)%3").arg(root.outputData.label)
@@ -31,17 +34,25 @@ Rectangle {
                             ? qsTr("Enabled, %1×%2").arg(root.outputData.logicalWidth)
                                                    .arg(root.outputData.logicalHeight)
                             : qsTr("Disabled")
+    Accessible.checkable: true
     Accessible.checked: root.selected
+    Accessible.onPressAction: root.click()
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.selectedRequested()
+    onClicked: root.selectedRequested()
+    Keys.onReturnPressed: event => {
+        root.click()
+        event.accepted = true
+    }
+    Keys.onEnterPressed: event => {
+        root.click()
+        event.accepted = true
+    }
+    Keys.onSpacePressed: event => {
+        root.click()
+        event.accepted = true
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Tokens.space["3"]
+    contentItem: ColumnLayout {
         spacing: Tokens.space["1"]
 
         RowLayout {
@@ -95,6 +106,23 @@ Rectangle {
             font.family: Tokens.type.fontFamily
             font.pointSize: Tokens.type.caption
             color: root.outputData.enabled ? Tokens.fg.default : Tokens.fg.disabled
+        }
+    }
+
+    background: Rectangle {
+        radius: Tokens.radius.m
+        color: root.selected ? Tokens.bg.highest : Tokens.bg.raised
+        border.width: root.activeFocus || root.selected
+                      ? Tokens.space["1"] : Tokens.space["1"] / 2
+        border.color: root.activeFocus ? Tokens.focus.ring
+                      : root.selected ? Tokens.accent.default : Tokens.outline.strong
+
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: root.down ? Tokens.state.pressed
+                 : root.hovered ? Tokens.state.hover : "transparent"
+            Accessible.ignored: true
         }
     }
 }

@@ -5,6 +5,8 @@
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/themes/theme_loader.h"
+#include "display_page_test_support.h"
+#include "stub_display_model.h"
 
 #include <QAccessible>
 #include <QAccessibleInterface>
@@ -19,299 +21,12 @@
 
 namespace {
 
+namespace PageSupport = QindaQt::Tests::DisplayPageSupport;
+using QindaQt::Tests::DisplayPageSupport::findItemByObjectName;
+using QindaQt::Tests::DisplayPageSupport::StubDisplayModel;
+
 const char *const BuildQmlImportPath = QINDAQT_QML_IMPORT_PATH;
 const char *const DisplayPageQmlPath = QINDAQT_DISPLAY_PAGE_QML_PATH;
-
-class StubDisplayModel final : public QObject {
-  Q_OBJECT
-  Q_PROPERTY(bool loading MEMBER loading NOTIFY stateChanged)
-  Q_PROPERTY(bool ready MEMBER ready NOTIFY stateChanged)
-  Q_PROPERTY(bool busy MEMBER busy NOTIFY stateChanged)
-  Q_PROPERTY(bool unavailable MEMBER unavailable NOTIFY stateChanged)
-  Q_PROPERTY(bool degraded MEMBER degraded NOTIFY stateChanged)
-  Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY stateChanged)
-  Q_PROPERTY(QString statusText MEMBER statusText NOTIFY stateChanged)
-  Q_PROPERTY(QString errorText MEMBER errorText NOTIFY stateChanged)
-
-  Q_PROPERTY(QVariantList outputs MEMBER outputs NOTIFY outputsChanged)
-  Q_PROPERTY(QString selectedOutputId MEMBER selectedOutputId WRITE setSelectedOutputId NOTIFY selectedOutputIdChanged)
-  Q_PROPERTY(QVariantMap selectedOutput MEMBER selectedOutput NOTIFY selectedOutputChanged)
-
-  Q_PROPERTY(bool draftDirty MEMBER draftDirty NOTIFY draftChanged)
-  Q_PROPERTY(bool draftValid MEMBER draftValid NOTIFY draftChanged)
-  Q_PROPERTY(QString draftErrorMessage MEMBER draftErrorMessage NOTIFY draftChanged)
-  Q_PROPERTY(QVariantMap fieldErrors MEMBER fieldErrors NOTIFY draftChanged)
-  Q_PROPERTY(QVariantList warnings MEMBER warnings NOTIFY draftChanged)
-  Q_PROPERTY(bool applyAvailable MEMBER applyAvailable NOTIFY stateChanged)
-
-  Q_PROPERTY(bool inTransaction MEMBER inTransaction NOTIFY transactionChanged)
-  Q_PROPERTY(bool awaitingConfirmation MEMBER awaitingConfirmation NOTIFY transactionChanged)
-  Q_PROPERTY(int transactionRemainingSeconds MEMBER transactionRemainingSeconds NOTIFY transactionCountdownChanged)
-  Q_PROPERTY(QString transactionStatusText MEMBER transactionStatusText NOTIFY transactionChanged)
-  Q_PROPERTY(QString activeTransactionId MEMBER activeTransactionId NOTIFY transactionChanged)
-
-public:
-  bool loading = false;
-  bool ready = true;
-  bool busy = false;
-  bool unavailable = false;
-  bool degraded = false;
-  bool canEdit = true;
-  QString statusText;
-  QString errorText;
-
-  QVariantList outputs;
-  QString selectedOutputId = QStringLiteral("edid:dp1");
-  QVariantMap selectedOutput;
-
-  bool draftDirty = false;
-  bool draftValid = true;
-  QString draftErrorMessage;
-  QVariantMap fieldErrors;
-  QVariantList warnings;
-  bool applyAvailable = false;
-
-  bool inTransaction = false;
-  bool awaitingConfirmation = false;
-  int transactionRemainingSeconds = 15;
-  QString transactionStatusText;
-  QString activeTransactionId;
-
-  int appliedCount = 0;
-  int canceledCount = 0;
-  int confirmedCount = 0;
-  int revertedCount = 0;
-  int retriedCount = 0;
-
-  explicit StubDisplayModel(QObject *parent = nullptr) : QObject(parent) {
-    setupDefaultOutputs();
-  }
-
-  void setupDefaultOutputs() {
-    QVariantMap mode1{
-        {QStringLiteral("id"), QStringLiteral("3840x2160@60")},
-        {QStringLiteral("label"), QStringLiteral("3840 × 2160 @ 60 Hz")},
-        {QStringLiteral("preferred"), true},
-    };
-    QVariantMap mode2{
-        {QStringLiteral("id"), QStringLiteral("1920x1080@60")},
-        {QStringLiteral("label"), QStringLiteral("1920 × 1080 @ 60 Hz")},
-        {QStringLiteral("preferred"), false},
-    };
-    QVariantList modes{mode1, mode2};
-
-    selectedOutput = {
-        {QStringLiteral("stableId"), QStringLiteral("edid:dp1")},
-        {QStringLiteral("connectorName"), QStringLiteral("DP-1")},
-        {QStringLiteral("label"), QStringLiteral("Main Monitor")},
-        {QStringLiteral("enabled"), true},
-        {QStringLiteral("primary"), true},
-        {QStringLiteral("modeId"), QStringLiteral("3840x2160@60")},
-        {QStringLiteral("positionX"), 0},
-        {QStringLiteral("positionY"), 0},
-        {QStringLiteral("logicalWidth"), 1920},
-        {QStringLiteral("logicalHeight"), 1080},
-        {QStringLiteral("scale"), 2.0},
-        {QStringLiteral("transform"), QStringLiteral("normal")},
-        {QStringLiteral("modes"), modes},
-    };
-
-    outputs = {selectedOutput};
-    outputsMap[QStringLiteral("edid:dp1")] = selectedOutput;
-    baselineOutputsMap = outputsMap;
-  }
-
-  QMap<QString, QVariantMap> outputsMap;
-  QMap<QString, QVariantMap> baselineOutputsMap;
-
-  void setupTwoOutputs() {
-    QVariantMap mode1{
-        {QStringLiteral("id"), QStringLiteral("3840x2160@60")},
-        {QStringLiteral("label"), QStringLiteral("3840 × 2160 @ 60 Hz")},
-        {QStringLiteral("preferred"), true},
-    };
-    QVariantList modes{mode1};
-
-    QVariantMap out1{
-        {QStringLiteral("stableId"), QStringLiteral("edid:dp1")},
-        {QStringLiteral("connectorName"), QStringLiteral("DP-1")},
-        {QStringLiteral("label"), QStringLiteral("Main Monitor")},
-        {QStringLiteral("enabled"), true},
-        {QStringLiteral("primary"), true},
-        {QStringLiteral("modeId"), QStringLiteral("3840x2160@60")},
-        {QStringLiteral("positionX"), 0},
-        {QStringLiteral("positionY"), 0},
-        {QStringLiteral("logicalWidth"), 1920},
-        {QStringLiteral("logicalHeight"), 1080},
-        {QStringLiteral("scale"), 2.0},
-        {QStringLiteral("transform"), QStringLiteral("normal")},
-        {QStringLiteral("modes"), modes},
-    };
-
-    QVariantMap out2{
-        {QStringLiteral("stableId"), QStringLiteral("edid:hdmi1")},
-        {QStringLiteral("connectorName"), QStringLiteral("HDMI-1")},
-        {QStringLiteral("label"), QStringLiteral("Side Monitor")},
-        {QStringLiteral("enabled"), true},
-        {QStringLiteral("primary"), false},
-        {QStringLiteral("modeId"), QStringLiteral("1920x1080@60")},
-        {QStringLiteral("positionX"), 1920},
-        {QStringLiteral("positionY"), 0},
-        {QStringLiteral("logicalWidth"), 1920},
-        {QStringLiteral("logicalHeight"), 1080},
-        {QStringLiteral("scale"), 1.0},
-        {QStringLiteral("transform"), QStringLiteral("normal")},
-        {QStringLiteral("modes"), modes},
-    };
-
-    outputsMap.clear();
-    outputsMap[QStringLiteral("edid:dp1")] = out1;
-    outputsMap[QStringLiteral("edid:hdmi1")] = out2;
-    baselineOutputsMap = outputsMap;
-
-    outputs = {out1, out2};
-    selectedOutputId = QStringLiteral("edid:dp1");
-    selectedOutput = out1;
-  }
-
-  void setSelectedOutputId(const QString &id) {
-    selectedOutputId = id;
-    if (outputsMap.contains(id)) {
-      selectedOutput = outputsMap.value(id);
-    }
-    Q_EMIT selectedOutputIdChanged(id);
-    Q_EMIT selectedOutputChanged();
-  }
-
-  Q_INVOKABLE bool setOutputEnabled(const QString &stableId, bool enabled) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("enabled")] = enabled;
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool setOutputPrimary(const QString &stableId) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("primary")] = true;
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool setOutputMode(const QString &stableId, const QString &modeId) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("modeId")] = modeId;
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool setOutputScale(const QString &stableId, double scale) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("scale")] = scale;
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool setOutputTransform(const QString &stableId, const QString &t) {
-    Q_UNUSED(stableId);
-    selectedOutput[QStringLiteral("transform")] = t;
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool setOutputPosition(const QString &stableId, int x, int y) {
-    if (outputsMap.contains(stableId)) {
-      auto map = outputsMap.value(stableId);
-      map[QStringLiteral("positionX")] = x;
-      map[QStringLiteral("positionY")] = y;
-      outputsMap[stableId] = map;
-      if (selectedOutputId == stableId) {
-        selectedOutput = map;
-      }
-    } else {
-      selectedOutput[QStringLiteral("positionX")] = x;
-      selectedOutput[QStringLiteral("positionY")] = y;
-    }
-    draftDirty = true;
-    applyAvailable = true;
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool applyDraft() {
-    ++appliedCount;
-    return true;
-  }
-
-  Q_INVOKABLE bool cancelDraft() {
-    ++canceledCount;
-    draftDirty = false;
-    applyAvailable = false;
-    outputsMap = baselineOutputsMap;
-    if (outputsMap.contains(selectedOutputId)) {
-      selectedOutput = outputsMap.value(selectedOutputId);
-    }
-    Q_EMIT selectedOutputChanged();
-    Q_EMIT draftChanged();
-    Q_EMIT stateChanged();
-    return true;
-  }
-
-  Q_INVOKABLE bool confirmTransaction() {
-    ++confirmedCount;
-    return true;
-  }
-
-  Q_INVOKABLE bool revertTransaction() {
-    ++revertedCount;
-    return true;
-  }
-
-  Q_INVOKABLE void retry() {
-    ++retriedCount;
-  }
-
-Q_SIGNALS:
-  void stateChanged();
-  void outputsChanged();
-  void selectedOutputIdChanged(const QString &selectedOutputId);
-  void selectedOutputChanged();
-  void draftChanged();
-  void transactionChanged();
-  void transactionCountdownChanged();
-};
-
-QQuickItem *findItemByObjectName(QQuickItem *root, const QString &name) {
-  if (root == nullptr) return nullptr;
-  if (root->objectName() == name) return root;
-  for (QQuickItem *child : root->childItems()) {
-    if (auto *match = findItemByObjectName(child, name); match != nullptr) {
-      return match;
-    }
-  }
-  return nullptr;
-}
 
 } // namespace
 
@@ -323,6 +38,9 @@ private Q_SLOTS:
   void testPageRenderingAndControls();
   void testScaleAndOrientationInteraction();
   void testArrangementPositionSynchronizationOnSwitchAndRevert();
+  void testAbandonedPositionEditCannotCrossOutputSelection();
+  void testExternalPositionRefreshCannotBeResurrectedOnBlur();
+  void testOutputCardsSupportKeyboardRadioSelection();
   void testUnavailableNoticeAndRetry();
   void testPreviewBannerAndTransactionActions();
 
@@ -367,6 +85,7 @@ void DisplayPageTest::testPageRenderingAndControls() {
 
   auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
   QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
 
   auto *heading = findItemByObjectName(pageItem, QStringLiteral("displayPageHeading"));
   QVERIFY(heading != nullptr);
@@ -433,6 +152,7 @@ void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() 
 
   auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
   QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
 
   auto *posXField = findItemByObjectName(pageItem, QStringLiteral("displayPosXField"));
   auto *posYField = findItemByObjectName(pageItem, QStringLiteral("displayPosYField"));
@@ -443,9 +163,15 @@ void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() 
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
   QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
 
-  // 2. Simulate user typing a new X position into posXField
-  posXField->setProperty("text", QStringLiteral("500"));
-  m_model->setOutputPosition(QStringLiteral("edid:dp1"), 500, 0);
+  // 2. A valid position crosses into the model only at Return/Enter.
+  m_model->positionSetCount = 0;
+  posXField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posXField);
+  PageSupport::replaceFocusedText(*m_view, QStringLiteral("500"));
+  QCOMPARE(m_model->positionSetCount, 0);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_model->positionSetCount, 1);
+  QCOMPARE(m_model->lastPositionStableId, QStringLiteral("edid:dp1"));
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("500"));
 
   // 3. Switch selected output to HDMI-1 (position (1920, 0))
@@ -462,6 +188,142 @@ void DisplayPageTest::testArrangementPositionSynchronizationOnSwitchAndRevert() 
   m_model->cancelDraft();
   QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
   QCOMPARE(posYField->property("text").toString(), QStringLiteral("0"));
+
+  // 6. Return is deliberate, but malformed text still cannot cross the model boundary.
+  posXField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posXField);
+  PageSupport::replaceFocusedText(*m_view, QStringLiteral("-"));
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QCoreApplication::processEvents();
+  QCOMPARE(m_model->positionSetCount, 1);
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("0"));
+}
+
+void DisplayPageTest::testAbandonedPositionEditCannotCrossOutputSelection() {
+  m_model->setupTwoOutputs();
+  m_model->positionSetCount = 0;
+  m_model->lastPositionStableId.clear();
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
+
+  auto *posXField = findItemByObjectName(pageItem, QStringLiteral("displayPosXField"));
+  QVERIFY(posXField != nullptr);
+  posXField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posXField);
+  PageSupport::replaceFocusedText(*m_view, QStringLiteral("777"));
+  QCOMPARE(m_model->positionSetCount, 0);
+
+  m_model->setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+  QCoreApplication::processEvents();
+
+  QCOMPARE(m_model->positionSetCount, 0);
+  QCOMPARE(m_model->outputsMap.value(QStringLiteral("edid:hdmi1"))
+               .value(QStringLiteral("positionX")).toInt(), 1920);
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("1920"));
+}
+
+void DisplayPageTest::testExternalPositionRefreshCannotBeResurrectedOnBlur() {
+  m_model->setupTwoOutputs();
+  m_model->positionSetCount = 0;
+  m_model->lastPositionStableId.clear();
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
+
+  auto *posXField = findItemByObjectName(pageItem, QStringLiteral("displayPosXField"));
+  auto *posYField = findItemByObjectName(pageItem, QStringLiteral("displayPosYField"));
+  QVERIFY(posXField != nullptr);
+  QVERIFY(posYField != nullptr);
+  posXField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posXField);
+  PageSupport::replaceFocusedText(*m_view, QStringLiteral("777"));
+  QCOMPARE(m_model->positionSetCount, 0);
+
+  m_model->publishExternalOutputPosition(QStringLiteral("edid:dp1"), 640, 40);
+  QCoreApplication::processEvents();
+  QCOMPARE(m_model->positionSetCount, 0);
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("640"));
+  posYField->forceActiveFocus(Qt::OtherFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), posYField);
+  QCoreApplication::processEvents();
+
+  QCOMPARE(m_model->positionSetCount, 0);
+  QCOMPARE(m_model->outputsMap.value(QStringLiteral("edid:dp1"))
+               .value(QStringLiteral("positionX")).toInt(), 640);
+  QCOMPARE(posXField->property("text").toString(), QStringLiteral("640"));
+}
+
+void DisplayPageTest::testOutputCardsSupportKeyboardRadioSelection() {
+  m_model->setupTwoOutputs();
+  m_model->setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QString::fromUtf8(DisplayPageQmlPath)));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+  QObject *pageObj = component.createWithInitialProperties({
+      {QStringLiteral("displaySettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+  });
+  QVERIFY(pageObj != nullptr);
+  std::unique_ptr<QObject> pageGuard(pageObj);
+  auto *pageItem = qobject_cast<QQuickItem *>(pageObj);
+  QVERIFY(pageItem != nullptr);
+  PageSupport::attachPage(*m_view, *pageItem);
+
+  const auto cards = PageSupport::outputCards(pageItem);
+  QCOMPARE(cards.size(), 2);
+  QQuickItem *dpCard = nullptr;
+  for (auto *card : cards) {
+    const auto data = card->property("outputData").toMap();
+    if (data.value(QStringLiteral("stableId")).toString()
+        == QStringLiteral("edid:dp1")) {
+      dpCard = card;
+      break;
+    }
+  }
+  QVERIFY(dpCard != nullptr);
+  QVERIFY(dpCard->activeFocusOnTab());
+  dpCard->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), dpCard);
+  const QList<Qt::Key> activationKeys{Qt::Key_Return, Qt::Key_Enter,
+                                      Qt::Key_Space};
+  for (const auto key : activationKeys) {
+    m_model->setSelectedOutputId(QStringLiteral("edid:hdmi1"));
+    dpCard->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(m_view->activeFocusItem(), dpCard);
+    QTest::keyClick(m_view.get(), key);
+    QCoreApplication::processEvents();
+    QCOMPARE(m_model->selectedOutputId, QStringLiteral("edid:dp1"));
+  }
+  auto *accessible = QAccessible::queryAccessibleInterface(dpCard);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::RadioButton);
+  QVERIFY(accessible->state().checkable);
+  QVERIFY(accessible->state().checked);
 }
 
 void DisplayPageTest::testUnavailableNoticeAndRetry() {

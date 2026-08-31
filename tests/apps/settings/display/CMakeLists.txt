@@ -33,7 +33,9 @@ add_test(NAME qindaqt.display-settings-model-adversarial
          COMMAND qindaqt_display_model_adversarial_tests)
 
 qt_add_executable(qindaqt_display_page_tests
-                  tst_display_page.cpp)
+                  tst_display_page.cpp
+                  display_page_test_support.h
+                  stub_display_model.h)
 target_include_directories(qindaqt_display_page_tests PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_definitions(
     qindaqt_display_page_tests PRIVATE

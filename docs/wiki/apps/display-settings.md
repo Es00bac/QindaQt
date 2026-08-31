@@ -21,6 +21,14 @@ The Display settings route provides comprehensive monitor and layout management:
 | Primary Output | "Make Primary" toggle / button | Designates primary output for default desktop surfaces and taskbars |
 | Topology / Position | Position coordinate controls (X, Y) | Validates contiguous, non-overlapping canvas bounds |
 
+Output cards are Tab-focusable radio controls activated by pointer, Return,
+Enter, or Space. Coordinate text is an explicit edit session: Return or Enter
+commits one valid integer to the output where the edit began. Focus loss
+discards uncommitted text; invalid input is rejected and resynchronized. Output
+selection and externally refreshed draft truth also resynchronize the fields,
+so stale text cannot be applied to another output or resurrect a configuration
+that the service reverted.
+
 The page is built strictly using QindaQt.Controls primitives and QST-1 semantic
 roles, with comprehensive accessibility descriptions and visible focus chains.
 
