@@ -137,7 +137,10 @@ read access was granted.
    controller.
 4. The `BluetoothAppletRuntime` install component stages the production shell,
    compiled QML, manifest, selected profile, policy, and theme for relocation
-   under source-path poison.
+   under source-path poison. Its package test supplies the exact build-selected
+   KF6 GlobalAccel platform artifact inside the disposable stage, clears
+   ambient loader paths, and requires the shell's relative install RUNPATH to
+   resolve that dependency locally.
 
 ## Focused verification
 
@@ -155,7 +158,7 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
 | `qindaqt.bluetooth-applet-boundary` | Pure dependency/source policy plus a mutation-sensitive public-client poison |
 | `qindaqt.bluetooth-applet-runtime-boundary` | No service/model/BlueZ/Agent1/pairing/address reach, audited production seams, and a mutation-sensitive service/pairing poison |
-| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, compiled QML evidence, and installed manifest discovery under source-path poison |
+| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 platform dependency resolved by relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
 
