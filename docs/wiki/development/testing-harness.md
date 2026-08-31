@@ -1490,6 +1490,15 @@ arrangement. Scenario ids are selected from a closed set. Each scenario's
 common pixel mode, scale, output count, and horizontal positions must be exactly
 representable; another catalog row cannot silently inherit this qualification.
 
+The harness keeps process launch, private-seat interaction and failure
+diagnostics, canonical evidence assembly, immutable topology models, topology
+validation, capture, and top-level orchestration in separate session modules.
+Their public boundary is the typed scenario/topology plus the authenticated
+process and evidence records; an orchestration edit must not reach around those
+collaborators to infer runtime state from paths, process names, or catalog data.
+Focused runtime-boundary tests are separate from the generic stage, sandbox,
+and archive tests so failures identify the owning contract.
+
 Every run retains distinct private parent/child Wayland sockets, the fake-seat
 pointer/keyboard pair plus the development input device, exact Meta+N surface
 causality, all eight production roles under the 1,048,576 KiB aggregate PSS
@@ -1504,6 +1513,12 @@ inventories. Geometry, scale, and horizontal arrangement must agree exactly,
 and an authenticated mapped production dock is required on every output. Weston
 headless retains one private parent framebuffer; screenshooter must create one
 nonuniform PNG bound to the interacted child output in each row.
+The dual row additionally runs the exact private
+`kscreen-doctor output.WL-1.primary` selector, requires the compositor's
+ordered authority to publish `WL-1` ahead of demoted `WL-0`, moves only the
+private development pointer into `WL-1`, then accepts the notification center
+only when both desired and actual output are `WL-1`. The registered row passing
+is required evidence; the selector command or catalog alone proves nothing.
 For fractional rows the compositor-global logical notification-center geometry
 is converted to the smallest outward-rounded physical rectangle containing the
 complete surface; only that owning output receives the independent region
@@ -1513,8 +1528,9 @@ the proof.
 
 S3 is not the complete display release gate. Portrait/rotation, mixed output
 modes or scales, negative coordinates, vertical placement, hotplug/reorder/lid
-events, primary transfer, mirroring, GPU/OpenGL/DRM, physical input, perceptual
-baseline comparison, and physical hardware remain unqualified.
+events, primary-transfer sequences beyond the one exact dual-row transfer,
+mirroring, GPU/OpenGL/DRM, physical input, perceptual baseline comparison, and
+physical hardware remain unqualified.
 
 ## Clipboard C0 model proof
 
