@@ -31,12 +31,13 @@ Bluetooth::OperationResult resultFor(
     const FakeBluetoothTransport::RecordedSubmission &submission,
     const Bluetooth::OperationStatus status,
     const QString &reason,
-    const quint64 observedRevision = 6)
+    const quint64 observedRevision = 6,
+    const quint64 initiatingRevision = 5)
 {
     return {.kind = submission.request.kind,
             .status = status,
             .initiatingEpoch = 61,
-            .initiatingRevision = 5,
+            .initiatingRevision = initiatingRevision,
             .observedEpoch = 61,
             .observedRevision = observedRevision,
             .reasonCode = reason,
@@ -174,7 +175,7 @@ void BluetoothAppletControllerTests::closeReleasesDiscoveryAfterPendingAcquire()
     transport.emitOperationReply(
         kOwner, release.requestId, true,
         resultFor(release, Bluetooth::OperationStatus::Succeeded,
-                  QStringLiteral("lease-released"), 7));
+                  QStringLiteral("lease-released"), 7, 6));
     QTRY_VERIFY(!controller.discoveryLeaseHeld());
     QTRY_COMPARE(transport.fetches.size(), 3);
     Bluetooth::Snapshot released = bluetoothClientSnapshot(61, 7);
@@ -210,7 +211,8 @@ void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
     QCOMPARE(transport.submissions.size(), 2);
     const auto release = transport.submissions.constLast();
     Bluetooth::OperationResult malformed = resultFor(
-        release, Bluetooth::OperationStatus::Failed, QStringLiteral("no-lease"));
+        release, Bluetooth::OperationStatus::Failed, QStringLiteral("no-lease"),
+        6, 6);
     malformed.wireValid = false;
 
     // Exercise the controller's final admission boundary directly: an invalid
@@ -227,7 +229,7 @@ void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
     transport.emitOperationReply(
         kOwner, release.requestId, true,
         resultFor(release, Bluetooth::OperationStatus::Succeeded,
-                  QStringLiteral("lease-released"), 7));
+                  QStringLiteral("lease-released"), 7, 6));
 }
 
 void BluetoothAppletControllerTests::successWaitsForSnapshotConvergence()
@@ -279,7 +281,7 @@ void BluetoothAppletControllerTests::successWaitsForSnapshotConvergence()
     transport.emitOperationReply(
         kOwner, connect.requestId, true,
         resultFor(connect, Bluetooth::OperationStatus::Rejected,
-                  QStringLiteral("policy-rejected"), 6));
+                  QStringLiteral("policy-rejected"), 6, 6));
     QTRY_VERIFY(!controller.operationPending());
 }
 
