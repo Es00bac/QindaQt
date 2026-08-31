@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:16:57-06:00
+updated_at: 2026-08-31T16:20:46-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — both manager-reported operation-lineage defects are repaired with mutation coverage; rerunning static gates before fresh Debug/Release qualification.
+- Status: working — serialized compiler/CTest lane claimed for exact repair `5714b2ffa8b2bc393c2c3561a70d749ed8a75845`; configuring fresh strict Debug and Release roots for focused and adjacent B1 qualification.
 
 ## Updates
+
+- 2026-08-31T16:20:46-06:00 — Manager independently confirmed both direct boundary/poison gates and diff checks green, accepted the convergence design for executable qualification, and explicitly confirmed no other worker uses the compiler/CTest lane. Direct process inspection found no CMake, Ninja, CTest, KWin, Weston, or QindaQt desktop process other than the inspection shell itself. Claimed the serialized lane for exact repair `5714b2ffa8b2bc393c2c3561a70d749ed8a75845`; fresh strict Debug/Release roots will run B1 7/7 plus adjacent Bluetooth/client/catalog/resolver/dispatcher/package rows. Private bus, nested compositor, BlueZ, host Bluetooth, hardware, network, and input remain prohibited.
 
 - 2026-08-31T16:16:57-06:00 — Manager audit found a second stale-truth mutation window: after valid success at observed revision 6, the controller cleared its request while the public client still exposed initiating snapshot revision 5, re-enabling the same disconnect/power/connect action before the async refetch. Added an exact-owner/epoch/minimum-revision success-convergence fence to pending-equivalent control admission. A controller mutation test proves the old revision cannot dispatch a second disconnect, an equal initiating snapshot cannot clear the fence, and only revision 6 truth with the disconnected device re-enables the now-valid Connect action. Owner/state loss ends the fence uncertain and fail-closed; there is no replay. Static gates are being rerun before compiler use.
 
