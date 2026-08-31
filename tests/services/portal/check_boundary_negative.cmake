@@ -53,12 +53,32 @@ expect_rejection(
 expect_rejection(
     "data/qindaqt.portal"
     "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.OpenURI"
-    "exact Settings-only boundary"
+    "exact singleton Settings interface"
 )
 expect_rejection(
     "data/qindaqt-portals.conf"
     "[preferred]\norg.freedesktop.impl.portal.OpenURI=qindaqt"
-    "selection config is not Settings-only"
+    "exact Settings singleton"
+)
+expect_rejection(
+    "data/qindaqt.portal"
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Background\nUseIn=QindaQt"
+    "exact singleton Settings interface"
+)
+expect_rejection(
+    "data/qindaqt-portals.conf"
+    "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Background=qindaqt"
+    "exact Settings singleton"
+)
+expect_rejection(
+    "data/qindaqt.portal"
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Settings\nUseIn=QindaQt"
+    "exact singleton Settings interface"
+)
+expect_rejection(
+    "data/qindaqt-portals.conf"
+    "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Settings=qindaqt"
+    "exact Settings singleton"
 )
 
 file(REMOVE_RECURSE "${poison_root}")

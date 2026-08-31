@@ -126,7 +126,10 @@ It covers pure mapping and hostile theme/snapshot input, exact-owner
 replacement and stale replies, standard D-Bus signatures and filters, service
 name rollback, bounded change signals, private-daemon activation/restart,
 staged runtime execution, exact installed metadata, source/package poison, and
-read-only startup. All bus tests create disposable daemons after removing host
+read-only startup. The metadata gate compares the complete `.portal` and
+selector contracts, so duplicate Settings entries or any extra standard family
+(including installed 1.20.4 Background) fail both source and staged-installed
+controls. All bus tests create disposable daemons after removing host
 session-bus variables; no test calls or modifies the host portal.
 
 This proves the backend boundary and direct standard D-Bus behavior. It does

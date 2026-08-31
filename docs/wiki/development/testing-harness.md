@@ -719,6 +719,10 @@ fresh daemon with fresh owners/PIDs. The staged-package row reruns that process
 proof through the installed portal executable and themes, validates the D-Bus
 descriptor, hardened systemd unit, Settings-only `.portal` declaration and
 selector, then proves source and installed-private-header poison rejection.
+Mutation controls independently add the installed standard Background family
+to `.portal` and selector artifacts and add duplicate Settings entries; the
+exact singleton checker must reject every mutation while accepting the
+unmodified source and installed files.
 Host session-bus variables are removed before every daemon starts. These rows
 do not contact, select, or modify the user's portal frontend or installed
 packages; host/toolkit integration remains a downstream release check. See
