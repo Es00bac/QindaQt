@@ -4,20 +4,22 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: working
+status: handoff
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:56:48-06:00
+updated_at: 2026-08-31T16:58:57-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — fresh strict Debug and Release are both green for B1 7/7 plus adjacent seams 6/6; no compiler/CTest/private process survives, and final docs/static/provenance gates are running.
+- Status: handoff — exact immutable Bluetooth B1 candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` is clean and awaits independent different-worker review; all compiler/CTest/private lanes are released.
 
 ## Updates
+
+- 2026-08-31T16:58:57-06:00 — Froze exact candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` (tree `b89ac700456690812da0d7dc2efb8e221a94a3a9`, sole parent `7c09625eb0fb40136651bab414a137867b943d12`). Exact ordinary merge `f23b61d91fdf76f6e4cecaa87808a16dd48f116b` retains parents `f8a85aeee56969e0a6e46970023247a6c70d4c52` and manager main `74da46345c7a5094d45c756ad8b23ca87591fcd3`; the preserved B1 milestone is also an ancestor. Final pure/runtime boundary+poison, three-file JSON parse, 117-document validation, strict MkDocs, 1,779-file source-shape, diff/conflict/prohibited-path/provenance, clean-tree, and process-residue checks pass. The handoff requests independent immutable review; compiler, CTest, private bus/runtime, compositor, BlueZ, radio, hardware, network, and input lanes are released.
 
 - 2026-08-31T16:56:48-06:00 — Fresh strict Release configured with GCC 15.3.0 and completed the requested serialized build 378/378, including production `qindaqt-shell` plus all focused B1/public-client/manifest/catalog/resolver binaries. Its B1 selector passed 7/7 and its adjacent selector passed 6/6. Together with the identical Debug counts, both executable profiles are green. Direct inspection after CTest found no compiler, CMake, Ninja, CTest, KWin, Weston, production-shell, or Bluetooth test process beyond the inspection shell. The owning docs now state only this focused public-client/offscreen/package evidence; final mutation-sensitive boundary, JSON, documentation, strict MkDocs, shape, and provenance checks follow.
 
