@@ -215,16 +215,18 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 3);
+  QCOMPARE(registry.count(), 4);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
   QVERIFY(registry.hasRoute(QStringLiteral("display")));
+  QVERIFY(registry.hasRoute(QStringLiteral("network")));
 
-  // Index ordering: notifications is 0, appearance is 1, display is 2
+  // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
   QCOMPARE(registry.indexOf(QStringLiteral("appearance")), 1);
   QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
+  QCOMPARE(registry.indexOf(QStringLiteral("network")), 3);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -249,6 +251,14 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!disp->title.isEmpty());
   QVERIFY(!disp->description.isEmpty());
   QVERIFY(disp->available);
+
+  const auto network = registry.route(QStringLiteral("network"));
+  QVERIFY(network.has_value());
+  QCOMPARE(network->id, QStringLiteral("network"));
+  QCOMPARE(network->component, SettingsRouteComponent::Network);
+  QVERIFY(!network->title.isEmpty());
+  QVERIFY(!network->description.isEmpty());
+  QVERIFY(network->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

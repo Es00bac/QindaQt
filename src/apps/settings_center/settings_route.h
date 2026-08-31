@@ -10,6 +10,7 @@ enum class SettingsRouteComponent {
   Notifications,
   Appearance,
   Display,
+  Network,
 };
 
 [[nodiscard]] QString

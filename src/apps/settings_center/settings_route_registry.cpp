@@ -119,6 +119,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool dispRegistered = registerRoute(displayRoute);
   Q_ASSERT(dispRegistered);
   Q_UNUSED(dispRegistered);
+
+  const SettingsRoute networkRoute{
+      .id = QStringLiteral("network"),
+      .component = SettingsRouteComponent::Network,
+      .title = QCoreApplication::translate("SettingsCenter", "Network"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Connectivity, devices, and saved networks"),
+      .iconName = QStringLiteral("preferences-system-network"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool networkRegistered = registerRoute(networkRoute);
+  Q_ASSERT(networkRegistered);
+  Q_UNUSED(networkRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

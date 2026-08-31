@@ -53,6 +53,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0050](0050-direct-kde-output-management-writer.md) | Accepted | Use a direct bounded KDE public output-management writer |
 | [ADR-0051](0051-persist-display-journal-in-injected-state-root.md) | Accepted | Persist canonical Display1 recovery truth in one injected user-state directory |
 | [ADR-0052](0052-confine-networkmanager-behind-network1.md) | Accepted | Confine libnm, credentials, and upstream-owner replacement behind resident Network1 |
+| [ADR-0055](0055-compose-network-settings-through-network1.md) | Accepted | Compose Network settings through public Network1 without credential authority |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

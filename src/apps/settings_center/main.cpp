@@ -7,12 +7,14 @@
 #include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_display/display_settings_model.h"
+#include "qindaqt/apps/settings_network/network_settings_model.h"
 #include "qindaqt/services/display_client/client.h"
 #include "qindaqt/services/display_client/display_coordinator.h"
 #include "qindaqt/services/display_client/qt_display_transport.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/services/network_qt_transport/qt_network_transport.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -163,6 +165,20 @@ int main(int argc, char **argv) {
       displayClient, displayCoordinator);
   displayClient.start();
 
+  // AGENT-CONTRACT: The Settings route consumes only the public Network1
+  // client/transport boundary. It never links the resident service or libnm
+  // adapter and cannot acquire credentials or arbitrary connection settings.
+  QindaQt::Network::Client::QtNetworkTransport networkTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::Network::Client::NetworkClient networkClient(networkTransport);
+  QindaQt::Apps::SettingsNetwork::NetworkSettingsModel networkSettings(
+      networkClient);
+  QString networkClientError;
+  if (!networkClient.start(&networkClientError)) {
+    qWarning("qindaqt-settings: Network1 client unavailable: %s",
+             qPrintable(networkClientError));
+  }
+
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
@@ -177,6 +193,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&appearanceSettings))},
       {QStringLiteral("displaySettings"),
        QVariant::fromValue(static_cast<QObject *>(&displaySettings))},
+      {QStringLiteral("networkSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&networkSettings))},
   });
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),
