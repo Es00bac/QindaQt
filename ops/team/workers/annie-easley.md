@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:34:24-06:00
+updated_at: 2026-08-31T16:35:23-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — presentation rebuilt 3/3; resumed strict Debug stopped at action 2/14 on one omitted result diagnostic, now applying the exact test-helper initializer.
+- Status: working — request-state rebuilt 3/3; resumed strict Debug stopped at action 2/11 on the controller result helper's omitted diagnostic, now applying the exact test-only initializer.
 
 ## Updates
+
+- 2026-08-31T16:35:23-06:00 — The repaired request-state target rebuilt 3/3. The next first red was displayed action 2/11 in `tst_bluetooth_applet_controller.cpp`: its canonical result helper omitted trailing `OperationResult::diagnostic`, rejected under GCC 15.3 strict warnings. No CTest ran. The exact test-only repair supplies empty diagnostic and `wireValid = true`; the failed controller target will replay before the graph resumes.
 
 - 2026-08-31T16:34:24-06:00 — The repaired presentation target rebuilt 3/3. The resumed Debug graph stopped at its next first red, action 2/14: the request-state test helper omitted trailing `OperationResult::diagnostic`, rejected by GCC 15.3 `-Werror=missing-field-initializers`. No CTest ran. The exact test-only repair explicitly supplies empty diagnostic and `wireValid = true`, matching the fixture's intended valid typed result before rebuilding only this failed target.
 
