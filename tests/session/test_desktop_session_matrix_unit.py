@@ -6,15 +6,18 @@ from __future__ import annotations
 import copy
 import unittest
 from pathlib import Path
+from typing import Any
 
 from desktop_session_interactive import validate_interactive_evidence
 from desktop_session_matrix import (
     DesktopMatrixError,
+    DesktopMatrixScenario,
     EXECUTABLE_MATRIX_ROWS,
     load_matrix_scenario,
     physical_content_region,
 )
 from desktop_session_topology import (
+    MatrixBootTopology,
     TopologyContractError,
     interactive_matrix_topology,
 )
@@ -24,62 +27,83 @@ from test_desktop_session_topology_unit import valid_evidence
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
 
 
-def valid_matrix_evidence(scenario_id: str) -> tuple[dict[str, object], object]:
-    scenario = load_matrix_scenario(SOURCE_ROOT, scenario_id)
-    topology = interactive_matrix_topology(scenario)
-    evidence = valid_evidence("WL-0")
+def _add_process_evidence(
+    evidence: dict[str, object],
+    scenario: DesktopMatrixScenario,
+    topology: MatrixBootTopology,
+) -> None:
     parent_pid = 999
-    parent_executable = "kwin_wayland" if scenario.virtual.scale != 1.0 else "weston"
+    parent_executable = (
+        "kwin_wayland" if scenario.virtual.scale != 1.0 else "weston"
+    )
     evidence["topology"] = topology.document()
     evidence["processes"] = {
         "parent-compositor": {
-            "pid": parent_pid, "executable": parent_executable,
+            "pid": parent_pid,
+            "executable": parent_executable,
             "parentRole": None,
         },
         **evidence["processes"],  # type: ignore[arg-type]
     }
+    cleanup = evidence["cleanup"]["terminalPhases"]  # type: ignore[index]
     if scenario.virtual.scale != 1.0:
         evidence["processes"]["parent-private-bus"] = {  # type: ignore[index]
-            "pid": 998, "executable": "dbus-daemon", "parentRole": None,
+            "pid": 998,
+            "executable": "dbus-daemon",
+            "parentRole": None,
         }
-        evidence["cleanup"]["terminalPhases"].insert(  # type: ignore[index]
-            0,
-            {
-                "role": "parent-private-bus", "pid": 998,
-                "processGroup": 998, "executablePath": "/usr/bin/dbus-daemon",
-                "startTicks": 998, "terminalPhase": "term",
-            },
-        )
-    evidence["cleanup"]["terminalPhases"].insert(  # type: ignore[index]
-        0,
-        {
-            "role": "parent-compositor", "pid": parent_pid,
-            "processGroup": parent_pid,
-            "executablePath": f"/usr/bin/{parent_executable}",
-            "startTicks": 999, "terminalPhase": "term",
-        },
-    )
-    outputs = []
-    visibility = []
-    docks = []
+        cleanup.insert(0, {  # type: ignore[union-attr]
+            "role": "parent-private-bus",
+            "pid": 998,
+            "processGroup": 998,
+            "executablePath": "/usr/bin/dbus-daemon",
+            "startTicks": 998,
+            "terminalPhase": "term",
+        })
+    cleanup.insert(0, {  # type: ignore[union-attr]
+        "role": "parent-compositor",
+        "pid": parent_pid,
+        "processGroup": parent_pid,
+        "executablePath": f"/usr/bin/{parent_executable}",
+        "startTicks": 999,
+        "terminalPhase": "term",
+    })
+
+
+def _add_output_evidence(
+    evidence: dict[str, object], topology: MatrixBootTopology
+) -> None:
+    outputs, visibility, docks = [], [], []
     shell_pid = evidence["processes"]["shell"]["pid"]  # type: ignore[index]
     for output in topology.outputs:
         name = f"WL-{output.ordinal}"
         geometry = {
-            "x": output.logical_x, "y": output.logical_y,
-            "width": output.logical_width, "height": output.logical_height,
+            "x": output.logical_x,
+            "y": output.logical_y,
+            "width": output.logical_width,
+            "height": output.logical_height,
         }
         outputs.append({"name": name, "geometry": geometry, "scale": output.scale})
         visibility.append({"id": name, "geometry": geometry, "scale": output.scale})
         docks.append({
-            "scope": "dock", "processId": str(shell_pid),
-            "outputName": name, "desiredOutputName": name,
-            "mapped": True, "committed": True,
+            "scope": "dock",
+            "processId": str(shell_pid),
+            "outputName": name,
+            "desiredOutputName": name,
+            "mapped": True,
+            "committed": True,
         })
-    evidence["outputs"] = outputs
-    evidence["visibilityOutputs"] = visibility
-    evidence["dockSurfaces"] = docks
-    evidence["inputDevices"] = [
+    evidence.update({
+        "outputs": outputs,
+        "visibilityOutputs": visibility,
+        "dockSurfaces": docks,
+    })
+
+
+def _add_input_evidence(
+    evidence: dict[str, object], scenario: DesktopMatrixScenario
+) -> None:
+    devices = [
         {
             "id": "input-00000001", "name": "", "enabled": True,
             "busType": 0, "vendorId": 0, "productId": 0,
@@ -92,18 +116,31 @@ def valid_matrix_evidence(scenario_id: str) -> tuple[dict[str, object], object]:
         },
     ]
     if scenario.virtual.scale == 1.0:
-        evidence["inputDevices"].insert(0, {  # type: ignore[union-attr]
+        devices.insert(0, {
             "id": "input-00000003", "name": "", "enabled": True,
             "busType": 0, "vendorId": 0, "productId": 0,
             "capabilities": ["pointer"],
         })
-    active = topology.outputs[1] if scenario.virtual.output_count == 2 else topology.outputs[0]
-    logical_geometry = {
+    evidence["inputDevices"] = devices
+
+
+def _interaction_geometry(topology: MatrixBootTopology) -> tuple[Any, dict[str, int]]:
+    active = topology.outputs[1] if len(topology.outputs) == 2 else topology.outputs[0]
+    return active, {
         "x": active.logical_x + active.logical_width - 456,
         "y": active.logical_y + 16,
         "width": 440,
         "height": 640,
     }
+
+
+def _add_interaction_evidence(
+    evidence: dict[str, object],
+    scenario: DesktopMatrixScenario,
+    topology: MatrixBootTopology,
+) -> tuple[Any, dict[str, int]]:
+    active, geometry = _interaction_geometry(topology)
+    shell_pid = evidence["processes"]["shell"]["pid"]  # type: ignore[index]
     evidence["containment"].update({  # type: ignore[union-attr]
         "parentBackend": (
             "kwin-virtual-qpaint" if scenario.virtual.scale != 1.0
@@ -119,59 +156,81 @@ def valid_matrix_evidence(scenario_id: str) -> tuple[dict[str, object], object]:
         "eventCount": 5 if scenario.virtual.output_count == 2 else 4,
         "preInjectionActiveSurfaceCount": 0,
         "surface": {
-            "scope": "notification-center", "processId": str(shell_pid),
+            "scope": "notification-center",
+            "processId": str(shell_pid),
             "outputName": f"WL-{active.ordinal}",
             "desiredOutputName": f"WL-{active.ordinal}",
             "mapped": True, "committed": True, "active": True,
-            "geometry": logical_geometry,
+            "geometry": geometry,
         },
     }
+    return active, geometry
+
+
+def _add_presentation_evidence(
+    evidence: dict[str, object], scenario: DesktopMatrixScenario
+) -> None:
+    parent_arguments = None
+    if scenario.virtual.scale != 1.0:
+        parent_arguments = [
+            "--virtual", "--width", str(scenario.virtual.logical_width),
+            "--height", str(scenario.virtual.logical_height),
+            "--scale", str(scenario.virtual.scale), "--output-count", "1",
+            "--socket", "qindaqt-parent-wayland", "--no-lockscreen",
+            "--no-global-shortcuts",
+        ]
     evidence["matrixPresentation"] = {
         "scenarioId": scenario.scenario_id,
         "profileId": scenario.profile_id,
         "themeId": scenario.theme_id,
         "requestedScale": scenario.virtual.scale,
-        "parentArguments": (
-            [
-                "--virtual", "--width", str(scenario.virtual.logical_width),
-                "--height", str(scenario.virtual.logical_height),
-                "--scale", str(scenario.virtual.scale), "--output-count", "1",
-                "--socket", "qindaqt-parent-wayland", "--no-lockscreen",
-                "--no-global-shortcuts",
-            ]
-            if scenario.virtual.scale != 1.0 else None
-        ),
+        "parentArguments": parent_arguments,
         "sessionArguments": [
             "--profile", scenario.profile_id, "--theme", scenario.theme_id
         ],
         "editorArguments": ["--theme", scenario.theme_id],
     }
-    captures = []
-    for output in (active,):
-        capture = {
-            "tool": (
-                "kwin-virtual-shm" if output.render_scale != 1.0
-                else "weston-screenshooter"
-            ),
-            "path": (
-                f"desktop-matrix-{scenario.scenario_id}-output-{output.ordinal}.png"
-            ),
-            "sha256": f"{output.ordinal + 1:x}" * 64,
-            "byteCount": 4096,
-            "width": output.pixel_width,
-            "height": output.pixel_height,
-            "sampledDistinctColors": 16,
-            "outputName": f"WL-{output.ordinal}",
-        }
-        capture["contentRegion"] = {
-            **physical_content_region(
-                logical_geometry, output, physical_scale=output.render_scale
-            ),
-            "sampledDistinctColors": 16,
-            "sha256": "a" * 64,
-        }
-        captures.append(capture)
-    evidence["matrixCaptures"] = captures
+
+
+def _add_capture_evidence(
+    evidence: dict[str, object],
+    scenario: DesktopMatrixScenario,
+    active: Any,
+    logical_geometry: dict[str, int],
+) -> None:
+    capture = {
+        "tool": (
+            "kwin-virtual-shm" if active.render_scale != 1.0
+            else "weston-screenshooter"
+        ),
+        "path": f"desktop-matrix-{scenario.scenario_id}-output-{active.ordinal}.png",
+        "sha256": f"{active.ordinal + 1:x}" * 64,
+        "byteCount": 4096,
+        "width": active.pixel_width,
+        "height": active.pixel_height,
+        "sampledDistinctColors": 16,
+        "outputName": f"WL-{active.ordinal}",
+    }
+    capture["contentRegion"] = {
+        **physical_content_region(
+            logical_geometry, active, physical_scale=active.render_scale
+        ),
+        "sampledDistinctColors": 16,
+        "sha256": "a" * 64,
+    }
+    evidence["matrixCaptures"] = [capture]
+
+
+def valid_matrix_evidence(scenario_id: str) -> tuple[dict[str, object], object]:
+    scenario = load_matrix_scenario(SOURCE_ROOT, scenario_id)
+    topology = interactive_matrix_topology(scenario)
+    evidence = valid_evidence("WL-0")
+    _add_process_evidence(evidence, scenario, topology)
+    _add_output_evidence(evidence, topology)
+    _add_input_evidence(evidence, scenario)
+    active, geometry = _add_interaction_evidence(evidence, scenario, topology)
+    _add_presentation_evidence(evidence, scenario)
+    _add_capture_evidence(evidence, scenario, active, geometry)
     return evidence, topology
 
 

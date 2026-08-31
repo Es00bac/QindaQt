@@ -101,8 +101,11 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/shell_surface_protocol_validation.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_measure.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_capture.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_evidence.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_interactive.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_interaction_runtime.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_kwin_capture.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_launch.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_lifecycle.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_matrix.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_output.py"
@@ -112,6 +115,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_sandbox.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology_model.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_parent_wayland_session.py"
@@ -128,6 +132,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_process_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_probe_cli.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_readiness_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_runtime_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
