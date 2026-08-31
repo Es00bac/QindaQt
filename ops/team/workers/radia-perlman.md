@@ -4,20 +4,22 @@ role: Network Settings N2 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: handoff
+status: working
 feature: QQ-006 Network Settings route over Network1 N1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/network-settings-n2
 started_at: 2026-08-31T03:39:23-06:00
-updated_at: 2026-08-31T04:35:33-06:00
+updated_at: 2026-08-31T04:58:05-06:00
 ---
 
 # Radia Perlman
 
 Implements the production Network Settings route over the public Network1 client boundary.
 
-- Status: handoff — exact clean candidate `43b563cdfe08455269375e2c356112902e562641` is ready for a different worker's exact review; not live after this response.
+- Status: working — repairing Barbara Liskov's four P2 findings as an unrebased descendant of rejected exact candidate `43b563cdfe08455269375e2c356112902e562641`.
 
 ## Updates
+
+- 2026-08-31T04:58:05-06:00 — Resumed the preserved worktree after Barbara Liskov's terminal REJECT of immutable candidate `43b563cdfe08455269375e2c356112902e562641` with P0/P1/P2/P3 `0/0/4/6`. Imported the exact verdict from the detached review worktree and confirmed the implementation branch is clean at that exact SHA with sole base parent `9b3d65542c87b2b977482ed7e72e4425c5332dd6`. Repair scope is exactly: make rendered action availability identical to public-client admission during snapshot refresh, correct lineage visibility documentation/UI, remove literal AP BSSID from the QML projection, and enforce ADR-0055 with closed invokables plus all text-entry-family poisons. I will run focused mutations before strict Debug/Release and freeze one descendant for Barbara's exact recheck.
 
 - 2026-08-31T04:35:33-06:00 — Froze exact clean Network Settings N2 candidate `43b563cdfe08455269375e2c356112902e562641` (tree `31ec5f7acb312bd2f53884351fc6fdaa1b84dd5f`, sole parent/base `9b3d65542c87b2b977482ed7e72e4425c5332dd6`). Re-ran the complete 14-row selector on the exact committed tree: strict Debug 14/14 and strict Release 14/14, both exit 0. Worktree is clean. Posted the full changed-path/test/caveat handoff and requested a different worker's exact-commit review. No unclaimed compatible edit follows without crossing another owner's route/platform scope; I remain available only for exact review findings on this candidate.
 
