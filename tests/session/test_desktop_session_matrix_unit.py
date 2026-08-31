@@ -165,7 +165,39 @@ def _add_interaction_evidence(
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",
         "eventCount": 5 if scenario.virtual.output_count == 2 else 4,
+        "activation": {
+            "action": "qindaqt_toggle_notification_center",
+            "component": "qindaqt-shell",
+            "pressed": True,
+            "released": True,
+        },
         "preInjectionActiveSurfaceCount": 0,
+        "shellPresentation": {
+            "before": {
+                "owner": ":1.20", "servicePid": str(shell_pid),
+                "shellPid": str(shell_pid),
+                "presentation": {
+                    "privatePresentationAllowed": True, "centerOpen": False,
+                },
+                "centerOpenedCount": "0",
+                "centerWindow": {
+                    "exists": True, "visible": False,
+                    "outputName": f"WL-{active.ordinal}",
+                },
+            },
+            "after": {
+                "owner": ":1.20", "servicePid": str(shell_pid),
+                "shellPid": str(shell_pid),
+                "presentation": {
+                    "privatePresentationAllowed": True, "centerOpen": True,
+                },
+                "centerOpenedCount": "1",
+                "centerWindow": {
+                    "exists": True, "visible": True,
+                    "outputName": f"WL-{active.ordinal}",
+                },
+            },
+        },
         "surface": {
             "scope": "notification-center",
             "processId": str(shell_pid),

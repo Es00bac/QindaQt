@@ -37,6 +37,77 @@ def _canonical_process_id(value: Any) -> int:
     return process_id
 
 
+def _canonical_counter(value: Any, location: str) -> int:
+    counter = (
+        int(value, 10)
+        if isinstance(value, str) and value.isascii() and value.isdecimal()
+        else -1
+    )
+    if counter < 0 or value != str(counter):
+        raise TopologyContractError(f"{location} must be a canonical counter")
+    return counter
+
+
+def _validate_shell_presentation(
+    interaction: Mapping[str, Any], shell_pid: Any, expected_output: str
+) -> None:
+    activation = _mapping(interaction.get("activation"), "interaction.activation")
+    if activation != {
+        "action": "qindaqt_toggle_notification_center",
+        "component": "qindaqt-shell",
+        "pressed": True,
+        "released": True,
+    }:
+        raise TopologyContractError("shortcut activation evidence is malformed")
+    presentation = _mapping(
+        interaction.get("shellPresentation"), "interaction.shellPresentation"
+    )
+    if set(presentation) != {"before", "after"}:
+        raise TopologyContractError("shell presentation phases are malformed")
+    phases = {
+        name: _mapping(presentation.get(name), f"shellPresentation.{name}")
+        for name in ("before", "after")
+    }
+    expected_fields = {
+        "owner", "servicePid", "shellPid", "presentation",
+        "centerOpenedCount", "centerWindow",
+    }
+    for name, phase in phases.items():
+        owner = phase.get("owner")
+        if set(phase) != expected_fields or not isinstance(owner, str) or not owner.startswith(":"):
+            raise TopologyContractError(f"shell presentation {name} identity is malformed")
+        if (
+            _canonical_process_id(phase.get("servicePid")) != shell_pid
+            or _canonical_process_id(phase.get("shellPid")) != shell_pid
+        ):
+            raise TopologyContractError(f"shell presentation {name} PID is malformed")
+        state = _mapping(phase.get("presentation"), f"shellPresentation.{name}.presentation")
+        window = _mapping(phase.get("centerWindow"), f"shellPresentation.{name}.centerWindow")
+        expected_open = name == "after"
+        if (
+            set(state) != {"privatePresentationAllowed", "centerOpen"}
+            or state.get("privatePresentationAllowed") is not True
+            or state.get("centerOpen") is not expected_open
+            or set(window) != {"exists", "visible", "outputName"}
+            or window.get("exists") is not True
+            or window.get("visible") is not expected_open
+            or window.get("outputName") != expected_output
+        ):
+            raise TopologyContractError(f"shell presentation {name} state is malformed")
+    if phases["before"].get("owner") != phases["after"].get("owner"):
+        raise TopologyContractError("shell presentation owner changed across input")
+    opened_before = _canonical_counter(
+        phases["before"].get("centerOpenedCount"),
+        "shell presentation before count",
+    )
+    opened_after = _canonical_counter(
+        phases["after"].get("centerOpenedCount"),
+        "shell presentation after count",
+    )
+    if opened_after <= opened_before:
+        raise TopologyContractError("shell presentation open counter did not advance")
+
+
 def _canonical_digest(value: Any) -> bool:
     return (
         isinstance(value, str)
@@ -189,13 +260,15 @@ def validate_interactive_evidence(
 
     interaction = _mapping(evidence.get("interaction"), "evidence.interaction")
     if set(interaction) != {
-        "action", "deviceId", "eventCount", "preInjectionActiveSurfaceCount", "surface",
+        "action", "deviceId", "eventCount", "activation",
+        "preInjectionActiveSurfaceCount", "shellPresentation", "surface",
     }:
         raise TopologyContractError("interaction has an unexpected field set")
     surface = _mapping(interaction.get("surface"), "interaction.surface")
     geometry = _mapping(surface.get("geometry"), "interaction.surface.geometry")
     expected_interaction_output = "WL-1" if secondary_output else "WL-0"
     expected_event_count = 5 if secondary_output else 4
+    _validate_shell_presentation(interaction, shell.get("pid"), expected_interaction_output)
     if (
         interaction.get("action") != "open-notification-center"
         or interaction.get("deviceId") != "qindaqt-development-input"
