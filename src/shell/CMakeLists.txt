@@ -75,6 +75,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         common/catalogpaths.h
         runtime/main.cpp
         runtime/globalshortcutregistrar.h
+        runtime/compositoroutputauthority.cpp
+        runtime/compositoroutputauthority.h
         runtime/kglobalaccelshortcutregistrar.cpp
         runtime/kglobalaccelshortcutregistrar.h
         runtime/notificationcenterappletaccess.cpp
@@ -85,8 +87,12 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/notificationwindowcontroller.h
         runtime/notificationquietingsettingsbridge.cpp
         runtime/notificationquietingsettingsbridge.h
+        runtime/notificationoutputselector.cpp
+        runtime/notificationoutputselector.h
         runtime/powerappletcomposition.cpp
         runtime/powerappletcomposition.h
+        runtime/qtcompositoroutputauthority.cpp
+        runtime/qtcompositoroutputauthority.h
         runtime/runtimeoptions.cpp
         runtime/runtimeoptions.h
         runtime/runtimepanelwindowfactory.cpp
@@ -95,6 +101,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shelldevelopmentevidence.h
         runtime/shellruntimeapplication.cpp
         runtime/shellruntimeapplication_development.cpp
+        runtime/shellruntimeapplication_surfaces.cpp
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
@@ -140,6 +147,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qindaqt_themes
             KF6::GlobalAccel
             Qt6::Core
+            Qt6::DBus
             Qt6::Gui
             Qt6::Qml
             Qt6::Quick

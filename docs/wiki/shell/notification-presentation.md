@@ -189,9 +189,9 @@ seconds or the next successful operation.
 
 ## Surfaces and entry points
 
-Both windows currently use the primary output, top-right anchors, overlay
-layer, a 16-logical-pixel top/right margin, zero exclusive zone, on-demand
-keyboard interactivity, and separate `notification-popup` and
+Both windows currently use the compositor's semantic-primary output, top-right
+anchors, overlay layer, a 16-logical-pixel top/right margin, zero exclusive
+zone, on-demand keyboard interactivity, and separate `notification-popup` and
 `notification-center` scopes. Popup stacks always disable activate-on-show so
 an incoming notification cannot steal focus. The center alone requests
 activate-on-show when mapped. KWin applies the top margin below any earlier
@@ -207,6 +207,19 @@ too small to retain usable controls. Popups retain a 240-logical-pixel minimum
 usable width. The center requires 384 logical pixels so its Do Not Disturb,
 History, and Close header controls remain usable; a compact 400x300 output
 therefore produces a clamped 384x284 center.
+
+The semantic-primary route is not taken from Qt's Wayland-local
+`primaryScreen()`. A focused runtime adapter subscribes to the exact owner of
+the public `Compositor1.Outputs` projection, invalidates before rereading, and
+retains only a strictly decoded immutable frame. Reconciliation accepts its
+first semantic output only when the `outputGeneration` and complete output-ID
+set match both the accepted `ShellVisibilitySnapshot` and the current Qt
+inventory. A live transfer therefore destroys/recreates popup and center roles
+on the new exact-name `QScreen`; an unchanged semantic primary retains the
+existing windows and only resizes them. Owner loss, removal/replacement races,
+generation mismatch, or a missing exact Qt screen clears both windows until a
+coherent frame returns. Panel and dock reconciliation keeps its independent
+safe-visible policy.
 
 The popup **History** button opens the center while a popup is visible. A
 dedicated notification-center applet now appears exactly once in each of the
@@ -272,6 +285,14 @@ registry. A second offscreen QML
 test proves the applet's disabled fallback, locked-state unavailability,
 accessibility label changes, narrow toggle call, read-only policy indicators,
 and compiled-entry-point dispatch without compositor or pointer input. The
+`qindaqt.notification-output-selector` row proves semantic-primary transfer,
+unchanged-primary retention, output replacement/removal, missing authority,
+generation and ID mismatches, strict wire decoding, and a mutation-sensitive
+control in which stale Qt primary `WL-0` must not override authoritative
+`WL-1`. `qindaqt.notification-output-authority-qt` runs against a private
+`dbus-daemon` and proves `OutputsChanged` withdraws the cached route before the
+replacement reply, exact-owner loss clears it, and a different owner may
+publish a fresh generation. Neither row opens a display or compositor. The
 notification-surface
 offscreen tests prove the Settings1-backed accessible quick control, honest
 state/retry projection, fixed settings route, natural bidirectional focus
@@ -358,7 +379,9 @@ The following remain unqualified or unimplemented:
 
 - screenshot-based visual baselines and full accessibility-tree/screen-reader
   behavior;
-- multi-output placement policy, per-output histories, and output migration;
+- seat-/active-window-based multi-output placement and per-output histories;
+  semantic-primary transfer is implemented, while the S3 dual-output live
+  rerun remains the compositor-level acceptance gate;
 - Do Not Disturb scheduling/inhibition, sound, and safe image/icon loading;
 - persistent notification history and live session-bus activation interaction;
 - physical-seat and real-desktop lock interaction, multi-seat/session switching,
