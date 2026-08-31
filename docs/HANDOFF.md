@@ -4,6 +4,22 @@
 
 Manager integration delta after the public baseline below:
 
+- The manager merge `7277771a63747bbcec957465e5f0b676e69168d0`
+  integrates exact accepted Display Settings descendant `2f429c11`. The live
+  `display` route composes the public D3 client/coordinator into bounded
+  snapshot, draft, topology-validation, preview, confirm, and revert behavior;
+  preserves authoritative coordinate truth across output replacement and
+  same-output refresh; and exposes keyboard-accessible output selection and
+  integer coordinate commits through the installed Settings application.
+  Katherine's terminal rereview found P0/P1/P2/P3 `0/0/0/0` after the sole
+  documentation-integrity defect was repaired. Exact Debug and Release review
+  each built 328/328 focused actions and passed 12/12 rows, the compiled page
+  passed 10/10, the independent interaction probe passed 7/7, and four hostile
+  mutations were killed. Fresh merged-tree verification builds 328/328 and
+  passes the same combined 12/12 selector. Display resident composition and
+  nested preview/confirm/revert convergence remain D6/S3 work; physical
+  displays and assistive-technology integration remain release gates.
+
 - The manager merge of exact accepted candidate `acd0168` integrates Display
   D5's crash-safe filesystem journal behind the D4 `JournalStore` boundary.
   The injected effective-user-owned state root, fixed names, canonical bounded
@@ -19,7 +35,7 @@ Manager integration delta after the public baseline below:
   docs, strict MkDocs, shape, lineage, provenance, and residue gates. Manager
   replay builds all 130 focused actions and passes the 12/12 and adjacent 5/5
   selectors serially. Resident startup recovery/writer composition,
-  authenticated lock/logind safety, Settings UI, nested convergence, mixed
+  authenticated lock/logind safety, nested convergence, mixed
   outputs, resources, and physical hardware remain D6+.
 
 - `26bb7f5` supplies the exact independently accepted private interactive
@@ -44,8 +60,8 @@ Manager integration delta after the public baseline below:
   provenance, cleanliness, and zero residue. Fresh manager-tree Debug
   verification built all 23 executable Display targets and passed the complete
   D0-D4 selector 26/26. The packaged resident remains deliberately fail-closed
-  until durable journal, authenticated lock/logind safety, writer composition,
-  Settings UI, and contained nested convergence land.
+  until authenticated lock/logind safety, writer/journal resident composition,
+  and contained nested convergence land.
 
 - `c819db8` integrates the exact independently accepted Display D3 typed
   asynchronous client and D2 transaction-summary projection replay. Astra's
@@ -54,8 +70,9 @@ Manager integration delta after the public baseline below:
   current-manager shared-registry entry. Fresh manager-tree strict Debug and
   Release builds complete 81/81 targeted actions and pass the exact seven-row
   D2/D3 selector in each profile. D4 now supplies the separately integrated
-  compositor writer; durable journal/resident composition, Settings display
-  UI, nested convergence, hardware, and resource proof remain.
+  compositor writer, D5 supplies the durable journal, and the Display Settings
+  route is now integrated; resident composition, nested convergence, hardware,
+  and resource proof remain.
 
 - `0c9f4b0` integrates the exact independently accepted Settings Center S1
   repair over typed navigation commit `80a91f8`. Noether's immutable rereview
@@ -271,9 +288,10 @@ two independent exact reviews passed. A fresh combined-tree Debug build passed
 68/68 focused build steps and all five Display1 service tests, including both
 serial private-D-Bus lifecycle rows, with no surviving service or fixture.
 Display1 now exposes the fail-closed D3 typed asynchronous client and
-server-projected reversible transaction coordinator. Output mutation remains
-unavailable until the compositor writer, durable persistence, Settings UI, and
-nested preview/confirm/revert convergence proof land.
+server-projected reversible transaction coordinator; D4, D5, and the Display
+Settings route are integrated separately. Production output mutation remains
+unavailable until resident writer/journal composition and contained nested
+preview/confirm/revert convergence proof land.
 Power/Brightness PB-1 is integrated as an EXECUTABLE resident service/client,
 package and private lifecycle boundary over the PB-0 protocol/aggregation/
 brightness foundation. PB-2 production upstream adapters and policy remain

@@ -18,8 +18,8 @@ qualification remain preserved integrated foundations.
 ### Platform services delivery queue
 
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
-remaining Display1 durable-journal/resident composition, transaction UI and
-nested convergence work, production Power/brightness adapters and UI,
+remaining Display1 resident composition and nested convergence work,
+production Power/brightness adapters and UI,
 resident Network1/NetworkManager transport over the Network N0 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
@@ -33,8 +33,9 @@ Finish QQ-006 through the durable
 [First-party queue](../ops/team/queues/first-party.md): complete Settings routes,
 later File Manager and Terminal capabilities, application migrations, and
 cross-app responsive, DPI, visual, keyboard, and accessibility qualification.
-QST-1, Controls, AppShell, Text Editor, the read-only local File Manager S0, and
-the single-session Terminal S0 remain preserved integrated foundations.
+QST-1, Controls, AppShell, Text Editor, the read-only local File Manager S0,
+the single-session Terminal S0, and live Notifications, Appearance, and Display
+Settings routes remain preserved integrated foundations.
 
 ### Interactive virtual desktop integration
 
@@ -52,6 +53,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `2f429c11` via manager merge `7277771a` — First-class Display Settings route
+  over the public D3 client/coordinator with bounded draft/topology validation,
+  preview/confirm/revert, authoritative coordinate refresh, keyboard-accessible
+  output selection and integer coordinate commits, and installed route/package
+  composition. The exact docs-only descendant passed terminal independent
+  rereview P0/P1/P2/P3 `0/0/0/0`; its fully exercised parent passed strict
+  Debug/Release builds 328/328 each, focused 12/12 each, compiled page 10/10
+  each, interaction probe 7/7, and four mutation controls. Fresh merged-tree
+  verification repeats 328/328 and 12/12. Resident writer composition, nested
+  convergence, physical displays, and live assistive technology remain later.
+
 - `acd0168` — Display D5 adds a separate crash-safe filesystem journal adapter
   with an injected, ownership-validated state root; fixed bounded paths;
   canonical hostile-input decoding; mode-0600 exclusive temporary writes;
@@ -64,7 +76,7 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   adjacent D2/D3 10/10, package, docs, shape, lineage, provenance, and residue
   gates; manager replay built 130/130 focused actions and passed 12/12 plus
   adjacent client 5/5. Resident startup recovery/writer composition,
-  authenticated lock/logind safety, Settings UI, nested convergence, mixed
+  authenticated lock/logind safety, nested convergence, mixed
   outputs, resource proof, and hardware qualification remain later outcomes.
 
 - `a8a57a9` — Resident Power PB-1 service/client, exact-owner asynchronous
@@ -93,8 +105,8 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   proxy-lifetime safety, pinned protocol inputs, and an installed poison-tested
   boundary. Independent review passed `0/0/0/0`; fresh integrated-tree Debug
   verification built all 23 executable Display targets and passed D0-D4
-  26/26. Durable journal and resident composition, authenticated lock/logind
-  policy, Settings UI, nested convergence, and hardware remain later.
+  26/26. Resident writer/journal composition, authenticated lock/logind policy,
+  nested convergence, and hardware remain later.
 
 - `c819db8` — Typed asynchronous Display1 client and reversible transaction
   coordinator with exact-owner activation, validated atomic snapshots,
@@ -103,9 +115,10 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   The current-manager replay passed exact Gemini review `0/0/0/0`; fresh
   strict Debug and Release manager builds each completed 81/81 targeted
   actions and passed the seven-row D2/D3 selector. The separately integrated
-  D4 writer now supplies the public compositor-mutation boundary; durable
-  journal/resident composition, Settings UI, nested convergence, hardware, and
-  resource qualification remain later outcomes.
+  D4 writer and D5 journal now supply the public mutation and durability
+  boundaries, and the Display Settings route is integrated separately;
+  resident composition, nested convergence, hardware, and resource
+  qualification remain later outcomes.
 - `0c9f4b0` — Native Settings Center S1 with a typed bounded route registry,
   stable per-route lifetime, responsive wide/compact navigation, guarded
   unavailable-route focus, keyboard and accessibility paths, sanitized
