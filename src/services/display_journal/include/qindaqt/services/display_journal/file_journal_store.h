@@ -37,9 +37,10 @@ public:
   // QindaQt. Construction performs no I/O and never consults HOME/XDG state.
   // Calls are synchronous and confined to the caller's thread. Failure never
   // follows symlinks or accepts a partial/non-canonical journal.
-  // AGENT-CONTRACT: Unchanged is available only before rename/unlink;
-  // DurabilityUncertain reports a committed pathname followed by a failed
-  // directory barrier. Callers must never treat that third state as permission
+  // AGENT-CONTRACT: Unchanged is available only while prior pathname truth is
+  // authoritative. DurabilityUncertain reports visible requested truth whose
+  // required directory barrier failed, including an absent retry after an
+  // uncertain unlink. Callers must never treat that third state as permission
   // for a forward compositor mutation.
   explicit FileJournalStore(QString userStateRoot);
   ~FileJournalStore() override;

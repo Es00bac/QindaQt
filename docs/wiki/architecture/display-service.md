@@ -167,9 +167,11 @@ there is no `HOME`, XDG, Settings, or global lookup.
 Store accepts only a valid D1 journal, writes its canonical versioned bytes to
 a newly created mode-0600 temporary file, syncs content, atomically renames in
 the same directory, and syncs directory metadata where supported. The typed
-mutation result is `Unchanged` before the pathname commit, `Durable` after a
-successful barrier, or `DurabilityUncertain` when rename/unlink succeeded but
-the following directory barrier failed. Load never
+mutation result is `Unchanged` while prior pathname truth remains authoritative,
+`Durable` after a successful barrier, or `DurabilityUncertain` when requested
+pathname truth is visible but its directory barrier failed. Clear applies that
+barrier even when the path is already absent so a retry after uncertain unlink
+cannot report false durability. Load never
 follows links, accepts only a restrictive regular single-link file owned by the
 effective user, enforces the 1 MiB limit on both pathname and opened-descriptor
 metadata before allocation and again while streaming, and returns absent/
@@ -289,8 +291,9 @@ or timeout).
 - `storeJournal` and `clearJournal` return one typed journal-mutation outcome.
   `Unchanged` guarantees the prior durable value, `Durable` proves the requested
   value/absence crossed every supported barrier, and `DurabilityUncertain`
-  records a pathname commit followed by a failed directory barrier. Only
-  `Durable` authorizes a forward apply. Initial-store uncertainty is retained as
+  records visible requested pathname truth with a failed directory barrier,
+  including an already-absent retry after uncertain unlink. Only `Durable`
+  authorizes a forward apply. Initial-store uncertainty is retained as
   cleanup-only active journal authority until an exact durable clear; clear
   uncertainty remains conservative cleanup/recovery failure. Neither is
   collapsed into a lying Boolean.

@@ -1169,13 +1169,17 @@ and a nonregular temporary-name collision. Injected mutation-sensitive rows
 force directory-sync failure after successful rename and unlink, assert the
 typed `DurabilityUncertain` result plus actual visible new/absent pathname, and
 grow the same opened inode to a 1 TiB sparse size between pathname stat and open
-so allocation must reject at the 1 MiB cap. D1 proves uncertain initial store
-issues no apply, retains cleanup-only active journal authority, rejects
-cancel/re-stage/re-preview replacement, preserves `Unchanged` clear truth, and
-requires an exact `Durable` clear after uncertain unlink before Ready. D4 proves
-it forwards all three outcomes unchanged. The package row stages the exact
-development component, permits only the public value/store header, and proves a
-planted private filesystem header fails the checker.
+so allocation must reject at the 1 MiB cap. A concrete absent-clear sequence
+then fails the directory barrier again while the path is already absent and
+remains uncertain; only a later successful barrier reports `Durable`. D1 proves
+uncertain initial store issues no apply, retains cleanup-only active journal
+authority, rejects cancel/re-stage/re-preview replacement, preserves
+`Unchanged` clear truth, and requires an exact `Durable` clear after uncertain
+unlink before Ready. A composed D1/D5 row drives that authority through the real
+store and repeated barrier failures. D4 proves it forwards all three outcomes
+unchanged. The package row stages the exact development component, permits only
+the public value/store header, and proves a planted private filesystem header
+fails the checker.
 
 These tests open no display, session bus, compositor, home directory, or host
 configuration path. They prove the persistence adapter and deterministic

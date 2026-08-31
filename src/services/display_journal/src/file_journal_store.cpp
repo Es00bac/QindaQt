@@ -293,9 +293,17 @@ DisplayTransaction::JournalMutationOutcome FileJournalStore::clear() {
   struct stat metadata{};
   if (::fstatat(root.get(), kJournalName, &metadata, AT_SYMLINK_NOFOLLOW) !=
       0) {
-    return errno == ENOENT
-               ? DisplayTransaction::JournalMutationOutcome::Durable
-               : DisplayTransaction::JournalMutationOutcome::Unchanged;
+    if (errno != ENOENT) {
+      return DisplayTransaction::JournalMutationOutcome::Unchanged;
+    }
+    // AGENT-GUARD: Absence may be the visible result of an earlier unlink
+    // whose directory barrier failed. Re-run that barrier before reporting
+    // Durable or D1 can discard recovery authority while deletion remains
+    // crash-uncertain. See ADR-0051.
+    if (syncDirectory(root.get(), *m_hooks)) {
+      return DisplayTransaction::JournalMutationOutcome::Durable;
+    }
+    return DisplayTransaction::JournalMutationOutcome::DurabilityUncertain;
   }
   if (!S_ISREG(metadata.st_mode) || metadata.st_uid != ::geteuid() ||
       metadata.st_nlink != 1 || (metadata.st_mode & 0077) != 0) {
