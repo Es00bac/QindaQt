@@ -19,6 +19,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
     return BuiltinAppletRegistry({
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.notification-center"),
+        QStringLiteral("qindaqt.applets.power"),
     });
 }
 

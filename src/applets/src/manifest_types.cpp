@@ -44,6 +44,7 @@ constexpr std::array capabilities{
     EnumToken{Capability::AudioRead, "audio.read"},
     EnumToken{Capability::AudioControl, "audio.control"},
     EnumToken{Capability::PowerRead, "power.read"},
+    EnumToken{Capability::PowerControl, "power.control"},
     EnumToken{Capability::ClipboardRead, "clipboard.read"},
     EnumToken{Capability::ClipboardWrite, "clipboard.write"},
     EnumToken{Capability::BluetoothRead, "bluetooth.read"},

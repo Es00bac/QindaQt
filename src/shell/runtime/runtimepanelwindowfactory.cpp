@@ -2,6 +2,7 @@
 #include "runtimepanelwindowfactory.h"
 
 #include "notificationcenterappletaccess.h"
+#include "power_applet_controller.h"
 
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
@@ -35,10 +36,12 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      QVariantMap theme,
                                                      const Applets::ManifestCatalog &applets,
                                                      const AppletHost::CapabilityPolicy &policy,
-                                                     NotificationCenterAppletAccess *notificationCenterAccess)
+                                                     NotificationCenterAppletAccess *notificationCenterAccess,
+                                                     PowerApplet::PowerAppletController *powerAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
     , m_notificationCenterAccess(notificationCenterAccess)
+    , m_powerAppletAccess(powerAppletAccess)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
@@ -102,6 +105,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         {QStringLiteral("surfaceId"), surfaceId},
         {QStringLiteral("notificationCenterAppletAccess"),
          QVariant::fromValue(m_notificationCenterAccess)},
+        {QStringLiteral("powerAppletAccess"),
+         QVariant::fromValue(m_powerAppletAccess)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);
