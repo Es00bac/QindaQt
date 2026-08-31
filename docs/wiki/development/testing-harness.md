@@ -1533,6 +1533,14 @@ collaborators to infer runtime state from paths, process names, or catalog data.
 Focused runtime-boundary tests are separate from the generic stage, sandbox,
 and archive tests so failures identify the owning contract.
 
+The `DesktopVirtual` install component must carry the complete import closure
+of every Settings route compiled into `Main.qml`. That currently includes the
+Appearance and Display backing libraries, plugins, `qmldir` files, typeinfo,
+and every QML source named by those module directories, in addition to Tokens
+and Controls. A package-only pass is insufficient if a required application
+does not map: topology readiness must observe the installed
+`org.qindaqt.Settings` window before interaction or capture can qualify a row.
+
 Every run retains distinct private parent/child Wayland sockets, the fake-seat
 pointer/keyboard pair plus the development input device, exact Meta+N surface
 causality, all eight production roles under the 1,048,576 KiB aggregate PSS

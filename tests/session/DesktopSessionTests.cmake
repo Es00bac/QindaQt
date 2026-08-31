@@ -33,6 +33,8 @@ set(
     qindaqt_controls_qmlplugin
     qindaqt_settings_appearance_qml
     qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qml
+    qindaqt_settings_display_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )
@@ -100,10 +102,10 @@ if(
         COMPONENT DesktopVirtual
     )
 
-    # qindaqt-settings now loads the Appearance route in production. The
-    # DesktopVirtual component is intentionally self-contained, so repeat the
-    # route's transitive QML payloads here just as first-party application
-    # components repeat their runtime imports. Omitting any backing library,
+    # qindaqt-settings loads both the Appearance and Display routes in
+    # production. The DesktopVirtual component is intentionally self-contained,
+    # so repeat each route's transitive QML payloads just as first-party
+    # application components repeat their runtime imports. Omitting any backing library,
     # plugin, qmldir, typeinfo, or source named by qmldir makes the staged
     # desktop differ from the installed application contract.
     qt_query_qml_module(
@@ -124,6 +126,13 @@ if(
         TYPEINFO _qindaqt_desktop_appearance_typeinfo
         QML_FILES _qindaqt_desktop_appearance_qml_files
         QML_FILES_DEPLOY_PATHS _qindaqt_desktop_appearance_deploy_paths
+    )
+    qt_query_qml_module(
+        qindaqt_settings_display_qml
+        QMLDIR _qindaqt_desktop_display_qmldir
+        TYPEINFO _qindaqt_desktop_display_typeinfo
+        QML_FILES _qindaqt_desktop_display_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_display_deploy_paths
     )
     install(
         TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
@@ -189,6 +198,36 @@ if(
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    install(
+        TARGETS
+            qindaqt_settings_display_qml
+            qindaqt_settings_display_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_display_qmldir}"
+            "${_qindaqt_desktop_display_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_display_qml_files
+            _qindaqt_desktop_display_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )
