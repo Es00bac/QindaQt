@@ -143,12 +143,16 @@ implemented; do not use placeholder modules to bypass a boundary.
   paired-device connect/disconnect only, and pairing prompts belong to a
   separate Agent1 outcome. See [Bluetooth service](bluetooth-service.md) and
   [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
-- Network consumers depend on the typed Network1 client. The dependency
-  direction is protocol → model → client; the client accepts only an injected
-  transport and the pure N0 boundary contains no D-Bus, NetworkManager,
-  platform radio, credential, persistence, or QML authority. See
-  [Network service](network-service.md) and
-  [ADR-0045](../adr/0045-fence-network1-pure-boundary.md).
+- Network consumers depend on the typed Network1 client. The N0 direction
+  remains protocol → model → client, with only an injected transport. N1's
+  `network_qt_transport` implements that seam without reversing it;
+  `network_service` owns fixed-wire D-Bus residency and an injected backend;
+  only `network_manager_adapter` links libnm. Its public boundary exports
+  secret-free copies and no NM/GObject handle. NetworkManager profile and
+  credential authority remains external, with credentials supplied only by an
+  external secret agent. See [Network service](network-service.md),
+  [ADR-0045](../adr/0045-fence-network1-pure-boundary.md), and
+  [ADR-0052](../adr/0052-confine-networkmanager-behind-network1.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,
