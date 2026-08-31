@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:18:53-06:00
+updated_at: 2026-08-31T17:20:02-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — repaired strict Debug presentation/controller is 2/2 and full B1 is 7/7 green; no process survives and serialized strict Release replay is next.
+- Status: working — repaired strict Debug and Release are each presentation/controller 2/2 and full B1 7/7 green; compiler/CTest lane is released and final static/docs freeze remains.
 
 ## Updates
+
+- 2026-08-31T17:20:02-06:00 — The same repaired dependency graph rebuilt 16/16 under strict Release, then exact presentation/controller passed 2/2 and full B1 passed 7/7. Debug and Release therefore have identical green focused counts. Direct inspection found no compiler, CMake, Ninja, CTest, KWin, Weston, shell, or Bluetooth test process beyond the inspection shell; the compiler/CTest lane is immediately released. No private bus/runtime, compositor, BlueZ, host Bluetooth, hardware, network, or input lane was used. Remaining work is documentation/static/provenance freeze only.
 
 - 2026-08-31T17:18:53-06:00 — In the existing strict Debug root, the repaired presentation/controller dependency graph rebuilt 16/16 after upstream automatic steps, the exact two registered rows passed 2/2, and the full B1 selector passed 7/7 including all ten strengthened poison mutations and the installed-package row. No process survives. The same two targets and exact seven-row selector now proceed serially in the existing strict Release root; no private runtime is involved.
 
