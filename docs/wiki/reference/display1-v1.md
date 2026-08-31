@@ -188,10 +188,12 @@ owner therefore cannot recreate the earlier public epoch during the process
 lifetime, and the model retains no attacker-controlled epoch history. The
 positive D0 `outputGeneration` is the Display1 revision. Exact typed redelivery
 is accepted at equal generation; changed content at equal generation, revision
-regression, and a newer generation with unchanged content all reject
-atomically. Owner replacement or transport loss discards the public snapshot
-and active machine. A later accepted frame starts a fresh epoch, so revisions
-are never compared across source owners.
+regression, and a newer generation with unchanged content all reject atomically
+while preserving the complete same-owner public snapshot and any active
+transaction. Rejection diagnostics do not imply authority loss. Owner
+replacement or transport loss discards the public snapshot and active machine.
+A later accepted frame starts a fresh epoch, so revisions are never compared
+across source owners.
 
 Projection is intentionally narrower than full output management. It publishes
 only D0 enabled outputs and one synthesized current mode, requires integral
@@ -428,7 +430,7 @@ qualification.
 | Startup and replacement recovery | `qindaqt.display-service-recovery`, `qindaqt.display-service-model`: valid loaded truth enters D1 recovery before readiness; rejected truth issues zero apply/clear; active truth survives owner loss under a new outer lineage; old-lineage completion is fenced |
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |
 | Exact-owner async inventory transport | `qindaqt.display-service-inventory-private-bus`: disposable private bus/root, exact-owner read, dirty coalescing, replacement/unavailable, stale-reply rejection, and stop suppression |
-| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation`, 500 ms recovered-set settle/clear, and name/object/port teardown on the same disposable bus |
+| Resident D-Bus lifecycle | `qindaqt.display-service-resident-private-bus`, `qindaqt.display-service-resident-inventory-rejection-private-bus`: successful name/object registration, unavailable error, typed snapshot, `Changed`, deadline fire/re-arm into rollback, transaction-summary projection at `AwaitingConfirmation`, 500 ms recovered-set settle/clear, preservation across every same-owner generation/projection rejection from Staged through AwaitingConfirmation, explicit unavailable and failed replacement-owner withdrawal, and name/object/port teardown on disposable buses |
 | D4 writer mapping and serialization | `qindaqt.display-writer-mapper`, `qindaqt.display-writer-port`: exact connector/current-mode translation, structural mutation rejection, exactly-one-in-flight machine/token/request/owner fencing, socket peer identity, authority edges, timeout/stop/lineage loss, hostile synchronous completion, and late-reply suppression |
 | D4 writer boundary/package poison | `qindaqt.display-writer-boundary`, `qindaqt.display-writer-boundary-poison`, `qindaqt.display-writer-installed-boundary-poison`: pinned protocol XML, no private/platform dependency in public headers, staged installed-header consumer, and non-vacuous negative probes |
 | D6 startup and resident composition | `qindaqt.display-runtime-state-root`, `qindaqt.display-runtime-resident-private-bus`: deterministic state-root precedence/rejection; load validation before writer start; loaded-target rollback with zero forward replay; combined writer/delay/lock safety; durability uncertainty; suspend delay; owner/lineage replacement; terminal authority loss; late completion |

@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus)
+# DisplayWriter is a static collaborator whose private Qt Wayland dependency is
+# walked while this directory's executable is finalized. Imported Qt targets
+# are directory-scoped, so declare that transitive component here as well.
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus WaylandClient)
 
 qt_add_library(qindaqt_display_runtime STATIC)
 add_library(QindaQt::DisplayRuntime ALIAS qindaqt_display_runtime)
