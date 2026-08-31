@@ -14,13 +14,20 @@
 
 namespace QindaQt::DisplayService
 {
+namespace
+{
+
+constexpr int kTopologyQuietWindowMilliseconds = 500;
+
+} // namespace
 
 ResidentDisplayService::ResidentDisplayService(
     std::unique_ptr<InventorySource> inventorySource,
     std::unique_ptr<TransactionPort> transactionPort,
     std::unique_ptr<DisplayTransaction::MonotonicClock> clock,
     EpochFactory epochFactory, const QDBusConnection &connection, QString serviceName,
-    DisplayTransaction::Timing timing, QObject *parent)
+    DisplayTransaction::Timing timing,
+    std::optional<DisplayTransaction::Journal> startupJournal, QObject *parent)
     : QObject(parent)
     , m_inventorySource(std::move(inventorySource))
     , m_clock(std::move(clock))
@@ -34,7 +41,8 @@ ResidentDisplayService::ResidentDisplayService(
     Q_ASSERT(m_transactionPort != nullptr);
     Display::registerDBusTypes();
     m_model = std::make_unique<DisplayServiceModel>(
-        *m_clock, *m_transactionPort, std::move(epochFactory), timing);
+        *m_clock, *m_transactionPort, std::move(epochFactory), timing,
+        std::move(startupJournal));
     m_serviceObject = std::make_unique<DisplayServiceObject>(
         *m_model, [this](const bool changed) { modelTransitioned(changed); });
     m_deadlineTimer = new QTimer(this);
@@ -49,6 +57,18 @@ ResidentDisplayService::ResidentDisplayService(
             // of silently dropping the only tick.
             armDeadline();
         }
+        if (result.stateChanged) {
+            m_serviceObject->notifyChanged();
+        }
+    });
+    m_topologySettleTimer = new QTimer(this);
+    m_topologySettleTimer->setSingleShot(true);
+    m_topologySettleTimer->setTimerType(Qt::PreciseTimer);
+    m_topologySettleTimer->setInterval(kTopologyQuietWindowMilliseconds);
+    QObject::connect(m_topologySettleTimer, &QTimer::timeout, this, [this] {
+        const DisplayTransaction::CommandResult result =
+            m_model->topologySettled();
+        modelTransitioned(result.stateChanged);
         if (result.stateChanged) {
             m_serviceObject->notifyChanged();
         }
@@ -95,6 +115,7 @@ ServiceStartStatus ResidentDisplayService::start()
 void ResidentDisplayService::stop()
 {
     m_deadlineTimer->stop();
+    m_topologySettleTimer->stop();
     m_inventorySource->stop();
     m_inventorySource->setObserver(nullptr);
     m_transactionPort->setObserver(nullptr);
@@ -119,15 +140,49 @@ DisplayServiceModel *ResidentDisplayService::model() noexcept
     return m_model.get();
 }
 
+DisplayTransaction::CommandResult ResidentDisplayService::setSafetyState(
+    const DisplayTransaction::SafetyState safety)
+{
+    const DisplayTransaction::CommandResult result = m_model->safetyChanged(safety);
+    modelTransitioned(result.stateChanged);
+    if (result.stateChanged) {
+        m_serviceObject->notifyChanged();
+    }
+    return result;
+}
+
+DisplayTransaction::CommandResult ResidentDisplayService::prepareForSuspend()
+{
+    const DisplayTransaction::CommandResult result = m_model->prepareForSuspend();
+    modelTransitioned(result.stateChanged);
+    if (result.stateChanged) {
+        m_serviceObject->notifyChanged();
+    }
+    return result;
+}
+
 void ResidentDisplayService::inventoryObserved(const InventoryFrame &frame)
 {
     const InventoryObservationResult result = m_model->observeInventory(frame);
     if (result.accepted()) {
         modelTransitioned(result.stateChanged);
+        syncTopologySettleTimer(
+            result.status == InventoryObservationStatus::AcceptedNewLineage
+            || result.status == InventoryObservationStatus::AcceptedChanged);
         if (result.stateChanged
             || result.status == InventoryObservationStatus::AcceptedNewLineage) {
             m_serviceObject->notifyChanged();
         }
+        return;
+    }
+    // A contradictory or otherwise rejected complete frame means the prior
+    // snapshot can no longer authorize a mutation. Retain any D5 journal for
+    // recovery, withdraw the public snapshot, and wait for a fresh lineage.
+    if (m_model->transportLost()) {
+        m_deadlineTimer->stop();
+        m_topologySettleTimer->stop();
+        Q_EMIT modelStateChanged();
+        m_serviceObject->notifyChanged();
     }
 }
 
@@ -135,6 +190,8 @@ void ResidentDisplayService::inventoryUnavailable()
 {
     if (m_model->transportLost()) {
         m_deadlineTimer->stop();
+        m_topologySettleTimer->stop();
+        Q_EMIT modelStateChanged();
         m_serviceObject->notifyChanged();
     }
 }
@@ -155,6 +212,8 @@ void ResidentDisplayService::modelTransitioned(const bool changed)
 {
     if (changed) {
         armDeadline();
+        syncTopologySettleTimer();
+        Q_EMIT modelStateChanged();
     }
 }
 
@@ -172,6 +231,23 @@ void ResidentDisplayService::armDeadline()
     const int interval = static_cast<int>(std::min<quint64>(
         remaining, static_cast<quint64>(std::numeric_limits<int>::max())));
     m_deadlineTimer->start(interval);
+}
+
+void ResidentDisplayService::syncTopologySettleTimer(
+    const bool acceptedInventoryChanged)
+{
+    const DisplayTransaction::MachineView *view = m_model->view();
+    if (view == nullptr
+        || view->state != DisplayTransaction::MachineState::SettlingTopology) {
+        m_topologySettleTimer->stop();
+        return;
+    }
+    if (acceptedInventoryChanged || !m_topologySettleTimer->isActive()) {
+        // AGENT-CONTRACT: D2 owns the accepted-inventory quiet window; D1
+        // deliberately has no wall-clock hotplug policy. Every changed frame
+        // restarts this single timer, and only its expiry routes settle.
+        m_topologySettleTimer->start();
+    }
 }
 
 } // namespace QindaQt::DisplayService

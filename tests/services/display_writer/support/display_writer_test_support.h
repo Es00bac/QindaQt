@@ -29,6 +29,10 @@ public:
             observer = nullptr;
         }
     }
+    qint64 peerProcessId() const noexcept override
+    {
+        return started ? configuredPeerProcessId : 0;
+    }
     SubmitStatus submit(const Configuration &configuration) override
     {
         submissions.push_back(configuration);
@@ -62,6 +66,7 @@ public:
     int stopCalls = 0;
     bool started = false;
     bool detachObserverOnStop = false;
+    qint64 configuredPeerProcessId = 4242;
 };
 
 class FakeJournalStore final : public JournalStore

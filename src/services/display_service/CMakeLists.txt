@@ -45,38 +45,3 @@ install(
     EXPORT QindaQtTargets
     FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-
-qt_add_executable(qindaqt-display-service app/main.cpp)
-target_link_libraries(
-    qindaqt-display-service PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus
-)
-target_compile_definitions(
-    qindaqt-display-service PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}"
-)
-set_target_properties(qindaqt-display-service PROPERTIES CXX_EXTENSIONS OFF)
-qindaqt_enable_warnings(qindaqt-display-service)
-
-configure_file(
-    data/org.qindaqt.Display1.service.in
-    "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Display1.service"
-    @ONLY
-)
-configure_file(
-    data/qindaqt-display-service.service.in
-    "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-display-service.service"
-    @ONLY
-)
-
-install(TARGETS qindaqt-display-service RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-install(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Display1.service"
-    DESTINATION "${KDE_INSTALL_DBUSSERVICEDIR}"
-)
-install(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-display-service.service"
-    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
-)
-install(
-    FILES data/org.qindaqt.Display1.xml
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
-)

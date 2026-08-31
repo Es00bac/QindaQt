@@ -43,6 +43,8 @@ public:
                            EpochFactory epochFactory, const QDBusConnection &connection,
                            QString serviceName = {},
                            DisplayTransaction::Timing timing = {},
+                           std::optional<DisplayTransaction::Journal> startupJournal =
+                               std::nullopt,
                            QObject *parent = nullptr);
     ~ResidentDisplayService() override;
 
@@ -51,6 +53,16 @@ public:
     [[nodiscard]] bool isRunning() const noexcept;
     [[nodiscard]] DisplayServiceModel *model() noexcept;
 
+    // D6's outer runtime owns platform safety composition. These entry points
+    // preserve resident timer/signal behavior rather than letting that outer
+    // module mutate the D1 model behind the service object's back.
+    DisplayTransaction::CommandResult setSafetyState(
+        DisplayTransaction::SafetyState safety);
+    DisplayTransaction::CommandResult prepareForSuspend();
+
+Q_SIGNALS:
+    void modelStateChanged();
+
 private:
     void inventoryObserved(const InventoryFrame &frame) override;
     void inventoryUnavailable() override;
@@ -58,6 +70,7 @@ private:
                         DisplayTransaction::ApplyOutcome outcome) override;
     void modelTransitioned(bool changed);
     void armDeadline();
+    void syncTopologySettleTimer(bool acceptedInventoryChanged = false);
 
     std::unique_ptr<InventorySource> m_inventorySource;
     std::unique_ptr<DisplayTransaction::MonotonicClock> m_clock;
@@ -67,6 +80,7 @@ private:
     QDBusConnection m_connection;
     QString m_serviceName;
     QTimer *m_deadlineTimer = nullptr;
+    QTimer *m_topologySettleTimer = nullptr;
     bool m_objectRegistered = false;
     bool m_nameRegistered = false;
 };
