@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "desktopnotificationbinding.h"
+
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusReply>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTextStream>
 #include <QThread>
+#include <QTimer>
 
 #include <array>
 #include <unistd.h>
@@ -19,6 +24,8 @@ namespace {
 constexpr auto CompositorService = "org.qindaqt.Compositor";
 constexpr auto CompositorPath = "/org/qindaqt/Compositor";
 constexpr auto CompositorInterface = "org.qindaqt.Compositor1";
+constexpr int ShortcutReadinessDeadlineMilliseconds = 1'000;
+constexpr int ShortcutReadinessPollMilliseconds = 20;
 
 QJsonObject failure(const QString &code, const QString &message)
 {
@@ -113,6 +120,28 @@ QJsonObject pointerAbsoluteEvent(double x, double y)
             {QStringLiteral("y"), y}};
 }
 
+bool awaitNotificationCenterBinding(QString *error)
+{
+    QElapsedTimer deadline;
+    deadline.start();
+    do {
+        if (QindaQt::Test::queryDesktopNotificationBinding(error)) {
+            return true;
+        }
+        if (deadline.elapsed() >= ShortcutReadinessDeadlineMilliseconds) {
+            break;
+        }
+        // AGENT-GUARD: This event-loop wait observes binding publication; it is
+        // not a fixed startup delay and must remain before the one input batch.
+        // Retrying Meta+N would make a lost event indistinguishable from proof.
+        QEventLoop waitForPublication;
+        QTimer::singleShot(ShortcutReadinessPollMilliseconds,
+                           &waitForPublication, &QEventLoop::quit);
+        waitForPublication.exec();
+    } while (true);
+    return false;
+}
+
 int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
                                      const QDBusConnection &connection,
                                      const QString &targetOutput = {})
@@ -120,6 +149,13 @@ int runNotificationCenterInteraction(QDBusConnectionInterface &bus,
     if (!requiredServicesOwned(bus)) {
         QTextStream(stderr) << "required private services are unavailable\n";
         return 3;
+    }
+    QString bindingError;
+    if (!awaitNotificationCenterBinding(&bindingError)) {
+        QTextStream(stderr)
+            << "notification-center Meta+N binding was not ready before private input: "
+            << bindingError << '\n';
+        return 9;
     }
     QDBusInterface compositor(QString::fromLatin1(CompositorService),
                               QString::fromLatin1(CompositorPath),

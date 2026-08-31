@@ -1457,9 +1457,13 @@ covers the eight QindaQt production roles—compositor, session, notification
 host, shell, Settings1, Audio1, Settings, and Text Editor—rather than the test
 parent.
 
-After simultaneous readiness, a second probe first requires zero active,
-mapped, committed notification-center surfaces, then sends exactly Meta+N
-through the scenario-gated QindaQt development input device. Success requires the stable
+After simultaneous readiness, a second probe first requires the stable
+`qindaqt_toggle_notification_center` action to expose both its exact default and
+active Meta+N bindings through KGlobalAccel, then requires zero active, mapped,
+committed notification-center surfaces and sends exactly one Meta+N sequence
+through the scenario-gated QindaQt development input device. Binding readiness
+uses a bounded event-loop observation before injection; it never substitutes a
+fixed startup delay or retries a lost input sequence. Success requires the stable
 device identity and one compositor-observed notification-center surface mapped
 and committed by the authenticated shell PID on the exact output. It never
 opens a host input node or uinput. Weston screenshooter then contacts only the
@@ -1538,10 +1542,12 @@ and archive tests so failures identify the owning contract.
 
 The `DesktopVirtual` install component must carry the complete import closure
 of every Settings route compiled into `Main.qml`. That currently includes the
-Appearance and Display backing libraries, plugins, `qmldir` files, typeinfo,
-and every QML source named by those module directories, in addition to Tokens
-and Controls. A package-only pass is insufficient if a required application
-does not map: topology readiness must observe the installed
+Appearance, Display, and Network backing libraries, plugins, `qmldir` files,
+typeinfo, and every QML source named by those module directories, in addition
+to Tokens and Controls. The package contract authenticates the exact Network
+library/plugin pair, metadata, and all five deployed QML files; missing-file,
+symlink, and traversal mutations fail closed. A package-only pass is
+insufficient if a required application does not map: topology readiness must observe the installed
 `org.qindaqt.Settings` window before interaction or capture can qualify a row.
 
 Every run retains distinct private parent/child Wayland sockets, the fake-seat

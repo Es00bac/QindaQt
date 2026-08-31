@@ -7,6 +7,10 @@ import argparse
 import sys
 from pathlib import Path
 
+from desktop_session_package_contract import (
+    PackagePayloadError,
+    authenticate_network_qml_package,
+)
 from desktop_session_stage import (
     StageContractError,
     install_stage,
@@ -25,6 +29,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--decoration-relative", required=True)
     parser.add_argument("--settings-service-directory", required=True)
     parser.add_argument("--audio-service-directory", required=True)
+    parser.add_argument("--qml-directory", required=True)
+    parser.add_argument("--network-qml-library", required=True)
+    parser.add_argument("--network-qml-plugin", required=True)
     parser.add_argument("--configuration", default="")
     return parser.parse_args()
 
@@ -47,12 +54,18 @@ def main() -> int:
             settings_service_directory=arguments.settings_service_directory,
             audio_service_directory=arguments.audio_service_directory,
         )
+        authenticate_network_qml_package(
+            stage_root,
+            qml_directory=arguments.qml_directory,
+            library_name=arguments.network_qml_library,
+            plugin_name=arguments.network_qml_plugin,
+        )
         write_stage_evidence(
             arguments.build_root
             / "tests/session/desktop-session-package-evidence.json",
             stage,
         )
-    except (OSError, StageContractError) as error:
+    except (OSError, PackagePayloadError, StageContractError) as error:
         print(f"desktop session package contract failed: {error}", file=sys.stderr)
         return 1
     print("desktop session package contract passed")
