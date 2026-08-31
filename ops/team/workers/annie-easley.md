@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:32:49-06:00
+updated_at: 2026-08-31T16:34:24-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — the first repair rebuilt 4/4; resumed strict Debug stopped at action 278/293 on two omitted empty fixture names, now applying the exact test-only initializers.
+- Status: working — presentation rebuilt 3/3; resumed strict Debug stopped at action 2/14 on one omitted result diagnostic, now applying the exact test-helper initializer.
 
 ## Updates
+
+- 2026-08-31T16:34:24-06:00 — The repaired presentation target rebuilt 3/3. The resumed Debug graph stopped at its next first red, action 2/14: the request-state test helper omitted trailing `OperationResult::diagnostic`, rejected by GCC 15.3 `-Werror=missing-field-initializers`. No CTest ran. The exact test-only repair explicitly supplies empty diagnostic and `wireValid = true`, matching the fixture's intended valid typed result before rebuilding only this failed target.
 
 - 2026-08-31T16:32:49-06:00 — The exact failed pure target rebuilt 4/4 after the explicit feedback initializer. The resumed serialized Debug graph then stopped at the next first red, action 278/293: `tst_bluetooth_applet_presentation.cpp` intentionally exercises adapter/device fallback labels but omitted the corresponding aggregate `name` members, and GCC 15.3 rejected both under `-Werror=missing-field-initializers`. Production shell, Bluetooth composition, compiled QML, applet resolver, public-client, and shared dependencies had compiled; no CTest ran. The test-only repair adds two explicit empty names before rebuilding only the failed presentation target.
 
