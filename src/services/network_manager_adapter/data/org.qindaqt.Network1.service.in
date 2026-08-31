@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.qindaqt.Network1
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-network-service
+SystemdService=qindaqt-network-service.service

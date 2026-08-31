@@ -4,6 +4,23 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Network N1 repair
+  descendant `aebc4fd3d887f09ae28149f9c016a08f28c86a92`. The resident Network1
+  service now composes the N0 model/client with a public Qt transport and a
+  libnm-confined NetworkManager adapter. Exact upstream-owner notifications
+  retire old generations beneath the fact-refresh interval; admitted backend
+  work is queued until the delayed bus reply is owned; definite scan failure
+  removes provisional freshness while uncertain cancellation remains
+  conservative. Katherine Johnson's exact rereview found P0/P1/P2/P3
+  `0/0/0/0`, passed strict Debug and Release 21/21 each, repeated four
+  mutation-sensitive rows ten times each for 40/40, and passed the positive
+  boundary, six-poison negative, and installed lifecycle selector 3/3. Fresh
+  merged-tree Debug and Release each build 111/111 focused actions and pass
+  the complete 21/21 Network selector with host display and bus variables
+  removed. Physical radios, UI, persistence, external secret-agent/credential
+  interaction, distribution policy, and hardware qualification remain later
+  gates.
+
 - This integration merges exact independently accepted Power P2 descendant
   `9e4b7a60f2bcc9c9229418a47c2c1801a343a876`. The production panel applet
   composes only the public PB-1 client through a shell-private controller,

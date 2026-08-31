@@ -20,12 +20,14 @@ qualification remain preserved integrated foundations.
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 resident composition and nested convergence work,
 production Power/brightness upstream adapters,
-resident Network1/NetworkManager transport over the Network N0 boundary,
+Network UI, persistence, external secret-agent integration, and hardware
+qualification over the resident Network N1 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
 and portal/policy interoperability. Existing Audio1, Display1 foundations, and
-resident Power PB-1 remain preserved integrated foundations; Network N0 and Bluetooth B0 are
-executable bounded foundations without production platform backends or UI.
+resident Power PB-1 remain preserved integrated foundations; Network N1 now
+owns the confined production NetworkManager transport, while Bluetooth B0 is
+an executable bounded foundation without a production platform backend or UI.
 
 ### First-party experience delivery queue
 
@@ -52,6 +54,17 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `aebc4fd3` — Resident Network N1 ownership, public Qt transport, confined
+  libnm NetworkManager adapter, activation/package lifecycle, exact upstream
+  owner-generation retirement, queued delayed-reply dispatch, and conservative
+  scan-lease truth. Katherine Johnson's independent rereview passed with
+  P0/P1/P2/P3 `0/0/0/0`, strict Debug and Release 21/21 each, 40/40 repeated
+  mutation-sensitive executions, and boundary/six-poison/installed lifecycle
+  3/3. Fresh manager Debug and Release each build 111/111 focused actions and
+  pass the complete 21/21 Network selector. UI, persistence, external
+  secret-agent/credential interaction, physical radios, distribution policy,
+  and hardware qualification remain later.
 
 - `9e4b7a60` — Production Power applet composition over the public PB-1 client,
   with separate read/control grants, exact-owner and pending-operation fences,
