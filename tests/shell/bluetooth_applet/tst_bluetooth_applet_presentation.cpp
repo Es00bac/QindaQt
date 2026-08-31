@@ -34,6 +34,7 @@ Bluetooth::Snapshot readySnapshot()
          .discovering = true},
         {.handle = {.epoch = 44, .serial = 20},
          .address = QStringLiteral("AA:BB:CC:00:11:33"),
+         .name = {},
          .powered = false,
          .discovering = false},
     };
@@ -53,6 +54,7 @@ Bluetooth::Snapshot readySnapshot()
         {.handle = {.epoch = 44, .serial = 200},
          .adapterHandle = {.epoch = 44, .serial = 10},
          .address = QStringLiteral("AA:BB:CC:44:55:77"),
+         .name = {},
          .deviceClass = Bluetooth::DeviceClass::Headphones,
          .paired = true,
          .connected = false},

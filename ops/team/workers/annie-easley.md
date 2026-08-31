@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:25:25-06:00
+updated_at: 2026-08-31T16:32:49-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — strict Debug stopped at action 84/378 on one B1 missing-field warning; applying the exact explicit empty-feedback initializer before rebuilding the failed target.
+- Status: working — the first repair rebuilt 4/4; resumed strict Debug stopped at action 278/293 on two omitted empty fixture names, now applying the exact test-only initializers.
 
 ## Updates
+
+- 2026-08-31T16:32:49-06:00 — The exact failed pure target rebuilt 4/4 after the explicit feedback initializer. The resumed serialized Debug graph then stopped at the next first red, action 278/293: `tst_bluetooth_applet_presentation.cpp` intentionally exercises adapter/device fallback labels but omitted the corresponding aggregate `name` members, and GCC 15.3 rejected both under `-Werror=missing-field-initializers`. Production shell, Bluetooth composition, compiled QML, applet resolver, public-client, and shared dependencies had compiled; no CTest ran. The test-only repair adds two explicit empty names before rebuilding only the failed presentation target.
 
 - 2026-08-31T16:25:25-06:00 — Fresh strict Debug configured successfully with GCC 15.3.0. The serialized build stopped at first red, action 84/378: `bluetooth_request_state.cpp` omitted trailing `RequestState::feedback` from its Pending aggregate and `-Werror=missing-field-initializers` rejected it. No later target or test ran. The exact repair adds `.feedback = {}`; the failed pure target will be rebuilt before resuming the graph. This is an owned B1 source portability repair and changes no behavior or authority boundary.
 
