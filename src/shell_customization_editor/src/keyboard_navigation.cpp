@@ -108,11 +108,15 @@ std::optional<DropTarget> steppedPanelTarget(const Profiles::LayoutProfile &prof
     if (stepped < 0 || stepped >= profile.panels.size()) {
         return std::nullopt;
     }
-    DropTarget target;
-    target.panelId = profile.panels.at(stepped).id;
-    target.zone = current.zone;
-    target.beforeAppletId.reset();
-    return target;
+    // AGENT-GUARD: Keep the append target aggregate-initialized and copy it
+    // into the outer optional. GCC 15 at -O3 otherwise treats a move of the
+    // disengaged nested optional as a read of its inactive QString storage.
+    const DropTarget target{
+        profile.panels.at(stepped).id,
+        current.zone,
+        std::nullopt,
+    };
+    return std::optional<DropTarget>{target};
 }
 
 } // namespace

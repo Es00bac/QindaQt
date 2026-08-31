@@ -81,15 +81,29 @@ private slots:
 
         const auto next = nextPanelTarget(source, current);
         QVERIFY(next.has_value());
-        QCOMPARE(next->panelId, QStringLiteral("dock"));
-        QCOMPARE(next->zone, QStringLiteral("end"));
-        QVERIFY(!next->beforeAppletId.has_value());
+        const DropTarget expectedNext{
+            QStringLiteral("dock"),
+            QStringLiteral("end"),
+            std::nullopt,
+        };
+        QVERIFY(*next == expectedNext);
 
         QVERIFY(!nextPanelTarget(source, *next).has_value());
+        QVERIFY(!previousPanelTarget(source, current).has_value());
 
         const auto back = previousPanelTarget(source, *next);
         QVERIFY(back.has_value());
-        QCOMPARE(back->panelId, QStringLiteral("bar"));
+        const DropTarget expectedBack{
+            QStringLiteral("bar"),
+            QStringLiteral("end"),
+            std::nullopt,
+        };
+        QVERIFY(*back == expectedBack);
+
+        const DropTarget missingPanel =
+            targetIn(QStringLiteral("missing"), QStringLiteral("center"));
+        QVERIFY(!nextPanelTarget(source, missingPanel).has_value());
+        QVERIFY(!previousPanelTarget(source, missingPanel).has_value());
     }
 
     void edgeStepsCycleThroughTheFourEdges() const

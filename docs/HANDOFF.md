@@ -4,6 +4,20 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted customization-editor
+  Release-portability candidate `fa22af5028e8dd4bfd9c0951cf742ea74d4b914f`.
+  The panel-step helper now constructs the complete `DropTarget` value and
+  copies it into the outer optional, removing GCC 15.3's optimization-only
+  inactive-storage diagnostic without suppressing warnings or changing the
+  panel, zone, or null-anchor contract. Grace Hopper's exact review reproduced
+  the parent failure at action 59/85 and found P0/P1/P2/P3 `0/0/0/0`; strict
+  Debug and Release each built 85/85 and passed the complete 6/6
+  customization-editor selector plus the repaired direct row 3/3. Fresh
+  merged-tree verification repeats those affected gates. This portability
+  repair does not advance QQ-004.08 beyond WIRED; the Settings canvas,
+  provisional live-shell binding, reveal UI, rendered matrix, and installed
+  session behavior remain later work.
+
 - This integration merges exact independently accepted Network N1 repair
   descendant `aebc4fd3d887f09ae28149f9c016a08f28c86a92`. The resident Network1
   service now composes the N0 model/client with a public Qt transport and a
