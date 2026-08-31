@@ -57,7 +57,9 @@ Bluetooth::OperationResult resultFor(const RequestState &request,
             .initiatingRevision = request.initiatingRevision,
             .observedEpoch = request.initiatingEpoch,
             .observedRevision = request.initiatingRevision + 1,
-            .reasonCode = reason};
+            .reasonCode = reason,
+            .diagnostic = {},
+            .wireValid = true};
 }
 
 } // namespace
