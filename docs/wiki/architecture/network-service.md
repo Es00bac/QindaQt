@@ -71,7 +71,11 @@ local high-water. This is deliberately paired with its D-Bus unique owner. An
 initially absent NetworkManager may later appear and become ready. Once a
 nonempty NetworkManager unique owner has been observed, owner loss or
 replacement makes dispatched work uncertain, publishes unavailable truth, and
-retires the process with status 75. The user unit restarts it, or the Qt
+retires the process with status 75. The libnm port binds
+`notify::dbus-name-owner` and establishes this admission fence at the owner
+event boundary; its one-second timer refreshes facts only. The watch carries a
+per-start generation and exact `NMClient` identity, so a notification from a
+stopped or replaced client cannot retire a later run. The user unit restarts it, or the Qt
 transport asks D-Bus to activate it after public-owner loss. The next process
 has a new Network1 unique owner and a strictly greater epoch; it never changes
 epoch beneath one surviving public owner. Session-bus disconnect also exits so
@@ -79,7 +83,8 @@ lineage cannot migrate to a new broker.
 
 ## Observation and publication
 
-The libnm port polls public NetworkManager state on the constructing Qt thread.
+The libnm port polls public NetworkManager facts on the constructing Qt thread;
+authority loss/replacement is event-driven and is not delayed until a poll.
 It publishes only value copies: normalized interface names, presentation-safe
 SSIDs, normalized BSSIDs, derived known-network ids, radio/device/connectivity
 state, permission-derived capabilities, and bounded scan-lease duration.
@@ -105,7 +110,17 @@ second is returned as busy. The backend deadline is five seconds. Timeout,
 authority replacement, or shutdown cancels the platform request and completes
 the client-visible result exactly once as uncertain; late callbacks are
 generation/operation-id fenced and discarded. No mutation is automatically
-replayed.
+replayed. Accepted backend dispatch is queued for the next turn of the same Qt
+thread. This lets the D-Bus object retain the original delayed call before even
+a synchronous backend failure can complete, while stop, timeout, and authority
+replacement fence a dispatch that has not started.
+
+A scan deadline is provisional while libnm dispatch is pending. Successful
+dispatch changes `Scanning` to `Leased`. A definite libnm failure clears both
+the in-progress flag and deadline, publishes `Idle` before the failed reply,
+and therefore permits an immediate retry. Cancellation is deliberately
+conservative: NetworkManager may already have accepted the scan, so the
+callback clears `Scanning` but retains the bounded lease until its deadline.
 
 The production dispatch surface is intentionally narrow:
 
@@ -133,9 +148,13 @@ The strict Debug and Release Network proof includes the thirteen N0 rows plus
 N1 transport, coordinator, residency, libnm-mapping/dispatch, activation,
 installed-package, boundary, and poison-policy rows. Private-bus tests cover
 exact introspection, unique-owner replacement, malformed/foreign/stale replies,
-delayed operations, unavailable backend, process activation, broker loss, and
-fresh higher epoch after restart. Adapter tests inject deterministic fake
-NetworkManager facts and dispatch completion; they never touch host networking.
+delayed and synchronous operation completion, timeout/stop/late exactly-once
+replies, unavailable backend, process activation, broker loss, and fresh higher
+epoch after restart. A private-system-bus concrete-libnm probe proves owner
+loss and A→B→A replacement retire below the one-second fact poll, including a
+production activated-process retirement. Adapter lease-state proof distinguishes
+definite scan failure (`Idle`, immediate retry) from conservative cancellation
+(`Leased`). Tests never touch host networking.
 
 The activation fixture gives the production binary a private session D-Bus and
 a separate empty private system D-Bus. The installed fixture stages

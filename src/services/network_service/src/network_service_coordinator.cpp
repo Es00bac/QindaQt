@@ -187,7 +187,20 @@ NetworkServiceCoordinator::submit(const NetworkServiceRequest &request) {
   }
   m_pending = PendingOperation{operationId, request};
   m_operationTimer.start(m_operationTimeoutMilliseconds);
-  m_backend->submit(operationId, backendRequest);
+  const quint64 generation = m_generation;
+  // AGENT-GUARD: The service object must return from submit() and retain its
+  // delayed D-Bus call before a synchronous backend failure can complete.
+  // Fence the queued dispatch against stop, timeout, and authority retirement.
+  QMetaObject::invokeMethod(
+      this,
+      [this, generation, operationId, backendRequest] {
+        if (!m_running || generation == 0 || generation != m_generation ||
+            !m_pending.has_value() || m_pending->id != operationId) {
+          return;
+        }
+        m_backend->submit(operationId, backendRequest);
+      },
+      Qt::QueuedConnection);
   return {true, operationId, {}};
 }
 

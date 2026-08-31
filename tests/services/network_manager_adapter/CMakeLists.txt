@@ -1,12 +1,26 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NetworkManagerTest REQUIRED IMPORTED_TARGET libnm>=1.44)
+
 qt_add_executable(
     qindaqt_network_manager_adapter_tests
     tst_network_manager_adapter.cpp
 )
 target_link_libraries(
     qindaqt_network_manager_adapter_tests
-    PRIVATE QindaQt::NetworkManagerAdapter Qt6::Test
+    PRIVATE
+        QindaQt::NetworkManagerAdapter
+        Qt6::DBus
+        Qt6::Test
+        PkgConfig::NetworkManagerTest
+)
+target_include_directories(
+    qindaqt_network_manager_adapter_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/network_manager_adapter/src"
+)
+target_compile_definitions(
+    qindaqt_network_manager_adapter_tests PRIVATE QT_NO_KEYWORDS
 )
 qindaqt_enable_warnings(qindaqt_network_manager_adapter_tests)
 add_test(

@@ -1019,17 +1019,20 @@ N1 adds these rows:
 | Row | Evidence |
 | --- | --- |
 | `qindaqt.network-qt-transport` | exact current unique owner, owner replacement, canonical fixed calls, local secret rejection, broker failure normalization |
-| `qindaqt.network-service` | validated atomic publication, malformed fallback, typed admission, serialization, timeout/cancel/late-drop, authority replacement |
-| `qindaqt.network-residency` | private-bus object/name ownership, exact introspection, delayed replies, unavailable backend, name theft |
-| `qindaqt.network-networkmanager-adapter` | deterministic fact normalization, hidden/unsafe SSIDs, reference repair/degradation, four typed dispatch paths, generation fence |
-| `qindaqt.network-activation` | production binary on a private session bus with a separate empty private system bus, honest unavailable truth, bus-loss exit, replacement owner and greater epoch |
+| `qindaqt.network-service` | validated atomic publication, malformed fallback, typed admission, queued-dispatch stop fence, timeout/cancel/late-drop, authority replacement |
+| `qindaqt.network-residency` | private-bus object/name ownership, exact introspection, synchronous/delayed/stop/timeout replies exactly once, unavailable backend, name theft |
+| `qindaqt.network-networkmanager-adapter` | deterministic fact normalization and dispatch, concrete libnm sub-poll loss plus A→B→A owner fencing, definite-failure Idle/immediate-retry lease proof, conservative-cancellation lease proof |
+| `qindaqt.network-activation` | production binary on private session/system buses, honest unavailable truth, sub-poll upstream-owner retirement, broker-loss exit, replacement owner and greater epoch |
 | `qindaqt.network-installed-package` | staged N0+N1 components, external CMake consumer, binary/descriptors, installed activation lifecycle |
 | `qindaqt.network-n1-boundary` | dependency/source/package policy for service, transport, and adapter |
 | `qindaqt.network-n1-boundary-poison` | rejects service-side libnm, reversed transport dependency, secret getter, public NM handle, `a{sv}` XML, and incomplete package registration |
 
 Private D-Bus instances and injected fake NetworkManager ports are mandatory.
-The activation fixture points `DBUS_SYSTEM_BUS_ADDRESS` at an empty private
-broker so the production libnm adapter cannot observe or mutate the host. No
+The concrete owner probe and activation fixture point
+`DBUS_SYSTEM_BUS_ADDRESS` at isolated private brokers; one owns only the
+NetworkManager bus name to exercise libnm owner notification, and neither
+exposes a host device or profile. The production adapter cannot observe or
+mutate the host. No
 test toggles a host radio, scans a host interface, activates a host profile, or
 requests a credential. The result qualifies the process/software boundary,
 not physical Wi-Fi, Ethernet, radios, external secret agents, credential entry,

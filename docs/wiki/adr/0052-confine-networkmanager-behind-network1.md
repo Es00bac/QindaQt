@@ -45,13 +45,22 @@ agent and any credential-entry UI are outside Network1.
 
 Initial NetworkManager absence publishes an honest bounded `Unavailable`
 snapshot and may later recover. After a nonempty NetworkManager unique owner
-has been observed, its disappearance or replacement retires the entire
+has been observed, an immediate libnm `dbus-name-owner` notification—not the
+periodic fact refresh—fences its disappearance or replacement and retires the entire
 Network1 process lineage. Pending dispatched work completes once as
 `Uncertain`, the service publishes final unavailable truth, and exits with
 status 75. The systemd unit or a client's fresh D-Bus activation starts a new
 process with a fresh Network1 unique owner and a strictly higher
 boot-monotonic epoch. Local session-bus loss likewise terminates the process;
 the old broker and owner are never reused.
+
+The resident queues an admitted backend dispatch for the next turn of its Qt
+thread so the D-Bus object owns the delayed reply before a backend can complete
+synchronously. Stop, timeout, or authority retirement fences that queued work.
+For scans, a definite libnm failure clears the provisional freshness deadline
+and publishes `Idle` before its failed result; cancellation remains
+conservatively `Leased` because it cannot prove NetworkManager did not accept
+the scan.
 
 ## Consequences
 
@@ -62,6 +71,8 @@ the old broker and owner are never reused.
   or hardware state.
 - A service restart is intentionally visible to clients as owner loss,
   unavailability, and a new lineage. Mutations are never replayed across it.
+- Owner notifications and queued operation dispatch carry per-run generation
+  fences, so stale callbacks cannot affect a later backend run.
 - The `QindaQtNetworkN1` install component contains the three N1 libraries,
   resident binary, introspection XML, D-Bus service descriptor, and systemd
   user unit; it is composed with the N0 component for consumers.

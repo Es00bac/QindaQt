@@ -7,6 +7,8 @@
 
 #include <QtCore/QList>
 
+#include <optional>
+
 namespace QindaQt::Network::Tests {
 
 class FakeNetworkBackend final : public Service::NetworkBackend {
@@ -39,6 +41,9 @@ public:
   void submit(const quint64 operationId,
               const Service::BackendOperationRequest &request) override {
     calls.append({operationId, request});
+    if (synchronousOutcome.has_value()) {
+      Q_EMIT operationFinished(generation, operationId, *synchronousOutcome);
+    }
   }
 
   void cancel(const quint64 operationId) override {
@@ -74,6 +79,7 @@ public:
   int stopCalls = 0;
   bool failStart = false;
   bool running = false;
+  std::optional<Service::BackendOperationOutcome> synchronousOutcome;
 };
 
 inline Service::BackendObservation readyNetworkObservation() {

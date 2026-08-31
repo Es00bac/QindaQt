@@ -5,6 +5,7 @@
 #include <qindaqt/services/network_qt_transport/qt_network_transport.h>
 
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QProcess>
@@ -12,7 +13,9 @@
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusReply>
 #include <QtTest>
 
 #include <csignal>
@@ -142,6 +145,12 @@ public:
     if (!peerName.isEmpty()) {
       QDBusConnection::disconnectFromBus(peerName);
     }
+    if (!systemOwnerAName.isEmpty()) {
+      QDBusConnection::disconnectFromBus(systemOwnerAName);
+    }
+    if (!systemOwnerBName.isEmpty()) {
+      QDBusConnection::disconnectFromBus(systemOwnerBName);
+    }
     stopDaemon(sessionDaemon);
     stopDaemon(systemDaemon);
   }
@@ -165,7 +174,45 @@ public:
     return servicePid;
   }
 
+  bool networkServiceRegistered() const {
+    const QDBusReply<bool> reply = connection.interface()->isServiceRegistered(
+        QString::fromLatin1(kServiceName));
+    return reply.isValid() && reply.value();
+  }
+
   void stopSessionDaemon() { stopDaemon(sessionDaemon); }
+
+  bool registerInitialNetworkManager() {
+    const QString suffix = QUuid::createUuid().toString(QUuid::Id128);
+    systemOwnerAName =
+        QStringLiteral("qindaqt-network-system-a-%1").arg(suffix);
+    systemOwnerBName =
+        QStringLiteral("qindaqt-network-system-b-%1").arg(suffix);
+    systemOwnerA =
+        QDBusConnection::connectToBus(systemAddress, systemOwnerAName);
+    systemOwnerB =
+        QDBusConnection::connectToBus(systemAddress, systemOwnerBName);
+    if (!systemOwnerA.isConnected() || !systemOwnerB.isConnected()) {
+      return false;
+    }
+    const QDBusReply<QDBusConnectionInterface::RegisterServiceReply> reply =
+        systemOwnerA.interface()->registerService(
+            QStringLiteral("org.freedesktop.NetworkManager"),
+            QDBusConnectionInterface::DontQueueService,
+            QDBusConnectionInterface::AllowReplacement);
+    return reply.isValid() &&
+           reply.value() == QDBusConnectionInterface::ServiceRegistered;
+  }
+
+  bool replaceNetworkManager() {
+    const QDBusReply<QDBusConnectionInterface::RegisterServiceReply> reply =
+        systemOwnerB.interface()->registerService(
+            QStringLiteral("org.freedesktop.NetworkManager"),
+            QDBusConnectionInterface::ReplaceExistingService,
+            QDBusConnectionInterface::AllowReplacement);
+    return reply.isValid() &&
+           reply.value() == QDBusConnectionInterface::ServiceRegistered;
+  }
 
   QTemporaryDir root{QStringLiteral("/tmp/qindaqt-network-activation-XXXXXX")};
   QProcess systemDaemon;
@@ -174,8 +221,12 @@ public:
   QString sessionAddress;
   QString connectionName;
   QString peerName;
+  QString systemOwnerAName;
+  QString systemOwnerBName;
   QDBusConnection connection{QStringLiteral("invalid")};
   QDBusConnection peer{QStringLiteral("invalid-peer")};
+  QDBusConnection systemOwnerA{QStringLiteral("invalid-system-a")};
+  QDBusConnection systemOwnerB{QStringLiteral("invalid-system-b")};
   pid_t servicePid = 0;
 };
 
@@ -190,6 +241,7 @@ class NetworkActivationTests final : public QObject {
 
 private Q_SLOTS:
   void activatesAgainstPrivateUnavailableNetworkManager();
+  void ownerReplacementRetiresProductionProcessBelowPoll();
   void busLossExitsAndReplacementAdvancesLineage();
 };
 
@@ -214,6 +266,29 @@ void NetworkActivationTests::
   QTRY_VERIFY_WITH_TIMEOUT(!processExists(pid), 10'000);
   buses.servicePid = 0;
   client.stop();
+}
+
+void NetworkActivationTests::
+    ownerReplacementRetiresProductionProcessBelowPoll() {
+  PrivateActivatingBuses buses;
+  QVERIFY(buses.start());
+  QVERIFY(buses.registerInitialNetworkManager());
+  QtNetworkTransport transport(buses.connection);
+  NetworkClient client(transport);
+  QVERIFY(client.start());
+  QTRY_VERIFY_WITH_TIMEOUT(client.model().snapshot().has_value(), 10'000);
+  QTRY_VERIFY_WITH_TIMEOUT(client.model().snapshot()->revision >= 2, 10'000);
+  const pid_t pid = buses.findServicePid();
+  QVERIFY(pid > 0);
+
+  QElapsedTimer boundary;
+  boundary.start();
+  QVERIFY(buses.replaceNetworkManager());
+  client.stop();
+  QTRY_VERIFY_WITH_TIMEOUT(!buses.networkServiceRegistered(), 500);
+  QVERIFY(boundary.elapsed() < 750);
+  QTRY_VERIFY_WITH_TIMEOUT(!processExists(pid), 2'000);
+  buses.servicePid = 0;
 }
 
 void NetworkActivationTests::busLossExitsAndReplacementAdvancesLineage() {

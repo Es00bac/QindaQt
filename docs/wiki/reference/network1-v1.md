@@ -30,7 +30,11 @@ results are canonical N0 byte arrays (`ay`):
 
 Mutation methods may hold their D-Bus reply until backend completion or the
 five-second service deadline. Immediate admission failures return a complete
-operation result. No method accepts credentials or arbitrary settings. D-Bus
+operation result. An admitted platform dispatch begins on the next same-thread
+event turn, after the resident object has retained the delayed D-Bus call;
+synchronous backend completion therefore still returns exactly once. Stop,
+timeout, or authority retirement before that turn fences the dispatch and
+returns the applicable uncertain result. No method accepts credentials or arbitrary settings. D-Bus
 activation and the user systemd unit both start `qindaqt-network-service`.
 
 ## Identity and lineage
@@ -45,7 +49,10 @@ transport owner. An operation result must repeat its initiating epoch,
 revision, and kind.
 
 The resident service binds one boot-monotonic epoch to one D-Bus unique owner.
-NetworkManager owner loss/replacement retires that process, makes pending work
+After the first nonempty upstream owner is observed, NetworkManager
+`dbus-name-owner` notification loss/replacement immediately retires that
+process; the one-second observation poll is not an authority fence. The watch
+is exact-client and per-start-generation fenced. Retirement makes pending work
 uncertain, and relies on systemd restart or fresh D-Bus activation for a new
 Network1 owner and greater epoch. Session-bus disconnect retires the process.
 Clients drop late, duplicate, malformed, foreign-owner, stale-token, and
@@ -112,6 +119,12 @@ consumer convert the duration to its injected local monotonic deadline.
 Invalid clocks and overflow fail atomically. A live lease makes a second scan
 intent busy, and a foreign epoch can never revive retired scan truth.
 
+The adapter treats the requested deadline as provisional during scan dispatch.
+A definite libnm failure clears it and publishes `Idle` before returning
+`Failed`, so an immediate retry is admissible. Cancellation is not proof that
+NetworkManager rejected the scan: cancellation publishes `Leased` and retains
+the bounded deadline conservatively, while never replaying the request.
+
 ## Canonical codec and total decoding
 
 Snapshot magic is `QN1S`; operation-result magic is `QN1R`. Both use big-endian
@@ -141,7 +154,10 @@ redundant radio state. Rejection changes no state.
 Operation status is `Succeeded`, `Rejected`, `Unsupported`, `Failed`,
 `Uncertain`, or `Busy`; non-success requires a reason. At most one service
 operation is dispatched. Timeout, shutdown, or authority replacement cancels
-it and reports `Uncertain` exactly once. A success means the request dispatch
+it and reports `Uncertain` exactly once. A late callback cannot create a second
+reply. Backend dispatch is queued only to close delayed-reply registration; it
+remains confined to the coordinator's Qt thread and is still covered by the
+five-second deadline. A success means the request dispatch
 completed, not that Network1 manufactured state; clients refetch authoritative
 observation.
 
