@@ -1184,6 +1184,43 @@ KWin, apply through this exact public-protocol adapter, observe callback before
 device truth, prove target and rollback convergence, fence hotplug/restart, and
 tear down without any inherited host display or configuration path.
 
+## D5 durable Display1 journal
+
+The isolated filesystem and installed-boundary rows are selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.display-journal'
+```
+
+The filesystem row uses a fresh temporary state root and proves canonical
+store/load/replace/clear, exact mode `0600`, absent truth, stale-temp process
+interruption, and preservation of the prior committed value when failure occurs
+before atomic replacement. Hostile cases include a symlinked root, symlink and
+directory final entries, insecure permissions, oversize and malformed bytes,
+and a nonregular temporary-name collision. Injected mutation-sensitive rows
+force directory-sync failure after successful rename and unlink, assert the
+typed `DurabilityUncertain` result plus actual visible new/absent pathname, and
+grow the same opened inode to a 1 TiB sparse size between pathname stat and open
+so allocation must reject at the 1 MiB cap. A concrete absent-clear sequence
+then fails the directory barrier again while the path is already absent and
+remains uncertain; only a later successful barrier reports `Durable`. D1 proves
+uncertain initial store issues no apply, retains cleanup-only active journal
+authority, rejects cancel/re-stage/re-preview replacement, preserves
+`Unchanged` clear truth, and requires an exact `Durable` clear after uncertain
+unlink before Ready. A composed D1/D5 row drives that authority through the real
+store and repeated barrier failures. D4 proves it forwards all three outcomes
+unchanged. The package row stages the exact development component, permits only
+the public value/store header, and proves a planted private filesystem header
+fails the checker.
+
+These tests open no display, session bus, compositor, home directory, or host
+configuration path. They prove the persistence adapter and deterministic
+startup-load seam, not resident startup recovery or compositor convergence.
+The contained D6 matrix must still compose the exact D4 writer and D5 store,
+restart during preview, consume the retained journal through D1 `recover`, and
+observe safe target/pre-image convergence before enabling production mutation.
+
 ## Contained interactive virtual desktop S0+S1
 
 The first whole-desktop harness boundary is selected with:

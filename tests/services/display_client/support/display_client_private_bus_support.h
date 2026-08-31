@@ -25,11 +25,14 @@ public:
     observer = value;
   }
   void beginMachineLineage(quint64 value) override { lineage = value; }
-  bool storeJournal(const DisplayTransaction::Journal &journal) override {
+  DisplayTransaction::JournalMutationOutcome
+  storeJournal(const DisplayTransaction::Journal &journal) override {
     journals.push_back(journal);
-    return true;
+    return DisplayTransaction::JournalMutationOutcome::Durable;
   }
-  bool clearJournal() override { return true; }
+  DisplayTransaction::JournalMutationOutcome clearJournal() override {
+    return DisplayTransaction::JournalMutationOutcome::Durable;
+  }
   void requestApply(const DisplayTransaction::ApplyRequest &request) override {
     requestLineages.push_back(lineage);
     requests.push_back(request);

@@ -67,21 +67,28 @@ public:
 class FakeJournalStore final : public JournalStore
 {
 public:
-    bool store(const DisplayTransaction::Journal &journal) override
+    DisplayTransaction::JournalMutationOutcome store(
+        const DisplayTransaction::Journal &journal) override
     {
         journals.push_back(journal);
-        return storeSucceeds;
+        return storeSucceeds ? storeOutcome
+                             : DisplayTransaction::JournalMutationOutcome::Unchanged;
     }
-    bool clear() override
+    DisplayTransaction::JournalMutationOutcome clear() override
     {
         ++clearCalls;
-        return clearSucceeds;
+        return clearSucceeds ? clearOutcome
+                             : DisplayTransaction::JournalMutationOutcome::Unchanged;
     }
 
     QList<DisplayTransaction::Journal> journals;
     int clearCalls = 0;
     bool storeSucceeds = true;
     bool clearSucceeds = true;
+    DisplayTransaction::JournalMutationOutcome storeOutcome =
+        DisplayTransaction::JournalMutationOutcome::Durable;
+    DisplayTransaction::JournalMutationOutcome clearOutcome =
+        DisplayTransaction::JournalMutationOutcome::Durable;
 };
 
 struct Completion {

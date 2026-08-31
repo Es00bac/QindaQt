@@ -30,6 +30,11 @@ inline bool rollbackInProgress(const MachineState state)
         || state == MachineState::RevertBackoff;
 }
 
+inline bool journalMutationDurable(const JournalMutationOutcome outcome)
+{
+    return outcome == JournalMutationOutcome::Durable;
+}
+
 inline quint64 saturatedDeadline(const quint64 now, const quint64 duration)
 {
     return duration > std::numeric_limits<quint64>::max() - now
