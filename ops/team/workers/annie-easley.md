@@ -8,16 +8,18 @@ status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T16:42:32-06:00
+updated_at: 2026-08-31T16:45:08-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — Debug controller is 9/9 green; the full B1 selector stopped 5/7 with one QML convergence-fixture gap and one missing staged KF6 runtime dependency, now repairing both without weakening authority or source-poison boundaries.
+- Status: working — the first package repair regeneration exposed directory-scoped KF6 target visibility; no compile/test ran, and the installed-test directory now needs its own import of the already-required dependency before replay.
 
 ## Updates
+
+- 2026-08-31T16:45:08-06:00 — The affected QML-target rebuild exited 1 during automatic CMake regeneration after configure completed: both KF6 artifact generator expressions reported that `KF6::GlobalAccel` was not visible from `tests/shell/bluetooth_applet`. The package had been found only in the `src/shell` directory scope. No compilation or CTest ran and no process survives. The test directory will import the already-required KF6 package itself, preserving exact imported-artifact staging, cleared ambient loader paths, relative installed RUNPATH resolution, and source poison.
 
 - 2026-08-31T16:42:32-06:00 — The rebuilt controller passed its exact registered row 1/1 with all nine QtTest cases green. The full serialized Debug B1 selector then exited 8 with 5/7 rows passing: presentation, request-state, controller, boundary, and runtime-boundary passed; offscreen QML expected a release submission before publishing the newly required revision-6 convergence snapshot, and the installed-package row's staged shell could not load `libKF6GlobalAccel.so.6` under source poison. No compiler or CTest process survives. The QML fixture will publish exact authoritative convergence truth, and the package harness will prove a relocatable staged dependency closure rather than borrowing a host/global library path or weakening poison.
 
