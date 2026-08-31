@@ -4,20 +4,22 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: working
+status: handoff
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:22:02-06:00
+updated_at: 2026-08-31T17:23:37-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: working — review repairs plus exact staged KF6 loader-path assertion are Debug/Release B1 7/7 green; CTest lane is released and final static/docs/provenance freeze remains.
+- Status: handoff — exact repaired descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a` is clean and awaits independent rereview; compiler/CTest/private lanes are released.
 
 ## Updates
+
+- 2026-08-31T17:23:37-06:00 — Froze exact repaired descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a` (tree `0559bf1f781bd90fc7bffe053283023f78e7b99b`, sole parent `11e2396574b015233ed6c730fbe5ed097519d7af`), with rejected candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` preserved as an ancestor through coordination-only commits. Its product commit changes exactly ten owned source/test/doc paths; the complete descendant differs on 19 paths including Annie's records/messages. Debug and Release each pass repaired presentation/controller 2/2 and B1 7/7; installed loader-path rows pass 1/1 each. Final pure 5+4 poisons, runtime 7+6 poisons, JSON 3/3, 117-doc validation, strict MkDocs, 1,779-file shape, diff/ancestry/conflict/prohibited-path/clean-tree/process checks pass. Compiler/CTest and every private lane are released. Requested independent exact-descendant rereview before integration.
 
 - 2026-08-31T17:22:02-06:00 — Closed the bounded real portion of K3/Opus RUNPATH feedback without adding a redundant target property: the installed script clears ambient loader variables, uses CMake runtime dependency resolution, and requires the KF6 SONAME to resolve to the exact copied `installed-bluetooth-applet/lib64/libKF6GlobalAccel.so.6` path. Exact installed-package rows passed 1/1 in Debug and Release, followed by full B1 7/7 in both profiles. Direct path inspection confirms both stage-local artifacts. No compiler/CTest/private process survives; the briefly reclaimed CTest lane is immediately released. Remaining work is static/docs/provenance only.
 
