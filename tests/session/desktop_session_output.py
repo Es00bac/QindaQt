@@ -183,3 +183,81 @@ def validate_matrix_output_inventory(
         ) != name:
             raise OutputInventoryError("matrix public output identities disagree")
     return expected_names
+
+
+def validate_secondary_output_authority(
+    snapshot: Any,
+    *,
+    previous_outputs: Any,
+    previous_generation: Any,
+) -> dict[str, Any]:
+    """Validate the exact public Outputs transition from WL-0 to WL-1."""
+
+    authority = _mapping(snapshot, "postSelectorOutputs")
+    if set(authority) != {
+        "schemaVersion", "status", "outputGeneration", "outputs"
+    } or authority.get("schemaVersion") != 1 or authority.get("status") != "ok":
+        raise OutputInventoryError("post-selector Outputs envelope is malformed")
+    before = _sequence(previous_outputs, "evidence.outputs")
+    after = _sequence(authority.get("outputs"), "postSelectorOutputs.outputs")
+    if len(before) != 2 or len(after) != 2:
+        raise OutputInventoryError("secondary authority requires exactly two outputs")
+
+    before_records = [
+        _mapping(record, f"evidence.outputs[{index}]")
+        for index, record in enumerate(before)
+    ]
+    after_records = [
+        _mapping(record, f"postSelectorOutputs.outputs[{index}]")
+        for index, record in enumerate(after)
+    ]
+    before_names = tuple(
+        _canonical_name(record.get("name"), f"evidence.outputs[{index}]", "wayland")
+        for index, record in enumerate(before_records)
+    )
+    after_names = tuple(
+        _canonical_name(
+            record.get("name"), f"postSelectorOutputs.outputs[{index}]", "wayland"
+        )
+        for index, record in enumerate(after_records)
+    )
+    if before_names != ("WL-0", "WL-1") or after_names != ("WL-1", "WL-0"):
+        raise OutputInventoryError(
+            "post-selector output authority is not ordered WL-1 then WL-0"
+        )
+    priorities = tuple(record.get("priority") for record in after_records)
+    if (
+        any(isinstance(priority, bool) or not isinstance(priority, int)
+            for priority in priorities)
+        or priorities != (1, 2)
+    ):
+        raise OutputInventoryError("post-selector priorities are not primary then secondary")
+
+    def generation(value: Any, location: str) -> int:
+        if (
+            not isinstance(value, str)
+            or not value.isascii()
+            or not value.isdecimal()
+            or value != str(int(value, 10))
+        ):
+            raise OutputInventoryError(f"{location} must be a canonical generation")
+        return int(value, 10)
+
+    before_generation = generation(previous_generation, "generations.outputs")
+    after_generation = generation(
+        authority.get("outputGeneration"), "postSelectorOutputs.outputGeneration"
+    )
+    if after_generation <= before_generation:
+        raise OutputInventoryError("post-selector output generation did not advance")
+
+    before_by_name = {record["name"]: record for record in before_records}
+    for record in after_records:
+        prior = dict(before_by_name[record["name"]])
+        current = dict(record)
+        prior.pop("priority", None)
+        current.pop("priority", None)
+        if current != prior:
+            raise OutputInventoryError(
+                "post-selector output topology changed beyond ordered authority"
+            )
+    return dict(authority)

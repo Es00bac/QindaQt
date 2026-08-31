@@ -5,28 +5,25 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import Any, Mapping
 
 from desktop_session_process import RuntimeState
-
-
-KSCREEN_WAYLAND_BACKEND = Path(
-    "/usr/lib64/qt6/plugins/kf6/kscreen/KSC_KWayland.so"
-)
+from desktop_session_output import validate_secondary_output_authority
+from desktop_session_readiness import parse_and_archive_probe
 
 
 def _secondary_primary_environment(
     environment: Mapping[str, str],
-    backend_plugin: Path | None = None,
+    backend_plugin: Path,
 ) -> dict[str, str]:
     """Expose the host KScreen backend only to the primary-selector child."""
 
-    plugin = backend_plugin or KSCREEN_WAYLAND_BACKEND
-    if not plugin.is_file():
+    if not backend_plugin.is_file():
         raise RuntimeError("private multi-output KScreen backend is unavailable")
-    plugin_root = str(plugin.parents[2])
+    plugin_root = str(backend_plugin.parents[2])
     result = dict(environment)
     existing = [
         entry for entry in result.get("QT_PLUGIN_PATH", "").split(":") if entry
@@ -174,20 +171,29 @@ def _run_interaction(
 
 
 def _select_secondary_primary(
-    environment: Mapping[str, str], state: RuntimeState,
+    arguments: argparse.Namespace,
+    environment: Mapping[str, str],
+    state: RuntimeState,
 ) -> None:
     """Make WL-1 the private dual-row primary before opening shell chrome."""
 
-    executable = Path("/usr/bin/kscreen-doctor")
-    if not executable.is_file():
+    executable = arguments.kscreen_doctor
+    backend_plugin = arguments.kscreen_wayland_backend
+    if (
+        not executable.is_absolute()
+        or not executable.is_file()
+        or not os.access(executable, os.X_OK)
+    ):
         raise RuntimeError("private multi-output selector is unavailable")
+    if not backend_plugin.is_absolute() or not backend_plugin.is_file():
+        raise RuntimeError("private multi-output KScreen backend is unavailable")
     log = Path("/var/log/qindaqt-desktop/secondary-primary.log").open(
         "w", encoding="utf-8"
     )
     try:
         process = subprocess.Popen(
             [str(executable), "output.WL-1.primary"],
-            env=_secondary_primary_environment(environment),
+            env=_secondary_primary_environment(environment, backend_plugin),
             stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
             text=True, start_new_session=True,
         )
@@ -198,3 +204,59 @@ def _select_secondary_primary(
     state.track(process, [executable])
     if process.wait(timeout=5) != 0:
         raise RuntimeError("private multi-output primary selection failed")
+
+
+def _read_post_selector_outputs(
+    arguments: argparse.Namespace,
+    environment: Mapping[str, str],
+    state: RuntimeState,
+    *,
+    log_path: Path = Path(
+        "/var/log/qindaqt-desktop/post-selector-output-probe.log"
+    ),
+) -> Mapping[str, Any]:
+    """Reacquire one exact public Outputs envelope after primary selection."""
+
+    log = log_path.open("w", encoding="utf-8")
+    try:
+        process = subprocess.Popen(
+            [str(arguments.probe)], env=dict(environment),
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=log,
+            text=True, start_new_session=True,
+        )
+    except BaseException:
+        log.close()
+        raise
+    process._qindaqt_log = log  # type: ignore[attr-defined]
+    state.track(process, [arguments.probe])
+    output, _ = process.communicate(timeout=2)
+    marker = "QINDAQT_DESKTOP_SESSION_PROBE="
+    lines = [line for line in output.splitlines() if line.startswith(marker)]
+    if process.returncode != 0 or len(lines) != 1:
+        raise RuntimeError("post-selector probe did not return exact evidence")
+    document = parse_and_archive_probe(lines[0], log)
+    outputs = document.get("outputs")
+    if not isinstance(outputs, Mapping):
+        raise RuntimeError("post-selector probe omitted its public Outputs envelope")
+    return outputs
+
+
+def _prepare_secondary_evidence(
+    arguments: argparse.Namespace,
+    environment: Mapping[str, str],
+    state: RuntimeState,
+    evidence: dict[str, Any],
+) -> None:
+    """Prove and preserve secondary authority before interaction can start."""
+
+    _select_secondary_primary(arguments, environment, state)
+    snapshot = _read_post_selector_outputs(arguments, environment, state)
+    generations = evidence.get("generations")
+    previous_generation = (
+        generations.get("outputs") if isinstance(generations, Mapping) else None
+    )
+    evidence["postSelectorOutputs"] = validate_secondary_output_authority(
+        snapshot,
+        previous_outputs=evidence.get("outputs"),
+        previous_generation=previous_generation,
+    )

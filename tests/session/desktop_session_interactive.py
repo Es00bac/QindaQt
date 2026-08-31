@@ -6,6 +6,10 @@ from __future__ import annotations
 import re
 from typing import Any, Mapping
 
+from desktop_session_output import (
+    OutputInventoryError,
+    validate_secondary_output_authority,
+)
 from desktop_session_topology import (
     DesktopTopology,
     MatrixBootTopology,
@@ -146,6 +150,23 @@ def validate_interactive_evidence(
     output_names = {
         item.get("name") for item in outputs if isinstance(item, Mapping)
     }
+    secondary_output = (
+        isinstance(topology, MatrixBootTopology) and len(topology.outputs) == 2
+    )
+    if secondary_output:
+        generations = _mapping(evidence.get("generations"), "evidence.generations")
+        try:
+            validate_secondary_output_authority(
+                evidence.get("postSelectorOutputs"),
+                previous_outputs=outputs,
+                previous_generation=generations.get("outputs"),
+            )
+        except OutputInventoryError as error:
+            raise TopologyContractError(str(error)) from error
+    elif "postSelectorOutputs" in evidence:
+        raise TopologyContractError(
+            "post-selector Outputs authority is unexpected for one output"
+        )
 
     containment = _mapping(evidence.get("containment"), "evidence.containment")
     parent_socket = containment.get("parentWaylandSocket")
@@ -173,9 +194,6 @@ def validate_interactive_evidence(
         raise TopologyContractError("interaction has an unexpected field set")
     surface = _mapping(interaction.get("surface"), "interaction.surface")
     geometry = _mapping(surface.get("geometry"), "interaction.surface.geometry")
-    secondary_output = (
-        isinstance(topology, MatrixBootTopology) and len(topology.outputs) == 2
-    )
     expected_interaction_output = "WL-1" if secondary_output else "WL-0"
     expected_event_count = 5 if secondary_output else 4
     if (

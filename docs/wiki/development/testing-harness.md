@@ -1346,8 +1346,11 @@ build root, authenticates the production executables and compositor plugin as
 regular files inside that prefix, validates both service descriptor identities,
 and writes a path manifest. Descriptor `Exec` values are recorded but never
 executed; Settings1 and Audio1 are started directly from the resolved stage.
-CMake discovers Python, bubblewrap, `dbus-daemon`, and `kwin_wayland` and passes
-their exact paths. The harness does not encode `/usr/bin` as executable policy.
+CMake discovers Python, bubblewrap, `dbus-daemon`, `kwin_wayland`, and the
+dual-row `kscreen-doctor` plus `KSC_KWayland.so` backend inputs and passes their
+exact paths. The sandbox binds each discovered installation prefix read-only;
+the outer and inner drivers preserve the exact selector/backend paths instead
+of encoding `/usr/bin` or a distribution-specific Qt plugin directory.
 
 The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
 inaccessible to an ordinary CTest invocation: the manager must allocate the
@@ -1556,11 +1559,16 @@ and an authenticated mapped production dock is required on every output. Weston
 headless retains one private parent framebuffer; screenshooter must create one
 nonuniform PNG bound to the interacted child output in each row.
 The dual row additionally runs the exact private
-`kscreen-doctor output.WL-1.primary` selector, requires the compositor's
-ordered authority to publish `WL-1` ahead of demoted `WL-0`, moves only the
-private development pointer into `WL-1`, then accepts the notification center
-only when both desired and actual output are `WL-1`. The registered row passing
-is required evidence; the selector command or catalog alone proves nothing.
+`kscreen-doctor output.WL-1.primary` selector, then reacquires and archives a
+complete public Outputs envelope before injecting any pointer event. That
+post-selector observation must advance the pre-selector output generation,
+retain the exact topology, and publish ordered authority `[WL-1, WL-0]` with
+priorities `[1, 2]`. The envelope is preserved as canonical
+`postSelectorOutputs` evidence and revalidated after teardown. Only then does
+the harness move the private development pointer into `WL-1` and accept the
+notification center when both desired and actual output are `WL-1`. The
+registered row passing is required evidence; selector success, pointer-routed
+surface placement, or the catalog alone proves nothing.
 For fractional rows the compositor-global logical notification-center geometry
 is converted to the smallest outward-rounded physical rectangle containing the
 complete surface; only that owning output receives the independent region
