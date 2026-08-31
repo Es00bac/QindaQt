@@ -4,20 +4,22 @@ role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
 model: inherited exact serving model; unexposed
 reasoning: inherited exact reasoning level; unexposed
-status: handoff
+status: working
 feature: QQ-004.14 production Bluetooth applet B1
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:23:37-06:00
+updated_at: 2026-08-31T17:30:54-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: handoff — exact repaired descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a` is clean and awaits independent rereview; compiler/CTest/private lanes are released.
+- Status: working — repairing the Opus multiline controller-surface policy escape above exact descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a`; no compiler/CTest/private lane is claimed.
 
 ## Updates
+
+- 2026-08-31T17:30:54-06:00 — Claude Opus 5 reproduced a formatting-only escape in the exact runtime boundary: single-line renamed invokables are rejected, but a newline inside either an undeclared `Q_INVOKABLE beginPairing` or undeclared `Q_PROPERTY deviceAddress` is accepted because the positive-surface regex stops at line boundaries. Resumed the clean coordination head `644bdc66cb4c84ed216393ea41c533596046530d`, whose sole parent is rejected repaired product `0eb14565ecbd2e96cfbef70482e1c8542276c35a`. The bounded policy repair will normalize controller whitespace before exact complete-surface comparison and add independent wrapped-invokable and wrapped-property poisons. Verification is direct runtime/static/docs only; no compiler, CTest, or private runtime lane is claimed.
 
 - 2026-08-31T17:23:37-06:00 — Froze exact repaired descendant `0eb14565ecbd2e96cfbef70482e1c8542276c35a` (tree `0559bf1f781bd90fc7bffe053283023f78e7b99b`, sole parent `11e2396574b015233ed6c730fbe5ed097519d7af`), with rejected candidate `ecadc745fdea1e22cbbcfcbcbab1738507231b8c` preserved as an ancestor through coordination-only commits. Its product commit changes exactly ten owned source/test/doc paths; the complete descendant differs on 19 paths including Annie's records/messages. Debug and Release each pass repaired presentation/controller 2/2 and B1 7/7; installed loader-path rows pass 1/1 each. Final pure 5+4 poisons, runtime 7+6 poisons, JSON 3/3, 117-doc validation, strict MkDocs, 1,779-file shape, diff/ancestry/conflict/prohibited-path/clean-tree/process checks pass. Compiler/CTest and every private lane are released. Requested independent exact-descendant rereview before integration.
 
