@@ -6,11 +6,18 @@ from __future__ import annotations
 import re
 from typing import Any, Mapping
 
+from desktop_session_output import (
+    OutputInventoryError,
+    validate_secondary_output_authority,
+)
 from desktop_session_topology import (
+    DesktopTopology,
+    MatrixBootTopology,
     TopologyContractError,
     interactive_1080p_topology,
     validate_boot_evidence,
 )
+from desktop_session_matrix import physical_content_region
 
 
 def _mapping(value: Any, location: str) -> Mapping[str, Any]:
@@ -30,22 +37,219 @@ def _canonical_process_id(value: Any) -> int:
     return process_id
 
 
-def validate_interactive_evidence(document: Any) -> None:
+def _canonical_counter(value: Any, location: str) -> int:
+    counter = (
+        int(value, 10)
+        if isinstance(value, str) and value.isascii() and value.isdecimal()
+        else -1
+    )
+    if counter < 0 or value != str(counter):
+        raise TopologyContractError(f"{location} must be a canonical counter")
+    return counter
+
+
+def _validate_shell_presentation(
+    interaction: Mapping[str, Any], shell_pid: Any, expected_output: str
+) -> None:
+    activation = _mapping(interaction.get("activation"), "interaction.activation")
+    if activation != {
+        "action": "qindaqt_toggle_notification_center",
+        "component": "qindaqt-shell",
+        "pressed": True,
+        "released": True,
+    }:
+        raise TopologyContractError("shortcut activation evidence is malformed")
+    presentation = _mapping(
+        interaction.get("shellPresentation"), "interaction.shellPresentation"
+    )
+    if set(presentation) != {"before", "after"}:
+        raise TopologyContractError("shell presentation phases are malformed")
+    phases = {
+        name: _mapping(presentation.get(name), f"shellPresentation.{name}")
+        for name in ("before", "after")
+    }
+    expected_fields = {
+        "owner", "servicePid", "shellPid", "presentation",
+        "centerOpenedCount", "centerWindow",
+    }
+    for name, phase in phases.items():
+        owner = phase.get("owner")
+        if set(phase) != expected_fields or not isinstance(owner, str) or not owner.startswith(":"):
+            raise TopologyContractError(f"shell presentation {name} identity is malformed")
+        if (
+            _canonical_process_id(phase.get("servicePid")) != shell_pid
+            or _canonical_process_id(phase.get("shellPid")) != shell_pid
+        ):
+            raise TopologyContractError(f"shell presentation {name} PID is malformed")
+        state = _mapping(phase.get("presentation"), f"shellPresentation.{name}.presentation")
+        window = _mapping(phase.get("centerWindow"), f"shellPresentation.{name}.centerWindow")
+        expected_open = name == "after"
+        if (
+            set(state) != {"privatePresentationAllowed", "centerOpen"}
+            or state.get("privatePresentationAllowed") is not True
+            or state.get("centerOpen") is not expected_open
+            or set(window) != {"exists", "visible", "outputName"}
+            or window.get("exists") is not True
+            or window.get("visible") is not expected_open
+            or window.get("outputName") != expected_output
+        ):
+            raise TopologyContractError(f"shell presentation {name} state is malformed")
+    if phases["before"].get("owner") != phases["after"].get("owner"):
+        raise TopologyContractError("shell presentation owner changed across input")
+    opened_before = _canonical_counter(
+        phases["before"].get("centerOpenedCount"),
+        "shell presentation before count",
+    )
+    opened_after = _canonical_counter(
+        phases["after"].get("centerOpenedCount"),
+        "shell presentation after count",
+    )
+    if opened_after <= opened_before:
+        raise TopologyContractError("shell presentation open counter did not advance")
+
+
+def _canonical_digest(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _validate_matrix_captures(
+    evidence: Mapping[str, Any], topology: MatrixBootTopology,
+    surface: Mapping[str, Any], geometry: Mapping[str, Any],
+) -> None:
+    presentation = _mapping(
+        evidence.get("matrixPresentation"), "evidence.matrixPresentation"
+    )
+    expected = topology.presentation
+    if presentation != {
+        "scenarioId": expected.scenario_id,
+        "profileId": expected.profile_id,
+        "themeId": expected.theme_id,
+        "requestedScale": expected.requested_scale,
+        "parentArguments": (
+            [
+                "--virtual", "--width", str(topology.outputs[0].logical_width),
+                "--height", str(topology.outputs[0].logical_height),
+                "--scale", str(expected.requested_scale), "--output-count", "1",
+                "--socket", "qindaqt-parent-wayland", "--no-lockscreen",
+                "--no-global-shortcuts",
+            ]
+            if expected.requested_scale != 1.0 else None
+        ),
+        "sessionArguments": [
+            "--profile", expected.profile_id, "--theme", expected.theme_id
+        ],
+        "editorArguments": ["--theme", expected.theme_id],
+    }:
+        raise TopologyContractError("matrix presentation selection is malformed")
+    captures = evidence.get("matrixCaptures")
+    if not isinstance(captures, list) or len(captures) != 1:
+        raise TopologyContractError("matrix capture cardinality is malformed")
+    by_name: dict[str, Mapping[str, Any]] = {}
+    for index, raw in enumerate(captures):
+        capture = _mapping(raw, f"matrixCaptures[{index}]")
+        name = capture.get("outputName")
+        if not isinstance(name, str) or name in by_name:
+            raise TopologyContractError("matrix capture output names must be unique")
+        by_name[name] = capture
+    interacted_name = surface.get("outputName")
+    if set(by_name) != {interacted_name}:
+        raise TopologyContractError("matrix capture does not bind the interacted output")
+    outputs_by_name = {
+        f"WL-{output.ordinal}": output for output in topology.outputs
+    }
+    for output_name, capture in by_name.items():
+        output = outputs_by_name[output_name]
+        expected_keys = {
+            "tool", "path", "sha256", "byteCount", "width", "height",
+            "sampledDistinctColors", "outputName",
+        }
+        expected_keys.add("contentRegion")
+        if (
+            set(capture) != expected_keys
+            or capture.get("tool")
+            != (
+                "kwin-virtual-shm"
+                if output.render_scale != 1.0 else "weston-screenshooter"
+            )
+            or capture.get("path")
+            != f"desktop-matrix-{expected.scenario_id}-output-{output.ordinal}.png"
+            or not _canonical_digest(capture.get("sha256"))
+            or isinstance(capture.get("byteCount"), bool)
+            or not isinstance(capture.get("byteCount"), int)
+            or capture["byteCount"] <= 1024
+            or capture.get("width") != output.pixel_width
+            or capture.get("height") != output.pixel_height
+            or isinstance(capture.get("sampledDistinctColors"), bool)
+            or not isinstance(capture.get("sampledDistinctColors"), int)
+            or capture["sampledDistinctColors"] < 16
+        ):
+            raise TopologyContractError("matrix captured desktop evidence is malformed")
+        region = _mapping(capture.get("contentRegion"), "capture.contentRegion")
+        physical = physical_content_region(
+            geometry, output, physical_scale=output.render_scale
+        )
+        if (
+            set(region) != {
+                "x", "y", "width", "height", "sampledDistinctColors", "sha256"
+            }
+            or any(region.get(key) != value for key, value in physical.items())
+            or isinstance(region.get("sampledDistinctColors"), bool)
+            or not isinstance(region.get("sampledDistinctColors"), int)
+            or region["sampledDistinctColors"] < 16
+            or not _canonical_digest(region.get("sha256"))
+        ):
+            raise TopologyContractError(
+                "matrix capture is not bound to the interacted physical region"
+            )
+
+
+def validate_interactive_evidence(
+    document: Any, topology: DesktopTopology | None = None
+) -> None:
     """Validate the additive S2 private-seat and captured-frame evidence."""
 
-    topology = interactive_1080p_topology()
+    topology = topology or interactive_1080p_topology()
     validate_boot_evidence(document, topology)
     evidence = _mapping(document, "evidence")
     processes = _mapping(evidence.get("processes"), "evidence.processes")
     shell = _mapping(processes.get("shell"), "processes.shell")
     outputs = evidence["outputs"]
-    output_name = outputs[0]["name"]
+    output_names = {
+        item.get("name") for item in outputs if isinstance(item, Mapping)
+    }
+    secondary_output = (
+        isinstance(topology, MatrixBootTopology) and len(topology.outputs) == 2
+    )
+    if secondary_output:
+        generations = _mapping(evidence.get("generations"), "evidence.generations")
+        try:
+            validate_secondary_output_authority(
+                evidence.get("postSelectorOutputs"),
+                previous_outputs=outputs,
+                previous_generation=generations.get("outputs"),
+            )
+        except OutputInventoryError as error:
+            raise TopologyContractError(str(error)) from error
+    elif "postSelectorOutputs" in evidence:
+        raise TopologyContractError(
+            "post-selector Outputs authority is unexpected for one output"
+        )
 
     containment = _mapping(evidence.get("containment"), "evidence.containment")
     parent_socket = containment.get("parentWaylandSocket")
     child_socket = containment.get("childWaylandSocket")
+    expected_parent = (
+        "kwin-virtual-qpaint"
+        if isinstance(topology, MatrixBootTopology)
+        and any(output.render_scale != 1.0 for output in topology.outputs)
+        else "weston-headless-pixman"
+    )
     if (
-        containment.get("parentBackend") != "weston-headless-pixman"
+        containment.get("parentBackend") != expected_parent
         or containment.get("qindaqtBackend") != "kwin-windowed-qpaint"
         or parent_socket != "qindaqt-parent-wayland"
         or not isinstance(child_socket, str)
@@ -56,15 +260,19 @@ def validate_interactive_evidence(document: Any) -> None:
 
     interaction = _mapping(evidence.get("interaction"), "evidence.interaction")
     if set(interaction) != {
-        "action", "deviceId", "eventCount", "preInjectionActiveSurfaceCount", "surface",
+        "action", "deviceId", "eventCount", "activation",
+        "preInjectionActiveSurfaceCount", "shellPresentation", "surface",
     }:
         raise TopologyContractError("interaction has an unexpected field set")
     surface = _mapping(interaction.get("surface"), "interaction.surface")
     geometry = _mapping(surface.get("geometry"), "interaction.surface.geometry")
+    expected_interaction_output = "WL-1" if secondary_output else "WL-0"
+    expected_event_count = 5 if secondary_output else 4
+    _validate_shell_presentation(interaction, shell.get("pid"), expected_interaction_output)
     if (
         interaction.get("action") != "open-notification-center"
         or interaction.get("deviceId") != "qindaqt-development-input"
-        or interaction.get("eventCount") != 4
+        or interaction.get("eventCount") != expected_event_count
         or interaction.get("preInjectionActiveSurfaceCount") != 0
         or surface.get("scope") != "notification-center"
         or surface.get("mapped") is not True
@@ -73,10 +281,14 @@ def validate_interactive_evidence(document: Any) -> None:
         or geometry.get("width") != 440
         or geometry.get("height") != 640
         or _canonical_process_id(surface.get("processId")) != shell.get("pid")
-        or surface.get("outputName") != output_name
-        or surface.get("desiredOutputName") != output_name
+        or surface.get("outputName") != expected_interaction_output
+        or surface.get("desiredOutputName") != surface.get("outputName")
     ):
         raise TopologyContractError("private-seat interaction evidence is malformed")
+
+    if isinstance(topology, MatrixBootTopology):
+        _validate_matrix_captures(evidence, topology, surface, geometry)
+        return
 
     capture = _mapping(evidence.get("capture"), "evidence.capture")
     digest = capture.get("sha256")
@@ -89,8 +301,7 @@ def validate_interactive_evidence(document: Any) -> None:
         }
         or capture.get("tool") != "weston-screenshooter"
         or capture.get("path") != "desktop-1080p.png"
-        or not isinstance(digest, str) or len(digest) != 64
-        or any(character not in "0123456789abcdef" for character in digest)
+        or not _canonical_digest(digest)
         or isinstance(capture.get("byteCount"), bool)
         or not isinstance(capture.get("byteCount"), int)
         or capture["byteCount"] <= 1024
@@ -105,7 +316,6 @@ def validate_interactive_evidence(document: Any) -> None:
         or isinstance(region.get("sampledDistinctColors"), bool)
         or not isinstance(region.get("sampledDistinctColors"), int)
         or region["sampledDistinctColors"] < 16
-        or not isinstance(region_digest, str) or len(region_digest) != 64
-        or any(character not in "0123456789abcdef" for character in region_digest)
+        or not _canonical_digest(region_digest)
     ):
         raise TopologyContractError("captured desktop evidence is malformed")

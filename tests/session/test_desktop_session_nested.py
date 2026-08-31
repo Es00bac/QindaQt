@@ -17,6 +17,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from desktop_session_process import capture_process_identity, terminate_processes
+from desktop_session_host_tools import (
+    library_search_roots,
+    resolved_system_input,
+    sandbox_path_for,
+    system_mounts,
+    weston_module_map,
+)
+from desktop_session_lifecycle import LIFECYCLE_TRACE_ENVIRONMENT
 from desktop_session_runtime import run_inner
 from desktop_session_sandbox import (
     PrivateLaneLock,
@@ -59,56 +67,69 @@ class AttemptResult:
         }
 
 
-def _tool_root(executable: Path) -> Path:
-    resolved = executable.resolve(strict=True)
-    parts = resolved.parts
-    if ".linuxbrew" in parts:
-        index = parts.index(".linuxbrew")
-        return Path(*parts[: index + 1])
-    if len(parts) >= 3 and parts[1] == "usr":
-        return Path("/usr")
-    return resolved.parent.parent
-
-
-def _system_mounts(tools: list[Path]) -> tuple[ReadOnlyMount, ...]:
-    roots = sorted({_tool_root(tool) for tool in tools}, key=str)
-    return tuple(ReadOnlyMount(root, PurePosixPath(str(root))) for root in roots)
-
-
-def _sandbox_path_for(source: Path, mounts: tuple[ReadOnlyMount, ...]) -> str:
-    resolved = source.resolve(strict=True)
-    for mount in mounts:
-        root = mount.source.resolve(strict=True)
-        if resolved == root or root in resolved.parents:
-            return str(mount.destination / resolved.relative_to(root))
-    raise SandboxContractError(f"tool is not covered by a system mount: {source}")
+def _enable_lifecycle_diagnostics(environment: dict[str, str]) -> None:
+    if os.environ.get(LIFECYCLE_TRACE_ENVIRONMENT) != "1":
+        return
+    environment[LIFECYCLE_TRACE_ENVIRONMENT] = "1"
+    environment["QT_FORCE_STDERR_LOGGING"] = "1"
 
 
 def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> SandboxSpec:
     tools = [arguments.python, arguments.dbus_daemon, arguments.kwin_wayland]
     interactive = getattr(arguments, "interactive", False)
+    secondary = interactive and arguments.scenario_id == "dual-1080p-horizontal"
     if interactive:
         tools.extend([arguments.weston, arguments.weston_screenshooter])
-    mounts = _system_mounts(tools)
-    python = _sandbox_path_for(arguments.python, mounts)
-    dbus_daemon = _sandbox_path_for(arguments.dbus_daemon, mounts)
-    kwin_wayland = _sandbox_path_for(arguments.kwin_wayland, mounts)
+    kscreen_doctor: Path | None = None
+    kscreen_backend: Path | None = None
+    if secondary:
+        kscreen_doctor = resolved_system_input(
+            arguments.kscreen_doctor, "KScreen selector", executable=True
+        )
+        kscreen_backend = resolved_system_input(
+            arguments.kscreen_wayland_backend,
+            "KScreen Wayland backend",
+            executable=False,
+        )
+        tools.append(kscreen_doctor)
+    mounted_inputs = list(tools)
+    if kscreen_backend is not None:
+        mounted_inputs.append(kscreen_backend)
+    mounts = system_mounts(mounted_inputs)
+    python = sandbox_path_for(arguments.python, mounts)
+    dbus_daemon = sandbox_path_for(arguments.dbus_daemon, mounts)
+    kwin_wayland = sandbox_path_for(arguments.kwin_wayland, mounts)
     weston = (
-        _sandbox_path_for(arguments.weston, mounts) if interactive else ""
+        sandbox_path_for(arguments.weston, mounts) if interactive else ""
     )
     screenshooter = (
-        _sandbox_path_for(arguments.weston_screenshooter, mounts)
+        sandbox_path_for(arguments.weston_screenshooter, mounts)
         if interactive else ""
     )
     system_path = sorted(
-        {str(PurePosixPath(_sandbox_path_for(tool, mounts)).parent) for tool in tools}
+        {str(PurePosixPath(sandbox_path_for(tool, mounts)).parent) for tool in tools}
+    )
+    library_path, qt_plugin_path, qml_import_path = library_search_roots(
+        mounted_inputs
     )
     environment = sandbox_environment(
         run_id=run_id,
         uid=os.getuid(),
         stage_bin=f"/opt/qindaqt/{arguments.bin_directory}",
         system_path=system_path,
+        library_path=library_path,
+        qt_plugin_path=qt_plugin_path,
+        qml_import_path=qml_import_path,
     )
+    if interactive:
+        # Weston supports relocatable test packages through this exact module
+        # map. Do not bind over its compiled /usr module directories.
+        environment["WESTON_MODULE_MAP"] = weston_module_map(arguments.weston)
+    if os.environ.get(LIFECYCLE_TRACE_ENVIRONMENT) == "1":
+        # This exact opt-in exists only to diagnose the essential session child
+        # boundary. It carries no host endpoint and is omitted from acceptance
+        # rows after the lifecycle defect is identified.
+        _enable_lifecycle_diagnostics(environment)
     command = (
         python,
         "/opt/qindaqt-source/tests/session/test_desktop_session_nested.py",
@@ -131,12 +152,23 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
         dbus_daemon,
         "--kwin-wayland",
         kwin_wayland,
+        "--scenario-id",
+        getattr(arguments, "scenario_id", "single-1080p"),
     )
     if interactive:
         command += (
             "--interactive",
             "--weston", weston,
             "--weston-screenshooter", screenshooter,
+        )
+    if secondary:
+        if kscreen_doctor is None or kscreen_backend is None:
+            raise SandboxContractError("dual-output KScreen inputs were not resolved")
+        command += (
+            "--kscreen-doctor",
+            sandbox_path_for(kscreen_doctor, mounts),
+            "--kscreen-wayland-backend",
+            sandbox_path_for(kscreen_backend, mounts),
         )
     return SandboxSpec(
         bwrap=arguments.bwrap,
@@ -325,8 +357,11 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--dbus-daemon", type=Path, required=True)
     parser.add_argument("--kwin-wayland", type=Path, required=True)
     parser.add_argument("--interactive", action="store_true")
+    parser.add_argument("--scenario-id", default="single-1080p")
     parser.add_argument("--weston", type=Path)
     parser.add_argument("--weston-screenshooter", type=Path)
+    parser.add_argument("--kscreen-doctor", type=Path)
+    parser.add_argument("--kscreen-wayland-backend", type=Path)
     parser.add_argument("--run-id", default="")
     parser.add_argument("--print-command-json", action="store_true")
     return parser.parse_args()
@@ -336,10 +371,22 @@ def main() -> int:
     arguments = parse_arguments()
     try:
         if arguments.interactive and (
-            arguments.weston is None or arguments.weston_screenshooter is None
+            arguments.weston is None
+            or arguments.weston_screenshooter is None
         ):
             raise SandboxContractError(
                 "interactive mode requires Weston and weston-screenshooter"
+            )
+        if (
+            arguments.interactive
+            and arguments.scenario_id == "dual-1080p-horizontal"
+            and (
+                arguments.kscreen_doctor is None
+                or arguments.kscreen_wayland_backend is None
+            )
+        ):
+            raise SandboxContractError(
+                "dual-output mode requires KScreen selector and Wayland backend"
             )
         return run_outer(arguments) if arguments.outer else run_inner(arguments)
     except (

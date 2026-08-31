@@ -58,7 +58,37 @@ def valid_interactive_evidence() -> dict[str, object]:
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",
         "eventCount": 4,
+        "activation": {
+            "action": "qindaqt_toggle_notification_center",
+            "component": "qindaqt-shell",
+            "pressed": True,
+            "released": True,
+        },
         "preInjectionActiveSurfaceCount": 0,
+        "shellPresentation": {
+            "before": {
+                "owner": ":1.20", "servicePid": str(shell_pid),
+                "shellPid": str(shell_pid),
+                "presentation": {
+                    "privatePresentationAllowed": True, "centerOpen": False,
+                },
+                "centerOpenedCount": "0",
+                "centerWindow": {
+                    "exists": True, "visible": False, "outputName": "WL-0",
+                },
+            },
+            "after": {
+                "owner": ":1.20", "servicePid": str(shell_pid),
+                "shellPid": str(shell_pid),
+                "presentation": {
+                    "privatePresentationAllowed": True, "centerOpen": True,
+                },
+                "centerOpenedCount": "1",
+                "centerWindow": {
+                    "exists": True, "visible": True, "outputName": "WL-0",
+                },
+            },
+        },
         "surface": {
             "scope": "notification-center", "processId": str(shell_pid),
             "outputName": "WL-0", "desiredOutputName": "WL-0",
@@ -106,6 +136,43 @@ class InteractiveEvidenceTests(unittest.TestCase):
         evidence["interaction"]["preInjectionActiveSurfaceCount"] = 1  # type: ignore[index]
         with self.assertRaisesRegex(TopologyContractError, "interaction"):
             validate_interactive_evidence(evidence)
+
+    def test_activation_and_shell_presentation_mutations_fail(self) -> None:
+        mutations = (
+            (("activation", "action"), "wrong-action"),
+            (("activation", "component"), "attacker-shell"),
+            (("activation", "pressed"), False),
+            (("activation", "released"), False),
+            (("shellPresentation", "before", "owner"), ":1.19"),
+            (("shellPresentation", "after", "owner"), ":1.21"),
+            (("shellPresentation", "before", "servicePid"), "77"),
+            (("shellPresentation", "before", "shellPid"), "77"),
+            (("shellPresentation", "after", "servicePid"), "77"),
+            (("shellPresentation", "after", "shellPid"), "77"),
+            (("shellPresentation", "before", "presentation",
+              "privatePresentationAllowed"), False),
+            (("shellPresentation", "after", "presentation",
+              "privatePresentationAllowed"), False),
+            (("shellPresentation", "before", "presentation", "centerOpen"), True),
+            (("shellPresentation", "after", "presentation", "centerOpen"), False),
+            (("shellPresentation", "before", "centerWindow", "exists"), False),
+            (("shellPresentation", "after", "centerWindow", "exists"), False),
+            (("shellPresentation", "before", "centerWindow", "visible"), True),
+            (("shellPresentation", "after", "centerWindow", "visible"), False),
+            (("shellPresentation", "before", "centerWindow", "outputName"), "WL-9"),
+            (("shellPresentation", "after", "centerWindow", "outputName"), "WL-9"),
+            (("shellPresentation", "before", "centerOpenedCount"), "01"),
+            (("shellPresentation", "after", "centerOpenedCount"), "0"),
+        )
+        for path, value in mutations:
+            with self.subTest(path=path):
+                evidence = valid_interactive_evidence()
+                cursor = evidence["interaction"]  # type: ignore[assignment]
+                for field in path[:-1]:
+                    cursor = cursor[field]  # type: ignore[index,assignment]
+                cursor[path[-1]] = value  # type: ignore[index]
+                with self.assertRaises(TopologyContractError):
+                    validate_interactive_evidence(evidence)
 
     def test_capture_must_bind_to_surface_region(self) -> None:
         evidence = valid_interactive_evidence()

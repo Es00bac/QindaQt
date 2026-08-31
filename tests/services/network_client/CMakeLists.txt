@@ -9,6 +9,18 @@ qindaqt_enable_warnings(qindaqt_network_client_tests)
 add_test(NAME qindaqt.network-client COMMAND qindaqt_network_client_tests)
 set_tests_properties(qindaqt.network-client PROPERTIES LABELS "service;network;pure")
 
+qt_add_executable(qindaqt_network_client_admission_tests
+                  tst_network_client_admission.cpp)
+target_include_directories(qindaqt_network_client_admission_tests
+                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../network_protocol")
+target_link_libraries(qindaqt_network_client_admission_tests
+                      PRIVATE QindaQt::NetworkClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_network_client_admission_tests)
+add_test(NAME qindaqt.network-client-admission
+         COMMAND qindaqt_network_client_admission_tests)
+set_tests_properties(qindaqt.network-client-admission
+                     PROPERTIES LABELS "service;network;pure;admission")
+
 qt_add_executable(qindaqt_network_adversarial_tests tst_network_adversarial.cpp)
 target_include_directories(qindaqt_network_adversarial_tests
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../network_protocol")

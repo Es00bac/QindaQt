@@ -20,14 +20,17 @@ qualification remain preserved integrated foundations.
 Finish QQ-005 through the durable [Platform queue](../ops/team/queues/platform.md):
 remaining Display1 nested convergence and hardware work,
 production Power/brightness upstream adapters,
-Network UI, persistence, external secret-agent integration, and hardware
-qualification over the resident Network N1 boundary,
+Network credential/profile/radio mutation, persistence, external secret-agent
+integration, and hardware qualification over the resident Network N1 boundary,
 production BlueZ/UI over the Bluetooth B0 boundary, private clipboard history,
 display color, font application,
-and portal/policy interoperability. Existing Audio1, Display1 foundations, and
+host portal selection/toolkit reaction, and every non-Settings portal family.
+The standard Settings appearance backend is now an executable integrated
+foundation. Existing Audio1, Display1 foundations, and
 resident Power PB-1 remain preserved integrated foundations; Network N1 now
-owns the confined production NetworkManager transport, while Bluetooth B0 is
-an executable bounded foundation without a production platform backend or UI.
+owns the confined production NetworkManager transport and an installed public-
+client-only Settings route, while Bluetooth B0 is an executable bounded
+foundation without a production platform backend or UI.
 
 ### First-party experience delivery queue
 
@@ -36,8 +39,8 @@ Finish QQ-006 through the durable
 later File Manager and Terminal capabilities, application migrations, and
 cross-app responsive, DPI, visual, keyboard, and accessibility qualification.
 QST-1, Controls, AppShell, Text Editor, the read-only local File Manager S0,
-the single-session Terminal S0, and live Notifications, Appearance, and Display
-Settings routes remain preserved integrated foundations.
+the single-session Terminal S0, and live Notifications, Appearance, Display,
+and Network Settings routes remain preserved integrated foundations.
 
 ### Interactive virtual desktop integration
 
@@ -54,6 +57,51 @@ a real defect, but optimization beyond that starting ceiling follows reliable
 end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
+
+- `4d4b3dc` — The private S3 desktop executes the production compositor,
+  shell, resident services, Settings, and Text Editor across WUXGA, 1440p at
+  125%, 1080p at 150%, light/dusk/dark themes, and a dual-output arrangement.
+  Exact shell-readiness joins prove the active GlobalAccel component/action,
+  stable unique shell owner and PID, closed/hidden center before the sole
+  private-seat Meta+N batch, open/visible center with an increased counter
+  after it, and one mapped compositor surface on the selected output. Mina
+  Shah's external Claude source/archive review accepted the immutable
+  candidate at P0/P1/P2/P3 `0/0/0/2`; Lise Meitner's independent fresh
+  static+dynamic review accepted it at `0/0/0/0` after an 882/882 build,
+  focused 5/5, formerly failing 1080p@150% 2/2, and package-plus-matrix 5/5.
+  Four fresh archives prove containment 12/12, bounded PSS, nontrivial
+  captures, empty teardown, and exact dual `[WL-1, WL-0]` authority with
+  interaction and capture on WL-1. Fresh merged-tree replay also builds
+  882/882, passes focused 5/5, formerly failing 1080p@150% plus package 2/2,
+  and an unretried package-plus-four-row matrix 5/5; its four captures are
+  byte-authenticated and visually coherent, all PSS values remain below the
+  1,024 MiB ceiling, and final process inspection is empty. This advances
+  QQ-004.09 and QQ-006.09 to
+  EXECUTABLE without claiming complete screen-reader/keyboard coverage,
+  heterogeneous mixed scaling, physical devices, GPU/DRM, hotplug, or
+  perceptual baseline qualification.
+
+- `6f5d0ba9` — The installed Network Settings route composes only the public
+  Network1 client into bounded, secret-free inventory and admitted saved-
+  profile actions. Barbara Liskov's external Claude exact rereview accepted
+  the repair at P0/P1/P2/P3 `0/0/0/3` after directly closing all four former
+  P2 findings. Fresh manager Debug and Release each build 2,036/2,036 and pass
+  mutation 5/5, affected 14/14, public package/policy 5/5, Network 25/25, and
+  Settings 9/9. Credentials, secret-agent ownership, profile editing, radio
+  mutation, persistence, session-runtime proof, and physical qualification
+  remain separate outcomes, so QQ-006.05 remains WIRED.
+
+- `9f59a77a` — The standard Settings v1 portal backend exports confirmed
+  QindaQt Settings1/QST appearance through the standard desktop-portal
+  endpoint, with exact owner/epoch withdrawal, bounded standard values,
+  activation, hardened service packaging, and complete Settings-only source
+  and staged metadata. Frances Allen's exact rereview accepted the repaired
+  descendant at P0/P1/P2/P3 `0/0/0/0` after independently proving the former
+  installed Background escape is closed. Debug and Release review and fresh
+  manager gates each build 97/97 and pass the contained 7/7 selector; docs,
+  strict MkDocs, shape, package, provenance, and residue gates pass. This
+  advances QQ-005.09 from ABSENT to EXECUTABLE without claiming host frontend
+  selection, toolkit reaction, or any non-Settings portal family.
 
 - `89557a0a` — Notification popup and center output selection now consumes the
   exact-owner ordered public compositor-output authority and accepts it only
