@@ -4,8 +4,9 @@ This page defines the accepted architecture for QindaQt power state, session
 power actions, idle reporting, and brightness. Its current maturity is
 **EXECUTABLE (PB-1)**: the PB-0 pure protocol/aggregation/brightness values
 and the PB-1 Wayland-free resident service/client slice are implemented with
-focused evidence; backlight, idle, session actions, and every live platform
-adapter remain pending as recorded below.
+focused evidence. A production shell Power applet now consumes that public
+client boundary, while backlight providers, idle, session actions, and every
+live platform adapter remain pending as recorded below.
 
 The durable choices are split across
 [ADR-0023](../adr/0023-split-power-authority-across-service-and-shell.md),
@@ -73,6 +74,7 @@ composition separate:
 | `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown | PB-2 |
 | `power_idle` | Compositor-idle observation and logind idle hints | PB-2 |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
+| [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
 
 The service orchestrator may not own UPower, logind, profile-daemon, Wayland,
 or sysfs transport objects. Power modules do not link Display implementation
@@ -125,6 +127,29 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
 
 The exact wire method and signal surface is recorded in the
 [Power1 reference](../reference/power1-v1.md).
+
+## Production shell consumer
+
+The production Power applet composes only the public `PowerClient` with the
+pure brightness and presentation projections. A shell-private composition owns
+the transport, client, and controller lifetime, then injects the controller—not
+the transport or service—through the audited built-in host boundary. Its manifest requests
+`power.read` and `power.control`; the same runtime policy evaluation that
+resolves the applet gates client observation and mutations independently.
+
+The controller accepts only a validated snapshot from the client's exact
+current owner. Owner loss/replacement clears prior truth and makes any pending
+operation terminal without replay. Profile and keyboard-brightness requests
+are bounded, serialized, resolved against the current snapshot, and fenced by
+request and generation lineage. Power1 v1 still defines no display-brightness
+write. Compiled offscreen interaction and relocated installed-package tests
+prove the renderer/host composition without contacting a user session bus,
+power daemon, display server, or hardware.
+
+Because PB-1's production process still injects unavailable collaborators, the
+applet currently renders `upstream-not-integrated` as unavailable and sends no
+operation in a real session. The applet is production UI for honest current
+truth, not evidence that a PB-2 provider exists.
 
 ## Internal-panel brightness
 
@@ -219,8 +244,9 @@ hardware hotkeys remain release evidence.
 ## Non-claims
 
 This contract does not prove a live UPower, power-profiles-daemon, or logind
-adapter, a backlight mutation, idle hint, session action, inhibitor, physical
-device, user interface, or host-session integration. PB-1's resident process
-honestly reports `upstream-not-integrated` until those adapters land. Progress
-beyond the recorded PB-1 slice requires the evidence tier defined by the
+adapter, a successful backlight mutation, idle hint, session action, inhibitor,
+physical device, or host-session integration. The production applet is
+compiled and packaged, but PB-1's resident process honestly reports
+`upstream-not-integrated` until those adapters land. Progress beyond the
+recorded PB-1 platform slice requires the evidence tier defined by the
 relevant later slice.

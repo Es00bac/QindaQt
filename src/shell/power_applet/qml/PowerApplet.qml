@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -10,6 +12,7 @@ Item {
     required property var theme
     property bool vertical: false
     readonly property var colors: theme.colors ?? ({})
+    readonly property bool available: access !== null
 
     objectName: "powerApplet"
     implicitWidth: vertical ? 40 : Math.max(46, summary.implicitWidth + 12)
@@ -19,7 +22,7 @@ Item {
         id: summary
         objectName: "powerAppletSummary"
         anchors.fill: parent
-        enabled: root.access !== null
+        enabled: root.available
         focusPolicy: Qt.TabFocus
         text: root.access !== null ? root.access.batteryLabel : qsTr("Power")
         Accessible.role: Accessible.Button
@@ -29,8 +32,13 @@ Item {
         Accessible.description: root.access !== null
                                 ? root.access.accessibleDescription : ""
 
-        onClicked: details.open()
-        Accessible.onPressAction: details.open()
+        function openDetails() {
+            if (root.available)
+                details.open()
+        }
+
+        onClicked: openDetails()
+        Accessible.onPressAction: openDetails()
 
         contentItem: Text {
             text: summary.text
@@ -72,11 +80,62 @@ Item {
             }
 
             Label {
+                objectName: "powerAppletLoading"
+                Layout.fillWidth: true
+                visible: root.access !== null && root.access.phase === "loading"
+                text: qsTr("Power information is loading…")
+                color: root.colors.textMuted ?? "#a9afa9"
+                wrapMode: Text.Wrap
+            }
+
+            Label {
                 Layout.fillWidth: true
                 visible: root.access !== null && root.access.diagnostic !== ""
                 text: visible ? root.access.diagnostic : ""
                 color: root.colors.textMuted ?? "#a9afa9"
                 wrapMode: Text.Wrap
+            }
+
+            Label {
+                Layout.fillWidth: true
+                visible: root.access !== null && root.access.profileRows.length > 0
+                text: qsTr("Power profile")
+                color: root.colors.text ?? "white"
+                font.bold: true
+            }
+
+            Repeater {
+                model: root.access !== null ? root.access.profileRows : []
+
+                Button {
+                    required property var modelData
+
+                    objectName: "powerAppletProfileButton"
+                    Layout.fillWidth: true
+                    text: modelData.active
+                          ? qsTr("%1 (current)").arg(modelData.label)
+                          : modelData.label
+                    enabled: modelData.adjustable && !modelData.pending
+                             && !root.access.operationPending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: modelData.accessibleName
+                    Accessible.description: modelData.accessibleDescription
+                    Accessible.checked: modelData.active
+                    onClicked: root.access.requestProfile(modelData.profileId)
+                    Accessible.onPressAction: {
+                        if (enabled)
+                            root.access.requestProfile(modelData.profileId)
+                    }
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                visible: root.access !== null && root.access.keyboardRows.length > 0
+                text: qsTr("Keyboard brightness")
+                color: root.colors.text ?? "white"
+                font.bold: true
             }
 
             Repeater {
@@ -104,6 +163,7 @@ Item {
                                ? parent.modelData.normalizedCurrent : 0
                         enabled: parent.modelData.adjustable
                                  && !parent.modelData.pending
+                                 && !root.access.operationPending
                         focusPolicy: Qt.TabFocus
                         Accessible.name: parent.modelData.accessibleName
                         Accessible.description:

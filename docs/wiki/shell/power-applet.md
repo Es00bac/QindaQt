@@ -1,22 +1,26 @@
-# Power applet presentation model
+# Power applet
 
-`src/shell/power_applet` owns the presentation-only projection that a future
-panel Power applet renders: battery summary and per-supply rows, charge
+`src/shell/power_applet` owns the pure projection and the shell-private runtime
+adapter for the production panel Power applet: battery summary and per-supply rows, charge
 states, bounded time-remaining truth, critical/low/full severity, brightness
-control rows, and the brightness control request lifecycle. It consumes only
-public PB-0 values — [`power_protocol`](../reference/power1-v1.md) and
-[`brightness_model`](../architecture/brightness-model.md) — plus Qt Core. The module is pure:
-no QObject, no QML, no transport, no clocks, no files, and no power or
-brightness policy of its own. The accepted authority split lives in
+control rows, profile choices, and serialized mutation lifecycles. The pure
+target consumes only public PB-0 values —
+[`power_protocol`](../reference/power1-v1.md) and
+[`brightness_model`](../architecture/brightness-model.md) — plus Qt Core. A
+separate runtime target borrows the public `PowerClient` and exposes bounded
+values to compiled QML; neither target reaches into `power_service` or a host
+power daemon. The accepted authority split lives in
 [Power and brightness architecture](../architecture/power-service.md) and the
 applet resolution rules in [Applet runtime](applet-runtime.md).
 
-Current maturity: **pure presentation model (compiled and verified)**.
-The P1 slice is pure and dependency-light: it has focused hostile tests and a
-boundary gate, compiled under `QINDAQT_BUILD_SHELL`, and verified against
-power/brightness protocol and composition models. It claims no GUI, session,
-bus, or hardware evidence, and does not advance the Power platform milestone
-(QQ-005.03) by itself.
+Current maturity: **production built-in composition (compiled and verified)**.
+The P2 slice has a manifest, audited registry entry, production dispatcher and
+host injection, keyboard/accessibility interaction, installed-package proof,
+and mutation-sensitive boundary gates. Its live truth still reflects PB-1:
+until platform collaborators arrive, the resident service reports
+`Unavailable/upstream-not-integrated`, so the applet presents unavailable
+truth and dispatches no operation. This UI slice does not advance the Power
+platform milestone (QQ-005.03) by itself.
 
 ## Projection contract
 
@@ -85,20 +89,51 @@ Presentation semantics, pinned by hostile tests:
   ever replays a request automatically, matching the Power1 rule that clients
   resnapshot instead of replaying after timeout or authority loss.
 
-## Registry seams
+## Runtime composition and interaction
+
+The production shell constructs one shell-private composition that owns a
+`QtPowerTransport`, `PowerClient`, and `PowerAppletController` on the GUI
+thread. The controller borrows the client; the composition stops and destroys
+the client only after panel windows and the controller are gone. `power.read` starts observation, while `power.control`
+enables mutation only when read access is also granted. Both grants come from
+the same audited manifest/policy evaluation used by applet resolution.
+
+The controller publishes rows only while the client has a validated snapshot
+from its exact current owner in `Ready` or `Degraded` state. Owner loss,
+replacement, a stopped client, capability denial, or an unavailable snapshot
+clears prior battery/profile/brightness truth. Profiles are sorted by ID and
+remain inside Power1's four-profile bound. Keyboard brightness uses the pure
+composition model and exact 0..10000 normalization; display brightness remains
+read-only because Power1 v1 has no display mutation.
+
+Only one profile or keyboard-brightness operation may be pending. Every
+gesture resolves its ID in the current snapshot, checks the applicable
+capability, and dispatches once. Completion is fenced by request ID, operation
+kind, initiating epoch/revision, and observed lineage. Owner replacement ends
+the pending state with uncertain feedback; it never replays the request.
+
+Compiled `PowerApplet.qml` renders a summary button and non-modal details
+popup. Space/Enter activation, tab-focusable profile radio buttons, keyboard
+operable brightness sliders, complete accessible names/descriptions, and an
+accessible alert for failure/uncertainty feedback are part of the production
+contract. The preview injects no live access object and therefore shows a
+disabled, deterministic fallback.
+
+## Production seams
 
 The module is registered through these additive seams:
 
-1. `src/CMakeLists.txt`: `add_subdirectory(shell/power_applet)` guarded under
-   `QINDAQT_BUILD_SHELL`.
-2. `tests/CMakeLists.txt`: `add_subdirectory(shell/power_applet)` guarded under
-   `QINDAQT_BUILD_SHELL`.
-3. `docs/wiki/architecture/module-boundaries.md`: source-ownership row.
-4. `docs/wiki/development/testing-harness.md`: test-matrix rows for the
-   registered tests.
-5. Future applet integration: manifest catalog entry, capability policy, the
-   compiled built-in registry and QML dispatcher entry, and a shell-private
-   facade exposing this model, per [Applet runtime](applet-runtime.md).
+1. `data/applets/power.json` requests `power.read` and `power.control`, and the
+   stock `qindaqt` profile places the applet in the end zone.
+2. `BuiltinAppletRegistry::firstParty()` admits
+   `qindaqt.applets.power`; `BuiltinAppletContent.qml` is the separately tested
+   renderer gate.
+3. `PowerAppletComposition` owns the client/controller lifetime for
+   `ShellRuntimeApplication`, and `RuntimePanelWindowFactory` injects only the
+   controller into QML.
+4. The `PowerAppletRuntime` install component stages the production shell,
+   compiled QML resources, manifest, selected profile, policy, and theme for a
+   relocation/poison test.
 
 ## Focused tests
 
@@ -113,7 +148,11 @@ ctest --test-dir build/dev -R '^qindaqt\.power-applet-' --output-on-failure
 | `qindaqt.power-applet-presentation` | Fail-closed phases, state/severity/time semantics, hostile numbers and raw enums, bounds and capability gates, determinism. |
 | `qindaqt.power-applet-control-rows` | Composition-owner fence, availability/reason projection, identity and accessibility phrases, deterministic row order. |
 | `qindaqt.power-applet-request-state` | Begin legality, lineage completion rules, stale-reply discard, typed failure feedback, owner-loss uncertainty, terminal immutability. |
+| `qindaqt.power-applet-controller` | Public-client projection, read/control denial, bounded profile and brightness dispatch, serialization, result fencing, and owner replacement without replay. |
+| `qindaqt.power-applet-offscreen` | Compiled QML loading, keyboard activation, profile and slider interaction, accessible roles/names/descriptions, and real controller dispatch. |
 | `qindaqt.power-applet-boundary` | Static policy gate rejecting transport, QML, QObject, platform, and hardware tokens outside the declared include roots. |
+| `qindaqt.power-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, host daemons, process/file, and hardware access; controller/QML also reject direct D-Bus while the shell root may construct the public Qt transport. Includes a poison negative control. |
+| `qindaqt.power-applet-installed-package` | Relocated production shell and data resolve under source-path poison, the binary contains the compiled applet module, and `--list` discovers the staged Power manifest. |
 
 The boundary gate also runs without configure:
 
@@ -123,7 +162,9 @@ cmake -DSOURCE_ROOT=<repository> -P tests/shell/power_applet/check_boundary.cmak
 
 ## Non-claims
 
-This slice proves no compiled applet, panel surface, QML component, Power1
-service or client, brightness mutation, session action, hardware access, or
-runtime qualification. It owns no policy: aggregation, estimates, thresholds,
-and capability truth remain Power1 and composition authority.
+This slice proves no live UPower or power-profiles-daemon adapter, successful
+host brightness mutation, display-brightness write, session action, idle
+integration, physical hardware, or nested compositor interaction. It owns no
+aggregation, estimate, threshold, or platform policy: those remain Power1 and
+brightness-composition authority. Installed proof is relocation and source
+policy evidence, not a claim that unavailable PB-1 data has become live.

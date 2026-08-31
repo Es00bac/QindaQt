@@ -28,6 +28,7 @@ class PowerAppletController final : public QObject
     Q_PROPERTY(QString batteryLabel READ batteryLabel NOTIFY stateChanged)
     Q_PROPERTY(QString accessibleName READ accessibleName NOTIFY stateChanged)
     Q_PROPERTY(QString accessibleDescription READ accessibleDescription NOTIFY stateChanged)
+    Q_PROPERTY(QVariantList profileRows READ profileRows NOTIFY stateChanged)
     Q_PROPERTY(QVariantList keyboardRows READ keyboardRows NOTIFY stateChanged)
     Q_PROPERTY(bool operationPending READ operationPending NOTIFY stateChanged)
     Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
@@ -35,6 +36,8 @@ class PowerAppletController final : public QObject
 
 public:
     explicit PowerAppletController(Power::PowerClient *client,
+                                   bool powerReadGranted,
+                                   bool powerControlGranted,
                                    QObject *parent = nullptr);
 
     [[nodiscard]] QString phase() const;
@@ -43,6 +46,7 @@ public:
     [[nodiscard]] QString batteryLabel() const;
     [[nodiscard]] QString accessibleName() const;
     [[nodiscard]] QString accessibleDescription() const;
+    [[nodiscard]] QVariantList profileRows() const;
     [[nodiscard]] QVariantList keyboardRows() const;
     [[nodiscard]] bool operationPending() const noexcept;
     [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
@@ -53,6 +57,7 @@ public:
     // device's current raw bound, and dispatches at most once.
     Q_INVOKABLE bool requestKeyboardBrightness(const QString &controlId,
                                                int normalized);
+    Q_INVOKABLE bool requestProfile(const QString &profileId);
     Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
@@ -60,17 +65,29 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
+    enum class PendingKind {
+        None,
+        KeyboardBrightness,
+        Profile,
+    };
+
     void reproject();
     void handleOperationCompleted(quint64 requestId,
                                   const Power::OperationResult &result);
     void publishFeedback(const QString &message);
     [[nodiscard]] bool presentationOwnerAvailable() const noexcept;
-    [[nodiscard]] const Power::KeyboardBacklight *
-    currentKeyboard(const QString &controlId) const;
+    [[nodiscard]] QString profileResultFeedback(
+        const Power::OperationResult &result) const;
 
     Power::PowerClient *m_client = nullptr;
+    bool m_powerReadGranted = false;
+    bool m_powerControlGranted = false;
     PowerAppletModel m_model;
     BrightnessRequest m_request;
+    PendingKind m_pendingKind = PendingKind::None;
+    QString m_pendingProfileId;
+    quint64 m_pendingEpoch = 0;
+    quint64 m_pendingRevision = 0;
     quint64 m_requestId = 0;
     QString m_feedback;
 };

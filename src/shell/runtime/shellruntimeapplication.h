@@ -64,6 +64,7 @@ class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
 class NotificationQuietingSettingsBridge;
+class PowerAppletComposition;
 class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
 
@@ -135,6 +136,7 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
