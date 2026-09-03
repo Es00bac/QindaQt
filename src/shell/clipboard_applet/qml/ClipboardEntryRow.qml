@@ -165,7 +165,7 @@ T.Control {
                 accessibleDescription: entry?.pinned ? qsTr("Unpin entry") : qsTr("Pin entry")
                 onClicked: {
                     if (rowRoot.entry && rowRoot.controller) {
-                        rowRoot.controller.togglePin(rowRoot.entry.generation, rowRoot.serial)
+                        rowRoot.controller.togglePin(rowRoot.entry.generation, rowRoot.entry.serial)
                     }
                 }
             }

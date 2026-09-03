@@ -111,10 +111,13 @@ private:
     void reproject();
     void setFeedback(const QString &message, const QString &status = QStringLiteral("error"));
     void cancelPendingForGeneration(quint32 oldGeneration);
+    void acceptSnapshot(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
+    void dropAcceptedBaseline();
+    void rejectSnapshot();
     void dispatchSearch();
     void abandonSearch();
     void applySearchOutcome(const QindaQt::Services::ClipboardModel::SearchOutcome &outcome);
-    void applyOperationOutcome(const OperationOutcome &outcome);
+    void resolveCompletion(quint64 requestId, const OperationOutcome &outcome);
     void noteObservedTicks(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
     void drainDeferredSignals();
     quint64 dispatchOperation(
@@ -129,6 +132,23 @@ private:
     bool m_clipboardWriteGranted = false;
     QindaQt::Services::ClipboardModel::HistorySnapshot m_snapshot;
     ClipboardAppletProjection m_projection;
+
+    // AGENT-GUARD: snapshot admission baseline. Every accepted snapshot must
+    // be delivered under the recorded owner and must not regress the recorded
+    // (generation, revision) high-water — the C0 lineage is lexicographically
+    // monotonic (generation rises by exactly one per purge, revision never
+    // resets), so anything older is stale or replayed. On owner loss or
+    // replacement the baseline is dropped and the next snapshot under the new
+    // owner must be content-empty: volatile history starts empty per owner,
+    // so non-empty content under a fresh owner is foreign content.
+    bool m_hasBaseline = false;
+    bool m_baselineDroppedForOwner = false;
+    QString m_baselineOwner;
+    quint32 m_baselineGeneration = 0;
+    quint64 m_baselineRevision = 0;
+    // True while the last incoming snapshot was refused by an admission fence;
+    // presentation withholds everything until a fresh valid snapshot lands.
+    bool m_snapshotRejected = false;
 
     bool m_isSearchActive = false;
     QString m_searchQuery;
@@ -158,7 +178,9 @@ private:
     // AGENT-GUARD: promote ticks are controller-issued monotonic metadata
     // the model trusts for recency ordering; wall-clock time can step
     // backwards. The counter is raised above every tick observed in a
-    // snapshot so issued ticks are strictly increasing across the lineage.
+    // snapshot so issued ticks are strictly increasing across the lineage,
+    // and fails closed at the fixed-width ceiling: selectEntry refuses a
+    // promote rather than issuing a wrapped (non-monotonic) tick.
     quint64 m_nextPromoteTick = 1;
 
     bool m_feedbackPresent = false;

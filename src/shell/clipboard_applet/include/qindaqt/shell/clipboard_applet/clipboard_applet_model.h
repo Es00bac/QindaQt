@@ -12,7 +12,10 @@ namespace QindaQt::ShellClipboardApplet {
 // AGENT-CONTRACT: Pure functional presentation model projecting snapshot state
 // and client facts into immutable, bounded UI structures for QML presentation.
 // This class owns no state, handles, or threads; it executes deterministic
-// projections only.
+// projections only. Projections fail closed: a snapshot or search-result list
+// that fails the hostile-input admission floor (see clipboard_snapshot_gate.h)
+// projects to the unavailable phase with no rows rather than copying hostile
+// metadata.
 class ClipboardAppletModel final {
 public:
     ClipboardAppletModel() = delete;

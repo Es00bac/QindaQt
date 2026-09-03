@@ -14,12 +14,14 @@ target_sources(
     PRIVATE
         src/clipboard_applet_types.cpp
         src/clipboard_applet_model.cpp
+        src/clipboard_snapshot_gate.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/shell/clipboard_applet/clipboard_applet_types.h
             include/qindaqt/shell/clipboard_applet/clipboard_applet_model.h
+            include/qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h
 )
 
 # AGENT-CONTRACT: the pure target consumes only public ClipboardModel values
@@ -56,6 +58,7 @@ target_sources(
     PRIVATE
         src/clipboard_applet_controller.cpp
         src/clipboard_applet_controller_search.cpp
+        src/clipboard_applet_controller_snapshot.cpp
         src/clipboard_model_client_adapter.cpp
     PUBLIC
         FILE_SET HEADERS

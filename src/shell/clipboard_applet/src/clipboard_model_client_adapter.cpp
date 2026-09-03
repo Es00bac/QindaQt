@@ -61,23 +61,53 @@ void ClipboardModelClientAdapter::setLocked(bool locked)
     // AGENT-GUARD: an authenticated lock must deny model privacy BEFORE the
     // lock signal is observable, so the model purges every entry and raises
     // its generation immediately. Unlock must then be unable to redisclose
-    // pre-lock content: the purged lineage is unreachable. Only authority the
-    // lock itself removed is restored; an independent host denial survives
-    // unlock unchanged. Violating the ordering leaks pre-lock content through
-    // a snapshot read between the signal and the purge.
-    if (m_model) {
-        if (locked && !m_privacyDeniedByLock
-            && m_model->privacyState()
-                == QindaQt::Services::ClipboardModel::PrivacyState::Allowed) {
-            m_model->setPrivacyAllowed(false);
-            m_privacyDeniedByLock = true;
-        } else if (!locked && m_privacyDeniedByLock) {
-            m_model->setPrivacyAllowed(true);
-            m_privacyDeniedByLock = false;
-        }
+    // pre-lock content: the purged lineage is unreachable. Violating the
+    // ordering leaks pre-lock content through a snapshot read between the
+    // signal and the purge.
+    if (m_model && locked && m_model->privacyState()
+            != QindaQt::Services::ClipboardModel::PrivacyState::Allowed
+        && !m_hostPrivacyDenied) {
+        // The model was already denied when the lock arrived and the tracked
+        // host authority did not cause it: that denial is foreign to this
+        // adapter and unlock must not silently undo it.
+        m_foreignDenialAtLock = true;
     }
+    applyPrivacyAuthority();
     Q_EMIT lockStateChanged(m_locked);
     notifyModelChanged();
+}
+
+void ClipboardModelClientAdapter::setHostPrivacyDenied(bool denied)
+{
+    if (m_hostPrivacyDenied == denied) {
+        return;
+    }
+    m_hostPrivacyDenied = denied;
+    applyPrivacyAuthority();
+    notifyModelChanged();
+}
+
+void ClipboardModelClientAdapter::applyPrivacyAuthority()
+{
+    if (!m_model) {
+        return;
+    }
+    const bool shouldAllow = !m_locked && !m_hostPrivacyDenied;
+    const bool modelAllows =
+        m_model->privacyState() == QindaQt::Services::ClipboardModel::PrivacyState::Allowed;
+    if (modelAllows) {
+        // Any observed Allow proves no foreign denial is active anymore.
+        m_foreignDenialAtLock = false;
+        if (!shouldAllow) {
+            m_model->setPrivacyAllowed(false);
+        }
+    } else if (shouldAllow && !m_foreignDenialAtLock) {
+        // Every known denial cause (lock, tracked host denial) is lifted and
+        // no foreign denial was observed: restoring is exactly the authority
+        // this adapter removed. With a foreign denial on record the adapter
+        // fails closed and leaves the model denied.
+        m_model->setPrivacyAllowed(true);
+    }
 }
 
 void ClipboardModelClientAdapter::notifyModelChanged()

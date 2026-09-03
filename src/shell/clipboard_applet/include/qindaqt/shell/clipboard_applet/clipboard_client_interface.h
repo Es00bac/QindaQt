@@ -13,6 +13,30 @@ namespace QindaQt::ShellClipboardApplet {
 // The applet controller depends strictly on this interface. It never links or executes
 // raw Wayland protocol requests, never accesses host clipboards, and never directly
 // mutates internal storage without generation fencing.
+//
+// Threading: the seam is GUI-thread confined. The controller invokes every
+// virtual member directly on its own thread and expects every signal to be
+// emitted on that same thread. A seam backed by another thread must marshal
+// through Qt queued connections (the values crossing the boundary are
+// implicitly-shared Qt copies, safe to hand over after the emitting call
+// returns); re-entrant signal emission from inside a dispatch call is
+// supported and fenced by the controller through request-id attribution.
+//
+// Lifetime: the controller borrows the seam and never deletes it. The
+// composing shell must guarantee the client outlives the controller (or
+// parents it accordingly); destroying the client first is undefined behavior
+// for any in-flight controller call.
+//
+// Errors and results: the request members perform no synchronous error
+// reporting — outcomes arrive only through operationCompleted/searchCompleted,
+// each echoing the unique request id of exactly one request. Request ids are
+// opaque, unique for the client's lifetime across all request kinds, and
+// carry NO ordering promise (zero is a valid id like any other): consumers
+// must fence replies by recorded id, never by id arithmetic. Completions must
+// carry the entry lineage they resolve; the controller additionally rejects a
+// completion whose entry id disagrees with the id recorded at dispatch.
+// Direct virtual calls are pure reads (snapshot/state accessors) and never
+// mutate anything.
 class ClipboardClientInterface : public QObject {
     Q_OBJECT
 

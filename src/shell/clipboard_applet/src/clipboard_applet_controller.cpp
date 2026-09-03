@@ -2,7 +2,9 @@
 
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_model.h"
+#include "qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h"
 
+#include <limits>
 #include <utility>
 
 namespace QindaQt::ShellClipboardApplet {
@@ -30,8 +32,7 @@ ClipboardAppletController::ClipboardAppletController(
                 this, &ClipboardAppletController::onSearchCompleted);
 
         if (m_clipboardReadGranted) {
-            m_snapshot = m_client->snapshot();
-            noteObservedTicks(m_snapshot);
+            acceptSnapshot(m_client->snapshot());
         }
     }
     reproject();
@@ -199,10 +200,24 @@ void ClipboardAppletController::reproject()
         return;
     }
 
-    const auto state = m_client ? m_client->clientState() : ClientState::Unavailable;
-    const auto reason = m_client ? m_client->reasonCode() : QStringLiteral("no-client");
+    auto state = m_client ? m_client->clientState() : ClientState::Unavailable;
+    auto reason = m_client ? m_client->reasonCode() : QStringLiteral("no-client");
     const auto ownerAvailable = m_client ? m_client->isOwnerAvailable() : false;
     const auto locked = m_client ? m_client->isLocked() : true;
+
+    if (m_snapshotRejected) {
+        // AGENT-GUARD: a snapshot refused by an admission fence presents
+        // nothing at all — never a partial or sanitized view of hostile data —
+        // until a fresh valid snapshot is accepted.
+        state = ClientState::Unavailable;
+        reason = QStringLiteral("invalid-snapshot");
+    } else if (!m_hasBaseline && ownerAvailable
+               && (state == ClientState::Ready || state == ClientState::Degraded)) {
+        // No accepted snapshot under the current owner yet: the documented
+        // loading phase ("waiting for the initial snapshot"), never a
+        // presentation of content delivered under a previous owner.
+        state = ClientState::Starting;
+    }
 
     m_projection = ClipboardAppletModel::project(
         m_snapshot,
@@ -221,33 +236,31 @@ void ClipboardAppletController::reproject()
 
 void ClipboardAppletController::onStateChanged(ClientState /*state*/, const QString &/*reasonCode*/)
 {
+    if (m_clipboardReadGranted && m_hasBaseline && m_client
+        && (!m_client->isOwnerAvailable() || m_client->owner() != m_baselineOwner)) {
+        // AGENT-GUARD: content accepted under one owner must never be
+        // presented under another; an owner transition voids the baseline.
+        dropAcceptedBaseline();
+    }
     reproject();
 }
 
-void ClipboardAppletController::onSnapshotChanged(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
+void ClipboardAppletController::onSnapshotChanged(
+    const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
-    const quint32 oldGeneration = m_snapshot.generation;
-    const bool generationChanged = (snapshot.generation != oldGeneration);
-    if (generationChanged) {
-        cancelPendingForGeneration(oldGeneration);
-    }
-    if (m_clipboardReadGranted) {
-        m_snapshot = snapshot;
-        noteObservedTicks(m_snapshot);
-    } else {
-        // Read denial retains only the authority flags, never content.
-        m_snapshot = {};
-        m_snapshot.generation = snapshot.generation;
-        m_snapshot.historyEnabled = snapshot.historyEnabled;
-        m_snapshot.privacyAllowed = snapshot.privacyAllowed;
-    }
-    if (generationChanged && m_isSearchActive) {
-        // Re-run the live query against the new generation; any reply to the
-        // pre-transition request is fenced out by the query-generation bump.
-        if (!m_searchQuery.isEmpty() && m_client) {
-            dispatchSearch();
-        } else {
-            clearSearch();
+    const bool hadBaseline = m_hasBaseline;
+    const quint32 previousGeneration = m_baselineGeneration;
+    acceptSnapshot(snapshot);
+    if (hadBaseline && m_hasBaseline && m_baselineGeneration != previousGeneration) {
+        cancelPendingForGeneration(previousGeneration);
+        if (m_isSearchActive) {
+            // Re-run the live query against the new generation; any reply to the
+            // pre-transition request is fenced out by the query-generation bump.
+            if (!m_searchQuery.isEmpty() && m_client) {
+                dispatchSearch();
+            } else {
+                clearSearch();
+            }
         }
     }
     reproject();
@@ -288,33 +301,36 @@ void ClipboardAppletController::onOperationCompleted(
         m_deferredCompletions.append({requestId, outcome});
         return;
     }
+    resolveCompletion(requestId, outcome);
+    reproject();
+}
+
+void ClipboardAppletController::resolveCompletion(
+    quint64 requestId,
+    const OperationOutcome &outcome)
+{
+    // AGENT-GUARD: the pending marker is cleared through the STORED request's
+    // entry id, never the completion's id field — that field is untrusted and
+    // previously stranded the initiating entry's marker when a hostile
+    // completion carried a foreign id. A completion whose valid id disagrees
+    // with the request's recorded lineage is rejected whole: no marker
+    // removal, no feedback, so it can neither unpin another entry nor forge
+    // an error message. (Clear requests carry an invalid id by construction;
+    // those always match.)
     const auto it = m_pendingRequests.constFind(requestId);
     if (it == m_pendingRequests.constEnd()) {
         return;
     }
+    if (outcome.id.isValid() && !(outcome.id == it->id)) {
+        return;
+    }
+    const PendingRequest request = it.value();
     m_pendingRequests.erase(it);
-    applyOperationOutcome(outcome);
-    reproject();
-}
-
-
-
-void ClipboardAppletController::applyOperationOutcome(const OperationOutcome &outcome)
-{
-    if (outcome.id.isValid()) {
-        m_pendingEntries.remove({outcome.id.generation, outcome.id.serial});
+    if (request.id.isValid()) {
+        m_pendingEntries.remove({request.id.generation, request.id.serial});
     }
     if (!outcome.ok()) {
         setFeedback(outcome.message, QStringLiteral("error"));
-    }
-}
-
-void ClipboardAppletController::noteObservedTicks(
-    const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
-{
-    for (const auto &entry : snapshot.entries) {
-        m_nextPromoteTick = qMax(m_nextPromoteTick, entry.lastUsedTick);
-        m_nextPromoteTick = qMax(m_nextPromoteTick, entry.admittedTick);
     }
 }
 
@@ -329,12 +345,7 @@ void ClipboardAppletController::drainDeferredSignals()
     // were exact-review findings; keep this the single attribution point.
     const auto completions = std::exchange(m_deferredCompletions, {});
     for (const auto &[requestId, outcome] : completions) {
-        const auto it = m_pendingRequests.constFind(requestId);
-        if (it == m_pendingRequests.constEnd()) {
-            continue;
-        }
-        m_pendingRequests.erase(it);
-        applyOperationOutcome(outcome);
+        resolveCompletion(requestId, outcome);
     }
     const auto searchReplies = std::exchange(m_deferredSearchReplies, {});
     for (const auto &[requestId, outcome] : searchReplies) {
@@ -394,7 +405,15 @@ bool ClipboardAppletController::selectEntry(quint32 generation, quint32 serial)
     m_pendingEntries.insert({generation, serial});
     // AGENT-GUARD: promote ticks are monotonic metadata the model trusts for
     // recency ordering; wall-clock time can step backwards (NTP, suspend), so
-    // ticks come from the controller's own strictly increasing counter.
+    // ticks come from the controller's own strictly increasing counter. The
+    // counter is fixed-width and fails closed like every C0 lineage counter:
+    // at exhaustion the promote is refused with feedback instead of issuing a
+    // wrapped (non-monotonic) tick.
+    if (m_nextPromoteTick == std::numeric_limits<quint64>::max()) {
+        m_pendingEntries.remove({generation, serial});
+        setFeedback(QStringLiteral("Clipboard history ordering is exhausted; the item cannot be promoted."));
+        return false;
+    }
     const quint64 tick = ++m_nextPromoteTick;
     dispatchOperation(OperationKind::Promote, id, generation,
                       [id, generation, tick](ClipboardClientInterface *client) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_model.h"
+#include "qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h"
 
 #include <QtCore/QLocale>
 
@@ -132,6 +133,22 @@ ClipboardAppletProjection ClipboardAppletModel::project(
     const QSet<QPair<quint32, quint32>> &pendingEntries)
 {
     ClipboardAppletProjection proj;
+
+    // AGENT-GUARD: fail-closed admission floor. Both entry collections the
+    // projection copies (snapshot entries and, when active, search matches)
+    // must pass the hostile-input gate; a violation refuses the whole
+    // projection instead of copying hostile labels/previews or counting an
+    // oversized collection. The controller gates earlier for its lineage
+    // bookkeeping — this is the defense-in-depth layer for any direct caller.
+    if (assessSnapshot(snapshot) != SnapshotGateDecision::Accept
+        || (isSearchActive
+            && assessDescriptorList(searchResults, snapshot.generation)
+                != SnapshotGateDecision::Accept)) {
+        proj.phase = Phase::Unavailable;
+        proj.phaseReasonText = QStringLiteral("Clipboard history data was refused.");
+        proj.emptyReasonText = proj.phaseReasonText;
+        return proj;
+    }
 
     // 1. Phase Determination (Fail-closed ordering)
     if (!ownerAvailable || clientState == ClientState::Unavailable) {
