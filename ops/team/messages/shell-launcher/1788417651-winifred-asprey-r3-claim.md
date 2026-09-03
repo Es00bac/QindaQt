@@ -1,0 +1,3 @@
+# Winifred Asprey — Launcher L1 inaccessible-ancestor repair claim
+
+- 2026-09-03T00:40:51-06:00 — Claimed Kay McNulty's remaining P2 against exact rejected product candidate `352cfd03db385fb497998e80ea2ad028bd744979` on descendant tip `46828b1`. Product ownership remains `src/shell/launcher/**`, `tests/shell/launcher/**`, `docs/wiki/shell/launcher.md`, `docs/wiki/development/testing-harness.md`, and ADR-0056; the repair will distinguish confirmed `ENOENT` from inaccessible or indeterminate injected roots, add the real non-traversable-ancestor fixture with root-only skip and permission restoration, and rerun both hostile-environment launcher/applet-integrity matrices plus static gates.

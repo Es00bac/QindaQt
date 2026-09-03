@@ -5,18 +5,18 @@ provider: OpenAI Codex
 model: gpt-5.6-sol
 reasoning: high
 status: handoff
-feature: QQ-004.07 Launcher L1 host-isolation review repair
+feature: QQ-004.07 Launcher L1 inaccessible-ancestor truth repair
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/launcher-l1
 started_at: 2026-09-02T23:24:02-06:00
-updated_at: 2026-09-03T00:21:58-06:00
+updated_at: 2026-09-03T00:50:15-06:00
 ---
 
 # Winifred Asprey
 
 - Role: Launcher L1 repair implementer
 - Provider/model: OpenAI Codex `gpt-5.6-sol`, reasoning high
-- Status: handoff — exact candidate `352cfd03db385fb497998e80ea2ad028bd744979` closes Kay McNulty's host-isolation recheck findings and is green in Debug and Release.
-- Exact base: `86a6d982325e2eaea90720713ac0d46dd86021b1`.
+- Status: handoff — exact product candidate `26f366a4a2ab14fc341407f015d21685b8c8415f` repairs inaccessible-ancestor root truth and is green in Debug and Release.
+- Exact base: `352cfd03db385fb497998e80ea2ad028bd744979`.
 - Branch: `worker/launcher-l1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/launcher-l1`.
 - Product authority: `src/shell/launcher/**`, `tests/shell/launcher/**`, `data/applets/launcher.json`, `docs/wiki/shell/launcher.md`, ADR-0056, plus the lane's additive shared edits.
@@ -29,3 +29,6 @@ updated_at: 2026-09-03T00:21:58-06:00
 - 2026-09-03T00:07:38-06:00 — claim: repairing Kay McNulty's P0 host-isolation rejection plus inaccessible-root diagnostics and the missing registered prose/comment regression controls on descendant tip `9f45c5f`.
 - 2026-09-03T00:19:39-06:00 — midpoint: the runtime link boundary and four guiless mains now reject the exact `86a6d98` host-isolation defect; inaccessible and dangling application trees publish scanner diagnostics and controller `degraded` truth; Debug/Release hostile-environment selectors pass 15/15 plus 3/3 applet integrity, with final replay pending after static-gate cleanup.
 - 2026-09-03T00:21:58-06:00 — handoff: immutable product candidate `352cfd03db385fb497998e80ea2ad028bd744979` (`004fc8775bd094846bd26a8546e5bf31710e7342`) passes hostile-environment launcher 15/15 and applet-integrity 3/3 in both profiles, all static gates, and mutation checks against `86a6d98` and `40f1372`; requesting Kay McNulty's exact recheck, then manager integration.
+- 2026-09-03T00:40:51-06:00 — claim: repairing Kay McNulty's remaining P2 inaccessible-ancestor discriminator on descendant tip `46828b1`; only confirmed `ENOENT` will remain normal absence, with an errno-aware regression fixture and bounded degraded diagnostic.
+- 2026-09-03T00:49:03-06:00 — midpoint: immutable product candidate `26f366a4a2ab14fc341407f015d21685b8c8415f` now uses errno-aware root and applications-tree probes, publishes bounded degraded truth for denied ancestor traversal, and retains confirmed absence as normal; the new behavior fixture passes in both profiles and fails against exact rejected candidate `352cfd0` with zero diagnostics, while full final exact-candidate replay is in progress.
+- 2026-09-03T00:50:15-06:00 — handoff: exact product candidate `26f366a4a2ab14fc341407f015d21685b8c8415f` (`a7be82dee8349102e59d7f153338d5b82583a9da`) passes hostile-environment launcher 15/15 and applet-integrity 3/3 in both profiles, all required static gates, and both behavioral/text mutation checks against rejected `352cfd0`; requesting Kay McNulty's independent exact recheck, then manager integration.
