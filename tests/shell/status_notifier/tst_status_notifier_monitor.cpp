@@ -5,6 +5,7 @@
 #include <qindaqt/shell/status_notifier/status_notifier_presentation.h>
 #include <qindaqt/shell/status_notifier/watcher/status_notifier_watcher_service.h>
 
+#include "status_notifier_fake_item_test_support.h"
 #include "status_notifier_private_bus_test_support.h"
 
 #include <QDBusMessage>
@@ -125,6 +126,10 @@ void StatusNotifierMonitorTests::removesItemAndFreesOwnerOnDisconnect()
     QVERIFY(registry.isOwnerLive(itemConnection.baseService()));
 
     const QString owner = itemConnection.baseService();
+    // Drop the last connection reference before disconnectFromBus: while a
+    // QDBusConnection copy is alive the socket stays open and the daemon
+    // never emits the owner-loss signal the monitor must observe.
+    itemConnection = QDBusConnection(QString());
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-b"));
     QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 0, 5'000);
     // The bounded owner tracking slot must be freed by the loss report, not
@@ -155,6 +160,9 @@ void StatusNotifierMonitorTests::rebaselinesPopulationWhenWatcherRestarts()
     auto item = std::make_unique<FakeStatusNotifierItem>();
     QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"),
                              item.get()));
+    // Real items re-register with a replacement watcher; arm the fake before
+    // its initial registration so the restart below re-admits it.
+    item->watchAndReregister(itemConnection, QStringLiteral("/StatusNotifierItem"));
     registerItem(itemConnection, QStringLiteral("/StatusNotifierItem"));
 
     StatusNotifierRegistry registry;
@@ -162,9 +170,13 @@ void StatusNotifierMonitorTests::rebaselinesPopulationWhenWatcherRestarts()
     monitor.attach(&registry);
     QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 1, 5'000);
     const quint64 firstEpoch = registry.currentWatcherEpoch();
+    const quint64 firstItemGeneration = registry.itemKeys().constFirst().generation;
 
     // The watcher process dies; the registry keeps last-known-good items.
     firstWatcher->stop();
+    // Dropping the last reference closes the socket so the daemon emits the
+    // watcher-name loss the monitor rebaselines on.
+    firstWatcherConnection = QDBusConnection(QString());
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-c1"));
     QTRY_COMPARE_WITH_TIMEOUT(monitor.isWatcherLive(), false, 5'000);
     QCOMPARE(registry.count(), 1);
@@ -174,9 +186,18 @@ void StatusNotifierMonitorTests::rebaselinesPopulationWhenWatcherRestarts()
     // A replacement watcher opens a fresh epoch and re-populates.
     StatusNotifierWatcherService secondWatcher(secondWatcherConnection);
     QVERIFY2(secondWatcher.start(&error), qPrintable(error));
-    QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 1, 5'000);
-    QVERIFY(registry.currentWatcherEpoch() > firstEpoch);
+    // The name-acquisition signal is delivered asynchronously; wait on the
+    // liveness and epoch transitions themselves. The count alone passes
+    // vacuously on last-known-good, so gate the rest on the item being
+    // re-admitted under a fresh owner generation by the new population.
+    QTRY_COMPARE_WITH_TIMEOUT(monitor.isWatcherLive(), true, 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(registry.currentWatcherEpoch() > firstEpoch, 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(!registry.itemKeys().isEmpty()
+                                 && registry.itemKeys().constFirst().generation
+                                     != firstItemGeneration,
+                             5'000);
     QVERIFY(registry.initialPopulationComplete());
+    QCOMPARE(registry.count(), 1);
     QCOMPARE(projectPresentation(registry, {.transportLive = monitor.isWatcherLive()}).state,
              PresentationState::Ready);
 

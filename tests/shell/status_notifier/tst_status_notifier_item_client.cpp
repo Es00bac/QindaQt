@@ -3,6 +3,7 @@
 #include <qindaqt/shell/status_notifier/item_client/status_notifier_item_client.h>
 #include <qindaqt/shell/status_notifier/status_notifier_limits.h>
 
+#include "status_notifier_fake_item_test_support.h"
 #include "status_notifier_private_bus_test_support.h"
 
 #include <QDBusConnection>
@@ -74,9 +75,13 @@ void StatusNotifierItemClientTests::decodesFullDescriptorAndWireDetails()
     item->attentionIconName = QStringLiteral("attention-icon");
     item->attentionPixmap = {FakeStatusNotifierItem::pixmap(1, 1, 0xFF000000)};
     item->attentionMovieName = QStringLiteral("attention-movie");
-    item->toolTip = {QStringLiteral("tooltip-icon"),
-                     QVariantList{FakeStatusNotifierItem::pixmap(1, 1, 0xFFFFFFFF)},
-                     QStringLiteral("Tooltip title"), QStringLiteral("Tooltip body")};
+    // Copy-assign: Q_GADGET structs are not aggregate-initializable.
+    FakeToolTipWire toolTip = item->toolTip;
+    toolTip.iconName = QStringLiteral("tooltip-icon");
+    toolTip.pixmaps = {FakeStatusNotifierItem::pixmap(1, 1, 0xFFFFFFFF)};
+    toolTip.title = QStringLiteral("Tooltip title");
+    toolTip.description = QStringLiteral("Tooltip body");
+    item->toolTip = toolTip;
     item->itemIsMenu = true;
     QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"),
                              item.get()));
@@ -166,7 +171,14 @@ void StatusNotifierItemClientTests::ignoresUnknownAndMissingProperties()
     auto item = std::make_unique<FakeStatusNotifierItem>();
     item->title.clear();
     item->iconName.clear();
-    item->iconPixmap = {QStringLiteral("not"), QStringLiteral("a"), QStringLiteral("pixmap")};
+    // Serve a deliberately malformed IconPixmap (array of strings, not
+    // a(iiay)) through the override map to exercise the client's fail-closed
+    // decode path.
+    item->setProperty(
+        "wireOverrides",
+        QVariantMap{{QStringLiteral("IconPixmap"),
+                     QVariantList{QStringLiteral("not"), QStringLiteral("a"),
+                                  QStringLiteral("pixmap")}}});
     QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"),
                              item.get()));
 
@@ -205,7 +217,8 @@ void StatusNotifierItemClientTests::rejectsOversizedPixmaps()
     auto readerConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-reader-d"));
 
     auto item = std::make_unique<FakeStatusNotifierItem>();
-    // Dimension beyond the shared 512-pixel bound.
+    // Dimension beyond the shared 512-pixel bound; the rest of the descriptor
+    // stays valid so the dimension bound is the first and only failure.
     item->iconPixmap = {FakeStatusNotifierItem::pixmap(int(kMaxIconPixmapDimension) + 1,
                                                         1, 0xFF000000)};
     QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"),

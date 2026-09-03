@@ -2,6 +2,11 @@
 
 #pragma once
 
+// Private session bus, StatusNotifier wire types, and the generic Properties
+// adaptor shared by the transport tests. The scripted item itself lives in
+// status_notifier_fake_item_test_support.h so each header stays within the
+// source-shape budget.
+
 #include <qindaqt/shell/status_notifier/status_notifier_limits.h>
 
 #include <QDBusAbstractAdaptor>
@@ -9,6 +14,7 @@
 #include <QDBusConnection>
 #include <QDBusMetaType>
 #include <QDBusObjectPath>
+#include <QDBusVariant>
 #include <QMetaProperty>
 #include <QObject>
 #include <QProcess>
@@ -21,10 +27,25 @@ namespace QindaQt::StatusNotifier::TestSupport
 // Wire form of one IconPixmap entry: D-Bus struct (iiay). Declared with
 // marshallers and registered with qDBusRegisterMetaType so the fake serves
 // the exact a(iiay) struct array the StatusNotifier spec mandates; a plain
-// QVariantList would be lossily encoded as an array of variants (av) that
-// real items never produce.
+// QVariantList degrades to an array of variants ('av') that real items never
+// produce.
+//
+// AGENT-NOTE: the structs are Q_GADGETs with their fields as properties, and
+// the registration has an in-process consequence a real item cannot produce:
+// when the fake and the client share a process (every row here), a demarshal
+// of the registered signature yields the registered C++ type (e.g. a
+// ToolTip struct field demarshals as QList<FakePixmapWire>, not
+// QDBusArgument). The production client decodes that shape generically via
+// gadget introspection; a production shell process never registers the item
+// wire types, so there the plain QDBusArgument shape is what arrives.
 struct FakePixmapWire
 {
+    Q_GADGET
+    Q_PROPERTY(int width MEMBER width CONSTANT)
+    Q_PROPERTY(int height MEMBER height CONSTANT)
+    Q_PROPERTY(QByteArray argb MEMBER argb CONSTANT)
+
+public:
     int width = 0;
     int height = 0;
     QByteArray argb;
@@ -47,9 +68,25 @@ inline const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
+// Qt 6.11 moc's MEMBER-property setter instantiates operator== on the
+// property type even for read-mostly fakes; without these the generated moc
+// file fails to compile inside QtMocHelpers::setProperty.
+inline bool operator==(const FakePixmapWire &lhs, const FakePixmapWire &rhs)
+{
+    return lhs.width == rhs.width && lhs.height == rhs.height
+        && lhs.argb == rhs.argb;
+}
+
 // Wire form of ToolTip: D-Bus struct (sa(iiay)ss).
 struct FakeToolTipWire
 {
+    Q_GADGET
+    Q_PROPERTY(QString iconName MEMBER iconName CONSTANT)
+    Q_PROPERTY(QList<FakePixmapWire> pixmaps MEMBER pixmaps CONSTANT)
+    Q_PROPERTY(QString title MEMBER title CONSTANT)
+    Q_PROPERTY(QString description MEMBER description CONSTANT)
+
+public:
     QString iconName;
     QList<FakePixmapWire> pixmaps;
     QString title;
@@ -75,13 +112,22 @@ inline const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
+inline bool operator==(const FakeToolTipWire &lhs, const FakeToolTipWire &rhs)
+{
+    return lhs.iconName == rhs.iconName && lhs.pixmaps == rhs.pixmaps
+        && lhs.title == rhs.title && lhs.description == rhs.description;
+}
+
 // Registers the fake wire types with the Qt meta and D-Bus marshaller
-// systems; idempotent, safe to call from every test row.
+// systems; idempotent, safe to call from every test row. The QList container
+// registration is what lets a ToolTip struct field demarshal back into a
+// QVariant holding QList<FakePixmapWire> instead of failing.
 inline void registerFakeWireTypes()
 {
     static const bool registered = [] {
         qDBusRegisterMetaType<FakePixmapWire>();
         qDBusRegisterMetaType<FakeToolTipWire>();
+        qDBusRegisterMetaType<QList<FakePixmapWire>>();
         return true;
     }();
     Q_UNUSED(registered)
@@ -159,6 +205,12 @@ public slots:
                                    const QString &propertyName)
     {
         Q_UNUSED(interfaceName);
+        const QVariantMap overrides =
+            parent()->property("wireOverrides").toMap();
+        const auto override = overrides.constFind(propertyName);
+        if (override != overrides.constEnd()) {
+            return QDBusVariant(override.value());
+        }
         return QDBusVariant(parent()->property(propertyName.toUtf8().constData()));
     }
 
@@ -173,6 +225,16 @@ public slots:
                 values[QString::fromUtf8(property.name())] = property.read(parent());
             }
         }
+        // QObject lookup gives dynamic properties precedence over typed MEMBER
+        // properties, but QMetaProperty iteration above cannot see them; the
+        // wireOverrides map is the explicit staging point for values a row
+        // cannot express through the typed MEMBERs (hostile shapes) — a plain
+        // setProperty("IconPixmap", ...) fails type conversion against the
+        // typed MEMBER and would silently stage nothing.
+        const QVariantMap overrides = parent()->property("wireOverrides").toMap();
+        for (auto it = overrides.constBegin(); it != overrides.constEnd(); ++it) {
+            values[it.key()] = it.value();
+        }
         return values;
     }
 
@@ -185,126 +247,4 @@ public slots:
         Q_UNUSED(value);
     }
 };
-
-// Registers a fake item the way a real KStatusNotifierItem-based item is
-// served: Properties adaptor attached, all slots/properties/signals exported.
-inline bool registerFakeItem(QDBusConnection &connection,
-                             const QString &path,
-                             QObject *item)
-{
-    // Owned by the item through QObject parent-child; must outlive the
-    // connection unregister, which teardown of the item guarantees.
-    new FakePropertiesAdaptor(item);
-    return connection.registerObject(
-        path,
-        item,
-        QDBusConnection::ExportAdaptors | QDBusConnection::ExportAllSlots
-            | QDBusConnection::ExportAllProperties
-            | QDBusConnection::ExportAllSignals);
-}
-
-// A scripted org.kde.StatusNotifierItem used by the transport tests. The
-// property setters let a row stage hostile payloads before or after export;
-// the intent slots record every invocation they receive.
-class FakeStatusNotifierItem final : public QObject
-{
-    Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.StatusNotifierItem")
-    Q_PROPERTY(QString Category MEMBER category CONSTANT)
-    Q_PROPERTY(QString Id MEMBER id CONSTANT)
-    Q_PROPERTY(QString Title MEMBER title NOTIFY titleChanged)
-    Q_PROPERTY(QString Status MEMBER status NOTIFY statusChanged)
-    Q_PROPERTY(quint32 WindowId MEMBER windowId CONSTANT)
-    Q_PROPERTY(QString IconName MEMBER iconName NOTIFY titleChanged)
-    Q_PROPERTY(QList<FakePixmapWire> IconPixmap MEMBER iconPixmap NOTIFY titleChanged)
-    Q_PROPERTY(QString OverlayIconName MEMBER overlayIconName NOTIFY titleChanged)
-    Q_PROPERTY(QString AttentionIconName MEMBER attentionIconName NOTIFY titleChanged)
-    Q_PROPERTY(QList<FakePixmapWire> AttentionPixmap MEMBER attentionPixmap NOTIFY titleChanged)
-    Q_PROPERTY(QString AttentionMovieName MEMBER attentionMovieName NOTIFY titleChanged)
-    Q_PROPERTY(FakeToolTipWire ToolTip MEMBER toolTip NOTIFY titleChanged)
-    Q_PROPERTY(bool ItemIsMenu MEMBER itemIsMenu CONSTANT)
-    Q_PROPERTY(QDBusObjectPath Menu MEMBER menu CONSTANT)
-    Q_PROPERTY(QString UnknownExtension MEMBER unknownExtension CONSTANT)
-
-public:
-    struct RecordedIntent {
-        QString member;
-        QList<QVariant> arguments;
-    };
-
-    QString category = QStringLiteral("ApplicationStatus");
-    QString id = QStringLiteral("org.qindaqt.fake");
-    QString title = QStringLiteral("Fake item");
-    QString status = QStringLiteral("Active");
-    quint32 windowId = 42;
-    QString iconName = QStringLiteral("fake-icon");
-    QList<FakePixmapWire> iconPixmap;
-    QString overlayIconName = QStringLiteral("fake-overlay");
-    QString attentionIconName;
-    QList<FakePixmapWire> attentionPixmap;
-    QString attentionMovieName;
-    FakeToolTipWire toolTip;
-    bool itemIsMenu = false;
-    QDBusObjectPath menu = QDBusObjectPath(QStringLiteral("/Menu"));
-    QString unknownExtension = QStringLiteral("ignored");
-    QList<RecordedIntent> recordedIntents;
-
-    explicit FakeStatusNotifierItem()
-    {
-        registerFakeWireTypes();
-    }
-
-    // Wire form of one pixmap: (width, height, argb-bytes).
-    static FakePixmapWire pixmap(int width, int height, const QByteArray &argb)
-    {
-        FakePixmapWire pixmap;
-        pixmap.width = width;
-        pixmap.height = height;
-        pixmap.argb = argb;
-        return pixmap;
-    }
-
-    static FakePixmapWire pixmap(int width, int height, quint32 fill)
-    {
-        QByteArray bytes;
-        bytes.resize(width * height * 4);
-        for (int index = 0; index < width * height; ++index) {
-            bytes[index * 4 + 0] = char(fill & 0xFF);
-            bytes[index * 4 + 1] = char((fill >> 8) & 0xFF);
-            bytes[index * 4 + 2] = char((fill >> 16) & 0xFF);
-            bytes[index * 4 + 3] = char((fill >> 24) & 0xFF);
-        }
-        return pixmap(width, height, bytes);
-    }
-
-public slots:
-    void Activate(int x, quint32 y) { record(QStringLiteral("Activate"), {x, y}); }
-    void SecondaryActivate(int x, quint32 y)
-    {
-        record(QStringLiteral("SecondaryActivate"), {x, y});
-    }
-    void ContextMenu(int x, quint32 y) { record(QStringLiteral("ContextMenu"), {x, y}); }
-    void Scroll(int delta, const QString &orientation)
-    {
-        record(QStringLiteral("Scroll"), {delta, orientation});
-    }
-
-signals:
-    void NewTitle();
-    void NewIcon();
-    void NewAttentionIcon();
-    void NewOverlayIcon();
-    void NewToolTip();
-    void NewStatus(const QString &status);
-    void NewIconThemePath(const QString &path);
-    void titleChanged();
-    void statusChanged();
-
-private:
-    void record(QString member, QList<QVariant> arguments)
-    {
-        recordedIntents.append({std::move(member), std::move(arguments)});
-    }
-};
-
 } // namespace QindaQt::StatusNotifier::TestSupport

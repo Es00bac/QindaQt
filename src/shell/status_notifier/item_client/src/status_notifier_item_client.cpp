@@ -8,6 +8,7 @@
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
+#include <QPointer>
 #include <QTimer>
 
 #include <optional>
@@ -29,12 +30,18 @@ namespace
 // StatusNotifier items produce.
 [[nodiscard]] bool decodePixmapFields(const QDBusArgument *argument, Pixmap *out)
 {
-    int width = 0;
-    int height = 0;
-    QByteArray argb;
     // AGENT-GUARD: demarshalling overloads are const-qualified; a non-const
     // QDBusArgument silently selects the WRITING beginStructure/beginArray
     // (libdbus then aborts on "write from a read-only object").
+    // currentType() must be checked first: a hostile entry whose inner shape
+    // is not a struct (e.g. array of strings) crashes libdbus inside
+    // beginStructure rather than failing cleanly.
+    if (argument->currentType() != QDBusArgument::StructureType) {
+        return false;
+    }
+    int width = 0;
+    int height = 0;
+    QByteArray argb;
     argument->beginStructure();
     *argument >> width >> height >> argb;
     argument->endStructure();
@@ -73,8 +80,12 @@ namespace
 [[nodiscard]] bool decodePixmapList(const QVariant &value, QList<Pixmap> *out)
 {
     if (value.canConvert<QDBusArgument>()) {
-        // Wire form a(iiay): demarshal the array element by element.
+        // Wire form a(iiay): demarshal the array element by element. A
+        // hostile non-array argument must fail closed, not reach libdbus.
         const QDBusArgument array = value.value<QDBusArgument>();
+        if (array.currentType() != QDBusArgument::ArrayType) {
+            return false;
+        }
         array.beginArray();
         while (!array.atEnd()) {
             Pixmap pixmap;
@@ -87,6 +98,9 @@ namespace
         return true;
     }
     if (!value.canConvert<QVariantList>()) {
+        // A type that is neither a wire argument nor a variant list (e.g. a
+        // registered struct container in a process that also hosts the item
+        // implementation) is not a shape real items produce; fail closed.
         return false;
     }
     const QVariantList entries = value.toList();
@@ -139,16 +153,32 @@ namespace
         const QDBusArgument argument = value.value<QDBusArgument>();
         argument.beginStructure();
         QString iconName;
-        QVariant pixmaps;
         QString title;
         QString description;
-        argument >> iconName >> pixmaps >> title >> description;
+        argument >> iconName;
+        // AGENT-NOTE: the a(iiay) field must NOT be read into a QVariant (or a
+        // variant container): when the client process has a matching type
+        // registered (in-process fakes, or a shell linking item-side
+        // libraries such as KDE's DBusImageStruct), Qt 6.11's QVariant-field
+        // demarshal consumes the array and leaves a mispositioned argument
+        // that aborts in libdbus on first read. Iterating the array manually
+        // with raw typed field reads is registry-independent, so the SAME
+        // code serves production items and same-process fakes.
+        argument.beginArray();
+        while (!argument.atEnd()) {
+            Pixmap pixmap;
+            if (!decodePixmapFields(&argument, &pixmap)) {
+                argument.endArray();
+                return ValidationOutcome::failure(
+                    ValidationError::InvalidToolTip,
+                    QStringLiteral("tooltip-pixmap-decode-failed"));
+            }
+            toolTip->pixmaps.append(std::move(pixmap));
+        }
+        argument.endArray();
+        argument >> title >> description;
         argument.endStructure();
         toolTip->iconName = iconName;
-        if (!decodePixmapList(pixmaps, &toolTip->pixmaps)) {
-            return ValidationOutcome::failure(ValidationError::InvalidToolTip,
-                                              QStringLiteral("tooltip-pixmap-decode-failed"));
-        }
         toolTip->title = title;
         toolTip->description = description;
         return ValidationOutcome::success();
@@ -306,7 +336,11 @@ void StatusNotifierItemClient::fetchDescriptor()
         if (!m_fetchInFlight) {
             return; // The reply path already reported.
         }
-        watcher->deleteLater();
+        // QPointer guard: the finished lambda may already have deleteLater()d
+        // (and event delivery freed) the watcher before this timer fires.
+        if (watcher) {
+            watcher->deleteLater();
+        }
         finishFetch(ItemDescriptorFetch{});
     });
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
@@ -316,8 +350,6 @@ void StatusNotifierItemClient::fetchDescriptor()
                     return; // The timeout path already reported.
                 }
                 const QDBusMessage reply = call->reply();
-                qWarning() << "DBG GetAll reply:" << reply.type() << reply.errorName()
-                           << reply.errorMessage() << reply.arguments();
                 if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
                     finishFetch(ItemDescriptorFetch{});
                     return;
