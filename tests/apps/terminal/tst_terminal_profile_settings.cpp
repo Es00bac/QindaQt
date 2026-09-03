@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "profiles/terminal_profile_settings.h"
+#include "session/process_liveness.h"
+#include "session/terminal_session_collection.h"
+#include "ui/terminal_appearance.h"
+#include "ui/terminal_window.h"
 
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 
+#include <QLabel>
 #include <QSignalSpy>
 #include <QtTest>
+
+#include <memory>
 
 using namespace QindaQt::Apps::Terminal;
 using namespace QindaQt::Services::SettingsClient;
@@ -144,6 +151,32 @@ QVariant operationValue(const ProfileTransport::CommitRequest &request) {
       QLatin1StringView(WireContract::FieldValue));
 }
 
+class NoProcessMonitor final : public ProcessMonitor {
+public:
+  ProcessExitInfo reap(ProcessId) override { return {}; }
+  ProcessGroupState processGroupState(ProcessId) override {
+    return ProcessGroupState::Unknown;
+  }
+  bool signalProcessGroup(ProcessId, int) override { return false; }
+};
+
+std::unique_ptr<TerminalWindow>
+makePresentationWindow(TerminalProfileSettings &settings,
+                       NoProcessMonitor &monitor) {
+  TerminalSessionContext context{{}, QStringLiteral("/bin/true"), {}, {}};
+  TerminalSession::BackendFactory noBackend = [](const TerminalProfile &) {
+    return std::unique_ptr<TerminalSessionBackend>{};
+  };
+  auto sessions = std::make_unique<TerminalSessionCollection>(
+      context, std::move(noBackend), &monitor, TeardownBounds{});
+  TerminalViewAppearance appearance;
+  appearance.statusWarningForeground = QColor(Qt::darkYellow);
+  appearance.statusDangerForeground = QColor(Qt::red);
+  return std::make_unique<TerminalWindow>(
+      std::move(sessions), appearance,
+      QStringList{QStringLiteral("qinda-dark")}, &settings);
+}
+
 } // namespace
 
 class TerminalProfileSettingsTest final : public QObject {
@@ -154,6 +187,8 @@ private slots:
   void applyCommitsEveryKeyAgainstFreshAuthority();
   void conflictAbortsWithoutReplayingLaterKeys();
   void uncertainCommitIsNeverReplayed();
+  void productionWindowPresentsAsynchronousOutcome_data();
+  void productionWindowPresentsAsynchronousOutcome();
 };
 
 void TerminalProfileSettingsTest::baselineRoundTripAndLossFailClosed() {
@@ -290,6 +325,77 @@ void TerminalProfileSettingsTest::uncertainCommitIsNeverReplayed() {
       settingsValues({userProfile()}, QStringLiteral("work"), true)));
   QTest::qWait(20);
   QCOMPARE(transport.commits.size(), 1);
+}
+
+void TerminalProfileSettingsTest::
+    productionWindowPresentsAsynchronousOutcome_data() {
+  QTest::addColumn<int>("outcome");
+  QTest::addColumn<QString>("expectedSummary");
+  QTest::newRow("conflict") << 0 << QStringLiteral("changed elsewhere");
+  QTest::newRow("confirmed-rejection")
+      << 1 << QStringLiteral("could not be saved");
+  QTest::newRow("transport-failure")
+      << 2 << QStringLiteral("outcome is uncertain");
+  QTest::newRow("owner-loss") << 3 << QStringLiteral("outcome is uncertain");
+}
+
+void TerminalProfileSettingsTest::
+    productionWindowPresentsAsynchronousOutcome() {
+  QFETCH(int, outcome);
+  QFETCH(QString, expectedSummary);
+  ProfileTransport transport;
+  SettingsClient client(transport, TerminalKeys::scopedKeys(), {100, 0, {10}});
+  TerminalProfileSettings settings(client);
+  QVERIFY(client.start());
+  QVERIFY(establishBaseline(transport, QStringLiteral(":1.80"),
+                            QStringLiteral("epoch-a"), 3, settingsValues()));
+  NoProcessMonitor monitor;
+  auto window = makePresentationWindow(settings, monitor);
+  auto *status =
+      window->findChild<QLabel *>(QStringLiteral("qindaqtTerminalStatus"));
+  QVERIFY(status != nullptr);
+  QVERIFY(
+      settings.applyProfiles({userProfile()}, QStringLiteral("work"), true));
+  QCOMPARE(transport.commits.size(), 1);
+  const auto commit = transport.commits.first();
+
+  if (outcome == 0) {
+    emit transport.commitReceived(
+        commit.token, commit.owner,
+        commitWire(SettingsWireStatus::Conflict, 4, 4,
+                   QStringLiteral("epoch-a"), operationKey(commit),
+                   QStringLiteral("[]"), QStringLiteral("changed elsewhere")));
+  } else if (outcome == 1) {
+    emit transport.commitReceived(
+        commit.token, commit.owner,
+        commitWire(SettingsWireStatus::PersistenceFailed, 3, 3,
+                   QStringLiteral("epoch-a"), operationKey(commit),
+                   operationValue(commit), QStringLiteral("disk denied")));
+  } else if (outcome == 2) {
+    emit transport.requestFailed(commit.token, commit.owner,
+                                 QStringLiteral("org.test.Disconnected"),
+                                 QStringLiteral("transport lost"));
+  } else {
+    emit transport.ownerChanged(QString{});
+  }
+
+  QTRY_VERIFY(status->text().contains(expectedSummary, Qt::CaseInsensitive));
+  QVERIFY(status->text().contains(QLatin1String("Profiles:")));
+  QVERIFY(status->text().contains(QLatin1String("Default profile:")));
+  QVERIFY(status->text().contains(QLatin1String("Restore tabs:")));
+  QCOMPARE(status->accessibleName(),
+           QStringLiteral("Session status: %1").arg(status->text()));
+
+  if (outcome >= 2) {
+    QVERIFY(status->text().contains(QLatin1String("not replayed"),
+                                    Qt::CaseInsensitive));
+    transport.snapshots.clear();
+    emit transport.ownerChanged(QStringLiteral(":1.81"));
+    QVERIFY(answerRefresh(transport, QStringLiteral("epoch-b"), 1,
+                          settingsValues()));
+    QTest::qWait(20);
+    QCOMPARE(transport.commits.size(), 1);
+  }
 }
 
 QTEST_MAIN(TerminalProfileSettingsTest)

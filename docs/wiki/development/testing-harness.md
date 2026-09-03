@@ -1225,13 +1225,21 @@ In addition to the S0 launch, PTY, teardown, appearance, metadata, CLI, and
 relocatable-install rows, S1 adds focused profile, session-collection,
 Settings1, AppShell, and tab-strip rows. The profile row rejects hostile names,
 identifiers, argv, ranges, duplicate identities, malformed JSON, and oversized
-lists, then proves canonical round trips and literal argv resolution. The
+lists, then proves canonical round trips, literal argv resolution, and exact
+unchanged editor preservation of leading/interior/trailing empty arguments. The
 collection row proves the eight-session bound, reordering, per-session close,
 close-all, forced destruction, and bounded child-title sanitization. The fake
 Settings1 row proves complete typed baselines, fixed-order one-key commits with
 a fresh snapshot between writes, conflict abort, fail-closed owner loss, and
-uncertain no-replay. The AppShell row validates the fixed action catalog and
-routes activation to the local command. `qindaqt.terminal-tabs-offscreen` runs
+uncertain no-replay. It also composes the production window and verifies that
+conflict, confirmed rejection, request transport failure, and owner loss each
+publish all three per-key results through bounded visible and accessible text;
+recovery never replays the uncertain write. The separate
+`qindaqt.terminal-process-group` row creates a real session leader and an
+HUP/TERM-immune descendant in its process group, requires TERM→KILL and verified
+group emptiness before clean completion, and kills any survivor on every test
+exit path. The AppShell row validates the fixed action catalog and routes
+activation to the local command. `qindaqt.terminal-tabs-offscreen` runs
 with `QT_QPA_PLATFORM=offscreen` and `QT_FATAL_WARNINGS=1`; it proves stable
 Shift-modified WindowShortcut bindings, selection/movement/close behavior, and
 PageTabList/PageTab accessible names and roles.

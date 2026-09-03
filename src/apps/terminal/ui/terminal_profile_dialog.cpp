@@ -53,6 +53,7 @@ TerminalProfileDialog::TerminalProfileDialog(
 
 void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   auto *splitter = new QSplitter(this);
+  m_editingSurface = splitter;
 
   auto *listSide = new QWidget(splitter);
   auto *listLayout = new QVBoxLayout(listSide);
@@ -136,13 +137,19 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_restoreTabsCheck->setAccessibleName(m_restoreTabsCheck->text());
   m_restoreTabsCheck->setChecked(m_restoreTabs);
   layout->addWidget(m_restoreTabsCheck);
-  auto *buttons = new QDialogButtonBox(
+  m_applyStatus = new QLabel(this);
+  m_applyStatus->setObjectName(QStringLiteral("profileApplyStatus"));
+  m_applyStatus->setAccessibleName(QStringLiteral("Profile save status"));
+  m_applyStatus->setWordWrap(true);
+  m_applyStatus->hide();
+  layout->addWidget(m_applyStatus);
+  m_buttons = new QDialogButtonBox(
       QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-  connect(buttons, &QDialogButtonBox::accepted, this,
+  connect(m_buttons, &QDialogButtonBox::accepted, this,
           &TerminalProfileDialog::accept);
-  connect(buttons, &QDialogButtonBox::rejected, this,
+  connect(m_buttons, &QDialogButtonBox::rejected, this,
           &TerminalProfileDialog::reject);
-  layout->addWidget(buttons);
+  layout->addWidget(m_buttons);
 
   connect(m_list, &QListWidget::currentRowChanged, this,
           [this](int) { loadSelectedIntoFields(); });
@@ -261,15 +268,15 @@ void TerminalProfileDialog::writeFieldsToSelected() {
   }
   profile->name = m_name->text();
   profile->shellProgram = m_shellProgram->text();
-  QStringList arguments;
-  const QStringList lines = m_shellArguments->toPlainText().split(
-      QLatin1Char('\n'), Qt::SkipEmptyParts);
-  for (const QString &line : lines) {
-    if (!line.trimmed().isEmpty()) {
-      arguments.append(line);
-    }
+  const QString editedArguments = m_shellArguments->toPlainText();
+  const QString originalArguments =
+      profile->shellArguments.join(QLatin1Char('\n'));
+  if (editedArguments != originalArguments) {
+    profile->shellArguments =
+        editedArguments.isEmpty()
+            ? QStringList{}
+            : editedArguments.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
   }
-  profile->shellArguments = arguments;
   profile->fontFamily = m_fontFamily->text();
   profile->fontSize = m_fontSize->value();
   profile->colorSchemeId = m_colorScheme->currentText();
@@ -284,6 +291,9 @@ void TerminalProfileDialog::writeFieldsToSelected() {
 }
 
 void TerminalProfileDialog::accept() {
+  if (m_applyInFlight) {
+    return;
+  }
   writeFieldsToSelected();
   m_restoreTabs = m_restoreTabsCheck->isChecked();
   QStringList problems;
@@ -316,7 +326,32 @@ void TerminalProfileDialog::accept() {
             .arg(problems.join(QStringLiteral("\n• "))));
     return;
   }
-  QDialog::accept();
+  m_applyInFlight = true;
+  m_editingSurface->setEnabled(false);
+  m_restoreTabsCheck->setEnabled(false);
+  m_buttons->setEnabled(false);
+  m_applyStatus->setText(QStringLiteral("Saving terminal profiles…"));
+  m_applyStatus->setAccessibleDescription(m_applyStatus->text());
+  m_applyStatus->show();
+  emit applyRequested();
+}
+
+void TerminalProfileDialog::finishApply(bool allApplied,
+                                        const QString &accessibleStatus) {
+  if (!m_applyInFlight) {
+    return;
+  }
+  m_applyStatus->setText(accessibleStatus.left(1024));
+  m_applyStatus->setAccessibleDescription(m_applyStatus->text());
+  m_applyStatus->show();
+  m_applyInFlight = false;
+  if (allApplied) {
+    QDialog::accept();
+    return;
+  }
+  m_editingSurface->setEnabled(true);
+  m_restoreTabsCheck->setEnabled(true);
+  m_buttons->setEnabled(true);
 }
 
 } // namespace QindaQt::Apps::Terminal

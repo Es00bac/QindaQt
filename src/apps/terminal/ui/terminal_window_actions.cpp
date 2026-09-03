@@ -4,6 +4,7 @@
 #include "app_shell/terminal_action_catalog.h"
 #include "app_shell/terminal_app_shell_bridge.h"
 #include "profiles/terminal_profile_settings.h"
+#include "ui/terminal_profile_apply_status.h"
 #include "ui/terminal_profile_dialog.h"
 #include "ui/terminal_tab_bar.h"
 
@@ -234,15 +235,28 @@ void TerminalWindow::manageProfiles() {
   TerminalProfileDialog dialog(
       m_profileSettings->userProfiles(), m_profileSettings->defaultProfileId(),
       m_profileSettings->restoreTabsPolicy(), m_themeIds, this);
-  if (dialog.exec() == QDialog::Accepted &&
-      !m_profileSettings->applyProfiles(dialog.userProfiles(),
-                                        dialog.defaultProfileId(),
-                                        dialog.restoreTabs())) {
-    showStatusMessage(
-        QStringLiteral("Profiles could not be saved right now; Settings1 "
-                       "is unavailable or a save is in progress"),
-        true);
-  }
+  connect(&dialog, &TerminalProfileDialog::applyRequested, &dialog,
+          [this, &dialog] {
+            if (!m_profileSettings->applyProfiles(dialog.userProfiles(),
+                                                  dialog.defaultProfileId(),
+                                                  dialog.restoreTabs())) {
+              const QString failure = QStringLiteral(
+                  "Error: Profiles could not be saved right now; Settings1 "
+                  "is unavailable or a save is in progress");
+              showStatusMessage(failure, true);
+              dialog.finishApply(false, failure);
+              return;
+            }
+            showStatusMessage(QStringLiteral("Saving terminal profiles…"),
+                              false);
+          });
+  connect(m_profileSettings, &TerminalProfileSettings::applyFinished, &dialog,
+          [&dialog](const QVariantList &ledger) {
+            const TerminalProfileApplyStatus status =
+                terminalProfileApplyStatus(ledger);
+            dialog.finishApply(status.allApplied, status.text);
+          });
+  static_cast<void>(dialog.exec());
 }
 
 void TerminalWindow::rebuildProfileMenu() {

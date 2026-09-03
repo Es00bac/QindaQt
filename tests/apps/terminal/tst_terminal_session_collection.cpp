@@ -34,6 +34,11 @@ public:
                : ProcessExitInfo{ProcessState::Running, false, 0, true};
   }
 
+  ProcessGroupState processGroupState(ProcessId pid) override {
+    return m_stats->stopped.contains(pid) ? ProcessGroupState::Empty
+                                          : ProcessGroupState::NonEmpty;
+  }
+
   bool signalProcessGroup(ProcessId pid, int signalNumber) override {
     m_stats->sentSignals.append({pid, signalNumber});
     return true;

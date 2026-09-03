@@ -13,6 +13,7 @@
 #include <QMainWindow>
 #include <QPalette>
 #include <QVBoxLayout>
+#include <QVariantList>
 #include <memory>
 
 class QMenu;
@@ -104,6 +105,7 @@ private:
   void updateTabActionStates();
   void updateStatusForState(TerminalSession::State state);
   void showExitStatus(const TerminalExitStatus &status);
+  void presentProfileApplyResult(const QVariantList &ledger);
   void showStatusMessage(const QString &text, bool danger);
   void showStatusMessage(const QString &text, bool danger,
                          const QPalette &palette);

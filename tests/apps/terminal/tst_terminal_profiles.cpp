@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "profiles/terminal_profile.h"
 #include "session/terminal_session_collection.h"
+#include "ui/terminal_profile_dialog.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLabel>
+#include <QListWidget>
+#include <QMetaObject>
+#include <QPlainTextEdit>
 #include <QRegularExpression>
+#include <QSignalSpy>
 #include <QtTest>
 
 using namespace QindaQt::Apps::Terminal;
@@ -46,6 +52,7 @@ private slots:
   void codecRoundTripsAndRejectsHostileDocuments();
   void generatedIdentifiersMatchThePublishedContract();
   void launchResolutionKeepsArgumentsLiteralAndEnvironmentOwned();
+  void unchangedDialogPreservesEmptyArgumentsUntilApplyFinishes();
 };
 
 void TerminalProfilesTest::builtInAndUserProfileValidate() {
@@ -181,6 +188,38 @@ void TerminalProfilesTest::
   QVERIFY(fallback.outcome.ok);
   QCOMPARE(fallback.request.program, QStringLiteral("/bin/true"));
   QCOMPARE(fallback.request.arguments, QStringList{QStringLiteral("--")});
+}
+
+void TerminalProfilesTest::
+    unchangedDialogPreservesEmptyArgumentsUntilApplyFinishes() {
+  TerminalProfile profile = userProfile();
+  profile.shellArguments = {QString(), QStringLiteral("payload"), QString()};
+  TerminalProfileDialog dialog({profile}, profile.id, false,
+                               {QStringLiteral("qinda-light")});
+  auto *list =
+      dialog.findChild<QListWidget *>(QStringLiteral("terminalProfileList"));
+  auto *arguments = dialog.findChild<QPlainTextEdit *>(
+      QStringLiteral("profileShellArgsEdit"));
+  auto *status =
+      dialog.findChild<QLabel *>(QStringLiteral("profileApplyStatus"));
+  QVERIFY(list != nullptr && arguments != nullptr && status != nullptr);
+  list->setCurrentRow(1);
+  QCOMPARE(arguments->toPlainText(), QStringLiteral("\npayload\n"));
+
+  QSignalSpy applyRequested(&dialog, &TerminalProfileDialog::applyRequested);
+  QVERIFY(QMetaObject::invokeMethod(&dialog, "accept", Qt::DirectConnection));
+  QCOMPARE(applyRequested.count(), 1);
+  QCOMPARE(dialog.userProfiles().first().shellArguments,
+           profile.shellArguments);
+  QCOMPARE(dialog.result(), int{QDialog::Rejected});
+  QVERIFY(!status->isHidden());
+  QVERIFY(status->text().contains(QLatin1String("Saving")));
+  QVERIFY(!status->accessibleDescription().isEmpty());
+
+  dialog.finishApply(false, QStringLiteral("Warning: conflict; apply again"));
+  QCOMPARE(dialog.result(), int{QDialog::Rejected});
+  QCOMPARE(status->text(), QStringLiteral("Warning: conflict; apply again"));
+  QVERIFY(arguments->isEnabled());
 }
 
 QTEST_MAIN(TerminalProfilesTest)

@@ -39,6 +39,10 @@ public:
                ? ProcessExitInfo{ProcessState::Exited, false, 0, true}
                : ProcessExitInfo{ProcessState::Running, false, 0, true};
   }
+  ProcessGroupState processGroupState(ProcessId pid) override {
+    return m_stopped.contains(pid) ? ProcessGroupState::Empty
+                                   : ProcessGroupState::NonEmpty;
+  }
   bool signalProcessGroup(ProcessId, int) override { return true; }
   void stop(ProcessId pid) { m_stopped.insert(pid); }
 

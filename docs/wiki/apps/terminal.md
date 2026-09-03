@@ -57,14 +57,17 @@ Teardown is a bounded escalation, not a hope:
 
 1. The bridge PTY master closes (the kernel delivers `SIGHUP` to the child
    session).
-2. After the close grace elapses, `SIGTERM` is sent to the exact captured
-   process group — never to a bare PID, and only after the group leader is
-   revalidated, so a recycled PID can never be signaled.
-3. After the term grace, `SIGKILL` to the same group.
-4. If the child somehow survives `SIGKILL`, the session reports a shutdown
-   failure honestly, retains the backend and the captured process-group id,
-   and refuses further close, quit, and restart attempts for that generation;
-   `start()` also refuses to replace it.
+2. After the close grace elapses, `SIGTERM` is sent to the exact process group
+   captured when the `setsid()` child was its leader — never to a bare PID.
+   Reaping that leader does not release the captured group id or prevent this
+   signal, because an inherited descendant may still own the group.
+3. After the term grace, `SIGKILL` is sent to the same retained group.
+4. Clean shutdown is published only after a `killpg(pgid, 0)` probe and Linux
+   `/proc` process-group scan establish that no member, including an orphaned
+   zombie awaiting its new parent's reap, remains. A member surviving the kill
+   grace or an indeterminate emptiness check reports shutdown failure honestly,
+   retains the backend and captured group id, and refuses further close, quit,
+   restart, or replacement for that generation.
 
 Window close hides the window, runs the escalation, and only then quits the
 application, so a surviving child can never be orphaned by an early exit. The
@@ -109,7 +112,9 @@ points; a safe QindaQt theme identifier; 0–100,000 scrollback lines; and a
 `silent` or `audible` bell policy. Silent profiles strip BEL from child output;
 audible profiles pass it to the renderer. A user profile never changes the
 shell contract: its program and argv go through `TerminalLaunchPolicy`, never
-through a shell string, and an invalid or unresolvable profile is refused.
+through a shell string, and an invalid or unresolvable profile is refused. The
+line-oriented profile editor preserves every unchanged argv element exactly,
+including leading, interior, trailing, and sole empty arguments.
 
 The terminal reads and writes this exact Settings1 scope:
 
@@ -128,6 +133,14 @@ and it is never replayed. Missing, malformed, incomplete, or wrong-typed
 snapshots are rejected wholesale. Before a valid baseline and whenever the
 transport or Settings1 authority is lost, new sessions use built-in defaults;
 existing sessions keep the profile value copied at creation.
+
+The Manage Profiles dialog does not close when Apply merely starts. It disables
+the draft while the asynchronous sequence is pending, closes only after all
+three keys are confirmed applied, and otherwise keeps the unchanged draft open
+with a bounded accessible per-key result. The same complete result remains in
+the window status surface: conflict requires review and explicit re-apply,
+confirmed rejection names failed and not-attempted keys, and transport loss or
+timeout is labeled uncertain and explicitly not replayed.
 
 Session content, scrollback bytes, child environment, argv history, titles,
 process identifiers, and tab inventory are never persisted. Consequently S1
@@ -255,7 +268,9 @@ output/echo capture, winsize, close, and read-notifier quiescence with
 retained-master bounded liveness after the slave side disappears), the
 session state machine (typed start
 failures, exit-code versus signal versus unknown-exit publication,
-duplicate-exit suppression), the teardown escalation sequence including
+duplicate-exit suppression), the teardown escalation sequence plus a real
+HUP/TERM-immune descendant that outlives its reaped group leader and must be
+killed before clean completion, including unconditional fixture cleanup;
 refusal to replace an unkillable generation, ownership retention with
 close/quit/restart refusal while a survivor remains, close-cancels-pending-
 restart through the session route and the production window route (Restart
@@ -268,9 +283,11 @@ Running→Exited, readline-safe shortcuts, exit-status severity rendering,
 accessibility and focus metadata, hostile-resize clamping, QST scheme
 documents for all five themes, real-adapter custom-scheme rendering and blank
 selection truth; bounded multi-session creation, movement, close-all, and
-forced destruction; title sanitization; hostile profile values and canonical
-round trips; Settings1 baseline, sequential apply, conflict, fail-closed loss,
-and uncertain no-replay behavior; tab shortcuts, traversal/movement, and
+forced destruction; title sanitization; hostile profile values, canonical
+round trips, and unchanged empty-argument preservation; Settings1 baseline,
+sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
+production visible/accessible per-key outcome presentation; tab shortcuts,
+traversal/movement, and
 PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
 rejection, and staged installed metadata with installed-prefix theme
