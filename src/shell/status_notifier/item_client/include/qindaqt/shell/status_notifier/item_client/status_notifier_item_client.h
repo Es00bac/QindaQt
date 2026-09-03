@@ -68,8 +68,9 @@ struct ItemDescriptorFetch {
 // counts, and text budgets are enforced by the foundation validators; a decode
 // shape error or an out-of-bounds value yields an invalid `validation` while
 // the descriptor still carries the decoded content so the registry can degrade
-// truthfully. Unknown properties are ignored; properties with unexpected
-// types are ignored; a missing property decodes to its default.
+// truthfully. Unknown properties are ignored; recognized properties with
+// unexpected types fail the descriptor closed, while a missing optional
+// property decodes to its default.
 //
 // Late-reply fencing: every emitted result is tagged with the owner generation
 // captured at construction; the injected `GenerationFence` is consulted before

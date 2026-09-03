@@ -23,6 +23,9 @@ class StatusNotifierIconLocator;
 // 2. Icon-theme lookup by IconName through the injected locator.
 // 3. A deterministic neutral placeholder, so a missing or hostile icon can
 //    never produce a null or randomly sized image in presentation.
+// Theme image metadata is dimension-checked before decode, decoded dimensions
+// are checked again, and placeholder requests are clamped to the same shared
+// 512-pixel ceiling as wire pixmaps.
 //
 // No network access, no filesystem writes, and no reads outside the injected
 // theme roots. Threading: pure lookup plus QImage value construction; an

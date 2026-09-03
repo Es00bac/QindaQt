@@ -305,7 +305,7 @@ StatusNotifierWatcherService::registerHost(const QString &serviceName)
         return {false, QStringLiteral("watcher-host-capacity-exceeded")};
     }
     m_hosts.insert(uniqueName);
-    emitHostSignal(QStringLiteral("StatusNotifierHostRegistered"), uniqueName);
+    emitHostSignal(QStringLiteral("StatusNotifierHostRegistered"));
     emit hostRegistered(uniqueName);
     return {true, {}};
 }
@@ -372,7 +372,7 @@ void StatusNotifierWatcherService::retireHost(const QString &uniqueName)
         // AGENT-GUARD: P1-1 showed that changing only the property strands
         // hosts which consume the documented four-signal watcher contract.
         // Emit the wire retirement before local observers see the state.
-        emitHostSignal(QStringLiteral("StatusNotifierHostUnregistered"), uniqueName);
+        emitHostSignal(QStringLiteral("StatusNotifierHostUnregistered"));
         emit hostUnregistered(uniqueName);
         emit stateChanged();
     }
@@ -388,13 +388,13 @@ void StatusNotifierWatcherService::emitItemSignal(const QString &member, const O
     Q_UNUSED(sent)
 }
 
-void StatusNotifierWatcherService::emitHostSignal(const QString &member,
-                                                  const QString &uniqueName)
+void StatusNotifierWatcherService::emitHostSignal(const QString &member)
 {
+    // KDE's watcher XML defines both host lifecycle signals with no payload;
+    // the local QObject signals carry the unique owner for internal probes.
     auto message = QDBusMessage::createSignal(QString::fromLatin1(kWatcherObjectPath),
                                               QString::fromLatin1(kWatcherInterfaceName),
                                               member);
-    message << QVariant::fromValue(uniqueName);
     const bool sent = m_connection.send(message);
     Q_UNUSED(sent)
 }

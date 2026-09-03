@@ -109,7 +109,7 @@ private:
     void retireOwnerItems(const QString &uniqueName);
     void retireHost(const QString &uniqueName);
     void emitItemSignal(const QString &member, const OwnerKey &key);
-    void emitHostSignal(const QString &member, const QString &uniqueName);
+    void emitHostSignal(const QString &member);
     void setState(WatcherServiceState state);
 
     QDBusConnection m_connection;

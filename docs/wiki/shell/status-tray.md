@@ -134,7 +134,8 @@ rules follow ADR-0032 exactly:
   through the bus daemon and lands on the resolved owner's
   `/StatusNotifierItem` path. A well-known name can never hold an item.
 - Registered items and hosts are retired on `NameOwnerChanged` when the owner
-  disconnects, emitting the matching protocol signal first.
+  disconnects, emitting the matching protocol signal first, including
+  `StatusNotifierHostUnregistered` for host retirement.
 - `start()` never claims a name another connection owns. A foreign owner is
   not an error: the service fails closed into `NameOwnedElsewhere`, stays
   introspectable, refuses registrations, and reports a truthful degraded
@@ -150,15 +151,18 @@ AttentionIconName, AttentionPixmap, AttentionMovieName, ToolTip, ItemIsMenu,
 Menu), decodes hostile input defensively, and validates through the foundation
 admission gate. Pixmap structs are decoded by manual wire iteration rather
 than registered-type demarshalling, so a hostile payload can never crash the
-decoder inside libdbus; unknown properties and unexpected types are ignored
-and missing properties decode to defaults. Every emitted result is tagged with
-the owner generation captured at construction and fenced through an injected
-predicate, so a reply racing owner loss or a watcher rebaseline is dropped
-instead of resurrecting a removed item. New* signals coalesce into at most one
-in-flight refetch. The intent calls (`activate`, `secondaryActivate`,
-`contextMenu`, `scroll`) are fire-and-forget; callers must evaluate and
-revalidate a `RequestIntent` through the registry before dispatching, and a
-non-horizontal/non-vertical scroll orientation is refused without sending.
+decoder inside libdbus. Unknown properties are ignored, recognized properties
+with unexpected types fail the descriptor closed, and missing optional
+properties decode to defaults. Every emitted result is tagged with the owner
+generation captured at construction and fenced through an injected predicate,
+so a reply racing owner loss or a watcher rebaseline is dropped instead of
+resurrecting a removed item. The typed fetch status distinguishes a bounded
+live-owner timeout from an immediate D-Bus transport error. New* signals
+coalesce into at most one in-flight refetch. The intent calls (`activate`,
+`secondaryActivate`, `contextMenu`, `scroll`) are fire-and-forget; coordinate
+methods use the protocol's signed `(int, int)` signature. Callers must evaluate
+and revalidate a `RequestIntent` through the registry before dispatching, and
+a non-horizontal/non-vertical scroll orientation is refused without sending.
 Wire-side details the value model has no slot for — `windowId`,
 `overlayIconName`, `itemIsMenu`, and the DBusMenu exporter path — are recorded
 in `ItemWireDetails` for later composition: the `Menu` path is **recorded but
@@ -167,8 +171,9 @@ adapter and a later lane composes it into the tray.
 
 `StatusNotifierItemMonitor` drives the registry through the event sink. It
 watches the watcher name, opens a fresh epoch and re-populates whenever a
-(replacement) watcher acquires it, keys every observed item to its owner
-generation, retires owners on `NameOwnerChanged` loss, and subscribes to the
+(replacement) watcher acquires it, issues one generation per owner per epoch
+and shares it across that owner's object paths (including the valid root path
+`/`), retires owners on `NameOwnerChanged` loss, and subscribes to the
 watcher's item registered/unregistered signals as a second retire path (the
 registry refuses the duplicate as stale, so ordering is not a contract).
 Population completion is fenced by the current epoch: a late reply from a dead
@@ -182,8 +187,12 @@ completion cannot wedge on a single silent item.
 caller-injected theme roots (index parsing, exact-size probing, fixed
 extension order) and `StatusNotifierIconRenderer` turns the result — or the
 wire IconPixmap ARGB32 payload — into a bounded `QImage`. Pixmap decoding is
-dimension- and byte-budget checked before any image is allocated; a missing
-icon or undecodable payload falls back to a deterministic placeholder. The
+dimension- and byte-budget checked before any image is allocated. Every index
+and icon candidate is canonicalized and must remain beneath its injected root,
+so declared `../` paths and symlink escapes cannot cause outside reads. Theme
+metadata is dimension-checked before decode, decoded dimensions are checked
+again, and fallback requests are clamped to the shared 512-pixel ceiling. A
+missing or undecodable icon falls back to that deterministic placeholder. The
 module performs no network access and no filesystem writes.
 
 ## Presentation and accessibility
@@ -225,29 +234,35 @@ fixture, never the host bus):
 
 - `qindaqt.status-notifier-watcher`: fake items and hosts registering by bare
   object path and by service name, unique-name keying, owner-loss retirement
-  of items and hosts, protocol properties and signals, and refusal to claim a
+  of items and hosts (including the host-unregistered wire signal), protocol
+  properties and signals, idempotent degraded startup, and refusal to claim a
   name another watcher owns (`NameOwnedElsewhere` with a truthful degraded
   reason).
 - `qindaqt.status-notifier-item-client`: descriptor fetches over the private
   bus, New*-signal refetch coalescing, hostile payloads (oversized pixmaps,
-  malformed wire shapes, bad tooltips, unknown/missing properties), bounded
-  strings, late-reply generation fencing, and activation intents recorded by a
-  fake item.
+  malformed wire shapes, wrong-typed string facts, bad tooltips, and
+  unknown/missing properties), bounded strings, a live owner that withholds its
+  reply through the configured typed timeout, the distinct immediate-error
+  outcome, late-reply generation fencing, and signed activation intents
+  recorded by a strict fake item.
 - `qindaqt.status-notifier-monitor`: end-to-end registry population from a
-  live watcher, item retirement and bounded owner-slot release on owner
-  disconnect, watcher-restart rebaseline into a fresh epoch (the fake item
-  re-registers with the replacement watcher, as real items do), truthful
-  Degraded presentation with last-known-good retention, and validated intent
-  dispatch (stale generations and invalid orientations refused).
+  live watcher, two paths sharing one owner generation, root-path population,
+  item retirement and bounded owner-slot release on owner disconnect,
+  watcher-restart rebaseline into a fresh epoch (the fake item re-registers
+  with the replacement watcher, as real items do), truthful Degraded
+  presentation with last-known-good retention, and validated intent dispatch
+  (stale generations and invalid orientations refused).
 - `qindaqt.status-notifier-icon`: theme lookup over injected theme roots,
-  ARGB32 pixmap decoding bounds, and deterministic fallback for missing or
+  canonical containment against hostile index directories, ARGB32 and theme
+  image decode bounds, and a bounded deterministic fallback for missing or
   undecodable icons.
 
 The values tests cover canonical unique owner-name/path/generation syntax, root
 object path, in-place pixmap dimension, byte-count and aggregate budget rules,
 icon/tooltip bounds, control-character rejection including C1, blank-text
 rejection, flat-menu depth/parent-kind/budget rules, and the composed
-descriptor gate catching hostile menus. The registry tests cover type traits
+descriptor gate catching hostile menus, plus source-policy precision for the
+production adapter constants. The registry tests cover type traits
 (non-copyable, non-movable), exact-owner keying through the narrow sink
 interface, replacement and removal, well-known-name spoofing, duplicate
 identity across live owners, stale replies after owner loss, generation-fenced
