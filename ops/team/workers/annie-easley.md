@@ -8,7 +8,7 @@ status: handoff
 feature: QQ-004.14 Bluetooth applet
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-09-02T20:58:39-06:00
+updated_at: 2026-09-02T21:33:27-06:00
 ---
 
 # Annie Easley
@@ -17,13 +17,19 @@ Implements the production Bluetooth applet over the public Bluetooth1/BluetoothC
 
 - Role: Bluetooth applet B1 implementer.
 - Provider/model: OpenAI Codex / `gpt-5.6-sol` (high reasoning).
-- Status: handoff — exact candidate `7061dd3bf0db9c2048bfe4ec919147e12ef9563c` replaces the lexical controller-surface gate and is green for exact rereview.
-- Exact base: `35f2fa20881437fc3ef9d85ce399dc68e12ed1d3`.
+- Status: handoff — exact repaired candidate `882cc0cdbb31ee9d619c625a2856aee90c7a49b0` restores composition-chain presence proof and its poison control.
+- Exact base: `e251cf1fced67b9bfcae27fc9c7381e44ec21f0c` (rejected product ancestor `7061dd3bf0db9c2048bfe4ec919147e12ef9563c`).
 - Branch: `worker/bluetooth-applet-b1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1`.
-- Product authority: `tests/shell/bluetooth_applet/**`, Bluetooth sections of `docs/wiki/shell/bluetooth-applet.md` and `docs/wiki/development/testing-harness.md`, and `src/shell/bluetooth_applet/**` only if registration requires it.
+- Product authority: `tests/shell/bluetooth_applet/**`, Bluetooth sections of `docs/wiki/shell/bluetooth-applet.md` and `docs/wiki/development/testing-harness.md`, this record, and the Bluetooth applet message thread.
 
 ## Updates
+
+- 2026-09-02T21:33:27-06:00 — Handoff: froze exact repaired product `882cc0cdbb31ee9d619c625a2856aee90c7a49b0` (tree `47611298c1a3dd6c11027d57ecfb214d206021c5`, sole parent/base `e251cf1fced67b9bfcae27fc9c7381e44ec21f0c`) across exactly three owned paths. Both strict Debug/Release focused builds exit 0; Bluetooth passes 8/8 and the corrected adjacent selector 6/6 per profile. Direct runtime modes pass 7+0, 7+0 skip, and 7+6 poison; pure passes 5+4. Final 117-document validation, strict MkDocs, 1,780-file source shape, whitespace, ancestry, and exact provenance gates pass; no JSON changed. Requested same-reviewer exact rechecks by Kimi K2.7 and Kimi K3-256k, then Program Manager integration.
+
+- 2026-09-02T21:29:55-06:00 — Material checkpoint: restored the complete ten-token base composition contract and added an eleventh literal delegate-construction token. All five existing runtime poison cases now copy the complete manifest/registry/profile/QML/shell chain before applying their own mutation. The sixth poison removes the exact Bluetooth stock-profile row, module import, and QML delegate, then requires the recursive gate to fail with all three corresponding missing-token diagnostics. Direct runtime modes pass 7+0 without a poison root, 7+0 with explicit skip, and 7+6 with full poison; the pure gate passes 5+4. The compiled meta-object test is byte-unchanged; docs now enumerate the eight compared property fields and name the actual notification-center offscreen adjacent row.
+
+- 2026-09-02T21:27:34-06:00 — Resumed from clean coordination tip `e251cf1fced67b9bfcae27fc9c7381e44ec21f0c` to repair Cecilia Payne's exact-candidate verdict on product `7061dd3bf0db9c2048bfe4ec919147e12ef9563c`. The bounded descendant will restore all ten base composition-chain presence tokens, add a copied-tree poison that removes both stock-profile placement and the QML delegate/import and must fail for those missing tokens, and correct the two Bluetooth documentation precision defects. No `src/` file, host desktop, host bus, hardware, uinput, network, or nested session is in scope.
 
 - 2026-09-02T20:58:39-06:00 — Handoff: froze exact product candidate `7061dd3bf0db9c2048bfe4ec919147e12ef9563c` (tree `4ff0f7984cb1fc2bf4083fdb6e77a8b85028a0a8`, sole parent/base `35f2fa20881437fc3ef9d85ce399dc68e12ed1d3`) across exactly five owned test/doc paths. Strict Debug/Release configured and built the focused graph (319/319 and 383/383 reported actions); final Bluetooth selectors pass 8/8 per profile and adjacent selectors pass 6/6 per profile. Direct runtime modes pass 7+0, 7+0, and 7+5; pure boundary 5+4; 117-document validation, strict MkDocs, 1,780-file source shape, and whitespace/provenance checks pass. No JSON changed. Requested independent exact rereview by Kimi K2.7 and Kimi K3-256k, then manager integration.
 
