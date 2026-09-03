@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "panelvisibilitysessionwindowproof.h"
+#include "panelvisibilitycaptureprocess.h"
 #include "panelvisibilityphasewaiter.h"
+#include "panelvisibilitysessionwindowproof.h"
 
 #include <QBackingStore>
 #include <QCoreApplication>
@@ -177,20 +178,13 @@ bool capture(const QString &tool, const QString &libraryPath,
         {QStringLiteral("wayland-screenshot-*.png")}, QDir::Files);
     const QSet<QString> before(beforeList.cbegin(), beforeList.cend());
     QProcess process;
-    auto environment = QProcessEnvironment::systemEnvironment();
-    environment.insert(QStringLiteral("WAYLAND_DISPLAY"),
-                       QStringLiteral("qindaqt-parent-wayland"));
-    const QString inherited = environment.value(QStringLiteral("LD_LIBRARY_PATH"));
-    environment.insert(
-        QStringLiteral("LD_LIBRARY_PATH"),
-        inherited.isEmpty() ? libraryPath
-                            : QStringLiteral("%1:%2").arg(libraryPath, inherited));
-    // AGENT-GUARD: Apply the private Weston closure only to this capture child.
-    // Exporting it to the probe or compositor lets system KWin load the private
-    // prefix's incompatible libkwin and invalidates the release-matched proof.
-    process.setProcessEnvironment(environment);
+    if (!QindaQt::Test::PanelVisibilityCapture::configureCaptureProcess(
+            process, QProcessEnvironment::systemEnvironment(), tool,
+            libraryPath, failure)) {
+        return false;
+    }
     process.setWorkingDirectory(directory.path());
-    process.start(tool);
+    process.start();
     if (!process.waitForStarted(5'000)) {
         *failure = QStringLiteral("could not start: %1").arg(process.errorString());
         return false;

@@ -43,6 +43,10 @@ from desktop_session_process import (
     identity_is_live,
     terminate_processes,
 )
+from desktop_session_shutdown import (
+    OrderlyShutdownError,
+    require_clean_session_shutdown,
+)
 from desktop_session_readiness import (
     ReadinessDeadlineExpired,
     await_complete_snapshot,
@@ -139,7 +143,14 @@ def _cleanup(state: RuntimeState) -> list[CleanupRecord]:
     ledger: list[CleanupRecord] = []
     try:
         if state.identities:
-            ledger = terminate_processes(reversed(state.identities))
+            orderly_roles = (
+                ("compositor",)
+                if any(identity.role == "compositor" for identity in state.identities)
+                else ()
+            )
+            ledger = terminate_processes(
+                reversed(state.identities), orderly_roles=orderly_roles
+            )
     except ProcessContractError as error:
         failures.append(str(error))
     finally:
@@ -147,6 +158,13 @@ def _cleanup(state: RuntimeState) -> list[CleanupRecord]:
             log = getattr(process, "_qindaqt_log", None)
             if log is not None:
                 log.close()
+    if any(identity.role == "compositor" for identity in state.identities):
+        try:
+            require_clean_session_shutdown(
+                Path("/var/log/qindaqt-desktop/compositor.log")
+            )
+        except OrderlyShutdownError as error:
+            failures.append(str(error))
     if failures:
         raise ProcessContractError("exact desktop cleanup failed: " + "; ".join(failures))
     return ledger

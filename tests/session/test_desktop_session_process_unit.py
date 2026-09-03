@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import signal
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,7 @@ from desktop_session_process import (
     terminate_processes,
 )
 from desktop_session_runtime import RuntimeState, _cleanup
+from desktop_session_shutdown import OrderlyShutdownError, require_clean_session_shutdown
 from desktop_session_topology import ProcessExpectation
 
 
@@ -192,6 +194,64 @@ class ProcessTests(unittest.TestCase):
             )
             self.assertEqual(ledger[0].terminal_phase, "kill")
             self.assertNotIn("graceful", ledger[0].document().values())
+
+    def test_compositor_gets_orderly_turn_before_shared_group_teardown(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proc = root / "proc"
+            proc.mkdir()
+            compositor_executable = root / "kwin_wayland"
+            session_executable = root / "qindaqt-session"
+            service_executable = root / "service"
+            for executable in (
+                compositor_executable, session_executable, service_executable
+            ):
+                executable.write_text("x")
+            compositor_path = write_process(proc, 60, compositor_executable, 301)
+            session_path = write_process(proc, 61, session_executable, 302)
+            service_path = write_process(proc, 62, service_executable, 303)
+            compositor = capture_process_identity(
+                "compositor", 60, [compositor_executable], proc_root=proc
+            )
+            session = capture_process_identity(
+                "session", 61, [session_executable], proc_root=proc
+            )
+            service = capture_process_identity(
+                "service", 62, [service_executable], proc_root=proc
+            )
+            signals: list[tuple[str, int, int]] = []
+
+            def signal_process(pid: int, signum: int) -> None:
+                signals.append(("process", pid, signum))
+                shutil.rmtree(compositor_path)
+                shutil.rmtree(session_path)
+
+            def signal_group(group: int, signum: int) -> None:
+                signals.append(("group", group, signum))
+                shutil.rmtree(service_path)
+
+            ledger = terminate_processes(
+                [service, session, compositor], orderly_roles=("compositor",),
+                proc_root=proc, signal_process=signal_process,
+                signal_group=signal_group, sleep=lambda _: None,
+            )
+
+            self.assertEqual(signals[0], ("process", compositor.pid, signal.SIGTERM))
+            self.assertEqual(signals[1][0], "group")
+            self.assertEqual(
+                {record.role: record.terminal_phase for record in ledger},
+                {"service": "term", "session": "term", "compositor": "term"},
+            )
+
+    def test_kwin_session_crash_diagnostic_fails_cleanup_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "compositor.log"
+            log.write_text("startup complete\nSession process has crashed\n")
+            with self.assertRaisesRegex(OrderlyShutdownError, "crashed session"):
+                require_clean_session_shutdown(log)
+
+            log.write_text("startup complete\norderly shutdown\n")
+            require_clean_session_shutdown(log)
 
     def test_live_direct_process_that_cannot_be_authenticated_fails_cleanup(self) -> None:
         process = Mock(pid=52)

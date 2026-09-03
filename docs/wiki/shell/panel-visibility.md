@@ -170,11 +170,13 @@ and excludes the parent prefix; otherwise KWin can load an ABI-incompatible
 private `libkwin`. The capture probe therefore gives only its
 `weston-screenshooter` child the already-authenticated loader path used by the
 parent Weston process. `desktop.virtual.panel-visibility.capture-loader-unit`
-rejects a missing, relative, or partially empty path and pins that command
-boundary. The deterministic `validator-unit` row injects a fake authority
-and poll timer to prove that a transitional 0x0 role is ignored until the role
-is absent, and that a role which never disappears times out fail-closed. The
-validator derives stable left and bottom panel
+rejects a missing, relative, or partially empty path at the Python command
+boundary. The separate `capture-loader-cpp-unit` row pins the C++ application
+of that path to the screenshot child's `QProcessEnvironment`; removing either
+half fails its owning row. The deterministic `validator-unit` row injects a
+fake authority and poll timer to prove that a transitional 0x0 role is ignored
+until the role is absent, and that a role which never disappears times out
+fail-closed. The validator derives stable left and bottom panel
 rectangles only from mapped/committed authority records, samples all pixels in
 the corresponding rectangle, and requires each hidden/visible pair to have a
 different region digest. Identical unrelated images therefore fail even when
@@ -186,13 +188,18 @@ cleanup phases, and a final observed empty survivor set.
 `desktop.virtual.sandbox-unit` remains a prerequisite and no host display, bus,
 input node, uinput device, or hardware is used.
 
-At terminal cleanup the harness sends `SIGTERM` to the authenticated shared
-KWin/session process group. Depending on exit ordering, KWin 6.6.6 may append
-`Session process has crashed` after all eight captures even though the row has
-completed and the final survivor set is empty. That teardown-only diagnostic is
-not a panel phase failure; the evidence document's completed capture set,
-terminal-phase ledger, and independent survivor observation distinguish it from
-an early session loss.
+The eight-capture rows use a 100-second sandbox-attempt deadline within their
+110-second CTest boundary. This preserves ten seconds for outer archival and
+CTest cleanup while allowing the complete WUXGA capture validation to finish;
+the generic desktop attempt remains capped at 70 seconds.
+
+At terminal cleanup the harness first sends `SIGTERM` to the authenticated KWin
+process alone and gives its signal handler a bounded opportunity to own session
+shutdown. Only then does it terminate remaining authenticated process groups.
+This ordering prevents the harness from racing KWin's `--exit-with-session`
+observer with a simultaneous signal to `qindaqt-session`. Any `Session process
+has crashed` diagnostic is a failed row, including after capture completion;
+the terminal ledger and final survivor observation remain independently strict.
 
 These rows qualify 100% 1080p and WUXGA on the private Weston/KWin path. They do
 not claim fractional scaling, multi-output behavior, GPU/OpenGL rendering,

@@ -2377,7 +2377,7 @@ Window-aware panel interaction has two additive installed qualification rows:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error \
-  -R '^(qindaqt\.shell-visibility-(popup-bounds|settings-private-bus)|desktop\.virtual\.panel-visibility\.(capture-loader-unit|validator-unit))$'
+  -R '^(qindaqt\.shell-visibility-(popup-bounds|settings-private-bus)|desktop\.virtual\.panel-visibility\.(capture-loader(-cpp)?-unit|validator-unit))$'
 
 QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
 ctest --test-dir build/dev --parallel 1 --output-on-failure \
@@ -2412,8 +2412,11 @@ an ABI-incompatible private libkwin. The launch boundary instead passes the
 parent process's authenticated absolute loader search path as a dedicated
 probe argument. The C++ probe applies it only to each
 `weston-screenshooter` child, which targets `qindaqt-parent-wayland`. The
-`capture-loader-unit` row pins that separation and fails closed on a missing,
-relative, or empty path component. Phase diagnostics distinguish an authority
+`capture-loader-unit` row pins the Python command separation and fails closed
+on a missing, relative, or empty path component. The separately compiled
+`capture-loader-cpp-unit` row proves that the C++ probe applies the validated
+path to the screenshot child's environment while retaining its base
+environment. Phase diagnostics distinguish an authority
 settlement timeout from a screenshot start, exit, output-count, or rename
 failure; capture failure never weakens or substitutes for the eight required
 images.
@@ -2432,12 +2435,14 @@ committed with exclusive zone 30. Canonical evidence includes all eight
 captures, the final pre-drag surface-authority snapshot, before/after drag
 geometry, an authoritative pre-close geometry and post-close absence,
 process/PSS authentication, bounded terminal phases, and a final independently
-observed empty survivor set. Cleanup terminates the authenticated shared
-KWin/session process group. KWin 6.6.6 can consequently append `Session process
-has crashed` after capture completion when the session child observes `SIGTERM`
-before KWin; a completed eight-capture document, `term` ledger, and empty final
-survivor set identify that terminal ordering and do not excuse the same line
-before evidence completion. The 1080p row and the existing
+observed empty survivor set. Cleanup gives the authenticated KWin process one
+bounded orderly `SIGTERM` turn before terminating remaining authenticated
+groups, so KWin owns its `--exit-with-session` child teardown. A `Session
+process has crashed` diagnostic fails the row at any point; captures and an
+empty survivor set never waive it. The capture-heavy panel rows have a bounded
+100-second sandbox attempt inside CTest's 110-second row, leaving the outer
+archiver a separate ten-second margin; ordinary desktop attempts retain their
+70-second bound. The 1080p row and the existing
 S3 `single-wuxga` output geometry are qualified; no fractional-scale,
 multi-output, GPU, physical-input, or screenshot-baseline claim follows from
 these two selectors.

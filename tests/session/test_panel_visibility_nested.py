@@ -376,6 +376,10 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--kscreen-doctor", type=Path)
     parser.add_argument("--kscreen-wayland-backend", type=Path)
     parser.add_argument("--run-id", default="")
+    parser.add_argument(
+        "--attempt-timeout-seconds", type=int,
+        default=base.DEFAULT_ATTEMPT_TIMEOUT_SECONDS,
+    )
     parser.add_argument("--print-command-json", action="store_true")
     return parser.parse_args()
 
