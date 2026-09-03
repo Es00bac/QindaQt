@@ -53,6 +53,20 @@
       "capability": "clipboard.write",
       "decision": "grant",
       "reason": "The audited Clipboard applet may dispatch generation-fenced select, pin, delete, and clear intents; execution stays with the clipboard authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "task-list",
+      "capability": "windows.read",
+      "decision": "deny",
+      "reason": "Window inventory observation stays with the audited Task List applet; third-party packages have no compositor window read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "task-list",
+      "capability": "windows.activate",
+      "decision": "deny",
+      "reason": "Window activation stays with the audited Task List applet's generation-fenced intents; third-party packages may not activate windows."
     }
   ]
 }

@@ -1,0 +1,2 @@
+module QindaQt.Shell.TaskList
+TaskListApplet 1.0 TaskListApplet.qml

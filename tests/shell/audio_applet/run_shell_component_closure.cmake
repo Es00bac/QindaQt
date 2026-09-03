@@ -26,7 +26,8 @@ set(shell_components
     BluetoothAppletRuntime
     GlobalMenuAppletRuntime
     LauncherAppletRuntime
-    PowerAppletRuntime)
+    PowerAppletRuntime
+    TaskListAppletRuntime)
 
 # Keep the executable inventory closed as well as testing the known stages.
 # An added shell install rule must extend the executable cases below instead
