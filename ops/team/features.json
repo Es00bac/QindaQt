@@ -1005,9 +1005,14 @@
               "kind": "commit",
               "reference": "22d9f234b626650cba675d4e05990c82e7777587",
               "summary": "The exact Clipboard Settings route candidate 6f4f728 (Fern Hunt, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds) is integrated at Ctrl+9 through the delegated registry merge 76abbad; the merged tree, built against the host's system KWin 6.6.6, passes the focused batch 118/118 in Debug and Release, the static gates, the broad safe Debug suite 569/569, and 88 Release Settings/network/app-shell rows."
+            },
+            {
+              "kind": "source",
+              "reference": "ops/team/messages/first-party-settings/1788465300-maryna-viazovska-final-recheck-verdict.md",
+              "summary": "Color Settings candidate 252b2fd is shelved after its final funded review rejected it at 0/1/0/0: with both buses provably unreachable, three fatal-warning Settings host rows abort on the eagerly composed Color client's expected disconnected-service warning. The candidate's fresh user ICC-root and non-vacuous DesktopVirtual closure repairs themselves passed."
             }
           ],
-          "caveat": "Color (lane open), font, and portal pages remain. Network joining of visible networks is in review; physical hardware and session-runtime proof remain separate."
+          "caveat": "Color is shelved after its final funded P1 rejection; font and portal pages remain outside the requested scope. Physical hardware and session-runtime proof remain separate."
         },
         {
           "id": "QQ-006.06",

@@ -8,7 +8,7 @@ status: working
 feature: Route the handoff's named lanes, integrate accepted desktop blockers, verify main, and maintain product truth
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-03T12:58:04-06:00
-updated_at: 2026-09-03T13:35:22-06:00
+updated_at: 2026-09-03T13:49:46-06:00
 ---
 
 # Codex Program Manager
@@ -43,3 +43,9 @@ updated_at: 2026-09-03T13:35:22-06:00
   8/8 on system KWin 6.6.6. Shelved terminally rejected Bluetooth pairing
   `7025a1c` (`0/0/1/0`) and Tray S2 `b10692c` (`0/1/0/0`); no further repair or
   combined hosting lane is authorized. Color Settings remains in final review.
+- 2026-09-03T13:49:46-06:00 — Shelved Color Settings `252b2fd` after Maryna
+  Viazovska's final REJECT `0/1/0/0`: its two requested repairs pass, but the
+  provably unreachable-bus Settings selector is 52/55 in both profiles because
+  three fatal-warning host rows abort on the eager Color client's availability
+  warning. No integration-assistant lane was opened. Beginning final
+  Release/install verification of the accepted main tree.
