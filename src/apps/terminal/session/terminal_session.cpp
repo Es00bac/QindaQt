@@ -8,8 +8,8 @@
 namespace QindaQt::Apps::Terminal {
 
 TerminalSession::TerminalSession(BackendFactory backendFactory,
-                                 ProcessMonitor *monitor,
-                                 TeardownBounds bounds, QObject *parent)
+                                 ProcessMonitor *monitor, TeardownBounds bounds,
+                                 QObject *parent)
     : QObject(parent), m_backendFactory(std::move(backendFactory)),
       m_monitor(monitor), m_bounds(bounds) {
   m_pollTimer.setInterval(m_bounds.pollIntervalMs);
@@ -27,16 +27,15 @@ TerminalSession::~TerminalSession() {
   // impossible in a destructor, so beginShutdown() remains the only
   // guaranteed-complete route and presentation code must prefer it on window
   // close; this guard exists for forced destruction paths only.
-  const bool childMayBeAlive = m_state == State::Running ||
-                               m_state == State::ShuttingDown ||
-                               m_state == State::ShutdownFailed;
-  if (childMayBeAlive && m_backend != nullptr) {
-    const ProcessId pid = m_backend->shellProcessId();
+  const bool groupMayBeOwned =
+      m_processGroupId > 0 && m_state != State::ShutdownComplete;
+  if (groupMayBeOwned && m_backend != nullptr) {
     m_backend->requestShutdown();
-    if (m_monitor != nullptr && pid > 0 &&
-        m_monitor->reap(pid).state != ProcessState::Exited) {
-      m_monitor->signalProcessGroup(pid, SIGTERM);
-      m_monitor->signalProcessGroup(pid, SIGKILL);
+    if (m_monitor != nullptr &&
+        m_monitor->processGroupState(m_processGroupId) !=
+            ProcessGroupState::Empty) {
+      m_monitor->signalProcessGroup(m_processGroupId, SIGTERM);
+      m_monitor->signalProcessGroup(m_processGroupId, SIGKILL);
     }
   }
 }
@@ -83,12 +82,20 @@ void TerminalSession::clearView() {
   }
 }
 
-bool TerminalSession::start(const TerminalLaunchRequest &request) {
-  // ShutdownFailed means a child may still be alive; only restart()'s
-  // escalation path may retire that generation. Exited generations were
-  // already reaped, so their views can be disposed synchronously.
+bool TerminalSession::start(const TerminalLaunchRequest &request,
+                            const TerminalProfile &profile) {
+  // AGENT-GUARD: Reaping the group leader does not prove that its descendants
+  // are gone. An Exited generation with a retained process-group id must go
+  // through restart()/beginShutdown() before a replacement can take ownership.
   if (m_state == State::ShuttingDown || m_state == State::Running ||
-      m_state == State::ShutdownFailed) {
+      m_state == State::ShutdownFailed || m_processGroupId > 0) {
+    return false;
+  }
+  const ProfileValidation profileValidation = validateTerminalProfile(profile);
+  if (!profileValidation.ok) {
+    publishExit({TerminalExitStatus::Kind::StartFailed, 0,
+                 profileValidation.diagnostic});
+    setState(State::Exited);
     return false;
   }
   if (request.program.isEmpty()) {
@@ -105,6 +112,7 @@ bool TerminalSession::start(const TerminalLaunchRequest &request) {
     m_backend.reset();
   }
   m_request = request;
+  m_profile = profile;
   return spawnGeneration();
 }
 
@@ -144,7 +152,13 @@ void TerminalSession::beginShutdown() {
 bool TerminalSession::spawnGeneration() {
   m_exitPublished = false;
   m_lastExit = {};
-  m_backend = m_backendFactory();
+  if (!m_backendFactory) {
+    publishExit({TerminalExitStatus::Kind::StartFailed, 0,
+                 QStringLiteral("Terminal view factory is unavailable")});
+    setState(State::Exited);
+    return false;
+  }
+  m_backend = m_backendFactory(m_profile);
   if (m_backend == nullptr) {
     publishExit({TerminalExitStatus::Kind::StartFailed, 0,
                  QStringLiteral("Terminal view could not be created")});
@@ -162,6 +176,7 @@ bool TerminalSession::spawnGeneration() {
   }
 
   m_childPid = m_backend->shellProcessId();
+  m_processGroupId = m_childPid;
   connect(m_backend.get(), &TerminalSessionBackend::selectionChanged, this,
           &TerminalSession::selectionAvailable);
   connect(m_backend.get(), &TerminalSessionBackend::titleChanged, this,
@@ -201,8 +216,7 @@ void TerminalSession::enterShutdownSequence(bool restartAfterwards) {
   m_pollTimer.start();
 }
 
-void TerminalSession::completeShutdown(bool clean,
-                                       const QString &diagnostic) {
+void TerminalSession::completeShutdown(bool clean, const QString &diagnostic) {
   m_pollTimer.stop();
   m_phase = ShutdownPhase::None;
   if (clean) {
@@ -212,6 +226,7 @@ void TerminalSession::completeShutdown(bool clean,
     // can be refused honestly.
     m_backend.reset();
     m_childPid = 0;
+    m_processGroupId = 0;
   }
   setState(clean ? State::ShutdownComplete : State::ShutdownFailed);
   if (clean && m_restartAfterShutdown) {
@@ -226,10 +241,10 @@ void TerminalSession::completeShutdown(bool clean,
 }
 
 void TerminalSession::advanceShutdownPhase() {
-  // AGENT-GUARD: m_childPid is the captured process-group leader. Signal
-  // paths must never run for pid <= 0: POSIX would interpret 0/-others as
-  // "my own group", which could signal QindaQt itself.
-  if (m_childPid <= 0 || m_monitor == nullptr) {
+  // AGENT-GUARD: m_processGroupId was captured from the setsid-created child.
+  // Signal paths must never run for ids <= 0: POSIX would interpret 0/-others
+  // as broader process sets and could signal QindaQt itself.
+  if (m_processGroupId <= 0 || m_monitor == nullptr) {
     return;
   }
   const qint64 elapsed = m_phaseTimer.elapsed();
@@ -239,26 +254,32 @@ void TerminalSession::advanceShutdownPhase() {
     // after the close grace elapses. Whether signalProcessGroup succeeded is
     // decided by the next reap, never by the send result alone.
     if (elapsed >= m_bounds.closeGraceMs) {
-      m_monitor->signalProcessGroup(m_childPid, SIGTERM);
+      m_monitor->signalProcessGroup(m_processGroupId, SIGTERM);
       m_phase = ShutdownPhase::Term;
       m_phaseTimer.start();
     }
     break;
   case ShutdownPhase::Term:
     if (elapsed >= m_bounds.termGraceMs) {
-      m_monitor->signalProcessGroup(m_childPid, SIGKILL);
+      m_monitor->signalProcessGroup(m_processGroupId, SIGKILL);
       m_phase = ShutdownPhase::Kill;
       m_phaseTimer.start();
     }
     break;
   case ShutdownPhase::Kill:
     if (elapsed >= m_bounds.killGraceMs) {
-      // SIGKILL cannot be ignored by our own child; surviving it means a
-      // stuck uninterruptible state, which is reported honestly instead of
-      // being mislabelled as a clean exit.
-      completeShutdown(
-          false,
-          QStringLiteral("Terminal child did not exit after SIGKILL"));
+      const auto groupState = m_monitor->processGroupState(m_processGroupId);
+      if (groupState == ProcessGroupState::Empty) {
+        completeShutdown(true, {});
+      } else if (groupState == ProcessGroupState::Unknown) {
+        completeShutdown(false,
+                         QStringLiteral("Terminal process group emptiness "
+                                        "could not be verified after SIGKILL"));
+      } else {
+        completeShutdown(false,
+                         QStringLiteral("Terminal process group did not exit "
+                                        "after SIGKILL"));
+      }
     }
     break;
   case ShutdownPhase::None:
@@ -290,16 +311,24 @@ void TerminalSession::pollTick() {
     return;
   }
   if (m_state == State::ShuttingDown) {
-    if (m_childPid <= 0) {
+    if (m_processGroupId <= 0) {
       // No child was ever spawned for this generation (idle or start
       // failure); the view is already disposed, so shutdown is complete.
       completeShutdown(true, {});
       return;
     }
-    if (m_monitor != nullptr &&
-        m_monitor->reap(m_childPid).state == ProcessState::Exited) {
-      completeShutdown(true, {});
-      return;
+    if (m_monitor != nullptr) {
+      if (m_childPid > 0) {
+        static_cast<void>(m_monitor->reap(m_childPid));
+      }
+      // AGENT-GUARD: waitpid proves only the direct child is reaped. Clean
+      // completion, backend release, and group-id release require explicit
+      // emptiness of the complete captured process group.
+      if (m_monitor->processGroupState(m_processGroupId) ==
+          ProcessGroupState::Empty) {
+        completeShutdown(true, {});
+        return;
+      }
     }
     advanceShutdownPhase();
   }

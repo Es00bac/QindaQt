@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "session/process_liveness.h"
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -9,14 +13,64 @@
 namespace QindaQt::Apps::Terminal {
 namespace {
 
-// AGENT-GUARD: The child pid is captured once as the session leader created by
-// setsid(), so pid == pgid at start. A recycled PID would belong to a different
-// session; the getpgid(pid) == pid check below rejects such a process before
-// any signal leaves this application. Removing that check would allow the
-// terminal to signal an unrelated recycled process.
-bool leaderStillLeadsItsGroup(ProcessId pid) {
-  const auto narrowPid = static_cast<pid_t>(pid);
-  return getpgid(narrowPid) == narrowPid;
+ProcessGroupState scanProcForGroup(ProcessId processGroupId) {
+  const QDir proc(QStringLiteral("/proc"));
+  if (!proc.exists()) {
+    return ProcessGroupState::Unknown;
+  }
+  const QStringList entries =
+      proc.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  bool sawProcessEntry = false;
+  bool scanIncomplete = false;
+  bool capturedLeaderExistsOutsideGroup = false;
+  for (const QString &entry : entries) {
+    bool numeric = false;
+    const qlonglong entryPid = entry.toLongLong(&numeric);
+    if (!numeric) {
+      continue;
+    }
+    sawProcessEntry = true;
+    QFile statFile(proc.filePath(entry + QStringLiteral("/stat")));
+    if (!statFile.open(QIODevice::ReadOnly)) {
+      // A process may disappear between enumeration and open. A persistent
+      // unreadable entry means the scan cannot prove that group absent.
+      scanIncomplete = scanIncomplete || QFileInfo::exists(statFile.fileName());
+      continue;
+    }
+    const QByteArray stat = statFile.readAll();
+    const qsizetype commandEnd = stat.lastIndexOf(')');
+    if (commandEnd < 0 || commandEnd + 2 >= stat.size()) {
+      scanIncomplete = true;
+      continue;
+    }
+    // Fields after comm are: state, ppid, pgrp, session, ... . The command
+    // itself may contain spaces or parentheses, hence the last ')' anchor.
+    const QList<QByteArray> fields = stat.sliced(commandEnd + 2).split(' ');
+    if (fields.size() < 3) {
+      scanIncomplete = true;
+      continue;
+    }
+    bool groupOk = false;
+    const qlonglong group = fields.at(2).toLongLong(&groupOk);
+    if (!groupOk) {
+      scanIncomplete = true;
+      continue;
+    }
+    if (group == processGroupId) {
+      return ProcessGroupState::NonEmpty;
+    }
+    if (entryPid == processGroupId) {
+      // The forked child can briefly exist before setsid() establishes the
+      // promised group. Treat that startup window (or a failed setsid zombie)
+      // as uncertain, never as proof that teardown has completed.
+      capturedLeaderExistsOutsideGroup = true;
+    }
+  }
+  if (capturedLeaderExistsOutsideGroup || scanIncomplete) {
+    return ProcessGroupState::Unknown;
+  }
+  return sawProcessEntry ? ProcessGroupState::Empty
+                         : ProcessGroupState::Unknown;
 }
 
 } // namespace
@@ -49,22 +103,40 @@ ProcessExitInfo PosixProcessMonitor::reap(ProcessId pid) {
   // code); any other errno is Unknown so callers treat the process
   // conservatively as alive rather than signaling on a guess.
   const bool alreadyReaped = (errno == ECHILD);
-  return {.state = alreadyReaped ? ProcessState::Exited
-                                 : ProcessState::Unknown,
+  return {.state = alreadyReaped ? ProcessState::Exited : ProcessState::Unknown,
           .signaled = false,
           .code = 0,
           .statusKnown = !alreadyReaped};
 }
 
-bool PosixProcessMonitor::signalProcessGroup(ProcessId groupLeader,
+ProcessGroupState
+PosixProcessMonitor::processGroupState(ProcessId processGroupId) {
+  if (processGroupId <= 0) {
+    return ProcessGroupState::Unknown;
+  }
+  errno = 0;
+  if (::killpg(static_cast<pid_t>(processGroupId), 0) == 0 || errno == EPERM) {
+    return ProcessGroupState::NonEmpty;
+  }
+  if (errno != ESRCH) {
+    return ProcessGroupState::Unknown;
+  }
+  // AGENT-GUARD: ESRCH from killpg alone is insufficient evidence. A zombie
+  // descendant still owns the captured pgrp in /proc until its new parent
+  // reaps it. Releasing the id before this scan says clean while a member
+  // remains, recreating Dina St Johnston's P1-1 leak.
+  return scanProcForGroup(processGroupId);
+}
+
+bool PosixProcessMonitor::signalProcessGroup(ProcessId processGroupId,
                                              int signalNumber) {
-  if (!leaderStillLeadsItsGroup(groupLeader)) {
+  if (processGroupId <= 0) {
     return false;
   }
-  // Negative pid targets the whole process group, which covers grandchildren
-  // that inherited the session's group. This is the teardown guarantee the
-  // acceptance contract names; plain kill(pid) would leak grandchildren.
-  return ::kill(-static_cast<pid_t>(groupLeader), signalNumber) == 0;
+  // AGENT-CONTRACT: TerminalSession retains the captured setsid-created group
+  // id until processGroupState() proves it empty. The group leader may already
+  // be reaped, so revalidating getpgid(leader) here would strand descendants.
+  return ::killpg(static_cast<pid_t>(processGroupId), signalNumber) == 0;
 }
 
 } // namespace QindaQt::Apps::Terminal

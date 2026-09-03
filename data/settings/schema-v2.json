@@ -280,6 +280,24 @@
       "domain": "services",
       "type": "boolean",
       "default": true
+    },
+    {
+      "key": "services.terminalProfiles",
+      "domain": "services",
+      "type": "string",
+      "default": "[]"
+    },
+    {
+      "key": "services.terminalDefaultProfile",
+      "domain": "services",
+      "type": "string",
+      "default": "builtin-default"
+    },
+    {
+      "key": "services.terminalRestoreTabs",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
     }
   ]
 }

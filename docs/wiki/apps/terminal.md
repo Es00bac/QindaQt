@@ -1,11 +1,12 @@
 # QindaQt Terminal
 
-`qindaqt-terminal` is QindaQt's first-party terminal. S0 is intentionally one
-complete ordinary desktop-client outcome: a single Qt 6 window that owns one
-PTY session, runs the configured shell, renders UTF-8 output, accepts keyboard
-input, supports bounded selection/copy/paste, reports exit and restart, and
-guarantees child teardown. Tabs, profiles, search, links, GPU rendering, and
-advanced VT behavior are explicit deferrals, not hidden claims.
+`qindaqt-terminal` is QindaQt's first-party terminal. S1 is an ordinary Qt 6
+desktop client with up to eight independent tabs in one window. Every tab owns
+the complete S0 PTY/child/teletype lifecycle, may select a validated profile at
+creation, and participates in teardown-first close and quit. User profiles,
+the default profile, and the tab-restore policy are persisted through the
+public Settings1 client. Search, links, GPU qualification, global-menu export,
+and advanced VT behavior remain explicit deferrals, not hidden claims.
 
 Launch policy, session lifecycle, rendering adaptation, and presentation are
 separate owners inside `src/apps/terminal`. The qtermwidget dependency and its
@@ -56,14 +57,17 @@ Teardown is a bounded escalation, not a hope:
 
 1. The bridge PTY master closes (the kernel delivers `SIGHUP` to the child
    session).
-2. After the close grace elapses, `SIGTERM` is sent to the exact captured
-   process group — never to a bare PID, and only after the group leader is
-   revalidated, so a recycled PID can never be signaled.
-3. After the term grace, `SIGKILL` to the same group.
-4. If the child somehow survives `SIGKILL`, the session reports a shutdown
-   failure honestly, retains the backend and the captured process-group id,
-   and refuses further close, quit, and restart attempts for that generation;
-   `start()` also refuses to replace it.
+2. After the close grace elapses, `SIGTERM` is sent to the exact process group
+   captured when the `setsid()` child was its leader — never to a bare PID.
+   Reaping that leader does not release the captured group id or prevent this
+   signal, because an inherited descendant may still own the group.
+3. After the term grace, `SIGKILL` is sent to the same retained group.
+4. Clean shutdown is published only after a `killpg(pgid, 0)` probe and Linux
+   `/proc` process-group scan establish that no member, including an orphaned
+   zombie awaiting its new parent's reap, remains. A member surviving the kill
+   grace or an indeterminate emptiness check reports shutdown failure honestly,
+   retains the backend and captured group id, and refuses further close, quit,
+   restart, or replacement for that generation.
 
 Window close hides the window, runs the escalation, and only then quits the
 application, so a surviving child can never be orphaned by an early exit. The
@@ -78,12 +82,79 @@ session's `beginShutdown`, which is the restart cancellation in that state.
 Bounds are injected values (default close 3 s, term 1 s,
 kill 1 s; 20 ms poll) which makes the sequence deterministic in tests.
 
+## Multiple sessions and tab titles
+
+One `TerminalSessionCollection` owns at most eight sessions. A ninth creation
+is refused without disturbing any existing child. Each accepted session gets a
+fresh backend, PTY, bridge, child process, copied profile value, and tab. Close
+Tab applies the S0 refusal/cancel rules to that session; closing the last tab is
+quit intent and therefore takes the same close-all path as File > Quit or the
+window decoration. Close-all starts every teardown, removes cleanly terminated
+sessions, retains any SIGKILL survivor, and refuses application quit while a
+survivor remains. Collection destruction synchronously invokes every retained
+session's forced-destruction guard, including process-exit teardown.
+
+Child-published tab titles are presentation data, never authority. Controls
+and Unicode format characters are removed, whitespace runs collapse, unpaired
+surrogates are dropped, and the result is capped at 128 UTF-16 code units
+without splitting a surrogate pair. Empty results use `Session N`. The tab
+strip has the accessible name `Terminal tabs`, exposes standard PageTabList /
+PageTab roles, and is keyboard-operable through the persistent actions below.
+
+## Profiles and Settings1 persistence
+
+The immutable `builtin-default` profile is always available. At most 16 user
+profiles may be persisted. A profile contains a stable safe identifier; a
+trimmed printable name (maximum 64 characters); an optional absolute shell
+program and at most 64 verbatim arguments under the existing launch-policy
+byte limits; an optional font family and either the theme font size or 6–48
+points; a safe QindaQt theme identifier; 0–100,000 scrollback lines; and a
+`silent` or `audible` bell policy. Silent profiles strip BEL from child output;
+audible profiles pass it to the renderer. A user profile never changes the
+shell contract: its program and argv go through `TerminalLaunchPolicy`, never
+through a shell string, and an invalid or unresolvable profile is refused. The
+line-oriented profile editor preserves every unchanged argv element exactly,
+including leading, interior, trailing, and sole empty arguments.
+
+The terminal reads and writes this exact Settings1 scope:
+
+| Key | Type/default | Meaning |
+| --- | --- | --- |
+| `services.terminalProfiles` | string / `[]` | Canonical JSON array of validated user profiles |
+| `services.terminalDefaultProfile` | string / `builtin-default` | Profile copied into new sessions |
+| `services.terminalRestoreTabs` | Boolean / `false` | Policy allowing a future saved tab inventory to be restored |
+
+The three values form one logical draft but use the public v1 client's
+single-key writes in the fixed table order. Each commit waits for the automatic
+fresh snapshot before the next write, so no stale base revision is reused. An
+authoritative conflict aborts remaining writes and requires an explicit
+re-apply. Timeout, owner loss, or bus loss makes the in-flight result uncertain
+and it is never replayed. Missing, malformed, incomplete, or wrong-typed
+snapshots are rejected wholesale. Before a valid baseline and whenever the
+transport or Settings1 authority is lost, new sessions use built-in defaults;
+existing sessions keep the profile value copied at creation.
+
+The Manage Profiles dialog does not close when Apply merely starts. It disables
+the draft while the asynchronous sequence is pending, closes only after all
+three keys are confirmed applied, and otherwise keeps the unchanged draft open
+with a bounded accessible per-key result. The same complete result remains in
+the window status surface: conflict requires review and explicit re-apply,
+confirmed rejection names failed and not-attempted keys, and transport loss or
+timeout is labeled uncertain and explicitly not replayed.
+
+Session content, scrollback bytes, child environment, argv history, titles,
+process identifiers, and tab inventory are never persisted. Consequently S1
+persists the restore *policy* but deliberately has no content-bearing inventory
+to restore yet; startup opens one tab using the confirmed default profile (or
+the built-in default after a definitive Settings1 failure).
+
 ## Rendering adapter boundary
 
 `qtermwidget6` is linked only by the terminal's rendering adapter, and only as
 a private link dependency; no other module gains its headers, include paths,
-or usage requirements, and tests never link it. Per ADR-0040 the adapter owns
-a second, application-side PTY: the child's controlling TTY and stdio are the
+or usage requirements. Only the dedicated production-adapter regression links
+that adapter; support-library tests remain independent of qtermwidget. Per
+ADR-0040 the adapter owns a second, application-side PTY: the child's controlling TTY and stdio are the
 bridge slave opened by path, so child stdio stays blocking and no descriptor
 flag can leak; keyboard and paste bytes are written to the bridge master (the
 only input direction); child output and line-discipline echo are read from the
@@ -112,6 +183,13 @@ name, Shift-modified terminal-safe shortcut, and window-shortcut context.
 
 | Action identity | Default | Meaning |
 | --- | --- | --- |
+| `tabNewAction` | `Ctrl+Shift+T` | Open a tab with the confirmed default profile |
+| `tabCloseAction` | `Ctrl+Shift+W` | Close the active tab, or close-all when it is last |
+| `tabNextAction` | `Ctrl+Shift+Right` | Select the next tab, wrapping at the end |
+| `tabPreviousAction` | `Ctrl+Shift+Left` | Select the previous tab, wrapping at the start |
+| `tabMoveLeftAction` | `Ctrl+Shift+Alt+Left` | Move the active tab left |
+| `tabMoveRightAction` | `Ctrl+Shift+Alt+Right` | Move the active tab right |
+| `profileManageAction` | `Ctrl+Shift+P` | Edit profiles and persistence policy |
 | `sessionRestartAction` | `Ctrl+Shift+R` | Tear down and start a fresh session |
 | `editCopyAction` | `Ctrl+Shift+C` | Copy selection to clipboard |
 | `editPasteAction` | `Ctrl+Shift+V` | Paste clipboard into the session |
@@ -132,7 +210,13 @@ selection) available. The embedded view takes focus
 when published, has `StrongFocus` policy, an accessible name and description,
 and the window exposes its title, session status, and accessible status text.
 Deep screen-reader bridge qualification stays a cross-application milestone
-(QQ-006.09), not an S0 claim.
+(QQ-006.09), not an S1 claim.
+
+The same fixed commands are projected through `QindaQt.AppShell 1.0` as
+`session.*`, `edit.*`, `view.clear`, and `file.quit` action identifiers.
+External activation is routed back to the corresponding local `QAction`, so a
+later global-menu exporter cannot bypass local enablement or lifecycle policy.
+S1 publishes the catalog but does not implement that exporter.
 
 ## QST-1 theme and appearance
 
@@ -163,7 +247,8 @@ backends.
 `org.qindaqt.Terminal.desktop` registers the ordinary Wayland application with
 `Categories=Qt;System;TerminalEmulator;`, no `MimeType`, and
 `StartupWMClass=qindaqt-terminal`. The installed `Terminal` component contains
-the executable, the desktop entry, and the built-in theme data. `qtermwidget6`
+the executable, desktop entry, built-in theme data, and AppShell's linked
+AppShell/Controls/Tokens backing libraries. `qtermwidget6`
 remains an external dynamically linked package dependency. The staged metadata
 gate resolves that dependency from the exact CMake-imported library file while
 clearing ambient loader and theme roots; a build-tree RPATH or caller-specific
@@ -183,7 +268,9 @@ output/echo capture, winsize, close, and read-notifier quiescence with
 retained-master bounded liveness after the slave side disappears), the
 session state machine (typed start
 failures, exit-code versus signal versus unknown-exit publication,
-duplicate-exit suppression), the teardown escalation sequence including
+duplicate-exit suppression), the teardown escalation sequence plus a real
+HUP/TERM-immune descendant that outlives its reaped group leader and must be
+killed before clean completion, including unconditional fixture cleanup;
 refusal to replace an unkillable generation, ownership retention with
 close/quit/restart refusal while a survivor remains, close-cancels-pending-
 restart through the session route and the production window route (Restart
@@ -195,29 +282,39 @@ wiring binding), window action identity and action-state truth across
 Running→Exited, readline-safe shortcuts, exit-status severity rendering,
 accessibility and focus metadata, hostile-resize clamping, QST scheme
 documents for all five themes, real-adapter custom-scheme rendering and blank
-selection truth, desktop metadata, positional-argument
+selection truth; bounded multi-session creation, movement, close-all, and
+forced destruction; title sanitization; hostile profile values, canonical
+round trips, and unchanged empty-argument preservation; Settings1 baseline,
+sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
+the production Manage Profiles modal remaining visible, enabled, and
+accessibly descriptive after conflict, rejection, transport loss, owner loss,
+or timeout while the all-applied control closes it; tab shortcuts,
+traversal/movement, and
+PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
+activation routing; desktop metadata; positional-argument
 rejection, and staged installed metadata with installed-prefix theme
 resolution. Every Widgets-linked row sets `QT_QPA_PLATFORM=offscreen`, so
 the selector runs in display-less environments with no display variables
 set. The installed and CLI rows
 exit before any window or session exists.
 
-The mandatory exact private-Wayland live lane additionally covers the real
-shell's UTF-8 and ANSI rendering, keyboard-to-child byte flow, resize/SIGWINCH,
-populated select/copy and paste, normal and signal exit truth, restart/close
-teardown, first frame, and aggregate PSS; passing that lane is an integration
-gate for this slice. Physical-display/GPU behavior and host-compositor
-interaction remain outside S0.
+The S0 milestone separately required an exact private-Wayland live lane for
+the real shell's UTF-8 and ANSI rendering, keyboard-to-child byte flow,
+resize/SIGWINCH, populated select/copy and paste, normal and signal exit truth,
+restart/close teardown, first frame, and aggregate PSS. This S1 worker does not
+rerun or extend nested-session evidence. Physical-display/GPU behavior and
+host-compositor interaction remain outside S1.
 
-## Bounded S0 deferrals
+## Bounded S1 deferrals
 
-- Tabs and multiple sessions: one window owns exactly one session.
-- Profiles, font/size settings, and Settings1 persistence: appearance derives
-  from one `--theme` per launch only.
+- The restore-policy flag is persisted, but tab inventory and terminal content
+  are intentionally not; startup restores no prior session bytes or argv.
 - Search, OSC-8 hyperlinks, click-to-open, and link tooltips stay disabled.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no
   rendering-performance claim is made.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - A QindaQt-branded icon and global-menu export wait for later branding and
-  application-shell slices.
+  shell-integration slices; S1 only publishes the AppShell action catalog.
+- Whole-application assistive-technology proof, the nested screenshot matrix,
+  and physical display/input qualification remain later integration gates.

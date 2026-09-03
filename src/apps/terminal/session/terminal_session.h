@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "profiles/terminal_profile.h"
 #include "session/terminal_session_backend.h"
 #include "session/terminal_session_types.h"
 
@@ -35,19 +36,25 @@ public:
   };
 
   using BackendFactory =
-      std::function<std::unique_ptr<TerminalSessionBackend>()>;
+      std::function<std::unique_ptr<TerminalSessionBackend>(
+          const TerminalProfile &)>;
 
   // The monitor is injected, not owned; the factory must be callable at any
   // later time (restart). Bounds make the teardown sequence deterministic in
-  // tests and human-scale in production.
+  // tests and human-scale in production. The factory receives the session's
+  // profile so the rendering adapter can apply per-profile font, scheme,
+  // scrollback, and bell policy (S1).
   TerminalSession(BackendFactory backendFactory, ProcessMonitor *monitor,
                   TeardownBounds bounds, QObject *parent = nullptr);
   ~TerminalSession() override;
 
   // Starts the first (or, after a completed shutdown, a fresh) generation.
-  // Returns true when a child is running; a start failure still publishes a
-  // StartFailed sessionFinished and leaves the object restartable.
-  [[nodiscard]] bool start(const TerminalLaunchRequest &request);
+  // The profile is stored for the Restart path. Returns true when a child
+  // is running; a start failure still publishes a StartFailed
+  // sessionFinished and leaves the object restartable.
+  [[nodiscard]] bool start(const TerminalLaunchRequest &request,
+                           const TerminalProfile &profile =
+                               builtinDefaultProfile());
 
   // Teardown-then-start with the last successful request. Rejected while a
   // shutdown is already in flight, while a SIGKILL survivor is owned
@@ -65,6 +72,7 @@ public:
   [[nodiscard]] const TerminalLaunchRequest &lastRequest() const {
     return m_request;
   }
+  [[nodiscard]] const TerminalProfile &profile() const { return m_profile; }
 
   // Presentation-facing view operations. Each is a safe no-op when no
   // backend generation is active, so the window never needs the backend
@@ -105,8 +113,10 @@ private:
 
   State m_state = State::Idle;
   TerminalLaunchRequest m_request;
+  TerminalProfile m_profile = builtinDefaultProfile();
   TerminalExitStatus m_lastExit;
   ProcessId m_childPid = 0;
+  ProcessId m_processGroupId = 0;
   bool m_exitPublished = false;
   bool m_restartAfterShutdown = false;
 
@@ -115,3 +125,5 @@ private:
 };
 
 } // namespace QindaQt::Apps::Terminal
+
+Q_DECLARE_METATYPE(QindaQt::Apps::Terminal::TerminalSession *)

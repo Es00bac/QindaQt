@@ -152,9 +152,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Customize route](apps/customize-settings.md) documents the direct
   profile canvas: editor-session gestures, keyboard parity, atomic user-profile
   persistence, Settings1 selection truth, and fail-closed package boundaries.
-- [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
-  terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
-  rendering adapter, and keyboard/accessibility boundaries.
+- [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
+  terminal with up to eight tabs: launch policy, PTY/session lifecycle and
+  teardown, profiles and Settings1 persistence, the qtermwidget rendering
+  adapter, and keyboard/accessibility boundaries.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route
   registry, responsive wide/compact navigation, route lifetime, keyboard and
   accessibility behavior, and sanitized package proof.
