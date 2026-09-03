@@ -2,6 +2,7 @@
 import QtQuick
 import QindaQt.Shell.AudioApplet 1.0 as AudioAppletModule
 import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
+import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 
@@ -17,6 +18,7 @@ Item {
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -34,9 +36,11 @@ Item {
         !liveApplets && String(applet.plugin ?? "") === "launcher"
     readonly property bool launcherReady:
         (ready && entryPoint === "qindaqt.applets.launcher") || launcherPreview
+    readonly property bool globalMenuReady:
+        ready && entryPoint === "qindaqt.applets.global-menu"
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady || launcherReady
+        || powerReady || launcherReady || globalMenuReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -59,6 +63,23 @@ Item {
         launcherAppletAccess !== null ? launcherAppletAccess
                                       : inheritedLauncherAccess()
 
+    function inheritedGlobalMenuAccess() {
+        let candidate = root.parent
+        // AppletChip deliberately remains a presentation-only boundary. The
+        // permitted panel rows carry this purpose-specific facade, and this
+        // bounded lookup crosses only that existing wrapper.
+        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
+            if (typeof candidate.globalMenuAppletAccess !== "undefined")
+                return candidate.globalMenuAppletAccess
+            candidate = candidate.parent
+        }
+        return null
+    }
+
+    readonly property var effectiveGlobalMenuAppletAccess:
+        globalMenuAppletAccess !== null ? globalMenuAppletAccess
+                                       : inheritedGlobalMenuAccess()
+
     // AGENT-CONTRACT: BuiltinAppletRegistry is the compiled trust root; this
     // dispatcher is only its presentation inventory. Focused tests must fail
     // if a registered entry point lacks a renderer here.
@@ -67,13 +88,15 @@ Item {
                    : audioReady ? audio.implicitWidth
                    : bluetoothReady ? bluetooth.implicitWidth
                    : powerReady ? power.implicitWidth
-                   : launcherReady ? launcher.implicitWidth : 0
+                   : launcherReady ? launcher.implicitWidth
+                   : globalMenuReady ? globalMenu.implicitWidth : 0
     implicitHeight: clockReady ? clock.implicitHeight
                     : notificationCenterReady ? notifications.implicitHeight
                     : audioReady ? audio.implicitHeight
                     : bluetoothReady ? bluetooth.implicitHeight
                     : powerReady ? power.implicitHeight
-                    : launcherReady ? launcher.implicitHeight : 0
+                    : launcherReady ? launcher.implicitHeight
+                    : globalMenuReady ? globalMenu.implicitHeight : 0
 
     ClockApplet {
         id: clock
@@ -123,6 +146,15 @@ Item {
         anchors.fill: parent
         visible: root.launcherReady
         access: root.effectiveLauncherAppletAccess
+        vertical: root.vertical
+    }
+
+    GlobalMenuModule.GlobalMenuApplet {
+        id: globalMenu
+        anchors.fill: parent
+        visible: root.globalMenuReady
+        access: root.effectiveGlobalMenuAppletAccess
+        theme: root.theme
         vertical: root.vertical
     }
 }

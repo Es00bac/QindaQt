@@ -14,6 +14,7 @@ Column {
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {

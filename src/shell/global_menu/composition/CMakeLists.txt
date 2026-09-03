@@ -14,6 +14,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/shell/global_menu/composition/announced_menu_address_source.h
             include/qindaqt/shell/global_menu/composition/global_menu_transport_coordinator.h
             include/qindaqt/shell/global_menu/composition/registrar_window_id_source.h
 )

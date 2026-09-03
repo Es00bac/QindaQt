@@ -12,6 +12,7 @@ Item {
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -41,6 +42,7 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletRow {
@@ -58,6 +60,7 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletRow {
@@ -76,6 +79,7 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -93,6 +97,7 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -110,6 +115,7 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -127,5 +133,6 @@ Item {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 }

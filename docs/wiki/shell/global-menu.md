@@ -11,15 +11,18 @@ and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
 ## Milestone boundary
 
 G0 delivered the pure model, policy, exporter, Qt Widgets adapter, and applet
-facade. G1 adds production AppMenu registrar and asynchronous dbusmenu
-transport libraries plus their shell-neutral composition coordinator. There
-is still no production-shell instantiation or applet-registry wiring; the
-`global-menu` manifest still resolves as `implementation-unavailable` (see
-[Applet runtime](applet-runtime.md)), and the QML component is not yet part
-of an installed QML module — the test imports the source tree directly. No
-one should read this page as a live-shell feature claim. The later composition
-lane owns the runtime focus adapter, applet registration, installed QML, panel
-instance, and submenu popups.
+facade. G1 delivered the AppMenu registrar, asynchronous dbusmenu transport,
+and shell-neutral composition coordinator. G2 now composes those accepted
+boundaries in `qindaqt-shell`: the audited built-in resolves in top-panel
+profiles, the shell owns the registrar on its injected session bus, consumes
+authenticated active-window identity through its existing exact-owner
+window-actions client, and hosts the compiled `QindaQt.Shell.GlobalMenu`
+module with bounded submenu popups. `GlobalMenuAppletRuntime` is the narrow
+installed component.
+
+This milestone does not claim GTK/foreign-toolkit exporters or an installed
+nested-session qualification. The full-tree snapshot protocol remains the
+authority; payload-bearing deltas are still deferred.
 
 ## Canonical model
 
@@ -214,11 +217,14 @@ closed under [ADR-0063](../adr/0063-project-authenticated-active-window-identity
 
 ## Transport composition
 
-`QindaQt::GlobalMenuTransportComposition` is buildable but not instantiated by
-the production shell yet. On an injected focus refresh it resolves the legacy
-window id, selects the exact registrar entry, asks the bus daemon for that
-unique peer's PID, and runs `ProviderAuthenticator`. Each newly accepted
-dbusmenu layout is authenticated again, adopted into
+`QindaQt::GlobalMenuTransportComposition` is instantiated by the production
+shell through `GlobalMenuAppletComposition`. For XWayland, an injected focus
+refresh resolves the projected numeric id, selects the exact registrar entry,
+asks the bus daemon for that unique peer's PID, and runs
+`ProviderAuthenticator`. For native Wayland, the same coordinator resolves the
+projected service to its current exact owner and uses the projected object
+path; owner replacement invalidates and rebinds through the same proof. Each
+newly accepted dbusmenu layout is authenticated again, adopted into
 `ActiveProviderSelector`, pulled through the unchanged `MenuExporter`, and
 published to `GlobalMenuAppletAccess`. Thus remote dbusmenu revisions never
 become invocation authority; the existing selector epoch/revision remains the
@@ -228,7 +234,17 @@ An applet activation synchronously captures the published tree, runs the
 existing `InvocationGuard`, converts the canonical numeric action id back to
 the dbusmenu item id, and submits one `clicked` event. Missing focus mappings,
 registration replacement, PID/name mismatch, focus movement, owner loss, or
-stale lineage publishes unavailable and admits no event.
+stale lineage publishes unavailable and admits no event. Registrar startup
+collision publishes the explicit `degraded` phase with reason
+`registrar-name-owned`; missing policy/catalog authority is `unavailable`.
+Stop, owner loss, and replacement clear all items before any refresh.
+
+`ShellRuntimeApplication` constructs exactly one
+`QtShellWindowActionsTransport`/`ShellWindowActionsClient` pair and lends that
+client to the composition. The global-menu runtime neither discovers nor owns
+a second compositor connection. `identityChanged` drives focus refresh, so the
+client's owner-loss and monotonic reread rules are also the menu's stale-truth
+withdrawal boundary.
 
 ## Qt Widgets adapter
 
@@ -252,12 +268,11 @@ snapshot, never to wrong complete truth.
 
 `GlobalMenuAppletAccess` mirrors
 `NotificationCenterAppletAccess`: shell composition publishes authoritative
-state, and QML only reads the top-level projection and requests an
-activation. The projection is honest by construction: entries carry their
-`kind` ("action" or "submenu") and their checked state, hidden items and
-separators are omitted, and `activate()` opens only enabled visible
-actions — top-level submenus render visibly but non-activating until the
-popup milestone, with their accessible name saying so. `publishTree` is
+state, and QML reads its recursive projection and requests an activation. The
+projection is honest by construction: entries carry their `kind` ("action",
+"submenu", or nested "separator"), children, shortcut, and checked state;
+hidden items are omitted, while nested separators are retained for popup
+layout. `activate()` admits only enabled visible actions. `publishTree` is
 fail-closed: invalid input publishes the unavailable state instead of any
 part of its content. The facade is GUI-thread-confined, and its G1 consumer
 must capture the observed window/epoch/revision at request time and run
@@ -280,22 +295,49 @@ Hosts below the documented minimum extent degrade to indicator-only (and
 the indicator hides itself when even it cannot fit) rather than painting
 partial content inside the clipped root. A clamped
 `maximumVisibleEntries` acts as the count cap on top of the measured fit.
-G1 still wires no publisher into the production shell, so `available` stays
-false there until the later composition lane instantiates the transport.
+
+An enabled submenu opens one `GlobalMenuPopup`. The popup keeps a stack of at
+most six menu levels, skips disabled entries and separators during Up/Down
+navigation, enters with Right, returns with Left, activates once with
+Return/Enter/Space, and closes on Escape, outside press, or focus loss. It
+exposes `PopupMenu`/`MenuItem` roles, names, descriptions, focusability, and
+provider-owned checked state. Reaching the depth cap fails closed. Popup
+activation calls the facade exactly once; the existing invocation guard and
+no-replay dbusmenu client remain the sole execution lineage.
+
+`BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
+Bluetooth, and Power. The panel factory injects only the facade; panel rows
+never receive a bus object or transport.
+
+## Manifest, policy, and packaging
+
+The existing `global-menu` manifest requests `global-menu.read` and
+`windows.activate`. The audited built-in policy grants only
+`global-menu.read`; it explicitly denies `windows.activate` because menu
+events do not activate arbitrary windows. The compiled built-in registry maps
+`QindaQt.Shell.GlobalMenu` to the in-process host. Stock placement remains
+limited to QindaQt, macOS, and Unity families, each on a top panel and only
+when `workflow.globalMenu` is true.
+
+`GlobalMenuAppletRuntime` installs the production shell, global-menu module
+library/plugin/QML metadata and sources, the embedded registrar/transport
+implementation, manifest, policy, QindaQt profile, default theme, and the shared
+Controls/Tokens/Launcher closure. Every other shell-carrying component also
+installs the global-menu module library because the shell has a direct runtime
+dependency. The component-closure gate authenticates that relocation.
 
 ## Remaining boundaries
 
 - No general application framework, foreign-application injection, or
   arbitrary command execution: the model carries menu values, never launch
   payloads, and invocation authorization never executes anything itself.
-- No private KWin/KDE ABI: compositor integration arrives later through an
-  authenticated public seam, mirroring the session-lock observer pattern.
-- No production-shell instantiation, live compositor focus adapter, applet
-  registry/manifest change, installed QML, submenu popup, or payload-bearing
-  canonical delta contract is part of G1.
+- No private KWin/KDE ABI: the runtime consumes only the public exact-owner
+  shell window-actions client and its authenticated identity snapshot.
+- No GTK/foreign-toolkit exporter, arbitrary exporter injection, or
+  payload-bearing canonical delta contract is part of G2.
 - The registrar/dbusmenu tests use private `dbus-run-session` connections only;
-  they do not qualify a real login session, foreign toolkit, or installed
-  desktop.
+  the installed-package row uses offscreen source poison. Neither qualifies a
+  real login session, foreign toolkit, or nested installed desktop.
 
 ## Verification
 
@@ -311,11 +353,16 @@ over the public seams), `qindaqt.global-menu-applet-qml-offscreen`
 `qindaqt.global-menu-applet-qml-accessibility-offscreen` (real accessible
 press and provider-owned checked state), and
 `qindaqt.global-menu-applet-qml-overflow-offscreen` (measured-geometry
-overflow, vertical layout, and below-minimum host cases). G1 adds
+overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-registrar-private-bus`,
 `qindaqt.global-menu-dbusmenu-decoder`,
 `qindaqt.global-menu-dbusmenu-private-bus`,
 `qindaqt.global-menu-transport-composition-private-bus`, and
-`qindaqt.global-menu-transport-boundary-poison`. Live focus handoff,
-installed packaging, and session qualification remain unbuilt and unclaimed;
-see the [testing harness](../development/testing-harness.md).
+`qindaqt.global-menu-transport-boundary-poison`. G2 adds
+`qindaqt.global-menu-runtime-composition-private-bus`,
+`qindaqt.global-menu-runtime-boundary-poison`,
+`qindaqt.global-menu-applet-submenu-qml-offscreen` under
+`QT_FATAL_WARNINGS=1`, `qindaqt.global-menu-installed-package`, and the shared
+`qindaqt.shell-runtime-component-closure`. Live installed-session
+qualification remains unbuilt and unclaimed; see the
+[testing harness](../development/testing-harness.md).
