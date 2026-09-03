@@ -799,9 +799,14 @@
               "kind": "test",
               "reference": "docs/wiki/development/testing-harness.md",
               "summary": "Independent Debug and Release Controls selectors passed 29/29, including 25 visual rows, behavior, source policy, PSS, and installed import."
+            },
+            {
+              "kind": "commit",
+              "reference": "5cf24a27d13600413d10549fdcf3d627bf6725e2",
+              "summary": "The exact accepted Controls visual gate candidate b7b5208 (Jean Hall, OpenAI Codex, ACCEPT 0/0/0/0 after one rejected round) vendors byte-pinned OFL font fixtures so the 25 controls visual rows no longer depend on host font packages; the merged tree passes controls 34/34 in Debug and Release, the visual rows twice consecutively, the static gates, and the broad safe Debug suite 465/465 with the visual rows included again."
             }
           ],
-          "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step."
+          "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step. The visual baselines are pinned to vendored font bytes (ADR-0021 amendment); host font updates no longer drift them."
         },
         {
           "id": "QQ-006.03",
