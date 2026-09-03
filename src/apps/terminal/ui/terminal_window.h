@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "links/terminal_link.h"
+#include "search/terminal_search.h"
 #include "profiles/terminal_profile.h"
 #include "session/terminal_session_collection.h"
 #include "session/terminal_session_types.h"
@@ -21,6 +23,8 @@ class QMenu;
 namespace QindaQt::Apps::Terminal {
 
 class TerminalAppShellBridge;
+class TerminalFindBar;
+class TerminalLinkOpener;
 class TerminalProfileSettings;
 class TerminalTabBar;
 
@@ -29,21 +33,24 @@ class TerminalTabBar;
 // AppShell action projection. It never touches PTYs, processes, the
 // rendering library, or Settings1 transport; the injected collection owns
 // session lifecycles and the injected profile settings owns persistence.
-// Every window shortcut is Shift-modified on purpose: plain Ctrl+C/S/Q/A
-// and friends must reach the child shell (readline job and flow control),
-// so a window-level binding on them would be a functional regression.
+// Every character-based window shortcut is Shift-modified on purpose: plain
+// Ctrl+C/S/Q/A and friends must reach the child shell (readline job and flow
+// control), so a window-level binding on them would be a functional
+// regression. F3 remains the non-character find-navigation convention.
 class TerminalWindow final : public QMainWindow {
   Q_OBJECT
 
 public:
   // The window takes ownership of the collection. profileSettings is
   // injected, not owned, and may be null (persistence unavailable: only the
-  // built-in profile is offered). themeIds enumerates the installed QindaQt
-  // themes offered by the profile dialog.
+  // built-in profile is offered). linkOpener is likewise borrowed, may be
+  // null, and must outlive the window. themeIds enumerates the installed
+  // QindaQt themes offered by the profile dialog.
   TerminalWindow(std::unique_ptr<TerminalSessionCollection> sessions,
                  const TerminalViewAppearance &appearance,
                  const QStringList &themeIds,
                  TerminalProfileSettings *profileSettings,
+                 TerminalLinkOpener *linkOpener = nullptr,
                  QWidget *parent = nullptr);
   ~TerminalWindow() override;
 
@@ -89,6 +96,7 @@ private:
   void wireCollection();
   void wireSessionPresentation(TerminalSession *session);
   void publishAppShellProjection();
+  void buildFindBar();
 
   void setActiveSession(TerminalSession *session);
   void attachSessionView(TerminalSession *session);
@@ -100,6 +108,15 @@ private:
   void moveActiveTab(int delta);
   void manageProfiles();
   void rebuildProfileMenu();
+  void showFindBar();
+  void closeFindBar();
+  void runSearch(TerminalSearchDirection direction);
+  void restoreSearchPresentation();
+  void selectRelativeLink(int delta);
+  void copyCurrentLink();
+  void openCurrentLink();
+  void showLinkContextMenu(const QPoint &globalPosition);
+  void presentLinkSelection(const TerminalLinkSelection &selection);
 
   void updateViewActionStates();
   void updateTabActionStates();
@@ -117,12 +134,14 @@ private:
 
   std::unique_ptr<TerminalSessionCollection> m_sessions;
   TerminalProfileSettings *m_profileSettings = nullptr;
+  TerminalLinkOpener *m_linkOpener = nullptr;
   QStringList m_themeIds;
   TerminalViewAppearance m_appearance;
   TerminalAppShellBridge *m_appShellBridge = nullptr;
   TerminalTabBar *m_tabBar = nullptr;
   QWidget *m_terminalHolder = nullptr;
   QVBoxLayout *m_terminalLayout = nullptr;
+  TerminalFindBar *m_findBar = nullptr;
   QWidget *m_terminalView = nullptr;
   QLabel *m_statusLabel = nullptr;
   QMenu *m_profileMenu = nullptr;
@@ -139,10 +158,20 @@ private:
   QAction *m_pasteSelectionAction = nullptr;
   QAction *m_selectAllAction = nullptr;
   QAction *m_clearAction = nullptr;
+  QAction *m_findAction = nullptr;
+  QAction *m_findNextAction = nullptr;
+  QAction *m_findPreviousAction = nullptr;
+  QAction *m_linkNextAction = nullptr;
+  QAction *m_linkPreviousAction = nullptr;
+  QAction *m_linkCopyAction = nullptr;
+  QAction *m_linkOpenAction = nullptr;
   QAction *m_quitAction = nullptr;
   TerminalSession *m_activeSession = nullptr;
   QHash<const TerminalSession *, bool> m_selectionBySession;
   QHash<const TerminalSession *, QString> m_titlesBySession;
+  QHash<const TerminalSession *, TerminalSearchQuery> m_searchBySession;
+  QHash<const TerminalSession *, bool> m_findVisibleBySession;
+  QHash<const TerminalSession *, TerminalLinkSelection> m_linkBySession;
   bool m_quitRequested = false;
 };
 

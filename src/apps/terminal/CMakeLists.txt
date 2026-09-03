@@ -13,6 +13,8 @@ find_package(qtermwidget6 2.4...<2.5 REQUIRED)
 set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     app_shell/terminal_action_catalog.cpp
     app_shell/terminal_app_shell_bridge.cpp
+    links/terminal_link.cpp
+    links/terminal_link_opener.cpp
     profiles/terminal_profile.cpp
     profiles/terminal_profile_settings.cpp
     session/process_liveness.cpp
@@ -21,16 +23,23 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     session/terminal_session.cpp
     session/terminal_session_backend.cpp
     session/terminal_session_collection.cpp
+    search/terminal_search.cpp
     ui/terminal_appearance.cpp
     ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
     ui/terminal_tab_bar.cpp
+    ui/terminal_find_bar.cpp
     ui/terminal_window.cpp
     ui/terminal_window_actions.cpp
+    ui/terminal_window_links.cpp
+    ui/terminal_window_search.cpp
+    ui/terminal_window_status.cpp
 )
 set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     app_shell/terminal_action_catalog.h
     app_shell/terminal_app_shell_bridge.h
+    links/terminal_link.h
+    links/terminal_link_opener.h
     profiles/terminal_profile.h
     profiles/terminal_profile_settings.h
     session/process_liveness.h
@@ -40,10 +49,12 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     session/terminal_session_backend.h
     session/terminal_session_collection.h
     session/terminal_session_types.h
+    search/terminal_search.h
     ui/terminal_appearance.h
     ui/terminal_profile_apply_status.h
     ui/terminal_profile_dialog.h
     ui/terminal_tab_bar.h
+    ui/terminal_find_bar.h
     ui/terminal_window.h
 )
 
@@ -83,6 +94,7 @@ target_sources(
     qindaqt_terminal_adapter
     PRIVATE ui/terminal_widget_adapter.cpp
             ui/terminal_widget_adapter_appearance.cpp
+            ui/terminal_widget_adapter_search.cpp
     PUBLIC ui/terminal_widget_adapter.h
 )
 target_include_directories(

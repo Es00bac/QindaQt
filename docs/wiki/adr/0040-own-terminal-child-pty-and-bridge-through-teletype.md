@@ -59,6 +59,19 @@ implemented in the qtermwidget-free `session/pty_bridge` unit:
 of the terminal target, linked **PRIVATE** into the static adapter so no
 other module gains its headers or usage requirements.
 
+Terminal S2 extends this same confined adapter without widening the PTY or
+child boundary, preserving ADR-0030's dependency-confinement rule. A
+qtermwidget-free policy first admits a bounded safe regex
+subset and counts matches over a capped history snapshot. Only after admission
+may the adapter configure the pinned 2.4 SearchBar object tree and invoke its
+synchronous find slots, preserving qtermwidget's current-selection scrolling
+and all-match renderer highlighting without exposing any qtermwidget type to
+the UI or support library. The object names and three-option ordering are part
+of this pinned adapter contract and fail closed when absent. Link detection and
+open policy likewise remain qtermwidget-free typed values; the adapter only
+extracts a bounded live-screen-tail snapshot and suppresses the widget's direct
+context activation in favor of application-owned confirmed actions.
+
 ## Consequences
 
 - Keyboard, paste, and `sendTextToSession` bytes reach the child as real
@@ -71,6 +84,14 @@ other module gains its headers or usage requirements.
 - One more platform surface (`posix_openpt`/`grantpt`/`unlockpt`/`ptsname_r`)
   lives in the Terminal module; the bridge is qtermwidget-free and is
   exercised by a real-PTY registered test without a display.
+- Search safety does not depend on cancelling PCRE work after it begins: unsafe
+  constructs, excessive history, and excessive matches are refused before the
+  pinned synchronous renderer search. General PCRE compatibility is therefore
+  deliberately not promised.
+- S2's URL/local-path opener is an independent injected boundary. Production
+  resolves an absolute `xdg-open`, confirms the exact plain-text target, and
+  detaches exactly one argv request; it never inherits Terminal session/PTY
+  ownership or executes a shell string.
 - ADR-0030's slave-forwarding decision is superseded; its remaining
   contracts (dependency confinement, exit-truth ownership, bounded
   process-group teardown) continue in force.
