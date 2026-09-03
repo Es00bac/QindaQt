@@ -70,9 +70,12 @@ struct TaskListWireScope {
                          const TaskListWireScope &) = default;
 };
 
-// Decoded ShellVisibilitySnapshot lineage. epoch and revision are validated
-// for shape and retained for diagnostics; join coherence is fenced by owner
-// and signal races, not by this revision, because Windows() exposes none.
+// Decoded ShellVisibilitySnapshot lineage. epoch is validated as a UUID and
+// revision as a canonical nonzero decimal string. The producer retains the
+// last accepted (owner, epoch, revision, payload) and rejects regressions and
+// changed bytes at an equal revision; join coherence additionally requires the
+// exact schema-2 Windows() fence (TaskListWindowsResult::epoch/revision) to
+// name this generation (docs/wiki/reference/compositor-control-v1.md).
 struct TaskListWireScopeSnapshot {
   QString epoch;
   quint64 revision = 0;
@@ -100,6 +103,13 @@ enum class TaskListWireError {
 
 struct TaskListWindowsResult {
   QVector<TaskListWireWindow> windows;
+  // The schema-2 shell-action fence: the exact (epoch, revision) of the
+  // ShellVisibilitySnapshot generation this read was sampled against, plus
+  // whether such a generation currently exists. The producer may join scope
+  // truth only when the scope snapshot matches this fence exactly.
+  QString epoch;
+  quint64 revision = 0;
+  bool generationAvailable = false;
   TaskListWireError error = TaskListWireError::None;
   QString message;
 

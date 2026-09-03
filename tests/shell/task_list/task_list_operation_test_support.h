@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/shell/task_list/operations/task_list_operation_adapter.h"
 #include "qindaqt/shell/task_list/operations/task_list_operation_transport.h"
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/producer/task_list_producer_transport.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSignalSpy>
 #include <QtTest>
 
 #include "task_list_producer_test_support.h"
@@ -50,6 +54,29 @@ public:
     Q_EMIT scopeRead(lastToken, owner, scene.scope);
   }
 
+  void publishBridgeScene(const QString &owner) {
+    // A control-bridge container admits Submit/ReleaseContainer; the shared
+    // standard scene is hybrid-authority and would pre-reject those paths.
+    const QByteArray windows = windowsPayload(
+        {windowJson(QStringLiteral("w1"), QStringLiteral("app.one")),
+         windowJson(QStringLiteral("w2"), QStringLiteral("app.two"),
+                    QStringLiteral("c1")),
+         windowJson(QStringLiteral("w3"), QStringLiteral("app.three"),
+                    QStringLiteral("c1"), false, true, true)});
+    const QByteArray containers = containersPayload(
+        {{QStringLiteral("c1"), 7, QStringLiteral("control-bridge")}});
+    const QByteArray scope = scopePayload(
+        {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
+                        {QStringLiteral("ws-1")}),
+         scopeEntryJson(QStringLiteral("w2"), QStringLiteral("output-1"),
+                        {QStringLiteral("ws-1")}),
+         scopeEntryJson(QStringLiteral("w3"), QStringLiteral("output-1"),
+                        {QStringLiteral("ws-1")})});
+    Q_EMIT windowsRead(lastToken, owner, windows);
+    Q_EMIT containersRead(lastToken, owner, containers);
+    Q_EMIT scopeRead(lastToken, owner, scope);
+  }
+
   quint64 lastToken = 0;
   QString lastOwner;
 };
@@ -88,6 +115,15 @@ public:
     return sendSucceeds;
   }
 
+  void emitReply(quint64 token, const QString &owner,
+                 const QByteArray &payload) {
+    Q_EMIT operationReplied(token, owner, payload);
+  }
+  void emitFailure(quint64 token, const QString &owner,
+                   const QString &message) {
+    Q_EMIT operationFailed(token, owner, message);
+  }
+
   QVector<RecordedCall> calls;
   bool sendSucceeds = true;
 };
@@ -109,6 +145,68 @@ inline TaskIntentOutcome acceptIntent(TaskListSource &source,
   // Fixture plumbing: callers only ask for entries the standard scene
   // contains at the current revision.
   return source.requestIntent({taskId, kind, source.revision()});
+}
+
+// Producer at Ready with the control-bridge scene plus an adapter and a
+// finished-signal spy, for the reply-mapping and lineage rows.
+struct ReadyBridgeFixture {
+  TaskListSource source;
+  FakeProducerTransport producerTransport;
+  FakeOperationTransport operationTransport;
+  TaskListFactsProducer producer;
+  TaskListOperationAdapter adapter;
+  QSignalSpy finishedSpy;
+
+  ReadyBridgeFixture()
+      : producer(producerTransport, source, fastTiming()),
+        adapter(producer, operationTransport, 60),
+        finishedSpy(&adapter, &TaskListOperationAdapter::operationFinished) {
+    if (!producer.start()) {
+      qFatal("fixture producer did not start");
+    }
+    Q_EMIT producerTransport.serviceOwnerChanged(QStringLiteral(":1.1"));
+  }
+
+  void makeReady() {
+    QTRY_VERIFY_WITH_TIMEOUT(producerTransport.lastToken != 0, 2'000);
+    producerTransport.publishBridgeScene(QStringLiteral(":1.1"));
+    if (source.status() != TaskListSourceStatus::Ready) {
+      qFatal("fixture scene did not reach Ready");
+    }
+  }
+
+  quint64 revision() const { return source.revision(); }
+  QString owner() const { return QStringLiteral(":1.1"); }
+};
+
+inline TaskListOperationResult firstResult(const QSignalSpy &spy) {
+  return spy.constFirst().constFirst().value<TaskListOperationResult>();
+}
+
+// Builds the canonical Compositor1 Submit reply (replyToJson shape) echoing
+// the lineage of the recorded request.
+inline QByteArray submitReply(const QByteArray &sentRequest,
+                              const QString &status, const QString &revision,
+                              const QString &containerOverride = {},
+                              const QString &transactionOverride = {}) {
+  const QJsonObject sent = QJsonDocument::fromJson(sentRequest).object();
+  return QJsonDocument(
+             QJsonObject{{QStringLiteral("protocol"),
+                          QJsonObject{{QStringLiteral("major"), 1},
+                                      {QStringLiteral("minor"), 1}}},
+                         {QStringLiteral("transactionId"),
+                          transactionOverride.isNull()
+                              ? sent.value(QStringLiteral("transactionId"))
+                                    .toString()
+                              : transactionOverride},
+                         {QStringLiteral("containerId"),
+                          containerOverride.isNull()
+                              ? sent.value(QStringLiteral("containerId"))
+                                    .toString()
+                              : containerOverride},
+                         {QStringLiteral("status"), status},
+                         {QStringLiteral("revision"), revision}})
+      .toJson(QJsonDocument::Compact);
 }
 
 } // namespace TaskListOperationTest

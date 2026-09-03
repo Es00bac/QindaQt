@@ -117,9 +117,19 @@ qindaqt_add_task_list_transport_test(
     qindaqt_task_list_operation_results_tests
     tst_task_list_operation_results.cpp
     qindaqt.task-list-operation-results
+    task_list_operation_test_support.h
 )
 set_tests_properties(
     qindaqt.task-list-operation-results PROPERTIES LABELS "shell;task-list"
+)
+qindaqt_add_task_list_transport_test(
+    qindaqt_task_list_operation_lineage_tests
+    tst_task_list_operation_lineage.cpp
+    qindaqt.task-list-operation-lineage
+    task_list_operation_test_support.h
+)
+set_tests_properties(
+    qindaqt.task-list-operation-lineage PROPERTIES LABELS "shell;task-list"
 )
 qindaqt_add_task_list_transport_test(
     qindaqt_task_list_qt_transports_tests

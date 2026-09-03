@@ -26,6 +26,11 @@ class TaskListOperationTransport;
 // queued intent can never act on a generation the user no longer sees. A
 // transaction is submitted exactly once; timeouts, malformed replies, and
 // owner loss in flight report Uncertain and are never retried by the adapter.
+// Tokens embed a per-process adapter-lifetime ordinal, so a late reply from a
+// destroyed adapter instance can never match a reconstructed adapter sharing
+// the transport. Submit replies settle only when the full canonical lineage
+// (protocol, transactionId, containerId, status, revision) echoes the
+// submitted transaction; anything else is Uncertain.
 // Window-level activate/minimize/close have no Compositor1 1.1 operation and
 // finish as Unavailable with the exact extension code; do not add a private
 // path around that (docs/wiki/shell/task-list.md).
@@ -87,6 +92,13 @@ private:
     quint64 token = 0;
     QString owner;
     PendingKind kind = PendingKind::Submit;
+    // Canonical reply lineage the compositor must echo: the Submit
+    // transaction id and target container, and the container revision the
+    // transaction fenced. Empty/unused for Dock (the compositor generates
+    // those ids) and Release (the wire reply carries no echo).
+    QString transactionId;
+    QString containerId;
+    quint64 expectedContainerRevision = 0;
   };
 
   quint64 admit(PendingKind kind, const QString &firstIdentifier,
@@ -102,7 +114,9 @@ private:
   int m_replyTimeoutMilliseconds;
   QTimer m_replyTimeout;
   std::optional<InFlightOperation> m_inFlight;
-  quint64 m_nextToken = 1;
+  // Token lineage: (adapter-lifetime ordinal << 32) | per-instance sequence.
+  const quint64 m_instanceOrdinal;
+  quint64 m_sequence = 1;
 };
 
 } // namespace QindaQt::ShellTaskList::Operations

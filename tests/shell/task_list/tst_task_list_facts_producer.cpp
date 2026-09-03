@@ -267,10 +267,12 @@ void TaskListFactsProducerTests::invalidFactsRejectedBySourceDegrade() {
   QCOMPARE(source.status(), TaskListSourceStatus::Loading);
   QCOMPARE(source.revision(), quint64(0));
 
-  // The bounded retry then admits the coherent standard scene.
+  // The bounded retry then admits the coherent standard scene at the next
+  // revision (the compositor advances the generation when state changes; the
+  // same revision with changed bytes would be a lineage collision).
   QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
   transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
-                      standardScene());
+                      standardScene(2));
   QCOMPARE(source.status(), TaskListSourceStatus::Ready);
 }
 
