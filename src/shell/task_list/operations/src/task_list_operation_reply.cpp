@@ -4,6 +4,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <limits>
+
 namespace QindaQt::ShellTaskList::Operations {
 namespace {
 
@@ -99,11 +101,15 @@ TaskListReplyClassification classifySubmit(
   if (!status.isString()) {
     return lineageMismatch();
   }
+  quint64 revision = 0;
+  if (!parseWireRevision(root.value(QLatin1StringView("revision")),
+                         &revision)) {
+    return lineageMismatch();
+  }
   const QString outcome = status.toString();
   if (outcome == QLatin1StringView("committed")) {
-    quint64 revision = 0;
-    if (!parseWireRevision(root.value(QLatin1StringView("revision")),
-                           &revision) ||
+    if (expectation.expectedContainerRevision ==
+            std::numeric_limits<quint64>::max() ||
         revision != expectation.expectedContainerRevision + 1) {
       return lineageMismatch();
     }

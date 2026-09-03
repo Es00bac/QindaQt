@@ -193,7 +193,7 @@ void TaskListOperationResultsTests::ownerChangeInFlightIsUncertain() {
                                                          fixture.revision());
   QVERIFY(fixture.adapter.operationInFlight());
   // Owner loss while a request is in flight: the outcome is unknowable.
-  Q_EMIT fixture.producerTransport.serviceOwnerChanged({});
+  fixture.authority.setUnavailable();
   QCOMPARE(fixture.finishedSpy.size(), 1);
   const TaskListOperationResult result = firstResult(fixture.finishedSpy);
   QCOMPARE(result.token, token);

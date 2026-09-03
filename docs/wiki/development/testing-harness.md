@@ -905,25 +905,29 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
 ```
 
-The fourteen rows cover the pure T0 model (values, batch validation, grouping,
-intents, scope filtering, presentation), the T1 wire decoders and fact joiner
-(hostile payload shapes, duplicate/oversized/malformed inventories, exact
-4,096/4,097 window and scope bounds, schema-2 fence and complete-snapshot
-lineage validation including UUID epochs and output membership, collapsed
-native-identity classification, scope availability), the facts producer's
-owner lineage (signal-raced refresh fencing, torn window/scope fence re-read
-and fail-closed degradation, scope revision regression/collision rejection,
-coherent epoch replacement, malformed-reply degradation with retained
-generation, degradation/stop `stateChanged` notification, stop availability
-withdrawal, timeout retry, owner loss/replacement, late-reply fencing, and the
-4,096-window stress scene), and the operation adapter (Unavailable
-window-level intents with exact extension codes, stale-generation and
+The thirteen rows cover the pure T0 model (values, batch validation, grouping,
+intents, scope filtering, presentation), the T1 wire decoders (hostile payload
+shapes, duplicate/oversized/malformed inventories, exact 4,096/4,097-window
+bounds, UUID/schema/revision validation, and container lineage bounds), the
+facts producer's exact-owner lineage (signal-raced refresh fencing, explicit
+refusal to combine the panel visibility or container inventories with
+`Windows`, malformed-reply degradation with retained generation,
+degradation/stop `stateChanged` notification, stop availability withdrawal,
+non-replying-authority timeout and bounded retry, owner loss/replacement,
+late-reply fencing, foreign epochs, revision regression/equal-revision
+collisions, and the 4,096-window stress scene), and the operation adapter
+(window-level `Unavailable` outcomes with stable adapter codes,
+stale-generation and
 degraded-source admission rejection, stopped-producer admission fencing,
 serialized Busy fencing, Submit/Release/Dock reply mapping, canonical Submit
-reply lineage with forged/recycled/cross-lifetime rejection, exactly-once
-Uncertain on timeout/owner change, and unsupported-authority pre-rejection). The Qt transport row runs a fake `org.qindaqt.Compositor1`
+reply lineage (`protocol`, `transactionId`, `containerId`, `status`, and
+`revision`) with forged/recycled/cross-lifetime rejection, exactly-once
+Uncertain on timeout/owner change, and unsupported-authority pre-rejection).
+The Qt transport row runs a fake `org.qindaqt.Compositor1`
 service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
-for reads, signals, and mutations, including owner loss and replacement.
+for reads, signals, and mutations, including owner loss and replacement; it
+also poisons the forbidden independent inventories and proves the producer
+never calls them.
 
 Every transport process is the QtTest executable itself on a private bus; the
 rows contact no host session bus, compositor, display, input, hardware, or

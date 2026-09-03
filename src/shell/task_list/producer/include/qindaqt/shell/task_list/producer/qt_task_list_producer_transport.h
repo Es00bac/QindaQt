@@ -30,14 +30,11 @@ public:
 
 private Q_SLOTS:
   void handleWindowsChanged();
-  void handleContainerCommitted();
-  void handleVisibilityChanged();
 
 private:
   void resolveInitialOwner();
   void bindOwner(const QString &uniqueOwner);
-  void issueRead(quint64 token, const QString &uniqueOwner,
-                 const char *method);
+  void issueRead(quint64 token, const QString &uniqueOwner);
   void failRequest(quint64 token, const QString &uniqueOwner, QString message);
 
   QDBusConnection m_connection;

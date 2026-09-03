@@ -11,8 +11,8 @@ using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
 using namespace TaskListOperationTest;
 
-// Canonical reply-lineage hostile controls (review finding P1-3 on rejected
-// candidate 3a5ae17): a reply settles an in-flight request only when the full
+// AGENT-NOTE: Review finding P1-3 on rejected candidate 3a5ae17: a reply
+// settles an in-flight request only when the full
 // canonical lineage (protocol, transactionId, containerId, status, revision)
 // echoes the submitted transaction, and tokens are bound to the adapter
 // lifetime so destroyed-adapter replies can never recycle into a new request.
@@ -23,6 +23,7 @@ private slots:
   void submitReplyWithoutCanonicalEchoIsUncertain();
   void forgedSubmitReplyLineageIsUncertain();
   void committedRevisionMustAdvanceFromTheExpectedRevision();
+  void everySubmitStatusRequiresCanonicalRevision();
   void adapterReconstructionCannotRecycleLineage();
 };
 
@@ -123,20 +124,50 @@ void TaskListOperationLineageTests::committedRevisionMustAdvanceFromTheExpectedR
            TaskListOperationStatus::Committed);
 }
 
+void TaskListOperationLineageTests::everySubmitStatusRequiresCanonicalRevision() {
+  ReadyBridgeFixture fixture;
+  fixture.makeReady();
+
+  for (const QString &status : {QStringLiteral("conflict"),
+                                QStringLiteral("rejected")}) {
+    const quint64 token = fixture.adapter.activateContainerPage(
+        QStringLiteral("c1"), QStringLiteral("page-2"), fixture.revision());
+    QJsonObject reply = QJsonDocument::fromJson(
+                            submitReply(
+                                fixture.operationTransport.calls.constLast().payload,
+                                status, QStringLiteral("8")))
+                            .object();
+    reply.remove(QStringLiteral("revision"));
+    reply.insert(QStringLiteral("failure"),
+                 QJsonObject{{QStringLiteral("code"),
+                              QStringLiteral("hostile")},
+                             {QStringLiteral("message"),
+                              QStringLiteral("missing revision")}});
+    fixture.operationTransport.emitReply(
+        token, fixture.owner(),
+        QJsonDocument(reply).toJson(QJsonDocument::Compact));
+    QCOMPARE(fixture.finishedSpy.constLast()
+                 .constFirst()
+                 .value<TaskListOperationResult>()
+                 .status,
+             TaskListOperationStatus::Uncertain);
+  }
+}
+
 void TaskListOperationLineageTests::adapterReconstructionCannotRecycleLineage() {
   ReadyBridgeFixture fixture;
   fixture.makeReady();
 
   quint64 oldToken = 0;
   {
-    TaskListOperationAdapter adapterA(fixture.producer,
+    TaskListOperationAdapter adapterA(fixture.authority,
                                       fixture.operationTransport, 60);
     oldToken = adapterA.releaseContainer(QStringLiteral("c1"),
                                          fixture.revision());
     QVERIFY(adapterA.operationInFlight());
   }
 
-  TaskListOperationAdapter adapterB(fixture.producer,
+  TaskListOperationAdapter adapterB(fixture.authority,
                                     fixture.operationTransport, 60);
   QSignalSpy spyB(&adapterB, &TaskListOperationAdapter::operationFinished);
   const quint64 newToken = adapterB.dockWindows(

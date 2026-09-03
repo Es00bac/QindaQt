@@ -71,10 +71,17 @@ public:
   QStringList lastDock;
 
 public Q_SLOTS:
-  Q_SCRIPTABLE QByteArray Windows() const { return m_scene.windows; }
-  Q_SCRIPTABLE QByteArray Containers() const { return m_scene.containers; }
+  Q_SCRIPTABLE QByteArray Windows() const {
+    ++windowsCalls;
+    return m_scene.windows;
+  }
+  Q_SCRIPTABLE QByteArray Containers() const {
+    ++containersCalls;
+    return m_scene.containers;
+  }
   Q_SCRIPTABLE QByteArray ShellVisibilitySnapshot() const {
-    return m_scene.scope;
+    ++visibilityCalls;
+    return QByteArrayLiteral("{\"status\":\"forbidden-test-poison\"}");
   }
   Q_SCRIPTABLE QByteArray Submit(const QByteArray &requestJson) {
     lastSubmit = requestJson;
@@ -97,6 +104,11 @@ Q_SIGNALS:
   Q_SCRIPTABLE void WindowsChanged();
   Q_SCRIPTABLE void ContainerCommitted(const QByteArray &eventJson);
   Q_SCRIPTABLE void ShellVisibilityChanged();
+
+public:
+  mutable int windowsCalls = 0;
+  mutable int containersCalls = 0;
+  mutable int visibilityCalls = 0;
 
 private:
   StandardScene m_scene;
@@ -152,9 +164,6 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
                                &TaskListProducerTransport::refreshInvalidated);
     QSignalSpy windowsSpy(&transport,
                           &TaskListProducerTransport::windowsRead);
-    QSignalSpy containersSpy(&transport,
-                             &TaskListProducerTransport::containersRead);
-    QSignalSpy scopeSpy(&transport, &TaskListProducerTransport::scopeRead);
     QSignalSpy failureSpy(&transport,
                           &TaskListProducerTransport::refreshFailed);
     QString startError;
@@ -162,29 +171,29 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QTRY_COMPARE_WITH_TIMEOUT(ownerSpy.size(), 1, 5'000);
     QCOMPARE(ownerSpy.constFirst().constFirst().toString(), ownerA);
 
-    // One refresh token delivers exactly one reply per read, bound to the
-    // exact owner.
+    // AGENT-NOTE: P1-1 on rejected candidate 3a5ae17 combined three methods.
+    // One refresh now reaches Windows() only; the poisoned visibility method
+    // and independent Containers() inventory must remain untouched.
     transport.requestRefresh(7, ownerA);
-    QTRY_COMPARE_WITH_TIMEOUT(scopeSpy.size(), 1, 5'000);
-    QCOMPARE(windowsSpy.size(), 1);
-    QCOMPARE(containersSpy.size(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(windowsSpy.size(), 1, 5'000);
     QCOMPARE(windowsSpy.constFirst().at(0).toULongLong(), quint64(7));
     QCOMPARE(windowsSpy.constFirst().at(1).toString(), ownerA);
-    QCOMPARE(scopeSpy.constFirst().at(1).toString(), ownerA);
+    QCOMPARE(compositorA.windowsCalls, 1);
+    QCOMPARE(compositorA.containersCalls, 0);
+    QCOMPARE(compositorA.visibilityCalls, 0);
     QCOMPARE(failureSpy.size(), 0);
 
     // A request for a stale owner fails instead of reaching the bus.
     transport.requestRefresh(8, QStringLiteral(":9.9"));
     QTRY_COMPARE_WITH_TIMEOUT(failureSpy.size(), 1, 5'000);
 
-    // All three invalidation signals forward with the bound owner.
+    // Only the inventory's own invalidation forwards. Signals for independent
+    // inventories cannot trigger a cross-inventory read.
     Q_EMIT compositorA.WindowsChanged();
     Q_EMIT compositorA.ContainerCommitted(QByteArrayLiteral("{}"));
     Q_EMIT compositorA.ShellVisibilityChanged();
-    QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 3, 5'000);
-    for (int index = 0; index < 3; ++index) {
-      QCOMPARE(invalidationSpy.at(index).constFirst().toString(), ownerA);
-    }
+    QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 1, 5'000);
+    QCOMPARE(invalidationSpy.constFirst().constFirst().toString(), ownerA);
 
     // Owner loss then replacement: signals from the dead owner must not
     // forward, and the new owner binds reads and signals.
@@ -193,7 +202,7 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QVERIFY(ownerSpy.at(1).constFirst().toString().isEmpty());
     Q_EMIT compositorA.WindowsChanged();
     QTest::qWait(50);
-    QCOMPARE(invalidationSpy.size(), 3);
+    QCOMPARE(invalidationSpy.size(), 1);
 
     FakeCompositor compositorB(standardScene());
     QVERIFY(registerCompositor(serverB, &compositorB));
@@ -202,11 +211,13 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QCOMPARE(ownerSpy.at(2).constFirst().toString(), ownerB);
 
     transport.requestRefresh(9, ownerB);
-    QTRY_COMPARE_WITH_TIMEOUT(scopeSpy.size(), 2, 5'000);
-    QCOMPARE(scopeSpy.at(1).at(1).toString(), ownerB);
+    QTRY_COMPARE_WITH_TIMEOUT(windowsSpy.size(), 2, 5'000);
+    QCOMPARE(windowsSpy.at(1).at(1).toString(), ownerB);
+    QCOMPARE(compositorB.containersCalls, 0);
+    QCOMPARE(compositorB.visibilityCalls, 0);
     Q_EMIT compositorB.WindowsChanged();
-    QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 4, 5'000);
-    QCOMPARE(invalidationSpy.at(3).constFirst().toString(), ownerB);
+    QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 2, 5'000);
+    QCOMPARE(invalidationSpy.at(1).constFirst().toString(), ownerB);
 
     transport.stop();
     QVERIFY(serverB.unregisterService(QString::fromLatin1(kServiceName)));
@@ -242,23 +253,25 @@ void TaskListQtTransportsTests::operationTransportDeliversMutationsToTheExactOwn
     QSignalSpy failureSpy(&transport,
                           &TaskListOperationTransport::operationFailed);
 
+    QCOMPARE(transport.allocateToken(), quint64(1));
+    QCOMPARE(transport.allocateToken(), quint64(2));
     // An empty owner is refused before any bus traffic.
-    QVERIFY(!transport.submitTransaction(1, {}, QByteArrayLiteral("{}")));
+    QVERIFY(!transport.submitTransaction(3, {}, QByteArrayLiteral("{}")));
 
     QVERIFY(transport.submitTransaction(
-        2, owner, QByteArrayLiteral("{\"protocol\":{\"major\":1,\"minor\":1}}")));
+        4, owner, QByteArrayLiteral("{\"protocol\":{\"major\":1,\"minor\":1}}")));
     QTRY_COMPARE_WITH_TIMEOUT(replySpy.size(), 1, 5'000);
-    QCOMPARE(replySpy.constFirst().at(0).toULongLong(), quint64(2));
+    QCOMPARE(replySpy.constFirst().at(0).toULongLong(), quint64(4));
     QCOMPARE(replySpy.constFirst().at(1).toString(), owner);
     QTRY_VERIFY_WITH_TIMEOUT(!compositor.lastSubmit.isEmpty(), 5'000);
     QCOMPARE(QString::fromUtf8(replySpy.constFirst().at(2).toByteArray()),
              QStringLiteral("{\"status\":\"committed\",\"revision\":\"2\"}"));
 
-    QVERIFY(transport.releaseContainer(3, owner, QStringLiteral("c1")));
+    QVERIFY(transport.releaseContainer(5, owner, QStringLiteral("c1")));
     QTRY_COMPARE_WITH_TIMEOUT(replySpy.size(), 2, 5'000);
     QCOMPARE(compositor.lastRelease, QStringList{QStringLiteral("c1")});
 
-    QVERIFY(transport.dockWindows(4, owner, QStringLiteral("w1"),
+    QVERIFY(transport.dockWindows(6, owner, QStringLiteral("w1"),
                                   QStringLiteral("w2"),
                                   QStringLiteral("horizontal"),
                                   QStringLiteral("second"), 0.5));
@@ -269,10 +282,10 @@ void TaskListQtTransportsTests::operationTransportDeliversMutationsToTheExactOwn
     QCOMPARE(failureSpy.size(), 0);
 
     // A call to a never-existent owner is sent, then fails on the bus.
-    QVERIFY(transport.submitTransaction(5, QStringLiteral(":9.99"),
+    QVERIFY(transport.submitTransaction(7, QStringLiteral(":9.99"),
                                         QByteArrayLiteral("{}")));
     QTRY_COMPARE_WITH_TIMEOUT(failureSpy.size(), 1, 5'000);
-    QCOMPARE(failureSpy.constFirst().at(0).toULongLong(), quint64(5));
+    QCOMPARE(failureSpy.constFirst().at(0).toULongLong(), quint64(7));
   }
 
   server.unregisterObject(QString::fromLatin1(kObjectPath));

@@ -21,6 +21,8 @@ public:
                                         QObject *parent = nullptr);
   ~QtTaskListOperationTransport() override;
 
+  [[nodiscard]] quint64 allocateToken() override;
+
   bool submitTransaction(quint64 token, const QString &uniqueOwner,
                          const QByteArray &requestJson) override;
   bool releaseContainer(quint64 token, const QString &uniqueOwner,
@@ -36,6 +38,7 @@ private:
 
   QDBusConnection m_connection;
   QList<QDBusPendingCallWatcher *> m_pendingCalls;
+  quint64 m_nextToken = 1;
 };
 
 } // namespace QindaQt::ShellTaskList::Operations

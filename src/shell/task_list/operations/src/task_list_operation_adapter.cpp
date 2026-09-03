@@ -3,13 +3,12 @@
 
 #include "qindaqt/shell/task_list/operations/task_list_operation_reply.h"
 #include "qindaqt/shell/task_list/operations/task_list_operation_transport.h"
-#include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
+#include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include <atomic>
 #include <cmath>
 #include <utility>
 
@@ -23,20 +22,6 @@ using Producer::TaskListContainerAuthority;
 constexpr qsizetype kMaxOperationIdentifierLength = 256;
 constexpr int kDefaultReplyTimeoutMilliseconds = 5000;
 constexpr int kMaximumReplyTimeoutMilliseconds = 60'000;
-constexpr quint64 kMaxInstanceOrdinal = 0xFFFFFFFFULL;
-constexpr quint64 kMaxTokenSequence = 0xFFFFFFFFULL;
-
-// AGENT-NOTE: Tokens embed a process-wide adapter-lifetime ordinal so a late
-// reply from a destroyed adapter — whose pending calls the transport may
-// still retain — can never match a reconstructed adapter's in-flight request
-// (review finding P1-3 on candidate 3a5ae17). The counter is a monotonic
-// lineage nonce, not shared mutable state: it is only ever incremented.
-quint64 nextInstanceOrdinal() {
-  static std::atomic<quint64> ordinal{0};
-  const quint64 value = ordinal.fetch_add(1, std::memory_order_relaxed) + 1;
-  return value <= kMaxInstanceOrdinal ? value : 0;
-}
-
 bool validOperationIdentifier(const QString &value) {
   return !value.isEmpty() && value.size() <= kMaxOperationIdentifierLength;
 }
@@ -70,18 +55,17 @@ QByteArray submitRequestJson(const QString &transactionId,
 } // namespace
 
 TaskListOperationAdapter::TaskListOperationAdapter(
-    Producer::TaskListFactsProducer &producer,
+    Producer::TaskListOperationAuthority &authority,
     TaskListOperationTransport &transport, int replyTimeoutMilliseconds,
     QObject *parent)
     : QObject(parent),
-      m_producer(producer),
+      m_authority(authority),
       m_transport(transport),
       m_replyTimeoutMilliseconds(
           replyTimeoutMilliseconds > 0 &&
                   replyTimeoutMilliseconds <= kMaximumReplyTimeoutMilliseconds
               ? replyTimeoutMilliseconds
-              : kDefaultReplyTimeoutMilliseconds),
-      m_instanceOrdinal(nextInstanceOrdinal()) {
+              : kDefaultReplyTimeoutMilliseconds) {
   m_replyTimeout.setSingleShot(true);
   connect(&m_replyTimeout, &QTimer::timeout, this,
           &TaskListOperationAdapter::handleReplyTimeout);
@@ -89,7 +73,7 @@ TaskListOperationAdapter::TaskListOperationAdapter(
           &TaskListOperationAdapter::handleReply);
   connect(&m_transport, &TaskListOperationTransport::operationFailed, this,
           &TaskListOperationAdapter::handleFailure);
-  connect(&m_producer, &Producer::TaskListFactsProducer::stateChanged, this,
+  connect(&m_authority, &Producer::TaskListOperationAuthority::stateChanged, this,
           &TaskListOperationAdapter::handleProducerStateChanged);
 }
 
@@ -161,7 +145,7 @@ quint64 TaskListOperationAdapter::activateContainerPage(
   if (owner.isEmpty()) {
     return token;
   }
-  const auto lineage = m_producer.containerLineage(containerId);
+  const auto lineage = m_authority.containerLineage(containerId);
   if (!lineage) {
     m_inFlight.reset();
     Q_EMIT operationFinished(makeResult(
@@ -205,7 +189,7 @@ quint64 TaskListOperationAdapter::detachWindow(const QString &containerId,
   if (owner.isEmpty()) {
     return token;
   }
-  const auto lineage = m_producer.containerLineage(containerId);
+  const auto lineage = m_authority.containerLineage(containerId);
   if (!lineage) {
     m_inFlight.reset();
     Q_EMIT operationFinished(makeResult(
@@ -248,7 +232,7 @@ quint64 TaskListOperationAdapter::releaseContainer(
   if (owner.isEmpty()) {
     return token;
   }
-  const auto lineage = m_producer.containerLineage(containerId);
+  const auto lineage = m_authority.containerLineage(containerId);
   if (!lineage) {
     m_inFlight.reset();
     Q_EMIT operationFinished(makeResult(
@@ -405,7 +389,7 @@ void TaskListOperationAdapter::handleProducerStateChanged() {
   if (!m_inFlight) {
     return;
   }
-  if (m_producer.uniqueOwner() == m_inFlight->owner) {
+  if (m_authority.uniqueOwner() == m_inFlight->owner) {
     return;
   }
   const quint64 token = m_inFlight->token;
@@ -434,12 +418,12 @@ quint64 TaskListOperationAdapter::admit(PendingKind kind,
                   QStringLiteral("operation identifiers must be non-empty and "
                                  "within the protocol bound"));
   }
-  if (m_producer.status() != TaskListSourceStatus::Ready) {
+  if (m_authority.status() != TaskListSourceStatus::Ready) {
     return reject(TaskListOperationStatus::SourceNotReady,
                   QStringLiteral("source-not-ready"),
                   QStringLiteral("the facts producer has no ready generation"));
   }
-  if (expectedRevision != m_producer.publishedRevision()) {
+  if (expectedRevision != m_authority.publishedRevision()) {
     return reject(TaskListOperationStatus::StaleGeneration,
                   QStringLiteral("stale-generation"),
                   QStringLiteral("the displayed generation is no longer "
@@ -450,7 +434,7 @@ quint64 TaskListOperationAdapter::admit(PendingKind kind,
                   QStringLiteral("operation-busy"),
                   QStringLiteral("another compositor operation is in flight"));
   }
-  const QString owner = m_producer.uniqueOwner();
+  const QString owner = m_authority.uniqueOwner();
   if (owner.isEmpty()) {
     return reject(TaskListOperationStatus::TransportFailure,
                   QStringLiteral("transport-unavailable"),
@@ -489,10 +473,7 @@ void TaskListOperationAdapter::finishInFlight(TaskListOperationResult result) {
 }
 
 quint64 TaskListOperationAdapter::nextToken() {
-  if (m_instanceOrdinal == 0 || m_sequence > kMaxTokenSequence) {
-    return 0;
-  }
-  return (m_instanceOrdinal << 32) | m_sequence++;
+  return m_transport.allocateToken();
 }
 
 } // namespace QindaQt::ShellTaskList::Operations

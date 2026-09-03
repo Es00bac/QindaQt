@@ -80,16 +80,49 @@ foreach(source IN LISTS task_list_transport_sources)
     endif()
 endforeach()
 
-# The pure decoding and join policy must stay transport-free even inside the
-# producer directory.
+# The pure decoding policy must stay transport-free inside the producer.
 foreach(source IN LISTS task_list_transport_sources)
-    if(source MATCHES "task_list_wire\\." OR source MATCHES "task_list_fact_joiner\\."
-       OR source MATCHES "task_list_operations\\.h")
+    if(source MATCHES "task_list_wire\\." OR source MATCHES "task_list_operations\\.h")
         file(READ "${source}" content)
         if(content MATCHES "QDBus" OR content MATCHES "<QtDBus/"
            OR content MATCHES "QObject" OR content MATCHES "QTimer")
             message(FATAL_ERROR "Pure task-list component has a transport dependency in ${source}")
         endif()
+    endif()
+endforeach()
+
+# AGENT-NOTE: Review finding P1-1 on rejected candidate 3a5ae17. The public
+# Compositor1 contract forbids joining its panel-visibility snapshot to the
+# independent Windows() inventory, even when their fences happen to match.
+file(
+    GLOB_RECURSE task_list_producer_sources
+    LIST_DIRECTORIES false
+    "${SOURCE_ROOT}/src/shell/task_list/producer/*.h"
+    "${SOURCE_ROOT}/src/shell/task_list/producer/*.cpp"
+)
+foreach(source IN LISTS task_list_producer_sources)
+    file(READ "${source}" content)
+    string(CONCAT forbidden_method "ShellVisibility" "Snapshot")
+    if(content MATCHES "${forbidden_method}")
+        message(FATAL_ERROR
+            "Task-list producer must not consume panel-visibility inventory: ${source}"
+        )
+    endif()
+endforeach()
+
+# AGENT-NOTE: Review finding P3-1 on rejected candidate 3a5ae17 predated the
+# authenticated window-actions and active-identity boundaries. Keep the owning
+# page pointed at the accepted composition path instead of requesting another
+# Compositor1 extension.
+file(READ "${SOURCE_ROOT}/docs/wiki/shell/task-list.md" task_list_wiki)
+foreach(required_marker IN ITEMS
+        "src/shell_window_actions_client"
+        "ADR-0061"
+        "ADR-0063")
+    if(NOT task_list_wiki MATCHES "${required_marker}")
+        message(FATAL_ERROR
+            "Task-list wiki is missing current window-action marker: ${required_marker}"
+        )
     endif()
 endforeach()
 

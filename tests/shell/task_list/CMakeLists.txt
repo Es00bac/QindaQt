@@ -89,14 +89,6 @@ set_tests_properties(
     qindaqt.task-list-wire PROPERTIES LABELS "shell;task-list;pure"
 )
 qindaqt_add_task_list_transport_test(
-    qindaqt_task_list_fact_joiner_tests
-    tst_task_list_fact_joiner.cpp
-    qindaqt.task-list-fact-joiner
-)
-set_tests_properties(
-    qindaqt.task-list-fact-joiner PROPERTIES LABELS "shell;task-list;pure"
-)
-qindaqt_add_task_list_transport_test(
     qindaqt_task_list_facts_producer_tests
     tst_task_list_facts_producer.cpp
     qindaqt.task-list-facts-producer

@@ -3,82 +3,51 @@
 
 #include "qindaqt/shell/task_list/operations/task_list_operation_adapter.h"
 #include "qindaqt/shell/task_list/operations/task_list_operation_transport.h"
-#include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
-#include "qindaqt/shell/task_list/producer/task_list_producer_transport.h"
+#include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
 #include <QtTest>
 
-#include "task_list_producer_test_support.h"
-
-// Shared fakes and fixtures for the operation-adapter rows. The producer fake
-// is scriptable in-process (no bus); the operation fake records every call so
-// tests can prove what never reached the wire.
 namespace TaskListOperationTest {
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
 using namespace QindaQt::ShellTaskList::Producer;
-using namespace TaskListProducerTest;
 
-inline TaskListFactsProducerTiming fastTiming() {
-  TaskListFactsProducerTiming timing;
-  timing.debounceMilliseconds = 1;
-  timing.requestTimeoutMilliseconds = 80;
-  timing.retryMilliseconds = {5, 10, 20};
-  return timing;
-}
-
-class FakeProducerTransport final : public TaskListProducerTransport {
+class FakeOperationAuthority final : public TaskListOperationAuthority {
   Q_OBJECT
 
 public:
-  bool start(QString *error = nullptr) override {
-    if (error) {
-      error->clear();
+  using TaskListOperationAuthority::TaskListOperationAuthority;
+
+  [[nodiscard]] QString uniqueOwner() const override { return owner; }
+  [[nodiscard]] quint64 publishedRevision() const override { return revision; }
+  [[nodiscard]] TaskListSourceStatus status() const override {
+    return sourceStatus;
+  }
+  [[nodiscard]] std::optional<TaskListContainerLineage>
+  containerLineage(const QString &containerId) const override {
+    for (const TaskListContainerLineage &lineage : containers) {
+      if (lineage.containerId == containerId) {
+        return lineage;
+      }
     }
-    return true;
-  }
-  void stop() override {}
-  void requestRefresh(quint64 token, const QString &uniqueOwner) override {
-    lastToken = token;
-    lastOwner = uniqueOwner;
+    return std::nullopt;
   }
 
-  void publishStandardScene(const QString &owner) {
-    const StandardScene scene = standardScene();
-    Q_EMIT windowsRead(lastToken, owner, scene.windows);
-    Q_EMIT containersRead(lastToken, owner, scene.containers);
-    Q_EMIT scopeRead(lastToken, owner, scene.scope);
+  void setUnavailable() {
+    sourceStatus = TaskListSourceStatus::Degraded;
+    owner.clear();
+    Q_EMIT stateChanged();
   }
 
-  void publishBridgeScene(const QString &owner) {
-    // A control-bridge container admits Submit/ReleaseContainer; the shared
-    // standard scene is hybrid-authority and would pre-reject those paths.
-    const QByteArray windows = windowsPayload(
-        {windowJson(QStringLiteral("w1"), QStringLiteral("app.one")),
-         windowJson(QStringLiteral("w2"), QStringLiteral("app.two"),
-                    QStringLiteral("c1")),
-         windowJson(QStringLiteral("w3"), QStringLiteral("app.three"),
-                    QStringLiteral("c1"), false, true, true)});
-    const QByteArray containers = containersPayload(
-        {{QStringLiteral("c1"), 7, QStringLiteral("control-bridge")}});
-    const QByteArray scope = scopePayload(
-        {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
-                        {QStringLiteral("ws-1")}),
-         scopeEntryJson(QStringLiteral("w2"), QStringLiteral("output-1"),
-                        {QStringLiteral("ws-1")}),
-         scopeEntryJson(QStringLiteral("w3"), QStringLiteral("output-1"),
-                        {QStringLiteral("ws-1")})});
-    Q_EMIT windowsRead(lastToken, owner, windows);
-    Q_EMIT containersRead(lastToken, owner, containers);
-    Q_EMIT scopeRead(lastToken, owner, scope);
-  }
-
-  quint64 lastToken = 0;
-  QString lastOwner;
+  QString owner = QStringLiteral(":1.1");
+  quint64 revision = 1;
+  TaskListSourceStatus sourceStatus = TaskListSourceStatus::Ready;
+  QVector<TaskListContainerLineage> containers{
+      {QStringLiteral("c1"), 7, TaskListContainerAuthority::ControlBridge}};
 };
 
 struct RecordedCall {
@@ -93,6 +62,13 @@ class FakeOperationTransport final : public TaskListOperationTransport {
   Q_OBJECT
 
 public:
+  [[nodiscard]] quint64 allocateToken() override {
+    if (nextToken == 0) {
+      return 0;
+    }
+    return nextToken++;
+  }
+
   bool submitTransaction(quint64 token, const QString &uniqueOwner,
                          const QByteArray &requestJson) override {
     calls.append({QStringLiteral("Submit"), token, uniqueOwner, requestJson,
@@ -125,66 +101,32 @@ public:
   }
 
   QVector<RecordedCall> calls;
+  quint64 nextToken = 1;
   bool sendSucceeds = true;
 };
 
-// Drives a producer to Ready with the standard scene under the given owner.
-inline void makeReady(TaskListFactsProducer &producer,
-                      FakeProducerTransport &transport,
-                      const QString &owner = QStringLiteral(":1.1")) {
-  QVERIFY(producer.start());
-  Q_EMIT transport.serviceOwnerChanged(owner);
-  QTRY_VERIFY_WITH_TIMEOUT(transport.lastToken != 0, 2'000);
-  transport.publishStandardScene(owner);
-  QCOMPARE(producer.status(), TaskListSourceStatus::Ready);
-}
-
-inline TaskIntentOutcome acceptIntent(TaskListSource &source,
-                                      const QString &taskId,
-                                      TaskIntentKind kind) {
-  // Fixture plumbing: callers only ask for entries the standard scene
-  // contains at the current revision.
-  return source.requestIntent({taskId, kind, source.revision()});
-}
-
-// Producer at Ready with the control-bridge scene plus an adapter and a
-// finished-signal spy, for the reply-mapping and lineage rows.
 struct ReadyBridgeFixture {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
+  FakeOperationAuthority authority;
   FakeOperationTransport operationTransport;
-  TaskListFactsProducer producer;
   TaskListOperationAdapter adapter;
   QSignalSpy finishedSpy;
 
   ReadyBridgeFixture()
-      : producer(producerTransport, source, fastTiming()),
-        adapter(producer, operationTransport, 60),
-        finishedSpy(&adapter, &TaskListOperationAdapter::operationFinished) {
-    if (!producer.start()) {
-      qFatal("fixture producer did not start");
-    }
-    Q_EMIT producerTransport.serviceOwnerChanged(QStringLiteral(":1.1"));
+      : adapter(authority, operationTransport, 60),
+        finishedSpy(&adapter, &TaskListOperationAdapter::operationFinished) {}
+
+  void makeReady() const {
+    QCOMPARE(authority.status(), TaskListSourceStatus::Ready);
   }
 
-  void makeReady() {
-    QTRY_VERIFY_WITH_TIMEOUT(producerTransport.lastToken != 0, 2'000);
-    producerTransport.publishBridgeScene(QStringLiteral(":1.1"));
-    if (source.status() != TaskListSourceStatus::Ready) {
-      qFatal("fixture scene did not reach Ready");
-    }
-  }
-
-  quint64 revision() const { return source.revision(); }
-  QString owner() const { return QStringLiteral(":1.1"); }
+  quint64 revision() const { return authority.revision; }
+  QString owner() const { return authority.owner; }
 };
 
 inline TaskListOperationResult firstResult(const QSignalSpy &spy) {
   return spy.constFirst().constFirst().value<TaskListOperationResult>();
 }
 
-// Builds the canonical Compositor1 Submit reply (replyToJson shape) echoing
-// the lineage of the recorded request.
 inline QByteArray submitReply(const QByteArray &sentRequest,
                               const QString &status, const QString &revision,
                               const QString &containerOverride = {},
