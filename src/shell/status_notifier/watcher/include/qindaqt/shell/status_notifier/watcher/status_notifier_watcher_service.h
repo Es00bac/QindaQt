@@ -40,8 +40,9 @@ enum class WatcherServiceState : quint32 {
 //   argument registers against the caller's unique name; a service-name
 //   argument is resolved through the bus daemon and lands on the resolved
 //   owner's /StatusNotifierItem path.
-// - Registered items are retired on NameOwnerChanged when the owner
-//   disconnects; a well-known name can never hold an item directly.
+// - Registered items are retired only on a bus-daemon-authenticated
+//   NameOwnerChanged loss tuple for their unique owner; a well-known name can
+//   never hold an item directly.
 // - start() never claims a name another connection owns: it fails closed into
 //   NameOwnedElsewhere with degradedReason() naming the cause, so callers can
 //   present truthful Degraded state instead of a silently broken watcher.

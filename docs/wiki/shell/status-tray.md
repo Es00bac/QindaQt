@@ -133,8 +133,10 @@ rules follow ADR-0032 exactly:
   argument registers against the caller; a service-name argument is resolved
   through the bus daemon and lands on the resolved owner's
   `/StatusNotifierItem` path. A well-known name can never hold an item.
-- Registered items and hosts are retired on `NameOwnerChanged` when the owner
-  disconnects, emitting the matching protocol signal first, including
+- Registered items and hosts are retired only on a bus-daemon-authenticated
+  `NameOwnerChanged` unique-name loss tuple. A peer-emitted signal with the
+  same path, interface, member, and payload cannot retire a live owner. A
+  genuine disconnect emits the matching protocol signal first, including
   `StatusNotifierHostUnregistered` for host retirement.
 - `start()` never claims a name another connection owns. A foreign owner is
   not an error: the service fails closed into `NameOwnedElsewhere`, stays
@@ -177,7 +179,8 @@ adapter and a later lane composes it into the tray.
 watches the watcher name, opens a fresh epoch and re-populates whenever a
 (replacement) watcher acquires it, issues one generation per owner per epoch
 and shares it across that owner's object paths (including the valid root path
-`/`), retires owners on `NameOwnerChanged` loss, and subscribes to the
+`/`), retires owners only on a bus-daemon-authenticated `NameOwnerChanged`
+unique-name loss tuple, and subscribes to the
 watcher's item registered/unregistered signals as a second retire path (the
 registry refuses the duplicate as stale, so ordering is not a contract).
 Population completion is fenced by the current epoch: a late reply from a dead
@@ -254,8 +257,9 @@ fixture, never the host bus):
   retirement followed by a new path retaining that still-live owner's
   generation, root-path population, item retirement and bounded owner-slot
   release on owner disconnect,
-  watcher-restart rebaseline into a fresh epoch (the fake item re-registers
-  with the replacement watcher, as real items do), truthful Degraded
+  rejection of a peer-forged owner-loss signal while the real owner remains
+  connected, watcher-restart rebaseline into a fresh epoch (the fake item
+  re-registers with the replacement watcher, as real items do), truthful Degraded
   presentation with last-known-good retention, and validated intent dispatch
   (stale generations and invalid orientations refused).
 - `qindaqt.status-notifier-icon`: theme lookup over injected theme roots,

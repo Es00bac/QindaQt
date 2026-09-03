@@ -105,13 +105,11 @@ bool StatusNotifierWatcherService::start(QString *errorMessage)
     }
 
     if (m_connection.registerService(QString::fromLatin1(kWatcherServiceName))) {
-        // AGENT-NOTE: the first connect argument is empty, not the bus daemon
-        // name: a service filter matches the sender's owned names, and the
-        // daemon's loss broadcasts are not reliably matched through its
-        // well-known name on private buses (this is the project's proven
-        // pattern from the resident Bluetooth service).
+        // AGENT-GUARD: Match the bus daemon as sender. A peer can emit a
+        // signal with this path/interface/member tuple; an empty service
+        // filter lets that peer forge owner loss and retire live tray items.
         m_watchingNameChanges = m_connection.connect(
-            QString{},
+            QStringLiteral("org.freedesktop.DBus"),
             QStringLiteral("/org/freedesktop/DBus"),
             QStringLiteral("org.freedesktop.DBus"),
             QStringLiteral("NameOwnerChanged"),
@@ -160,7 +158,7 @@ void StatusNotifierWatcherService::stop()
     }
     if (m_watchingNameChanges) {
         m_connection.disconnect(
-            QString{},
+            QStringLiteral("org.freedesktop.DBus"),
             QStringLiteral("/org/freedesktop/DBus"),
             QStringLiteral("org.freedesktop.DBus"),
             QStringLiteral("NameOwnerChanged"),
@@ -314,8 +312,7 @@ void StatusNotifierWatcherService::handleNameOwnerChanged(const QString &name,
                                                           const QString &oldOwner,
                                                           const QString &newOwner)
 {
-    Q_UNUSED(oldOwner)
-    if (!newOwner.isEmpty()) {
+    if (name != oldOwner || !isValidUniqueBusName(name) || !newOwner.isEmpty()) {
         return;
     }
     retireOwnerItems(name);
