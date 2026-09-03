@@ -8,6 +8,7 @@ Window {
     required property var theme
     required property string surfaceId
     property var notificationCenterAppletAccess: null
+    property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
 
@@ -22,6 +23,7 @@ Window {
         theme: root.theme
         liveApplets: true
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }

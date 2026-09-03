@@ -163,6 +163,25 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
+The production Audio applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.audio-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection rows are joined by a public-client controller with
+read/control grant separation and exact-owner replacement cleanup, a compiled
+offscreen keyboard/accessibility row, pure/runtime boundary gates with a
+service-internal poison negative control, and an installed
+production-package/source-poison row that also requires the staged KF6
+GlobalAccel artifact to resolve through the relocated shell's relative
+RUNPATH. All rows use an injected fake transport or a relocated package
+stage; no row contacts the host session bus, PipeWire, WirePlumber, display
+server, or hardware. The exact matrix and non-claims are detailed in
+[Audio applet](../shell/audio-applet.md).
+
 The production Power applet slice is selected with:
 
 ```sh

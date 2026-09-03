@@ -59,6 +59,7 @@ class SessionLockStateMonitor;
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
+class AudioAppletComposition;
 class BluetoothAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class NotificationCenterAppletAccess;
@@ -140,6 +141,10 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    // AGENT-GUARD: declaration order makes each borrowed dependency outlive
+    // its consumer: the applet compositions precede the window factory that
+    // injects their facades into panel QML.
+    std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;

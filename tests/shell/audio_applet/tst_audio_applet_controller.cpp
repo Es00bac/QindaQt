@@ -177,6 +177,12 @@ public:
     {
         Q_EMIT snapshotReply(kOwner, requestId, success, snapshot, reason);
     }
+    void deliverSnapshotAs(const QString &owner, quint64 requestId, bool success,
+                           const Snapshot &snapshot,
+                           const QString &reason = {})
+    {
+        Q_EMIT snapshotReply(owner, requestId, success, snapshot, reason);
+    }
     void deliverOperation(quint64 requestId, bool success,
                           const OperationResult &result,
                           const QString &reason = {})
@@ -212,6 +218,8 @@ private slots:
     void pendingPrunesWhenSerialVanishesAndLateReplyIsIgnored();
     void degradedSnapshotKeepsRowsWithReason();
     void unavailableSnapshotFailsClosedWithReason();
+    void grantsGateReadAndControlIndependently();
+    void ownerReplacementClearsTruthAndPendingWithoutReplay();
 
 private:
     void publishReadySnapshot();
@@ -228,7 +236,7 @@ void AudioAppletControllerTests::init()
 {
     m_transport = new FakeTransport(this);
     m_client = new AudioClient(m_transport, this);
-    m_controller = new AudioAppletController(m_client, this);
+    m_controller = new AudioAppletController(m_client, true, true, this);
 }
 
 void AudioAppletControllerTests::cleanup()
@@ -552,6 +560,77 @@ void AudioAppletControllerTests::unavailableSnapshotFailsClosedWithReason()
         AudioAppletController::tr("The audio service is not available right now."));
     QVERIFY(m_controller->deviceRows().isEmpty());
     QVERIFY(m_controller->streamRows().isEmpty());
+}
+
+void AudioAppletControllerTests::grantsGateReadAndControlIndependently()
+{
+    // Read denial suppresses observation entirely: even a ready client behind
+    // the facade must present as policy-unavailable, never as live truth.
+    AudioAppletController denied(m_client, false, true);
+    m_client->start();
+    m_transport->changeOwner(kOwner);
+    m_transport->deliverSnapshot(m_transport->fetches.constLast().requestId,
+                                 true, makeReadySnapshot());
+    QCOMPARE(denied.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(denied.phaseReasonText(),
+             AudioAppletController::tr(
+                 "Audio access was not granted to this applet."));
+    QVERIFY(denied.deviceRows().isEmpty());
+    QVERIFY(!denied.requestMute(1, false, true));
+    QCOMPARE(m_transport->submissions.size(), 0);
+
+    // Control denial keeps bounded rows visible but refuses every mutation
+    // before dispatch; observation still works.
+    delete m_controller;
+    m_controller =
+        new AudioAppletController(m_client, true, false, this);
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
+    QCOMPARE(m_controller->deviceRows().size(), 3);
+    QVERIFY(!m_controller->isControlGranted());
+    QVERIFY(!m_controller->requestVolume(1, false, 0.2));
+    QCOMPARE(m_transport->submissions.size(), 0);
+    QCOMPARE(m_controller->feedback(),
+             AudioAppletController::tr(
+                 "Audio controls are not allowed for this applet."));
+    QCOMPARE(countPendingDeviceRows(), 0);
+
+    // Control without read is not control: the same refusal path applies.
+    delete m_controller;
+    m_controller = new AudioAppletController(m_client, false, false, this);
+    QVERIFY(!m_controller->isControlGranted());
+    QVERIFY(!m_controller->requestMute(1, false, true));
+    QCOMPARE(m_transport->submissions.size(), 0);
+}
+
+void AudioAppletControllerTests::
+    ownerReplacementClearsTruthAndPendingWithoutReplay()
+{
+    publishReadySnapshot();
+
+    QVERIFY(m_controller->requestMute(1, false, true));
+    QCOMPARE(countPendingDeviceRows(), 1);
+
+    // An exact-owner replacement invalidates the old lineage: rows must
+    // clear immediately, the in-flight request resolves as uncertain, and
+    // nothing replays against the next owner.
+    m_transport->changeOwner(QStringLiteral(":1.99"));
+    QVERIFY(m_controller->deviceRows().isEmpty());
+    QVERIFY(m_controller->streamRows().isEmpty());
+    QTRY_COMPARE(countPendingDeviceRows(), 0);
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("loading"));
+    QTRY_COMPARE(m_controller->feedback(),
+                 AudioAppletController::tr("The %1 change could not be confirmed. "
+                                           "Shown state will refresh from the audio "
+                                           "service.")
+                     .arg(AudioAppletController::tr("mute")));
+
+    // The new owner must be answered before truth returns; a stale reply
+    // addressed to the old owner changes nothing.
+    m_transport->deliverSnapshotAs(QStringLiteral(":1.99"),
+                                   m_transport->fetches.constLast().requestId,
+                                   true, withEpoch(makeReadySnapshot(), kEpoch + 1));
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
+    QCOMPARE(m_controller->deviceRows().size(), 3);
 }
 
 QTEST_GUILESS_MAIN(AudioAppletControllerTests)
