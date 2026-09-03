@@ -8,9 +8,123 @@ three production D-Bus transports that feed it: a
 `org.kde.StatusNotifierWatcher` service, an asynchronous item reader with its
 registry-feeding monitor, and an icon-theme/pixmap renderer. The architectural
 decision is in
-[ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md). The tray
-applet itself still resolves as `implementation-unavailable` in the applet
-runtime until its presentation slice lands.
+[ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md). The S2 tray
+applet slice below composes these modules into the registered built-in
+`status-notifier` applet; panel hosting (dispatcher composition) is a later
+lane, so the applet resolves `ready` but is not placed by the stock profile.
+
+## Tray applet (`src/shell/status_notifier/applet`)
+
+Two static targets mirror the Clipboard applet's split:
+
+| Target | Responsibility |
+| --- | --- |
+| `QindaQt::ShellStatusNotifierApplet` (pure) | `StatusNotifierAppletModel`: deterministic, reentrant projection of one S1 `TrayPresentation` plus the registry's item descriptors into applet phases, bounded rows, and flattened menu previews; plus the row/projection/texts value types. Public StatusNotifier foundation values plus Qt Core only. |
+| `QindaQt::ShellStatusNotifierAppletRuntime` | `StatusNotifierAppletController` (QML-facing facade), `StatusNotifierMonitorAdapter` (the production seam composition over registry + monitor + icon renderer), and the compiled `QindaQt.Shell.StatusNotifier 1.0` QML module. Links the public S1 item-client and icon targets and Qt Qml/Quick; never opens D-Bus connections or calls QDBus APIs beyond the injected connection type, and never touches panel QML or the shell runtime. |
+
+`StatusNotifierSourceInterface` is the injected least-authority seam:
+presentation and descriptors in, never-null icon renders, current-generation
+reads, and activate/secondary-activate/context-menu dispatches out, with a
+single `changed()` signal after every registry-affecting event. The S1 monitor
+deliberately emits only `watcherLiveChanged`, so the adapter interposes a
+private forwarding sink between monitor and registry: every
+`StatusNotifierEventSink` call is forwarded verbatim (including
+`beginWatcherEpoch`/`beginOwnerGeneration` return values) and `changed()` is
+emitted after each accepted mutation. The watcher *service* is owned by the
+future shell-session composition, not the adapter. QML receives no registry
+pointers, wire payloads, or bus endpoints.
+
+## Capability gating
+
+The manifest requests `status-items.read` and `status-items.activate`
+independently; `data/applet-policy/default.json` grants both to the audited
+`status-notifier` package only. The composing shell passes the evaluated
+grants to the controller at construction (fail-closed, immutable):
+
+- `status-items.read` denied: observation is withheld entirely — the phase
+  reports `unavailable` with the registered reason
+  `status-items-read-not-granted`, no rows are retained, and the source seam
+  is never queried (no presentation read, no descriptor read, no icon
+  render).
+- `status-items.activate` denied: browsing stays live, but every intent is
+  refused with feedback before any dispatch.
+
+## Applet presentation contract
+
+Phases, exposed as `phaseText` with `phaseReasonText`:
+
+| Phase | Meaning |
+| --- | --- |
+| `loading` | Watcher live; the current epoch's population not yet observed. |
+| `ready` | Watcher live, population observed, at least one item. |
+| `empty` | Watcher live, population observed, no items. |
+| `degraded` | Watcher unavailable (last-known-good rows stay visible and actionable) or the registry degraded; the S1 diagnostic is the phase reason. |
+| `unavailable` | Read capability denied (`status-items-read-not-granted`) or no source composed. |
+
+Rows follow the S1 presentation's stable order and are capped at
+`kMaxPresentedItems` (24); overflow is truthful through `overflowCount` and a
+counted `overflowText`. Icons cross into QML only as bounded PNG data URLs
+rendered through the seam on the GUI thread for presented rows; a missing or
+hostile icon resolves to the deterministic S1 placeholder and the row says so
+(`iconIsPlaceholder`). Every intent enforces the owner generation locally
+(presented-row match plus `currentGeneration`; generation 0 is never live),
+then the seam revalidates and dispatches once: a reentrancy guard refuses a
+second dispatch while a gesture is in flight, so a seam that emits `changed()`
+synchronously inside a dispatch cannot double it. The menu payload projects to
+a bounded, depth-capped read-only preview; dbusmenu entry activation is a
+later composition lane.
+
+## Packaging and staging
+
+The `StatusNotifierAppletRuntime` install component packages the public
+boundary (static archives, generated plugin archive, `qmldir`, `.qmltypes`,
+QML files under `QindaQt/Shell/StatusNotifier`, public headers, manifest). It
+is a member of the shell component-closure inventory proven by
+`qindaqt.shell-runtime-component-closure`, and
+`qindaqt.status-notifier-applet-installed-package` validates the staged
+component with a relocation/RPATH proof mirroring the clipboard row. The
+module is staged into the `DesktopVirtual` component ahead of hosting (from
+`tests/session/PanelVisibilityTests.cmake`); the hosting lane moves it into
+the shared `DesktopVirtualAppletModules.cmake` inventory when
+`BuiltinAppletContent.qml` gains the import. A dispatcher-only test-import
+double lives at `tests/shell/qml/imports/QindaQt/Shell/StatusNotifier/`.
+
+## Focused tests
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.status-notifier-applet-' \
+  --output-on-failure
+```
+
+| Test | Scope |
+| --- | --- |
+| `qindaqt.status-notifier-applet-model` | Pure projection: every phase including read-denied Unavailable with no rows, the 24-row cap with truthful overflow, descriptor matching and fail-closed misses, status flags, keyboard texts, menu flattening with the depth cap against hostile chains, determinism. |
+| `qindaqt.status-notifier-applet-controller` | Scripted seam: capability gates (read denial withholds all seam reads; activate denial refuses before dispatch), exactly-once dispatch including a seam that emits `changed()` re-entrantly, stale-generation and owner-loss fencing, overflow truth, data-URL icons with placeholder truth, iconSize re-render, bounded fenced menu preview. |
+| `qindaqt.status-notifier-applet-adapter` | Real registry + monitor + watcher composition over a private session bus: population through the seam, exactly one recorded wire `Activate` through the controller, owner disconnect, watcher-loss Degraded with last-known-good retention and replacement-watcher repopulation. |
+| `qindaqt.status-notifier-applet-qml-offscreen` | Compiled module surfaces: ready/empty/loading/degraded/unavailable, row and badge rendering, overflow chip, null-access disabled truth, feedback dismissal. |
+| `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
+| `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
+| `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through. |
+| `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
+
+The boundary gate also runs without configure:
+
+```sh
+cmake -DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=<repository>/src/shell/status_notifier/applet \
+  -DQINDAQT_STATUS_NOTIFIER_APPLET_POISON_DIRECTORY=<scratch> \
+  -P tests/shell/status_notifier/applet/check_status_notifier_applet_boundary.cmake
+```
+
+## Applet non-claims
+
+The S2 slice proves no panel hosting or production-shell dispatcher
+composition (the stock profile does not place the applet), no dbusmenu entry
+activation (the menu preview is read-only), no assistive-technology bridge
+behavior, and no host session bus evidence; those belong to later lanes and
+their own gates. The older `system-tray` manifest (`data/applets/
+status-tray.json`) remains an accepted catalog contract resolving
+`implementation-unavailable` until the hosting lane reconciles the two.
 
 ## Ownership identity
 

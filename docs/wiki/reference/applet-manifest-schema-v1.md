@@ -43,7 +43,7 @@ authority.
 
 The built-in catalog lives in `data/applets`. It currently describes
 launcher, task-list, global-menu, status-tray, clock, notification-center,
-audio, Bluetooth, power, and clipboard applets.
+audio, Bluetooth, power, clipboard, and status-notifier applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -92,6 +92,13 @@ The audited renderer receives a shell-private controller over the injected
 `ClipboardClientInterface` seam. Read denial withholds all observation; write
 denial keeps bounded browsing visible but refuses every mutating intent
 (select/promote, pin, delete, clear) before dispatch.
+
+The Status Notifier manifest requests both `status-items.read` and
+`status-items.activate`. The audited renderer receives a shell-private
+controller over the injected `StatusNotifierSourceInterface` seam. Read denial
+withholds all observation, including icon rendering; activate denial keeps the
+bounded rows visible but refuses every intent (activate, secondary-activate,
+context menu) before dispatch, and execution always stays with the item owners.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "status-notifier",
+  "name": "Status Notifier",
+  "description": "Presents mediated status-notifier tray items with bounded, generation-fenced activation.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.status-notifier"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 32, "preferred": 160, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["status-items.read", "status-items.activate"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "iconSize": {"type": "integer", "minimum": 16, "maximum": 64, "default": 22}
+    }
+  }
+}

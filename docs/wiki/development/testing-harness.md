@@ -934,6 +934,28 @@ and deterministic fallback. DBusMenu rendering, a rendered panel tray, and
 assistive-technology behavior remain separate later milestones with their own
 gates.
 
+The registered Status Notifier tray applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.status-notifier-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its eight rows cover the pure applet projection (phases including read-denied
+unavailable, the 24-row presentation cap with truthful overflow, descriptor
+matching, and depth-capped menu flattening), the controller over a scripted
+source seam (capability gates, exactly-once generation-fenced dispatch against
+hostile reentrancy, owner-loss fencing, data-URL icon truth), the real
+registry/monitor/watcher adapter composition over a private session bus, the
+compiled QML offscreen/keyboard/accessibility rows under fatal warnings, an
+eight-case boundary-poison gate (direct D-Bus wire authority, QProcess,
+Wayland/KWin/LayerShell, private headers), and a staged installed-package row
+with the same `$ORIGIN`-relative RUNPATH rewrite, relocation, and reruns as
+the clipboard lane. No row contacts the host bus, display server, or hardware.
+The exact matrix and non-claims are detailed in
+[Status notifier tray](../shell/status-tray.md).
+
 ## Current task-list proof
 
 The task list's complete source, producer, and operation boundary is selected

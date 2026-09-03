@@ -53,6 +53,20 @@
       "capability": "clipboard.write",
       "decision": "grant",
       "reason": "The audited Clipboard applet may dispatch generation-fenced select, pin, delete, and clear intents; execution stays with the clipboard authority."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "status-notifier",
+      "capability": "status-items.read",
+      "decision": "grant",
+      "reason": "The audited Status Notifier applet may observe the bounded, validated status-item registry through its injected source seam."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "status-notifier",
+      "capability": "status-items.activate",
+      "decision": "grant",
+      "reason": "The audited Status Notifier applet may dispatch generation-fenced activate, secondary-activate, and context-menu intents; execution stays with the item owners."
     }
   ]
 }
