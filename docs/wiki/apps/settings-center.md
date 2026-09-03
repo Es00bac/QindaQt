@@ -115,7 +115,12 @@ ctest --test-dir build/dev --output-on-failure \
   traversal, and unavailable truth;
 - the offscreen navigation row proves 720×520 wide and 440×360 compact layout,
   mutually exclusive page construction, route switching, shortcut and focus
-  paths, PageTab semantics, selected state, and fail-closed alerts;
+  paths, PageTab semantics, selected state, and fail-closed alerts; it is
+  registered with `QT_FATAL_WARNINGS=1`, so any QML warning emitted while
+  constructing the host or a route page aborts the row instead of passing
+  silently. The child-process construction and installed rows deliberately
+  tolerate `main()`'s absent-bus client-unavailability warnings and are not
+  registered as fatal;
 - the CLI row rejects ordinary unknown, uppercase, parent-path, and nested-path
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
