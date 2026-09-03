@@ -58,6 +58,7 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- 2026-09-03T04:32:48-06:00 — Integrated the Audio Settings route `d10abe2` at merge `f6d47db` (delegated registry reconciliation by an integration assistant, landed at `fac8d6a`); merged tree passes all Settings rows (audio 4, customize 7, center/package/navigation rows) in Debug and Release under host-bus isolation, broad safe Debug 435 rows with zero failures, and static gates. QQ-006.05 widened (Audio route live); Bluetooth Settings `24129a2` accepted 0/0/0/0 and its merge delegated next.
 - `8505bdb` and `7ecdb36` — The compositor's authenticated `CompositorShell1` boundary now projects a revisioned
   active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced
   app-menu service/path) with an exported change signal validated by the public generation rule on both sides
