@@ -138,6 +138,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_runtime_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_selector_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
@@ -161,6 +162,7 @@ find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopSessionTests.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/PanelVisibilityTests.cmake")
 
 # AGENT-CONTRACT: qindaqt-wm defaults to its installed KDE plugin root. Every
 # build-tree integration test must name the transient root explicitly.

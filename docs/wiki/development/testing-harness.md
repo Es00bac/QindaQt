@@ -1840,6 +1840,38 @@ complete release matrix:
 | `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
 | `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |
 
+Window-aware panel interaction has two additive installed qualification rows:
+
+```sh
+QINDAQT_PRIVATE_RUNTIME_LANE=interactive-virtual-desktop \
+ctest --test-dir build/dev --parallel 1 --output-on-failure \
+  -R '^desktop\.virtual\.panel-visibility\.(single-1080p|single-wuxga)$'
+```
+
+`desktop.virtual.sandbox-unit` must pass before either row. The rows are serial
+and reuse the S3 bubblewrap stage, private buses, nested Weston/KWin sockets,
+authenticated production processes, development input device, and private
+parent screenshooter. A fixture profile supplies a `never` top panel, an
+`intelligent` left panel, and an `always` bottom panel. A real painted client
+first covers and hides the left panel, then a private-seat Meta-drag moves it
+clear and its later close preserves the restored panel. Private pointer input
+reveals the bottom panel at its one-pixel edge sensor, `Meta+Space` provides the
+shortcut reveal, and the installed notification center opened with `Meta+N`
+holds the panel visible after that shortcut lease expires. A second `Meta+N`
+closes the center and must allow the panel to hide again.
+
+The interaction probe records exact compositor surface inventories and one
+framebuffer capture for each of `window-overlap-hidden`, `window-moved-away`,
+`edge-revealed`, `shortcut-revealed`, `popup-held`, and `popup-closed`. Each PNG
+must have the scenario's exact pixel dimensions, be a regular non-symlink file,
+pass checksum decoding, and contain at least eight colors. Every phase also
+requires the top panel mapped and committed with exclusive zone 30. Canonical
+evidence includes all six captures, process/PSS authentication, bounded
+terminal phases, and a final independently observed empty survivor set. The
+1080p row and the existing S3 `single-wuxga` output geometry are qualified; no
+fractional-scale, multi-output, GPU, physical-input, or screenshot-baseline
+claim follows from these two selectors.
+
 Together with S2's 1080p/dusk row, this covers WUXGA, 1440p, representative
 125% and 150% scaling, light/dusk/dark, and one executable multi-output
 arrangement. Scenario ids are selected from a closed set. Each scenario's
