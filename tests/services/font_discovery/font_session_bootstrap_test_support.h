@@ -7,7 +7,7 @@
 // mode) and host canned Settings1 services in a second child mode
 // (`--qindaqt-font-fake-service=<profile>`). Every bus is a private
 // dbus-daemon; no host bus is ever touched (review findings P1-1/P1-4/P1-6 of
-// rejected candidate abc76f3).
+// rejected candidates abc76f3 and 84367aa).
 
 #include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
@@ -82,7 +82,11 @@ inline QVariantMap snapshotWireFor(const QString &profile, const QStringList &re
 
 class FakeSettingsObject final : public QDBusVirtualObject {
 public:
-    explicit FakeSettingsObject(QString profile) : m_profile(std::move(profile)) {}
+    FakeSettingsObject(QString profile, QDBusConnection connection)
+        : m_profile(std::move(profile))
+        , m_connection(std::move(connection))
+    {
+    }
 
     QString introspect(const QString &) const override { return QString(); }
 
@@ -90,6 +94,15 @@ public:
     {
         if (message.member() == QLatin1String(WireContract::GetSnapshotMethod)
             && !message.arguments().isEmpty()) {
+            if (m_profile == QLatin1String("owner-loss")) {
+                // Replying to a unique-name call remains possible after this
+                // process relinquishes the well-known Settings1 name. This is
+                // the precise stale-reply race the bootstrap must fence.
+                if (!m_connection.unregisterService(
+                        QString::fromLatin1(WireContract::ServiceName))) {
+                    return false;
+                }
+            }
             connection.send(message.createReply(
                 QVariant::fromValue(snapshotWireFor(m_profile,
                                                     message.arguments().constFirst().toStringList()))));
@@ -100,6 +113,7 @@ public:
 
 private:
     QString m_profile;
+    QDBusConnection m_connection;
 };
 
 inline int runProbe(int argc, char **argv)
@@ -127,7 +141,7 @@ inline int runFakeService(int argc, char **argv, const QString &profile)
     if (!bus.isConnected()) {
         return 2;
     }
-    FakeSettingsObject object(profile);
+    FakeSettingsObject object(profile, bus);
     if (!bus.registerVirtualObject(QString::fromLatin1(WireContract::ObjectPath), &object)) {
         return 3;
     }

@@ -405,10 +405,15 @@ void FontSettingsBridgeTests::transportLossFailsClosed()
     QVERIFY(client.start());
     driveBaseline(transport, client,
                   fontsValues(QStringLiteral("Liberation Mono")), 1);
+    QVERIFY(bridge.hasBaseline());
     QCOMPARE(coordinator.preferences().family(), QStringLiteral("Liberation Mono"));
 
     Q_EMIT transport.ownerChanged(QString{});
     QTRY_VERIFY(client.state() == ClientState::Unavailable);
+    // AGENT-NOTE: review finding P2-1 (rejected candidate 84367aa) — LKG
+    // remains readable, but ordinary owner loss must revoke the bridge's
+    // public write-baseline authority until a later valid snapshot.
+    QTRY_VERIFY(!bridge.hasBaseline());
     // AGENT-GUARD: Transport loss never claims last confirmed values are
     // current authority; the coordinator keeps its atomic LKG state.
     QCOMPARE(coordinator.preferences().family(), QStringLiteral("Liberation Mono"));

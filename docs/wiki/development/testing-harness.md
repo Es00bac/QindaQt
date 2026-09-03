@@ -871,9 +871,10 @@ host fontconfig), hostile non-font content, symlink loops and unreadable
 files, control-character style rejection, string-length pattern rejection,
 deterministic bounded truncation over thousands of directory entries, and the
 `productionDefault()` default-configuration contract under a staged
-`FONTCONFIG_FILE` and under `/dev/null`. The host default fontconfig
-configuration and host font directories are never consulted by any injected
-row.
+`FONTCONFIG_FILE`. The `/dev/null` poison belongs only to the separate
+injected-directory-without-configuration rejection row; it is not evidence for
+the production-default request shape. The host default fontconfig configuration
+and host font directories are never consulted by any injected row.
 `qindaqt.font-settings-bridge` drives the public Settings1 client through a
 fake transport: confirmed-snapshot synchronization, hostile-value and
 wrong-typed-value LKG retention, write refusal without a baseline,
@@ -891,7 +892,9 @@ guarded call applying confirmed preferences served by a fake Settings1
 service and by the real `qindaqt-settings-service` (seeded through the real
 `CommitUserTransaction` wire), plus fail-closed rows for an unset bus address
 (no autolaunch), an absent bus, an absent service, a wrong-typed snapshot, a
-malformed envelope, and a confirmed family absent from the staged catalog.
+malformed envelope, a confirmed family absent from the staged catalog, and a
+valid reply whose resolved owner relinquishes Settings1 before reply
+acceptance.
 `qindaqt.font-application-bootstrap-wiring` is the source-level P1-6 regression
 gate: all four first-party composition roots must contain exactly one guarded
 helper call before `QGuiApplication`/`QApplication` construction; policy stays
