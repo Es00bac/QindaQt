@@ -2,6 +2,7 @@
 #include "kwinshellwindowactions.h"
 
 #include "kwinhybridsession.h"
+#include "kwinshellwindowidentity.h"
 #include "kwinshellvisibilitypublisher.h"
 #include "managedwindowregistry.h"
 
@@ -13,6 +14,7 @@
 #include <workspace.h>
 
 #include <QDBusConnectionInterface>
+#include <QDBusMessage>
 #include <QDBusReply>
 #include <QSet>
 #include <QVariantMap>
@@ -25,6 +27,9 @@ namespace {
 
 constexpr auto PanelScope = "dock";
 constexpr auto ProcessIdCredential = "ProcessID";
+constexpr auto ShellObjectPath = "/org/qindaqt/CompositorShell";
+constexpr auto ShellInterface = "org.qindaqt.CompositorShell1";
+constexpr auto IdentityChangedSignal = "ActiveWindowIdentityChanged";
 
 } // namespace
 
@@ -77,8 +82,15 @@ void KWinShellPanelOwnerSource::track(KWin::LayerSurfaceV1Interface *surface)
     // dock roles at the authorization decision; filtering at creation would
     // permanently miss the real production panels.
     m_surfaces.append(surface);
+    if (surface->surface()) {
+        connect(surface->surface(), &KWin::SurfaceInterface::committed,
+                this, &KWinShellPanelOwnerSource::shellPanelOwnerChanged);
+    }
     connect(surface, &KWin::LayerSurfaceV1Interface::aboutToBeDestroyed,
-            this, [this, surface] { m_surfaces.removeAll(surface); });
+            this, [this, surface] {
+                m_surfaces.removeAll(surface);
+                Q_EMIT shellPanelOwnerChanged();
+            });
 }
 
 std::optional<qint64> KWinShellPanelOwnerSource::shellPanelProcessId() const
@@ -182,11 +194,21 @@ bool KWinShellWindowActionExecutor::execute(ShellWindowAction action,
 }
 
 KWinShellWindowActionsEndpoint::KWinShellWindowActionsEndpoint(
-    ShellWindowActionController &controller,
+    ShellWindowActionController &actionController,
+    ShellWindowIdentityController &identityController,
+    KWinShellWindowIdentityPublisher &identityPublisher,
+    KWinShellPanelOwnerSource &panelOwner,
+    QDBusConnection connection,
     QObject *parent)
     : QObject(parent)
-    , m_controller(controller)
+    , m_actionController(actionController)
+    , m_identityController(identityController)
+    , m_connection(std::move(connection))
 {
+    connect(&identityPublisher, &KWinShellWindowIdentityPublisher::snapshotChanged,
+            this, &KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation);
+    connect(&panelOwner, &KWinShellPanelOwnerSource::shellPanelOwnerChanged,
+            this, &KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation);
 }
 
 QByteArray KWinShellWindowActionsEndpoint::ActivateWindow(
@@ -219,6 +241,35 @@ QByteArray KWinShellWindowActionsEndpoint::RaiseWindow(
     return submit(ShellWindowAction::Raise, windowId, epoch, revision);
 }
 
+QByteArray KWinShellWindowActionsEndpoint::ActiveWindowIdentity()
+{
+    const QString caller = calledFromDBus() ? message().service() : QString{};
+    const QByteArray result = m_identityController.snapshot(caller);
+    const auto decoded = decodeShellWindowIdentitySnapshot(result);
+    if (decoded && decoded->status != ShellWindowIdentityStatus::Unauthorized) {
+        m_boundIdentityOwner = caller;
+    }
+    return result;
+}
+
+void KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation()
+{
+    if (m_boundIdentityOwner.isEmpty() || !m_connection.isConnected()) {
+        return;
+    }
+    // AGENT-GUARD: Exporting a normal Qt signal would broadcast focus timing
+    // to every session-bus peer. Direct this no-payload hint only to the exact
+    // shell owner that completed an authenticated identity read.
+    QDBusMessage signal = QDBusMessage::createTargetedSignal(
+        m_boundIdentityOwner, QString::fromLatin1(ShellObjectPath),
+        QString::fromLatin1(ShellInterface),
+        QString::fromLatin1(IdentityChangedSignal));
+    m_connection.send(signal);
+    if (!m_identityController.authorized(m_boundIdentityOwner)) {
+        m_boundIdentityOwner.clear();
+    }
+}
+
 QByteArray KWinShellWindowActionsEndpoint::submit(
     ShellWindowAction action,
     const QString &windowId,
@@ -226,7 +277,7 @@ QByteArray KWinShellWindowActionsEndpoint::submit(
     const QString &revision)
 {
     const QString caller = calledFromDBus() ? message().service() : QString{};
-    return encodeShellWindowActionResult(m_controller.submit({
+    return encodeShellWindowActionResult(m_actionController.submit({
         caller, action, windowId, epoch, revision}));
 }
 

@@ -4,6 +4,7 @@ add_library(qindaqt_compositor_bridge STATIC)
 add_library(QindaQt::CompositorBridge ALIAS qindaqt_compositor_bridge)
 
 add_library(qindaqt_compositor_shell_actions STATIC
+    src/shellwindowidentity.cpp
     src/shellwindowactions.cpp
 )
 add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
@@ -13,7 +14,9 @@ target_sources(
         FILE_SET public_headers
         TYPE HEADERS
         BASE_DIRS include
-        FILES include/qindaqt/compositor/shellwindowactions.h
+        FILES
+            include/qindaqt/compositor/shellwindowactions.h
+            include/qindaqt/compositor/shellwindowidentity.h
 )
 target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
 target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core)
@@ -230,6 +233,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwincontrolendpoint.h
             kwin/kwinshellvisibilitypublisher.cpp
             kwin/kwinshellvisibilitypublisher.h
+            kwin/kwinshellwindowidentity.cpp
+            kwin/kwinshellwindowidentity.h
             kwin/kwinshellwindowactions.cpp
             kwin/kwinshellwindowactions.h
             kwin/kwininteractiontargetresolver.cpp

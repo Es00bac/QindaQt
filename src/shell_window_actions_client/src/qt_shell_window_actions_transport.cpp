@@ -20,6 +20,8 @@ constexpr auto DBusService = "org.freedesktop.DBus";
 constexpr auto DBusPath = "/org/freedesktop/DBus";
 constexpr auto DBusInterface = "org.freedesktop.DBus";
 constexpr auto GetNameOwnerMethod = "GetNameOwner";
+constexpr auto IdentityMethod = "ActiveWindowIdentity";
+constexpr auto IdentityChangedSignal = "ActiveWindowIdentityChanged";
 constexpr int DBusTimeoutMilliseconds = 2000;
 
 QString methodName(Compositor::ShellWindowAction action)
@@ -89,7 +91,15 @@ void QtShellWindowActionsTransport::stop()
     if (!m_started) return;
     m_started = false;
     ++m_ownerGeneration;
+    if (!m_uniqueOwner.isEmpty()) {
+        m_connection.disconnect(
+            m_uniqueOwner, QString::fromLatin1(ObjectPath),
+            QString::fromLatin1(InterfaceName),
+            QString::fromLatin1(IdentityChangedSignal), this,
+            SLOT(handleIdentityInvalidation()));
+    }
     m_uniqueOwner.clear();
+    m_identitySignalConnected = false;
     for (const auto &pending : std::as_const(m_pendingCalls)) {
         if (pending) {
             pending->disconnect(this);
@@ -138,6 +148,39 @@ void QtShellWindowActionsTransport::request(
             });
 }
 
+void QtShellWindowActionsTransport::requestIdentity(
+    quint64 token, const QString &uniqueOwner)
+{
+    if (!m_started || uniqueOwner.isEmpty() || uniqueOwner != m_uniqueOwner) {
+        failIdentity(token, uniqueOwner,
+                     QStringLiteral("the compositor owner is no longer current"));
+        return;
+    }
+    if (!m_identitySignalConnected) {
+        failIdentity(token, uniqueOwner,
+                     QStringLiteral("identity invalidation subscription is unavailable"));
+        return;
+    }
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        uniqueOwner, QString::fromLatin1(ObjectPath),
+        QString::fromLatin1(InterfaceName), QString::fromLatin1(IdentityMethod));
+    auto *watcher = new QDBusPendingCallWatcher(
+        m_connection.asyncCall(call, DBusTimeoutMilliseconds), this);
+    m_pendingCalls.append(watcher);
+    connect(watcher, &QDBusPendingCallWatcher::finished,
+            this, [this, watcher, token, uniqueOwner] {
+                m_pendingCalls.removeAll(watcher);
+                QDBusPendingReply<QByteArray> reply = *watcher;
+                watcher->deleteLater();
+                if (!m_started) return;
+                if (reply.isError()) {
+                    failIdentity(token, uniqueOwner, reply.error().message());
+                    return;
+                }
+                Q_EMIT identityReplyReceived(token, uniqueOwner, reply.value());
+            });
+}
+
 void QtShellWindowActionsTransport::resolveOwner()
 {
     if (!m_started) return;
@@ -162,8 +205,30 @@ void QtShellWindowActionsTransport::resolveOwner()
 void QtShellWindowActionsTransport::bindOwner(const QString &uniqueOwner)
 {
     if (!m_started || uniqueOwner == m_uniqueOwner) return;
+    if (!m_uniqueOwner.isEmpty()) {
+        m_connection.disconnect(
+            m_uniqueOwner, QString::fromLatin1(ObjectPath),
+            QString::fromLatin1(InterfaceName),
+            QString::fromLatin1(IdentityChangedSignal), this,
+            SLOT(handleIdentityInvalidation()));
+    }
     m_uniqueOwner = uniqueOwner;
+    m_identitySignalConnected = false;
+    if (!m_uniqueOwner.isEmpty()) {
+        m_identitySignalConnected = m_connection.connect(
+            m_uniqueOwner, QString::fromLatin1(ObjectPath),
+            QString::fromLatin1(InterfaceName),
+            QString::fromLatin1(IdentityChangedSignal), this,
+            SLOT(handleIdentityInvalidation()));
+    }
     Q_EMIT serviceOwnerChanged(m_uniqueOwner);
+}
+
+void QtShellWindowActionsTransport::handleIdentityInvalidation()
+{
+    if (m_started && !m_uniqueOwner.isEmpty()) {
+        Q_EMIT identityInvalidated(m_uniqueOwner);
+    }
 }
 
 void QtShellWindowActionsTransport::fail(
@@ -173,6 +238,15 @@ void QtShellWindowActionsTransport::fail(
         message = QStringLiteral("the shell window action D-Bus request failed");
     }
     Q_EMIT requestFailed(token, uniqueOwner, message);
+}
+
+void QtShellWindowActionsTransport::failIdentity(
+    quint64 token, const QString &uniqueOwner, QString message)
+{
+    if (message.trimmed().isEmpty()) {
+        message = QStringLiteral("the active-window identity request failed");
+    }
+    Q_EMIT identityRequestFailed(token, uniqueOwner, message);
 }
 
 } // namespace QindaQt::ShellWindowActionsClient

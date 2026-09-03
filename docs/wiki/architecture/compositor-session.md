@@ -287,6 +287,26 @@ This PID join blocks an unrelated local bus process, but deliberately does not
 claim protection from a compromised production shell or a same-user process
 able to impersonate its committed layer-surface role.
 
+That same authenticated object projects a revisioned active-window identity
+snapshot for Global Menu; [ADR-0062](../adr/0062-project-authenticated-active-window-identity.md)
+defines the boundary. The projection is sampled on KWin's compositor thread
+and carries the active UUID, credentials-derived Wayland PID or XRes-derived
+XWayland PID, exact X11 AppMenu window id when one exists, and a valid paired
+KDE appmenu service/object-path announcement. Every missing fact is explicit
+absence. The identity lineage shares the visibility/action epoch and carries
+the exact action revision sampled with it; visibility-generation changes also
+refresh identity. Reads authenticate before touching KWin state, and change
+hints are targeted only to the exact shell peer that successfully read the
+snapshot. The unauthenticated `Compositor1` remains unchanged.
+
+These compositor facts are proof inputs, not registrar authority. A local
+process can still lodge bogus `RegisterWindow` claims, and an announced service
+name does not prove who owns it. Global Menu must join the numeric id or
+Wayland address to this snapshot, bind the provider to an exact bus owner,
+compare bus-daemon credentials with the compositor PID around a stable focus
+revision, and reject any mismatch. The proof does not protect a compromised
+application from exporting a hostile menu for its own window.
+
 Development test sessions construct one combined keyboard/pointer
 `KWin::InputDevice` and register it with KWin input redirection. The versioned,
 bounded `InjectTestInput` method emits only the documented absolute pointer,

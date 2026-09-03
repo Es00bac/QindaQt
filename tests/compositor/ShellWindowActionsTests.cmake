@@ -7,6 +7,13 @@ target_link_libraries(
 )
 add_test(NAME compositor.shell-window-actions COMMAND qindaqt_shell_window_actions_tests)
 
+qt_add_executable(qindaqt_shell_window_identity_tests tst_shellwindowidentity.cpp)
+target_link_libraries(
+    qindaqt_shell_window_identity_tests
+    PRIVATE QindaQt::CompositorShellActions Qt6::Test
+)
+add_test(NAME compositor.shell-window-identity COMMAND qindaqt_shell_window_identity_tests)
+
 if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
     find_package(LayerShellQt 6.6.5 REQUIRED)
     find_program(QINDAQT_SHELL_ACTIONS_DBUS_RUN_SESSION dbus-run-session)
@@ -14,6 +21,8 @@ if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
         qt_add_executable(
             qindaqt_shell_window_actions_live_probe
             shellwindowactionsliveprobe.cpp
+            shellwindowactionsliveclients.cpp
+            shellwindowactionsliveclients.h
         )
         target_link_libraries(
             qindaqt_shell_window_actions_live_probe

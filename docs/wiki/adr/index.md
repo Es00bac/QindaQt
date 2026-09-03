@@ -62,6 +62,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0059](0059-route-unimplemented-portal-families-explicitly.md) | Accepted | Route unimplemented portal families through an explicit fail-closed table |
 | [ADR-0060](0060-confine-production-power-upstreams.md) | Accepted | Confine production power upstreams behind injected adapters |
 | [ADR-0061](0061-authenticate-shell-window-actions-by-panel-owner.md) | Accepted | Authenticate shell window actions by the exact panel Wayland owner PID |
+| [ADR-0062](0062-project-authenticated-active-window-identity.md) | Accepted | Project authenticated active-window identity to the exact shell owner |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

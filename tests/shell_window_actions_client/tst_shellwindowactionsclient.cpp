@@ -38,6 +38,10 @@ public:
     {
         sent.append({token, owner, action, windowId, generation});
     }
+    void requestIdentity(quint64 token, const QString &owner) override
+    {
+        identitySent.append({token, owner});
+    }
 
     void owner(const QString &value) { Q_EMIT serviceOwnerChanged(value); }
     void reply(const Compositor::ShellWindowActionResult &result)
@@ -52,8 +56,16 @@ public:
         Q_EMIT requestFailed(request.token, request.owner,
                              QStringLiteral("wire failed"));
     }
+    void identityReply(const Compositor::ShellWindowIdentitySnapshot &snapshot)
+    {
+        const auto request = identitySent.constLast();
+        Q_EMIT identityReplyReceived(
+            request.first, request.second,
+            Compositor::encodeShellWindowIdentitySnapshot(snapshot));
+    }
 
     QVector<Sent> sent;
+    QVector<QPair<quint64, QString>> identitySent;
     bool started = false;
     bool startSucceeds = true;
 };
@@ -71,6 +83,8 @@ private Q_SLOTS:
     void ownerChangeBindsBeforeCompletionSignal();
     void malformedReplyIsUncertain();
     void timeoutIsUncertainWithoutReplay();
+    void publishesIdentityAndRefreshesAfterInvalidation();
+    void identityOwnerChangeAndRegressionFailClosed();
 };
 
 void ShellWindowActionsClientTest::bindsExactOwnerAndCompletesMatchingReply()
@@ -180,6 +194,55 @@ void ShellWindowActionsClientTest::timeoutIsUncertainWithoutReplay()
     QVERIFY(client.lastResult()->uncertain);
     QCOMPARE(client.lastResult()->failureCode, QStringLiteral("request-timeout"));
     QCOMPARE(transport.sent.size(), 1);
+}
+
+void ShellWindowActionsClientTest::publishesIdentityAndRefreshesAfterInvalidation()
+{
+    FakeTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 100);
+    QVERIFY(client.start());
+    transport.owner(QStringLiteral(":1.7"));
+    QCOMPARE(transport.identitySent.size(), 1);
+    const Compositor::ShellWindowIdentityFacts facts{
+        WindowId, qint64(551), quint32(77), std::nullopt, std::nullopt};
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             Generation.epoch, 1, Generation, facts, {}, {}});
+    QVERIFY(client.identityAvailable());
+    QCOMPARE(client.identitySnapshot()->activeWindow->processId,
+             std::optional<qint64>(551));
+
+    Q_EMIT transport.identityInvalidated(QStringLiteral(":1.7"));
+    QVERIFY(!client.identityAvailable());
+    QCOMPARE(transport.identitySent.size(), 2);
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             Generation.epoch, 2, Generation,
+                             std::nullopt, {}, {}});
+    QVERIFY(client.identityAvailable());
+    QVERIFY(!client.identitySnapshot()->activeWindow);
+}
+
+void ShellWindowActionsClientTest::identityOwnerChangeAndRegressionFailClosed()
+{
+    FakeTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 100);
+    QVERIFY(client.start());
+    transport.owner(QStringLiteral(":1.old"));
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             Generation.epoch, 2, Generation,
+                             std::nullopt, {}, {}});
+    QVERIFY(client.identityAvailable());
+    transport.owner(QStringLiteral(":1.new"));
+    QVERIFY(!client.identityAvailable());
+    QCOMPARE(transport.identitySent.size(), 2);
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             Generation.epoch, 2, Generation,
+                             std::nullopt, {}, {}});
+    QVERIFY(client.identityAvailable());
+    Q_EMIT transport.identityInvalidated(QStringLiteral(":1.new"));
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             Generation.epoch, 1, Generation,
+                             std::nullopt, {}, {}});
+    QVERIFY(!client.identityAvailable());
 }
 
 QTEST_GUILESS_MAIN(ShellWindowActionsClientTest)

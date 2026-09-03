@@ -191,6 +191,7 @@ def validate_shell_descriptor(path: Path) -> None:
         "UnminimizeWindow",
         "CloseWindow",
         "RaiseWindow",
+        "ActiveWindowIdentity",
     }
     methods = {element.get("name") for element in interface.findall("method")}
     if methods != expected_methods:
@@ -203,10 +204,18 @@ def validate_shell_descriptor(path: Path) -> None:
         ("revision", "s", "in"),
         ("resultJson", "ay", "out"),
     ]
-    for method_name in sorted(expected_methods):
+    for method_name in sorted(expected_methods - {"ActiveWindowIdentity"}):
         validate_method_signature(interface, method_name, expected_arguments)
-    if interface.findall("signal"):
-        raise ValueError("shell mutation interface must not expose signals")
+    validate_method_signature(
+        interface, "ActiveWindowIdentity", [("snapshotJson", "ay", "out")]
+    )
+    signals = interface.findall("signal")
+    if [signal.get("name") for signal in signals] != [
+        "ActiveWindowIdentityChanged"
+    ]:
+        raise ValueError("shell interface must expose only identity invalidation")
+    if signals[0].findall("arg"):
+        raise ValueError("ActiveWindowIdentityChanged must carry no facts")
 
 
 def main() -> int:

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
+#include "shellwindowactionsliveclients.h"
 
 #include <LayerShellQt/Window>
 
-#include <QBackingStore>
-#include <QColor>
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusInterface>
@@ -15,11 +14,10 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QPainter>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QTextStream>
 #include <QThread>
-#include <QTimer>
 #include <QWindow>
 
 #include <functional>
@@ -29,6 +27,12 @@
 using QindaQt::Compositor::ShellWindowAction;
 using QindaQt::Compositor::ShellWindowActionStatus;
 using QindaQt::Compositor::ShellWindowGeneration;
+using QindaQt::Compositor::ShellWindowIdentityStatus;
+using QindaQt::Compositor::TestSupport::ShellWindowActionsLiveClientMarker;
+using QindaQt::Compositor::TestSupport::isFailClosedUnauthorizedIdentityReply;
+using QindaQt::Compositor::TestSupport::parseLiveClientNativeWindowId;
+using QindaQt::Compositor::TestSupport::runShellWindowActionsLiveWindow;
+using QindaQt::Compositor::TestSupport::runUnauthorizedIdentityClient;
 using QindaQt::ShellWindowActionsClient::QtShellWindowActionsTransport;
 using QindaQt::ShellWindowActionsClient::ShellWindowActionsClient;
 
@@ -48,43 +52,6 @@ QString inventoryDiagnostic;
 struct Inventory final {
     ShellWindowGeneration generation;
     QJsonArray windows;
-};
-
-class PaintedWindow final : public QWindow {
-public:
-    PaintedWindow()
-        : m_store(this)
-    {
-    }
-
-protected:
-    void exposeEvent(QExposeEvent *event) override
-    {
-        QWindow::exposeEvent(event);
-        paint();
-    }
-
-    void resizeEvent(QResizeEvent *event) override
-    {
-        QWindow::resizeEvent(event);
-        paint();
-    }
-
-private:
-    void paint()
-    {
-        if (!isExposed() || size().isEmpty()) return;
-        m_store.resize(size());
-        const QRegion region(QRect(QPoint{}, size()));
-        m_store.beginPaint(region);
-        QPainter painter(m_store.paintDevice());
-        painter.fillRect(region.boundingRect(), QColor(QStringLiteral("#31506b")));
-        painter.end();
-        m_store.endPaint();
-        m_store.flush(region);
-    }
-
-    QBackingStore m_store;
 };
 
 void emitResult(bool passed, const QString &failure = {})
@@ -168,17 +135,6 @@ QString methodName(ShellWindowAction action)
     return {};
 }
 
-int runWindow(QGuiApplication &application, const QString &title)
-{
-    PaintedWindow window;
-    window.setTitle(title);
-    window.resize(360, 240);
-    window.show();
-    QTimer::singleShot(TimeoutMilliseconds * 2, &application,
-                       &QCoreApplication::quit);
-    return application.exec();
-}
-
 int runUnauthorized(const QStringList &arguments)
 {
     if (arguments.size() != 5) {
@@ -260,6 +216,7 @@ public:
                            [](const QJsonObject &window, const Inventory &) {
                                return window.value(QStringLiteral("active")).toBool();
                            })
+            || !proveIdentity(FirstTitle, 0, false)
             || !actAndObserve(ShellWindowAction::Minimize, FirstTitle,
                               [](const QJsonObject &window, const Inventory &) {
                                   return window.value(QStringLiteral("minimized")).toBool();
@@ -271,7 +228,8 @@ public:
             || !actAndObserve(ShellWindowAction::Activate, SecondTitle,
                               [](const QJsonObject &window, const Inventory &) {
                                   return window.value(QStringLiteral("active")).toBool();
-                              })) {
+                              })
+            || !proveIdentity(SecondTitle, 1, true)) {
             return finish(false, m_failure);
         }
         if (!actAndObserve(ShellWindowAction::Raise, FirstTitle,
@@ -318,16 +276,35 @@ private:
     bool startClients()
     {
         const QString executable = m_application.applicationFilePath();
-        for (const auto &title : {QString::fromLatin1(FirstTitle),
-                                  QString::fromLatin1(SecondTitle)}) {
+        const QList<QString> titles{QString::fromLatin1(FirstTitle),
+                                    QString::fromLatin1(SecondTitle)};
+        for (qsizetype index = 0; index < titles.size(); ++index) {
+            const QString &title = titles[index];
             auto *process = new QProcess(&m_application);
+            QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+            environment.insert(QStringLiteral("QT_QPA_PLATFORM"),
+                               index == 0 ? QStringLiteral("wayland")
+                                          : QStringLiteral("xcb"));
+            process->setProcessEnvironment(environment);
             process->setProgram(executable);
             process->setArguments({QStringLiteral("--window"), title});
             process->start();
             if (!process->waitForStarted(2000)) {
                 return false;
             }
+            QByteArray output;
+            if (!waitFor([&] {
+                    output += process->readAllStandardOutput();
+                    return output.contains(ShellWindowActionsLiveClientMarker);
+                }, 5000)) {
+                return false;
+            }
+            const auto nativeId = parseLiveClientNativeWindowId(output, title);
+            if (!nativeId) {
+                return false;
+            }
             m_clients.append(process);
+            m_nativeWindowIds.append(*nativeId);
         }
         return true;
     }
@@ -355,7 +332,8 @@ private:
             m_failure = QStringLiteral("unbound caller response was %1")
                             .arg(QString::fromUtf8(output));
         }
-        return rejected && proveHostileUnauthorized();
+        return rejected && proveHostileUnauthorized()
+            && proveUnauthorizedIdentity();
     }
 
     bool proveHostileUnauthorized()
@@ -389,6 +367,64 @@ private:
                             .arg(QString::fromUtf8(output.left(1024)));
         }
         return rejected;
+    }
+
+    bool proveUnauthorizedIdentity()
+    {
+        QProcess attacker;
+        attacker.setProgram(m_application.applicationFilePath());
+        attacker.setArguments({QStringLiteral("--unauthorized-identity")});
+        attacker.start();
+        if (!attacker.waitForFinished(3000) || attacker.exitCode() != 0) {
+            m_failure = QStringLiteral("unbound identity caller failed");
+            return false;
+        }
+        const QByteArray output = attacker.readAllStandardOutput().trimmed();
+        const bool rejected = isFailClosedUnauthorizedIdentityReply(output);
+        if (!rejected) {
+            m_failure = QStringLiteral("unbound identity response leaked facts: %1")
+                            .arg(QString::fromUtf8(output.left(1024)));
+        }
+        return rejected;
+    }
+
+    bool proveIdentity(const char *title, qsizetype clientIndex,
+                       bool expectX11WindowId)
+    {
+        const QString expectedTitle = QString::fromLatin1(title);
+        const qint64 expectedPid = m_clients[clientIndex]->processId();
+        const quint64 expectedNativeId = m_nativeWindowIds[clientIndex];
+        const bool observed = waitFor([&] {
+            const auto inventory = readInventory();
+            const auto window = inventory
+                ? windowByTitle(*inventory, expectedTitle) : std::nullopt;
+            const auto &snapshot = m_client.identitySnapshot();
+            if (!inventory || !window || !snapshot
+                || snapshot->status != ShellWindowIdentityStatus::Ok
+                || !snapshot->activeWindow
+                || snapshot->actionGeneration != inventory->generation) {
+                return false;
+            }
+            const auto &identity = *snapshot->activeWindow;
+            const bool windowIdMatches = identity.windowId
+                == window->value(QStringLiteral("id")).toString();
+            const bool processMatches = identity.processId
+                && *identity.processId == expectedPid;
+            const bool menuIdMatches = expectX11WindowId
+                ? identity.appMenuWindowId
+                    && static_cast<quint64>(*identity.appMenuWindowId)
+                        == expectedNativeId
+                : !identity.appMenuWindowId;
+            return windowIdMatches && processMatches && menuIdMatches;
+        });
+        if (!observed) {
+            m_failure = QStringLiteral(
+                "active identity did not match %1 expected pid=%2 menu=%3")
+                .arg(expectedTitle, QString::number(expectedPid),
+                     expectX11WindowId ? QString::number(expectedNativeId)
+                                       : QStringLiteral("null"));
+        }
+        return observed;
     }
 
     bool actAndObserve(ShellWindowAction action, const char *title,
@@ -452,8 +488,9 @@ private:
     }
 
     QGuiApplication &m_application;
-    PaintedWindow m_panel;
+    QWindow m_panel;
     QList<QProcess *> m_clients;
+    QList<quint64> m_nativeWindowIds;
     QtShellWindowActionsTransport m_transport;
     ShellWindowActionsClient m_client;
     QString m_failure;
@@ -466,7 +503,7 @@ int main(int argc, char **argv)
     QGuiApplication application(argc, argv);
     const QStringList arguments = application.arguments();
     if (arguments.size() >= 3 && arguments[1] == QStringLiteral("--window")) {
-        return runWindow(application, arguments[2]);
+        return runShellWindowActionsLiveWindow(application, arguments[2]);
     }
     if (arguments.size() >= 2 && arguments[1] == QStringLiteral("--unauthorized")) {
         return runUnauthorized(arguments);
@@ -474,6 +511,10 @@ int main(int argc, char **argv)
     if (arguments.size() == 2
         && arguments[1] == QStringLiteral("--unauthorized-hostile")) {
         return runHostileUnauthorized();
+    }
+    if (arguments.size() == 2
+        && arguments[1] == QStringLiteral("--unauthorized-identity")) {
+        return runUnauthorizedIdentityClient();
     }
     return LiveProof(application).run();
 }
