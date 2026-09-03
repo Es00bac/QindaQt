@@ -50,10 +50,14 @@ Ctrl+Right steps within a panel, Alt+Left or Alt+Right changes zone, and
 Ctrl+Shift+Left or Ctrl+Shift+Right changes panel. Delete removes the selection,
 Ctrl+D duplicates it, the platform Undo/Redo sequences traverse history,
 Ctrl+Return applies, and Ctrl+Shift+Return discards. Announcements describe
-accepted and rejected targets for assistive technology. The route's Close and
-navigation-away paths do not discard silently: dirty profile selection is
-rejected, while Close or selecting another Settings route opens a modal discard
-confirmation. Cancelling that prompt returns navigation to Customize.
+accepted and rejected targets for assistive technology. No application
+departure discards silently: dirty profile selection is rejected, while the
+route Close action, the platform Quit shortcut, title-bar close, or selecting
+another Settings route opens the same modal discard confirmation. Cancelling
+that prompt keeps the window open and returns navigation to Customize. Crossing
+the responsive host threshold while a navigation decision is pending
+reconstructs the prompt in the active host; resizing cannot accept or discard
+the draft.
 
 ## Settings1, persistence, and failure truth
 
@@ -93,13 +97,18 @@ ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
 The model row proves one-step pointer commit, exact cancellation, deterministic
 rejection rollback, pointer/keyboard insertion convergence, Undo/Redo,
 atomic profile persistence, Settings1 conflict truth, and foreign-lease
-recovery. The page row renders 720×720 compact and 1080×720 wide layouts with a
-software `QQuickView`, checks the canvas and contextual controls, validates
-accessible names for palette/panel/zone elements, and exercises keyboard
-activation. Positive and deliberately poisoned boundary rows reject shell,
-LayerShellQt, compositor, private repository, and D-Bus imports. The installed
-row reuses the sanitized Settings package harness and proves the relocated
-module and catalogs.
+recovery. The warning-fatal page row renders 720×720 compact and 1080×720
+wide layouts with a software `QQuickView`, checks the canvas and contextual
+controls, validates accessible names for palette/panel/zone elements, exercises
+keyboard activation, and proves the discard dialog is centered in the window
+overlay. The window-lifecycle row proves a dirty title-bar close opens that
+dialog, Cancel keeps the window and draft, and a pending navigation decision
+survives wide/compact host reconstruction. Positive and deliberately poisoned
+boundary rows scan every owned C++ header/source and QML file and reject shell,
+LayerShellQt, compositor, private repository, and D-Bus imports. The sole
+direct `QDBusConnection` exception is the named route-composition source that
+constructs the public Settings1 transport. The installed row reuses the
+sanitized Settings package harness and proves the relocated module and catalogs.
 
 These tests use injected transports, temporary stores, and offscreen rendering.
 They do not contact a host session bus, compositor, hardware, or input device.

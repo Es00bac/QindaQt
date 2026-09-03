@@ -84,7 +84,6 @@ QVariantList CustomizeSettingsModel::profiles() const
             {QStringLiteral("id"), profile.id},
             {QStringLiteral("name"), profile.name},
             {QStringLiteral("description"), profile.description},
-            {QStringLiteral("selected"), profile.id == m_selectedProfileId},
         });
     }
     return result;

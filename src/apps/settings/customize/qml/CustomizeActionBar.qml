@@ -73,7 +73,7 @@ ColumnLayout {
         title: qsTr("Discard layout changes?")
         modal: true
         width: Math.min(480, root.width - 2 * Tokens.space["4"])
-        anchors.centerIn: Overlay.overlay
+        anchors.centerIn: T.Overlay.overlay
         standardButtons: T.Dialog.Discard | T.Dialog.Cancel
         contentItem: Label {
             width: 360

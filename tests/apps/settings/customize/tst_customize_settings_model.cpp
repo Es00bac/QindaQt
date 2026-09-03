@@ -75,6 +75,7 @@ private slots:
     void pointerGestureCommitsOneUndoStepAndCancelRollsBack();
     void rejectedTargetRollsBackDeterministically();
     void pointerAndKeyboardPathsConverge();
+    void profileProjectionKeepsSelectionInOneLiveProperty();
     void persistenceAndConflictRemainTruthful();
     void foreignLeaseFailsClosedThenRecoversOnRefresh();
 };
@@ -141,6 +142,18 @@ void CustomizeSettingsModelTests::pointerAndKeyboardPathsConverge()
                                           QStringLiteral("dock"),
                                           QStringLiteral("start")));
     QCOMPARE(pointer.model.panels(), keyboard.model.panels());
+}
+
+void CustomizeSettingsModelTests::profileProjectionKeepsSelectionInOneLiveProperty()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establish());
+    for (const QVariant &profile : harness.model.profiles()) {
+        QVERIFY(!profile.toMap().contains(QStringLiteral("selected")));
+    }
+
+    QVERIFY(harness.model.selectProfile(QStringLiteral("alternate")));
+    QCOMPARE(harness.model.selectedProfileId(), QStringLiteral("alternate"));
 }
 
 void CustomizeSettingsModelTests::persistenceAndConflictRemainTruthful()
