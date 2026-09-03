@@ -4,6 +4,18 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted compositor window-actions descendant
+  `3690a056e667135d486da4fa60d7996882a4560a` at manager merge `135fe65`. A new authenticated
+  `org.qindaqt.CompositorShell1` boundary admits activate/minimize/unminimize/close/raise only for the
+  D-Bus caller whose credentials match the bound panel-owning Wayland client, authenticates before any
+  parsing, bounds every entry field, replies constant-size to unauthenticated or unbound callers, fences
+  by generation, rate-limits, routes Hybrid members through container policy, and ships an exact-owner
+  shell client; the unauthenticated `Compositor1` mutators stay `control-disabled`. Margaret Rock (OpenAI
+  Codex) accepted the repair at `0/0/0/0`. The candidate's ADR is renumbered to ADR-0061. Fresh merged-tree
+  Debug and Release each pass compositor 35/35 non-nested rows and the window-action rows 4/4 including the
+  nested live row; the sixteen `compositor.kwin-` rows pass 16/16 serially; the broad safe Debug suite passes 406/406; 124-document validation, strict MkDocs, source shape, diff,
+  JSON, and Team Board 16/16 pass.
+
 - This integration merges exact accepted Power PB-2 descendant `6cef8b582aeb33522829d6ae838269f31aad7611`
   at manager merge `4ae7f89`. The resident Power1 service now composes production UPower, logind,
   power-profiles, and backlight adapters over injected buses and roots, defaulting to production with an
