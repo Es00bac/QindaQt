@@ -47,11 +47,16 @@ the whole value invalid; consumers publish no valid prefix.
 
 Each mutation returns one operation-result structure. Every request id is
 nonzero and scoped to the caller's D-Bus unique name. The service remembers at
-most 64 results for each of at most 64 callers. An identical repeat returns the
-remembered result; reuse with different arguments rejects as
-`request-id-conflict`. Eviction of an old remembered result never permits a
-client to assume replay safety, so clients do not automatically retry a timed
-out mutation.
+most 64 results for each of at most 64 callers. A 65th simultaneous caller is
+returned `Busy`/`caller-cache-full` before a caller cache is created. For an
+admitted caller, a fresh request at the per-caller ceiling evicts the oldest
+inserted remembered result before execution and retains the fresh result as the
+newest. Repeating an identity that is still retained with identical arguments
+returns its exact remembered result; reusing that retained identity with
+different arguments rejects as `request-id-conflict`. Once evicted, an identity
+has no exactly-once memory and is treated as a fresh request. Eviction therefore
+never permits a client to assume replay safety: clients do not automatically
+retry a timed-out mutation.
 
 All intents require an exact expected epoch, generation, and revision. A stale
 or restarted view rejects without mutation. A successful result preserves the

@@ -154,6 +154,18 @@ void FakeDataControlServer::sourceOffer(wl_client *, wl_resource *, const char *
 
 void FakeDataControlServer::sendOffer(const QHash<QString, QByteArray> &payloads, bool primary)
 {
+    publishOffer(payloads, primary);
+}
+
+void FakeDataControlServer::sendUnselectedOffer(
+    const QHash<QString, QByteArray> &payloads)
+{
+    publishOffer(payloads, std::nullopt);
+}
+
+void FakeDataControlServer::publishOffer(
+    const QHash<QString, QByteArray> &payloads, std::optional<bool> primary)
+{
     if (m_device == nullptr) {
         return;
     }
@@ -169,13 +181,32 @@ void FakeDataControlServer::sendOffer(const QHash<QString, QByteArray> &payloads
     for (const QString &type : types) {
         ext_data_control_offer_v1_send_offer(state->resource, type.toUtf8().constData());
     }
-    if (primary) {
-        ext_data_control_device_v1_send_primary_selection(m_device, state->resource);
-    } else {
-        ext_data_control_device_v1_send_selection(m_device, state->resource);
+    if (primary.has_value()) {
+        if (*primary) {
+            ext_data_control_device_v1_send_primary_selection(m_device, state->resource);
+        } else {
+            ext_data_control_device_v1_send_selection(m_device, state->resource);
+        }
     }
     m_offers.push_back(std::move(state));
     wl_display_flush_clients(m_display);
+}
+
+void FakeDataControlServer::removeManagerGlobal()
+{
+    if (m_managerGlobal != nullptr) {
+        wl_global_destroy(m_managerGlobal);
+        m_managerGlobal = nullptr;
+        wl_display_flush_clients(m_display);
+    }
+}
+
+void FakeDataControlServer::disconnectClient()
+{
+    if (m_display != nullptr) {
+        wl_display_destroy_clients(m_display);
+        m_device = nullptr;
+    }
 }
 
 void FakeDataControlServer::dispatch()

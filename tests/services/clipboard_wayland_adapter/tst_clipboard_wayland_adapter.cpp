@@ -90,6 +90,62 @@ private Q_SLOTS:
         QCOMPARE(m_observer.captureCount, 0);
     }
 
+    void rejectsOverboundedMediaAdvertisementsWithoutReading()
+    {
+        QHash<QString, QByteArray> tooMany;
+        tooMany.insert(QStringLiteral("text/plain"), QByteArrayLiteral("ordinary"));
+        for (qsizetype index = 0;
+             index < ClipboardWayland::kMaxAdvertisedMediaTypesPerOffer; ++index) {
+            tooMany.insert(QStringLiteral("application/x-fixture-%1").arg(index),
+                           QByteArrayLiteral("ignored"));
+        }
+        m_server->sendOffer(tooMany, false);
+        QTRY_COMPARE(m_observer.refusalCount, 1);
+        QCOMPARE(m_observer.refusal, ClipboardModel::ClipboardError::TooManyFormats);
+        QVERIFY(m_server->receivedTypes().isEmpty());
+
+        m_observer = Observer{};
+        const QString overlong(ClipboardModel::kMaxMediaTypeLength + 1, QLatin1Char('a'));
+        m_server->sendOffer({{overlong, QByteArrayLiteral("ignored")},
+                             {QStringLiteral("text/plain"), QByteArrayLiteral("ordinary")}},
+                            false);
+        QTRY_COMPARE(m_observer.refusalCount, 1);
+        QCOMPARE(m_observer.refusal, ClipboardModel::ClipboardError::TooManyFormats);
+        QVERIFY(m_server->receivedTypes().isEmpty());
+    }
+
+    void boundsPendingUnselectedOffersAndKeepsNewestUsable()
+    {
+        for (qsizetype index = 0; index <= ClipboardWayland::kMaxPendingOffers; ++index) {
+            m_server->sendUnselectedOffer(
+                {{QStringLiteral("text/plain"), QByteArray::number(index)}});
+        }
+        m_server->sendOffer(
+            {{QStringLiteral("text/plain"), QByteArrayLiteral("newest")}}, false);
+        QTRY_COMPARE(m_observer.captureCount, 1);
+        QCOMPARE(m_observer.payload.formats.constFirst().payload,
+                 QByteArrayLiteral("newest"));
+    }
+
+    void globalRemovalWithdrawsAvailability()
+    {
+        m_server->removeManagerGlobal();
+        QTRY_VERIFY(!m_observer.available);
+        QVERIFY(!m_adapter->isAvailable());
+        m_server->sendOffer(
+            {{QStringLiteral("text/plain"), QByteArrayLiteral("denied")}}, false);
+        QTest::qWait(20);
+        QCOMPARE(m_observer.captureCount, 0);
+    }
+
+    void compositorDisconnectWithdrawsAvailability()
+    {
+        m_server->disconnectClient();
+        QTRY_VERIFY(!m_observer.available);
+        QVERIFY(!m_adapter->isAvailable());
+        QCOMPARE(m_observer.captureCount, 0);
+    }
+
 private:
     std::unique_ptr<QindaQt::Tests::FakeDataControlServer> m_server;
     Observer m_observer;

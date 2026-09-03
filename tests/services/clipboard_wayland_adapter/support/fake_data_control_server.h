@@ -8,6 +8,7 @@
 #include <QtCore/QTimer>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 struct wl_client;
@@ -26,6 +27,9 @@ public:
     [[nodiscard]] QString socketName() const { return m_socketName; }
     [[nodiscard]] bool hasDevice() const noexcept { return m_device != nullptr; }
     void sendOffer(const QHash<QString, QByteArray> &payloads, bool primary);
+    void sendUnselectedOffer(const QHash<QString, QByteArray> &payloads);
+    void removeManagerGlobal();
+    void disconnectClient();
     [[nodiscard]] QStringList receivedTypes() const { return m_receivedTypes; }
 
 public:
@@ -44,6 +48,8 @@ public:
     static void sourceOffer(wl_client *client, wl_resource *resource,
                             const char *mediaType);
 private:
+    void publishOffer(const QHash<QString, QByteArray> &payloads,
+                      std::optional<bool> primary);
     void dispatch();
     void queueWrite(int fd, QByteArray payload);
     void pumpWrites();

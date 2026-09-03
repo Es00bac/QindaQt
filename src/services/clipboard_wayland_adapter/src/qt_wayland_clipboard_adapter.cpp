@@ -46,16 +46,32 @@ public:
     }
 
     [[nodiscard]] const QStringList &mediaTypes() const noexcept { return m_mediaTypes; }
+    [[nodiscard]] bool advertisementsBounded() const noexcept
+    {
+        return m_advertisementsBounded;
+    }
 
 protected:
     void ext_data_control_offer_v1_offer(const QString &mediaType) override
     {
+        if (!m_advertisementsBounded) {
+            return;
+        }
+        ++m_advertisedNameCount;
+        if (m_advertisedNameCount > kMaxAdvertisedMediaTypesPerOffer
+            || mediaType.size() > ClipboardModel::kMaxMediaTypeLength) {
+            m_advertisementsBounded = false;
+            m_mediaTypes.clear();
+            return;
+        }
         m_mediaTypes.append(mediaType);
     }
 
 private:
     QtClipboardAdapter *m_owner = nullptr;
     QStringList m_mediaTypes;
+    qsizetype m_advertisedNameCount = 0;
+    bool m_advertisementsBounded = true;
 };
 
 class Device final : public QtWayland::ext_data_control_device_v1 {
@@ -203,6 +219,11 @@ public:
 
     void introduceOffer(::ext_data_control_offer_v1 *raw)
     {
+        // AGENT-GUARD: A compositor may introduce offers it never selects.
+        // Retain only the newest bounded set so the resident host cannot grow.
+        if (m_offers.size() >= static_cast<size_t>(kMaxPendingOffers)) {
+            m_offers.erase(m_offers.begin());
+        }
         m_offers.push_back(std::make_unique<Offer>(raw, this));
     }
 
@@ -278,7 +299,13 @@ private:
     void beginCapture(SelectionKind kind, Offer *offer)
     {
         cancelTransfer();
-        if (!m_captureEnabled || offer == nullptr) {
+        if (!m_available || !m_captureEnabled || offer == nullptr) {
+            return;
+        }
+        if (!offer->advertisementsBounded()) {
+            if (m_observer != nullptr) {
+                m_observer->captureRefused(kind, ClipboardError::TooManyFormats);
+            }
             return;
         }
         QStringList admitted;
@@ -427,6 +454,7 @@ private:
 
     void transportLost()
     {
+        m_captureEnabled = false;
         setAvailable(false);
         cancelTransfer();
         if (m_readNotifier != nullptr) {

@@ -36,7 +36,10 @@ install(
     FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-qt_add_executable(qindaqt-clipboard-host app/main.cpp)
+qt_add_executable(qindaqt-clipboard-host
+    app/main.cpp
+    app/clipboard_history_consent.cpp
+    app/clipboard_history_consent.h)
 target_link_libraries(
     qindaqt-clipboard-host
     PRIVATE

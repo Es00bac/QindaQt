@@ -58,9 +58,25 @@ OperationResult ClipboardServiceObject::submit(OperationRequest request)
                 .observedEpoch = current.epoch, .observedGeneration = current.generation,
                 .observedRevision = current.revision, .reasonCode = validation.reasonCode};
     }
-    auto &requests = m_remembered[caller];
-    const auto found = requests.constFind(request.requestId);
-    if (found != requests.cend()) {
+    auto callerIt = m_remembered.find(caller);
+    if (callerIt == m_remembered.end()) {
+        if (m_remembered.size() >= kMaxRememberedCallers) {
+            const Snapshot current = m_host->snapshot();
+            return {.kind = request.kind, .status = OperationStatus::Busy,
+                    .requestId = request.requestId,
+                    .initiatingEpoch = request.expectedEpoch,
+                    .initiatingGeneration = request.expectedGeneration,
+                    .initiatingRevision = request.expectedRevision,
+                    .observedEpoch = current.epoch,
+                    .observedGeneration = current.generation,
+                    .observedRevision = current.revision,
+                    .reasonCode = QStringLiteral("caller-cache-full")};
+        }
+        callerIt = m_remembered.insert(caller, {});
+    }
+    CallerRequests &requests = callerIt.value();
+    const auto found = requests.byId.constFind(request.requestId);
+    if (found != requests.byId.cend()) {
         if (found->request == request) {
             return found->result;
         }
@@ -69,19 +85,15 @@ OperationResult ClipboardServiceObject::submit(OperationRequest request)
         conflict.reasonCode = QStringLiteral("request-id-conflict");
         return conflict;
     }
-    if (requests.size() >= kMaxRememberedRequestsPerCaller
-        || (m_remembered.size() > kMaxRememberedCallers && requests.isEmpty())) {
-        const Snapshot current = m_host->snapshot();
-        return {.kind = request.kind, .status = OperationStatus::Busy,
-                .requestId = request.requestId, .initiatingEpoch = request.expectedEpoch,
-                .initiatingGeneration = request.expectedGeneration,
-                .initiatingRevision = request.expectedRevision,
-                .observedEpoch = current.epoch, .observedGeneration = current.generation,
-                .observedRevision = current.revision,
-                .reasonCode = QStringLiteral("request-cache-full")};
+    if (requests.byId.size() >= kMaxRememberedRequestsPerCaller) {
+        // AGENT-GUARD: FIFO eviction keeps long-lived callers live while exact
+        // duplicate delivery remains idempotent for every retained request id.
+        const quint64 oldest = requests.oldestFirst.takeFirst();
+        requests.byId.remove(oldest);
     }
     const OperationResult result = m_host->submit(request);
-    requests.insert(request.requestId, {.request = request, .result = result});
+    requests.byId.insert(request.requestId, {.request = request, .result = result});
+    requests.oldestFirst.append(request.requestId);
     return result;
 }
 

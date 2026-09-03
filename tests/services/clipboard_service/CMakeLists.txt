@@ -9,6 +9,19 @@ qindaqt_enable_warnings(qindaqt_clipboard_service_tests)
 add_test(NAME qindaqt.clipboard-service COMMAND qindaqt_clipboard_service_tests)
 set_tests_properties(qindaqt.clipboard-service PROPERTIES LABELS "service;clipboard" TIMEOUT 20)
 
+qt_add_executable(qindaqt_clipboard_settings_consent_tests
+    tst_clipboard_settings_consent.cpp
+    "${CMAKE_SOURCE_DIR}/src/services/clipboard_service/app/clipboard_history_consent.cpp")
+target_include_directories(qindaqt_clipboard_settings_consent_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/clipboard_service/app")
+target_link_libraries(qindaqt_clipboard_settings_consent_tests
+    PRIVATE QindaQt::SettingsClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_clipboard_settings_consent_tests)
+add_test(NAME qindaqt.clipboard-settings-consent
+    COMMAND qindaqt_clipboard_settings_consent_tests)
+set_tests_properties(qindaqt.clipboard-settings-consent
+    PROPERTIES LABELS "service;clipboard;settings;privacy" TIMEOUT 20)
+
 find_program(QINDAQT_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
 qt_add_executable(qindaqt_clipboard_private_bus_tests
     tst_clipboard_private_bus.cpp
@@ -21,6 +34,20 @@ target_link_libraries(qindaqt_clipboard_private_bus_tests
 qindaqt_enable_warnings(qindaqt_clipboard_private_bus_tests)
 add_test(NAME qindaqt.clipboard-private-bus COMMAND qindaqt_clipboard_private_bus_tests)
 set_tests_properties(qindaqt.clipboard-private-bus PROPERTIES LABELS "service;clipboard;dbus" TIMEOUT 30 RUN_SERIAL TRUE)
+
+qt_add_executable(qindaqt_clipboard_request_cache_tests
+    tst_clipboard_request_cache.cpp
+    support/fake_wayland_adapter.h
+    support/private_bus.h)
+target_compile_definitions(qindaqt_clipboard_request_cache_tests
+    PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
+target_link_libraries(qindaqt_clipboard_request_cache_tests
+    PRIVATE QindaQt::ClipboardService QindaQt::ClipboardClient Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_clipboard_request_cache_tests)
+add_test(NAME qindaqt.clipboard-request-cache
+    COMMAND qindaqt_clipboard_request_cache_tests)
+set_tests_properties(qindaqt.clipboard-request-cache
+    PROPERTIES LABELS "service;clipboard;dbus;hostile" TIMEOUT 30 RUN_SERIAL TRUE)
 
 add_test(
     NAME qindaqt.clipboard-service-boundary-poison
