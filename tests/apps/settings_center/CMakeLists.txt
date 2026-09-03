@@ -48,6 +48,7 @@ qt_add_executable(
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/clipboard/stub_clipboard_settings_model.h
 )
 target_include_directories(qindaqt_settings_navigation_page_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
@@ -59,6 +60,8 @@ target_link_libraries(
     qindaqt_settings_customize_qml
     qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth
+    qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -83,6 +86,7 @@ add_dependencies(
     qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin
     qindaqt_settings_bluetooth_qml qindaqt_settings_bluetooth_qmlplugin
+    qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
@@ -157,7 +161,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance;customize;audio" RUN_SERIAL TRUE TIMEOUT 25
+    LABELS "offscreen;settings;appearance;customize;audio;clipboard" RUN_SERIAL TRUE TIMEOUT 30
 )
 
 # 8. Installed staged package test
@@ -176,5 +180,5 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
-    LABELS "offscreen;settings;appearance;package" RUN_SERIAL TRUE TIMEOUT 90
+    LABELS "offscreen;settings;appearance;clipboard;package" RUN_SERIAL TRUE TIMEOUT 90
 )

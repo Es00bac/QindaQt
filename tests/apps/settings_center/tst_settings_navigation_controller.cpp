@@ -123,11 +123,19 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
 
-  // selectNext from 6 ("bluetooth") wraps to 0 ("notifications")
+  // selectNext from 6 ("bluetooth") -> 7 ("clipboard")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
+
+  // selectNext from 7 ("clipboard") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 6 ("bluetooth")
+  // selectPrevious from 0 wraps to 7 ("clipboard")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
+
+  // selectPrevious from 7 -> 6 ("bluetooth")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
 
@@ -179,12 +187,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(6));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
 
+  QVERIFY(controller.selectIndex(7));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(7));
+  QVERIFY(!controller.selectIndex(8));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -242,7 +253,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 7);
+  QCOMPARE(list.size(), 8);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -271,6 +282,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap bluetoothMap = list.at(6).toMap();
   QCOMPARE(bluetoothMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("bluetooth"));
+
+  const QVariantMap clipboardMap = list.at(7).toMap();
+  QCOMPARE(clipboardMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("clipboard"));
 
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
@@ -304,7 +319,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt6.value(QStringLiteral("component")).toString(),
            QStringLiteral("bluetooth"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(7);
+  const QVariantMap itemAt7 = controller.routeAt(7);
+  QCOMPARE(itemAt7.value(QStringLiteral("id")).toString(),
+           QStringLiteral("clipboard"));
+  QCOMPARE(itemAt7.value(QStringLiteral("component")).toString(),
+           QStringLiteral("clipboard"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(8);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

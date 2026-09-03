@@ -13,12 +13,14 @@ Item {
     required property var customizeSettings
     property var audioSettings: null
     property var bluetoothSettings: null
+    property var clipboardSettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
     property Component networkComponent: null
     property Component audioComponent: null
     property Component bluetoothComponent: null
+    property Component clipboardComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -46,6 +48,8 @@ Item {
               ? audioLoader
             : navigation.activeRouteComponent === "bluetooth"
               ? bluetoothLoader
+            : navigation.activeRouteComponent === "clipboard"
+              ? clipboardLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -183,6 +187,18 @@ Item {
     }
 
     Loader {
+        id: clipboardLoader
+        objectName: host.objectNamePrefix + "ClipboardLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "clipboard"
+                && host.clipboardComponent !== null
+        sourceComponent: host.clipboardComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -197,7 +213,8 @@ Item {
                         && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
                         && host.navigation.activeRouteComponent !== "customize"
                         && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)
-                        && (host.navigation.activeRouteComponent !== "bluetooth" || host.bluetoothComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "bluetooth" || host.bluetoothComponent === null)
+                        && (host.navigation.activeRouteComponent !== "clipboard" || host.clipboardComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }

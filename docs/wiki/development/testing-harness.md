@@ -1115,12 +1115,51 @@ stages the real runtime, requires failure while the installed Bluetooth module
 is withheld despite the developer tree, then launches the relocated route after
 restoration.
 
-The Settings Center selector adds deterministic seven-route order, canonical
+The Settings Center selector adds deterministic eight-route order, canonical
 startup, Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader
 exclusivity, route-departure lifetime signaling, and the common relocated
 package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
 remove behavior, physical Bluetooth qualification, live AT-SPI, and nested
 desktop screenshots remain outside this proof.
+
+## Current Clipboard Settings route proof
+
+The public-client-only preference/state page, exact-lineage clear action,
+hostile content boundary, and relocated package are selected with:
+
+```sh
+env -u DBUS_SESSION_BUS_ADDRESS -u DISPLAY -u WAYLAND_DISPLAY \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.settings-clipboard-'
+```
+
+The six rows use injected fake Settings1 and Clipboard1 transports or absent
+private buses only. Preference coverage proves the schema-default-off baseline,
+draft/apply convergence, explicit conflict resolution, authority replacement,
+and uncertain-write no replay. Service coverage decodes only enough public
+descriptor metadata to count entries, presents capacity/privacy truth, and
+proves confirmation plus dispatch are fenced to exact owner, epoch, generation,
+and revision. Success waits for authoritative snapshot convergence; failure or
+uncertainty cannot replay the clear.
+
+The page row runs with `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320
+compact software scenes. It checks metadata-only disclosure, accessible
+roles/state, admitted Close focus, preference wiring, and explicit clear
+confirmation. Positive and negative allow-list scans reject sibling/private
+imports, path escapes, payload decoding, `QClipboard`/`QMimeData`, per-entry
+copy/select/remove/read authority, and D-Bus outside the route composition.
+The installed row stages the real runtime and launches `--page clipboard` from
+the relocated prefix with host display and bus authority unavailable while the
+developer QML tree remains present.
+
+The Settings Center selector additionally proves eight-route order, canonical
+startup, `Ctrl+9`, PageTab accessibility, Escape/Tab entry in both layouts,
+Loader exclusivity, construction under authority loss, and the common relocated
+package. These rows do not contact a host clipboard, data-control server,
+session/system bus, or compositor. They do not claim content presentation,
+individual-entry mutation, configurable retention, live Wayland capture, live
+AT-SPI, or nested-session screenshots.
 
 ## Current Settings Center navigation S1 proof
 
@@ -1139,17 +1178,17 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all seven route roots under private-bus loss,
+forms, desktop identity, all eight route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,
-reinstalls the runtime component, and only then proves all seven complete
+reinstalls the runtime component, and only then proves all eight complete
 routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. Settings1 route models use independent transports, while Network,
-Audio, and Bluetooth use their distinct public service clients. Focused construction
+Audio, Bluetooth, and Clipboard use their distinct public service clients. Focused construction
 rows prove unavailable startup surfaces; public client suites remain
 authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,

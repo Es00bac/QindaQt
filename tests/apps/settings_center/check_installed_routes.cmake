@@ -107,6 +107,16 @@ if(NOT bluetooth_in_stage OR NOT IS_DIRECTORY "${bluetooth_module}")
         "${bluetooth_module}")
 endif()
 
+set(clipboard_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Clipboard")
+cmake_path(NORMAL_PATH clipboard_module OUTPUT_VARIABLE clipboard_module)
+cmake_path(IS_PREFIX install_prefix "${clipboard_module}" NORMALIZE clipboard_in_stage)
+if(NOT clipboard_in_stage OR NOT IS_DIRECTORY "${clipboard_module}")
+    message(FATAL_ERROR
+        "installed Settings Clipboard module is missing or outside stage: "
+        "${clipboard_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -127,6 +137,11 @@ set(build_bluetooth_module "${build_directory}/qml/QindaQt/SettingsApp/Bluetooth
 if(NOT IS_DIRECTORY "${build_bluetooth_module}")
     message(FATAL_ERROR
         "package poison requires the developer Bluetooth QML tree to remain present")
+endif()
+set(build_clipboard_module "${build_directory}/qml/QindaQt/SettingsApp/Clipboard")
+if(NOT IS_DIRECTORY "${build_clipboard_module}")
+    message(FATAL_ERROR
+        "package relocation requires the developer Clipboard QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")
@@ -211,7 +226,7 @@ if(NOT network_poison_status EQUAL 3)
 endif()
 # Reinstall rather than trusting the rename restoration, then repeat the
 # developer-tree poison for the Audio route the same way, and finally prove
-# all seven complete routes below using only the staged prefix.
+# all eight complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}
     RESULT_VARIABLE reinstall_status
