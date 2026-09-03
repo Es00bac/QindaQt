@@ -44,6 +44,8 @@ struct RestoreWriteResult final {
 // beneath XDG_STATE_HOME selected by composition; this class never discovers
 // HOME, Settings1, document content, or UI. Every successful write is an
 // atomic same-directory replacement and contains paths plus active index only.
+// Linux openat/O_NOFOLLOW traversal refuses every symlinked directory ancestor;
+// load, store, and clear therefore cannot escape the injected root path.
 class RestoreStateStore final {
 public:
   static constexpr qint64 maximumBytes = 64 * 1024;

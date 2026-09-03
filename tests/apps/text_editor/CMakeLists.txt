@@ -148,7 +148,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.editor-cli-multiple-paths
-    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen"
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 add_test(
     NAME qindaqt.editor-cli-hostile-argv
@@ -158,7 +158,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.editor-cli-hostile-argv
-    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen"
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
 # AGENT-CONTRACT: This row resolves themes and metadata only from a clean staged
@@ -182,5 +182,19 @@ set_tests_properties(
         LABELS "package;editor"
         RUN_SERIAL TRUE
         TIMEOUT 240
-        ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
+        ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_FATAL_WARNINGS=1"
+)
+
+# AGENT-NOTE: P2-2 regression from the a13aa62 review: child scripts choosing
+# offscreen internally do not excuse the registered row from fatal warnings.
+add_test(
+    NAME qindaqt.editor-offscreen-warning-policy
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_registered_environment.py"
+            --ctest "${CMAKE_CTEST_COMMAND}"
+            --build-directory "${CMAKE_BINARY_DIR}"
+)
+set_tests_properties(
+    qindaqt.editor-offscreen-warning-policy
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
 )

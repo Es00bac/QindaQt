@@ -2095,10 +2095,13 @@ The selector includes independent tab state/undo and canonical duplicate-path
 coverage; bounded dirty summaries and sanitized tab labels; AppShell action
 IDs and tab shortcuts; literal, whole-word, case, wrap, no-match, hostile-regex,
 and one-step Replace All behavior; exact paths-only atomic restore files with
-malformed, oversize, and symlink rejection; Settings1 baseline loss, conflict,
-fresh confirmation, and no-replay uncertainty; `%F` desktop metadata; bounded
-multi-path/hostile CLI probes; source-boundary poison; and installed-prefix
-theme/startup/PSS evidence.
+malformed, oversize, final-symlink, and symlinked-ancestor rejection; Settings1
+baseline loss, conflict, fresh confirmation, and no-replay uncertainty; `%F`
+desktop metadata; bounded multi-path/hostile CLI probes; source-boundary poison;
+and installed-prefix theme/startup/PSS evidence. All rows that launch offscreen
+Qt register `QT_FATAL_WARNINGS=1`, including the two CLI scripts and installed
+package probe; a dedicated registry-policy row prevents those properties from
+silently regressing.
 
 These rows do not start a compositor, use a host chooser, contact an ambient
 bus, synthesize input, qualify a real portal/global menu, capture screenshots,

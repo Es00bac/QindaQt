@@ -4,7 +4,9 @@
 #include "document/local_document_store.h"
 #include "ui/document_title.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -29,8 +31,10 @@ class DocumentCollectionTest final : public QObject {
 private slots:
   void pathsAreUniqueAndStateIsIndependent();
   void saveAsCannotAliasAnotherTab();
+  void saveAsResolvesSymlinkedParent();
   void closePlanIsBoundedAndExplicit();
   void titlesAreSanitizedAndBounded();
+  void titleCollapseHonorsUtf16Boundary();
 };
 
 void DocumentCollectionTest::pathsAreUniqueAndStateIsIndependent() {
@@ -82,6 +86,42 @@ void DocumentCollectionTest::saveAsCannotAliasAnotherTab() {
   QVERIFY(untitled.controller->state().isUntitled());
 }
 
+void DocumentCollectionTest::saveAsResolvesSymlinkedParent() {
+  // AGENT-NOTE: P1-1 regression from the a13aa62 review: a not-yet-created
+  // Save As target beneath a symlinked parent must retain the real identity.
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString realDirectory = directory.filePath(QStringLiteral("real"));
+  const QString aliasDirectory = directory.filePath(QStringLiteral("alias"));
+  QVERIFY(QDir().mkpath(realDirectory));
+  QVERIFY(QFile::link(realDirectory, aliasDirectory));
+
+  DocumentCollection documents(localFactory());
+  const AddDocumentResult untitled = documents.addUntitled();
+  QVERIFY(untitled.ok());
+  untitled.controller->setText(QStringLiteral("shared"));
+  const QString aliasPath =
+      QDir(aliasDirectory).filePath(QStringLiteral("shared.txt"));
+  QVERIFY(documents.saveAs(0, aliasPath, false).ok());
+
+  const QString realPath =
+      QDir(realDirectory).filePath(QStringLiteral("shared.txt"));
+  QCOMPARE(untitled.controller->state().path(),
+           QFileInfo(realPath).canonicalFilePath());
+  const AddDocumentResult reopened = documents.openPath(realPath);
+  QVERIFY(reopened.ok());
+  QVERIFY(reopened.focusedExisting);
+  QCOMPARE(reopened.controller, untitled.controller);
+  QCOMPARE(documents.count(), 1);
+
+  const QString unresolvable =
+      QDir(directory.path())
+          .filePath(QStringLiteral("missing-parent/refused.txt"));
+  QCOMPARE(documents.saveAs(0, unresolvable, false).error,
+           DocumentError::InvalidPath);
+  QVERIFY(!QFileInfo::exists(unresolvable));
+}
+
 void DocumentCollectionTest::closePlanIsBoundedAndExplicit() {
   DocumentCollection documents(localFactory());
   for (int index = 0; index < 12; ++index) {
@@ -111,6 +151,23 @@ void DocumentCollectionTest::titlesAreSanitizedAndBounded() {
   QVERIFY(!title.contains(u'\t'));
   QVERIFY(!title.contains(QChar(0x0007)));
   QVERIFY(title.startsWith(QStringLiteral("hello world")));
+}
+
+void DocumentCollectionTest::titleCollapseHonorsUtf16Boundary() {
+  // AGENT-NOTE: P2-1 regression from the a13aa62 review: the collapsed space
+  // and following scalar share the 128-unit budget; surrogate pairs stay whole.
+  QCOMPARE(
+      sanitizeDocumentTitle(QString(127, u'x') + QStringLiteral(" y")).size(),
+      127);
+  const QString supplementary = QString::fromUcs4(U"\U0001F680");
+  const QString exact =
+      sanitizeDocumentTitle(QString(125, u'x') + u' ' + supplementary);
+  QCOMPARE(exact.size(), 128);
+  QVERIFY(exact.isValidUtf16());
+  const QString title =
+      sanitizeDocumentTitle(QString(126, u'x') + u' ' + supplementary);
+  QCOMPARE(title.size(), 126);
+  QVERIFY(title.isValidUtf16());
 }
 
 QTEST_GUILESS_MAIN(DocumentCollectionTest)

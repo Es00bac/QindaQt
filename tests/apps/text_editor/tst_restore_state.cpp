@@ -18,6 +18,7 @@ private slots:
   void roundTripContainsPathsOnly();
   void malformedInventoryIsRejectedWholesale();
   void oversizedAndSymlinkStateFailClosed();
+  void symlinkedAncestorCannotEscapeStateRoot();
 };
 
 void RestoreStateTest::roundTripContainsPathsOnly() {
@@ -83,6 +84,28 @@ void RestoreStateTest::oversizedAndSymlinkStateFailClosed() {
   targetFile.close();
   QVERIFY(QFile::link(target, store.filePath()));
   QCOMPARE(store.load().error, RestoreStateError::Malformed);
+}
+
+void RestoreStateTest::symlinkedAncestorCannotEscapeStateRoot() {
+  // AGENT-NOTE: P1-2 regression from the a13aa62 review: secure directory
+  // traversal must reject a qindaqt ancestor that redirects outside state.
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString stateRoot = directory.filePath(QStringLiteral("state"));
+  const QString escaped = directory.filePath(QStringLiteral("escaped"));
+  QVERIFY(QDir().mkpath(stateRoot));
+  QVERIFY(QDir().mkpath(escaped));
+  QVERIFY(QFile::link(escaped,
+                      QDir(stateRoot).filePath(QStringLiteral("qindaqt"))));
+
+  RestoreStateStore store(
+      QDir(stateRoot).filePath(QStringLiteral("qindaqt/text-editor")));
+  const RestoreWriteResult result =
+      store.store({.paths = {}, .activeIndex = -1});
+  QVERIFY(!result.ok());
+  QCOMPARE(result.error, RestoreStateError::InvalidRoot);
+  QVERIFY(!QFileInfo::exists(QDir(escaped).filePath(
+      QStringLiteral("text-editor/open-documents-v1.json"))));
 }
 
 QTEST_GUILESS_MAIN(RestoreStateTest)

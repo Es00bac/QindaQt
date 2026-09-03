@@ -18,13 +18,14 @@ QString sanitizeDocumentTitle(const QString &rawTitle) {
           !rawTitle.at(index + 1).isLowSurrogate()) {
         continue;
       }
+      const qsizetype requiredUnits = 2 + (pendingSpace ? 1 : 0);
+      if (sanitized.size() + requiredUnits > maximumDocumentTitleLength) {
+        break;
+      }
       if (pendingSpace && !sanitized.isEmpty()) {
         sanitized.append(QLatin1Char(' '));
       }
       pendingSpace = false;
-      if (sanitized.size() + 2 > maximumDocumentTitleLength) {
-        break;
-      }
       sanitized.append(character);
       sanitized.append(rawTitle.at(++index));
       continue;
@@ -34,14 +35,15 @@ QString sanitizeDocumentTitle(const QString &rawTitle) {
         character.isLowSurrogate()) {
       continue;
     }
+    const qsizetype requiredUnits = 1 + (pendingSpace ? 1 : 0);
+    if (sanitized.size() + requiredUnits > maximumDocumentTitleLength) {
+      break;
+    }
     if (pendingSpace) {
       sanitized.append(QLatin1Char(' '));
       pendingSpace = false;
     }
     sanitized.append(character);
-    if (sanitized.size() >= maximumDocumentTitleLength) {
-      break;
-    }
   }
   return sanitized.trimmed();
 }

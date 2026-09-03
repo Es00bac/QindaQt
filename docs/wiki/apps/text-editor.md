@@ -107,7 +107,11 @@ fresh snapshot confirms it, and an uncertain write is never replayed.
 When disabled, the editor removes its local restore inventory. When enabled,
 it atomically writes `open-documents-v1.json` beneath
 `$XDG_STATE_HOME/qindaqt/text-editor` using `QSaveFile` with direct-write
-fallback disabled and owner-only file permissions. The exact schema is:
+fallback disabled and owner-only file permissions. Directory traversal opens
+each absolute-path component with Linux `openat`/`O_NOFOLLOW` semantics and
+keeps the final directory descriptor through atomic commit; any symlinked
+ancestor or unsafe final entry refuses load, store, and clear rather than
+escaping the selected state path. The exact schema is:
 
 ```json
 {"version":1,"paths":["/absolute/a.txt"],"activeIndex":0}
@@ -185,10 +189,14 @@ external-change conflict recovery, duplicate/colliding paths, independent tab
 state and undo, bounded consent summaries and title sanitization, all action
 catalog identities and keyboard traversal, find options/wrap/no-match and
 hostile regex rejection, single-step Replace All, restore-state schema and
-symlink/oversize rejection, Settings1 baseline/conflict/uncertainty, multi-path
-and hostile CLI admission, desktop metadata, source-boundary poison, and a
-clean installed-prefix offscreen launch. All rows receive build-root HOME,
-XDG state/data, and TMPDIR values and disconnected display/bus environments.
+final/ancestor-symlink and oversize rejection, Settings1
+baseline/conflict/uncertainty, multi-path and hostile CLI admission, desktop
+metadata, source-boundary poison, and a clean installed-prefix offscreen
+launch. Every row that launches offscreen Qt registers
+`QT_FATAL_WARNINGS=1`; a registry-policy row checks the three script-driven
+and package cases whose names do not express that requirement. All rows receive
+build-root HOME, XDG state/data, and TMPDIR values and disconnected display/bus
+environments.
 
 The installed performance probe retains the S1 ceilings: first painted frame
 at most 400 ms and median PSS at most 64 MiB across five settled samples.
