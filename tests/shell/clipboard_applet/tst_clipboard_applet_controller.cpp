@@ -80,6 +80,12 @@ public:
     SearchOutcome m_scriptedSearchOutcome;
     bool m_completeOperationsSynchronously = false;
     OperationOutcome m_scriptedCompletion;
+    // When armed, record() first re-entrantly emits this completion — for an
+    // EARLIER request id — inside the dispatch call, then proceeds. Exercises
+    // exact-id attribution of cross-request synchronous flushes.
+    bool m_flushEarlierCompletionDuringRecord = false;
+    quint64 m_flushedEarlierRequestId = 0;
+    OperationOutcome m_flushedEarlierCompletion;
 
     HistorySnapshot m_snapshot;
     bool m_locked = false;
@@ -158,6 +164,10 @@ private:
         recorded.id = id;
         m_operations.append(recorded);
 
+        if (m_flushEarlierCompletionDuringRecord) {
+            m_flushEarlierCompletionDuringRecord = false;
+            Q_EMIT operationCompleted(m_flushedEarlierRequestId, m_flushedEarlierCompletion);
+        }
         if (m_completeOperationsSynchronously) {
             OperationOutcome completion = m_scriptedCompletion;
             completion.id = id;
@@ -188,6 +198,9 @@ private Q_SLOTS:
     void testPendingTracking();
     void testRapidStateAndLockTransitions();
     void testLineageExhaustionFailsClosed();
+    void testReadDenialWithholdsObservation();
+    void testWriteDenialKeepsBrowsingButRefusesMutation();
+    void testDeferredCompletionForEarlierRequestAttributesById();
 };
 
 void TstClipboardAppletController::testInitialState()
@@ -202,7 +215,7 @@ void TstClipboardAppletController::testInitialState()
     QVERIFY(admitRes1.accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
     QCOMPARE(controller.isLocked(), false);
@@ -226,7 +239,7 @@ void TstClipboardAppletController::testLockGating()
     QVERIFY(admitRes2.accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
     QCOMPARE(controller.entryCount(), 1);
@@ -263,7 +276,7 @@ void TstClipboardAppletController::testLockPurgesModelAndPreventsRedisclosure()
     const quint32 generationBeforeLock = model.generation();
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
     QCOMPARE(controller.entryCount(), 1);
 
     // The lock is an authority denial: model privacy flips to Denied, every
@@ -297,7 +310,7 @@ void TstClipboardAppletController::testLockPurgesActiveSearchState()
     QVERIFY(model.admit(val, 1, QStringLiteral("Notes"), 100).accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     controller.setSearchQuery(QStringLiteral("searchable"));
     QCOMPARE(controller.isSearchActive(), true);
@@ -325,7 +338,7 @@ void TstClipboardAppletController::testOwnerFencing()
     model.setPrivacyAllowed(true);
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
 
@@ -355,7 +368,7 @@ void TstClipboardAppletController::testGenerationFencing()
     QVERIFY(admitRes3.accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     // Purge model to raise generation to 2
     model.setPrivacyAllowed(false);
@@ -386,7 +399,7 @@ void TstClipboardAppletController::testIntentOperations()
     const auto outcome2 = model.admit(val2, 1, QStringLiteral("App2"), 110);
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.entryCount(), 2);
 
@@ -425,7 +438,7 @@ void TstClipboardAppletController::testSearchLifecycle()
     QVERIFY(admitRes5.accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.entryCount(), 2);
 
@@ -453,7 +466,7 @@ void TstClipboardAppletController::testHostileSynchronousFlushCannotDisplaySuper
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
 
-    ClipboardAppletController controller(&client);
+    ClipboardAppletController controller(&client, true, true);
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
 
     auto outcomeWithPreview = [](const char *preview) {
@@ -515,7 +528,7 @@ void TstClipboardAppletController::testSynchronousCompletionLeavesNoPendingRecor
     client.m_completeOperationsSynchronously = true;
     client.m_scriptedCompletion.code = OperationErrorCode::None;
 
-    ClipboardAppletController controller(&client);
+    ClipboardAppletController controller(&client, true, true);
 
     // Clear-history completing synchronously inside requestClear() must not
     // leak a permanently pending record.
@@ -548,7 +561,7 @@ void TstClipboardAppletController::testUnknownAndDuplicateCompletionsAreIgnored(
     desc.formats = { { QStringLiteral("text/plain"), 5 } };
     client.m_snapshot.entries.append(desc);
 
-    ClipboardAppletController controller(&client);
+    ClipboardAppletController controller(&client, true, true);
 
     QVERIFY(controller.selectEntry(3, 7));
     QCOMPARE(controller.pendingOperationCount(), 1);
@@ -597,7 +610,7 @@ void TstClipboardAppletController::testPromoteTicksAreStrictlyMonotonic()
     client.m_completeOperationsSynchronously = true;
     client.m_scriptedCompletion.code = OperationErrorCode::None;
 
-    ClipboardAppletController controller(&client);
+    ClipboardAppletController controller(&client, true, true);
 
     QVERIFY(controller.selectEntry(3, 7));
     QVERIFY(controller.selectEntry(3, 7));
@@ -624,7 +637,7 @@ void TstClipboardAppletController::testFeedbackHandling()
     model.setPrivacyAllowed(true);
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     QVERIFY(!controller.feedbackPresent());
 
@@ -650,7 +663,7 @@ void TstClipboardAppletController::testPendingTracking()
     const auto admitted = model.admit(val, 1, QStringLiteral("Kate"), 100);
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     // Dispatch select
     QVERIFY(controller.selectEntry(admitted.entry.id.generation, admitted.entry.id.serial));
@@ -668,7 +681,7 @@ void TstClipboardAppletController::testRapidStateAndLockTransitions()
     QVERIFY(admitted.accepted());
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     quint32 expectedGeneration = model.generation();
     // Rapid lock/unlock toggles: each lock purges content and fences the
@@ -699,7 +712,7 @@ void TstClipboardAppletController::testSearchReplyFreshnessWithUnorderedIds()
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
 
-    ClipboardAppletController controller(&client);
+    ClipboardAppletController controller(&client, true, true);
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
 
     // First query dispatches request id 902; a revision of the query
@@ -767,7 +780,7 @@ void TstClipboardAppletController::testLineageExhaustionFailsClosed()
     model.setPrivacyAllowed(true);
 
     ClipboardModelClientAdapter adapter(&model);
-    ClipboardAppletController controller(&adapter);
+    ClipboardAppletController controller(&adapter, true, true);
 
     // Trigger a purge at ceiling to latch generationExhausted
     model.setPrivacyAllowed(false);
@@ -778,6 +791,125 @@ void TstClipboardAppletController::testLineageExhaustionFailsClosed()
     controller.selectEntry(counters.generation, 1);
     QVERIFY(controller.feedbackPresent());
     QCOMPARE(controller.feedbackStatus(), QStringLiteral("error"));
+}
+
+void TstClipboardAppletController::testReadDenialWithholdsObservation()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "granted-secret" } };
+    QVERIFY(model.admit(val, 1, QStringLiteral("Notes"), 100).accepted());
+
+    ClipboardModelClientAdapter adapter(&model);
+    // clipboard.read denied, clipboard.write granted: observation must fail
+    // closed even though mutation authority exists.
+    ClipboardAppletController controller(&adapter, false, true);
+
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: clipboard-read-not-granted"));
+    QCOMPARE(controller.entryCount(), 0);
+    QVERIFY(controller.entryRows().isEmpty());
+    QVERIFY(!controller.clipboardReadGranted());
+    QVERIFY(controller.clipboardWriteGranted());
+
+    // Late snapshots must not stock the withheld projection.
+    adapter.notifyModelChanged();
+    QCOMPARE(controller.entryCount(), 0);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+
+    // Search is a read: it must not reach the seam at all.
+    controller.setSearchQuery(QStringLiteral("granted"));
+    QCOMPARE(controller.isSearchActive(), false);
+
+    // Mutations are refused locally with honest feedback, before dispatch.
+    QVERIFY(!controller.deleteEntry(1, 1));
+    QVERIFY(controller.feedbackPresent());
+}
+
+void TstClipboardAppletController::testWriteDenialKeepsBrowsingButRefusesMutation()
+{
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "readonly item" } };
+    const auto admitted = model.admit(val, 1, QStringLiteral("Kate"), 100);
+    QVERIFY(admitted.accepted());
+
+    ClipboardModelClientAdapter adapter(&model);
+    // clipboard.read granted, clipboard.write denied: browsing and search
+    // stay live; every mutating intent is refused before dispatch.
+    ClipboardAppletController controller(&adapter, true, false);
+
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 1);
+
+    controller.setSearchQuery(QStringLiteral("readonly"));
+    QCOMPARE(controller.searchResultCount(), 1);
+
+    const quint32 generation = admitted.entry.id.generation;
+    const quint32 serial = admitted.entry.id.serial;
+    QVERIFY(!controller.selectEntry(generation, serial));
+    QVERIFY(!controller.deleteEntry(generation, serial));
+    QVERIFY(!controller.togglePin(generation, serial));
+    QVERIFY(!controller.clearHistory(false));
+    QVERIFY(controller.feedbackPresent());
+
+    // Nothing reached the model: the entry is intact and nothing is pending.
+    QCOMPARE(model.snapshot().entries.size(), 1);
+    QCOMPARE(controller.pendingOperationCount(), 0);
+    QCOMPARE(controller.entryCount(), 1);
+}
+
+void TstClipboardAppletController::testDeferredCompletionForEarlierRequestAttributesById()
+{
+    // AGENT-GUARD (P2 regression): a seam that completes an EARLIER pending
+    // request synchronously inside a LATER dispatch call must have that
+    // completion attributed by its exact registered id. Dropping it would
+    // strand a permanently pending record and pin the entry's busy marker.
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 3;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    ClipboardEntryDescriptor first;
+    first.id = { 3, 7 };
+    first.preview = QStringLiteral("first");
+    first.formats = { { QStringLiteral("text/plain"), 5 } };
+    ClipboardEntryDescriptor second;
+    second.id = { 3, 8 };
+    second.preview = QStringLiteral("second");
+    second.formats = { { QStringLiteral("text/plain"), 6 } };
+    client.m_snapshot.entries.append(first);
+    client.m_snapshot.entries.append(second);
+
+    ClipboardAppletController controller(&client, true, true);
+
+    // Dispatch remove for the first entry; the seam holds the completion.
+    QVERIFY(controller.deleteEntry(3, 7));
+    QCOMPARE(controller.pendingOperationCount(), 1);
+    const quint64 removeId = client.m_operations.first().requestId;
+
+    // Arm the seam: while the promote for the second entry is being issued,
+    // it re-entrantly flushes the completion of the EARLIER remove first,
+    // then completes the promote itself.
+    client.m_completeOperationsSynchronously = true;
+    client.m_scriptedCompletion.code = OperationErrorCode::None;
+    OperationOutcome earlierCompletion;
+    earlierCompletion.code = OperationErrorCode::None;
+    earlierCompletion.id = { 3, 7 };
+    client.m_flushEarlierCompletionDuringRecord = true;
+    client.m_flushedEarlierRequestId = removeId;
+    client.m_flushedEarlierCompletion = earlierCompletion;
+
+    QVERIFY(controller.selectEntry(3, 8));
+    // Both the earlier remove and the current promote completed; no record
+    // leaks and the first entry's pending marker is cleared.
+    QCOMPARE(controller.pendingOperationCount(), 0);
 }
 
 QTEST_MAIN(TstClipboardAppletController)

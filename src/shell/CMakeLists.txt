@@ -200,3 +200,13 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         COMPONENT PowerAppletRuntime
     )
 endif()
+
+# The Clipboard applet's packaged component carries its own manifest, mirroring
+# the PowerAppletRuntime precedent above. The applet module itself
+# (src/shell/clipboard_applet) owns the compiled-library/QML install rules.
+install(
+    FILES
+        "${PROJECT_SOURCE_DIR}/data/applets/clipboard.json"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+    COMPONENT ClipboardApplet
+)

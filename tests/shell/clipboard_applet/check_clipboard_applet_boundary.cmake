@@ -31,12 +31,13 @@ foreach(path IN LISTS applet_files)
     # re-discloses content behind the lock/privacy fence. Case matters — lowercase
     # "clipboard" is vocabulary, the capitalized Qt/GTK symbols and qApp-> usages
     # are forbidden platform access.
-    if(content MATCHES "QDBus|LayerShell|KWin::|QProcess|sysfs|wayland-client|wayland-server"
+    if(content MATCHES "QDBus|QtDBus/|LayerShell|KWin::|QProcess|sysfs|wayland-client|wayland-server"
        OR content MATCHES "QClipboard|QApplication|QGuiApplication|qt_clipboard|gtk_clipboard|GtkClipboard"
        OR content MATCHES "qApp->"
        OR content MATCHES "xclip|xsel|wl-copy|wl-paste|X11/Xlib|XGetSelection|XStoreBytes"
        OR content MATCHES "qindaqt/(compositor|platform)/"
-       OR content MATCHES "src/(compositor|platform)/")
+       OR content MATCHES "src/(compositor|platform)/"
+       OR content MATCHES "clipboard_[a-z_]*_p\\.h")
         message(FATAL_ERROR
                 "${path}: Clipboard Applet crossed a private platform/host-clipboard boundary")
     endif()
@@ -57,7 +58,7 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
     # in another pattern. Bodies are numbered variables, not list elements,
     # because realistic C++ bodies contain semicolons that would split a
     # CMake list and silently scramble the staged poison.
-    set(poison_case_count 6)
+    set(poison_case_count 8)
     set(poison_case_0_name "qdbus")
     set(poison_case_0_body "#include <QDBusConnection>\nvoid f() { QDBusConnection::sessionBus(); }\n")
     set(poison_case_1_name "host_clipboard_include")
@@ -70,6 +71,10 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
     set(poison_case_4_body "#include <QApplication>\nQString f() { return QApplication::clipboard()->text(); }\n")
     set(poison_case_5_name "qapp_macro_bypass")
     set(poison_case_5_body "// qApp->clipboard() reaches the host clipboard without naming a class\nvoid g() { auto c = qApp->clipboard(); }\n")
+    set(poison_case_6_name "qtdbus_include_path")
+    set(poison_case_6_body "#include <QtDBus/QDBusMessage>\nvoid f() {}\n")
+    set(poison_case_7_name "private_model_header")
+    set(poison_case_7_body "#include <qindaqt/services/clipboard_model/clipboard_history_p.h>\nvoid f() {}\n")
 
     foreach(poison_index RANGE ${poison_case_count})
         if(poison_index EQUAL poison_case_count)

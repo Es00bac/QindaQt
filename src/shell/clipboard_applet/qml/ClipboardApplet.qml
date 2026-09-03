@@ -255,6 +255,11 @@ Item {
             model: controller?.entryRows ?? []
 
             delegate: ClipboardEntryRow {
+                // AGENT-GUARD: compiled QML resolves model context only for
+                // explicitly declared delegate properties; an implicit
+                // `modelData` reference is a ReferenceError in the compiled
+                // module and leaves every row's `entry` undefined.
+                required property var modelData
                 objectName: "clipboardEntryRow"
                 width: entriesList.width
                 entry: modelData

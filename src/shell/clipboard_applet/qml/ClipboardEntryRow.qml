@@ -58,7 +58,7 @@ T.Control {
         border.width: rowRoot.activeFocus ? Tokens.space["1"] : Tokens.space["1"] / 2
         border.color: rowRoot.activeFocus ? Tokens.focus.ring
                      : entry?.pinned ? Tokens.accent.default
-                     : Tokens.outline.subtle
+                     : Tokens.outline.divider
 
         Behavior on color {
             ColorAnimation { duration: Tokens.motion.short }
@@ -136,7 +136,7 @@ T.Control {
                     id: sourceLabelText
                     visible: rowRoot.entry && rowRoot.entry.sourceLabel.length > 0
                     text: rowRoot.entry ? rowRoot.entry.sourceLabel : ""
-                    color: Tokens.fg.subtle
+                    color: Tokens.fg.muted
                     font.family: Tokens.type.fontFamily
                     font.pointSize: Tokens.type.caption
                     elide: Text.ElideRight

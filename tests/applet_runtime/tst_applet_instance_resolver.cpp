@@ -71,6 +71,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringLiteral("ready"));
 
     const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.clipboard"),
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
@@ -84,6 +85,15 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(power.grantedCapabilities,
              QStringList({QStringLiteral("power.control"),
                           QStringLiteral("power.read")}));
+
+    const auto clipboard = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("clipboard")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(clipboard.ready(), qPrintable(clipboard.diagnostic));
+    QCOMPARE(clipboard.entryPoint, QStringLiteral("qindaqt.applets.clipboard"));
+    QCOMPARE(clipboard.grantedCapabilities,
+             QStringList({QStringLiteral("clipboard.read"),
+                          QStringLiteral("clipboard.write")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
