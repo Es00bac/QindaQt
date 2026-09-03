@@ -43,6 +43,8 @@ target_link_libraries(
     qindaqt_settings_appearance
     qindaqt_settings_display
     qindaqt_settings_network
+    qindaqt_settings_customize_qml
+    qindaqt_settings_customize_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -57,13 +59,14 @@ target_compile_definitions(
 )
 set_target_properties(
     qindaqt-settings PROPERTIES
-    INSTALL_RPATH "$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Tokens;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Controls;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+    INSTALL_RPATH "$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Tokens;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/Controls;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network;$ORIGIN/../${QT6_INSTALL_QML}/QindaQt/SettingsApp/Customize"
 )
 add_dependencies(
     qindaqt-settings
     qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
     qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qml qindaqt_settings_network_qmlplugin
+    qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )

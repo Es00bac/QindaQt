@@ -163,12 +163,13 @@ This transaction layer adds no persistence fields; accepted values remain
 profile schema v1.
 
 This module does not load applet entry points, construct shell surfaces, render
-drop targets, persist user profiles, or provide the settings UI. The production
-surface host consumes the same solver contract from its selected profile; it
-does not yet subscribe to provisional editor snapshots. Settings-service
-publication into that host, the live adapter for the implemented window-aware
-visibility policy, drag/keyboard presentation, and a first-class customization
-window remain outstanding parts of the Shell and customization milestone.
+drop targets, persist user profiles, or provide settings presentation. The
+[Settings Customize route](../apps/customize-settings.md) now owns the separate
+canvas, palette, property, keyboard, and user-profile persistence composition
+over these values. The production surface host consumes the same solver
+contract from its selected profile but does not yet subscribe to provisional
+editor snapshots; live Settings-to-shell publication and the reveal affordance
+remain outstanding parts of the Shell and customization milestone.
 
 ## Built-in workflow families
 

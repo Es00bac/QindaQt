@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QindaQt.SettingsApp.Customize
 
 Item {
     id: host
@@ -16,8 +17,14 @@ Item {
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
+    readonly property bool customizeDeparturePending:
+        host.presentationActive && customizeLoader.item !== null
+        && customizeLoader.item.dirty
+        && host.navigation.activeRouteComponent !== "customize"
 
-    readonly property Loader currentLoader: !navigation.activeRouteAvailable
+    readonly property Loader currentLoader: customizeDeparturePending
+        ? customizeLoader
+        : !navigation.activeRouteAvailable
         ? unavailableLoader
         : navigation.activeRouteComponent === "notifications"
           ? notificationsLoader
@@ -27,6 +34,8 @@ Item {
               ? displayLoader
             : navigation.activeRouteComponent === "network"
               ? networkLoader
+            : navigation.activeRouteComponent === "customize"
+              ? customizeLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -52,6 +61,7 @@ Item {
         objectName: host.objectNamePrefix + "NotificationsLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "notifications"
         sourceComponent: host.notificationsComponent
@@ -62,6 +72,7 @@ Item {
         objectName: host.objectNamePrefix + "AppearanceLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "appearance"
         sourceComponent: host.appearanceComponent
@@ -72,6 +83,7 @@ Item {
         objectName: host.objectNamePrefix + "DisplayLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "display"
                 && host.displayComponent !== null
@@ -83,10 +95,27 @@ Item {
         objectName: host.objectNamePrefix + "NetworkLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "network"
                 && host.networkComponent !== null
         sourceComponent: host.networkComponent
+    }
+
+    Loader {
+        id: customizeLoader
+        objectName: host.objectNamePrefix + "CustomizeLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && ((host.navigation.activeRouteAvailable
+                     && host.navigation.activeRouteComponent === "customize")
+                    || (item !== null && item.dirty))
+        sourceComponent: customizeRouteComponent
+    }
+
+    Component {
+        id: customizeRouteComponent
+        CustomizeRoute { navigation: host.navigation }
     }
 
     Loader {
@@ -96,11 +125,13 @@ Item {
         // An unrecognized component key is presentation-hostile even if a
         // malformed producer claimed the route was otherwise available.
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && (!host.navigation.activeRouteAvailable
                     || (host.navigation.activeRouteComponent !== "notifications"
                         && host.navigation.activeRouteComponent !== "appearance"
                         && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
-                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
+                        && host.navigation.activeRouteComponent !== "customize"))
         sourceComponent: host.unavailableComponent
     }
 }

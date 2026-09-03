@@ -146,6 +146,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Network route](apps/network-settings.md) documents the first-party
   secret-free Network1 client surface: exact-owner inventory, stale and pending
   truth, bounded scan/connect/disconnect actions, and installed-route proof.
+- [Settings Customize route](apps/customize-settings.md) documents the direct
+  profile canvas: editor-session gestures, keyboard parity, atomic user-profile
+  persistence, Settings1 selection truth, and fail-closed package boundaries.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.
