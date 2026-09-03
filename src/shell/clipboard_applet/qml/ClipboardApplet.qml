@@ -23,10 +23,12 @@ Item {
             || controller?.phaseText === "degraded"
 
     // AGENT-GUARD: mutating intents (select/promote, pin, delete, clear) are
-    // dispatched by the controller only in the ready phase; the degraded
-    // service refuses them. Surface that honestly: browsing stays available,
-    // mutating controls are disabled rather than dead-looking.
-    readonly property bool actionsEnabled: controller?.phaseText === "ready"
+    // dispatched by the controller only in the ready phase and only with the
+    // clipboard.write grant; the degraded service and a denied grant both
+    // refuse them. Surface that honestly: browsing stays available, mutating
+    // controls are disabled rather than dead-looking.
+    readonly property bool actionsEnabled:
+        controller?.phaseText === "ready" && (controller?.clipboardWriteGranted ?? false)
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Clipboard")

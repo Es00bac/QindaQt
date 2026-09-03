@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 7);
+    QCOMPARE(catalog.manifests().size(), 8);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
