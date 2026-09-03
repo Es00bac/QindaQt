@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import hashlib
 import json
 import os
 import subprocess
@@ -13,7 +14,7 @@ from pathlib import Path, PurePosixPath
 
 import test_desktop_session_nested as base
 import desktop_session_runtime as runtime
-from desktop_session_capture import validate_capture
+from desktop_session_capture import CaptureContractError, _decode_png
 from desktop_session_evidence import _authenticate_processes, _build_evidence
 from desktop_session_launch import _start_desktop
 from desktop_session_matrix import DesktopMatrixScenario, MatrixOutput, load_matrix_scenario
@@ -25,6 +26,11 @@ from nested_session_scenario import VirtualOutputSpec
 
 
 PROFILE_ID = "panel-visibility-proof"
+PHASES = (
+    "window-overlap-hidden", "window-moved-away", "window-close-hidden",
+    "window-closed-restored", "edge-revealed", "shortcut-revealed",
+    "popup-held", "popup-closed",
+)
 
 
 def _scenario(identifier: str) -> DesktopMatrixScenario:
@@ -75,24 +81,196 @@ def _run_visibility_probe(arguments: argparse.Namespace, environment: dict[str, 
             f"panel visibility probe exited {process.returncode}; see {log_path}"
         )
     document = json.loads(lines[0].removeprefix(marker))
-    if not isinstance(document, dict) or len(document.get("phases", [])) != 6:
+    if not isinstance(document, dict) or len(document.get("phases", [])) != len(PHASES):
         raise RuntimeError("panel visibility probe evidence is incomplete")
     return document
 
 
-def _validate_captures(width: int, height: int) -> list[dict[str, object]]:
-    root = Path("/var/lib/qindaqt-evidence")
-    phases = (
-        "window-overlap-hidden", "window-moved-away", "edge-revealed",
-        "shortcut-revealed", "popup-held", "popup-closed",
+def _geometry(value: object, location: str, width: int, height: int) -> dict[str, int]:
+    if not isinstance(value, dict) or set(value) != {"x", "y", "width", "height"}:
+        raise RuntimeError(f"{location} geometry is malformed")
+    if any(isinstance(value[key], bool) or not isinstance(value[key], int)
+           for key in value):
+        raise RuntimeError(f"{location} geometry is not integral")
+    geometry = {key: value[key] for key in ("x", "y", "width", "height")}
+    if (geometry["x"] < 0 or geometry["y"] < 0 or geometry["width"] <= 0
+            or geometry["height"] <= 0
+            or geometry["x"] + geometry["width"] > width
+            or geometry["y"] + geometry["height"] > height):
+        raise RuntimeError(f"{location} geometry escapes the framebuffer")
+    return geometry
+
+
+def _intersects(first: dict[str, int], second: dict[str, int]) -> bool:
+    return (
+        first["x"] < second["x"] + second["width"]
+        and second["x"] < first["x"] + first["width"]
+        and first["y"] < second["y"] + second["height"]
+        and second["y"] < first["y"] + first["height"]
     )
+
+
+def _panel_geometry(surfaces: object, edge: str, thickness: int,
+                    width: int, height: int) -> dict[str, int] | None:
+    if not isinstance(surfaces, list):
+        raise RuntimeError("panel phase surface authority is malformed")
+    matches: list[dict[str, int]] = []
+    for index, surface in enumerate(surfaces):
+        if not isinstance(surface, dict):
+            raise RuntimeError("panel phase surface record is malformed")
+        geometry = _geometry(
+            surface.get("geometry"), f"surface[{index}]", width, height
+        )
+        placed = (
+            edge == "top" and geometry["y"] == 0
+            and geometry["height"] == thickness
+        ) or (
+            edge == "left" and geometry["x"] == 0
+            and geometry["width"] == thickness
+        ) or (
+            edge == "bottom" and geometry["height"] == thickness
+            and geometry["y"] + geometry["height"] == height
+        )
+        if placed and surface.get("mapped") is True and surface.get("committed") is True:
+            matches.append(geometry)
+    if len(matches) > 1:
+        raise RuntimeError(f"panel authority contains duplicate {edge} surfaces")
+    return matches[0] if matches else None
+
+
+def _validate_interaction(interaction: object, width: int,
+                          height: int) -> dict[str, dict[str, int]]:
+    if not isinstance(interaction, dict) or interaction.get("schemaVersion") != 1:
+        raise RuntimeError("panel interaction envelope is malformed")
+    if (interaction.get("outputWidth"), interaction.get("outputHeight")) != (width, height):
+        raise RuntimeError("panel interaction output geometry disagrees with capture")
+    phases = interaction.get("phases")
+    if not isinstance(phases, list) or len(phases) != len(PHASES):
+        raise RuntimeError("panel interaction phase count is not exact")
+    documents: dict[str, dict[str, object]] = {}
+    for expected, phase in zip(PHASES, phases, strict=True):
+        if not isinstance(phase, dict) or phase.get("phase") != expected:
+            raise RuntimeError("panel interaction phases are not canonical")
+        if _panel_geometry(phase.get("surfaces"), "top", 30, width, height) is None:
+            raise RuntimeError(f"top reservation authority is absent in {expected}")
+        documents[expected] = phase
+
+    left_visible = [
+        _panel_geometry(documents[name].get("surfaces"), "left", 40, width, height)
+        for name in ("window-moved-away", "window-closed-restored")
+    ]
+    if left_visible[0] is None or left_visible[0] != left_visible[1]:
+        raise RuntimeError("left panel visible authority is missing or unstable")
+    for name in ("window-overlap-hidden", "window-close-hidden"):
+        if _panel_geometry(documents[name].get("surfaces"), "left", 40,
+                           width, height) is not None:
+            raise RuntimeError(f"left panel is not hidden in {name}")
+
+    bottom_names = ("edge-revealed", "shortcut-revealed", "popup-held")
+    bottom_visible = [
+        _panel_geometry(documents[name].get("surfaces"), "bottom", 48, width, height)
+        for name in bottom_names
+    ]
+    if bottom_visible[0] is None or any(
+        geometry != bottom_visible[0] for geometry in bottom_visible[1:]
+    ):
+        raise RuntimeError("bottom panel visible authority is missing or unstable")
+    if _panel_geometry(documents["popup-closed"].get("surfaces"), "bottom", 48,
+                       width, height) is not None:
+        raise RuntimeError("bottom panel is not hidden after popup close")
+
+    move = interaction.get("move")
+    if (not isinstance(move, dict)
+            or set(move) != {"before", "after", "surfacesBefore"}):
+        raise RuntimeError("window move geometry proof is absent")
+    if _panel_geometry(move["surfacesBefore"], "top", 30, width, height) is None:
+        raise RuntimeError("pre-drag top authority is absent")
+    if _panel_geometry(move["surfacesBefore"], "left", 40,
+                       width, height) is not None:
+        raise RuntimeError("left panel was not hidden immediately before drag")
+    before = _geometry(move["before"], "move.before", width, height)
+    after = _geometry(move["after"], "move.after", width, height)
+    if before["x"] == after["x"] and before["y"] == after["y"]:
+        raise RuntimeError("injected drag did not move the proof window")
+    if after["width"] >= width or after["height"] >= height:
+        raise RuntimeError("injected drag did not leave a movable proof window")
+    if _intersects(after, left_visible[0]):
+        raise RuntimeError("window move does not clear the left panel")
+    close = interaction.get("close")
+    if (not isinstance(close, dict) or set(close) != {"before", "windowAbsentAfter"}
+            or close.get("windowAbsentAfter") is not True):
+        raise RuntimeError("window close authority proof is absent")
+    close_before = _geometry(close["before"], "close.before", width, height)
+    if not _intersects(close_before, left_visible[0]):
+        raise RuntimeError("closing window did not cover the left panel")
+    return {"left": left_visible[0], "bottom": bottom_visible[0]}
+
+
+def _validate_panel_capture(path: Path, width: int, height: int,
+                            geometry: dict[str, int]) -> dict[str, object]:
+    actual_width, actual_height, pixels, channels = _decode_png(path)
+    if (actual_width, actual_height) != (width, height):
+        raise CaptureContractError("captured framebuffer dimensions are not exact")
+    frame_colors: set[bytes] = set()
+    for row in range(72):
+        y = min(height - 1, row * height // 72)
+        for column in range(128):
+            x = min(width - 1, column * width // 128)
+            start = (y * width + x) * channels
+            frame_colors.add(pixels[start:start + channels])
+    if len(frame_colors) < 8:
+        raise CaptureContractError("captured framebuffer is visually uniform")
+    digest = hashlib.sha256()
+    colors: set[bytes] = set()
+    for y in range(geometry["y"], geometry["y"] + geometry["height"]):
+        start = (y * width + geometry["x"]) * channels
+        row = pixels[start:start + geometry["width"] * channels]
+        digest.update(row)
+        for offset in range(0, len(row), channels):
+            colors.add(row[offset:offset + channels])
+    return {
+        "tool": "weston-screenshooter", "path": path.name,
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "byteCount": path.stat().st_size, "width": width, "height": height,
+        "sampledDistinctColors": len(frame_colors),
+        "panelRegion": {**geometry, "sha256": digest.hexdigest(),
+                        "sampledDistinctColors": len(colors)},
+    }
+
+
+def _validate_captures(width: int, height: int,
+                       interaction: object) -> list[dict[str, object]]:
+    root = Path("/var/lib/qindaqt-evidence")
+    panel_geometries = _validate_interaction(interaction, width, height)
     captures = []
-    for phase in phases:
+    for phase in PHASES:
         path = root / f"panel-{phase}.png"
-        captures.append(validate_capture(
-            path, expected_width=width, expected_height=height,
-            minimum_colors=8, evidence_path=path.name,
-        ))
+        panel = "left" if phase.startswith("window-") else "bottom"
+        capture = _validate_panel_capture(
+            path, width, height, panel_geometries[panel]
+        )
+        state = "hidden" if phase in {
+            "window-overlap-hidden", "window-close-hidden", "popup-closed"
+        } else "visible"
+        capture.update({"phase": phase, "panel": panel, "panelState": state})
+        captures.append(capture)
+    by_phase = {capture["phase"]: capture for capture in captures}
+    pairs = (
+        ("window-overlap-hidden", "window-moved-away"),
+        ("window-close-hidden", "window-closed-restored"),
+        ("popup-closed", "edge-revealed"),
+        ("popup-closed", "shortcut-revealed"),
+        ("popup-closed", "popup-held"),
+    )
+    # AGENT-NOTE: P1-3 accepted six copies of one unrelated image. Every
+    # hidden/visible assertion now compares pixels in the exact authority-owned
+    # panel rectangle, rather than whole-frame dimensions or color counts.
+    for hidden, visible in pairs:
+        if (by_phase[hidden]["panelRegion"]["sha256"]
+                == by_phase[visible]["panelRegion"]["sha256"]):
+            raise RuntimeError(
+                f"panel pixels did not change from {hidden} to {visible}"
+            )
     return captures
 
 
@@ -128,7 +306,8 @@ def run_inner(arguments: argparse.Namespace) -> int:
         )
         evidence["panelVisibility"] = interaction
         evidence["panelVisibilityCaptures"] = _validate_captures(
-            scenario.virtual.pixel_width, scenario.virtual.pixel_height
+            scenario.virtual.pixel_width, scenario.virtual.pixel_height,
+            interaction,
         )
     finally:
         cleanup = runtime._cleanup(state)

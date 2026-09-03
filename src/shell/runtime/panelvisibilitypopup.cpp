@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "panelvisibilitypopup.h"
 
+#include "panelvisibilitytimer.h"
+
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
 
 #include <QEvent>
 #include <QGuiApplication>
 #include <QHash>
 #include <QMetaProperty>
-#include <QPointer>
 #include <QScreen>
 #include <QWindow>
 
+#include <limits>
 #include <map>
 #include <utility>
 #include <vector>
@@ -56,18 +58,30 @@ QString outputName(const QWindow &window)
 
 class PanelVisibilityPopupProducer::Private final {
 public:
+    struct Source final {
+        QObject *owner = nullptr;
+        quint64 generation = 0;
+        quint64 expiryToken = 0;
+        QMetaObject::Connection ownerDestroyed;
+        std::vector<Lease> leases;
+    };
+
     QGuiApplication &application;
     ShellOrchestration::PanelInteractionStore &interactions;
+    PanelVisibilityTimerPort &timer;
     QVector<Identity> identities;
-    std::map<QString, std::vector<Lease>> leases;
+    std::map<QString, Source> sources;
     QHash<QObject *, QString> popupOutputs;
+    qsizetype leaseCount = 0;
+    quint64 nextGeneration = 1;
 };
 
 PanelVisibilityPopupProducer::PanelVisibilityPopupProducer(
     QGuiApplication &application,
-    ShellOrchestration::PanelInteractionStore &interactions, QObject *parent)
+    ShellOrchestration::PanelInteractionStore &interactions,
+    PanelVisibilityTimerPort &timer, QObject *parent)
     : QObject(parent)
-    , m_private(new Private{application, interactions, {}, {}, {}})
+    , m_private(new Private{application, interactions, timer, {}, {}, {}, 0, 1})
 {
     application.installEventFilter(this);
 }
@@ -102,16 +116,15 @@ void PanelVisibilityPopupProducer::synchronizePopupObjects()
             // so a visible popup cannot accidentally hold every output.
             m_private->popupOutputs.insert(object, outputName(*window));
             connect(object, &QObject::destroyed, this, [this, object] {
-                setPopupVisible(QStringLiteral("object:%1")
-                                    .arg(reinterpret_cast<quintptr>(object), 0, 16),
-                                {}, false);
                 m_private->popupOutputs.remove(object);
             });
             if (object->property("visible").toBool()) {
-                setPopupVisible(
+                const bool admitted = setPopupVisible(
+                    object,
                     QStringLiteral("object:%1")
                         .arg(reinterpret_cast<quintptr>(object), 0, 16),
                     outputName(*window), true);
+                Q_UNUSED(admitted)
             }
         }
     }
@@ -123,16 +136,19 @@ void PanelVisibilityPopupProducer::popupObjectVisibilityChanged()
     if (object == nullptr) {
         return;
     }
-    setPopupVisible(
+    const bool admitted = setPopupVisible(
+        object,
         QStringLiteral("object:%1")
             .arg(reinterpret_cast<quintptr>(object), 0, 16),
         m_private->popupOutputs.value(object),
         object->property("visible").toBool());
+    Q_UNUSED(admitted)
 }
 
 PanelVisibilityPopupProducer::~PanelVisibilityPopupProducer()
 {
     m_private->application.removeEventFilter(this);
+    clearSources();
     delete m_private;
 }
 
@@ -143,39 +159,107 @@ void PanelVisibilityPopupProducer::setIdentities(QVector<Identity> identities)
     }
     // Identity replacement invalidates leases in the store. Reacquiring on a
     // later Show event is safer than carrying a popup across output topology.
-    m_private->leases.clear();
+    clearSources();
     m_private->identities = std::move(identities);
 }
 
-void PanelVisibilityPopupProducer::setPopupVisible(
-    const QString &sourceId, const QString &outputId, bool visible)
+bool PanelVisibilityPopupProducer::setPopupVisible(
+    QObject *owner, const QString &sourceId, const QString &outputId,
+    bool visible)
 {
-    if (sourceId.trimmed().isEmpty()) {
-        return;
+    if (owner == nullptr || sourceId.size() > MaximumSourceIdLength
+        || sourceId.trimmed().isEmpty()) {
+        return false;
+    }
+    const auto existing = m_private->sources.find(sourceId);
+    if (existing != m_private->sources.end()) {
+        if (existing->second.owner != owner) {
+            return false;
+        }
+        if (visible) {
+            // AGENT-GUARD: Repeated visible notifications never extend the
+            // maximum lifetime. A close/reopen transition is required.
+            return true;
+        }
+        releaseSource(sourceId, existing->second.generation);
+        return true;
     }
     if (!visible) {
-        m_private->leases.erase(sourceId);
-        return;
+        return true;
     }
-    if (m_private->leases.contains(sourceId)) {
-        return;
+    if (std::ssize(m_private->sources) >= MaximumSources
+        || m_private->nextGeneration == 0) {
+        return false;
+    }
+    QVector<Identity> selected;
+    for (const Identity &identity : std::as_const(m_private->identities)) {
+        if (outputId.isEmpty() || identity.outputId == outputId) {
+            selected.append(identity);
+        }
+    }
+    if (selected.isEmpty()
+        || selected.size() > MaximumLeases - m_private->leaseCount) {
+        return false;
     }
     std::vector<Lease> acquired;
-    for (const Identity &identity : std::as_const(m_private->identities)) {
-        if (!outputId.isEmpty() && identity.outputId != outputId) {
-            continue;
-        }
+    acquired.reserve(static_cast<std::size_t>(selected.size()));
+    for (const Identity &identity : std::as_const(selected)) {
         QString error;
         auto lease = m_private->interactions.acquire(
             identity, ShellOrchestration::PanelInteractionKind::VisibilityHold,
             &error);
         if (lease) {
             acquired.push_back(std::move(*lease));
+        } else {
+            return false;
         }
     }
-    if (!acquired.empty()) {
-        m_private->leases.emplace(sourceId, std::move(acquired));
+    const quint64 generation = m_private->nextGeneration;
+    m_private->nextGeneration = generation == std::numeric_limits<quint64>::max()
+        ? 0 : generation + 1;
+    auto [iterator, inserted] = m_private->sources.emplace(
+        sourceId, Private::Source{owner, generation, 0, {}, std::move(acquired)});
+    if (!inserted) {
+        return false;
     }
+    iterator->second.ownerDestroyed = connect(
+        owner, &QObject::destroyed, this,
+        [this, sourceId, generation] { releaseSource(sourceId, generation); });
+    iterator->second.expiryToken = m_private->timer.schedule(
+        MaximumHoldMilliseconds,
+        [this, sourceId, generation] { releaseSource(sourceId, generation); });
+    if (iterator->second.expiryToken == 0) {
+        QObject::disconnect(iterator->second.ownerDestroyed);
+        m_private->sources.erase(iterator);
+        return false;
+    }
+    m_private->leaseCount += selected.size();
+    return true;
+}
+
+void PanelVisibilityPopupProducer::releaseSource(
+    const QString &sourceId, quint64 generation)
+{
+    const auto iterator = m_private->sources.find(sourceId);
+    if (iterator == m_private->sources.end()
+        || iterator->second.generation != generation) {
+        return;
+    }
+    m_private->timer.cancel(iterator->second.expiryToken);
+    QObject::disconnect(iterator->second.ownerDestroyed);
+    m_private->leaseCount -= std::ssize(iterator->second.leases);
+    m_private->sources.erase(iterator);
+}
+
+void PanelVisibilityPopupProducer::clearSources()
+{
+    for (auto &[sourceId, source] : m_private->sources) {
+        Q_UNUSED(sourceId)
+        m_private->timer.cancel(source.expiryToken);
+        QObject::disconnect(source.ownerDestroyed);
+    }
+    m_private->sources.clear();
+    m_private->leaseCount = 0;
 }
 
 bool PanelVisibilityPopupProducer::eventFilter(QObject *watched, QEvent *event)
@@ -186,10 +270,13 @@ bool PanelVisibilityPopupProducer::eventFilter(QObject *watched, QEvent *event)
     }
     const QString source = windowSource(*window);
     if (event->type() == QEvent::Show) {
-        setPopupVisible(source, outputName(*window), true);
+        const bool admitted = setPopupVisible(
+            window, source, outputName(*window), true);
+        Q_UNUSED(admitted)
     } else if (event->type() == QEvent::Hide || event->type() == QEvent::Close
                || event->type() == QEvent::Destroy) {
-        setPopupVisible(source, {}, false);
+        const bool released = setPopupVisible(window, source, {}, false);
+        Q_UNUSED(released)
     }
     return QObject::eventFilter(watched, event);
 }

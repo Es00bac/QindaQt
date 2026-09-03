@@ -1,5 +1,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp")
+add_test(
+    NAME desktop.virtual.panel-visibility.validator-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "PYTHONDONTWRITEBYTECODE=1"
+        "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
+)
+set_tests_properties(
+    desktop.virtual.panel-visibility.validator-unit
+    PROPERTIES LABELS "unit;session;screenshot;visibility"
+)
+
 if(
     TARGET qindaqt-desktop-session-probe
     AND QINDAQT_WESTON
@@ -8,6 +23,7 @@ if(
     qt_add_executable(
         qindaqt-panel-visibility-session-probe
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionprobe.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionwindowproof.cpp"
     )
     target_link_libraries(
         qindaqt-panel-visibility-session-probe

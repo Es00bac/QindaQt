@@ -37,14 +37,17 @@ bool exactBool(const QVariant &value, bool *result)
 
 bool boundedDelay(const QVariant &value, int *result)
 {
-    if (value.metaType().id() != QMetaType::Int) {
+    // AGENT-GUARD: Settings1 canonicalizes every accepted integer to signed
+    // 64-bit. Narrow source-language ints make unit fixtures pass while real
+    // service snapshots are silently ignored (review finding P1-1).
+    if (value.metaType().id() != QMetaType::LongLong) {
         return false;
     }
-    const int delay = value.toInt();
+    const qint64 delay = value.toLongLong();
     if (delay < 0 || delay > 5'000) {
         return false;
     }
-    *result = delay;
+    *result = static_cast<int>(delay);
     return true;
 }
 
@@ -59,7 +62,7 @@ public:
         , animationPort()
         , pointer(application, interactions, timer)
         , edge(pointer)
-        , popup(application, interactions)
+        , popup(application, interactions, timer)
         , shortcut(registrar, interactions, timer)
         , animation(application, interactions, animationPort)
     {

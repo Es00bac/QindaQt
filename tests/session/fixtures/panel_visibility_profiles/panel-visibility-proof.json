@@ -23,7 +23,7 @@
     },
     {
       "id": "window-rail", "edge": "left", "layer": "above", "hideMode": "intelligent",
-      "alignment": "fill", "rows": 1, "thickness": 40, "length": 1.0,
+      "alignment": "start", "rows": 1, "thickness": 40, "length": 0.2,
       "applets": []
     },
     {

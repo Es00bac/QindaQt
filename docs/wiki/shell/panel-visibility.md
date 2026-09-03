@@ -92,20 +92,29 @@ The production shell now owns the following producers behind that store:
   `panels.autoHideDelayMs` setting;
 - shell popup windows, including the notification center, and applet `Popup`
   objects, including launcher and power popups, acquire output-scoped
-  visibility-hold leases for their complete visible lifetime;
+  visibility-hold leases through a bounded owner/lifetime registry. It admits
+  at most 32 sources, 128 aggregate surface leases, and 128 UTF-16 units per
+  source identity. Every source is fenced to one `QObject` owner and releases
+  on close/hide, owner destruction, topology replacement, or producer teardown.
+  One uninterrupted admission expires after 30,000 ms even if the producer
+  misses close; duplicate visible notifications do not renew it, and only a
+  later close/reopen transition can acquire another bounded hold;
 - the stable `qindaqt_reveal_panels` KGlobalAccel action requests a reveal for
   every hideable panel with default `Meta+Space`; and
 - an opacity transition holds a panel mapped until a hide animation completes,
   then requests the authoritative plan again before unmapping. Reveal animates
   the already-authorized mapped surface back to full opacity.
 
-The runtime reads only exact typed settings. Missing or malformed settings keep
-the safe defaults: reduced motion is enabled and the leave delay is 250 ms.
-Reduced motion caps the selected theme duration at 80 ms; normal motion uses the
-theme duration, bounded to one second. Loss or rejection of compositor
-authority cancels transitions, restores full opacity, and leaves policy in its
-existing safe-visible state. Producers never set mapping, reservation, or
-window inventory directly.
+The runtime reads only exact typed settings. `panels.autoHideDelayMs` is the
+canonical signed 64-bit integer produced by the Settings1 codec, while
+`accessibility.reducedMotion` is an exact boolean. Missing or malformed
+settings keep the safe defaults: reduced motion is enabled and the leave delay
+is 250 ms. Reduced motion caps the selected theme duration at 80 ms; normal
+motion uses the theme duration, bounded to one second. A private-bus Settings1
+round trip pins that production representation. Loss or rejection of
+compositor authority cancels transitions, restores full opacity, and leaves
+policy in its existing safe-visible state. Producers never set mapping,
+reservation, or window inventory directly.
 
 ## Installed interaction qualification
 
@@ -114,24 +123,39 @@ and compositor in two serial rows:
 
 | Selector | Output | Required interaction evidence |
 | --- | --- | --- |
-| `desktop.virtual.panel-visibility.single-1080p` | 1920x1080 at 100% | all six phases below |
+| `desktop.virtual.panel-visibility.single-1080p` | 1920x1080 at 100% | all eight phases below |
 | `desktop.virtual.panel-visibility.single-wuxga` | 1920x1200 at 100% | the same phases on the S3 WUXGA geometry |
 
-Each row maps a painted client and requires a real `intelligent` left panel to
-hide under fullscreen overlap, restore after a private-seat Meta-drag moves the
-client clear, and remain restored after the client closes. It then requires the
-real `always` bottom panel to reveal through its private edge sensor and through
-the exact `Meta+Space` action. Opening the production notification center with
-private-seat `Meta+N` must keep that panel visible beyond the shortcut lease;
-closing the center must release the popup hold and hide it again. At every
-phase, the `never` top panel must remain mapped and committed with exclusive
-zone 30, proving that its reservation is retained.
+Each row maps a fullscreen painted client over the real start-aligned,
+partial-height `intelligent` left panel. A setup Meta-drag restores it onto that
+panel, and the row re-establishes the hidden state at the final boundary before
+a second private-seat Meta-drag.
+That causal drag must change the client's compositor-reported frame and leave
+it clear before the panel may count as restored. The client becomes fullscreen
+again to establish a second hidden state; close must remove
+the window from compositor authority and restore the panel in a fresh capture. The
+row then requires the real `always` bottom panel to reveal through its private
+edge sensor and through the exact `Meta+Space` action. Opening the production
+notification center with private-seat `Meta+N` must keep that panel visible
+beyond the shortcut lease; closing the center must release the popup hold and
+hide it again. At every phase, the `never` top panel remains mapped and
+committed with exclusive zone 30, proving that its reservation is retained.
 
-The driver archives six checksum-validated, nonuniform private-parent
-framebuffer captures together with exact compositor surface inventories,
-authenticated process evidence, bounded cleanup phases, and a final observed
-empty survivor set. `desktop.virtual.sandbox-unit` remains a prerequisite and
-no host display, bus, input node, uinput device, or hardware is used.
+The driver archives eight checksum-validated, nonuniform private-parent
+framebuffer captures: overlap-hidden, moved-away, close-hidden,
+closed-restored, edge-revealed, shortcut-revealed, popup-held, and popup-closed.
+Every capture is joined to the exact compositor-authority surface inventory
+taken for that phase. The validator derives stable left and bottom panel
+rectangles only from mapped/committed authority records, samples all pixels in
+the corresponding rectangle, and requires each hidden/visible pair to have a
+different region digest. Identical unrelated images therefore fail even when
+their dimensions, checksums, and whole-frame color counts are valid. Canonical
+evidence also carries the final pre-drag surface-authority snapshot,
+before/after window frames for the drag, the authoritative pre-close frame,
+post-close absence, authenticated process evidence, bounded
+cleanup phases, and a final observed empty survivor set.
+`desktop.virtual.sandbox-unit` remains a prerequisite and no host display, bus,
+input node, uinput device, or hardware is used.
 
 These rows qualify 100% 1080p and WUXGA on the private Weston/KWin path. They do
 not claim fractional scaling, multi-output behavior, GPU/OpenGL rendering,
