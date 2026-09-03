@@ -1,7 +1,8 @@
 # Settings route module staging for the private desktop component (DesktopVirtual).
 # Included by DesktopSessionTests.cmake inside its guarded block so the parent file stays
 # within the source-shape budget. Every shared Settings route module the Settings Center
-# links must be staged here (Appearance, Display, Network, Audio, Bluetooth, Power).
+# links must be staged here (Appearance, Display, Network, Audio, Bluetooth, Power,
+# Clipboard).
 
     qt_query_qml_module(
         qindaqt_settings_appearance_qml
@@ -44,6 +45,13 @@
         TYPEINFO _qindaqt_desktop_power_typeinfo
         QML_FILES _qindaqt_desktop_power_qml_files
         QML_FILES_DEPLOY_PATHS _qindaqt_desktop_power_deploy_paths
+    )
+    qt_query_qml_module(
+        qindaqt_settings_clipboard_qml
+        QMLDIR _qindaqt_desktop_clipboard_qmldir
+        TYPEINFO _qindaqt_desktop_clipboard_typeinfo
+        QML_FILES _qindaqt_desktop_clipboard_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_clipboard_deploy_paths
     )
     install(
         TARGETS
@@ -135,7 +143,7 @@
             COMPONENT DesktopVirtual
         )
     endforeach()
-    # AGENT-NOTE: qindaqt-settings links the Audio, Bluetooth, and Power route
+    # AGENT-NOTE: qindaqt-settings links the Audio, Bluetooth, Power, and Clipboard route
     # modules added after this harness was written; the private desktop stage
     # installs only DesktopVirtual, so each shared route module must be staged
     # here like Appearance/Display/Network or the staged Settings Center fails
@@ -226,6 +234,36 @@
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    install(
+        TARGETS
+            qindaqt_settings_clipboard_qml
+            qindaqt_settings_clipboard_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_clipboard_qmldir}"
+            "${_qindaqt_desktop_clipboard_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_clipboard_qml_files
+            _qindaqt_desktop_clipboard_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Clipboard/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )

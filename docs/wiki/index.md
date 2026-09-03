@@ -166,6 +166,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Power route](apps/power-settings.md) documents bounded supply,
   profile/hold, and brightness truth, exact-lineage admission and convergence,
   keyboard-slider debounce, and the explicit session-action boundary.
+- [Settings Clipboard route](apps/clipboard-settings.md) documents the default-
+  off Settings1 history preference, content-free Clipboard1 state/count truth,
+  exact-lineage confirmed clearing, and explicit no-read/no-replay boundary.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering

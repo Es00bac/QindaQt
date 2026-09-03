@@ -15,6 +15,7 @@ enum class SettingsRouteComponent {
   Audio,
   Bluetooth,
   Power,
+  Clipboard,
 };
 
 [[nodiscard]] QString
