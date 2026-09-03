@@ -7,7 +7,9 @@
 
 #include <QPainter>
 
+#include <QBuffer>
 #include <QFile>
+#include <QImageReader>
 
 namespace QindaQt::StatusNotifier
 {
@@ -21,7 +23,9 @@ StatusNotifierIconRenderer::~StatusNotifierIconRenderer() = default;
 
 QImage StatusNotifierIconRenderer::render(const IconPayload &icon, int size) const
 {
-    const int target = size > 0 ? size : 16;
+    const int target = qBound(1,
+                              size > 0 ? size : 16,
+                              int(kMaxIconPixmapDimension));
 
     // The nearest bounded wire pixmap wins over theme lookup: an item that
     // ships its own pixels must not be second-guessed against the theme.
@@ -74,7 +78,11 @@ QImage StatusNotifierIconRenderer::decodePixmap(const Pixmap &pixmap)
 
 QImage StatusNotifierIconRenderer::fallbackIcon(int size)
 {
-    const int extent = size > 0 ? size : 16;
+    // AGENT-GUARD: P1-8 regression: caller size is hostile input too. Never
+    // allocate a placeholder beyond the shared image dimension ceiling.
+    const int extent = qBound(1,
+                              size > 0 ? size : 16,
+                              int(kMaxIconPixmapDimension));
     QImage image(extent, extent, QImage::Format_ARGB32_Premultiplied);
     // Deterministic neutral placeholder: fixed colors, no text, no clock, so
     // baselines and assistive snapshots see a stable image.
@@ -99,8 +107,22 @@ QImage StatusNotifierIconRenderer::decodeThemeIcon(const QString &iconName, int 
     if (bytes.size() > kMaxIconFileBytes) {
         return {}; // Beyond the shared budget: fail closed into the fallback.
     }
-    QImage decoded;
-    if (!decoded.loadFromData(bytes)) {
+    QBuffer buffer;
+    buffer.setData(bytes);
+    if (!buffer.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    QImageReader reader(&buffer);
+    const QSize advertisedSize = reader.size();
+    if (!advertisedSize.isValid()
+        || advertisedSize.width() > int(kMaxIconPixmapDimension)
+        || advertisedSize.height() > int(kMaxIconPixmapDimension)) {
+        return {};
+    }
+    const QImage decoded = reader.read();
+    if (decoded.isNull()
+        || decoded.width() > int(kMaxIconPixmapDimension)
+        || decoded.height() > int(kMaxIconPixmapDimension)) {
         return {};
     }
     return decoded;
