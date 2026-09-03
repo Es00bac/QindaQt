@@ -138,6 +138,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_runtime_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_selector_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
 )
 set_tests_properties(session.python-syntax PROPERTIES LABELS unit)

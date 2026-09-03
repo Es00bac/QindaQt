@@ -14,21 +14,33 @@ class PanelInteractionStore;
 
 namespace QindaQt::Shell {
 
+class PanelVisibilityTimerPort;
+
 class PanelVisibilityPopupProducer final : public QObject {
     Q_OBJECT
 public:
+    static constexpr qsizetype MaximumSources = 32;
+    static constexpr qsizetype MaximumLeases = 128;
+    static constexpr qsizetype MaximumSourceIdLength = 128;
+    static constexpr int MaximumHoldMilliseconds = 30'000;
+
     PanelVisibilityPopupProducer(
         QGuiApplication &application,
         ShellOrchestration::PanelInteractionStore &interactions,
+        PanelVisibilityTimerPort &timer,
         QObject *parent = nullptr);
     ~PanelVisibilityPopupProducer() override;
 
     void setIdentities(
         QVector<ShellVisibility::PanelSurfaceIdentity> identities);
-    // Explicit shell-owned popup sources can use this same lease boundary.
+    // Explicit shell-owned sources must supply their QObject lifetime owner.
     // Empty output means every expanded panel, never an inferred primary.
-    void setPopupVisible(const QString &sourceId, const QString &outputId,
-                         bool visible);
+    // One uninterrupted visible admission expires after the fixed maximum;
+    // duplicate visible calls do not renew it.
+    [[nodiscard]] bool setPopupVisible(QObject *owner,
+                                       const QString &sourceId,
+                                       const QString &outputId,
+                                       bool visible);
     // Discovers shell-owned in-window Qt Quick popups after panel QML has
     // completed. Native popup windows continue through the event filter.
     void synchronizePopupObjects();
@@ -40,6 +52,9 @@ private Q_SLOTS:
     void popupObjectVisibilityChanged();
 
 private:
+    void releaseSource(const QString &sourceId, quint64 generation);
+    void clearSources();
+
     class Private;
     Private *m_private = nullptr;
 };

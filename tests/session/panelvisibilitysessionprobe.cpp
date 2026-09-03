@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "panelvisibilitysessionwindowproof.h"
+
 #include <QBackingStore>
 #include <QCoreApplication>
 #include <QDBusConnection>
@@ -38,7 +40,7 @@ public:
     PaintedWindow() : m_store(this)
     {
         setTitle(QStringLiteral("QindaQt panel visibility proof client"));
-        setFlags(Qt::Window | Qt::FramelessWindowHint);
+        setFlags(Qt::Window);
         resize(720, 480);
     }
 
@@ -150,64 +152,6 @@ bool inject(QDBusInterface &endpoint, QJsonArray events)
 
 QJsonObject pointer(double x, double y);
 QJsonObject key(const char *name, bool pressed);
-QJsonObject button(bool pressed);
-
-std::optional<QRect> proofWindowGeometry(QDBusInterface &endpoint)
-{
-    const QJsonObject result = call(endpoint, QStringLiteral("Windows"));
-    for (const QJsonValue &value : result.value(QStringLiteral("windows")).toArray()) {
-        const QJsonObject item = value.toObject();
-        if (item.value(QStringLiteral("title"))
-            != QStringLiteral("QindaQt panel visibility proof client")) {
-            continue;
-        }
-        const QJsonObject geometry = item.value(QStringLiteral("geometry")).toObject();
-        return QRect(geometry.value(QStringLiteral("x")).toInt(),
-                     geometry.value(QStringLiteral("y")).toInt(),
-                     geometry.value(QStringLiteral("width")).toInt(),
-                     geometry.value(QStringLiteral("height")).toInt());
-    }
-    return std::nullopt;
-}
-
-bool moveProofWindowFromPanel(QDBusInterface &endpoint, const QRect &output)
-{
-    std::optional<QRect> frame;
-    QElapsedTimer timer;
-    timer.start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents);
-        frame = proofWindowGeometry(endpoint);
-        if (frame && frame->width() < output.width()
-            && frame->height() < output.height()) {
-            break;
-        }
-        QThread::msleep(20);
-    } while (timer.elapsed() < 5'000);
-    if (!frame) {
-        return false;
-    }
-    const QPointF start = frame->center();
-    const QPointF end(std::max(start.x(), output.width() * 0.6),
-                      std::max(start.y(), output.height() * 0.45));
-    if (!inject(endpoint, {pointer(start.x(), start.y())})) {
-        return false;
-    }
-    QThread::msleep(30);
-    if (!inject(endpoint, {key("left-meta", true), button(true)})) {
-        return false;
-    }
-    constexpr int Steps = 12;
-    for (int step = 1; step <= Steps; ++step) {
-        const qreal progress = qreal(step) / qreal(Steps);
-        const QPointF position = start + ((end - start) * progress);
-        if (!inject(endpoint, {pointer(position.x(), position.y())})) {
-            return false;
-        }
-        QThread::msleep(15);
-    }
-    return inject(endpoint, {button(false), key("left-meta", false)});
-}
 
 QJsonObject pointer(double x, double y)
 {
@@ -219,13 +163,6 @@ QJsonObject key(const char *name, bool pressed)
 {
     return {{QStringLiteral("type"), QStringLiteral("key")},
             {QStringLiteral("key"), QString::fromLatin1(name)},
-            {QStringLiteral("pressed"), pressed}};
-}
-
-QJsonObject button(bool pressed)
-{
-    return {{QStringLiteral("type"), QStringLiteral("button")},
-            {QStringLiteral("button"), QStringLiteral("left")},
             {QStringLiteral("pressed"), pressed}};
 }
 
@@ -278,6 +215,8 @@ bool requirePhase(QDBusInterface &endpoint, QJsonArray *items,
 
 int main(int argc, char **argv)
 {
+    using namespace QindaQt::Test::PanelVisibilityWindowProof;
+
     QGuiApplication application(argc, argv);
     application.setQuitOnLastWindowClosed(false);
     if (application.arguments().size() != 2 || application.screens().size() != 1) {
@@ -319,9 +258,25 @@ int main(int argc, char **argv)
         return 5;
     }
     client.showNormal();
-    client.resize(720, 480);
+    client.showMaximized();
     client.requestActivate();
-    if (!moveProofWindowFromPanel(endpoint, output)) {
+    if (!waitForMaximizedProofWindowGeometry(endpoint, output)) {
+        return 6;
+    }
+    const auto restoredOntoPanel = restoreProofWindowOntoPanel(endpoint, output);
+    if (!restoredOntoPanel) {
+        return 6;
+    }
+    // Clear the client's maximized request after the compositor-side restore.
+    // The authority is sampled again below, so this normalization cannot stand
+    // in for the required hidden-immediately-before-input proof.
+    client.showNormal();
+    client.requestActivate();
+    if (!waitFor(endpoint, overlapHidden, &observed)) {
+        return 6;
+    }
+    const auto movedAway = moveProofWindowFromPanel(endpoint, output);
+    if (!movedAway) {
         return 6;
     }
     const auto leftVisible = [&](const QJsonArray &items) {
@@ -333,8 +288,19 @@ int main(int argc, char **argv)
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
     }
+    client.showFullScreen();
+    client.requestActivate();
+    if (!requirePhase(endpoint, &observed, overlapHidden, captureTool,
+                      QStringLiteral("window-close-hidden"), &phases)) {
+        return 7;
+    }
+    const auto closeGeometry = proofWindowGeometry(endpoint);
+    if (!closeGeometry) {
+        return 7;
+    }
     client.close();
-    if (!waitFor(endpoint, leftVisible, &observed)) {
+    if (!requirePhase(endpoint, &observed, leftVisible, captureTool,
+                      QStringLiteral("window-closed-restored"), &phases)) {
         return 7;
     }
     const double centerX = static_cast<double>(output.width()) / 2.0;
@@ -393,6 +359,20 @@ int main(int argc, char **argv)
     const QJsonObject result{{QStringLiteral("schemaVersion"), 1},
                              {QStringLiteral("outputWidth"), output.width()},
                              {QStringLiteral("outputHeight"), output.height()},
+                             {QStringLiteral("move"),
+                              QJsonObject{
+                                  {QStringLiteral("before"),
+                                   geometryObject(movedAway->before)},
+                                  {QStringLiteral("after"),
+                                   geometryObject(movedAway->after)},
+                                  {QStringLiteral("surfacesBefore"),
+                                   movedAway->authorityBefore}}},
+                             {QStringLiteral("close"),
+                              QJsonObject{
+                                  {QStringLiteral("before"),
+                                   geometryObject(*closeGeometry)},
+                                  {QStringLiteral("windowAbsentAfter"),
+                                   !proofWindowGeometry(endpoint).has_value()}}},
                              {QStringLiteral("phases"), phases}};
     QTextStream(stdout) << "QINDAQT_PANEL_VISIBILITY_EVIDENCE="
                         << QJsonDocument(result).toJson(QJsonDocument::Compact)

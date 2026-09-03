@@ -188,16 +188,18 @@ void PanelVisibilityProducerTests::popup()
 {
     ShellOrchestration::PanelInteractionStore store;
     QVERIFY(store.setIdentities({identity(), identity("dock", "other")}));
-    Shell::PanelVisibilityPopupProducer producer(*qGuiApp, store);
+    FakeTimer timer;
+    Shell::PanelVisibilityPopupProducer producer(*qGuiApp, store, timer);
     producer.setIdentities({identity(), identity("dock", "other")});
+    QObject owner;
 
-    producer.setPopupVisible(QStringLiteral("launcher"),
-                             QStringLiteral("main"), true);
+    QVERIFY(producer.setPopupVisible(&owner, QStringLiteral("launcher"),
+                                     QStringLiteral("main"), true));
     const auto opened = store.snapshot();
     QVERIFY(opened[0].visibilityHeld);
     QVERIFY(!opened[1].visibilityHeld);
-    producer.setPopupVisible(QStringLiteral("launcher"),
-                             QStringLiteral("main"), false);
+    QVERIFY(producer.setPopupVisible(&owner, QStringLiteral("launcher"),
+                                     QStringLiteral("main"), false));
     for (const auto &item : store.snapshot()) {
         QVERIFY(!item.visibilityHeld);
     }
@@ -274,8 +276,10 @@ void PanelVisibilityProducerTests::reducedMotion()
 
     QVERIFY(runtime.reducedMotion());
     QCOMPARE(runtime.animationDurationMilliseconds(), 80);
+    // AGENT-NOTE: P1-1 requires the canonical Settings1 signed 64-bit value;
+    // an `int` literal would repeat the rejected candidate's vacuous fixture.
     runtime.applySettings({{QStringLiteral("accessibility.reducedMotion"), false},
-                           {QStringLiteral("panels.autoHideDelayMs"), 400}});
+                           {QStringLiteral("panels.autoHideDelayMs"), qint64(400)}});
     QVERIFY(!runtime.reducedMotion());
     QCOMPARE(runtime.animationDurationMilliseconds(), 320);
     runtime.applySettings({{QStringLiteral("accessibility.reducedMotion"),
