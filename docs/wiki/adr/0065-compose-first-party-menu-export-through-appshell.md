@@ -26,18 +26,23 @@ coordinator or duplicating shell authentication.
   inside, the transport-free AppShell core. It borrows an
   `ApplicationCoordinator`, primary `QWindow`, and injected session-bus
   connection and owns its identity publisher and export lifetime.
-- Project the coordinator's atomic deterministic action snapshot into the
-  accepted canonical model, supply an explicit application-local
-  owner/epoch/revision source to the accepted `MenuExporter`, and serve complete
-  snapshots at `/org/qindaqt/AppShell/Menu` through standard dbusmenu. The
-  exporter does not mint lineage.
+- Project the coordinator's atomic deterministic action snapshot into
+  lineage-free canonical content and serve it at
+  `/org/qindaqt/AppShell/Menu` through the complete standard server owned by
+  `QindaQt::GlobalMenuDbusMenu`. The application never invokes
+  `MenuExporter`, issues an owner/epoch/revision, or otherwise competes with
+  the shell selector: only the authenticated shell composition stamps
+  accepted lineage after decoding the wire snapshot.
 - Route one admitted dbusmenu `clicked` event through
   `ApplicationCoordinator::activateAction()` exactly once. Its current
   known/enabled gate remains the application consent authority shared with the
   in-window menu. Transport uncertainty is never retried as an action.
 - Use only asynchronous registrar/name calls. Track the exact current owner of
   `com.canonical.AppMenu.Registrar`; withdraw and republish on owner
-  loss/replacement and withdraw before window close or composition destruction.
+  loss/replacement. A close event is only a request until the application has
+  handled it; withdraw after an accepted close makes the surface non-visible,
+  or on composition/window destruction, but retain the association when
+  AppShell rejects close for application consent.
 - On `xcb`, register the real positive 32-bit `QWindow::winId()`. On native
   Wayland, publish no numeric id. Confine Qt 6.11's private Unix platform
   `registerDBusMenuForWindow` hook to one adapter, after a native Wayland
@@ -64,10 +69,16 @@ they do not import File Manager or shell runtime implementation.
 - A missing bus, registrar, native surface, unsupported platform, malformed
   snapshot, or registration failure leaves export disabled/waiting without
   affecting local menus or application use.
-- Tests require real dbusmenu traffic on a private bus, owner transition and
-  teardown cases, exactly-once/disabled activation controls, source-boundary
-  poison, and an actual first-party process consumed by production shell
-  composition with an injected identity snapshot.
+- One transport-owned dbusmenu v4 server implements `GetLayout`,
+  `GetGroupProperties`, `GetProperty`, `Event`, `EventGroup`, `AboutToShow`,
+  and `AboutToShowGroup`, including depth/property filters and atomic malformed
+  snapshot rejection. AppShell supplies content and consumes admitted action
+  IDs; it owns no second protocol object.
+- Tests require real dbusmenu traffic on a private bus, the complete v4
+  surface, owner transition, accepted/rejected close cases, exactly-once and
+  disabled activation controls, lineage/source-boundary poison, and an actual
+  first-party process consumed by production shell composition under matching,
+  PID-mismatched, and window-ID-mismatched identity snapshots.
 
 ## Revisit when
 

@@ -25,10 +25,12 @@ and value signatures behind three confined modules:
 - a bounded registrar service binds each window to the D-Bus message's exact
   caller unique name, permits unregister/update only by that peer, and removes
   every binding on the exact owner's loss behind monotonic generations;
-- an exact-owner asynchronous dbusmenu client treats signals as invalidations,
-  accepts only complete bounded `GetLayout` snapshots above its revision high
-  water, validates standard properties, and never retries an uncertain
-  activation event; and
+- a complete dbusmenu v4 server validates lineage-free canonical content,
+  applies layout/property filters, owns stable numeric wire IDs and remote
+  revision, and emits an admitted action ID once; the same module's exact-owner
+  asynchronous client treats signals as invalidations, accepts only complete
+  bounded `GetLayout` snapshots above its revision high water, validates
+  standard properties, and never retries an uncertain activation event; and
 - a shell-neutral coordinator joins a numeric registrar id only through an
   injected compositor-authenticated mapping, re-runs ADR-0033 authentication,
   and republishes through the existing selector/exporter lineage.
@@ -44,6 +46,8 @@ separate change.
   granting a registration authority over another window.
 - Remote dbusmenu revisions fence remote snapshot replay but do not authorize
   shell actions. Only ADR-0033's epoch/revision and invocation guard do that.
+- Application-side servers transport content without issuing canonical
+  ownership lineage. The authenticated shell selector remains its sole issuer.
 - Hostile layouts are rejected atomically under canonical depth/item/text
   limits and additional icon/property bounds. Unknown properties can evolve
   without widening QindaQt's model.

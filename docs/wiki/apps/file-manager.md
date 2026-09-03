@@ -283,7 +283,9 @@ S1 adds mutation, Trash, controller, action-catalog, UI-contract, UI-action, and
 boundary-policy rows. The first-party export slice adds a private-bus row that
 runs the real File Manager against the production shell global-menu
 composition, injects its exact child PID and window id, activates New Folder
-once, and proves owner exit clears the shell menu. Fixture trees exercise Unicode/control-character names,
+once, and proves owner exit clears the shell menu. Separate real-process
+variants inject a mismatched PID and a mismatched registrar window ID; each
+keeps the shell facade unavailable and records zero activation. Fixture trees exercise Unicode/control-character names,
 overlong rejection, permissions, collision, before/during-operation vanishing,
 identity change, nested and root symlink poison, cancellation cleanup, Trash
 round trips, an in-flight nested-directory swap, unique names, restore

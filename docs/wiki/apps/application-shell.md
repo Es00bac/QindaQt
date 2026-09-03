@@ -28,12 +28,14 @@ results.
 composition module. It borrows one coordinator, one real `QWindow`, one
 injected session-bus connection, and one owned identity publisher for the
 window lifetime. This keeps D-Bus and toolkit identity discovery out of the
-coordinator and QML module. Destruction or a window-close event withdraws the
-published identity and registrar entry before the surface is retired.
+coordinator and QML module. Destruction or an accepted close withdraws the
+published identity and registrar entry as the surface retires; a close that
+AppShell rejects while awaiting application consent keeps the live menu
+published.
 
 The core `src/app_shell` target depends inward on Qt Core/Gui/QML/Quick plus the public QST-1 and
 Controls modules. The opt-in `menu_export` target depends on the accepted
-global-menu protocol/exporter/dbusmenu/registrar public boundaries and Qt
+global-menu protocol/dbusmenu/registrar public boundaries and Qt
 Core/DBus/Gui. Applications may depend on AppShell; AppShell may not depend
 on `src/apps`, service implementations or clients, shell internals, KWin,
 LayerShellQt, or application domain models. An app that does not need Settings
@@ -76,10 +78,12 @@ projection. These are window-local actions; AppShell never registers
 KGlobalAccel.
 
 The opt-in `ApplicationMenuExport` turns that same deterministic snapshot into
-the accepted canonical menu tree and serves a standard dbusmenu object at
-`/org/qindaqt/AppShell/Menu`. It supplies explicit window-local lineage to the
-accepted exporter; the exporter still never invents ownership lineage. Menu
-changes publish whole snapshots, and a dbusmenu `clicked` event calls
+lineage-free canonical content and lends it to the complete standard dbusmenu
+v4 server owned by `QindaQt::GlobalMenuDbusMenu` at
+`/org/qindaqt/AppShell/Menu`. It never imports the canonical exporter or mints
+owner/epoch/revision metadata. The authenticated shell selector remains the
+only lineage authority after it decodes the remote snapshot. Menu changes
+publish whole snapshots, and a dbusmenu `clicked` event calls
 `ApplicationCoordinator::activateAction()` once. The coordinator therefore
 rechecks the same known/enabled consent gate used by the in-window menu before
 emitting `actionRequested`; transport failures and uncertain replies are never
@@ -209,8 +213,11 @@ platform/service dependencies from the core and rejects ambient bus lookup or
 private-toolkit-hook leakage from the opt-in exporter. Private-bus rows add a
 real dbusmenu client, fake registrar owner replacement/loss, exact X window-id
 registration, native-Wayland no-numeric-id behavior, exactly-once activation,
-disabled-action refusal, and close teardown. The static matcher proves itself
-with service-lookup poison. The remaining policy gate rejects palette
+disabled-action refusal, rejected-close retention, and accepted-close teardown.
+The transport server row covers all v4 methods, depth/property filtering,
+grouped calls, and malformed-snapshot retention. The static matcher rejects a
+local lineage issuer or dbusmenu interface and proves itself with
+service-lookup poison. The remaining policy gate rejects palette
 literals, and theme selection. The installed-consumer row clears ambient QML
 import paths, checks the staged headers/QML/plugin payload, recompiles a C++
 consumer, runs it, and loads the staged QML module with `qmltestrunner`.
