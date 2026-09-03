@@ -145,3 +145,4 @@ nav:
       - "ADR-0059: Explicit portal fallback routing": adr/0059-route-unimplemented-portal-families-explicitly.md
       - "ADR-0060: Confined production power upstreams": adr/0060-confine-production-power-upstreams.md
       - "ADR-0061: Authenticated shell window actions": adr/0061-authenticate-shell-window-actions-by-panel-owner.md
+      - "ADR-0062: Authenticated active-window identity": adr/0062-project-authenticated-active-window-identity.md

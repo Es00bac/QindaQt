@@ -27,6 +27,7 @@ ShellWindowActionsClient::ShellWindowActionsClient(
     , m_timeoutMilliseconds(timeoutMilliseconds)
 {
     m_timeout.setSingleShot(true);
+    m_identityTimeout.setSingleShot(true);
     connect(&m_timeout, &QTimer::timeout, this, [this] {
         finishUncertain(QStringLiteral("request-timeout"),
                         QStringLiteral("the shell window action outcome is uncertain"));
@@ -37,6 +38,16 @@ ShellWindowActionsClient::ShellWindowActionsClient(
             this, &ShellWindowActionsClient::handleReply);
     connect(&m_transport, &ShellWindowActionsTransport::requestFailed,
             this, &ShellWindowActionsClient::handleFailure);
+    connect(&m_transport, &ShellWindowActionsTransport::identityInvalidated,
+            this, &ShellWindowActionsClient::handleIdentityInvalidated);
+    connect(&m_transport, &ShellWindowActionsTransport::identityReplyReceived,
+            this, &ShellWindowActionsClient::handleIdentityReply);
+    connect(&m_transport, &ShellWindowActionsTransport::identityRequestFailed,
+            this, &ShellWindowActionsClient::handleIdentityFailure);
+    connect(&m_identityTimeout, &QTimer::timeout, this, [this] {
+        invalidateIdentity(true);
+        finishIdentityRead();
+    });
 }
 
 ShellWindowActionsClient::~ShellWindowActionsClient()
@@ -69,11 +80,17 @@ void ShellWindowActionsClient::stop()
     const bool wasAvailable = available();
     m_started = false;
     m_uniqueOwner.clear();
+    invalidateIdentity(true);
+    m_identityEpoch.clear();
+    m_identityRevision = 0;
+    m_identityPayload.clear();
     if (m_pending) {
         finishUncertain(QStringLiteral("client-stopped"),
                         QStringLiteral("the client stopped before the action reply"));
     }
     m_timeout.stop();
+    m_identityTimeout.stop();
+    m_identityToken = 0;
     m_transport.stop();
     if (wasAvailable) Q_EMIT availabilityChanged();
 }
@@ -130,6 +147,17 @@ ShellWindowActionsClient::lastResult() const noexcept
     return m_lastResult;
 }
 
+const std::optional<Compositor::ShellWindowIdentitySnapshot> &
+ShellWindowActionsClient::identitySnapshot() const noexcept
+{
+    return m_identitySnapshot;
+}
+
+bool ShellWindowActionsClient::identityAvailable() const noexcept
+{
+    return m_identitySnapshot && m_identitySnapshot->available();
+}
+
 void ShellWindowActionsClient::handleOwner(const QString &uniqueOwner)
 {
     if (!m_started || uniqueOwner == m_uniqueOwner) return;
@@ -137,11 +165,117 @@ void ShellWindowActionsClient::handleOwner(const QString &uniqueOwner)
     // AGENT-GUARD: Publish the new binding before actionFinished. A slot may
     // synchronously submit its next intent and must never target the old owner.
     m_uniqueOwner = uniqueOwner;
+    invalidateIdentity(true);
+    m_identityEpoch.clear();
+    m_identityRevision = 0;
+    m_identityPayload.clear();
+    m_identityTimeout.stop();
+    m_identityToken = 0;
+    m_identityDirty = false;
     if (m_pending) {
         finishUncertain(QStringLiteral("owner-changed"),
                         QStringLiteral("the compositor owner changed during the action"));
     }
     if (wasAvailable != available()) Q_EMIT availabilityChanged();
+    if (!m_uniqueOwner.isEmpty()) requestIdentity();
+}
+
+void ShellWindowActionsClient::invalidateIdentity(bool publish)
+{
+    const bool changed = m_identitySnapshot.has_value();
+    m_identitySnapshot.reset();
+    if (publish && changed) {
+        Q_EMIT identityChanged();
+    }
+}
+
+void ShellWindowActionsClient::requestIdentity()
+{
+    if (!m_started || m_uniqueOwner.isEmpty() || m_identityToken != 0) {
+        return;
+    }
+    if (m_nextIdentityToken == 0) {
+        invalidateIdentity(true);
+        return;
+    }
+    m_identityToken = m_nextIdentityToken;
+    m_nextIdentityToken = m_nextIdentityToken
+        == std::numeric_limits<quint64>::max() ? 0 : m_nextIdentityToken + 1;
+    m_identityDirty = false;
+    m_identityTimeout.start(m_timeoutMilliseconds);
+    m_transport.requestIdentity(m_identityToken, m_uniqueOwner);
+}
+
+void ShellWindowActionsClient::handleIdentityInvalidated(
+    const QString &uniqueOwner)
+{
+    if (!m_started || uniqueOwner != m_uniqueOwner) {
+        return;
+    }
+    invalidateIdentity(true);
+    if (m_identityToken != 0) {
+        m_identityDirty = true;
+        return;
+    }
+    requestIdentity();
+}
+
+void ShellWindowActionsClient::handleIdentityReply(
+    quint64 token, const QString &uniqueOwner, const QByteArray &payload)
+{
+    if (!m_started || token == 0 || token != m_identityToken
+        || uniqueOwner != m_uniqueOwner) {
+        return;
+    }
+    if (m_identityDirty) {
+        finishIdentityRead();
+        requestIdentity();
+        return;
+    }
+    QString error;
+    const auto snapshot = Compositor::decodeShellWindowIdentitySnapshot(payload, &error);
+    if (!snapshot || snapshot->status == Compositor::ShellWindowIdentityStatus::Unauthorized) {
+        invalidateIdentity(true);
+        finishIdentityRead();
+        return;
+    }
+    const bool first = m_identityEpoch.isEmpty();
+    const bool lineageValid = first
+        || (snapshot->epoch == m_identityEpoch
+            && snapshot->revision >= m_identityRevision);
+    const bool equalConsistent = first || snapshot->revision != m_identityRevision
+        || payload == m_identityPayload;
+    if (!lineageValid || !equalConsistent) {
+        invalidateIdentity(true);
+        finishIdentityRead();
+        return;
+    }
+    const bool changed = !m_identitySnapshot || *m_identitySnapshot != *snapshot;
+    m_identityEpoch = snapshot->epoch;
+    m_identityRevision = snapshot->revision;
+    m_identityPayload = payload;
+    m_identitySnapshot = *snapshot;
+    finishIdentityRead();
+    if (changed) {
+        Q_EMIT identityChanged();
+    }
+}
+
+void ShellWindowActionsClient::handleIdentityFailure(
+    quint64 token, const QString &uniqueOwner, const QString &)
+{
+    if (!m_started || token != m_identityToken || uniqueOwner != m_uniqueOwner) {
+        return;
+    }
+    invalidateIdentity(true);
+    finishIdentityRead();
+}
+
+void ShellWindowActionsClient::finishIdentityRead()
+{
+    m_identityTimeout.stop();
+    m_identityToken = 0;
+    m_identityDirty = false;
 }
 
 void ShellWindowActionsClient::handleReply(
