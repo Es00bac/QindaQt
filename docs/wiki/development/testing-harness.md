@@ -1662,12 +1662,12 @@ events, primary-transfer sequences beyond the one exact dual-row transfer,
 mirroring, GPU/OpenGL/DRM, physical input, perceptual baseline comparison, and
 physical hardware remain unqualified.
 
-## Clipboard C0 model proof
+## Clipboard C0/C1 service proof
 
 The focused Clipboard C0 selector is:
 
 ```sh
-ctest --test-dir build/dev --output-on-failure -R 'clipboard'
+ctest --test-dir build/dev --output-on-failure -R '^qindaqt\.clipboard-'
 ```
 
 Four suites cover the pure model boundary: `clipboard-model-media`
@@ -1686,13 +1686,22 @@ duplicate rejection, and hostile decode mutations: truncation,
 magic/version/flag corruption, oversized declared lengths, duplicate and
 non-canonical media, aggregate-overflow claims, unsanitized metadata).
 
-These are static in-process unit tests on Qt Core values. The C0 boundary
-never touches a host clipboard, Wayland connection, D-Bus daemon, session,
-GUI, file system, or clock. Installed-header/link consumer evidence and
-staged packaged qualification are deliberately deferred to the Clipboard1
-integration slice, which owns the transport, bus surface, and lock-state
-prerequisites; the model's `install(TARGETS …)` export exists but no
-packaged-qualification claim is made for C0 alone.
+The C1 rows add `clipboard-protocol` hostile structures and canonical QCDL
+snapshots, `clipboard-client` exact-owner/epoch/revision fencing and uncertain
+operation results, `clipboard-service` opt-in/lock/purge/copy behavior,
+`clipboard-private-bus` real client/service round trips and owner loss on an
+ephemeral private `dbus-daemon`, and `clipboard-wayland-adapter` compiled
+generated-client behavior against an in-process `libwayland-server` fake. The
+fake advertises both selection kinds and services nonblocking pipes so MIME
+preflight, sensitive no-read behavior, and the one-MiB read ceiling exercise
+the real adapter without `WAYLAND_DISPLAY` inheritance. Boundary-poison and
+pinned-XML checksum rows reject persistence/logging dependencies and protocol
+drift.
+
+All runtime roots are below the assigned build tree. These tests never connect
+to the host clipboard, Wayland display, session bus, compositor, hardware, or
+network. They prove generated protocol behavior and private-bus semantics, not
+interoperability with a packaged KWin session or physical input.
 
 ## Required display matrix
 
