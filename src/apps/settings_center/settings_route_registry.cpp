@@ -180,6 +180,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool bluetoothRegistered = registerRoute(bluetoothRoute);
   Q_ASSERT(bluetoothRegistered);
   Q_UNUSED(bluetoothRegistered);
+
+  const SettingsRoute powerRoute{
+      .id = QStringLiteral("power"),
+      .component = SettingsRouteComponent::Power,
+      .title = QCoreApplication::translate("SettingsCenter", "Power"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Power supplies, profiles, and brightness"),
+      .iconName = QStringLiteral("preferences-system-power-management"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool powerRegistered = registerRoute(powerRoute);
+  Q_ASSERT(powerRegistered);
+  Q_UNUSED(powerRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

@@ -1,0 +1,122 @@
+# QindaQt Settings — Power route
+
+`qindaqt-settings --page power` is the first-party power-supply, profile, and
+brightness surface. It composes the public Power1 client boundary only. The
+route model receives one injected `PowerClient`; a narrow process-lifetime QML
+composition owns the public Qt transport and client. UPower,
+power-profiles-daemon, logind, sysfs, the resident Power service, and shell
+session-action controllers never cross into the model or page.
+
+The wire values and bounds are fixed by the [Power1 reference](../reference/power1-v1.md),
+and the platform authority remains owned by the
+[Power architecture](../architecture/power-service.md).
+
+## Truth shown by the route
+
+The route presents only validated, bounded public snapshot copies:
+
+| Group | Public truth | Interaction |
+| --- | --- | --- |
+| Power supplies | AC-adapter presence plus up to eight batteries or UPS devices, with state, exact percentage or coarse level, upstream time estimate, and textual warning severity | Read-only inventory |
+| Power profiles | Active profile and at most four supported profiles | Select a different profile only when the exact snapshot admits it |
+| Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
+| Internal brightness | Normalized 0–10000 position and exact observed raw value/maximum | Read-only disabled slider because Power1 version 1 has no internal-display mutation |
+| Keyboard brightness | Normalized 0–10000 position and exact raw value/maximum | Keyboard- and pointer-operable slider when Power1 admits mutation |
+
+Every state and warning has visible text; meaning is not carried by color
+alone. Unknown values are labeled unknown instead of manufacturing a number or
+estimate. The route shows loading, ready, degraded, stale, unavailable, queued,
+pending, convergence-wait, failed, and uncertain states separately.
+
+## Exact admission and operation lifetime
+
+One predicate supplies both each displayed availability flag and final
+dispatch admission. It requires a retained validated snapshot, a nonempty exact
+client owner, nonzero epoch/revision, `Ready` or `Degraded` snapshot
+availability, the relevant capability, a current supported profile or
+keyboard handle, target `canSet` truth, and no conflicting debounce, operation,
+or convergence fence.
+
+Profile selection dispatches once. Keyboard slider gestures enter a 120 ms
+single-shot debounce; further changes for that same exact row replace the
+queued normalized value. A burst therefore sends at most one raw request.
+Dispatch re-resolves the row against the unchanged owner, epoch, and revision,
+converts the final normalized value with the public integer brightness math,
+and submits the exact raw value. A different target or profile remains fenced
+while a debounce is queued.
+
+Every submitted operation pins request ID, kind, owner, epoch, revision, target,
+and expected result. Success never edits presented truth optimistically. The
+route waits for a matching authoritative snapshot at or beyond the result's
+observed revision and keeps controls fenced for at most five seconds. Owner or
+epoch replacement, malformed or mismatched completion, timeout, and uncertain
+outcomes clear the local fence with visible no-replay feedback. The public
+client performs its own bounded transport timeout and resnapshot.
+
+## Session-action poison boundary
+
+Suspend, hibernate, restart, power off, and lock are visibly outside this page.
+Power1 version 1 has no session-action values or methods, and the route model
+has no corresponding invokable. The allow-list source gate rejects private
+Power service/adapters, session-action modules, UPower, logind, sysfs, sibling
+application internals, and direct D-Bus outside the named composition root.
+The negative-control row proves each poison is rejected. This prevents a later
+presentation edit from silently acquiring authority owned by the shell and
+logind boundary.
+
+## Responsive interaction and accessibility
+
+The same vertically scrollable content serves wide and compact Settings hosts.
+Page Up/Page Down and Ctrl+Home/Ctrl+End move the viewport, and focus changes
+reveal the active control. Supply, hold, and brightness cards expose list-item
+names and descriptions. Profile buttons expose radio-button role and checked
+state. Brightness sliders expose slider role, target name, normalized value,
+and exact raw value in both visible and accessible descriptions.
+
+The page computes its host-entry target from current admission truth: the first
+enabled profile action, then the first enabled keyboard slider, then Retry, then
+the always-enabled Close action. A disabled internal slider or fenced domain
+action is never nominated. Escape returns focus to the active Power PageTab in
+both layouts, and Ctrl+8 selects the appended eighth route.
+
+## Composition and package boundary
+
+The closed Settings registry maps only canonical `power` to the compiled Power
+component. Unknown and path-like values still exit before QML or Power
+composition. `PowerRouteComposition` is an engine singleton so responsive host
+reconstruction does not duplicate the public client or request domain.
+
+The `SettingsAppearanceRuntime` component installs the shared Power page module
+and the executable's relative Power import path. The small public-client
+composition backend is linked once into the process; keeping presentation in
+the shared module makes the installed route a real runtime dependency. The dedicated relocation test
+withholds that installed module while the developer tree remains present and
+requires root construction to fail, then restores the module and proves the
+relocated route remains resident with both host buses poisoned.
+
+## Verification and non-claims
+
+Focused selection:
+
+```sh
+env -u DBUS_SESSION_BUS_ADDRESS \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.settings-power-'
+```
+
+The model row covers bounded inventory, labels, raw values, holds, shared
+profile admission, exact lineage, convergence, owner replacement, and absent
+session invokables. The slider row proves burst coalescing, normalized-to-raw
+conversion, invalid/stale rejection, and no dispatch after authority change.
+The warning-fatal page row renders wide and compact software scenes, verifies
+action wiring, accessible roles/descriptions, disabled internal truth, and an
+always-admitted focus target. Boundary/poison and installed-route rows prove
+the source and relocated package boundaries. Settings Center tests additionally
+cover eighth-route order, Ctrl+8, PageTab semantics, Escape/Tab entry, and
+exclusive wide/compact loaders.
+
+No row contacts a host session/system bus, UPower, power-profiles-daemon,
+logind, sysfs, Wayland, or hardware. This slice does not claim session actions,
+internal-display mutation, hold acquisition/release, charge thresholds,
+persistence, live AT-SPI, physical brightness keys, or nested-session visuals.

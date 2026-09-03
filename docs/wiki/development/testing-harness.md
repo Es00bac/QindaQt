@@ -1090,6 +1090,39 @@ package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
 remove behavior, physical Bluetooth qualification, live AT-SPI, and nested
 desktop screenshots remain outside this proof.
 
+## Current Power Settings route proof
+
+The public-client model, debounced slider, warning-fatal page, hostile boundary,
+and relocated package are selected with:
+
+```sh
+env -u DBUS_SESSION_BUS_ADDRESS \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev -R '^qindaqt\.settings-power-' \
+  --output-on-failure --no-tests=error
+```
+
+The six rows use an injected fake Power transport or absent private buses only.
+Model coverage proves bounded supply/profile/hold/brightness projection,
+textual state/warning/estimate truth, exact raw values, shared action admission,
+success convergence, owner replacement, and the absence of session-action
+invokables. Slider coverage proves that a 120 ms burst sends one final raw
+request, rejects invalid or stale targets, and sends nothing after authority
+replacement. The page row runs with `QT_FATAL_WARNINGS=1` in wide and compact
+software scenes and checks accessible role/name/value descriptions, disabled
+internal brightness, action wiring, and first-focus admission. The allow-list
+and independent poisons reject sibling/private service imports, direct D-Bus
+outside the named composition, and session actions. The installed row withholds
+the staged Power module while the developer module remains present, then proves
+the restored relocated route with both host buses unavailable.
+
+The Settings Center selector adds deterministic eight-route order, Ctrl+8,
+Power PageTab accessibility, Escape/Tab entry, exclusive wide/compact Loaders,
+canonical construction, and the common relocated package. No selector contacts
+UPower, power-profiles-daemon, logind, sysfs, Wayland, a host bus, or hardware.
+Session actions, internal-display mutation, live AT-SPI, and nested desktop
+screenshots remain outside this proof.
+
 ## Current Settings Center navigation S1 proof
 
 The typed registry/controller, responsive route host, existing route
@@ -1107,17 +1140,17 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all seven route roots under private-bus loss,
+forms, desktop identity, all eight route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,
-reinstalls the runtime component, and only then proves all seven complete
+reinstalls the runtime component, and only then proves all eight complete
 routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. Settings1 route models use independent transports, while Network,
-Audio, and Bluetooth use their distinct public service clients. Focused construction
+Audio, Bluetooth, and Power use their distinct public service clients. Focused construction
 rows prove unavailable startup surfaces; public client suites remain
 authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
