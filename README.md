@@ -58,6 +58,7 @@ strict:
 | KDecoration3 | 6.6 or newer | `kdecoration 6.6.5-1` |
 | LayerShellQt | 6.6.5 or newer | `layer-shell-qt 6.6.5-2` |
 | KF6 CoreAddons and GlobalAccel | 6.0 or newer | `kcoreaddons 6.27.0-1`, `kglobalaccel 6.27.0-1` |
+| XDG desktop portal runtime | 1.20 or newer; QindaQt supplies only Settings | `xdg-desktop-portal` plus at least one of `xdg-desktop-portal-kde`, `xdg-desktop-portal-gtk`, or `xdg-desktop-portal-lxqt` for explicitly routed fallback families |
 
 CMake 3.25 or newer, Ninja, Python 3 for tests, and a C++20 compiler are also
 required. The KWin and Plasma Activities entries are exact because QindaQt
@@ -71,7 +72,8 @@ sudo pacman -S --needed \
   base-devel cmake ninja python extra-cmake-modules \
   qt6-base qt6-declarative qt6-wayland \
   kcoreaddons kglobalaccel kdecoration kwin plasma-activities \
-  layer-shell-qt dbus xorg-xdpyinfo xorg-xwayland
+  layer-shell-qt dbus xdg-desktop-portal xdg-desktop-portal-kde \
+  xorg-xdpyinfo xorg-xwayland
 ```
 
 Rolling repositories may already have moved beyond KWin 6.6.5. In that case,

@@ -60,6 +60,8 @@ private Q_SLOTS:
     void startsUnavailableWithNoItems();
     void publishTreeMakesAvailableAndProjectsTopLevel();
     void projectionCarriesHonestKindsAndOmitsHiddenEntries();
+    void projectionCarriesNestedPopupEntries();
+    void degradedPhaseClearsStaleTruth();
     void publishUnavailableClearsItems();
     void publishInvalidTreeFailsClosedToUnavailable();
     void activateAfterInvalidPublishEmitsNothing();
@@ -76,6 +78,34 @@ void GlobalMenuAppletAccessTests::startsUnavailableWithNoItems()
     GlobalMenuAppletAccess access;
     QVERIFY(!access.available());
     QVERIFY(access.items().isEmpty());
+}
+
+void GlobalMenuAppletAccessTests::projectionCarriesNestedPopupEntries()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+
+    const QVariantMap submenu = access.items().constFirst().toMap();
+    const QVariantList children = submenu.value(QStringLiteral("children")).toList();
+    QCOMPARE(children.size(), 3);
+    QCOMPARE(children.at(0).toMap().value(QStringLiteral("id")).toString(),
+             QStringLiteral("fileNewAction"));
+    QCOMPARE(children.at(1).toMap().value(QStringLiteral("kind")).toString(),
+             QStringLiteral("separator"));
+    QCOMPARE(children.at(2).toMap().value(QStringLiteral("enabled")).toBool(),
+             false);
+}
+
+void GlobalMenuAppletAccessTests::degradedPhaseClearsStaleTruth()
+{
+    GlobalMenuAppletAccess access;
+    access.publishTree(fixtureTree());
+    access.publishDegraded(QStringLiteral("registrar-name-owned"));
+
+    QVERIFY(!access.available());
+    QVERIFY(access.items().isEmpty());
+    QCOMPARE(access.phase(), QStringLiteral("degraded"));
+    QCOMPARE(access.reasonCode(), QStringLiteral("registrar-name-owned"));
 }
 
 void GlobalMenuAppletAccessTests::publishTreeMakesAvailableAndProjectsTopLevel()

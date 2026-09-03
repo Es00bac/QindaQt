@@ -9,6 +9,8 @@
 
 namespace QindaQt::Compositor {
 class ContainerControlBridge;
+class ShellWindowActionController;
+class ShellWindowIdentityController;
 }
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -21,6 +23,12 @@ class KWinOutputInventory;
 class KWinHybridSession;
 class KWinSceneAdapter;
 class KWinShellVisibilityPublisher;
+class KWinShellWindowIdentityPublisher;
+class KWinShellPanelOwnerSource;
+class KWinShellWindowRegistry;
+class KWinShellWindowActionExecutor;
+class KWinShellWindowActionsEndpoint;
+class QtBusShellCredentialSource;
 class ManagedWindowRegistry;
 
 class QindaQtKWinPlugin final : public KWin::Plugin
@@ -43,6 +51,14 @@ private:
     std::unique_ptr<ManagedWindowRegistry> m_registry;
     std::unique_ptr<KWinOutputInventory> m_outputInventory;
     std::unique_ptr<KWinShellVisibilityPublisher> m_shellVisibility;
+    std::unique_ptr<KWinShellWindowIdentityPublisher> m_shellIdentity;
+    std::unique_ptr<QtBusShellCredentialSource> m_shellCredentials;
+    std::unique_ptr<KWinShellPanelOwnerSource> m_shellPanelOwner;
+    std::unique_ptr<KWinShellWindowRegistry> m_shellActionRegistry;
+    std::unique_ptr<KWinShellWindowActionExecutor> m_shellActionExecutor;
+    std::unique_ptr<ShellWindowActionController> m_shellActionController;
+    std::unique_ptr<ShellWindowIdentityController> m_shellIdentityController;
+    std::unique_ptr<KWinShellWindowActionsEndpoint> m_shellActionEndpoint;
     std::unique_ptr<KWinHybridSession> m_hybridSession;
     std::unique_ptr<KWinInputAdapter> m_inputAdapter;
     std::unique_ptr<KWinDevelopmentInputInjector> m_developmentInputInjector;
@@ -52,6 +68,7 @@ private:
     std::unique_ptr<KWinControlEndpoint> m_endpoint;
     bool m_registeredService = false;
     bool m_registeredObject = false;
+    bool m_registeredShellActionObject = false;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

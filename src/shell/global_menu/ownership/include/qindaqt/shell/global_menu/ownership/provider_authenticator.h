@@ -71,9 +71,9 @@ struct AuthenticationResult final {
 // moves mid-check. A registration is accepted only when everything agrees
 // and the peer's unique name is a syntactically valid D-Bus unique name.
 // This is deliberately narrower than `com.canonical.AppMenu.Registrar`'s
-// `RegisterWindow`, which trusts the caller's claimed window id outright; G0
-// authenticates only the currently active window; a per-window registration
-// cache is a later milestone.
+// `RegisterWindow`, which trusts the caller's claimed window id outright; the
+// shell authenticates only the currently active window even though G1's
+// registrar retains a bounded compatibility cache.
 //
 // Lifetime/thread contract: the two seam references must outlive this
 // object, and authenticate() must be called on the same thread that owns

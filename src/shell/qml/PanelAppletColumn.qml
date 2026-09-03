@@ -10,7 +10,11 @@ Column {
     required property string zone
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var audioAppletAccess: null
+    property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
+    property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {
@@ -31,6 +35,8 @@ Column {
             vertical: true
             liveApplets: root.liveApplets
             notificationCenterAppletAccess: root.notificationCenterAppletAccess
+            audioAppletAccess: root.audioAppletAccess
+            bluetoothAppletAccess: root.bluetoothAppletAccess
             powerAppletAccess: root.powerAppletAccess
         }
     }

@@ -19,6 +19,35 @@ Applications do not call this backend name directly in production. They use
 the `org.freedesktop.portal.Settings` frontend, which selects and forwards to a
 desktop backend.
 
+## Frontend routing for the QindaQt desktop
+
+`qindaqt-portals.conf` is an exact allowlist. `default=none` closes every
+family absent from this table; listing a fallback is routing policy, not a
+claim that the fallback package is installed or that QindaQt implements that
+family.
+
+| Frontend family / backend interface | Ordered selection | QindaQt authority |
+| --- | --- | --- |
+| Settings / `org.freedesktop.impl.portal.Settings` | `qindaqt` | This version-1 backend |
+| Access | `kde;gtk;lxqt` | None |
+| AppChooser | `kde;gtk;lxqt` | None |
+| FileChooser | `kde;gtk;lxqt` | None |
+| Email | `kde;gtk;lxqt` | None |
+| Inhibit | `kde;gtk;lxqt` | None |
+| Notification | `kde;gtk;lxqt` | None |
+| Print | `kde;gtk;lxqt` | None |
+| Screenshot | `kde;gtk;lxqt` | None |
+| ScreenCast | `kde;gtk;lxqt` | None |
+| RemoteDesktop | `kde;gtk;lxqt` | None |
+| Background | `none` | Deliberately unavailable |
+| OpenURI | Frontend-owned; no backend selector | None |
+| Any unlisted family | `default=none` | Deliberately unavailable |
+
+The frontend filters the ordered names by the staged providers that advertise
+the requested implementation interface. The first available match wins.
+QindaQt's `.portal` declaration continues to advertise only Settings, so no
+fallback family can resolve to the QindaQt process.
+
 ## Methods and signal
 
 | Member | D-Bus signature | Behavior |

@@ -102,6 +102,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   milestones.
 - [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
   compiled-implementation gates and records which built-ins are genuinely live.
+- [Bluetooth applet](shell/bluetooth-applet.md) records the production
+  public-client-only B1 projection, serialized controls, discovery-lease
+  teardown, compiled accessibility, and explicit pairing/hardware nonclaims.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
@@ -146,9 +149,20 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Network route](apps/network-settings.md) documents the first-party
   secret-free Network1 client surface: exact-owner inventory, stale and pending
   truth, bounded scan/connect/disconnect actions, and installed-route proof.
-- [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
-  terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
-  rendering adapter, and keyboard/accessibility boundaries.
+- [Settings Customize route](apps/customize-settings.md) documents the direct
+  profile canvas: editor-session gestures, keyboard parity, atomic user-profile
+  persistence, Settings1 selection truth, and fail-closed package boundaries.
+- [Settings Audio route](apps/audio-settings.md) documents the first-party
+  Audio1 client surface: bounded device and stream inventory, default-device
+  selection, shared availability/admission truth, bounded volume/mute
+  intents, and installed-route proof.
+- [Settings Bluetooth route](apps/bluetooth-settings.md) documents the public-
+  client-only adapter/device inventory, exact-lineage admission, route-scoped
+  discovery lease, paired-device controls, and explicit BlueZ authority limit.
+- [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
+  terminal with up to eight tabs: launch policy, PTY/session lifecycle and
+  teardown, profiles and Settings1 persistence, the qtermwidget rendering
+  adapter, and keyboard/accessibility boundaries.
 - [Settings Center](apps/settings-center.md) documents the typed bounded route
   registry, responsive wide/compact navigation, route lifetime, keyboard and
   accessibility behavior, and sanitized package proof.

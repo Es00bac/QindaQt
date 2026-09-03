@@ -37,7 +37,7 @@ keyboard docking.
 | Method | Input | Current result |
 | --- | --- | --- |
 | `Capabilities` | None | Protocol, KWin ABI, methods, events, operations, limits, control mode, and optional Hybrid diagnostics |
-| `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
+| `Windows` | None | Schema-2 normal-window inventory plus the current shell-action epoch/revision fence, UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
 | `Outputs` | None | One generation of ordered outputs with stable identity, logical geometry, mode, priority, and display metadata |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
 | `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
@@ -91,6 +91,13 @@ KWin signal. Malformed, ambiguous, empty, or over-limit candidates are rejected
 atomically and retain the previous response and generation. The inventory uses
 the shell visibility wire bounds of 64 outputs and scale `(0, 16]` so its
 projection cannot exceed what `ShellVisibilitySnapshot` represents.
+
+`Windows` schema 2 adds `epoch`, decimal-string `revision`, and
+`generationAvailable`. These name the currently retained
+`ShellVisibilitySnapshot` generation and are the fence supplied with a shell
+action targeting a UUID from that read. The two inventories are not one atomic
+payload: a caller rereads after invalidation, and the action endpoint both
+compares the generation and resolves the live UUID again before dispatch.
 
 For each window, `geometry` is KWin's current acknowledged frame.
 `targetGeometry` is QindaQt's committed planned frame for a container member,
@@ -190,6 +197,131 @@ loss, unavailable/malformed data, timeout, revision regression/collision, or
 exact Qt-output mismatch. Forward gaps are accepted because every payload is a
 complete generation and invalidations may coalesce. Recovery requires a later
 complete valid generation; no partial inventory is retained as policy input.
+
+## Authenticated production shell actions
+
+Production window mutation is a separate interface, not a `Compositor1`
+capability:
+
+| Property | Value |
+| --- | --- |
+| Bus name | `org.qindaqt.Compositor` |
+| Object path | `/org/qindaqt/CompositorShell` |
+| Interface | `org.qindaqt.CompositorShell1` |
+| Descriptor | `compositor/dbus/org.qindaqt.CompositorShell1.xml` |
+
+`ActivateWindow`, `MinimizeWindow`, `UnminimizeWindow`, `CloseWindow`, and
+`RaiseWindow` each take `(windowId, epoch, revision)` as D-Bus strings and
+return compact UTF-8 JSON in `ay`. The UUID must come from `Windows`; the epoch
+and canonical nonzero decimal revision must be the displayed
+`ShellVisibilitySnapshot` generation (also exposed by `Windows` schema 2).
+Entry lengths are at most 64 UTF-16 code units for `windowId`, 128 for `epoch`,
+and 20 for `revision`. Authenticated, bounded requests receive replies that echo
+the request and use exactly `admitted`, `stale`, `unknown-window`,
+`unauthorized`, or `control-disabled`.
+
+At entry the controller reads only the three constant-time string lengths. It
+then authenticates the call from its D-Bus message before scanning, parsing,
+normalizing, or reflecting any field. The bus daemon's
+`GetConnectionCredentials` PID for the caller's unique name must equal the sole
+positive Wayland-client PID owning all currently committed layer-shell surfaces
+with exact scope `dock`. Missing panels, conflicting panel owners, invalid
+credentials, or dispatch-policy failure deny the request with a fixed compact
+reply that omits `windowId`, `epoch`, and `revision`. A successful PID join is
+rate-admitted, the recorded entry limits are enforced, and only then are the
+revision, generation, and UUID interpreted. An oversized authenticated request
+also receives a fixed echo-free `request-fields-too-large` rejection. Any local
+process can reach the session bus, but bus access or a matching UID alone grants
+nothing. This does not protect a compromised shell or a process that can
+successfully impersonate the shell's committed dock client; the complete threat
+model is [ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md).
+
+Independent targets use KWin's normal activate/minimize/restore/raise/request-
+close paths. A UUID currently owned by Hybrid instead enters its existing
+active-page, whole-group minimize, close-confirmation, and verified stacking
+policy; no method mutates one member around that policy. Admission is bounded
+to 32 calls per unique caller per one-second rate window. The server does not
+queue or replay calls.
+
+The public `shell_window_actions_client` binds the well-known name to its exact
+unique owner, serializes to one request in flight, and matches action, UUID,
+owner, epoch, and revision on reply. Timeout, owner change, transport failure,
+or malformed/mismatched reply is an uncertain outcome and is never retried. An
+owner change withdraws availability for the old owner before completion, and a
+late reply from that unique owner cannot settle or replay the request against
+its replacement.
+Task-list and launcher composition must retain the generation displayed with
+each intent and may update UI only from a later reconciled compositor snapshot.
+None of this changes `Compositor1`: its unauthenticated production mutators
+remain `control-disabled`.
+
+### Active-window identity snapshot
+
+The same authenticated object exposes `ActiveWindowIdentity() -> ay` and the
+no-argument `ActiveWindowIdentityChanged` signal. Authentication happens before
+the producer reads active-window state. After a successful read, KWin sends the
+invalidation only to that exact shell unique owner; no focus or process fact is
+broadcast. Panel-owner loss triggers one final directed invalidation and revokes
+the binding. The shell client rereads over the same exact-owner transport and
+withdraws its prior value while the read is pending.
+
+The signal is a scriptable Qt meta-object member and is exported alongside the
+scriptable methods, so live `org.freedesktop.DBus.Introspectable` output matches
+the immutable descriptor. The endpoint deliberately never emits that Qt signal:
+normal Qt D-Bus signal export would broadcast it. It instead sends the same
+declared wire member as a targeted message to the authenticated owner. The
+private-KWin contract row compares the live method/signal sets with the checked-
+in XML; parsing the XML alone is not parity evidence.
+
+An available schema-1 response is a complete compact JSON object:
+
+```json
+{
+  "status": "ok",
+  "schemaVersion": 1,
+  "epoch": "compositor-service-epoch",
+  "revision": "17",
+  "actionRevision": "42",
+  "activeWindow": {
+    "windowId": "72bfa847-6e42-48d7-9303-334e6c6a8bd3",
+    "processId": "8241",
+    "appMenuWindowId": 4194309,
+    "appMenuServiceName": "org.example.Editor",
+    "appMenuObjectPath": "/org/example/Editor/Menu"
+  }
+}
+```
+
+`revision` is the identity/focus generation and strictly advances whenever the
+published active UUID, identity facts, appmenu announcement, or associated
+window-action fence changes. `epoch` is the same service epoch used by
+`Windows`; `(epoch, actionRevision)` is the exact visibility/action generation
+sampled with the facts. Consumers accept forward revision gaps but reject epoch
+changes without reset, revision regression, and changed bytes at an equal
+revision. Both compositor publication and shell decoding apply
+`ShellWindowGeneration::isValid()` to the `(epoch, actionRevision)` fence;
+whitespace-padded, empty, oversized, zero-revision, or otherwise invalid action
+generations make identity unavailable rather than current truth.
+
+`activeWindow` is `null` when no admitted ordinary window is active. Otherwise
+`windowId` is its KWin UUID. `processId` is a positive decimal string or
+`null`: native Wayland uses the client connection's kernel credentials, while
+XWayland uses KWin's XRes `LOCAL_CLIENT_PID` result for the X client id.
+`appMenuWindowId` is that exact nonzero X11 client window id for XWayland and is
+`null` for native Wayland; the KDE Wayland appmenu protocol identifies its menu
+by the paired service/path instead of inventing a registrar number. The service
+and object path are both strings or both `null`, reflecting only a valid pair
+already announced through the KDE appmenu protocol or the corresponding
+`_KDE_NET_WM_APPMENU_SERVICE_NAME` and
+`_KDE_NET_WM_APPMENU_OBJECT_PATH` properties. No value is inferred from the
+AppMenu registrar.
+
+Before the first valid publication or after a sampling defect, `status` is
+`unavailable` with retained `epoch`/`revision` and a typed `failure`; no facts
+are usable. An unauthenticated caller receives a fixed compact `unauthorized`
+object with no epoch, revisions, UUID, PID, menu id, or appmenu address. Field
+and payload limits are enforced before publication or acceptance. The complete
+trust decision and registrar limitation are [ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
 
 ## Development qualification-surface evidence
 

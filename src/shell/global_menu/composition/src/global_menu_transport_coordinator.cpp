@@ -5,6 +5,10 @@
 #include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_client.h>
 #include <qindaqt/shell/global_menu/ownership/invocation_guard.h>
 
+#include <QtDBus/QDBusConnectionInterface>
+#include <QtDBus/QDBusObjectPath>
+#include <QtDBus/QDBusServiceWatcher>
+
 #include <utility>
 
 namespace QindaQt::Shell::GlobalMenu::Composition
@@ -23,12 +27,32 @@ GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
     , m_credentials(m_connection)
     , m_authenticator(m_activeWindowSource, m_credentials)
 {
+    m_announcedServiceWatcher = new QDBusServiceWatcher(
+        {}, m_connection, QDBusServiceWatcher::WatchForOwnerChange, this);
+    connect(m_announcedServiceWatcher, &QDBusServiceWatcher::serviceOwnerChanged,
+            this, [this](const QString &service, const QString &, const QString &) {
+                if (service == m_watchedAnnouncedService) {
+                    refreshFocus();
+                }
+            });
     connect(&m_registry, &Registrar::RegistrarRegistry::windowRegistered, this,
             [this](const Registrar::AppMenuRegistration &) { refreshFocus(); });
     connect(&m_registry, &Registrar::RegistrarRegistry::windowUnregistered, this,
             [this](quint32, const QString &) { refreshFocus(); });
     connect(&m_applet, &GlobalMenuAppletAccess::activationRequested, this,
             &GlobalMenuTransportCoordinator::activate);
+}
+
+GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
+    QDBusConnection connection, const Ownership::ActiveWindowSource &activeWindowSource,
+    const RegistrarWindowIdSource &windowIdSource,
+    const AnnouncedMenuAddressSource &announcedMenuSource,
+    Registrar::RegistrarRegistry &registry, GlobalMenuAppletAccess &applet,
+    QObject *parent)
+    : GlobalMenuTransportCoordinator(std::move(connection), activeWindowSource,
+                                     windowIdSource, registry, applet, parent)
+{
+    m_announcedMenuSource = &announcedMenuSource;
 }
 
 GlobalMenuTransportCoordinator::~GlobalMenuTransportCoordinator()
@@ -45,32 +69,85 @@ void GlobalMenuTransportCoordinator::refreshFocus()
         return;
     }
     m_selector.applyFocusGeneration(focus->focusGeneration);
-    const std::optional<quint32> registrarWindowId =
-        m_windowIdSource.registrarWindowIdFor(focus->window);
-    if (!registrarWindowId) {
+    const std::optional<ProviderEndpoint> endpoint = endpointFor(*focus);
+    if (!endpoint) {
         clearAuthority();
         return;
     }
-    const std::optional<Registrar::AppMenuRegistration> registration =
-        m_registry.registrationFor(*registrarWindowId);
-    if (!registration) {
-        clearAuthority();
-        return;
-    }
-    if (m_client && m_registrationGeneration == registration->registrationGeneration
+    if (m_client && m_boundEndpoint == *endpoint
         && m_focusGeneration == focus->focusGeneration && m_selector.current()) {
         return;
     }
-    bindRegistration(*focus, *registration);
+    bindRegistration(*focus, *endpoint);
+}
+
+std::optional<GlobalMenuTransportCoordinator::ProviderEndpoint>
+GlobalMenuTransportCoordinator::endpointFor(
+    const Ownership::ActiveWindowObservation &focus)
+{
+    const std::optional<quint32> registrarWindowId =
+        m_windowIdSource.registrarWindowIdFor(focus.window);
+    if (registrarWindowId) {
+        watchAnnouncedService({});
+        const auto registration = m_registry.registrationFor(*registrarWindowId);
+        if (!registration) {
+            return std::nullopt;
+        }
+        return ProviderEndpoint{.uniqueOwner = registration->ownerUniqueName,
+                                .objectPath = registration->menuObjectPath.path(),
+                                .announcedService = {},
+                                .registrationGeneration =
+                                    registration->registrationGeneration};
+    }
+    if (m_announcedMenuSource == nullptr) {
+        watchAnnouncedService({});
+        return std::nullopt;
+    }
+    const auto announced = m_announcedMenuSource->announcedMenuFor(focus.window);
+    if (!announced || announced->serviceName.isEmpty()
+        || announced->objectPath.isEmpty()) {
+        watchAnnouncedService({});
+        return std::nullopt;
+    }
+    watchAnnouncedService(announced->serviceName);
+    if (!m_connection.isConnected() || m_connection.interface() == nullptr) {
+        return std::nullopt;
+    }
+    const QDBusReply<QString> owner =
+        m_connection.interface()->serviceOwner(announced->serviceName);
+    if (!owner.isValid() || owner.value().isEmpty()) {
+        return std::nullopt;
+    }
+    return ProviderEndpoint{.uniqueOwner = owner.value(),
+                            .objectPath = announced->objectPath,
+                            .announcedService = announced->serviceName,
+                            .registrationGeneration = 0};
+}
+
+void GlobalMenuTransportCoordinator::watchAnnouncedService(
+    const QString &serviceName)
+{
+    if (serviceName == m_watchedAnnouncedService) {
+        return;
+    }
+    if (!m_watchedAnnouncedService.isEmpty()) {
+        m_announcedServiceWatcher->removeWatchedService(
+            m_watchedAnnouncedService);
+    }
+    m_watchedAnnouncedService = serviceName;
+    if (!m_watchedAnnouncedService.isEmpty()) {
+        m_announcedServiceWatcher->addWatchedService(
+            m_watchedAnnouncedService);
+    }
 }
 
 void GlobalMenuTransportCoordinator::bindRegistration(
     const Ownership::ActiveWindowObservation &focus,
-    const Registrar::AppMenuRegistration &registration)
+    const ProviderEndpoint &endpoint)
 {
     const Ownership::MenuProviderRegistration claim{
         .windowId = focus.window.windowId,
-        .providerUniqueName = registration.ownerUniqueName,
+        .providerUniqueName = endpoint.uniqueOwner,
         .claimedProcessId = focus.window.processId};
     const Ownership::AuthenticationResult authentication = m_authenticator.authenticate(claim);
     if (!authentication.accepted || !authentication.proof) {
@@ -88,16 +165,19 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     m_client.reset();
     m_applet.publishUnavailable();
     m_selector.adopt(*authentication.proof);
-    m_registrationGeneration = registration.registrationGeneration;
+    m_boundEndpoint = endpoint;
     m_focusGeneration = focus.focusGeneration;
     m_client = std::make_unique<DbusMenu::DbusMenuClient>(
-        m_connection, registration.ownerUniqueName, registration.menuObjectPath,
+        m_connection, endpoint.uniqueOwner, QDBusObjectPath(endpoint.objectPath),
         focus.window.windowId);
     m_exporter = std::make_unique<Exporter::MenuExporter>(*m_client, *this);
     connect(m_client.get(), &DbusMenu::DbusMenuClient::treeChanged, this,
             &GlobalMenuTransportCoordinator::publishClientTree);
     connect(m_client.get(), &DbusMenu::DbusMenuClient::unavailable, this,
-            &GlobalMenuTransportCoordinator::clearAuthority, Qt::QueuedConnection);
+            [this] {
+                clearAuthority();
+                refreshFocus();
+            }, Qt::QueuedConnection);
     QString error;
     if (!m_client->start(&error)) {
         clearAuthority();
@@ -111,21 +191,16 @@ void GlobalMenuTransportCoordinator::publishClientTree()
     }
     const std::optional<Ownership::ActiveWindowObservation> focus =
         m_activeWindowSource.activeWindow();
-    const std::optional<quint32> registrarWindowId = focus
-        ? m_windowIdSource.registrarWindowIdFor(focus->window)
-        : std::nullopt;
-    const std::optional<Registrar::AppMenuRegistration> registration = registrarWindowId
-        ? m_registry.registrationFor(*registrarWindowId)
-        : std::nullopt;
-    if (!focus || !registration
-        || registration->registrationGeneration != m_registrationGeneration
+    const std::optional<ProviderEndpoint> endpoint = focus
+        ? endpointFor(*focus) : std::nullopt;
+    if (!focus || !endpoint || *endpoint != m_boundEndpoint
         || focus->focusGeneration != m_focusGeneration) {
         clearAuthority();
         return;
     }
     const Ownership::AuthenticationResult authentication = m_authenticator.authenticate(
         Ownership::MenuProviderRegistration{.windowId = focus->window.windowId,
-                                            .providerUniqueName = registration->ownerUniqueName,
+                                            .providerUniqueName = endpoint->uniqueOwner,
                                             .claimedProcessId = focus->window.processId});
     if (!authentication.accepted || !authentication.proof) {
         clearAuthority();
@@ -187,7 +262,7 @@ void GlobalMenuTransportCoordinator::clearAuthority()
     m_exporter.reset();
     m_client.reset();
     m_selector.clear();
-    m_registrationGeneration = 0;
+    m_boundEndpoint = {};
     m_focusGeneration = 0;
     m_applet.publishUnavailable();
 }
@@ -195,6 +270,7 @@ void GlobalMenuTransportCoordinator::clearAuthority()
 void GlobalMenuTransportCoordinator::stop()
 {
     clearAuthority();
+    watchAnnouncedService({});
 }
 
 std::optional<Exporter::ExportLineage> GlobalMenuTransportCoordinator::lineageFor(

@@ -1,4 +1,4 @@
-import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
+import QindaQt.Shell.GlobalMenu as GlobalMenuComponents
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
@@ -16,9 +16,9 @@ Item {
     width: 360
     height: 60
 
-    // Mirrors the facade's documented projection shape exactly: top-level
-    // entries with {id, kind, text, mnemonicIndex, enabled, checkable,
-    // checked}, hidden items and separators already omitted by the facade.
+    // Mirrors the facade's top-level projection fields. These cases omit
+    // children deliberately to exercise honest empty-submenu behavior; the
+    // dedicated submenu row covers recursive children and separators.
     QtObject {
         id: fakeAccess
 
@@ -128,7 +128,7 @@ Item {
             compare(entries.length, 3);
             // Realistic menus present submenus alongside actions; every
             // entry keeps an accessible name even when non-activating.
-            compare(entries[0].Accessible.name, "File (submenu unavailable)");
+            compare(entries[0].Accessible.name, "File");
             compare(entries[2].Accessible.name, "About");
         }
 
@@ -139,7 +139,7 @@ Item {
             const submenuEntry = findChild(applet, "globalMenuTopLevelItem");
             verify(submenuEntry !== null);
             // Submenus are presented honestly: visible, disabled, not a
-            // clickable fake of an interaction G0 does not implement.
+            // clickable fake when no popup children were published.
             verify(submenuEntry.visible);
             verify(!submenuEntry.enabled);
             compare(submenuEntry.Accessible.role, Accessible.MenuItem);

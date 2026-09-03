@@ -48,6 +48,7 @@ nav:
       - Customization editor domain: shell/customization-editor.md
       - Applet runtime: shell/applet-runtime.md
       - Audio applet: shell/audio-applet.md
+      - Bluetooth applet: shell/bluetooth-applet.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
@@ -64,6 +65,7 @@ nav:
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
       - Bluetooth1 protocol 1: reference/bluetooth1-v1.md
+      - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
@@ -80,6 +82,9 @@ nav:
       - Settings Appearance route: apps/appearance-settings.md
       - Settings Display route: apps/display-settings.md
       - Settings Network route: apps/network-settings.md
+      - Settings Customize route: apps/customize-settings.md
+      - Settings Audio route: apps/audio-settings.md
+      - Settings Bluetooth route: apps/bluetooth-settings.md
       - Terminal: apps/terminal.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
@@ -138,3 +143,10 @@ nav:
       - "ADR-0054: Standard Settings portal appearance": adr/0054-export-appearance-through-the-standard-settings-portal.md
       - "ADR-0055: Network Settings through Network1": adr/0055-compose-network-settings-through-network1.md
       - "ADR-0056: Standard AppMenu/dbusmenu transports": adr/0056-adopt-standard-appmenu-dbusmenu-transports.md
+      - "ADR-0057: Injected direct BlueZ transport": adr/0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md
+      - "ADR-0058: Volatile clipboard capture host": adr/0058-isolate-clipboard-capture-in-a-volatile-host.md
+      - "ADR-0059: Explicit portal fallback routing": adr/0059-route-unimplemented-portal-families-explicitly.md
+      - "ADR-0060: Confined production power upstreams": adr/0060-confine-production-power-upstreams.md
+      - "ADR-0061: Authenticated shell window actions": adr/0061-authenticate-shell-window-actions-by-panel-owner.md
+      - "ADR-0062: Bound launcher execution seams": adr/0062-bound-launcher-execution-behind-injected-seams.md
+      - "ADR-0063: Authenticated active-window identity": adr/0063-project-authenticated-active-window-identity.md

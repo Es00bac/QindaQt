@@ -52,9 +52,11 @@ RowLayout {
         objectName: "audioDeviceVolume"
 
         readonly property double level: row?.volume ?? 0.0
+        // The grant, not the row state alone, decides adjustability: a
+        // policy-denied applet renders truth but can never dispatch.
         readonly property bool adjustable:
             (row?.canSetVolume ?? false) && (row?.volumeKnown ?? false)
-                 && !root.pending
+                 && (controller?.controlGranted ?? false) && !root.pending
 
         visible: row?.volumeKnown ?? false
         Layout.preferredWidth: 140
@@ -64,14 +66,20 @@ RowLayout {
         value: level
         enabled: adjustable
         accessibleName: qsTr("Volume for %1").arg(root.deviceName)
-        accessibleDescription: adjustable
-            ? qsTr("Sets the volume from 0 to 100 percent")
-            : root.pending ? qsTr("Volume change in progress")
-                           : qsTr("This device does not allow volume changes")
-        // Dispatch on release or on each keyboard step. Keyboard steps arrive
-        // with pressed already false, so the keyboard path requests
-        // immediately while a pointer drag stays quiet until it ends.
-        onMoved: if (!pressed && adjustable)
+        accessibleDescription: root.pending
+            ? qsTr("Volume change in progress")
+            : !(controller?.controlGranted ?? false)
+                  ? qsTr("Volume changes are not allowed for %1").arg(root.deviceName)
+                  : (row?.canSetVolume ?? false)
+                        ? qsTr("Sets the volume from 0 to 100 percent")
+                        : qsTr("This device does not allow volume changes")
+
+        // AGENT-NOTE: Dispatch on every moved, like the Power applet rows.
+        // The slider disables itself while the row is pending, so a pointer
+        // drag cannot spam concurrent requests; the first move dispatches and
+        // the controller refuses overlaps. Qt 6.11 reports pressed=true during
+        // keyboard steps, so `pressed` cannot gate dispatch.
+        onMoved: if (adjustable)
                      controller.requestVolume(row.serial, false, value)
     }
 
@@ -88,7 +96,7 @@ RowLayout {
 
         readonly property bool adjustable:
             (row?.canSetMute ?? false) && (row?.muteKnown ?? false)
-                 && !root.pending
+                 && (controller?.controlGranted ?? false) && !root.pending
 
         visible: row?.muteKnown ?? false
         text: qsTr("Mute")

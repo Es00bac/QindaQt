@@ -15,6 +15,33 @@ namespace QindaQt::Shell::GlobalMenu
 namespace
 {
 
+QVariantMap projectItem(const Protocol::MenuItem &item)
+{
+    QVariantList children;
+    children.reserve(item.children.size());
+    for (const Protocol::MenuItem &child : item.children) {
+        if (!child.visible) {
+            continue;
+        }
+        children.append(projectItem(child));
+    }
+    QString kind = QStringLiteral("action");
+    if (item.kind == Protocol::MenuItemKind::Submenu) {
+        kind = QStringLiteral("submenu");
+    } else if (item.kind == Protocol::MenuItemKind::Separator) {
+        kind = QStringLiteral("separator");
+    }
+    return {{QStringLiteral("id"), item.id},
+            {QStringLiteral("kind"), kind},
+            {QStringLiteral("text"), item.text},
+            {QStringLiteral("mnemonicIndex"), item.mnemonicIndex},
+            {QStringLiteral("shortcutText"), item.shortcutText},
+            {QStringLiteral("enabled"), item.enabled},
+            {QStringLiteral("checkable"), item.checkable},
+            {QStringLiteral("checked"), item.checked},
+            {QStringLiteral("children"), children}};
+}
+
 QVariantList projectTopLevel(const Protocol::MenuTree &tree)
 {
     QVariantList projection;
@@ -26,18 +53,7 @@ QVariantList projectTopLevel(const Protocol::MenuTree &tree)
         if (item.kind == Protocol::MenuItemKind::Separator || !item.visible) {
             continue;
         }
-        QVariantMap entry;
-        entry.insert(QStringLiteral("id"), item.id);
-        entry.insert(QStringLiteral("kind"),
-                     item.kind == Protocol::MenuItemKind::Submenu
-                         ? QStringLiteral("submenu")
-                         : QStringLiteral("action"));
-        entry.insert(QStringLiteral("text"), item.text);
-        entry.insert(QStringLiteral("mnemonicIndex"), item.mnemonicIndex);
-        entry.insert(QStringLiteral("enabled"), item.enabled);
-        entry.insert(QStringLiteral("checkable"), item.checkable);
-        entry.insert(QStringLiteral("checked"), item.checked);
-        projection.append(entry);
+        projection.append(projectItem(item));
     }
     return projection;
 }
@@ -57,6 +73,16 @@ bool GlobalMenuAppletAccess::available() const noexcept
 QVariantList GlobalMenuAppletAccess::items() const
 {
     return m_topLevelProjection;
+}
+
+QString GlobalMenuAppletAccess::phase() const
+{
+    return m_phase;
+}
+
+QString GlobalMenuAppletAccess::reasonCode() const
+{
+    return m_reasonCode;
 }
 
 void GlobalMenuAppletAccess::activate(const QString &actionId)
@@ -88,6 +114,7 @@ void GlobalMenuAppletAccess::publishTree(const Protocol::MenuTree &tree)
     m_tree = tree;
     setTopLevelProjection(projectTopLevel(tree));
     setAvailable(true);
+    setPhase(QStringLiteral("ready"), {});
 }
 
 void GlobalMenuAppletAccess::publishUnavailable()
@@ -95,6 +122,15 @@ void GlobalMenuAppletAccess::publishUnavailable()
     m_tree = Protocol::MenuTree{};
     setTopLevelProjection({});
     setAvailable(false);
+    setPhase(QStringLiteral("unavailable"), {});
+}
+
+void GlobalMenuAppletAccess::publishDegraded(const QString &reasonCode)
+{
+    m_tree = Protocol::MenuTree{};
+    setTopLevelProjection({});
+    setAvailable(false);
+    setPhase(QStringLiteral("degraded"), reasonCode);
 }
 
 void GlobalMenuAppletAccess::setAvailable(bool available)
@@ -113,6 +149,16 @@ void GlobalMenuAppletAccess::setTopLevelProjection(QVariantList projection)
     }
     m_topLevelProjection = std::move(projection);
     Q_EMIT itemsChanged();
+}
+
+void GlobalMenuAppletAccess::setPhase(QString phase, QString reasonCode)
+{
+    if (m_phase == phase && m_reasonCode == reasonCode) {
+        return;
+    }
+    m_phase = std::move(phase);
+    m_reasonCode = std::move(reasonCode);
+    Q_EMIT phaseChanged();
 }
 
 } // namespace QindaQt::Shell::GlobalMenu

@@ -58,6 +58,124 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- 2026-09-03T04:58:12-06:00 — Integrated the Bluetooth Settings route `24129a2` at merge `111dedb` (delegated registry reconciliation, landed at `500a33e`); merged tree passes Settings and Bluetooth rows 64/64 in Debug and Release under host-bus isolation, broad safe Debug 472/472, and static gates. QQ-006.05 widened (Bluetooth route live at Ctrl+7).
+- 2026-09-03T04:42:48-06:00 — Integrated the Controls visual gate host-independence candidate `b7b5208` at merge `5cf24a2` (owned paths only; the branch's stale synced files dropped); merged tree passes controls 34/34 Debug/Release, visual rows twice, broad safe Debug 465/465 now including the 25 visual rows, and static gates. QQ-006.02 stays QUALIFIED with pinned fixtures.
+- 2026-09-03T04:32:48-06:00 — Integrated the Audio Settings route `d10abe2` at merge `f6d47db` (delegated registry reconciliation by an integration assistant, landed at `fac8d6a`); merged tree passes all Settings rows (audio 4, customize 7, center/package/navigation rows) in Debug and Release under host-bus isolation, broad safe Debug 435 rows with zero failures, and static gates. QQ-006.05 widened (Audio route live); Bluetooth Settings `24129a2` accepted 0/0/0/0 and its merge delegated next.
+- `8505bdb` and `7ecdb36` — The compositor's authenticated `CompositorShell1` boundary now projects a revisioned
+  active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced
+  app-menu service/path) with an exported change signal validated by the public generation rule on both sides
+  (ADR-0063), and the compiled launcher applet is hosted in the production shell panels through a composition
+  with production seams and a closed install component. Margaret Rock (OpenAI Codex) rejected the identity
+  candidate once at `0/2/1/0` and accepted the repair at `0/0/0/0`; Annie Cannon (Z.AI GLM) accepted the hosting
+  at `0/0/0/2`. The fresh merged tree passes compositor 36/36 non-nested rows, the window-actions/identity and
+  client rows, the nested KWin rows serially, launcher 17/17, and the integrity/runtime/closure/installed rows in
+  Debug and Release, the broad safe Debug suite passes 430/430, and all static gates. QQ-004.07 advances WIRED → EXECUTABLE; the Global Menu G2
+  composition is unblocked.
+
+- `00f2db9` — Terminal S1 adds a bounded multi-session tab strip in which every session owns its PTY/child with
+  process-group-complete teardown, validated profiles within the existing launch policy, Settings1
+  persistence with presented asynchronous apply outcomes, AppShell action-catalog exposure, exact argv
+  preservation, and keyboard/accessibility parity. Dina St Johnston (OpenAI Codex, a different worker)
+  rejected the first candidate at `0/2/1/1` for a shutdown that reported clean while an HUP-immune descendant
+  survived and for apply failures never presented, rejected the next at `0/0/1/0` for a vacuous dialog
+  proof, and accepted the second repair at `0/0/0/0`. The fresh merged tree passes terminal 15/15 in Debug and
+  Release under host-unset isolation, the broad safe Debug suite passes 427/427, and all static gates. QQ-006.08 stays EXECUTABLE with a wider
+  stopping point; search, links, global-menu export, and the nested matrix remain.
+
+- `26f366a` — Launcher L1 adds the production adapters around the pure L0 model: an injected-root desktop-entry
+  scanner with canonical containment, non-regular-file refusal, capped reads, debounced generation-fenced
+  refresh, and errno-aware degraded truth; Settings1 pinned/recent persistence with uncertainty convergence; a
+  seam-based bounded execution adapter with entry-level policy inheritance and no shell interpolation; and a
+  compiled, registered, fatal-warning-clean launcher applet with persistence status, keyboard traversal, and
+  accessibility (ADR-0062). Kay McNulty (OpenAI Codex, a different worker) rejected three candidates,
+  including a host-isolation P0, before accepting the third repair at `0/0/0/0`. The fresh merged tree passes
+  launcher 15/15 and applet integrity rows in Debug and Release under host-unset isolation, the broad safe Debug suite passes 421/421, and all
+  static gates. QQ-004.07 stays WIRED with a wider stopping point until the production dispatcher hosts the applet.
+
+- `2500a3d` — The direct Customize Settings canvas composes the integrated customization-editor domain into an
+  installed `qindaqt-settings --page customize` route: a scaled WYSIWYG canvas with a manifest-sourced applet
+  palette and properties pane, pointer drag through the domain's preview bracket with exactly one undo step
+  per gesture, complete keyboard parity with accessible identities, Settings1 profile selection, atomic
+  user-profile persistence, and dirty-draft discard confirmation on route departure and window close across
+  responsive host switches. Klara Dan von Neumann (Kimi K3) rejected the first candidate at `0/0/2/3`; Adele
+  Goldstine (OpenAI Codex) rejected two descendants at `0/0/2/0` and `0/0/1/0` and accepted the third repair
+  at `0/0/0/0`. The fresh merged tree passes customize 17/17 (route plus domain rows) and Settings Center 9/9 in Debug and Release,
+  the broad safe Debug suite passes 412/412, and all static gates. This advances QQ-004.08 from WIRED to EXECUTABLE; live-shell binding, reveal
+  affordances, and the nested matrix remain.
+
+- `3690a05` — The compositor exposes an authenticated `CompositorShell1` window-action boundary (activate,
+  minimize, unminimize, close, raise) admitted only for the D-Bus caller whose unix credentials match the
+  bound panel-owning shell client, with authentication before any parsing, explicit entry bounds,
+  constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing,
+  and an exact-owner asynchronous shell client (ADR-0061). Margaret Rock (OpenAI Codex, a different
+  worker) rejected the first candidate at `0/1/1/0` for pre-authentication parsing and unbounded reflected
+  replies and accepted the repair at `0/0/0/0`. The fresh merged tree passes compositor 35/35 non-nested
+  rows and the four window-action rows including the nested live row in Debug and Release, the sixteen `compositor.kwin-` rows pass 16/16 serially,
+  the broad safe Debug suite passes 406/406, and all static gates. This widens QQ-004.10 without changing its WIRED state; the shell-side
+  facts producer and applet hosting remain.
+
+- `6cef8b5` — Power PB-2 adds the production upstream adapters behind PB-1's collaborator seams: UPower with
+  correct line-power/PowerSupply/battery semantics, logind actions re-authorized at dispatch time with
+  generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight
+  adapter, all selected by the composition root in production with an explicit deterministic mode
+  (ADR-0060). Ida Holz (OpenAI Codex, a different worker) rejected the first two candidates at `0/2/1/1`
+  and `0/1/0/0` and accepted the second repair at `0/0/0/0`. The fresh merged tree passes the power selector
+  26/26 in Debug and Release under an unreachable host system bus, the broad safe Debug suite passes 403/403, and all static gates. QQ-005.03
+  stays EXECUTABLE with production adapters; physical hardware, suspend/resume, and the Settings page remain.
+
+- `14f3e67` — The production Audio applet composes only the public AudioClient through a shell-private
+  controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled
+  keyboard-accessible QML, and exact-owner replacement fences. Integration exposed that the shell's new
+  Controls/Tokens link dependency was not staged by the Power, Bluetooth, or default install components;
+  the accepted staging-closure descendant ships that closure in every shell-carrying component and adds a
+  component-closure row. Reviews: `caaf7d9` accepted `0/0/0/0` on Codex, `b623b00` rejected `0/1/0/0`,
+  `14f3e67` accepted `0/0/0/0` by Frances Bilas (OpenAI Codex). The fresh merged tree passes applet 22/22 and
+  integrity/runtime/closure 7/7 in Debug and Release, the broad safe Debug suite passes 396/396, and all static gates. This advances
+  QQ-004.12 from WIRED to EXECUTABLE; physical devices and nested panel interaction remain.
+
+- `c33b490` — Portal P1 proves host frontend selection and toolkit reaction with the real `xdg-desktop-portal`
+  1.20.4 on a private bus: the QindaQt Settings backend is selected only under `XDG_CURRENT_DESKTOP=qindaqt`,
+  the frontend's values and `SettingChanged` follow the QindaQt projection, Qt's `xdgdesktopportal` platform
+  theme reacts live, and every non-Settings family routes through an explicit fail-closed fallback table
+  (ADR-0059). Gertrude Blanch (OpenAI Codex, a different worker) accepted it at P0/P1/P2/P3 `0/0/0/0` with
+  9/9 in Debug and Release; the fresh merged tree repeats 9/9, the broad safe Debug suite passes 391/391, and all static gates. QQ-005.09
+  stays EXECUTABLE with host selection and Qt reaction now proven; GTK/Flatpak reaction and the other
+  portal families remain.
+
+- `63e884c` — The Clipboard C1 service adds a bounded `ext-data-control-v1` capture adapter, the private-bus
+  `org.qindaqt.Clipboard1` protocol and exact-owner client with bounded remembered-request eviction, and a
+  resident host that captures only after an explicit user-override opt-in (the Settings1 schema default is
+  now `false`), withdraws truth unless the authenticated lock state is Unlocked, and ships activation
+  artifacts. Evelyn Berezin (Kimi K3-256k) rejected the first candidate at `0/1/1/3` for first-start capture
+  without consent and permanent request-cache exhaustion; Ruth Lichterman (OpenAI Codex) accepted the
+  repair at `0/0/0/0`. The fresh merged tree passes clipboard 14/14 and Settings-related 29/29 in Debug and
+  Release, the broad safe Debug suite passes 389/389, and all static gates; the candidate's ADR is renumbered to 0058. This advances
+  QQ-005.06 from WIRED to EXECUTABLE; applet composition, live nested capture, and persistence remain.
+
+- `f44919a` — The production BlueZ adapter reaches `org.bluez` through an injected direct-QtDBus
+  connection behind the accepted AdapterBackend port, driving only adapter power, the reference-counted
+  discovery lease, and paired-device connect/disconnect while BlueZ keeps pairing and trust authority;
+  owner loss retires truth, hostile properties are bounded, and the composition root defaults to production
+  with an explicit deterministic mode. Betty Holberton's independent Kimi K3 exact review accepted it at
+  P0/P1/P2/P3 `0/0/0/2` with 14/14 rows in Debug and Release under an unreachable host system bus. The fresh
+  merged tree passes 15/15 Bluetooth rows including the whole-repository staged-install row in both profiles,
+  the broad safe Debug suite 379/379, and all static gates; the candidate's ADR is renumbered to 0057 to
+  follow the already integrated ADR-0056. QQ-005.05 stays EXECUTABLE with a production backend; physical
+  radios, pairing UX, Settings UI, and hardware qualification remain.
+
+- `882cc0c` — The production Bluetooth applet B1 composes only the public Bluetooth client
+  through a shell-private controller with separate read and control grants, audited
+  manifest/registry/host/profile routing, compiled keyboard-accessible QML, and exact-owner
+  replacement fences. Its controller surface is now proven by a compiled QMetaObject contract
+  with token-paste, public-slot, and enum negative controls instead of the former regex gate,
+  while textual composition-chain and dependency-policy contracts keep their independent
+  poisons. After a 2/2 split on the regex ancestor, the same reviewers Cecilia Payne (Kimi K2.7)
+  and Chien-Shiung Wu (Kimi K3-256k) accepted the repair descendant at P0/P1/P2/P3 `0/0/0/0`.
+  The fresh merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release, direct
+  boundary gates 7+6 and 5+4, the broad safe Debug suite 373/373 (nested-compositor and host-font visual rows excluded), and all static gates. This advances
+  QQ-004.14 from ABSENT to EXECUTABLE; the B0 service still runs the deterministic unavailable
+  backend, so BlueZ, pairing UX, nested interaction, and hardware remain later outcomes.
+
 - `7c27ee5` — Global Menu G1 adds the production transports behind the G0 foundation: an exact-owner
   `com.canonical.AppMenu.Registrar` service on an injected bus keyed to caller unique names with owner-loss
   retirement, an asynchronous `com.canonical.dbusmenu` client whose decoder bounds depth, counts, and lengths and

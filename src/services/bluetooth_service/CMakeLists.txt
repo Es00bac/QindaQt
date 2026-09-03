@@ -36,7 +36,12 @@ install(
 qt_add_executable(qindaqt-bluetooth-service app/main.cpp)
 target_link_libraries(
     qindaqt-bluetooth-service
-    PRIVATE QindaQt::BluetoothService QindaQt::BluetoothModel Qt6::Core Qt6::DBus
+    PRIVATE
+        QindaQt::BluetoothService
+        QindaQt::BluetoothModel
+        QindaQt::BluezAdapter
+        Qt6::Core
+        Qt6::DBus
 )
 target_compile_definitions(
     qindaqt-bluetooth-service PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}"

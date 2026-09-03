@@ -111,11 +111,35 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
 
-  // selectNext from 3 ("network") wraps to 0 ("notifications")
+  // selectNext from 3 ("network") -> 4 ("customize")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
+
+  // selectNext from 4 ("customize") -> 5 ("audio")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("audio"));
+
+  // selectNext from 5 ("audio") -> 6 ("bluetooth")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
+  // selectNext from 6 ("bluetooth") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 3 ("network")
+  // selectPrevious from 0 wraps to 6 ("bluetooth")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
+  // selectPrevious from 6 -> 5 ("audio")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("audio"));
+
+  // selectPrevious from 5 -> 4 ("customize")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
+
+  // selectPrevious from 4 -> 3 ("network")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
 
@@ -146,12 +170,21 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(3));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("network"));
 
+  QVERIFY(controller.selectIndex(4));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
+
+  QVERIFY(controller.selectIndex(5));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("audio"));
+
+  QVERIFY(controller.selectIndex(6));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(4));
+  QVERIFY(!controller.selectIndex(7));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -209,7 +242,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 4);
+  QCOMPARE(list.size(), 7);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -227,6 +260,18 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(networkMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("network"));
 
+  const QVariantMap customizeMap = list.at(4).toMap();
+  QCOMPARE(customizeMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("customize"));
+
+  const QVariantMap audioMap = list.at(5).toMap();
+  QCOMPARE(audioMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("audio"));
+
+  const QVariantMap bluetoothMap = list.at(6).toMap();
+  QCOMPARE(bluetoothMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("bluetooth"));
+
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
            QStringLiteral("notifications"));
@@ -243,7 +288,23 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt3.value(QStringLiteral("id")).toString(),
            QStringLiteral("network"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(5);
+  const QVariantMap itemAt4 = controller.routeAt(4);
+  QCOMPARE(itemAt4.value(QStringLiteral("id")).toString(),
+           QStringLiteral("customize"));
+
+  const QVariantMap itemAt5 = controller.routeAt(5);
+  QCOMPARE(itemAt5.value(QStringLiteral("id")).toString(),
+           QStringLiteral("audio"));
+  QCOMPARE(itemAt5.value(QStringLiteral("component")).toString(),
+           QStringLiteral("audio"));
+
+  const QVariantMap itemAt6 = controller.routeAt(6);
+  QCOMPARE(itemAt6.value(QStringLiteral("id")).toString(),
+           QStringLiteral("bluetooth"));
+  QCOMPARE(itemAt6.value(QStringLiteral("component")).toString(),
+           QStringLiteral("bluetooth"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(7);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

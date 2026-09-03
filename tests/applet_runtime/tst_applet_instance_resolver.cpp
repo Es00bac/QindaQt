@@ -3,6 +3,7 @@
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
+#include "qindaqt/profiles/profile_catalog.h"
 
 #include <QtTest>
 
@@ -52,6 +53,8 @@ private slots:
     void requiresTheCompiledImplementationRegistry();
     void exposesCapabilitiesOnlyForRegisteredImplementations();
     void carriesDeniedCapabilitiesWithoutInventingAuthority();
+    void stockProfilesPlaceOneResolvedLauncher();
+    void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -71,10 +74,23 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringLiteral("ready"));
 
     const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.audio"),
+        QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.global-menu"),
+        QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
+
+    const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("audio")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(audio.ready(), qPrintable(audio.diagnostic));
+    QCOMPARE(audio.entryPoint, QStringLiteral("qindaqt.applets.audio"));
+    QCOMPARE(audio.grantedCapabilities,
+             QStringList({QStringLiteral("audio.control"),
+                          QStringLiteral("audio.read")}));
 
     const auto power = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("power")), Profiles::Edge::Top,
@@ -84,6 +100,15 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(power.grantedCapabilities,
              QStringList({QStringLiteral("power.control"),
                           QStringLiteral("power.read")}));
+
+    const auto bluetooth = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("bluetooth")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(bluetooth.ready(), qPrintable(bluetooth.diagnostic));
+    QCOMPARE(bluetooth.entryPoint, QStringLiteral("qindaqt.applets.bluetooth"));
+    QCOMPARE(bluetooth.grantedCapabilities,
+             QStringList({QStringLiteral("bluetooth.control"),
+                          QStringLiteral("bluetooth.read")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
@@ -172,18 +197,20 @@ void AppletInstanceResolverTests::exposesCapabilitiesOnlyForRegisteredImplementa
     QString error;
     QVERIFY2(fixture.load(&error), qPrintable(error));
 
+    // The first-party registry now contains the launcher (L1); an
+    // implementation missing from the evaluated registry still fails closed.
+    const AppletRuntime::BuiltinAppletRegistry withoutLauncher(
+        QStringList{QStringLiteral("qindaqt.applets.clock")});
     const auto unavailable = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("launcher")), Profiles::Edge::Bottom,
-        fixture.catalog, fixture.policy, fixture.registry);
+        fixture.catalog, fixture.policy, withoutLauncher);
     QCOMPARE(AppletRuntime::toString(unavailable.status),
              QStringLiteral("implementation-unavailable"));
     QVERIFY(unavailable.grantedCapabilities.isEmpty());
 
-    const AppletRuntime::BuiltinAppletRegistry registry(
-        QStringList{QStringLiteral("qindaqt.applets.launcher")});
     const auto registered = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("launcher")), Profiles::Edge::Bottom,
-        fixture.catalog, fixture.policy, registry);
+        fixture.catalog, fixture.policy, fixture.registry);
     QVERIFY2(registered.ready(), qPrintable(registered.diagnostic));
     QCOMPARE(registered.grantedCapabilities,
              QStringList{QStringLiteral("applications.launch")});
@@ -205,6 +232,82 @@ void AppletInstanceResolverTests::carriesDeniedCapabilitiesWithoutInventingAutho
 
     QVERIFY2(launcher.ready(), qPrintable(launcher.diagnostic));
     QVERIFY(launcher.grantedCapabilities.isEmpty());
+}
+
+void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+    QCOMPARE(profiles.profiles().size(), 10);
+
+    for (const auto &profile : profiles.profiles()) {
+        int launcherCount = 0;
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1String("launcher")) {
+                    continue;
+                }
+                ++launcherCount;
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(),
+                         qPrintable(profile.id + QStringLiteral(": ")
+                                    + resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.launcher"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList{QStringLiteral("applications.launch")});
+            }
+        }
+        QCOMPARE(launcherCount, 1);
+    }
+}
+
+void AppletInstanceResolverTests::globalMenuUsesLeastAuthorityAndStockTopPanels()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    int enabledFamilies = 0;
+    for (const auto &profile : profiles.profiles()) {
+        int menuCount = 0;
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1String("global-menu")) {
+                    continue;
+                }
+                ++menuCount;
+                QCOMPARE(static_cast<int>(panel.edge),
+                         static_cast<int>(Profiles::Edge::Top));
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(), qPrintable(resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.global-menu"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList{QStringLiteral("global-menu.read")});
+            }
+        }
+        QCOMPARE(menuCount, profile.workflow.globalMenu ? 1 : 0);
+        if (profile.workflow.globalMenu) {
+            ++enabledFamilies;
+        }
+    }
+    QCOMPARE(enabledFamilies, 3);
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)

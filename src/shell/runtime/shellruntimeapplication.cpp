@@ -2,7 +2,12 @@
 #include "shellruntimeapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "audioappletcomposition.h"
+#include "bluetoothappletcomposition.h"
+#include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
+#include "launcherappletcomposition.h"
+#include "launcher_persistence.h"
 #include "notificationcenterappletaccess.h"
 #include "notificationcentershortcut.h"
 #include "notificationwindowcontroller.h"
@@ -29,10 +34,14 @@
 #include "qindaqt/shell_surface/panel_surface_controller.h"
 #include "qindaqt/shell_visibility_client/compositor_visibility_client.h"
 #include "qindaqt/shell_visibility_client/qt_compositor_visibility_transport.h"
+#include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
+#include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
 #include <QGuiApplication>
+#include <QProcessEnvironment>
 #include <QScreen>
 #include <QTextStream>
 
@@ -51,6 +60,10 @@ ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
             qWarning().noquote() << "QindaQt shell kept its prior surface set:" << error;
         }
     });
+    m_windowActionsRetry.setSingleShot(true);
+    m_windowActionsRetry.setInterval(2'500);
+    connect(&m_windowActionsRetry, &QTimer::timeout, this,
+            &ShellRuntimeApplication::restartWindowActionsIdentity);
 }
 
 ShellRuntimeApplication::~ShellRuntimeApplication()
@@ -170,6 +183,73 @@ void ShellRuntimeApplication::printCatalog() const
     }
 }
 
+bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
+{
+    m_settingsTransport = std::make_unique<Services::SettingsClient::QtSettingsTransport>(
+        QDBusConnection::sessionBus());
+    m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
+        *m_settingsTransport,
+        QStringList{QStringLiteral("services.doNotDisturb"),
+                    Launcher::LauncherPersistenceController::pinnedKey(),
+                    Launcher::LauncherPersistenceController::recentKey()});
+    m_launcherApplet = std::make_unique<LauncherAppletComposition>(
+        m_applets, m_appletPolicy,
+        launcherDataRoots(QProcessEnvironment::systemEnvironment(),
+                          QDir::homePath()),
+        *m_settingsClient, QDBusConnection::sessionBus());
+    return m_launcherApplet->start(error);
+}
+
+void ShellRuntimeApplication::initializeServiceAppletCompositions()
+{
+    m_audioApplet =
+        std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
+    m_bluetoothApplet =
+        std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
+    m_powerApplet =
+        std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
+    const QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    m_windowActionsTransport = std::make_unique<
+        ShellWindowActionsClient::QtShellWindowActionsTransport>(sessionBus);
+    m_windowActionsClient = std::make_unique<
+        ShellWindowActionsClient::ShellWindowActionsClient>(
+            *m_windowActionsTransport);
+    m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
+        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    m_globalMenuApplet->start();
+    connect(m_windowActionsClient.get(),
+            &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
+            this, [this] {
+                if (m_windowActionsClient->identitySnapshot()) {
+                    m_windowActionsRetry.stop();
+                } else {
+                    m_windowActionsRetry.start();
+                }
+            });
+}
+
+void ShellRuntimeApplication::restartWindowActionsIdentity()
+{
+    if (!m_windowActionsClient) {
+        return;
+    }
+    m_windowActionsClient->stop();
+    QString error;
+    if (!m_windowActionsClient->start(&error)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start authenticated window identity:"
+            << error;
+        m_windowActionsRetry.start();
+        return;
+    }
+    // The compositor may not yet have observed the just-mapped dock surface.
+    // Retry the same client after its request deadline; never create a second
+    // binding or retain a failed snapshot.
+    if (!m_windowActionsClient->identitySnapshot()) {
+        m_windowActionsRetry.start();
+    }
+}
+
 bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                                                 QString *error)
 {
@@ -181,8 +261,11 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
-    m_powerApplet =
-        std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
+    if (!initializeLauncherRuntime(error)) {
+        resetRuntime();
+        return false;
+    }
+    initializeServiceAppletCompositions();
     if (m_presentationAccessToken) {
         // Runtime option parsing treats these values as one trust bundle. Keep
         // the assertion fail closed here too so future alternate callers cannot
@@ -207,10 +290,6 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             NotificationPresentationPolicy::NotificationInterruptionPolicy>();
         m_notificationPrivacyPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationPrivacyPolicy>();
-        m_settingsTransport = std::make_unique<Services::SettingsClient::QtSettingsTransport>(
-            QDBusConnection::sessionBus());
-        m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
-            *m_settingsTransport, QStringList{QStringLiteral("services.doNotDisturb")});
         m_quietingSettingsBridge =
             std::make_unique<NotificationQuietingSettingsBridge>(
                 *m_settingsClient, *m_notificationInterruptionPolicy);
@@ -264,7 +343,9 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
-            m_notificationCenterAccess.get(), m_powerApplet->access());
+            m_notificationCenterAccess.get(), m_audioApplet->access(),
+            m_bluetoothApplet->access(), m_powerApplet->access(),
+            m_launcherApplet->access(), m_globalMenuApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -285,6 +366,14 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         return false;
     }
 
+    QString settingsError;
+    if (!m_settingsClient->start(&settingsError)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start Settings1; launcher persistence"
+               " and notification quieting remain unavailable:"
+            << settingsError;
+    }
+
     if (m_notificationClient) {
         startNotificationOutputAuthority();
         QString lockError;
@@ -300,12 +389,6 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         if (!m_notificationClient->start(error)) {
             resetRuntime();
             return false;
-        }
-        QString settingsError;
-        if (!m_settingsClient->start(&settingsError)) {
-            qWarning().noquote()
-                << "QindaQt shell could not start Settings1; notifications remain quiet"
-                << "until a baseline is available:" << settingsError;
         }
         m_notificationWindows = std::make_unique<NotificationWindowController>(
             m_engine, *m_notificationPresentation,
@@ -328,6 +411,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         resetRuntime();
         return false;
     }
+    restartWindowActionsIdentity();
 
     for (QScreen *screen : m_application.screens()) {
         attachOutputSignals(screen);
@@ -350,14 +434,13 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
+    m_windowActionsRetry.stop();
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();
     m_shellDevelopmentEvidence.reset();
     m_notificationWindows.reset();
     m_settingsRouteLauncher.reset();
     m_quietingSettingsBridge.reset();
-    m_settingsClient.reset();
-    m_settingsTransport.reset();
     m_outputAuthority.reset();
     m_interactions.reset();
     m_visibilityClient.reset();
@@ -365,8 +448,22 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_globalMenuApplet.reset();
+    if (m_windowActionsClient) {
+        m_windowActionsClient->stop();
+    }
+    m_windowActionsClient.reset();
+    m_windowActionsTransport.reset();
+    m_launcherApplet.reset();
+    m_audioApplet.reset();
+    m_bluetoothApplet.reset();
     m_powerApplet.reset();
     m_notificationCenterAccess.reset();
+    if (m_settingsClient) {
+        m_settingsClient->stop();
+    }
+    m_settingsClient.reset();
+    m_settingsTransport.reset();
     m_notificationPresentation.reset();
     m_notificationPrivacyPolicy.reset();
     m_notificationInterruptionPolicy.reset();

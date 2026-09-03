@@ -21,7 +21,9 @@
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
         {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "bluetooth", "plugin": "bluetooth", "settings": {"zone": "end"}},
         {"id": "power", "plugin": "power", "settings": {"zone": "end"}},
+        {"id": "audio", "plugin": "audio", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]

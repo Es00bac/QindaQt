@@ -163,6 +163,44 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
+The production Audio applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.audio-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection rows are joined by a public-client controller with
+read/control grant separation and exact-owner replacement cleanup (including a
+stale old-owner reply dropped after replacement), a compiled
+offscreen keyboard/accessibility row, pure/runtime boundary gates with
+independent service-internal/transport/QML/QObject poison negative controls,
+and an installed
+production-package/source-poison row that also requires the staged KF6,
+Controls, and Tokens artifacts to resolve through the relocated shell's and
+Controls library's relative RUNPATHs. All rows use an injected fake transport
+or a relocated package stage; no row contacts the host session bus, PipeWire,
+WirePlumber, display server, or hardware. The exact matrix and non-claims are
+detailed in [Audio applet](../shell/audio-applet.md).
+
+The shared production-shell install closure is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.shell-runtime-component-closure$' \
+  --output-on-failure --no-tests=error
+```
+
+That row independently installs default `QindaQt`, `AudioAppletRuntime`,
+`BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
+and `PowerAppletRuntime`
+into build-local stages. It requires the staged shell to resolve each directly
+linked applet backing library and Controls from its own install library
+directory and Tokens from Controls' baked sibling RUNPATH, then launches
+`--help` with ambient loader, display, Wayland, and session-bus variables
+cleared. It contacts no compositor, host bus, service, or hardware.
+
 The production Power applet slice is selected with:
 
 ```sh
@@ -173,9 +211,87 @@ ctest --test-dir build/dev \
 
 Its pure projection/control/request rows are joined by public-client controller,
 compiled offscreen keyboard/accessibility, runtime-boundary poison, and
-installed production-package/source-poison rows. No row contacts the host
+installed production-package/source-poison rows. The installed row requires
+the shell's directly linked Controls library and its Tokens dependency to
+resolve from the narrow relocated component. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
+
+The production Bluetooth applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.bluetooth-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection/request rows are joined by an exact-owner public-client
+controller, compiled offscreen keyboard/accessibility and lease-close proof,
+an ordered post-moc controller-surface contract, mutation-sensitive
+pure/runtime dependency boundaries, and an installed production-package/source-
+poison row. That installed row requires the staged
+shell's KF6, Controls, and Tokens dependencies to resolve from their exact
+relocated paths. `qindaqt.bluetooth-applet-surface` walks the controller-owned
+property, method, and enumerator slices of `staticMetaObject`, compares the
+property name/type/readable/writable/resettable/notify/constant/final fields
+and method signature/return/type/access/revision fields, plus each enumerator's
+name, enum name, scope, flag/scoped state, and key/value list, in order. It
+rejects a deliberately expanded test surface and constructs the production
+applet through an offscreen `QQmlEngine` to compare controller-specific
+QML-visible property and method names with the same literal contract.
+Token-pasted macros, public slots, and
+cross-header macro aliases therefore cannot evade the compiled gate. The
+textual boundary rows retain exact file/header allowlists, forbidden
+dependencies or symbols, and manifest/registry/profile/QML/composition presence
+contracts, with independent client/service, address, persistence, filesystem,
+adjacent-module, and composition-removal poisons. No row contacts the host
+session bus, display server, BlueZ, a radio, or pairing authority. The exact
+matrix and nonclaims are
+detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
+also clears ambient loader paths and requires CMake's runtime dependency
+resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
+The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
+profile built the production shell plus the focused targets, passed all eight
+registered Bluetooth-applet rows, and passed six adjacent public-client,
+manifest, catalog, resolver, notification-center applet offscreen, and
+shell-runtime-catalog rows. This
+is deterministic public-client/offscreen/package evidence only; it adds no
+private-bus, compositor, BlueZ, host-radio, or hardware claim.
+
+The Launcher L1 production-adapter slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.launcher-' \
+  --output-on-failure --no-tests=error
+```
+
+Its adapter and composition rows cover injected-root fixture trees with
+canonical containment,
+escaping-link and FIFO/non-regular negative controls, capped reads, debounced
+watcher refresh with generation fencing, explicit inaccessible-root,
+non-traversable-ancestor, and dangling-top-level-link degradation (with only
+syscall-confirmed absence remaining normal), Settings1 persistence round trips
+and unchanged-authority post-uncertainty convergence against a scripted fake
+transport, and seam-based execution with entry-policy action inheritance and
+a recording spawner/activator. The production composition row uses a private
+bus, derives roots from an explicit environment snapshot, evaluates the audited
+launch grant, and injects recording execution seams, so it starts no real
+application. The only real children elsewhere in the slice are the inert
+`/bin/true` and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
+QST provisioning, pinned/recent/category/search rendering, persistence failure,
+Tab and cross-section traversal, Return/Space activation, Escape, and accessible
+enabled/denied/unavailable states. A second fatal-warning-clean row traverses
+the production panel dispatcher and preview fallback. A runtime source-boundary
+poison gate, a mutation-sensitive documentation/comment contract row, a
+relocated `LauncherAppletRuntime` shell/module/import-closure installed-package
+proof, and the shared component-closure row finish the slice. No row
+contacts the host session bus, display server, real user applications, or
+hardware: headless rows construct `QCoreApplication`, inherited display/bus
+endpoints are removed from every launcher row, and GUI rows force the offscreen
+software backend. The exact
+matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
+[ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
@@ -257,24 +373,89 @@ scale-incompatible rows and requires exactly the requested tagged pass; this
 prevents Qt Quick software-render state from crossing window lifetimes as
 specified by [ADR-0021](../adr/0021-isolate-controls-visual-rows.md). Each row
 waits through a named control's published QST transition duration, then checks
-the applied DPR and pixel dimensions before comparing reviewed PNG fixtures
-under two required named host-font substitutions, C locale, offscreen platform,
-and software rendering. This is environment determinism rather than a pin of
-repository-owned font bytes. The
-behavior gate separately proves reduced-motion duration projection. The gallery
+the applied DPR and pixel dimensions before comparing reviewed PNG fixtures.
+Glyphs render only from repository-owned font bytes: the fixture registers the
+Noto Sans Regular/SemiBold/Bold and Noto Sans Mono Regular files vendored
+under `tests/controls/fonts/` (SIL Open Font License 1.1) with
+`QFontDatabase::addApplicationFont`, verifies each registration exposes
+exactly the expected family, rewrites every theme in the product catalog
+(`data/themes/*.json`) with its `fontFamily`/`monoFontFamily` replaced by the
+registered families into a runtime pinned-theme directory (all other fields
+unchanged), and installs `QFont` substitutions for the original catalog names.
+The rewrite is required because `QFont::insertSubstitution` is only consulted
+when the requested family is absent from the host: with host Noto installed,
+requesting `Noto Sans` resolves the host face regardless of any substitution,
+which is exactly how the high-contrast theme bypassed the pin (measured
+against Qt 6.11). The vendored name records declare the repository-owned
+families `QindaQt Sans` and `QindaQt Sans Mono`, which no host-installed font
+can declare, so the fixture cannot collide with or be shadowed by host Noto
+however Qt or fontconfig order their matches; a host Noto package update
+cannot change the rendered bytes. The loader fixes the C locale and fails
+closed when a vendored file is missing, unreadable, renamed, carries invalid
+OpenType checksums, or a theme catalog file cannot be read, parsed, or
+rewritten. The row environment otherwise keeps the documented host fontconfig
+configuration, because an empty configuration re-wraps text and removes the
+fallback glyph the baselines contain instead of pinning bytes.
+
+Four focused rows guard the pin. `qindaqt.controls-font-pinning` requires the
+engine resolving the schema's `Inter` family to resolve to the
+repository-owned `QindaQt Sans` family and to serve a name table
+byte-identical to the vendored Regular file, requires direct requests for the
+registered families to serve the vendored bytes, verifies every pinned theme
+copy names only the registered families with every other field unchanged,
+and validates every vendored file's sfnt table directory checksums and
+`head.checkSumAdjustment` whole-font sum, so a renewal tool that rebuilds a
+font without restoring its checksums fails this row instead of shipping a
+malformed fixture. The three
+`qindaqt.controls-font-fixture-missing`, `-corrupt`, and `-wrongfamily` rows
+drive the missing-file, unreadable-file, and wrong-family failure branches of
+the fixture loader and require the process to abort with the matching
+diagnostic.
+
+Host-font independence is proven by a dedicated canary row,
+`qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact`, which reruns
+the theme row that previously bypassed the registered families under the
+checked-in
+`tests/controls/fontconfig/no-noto/fonts.conf` applied through
+`FONTCONFIG_FILE`. That configuration keeps the documented host fonts and
+rendering rules but rejects exactly the host families the theme catalog can
+name (`Noto Sans`, `Noto Sans Mono`), so a fixture that renders any host Noto
+byte drifts against the reviewed baseline and fails. Setting
+`FONTCONFIG_FILE=/dev/null` is not a proof of anything: fontconfig cannot
+parse it and silently falls back to the standard host configuration, so such
+a run passes regardless of a host-font bypass. The canary row also points
+`XDG_CACHE_HOME` into the test build tree so fontconfig never writes to the
+user's cache. Regenerating baselines with
+`QINDAQT_UPDATE_CONTROLS_BASELINES=1` re-renders pixels when the vendored
+bytes, themes, QML, or rendering change, and the resulting baseline diff must
+be reviewed.
+The behavior gate separately proves reduced-motion duration projection. The gallery
 includes explicit error, busy, disabled, degraded, checked, and ordinary states
 so those appearances are reviewable in every row.
-The staged consumer removes its previous build-confined prefix, installs the
-current tree, requires the exact 14 Qt-generated QML deploy paths with no extra
-QML source, and resolves representative Controls properties through strict
-tooling analysis and compiled runtime loading only from that installed QML root.
+The staged consumer removes its previous build-confined prefix, installs only
+the `ControlsQmlModules` component (declared in `tests/controls/CMakeLists`
+because the product rules for those two QML modules live in the broader
+`SettingsAppearanceRuntime` component), requires the exact 14 Qt-generated QML
+deploy paths with no extra QML source, and resolves representative Controls
+properties through strict tooling analysis and compiled runtime loading only
+from that installed QML root.
 Ambient source/build QML paths are absent. A separate no-threshold benchmark reports the median
 PSS delta of a token-plus-controls gallery versus a matched bare Qt Quick
 process from exact `smaps_rollup` PIDs.
 
-The complete `^qindaqt\.controls-` prefix currently discovers 29 tests: one
-behavior test, the 25 visual rows, source policy, staged installed import, and
-the PSS measurement.
+The complete `^qindaqt\.controls-` prefix currently discovers 34 tests: one
+behavior test, the 25 visual rows, the no-Noto canary row, font pinning,
+three font-fixture fail-closed controls, source policy, staged installed
+import, and the PSS measurement. The selector is runnable after a focused
+build of exactly these targets:
+
+```sh
+cmake --build build/dev --parallel 3 --target \
+  qindaqt_controls_visual_tests qindaqt_controls_behavior_tests \
+  qindaqt_controls_font_pinning_tests qindaqt_controls_font_fixture_negative_tests \
+  qindaqt_controls_memory_probe qindaqt_controls_bare_memory_probe \
+  qindaqt_controls_qml qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+```
 
 This boundary is software-renderer, package, and process-memory evidence. Live
 AT-SPI, compositor focus, physical DPI/GPU output, Settings/AppShell/service
@@ -621,9 +802,10 @@ user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual
 screenshot baselines.
 
-## Current global-menu transport proof
+## Current Global Menu production-shell proof
 
-The complete G0 model/presentation and G1 transport boundary is selected with:
+The complete G0 model/presentation, G1 transport, and G2 production-shell
+composition boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
@@ -642,15 +824,45 @@ properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
 property tolerance, changed-equal (replayed) revision rejection, owner loss, and
 one Event for one accepted activation. Composition proves the applet snapshot
 comes from the focused registrar entry only after PID/name authentication and
-that loss or focus withdrawal clears authority.
+that loss or focus withdrawal clears authority. The transport-composition row
+also proves a native announced service/path is resolved to its exact owner and
+withdrawn on loss.
 
-Every transport process is the QtTest executable itself, and every bus is the
-fresh broker created by `dbus-run-session`; the rows contact no inherited
-session bus, display, input, compositor, hardware, or network. They do not
-qualify production-shell instantiation, installed QML/manifest wiring,
-submenus, a foreign toolkit, or a live desktop. Those remain later shell and
-contained-session gates. See [Global application menu](../shell/global-menu.md)
-and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
+G2 adds `qindaqt.global-menu-runtime-composition-private-bus`, which feeds a
+revisioned authenticated identity through the public shell window-actions
+client, verifies registrar residency and one activation against a fake
+exporter, clears truth on provider loss, and reports `degraded` when another
+peer owns the registrar name. The same private-bus row starts a second real
+provider process and proves both a compositor-PID mismatch and a regressed
+identity revision leave the facade unavailable and empty; an attempted action
+produces zero provider `Event` calls in both variants.
+`qindaqt.global-menu-runtime-boundary-poison`
+requires that composition to borrow the shared client and reject planted
+private-compositor/second-transport dependencies.
+
+All six Global Menu QML rows import the compiled
+`QindaQt.Shell.GlobalMenu` module under `QT_FATAL_WARNINGS=1`. The submenu row
+proves Up/Down/Right/Left traversal, Enter/Space activation exactly once,
+Escape and focus-loss closure, the six-level cap, and accessible popup/menu
+item state. The production-panel keyboard row hosts the real
+`PanelAppletRow`/`BuiltinAppletContent` dispatcher and proves the key-only
+Tab → Down → Down → Right → Space route through a required `Popup.Window`.
+`qindaqt.global-menu-installed-package` stages only
+`GlobalMenuAppletRuntime`, authenticates the shell's relocated module library,
+and resolves the installed manifest under source poison. The shared
+`qindaqt.shell-runtime-component-closure` row independently includes this
+component and the Global Menu library in every shell-carrying component.
+
+Every bus is the fresh broker created by `dbus-run-session`; the hostile
+ownership variant's only additional process is the inert test exporter whose
+distinct bus-daemon PID is the negative-control input. Offscreen/package rows
+contact no inherited display, input, compositor, hardware, or network. These rows qualify
+production-shell instantiation, installed QML/manifest wiring, and submenu
+behavior, but not a foreign toolkit, real login session, or nested installed
+desktop. Those remain contained-session gates. See
+[Global application menu](../shell/global-menu.md),
+[ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md), and
+[ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
 
 ## Current status-notifier foundation proof
 
@@ -792,15 +1004,35 @@ Settings1 executables, observes both owners and PIDs, proves read-only standard
 truth, kills the daemon, requires both processes to exit, and repeats on a
 fresh daemon with fresh owners/PIDs. The staged-package row reruns that process
 proof through the installed portal executable and themes, validates the D-Bus
-descriptor, hardened systemd unit, Settings-only `.portal` declaration and
-selector, then proves source and installed-private-header poison rejection.
-Mutation controls independently add the installed standard Background family
-to `.portal` and selector artifacts and add duplicate Settings entries; the
-exact singleton checker must reject every mutation while accepting the
-unmodified source and installed files.
-Host session-bus variables are removed before every daemon starts. These rows
-do not contact, select, or modify the user's portal frontend or installed
-packages; host/toolkit integration remains a downstream release check. See
+descriptor, hardened systemd unit, Settings-only `.portal` declaration, exact
+selector, and one installed copy of each runtime artifact, then proves source
+and installed-private-header poison rejection.
+
+`qindaqt.portal-frontend-selection` stages only the QindaQt metadata plus the
+installed KDE provider declaration, starts the real `xdg-desktop-portal` on a
+private `dbus-run-session` bus, and injects a FileChooser-only object at the KDE
+backend name. It proves exact Settings `ReadAll`/`Read` projection and live
+`SettingChanged`, KDE-first FileChooser routing, Background rejection, and
+that another `XDG_CURRENT_DESKTOP` cannot select QindaQt. The auxiliary
+Documents and PermissionStore names are reserved by the test process so the
+frontend cannot activate host services.
+
+`qindaqt.portal-frontend-toolkit` uses the same private fixture and launches a
+Qt 6 Widgets probe with `QT_QPA_PLATFORM=offscreen` and
+`QT_QPA_PLATFORMTHEME=xdgdesktopportal`. It requires initial Dark
+`QStyleHints::colorScheme()`, a contrasting palette derived and applied by the
+probe, then a live Light hint signal and matching derived palette. The row does
+not assert automatic replacement of an application's explicit palette.
+
+The staged-package row repeats both frontend rows with the installed selector,
+`.portal`, executable, and theme/schema paths. Mutation controls independently
+open the default/Background routes, advertise a non-Settings family from
+QindaQt, and add duplicate Settings entries; the exact singleton checker must
+reject every mutation while accepting the unmodified source and installed
+files. Host session-bus variables are removed before every daemon starts.
+These rows do not contact or modify the user's portal frontend, host D-Bus
+services, or installed packages. They do not qualify GTK/GSettings, Flatpak,
+an installed desktop session, or any real non-Settings implementation. See
 [XDG Settings portal appearance backend](../architecture/portal-service.md).
 
 ## Current Appearance Settings S0 proof
@@ -844,6 +1076,83 @@ does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.
 
+## Current Customize Settings canvas proof
+
+The direct canvas, editor-session composition, hostile boundary, and relocated
+package are selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
+  --output-on-failure --no-tests=error
+```
+
+The model row uses an injected Settings transport, real editing repository and
+coordinator adapter, and temporary profile store. It proves converging preview,
+one durable gesture history boundary, cancel and rejection rollback,
+pointer/keyboard insertion parity, persistence, conflict truth, and explicit
+lease-loss recovery. The page row runs warning-fatal, renders 720×720 compact
+and 1080×720 wide software scenes, checks accessible palette, panel, and zone
+identity plus keyboard activation, and verifies centered discard-dialog
+geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
+or Discard resolves it and preserves both navigation and application-close
+prompts across wide-to-compact and compact-to-wide host reconstruction. The
+boundary row scans every C++ and QML file owned by the route. It accepts C++
+includes only from Qt/system headers, the route's own directory, or the public
+`include/` trees of its named dependencies; all other repository-relative
+includes fail. Independent negative controls plant the exact sibling
+`src/apps/settings_center/settings_route_registry.h` include and a `../` escape
+and require both to be rejected. The same row rejects shell, LayerShellQt,
+compositor, and D-Bus dependencies. Only the named composition source may
+construct the public Settings1 Qt transport with `QDBusConnection`; adding that
+dependency anywhere else fails.
+
+`qindaqt.settings-customize-installed-route` stages the complete explicit
+Settings runtime component and runs the common hostile Settings package script.
+It additionally requires the relocated Customize QML module, profile catalog,
+and applet manifest catalog before exercising all registered route intents.
+The selector never starts a session bus, nested compositor, host service, or
+input backend. Live shell binding, reveal behavior, live AT-SPI, and rendered
+session matrices remain downstream evidence.
+
+## Current Bluetooth Settings route proof
+
+The public-client model, warning-fatal page, hostile boundary, and relocated
+package are selected with:
+
+```sh
+DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev -R '^qindaqt\.settings-bluetooth-' \
+  --output-on-failure --no-tests=error
+```
+
+The seven rows use an injected fake Bluetooth transport or absent private buses
+only. The model row proves bounded address-free adapter/device projection,
+class/icon/RSSI truth, exact owner/epoch/revision admission, paired-only
+connection actions, serialized pending/convergence fences, one discovery
+lease, and release on route departure. The adversarial model row proves that
+rejected, failed, uncertain, inexact, owner-lost, and owner-replaced acquisition
+cannot leave a wait-for-nothing close fence, and rejects duplicate identifiers,
+overlong names, and invalid class/RSSI values. The page row runs with
+`QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320 compact software scenes and
+checks accessible role/state/name truth, disabled controls, action wiring, and
+the always-enabled host-entry Close target. The allow-list boundary scan and
+independent negative controls reject sibling application internals, parent
+escapes, private Bluetooth service headers, and pairing authority. The
+window-close row uses a stub to isolate successful-release waiting, then uses
+the real client/model to prove rejected, uncertain, owner-lost, and owner-
+replaced pending acquires release the QML close fence; it also exercises
+Bluetooth Escape/Tab entry through the compact Settings host. The installed row
+stages the real runtime, requires failure while the installed Bluetooth module
+is withheld despite the developer tree, then launches the relocated route after
+restoration.
+
+The Settings Center selector adds deterministic seven-route order, canonical
+startup, Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader
+exclusivity, route-departure lifetime signaling, and the common relocated
+package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
+remove behavior, physical Bluetooth qualification, live AT-SPI, and nested
+desktop screenshots remain outside this proof.
+
 ## Current Settings Center navigation S1 proof
 
 The typed registry/controller, responsive route host, existing route
@@ -861,19 +1170,56 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, both complete startup roots under private-bus loss,
+forms, desktop identity, all seven route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
-requires root-construction failure, reinstalls the runtime component, and only
-then proves both complete routes from the sanitized stage.
+requires root-construction failure, repeats the poison for Network and Audio,
+reinstalls the runtime component, and only then proves all seven complete
+routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
-token-styled. The two route models use independent Settings1 transports; the
-focused construction rows prove their unavailable startup surface, while the
-Settings1 client suites remain authoritative for exact-owner and reply fencing.
+token-styled. Settings1 route models use independent transports, while Network,
+Audio, and Bluetooth use their distinct public service clients. Focused construction
+rows prove unavailable startup surfaces; public client suites remain
+authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
 compositor focus, screen-reader traversal, or the later platform-route matrix.
+
+## Current Audio Settings route proof
+
+The first-party Audio route over the public Audio1 client is selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
+  -R '^qindaqt\.settings-audio-(model|model-adversarial|page|boundary|boundary-poison)$'
+```
+
+The model row uses only the injected fake audio transport: it proves bounded
+device/stream projection with default identity, exact owner/epoch/revision
+exposure, capability and per-target admission, one-shot set-default, device
+and stream volume/mute dispatch with hostile level/serial refusal, degraded
+truth that stays admitted exactly as the client preflight admits it, and
+visible never-replayed uncertain outcomes. The adversarial row adds owner
+loss and replacement, epoch fencing of a pending operation and retired
+serials, ignored foreign and late completions, retained stale truth, and a
+retry that rediscovers without replaying. The offscreen page row proves
+accessible roles and names, action wiring including slider release and switch
+toggles, stale and owner-loss presentation, compact focus reveal, and Tab
+cycling in both directions, including the negative control that host entry
+targets the first enabled, admitted action when the default output admits
+none of its own controls. The Settings Center navigation page row proves the
+integrated route end to end: Ctrl+6 selection, `settingsNavButton_audio` and
+`settingsCompactTab_audio` accessible PageTab roles, Escape return to the
+active route tab, and Tab entry into the page's declared first focus target
+in both the 720×520 and 440×360 host layouts, with
+`wideSettingsRouteAudioLoader`/`compactSettingsRouteAudioLoader` activation.
+Boundary and poison rows fail on private service, WirePlumber,
+PipeWire, or Qt D-Bus sources, an invokable outside the closed intent
+surface, text entry, a stream-move surface, or a private dependency; the
+Settings Center installed-package row additionally withholds the installed
+Audio module and requires relocated-root failure before restoring it. No row
+contacts the host session bus, PipeWire, or WirePlumber.
 
 ## Current compositor proof
 
@@ -881,7 +1227,7 @@ The focused live checks are:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^(session\.(nested-wayland-xwayland|parent-wayland\.weston-headless|virtual-output\.|installed-plugin-discovery)|compositor\.(kwin-plugin-nested|kwin-plugin-unload-restores-clients|production-control-read-only))' \
+  -R '^(session\.(nested-wayland-xwayland|parent-wayland\.weston-headless|virtual-output\.|installed-plugin-discovery)|compositor\.(kwin-plugin-nested|kwin-plugin-unload-restores-clients|kwin-shell-window-actions|production-control-read-only))' \
   --output-on-failure
 ctest --test-dir build/dev \
   -R '^compositor\.(kwin-plugin-nested|kwin-plugin-unload-restores-clients)$' \
@@ -891,6 +1237,47 @@ ctest --test-dir build/dev \
 The milestone boundary passed the complete 40-test suite in both Debug and
 Release configurations. The focused commands above isolate its live session
 proofs; they do not replace the complete-suite gate.
+
+`compositor.kwin-shell-window-actions` runs serially under a private session
+bus, disposable build-root XDG directories, and the cache-pinned KWin 6.6.5
+virtual runtime. One fake shell process maps a committed `scope=dock` layer
+surface while separate native Wayland and XWayland client processes map real
+buffered ordinary windows. From the bound shell PID it observes the current Windows/visibility
+fence and proves activate, minimize, unminimize, raise-order, and request-close
+effects through `CompositorShell1`; a separate bus process using the same valid
+UUID/generation must receive `unauthorized`. That wrong-PID process also sends
+megabyte-scale window, epoch, and revision fields and requires a compact reply
+with no echoed field. The same row compares the projected Wayland PID with its
+real child process and requires a typed-null AppMenu window id, then compares
+the XWayland XRes PID and exact projected AppMenu id with that child's PID and
+native X11 window id. A wrong-PID identity read must be bounded,
+`unauthorized`, and contain no identity fact. The row uses no host display,
+input, D-Bus session,
+hardware, or `tests/session` desktop scenario.
+
+That row also introspects the live `CompositorShell1` object and compares its
+complete method and signal name sets with the checked-in XML. The native
+Wayland client announces one valid KDE AppMenu service/path through KWayland on
+the same Qt Wayland connection; the row observes those exact values, then
+replaces them with an overlong service, a malformed service, and a malformed
+path in separate phases. Each hostile phase must publish typed unavailability,
+and each intervening valid announcement must recover with a later identity
+revision.
+
+The deterministic companion rows are `compositor.shell-window-actions` for
+bound-PID admission, unbound authority, authenticate-before-parse hostile
+fields, authenticated entry bounds, echo-free fixed failures, stale-before-
+lookup, unknown UUID, Hybrid routing, executor failure, and fixed rate bounds;
+`compositor.shell-window-identity` for fake credential/source ordering,
+revision and action-generation fencing, typed absence, paired appmenu
+announcements, malformed payload rejection, and echo-free authorization;
+`compositor.dbus-contract` for exact XML parity; and
+`qindaqt.shell-window-actions-{client,private-bus}` for exact-owner async
+serialization, owner/timeout/malformed uncertainty with no replay, real
+private-bus owner replacement plus late-old-reply rejection, a real-bus client
+timeout, ordinary transport round trip, directed identity invalidation,
+monotonic refresh, invalid-generation rejection, identity-specific late-old-
+owner reply rejection, and fail-closed identity withdrawal.
 
 These tests boot beneath disposable XDG trees and private D-Bus sessions. Two
 or more `QBackingStore`-backed probe windows commit real Wayland buffers and
@@ -1204,6 +1591,42 @@ does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,
 hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
 Settings/shell UI. Those are later isolated hardware and integrated-session
 gates; a `wpctl`-based test or production fallback is not equivalent evidence.
+
+## Terminal S1 focused proof
+
+The display-less terminal slice is selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.terminal-' --output-on-failure
+```
+
+In addition to the S0 launch, PTY, teardown, appearance, metadata, CLI, and
+relocatable-install rows, S1 adds focused profile, session-collection,
+Settings1, AppShell, and tab-strip rows. The profile row rejects hostile names,
+identifiers, argv, ranges, duplicate identities, malformed JSON, and oversized
+lists, then proves canonical round trips, literal argv resolution, and exact
+unchanged editor preservation of leading/interior/trailing empty arguments. The
+collection row proves the eight-session bound, reordering, per-session close,
+close-all, forced destruction, and bounded child-title sanitization. The fake
+Settings1 row proves complete typed baselines, fixed-order one-key commits with
+a fresh snapshot between writes, conflict abort, fail-closed owner loss, and
+uncertain no-replay. It also composes the production window and verifies that
+conflict, confirmed rejection, request transport failure, and owner loss each
+publish all three per-key results through bounded visible and accessible text;
+recovery never replays the uncertain write. The separate
+`qindaqt.terminal-process-group` row creates a real session leader and an
+HUP/TERM-immune descendant in its process group, requires TERM→KILL and verified
+group emptiness before clean completion, and kills any survivor on every test
+exit path. The AppShell row validates the fixed action catalog and routes
+activation to the local command. `qindaqt.terminal-tabs-offscreen` runs
+with `QT_QPA_PLATFORM=offscreen` and `QT_FATAL_WARNINGS=1`; it proves stable
+Shift-modified WindowShortcut bindings, selection/movement/close behavior, and
+PageTabList/PageTab accessible names and roles.
+
+These rows use injected backends, process monitors, and Settings transports.
+They open no PTY child, session bus, display, network, or host desktop. They do
+not qualify global-menu export, restored tab inventory, whole-application AT,
+nested screenshots, GPU rendering, or physical display/input behavior.
 
 ## D1 deterministic display model
 
@@ -1724,12 +2147,40 @@ events, primary-transfer sequences beyond the one exact dual-row transfer,
 mirroring, GPU/OpenGL/DRM, physical input, perceptual baseline comparison, and
 physical hardware remain unqualified.
 
-## Clipboard C0 model proof
+## Bluetooth BlueZ B1 private-bus proof
+
+The focused selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.bluetooth-bluez-'
+```
+
+`bluetooth-bluez-adapter` and `bluetooth-bluez-operations` each start their
+own private `dbus-daemon`, inject that connection into the production
+`BluezAdapterBackend`, and provide a fake exact owner of `org.bluez`. They
+cover absent startup, ObjectManager inventory, Adapter1/Device1 property and
+interface churn, bounded hostile values, deterministic duplicate suppression,
+power, one-session reference-counted discovery, connect/disconnect replies,
+caller and BlueZ owner loss, owner return, and late-reply fencing. The mode row
+proves only exact `deterministic` opts out of the packaged production default.
+The installed-boundary row stages only `QindaQtBluetoothB1` and verifies its
+archive plus exact two-header public surface without private transport/store
+leaks. The boundary and boundary-poison rows enforce module direction, the
+permitted BlueZ method set, injected-bus test isolation, composition linkage,
+install component registration, and hostile-checker rejection.
+
+These rows never use the ambient session/system bus, a host BlueZ, rfkill,
+Bluetooth hardware, uinput, or a nested compositor. They do not qualify a
+physical adapter, a distribution BlueZ build, pairing Agent1, suspend/resume,
+or Bluetooth audio routing.
+
+## Clipboard C0/C1 service proof
 
 The focused Clipboard C0 selector is:
 
 ```sh
-ctest --test-dir build/dev --output-on-failure -R 'clipboard'
+ctest --test-dir build/dev --output-on-failure -R '^qindaqt\.clipboard-'
 ```
 
 Four suites cover the pure model boundary: `clipboard-model-media`
@@ -1748,13 +2199,56 @@ duplicate rejection, and hostile decode mutations: truncation,
 magic/version/flag corruption, oversized declared lengths, duplicate and
 non-canonical media, aggregate-overflow claims, unsanitized metadata).
 
-These are static in-process unit tests on Qt Core values. The C0 boundary
-never touches a host clipboard, Wayland connection, D-Bus daemon, session,
-GUI, file system, or clock. Installed-header/link consumer evidence and
-staged packaged qualification are deliberately deferred to the Clipboard1
-integration slice, which owns the transport, bus surface, and lock-state
-prerequisites; the model's `install(TARGETS …)` export exists but no
-packaged-qualification claim is made for C0 alone.
+The C1 rows add `clipboard-protocol` hostile structures and canonical QCDL
+snapshots, `clipboard-client` exact-owner/epoch/revision fencing and uncertain
+operation results, `clipboard-service` opt-in/lock/purge/copy behavior,
+`clipboard-settings-consent` schema/profile-default denial plus explicit
+user-override acceptance, `clipboard-request-cache` FIFO result eviction and
+the exact 64-caller ceiling,
+`clipboard-private-bus` real client/service round trips and owner loss on an
+ephemeral private `dbus-daemon`, and `clipboard-wayland-adapter` compiled
+generated-client behavior against an in-process `libwayland-server` fake. The
+fake advertises both selection kinds and services nonblocking pipes so MIME
+preflight, sensitive no-read behavior, the one-MiB read ceiling, advertised-name
+and pending-offer bounds, global removal, and compositor disconnect exercise the
+real adapter without `WAYLAND_DISPLAY` inheritance. Boundary-poison and pinned-
+XML checksum rows reject persistence/logging dependencies and protocol drift.
+
+All runtime roots are below the assigned build tree. These tests never connect
+to the host clipboard, Wayland display, session bus, compositor, hardware, or
+network. They prove generated protocol behavior and private-bus semantics, not
+interoperability with a packaged KWin session or physical input.
+
+## Power PB-2 production-upstream proof
+
+The focused production-adapter selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.power-service-(sysfs-backlight|upstream-composition|upower-adapter|profiles-adapter|logind-adapter|logind-actions|production-activation|boundary)$'
+```
+
+UPower, Power Profiles, and logind rows create one private `dbus-daemon` per
+fixture and connect only by its printed address. Production activation exports
+that same address as both bus environments to the activated executable and
+injects a backlight root below the configured build scratch directory. The
+rows cover daemon absence/loss/replacement, device removal, service and device
+property changes, line-power `Online` transitions, exclusion of peripheral
+`PowerSupply=false` batteries from mixed inventories, hostile property types
+and ordinals, estimate bounds, modern/legacy profile roots and cookie holds,
+sanitized inhibitors, `PrepareForSleep`, dispatch-time `Can*` reauthorization,
+no-prompt actions, duplicate operation lineage, restart with a reused operation
+ID while the stopped generation's authorization reply is delayed, sysfs
+disappearance/read-only/write/re-observation, the explicit composition modes,
+and installed activation descriptors. The production activation row also
+proves exact name ownership, constructing-bus-loss exit, and fresh
+owner/epoch/process truth on an independent replacement bus, preserving the
+legacy activation contract without using its `/tmp` fixture.
+
+The selector does not contact an ambient system/session bus, the host
+`/sys/class/backlight`, hardware, polkit, uinput, a compositor, or a desktop
+session. It proves only the injected adapter and package contracts; physical
+battery/backlight behavior and suspend/resume remain hardware evidence.
 
 ## Required display matrix
 

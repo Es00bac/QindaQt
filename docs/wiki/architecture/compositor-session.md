@@ -118,6 +118,9 @@ The KWin plugin provides:
   snapshots exact logical outputs, normal/dialog/utility user windows, current
   workspace/activity, Hybrid whole-group maximize state, and a per-service
   epoch behind one coalesced Compositor1 invalidation;
+- a separately authenticated shell-only action object whose bus credential PID
+  must equal the sole committed `dock` layer-surface owner, with exact
+  visibility-generation fencing and Hybrid-policy routing;
 - sanitized input-device capabilities and a non-consuming lifecycle-safe
   `InputEventSpy` with no key text/native scan codes/serials or public event
   stream;
@@ -258,6 +261,57 @@ state; it is not one of the production-readable snapshots. Only the isolated
 explicit scenario path enables the
 `development-test` mutation mode. Production Hybrid gestures call typed
 process-local policy instead of enabling D-Bus mutation.
+
+The production task list and launcher use the distinct
+`org.qindaqt.CompositorShell1` object described by
+[ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md).
+Its controller receives credential, panel-owner, registry, rate/clock, and
+executor collaborators explicitly. A request is admitted only while all
+committed `dock` layer roles have one Wayland-client PID and the session-bus
+daemon reports that exact PID for the caller's unique name. Authority vanishes
+when the panels unbind or conflicting owners overlap. Before that PID join the
+controller reads only constant-time raw field lengths; unauthenticated and
+unbound replies are fixed, compact, and echo no caller field. After
+authentication it rate-admits, enforces the 64/128/20-character
+window/epoch/revision entry limits, parses the retained visibility generation,
+resolves the live UUID, and routes Hybrid members back through process-local
+group policy. It never enables or shares admission state with the
+unauthenticated `Compositor1` mutators.
+
+The corresponding shell client is exact-owner and one-in-flight. It never
+retries an uncertain mutation, so compositor-owner replacement, timeout, and
+transport loss require inventory reconciliation before another user intent.
+Owner replacement publishes the new binding and settles the old request as
+uncertain without sending it again; a late old-owner reply is ignored.
+This PID join blocks an unrelated local bus process, but deliberately does not
+claim protection from a compromised production shell or a same-user process
+able to impersonate its committed layer-surface role.
+
+That same authenticated object projects a revisioned active-window identity
+snapshot for Global Menu; [ADR-0063](../adr/0063-project-authenticated-active-window-identity.md)
+defines the boundary. The projection is sampled on KWin's compositor thread
+and carries the active UUID, credentials-derived Wayland PID or XRes-derived
+XWayland PID, exact X11 AppMenu window id when one exists, and a valid paired
+KDE appmenu service/object-path announcement. Every missing fact is explicit
+absence. The identity lineage shares the visibility/action epoch and carries
+the exact action revision sampled with it; visibility-generation changes also
+refresh identity. Reads authenticate before touching KWin state, and change
+hints are targeted only to the exact shell peer that successfully read the
+snapshot. The unauthenticated `Compositor1` remains unchanged.
+
+The endpoint exports its scriptable identity signal for descriptor/live-object
+introspection parity but does not emit it through Qt's broadcast path; the
+authenticated unicast is assembled explicitly. The publisher and client codec
+both apply the public action-generation validity rule, so a malformed epoch is
+typed unavailability rather than a usable identity fence.
+
+These compositor facts are proof inputs, not registrar authority. A local
+process can still lodge bogus `RegisterWindow` claims, and an announced service
+name does not prove who owns it. Global Menu must join the numeric id or
+Wayland address to this snapshot, bind the provider to an exact bus owner,
+compare bus-daemon credentials with the compositor PID around a stable focus
+revision, and reject any mismatch. The proof does not protect a compromised
+application from exporting a hostile menu for its own window.
 
 Development test sessions construct one combined keyboard/pointer
 `KWin::InputDevice` and register it with KWin input redirection. The versioned,

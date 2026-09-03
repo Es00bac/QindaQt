@@ -33,6 +33,11 @@ class CompositorVisibilityClient;
 class QtCompositorVisibilityTransport;
 }
 
+namespace QindaQt::ShellWindowActionsClient {
+class QtShellWindowActionsTransport;
+class ShellWindowActionsClient;
+}
+
 namespace QindaQt::Services::NotificationPresentationClient {
 class NotificationPresentationClient;
 class QtNotificationPresentationTransport;
@@ -59,7 +64,11 @@ class SessionLockStateMonitor;
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
+class AudioAppletComposition;
+class BluetoothAppletComposition;
+class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
+class LauncherAppletComposition;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
@@ -85,6 +94,9 @@ private:
     void printCatalog() const;
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
+    [[nodiscard]] bool initializeLauncherRuntime(QString *error);
+    void initializeServiceAppletCompositions();
+    void restartWindowActionsIdentity();
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
@@ -106,6 +118,10 @@ private:
         m_visibilityTransport;
     std::unique_ptr<ShellVisibilityClient::CompositorVisibilityClient>
         m_visibilityClient;
+    std::unique_ptr<ShellWindowActionsClient::QtShellWindowActionsTransport>
+        m_windowActionsTransport;
+    std::unique_ptr<ShellWindowActionsClient::ShellWindowActionsClient>
+        m_windowActionsClient;
     std::unique_ptr<QtCompositorOutputAuthority> m_outputAuthority;
     std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
@@ -139,12 +155,23 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    // AGENT-GUARD: teardown safety comes from ~ShellRuntimeApplication()
+    // unconditionally calling resetRuntime(), which tears the window factory
+    // down before the applet compositions. Declaration order alone does NOT
+    // protect these members: they are declared after m_windowFactory, so
+    // reverse-order destruction would destroy the compositions first. Do not
+    // make resetRuntime optional or rely on member order for this pair.
+    std::unique_ptr<AudioAppletComposition> m_audioApplet;
+    std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
+    std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
+    std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
     std::unique_ptr<NotificationCenterShortcut> m_notificationCenterShortcut;
     QTimer m_outputDebounce;
+    QTimer m_windowActionsRetry;
 };
 
 } // namespace QindaQt::Shell

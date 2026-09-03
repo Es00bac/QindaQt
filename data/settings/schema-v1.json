@@ -228,7 +228,7 @@
       "key": "services.clipboardHistory",
       "domain": "services",
       "type": "boolean",
-      "default": true
+      "default": false
     },
     {
       "key": "services.notifications",

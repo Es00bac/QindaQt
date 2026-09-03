@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
+#include <qindaqt/shell/global_menu/composition/announced_menu_address_source.h>
 #include <qindaqt/shell/global_menu/composition/registrar_window_id_source.h>
 #include <qindaqt/shell/global_menu/exporter/menu_exporter.h>
 #include <qindaqt/shell/global_menu/ownership/active_provider_selector.h>
@@ -20,12 +21,14 @@ namespace QindaQt::Shell::GlobalMenu::DbusMenu
 class DbusMenuClient;
 }
 
+class QDBusServiceWatcher;
+
 namespace QindaQt::Shell::GlobalMenu::Composition
 {
 
 // Shell-neutral join of focused-window facts, registrar ownership, dbusmenu
-// snapshots, G0 lineage, and the applet facade. The later runtime lane owns
-// instantiation and calls refreshFocus() after each authenticated focus fact.
+// snapshots, G0 lineage, and the applet facade. Shell runtime composition owns
+// instantiation and calls refreshFocus() after each authenticated identity fact.
 // Dependencies and connection are injected and must outlive this object; the
 // coordinator owns its client/exporter and no bus name. It and all dependencies
 // are single-threaded Qt objects. Any missing/failed proof publishes unavailable.
@@ -40,6 +43,12 @@ public:
         const RegistrarWindowIdSource &windowIdSource,
         Registrar::RegistrarRegistry &registry, GlobalMenuAppletAccess &applet,
         QObject *parent = nullptr);
+    GlobalMenuTransportCoordinator(
+        QDBusConnection connection, const Ownership::ActiveWindowSource &activeWindowSource,
+        const RegistrarWindowIdSource &windowIdSource,
+        const AnnouncedMenuAddressSource &announcedMenuSource,
+        Registrar::RegistrarRegistry &registry, GlobalMenuAppletAccess &applet,
+        QObject *parent = nullptr);
     ~GlobalMenuTransportCoordinator() override;
 
     void refreshFocus();
@@ -52,15 +61,28 @@ Q_SIGNALS:
     void activationRejected(QString reasonCode);
 
 private:
+    struct ProviderEndpoint final {
+        QString uniqueOwner;
+        QString objectPath;
+        QString announcedService;
+        quint64 registrationGeneration = 0;
+
+        bool operator==(const ProviderEndpoint &) const = default;
+    };
+
+    [[nodiscard]] std::optional<ProviderEndpoint> endpointFor(
+        const Ownership::ActiveWindowObservation &focus);
+    void watchAnnouncedService(const QString &serviceName);
     void clearAuthority();
     void bindRegistration(const Ownership::ActiveWindowObservation &focus,
-                          const Registrar::AppMenuRegistration &registration);
+                          const ProviderEndpoint &endpoint);
     void publishClientTree();
     void activate(const QString &actionId);
 
     QDBusConnection m_connection;
     const Ownership::ActiveWindowSource &m_activeWindowSource;
     const RegistrarWindowIdSource &m_windowIdSource;
+    const AnnouncedMenuAddressSource *m_announcedMenuSource = nullptr;
     Registrar::RegistrarRegistry &m_registry;
     GlobalMenuAppletAccess &m_applet;
     Registrar::QtBusCredentialSource m_credentials;
@@ -68,7 +90,9 @@ private:
     Ownership::ActiveProviderSelector m_selector;
     std::unique_ptr<DbusMenu::DbusMenuClient> m_client;
     std::unique_ptr<Exporter::MenuExporter> m_exporter;
-    quint64 m_registrationGeneration = 0;
+    QDBusServiceWatcher *m_announcedServiceWatcher = nullptr;
+    ProviderEndpoint m_boundEndpoint;
+    QString m_watchedAnnouncedService;
     quint64 m_focusGeneration = 0;
 };
 
