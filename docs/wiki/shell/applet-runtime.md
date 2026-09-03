@@ -50,8 +50,8 @@ allowing their static profile label to masquerade as live behavior.
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, and status tray packages. The
-compiled first-party registry and production QML dispatcher currently
-contain five audited entry points:
+compiled first-party registry contains six audited entry points; the
+production QML dispatcher currently renders five of them:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -89,6 +89,14 @@ contain five audited entry points:
   empty backend, so production truth remains unavailable until the platform
   adapter lands.
 
+The sixth registry entry, `qindaqt.applets.launcher`, is the compiled
+`QindaQt.Shell.Launcher` module over its shell-private controller (scanning,
+Settings1 persistence, and seam-based bounded execution; `applications.launch`
+gates activation). It passes resolution as `ready`, but hosting it in the
+production panel dispatcher is a later lane's slice, so production panels do
+not render launcher content yet. See [Launcher](launcher.md) and
+[ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
+
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
 provisioning, but the notification facade is absent and its control is
@@ -114,8 +122,10 @@ library paths, and launches the staged shell with ambient loader, display,
 Wayland, and session-bus variables cleared. A new shell-carrying component is
 incomplete until it is added to this inventory and passes the same proof.
 
-Launcher, task-list, global-menu, and status-tray manifests remain accepted
-contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
+Task-list, global-menu, and status-tray manifests remain accepted contracts but
+resolve as `implementation-unavailable`. Launcher instead resolves `ready` at
+the registry gate described above, while remaining absent from the production
+panel dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
 status-tray value and ownership foundation is documented in
