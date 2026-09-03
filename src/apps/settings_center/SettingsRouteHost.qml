@@ -9,10 +9,12 @@ Item {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    property var audioSettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
     property Component networkComponent: null
+    property Component audioComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -27,6 +29,8 @@ Item {
               ? displayLoader
             : navigation.activeRouteComponent === "network"
               ? networkLoader
+            : navigation.activeRouteComponent === "audio"
+              ? audioLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -90,6 +94,17 @@ Item {
     }
 
     Loader {
+        id: audioLoader
+        objectName: host.objectNamePrefix + "AudioLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "audio"
+                && host.audioComponent !== null
+        sourceComponent: host.audioComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -100,7 +115,8 @@ Item {
                     || (host.navigation.activeRouteComponent !== "notifications"
                         && host.navigation.activeRouteComponent !== "appearance"
                         && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
-                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
+                        && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }

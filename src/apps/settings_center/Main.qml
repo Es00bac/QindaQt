@@ -7,6 +7,7 @@ import QindaQt.Controls 1.0 as Controls
 import QindaQt.SettingsApp.Appearance
 import QindaQt.SettingsApp.Display
 import QindaQt.SettingsApp.Network
+import QindaQt.SettingsApp.Audio
 
 T.ApplicationWindow {
     id: root
@@ -16,6 +17,7 @@ T.ApplicationWindow {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    property var audioSettings: null
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -47,6 +49,11 @@ T.ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+4"
         onActivated: root.navigation.selectRoute("network")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+5"
+        onActivated: root.navigation.selectRoute("audio")
     }
 
     Shortcut {
@@ -95,10 +102,12 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            audioSettings: root.audioSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -128,10 +137,12 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            audioSettings: root.audioSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
             unavailableComponent: unavailableRouteComponent
         }
     }
@@ -168,6 +179,15 @@ T.ApplicationWindow {
         NetworkPage {
             objectName: "networkPage"
             networkSettings: root.networkSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: audioRouteComponent
+        AudioPage {
+            objectName: "audioPage"
+            audioSettings: root.audioSettings
             onCloseRequested: root.close()
         }
     }

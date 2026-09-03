@@ -1,16 +1,18 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains four real routes: **Notifications**,
-**Appearance**, **Display**, and **Network**. The shell owns route identity,
-selection, responsive presentation, and navigation accessibility. Each route
-continues to own its domain model, service scope, page state, and mutations.
+modular settings routes. It contains five real routes: **Notifications**,
+**Appearance**, **Display**, **Network**, and **Audio**. The shell owns route
+identity, selection, responsive presentation, and navigation accessibility.
+Each route continues to own its domain model, service scope, page state, and
+mutations.
 
 The durable ownership choice is [ADR-0048](../adr/0048-settings-center-navigation-and-route-ownership.md).
 Appearance behavior remains documented on the
 [Appearance route](appearance-settings.md); Display behavior is documented on
 the [Display route](display-settings.md); Network behavior is documented on
-the [Network route](network-settings.md); notification quieting and its live
+the [Network route](network-settings.md); Audio behavior is documented on the
+[Audio route](audio-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 
@@ -30,14 +32,14 @@ characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
 must not hide one. The closed component kind is mapped to the compiled
-Notifications, Appearance, Display, or Network component. It is not a QML URL,
-plugin path, or service locator.
+Notifications, Appearance, Display, Network, or Audio component. It is not a
+QML URL, plugin path, or service locator.
 
 The public command accepts `--page notifications`, `--page appearance`,
-`--page display`, and `--page network`. Unknown, noncanonical, path-like, or
-otherwise hostile values exit 2 before any settings transport, route model, or
-QML root is constructed. Registry lookup also rejects unknown runtime selection
-without changing the active or previous route.
+`--page display`, `--page network`, and `--page audio`. Unknown, noncanonical,
+path-like, or otherwise hostile values exit 2 before any settings transport,
+route model, or QML root is constructed. Registry lookup also rejects unknown
+runtime selection without changing the active or previous route.
 
 ## Composition and lifetime
 
@@ -60,9 +62,15 @@ libnm, or credential handling. The Network page receives only its route model;
 the complete authority and operation contract is in [Network
 Settings](network-settings.md).
 
+Audio owns one public Audio transport, `AudioClient`, and
+`AudioSettingsModel` for the process lifetime. It never imports the private
+Audio service, WirePlumber, or PipeWire. The Audio page receives only its
+route model; the complete authority and operation contract is in
+[Audio Settings](audio-settings.md).
+
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the
-inactive host's four Loaders are all inactive. Switching layouts or routes
+inactive host's five Loaders are all inactive. Switching layouts or routes
 cannot duplicate a page, its focus side effects, or its settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
@@ -80,8 +88,8 @@ The interaction contract is:
 - Up/Down move within the wide route list; Left/Right move within compact tabs;
 - Tab from a route tab enters the active page's declared first focus target;
 - Escape returns focus to the active visible route tab;
-- Ctrl+1, Ctrl+2, Ctrl+3, and Ctrl+4 select Notifications, Appearance,
-  Display, and Network respectively;
+- Ctrl+1, Ctrl+2, Ctrl+3, Ctrl+4, and Ctrl+5 select Notifications,
+  Appearance, Display, Network, and Audio respectively;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window.
 
@@ -112,17 +120,18 @@ ctest --test-dir build/dev --output-on-failure \
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
-- construction starts all four route intents against an absent private bus and
+- construction starts all five route intents against an absent private bus and
   requires each complete root to remain resident;
 - the installed row stages only `SettingsAppearanceRuntime`, removes host
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
-  repeats that poison for the Network module, then reinstalls and proves all
-  four routes from only the complete relocated prefix; and
+  repeats that poison for the Network module and the Audio module, then
+  reinstalls and proves all five routes from only the complete relocated
+  prefix; and
 - the same installed row repeats hostile-intent rejection.
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-
-service pages beyond the four compiled routes, search, arbitrary deep links,
+service pages beyond the five compiled routes, search, arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.

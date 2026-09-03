@@ -215,18 +215,20 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 4);
+  QCOMPARE(registry.count(), 5);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
   QVERIFY(registry.hasRoute(QStringLiteral("display")));
   QVERIFY(registry.hasRoute(QStringLiteral("network")));
+  QVERIFY(registry.hasRoute(QStringLiteral("audio")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
   QCOMPARE(registry.indexOf(QStringLiteral("appearance")), 1);
   QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
   QCOMPARE(registry.indexOf(QStringLiteral("network")), 3);
+  QCOMPARE(registry.indexOf(QStringLiteral("audio")), 4);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -259,6 +261,14 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!network->title.isEmpty());
   QVERIFY(!network->description.isEmpty());
   QVERIFY(network->available);
+
+  const auto audio = registry.route(QStringLiteral("audio"));
+  QVERIFY(audio.has_value());
+  QCOMPARE(audio->id, QStringLiteral("audio"));
+  QCOMPARE(audio->component, SettingsRouteComponent::Audio);
+  QVERIFY(!audio->title.isEmpty());
+  QVERIFY(!audio->description.isEmpty());
+  QVERIFY(audio->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {
