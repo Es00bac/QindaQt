@@ -51,12 +51,13 @@ public:
     ~BluezPairingAgent() override;
 
     void adoptOwner(const QString &owner);
+    void setAdapterAvailable(bool available);
     void stop();
     [[nodiscard]] BackendPairingPrompt prompt() const { return m_prompt; }
-    [[nodiscard]] bool replyConfirmation(bool accepted);
-    [[nodiscard]] bool replyPasskey(const QString &passkey);
-    [[nodiscard]] bool replyPin(const QString &pin);
-    [[nodiscard]] bool cancelPrompt();
+    [[nodiscard]] bool replyConfirmation(quint64 promptId, bool accepted);
+    [[nodiscard]] bool replyPasskey(quint64 promptId, const QString &passkey);
+    [[nodiscard]] bool replyPin(quint64 promptId, const QString &pin);
+    [[nodiscard]] bool cancelPrompt(quint64 promptId);
 
 public Q_SLOTS:
     Q_SCRIPTABLE void Release();
@@ -78,6 +79,8 @@ Q_SIGNALS:
 
 private:
     void registerWithOwner();
+    void unregisterFromOwner();
+    void syncRegistration();
     void beginRequest(PairingPromptKind kind, const QString &devicePath,
                       QString detail = {}, QString serviceUuid = {});
     void publishDisplay(PairingPromptKind kind, const QString &devicePath,
@@ -87,6 +90,7 @@ private:
     [[nodiscard]] bool authenticCall() const;
     [[nodiscard]] bool requireAuthenticCall();
     [[nodiscard]] QString resolve(const QString &devicePath) const;
+    [[nodiscard]] quint64 issuePromptId();
 
     QDBusConnection m_connection;
     DeviceResolver m_resolver;
@@ -95,7 +99,11 @@ private:
     QDBusMessage m_pendingCall;
     BackendPairingPrompt m_prompt;
     quint64 m_ownerToken = 0;
+    quint64 m_nextPromptId = 1;
+    bool m_adapterAvailable = false;
     bool m_objectRegistered = false;
+    bool m_agentRegistered = false;
+    bool m_registrationPending = false;
 };
 
 } // namespace QindaQt::Bluetooth::Bluez

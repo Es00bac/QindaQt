@@ -14,8 +14,9 @@ BluezQt as the reuse library for the future runtime adapter. The B1 lane now
 supersedes that library choice and implements the production
 `AdapterBackend` over BlueZ. The authority decision — BlueZ owns pairing,
 trust, keys, device records, profiles, and authorization — is untouched by
-this choice. Bluetooth1 now forwards those operations to BlueZ as described by
-ADR-0037's 2026-09-03 amendment; it still owns none of their state.
+this choice. The additive Bluetooth2 boundary now forwards those operations to
+BlueZ as described by ADR-0037's 2026-09-03 amendment; it still owns none of
+their state, and the frozen Bluetooth1 boundary remains available.
 
 Two facts forced an explicit decision rather than a default:
 
@@ -47,7 +48,7 @@ not through BluezQt. The module:
   address grammar, UTF-8-safe name truncation, control-character
   sanitization, RSSI accepted only in `[-128, 0]`, class decoding only for the
   24-bit CoD space, unknown interfaces ignored, inventory capped at the
-  Bluetooth1 bounds) and drops unrepresentable entities instead of poisoning
+  shared Bluetooth protocol bounds) and drops unrepresentable entities instead of poisoning
   the whole snapshot;
 - owns the caller-scoped, reference-counted discovery lease table, issuing one
   `StartDiscovery` per adapter when the local count rises from zero and one
@@ -57,8 +58,9 @@ not through BluezQt. The module:
   under concurrent external BlueZ clients;
 - performs `Pair`, `CancelPairing`, `RemoveDevice`, and `Properties.Set(Trusted)`
   only against the exact BlueZ owner, registers one bounded `KeyboardDisplay`
-  Agent1 through AgentManager1, and never duplicates or persists BlueZ records,
-  prompt input, link keys, or authorization decisions.
+  Agent1 through AgentManager1 only while an adapter exists, unregisters it on
+  shutdown or loss of the final adapter, and never duplicates or persists BlueZ
+  records, prompt input, link keys, or authorization decisions.
 
 The composition root selects the adapter through the explicit
 `QINDAQT_BLUETOOTH_BACKEND` environment mode (`production` default,
@@ -68,24 +70,23 @@ The composition root selects the adapter through the explicit
 ## Consequences
 
 - No new mandatory dependency; the adapter depends only on the public
-  Bluetooth1 model port and Qt Core/DBus.
+  Bluetooth model port and Qt Core/DBus.
 - Exact-owner fencing, match-rule lifecycle, and reply fencing are ours to
   maintain; a BluezQt-based rewrite would delete that code but bring the KDE
   Frameworks dependency and its own event-loop integration.
 - The synthetic external-session lease row is invisible on the wire (the
   public snapshot carries no lease list) and is bounded by the same lease caps.
-- BlueZ facts that Bluetooth1 v1 cannot represent are suppressed or dropped,
-  not approximated: connections on unpowered or unpaired devices publish as
-  not connected, and device battery percentage (`org.bluez.Battery1`) and GAP
-  role stay unreported until a schema revision carries them.
+- BlueZ facts that neither frozen Bluetooth1 nor current Bluetooth2 can
+  represent are suppressed or dropped, not approximated. Connections on
+  unpowered or unpaired devices publish as not connected.
 - Tests qualify the adapter and Agent1 only against a fake `org.bluez` on a
   private bus; real-adapter interoperability and hardware gates remain outside
   this decision, as in ADR-0037.
 
 ## Revisit when
 
-- A Bluetooth1 schema revision adds battery, role, or external-session
-  visibility that the mapping currently omits.
+- A future protocol revision adds an upstream fact or external-session
+  visibility that the current mapping omits.
 - BluezQt enters the pinned dependency set for another accepted reason, or
   BlueZ ships a stabilized high-level API that would delete the exact-owner and
   fencing code wholesale.

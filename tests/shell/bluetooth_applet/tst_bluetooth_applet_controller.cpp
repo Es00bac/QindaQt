@@ -432,6 +432,7 @@ void BluetoothAppletControllerTests::pairingConfirmationRoundTrip()
     BluetoothAppletController controller(&client, true, true);
     Bluetooth::Snapshot prompt = bluetoothClientSnapshot();
     prompt.pairingPrompt = {
+        .promptId = 103,
         .kind = Bluetooth::PairingPromptKind::ConfirmPasskey,
         .device = prompt.devices.constFirst().handle,
         .detail = QStringLiteral("123456"),

@@ -13,6 +13,7 @@ namespace QindaQt::Bluetooth
 {
 
 class BluetoothServiceObject;
+class Bluetooth1ServiceObject;
 
 enum class ServiceStartStatus {
     Started,
@@ -50,10 +51,12 @@ private Q_SLOTS:
 private:
     std::unique_ptr<AdapterBackend> m_backend;
     std::unique_ptr<BluetoothModel> m_model;
+    std::unique_ptr<Bluetooth1ServiceObject> m_bluetooth1Object;
     std::unique_ptr<BluetoothServiceObject> m_serviceObject;
     QDBusConnection m_connection;
     QString m_serviceName;
     bool m_objectRegistered = false;
+    bool m_bluetooth1ObjectRegistered = false;
     bool m_nameRegistered = false;
     bool m_ownerWatchInstalled = false;
 };

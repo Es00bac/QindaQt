@@ -10,6 +10,8 @@ target_sources(
     PRIVATE
         src/bluetooth_service_object.cpp
         src/bluetooth_service_object_p.h
+        src/bluetooth1_service_object.cpp
+        src/bluetooth1_service_object_p.h
         src/resident_bluetooth_service.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -76,7 +78,7 @@ install(
     COMPONENT QindaQtBluetoothB1
 )
 install(
-    FILES data/org.qindaqt.Bluetooth1.xml
+    FILES data/org.qindaqt.Bluetooth1.xml data/org.qindaqt.Bluetooth2.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
     COMPONENT QindaQtBluetoothB1
 )

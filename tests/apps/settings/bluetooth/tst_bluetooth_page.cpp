@@ -182,6 +182,11 @@ void BluetoothPageTest::rendersAccessibleInlinePairingPrompt() {
   QVERIFY(QMetaObject::invokeMethod(confirm, "clicked"));
   QCOMPARE(m_model->promptReplies, 1);
   QVERIFY(m_model->lastBoolean);
+  confirm->forceActiveFocus();
+  QTRY_VERIFY(confirm->hasActiveFocus());
+  QTest::keyClick(m_view.get(), Qt::Key_Escape);
+  QTRY_COMPARE(m_model->promptReplies, 2);
+  QVERIFY(!m_model->lastBoolean);
 }
 
 void BluetoothPageTest::keepsCompactFallbackFocusEnabled() {

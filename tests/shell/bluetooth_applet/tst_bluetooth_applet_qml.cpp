@@ -188,6 +188,7 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
     BluetoothAppletController controller(&client, true, true);
     Bluetooth::Snapshot prompt = bluetoothClientSnapshot();
     prompt.pairingPrompt = {
+        .promptId = 104,
         .kind = Bluetooth::PairingPromptKind::ConfirmPasskey,
         .device = prompt.devices.constFirst().handle,
         .detail = QStringLiteral("123456"),
@@ -245,6 +246,27 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
     QCOMPARE(transport.submissions.constFirst().request.kind,
              Bluetooth::OperationKind::ReplyConfirmation);
     QVERIFY(transport.submissions.constFirst().request.accepted);
+
+    const auto confirmation = transport.submissions.constFirst();
+    transport.emitOperationReply(
+        kOwner, confirmation.requestId, true,
+        resultFor(confirmation, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("prompt-replied"), 6));
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    Bluetooth::Snapshot replacement = bluetoothClientSnapshot(61, 6);
+    replacement.pairingPrompt = prompt.pairingPrompt;
+    replacement.pairingPrompt.promptId = 105;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, replacement);
+    QTRY_VERIFY(!controller.pairingReplyPending());
+
+    QTest::keyClick(&window, Qt::Key_Escape);
+    QTRY_COMPARE(transport.submissions.size(), 2);
+    QCOMPARE(transport.submissions.constLast().request.kind,
+             Bluetooth::OperationKind::ReplyConfirmation);
+    QVERIFY(!transport.submissions.constLast().request.accepted);
+    QTRY_VERIFY(!root->findChild<QObject *>(
+        QStringLiteral("bluetoothAppletPopup"))->property("opened").toBool());
 }
 
 QTEST_MAIN(BluetoothAppletQmlTests)

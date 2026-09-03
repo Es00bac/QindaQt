@@ -130,6 +130,7 @@ bool BluetoothSettingsModel::dispatchPrompt(
   }
   const Snapshot snapshot = m_client.snapshot();
   if (!snapshot.pairingPrompt.active()
+      || snapshot.pairingPrompt.promptId != request.promptId
       || snapshot.pairingPrompt.device != request.target) {
     reject(QStringLiteral("no-prompt"));
     return false;
@@ -149,7 +150,8 @@ bool BluetoothSettingsModel::replyConfirmation(const bool accepted) {
   const PairingPrompt prompt = m_client.snapshot().pairingPrompt;
   OperationRequest request{.kind = OperationKind::ReplyConfirmation,
                            .target = prompt.device,
-                           .accepted = accepted};
+                           .accepted = accepted,
+                           .promptId = prompt.promptId};
   return dispatchPrompt(request, [this, accepted] {
     return m_client.replyConfirmation(accepted);
   });
@@ -157,8 +159,10 @@ bool BluetoothSettingsModel::replyConfirmation(const bool accepted) {
 
 bool BluetoothSettingsModel::replyPasskey(const QString &passkey) {
   if (!exactSnapshotReady()) { reject(QStringLiteral("unavailable")); return false; }
+  const PairingPrompt prompt = m_client.snapshot().pairingPrompt;
   OperationRequest request{.kind = OperationKind::ReplyPasskey,
-                           .target = m_client.snapshot().pairingPrompt.device};
+                           .target = prompt.device,
+                           .promptId = prompt.promptId};
   if (!setPairingInput(request.input, request.inputSize, passkey)) {
     reject(QStringLiteral("malformed-request"));
     return false;
@@ -170,8 +174,10 @@ bool BluetoothSettingsModel::replyPasskey(const QString &passkey) {
 
 bool BluetoothSettingsModel::replyPin(const QString &pin) {
   if (!exactSnapshotReady()) { reject(QStringLiteral("unavailable")); return false; }
+  const PairingPrompt prompt = m_client.snapshot().pairingPrompt;
   OperationRequest request{.kind = OperationKind::ReplyPin,
-                           .target = m_client.snapshot().pairingPrompt.device};
+                           .target = prompt.device,
+                           .promptId = prompt.promptId};
   if (!setPairingInput(request.input, request.inputSize, pin)) {
     reject(QStringLiteral("malformed-request"));
     return false;
@@ -181,9 +187,11 @@ bool BluetoothSettingsModel::replyPin(const QString &pin) {
 
 bool BluetoothSettingsModel::cancelPrompt() {
   if (!exactSnapshotReady()) { reject(QStringLiteral("unavailable")); return false; }
+  const PairingPrompt prompt = m_client.snapshot().pairingPrompt;
   const OperationRequest request{
       .kind = OperationKind::CancelPrompt,
-      .target = m_client.snapshot().pairingPrompt.device,
+      .target = prompt.device,
+      .promptId = prompt.promptId,
   };
   return dispatchPrompt(request, [this] { return m_client.cancelPrompt(); });
 }

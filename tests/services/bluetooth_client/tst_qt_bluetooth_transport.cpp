@@ -91,7 +91,7 @@ BackendInventory populatedInventory()
 class HostileSnapshotService final : public QObject, protected QDBusContext
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Bluetooth1")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Bluetooth2")
 
 public:
     explicit HostileSnapshotService(QObject *parent = nullptr)
@@ -180,11 +180,46 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
     const QDBusPendingReply<QString> introspectionReply = introspectionWatcher;
     QVERIFY2(!introspectionReply.isError(),
              qPrintable(introspectionReply.error().message()));
-    const QString introspection = introspectionReply.value();
-    QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))\"")));
+    const QString legacyIntrospection = introspectionReply.value();
+    QVERIFY(legacyIntrospection.contains(QStringLiteral(
+        "type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))\"")));
+    QVERIFY(legacyIntrospection.contains(QStringLiteral("name=\"AcquireDiscovery\"")));
+    QVERIFY(!legacyIntrospection.contains(QStringLiteral("name=\"Pair\"")));
+    QDBusMessage legacySnapshotCall = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName), QStringLiteral("GetSnapshot"));
+    QDBusPendingCallWatcher legacySnapshotWatcher(
+        bus.connection.asyncCall(legacySnapshotCall));
+    QSignalSpy legacySnapshotFinished(&legacySnapshotWatcher,
+                                      &QDBusPendingCallWatcher::finished);
+    QTRY_COMPARE(legacySnapshotFinished.size(), 1);
+    const QDBusPendingReply<Bluetooth1Snapshot> legacySnapshotReply =
+        legacySnapshotWatcher;
+    QVERIFY2(!legacySnapshotReply.isError(),
+             qPrintable(legacySnapshotReply.error().message()));
+    QCOMPARE(legacySnapshotReply.value().schemaVersion,
+             kBluetooth1SchemaVersion);
+    QCOMPARE(legacySnapshotReply.value().devices.size(), 1);
+    QCOMPARE(legacySnapshotReply.value().capabilities,
+             Capability::SetAdapterPower | Capability::DiscoveryLease
+                 | Capability::ConnectPaired | Capability::DisconnectPaired);
+
+    const QDBusMessage currentIntrospectionCall = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kCurrentObjectPath),
+        QStringLiteral("org.freedesktop.DBus.Introspectable"),
+        QStringLiteral("Introspect"));
+    QDBusPendingCallWatcher currentWatcher(
+        bus.connection.asyncCall(currentIntrospectionCall));
+    QSignalSpy currentFinished(&currentWatcher,
+                               &QDBusPendingCallWatcher::finished);
+    QTRY_COMPARE(currentFinished.size(), 1);
+    const QDBusPendingReply<QString> currentReply = currentWatcher;
+    QVERIFY2(!currentReply.isError(), qPrintable(currentReply.error().message()));
+    const QString introspection = currentReply.value();
+    QVERIFY(introspection.contains(QStringLiteral(
+        "type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(tu(tt)ssq))\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
-    QVERIFY(introspection.contains(QStringLiteral("name=\"AcquireDiscovery\"")));
+    QVERIFY(introspection.contains(QStringLiteral("name=\"promptId\" type=\"t\"")));
     const QStringList pairingMethods = {
         QStringLiteral("Pair"),
         QStringLiteral("CancelPairing"),
@@ -207,6 +242,7 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
     client.start();
     QTRY_COMPARE(client.state(), ClientState::Ready);
     QCOMPARE(client.snapshot().epoch, quint64(9001));
+    QCOMPARE(client.snapshot().schemaVersion, kSchemaVersion);
     QVERIFY(client.owner().startsWith(QLatin1Char(':')));
     // AGENT-CONTRACT under test: the wire round trip is faithful. The client
     // snapshot decoded over the real bus must equal the model snapshot value
@@ -276,7 +312,7 @@ void QtBluetoothTransportTests::hostileOversizedWireSnapshotIsRejected()
     const QString hostileName = QStringLiteral("org.qindaqt.BluetoothHostile.p%1")
                                     .arg(QCoreApplication::applicationPid());
     HostileSnapshotService hostile;
-    QVERIFY(bus.connection.registerObject(QString::fromLatin1(kObjectPath), &hostile,
+    QVERIFY(bus.connection.registerObject(QString::fromLatin1(kCurrentObjectPath), &hostile,
                                           QDBusConnection::ExportScriptableSlots
                                               | QDBusConnection::ExportScriptableSignals));
     QVERIFY(bus.connection.registerService(hostileName));
@@ -298,7 +334,7 @@ void QtBluetoothTransportTests::hostileOversizedWireSnapshotIsRejected()
     QTRY_COMPARE(snapshots.count(), 0);
     QVERIFY(!client.operationPending());
 
-    bus.connection.unregisterObject(QString::fromLatin1(kObjectPath));
+    bus.connection.unregisterObject(QString::fromLatin1(kCurrentObjectPath));
     bus.connection.unregisterService(hostileName);
     client.stop();
 }

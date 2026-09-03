@@ -130,6 +130,7 @@ Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) con
             });
         if (promptDevice != snapshot.devices.cend()) {
             snapshot.pairingPrompt = {
+                .promptId = inventory.pairingPrompt.promptId,
                 .kind = inventory.pairingPrompt.kind,
                 .device = promptDevice->handle,
                 .detail = inventory.pairingPrompt.detail,
@@ -194,6 +195,10 @@ void BluetoothModel::acceptInventory(const quint64 generation,
         return;
     }
 
+    const bool promptIdentityValid = inventory.pairingPrompt.kind
+            == PairingPromptKind::None
+        ? inventory.pairingPrompt.promptId == 0
+        : inventory.pairingPrompt.promptId != 0;
     const bool promptDeviceKnown = inventory.pairingPrompt.kind == PairingPromptKind::None
         || std::any_of(inventory.devices.cbegin(), inventory.devices.cend(),
                        [&](const BackendDevice &device) {
@@ -202,7 +207,7 @@ void BluetoothModel::acceptInventory(const quint64 generation,
                        });
     const bool inventorySane = inventory.adapters.size() <= kMaxAdapters
         && inventory.devices.size() <= kMaxDevices && leaseBoundsRespected(inventory)
-        && promptDeviceKnown
+        && promptIdentityValid && promptDeviceKnown
         && isBoundedText(inventory.pairingPrompt.detail,
                          kMaxPairingTextUtf8Bytes)
         && isBoundedText(inventory.pairingPrompt.serviceUuid,

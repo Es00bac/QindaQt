@@ -43,7 +43,6 @@ void BluezAdapterBackend::submitCancelPairing(const quint64 operationId,
                         QStringLiteral("stale-handle"));
         return;
     }
-    (void)d->pairingAgent.cancelPrompt();
     const quint64 callId = d->transport.cancelPairing(device->path);
     if (callId == 0) {
         finishOperation(operationId, BackendOperationStatus::Uncertain,
@@ -100,8 +99,9 @@ void BluezAdapterBackend::submitSetTrusted(const quint64 operationId,
 void BluezAdapterBackend::submitPromptReply(const quint64 operationId,
                                             const BackendRequest &request)
 {
-    if (!d->pairingPrompt.deviceAddress.isEmpty()
-        && d->pairingPrompt.deviceAddress != request.deviceAddress) {
+    if (request.promptId == 0 || request.promptId != d->pairingPrompt.promptId
+        || (!d->pairingPrompt.deviceAddress.isEmpty()
+            && d->pairingPrompt.deviceAddress != request.deviceAddress)) {
         finishOperation(operationId, BackendOperationStatus::Rejected,
                         QStringLiteral("stale-prompt"));
         return;
@@ -110,18 +110,21 @@ void BluezAdapterBackend::submitPromptReply(const quint64 operationId,
     bool accepted = false;
     switch (request.kind) {
     case OperationKind::ReplyConfirmation:
-        accepted = d->pairingAgent.replyConfirmation(request.accepted);
+        accepted = d->pairingAgent.replyConfirmation(request.promptId,
+                                                      request.accepted);
         break;
     case OperationKind::ReplyPasskey:
         accepted = d->pairingAgent.replyPasskey(
+            request.promptId,
             pairingInputString(request.input, request.inputSize));
         break;
     case OperationKind::ReplyPin:
         accepted = d->pairingAgent.replyPin(
+            request.promptId,
             pairingInputString(request.input, request.inputSize));
         break;
     case OperationKind::CancelPrompt:
-        accepted = d->pairingAgent.cancelPrompt();
+        accepted = d->pairingAgent.cancelPrompt(request.promptId);
         if (accepted && (promptKind == PairingPromptKind::DisplayPasskey
                          || promptKind == PairingPromptKind::DisplayPin)) {
             const auto *device = d->store.deviceByAddress(request.deviceAddress);
@@ -176,8 +179,8 @@ void BluezAdapterBackend::finishPairingCallSuccess(
         reasonCode = QStringLiteral("trusted-set");
     } else {
         reasonCode = kind == OperationKind::CancelPrompt
-            ? QStringLiteral("prompt-canceled")
-            : QStringLiteral("pairing-canceled");
+            ? QStringLiteral("prompt-cancelled")
+            : QStringLiteral("pairing-cancelled");
     }
     finishOperation(operationId, BackendOperationStatus::Succeeded, reasonCode);
 }

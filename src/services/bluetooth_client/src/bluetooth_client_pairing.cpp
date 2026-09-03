@@ -31,16 +31,23 @@ quint64 BluetoothClient::replyConfirmation(const bool accepted)
 {
     const Handle target = m_snapshot.has_value() ? m_snapshot->pairingPrompt.device
                                                   : Handle{};
+    const quint64 promptId = m_snapshot.has_value()
+        ? m_snapshot->pairingPrompt.promptId : 0;
     return beginOperation({.kind = OperationKind::ReplyConfirmation,
                            .target = target,
-                           .accepted = accepted});
+                           .accepted = accepted,
+                           .promptId = promptId});
 }
 
 quint64 BluetoothClient::replyPasskey(const QString &passkey)
 {
     const Handle target = m_snapshot.has_value() ? m_snapshot->pairingPrompt.device
                                                   : Handle{};
-    OperationRequest request{.kind = OperationKind::ReplyPasskey, .target = target};
+    const quint64 promptId = m_snapshot.has_value()
+        ? m_snapshot->pairingPrompt.promptId : 0;
+    OperationRequest request{.kind = OperationKind::ReplyPasskey,
+                             .target = target,
+                             .promptId = promptId};
     (void)setPairingInput(request.input, request.inputSize, passkey);
     return beginOperation(request);
 }
@@ -49,7 +56,11 @@ quint64 BluetoothClient::replyPin(const QString &pin)
 {
     const Handle target = m_snapshot.has_value() ? m_snapshot->pairingPrompt.device
                                                   : Handle{};
-    OperationRequest request{.kind = OperationKind::ReplyPin, .target = target};
+    const quint64 promptId = m_snapshot.has_value()
+        ? m_snapshot->pairingPrompt.promptId : 0;
+    OperationRequest request{.kind = OperationKind::ReplyPin,
+                             .target = target,
+                             .promptId = promptId};
     (void)setPairingInput(request.input, request.inputSize, pin);
     return beginOperation(request);
 }
@@ -58,7 +69,11 @@ quint64 BluetoothClient::cancelPrompt()
 {
     const Handle target = m_snapshot.has_value() ? m_snapshot->pairingPrompt.device
                                                   : Handle{};
-    return beginOperation({.kind = OperationKind::CancelPrompt, .target = target});
+    const quint64 promptId = m_snapshot.has_value()
+        ? m_snapshot->pairingPrompt.promptId : 0;
+    return beginOperation({.kind = OperationKind::CancelPrompt,
+                           .target = target,
+                           .promptId = promptId});
 }
 
 } // namespace QindaQt::Bluetooth

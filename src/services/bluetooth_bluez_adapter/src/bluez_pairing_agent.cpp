@@ -6,6 +6,9 @@
 #include <qindaqt/services/bluetooth_protocol/bluetooth_validation.h>
 
 #include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusPendingReply>
+
+#include <limits>
 
 namespace QindaQt::Bluetooth::Bluez
 {
@@ -48,22 +51,35 @@ void BluezPairingAgent::adoptOwner(const QString &owner)
         return;
     }
     rejectCurrent(QString(kCanceled));
+    unregisterFromOwner();
     m_owner = owner;
     ++m_ownerToken;
     if (!m_objectRegistered && m_connection.isConnected()) {
         m_objectRegistered = m_connection.registerObject(
             QString(kAgentPath), this, QDBusConnection::ExportScriptableSlots);
     }
-    if (!m_owner.isEmpty() && m_objectRegistered) {
-        registerWithOwner();
+    syncRegistration();
+}
+
+void BluezPairingAgent::setAdapterAvailable(const bool available)
+{
+    if (available == m_adapterAvailable) {
+        return;
     }
+    m_adapterAvailable = available;
+    if (!available) {
+        rejectCurrent(QString(kCanceled));
+    }
+    syncRegistration();
 }
 
 void BluezPairingAgent::stop()
 {
     rejectCurrent(QString(kCanceled));
+    unregisterFromOwner();
     ++m_ownerToken;
     m_owner.clear();
+    m_adapterAvailable = false;
     if (m_objectRegistered) {
         m_connection.unregisterObject(QString(kAgentPath));
         m_objectRegistered = false;
@@ -78,6 +94,7 @@ void BluezPairingAgent::registerWithOwner()
     call.setArguments({QVariant::fromValue(QDBusObjectPath(QString(kAgentPath))),
                        QStringLiteral("KeyboardDisplay")});
     const quint64 token = m_ownerToken;
+    m_registrationPending = true;
     auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, token](QDBusPendingCallWatcher *) {
@@ -85,9 +102,53 @@ void BluezPairingAgent::registerWithOwner()
                 if (token != m_ownerToken || m_owner.isEmpty()) {
                     return;
                 }
-                // Registration failure remains fail-closed: Device1.Pair will
-                // report a typed BlueZ failure and no prompt can be accepted.
+                const QDBusPendingReply<> reply = *watcher;
+                m_registrationPending = false;
+                m_agentRegistered = !reply.isError();
             });
+}
+
+void BluezPairingAgent::unregisterFromOwner()
+{
+    ++m_ownerToken;
+    const bool registrationMayExist = m_agentRegistered || m_registrationPending;
+    m_registrationPending = false;
+    if (!registrationMayExist || m_owner.isEmpty() || !m_objectRegistered
+        || !m_connection.isConnected()) {
+        m_agentRegistered = false;
+        return;
+    }
+    // AGENT-GUARD: AgentManager1 retains registrations independently of our
+    // local object. Retire the exact path while the exact owner is still
+    // addressable; otherwise a stopped backend leaves a dangling agent.
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        m_owner, QStringLiteral("/org/bluez"), QString(kAgentManager),
+        QStringLiteral("UnregisterAgent"));
+    call.setArguments({QVariant::fromValue(QDBusObjectPath(QString(kAgentPath)))});
+    m_connection.asyncCall(call);
+    m_agentRegistered = false;
+}
+
+void BluezPairingAgent::syncRegistration()
+{
+    const bool shouldRegister = !m_owner.isEmpty() && m_objectRegistered
+        && m_adapterAvailable;
+    if (shouldRegister && !m_agentRegistered && !m_registrationPending) {
+        registerWithOwner();
+    } else if (!shouldRegister && (m_agentRegistered || m_registrationPending)) {
+        unregisterFromOwner();
+    }
+}
+
+quint64 BluezPairingAgent::issuePromptId()
+{
+    if (m_nextPromptId == 0) {
+        return 0;
+    }
+    const quint64 result = m_nextPromptId;
+    m_nextPromptId = result == std::numeric_limits<quint64>::max()
+        ? 0 : result + 1;
+    return result;
 }
 
 bool BluezPairingAgent::authenticCall() const
@@ -128,8 +189,15 @@ void BluezPairingAgent::beginRequest(const PairingPromptKind kind,
                                                 QStringLiteral("Pairing prompt rejected")));
         return;
     }
+    const quint64 promptId = issuePromptId();
+    if (promptId == 0) {
+        m_connection.send(call.createErrorReply(QString(kRejected),
+                                                QStringLiteral("Pairing prompt exhausted")));
+        return;
+    }
     m_pendingCall = call;
-    m_prompt = {.kind = kind,
+    m_prompt = {.promptId = promptId,
+                .kind = kind,
                 .deviceAddress = address,
                 .detail = std::move(detail),
                 .serviceUuid = std::move(serviceUuid),
@@ -152,7 +220,14 @@ void BluezPairingAgent::publishDisplay(const PairingPromptKind kind,
         sendErrorReply(QString(kRejected), QStringLiteral("Pairing display rejected"));
         return;
     }
-    m_prompt = {.kind = kind,
+    const quint64 promptId = m_prompt.kind == PairingPromptKind::None
+        ? issuePromptId() : m_prompt.promptId;
+    if (promptId == 0) {
+        sendErrorReply(QString(kRejected), QStringLiteral("Pairing prompt exhausted"));
+        return;
+    }
+    m_prompt = {.promptId = promptId,
+                .kind = kind,
                 .deviceAddress = address,
                 .detail = std::move(detail),
                 .serviceUuid = {},
@@ -182,10 +257,12 @@ void BluezPairingAgent::rejectCurrent(const QString &errorName)
     clearPrompt();
 }
 
-bool BluezPairingAgent::replyConfirmation(const bool accepted)
+bool BluezPairingAgent::replyConfirmation(const quint64 promptId,
+                                          const bool accepted)
 {
-    if (m_prompt.kind != PairingPromptKind::ConfirmPasskey
-        && m_prompt.kind != PairingPromptKind::AuthorizeService) {
+    if (promptId == 0 || promptId != m_prompt.promptId
+        || (m_prompt.kind != PairingPromptKind::ConfirmPasskey
+            && m_prompt.kind != PairingPromptKind::AuthorizeService)) {
         return false;
     }
     const QDBusMessage pending = m_pendingCall;
@@ -199,11 +276,13 @@ bool BluezPairingAgent::replyConfirmation(const bool accepted)
     return true;
 }
 
-bool BluezPairingAgent::replyPasskey(const QString &passkey)
+bool BluezPairingAgent::replyPasskey(const quint64 promptId,
+                                     const QString &passkey)
 {
     bool ok = false;
     const quint32 value = passkey.toUInt(&ok);
-    if (m_prompt.kind != PairingPromptKind::EnterPasskey || !ok
+    if (promptId == 0 || promptId != m_prompt.promptId
+        || m_prompt.kind != PairingPromptKind::EnterPasskey || !ok
         || passkey.isEmpty() || passkey.size() > 6 || value > 999999) {
         return false;
     }
@@ -216,9 +295,10 @@ bool BluezPairingAgent::replyPasskey(const QString &passkey)
     return true;
 }
 
-bool BluezPairingAgent::replyPin(const QString &pin)
+bool BluezPairingAgent::replyPin(const quint64 promptId, const QString &pin)
 {
-    if (m_prompt.kind != PairingPromptKind::EnterPin || pin.isEmpty()
+    if (promptId == 0 || promptId != m_prompt.promptId
+        || m_prompt.kind != PairingPromptKind::EnterPin || pin.isEmpty()
         || pin.size() > 16 || !isBoundedText(pin, kMaxPairingTextUtf8Bytes)) {
         return false;
     }
@@ -231,9 +311,10 @@ bool BluezPairingAgent::replyPin(const QString &pin)
     return true;
 }
 
-bool BluezPairingAgent::cancelPrompt()
+bool BluezPairingAgent::cancelPrompt(const quint64 promptId)
 {
-    if (m_prompt.kind == PairingPromptKind::None) {
+    if (promptId == 0 || promptId != m_prompt.promptId
+        || m_prompt.kind == PairingPromptKind::None) {
         return false;
     }
     rejectCurrent(QString(kCanceled));

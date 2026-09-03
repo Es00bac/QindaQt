@@ -154,15 +154,15 @@ void QtBluetoothTransport::setOwner(const QString &owner)
         return;
     }
     if (!d->owner.isEmpty()) {
-        d->connection.disconnect(d->owner, QString::fromLatin1(kObjectPath),
-                                 QString::fromLatin1(kInterfaceName),
+        d->connection.disconnect(d->owner, QString::fromLatin1(kCurrentObjectPath),
+                                 QString::fromLatin1(kCurrentInterfaceName),
                                  QStringLiteral("Changed"), this,
                                  SLOT(onChanged(quint64,quint64)));
     }
     d->owner = owner;
     if (!d->owner.isEmpty()) {
-        d->connection.connect(d->owner, QString::fromLatin1(kObjectPath),
-                              QString::fromLatin1(kInterfaceName),
+        d->connection.connect(d->owner, QString::fromLatin1(kCurrentObjectPath),
+                              QString::fromLatin1(kCurrentInterfaceName),
                               QStringLiteral("Changed"), this,
                               SLOT(onChanged(quint64,quint64)));
     }
@@ -194,7 +194,8 @@ void QtBluetoothTransport::fetchSnapshot(const QString &owner, const quint64 req
         return;
     }
     const QDBusMessage call = QDBusMessage::createMethodCall(
-        owner, QString::fromLatin1(kObjectPath), QString::fromLatin1(kInterfaceName),
+        owner, QString::fromLatin1(kCurrentObjectPath),
+        QString::fromLatin1(kCurrentInterfaceName),
         QStringLiteral("GetSnapshot"));
     auto *watcher = new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
@@ -265,18 +266,21 @@ void QtBluetoothTransport::submitOperation(const QString &owner, const quint64 r
         break;
     case OperationKind::ReplyConfirmation:
         method = QStringLiteral("ReplyConfirmation");
-        arguments = {request.accepted};
+        arguments = {request.promptId, request.accepted};
         break;
     case OperationKind::ReplyPasskey:
         method = QStringLiteral("ReplyPasskey");
-        arguments = {pairingInputString(request.input, request.inputSize).toUInt()};
+        arguments = {request.promptId,
+                     pairingInputString(request.input, request.inputSize).toUInt()};
         break;
     case OperationKind::ReplyPin:
         method = QStringLiteral("ReplyPin");
-        arguments = {pairingInputString(request.input, request.inputSize)};
+        arguments = {request.promptId,
+                     pairingInputString(request.input, request.inputSize)};
         break;
     case OperationKind::CancelPrompt:
         method = QStringLiteral("CancelPrompt");
+        arguments = {request.promptId};
         break;
     default:
     {
@@ -292,7 +296,8 @@ void QtBluetoothTransport::submitOperation(const QString &owner, const quint64 r
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(
-        owner, QString::fromLatin1(kObjectPath), QString::fromLatin1(kInterfaceName),
+        owner, QString::fromLatin1(kCurrentObjectPath),
+        QString::fromLatin1(kCurrentInterfaceName),
         method);
     call.setArguments(arguments);
     auto *watcher = new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);

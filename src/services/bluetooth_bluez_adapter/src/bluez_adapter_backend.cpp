@@ -25,6 +25,7 @@ BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
 {
     connect(&d->transport, &Bluez::BluezTransport::ownerChanged, this,
             [this](const QString &owner) {
+                d->pairingAgent.setAdapterAvailable(false);
                 d->pairingAgent.adoptOwner(owner);
                 handleOwnerReplaced();
             });

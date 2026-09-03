@@ -160,6 +160,7 @@ void BluetoothSettingsModelTest::pairingPromptRepliesWhilePairIsPending() {
   QTRY_COMPARE(fixture.transport.fetches.size(), 2);
   Snapshot prompted = readySnapshot(61, 6);
   prompted.pairingPrompt = {
+      .promptId = 102,
       .kind = PairingPromptKind::EnterPasskey,
       .device = prompted.devices.at(2).handle,
       .detail = {},

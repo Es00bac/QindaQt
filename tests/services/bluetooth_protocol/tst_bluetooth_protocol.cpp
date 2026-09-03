@@ -98,17 +98,22 @@ private Q_SLOTS:
 void BluetoothProtocolTests::fixedSignatures()
 {
     registerDBusTypes();
-    // AGENT-GUARD: These exact signatures are the Bluetooth1 v1 ABI derived
-    // from the registered codecs. They must stay identical to the adaptor
-    // Q_CLASSINFO introspection and data/org.qindaqt.Bluetooth1.xml.
+    // AGENT-GUARD: Bluetooth1 remains byte-compatible while Bluetooth2 owns
+    // every pairing addition. Both sets must match their shipped XML.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Adapter>()), "((tt)ssbb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
              "((tt)(tt)ssuubbbnbyb)");
+    QCOMPARE(QDBusMetaType::typeToSignature(
+                 QMetaType::fromType<Bluetooth1Device>()),
+             "((tt)(tt)ssuubbbnby)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<PairingPrompt>()),
-             "(u(tt)ssq)");
+             "(tu(tt)ssq)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))");
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(tu(tt)ssq))");
+    QCOMPARE(QDBusMetaType::typeToSignature(
+                 QMetaType::fromType<Bluetooth1Snapshot>()),
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
@@ -124,9 +129,14 @@ void BluetoothProtocolTests::realWireMarshallingMatchesCanonicalSignatures()
              "((tt)ssbb)");
     QCOMPARE(marshalledArgument(validSnapshot().devices.constFirst()).currentSignature(),
              "((tt)(tt)ssuubbbnbyb)");
-    QCOMPARE(marshalledArgument(PairingPrompt{}).currentSignature(), "(u(tt)ssq)");
+    const Bluetooth1Snapshot legacy = bluetooth1Projection(validSnapshot());
+    QCOMPARE(marshalledArgument(legacy.devices.constFirst()).currentSignature(),
+             "((tt)(tt)ssuubbbnby)");
+    QCOMPARE(marshalledArgument(PairingPrompt{}).currentSignature(), "(tu(tt)ssq)");
     QCOMPARE(marshalledArgument(validSnapshot()).currentSignature(),
-             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))");
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(tu(tt)ssq))");
+    QCOMPARE(marshalledArgument(legacy).currentSignature(),
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
     QCOMPARE(marshalledArgument(validResult()).currentSignature(), "(uuttttss)");
 }
 
@@ -409,7 +419,8 @@ void BluetoothProtocolTests::rejectsMalformedOperationRequests()
 void BluetoothProtocolTests::validatesPairingPromptsAndReplies()
 {
     Snapshot snapshot = validSnapshot();
-    snapshot.pairingPrompt = {.kind = PairingPromptKind::ConfirmPasskey,
+    snapshot.pairingPrompt = {.promptId = 41,
+                              .kind = PairingPromptKind::ConfirmPasskey,
                               .device = snapshot.devices.constFirst().handle,
                               .detail = QStringLiteral("004321"),
                               .serviceUuid = {},
@@ -419,21 +430,33 @@ void BluetoothProtocolTests::validatesPairingPromptsAndReplies()
     snapshot.pairingPrompt.detail = QStringLiteral("4321");
     QCOMPARE(validateSnapshot(snapshot).reasonCode,
              QStringLiteral("invalid-pairing-prompt"));
-    snapshot.pairingPrompt = {.kind = PairingPromptKind::DisplayPasskey,
+    snapshot = validSnapshot();
+    snapshot.pairingPrompt = {.promptId = 0,
+                              .kind = PairingPromptKind::EnterPin,
+                              .device = snapshot.devices.constFirst().handle,
+                              .detail = {},
+                              .serviceUuid = {},
+                              .entered = 0};
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-pairing-prompt"));
+    snapshot.pairingPrompt = {.promptId = 42,
+                              .kind = PairingPromptKind::DisplayPasskey,
                               .device = snapshot.devices.constFirst().handle,
                               .detail = QStringLiteral("004321"),
                               .serviceUuid = {},
                               .entered = 7};
     QCOMPARE(validateSnapshot(snapshot).reasonCode,
              QStringLiteral("invalid-pairing-prompt"));
-    snapshot.pairingPrompt = {.kind = PairingPromptKind::DisplayPin,
+    snapshot.pairingPrompt = {.promptId = 43,
+                              .kind = PairingPromptKind::DisplayPin,
                               .device = snapshot.devices.constFirst().handle,
                               .detail = QStringLiteral("12-34"),
                               .serviceUuid = {},
                               .entered = 0};
     QCOMPARE(validateSnapshot(snapshot).reasonCode,
              QStringLiteral("invalid-pairing-prompt"));
-    snapshot.pairingPrompt = {.kind = PairingPromptKind::EnterPin,
+    snapshot.pairingPrompt = {.promptId = 44,
+                              .kind = PairingPromptKind::EnterPin,
                               .device = {.epoch = snapshot.epoch, .serial = 999},
                               .detail = {},
                               .serviceUuid = {},
@@ -442,9 +465,14 @@ void BluetoothProtocolTests::validatesPairingPromptsAndReplies()
              QStringLiteral("invalid-pairing-prompt"));
 
     OperationRequest reply{.kind = OperationKind::ReplyPasskey,
-                           .target = snapshot.devices.constFirst().handle};
+                           .target = snapshot.devices.constFirst().handle,
+                           .promptId = 44};
     QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("4321")));
     QVERIFY(validateOperationRequest(reply).accepted);
+    reply.promptId = 0;
+    QCOMPARE(validateOperationRequest(reply).reasonCode,
+             QStringLiteral("malformed-request"));
+    reply.promptId = 44;
     QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("1000000")));
     QCOMPARE(validateOperationRequest(reply).reasonCode,
              QStringLiteral("malformed-request"));

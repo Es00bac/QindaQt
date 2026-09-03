@@ -79,6 +79,12 @@ bool validOperationKind(const OperationKind value)
     return value >= OperationKind::SetAdapterPower && value <= OperationKind::CancelPrompt;
 }
 
+bool isPromptOperation(const OperationKind value)
+{
+    return value >= OperationKind::ReplyConfirmation
+        && value <= OperationKind::CancelPrompt;
+}
+
 bool validOperationStatus(const OperationStatus value)
 {
     return value >= OperationStatus::Succeeded && value <= OperationStatus::Busy;
@@ -100,7 +106,7 @@ bool validHandleForEpoch(const Handle &handle, const quint64 epoch)
     return handle.epoch == epoch && handle.serial != 0;
 }
 
-// Known capability bits for the v1 schema. Any other bit in a decoded or
+// Known capability bits for the v2 schema. Any other bit in a decoded or
 // backend-provided snapshot is rejected rather than ignored.
 constexpr quint32 knownCapabilityBits()
 {
@@ -136,12 +142,12 @@ ValidationResult validatePrompt(const PairingPrompt &prompt, const Snapshot &sna
         return rejected(QStringLiteral("invalid-pairing-prompt"));
     }
     if (!prompt.active()) {
-        return !prompt.device.isValid() && prompt.detail.isEmpty()
+        return prompt.promptId == 0 && !prompt.device.isValid() && prompt.detail.isEmpty()
                 && prompt.serviceUuid.isEmpty() && prompt.entered == 0
             ? ValidationResult{.accepted = true, .reasonCode = {}}
             : rejected(QStringLiteral("invalid-pairing-prompt"));
     }
-    if (snapshot.availability != Availability::Ready
+    if (prompt.promptId == 0 || snapshot.availability != Availability::Ready
         || !validHandleForEpoch(prompt.device, snapshot.epoch)
         || !deviceSerials.contains(prompt.device.serial)
         || !isBoundedText(prompt.detail, kMaxPairingTextUtf8Bytes)
@@ -386,6 +392,10 @@ ValidationResult validateOperationRequest(const OperationRequest &request)
     }
     if (!request.target.isValid()) {
         return rejected(QStringLiteral("stale-handle"));
+    }
+    if ((isPromptOperation(request.kind) && request.promptId == 0)
+        || (!isPromptOperation(request.kind) && request.promptId != 0)) {
+        return rejected(QStringLiteral("malformed-request"));
     }
     if (request.inputSize > 16) {
         return rejected(QStringLiteral("malformed-request"));

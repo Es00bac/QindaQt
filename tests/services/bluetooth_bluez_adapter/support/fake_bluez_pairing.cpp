@@ -27,6 +27,21 @@ void FakeBluez::registerAgent(const QDBusMessage &request)
     sendReply(request);
 }
 
+void FakeBluez::unregisterAgent(const QDBusMessage &request)
+{
+    ++unregisterAgentCalls;
+    const QString path = request.arguments().value(0).value<QDBusObjectPath>().path();
+    if (request.service() != m_agentOwner || path != m_agentPath) {
+        sendError(request, QStringLiteral("org.bluez.Error.DoesNotExist"),
+                  QStringLiteral("Agent is not registered"));
+        return;
+    }
+    m_agentOwner.clear();
+    m_agentPath.clear();
+    registeredCapability.clear();
+    sendReply(request);
+}
+
 void FakeBluez::devicePair(const QString &path, const QDBusMessage &request)
 {
     ++pairCalls;

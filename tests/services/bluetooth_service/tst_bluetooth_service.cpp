@@ -4,10 +4,13 @@
 #include "support/private_bus.h"
 
 #include <qindaqt/services/bluetooth_model/bluetooth_model.h>
+#include <qindaqt/services/bluetooth_protocol/bluetooth_dbus.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
 
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusPendingReply>
 #include <QtTest>
 
 #include <memory>
@@ -22,6 +25,7 @@ class BluetoothServiceTests final : public QObject
 private Q_SLOTS:
     void invalidConnectionFailsClosed();
     void privateBusCompositionOwnership();
+    void stalePromptReplyIsRejectedByExactId();
 };
 
 void BluetoothServiceTests::invalidConnectionFailsClosed()
@@ -89,6 +93,58 @@ void BluetoothServiceTests::privateBusCompositionOwnership()
     third.stop();
     QDBusConnection::disconnectFromBus(secondConnectionName);
     QDBusConnection::disconnectFromBus(thirdConnectionName);
+}
+
+void BluetoothServiceTests::stalePromptReplyIsRejectedByExactId()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.BluetoothPromptTest.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+    const QString connectionName = bus.name + QStringLiteral("-prompt-service");
+    QDBusConnection serviceConnection =
+        QDBusConnection::connectToBus(bus.address, connectionName);
+    QVERIFY(serviceConnection.isConnected());
+
+    auto backend = std::make_unique<FakeAdapterBackend>();
+    FakeAdapterBackend *backendPtr = backend.get();
+    ResidentBluetoothService service(std::move(backend), serviceConnection,
+                                     serviceName, 7010);
+    QCOMPARE(service.start(), ServiceStartStatus::Started);
+    BackendInventory inventory = bluetoothInventory();
+    inventory.devices[0].paired = false;
+    inventory.pairingPrompt = {
+        .promptId = 51,
+        .kind = PairingPromptKind::ConfirmPasskey,
+        .deviceAddress = inventory.devices.constFirst().address,
+        .detail = QStringLiteral("123456"),
+        .serviceUuid = {},
+        .entered = 0,
+    };
+    backendPtr->publish(inventory);
+    QCOMPARE(service.model()->snapshot().pairingPrompt.promptId, quint64(51));
+
+    inventory.pairingPrompt.promptId = 52;
+    backendPtr->publish(inventory);
+    QCOMPARE(service.model()->snapshot().pairingPrompt.promptId, quint64(52));
+
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kCurrentObjectPath),
+        QString::fromLatin1(kCurrentInterfaceName),
+        QStringLiteral("ReplyConfirmation"));
+    call.setArguments({quint64(51), true});
+    QDBusPendingCallWatcher watcher(bus.connection.asyncCall(call));
+    QSignalSpy finished(&watcher, &QDBusPendingCallWatcher::finished);
+    QTRY_COMPARE(finished.size(), 1);
+    const QDBusPendingReply<OperationResult> reply = watcher;
+    QVERIFY2(!reply.isError(), qPrintable(reply.error().message()));
+    QCOMPARE(reply.value().status, OperationStatus::Rejected);
+    QCOMPARE(reply.value().reasonCode, QStringLiteral("no-prompt"));
+    QCOMPARE(backendPtr->operations.size(), 0);
+    QCOMPARE(service.model()->snapshot().pairingPrompt.promptId, quint64(52));
+
+    service.stop();
+    QDBusConnection::disconnectFromBus(connectionName);
 }
 
 QTEST_GUILESS_MAIN(BluetoothServiceTests)
