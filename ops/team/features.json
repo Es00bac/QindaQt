@@ -923,7 +923,7 @@
           "title": "QindaQt Text Editor",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge.",
+          "summary": "The native Text Editor S1 local-document slice is integrated with optimistic conflict detection, atomic persistence, QST/Controls presentation, keyboard actions, accessibility metadata, packaging, large-document coverage, and a typed QindaQt.AppShell action/lifecycle/file-selection bridge. S2 adds bounded multi-document hosting with independent per-document persistence and external-change truth, bounded find/replace, and a Settings1-governed paths-only restore policy (ADR-0065).",
           "evidence": [
             {
               "kind": "commit",
@@ -939,9 +939,14 @@
               "kind": "commit",
               "reference": "d0e0809",
               "summary": "The manager replay of exact candidate 75f786e9 passes 10/10 focused and 17/17 adjacent integrated-tree rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "28bcd37cc8ba472510dabed9132088e4ae1d8858",
+              "summary": "The exact Text Editor S2 candidate d68f8b1 (Olga Ladyzhenskaya, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting symlinked-parent path uniqueness and restore-root containment defects) is integrated with its ADR renumbered to 0065; the merged tree passes editor, settings, app-shell, terminal, and file-manager rows 97/97 in Debug and Release, the static gates, and the broad safe Debug suite 494/495 with the single failing session-probe unit row passing on isolated re-run (attributed to the concurrent nested-row review on the host)."
             }
           ],
-          "caveat": "S1 does not yet include multiple documents, portals, session restore, print, extensions, rich text, a nested display screenshot matrix, or whole-application assistive-technology qualification."
+          "caveat": "Portals, print, extensions, rich text, a nested display screenshot matrix, and whole-application assistive-technology qualification remain."
         },
         {
           "id": "QQ-006.07",
