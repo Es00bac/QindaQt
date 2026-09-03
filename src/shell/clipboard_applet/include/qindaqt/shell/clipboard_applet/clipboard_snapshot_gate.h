@@ -20,14 +20,25 @@ namespace QindaQt::ShellClipboardApplet {
 // docs/wiki/shell/clipboard-applet.md ("Snapshot admission gate").
 enum class SnapshotGateDecision {
     Accept,
+    // Ready and withheld C0 snapshots always carry a real model generation.
+    RejectZeroGeneration,
+    // Disabled/privacy-denied snapshots must expose neither descriptors nor
+    // aggregate content bytes.
+    RejectAuthorityContent,
     // More descriptors than the C0 kMaxEntries protocol ceiling.
     RejectCollectionBound,
+    // C0 identities are unique within one snapshot.
+    RejectDuplicateEntry,
+    // More pinned descriptors than the C0 kMaxPinnedEntries ceiling.
+    RejectPinnedBound,
     // An entry id whose generation disagrees with the generation the
     // collection claims; the C0 model purges on generation change, so a
     // snapshot can never legitimately mix entry generations.
     RejectEntryLineage,
     // Snapshot aggregate byte total negative or above kMaxTotalPayloadBytes.
     RejectAggregateBytes,
+    // Snapshot aggregate does not equal the sum of descriptor byte claims.
+    RejectAggregateMismatch,
     // Media classes the C0 model refuses for history storage; a snapshot or
     // search reply carrying them is forged, not merely unusual.
     RejectSensitiveMedia,
@@ -50,8 +61,9 @@ enum class SnapshotGateDecision {
     const QList<QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor> &descriptors,
     quint32 expectedGeneration);
 
-// Assesses a whole incoming history snapshot: the descriptor floor over its
-// entries (against its own generation) plus the aggregate byte bound.
+// Assesses a whole incoming history snapshot: nonzero lineage, authority/content
+// consistency, the descriptor collection floor, unique identities, pin bound,
+// and an exact bounded aggregate byte claim.
 [[nodiscard]] SnapshotGateDecision assessSnapshot(
     const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
 

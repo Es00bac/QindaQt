@@ -32,9 +32,10 @@ namespace QindaQt::ShellClipboardApplet {
 // each echoing the unique request id of exactly one request. Request ids are
 // opaque, unique for the client's lifetime across all request kinds, and
 // carry NO ordering promise (zero is a valid id like any other): consumers
-// must fence replies by recorded id, never by id arithmetic. Completions must
-// carry the entry lineage they resolve; the controller additionally rejects a
-// completion whose entry id disagrees with the id recorded at dispatch.
+// must fence replies by recorded id, never by id arithmetic. Entry-operation
+// completions must carry a valid entry lineage; Clear completions must carry
+// an invalid entry id because no entry is addressed. The controller rejects
+// either missing, foreign, or unexpected lineage without resolving the request.
 // Direct virtual calls are pure reads (snapshot/state accessors) and never
 // mutate anything.
 class ClipboardClientInterface : public QObject {

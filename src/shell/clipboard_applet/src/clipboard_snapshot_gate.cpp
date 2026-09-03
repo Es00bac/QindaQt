@@ -5,6 +5,8 @@
 #include <qindaqt/services/clipboard_model/clipboard_descriptor.h>
 #include <qindaqt/services/clipboard_model/clipboard_media.h>
 
+#include <QtCore/QSet>
+
 namespace QindaQt::ShellClipboardApplet {
 
 namespace {
@@ -63,10 +65,20 @@ SnapshotGateDecision assessDescriptorList(
     if (descriptors.size() > kMaxEntries) {
         return SnapshotGateDecision::RejectCollectionBound;
     }
+    QSet<quint32> serials;
+    int pinnedCount = 0;
     for (const auto &descriptor : descriptors) {
         const auto decision = assessDescriptor(descriptor, expectedGeneration);
         if (decision != SnapshotGateDecision::Accept) {
             return decision;
+        }
+        if (serials.contains(descriptor.id.serial)) {
+            return SnapshotGateDecision::RejectDuplicateEntry;
+        }
+        serials.insert(descriptor.id.serial);
+        pinnedCount += descriptor.pinned ? 1 : 0;
+        if (pinnedCount > QindaQt::Services::ClipboardModel::kMaxPinnedEntries) {
+            return SnapshotGateDecision::RejectPinnedBound;
         }
     }
     return SnapshotGateDecision::Accept;
@@ -76,10 +88,31 @@ SnapshotGateDecision assessSnapshot(
     const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
     using QindaQt::Services::ClipboardModel::kMaxTotalPayloadBytes;
+    if (snapshot.generation == 0) {
+        return SnapshotGateDecision::RejectZeroGeneration;
+    }
+    if ((!snapshot.historyEnabled || !snapshot.privacyAllowed)
+        && (!snapshot.entries.isEmpty() || snapshot.totalPayloadBytes != 0)) {
+        return SnapshotGateDecision::RejectAuthorityContent;
+    }
     if (snapshot.totalPayloadBytes < 0 || snapshot.totalPayloadBytes > kMaxTotalPayloadBytes) {
         return SnapshotGateDecision::RejectAggregateBytes;
     }
-    return assessDescriptorList(snapshot.entries, snapshot.generation);
+    const auto descriptorDecision = assessDescriptorList(snapshot.entries, snapshot.generation);
+    if (descriptorDecision != SnapshotGateDecision::Accept) {
+        return descriptorDecision;
+    }
+
+    qint64 describedPayloadBytes = 0;
+    for (const auto &descriptor : snapshot.entries) {
+        for (const auto &format : descriptor.formats) {
+            describedPayloadBytes += format.payloadBytes;
+        }
+    }
+    if (describedPayloadBytes != snapshot.totalPayloadBytes) {
+        return SnapshotGateDecision::RejectAggregateMismatch;
+    }
+    return SnapshotGateDecision::Accept;
 }
 
 } // namespace QindaQt::ShellClipboardApplet

@@ -237,7 +237,9 @@ void TstClipboardAppletModel::testPresentationBounds()
         desc.pinned = (i <= 3);
         snapshot.entries.append(desc);
     }
-    snapshot.totalPayloadBytes = 50 * 10;
+    for (const auto &entry : snapshot.entries) {
+        snapshot.totalPayloadBytes += entry.formats.first().payloadBytes;
+    }
 
     const auto proj = ClipboardAppletModel::project(
         snapshot, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
@@ -267,7 +269,9 @@ void TstClipboardAppletModel::testPinnedFirstPartitionOrdering()
     addEntry(2, true, QStringLiteral("second item, pinned"));
     addEntry(3, false, QStringLiteral("third item"));
     addEntry(4, true, QStringLiteral("oldest item, pinned"));
-    snapshot.totalPayloadBytes = 32;
+    for (const auto &entry : snapshot.entries) {
+        snapshot.totalPayloadBytes += entry.formats.first().payloadBytes;
+    }
 
     const auto proj = ClipboardAppletModel::project(
         snapshot, ClientState::Ready, {}, true, false, false, {}, {}, false, {});

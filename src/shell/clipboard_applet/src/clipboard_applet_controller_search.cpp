@@ -32,27 +32,38 @@ void ClipboardAppletController::onSearchCompleted(
     if (it == m_pendingSearchRequests.constEnd()) {
         return;
     }
-    const quint64 replyQueryGeneration = it.value();
+    const PendingSearchRequest request = it.value();
     m_pendingSearchRequests.erase(it);
-    if (replyQueryGeneration != m_searchQueryGeneration) {
+    if (request.queryGeneration != m_searchQueryGeneration) {
         return;
     }
 
-    applySearchOutcome(outcome);
+    applySearchOutcome(outcome, request);
     reproject();
 }
 
 void ClipboardAppletController::applySearchOutcome(
-    const QindaQt::Services::ClipboardModel::SearchOutcome &outcome)
+    const QindaQt::Services::ClipboardModel::SearchOutcome &outcome,
+    const PendingSearchRequest &request)
 {
     // AGENT-GUARD: a reply that already passed the id and query-generation
     // fences can still carry hostile match content. Matches are admitted
     // through the same descriptor floor as snapshots (against the generation
     // the query ran under); a refusal or a hostile list clears the displayed
     // results instead of copying hostile metadata into rows.
+    bool exactMembers = true;
+    for (const auto &match : outcome.matches) {
+        if (!m_snapshot.entries.contains(match)) {
+            exactMembers = false;
+            break;
+        }
+    }
     if (outcome.accepted()
-        && assessDescriptorList(outcome.matches, m_snapshot.generation)
-            == SnapshotGateDecision::Accept) {
+        && request.snapshotGeneration == m_snapshot.generation
+        && request.snapshotRevision == m_snapshot.revision
+        && assessDescriptorList(outcome.matches, request.snapshotGeneration)
+            == SnapshotGateDecision::Accept
+        && exactMembers) {
         m_searchResults = outcome.matches;
         m_searchTruncated = outcome.truncated;
     } else {
@@ -79,7 +90,11 @@ void ClipboardAppletController::dispatchSearch()
     const quint64 requestId = m_client->requestSearch(
         m_searchQuery, m_snapshot.generation, kMaxPresentedEntries);
     m_insideClientCall = false;
-    m_pendingSearchRequests.insert(requestId, m_searchQueryGeneration);
+    PendingSearchRequest request;
+    request.queryGeneration = m_searchQueryGeneration;
+    request.snapshotGeneration = m_snapshot.generation;
+    request.snapshotRevision = m_snapshot.revision;
+    m_pendingSearchRequests.insert(requestId, request);
     drainDeferredSignals();
 }
 

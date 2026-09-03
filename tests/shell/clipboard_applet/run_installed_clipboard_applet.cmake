@@ -142,30 +142,31 @@ find_program(patchelf_program patchelf)
 if(NOT patchelf_program)
     message(FATAL_ERROR "patchelf is required for the ClipboardApplet relocation check")
 endif()
-set(staged_controls_library "${qml_stage_root}/QindaQt/Controls")
-set(staged_tokens_library "${qml_stage_root}/QindaQt/Tokens")
-file(GLOB staged_controls_so "${staged_controls_library}/libqindaqt_controls_qml${QINDAQT_SHARED_LIBRARY_SUFFIX}")
-file(GLOB staged_tokens_so "${staged_tokens_library}/libqindaqt_tokens_qml${QINDAQT_SHARED_LIBRARY_SUFFIX}")
-foreach(patch_spec IN ITEMS
-        "${staged_controls_so}|$ORIGIN/../Tokens"
-        "${staged_tokens_so}|$ORIGIN")
-    string(FIND "${patch_spec}" "|" separator)
-    string(SUBSTRING "${patch_spec}" 0 ${separator} patch_target)
-    math(EXPR rest_start "${separator} + 1")
-    string(SUBSTRING "${patch_spec}" ${rest_start} -1 patch_rpath)
-    if(NOT EXISTS "${patch_target}")
-        message(FATAL_ERROR "Staged module library missing for RPATH rewrite: ${patch_target}")
-    endif()
-    execute_process(
-        COMMAND "${patchelf_program}" --set-rpath "${patch_rpath}" "${patch_target}"
-        RESULT_VARIABLE patchelf_status
-        OUTPUT_VARIABLE patchelf_output
-        ERROR_VARIABLE patchelf_error
-    )
-    if(NOT patchelf_status EQUAL 0)
+foreach(stage_module IN ITEMS Controls Tokens)
+    set(staged_module_directory "${qml_stage_root}/QindaQt/${stage_module}")
+    file(GLOB staged_module_shared_objects
+         "${staged_module_directory}/*${QINDAQT_SHARED_LIBRARY_SUFFIX}")
+    if(NOT staged_module_shared_objects)
         message(FATAL_ERROR
-                "patchelf failed on ${patch_target}:\n${patchelf_output}${patchelf_error}")
+                "Staged ${stage_module} module has no shared artifacts for relocation proof")
     endif()
+    if(stage_module STREQUAL "Controls")
+        set(module_rpath "$ORIGIN:$ORIGIN/../Tokens")
+    else()
+        set(module_rpath "$ORIGIN")
+    endif()
+    foreach(patch_target IN LISTS staged_module_shared_objects)
+        execute_process(
+            COMMAND "${patchelf_program}" --set-rpath "${module_rpath}" "${patch_target}"
+            RESULT_VARIABLE patchelf_status
+            OUTPUT_VARIABLE patchelf_output
+            ERROR_VARIABLE patchelf_error
+        )
+        if(NOT patchelf_status EQUAL 0)
+            message(FATAL_ERROR
+                    "patchelf failed on ${patch_target}:\n${patchelf_output}${patchelf_error}")
+        endif()
+    endforeach()
 endforeach()
 
 # Stage the C0 model archive/headers, the themes/design-tokens archives and
@@ -250,9 +251,10 @@ if(NOT consumer_patchelf_status EQUAL 0)
             "${consumer_patchelf_output}${consumer_patchelf_error}")
 endif()
 
-# RPATH truth: the consumer resolves its staged shared dependencies
-# (Controls/Tokens) through $ORIGIN-relative entries only — never an absolute
-# stage path, so the whole stage can be relocated.
+# RPATH truth: every staged dynamic artifact, including the optional Controls
+# and Tokens QML plugins, resolves through $ORIGIN-relative entries only. The
+# consumer can preload the backing libraries and otherwise mask a plugin's
+# absolute build-tree RUNPATH, so checking only the executable is insufficient.
 find_program(readelf_program readelf)
 if(NOT readelf_program)
     message(FATAL_ERROR "readelf is required for the ClipboardApplet RPATH check")
@@ -274,14 +276,40 @@ if(NOT readelf_output MATCHES "[$]ORIGIN/[.][.]/.*QindaQt/Tokens")
     message(FATAL_ERROR
             "Installed consumer RPATH is not $ORIGIN-relative for the staged Tokens module:\n${readelf_output}")
 endif()
-# Poison: no RPATH entry may be an absolute path into the stage, the build
-# tree, or the source tree.
-if(readelf_output MATCHES "${install_prefix}"
-   OR readelf_output MATCHES "${build_directory}"
-   OR readelf_output MATCHES "${QINDAQT_SOURCE_DIRECTORY}")
-    message(FATAL_ERROR
-            "Installed consumer RPATH leaks an absolute stage/build/source-tree path:\n${readelf_output}")
-endif()
+
+# AGENT-NOTE (P2-2): e3e2dba rewrote the backing libraries and consumer but
+# left these copied QML plugin libraries pointing at the build tree. Enumerate
+# every staged ELF shared object so a directly linked consumer cannot hide a
+# contaminated plugin RUNPATH.
+file(GLOB_RECURSE staged_dynamic_artifacts
+     "${qml_stage_root}/QindaQt/*${QINDAQT_SHARED_LIBRARY_SUFFIX}")
+list(APPEND staged_dynamic_artifacts
+     "${consumer_build}/qindaqt_installed_clipboard_applet_consumer")
+foreach(dynamic_artifact IN LISTS staged_dynamic_artifacts)
+    execute_process(
+        COMMAND "${readelf_program}" -d "${dynamic_artifact}"
+        RESULT_VARIABLE artifact_readelf_status
+        OUTPUT_VARIABLE artifact_readelf_output
+        ERROR_VARIABLE artifact_readelf_error
+    )
+    if(NOT artifact_readelf_status EQUAL 0)
+        message(FATAL_ERROR
+                "readelf failed on staged dynamic artifact ${dynamic_artifact}:\n"
+                "${artifact_readelf_error}")
+    endif()
+    if(NOT artifact_readelf_output MATCHES "[$]ORIGIN")
+        message(FATAL_ERROR
+                "Staged dynamic artifact lacks an $ORIGIN-relative RPATH: "
+                "${dynamic_artifact}\n${artifact_readelf_output}")
+    endif()
+    if(artifact_readelf_output MATCHES "${install_prefix}"
+       OR artifact_readelf_output MATCHES "${build_directory}"
+       OR artifact_readelf_output MATCHES "${QINDAQT_SOURCE_DIRECTORY}")
+        message(FATAL_ERROR
+                "Staged dynamic artifact leaks an absolute stage/build/source-tree path: "
+                "${dynamic_artifact}\n${artifact_readelf_output}")
+    endif()
+endforeach()
 
 # AGENT-GUARD: the consumer must run from staged files only — no
 # LD_LIBRARY_PATH, no ambient import paths — first at the original prefix...

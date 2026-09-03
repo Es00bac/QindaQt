@@ -185,13 +185,14 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its pure projection, hostile-snapshot admission, controller fencing, seam,
-compiled offscreen keyboard/accessibility/real-pointer, boundary-poison, and
-staged installed-package rows run entirely offscreen against the in-process C0
-model; the installed-package row rewrites the staged module libraries'
-RUNPATHs to `$ORIGIN`-relative entries with `patchelf`, moves the whole
-staged prefix, and reruns the consumer with `LD_LIBRARY_PATH` unset, proving
-the `$ORIGIN`-relative resolution. No row contacts the host clipboard,
+Its pure projection, hostile-snapshot and whole-C0-invariant admission,
+complete snapshot-lineage search fencing, controller fencing, seam, compiled
+offscreen keyboard/accessibility/real-pointer, boundary-poison, and staged
+installed-package rows run entirely offscreen against the in-process C0 model;
+the installed-package row rewrites and inspects every staged Controls/Tokens
+backing and optional plugin library plus the consumer for `$ORIGIN`-relative
+RUNPATHs, moves the whole staged prefix, and reruns the consumer with
+`LD_LIBRARY_PATH` unset. No row contacts the host clipboard,
 session bus, display server, or hardware. The exact matrix and non-claims are
 detailed in [Clipboard applet](../shell/clipboard-applet.md).
 

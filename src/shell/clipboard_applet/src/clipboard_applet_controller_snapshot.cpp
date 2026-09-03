@@ -68,6 +68,28 @@ void ClipboardAppletController::acceptSnapshot(
             rejectSnapshot();
             return;
         }
+        if (snapshot.generation == m_baselineGeneration
+            && ((m_snapshot.historyEnabled && !snapshot.historyEnabled)
+                || (m_snapshot.privacyAllowed && !snapshot.privacyAllowed))) {
+            // C0 purges and advances generation whenever either authority is
+            // withdrawn. Even an empty denial at the old generation is
+            // impossible and may not become a bridge back to content.
+            rememberRejectedLineage(snapshot, true);
+            rejectSnapshot();
+            return;
+        }
+        if (!m_snapshotRejected
+            && snapshot.generation == m_baselineGeneration
+            && snapshot.revision == m_baselineRevision
+            && (snapshot.entries != m_snapshot.entries
+                || snapshot.totalPayloadBytes != m_snapshot.totalPayloadBytes)) {
+            // A C0 content change always advances revision. Treat changed
+            // content at an identical lineage as a contradiction, while still
+            // allowing flag-only authority transitions over empty content.
+            rememberRejectedLineage(snapshot);
+            rejectSnapshot();
+            return;
+        }
     } else if (m_baselineDroppedForOwner && !snapshot.entries.isEmpty()) {
         // AGENT-GUARD: volatile history starts empty for every new owner
         // (no persistence, no synchronization), so the first snapshot under a
@@ -80,7 +102,19 @@ void ClipboardAppletController::acceptSnapshot(
 
     // AGENT-GUARD: hostile-input floor and collection bound. A refused
     // snapshot is never partially retained or sanitized into rows.
-    if (assessSnapshot(snapshot) != SnapshotGateDecision::Accept) {
+    if (m_hasRejectedLineage
+        && (snapshot.generation < m_rejectedGeneration
+            || (snapshot.generation == m_rejectedGeneration
+                && (m_rejectedGenerationMustAdvance
+                    || snapshot.revision <= m_rejectedRevision)))) {
+        rejectSnapshot();
+        return;
+    }
+
+    const auto gateDecision = assessSnapshot(snapshot);
+    if (gateDecision != SnapshotGateDecision::Accept) {
+        rememberRejectedLineage(
+            snapshot, gateDecision == SnapshotGateDecision::RejectAuthorityContent);
         rejectSnapshot();
         return;
     }
@@ -92,7 +126,37 @@ void ClipboardAppletController::acceptSnapshot(
     m_baselineOwner = currentOwner;
     m_baselineGeneration = snapshot.generation;
     m_baselineRevision = snapshot.revision;
+    m_hasRejectedLineage = false;
+    m_rejectedGeneration = 0;
+    m_rejectedRevision = 0;
+    m_rejectedGenerationMustAdvance = false;
     m_snapshotRejected = false;
+}
+
+void ClipboardAppletController::rememberRejectedLineage(
+    const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot,
+    bool generationMustAdvance)
+{
+    if (snapshot.generation == 0) {
+        return;
+    }
+    if (m_hasBaseline
+        && (snapshot.generation < m_baselineGeneration
+            || (snapshot.generation == m_baselineGeneration
+                && snapshot.revision < m_baselineRevision))) {
+        return;
+    }
+    if (!m_hasRejectedLineage || snapshot.generation > m_rejectedGeneration
+        || (snapshot.generation == m_rejectedGeneration
+            && snapshot.revision > m_rejectedRevision)) {
+        m_hasRejectedLineage = true;
+        m_rejectedGeneration = snapshot.generation;
+        m_rejectedRevision = snapshot.revision;
+        m_rejectedGenerationMustAdvance = generationMustAdvance;
+    } else if (snapshot.generation == m_rejectedGeneration
+               && generationMustAdvance) {
+        m_rejectedGenerationMustAdvance = true;
+    }
 }
 
 void ClipboardAppletController::dropAcceptedBaseline()
@@ -107,6 +171,10 @@ void ClipboardAppletController::dropAcceptedBaseline()
     m_baselineOwner.clear();
     m_baselineGeneration = 0;
     m_baselineRevision = 0;
+    m_hasRejectedLineage = false;
+    m_rejectedGeneration = 0;
+    m_rejectedRevision = 0;
+    m_rejectedGenerationMustAdvance = false;
     m_snapshotRejected = false;
     m_snapshot = {};
     m_pendingRequests.clear();

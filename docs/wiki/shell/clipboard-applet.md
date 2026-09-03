@@ -95,7 +95,15 @@ projection or retained controller state:
   media classes are forged, not unusual — the C0 model never stores them.
 - **Collection and aggregate bounds.** A snapshot above the C0 `kMaxEntries`
   ceiling or with a negative/oversized aggregate byte claim is refused whole;
-  the 32-row presentation cap is never the thing that saves us.
+  the claim must also equal the sum of every descriptor's format-byte claims.
+  Entry identities are unique and no more than C0's eight pinned entries may
+  appear. The 32-row presentation cap is never the thing that saves us.
+- **Authority consistency.** Generation zero is never C0 truth. Whenever
+  history is disabled or privacy is denied, both the descriptor list and
+  aggregate byte claim must be empty. These contradictions have distinct typed
+  `SnapshotGateDecision` refusals rather than becoming retained hidden state.
+  Withdrawing either authority must also advance generation from the last
+  accepted snapshot, matching C0's mandatory purge fence.
 - **Lineage monotonicity.** Accepted (generation, revision) is a high-water
   mark: anything below it is stale or replayed and refused; re-stating the
   exact accepted lineage is an idempotent re-delivery. Entries whose id
@@ -113,9 +121,12 @@ projection or retained controller state:
 
 Any violation fails closed: the presented copy, pending intents, and search
 state are destroyed and the surface reports unavailable (`invalid-snapshot`)
-until a fresh valid snapshot arrives; the accepted high-water fence survives
-the rejection so the violating lineage cannot return below it. Rejection is
-per-snapshot, not a permanent latch.
+until a fresh valid snapshot arrives. The accepted high-water fence survives
+the rejection, and a structurally impossible authority snapshot poisons its
+generation so changing a flag or revision cannot arm rejected content;
+recovery requires a later valid generation or a fresh owner baseline. Other
+structural refusals poison their exact lineage until a later valid snapshot.
+Rejection is not a permanent latch.
 
 ## Privacy, lock purge, and generation fencing
 
@@ -137,18 +148,24 @@ A lock is an authenticated authority denial, not a presentation hint:
   never resolve again, and unlock cannot redisclose pre-lock content.
 
 Search reply freshness uses a controller-internal monotonically increasing
-query generation. The seam promises request-id *uniqueness* only, never
-ordering, so a reply is accepted only when its id maps to the query generation
-that issued it; replies for superseded, abandoned, or replayed requests are
-dropped regardless of numeric id. Seam signals emitted synchronously inside a
-dispatch call are buffered and drained through one exact-id attribution path:
+query generation plus the complete snapshot lineage at dispatch: generation,
+revision, and exact descriptor membership. Every accepted snapshot change
+immediately clears prior results and abandons or reissues the query, including
+same-generation revision changes; an accepted reply must still contain only
+descriptors that are exact members of the current accepted snapshot. The seam
+promises request-id *uniqueness* only, never ordering, so a reply is accepted
+only when its id maps to the query generation and snapshot lineage that issued
+it; replies for superseded, abandoned, or replayed requests are dropped
+regardless of numeric id. Seam signals emitted synchronously inside a dispatch
+call are buffered and drained through one exact-id attribution path:
 the current request and already-registered pending requests resolve, anything
 else is discarded, so a hostile flush can neither impersonate the live request
 nor strand an earlier one. Operation completions clear the pending marker
-through the **stored request's** entry id, never the completion's id field: a
-completion whose valid entry id disagrees with the lineage recorded at
-dispatch is rejected whole, so it can neither unpin another entry's marker nor
-forge feedback. Promote ticks are controller-issued monotonic metadata, never
+through the **stored request's** entry id, never the completion's id field:
+entry-operation completions require a valid exact entry id, while Clear
+requires no entry id. Missing, foreign, or unexpected lineage is rejected
+whole, so it can neither unpin another entry's marker nor forge feedback.
+Promote ticks are controller-issued monotonic metadata, never
 wall clock, raised above every tick observed in a snapshot; the fixed-width
 counter fails closed at exhaustion — the promote is refused with feedback
 rather than issuing a wrapped (non-monotonic) tick.
@@ -172,12 +189,14 @@ QML tree; the applet's public headers under the include directory; and the
 manifest under `qindaqt/applets`.
 `qindaqt.clipboard-applet-installed-package` installs the component into a
 fresh stage, builds a C++ consumer against only staged files, then proves
-genuine relocation: the staged sibling modules' build-tree RUNPATHs are
-rewritten to `$ORIGIN`-relative entries (`patchelf`), the consumer resolves
-its stage root from its own executable location, and after a passing run at
-the original prefix the whole stage is **moved** and the consumer rerun with
-`LD_LIBRARY_PATH` unset. The readelf assertions require `$ORIGIN`-relative
-RPATH entries and reject any absolute stage/build/source-tree path. The row
+genuine relocation: every staged Controls/Tokens backing library and optional
+QML plugin has its build-tree RUNPATH rewritten to `$ORIGIN`-relative entries
+(`patchelf`), the consumer resolves its stage root from its own executable
+location, and after a passing run at the original prefix the whole stage is
+**moved** and the consumer rerun with `LD_LIBRARY_PATH` unset. The `readelf`
+assertions enumerate every staged dynamic artifact, require an
+`$ORIGIN`-relative RPATH, and reject any absolute stage/build/source-tree path.
+The row
 also runs the lock/purge contract plus an offscreen instantiation of the
 staged compiled module against the real controller at both locations.
 
@@ -191,15 +210,16 @@ ctest --test-dir build/dev -R '^qindaqt\.clipboard-applet-' --output-on-failure
 | --- | --- |
 | `qindaqt.clipboard-applet-model` | Pure projection: phases, fail-closed ordering, pinned-first partition, bounds, accessibility phrases, determinism, and exact whole-projection rejection of floor/bound/hostile-match violations. |
 | `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing with presented owner-A content, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion. |
-| `qindaqt.clipboard-applet-fencing` | Hostile-seam attribution: unique-but-unordered ids, superseded-reply flushes inside dispatch calls, injected/duplicated completions, cross-request synchronous drain, monotonic promote ticks. |
-| `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, (generation, revision) high-water, owner-lineage fencing with owner-A content, fail-closed rejection and recovery, mismatched-completion rejection, promote-tick exhaustion. |
+| `qindaqt.clipboard-applet-fencing` | Hostile-seam attribution: unique-but-unordered ids, complete generation/revision/entry-set search fencing, superseded-reply flushes inside dispatch calls, injected/duplicated completions, cross-request synchronous drain, monotonic promote ticks. |
+| `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, (generation, revision) high-water, owner-lineage fencing with owner-A content, fail-closed rejection and recovery, missing/mismatched completion-lineage rejection, promote-tick exhaustion. |
+| `qindaqt.clipboard-applet-snapshot-invariants` | Whole C0 snapshot truth: nonzero generation, denied/disabled emptiness, exact aggregate sum, unique identities, pin ceiling, and denied-content lineage poisoning. |
 | `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, independent and overlapping host denials surviving unlock, error mapping, owner fencing over the real C0 model. |
 | `qindaqt.clipboard-applet-qml-offscreen` | Compiled module states: ready/degraded/locked/disabled/unavailable/empty/search presentation. |
 | `qindaqt.clipboard-applet-qml-accessibility-offscreen` | Accessible roles, names, descriptions, and enabled/busy state for every interactive element: search field and clear, Pin, Delete, both Clear buttons, feedback dismissal (alert role). |
 | `qindaqt.clipboard-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal across every interactive element and Space/Return/Delete keyboard activation with exact intent arguments. |
 | `qindaqt.clipboard-applet-qml-interactive-offscreen` | Real pointer events reach Pin/Delete/row body with exact `(generation, serial)` arguments (P1 regressions), read-only search stays enabled under write denial, degraded-state honesty, busy pending controls. |
 | `qindaqt.clipboard-applet-boundary-policy` | Static source gate with eight per-case poison probes (D-Bus, host clipboard, external helpers, private model headers, compositor reach-through). |
-| `qindaqt.clipboard-applet-installed-package` | Staged component artifacts, genuine stage relocation with `LD_LIBRARY_PATH` unset and `$ORIGIN`-relative RPATH, lock/purge contract and staged-module instantiation at the installed boundary. |
+| `qindaqt.clipboard-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset and `$ORIGIN`-relative RPATH, lock/purge contract and staged-module instantiation at the installed boundary. |
 
 The boundary gate also runs without configure:
 
