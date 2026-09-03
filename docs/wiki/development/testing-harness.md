@@ -1561,6 +1561,49 @@ hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
 Settings/shell UI. Those are later isolated hardware and integrated-session
 gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
+## File Manager S1 focused proof
+
+The display-less File Manager selector is:
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
+  QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_FATAL_WARNINGS=1 \
+  ctest --test-dir build/dev -R '^qindaqt\.file-manager-' \
+  --output-on-failure --no-tests=error
+```
+
+The S0 navigation, local-listing, bounded-launch, CLI, metadata, and relocatable
+package rows remain in the selector. S1 adds separate local-mutation, home-Trash,
+worker-controller, AppShell action-catalog, production-QML contract, and source-
+boundary rows. Disposable fixture trees cover Unicode and control-character
+names, overlong rejection, permission denial, existing destinations, stale and
+vanished identities (including vanishing during copy), cancellation cleanup,
+nested/root symbolic-link escapes, an in-flight nested-directory swap,
+mode/data preservation, Trash metadata and restore round trips, unique payloads,
+orphan-payload suffix allocation, restore collision, vanished restore-parent
+typing, empty Trash, a deterministic preflight-to-commit racing writer, and a
+cross-device refusal through an injected device resolver. Controller fakes
+prove execution occurs off the GUI thread and cancellation returns typed state.
+
+`qindaqt.file-manager-mutation-ui-offscreen` constructs the production QML
+root, action menus, dialogs, and accessible progress/failure/result surfaces
+with fatal Qt warnings and no host display or session-bus address.
+`qindaqt.file-manager-mutation-ui-actions-offscreen` additionally activates
+rename, copy, move, Trash, and restore through the real AppShell/QML dialog seam
+against a disposable build-root fixture, preserving 64-bit listing identities
+across JavaScript. The boundary
+row rejects shell, service, KWin, LayerShell, D-Bus, desktop-launch, and QML
+dependencies from `mutation/**` and must also reject its planted poison input.
+The installed-runtime row still stages only the FileManager component; its
+exact payload now includes AppShell in addition to Tokens and Controls.
+
+Every Trash root and `XDG_DATA_HOME` used by these rows is below the test build
+directory or a `QTemporaryDir`. No row touches the user's home/Trash, connects
+to a bus/display, launches a handler, mounts a filesystem, or uses the network.
+These rows do not qualify per-volume Trash, mounts, search, previews, portals,
+nested screenshots, or complete
+assistive-technology behavior.
+
 ## Terminal S1 focused proof
 
 The display-less terminal slice is selected with:

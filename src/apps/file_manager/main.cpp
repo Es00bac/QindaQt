@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "app_shell/file_manager_action_catalog.h"
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "runtime/qml_component_ready.h"
+#include "runtime/mutation_ui_action_probe.h"
+#include "mutation/local_mutation_backend.h"
+#include "mutation/mutation_controller.h"
 
+#include "qindaqt/app_shell/application_coordinator.h"
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/themes/theme_loader.h"
@@ -11,11 +16,13 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QFileInfo>
+#include <QFile>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QVariant>
 
 #include <cstdio>
@@ -97,6 +104,68 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
   return facade;
 }
 
+[[nodiscard]] QString configureAppShell(
+    QindaQt::AppShell::ApplicationCoordinator &coordinator,
+    QindaQt::Apps::FileManager::NavigationController &navigation,
+    QindaQt::Apps::FileManager::MutationController &mutation) {
+  coordinator.setApplicationName(QStringLiteral("QindaQt File Manager"));
+  coordinator.setWindowTitle(
+      QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
+  coordinator.setInitialFocusObjectName(QStringLiteral("newFolderButton"));
+  const auto catalogResult = coordinator.replaceActions(
+      QindaQt::Apps::FileManager::fileManagerActionCatalog());
+  if (!catalogResult.ok()) {
+    return catalogResult.message;
+  }
+  QObject::connect(&navigation,
+                   &QindaQt::Apps::FileManager::NavigationController::navigationChanged,
+                   &coordinator, [&coordinator, &navigation]() {
+    coordinator.setWindowTitle(
+        QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
+  });
+  QObject::connect(
+      &mutation, &QindaQt::Apps::FileManager::MutationController::stateChanged,
+      &coordinator, [&coordinator, &mutation]() {
+        const bool idle = !mutation.busy();
+        for (const QString &actionId :
+             {QStringLiteral("file.new-folder"), QStringLiteral("file.rename"),
+              QStringLiteral("file.copy"), QStringLiteral("file.move"),
+              QStringLiteral("file.trash"), QStringLiteral("file.empty-trash")}) {
+          const auto result = coordinator.setActionEnabled(actionId, idle);
+          Q_UNUSED(result);
+        }
+        const auto undoResult = coordinator.setActionEnabled(
+            QStringLiteral("edit.undo"), mutation.canUndo());
+        const auto restoreResult = coordinator.setActionEnabled(
+            QStringLiteral("file.restore-last"), mutation.canRestore());
+        const auto cancelResult = coordinator.setActionEnabled(
+            QStringLiteral("operation.cancel"), !idle);
+        Q_UNUSED(undoResult);
+        Q_UNUSED(restoreResult);
+        Q_UNUSED(cancelResult);
+      });
+  QObject::connect(
+      &coordinator,
+      &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
+      &coordinator, [&coordinator, &mutation](quint64 requestId, const QString &) {
+        const auto result = coordinator.resolveQuit(
+            requestId, !mutation.busy(),
+            mutation.busy() ? QStringLiteral("A file operation is still running")
+                            : QString());
+        Q_UNUSED(result);
+      });
+  const auto undoDisabled =
+      coordinator.setActionEnabled(QStringLiteral("edit.undo"), false);
+  const auto restoreDisabled =
+      coordinator.setActionEnabled(QStringLiteral("file.restore-last"), false);
+  const auto cancelDisabled =
+      coordinator.setActionEnabled(QStringLiteral("operation.cancel"), false);
+  Q_UNUSED(undoDisabled);
+  Q_UNUSED(restoreDisabled);
+  Q_UNUSED(cancelDisabled);
+  return {};
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -119,6 +188,12 @@ int main(int argc, char **argv) {
   parser.addOption(
       {QStringLiteral("check-qml-root"),
        QStringLiteral("Construct the QML root for an installed-package probe and exit")});
+  parser.addOption(
+      {QStringLiteral("check-ui-contract"),
+       QStringLiteral("Verify the mutation action and accessible object contract and exit")});
+  parser.addOption(
+      {QStringLiteral("check-ui-actions"),
+       QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
   parser.addPositionalArgument(QStringLiteral("folder"),
                                QStringLiteral("Local folder to open"), QStringLiteral("[folder]"));
   parser.process(application);
@@ -139,6 +214,25 @@ int main(int argc, char **argv) {
       std::fprintf(stderr, "qindaqt-file-manager: %s is not a folder\n",
                    qPrintable(parser.positionalArguments().first()));
       return 4;
+    }
+  }
+
+  std::unique_ptr<QTemporaryDir> uiActionFixture;
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    uiActionFixture = std::make_unique<QTemporaryDir>(
+        QDir(startPath).filePath(QStringLiteral("qindaqt-file-manager-ui-XXXXXX")));
+    if (!uiActionFixture->isValid()) {
+      std::fprintf(stderr,
+                   "qindaqt-file-manager: could not create the UI action fixture\n");
+      return 5;
+    }
+    startPath = uiActionFixture->path();
+    QFile seed(QDir(startPath).filePath(QStringLiteral("qml-source.txt")));
+    if (!seed.open(QIODevice::WriteOnly) ||
+        seed.write("fixture-data") != QByteArray("fixture-data").size()) {
+      std::fprintf(stderr,
+                   "qindaqt-file-manager: could not seed the UI action fixture\n");
+      return 5;
     }
   }
 
@@ -173,16 +267,83 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>());
   controller->navigateTo(startPath);
 
+  const QString trashRoot = QDir(QStandardPaths::writableLocation(
+                                     QStandardPaths::GenericDataLocation))
+                                .filePath(QStringLiteral("Trash"));
+  auto mutationController =
+      std::make_unique<QindaQt::Apps::FileManager::MutationController>(
+          std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(trashRoot));
+  auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
+  const QString appShellError = configureAppShell(
+      *appCoordinator, *controller, *mutationController);
+  if (!appShellError.isEmpty()) {
+    std::fprintf(stderr, "qindaqt-file-manager: %s\n",
+                 qPrintable(appShellError));
+    return 3;
+  }
+
   engine.setInitialProperties(
       {{QStringLiteral("navigationController"),
-        QVariant::fromValue(static_cast<QObject *>(controller.get()))}});
+        QVariant::fromValue(static_cast<QObject *>(controller.get()))},
+       {QStringLiteral("mutationController"),
+        QVariant::fromValue(static_cast<QObject *>(mutationController.get()))},
+       {QStringLiteral("coordinator"),
+        QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
   if (engine.rootObjects().isEmpty()) {
     return 3;
   }
+  // Keep the injected C++ controllers alive while QML tears down. The engine
+  // was constructed before them, so relying on automatic stack destruction
+  // would invalidate required bindings during package probes.
+  const auto destroyRoots = [&engine]() {
+    const QList<QObject *> roots = engine.rootObjects();
+    for (QObject *root : roots) {
+      delete root;
+    }
+  };
   if (parser.isSet(QStringLiteral("check-qml-root"))) {
     std::printf("qml-root-loaded\n");
+    destroyRoots();
     return 0;
   }
-  return application.exec();
+  if (parser.isSet(QStringLiteral("check-ui-contract"))) {
+    const QStringList requiredObjects = {
+        QStringLiteral("newFolderButton"), QStringLiteral("entryListView"),
+        QStringLiteral("mutationProgressCard"), QStringLiteral("mutationFailureCard"),
+        QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
+        QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
+        QStringLiteral("trashConfirmationDialog"),
+        QStringLiteral("emptyTrashConfirmationDialog")};
+    QObject *root = engine.rootObjects().constFirst();
+    for (const QString &objectName : requiredObjects) {
+      if (!root->findChild<QObject *>(objectName)) {
+        std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
+                     qPrintable(objectName));
+        destroyRoots();
+        return 5;
+      }
+    }
+    std::printf("mutation-ui-contract-ok\n");
+    destroyRoots();
+    return 0;
+  }
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    QString actionError;
+    if (!QindaQt::Apps::FileManager::verifyMutationUiActions(
+            engine.rootObjects().constFirst(), appCoordinator.get(),
+            controller.get(), mutationController.get(), startPath,
+            &actionError)) {
+      std::fprintf(stderr, "qindaqt-file-manager: %s\n",
+                   qPrintable(actionError));
+      destroyRoots();
+      return 5;
+    }
+    std::printf("mutation-ui-actions-ok\n");
+    destroyRoots();
+    return 0;
+  }
+  const int exitCode = application.exec();
+  destroyRoots();
+  return exitCode;
 }
