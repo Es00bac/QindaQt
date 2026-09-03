@@ -614,7 +614,7 @@
           "title": "Display color, ICC, HDR, and WCG settings",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "Display Color C0 integrates a pure bounded ICC catalog, strict header validation, capability-aware assignment policy, deterministic lineage fingerprinting, and atomic revisioned snapshots.",
+          "summary": "Display Color C0 integrates a pure bounded ICC catalog, strict header validation, capability-aware assignment policy, deterministic lineage fingerprinting, and atomic revisioned snapshots. C1 adds fontconfig-free ICC profile discovery from injected roots with canonical-path containment, import with content-identity checks, and persistent per-output assignment through Settings1 (ADR-0066).",
           "evidence": [
             {
               "kind": "commit",
@@ -625,9 +625,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/display-color-model.md",
               "summary": "Strict Debug/Release builds pass 6/6 registered rows and 46/46 direct cases; manager-tree focused verification and documentation gates pass."
+            },
+            {
+              "kind": "commit",
+              "reference": "f6b14b24cefc16b4ffaa941c8e7790485ab7eb4a",
+              "summary": "The exact Display Color C1 candidate 4c4f2c4 (Emmy Noether, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting injected-root containment, import truth, duplicate collapsing, and apply verification defects across two rounds; lineage GLM -> Kimi -> Codex after provider limits) is integrated with its ADR renumbered to 0066; the merged tree passes display-color rows in Debug and Release, the static gates, and the broad safe Debug suite 520/520."
             }
           ],
-          "caveat": "C0 is an executable pure/injected boundary. Live profile discovery/import, persistent assignment, compositor application, Settings UI, nested HDR/WCG proof, and physical hardware qualification remain later slices."
+          "caveat": "Compositor application of assigned profiles, the Settings UI, nested HDR/WCG proof, and physical display qualification remain."
         },
         {
           "id": "QQ-005.08",
@@ -863,7 +868,7 @@
           "title": "Settings pages and live platform-service routes",
           "weight": 15,
           "state": "WIRED",
-          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, and Bluetooth are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority.",
+          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, and Power are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority. Power composes the public Power client into supply inventory, admitted profile selection, read-only holds, and debounced brightness sliders with exact admission fencing and no session actions.",
           "evidence": [
             {
               "kind": "commit",
@@ -914,9 +919,14 @@
               "kind": "test",
               "reference": "docs/wiki/apps/bluetooth-settings.md",
               "summary": "The owning page records the public-client-only Bluetooth route, the discovery lease released on route departure and window close, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "a83f34ee17e39762444b0d699150d0d50e6c84f0",
+              "summary": "The exact Power Settings route candidate 0392aee (Julia Robinson, Moonshot Kimi, REJECT 0/0/2/1 on the ancestor; Argelia Velez-Rodriguez, OpenAI Codex, substitute recheck ACCEPT 0/0/0/1 after the Kimi usage limit) is integrated at Ctrl+8; a manager reconciliation (3afa972) links the static PowerBackend module into the in-process Main.qml test hosts; the merged tree passes Settings, power, and display-color rows 89/89 in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite 520/520."
             }
           ],
-          "caveat": "Power, brightness, clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence, physical audio devices, and physical Bluetooth adapters/pairing remain separate too."
+          "caveat": "Clipboard (accepted candidate in review), brightness beyond the Power page, color, font, and portal pages remain. Network credential entry (secret agent lane open), secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence, physical audio devices, Bluetooth adapters/pairing, and physical batteries/backlights remain separate too."
         },
         {
           "id": "QQ-006.06",
