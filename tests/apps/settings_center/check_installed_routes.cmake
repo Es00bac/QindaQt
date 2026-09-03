@@ -107,6 +107,16 @@ if(NOT bluetooth_in_stage OR NOT IS_DIRECTORY "${bluetooth_module}")
         "${bluetooth_module}")
 endif()
 
+set(power_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Power")
+cmake_path(NORMAL_PATH power_module OUTPUT_VARIABLE power_module)
+cmake_path(IS_PREFIX install_prefix "${power_module}" NORMALIZE power_in_stage)
+if(NOT power_in_stage OR NOT IS_DIRECTORY "${power_module}")
+    message(FATAL_ERROR
+        "installed Settings Power module is missing or outside stage: "
+        "${power_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")

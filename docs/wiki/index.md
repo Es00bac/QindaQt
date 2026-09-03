@@ -159,6 +159,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Bluetooth route](apps/bluetooth-settings.md) documents the public-
   client-only adapter/device inventory, exact-lineage admission, route-scoped
   discovery lease, paired-device controls, and explicit BlueZ authority limit.
+- [Settings Power route](apps/power-settings.md) documents bounded supply,
+  profile/hold, and brightness truth, exact-lineage admission and convergence,
+  keyboard-slider debounce, and the explicit session-action boundary.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering
