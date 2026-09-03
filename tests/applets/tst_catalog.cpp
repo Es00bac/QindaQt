@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 7);
+    QCOMPARE(catalog.manifests().size(), 8);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -49,6 +49,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("system-tray"),
         QStringLiteral("clock"),
         QStringLiteral("notification-center"),
+        QStringLiteral("bluetooth"),
         QStringLiteral("power"),
     };
     QSet<QString> actual;
@@ -72,16 +73,21 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *tray = catalog.findById(QStringLiteral("system-tray"));
     const AppletManifest *notificationCenter =
         catalog.findById(QStringLiteral("notification-center"));
+    const AppletManifest *bluetooth = catalog.findById(QStringLiteral("bluetooth"));
     const AppletManifest *power = catalog.findById(QStringLiteral("power"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
     QVERIFY(notificationCenter != nullptr);
+    QVERIFY(bluetooth != nullptr);
     QVERIFY(power != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
     QVERIFY(notificationCenter->capabilities.isEmpty());
+    QVERIFY(bluetooth->capabilities
+            == QVector<Capability>({Capability::BluetoothRead,
+                                    Capability::BluetoothControl}));
     QVERIFY(power->capabilities
             == QVector<Capability>({Capability::PowerRead,
                                     Capability::PowerControl}));

@@ -177,6 +177,45 @@ installed production-package/source-poison rows. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
+The production Bluetooth applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.bluetooth-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection/request rows are joined by an exact-owner public-client
+controller, compiled offscreen keyboard/accessibility and lease-close proof,
+an ordered post-moc controller-surface contract, mutation-sensitive
+pure/runtime dependency boundaries, and an installed production-package/source-
+poison row. `qindaqt.bluetooth-applet-surface` walks the controller-owned
+property, method, and enumerator slices of `staticMetaObject`, compares the
+property name/type/readable/writable/resettable/notify/constant/final fields
+and method signature/return/type/access/revision fields, plus each enumerator's
+name, enum name, scope, flag/scoped state, and key/value list, in order. It
+rejects a deliberately expanded test surface and constructs the production
+applet through an offscreen `QQmlEngine` to compare controller-specific
+QML-visible property and method names with the same literal contract.
+Token-pasted macros, public slots, and
+cross-header macro aliases therefore cannot evade the compiled gate. The
+textual boundary rows retain exact file/header allowlists, forbidden
+dependencies or symbols, and manifest/registry/profile/QML/composition presence
+contracts, with independent client/service, address, persistence, filesystem,
+adjacent-module, and composition-removal poisons. No row contacts the host
+session bus, display server, BlueZ, a radio, or pairing authority. The exact
+matrix and nonclaims are
+detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
+also clears ambient loader paths and requires CMake's runtime dependency
+resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
+The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
+profile built the production shell plus the focused targets, passed all eight
+registered Bluetooth-applet rows, and passed six adjacent public-client,
+manifest, catalog, resolver, notification-center applet offscreen, and
+shell-runtime-catalog rows. This
+is deterministic public-client/offscreen/package evidence only; it adds no
+private-bus, compositor, BlueZ, host-radio, or hardware claim.
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
