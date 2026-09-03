@@ -58,6 +58,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `3690a05` — The compositor exposes an authenticated `CompositorShell1` window-action boundary (activate,
+  minimize, unminimize, close, raise) admitted only for the D-Bus caller whose unix credentials match the
+  bound panel-owning shell client, with authentication before any parsing, explicit entry bounds,
+  constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing,
+  and an exact-owner asynchronous shell client (ADR-0061). Margaret Rock (OpenAI Codex, a different
+  worker) rejected the first candidate at `0/1/1/0` for pre-authentication parsing and unbounded reflected
+  replies and accepted the repair at `0/0/0/0`. The fresh merged tree passes compositor 35/35 non-nested
+  rows and the four window-action rows including the nested live row in Debug and Release, the sixteen `compositor.kwin-` rows pass 16/16 serially,
+  the broad safe Debug suite passes 406/406, and all static gates. This widens QQ-004.10 without changing its WIRED state; the shell-side
+  facts producer and applet hosting remain.
+
 - `6cef8b5` — Power PB-2 adds the production upstream adapters behind PB-1's collaborator seams: UPower with
   correct line-power/PowerSupply/battery semantics, logind actions re-authorized at dispatch time with
   generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight
