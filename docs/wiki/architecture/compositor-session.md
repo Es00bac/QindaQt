@@ -269,14 +269,20 @@ Its controller receives credential, panel-owner, registry, rate/clock, and
 executor collaborators explicitly. A request is admitted only while all
 committed `dock` layer roles have one Wayland-client PID and the session-bus
 daemon reports that exact PID for the caller's unique name. Authority vanishes
-when the panels unbind or conflicting owners overlap. The controller then
-requires the retained visibility epoch/revision, resolves the live UUID, and
-routes Hybrid members back through process-local group policy. It never enables
-or shares admission state with the unauthenticated `Compositor1` mutators.
+when the panels unbind or conflicting owners overlap. Before that PID join the
+controller reads only constant-time raw field lengths; unauthenticated and
+unbound replies are fixed, compact, and echo no caller field. After
+authentication it rate-admits, enforces the 64/128/20-character
+window/epoch/revision entry limits, parses the retained visibility generation,
+resolves the live UUID, and routes Hybrid members back through process-local
+group policy. It never enables or shares admission state with the
+unauthenticated `Compositor1` mutators.
 
 The corresponding shell client is exact-owner and one-in-flight. It never
 retries an uncertain mutation, so compositor-owner replacement, timeout, and
 transport loss require inventory reconciliation before another user intent.
+Owner replacement publishes the new binding and settles the old request as
+uncertain without sending it again; a late old-owner reply is ignored.
 This PID join blocks an unrelated local bus process, but deliberately does not
 claim protection from a compromised production shell or a same-user process
 able to impersonate its committed layer-surface role.

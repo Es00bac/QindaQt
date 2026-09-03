@@ -26,21 +26,6 @@ namespace {
 constexpr auto PanelScope = "dock";
 constexpr auto ProcessIdCredential = "ProcessID";
 
-std::optional<quint64> strictRevision(const QString &text)
-{
-    if (text.isEmpty() || (text.size() > 1 && text.startsWith(u'0'))) {
-        return std::nullopt;
-    }
-    for (const QChar character : text) {
-        if (character < u'0' || character > u'9') {
-            return std::nullopt;
-        }
-    }
-    bool ok = false;
-    const quint64 revision = text.toULongLong(&ok, 10);
-    return ok && revision > 0 ? std::optional<quint64>(revision) : std::nullopt;
-}
-
 } // namespace
 
 QtBusShellCredentialSource::QtBusShellCredentialSource(QDBusConnection connection)
@@ -240,10 +225,9 @@ QByteArray KWinShellWindowActionsEndpoint::submit(
     const QString &epoch,
     const QString &revision)
 {
-    const auto parsedRevision = strictRevision(revision);
     const QString caller = calledFromDBus() ? message().service() : QString{};
     return encodeShellWindowActionResult(m_controller.submit({
-        caller, action, windowId, {epoch, parsedRevision.value_or(0)}}));
+        caller, action, windowId, epoch, revision}));
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

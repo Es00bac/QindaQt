@@ -16,9 +16,11 @@ public:
     std::optional<qint64> processIdForUniqueName(
         const QString &uniqueName) const override
     {
+        ++lookups;
         return processIds.value(uniqueName, std::nullopt);
     }
     QHash<QString, std::optional<qint64>> processIds;
+    mutable int lookups = 0;
 };
 
 class FakeOwner final : public ShellPanelOwnerSource
@@ -33,6 +35,7 @@ class FakeRegistry final : public ShellWindowRegistry
 public:
     std::optional<ShellWindowGeneration> currentGeneration() const override
     {
+        ++generationLookups;
         return generation;
     }
     std::optional<ShellWindowTarget> target(const QString &windowId) const override
@@ -44,6 +47,7 @@ public:
     QHash<QString, std::optional<ShellWindowTarget>> targets{
         {WindowId, ShellWindowTarget{WindowId, {}}}};
     mutable int lookups = 0;
+    mutable int generationLookups = 0;
 };
 
 class FakeExecutor final : public ShellWindowActionExecutor
@@ -76,7 +80,8 @@ struct Fixture final
     ShellWindowActionRequest request(
         ShellWindowAction action = ShellWindowAction::Activate) const
     {
-        return {QStringLiteral(":1.good"), action, WindowId, Generation};
+        return {QStringLiteral(":1.good"), action, WindowId,
+                Generation.epoch, QString::number(Generation.revision)};
     }
 
     FakeCredentials credentials;
@@ -98,6 +103,9 @@ private Q_SLOTS:
     void staleGenerationPrecedesWindowLookup();
     void unknownWindowDoesNotExecute();
     void unboundOwnerDisablesBeforeCredentials();
+    void hostileUnauthenticatedFieldsAreNotParsedOrEchoed();
+    void hostileUnboundFieldsAreNotParsedOrEchoed();
+    void hostileAuthenticatedFieldsRejectBeforeParsing();
     void preservesHybridRouteForExecutor();
     void boundsRateAndResetsAfterInterval();
     void executorFailureIsControlDisabled();
@@ -134,7 +142,7 @@ void ShellWindowActionsTest::staleGenerationPrecedesWindowLookup()
 {
     Fixture fixture;
     auto request = fixture.request();
-    request.generation.revision = 8;
+    request.revision = QStringLiteral("8");
     QCOMPARE(fixture.controller.submit(request).status,
              ShellWindowActionStatus::Stale);
     QCOMPARE(fixture.registry.lookups, 0);
@@ -160,6 +168,74 @@ void ShellWindowActionsTest::unboundOwnerDisablesBeforeCredentials()
     const auto result = fixture.controller.submit(request);
     QCOMPARE(result.status, ShellWindowActionStatus::ControlDisabled);
     QCOMPARE(result.failureCode, QStringLiteral("shell-owner-unbound"));
+    QCOMPARE(fixture.credentials.lookups, 0);
+}
+
+void ShellWindowActionsTest::hostileUnauthenticatedFieldsAreNotParsedOrEchoed()
+{
+    Fixture fixture;
+    auto ordinary = fixture.request();
+    ordinary.callerUniqueName = QStringLiteral(":1.bad");
+    const QByteArray ordinaryPayload = encodeShellWindowActionResult(
+        fixture.controller.submit(ordinary));
+    auto request = fixture.request();
+    request.callerUniqueName = QStringLiteral(":1.bad");
+    request.windowId = QString(1024 * 1024, u'w');
+    request.epoch = QString(1024 * 1024, u'e');
+    request.revision = QString(1024 * 1024, u'9');
+    const auto result = fixture.controller.submit(request);
+    QCOMPARE(result.status, ShellWindowActionStatus::Unauthorized);
+    QCOMPARE(fixture.credentials.lookups, 2);
+    QCOMPARE(fixture.registry.generationLookups, 0);
+    QCOMPARE(fixture.registry.lookups, 0);
+    QCOMPARE(fixture.executor.calls, 0);
+    const QByteArray payload = encodeShellWindowActionResult(result);
+    QVERIFY(payload.size() < 512);
+    QVERIFY(!payload.contains(QByteArray(32, 'w')));
+    QVERIFY(!payload.contains(QByteArray(32, 'e')));
+    QVERIFY(!payload.contains(QByteArray(32, '9')));
+    QVERIFY(!payload.contains("windowId"));
+    QVERIFY(!payload.contains("epoch"));
+    QVERIFY(!payload.contains("revision"));
+    QCOMPARE(payload, ordinaryPayload);
+}
+
+void ShellWindowActionsTest::hostileUnboundFieldsAreNotParsedOrEchoed()
+{
+    Fixture fixture;
+    fixture.owner.processId.reset();
+    const QByteArray ordinaryPayload = encodeShellWindowActionResult(
+        fixture.controller.submit(fixture.request()));
+    auto request = fixture.request();
+    request.windowId = QString(1024 * 1024, u'w');
+    request.epoch = QString(1024 * 1024, u'e');
+    request.revision = QString(1024 * 1024, u'9');
+    const auto result = fixture.controller.submit(request);
+    QCOMPARE(result.status, ShellWindowActionStatus::ControlDisabled);
+    QCOMPARE(result.failureCode, QStringLiteral("shell-owner-unbound"));
+    QCOMPARE(fixture.credentials.lookups, 0);
+    QCOMPARE(fixture.registry.generationLookups, 0);
+    QCOMPARE(fixture.registry.lookups, 0);
+    const QByteArray payload = encodeShellWindowActionResult(result);
+    QVERIFY(payload.size() < 512);
+    QVERIFY(!payload.contains("windowId"));
+    QVERIFY(!payload.contains("epoch"));
+    QVERIFY(!payload.contains("revision"));
+    QCOMPARE(payload, ordinaryPayload);
+}
+
+void ShellWindowActionsTest::hostileAuthenticatedFieldsRejectBeforeParsing()
+{
+    Fixture fixture;
+    auto request = fixture.request();
+    request.revision = QString(1024 * 1024, u'9');
+    const auto result = fixture.controller.submit(request);
+    QCOMPARE(result.status, ShellWindowActionStatus::ControlDisabled);
+    QCOMPARE(result.failureCode, QStringLiteral("request-fields-too-large"));
+    QCOMPARE(fixture.credentials.lookups, 1);
+    QCOMPARE(fixture.registry.generationLookups, 0);
+    QCOMPARE(fixture.registry.lookups, 0);
+    QVERIFY(encodeShellWindowActionResult(result).size() < 512);
 }
 
 void ShellWindowActionsTest::preservesHybridRouteForExecutor()

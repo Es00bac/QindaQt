@@ -197,6 +197,22 @@ int runUnauthorized(const QStringList &arguments)
     return 0;
 }
 
+int runHostileUnauthorized()
+{
+    const QString hostile(1024 * 1024, u'9');
+    QDBusInterface interface(QString::fromLatin1(ServiceName),
+                             QString::fromLatin1(ShellPath),
+                             QString::fromLatin1(ShellInterface),
+                             QDBusConnection::sessionBus());
+    const QDBusReply<QByteArray> reply = interface.call(
+        QStringLiteral("ActivateWindow"), hostile, hostile, hostile);
+    if (!reply.isValid()) {
+        return 3;
+    }
+    QTextStream(stdout) << reply.value() << Qt::endl;
+    return 0;
+}
+
 class LiveProof final {
 public:
     explicit LiveProof(QGuiApplication &application)
@@ -339,6 +355,39 @@ private:
             m_failure = QStringLiteral("unbound caller response was %1")
                             .arg(QString::fromUtf8(output));
         }
+        return rejected && proveHostileUnauthorized();
+    }
+
+    bool proveHostileUnauthorized()
+    {
+        QProcess attacker;
+        attacker.setProgram(m_application.applicationFilePath());
+        attacker.setArguments({QStringLiteral("--unauthorized-hostile")});
+        attacker.start();
+        if (!attacker.waitForFinished(5000) || attacker.exitCode() != 0) {
+            m_failure = QStringLiteral("wrong-PID hostile-size stage failed: %1")
+                            .arg(QString::fromUtf8(attacker.readAllStandardError()));
+            return false;
+        }
+        const QByteArray output = attacker.readAllStandardOutput().trimmed();
+        QJsonParseError error;
+        const auto document = QJsonDocument::fromJson(output, &error);
+        const auto object = document.object();
+        const bool rejected = error.error == QJsonParseError::NoError
+            && document.isObject() && output.size() < 512
+            && object.value(QStringLiteral("status")).toString()
+                == QStringLiteral("unauthorized")
+            && object.value(QStringLiteral("failure")).toObject()
+                   .value(QStringLiteral("code")).toString()
+                == QStringLiteral("caller-pid-mismatch")
+            && !object.contains(QStringLiteral("windowId"))
+            && !object.contains(QStringLiteral("epoch"))
+            && !object.contains(QStringLiteral("revision"));
+        if (!rejected) {
+            m_failure = QStringLiteral(
+                "wrong-PID hostile-size reply was not bounded and echo-free: %1")
+                            .arg(QString::fromUtf8(output.left(1024)));
+        }
         return rejected;
     }
 
@@ -421,6 +470,10 @@ int main(int argc, char **argv)
     }
     if (arguments.size() >= 2 && arguments[1] == QStringLiteral("--unauthorized")) {
         return runUnauthorized(arguments);
+    }
+    if (arguments.size() == 2
+        && arguments[1] == QStringLiteral("--unauthorized-hostile")) {
+        return runHostileUnauthorized();
     }
     return LiveProof(application).run();
 }

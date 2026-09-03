@@ -12,8 +12,6 @@
 namespace QindaQt::Compositor {
 namespace {
 
-constexpr qsizetype MaximumEpochCharacters = 512;
-constexpr qsizetype MaximumWindowIdCharacters = 64;
 constexpr qsizetype MaximumRateOwners = 8;
 
 qint64 monotonicMilliseconds()
@@ -24,7 +22,8 @@ qint64 monotonicMilliseconds()
 
 bool canonicalWindowId(const QString &windowId)
 {
-    if (windowId.isEmpty() || windowId.size() > MaximumWindowIdCharacters) {
+    if (windowId.isEmpty()
+        || windowId.size() > ShellWindowActionMaximumWindowIdCharacters) {
         return false;
     }
     const QUuid uuid(windowId);
@@ -32,13 +31,32 @@ bool canonicalWindowId(const QString &windowId)
         && uuid.toString(QUuid::WithoutBraces) == windowId;
 }
 
-ShellWindowActionResult reject(const ShellWindowActionRequest &request,
+ShellWindowActionResult reject(ShellWindowAction action,
+                               const QString &windowId,
+                               const ShellWindowGeneration &generation,
                                ShellWindowActionStatus status,
-                               QString code,
-                               QString message)
+                               QString code, QString message)
 {
-    return {status, request.action, request.windowId, request.generation,
+    return {status, action, windowId, generation,
             std::move(code), std::move(message)};
+}
+
+ShellWindowActionResult rejectWithoutEcho(ShellWindowAction action,
+                                          ShellWindowActionStatus status,
+                                          QString code, QString message)
+{
+    return reject(action, {}, {}, status, std::move(code), std::move(message));
+}
+
+bool fieldsWithinEntryBounds(const ShellWindowActionRequest &request)
+{
+    // AGENT-GUARD: These QString length reads are the only caller-field access
+    // permitted before the PID join. Do not scan, parse, normalize, or echo a
+    // wire field until authentication succeeds; hostile peers otherwise run
+    // unbounded work on KWin's owner thread.
+    return request.windowId.size() <= ShellWindowActionMaximumWindowIdCharacters
+        && request.epoch.size() <= ShellWindowActionMaximumEpochCharacters
+        && request.revision.size() <= ShellWindowActionMaximumRevisionCharacters;
 }
 
 void setError(QString *error, QString message)
@@ -94,7 +112,8 @@ std::optional<quint64> parseRevision(const QString &value)
 bool ShellWindowGeneration::isValid() const noexcept
 {
     return revision > 0 && !epoch.isEmpty()
-        && epoch.size() <= MaximumEpochCharacters && epoch == epoch.trimmed();
+        && epoch.size() <= ShellWindowActionMaximumEpochCharacters
+        && epoch == epoch.trimmed();
 }
 
 bool ShellWindowActionResult::admitted() const noexcept
@@ -128,58 +147,76 @@ ShellWindowActionController::ShellWindowActionController(
 ShellWindowActionResult ShellWindowActionController::submit(
     const ShellWindowActionRequest &request)
 {
+    const bool fieldsAreBounded = fieldsWithinEntryBounds(request);
     const auto panelPid = m_panelOwner.shellPanelProcessId();
     if (!panelPid || *panelPid <= 1) {
-        return reject(request, ShellWindowActionStatus::ControlDisabled,
-                      QStringLiteral("shell-owner-unbound"),
-                      QStringLiteral("no single committed shell panel owner is bound"));
+        return rejectWithoutEcho(
+            request.action, ShellWindowActionStatus::ControlDisabled,
+            QStringLiteral("shell-owner-unbound"),
+            QStringLiteral("no single committed shell panel owner is bound"));
     }
     if (request.callerUniqueName.isEmpty()
         || !request.callerUniqueName.startsWith(u':')) {
-        return reject(request, ShellWindowActionStatus::Unauthorized,
-                      QStringLiteral("caller-not-unique"),
-                      QStringLiteral("the caller has no unique D-Bus identity"));
+        return rejectWithoutEcho(
+            request.action, ShellWindowActionStatus::Unauthorized,
+            QStringLiteral("caller-not-unique"),
+            QStringLiteral("the caller has no unique D-Bus identity"));
     }
     const auto callerPid =
         m_credentials.processIdForUniqueName(request.callerUniqueName);
     if (!callerPid || *callerPid != *panelPid) {
-        return reject(request, ShellWindowActionStatus::Unauthorized,
-                      QStringLiteral("caller-pid-mismatch"),
-                      QStringLiteral("the D-Bus caller does not own the shell panels"));
+        return rejectWithoutEcho(
+            request.action, ShellWindowActionStatus::Unauthorized,
+            QStringLiteral("caller-pid-mismatch"),
+            QStringLiteral("the D-Bus caller does not own the shell panels"));
     }
     if (!admitRate(request.callerUniqueName, m_clock())) {
-        return reject(request, ShellWindowActionStatus::ControlDisabled,
-                      QStringLiteral("rate-limited"),
-                      QStringLiteral("the bounded shell action rate was exceeded"));
+        return rejectWithoutEcho(
+            request.action, ShellWindowActionStatus::ControlDisabled,
+            QStringLiteral("rate-limited"),
+            QStringLiteral("the bounded shell action rate was exceeded"));
     }
+    if (!fieldsAreBounded) {
+        return rejectWithoutEcho(
+            request.action, ShellWindowActionStatus::ControlDisabled,
+            QStringLiteral("request-fields-too-large"),
+            QStringLiteral("the shell action fields exceed their entry bounds"));
+    }
+    const auto revision = parseRevision(request.revision);
+    const ShellWindowGeneration generation{request.epoch,
+                                            revision.value_or(0)};
     const auto currentGeneration = m_registry.currentGeneration();
-    if (!request.generation.isValid() || !currentGeneration
-        || request.generation != *currentGeneration) {
-        return reject(request, ShellWindowActionStatus::Stale,
+    if (!generation.isValid() || !currentGeneration
+        || generation != *currentGeneration) {
+        return reject(request.action, request.windowId, generation,
+                      ShellWindowActionStatus::Stale,
                       QStringLiteral("stale-generation"),
                       QStringLiteral("the observed compositor generation is no longer current"));
     }
     if (!canonicalWindowId(request.windowId)) {
-        return reject(request, ShellWindowActionStatus::UnknownWindow,
+        return reject(request.action, request.windowId, generation,
+                      ShellWindowActionStatus::UnknownWindow,
                       QStringLiteral("unknown-window"),
                       QStringLiteral("the window UUID is not currently managed"));
     }
     const auto target = m_registry.target(request.windowId);
     if (!target || target->windowId != request.windowId) {
-        return reject(request, ShellWindowActionStatus::UnknownWindow,
+        return reject(request.action, request.windowId, generation,
+                      ShellWindowActionStatus::UnknownWindow,
                       QStringLiteral("unknown-window"),
                       QStringLiteral("the window UUID is not currently managed"));
     }
 
     QString error;
     if (!m_executor.execute(request.action, *target, &error)) {
-        return reject(request, ShellWindowActionStatus::ControlDisabled,
+        return reject(request.action, request.windowId, generation,
+                      ShellWindowActionStatus::ControlDisabled,
                       QStringLiteral("action-rejected"),
                       error.isEmpty() ? QStringLiteral("window policy rejected the action")
                                       : error);
     }
     return {ShellWindowActionStatus::Admitted, request.action, request.windowId,
-            request.generation, {}, {}};
+            generation, {}, {}};
 }
 
 bool ShellWindowActionController::admitRate(const QString &uniqueName, qint64 now)
@@ -228,11 +265,14 @@ QByteArray encodeShellWindowActionResult(const ShellWindowActionResult &result)
 {
     QJsonObject object{{QStringLiteral("status"),
                         shellWindowActionStatusName(result.status)},
-                       {QStringLiteral("action"), shellWindowActionName(result.action)},
-                       {QStringLiteral("windowId"), result.windowId},
-                       {QStringLiteral("epoch"), result.generation.epoch},
-                       {QStringLiteral("revision"),
-                        QString::number(result.generation.revision)}};
+                       {QStringLiteral("action"), shellWindowActionName(result.action)}};
+    if (!result.windowId.isEmpty() || result.generation.revision != 0
+        || !result.generation.epoch.isEmpty()) {
+        object.insert(QStringLiteral("windowId"), result.windowId);
+        object.insert(QStringLiteral("epoch"), result.generation.epoch);
+        object.insert(QStringLiteral("revision"),
+                      QString::number(result.generation.revision));
+    }
     if (!result.failureCode.isEmpty()) {
         object.insert(QStringLiteral("failure"),
                       QJsonObject{{QStringLiteral("code"), result.failureCode},

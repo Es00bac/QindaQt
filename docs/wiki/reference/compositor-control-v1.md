@@ -215,18 +215,26 @@ capability:
 return compact UTF-8 JSON in `ay`. The UUID must come from `Windows`; the epoch
 and canonical nonzero decimal revision must be the displayed
 `ShellVisibilitySnapshot` generation (also exposed by `Windows` schema 2).
-Replies echo that request and use exactly `admitted`, `stale`,
-`unknown-window`, `unauthorized`, or `control-disabled`.
+Entry lengths are at most 64 UTF-16 code units for `windowId`, 128 for `epoch`,
+and 20 for `revision`. Authenticated, bounded requests receive replies that echo
+the request and use exactly `admitted`, `stale`, `unknown-window`,
+`unauthorized`, or `control-disabled`.
 
-Every call is authenticated from its D-Bus message, before generation or UUID
-lookup. The bus daemon's `GetConnectionCredentials` PID for the caller's unique
-name must equal the sole positive Wayland-client PID owning all currently
-committed layer-shell surfaces with exact scope `dock`. Missing panels,
-conflicting panel owners, invalid credentials, or dispatch-policy failure deny
-the request. Any local process can reach the session bus, but bus access or a
-matching UID alone grants nothing. This does not protect a compromised shell or
-a process that can successfully impersonate the shell's committed dock client;
-the complete threat model is [ADR-0057](../adr/0057-authenticate-shell-window-actions-by-panel-owner.md).
+At entry the controller reads only the three constant-time string lengths. It
+then authenticates the call from its D-Bus message before scanning, parsing,
+normalizing, or reflecting any field. The bus daemon's
+`GetConnectionCredentials` PID for the caller's unique name must equal the sole
+positive Wayland-client PID owning all currently committed layer-shell surfaces
+with exact scope `dock`. Missing panels, conflicting panel owners, invalid
+credentials, or dispatch-policy failure deny the request with a fixed compact
+reply that omits `windowId`, `epoch`, and `revision`. A successful PID join is
+rate-admitted, the recorded entry limits are enforced, and only then are the
+revision, generation, and UUID interpreted. An oversized authenticated request
+also receives a fixed echo-free `request-fields-too-large` rejection. Any local
+process can reach the session bus, but bus access or a matching UID alone grants
+nothing. This does not protect a compromised shell or a process that can
+successfully impersonate the shell's committed dock client; the complete threat
+model is [ADR-0057](../adr/0057-authenticate-shell-window-actions-by-panel-owner.md).
 
 Independent targets use KWin's normal activate/minimize/restore/raise/request-
 close paths. A UUID currently owned by Hybrid instead enters its existing
@@ -238,7 +246,10 @@ queue or replay calls.
 The public `shell_window_actions_client` binds the well-known name to its exact
 unique owner, serializes to one request in flight, and matches action, UUID,
 owner, epoch, and revision on reply. Timeout, owner change, transport failure,
-or malformed/mismatched reply is an uncertain outcome and is never retried.
+or malformed/mismatched reply is an uncertain outcome and is never retried. An
+owner change withdraws availability for the old owner before completion, and a
+late reply from that unique owner cannot settle or replay the request against
+its replacement.
 Task-list and launcher composition must retain the generation displayed with
 each intent and may update UI only from a later reconciled compositor snapshot.
 None of this changes `Compositor1`: its unauthenticated production mutators
