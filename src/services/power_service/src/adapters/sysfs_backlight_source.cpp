@@ -9,8 +9,9 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QFileSystemWatcher>
-#include <QtCore/QTextStream>
+#include <QtCore/QRegularExpression>
 
 namespace QindaQt::Power::Upstream {
 namespace {
@@ -83,7 +84,10 @@ void SysfsBacklightSource::stop()
     }
     m_watching = false;
     if (m_watcher != nullptr) {
-        m_watcher->removePaths(m_watcher->directories());
+        const QStringList watchedDirectories = m_watcher->directories();
+        if (!watchedDirectories.isEmpty()) {
+            m_watcher->removePaths(watchedDirectories);
+        }
     }
     m_devices.clear();
 }
@@ -97,14 +101,22 @@ bool SysfsBacklightSource::readBoundedInteger(const QString &directory,
     if (!file.open(QIODevice::ReadOnly)) {
         return false;
     }
-    const QString text = QString::fromUtf8(file.readAll());
+    const QByteArray bytes = file.read(65);
+    const bool bounded = file.atEnd();
     file.close();
+    if (!bounded) {
+        return false;
+    }
+    const QString text = QString::fromUtf8(bytes).trimmed();
+    static const QRegularExpression decimal(QStringLiteral("^[0-9]+$"));
+    if (!decimal.match(text).hasMatch()) {
+        return false;
+    }
     bool converted = false;
-    const qlonglong parsed = text.trimmed().toLongLong(&converted);
+    const qulonglong parsed = text.toULongLong(&converted);
     // Strict decimal integers only: no signs, exponents, floats, or trailing
     // garbage. Negative and oversize values are hostile input, not truth.
-    if (!converted || parsed < 0 || text.trimmed().startsWith(QLatin1Char('-'))
-        || static_cast<quint64>(parsed) > bound) {
+    if (!converted || parsed > bound) {
         return false;
     }
     value = static_cast<quint32>(parsed);
@@ -131,8 +143,13 @@ void SysfsBacklightSource::rescan()
         if (!typeFile.open(QIODevice::ReadOnly)) {
             continue;
         }
-        const QString typeText = QString::fromUtf8(typeFile.readAll());
+        const QByteArray typeBytes = typeFile.read(65);
+        const bool typeBounded = typeFile.atEnd();
         typeFile.close();
+        if (!typeBounded) {
+            continue;
+        }
+        const QString typeText = QString::fromUtf8(typeBytes);
         BacklightKind kind = BacklightKind::Firmware;
         if (!kindFromTypeFile(typeText, kind)) {
             continue;
@@ -172,8 +189,16 @@ void SysfsBacklightSource::rescan()
         if (observedValid && observed <= maximum) {
             device.observedKnown = true;
             device.observed = observed;
-            device.status = BacklightStatus::Ok;
-            device.reason = BacklightReason::None;
+            const QFileInfo brightness(deviceDirectory
+                                       + QStringLiteral("/brightness"));
+            if (brightness.isWritable()) {
+                device.status = BacklightStatus::Ok;
+                device.reason = BacklightReason::None;
+            } else {
+                device.status = BacklightStatus::Unavailable;
+                device.reason = BacklightReason::LogindError;
+                device.diagnostic = QStringLiteral("backlight-read-only");
+            }
         } else {
             device.observedKnown = false;
             device.observed = 0;
@@ -240,16 +265,10 @@ BacklightWriteOutcome SysfsBacklightSource::writeBrightness(const QString &opaqu
     }
     file.close();
 
-    for (InternalBacklight &device : m_devices) {
-        if (device.handle.opaqueId == opaqueId) {
-            device.observedKnown = true;
-            device.observed = value;
-            device.status = BacklightStatus::Ok;
-            device.reason = BacklightReason::None;
-            break;
-        }
-    }
-    emitDevices();
+    // actual_brightness is authoritative when present. Re-read the fixture or
+    // kernel view after the write instead of claiming that the request itself
+    // is an observation.
+    rescan();
     return {.status = BacklightWriteStatus::Succeeded,
             .reasonCode = QStringLiteral("applied"),
             .diagnostic = {}};

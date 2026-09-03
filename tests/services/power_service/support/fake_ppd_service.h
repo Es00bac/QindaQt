@@ -27,9 +27,8 @@ public:
     struct HoldRequest {
         QString profile;
         QString reason;
-        QString application;
-        QString appId;
-        QString holdPath;
+        QString applicationId;
+        quint32 cookie = 0;
     };
 
     FakePpdService(const QDBusConnection &connection, bool legacyOnly,
@@ -51,11 +50,12 @@ public:
 
     QStringList setProfileRequests;
     QList<HoldRequest> holdRequests;
-    QStringList releaseRequests;
-    int nextHoldNumber = 0;
+    QList<quint32> releaseRequests;
+    quint32 nextCookie = 1;
 
 private:
     [[nodiscard]] QString busName() const;
+    [[nodiscard]] QString objectPath() const;
     [[nodiscard]] QString interfaceName() const;
     [[nodiscard]] QString holdsKey() const;
     [[nodiscard]] QVariant profilesValue() const;

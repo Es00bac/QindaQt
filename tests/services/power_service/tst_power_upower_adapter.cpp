@@ -93,6 +93,8 @@ struct UpowerRow
         snapshotSpy = std::make_unique<QSignalSpy>(
             coordinator.get(), &PowerServiceCoordinator::snapshotChanged);
         coordinator->start();
+        profiles.publish(fixtureProfileFacts());
+        session.publish(fixtureSessionFacts());
         return true;
     }
 };
@@ -107,12 +109,14 @@ private Q_SLOTS:
     void publishesSuppliesAcAndOnBatteryTruth();
     void coarseBatteryLevelSuppressesPercentage();
     void absentOptionalPropertiesYieldUnknownFlags();
+    void zeroTimeEstimatesStayUnknownAndSignedRateIsAbsolute();
     void deviceAddedAndRemovedUpdateSupplies();
     void devicePropertiesChangedUpdatesSupply();
     void onBatteryServicePropertyChangeUpdatesTruth();
     void ownerLossFailsClosedUnavailable();
     void ownerReplacementInvalidatesEpoch();
     void hostileWrongTypedPercentageFailsClosedMalformed();
+    void hostileMissingPresenceFailsClosedMalformed();
     void hostileOutOfRangeEstimateDegradesThroughSanitization();
     void hostileUnknownStateOrdinalFailsClosedMalformed();
     void oversizeEnumerationDegradesThroughSanitization();
@@ -194,6 +198,22 @@ void PowerUpowerAdapterTests::absentOptionalPropertiesYieldUnknownFlags()
     QCOMPARE(supply.state, ChargeState::Unknown);
     QVERIFY(!supply.energyKnown);
     QVERIFY(!supply.rateKnown);
+    QVERIFY(!supply.timeToEmptyKnown);
+    QVERIFY(!supply.timeToFullKnown);
+}
+
+void PowerUpowerAdapterTests::zeroTimeEstimatesStayUnknownAndSignedRateIsAbsolute()
+{
+    QVariantMap properties = batteryProperties();
+    properties.insert(QStringLiteral("EnergyRate"), QVariant(-7.25));
+    properties.insert(QStringLiteral("TimeToEmpty"), QVariant(qint64(0)));
+    properties.insert(QStringLiteral("TimeToFull"), QVariant(qint64(0)));
+    UpowerRow row;
+    QVERIFY(row.start({{kBatteryPath, properties}}, true));
+    QTRY_COMPARE(row.coordinator->snapshot().supplies.size(), 1);
+    const PowerSupply &supply = row.coordinator->snapshot().supplies.constFirst();
+    QVERIFY(supply.rateKnown);
+    QCOMPARE(supply.energyRateWatts, 7.25);
     QVERIFY(!supply.timeToEmptyKnown);
     QVERIFY(!supply.timeToFullKnown);
 }
@@ -300,6 +320,18 @@ void PowerUpowerAdapterTests::hostileWrongTypedPercentageFailsClosedMalformed()
     QCOMPARE(row.coordinator->snapshot().supplies.size(), 0);
 }
 
+void PowerUpowerAdapterTests::hostileMissingPresenceFailsClosedMalformed()
+{
+    QVariantMap properties = batteryProperties();
+    properties.remove(QStringLiteral("IsPresent"));
+    UpowerRow row;
+    QVERIFY(row.start({{kBatteryPath, properties}}, false));
+    QTRY_COMPARE(row.coordinator->snapshot().availability, Availability::Degraded);
+    QCOMPARE(row.coordinator->snapshot().reasonCode,
+             QStringLiteral("upower-malformed"));
+    QCOMPARE(row.coordinator->snapshot().supplies.size(), 0);
+}
+
 void PowerUpowerAdapterTests::hostileOutOfRangeEstimateDegradesThroughSanitization()
 {
     QVariantMap properties = batteryProperties();
@@ -385,7 +417,8 @@ void writeFixtureFile(const QString &path, const QByteArray &content)
 
 void PowerUpowerAdapterTests::mergedProductionFactsCarryInternalBacklights()
 {
-    QTemporaryDir root;
+    QTemporaryDir root{QStringLiteral(QINDAQT_TEST_SCRATCH_DIR)
+                       + QStringLiteral("/upower-merge-XXXXXX")};
     QVERIFY(root.isValid());
     const QString panel = root.path() + QStringLiteral("/panel");
     writeFixtureFile(panel + QStringLiteral("/type"), QByteArrayLiteral("firmware\n"));

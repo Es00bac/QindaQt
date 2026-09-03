@@ -4,16 +4,17 @@
 
 
 #include <QtDBus/QDBusArgument>
-#include <QtDBus/QDBusObjectPath>
-
 #include <QtCore/QVariant>
+
+#include <algorithm>
 
 namespace QindaQt::Tests {
 namespace {
 
-constexpr char kObjectPath[] = "/net/hadess/PowerProfiles";
 constexpr char kPrimaryName[] = "org.freedesktop.UPower.PowerProfiles";
+constexpr char kPrimaryPath[] = "/org/freedesktop/UPower/PowerProfiles";
 constexpr char kLegacyName[] = "net.hadess.PowerProfiles";
+constexpr char kLegacyPath[] = "/net/hadess/PowerProfiles";
 constexpr char kPrimaryInterface[] = "org.freedesktop.UPower.PowerProfiles";
 constexpr char kLegacyInterface[] = "net.hadess.PowerProfiles";
 constexpr char kPropertiesInterface[] = "org.freedesktop.DBus.Properties";
@@ -46,22 +47,31 @@ FakePpdService::~FakePpdService()
 
 bool FakePpdService::registerService()
 {
-    if (!m_connection.registerService(busName())) {
+    if (!m_connection.registerVirtualObject(objectPath(), this,
+                                            QDBusConnection::SubPath)) {
         return false;
     }
-    return m_connection.registerVirtualObject(QString::fromLatin1(kObjectPath), this,
-                                              QDBusConnection::SubPath);
+    if (!m_connection.registerService(busName())) {
+        m_connection.unregisterObject(objectPath());
+        return false;
+    }
+    return true;
 }
 
 void FakePpdService::unregisterService()
 {
-    m_connection.unregisterObject(QString::fromLatin1(kObjectPath));
+    m_connection.unregisterObject(objectPath());
     m_connection.unregisterService(busName());
 }
 
 QString FakePpdService::busName() const
 {
     return QString::fromLatin1(m_legacyOnly ? kLegacyName : kPrimaryName);
+}
+
+QString FakePpdService::objectPath() const
+{
+    return QString::fromLatin1(m_legacyOnly ? kLegacyPath : kPrimaryPath);
 }
 
 QString FakePpdService::interfaceName() const
@@ -97,7 +107,7 @@ void FakePpdService::setRejectSetProfile(const bool reject)
 void FakePpdService::emitPropertiesChanged()
 {
     QDBusMessage signal = QDBusMessage::createSignal(
-        QString::fromLatin1(kObjectPath), QString::fromLatin1(kPropertiesInterface),
+        objectPath(), QString::fromLatin1(kPropertiesInterface),
         QStringLiteral("PropertiesChanged"));
     QVariantMap changed;
     changed.insert(QStringLiteral("ActiveProfile"), QVariant(m_activeProfile));
@@ -126,9 +136,8 @@ QVariant FakePpdService::holdsValue() const
     for (const HoldSpec &hold : m_holds) {
         QVariantMap entry;
         entry.insert(QStringLiteral("Profile"), QVariant(hold.profile));
-        entry.insert(QStringLiteral("Application"), QVariant(hold.application));
+        entry.insert(QStringLiteral("ApplicationId"), QVariant(hold.application));
         entry.insert(QStringLiteral("Reason"), QVariant(hold.reason));
-        entry.insert(QStringLiteral("AppId"), QVariant(hold.application));
         entries.push_back(entry);
     }
     return arrayOfStringVariantMaps(entries);
@@ -155,9 +164,37 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
     }
     const QString member = message.member();
 
+    if (message.path() == objectPath() && message.interface() == interfaceName()
+        && member == QStringLiteral("ReleaseProfile")
+        && message.arguments().size() == 1
+        && message.arguments().constFirst().metaType()
+            == QMetaType::fromType<uint>()) {
+        const quint32 cookie = message.arguments().constFirst().toUInt();
+        releaseRequests.push_back(cookie);
+        const auto request = std::find_if(
+            holdRequests.cbegin(), holdRequests.cend(),
+            [cookie](const HoldRequest &candidate) {
+                return candidate.cookie == cookie;
+            });
+        if (request != holdRequests.cend()) {
+            const auto hold = std::find_if(
+                m_holds.cbegin(), m_holds.cend(),
+                [&request](const HoldSpec &candidate) {
+                    return candidate.profile == request->profile
+                        && candidate.application == request->applicationId
+                        && candidate.reason == request->reason;
+                });
+            if (hold != m_holds.cend()) {
+                m_holds.erase(hold);
+            }
+        }
+        QDBusMessage reply = message.createReply();
+        m_connection.send(reply);
+        return true;
+    }
     if (message.interface() == interfaceName()) {
         if (member == QStringLiteral("HoldProfile")) {
-            if (message.arguments().size() != 4) {
+            if (message.arguments().size() != 3) {
                 sendError(message, QStringLiteral("org.freedesktop.DBus.Error.InvalidArgs"),
                           QStringLiteral("Bad HoldProfile"));
                 return true;
@@ -165,18 +202,16 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
             HoldRequest request;
             request.profile = message.arguments().at(0).toString();
             request.reason = message.arguments().at(1).toString();
-            request.application = message.arguments().at(2).toString();
-            request.appId = message.arguments().at(3).toString();
-            request.holdPath = QString::fromLatin1(kObjectPath) + QStringLiteral("/hold%1")
-                                                  .arg(nextHoldNumber++);
+            request.applicationId = message.arguments().at(2).toString();
+            request.cookie = nextCookie++;
             holdRequests.push_back(request);
             HoldSpec spec;
             spec.profile = request.profile;
-            spec.application = request.application;
+            spec.application = request.applicationId;
             spec.reason = request.reason;
             m_holds.push_back(spec);
             QDBusMessage reply = message.createReply();
-            reply.setArguments({QVariant::fromValue(QDBusObjectPath(request.holdPath))});
+            reply.setArguments({QVariant::fromValue(request.cookie)});
             m_connection.send(reply);
             return true;
         }
@@ -185,19 +220,14 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
         return true;
     }
     if (message.interface() == QString::fromLatin1(kPropertiesInterface)) {
-        if (message.arguments().size() != 1) {
-            sendError(message, QStringLiteral("org.freedesktop.DBus.Error.InvalidArgs"),
-                      QStringLiteral("Bad Properties call"));
-            return true;
-        }
-        const QString requestedInterface =
-            message.arguments().constFirst().toString();
-        if (requestedInterface != interfaceName()) {
-            sendError(message, QStringLiteral("org.freedesktop.DBus.Error.UnknownInterface"),
-                      QStringLiteral("Unknown interface ") + requestedInterface);
-            return true;
-        }
         if (member == QStringLiteral("GetAll")) {
+            if (message.arguments().size() != 1
+                || message.arguments().constFirst().toString() != interfaceName()) {
+                sendError(message,
+                          QStringLiteral("org.freedesktop.DBus.Error.InvalidArgs"),
+                          QStringLiteral("Bad GetAll call"));
+                return true;
+            }
             QVariantMap properties;
             properties.insert(QStringLiteral("ActiveProfile"), QVariant(m_activeProfile));
             properties.insert(QStringLiteral("Profiles"), profilesValue());
@@ -209,6 +239,7 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
         }
         if (member == QStringLiteral("Set")) {
             if (message.arguments().size() != 3
+                || message.arguments().at(0).toString() != interfaceName()
                 || message.arguments().at(1).toString()
                        != QStringLiteral("ActiveProfile")) {
                 sendError(message, QStringLiteral("org.freedesktop.DBus.Error.InvalidArgs"),
@@ -229,20 +260,6 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
         }
         sendError(message, QStringLiteral("org.freedesktop.DBus.Error.UnknownMethod"),
                   QStringLiteral("Unknown Properties member ") + member);
-        return true;
-    }
-    if (message.path().startsWith(QString::fromLatin1(kObjectPath)
-                                  + QStringLiteral("/hold"))
-        && member == QStringLiteral("Release")) {
-        if (!message.interface().isEmpty()
-            && message.interface() != interfaceName()) {
-            sendError(message, QStringLiteral("org.freedesktop.DBus.Error.UnknownMethod"),
-                      QStringLiteral("Wrong hold interface"));
-            return true;
-        }
-        releaseRequests.push_back(message.path());
-        QDBusMessage reply = message.createReply();
-        m_connection.send(reply);
         return true;
     }
     sendError(message, QStringLiteral("org.freedesktop.DBus.Error.UnknownMethod"),

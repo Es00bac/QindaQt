@@ -5,23 +5,37 @@
 #include "upstream_dbus_util.h"
 #include "upstream_identity.h"
 
-#include <qindaqt/services/power_protocol/power_limits.h>
-
 #include <QtCore/QTimer>
 #include <QtDBus/QDBusArgument>
+#include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusObjectPath>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusServiceWatcher>
+#include <QtDBus/QDBusVariant>
+#include <QtDBus/QDBusReply>
 
 namespace QindaQt::Power::Upstream {
 namespace {
 
-constexpr char kPpdPrimaryName[] = "org.freedesktop.UPower.PowerProfiles";
-constexpr char kPpdLegacyName[] = "net.hadess.PowerProfiles";
-constexpr char kPpdObjectPath[] = "/net/hadess/PowerProfiles";
-constexpr char kPpdPrimaryInterface[] = "org.freedesktop.UPower.PowerProfiles";
-constexpr char kPpdLegacyInterface[] = "net.hadess.PowerProfiles";
+constexpr char kPrimaryName[] = "org.freedesktop.UPower.PowerProfiles";
+constexpr char kPrimaryPath[] = "/org/freedesktop/UPower/PowerProfiles";
+constexpr char kPrimaryInterface[] = "org.freedesktop.UPower.PowerProfiles";
+constexpr char kLegacyName[] = "net.hadess.PowerProfiles";
+constexpr char kLegacyPath[] = "/net/hadess/PowerProfiles";
+constexpr char kLegacyInterface[] = "net.hadess.PowerProfiles";
 constexpr char kPropertiesInterface[] = "org.freedesktop.DBus.Properties";
+
+struct Candidate {
+    const char *service;
+    const char *path;
+    const char *interface;
+};
+
+constexpr Candidate kCandidates[] = {
+    {kPrimaryName, kPrimaryPath, kPrimaryInterface},
+    {kLegacyName, kLegacyPath, kLegacyInterface},
+};
 
 QString canonicalProfileLabel(const QString &profileId)
 {
@@ -37,19 +51,15 @@ QString canonicalProfileLabel(const QString &profileId)
     return profileId;
 }
 
-bool optionalStringEntry(const QVariantMap &entry, const QString &key,
+bool requiredStringEntry(const QVariantMap &entry, const QString &key,
                          QString &value)
 {
     const auto it = entry.constFind(key);
-    if (it == entry.constEnd()) {
-        value = QString();
-        return true;
-    }
-    if (it.value().userType() != QMetaType::QString) {
+    if (it == entry.constEnd() || it.value().metaType() != QMetaType::fromType<QString>()) {
         return false;
     }
     value = it.value().toString();
-    return true;
+    return !value.isEmpty();
 }
 
 } // namespace
@@ -68,58 +78,71 @@ PowerProfilesCollaborator::~PowerProfilesCollaborator()
 
 quint64 PowerProfilesCollaborator::start()
 {
-    ++m_nextGeneration;
-    if (m_nextGeneration == 0) {
+    if (++m_nextGeneration == 0) {
         ++m_nextGeneration;
     }
     m_generation = m_nextGeneration;
     m_running = true;
     m_acquiredHolds.clear();
+    m_primaryOwner.clear();
+    m_legacyOwner.clear();
     m_activeOwner.clear();
+    m_lastOwner.clear();
     m_activeServiceName.clear();
     m_activeInterfaceName.clear();
+    m_activeObjectPath.clear();
+    m_epochAdvancedForLoss = false;
 
     if (!m_connection.isConnected()) {
         scheduleUnavailable(m_generation, QStringLiteral("profiles-bus-unavailable"));
         return m_generation;
     }
+    const QDBusReply<QString> primaryOwner =
+        m_connection.interface()->serviceOwner(QString::fromLatin1(kPrimaryName));
+    if (primaryOwner.isValid()) {
+        m_primaryOwner = primaryOwner.value();
+    }
+    const QDBusReply<QString> legacyOwner =
+        m_connection.interface()->serviceOwner(QString::fromLatin1(kLegacyName));
+    if (legacyOwner.isValid()) {
+        m_legacyOwner = legacyOwner.value();
+    }
     if (m_primaryWatcher == nullptr) {
         m_primaryWatcher = new QDBusServiceWatcher(
-            QString::fromLatin1(kPpdPrimaryName), m_connection,
+            QString::fromLatin1(kPrimaryName), m_connection,
             QDBusServiceWatcher::WatchForOwnerChange, this);
         connect(m_primaryWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
                 &PowerProfilesCollaborator::onProfileOwnerChanged);
     }
     if (m_legacyWatcher == nullptr) {
         m_legacyWatcher = new QDBusServiceWatcher(
-            QString::fromLatin1(kPpdLegacyName), m_connection,
+            QString::fromLatin1(kLegacyName), m_connection,
             QDBusServiceWatcher::WatchForOwnerChange, this);
         connect(m_legacyWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
                 &PowerProfilesCollaborator::onProfileOwnerChanged);
     }
-    // One subscription covers both daemon interface generations; the slot
-    // accepts either interface name carried by the signal.
-    if (!m_connection.connect(
-            QString(), QString::fromLatin1(kPpdObjectPath),
-            QString::fromLatin1(kPropertiesInterface),
+    if (!m_signalsSubscribed
+        && !m_connection.connect(
+            QString(), QString(), QString::fromLatin1(kPropertiesInterface),
             QStringLiteral("PropertiesChanged"), this,
             SLOT(onPpdPropertiesChanged(QDBusMessage)))) {
         scheduleUnavailable(m_generation, QStringLiteral("profiles-unavailable"));
         return m_generation;
     }
+    m_signalsSubscribed = true;
     refreshFacts(m_generation);
     return m_generation;
 }
 
 void PowerProfilesCollaborator::stop()
 {
-    // Signal hooks stay registered for this object's lifetime; they are
-    // generation-guarded and QtDBus drops them at destruction.
     m_running = false;
+    ++m_refreshSerial;
     m_acquiredHolds.clear();
     m_activeOwner.clear();
     m_activeServiceName.clear();
     m_activeInterfaceName.clear();
+    m_activeObjectPath.clear();
 }
 
 bool PowerProfilesCollaborator::runningGeneration(const quint64 generation) const
@@ -127,145 +150,130 @@ bool PowerProfilesCollaborator::runningGeneration(const quint64 generation) cons
     return m_running && generation != 0 && generation == m_generation;
 }
 
-void PowerProfilesCollaborator::scheduleUnavailable(const quint64 generation,
-                                                    const QString &reasonCode)
+void PowerProfilesCollaborator::scheduleUnavailable(
+    const quint64 generation, const QString &reasonCode)
 {
     QTimer::singleShot(0, this, [this, generation, reasonCode]() {
-        if (!runningGeneration(generation)) {
-            return;
+        if (runningGeneration(generation)) {
+            Q_EMIT statusUnavailable(generation, reasonCode);
         }
-        Q_EMIT statusUnavailable(generation, reasonCode);
     });
 }
 
-void PowerProfilesCollaborator::onPpdPropertiesChanged(const QDBusMessage &message)
+void PowerProfilesCollaborator::onPpdPropertiesChanged(
+    const QDBusMessage &message)
 {
-    if (message.arguments().isEmpty()) {
+    if (!m_running || message.arguments().isEmpty()) {
         return;
     }
-    const QString interfaceName = message.arguments().at(0).toString();
-    if (interfaceName != QString::fromLatin1(kPpdPrimaryInterface)
-        && interfaceName != QString::fromLatin1(kPpdLegacyInterface)) {
-        return;
-    }
-    if (runningGeneration(m_generation)) {
+    const QString interfaceName = message.arguments().constFirst().toString();
+    const bool primary = message.path() == QString::fromLatin1(kPrimaryPath)
+        && interfaceName == QString::fromLatin1(kPrimaryInterface);
+    const bool legacy = message.path() == QString::fromLatin1(kLegacyPath)
+        && interfaceName == QString::fromLatin1(kLegacyInterface);
+    if (primary || legacy) {
         refreshFacts(m_generation);
     }
 }
 
 void PowerProfilesCollaborator::refreshFacts(const quint64 generation)
 {
-    tryRefreshCandidate(generation, 0);
+    if (++m_refreshSerial == 0) {
+        ++m_refreshSerial;
+    }
+    tryRefreshCandidate(generation, m_refreshSerial, 0);
 }
 
-void PowerProfilesCollaborator::tryRefreshCandidate(const quint64 generation,
-                                                    const int index)
+void PowerProfilesCollaborator::tryRefreshCandidate(
+    const quint64 generation, const quint64 refreshSerial, const int index)
 {
-    // AGENT-GUARD: candidate order is part of the adapter contract -- primary
-    // bus name and interface first, legacy fallbacks after. Each candidate is
-    // tried only while the run is current, so a restart never adopts a stale
-    // authority.
-    struct Candidate {
-        const char *serviceName;
-        const char *interfaceName;
-    };
-    static const Candidate candidates[] = {
-        {kPpdPrimaryName, kPpdPrimaryInterface},
-        {kPpdPrimaryName, kPpdLegacyInterface},
-        {kPpdLegacyName, kPpdPrimaryInterface},
-        {kPpdLegacyName, kPpdLegacyInterface}};
-
-    if (index >= 4) {
+    if (!runningGeneration(generation) || refreshSerial != m_refreshSerial) {
+        return;
+    }
+    if (index >= static_cast<int>(std::size(kCandidates))) {
         scheduleUnavailable(generation, QStringLiteral("profiles-unavailable"));
         return;
     }
-    const Candidate &candidate = candidates[index];
-    Upstream::getAllProperties(
-        m_connection, QString::fromLatin1(candidate.serviceName),
-        QString::fromLatin1(kPpdObjectPath),
-        QString::fromLatin1(candidate.interfaceName), this,
-        [this, generation, candidate](const QVariantMap &properties,
-                                      const QString &sender) {
-            if (!runningGeneration(generation)) {
+    const Candidate candidate = kCandidates[index];
+    getAllProperties(
+        m_connection, QString::fromLatin1(candidate.service),
+        QString::fromLatin1(candidate.path), QString::fromLatin1(candidate.interface),
+        this,
+        [this, generation, refreshSerial, candidate](
+            const QVariantMap &properties, const QString &owner) {
+            if (!runningGeneration(generation) || refreshSerial != m_refreshSerial
+                || owner.isEmpty()) {
                 return;
             }
-            m_activeServiceName = QString::fromLatin1(candidate.serviceName);
-            m_activeInterfaceName = QString::fromLatin1(candidate.interfaceName);
-            if (!sender.isEmpty()) {
-                m_activeOwner = sender;
-            }
+            adoptOwner(owner);
+            m_activeServiceName = QString::fromLatin1(candidate.service);
+            m_activeInterfaceName = QString::fromLatin1(candidate.interface);
+            m_activeObjectPath = QString::fromLatin1(candidate.path);
             applyProperties(generation, properties);
         },
-        [this, generation, index](const QString &) {
-            if (!runningGeneration(generation)) {
-                return;
-            }
-            tryRefreshCandidate(generation, index + 1);
+        [this, generation, refreshSerial, index](const QString &) {
+            tryRefreshCandidate(generation, refreshSerial, index + 1);
         });
 }
 
-void PowerProfilesCollaborator::applyProperties(const quint64 generation,
-                                                const QVariantMap &properties)
+void PowerProfilesCollaborator::applyProperties(
+    const quint64 generation, const QVariantMap &properties)
 {
+    const auto profilesIt = properties.constFind(QStringLiteral("Profiles"));
+    const auto activeIt = properties.constFind(QStringLiteral("ActiveProfile"));
+    if (profilesIt == properties.constEnd() || activeIt == properties.constEnd()
+        || activeIt.value().metaType() != QMetaType::fromType<QString>()) {
+        scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
+        return;
+    }
+
+    QList<QVariantMap> profiles;
+    if (!readStringVariantMapArray(profilesIt.value(), profiles)) {
+        scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
+        return;
+    }
     ProfileFacts facts;
-    if (properties.contains(QStringLiteral("Profiles"))) {
-        QList<QVariantMap> entries;
-        if (!Upstream::readStringVariantMapArray(
-                properties.value(QStringLiteral("Profiles")), entries)) {
+    for (const QVariantMap &entry : profiles) {
+        QString profileId;
+        if (!requiredStringEntry(entry, QStringLiteral("Profile"), profileId)) {
             scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
             return;
         }
-        for (const QVariantMap &entry : entries) {
-            QString profileId;
-            if (!optionalStringEntry(entry, QStringLiteral("Profile"), profileId)) {
-                scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
-                return;
-            }
-            Profile profile;
-            profile.id = profileId;
-            profile.label = canonicalProfileLabel(profileId);
-            facts.profiles.supported.push_back(std::move(profile));
-        }
+        facts.profiles.supported.push_back(
+            Profile{.id = profileId, .label = canonicalProfileLabel(profileId)});
     }
-    if (properties.contains(QStringLiteral("ActiveProfile"))) {
-        const QVariant &active =
-            properties.value(QStringLiteral("ActiveProfile"));
-        if (active.userType() != QMetaType::QString) {
-            scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
-            return;
-        }
-        facts.profiles.activeProfileId = active.toString();
+    facts.profiles.activeProfileId = activeIt.value().toString();
+
+    auto holdsIt = properties.constFind(QStringLiteral("ActiveProfileHolds"));
+    if (holdsIt == properties.constEnd()
+        && m_activeInterfaceName == QString::fromLatin1(kLegacyInterface)) {
+        holdsIt = properties.constFind(QStringLiteral("Holds"));
     }
-    const QString holdsKey = properties.contains(
-                                 QStringLiteral("ActiveProfileHolds"))
-        ? QStringLiteral("ActiveProfileHolds")
-        : QStringLiteral("Holds");
-    if (properties.contains(holdsKey)) {
-        QList<QVariantMap> entries;
-        if (!Upstream::readStringVariantMapArray(properties.value(holdsKey),
-                                                 entries)) {
+    if (holdsIt != properties.constEnd()) {
+        QList<QVariantMap> holds;
+        if (!readStringVariantMapArray(holdsIt.value(), holds)) {
             scheduleUnavailable(generation, QStringLiteral("profiles-malformed"));
             return;
         }
-        for (const QVariantMap &entry : entries) {
+        for (const QVariantMap &entry : holds) {
             QString profileId;
-            QString application;
+            QString applicationId;
             QString reason;
-            if (!optionalStringEntry(entry, QStringLiteral("Profile"), profileId)
-                || !optionalStringEntry(entry, QStringLiteral("Application"),
-                                        application)
-                || !optionalStringEntry(entry, QStringLiteral("Reason"), reason)) {
+            if (!requiredStringEntry(entry, QStringLiteral("Profile"), profileId)
+                || !requiredStringEntry(entry, QStringLiteral("ApplicationId"),
+                                        applicationId)
+                || !requiredStringEntry(entry, QStringLiteral("Reason"), reason)) {
                 scheduleUnavailable(generation,
                                     QStringLiteral("profiles-malformed"));
                 return;
             }
             ProfileHold hold;
-            hold.handle.opaqueId = Upstream::deriveOpaqueId(
+            hold.handle.opaqueId = deriveOpaqueId(
                 QStringLiteral("profile-hold"),
-                profileId + QLatin1Char('|') + application + QLatin1Char('|')
+                profileId + QLatin1Char('|') + applicationId + QLatin1Char('|')
                     + reason);
             hold.profileId = profileId;
-            hold.applicationName = application;
+            hold.applicationName = applicationId;
             hold.reason = reason;
             facts.profiles.holds.push_back(std::move(hold));
         }
@@ -273,10 +281,9 @@ void PowerProfilesCollaborator::applyProperties(const quint64 generation,
     Q_EMIT factsChanged(generation, facts);
 }
 
-void PowerProfilesCollaborator::finishOperation(const quint64 generation,
-                                                const quint64 operationId,
-                                                const CollaboratorStatus status,
-                                                const QString &reasonCode)
+void PowerProfilesCollaborator::finishOperation(
+    const quint64 generation, const quint64 operationId,
+    const CollaboratorStatus status, const QString &reasonCode)
 {
     Q_EMIT operationFinished(
         generation, operationId,
@@ -285,44 +292,42 @@ void PowerProfilesCollaborator::finishOperation(const quint64 generation,
                             .diagnostic = {}});
 }
 
-void PowerProfilesCollaborator::submitSetProfile(const quint64 operationId,
-                                                 const QString &profileId)
+void PowerProfilesCollaborator::submitSetProfile(
+    const quint64 operationId, const QString &profileId)
 {
-    if (m_activeServiceName.isEmpty() || m_activeInterfaceName.isEmpty()) {
+    if (m_activeOwner.isEmpty() || m_activeServiceName.isEmpty()) {
         finishOperation(m_generation, operationId, CollaboratorStatus::Unsupported,
                         QStringLiteral("profiles-unavailable"));
         return;
     }
+    const quint64 generation = m_generation;
+    const QString owner = m_activeOwner;
     QDBusMessage call = QDBusMessage::createMethodCall(
-        m_activeServiceName, QString::fromLatin1(kPpdObjectPath),
-        QString::fromLatin1(kPropertiesInterface), QStringLiteral("Set"));
+        owner, m_activeObjectPath, QString::fromLatin1(kPropertiesInterface),
+        QStringLiteral("Set"));
     call.setArguments({m_activeInterfaceName, QStringLiteral("ActiveProfile"),
                        QVariant::fromValue(QDBusVariant(profileId))});
-    const QString ownerAtSubmission = m_activeOwner;
-    auto *watcher =
-        new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
-            [this, watcher, operationId, ownerAtSubmission]() {
+            [this, watcher, generation, operationId, owner]() {
+                const QDBusMessage reply = watcher->reply();
                 watcher->deleteLater();
-                if (!m_running) {
+                if (!runningGeneration(generation)) {
                     return;
                 }
-                if (watcher->reply().type() != QDBusMessage::ReplyMessage) {
-                    finishOperation(m_generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-rejected"));
-                    return;
-                }
-                if (!ownerAtSubmission.isEmpty()
-                    && m_activeOwner != ownerAtSubmission) {
-                    finishOperation(m_generation, operationId,
+                if (m_activeOwner != owner) {
+                    finishOperation(generation, operationId,
                                     CollaboratorStatus::Uncertain,
                                     QStringLiteral("authority-replaced"));
-                    return;
+                } else if (reply.type() != QDBusMessage::ReplyMessage) {
+                    finishOperation(generation, operationId,
+                                    CollaboratorStatus::Failed,
+                                    QStringLiteral("profiles-rejected"));
+                } else {
+                    finishOperation(generation, operationId,
+                                    CollaboratorStatus::Succeeded,
+                                    QStringLiteral("applied"));
                 }
-                finishOperation(m_generation, operationId,
-                                CollaboratorStatus::Succeeded,
-                                QStringLiteral("applied"));
             });
 }
 
@@ -330,62 +335,48 @@ void PowerProfilesCollaborator::submitAcquireProfileHold(
     const quint64 operationId, const QString &profileId,
     const QString &applicationName, const QString &reason)
 {
-    if (m_activeServiceName.isEmpty() || m_activeInterfaceName.isEmpty()) {
+    if (m_activeOwner.isEmpty() || m_activeServiceName.isEmpty()) {
         finishOperation(m_generation, operationId, CollaboratorStatus::Unsupported,
                         QStringLiteral("profiles-unavailable"));
         return;
     }
+    const quint64 generation = m_generation;
+    const QString owner = m_activeOwner;
     QDBusMessage call = QDBusMessage::createMethodCall(
-        m_activeServiceName, QString::fromLatin1(kPpdObjectPath),
-        m_activeInterfaceName, QStringLiteral("HoldProfile"));
-    call.setArguments({profileId, reason, applicationName, applicationName});
-    const QString ownerAtSubmission = m_activeOwner;
-    auto *watcher =
-        new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+        owner, m_activeObjectPath, m_activeInterfaceName,
+        QStringLiteral("HoldProfile"));
+    call.setArguments({profileId, reason, applicationName});
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
-            [this, watcher, operationId, profileId, applicationName, reason,
-             ownerAtSubmission]() {
-                watcher->deleteLater();
-                if (!m_running) {
-                    return;
-                }
+            [this, watcher, generation, operationId, profileId, applicationName,
+             reason, owner]() {
                 const QDBusMessage reply = watcher->reply();
-                if (reply.type() != QDBusMessage::ReplyMessage
-                    || reply.arguments().isEmpty()) {
-                    finishOperation(m_generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-rejected"));
+                watcher->deleteLater();
+                if (!runningGeneration(generation)) {
                     return;
                 }
-                if (!ownerAtSubmission.isEmpty()
-                    && m_activeOwner != ownerAtSubmission) {
-                    finishOperation(m_generation, operationId,
+                if (m_activeOwner != owner) {
+                    finishOperation(generation, operationId,
                                     CollaboratorStatus::Uncertain,
                                     QStringLiteral("authority-replaced"));
                     return;
                 }
-                const QVariant holdArgument = reply.arguments().constFirst();
-                if (holdArgument.userType()
-                    != QMetaType::fromType<QDBusObjectPath>().id()) {
-                    finishOperation(m_generation, operationId,
+                if (reply.type() != QDBusMessage::ReplyMessage
+                    || reply.arguments().size() != 1
+                    || reply.arguments().constFirst().metaType()
+                        != QMetaType::fromType<uint>()) {
+                    finishOperation(generation, operationId,
                                     CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-malformed"));
+                                    QStringLiteral("profiles-rejected"));
                     return;
                 }
-                const QString holdPath =
-                    holdArgument.value<QDBusObjectPath>().path();
-                if (holdPath.isEmpty() || !holdPath.startsWith(QLatin1Char('/'))) {
-                    finishOperation(m_generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-malformed"));
-                    return;
-                }
-                const QString opaqueId = Upstream::deriveOpaqueId(
+                const quint32 cookie = reply.arguments().constFirst().toUInt();
+                const QString opaqueId = deriveOpaqueId(
                     QStringLiteral("profile-hold"),
                     profileId + QLatin1Char('|') + applicationName
                         + QLatin1Char('|') + reason);
-                m_acquiredHolds.insert(opaqueId, holdPath);
-                finishOperation(m_generation, operationId,
+                m_acquiredHolds.insert(opaqueId, cookie);
+                finishOperation(generation, operationId,
                                 CollaboratorStatus::Succeeded,
                                 QStringLiteral("applied"));
             });
@@ -394,54 +385,46 @@ void PowerProfilesCollaborator::submitAcquireProfileHold(
 void PowerProfilesCollaborator::submitReleaseProfileHold(
     const quint64 operationId, const Handle &hold)
 {
-    const QString opaqueId = hold.opaqueId;
-    // AGENT-GUARD: upstream exposes no object path for holds this process did
-    // not acquire; releasing a foreign hold must fail closed rather than guess
-    // a path.
-    if (!m_acquiredHolds.contains(opaqueId)) {
+    const auto it = m_acquiredHolds.constFind(hold.opaqueId);
+    if (it == m_acquiredHolds.constEnd()) {
         finishOperation(m_generation, operationId, CollaboratorStatus::Unsupported,
                         QStringLiteral("hold-not-releasable"));
         return;
     }
-    callRelease(m_acquiredHolds.value(opaqueId), m_generation, operationId,
-                m_activeOwner);
+    callRelease(it.value(), m_generation, operationId, m_activeOwner);
 }
 
-void PowerProfilesCollaborator::callRelease(const QString &holdObjectPath,
-                                            const quint64 generation,
-                                            const quint64 operationId,
-                                            const QString &ownerAtSubmission)
+void PowerProfilesCollaborator::callRelease(
+    const quint32 cookie, const quint64 generation, const quint64 operationId,
+    const QString &ownerAtSubmission)
 {
     QDBusMessage call = QDBusMessage::createMethodCall(
-        m_activeServiceName, holdObjectPath, m_activeInterfaceName,
-        QStringLiteral("Release"));
-    auto *watcher =
-        new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+        ownerAtSubmission, m_activeObjectPath, m_activeInterfaceName,
+        QStringLiteral("ReleaseProfile"));
+    call.setArguments({cookie});
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
-            [this, watcher, generation, operationId, holdObjectPath,
-             ownerAtSubmission]() {
+            [this, watcher, generation, operationId, cookie, ownerAtSubmission]() {
+                const QDBusMessage reply = watcher->reply();
                 watcher->deleteLater();
                 if (!runningGeneration(generation)) {
                     return;
                 }
-                if (watcher->reply().type() != QDBusMessage::ReplyMessage) {
-                    finishOperation(generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-rejected"));
-                    return;
-                }
-                if (!ownerAtSubmission.isEmpty()
-                    && m_activeOwner != ownerAtSubmission) {
+                if (m_activeOwner != ownerAtSubmission) {
                     finishOperation(generation, operationId,
                                     CollaboratorStatus::Uncertain,
                                     QStringLiteral("authority-replaced"));
                     return;
                 }
-                // The acquired-hold table is keyed by tuple derivation, so
-                // the completed hold is removed by its object-path value.
+                if (reply.type() != QDBusMessage::ReplyMessage) {
+                    finishOperation(generation, operationId,
+                                    CollaboratorStatus::Failed,
+                                    QStringLiteral("profiles-rejected"));
+                    return;
+                }
                 for (auto it = m_acquiredHolds.begin();
                      it != m_acquiredHolds.end(); ++it) {
-                    if (it.value() == holdObjectPath) {
+                    if (it.value() == cookie) {
                         m_acquiredHolds.erase(it);
                         break;
                     }
@@ -452,34 +435,58 @@ void PowerProfilesCollaborator::callRelease(const QString &holdObjectPath,
             });
 }
 
-void PowerProfilesCollaborator::onProfileOwnerChanged(const QString &name,
-                                                      const QString &oldOwner,
-                                                      const QString &newOwner)
+void PowerProfilesCollaborator::adoptOwner(const QString &owner)
+{
+    const bool changed = !m_lastOwner.isEmpty() && m_lastOwner != owner;
+    m_activeOwner = owner;
+    m_lastOwner = owner;
+    if (changed && !m_epochAdvancedForLoss) {
+        Q_EMIT authorityReplaced(m_generation);
+    }
+    m_epochAdvancedForLoss = false;
+}
+
+void PowerProfilesCollaborator::onProfileOwnerChanged(
+    const QString &name, const QString &oldOwner, const QString &newOwner)
 {
     Q_UNUSED(oldOwner)
-    if (name == QString::fromLatin1(kPpdPrimaryName)) {
-        m_primaryOwner = newOwner;
-    } else {
-        m_legacyOwner = newOwner;
+    Q_UNUSED(newOwner)
+    const QDBusReply<QString> resolved =
+        m_connection.interface()->serviceOwner(name);
+    const QString currentOwner = resolved.isValid() ? resolved.value() : QString();
+    if (name == QString::fromLatin1(kPrimaryName)) {
+        m_primaryOwner = currentOwner;
+    } else if (name == QString::fromLatin1(kLegacyName)) {
+        m_legacyOwner = currentOwner;
     }
     if (!m_running) {
         return;
     }
-    const QString nextActive = !m_primaryOwner.isEmpty() ? m_primaryOwner
-                                                         : m_legacyOwner;
-    const QString previousActive = m_activeOwner;
-    m_acquiredHolds.clear();
-    m_activeServiceName.clear();
-    m_activeInterfaceName.clear();
-    if (nextActive.isEmpty()) {
+
+    ++m_refreshSerial;
+    const QString nextOwner = !m_primaryOwner.isEmpty() ? m_primaryOwner
+                                                        : m_legacyOwner;
+    if (nextOwner.isEmpty()) {
+        if (!m_activeOwner.isEmpty()) {
+            m_epochAdvancedForLoss = true;
+            Q_EMIT authorityReplaced(m_generation);
+        }
         m_activeOwner.clear();
-        scheduleUnavailable(m_generation, QStringLiteral("profiles-unavailable"));
+        m_activeServiceName.clear();
+        m_activeInterfaceName.clear();
+        m_activeObjectPath.clear();
+        m_acquiredHolds.clear();
+        Q_EMIT statusUnavailable(m_generation,
+                                 QStringLiteral("profiles-unavailable"));
         return;
     }
-    const bool replaced = !previousActive.isEmpty() && previousActive != nextActive;
-    m_activeOwner = nextActive;
-    if (replaced) {
-        Q_EMIT authorityReplaced(m_generation);
+    const bool replacement = !m_activeOwner.isEmpty()
+        && m_activeOwner != nextOwner;
+    adoptOwner(nextOwner);
+    m_acquiredHolds.clear();
+    if (replacement) {
+        Q_EMIT statusUnavailable(m_generation,
+                                 QStringLiteral("profiles-unavailable"));
     }
     refreshFacts(m_generation);
 }

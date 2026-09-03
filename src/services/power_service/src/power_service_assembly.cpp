@@ -145,6 +145,7 @@ bool sanitizeProfileFacts(const ProfileFacts &input, const quint64 epoch,
     }
     out.degradationReason =
         sanitizeText(in.degradationReason, kMaxDiagnosticUtf8Bytes);
+    QSet<QString> holdIds = reservedOpaqueIds;
     for (const ProfileHold &hold : in.holds) {
         ProfileHold stamped = hold;
         stamped.profileId = sanitizeText(hold.profileId, kMaxProfileIdUtf8Bytes);
@@ -155,10 +156,11 @@ bool sanitizeProfileFacts(const ProfileFacts &input, const quint64 epoch,
         stamped.handle.opaqueId =
             sanitizeText(hold.handle.opaqueId, kMaxOpaqueIdUtf8Bytes);
         if (!nonemptyBounded(stamped.handle.opaqueId, kMaxOpaqueIdUtf8Bytes)
-            || reservedOpaqueIds.contains(stamped.handle.opaqueId)
+            || holdIds.contains(stamped.handle.opaqueId)
             || !profileIds.contains(stamped.profileId)) {
             return false;
         }
+        holdIds.insert(stamped.handle.opaqueId);
         out.holds.push_back(stamped);
     }
     output = candidate;

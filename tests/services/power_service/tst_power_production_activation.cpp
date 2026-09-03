@@ -82,9 +82,13 @@ public:
         }
         descriptor.write("[D-BUS Service]\nName=org.qindaqt.Power1\nExec=");
         descriptor.write(QByteArray(QINDAQT_POWER_SERVICE_EXECUTABLE));
-        if (!extraExecArguments.isEmpty()) {
+        QString effectiveArguments = extraExecArguments;
+        if (effectiveArguments.contains(QStringLiteral("--upstream=production"))) {
+            effectiveArguments += QStringLiteral(" --backlight-root=%1").arg(backlightRoot);
+        }
+        if (!effectiveArguments.isEmpty()) {
             descriptor.write(" ");
-            descriptor.write(extraExecArguments.toUtf8());
+            descriptor.write(effectiveArguments.toUtf8());
         }
         descriptor.write("\n");
         descriptor.close();
@@ -96,13 +100,19 @@ public:
                            root.filePath(QStringLiteral("share")));
         environment.insert(QStringLiteral("XDG_RUNTIME_DIR"), runtimeDir);
         environment.insert(QStringLiteral("DBUS_SYSTEM_BUS_ADDRESS"), address);
+        environment.insert(QStringLiteral("DBUS_SESSION_BUS_ADDRESS"), address);
         daemon.setProcessEnvironment(environment);
         daemon.setProgram(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE));
         daemon.setArguments({QStringLiteral("--session"), QStringLiteral("--nofork"),
                              QStringLiteral("--nopidfile"),
-                             QStringLiteral("--address=%1").arg(address)});
+                             QStringLiteral("--address=%1").arg(address),
+                             QStringLiteral("--print-address=1")});
         daemon.start();
-        return daemon.waitForStarted(5000);
+        if (!daemon.waitForStarted(5000) || !daemon.waitForReadyRead(5000)) {
+            return false;
+        }
+        return QString::fromUtf8(daemon.readLine()).trimmed().startsWith(
+            address + QStringLiteral(",guid="));
     }
 
     ~ProductionBus()
@@ -112,6 +122,9 @@ public:
         }
         if (!connectionName.isEmpty()) {
             QDBusConnection::disconnectFromBus(connectionName);
+        }
+        for (const QString &open : openedConnections) {
+            QDBusConnection::disconnectFromBus(open);
         }
         if (daemon.state() == QProcess::NotRunning) {
             return;
@@ -123,6 +136,18 @@ public:
         }
     }
 
+    QDBusConnection openConnection(const QString &suffix)
+    {
+        const QString name = QStringLiteral("qindaqt-production-fake-%1-%2")
+                                 .arg(suffix, QUuid::createUuid().toString(
+                                                  QUuid::Id128));
+        const QDBusConnection opened = QDBusConnection::connectToBus(address, name);
+        if (opened.isConnected()) {
+            openedConnections.push_back(name);
+        }
+        return opened;
+    }
+
     QTemporaryDir root{QStringLiteral(QINDAQT_TEST_SCRATCH_DIR)
                         + QStringLiteral("/production-XXXXXX")};
     QString runtimeDir;
@@ -131,6 +156,7 @@ public:
     QProcess daemon;
     QString connectionName;
     QDBusConnection connection{QStringLiteral("invalid")};
+    QStringList openedConnections;
     pid_t servicePid = 0;
 };
 
@@ -212,8 +238,7 @@ void PowerProductionActivationTests::productionModePublishesFakeUpstreamTruth()
 {
     registerDBusTypes();
     ProductionBus bus;
-    QVERIFY(bus.start(QStringLiteral("--upstream=production --backlight-root=%1")
-                          .arg(bus.backlightRoot)));
+    QVERIFY(bus.start(QStringLiteral("--upstream=production")));
     writeBacklightFixture(bus.backlightRoot);
     bus.connectionName =
         QStringLiteral("qindaqt-production-%1")
@@ -221,16 +246,20 @@ void PowerProductionActivationTests::productionModePublishesFakeUpstreamTruth()
     bus.connection = QDBusConnection::connectToBus(bus.address, bus.connectionName);
     QVERIFY(bus.connection.isConnected());
 
-    FakeUpowerService upower(bus.connection);
+    const QDBusConnection upowerConnection = bus.openConnection(QStringLiteral("upower"));
+    FakeUpowerService upower(upowerConnection);
     QVERIFY(upower.registerService());
     upower.setDevices({productionBattery()});
     upower.setOnBattery(true);
-    FakePpdService profiles(bus.connection, false);
+    const QDBusConnection profilesConnection =
+        bus.openConnection(QStringLiteral("profiles"));
+    FakePpdService profiles(profilesConnection, false);
     QVERIFY(profiles.registerService());
     profiles.setProfiles({QStringLiteral("power-saver"), QStringLiteral("balanced"),
                           QStringLiteral("performance")});
     profiles.setActiveProfile(QStringLiteral("balanced"));
-    FakeLogindService logind(bus.connection);
+    const QDBusConnection logindConnection = bus.openConnection(QStringLiteral("logind"));
+    FakeLogindService logind(logindConnection);
     QVERIFY(logind.registerService());
     logind.setSessionTruth(false, false, false);
 
@@ -338,9 +367,7 @@ void PowerProductionActivationTests::packagedDescriptorSelectsProduction()
     QVERIFY(descriptor.open(QIODevice::ReadOnly | QIODevice::Text));
     const QString content = QString::fromUtf8(descriptor.readAll());
     descriptor.close();
-    QVERIFY(content.contains(
-        QStringLiteral("Exec=") + QStringLiteral(QINDAQT_POWER_SERVICE_EXECUTABLE)
-            + QStringLiteral(" --upstream=production\n")));
+    QVERIFY(content.contains(QStringLiteral("/qindaqt-power-service --upstream=production\n")));
     QVERIFY(content.contains(QStringLiteral("SystemdService=qindaqt-power-service.service")));
 
     QFile unit(QStringLiteral(QINDAQT_SYSTEMD_UNIT_FILE));
@@ -348,8 +375,7 @@ void PowerProductionActivationTests::packagedDescriptorSelectsProduction()
     const QString unitContent = QString::fromUtf8(unit.readAll());
     unit.close();
     QVERIFY(unitContent.contains(
-        QStringLiteral("ExecStart=") + QStringLiteral(QINDAQT_POWER_SERVICE_EXECUTABLE)
-            + QStringLiteral(" --upstream=production")));
+        QStringLiteral("/qindaqt-power-service --upstream=production")));
 }
 
 QTEST_GUILESS_MAIN(PowerProductionActivationTests)

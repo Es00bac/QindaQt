@@ -3,8 +3,10 @@
 #include "upstream_dbus_util.h"
 
 #include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
+#include <QtDBus/QDBusReply>
 
 namespace QindaQt::Power::Upstream {
 
@@ -78,23 +80,28 @@ void getAllProperties(const QDBusConnection &connection, const QString &service,
                                                const QString &sender)> &accept,
                       const std::function<void(const QString &)> &reject)
 {
+    const QDBusReply<QString> resolvedOwner =
+        connection.interface()->serviceOwner(service);
+    if (!resolvedOwner.isValid() || resolvedOwner.value().isEmpty()) {
+        reject(resolvedOwner.error().name());
+        return;
+    }
+    const QString owner = resolvedOwner.value();
     QDBusMessage call = QDBusMessage::createMethodCall(
-        service, path, QStringLiteral("org.freedesktop.DBus.Properties"),
+        owner, path, QStringLiteral("org.freedesktop.DBus.Properties"),
         QStringLiteral("GetAll"));
     call.setArguments({interface});
     auto *watcher =
         new QDBusPendingCallWatcher(connection.asyncCall(call), context);
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, context,
-                     [watcher, accept, reject]() {
+                     [watcher, accept, reject, owner]() {
                          const QDBusPendingReply<QVariantMap> reply = *watcher;
-                         const QString replyingService =
-                             watcher->reply().service();
                          watcher->deleteLater();
                          if (reply.isError()) {
                              reject(reply.error().name());
                              return;
                          }
-                         accept(reply.value(), replyingService);
+                         accept(reply.value(), owner);
                      });
 }
 

@@ -5,6 +5,8 @@
 #include <qindaqt/services/power_service/power_collaborators.h>
 
 #include <QtCore/QObject>
+#include <QtCore/QHash>
+#include <QtCore/QSet>
 
 #include <memory>
 #include <QtDBus/QDBusConnection>
@@ -58,10 +60,11 @@ Q_SIGNALS:
 private:
     struct PendingCanQuery {
         int outstanding = 0;
+        quint64 serial = 0;
+        QString owner;
         AdmittedActions actions;
     };
 
-    void resolveCurrentOwner();
     void callCanAction(SessionAction action, const std::shared_ptr<PendingCanQuery> &query);
     void callExecuteAction(quint64 operationId, SessionAction action);
     void finishAction(quint64 generation, quint64 operationId,
@@ -76,8 +79,11 @@ private:
     QDBusServiceWatcher *m_watcher = nullptr;
     AdmittedActions m_admitted;
     QString m_activeOwner;
+    QHash<quint64, QString> m_pendingActions;
+    QSet<quint64> m_seenOperationIds;
     quint64 m_generation = 0;
     quint64 m_nextGeneration = 0;
+    quint64 m_refreshSerial = 0;
     bool m_running = false;
 };
 
