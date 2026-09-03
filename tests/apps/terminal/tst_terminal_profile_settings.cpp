@@ -3,14 +3,19 @@
 #include "session/process_liveness.h"
 #include "session/terminal_session_collection.h"
 #include "ui/terminal_appearance.h"
+#include "ui/terminal_profile_dialog.h"
 #include "ui/terminal_window.h"
 
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 
+#include <QAction>
+#include <QApplication>
+#include <QDialogButtonBox>
 #include <QLabel>
 #include <QSignalSpy>
+#include <QTimer>
 #include <QtTest>
 
 #include <memory>
@@ -187,8 +192,9 @@ private slots:
   void applyCommitsEveryKeyAgainstFreshAuthority();
   void conflictAbortsWithoutReplayingLaterKeys();
   void uncertainCommitIsNeverReplayed();
-  void productionWindowPresentsAsynchronousOutcome_data();
-  void productionWindowPresentsAsynchronousOutcome();
+  void productionDialogPresentsAsynchronousOutcome_data();
+  void productionDialogPresentsAsynchronousOutcome();
+  void productionDialogClosesOnlyAfterAllApplied();
 };
 
 void TerminalProfileSettingsTest::baselineRoundTripAndLossFailClosed() {
@@ -328,74 +334,194 @@ void TerminalProfileSettingsTest::uncertainCommitIsNeverReplayed() {
 }
 
 void TerminalProfileSettingsTest::
-    productionWindowPresentsAsynchronousOutcome_data() {
+    productionDialogPresentsAsynchronousOutcome_data() {
   QTest::addColumn<int>("outcome");
   QTest::addColumn<QString>("expectedSummary");
   QTest::newRow("conflict") << 0 << QStringLiteral("changed elsewhere");
   QTest::newRow("confirmed-rejection")
       << 1 << QStringLiteral("could not be saved");
-  QTest::newRow("transport-failure")
-      << 2 << QStringLiteral("outcome is uncertain");
+  QTest::newRow("transport-loss")
+      << 2 << QStringLiteral("session bus disconnected");
   QTest::newRow("owner-loss") << 3 << QStringLiteral("outcome is uncertain");
+  QTest::newRow("timeout-uncertain") << 4 << QStringLiteral("commit timed out");
 }
 
 void TerminalProfileSettingsTest::
-    productionWindowPresentsAsynchronousOutcome() {
+    productionDialogPresentsAsynchronousOutcome() {
   QFETCH(int, outcome);
   QFETCH(QString, expectedSummary);
   ProfileTransport transport;
-  SettingsClient client(transport, TerminalKeys::scopedKeys(), {100, 0, {10}});
+  SettingsClient client(transport, TerminalKeys::scopedKeys(), {20, 0, {10}});
   TerminalProfileSettings settings(client);
   QVERIFY(client.start());
   QVERIFY(establishBaseline(transport, QStringLiteral(":1.80"),
                             QStringLiteral("epoch-a"), 3, settingsValues()));
   NoProcessMonitor monitor;
   auto window = makePresentationWindow(settings, monitor);
-  auto *status =
-      window->findChild<QLabel *>(QStringLiteral("qindaqtTerminalStatus"));
-  QVERIFY(status != nullptr);
-  QVERIFY(
-      settings.applyProfiles({userProfile()}, QStringLiteral("work"), true));
-  QCOMPARE(transport.commits.size(), 1);
-  const auto commit = transport.commits.first();
+  auto *action =
+      window->findChild<QAction *>(QStringLiteral("profileManageAction"));
+  QVERIFY(action != nullptr);
+  QVERIFY(action->isEnabled());
+  window->show();
+  QTRY_VERIFY(window->isVisible());
 
-  if (outcome == 0) {
-    emit transport.commitReceived(
-        commit.token, commit.owner,
-        commitWire(SettingsWireStatus::Conflict, 4, 4,
-                   QStringLiteral("epoch-a"), operationKey(commit),
-                   QStringLiteral("[]"), QStringLiteral("changed elsewhere")));
-  } else if (outcome == 1) {
-    emit transport.commitReceived(
-        commit.token, commit.owner,
-        commitWire(SettingsWireStatus::PersistenceFailed, 3, 3,
-                   QStringLiteral("epoch-a"), operationKey(commit),
-                   operationValue(commit), QStringLiteral("disk denied")));
-  } else if (outcome == 2) {
-    emit transport.requestFailed(commit.token, commit.owner,
-                                 QStringLiteral("org.test.Disconnected"),
-                                 QStringLiteral("transport lost"));
-  } else {
-    emit transport.ownerChanged(QString{});
-  }
+  bool callbackRan = false;
+  bool dialogWasLive = false;
+  bool dialogRemainedLive = false;
+  bool controlsReenabled = false;
+  bool outcomePresentedAccessibly = false;
+  QString outcomeText;
+  QString accessibleText;
+  QString callbackError;
+  const auto inspectAndDismiss = [&](TerminalProfileDialog *dialog) {
+    auto *status =
+        dialog->findChild<QLabel *>(QStringLiteral("profileApplyStatus"));
+    auto *buttons = dialog->findChild<QDialogButtonBox *>();
+    dialogRemainedLive = dialog->isVisible() && dialog->isModal() &&
+                         dialog->isEnabled() && dialog->result() == 0;
+    controlsReenabled = buttons != nullptr && buttons->isEnabled();
+    if (status != nullptr) {
+      outcomeText = status->text();
+      accessibleText = status->accessibleDescription();
+      outcomePresentedAccessibly =
+          status->isVisible() &&
+          status->accessibleName() == QStringLiteral("Profile save status") &&
+          accessibleText == outcomeText;
+    }
+    dialog->reject();
+  };
+  QTimer::singleShot(0, window.get(), [&] {
+    callbackRan = true;
+    auto *dialog = window->findChild<TerminalProfileDialog *>(
+        QStringLiteral("terminalProfileDialog"));
+    if (dialog == nullptr) {
+      callbackError = QStringLiteral("production dialog was not created");
+      if (QWidget *modal = QApplication::activeModalWidget()) {
+        modal->close();
+      }
+      return;
+    }
+    dialogWasLive =
+        dialog->isVisible() && dialog->isModal() && dialog->isEnabled();
+    if (!QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection) ||
+        transport.commits.size() != 1) {
+      callbackError = QStringLiteral("dialog Apply did not start one commit");
+      dialog->reject();
+      return;
+    }
+    const auto commit = transport.commits.first();
+    if (outcome == 0) {
+      emit transport.commitReceived(
+          commit.token, commit.owner,
+          commitWire(SettingsWireStatus::Conflict, 4, 4,
+                     QStringLiteral("epoch-a"), operationKey(commit),
+                     QStringLiteral("authoritative-change"),
+                     QStringLiteral("changed elsewhere")));
+    } else if (outcome == 1) {
+      emit transport.commitReceived(
+          commit.token, commit.owner,
+          commitWire(SettingsWireStatus::PersistenceFailed, 3, 3,
+                     QStringLiteral("epoch-a"), operationKey(commit),
+                     operationValue(commit), QStringLiteral("disk denied")));
+    } else if (outcome == 2) {
+      emit transport.busDisconnected();
+    } else if (outcome == 3) {
+      emit transport.ownerChanged(QString{});
+    } else {
+      QTimer::singleShot(40, dialog,
+                         [&, dialog] { inspectAndDismiss(dialog); });
+      return;
+    }
+    inspectAndDismiss(dialog);
+  });
+  action->trigger();
 
-  QTRY_VERIFY(status->text().contains(expectedSummary, Qt::CaseInsensitive));
-  QVERIFY(status->text().contains(QLatin1String("Profiles:")));
-  QVERIFY(status->text().contains(QLatin1String("Default profile:")));
-  QVERIFY(status->text().contains(QLatin1String("Restore tabs:")));
-  QCOMPARE(status->accessibleName(),
-           QStringLiteral("Session status: %1").arg(status->text()));
+  QVERIFY2(callbackRan, qPrintable(callbackError));
+  QVERIFY2(callbackError.isEmpty(), qPrintable(callbackError));
+  QVERIFY(dialogWasLive);
+  QVERIFY(dialogRemainedLive);
+  QVERIFY(controlsReenabled);
+  QVERIFY(outcomePresentedAccessibly);
+  QVERIFY(outcomeText.contains(expectedSummary, Qt::CaseInsensitive));
+  QVERIFY(outcomeText.contains(QLatin1String("Profiles:")));
+  QVERIFY(outcomeText.contains(QLatin1String("Default profile:")));
+  QVERIFY(outcomeText.contains(QLatin1String("Restore tabs:")));
+  QVERIFY(!outcomeText.contains(QLatin1String("Saving")));
+  QCOMPARE(accessibleText, outcomeText);
 
   if (outcome >= 2) {
-    QVERIFY(status->text().contains(QLatin1String("not replayed"),
-                                    Qt::CaseInsensitive));
-    transport.snapshots.clear();
-    emit transport.ownerChanged(QStringLiteral(":1.81"));
-    QVERIFY(answerRefresh(transport, QStringLiteral("epoch-b"), 1,
-                          settingsValues()));
-    QTest::qWait(20);
+    QVERIFY(outcomeText.contains(QLatin1String("not replayed"),
+                                 Qt::CaseInsensitive));
     QCOMPARE(transport.commits.size(), 1);
   }
+}
+
+void TerminalProfileSettingsTest::productionDialogClosesOnlyAfterAllApplied() {
+  ProfileTransport transport;
+  SettingsClient client(transport, TerminalKeys::scopedKeys(), {100, 0, {10}});
+  TerminalProfileSettings settings(client);
+  QVERIFY(client.start());
+  QVariantMap authority = settingsValues();
+  QVERIFY(establishBaseline(transport, QStringLiteral(":1.82"),
+                            QStringLiteral("epoch-a"), 7, authority));
+  NoProcessMonitor monitor;
+  auto window = makePresentationWindow(settings, monitor);
+  auto *action =
+      window->findChild<QAction *>(QStringLiteral("profileManageAction"));
+  QVERIFY(action != nullptr);
+
+  bool callbackRan = false;
+  bool closedAfterAllApplied = false;
+  bool liveFailureAssertionWouldRejectControl = false;
+  QString callbackError;
+  QTimer::singleShot(0, window.get(), [&] {
+    callbackRan = true;
+    auto *dialog = window->findChild<TerminalProfileDialog *>(
+        QStringLiteral("terminalProfileDialog"));
+    if (dialog == nullptr || !dialog->isVisible() || !dialog->isModal() ||
+        !QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection)) {
+      callbackError = QStringLiteral("production dialog did not start Apply");
+      if (dialog != nullptr) {
+        dialog->reject();
+      }
+      return;
+    }
+    const QStringList keys = TerminalKeys::scopedKeys();
+    for (int index = 0; index < keys.size(); ++index) {
+      if (transport.commits.size() != index + 1) {
+        callbackError = QStringLiteral("apply sequence did not advance");
+        dialog->reject();
+        return;
+      }
+      const auto commit = transport.commits.at(index);
+      const QVariant intended = operationValue(commit);
+      authority.insert(keys.at(index), intended);
+      const quint64 before = 7U + static_cast<quint64>(index);
+      emit transport.commitReceived(
+          commit.token, commit.owner,
+          commitWire(SettingsWireStatus::Applied, before, before + 1U,
+                     QStringLiteral("epoch-a"), keys.at(index), intended));
+      if (!answerRefresh(transport, QStringLiteral("epoch-a"), before + 1U,
+                         authority)) {
+        callbackError = QStringLiteral("post-commit refresh was not requested");
+        dialog->reject();
+        return;
+      }
+    }
+    closedAfterAllApplied =
+        !dialog->isVisible() && dialog->result() == QDialog::Accepted;
+    liveFailureAssertionWouldRejectControl =
+        !(dialog->isVisible() && dialog->isModal() && dialog->isEnabled() &&
+          dialog->result() == 0);
+  });
+  action->trigger();
+
+  QVERIFY2(callbackRan, qPrintable(callbackError));
+  QVERIFY2(callbackError.isEmpty(), qPrintable(callbackError));
+  QVERIFY(closedAfterAllApplied);
+  QVERIFY(liveFailureAssertionWouldRejectControl);
+  QVERIFY(window->findChild<TerminalProfileDialog *>(
+              QStringLiteral("terminalProfileDialog")) == nullptr);
 }
 
 QTEST_MAIN(TerminalProfileSettingsTest)

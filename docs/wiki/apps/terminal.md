@@ -286,7 +286,9 @@ selection truth; bounded multi-session creation, movement, close-all, and
 forced destruction; title sanitization; hostile profile values, canonical
 round trips, and unchanged empty-argument preservation; Settings1 baseline,
 sequential apply, conflict, fail-closed loss, uncertain no-replay behavior, and
-production visible/accessible per-key outcome presentation; tab shortcuts,
+the production Manage Profiles modal remaining visible, enabled, and
+accessibly descriptive after conflict, rejection, transport loss, owner loss,
+or timeout while the all-applied control closes it; tab shortcuts,
 traversal/movement, and
 PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
