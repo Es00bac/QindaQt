@@ -14,7 +14,7 @@ composition, keyboard-accessible compiled QML, static mutation gates, and a
 relocated installed-package test. Fresh strict GCC 15.3 Debug and Release roots
 each built the production shell and focused targets, passed the eight-row B1
 selector, and passed six adjacent public-client, manifest, catalog, resolver,
-dispatcher, and shell-catalog rows. Bluetooth B0 still composes its
+notification-center applet offscreen, and shell-catalog rows. Bluetooth B0 still composes its
 deterministic empty backend, so a normal activated service truthfully makes the
 applet unavailable until the separately reviewed BluezQt runtime adapter
 lands. This consumer does not advance platform hardware maturity by itself.
@@ -122,8 +122,9 @@ client is stopped after the controller's shutdown hook.
 The controller's QML authority is a literal compiled-surface contract. The
 focused surface test walks only the controller-owned slices of its post-moc
 `staticMetaObject`, beginning at `propertyOffset()`, `methodOffset()`, and
-`enumeratorOffset()`. It compares every property attribute, notify signature,
-method signature/return/type/access/revision, and enumerator in declaration
+`enumeratorOffset()`. It compares each property's name, type, readable,
+writable, resettable, notify signature, constant, and final fields, plus every
+method's signature/return/type/access/revision and each enumerator in declaration
 order. It also constructs the production applet through an offscreen
 `QQmlEngine`, reflects the controller-specific names visible to QML relative
 to a plain `QObject`, and compares them with the same literal property and
@@ -180,7 +181,7 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
 | `qindaqt.bluetooth-applet-surface` | Ordered post-moc property/method/enumerator contract, non-vacuous expanded-surface rejection, and offscreen QML-visible name equality |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
-| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; five independent service-include, address-accessor, persistence, file, and standard-path poisons |
+| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; eleven manifest/registry/profile/QML/composition presence tokens; five dependency poisons plus a profile-and-QML composition-removal poison |
 | `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
