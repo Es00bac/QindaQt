@@ -112,6 +112,10 @@ construction and accessibility, positive and hostile boundary scans, and
 staged relocation. Settings Center's focused selector adds
 the typed route order, `Ctrl+9`, tab accessibility, Escape/Tab entry in both
 layouts, root construction, and the common installed package.
+The uncertainty-notification assertion delivers only the client's queued
+operation completion and requires exactly one model notification before any
+follow-up fetch timer can fire, so an unrelated later timeout cannot satisfy
+the regression.
 
 All model tests use injected fake transports. Product and test runs do not
 contact a host session bus, system bus, compositor, data-control server, or
