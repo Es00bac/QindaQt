@@ -36,11 +36,11 @@
     {
       "id": "kimi",
       "name": "Moonshot Kimi",
-      "status": "available",
-      "updatedAt": "2026-09-03T04:28:43-06:00",
-      "estimatedReturnAt": "",
+      "status": "unavailable",
+      "updatedAt": "2026-09-03T06:21:56-06:00",
+      "estimatedReturnAt": "2026-09-03T09:30:00-06:00",
       "evidence": "Direct probes at 01:46, 02:02, and 02:12 MDT still returned the 403 5-hour usage limit; next probe on the 02:20 reminder and again at 02:45. Paused Kimi lanes keep their preserved WIP.",
-      "note": "5-hour window reset confirmed by a k3 probe at 04:30; four Kimi processes running (one review, three resumed lanes)"
+      "note": "Second 5-hour limit (403) at about 06:20 after recovering at 04:30; two lanes reassigned to Codex with WIP preserved; the task-list repair and the power recheck were still running and will be reassigned when they stop"
     }
   ]
 }
