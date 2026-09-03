@@ -8,14 +8,14 @@ status: handoff
 feature: QQ-004.08 Direct WYSIWYG customization and reveal affordances
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/customize-settings-canvas
 started_at: 2026-09-02T21:24:18-06:00
-updated_at: 2026-09-02T23:16:56-06:00
+updated_at: 2026-09-02T23:56:38-06:00
 ---
 
 # Lynn Conway
 
 - Role: Customize canvas implementer.
 - Provider/model: OpenAI `gpt-5.6-sol` (reasoning high).
-- Status: handoff — repaired candidate `5a411b52da08f09a58be351daa47b60b1ef51a6c` is green and ready for independent exact recheck.
+- Status: handoff — repaired candidate `e537fc9ad4c6bcf118cc1ec8646cf3211cd96e74` is green and ready for Adele Goldstine's independent exact recheck.
 - Exact base: `03dc71e6dfd06b6e30f8f86ac354fe24684f497a`.
 - Branch: `worker/customize-settings-canvas`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/customize-settings-canvas`.
@@ -29,3 +29,6 @@ updated_at: 2026-09-02T23:16:56-06:00
 - 2026-09-02T23:03:23-06:00 — Repair claim: Klara rejected `a6ea864ec2162dd5c1a8fba9f2d8f1f2f09a321f` with two P2 lifecycle/presentation defects and three bounded P3 proof/state issues; repairing all five on the existing branch without amending or rebasing.
 - 2026-09-02T23:11:43-06:00 — Repair midpoint: Debug warning-fatal page construction, centered-dialog geometry, dirty top-level close/Cancel, responsive prompt reconstruction, comprehensive boundary/poison scans, model projection, and relocated package now pass 6/6 under `^qindaqt\\.settings-customize-`; Release and broad selectors remain.
 - 2026-09-02T23:16:56-06:00 — Repair handoff: candidate `5a411b52da08f09a58be351daa47b60b1ef51a6c` (tree `7ac888684b5b4f302073a48060e019cb753f1bef`) passes 6/6 Customize, 17/17 customization-domain, and 9/9 Settings rows in both Debug and Release, warning-fatal page/navigation probes, and all static gates; requesting independent exact recheck then manager integration.
+- 2026-09-02T23:45:06-06:00 — Second repair claim: Adele rejected `5a411b52da08f09a58be351daa47b60b1ef51a6c` for host-local application-close state across responsive reconstruction and a missing private-header boundary poison; repairing both on the existing branch without amending or rebasing.
+- 2026-09-02T23:55:49-06:00 — Second repair verification midpoint: window-owned close state now reconstructs the modal in both responsive directions, the exact private-header poison is rejected, Debug/Release pass 6/6 Customize, 17/17 customization-domain, and 9/9 Settings rows, and all static gates are green; final ownership audit and immutable product commit remain.
+- 2026-09-02T23:56:38-06:00 — Second repair handoff: candidate `e537fc9ad4c6bcf118cc1ec8646cf3211cd96e74` (tree `2f8e4b8cb2f6504a56c17884c84c1614b72e555c`) passes both responsive close directions, the exact private-header poison, 6/6 Customize, 17/17 customization-domain, and 9/9 Settings rows in Debug and Release plus all static gates; requesting Adele's independent exact recheck then manager integration.
