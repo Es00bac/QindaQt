@@ -53,6 +53,8 @@ struct TaskListReplyClassification {
 // minor <= 1, the exact transactionId and containerId, and a committed
 // revision exactly one above the fenced container revision (the bridge
 // increments exactly once per commit — docs/wiki/reference/compositor-control-v1.md).
+// A successful Dock reply likewise settles only at its protocol-fixed first
+// committed revision, exactly 1; a merely parseable revision is not lineage.
 class TaskListOperationReplyCodec final {
 public:
   [[nodiscard]] static TaskListReplyClassification

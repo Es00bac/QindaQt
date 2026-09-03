@@ -85,6 +85,7 @@ void QtTaskListProducerTransport::stop() {
     }
   }
   m_pendingCalls.clear();
+  m_ownerObservationPublished = false;
   delete m_serviceWatcher;
   m_serviceWatcher = nullptr;
 }
@@ -159,7 +160,8 @@ void QtTaskListProducerTransport::resolveInitialOwner() {
 }
 
 void QtTaskListProducerTransport::bindOwner(const QString &uniqueOwner) {
-  if (!m_started || uniqueOwner == m_uniqueOwner) {
+  if (!m_started ||
+      (uniqueOwner == m_uniqueOwner && m_ownerObservationPublished)) {
     return;
   }
   const QString previous = m_uniqueOwner;
@@ -172,9 +174,11 @@ void QtTaskListProducerTransport::bindOwner(const QString &uniqueOwner) {
   m_uniqueOwner.clear();
 
   if (uniqueOwner.isEmpty()) {
-    if (!previous.isEmpty()) {
-      Q_EMIT serviceOwnerChanged({});
-    }
+    // AGENT-GUARD: The first empty observation resolves Loading to known
+    // unavailability. Suppressing it as an empty-to-empty transition strands
+    // a cold-start producer in Loading (review finding P2-1 on 7b6bd8a).
+    m_ownerObservationPublished = true;
+    Q_EMIT serviceOwnerChanged({});
     return;
   }
 
@@ -186,13 +190,15 @@ void QtTaskListProducerTransport::bindOwner(const QString &uniqueOwner) {
       QString::fromLatin1(kInterfaceName), QString::fromLatin1(kWindowsSignal),
       this, SLOT(handleWindowsChanged()));
   if (!connected) {
-    if (!previous.isEmpty()) {
+    if (!m_ownerObservationPublished || !previous.isEmpty()) {
       Q_EMIT serviceOwnerChanged({});
     }
+    m_ownerObservationPublished = true;
     QTimer::singleShot(250, this, [this] { resolveInitialOwner(); });
     return;
   }
   m_uniqueOwner = uniqueOwner;
+  m_ownerObservationPublished = true;
   Q_EMIT serviceOwnerChanged(m_uniqueOwner);
 }
 

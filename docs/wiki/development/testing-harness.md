@@ -922,12 +922,13 @@ degraded-source admission rejection, stopped-producer admission fencing,
 serialized Busy fencing, Submit/Release/Dock reply mapping, canonical Submit
 reply lineage (`protocol`, `transactionId`, `containerId`, `status`, and
 `revision`) with forged/recycled/cross-lifetime rejection, exactly-once
-Uncertain on timeout/owner change, and unsupported-authority pre-rejection).
+Uncertain on timeout/owner change, protocol-fixed Dock revision rejection, and
+unsupported-authority pre-rejection).
 The Qt transport row runs a fake `org.qindaqt.Compositor1`
 service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
-for reads, signals, and mutations, including owner loss and replacement; it
-also poisons the forbidden independent inventories and proves the producer
-never calls them.
+for reads, signals, and mutations, including cold-start known absence, owner
+loss, and replacement; it also poisons the forbidden independent inventories
+and proves the producer never calls them.
 
 Every transport process is the QtTest executable itself on a private bus; the
 rows contact no host session bus, compositor, display, input, hardware, or

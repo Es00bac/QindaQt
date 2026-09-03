@@ -16,6 +16,9 @@ namespace QindaQt::ShellTaskList::Producer {
 // calls bind to the exact current unique owner, mirroring the integrated
 // compositor output authority pattern (integrated at 89557a0a); the injected
 // connection lets tests run on a private bus and never the host session bus.
+// AGENT-CONTRACT: Completing initial owner discovery publishes one observation
+// even when the well-known name is unowned. Empty-before-resolution means
+// unknown/loading; observed empty means known unavailable/degraded.
 class QtTaskListProducerTransport final : public TaskListProducerTransport {
   Q_OBJECT
 
@@ -42,6 +45,7 @@ private:
   QList<QDBusPendingCallWatcher *> m_pendingCalls;
   QString m_uniqueOwner;
   quint64 m_resolutionGeneration = 0;
+  bool m_ownerObservationPublished = false;
   bool m_started = false;
 };
 

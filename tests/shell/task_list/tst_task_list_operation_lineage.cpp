@@ -11,6 +11,24 @@ using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
 using namespace TaskListOperationTest;
 
+namespace {
+
+QByteArray dockedReply(const QString &revision) {
+  return QJsonDocument(
+             QJsonObject{{QStringLiteral("protocol"),
+                          QJsonObject{{QStringLiteral("major"), 1},
+                                      {QStringLiteral("minor"), 1}}},
+                         {QStringLiteral("transactionId"),
+                          QStringLiteral("dock-generated")},
+                         {QStringLiteral("containerId"),
+                          QStringLiteral("container-generated")},
+                         {QStringLiteral("status"), QStringLiteral("docked")},
+                         {QStringLiteral("revision"), revision}})
+      .toJson(QJsonDocument::Compact);
+}
+
+} // namespace
+
 // AGENT-NOTE: Review finding P1-3 on rejected candidate 3a5ae17: a reply
 // settles an in-flight request only when the full
 // canonical lineage (protocol, transactionId, containerId, status, revision)
@@ -24,6 +42,7 @@ private slots:
   void forgedSubmitReplyLineageIsUncertain();
   void committedRevisionMustAdvanceFromTheExpectedRevision();
   void everySubmitStatusRequiresCanonicalRevision();
+  void dockSuccessRevisionMustBeExactlyOne();
   void adapterReconstructionCannotRecycleLineage();
 };
 
@@ -152,6 +171,31 @@ void TaskListOperationLineageTests::everySubmitStatusRequiresCanonicalRevision()
                  .status,
              TaskListOperationStatus::Uncertain);
   }
+}
+
+// AGENT-NOTE: Review finding P1-1 on rejected candidate 7b6bd8a: Compositor1
+// can produce a successful DockWindows result only at revision 1. Any other
+// canonical decimal cannot identify the pending request's committed outcome.
+void TaskListOperationLineageTests::dockSuccessRevisionMustBeExactlyOne() {
+  ReadyBridgeFixture fixture;
+  fixture.makeReady();
+
+  for (const QString &revision : {QStringLiteral("0"), QStringLiteral("2")}) {
+    const quint64 token = fixture.adapter.dockWindows(
+        QStringLiteral("w1"), QStringLiteral("w9"),
+        QStringLiteral("horizontal"), QStringLiteral("second"), 0.5,
+        fixture.revision());
+    fixture.operationTransport.emitReply(token, fixture.owner(),
+                                         dockedReply(revision));
+    const TaskListOperationResult result =
+        fixture.finishedSpy.constLast()
+            .constFirst()
+            .value<TaskListOperationResult>();
+    QCOMPARE(result.status, TaskListOperationStatus::Uncertain);
+    QCOMPARE(result.code, QStringLiteral("reply-lineage-mismatch"));
+  }
+  QCOMPARE(fixture.operationTransport.calls.size(), 2);
+  QCOMPARE(fixture.finishedSpy.size(), 2);
 }
 
 void TaskListOperationLineageTests::adapterReconstructionCannotRecycleLineage() {

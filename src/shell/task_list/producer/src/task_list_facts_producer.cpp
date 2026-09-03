@@ -148,7 +148,7 @@ void TaskListFactsProducer::handleServiceOwnerChanged(
   m_hasWindowLineage = false;
 
   if (uniqueOwner.isEmpty()) {
-    degrade(QStringLiteral("compositor owner was lost"));
+    degrade(QStringLiteral("compositor owner is unavailable"));
   } else {
     degrade(QStringLiteral("compositor owner changed; coherent task-list "
                            "inventory is not yet available"));
