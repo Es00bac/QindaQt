@@ -152,6 +152,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Customize route](apps/customize-settings.md) documents the direct
   profile canvas: editor-session gestures, keyboard parity, atomic user-profile
   persistence, Settings1 selection truth, and fail-closed package boundaries.
+- [Settings Audio route](apps/audio-settings.md) documents the first-party
+  Audio1 client surface: bounded device and stream inventory, default-device
+  selection, shared availability/admission truth, bounded volume/mute
+  intents, and installed-route proof.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering

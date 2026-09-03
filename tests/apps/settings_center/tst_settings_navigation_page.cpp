@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "src/apps/settings_center/settings_navigation_controller.h"
 #include "src/apps/settings_center/settings_route_registry.h"
+#include "tests/apps/settings/audio/stub_audio_settings_model.h"
 #include "tests/apps/settings/network/stub_network_settings_model.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
@@ -24,6 +25,7 @@
 #include <QUrl>
 
 using namespace QindaQt::Apps::SettingsCenter;
+using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
 using QindaQt::Apps::SettingsNetwork::TestSupport::StubNetworkSettingsModel;
 
 namespace {
@@ -158,6 +160,7 @@ private:
   std::unique_ptr<StubQuietingModel> m_quieting;
   std::unique_ptr<StubAppearanceModel> m_appearance;
   std::unique_ptr<StubNetworkSettingsModel> m_network;
+  std::unique_ptr<StubAudioSettingsModel> m_audio;
 };
 
 namespace {
@@ -202,6 +205,7 @@ void SettingsNavigationPageTest::initTestCase() {
   m_quieting = std::make_unique<StubQuietingModel>();
   m_appearance = std::make_unique<StubAppearanceModel>();
   m_network = std::make_unique<StubNetworkSettingsModel>();
+  m_audio = std::make_unique<StubAudioSettingsModel>();
 }
 
 void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
@@ -223,6 +227,8 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -263,11 +269,15 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
                            QStringLiteral("settingsNavButton_appearance"));
   auto *networkBtn = sceneItem(window->contentItem(),
                                QStringLiteral("settingsNavButton_network"));
+  auto *audioBtn = sceneItem(window->contentItem(),
+                             QStringLiteral("settingsNavButton_audio"));
   QVERIFY(notifBtn != nullptr);
   QVERIFY(appBtn != nullptr);
   QVERIFY(networkBtn != nullptr);
+  QVERIFY(audioBtn != nullptr);
   QCOMPARE(notifBtn->property("active").toBool(), true);
   QCOMPARE(appBtn->property("active").toBool(), false);
+  QCOMPARE(audioBtn->property("active").toBool(), false);
   auto *sidebarAccessible = QAccessible::queryAccessibleInterface(sidebar);
   auto *notifAccessible = QAccessible::queryAccessibleInterface(notifBtn);
   QVERIFY(sidebarAccessible != nullptr);
@@ -312,6 +322,8 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -365,6 +377,34 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
       window->contentItem(), QStringLiteral("settingsCompactTab_appearance"));
   QVERIFY(compactAppearance != nullptr);
   QTRY_COMPARE(window->activeFocusItem(), compactAppearance);
+
+  // The Audio route follows the same compact contract: Ctrl+6 selection,
+  // route-tab accessibility, Escape return, and Tab entry into the page.
+  QTest::keyClick(window, Qt::Key_6, Qt::ControlModifier);
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("audio"));
+  auto *compactAudioLoader =
+      sceneObject(window->contentItem(),
+                  QStringLiteral("compactSettingsRouteAudioLoader"));
+  QVERIFY(compactAudioLoader != nullptr);
+  QCOMPARE(compactAudioLoader->property("active").toBool(), true);
+  auto *compactAudioTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsCompactTab_audio"));
+  QVERIFY(compactAudioTab != nullptr);
+  auto *compactAudioAccessible =
+      QAccessible::queryAccessibleInterface(compactAudioTab);
+  QVERIFY(compactAudioAccessible != nullptr);
+  QCOMPARE(compactAudioAccessible->role(), QAccessible::PageTab);
+  QCOMPARE(compactAudioAccessible->text(QAccessible::Name),
+           QStringLiteral("Audio"));
+  QVERIFY(compactAudioAccessible->state().selected);
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), compactAudioTab);
+  QTest::keyClick(window, Qt::Key_Tab);
+  auto *compactAudioVolume =
+      sceneItem(window->contentItem(), QStringLiteral("audioOutputVolume_10"));
+  QVERIFY(compactAudioVolume != nullptr);
+  QTRY_COMPARE(window->activeFocusItem(), compactAudioVolume);
 }
 
 void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
@@ -386,6 +426,8 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -439,6 +481,45 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   // Shortcut Alt+Left returns to the immediately previous route.
   QTest::keyClick(window, Qt::Key_Left, Qt::AltModifier);
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("notifications"));
+
+  // Ctrl+6 selects the Audio route; Escape returns to its route tab and Tab
+  // enters the page's declared first focus target, the default output's
+  // volume slider.
+  QTest::keyClick(window, Qt::Key_6, Qt::ControlModifier);
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("audio"));
+  auto *audioLoader = sceneObject(
+      window->contentItem(), QStringLiteral("wideSettingsRouteAudioLoader"));
+  auto *audioVolume =
+      sceneItem(window->contentItem(), QStringLiteral("audioOutputVolume_10"));
+  QVERIFY(audioLoader != nullptr);
+  QCOMPARE(audioLoader->property("active").toBool(), true);
+  QVERIFY(audioVolume != nullptr);
+  auto *audioTab = sceneItem(window->contentItem(),
+                             QStringLiteral("settingsNavButton_audio"));
+  QVERIFY(audioTab != nullptr);
+  auto *audioTabAccessible =
+      QAccessible::queryAccessibleInterface(audioTab);
+  QVERIFY(audioTabAccessible != nullptr);
+  QCOMPARE(audioTabAccessible->role(), QAccessible::PageTab);
+  QCOMPARE(audioTabAccessible->text(QAccessible::Name),
+           QStringLiteral("Audio"));
+  QVERIFY(audioTabAccessible->state().selected);
+  auto *audioVolumeAccessible =
+      QAccessible::queryAccessibleInterface(audioVolume);
+  QVERIFY(audioVolumeAccessible != nullptr);
+  QCOMPARE(audioVolumeAccessible->role(), QAccessible::Slider);
+  auto *audioHeading =
+      sceneItem(window->contentItem(), QStringLiteral("audioPageHeading"));
+  QVERIFY(audioHeading != nullptr);
+  auto *audioHeadingAccessible =
+      QAccessible::queryAccessibleInterface(audioHeading);
+  QVERIFY(audioHeadingAccessible != nullptr);
+  QCOMPARE(audioHeadingAccessible->role(), QAccessible::Heading);
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(window->activeFocusItem(), audioTab);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), audioVolume);
 }
 
 void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
@@ -471,6 +552,8 @@ void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
