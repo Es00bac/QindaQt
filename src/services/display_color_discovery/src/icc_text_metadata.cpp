@@ -266,6 +266,7 @@ IccProfileDescriptor assembleDescriptor(DiscoveryOrigin origin, const QString &f
     descriptor.displayName = chooseDiscoveredDisplayName(metadata, descriptor.profileId);
     descriptor.description = metadata.descriptionValid ? metadata.description : QString();
     descriptor.fileName = fileName;
+    descriptor.wireValid = true;
     switch (origin) {
     case DiscoveryOrigin::BuiltIn:
         descriptor.origin = ProfileOrigin::BuiltIn;
@@ -288,7 +289,6 @@ IccProfileDescriptor assembleDescriptor(DiscoveryOrigin origin, const QString &f
     descriptor.rawHeader = headerBytes;
     descriptor.checksumSha256 = lineageFingerprint;
     descriptor.byteSize = fileSize;
-    descriptor.wireValid = true;
     return descriptor;
 }
 

@@ -2,15 +2,16 @@
 
 #include "import_writer_p.h"
 
-#include "path_safety_p.h"
-
 #include <QtCore/QCryptographicHash>
+#include <QtCore/QDir>
 #include <QtCore/QFile>
 
 #include <cerrno>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <utility>
 
 namespace QindaQt::DisplayColor
 {
@@ -58,16 +59,9 @@ private:
     int m_fd = -1;
 };
 
-// AGENT-GUARD: The persistence root is validated exactly like the ADR-0051
-// journal root — non-symlink, effective-user-owned, not group/other-writable.
-// Relaxing this would let a redirected or shared-writable directory become
-// assignment-provenance authority.
-ScopedFd openValidatedRoot(const QString &root)
+ScopedFd openValidatedRoot(const CanonicalRootContainment &containment)
 {
-    if (root.isEmpty() || root.contains(QChar(u'\0'))) {
-        return {};
-    }
-    const QByteArray encoded = QFile::encodeName(root);
+    const QByteArray encoded = QFile::encodeName(containment.canonicalRoot());
     ScopedFd fd(::open(encoded.constData(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW));
     if (fd.get() < 0) {
         return {};
@@ -149,33 +143,119 @@ std::optional<QByteArray> readExactlyAndHash(int fd, size_t payloadSize)
 
 } // namespace
 
-ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString &fileName,
-                                          const QByteArray &content)
+ImportRootAccess::ImportRootAccess(CanonicalRootContainment containment, int fd)
+    : m_containment(std::move(containment)), m_fd(fd)
 {
-    if (injectedRootHasSymlinkedAncestor(userRoot)) {
-        return {ImportWriteOutcome::Status::Failed, QString(ImportRootUnsafeCode)};
+}
+
+std::optional<ImportRootAccess> ImportRootAccess::open(const QString &injectedRoot)
+{
+    std::optional<CanonicalRootContainment> containment =
+        CanonicalRootContainment::resolve(injectedRoot);
+    if (!containment.has_value()) {
+        return std::nullopt;
     }
-    const ScopedFd root = openValidatedRoot(userRoot);
+    ScopedFd root = openValidatedRoot(*containment);
     if (root.get() < 0) {
-        return {ImportWriteOutcome::Status::Failed, QString(ImportRootUnsafeCode)};
+        return std::nullopt;
+    }
+    return ImportRootAccess(std::move(*containment), root.release());
+}
+
+ImportRootAccess::~ImportRootAccess()
+{
+    if (m_fd >= 0) {
+        static_cast<void>(::close(m_fd));
+    }
+}
+
+ImportRootAccess::ImportRootAccess(ImportRootAccess &&other) noexcept
+    : m_containment(std::move(other.m_containment)), m_fd(std::exchange(other.m_fd, -1))
+{
+}
+
+ImportRootAccess &ImportRootAccess::operator=(ImportRootAccess &&other) noexcept
+{
+    if (this != &other) {
+        if (m_fd >= 0) {
+            static_cast<void>(::close(m_fd));
+        }
+        m_containment = std::move(other.m_containment);
+        m_fd = std::exchange(other.m_fd, -1);
+    }
+    return *this;
+}
+
+QString ImportRootAccess::destinationPath(const QString &fileName) const
+{
+    return QDir(m_containment.canonicalRoot()).filePath(fileName);
+}
+
+bool ImportRootAccess::destinationIsContained(const QString &fileName) const
+{
+    return m_containment.containsDestinationPath(destinationPath(fileName));
+}
+
+ExistingDestinationOutcome ImportRootAccess::inspectExisting(
+    const QString &fileName, const QByteArray &content) const
+{
+    if (!destinationIsContained(fileName)) {
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    const QByteArray encodedName = QFile::encodeName(fileName);
+    struct stat metadata {};
+    if (::fstatat(m_fd, encodedName.constData(), &metadata, AT_SYMLINK_NOFOLLOW) != 0) {
+        return errno == ENOENT
+                   ? ExistingDestinationOutcome{ExistingDestinationOutcome::Status::Missing, {}}
+                   : ExistingDestinationOutcome{ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    if (!S_ISREG(metadata.st_mode) || metadata.st_size < 0 ||
+        static_cast<quint64>(metadata.st_size) != static_cast<quint64>(content.size())) {
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    const int rawFd =
+        ::openat(m_fd, encodedName.constData(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (rawFd < 0) {
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    ScopedFd file(rawFd);
+    struct stat openedMetadata {};
+    if (::fstat(file.get(), &openedMetadata) != 0 || !S_ISREG(openedMetadata.st_mode) ||
+        openedMetadata.st_size < 0 || openedMetadata.st_size != metadata.st_size) {
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    const std::optional<QByteArray> storedDigest =
+        readExactlyAndHash(file.get(), static_cast<size_t>(openedMetadata.st_size));
+    if (!storedDigest.has_value() || *storedDigest != sha256(content)) {
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    }
+    return {ExistingDestinationOutcome::Status::Identical, *storedDigest};
+}
+
+ImportWriteOutcome ImportRootAccess::write(const QString &fileName,
+                                           const QByteArray &content) const
+{
+    const QString temporaryName = temporaryNameFor(fileName);
+    if (!destinationIsContained(fileName) || !destinationIsContained(temporaryName)) {
+        return {ImportWriteOutcome::Status::Failed, QString(ImportWriteFailureCode)};
     }
 
     const QByteArray encodedName = QFile::encodeName(fileName);
-    const QByteArray encodedTemporary = QFile::encodeName(temporaryNameFor(fileName));
+    const QByteArray encodedTemporary = QFile::encodeName(temporaryName);
 
     // A stale temporary from an interrupted import is unlinked by name
     // without following links; a directory at the temporary name is a
     // hostile collision and fails closed.
     struct stat temporaryStat {};
-    if (::fstatat(root.get(), encodedTemporary.constData(), &temporaryStat, AT_SYMLINK_NOFOLLOW) == 0) {
+    if (::fstatat(m_fd, encodedTemporary.constData(), &temporaryStat, AT_SYMLINK_NOFOLLOW) == 0) {
         if (S_ISDIR(temporaryStat.st_mode) ||
-            ::unlinkat(root.get(), encodedTemporary.constData(), 0) != 0) {
+            ::unlinkat(m_fd, encodedTemporary.constData(), 0) != 0) {
             return {ImportWriteOutcome::Status::Failed, QString(ImportWriteFailureCode)};
         }
     }
 
     const int rawTemporary =
-        ::openat(root.get(), encodedTemporary.constData(),
+        ::openat(m_fd, encodedTemporary.constData(),
                  O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, S_IRUSR | S_IWUSR);
     if (rawTemporary < 0) {
         return {ImportWriteOutcome::Status::Failed, QString(ImportWriteFailureCode)};
@@ -184,7 +264,7 @@ ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString
         ScopedFd temporary(rawTemporary);
         if (::fchmod(temporary.get(), S_IRUSR | S_IWUSR) != 0 ||
             !writeAll(temporary.get(), content) || ::fsync(temporary.get()) != 0) {
-            static_cast<void>(::unlinkat(root.get(), encodedTemporary.constData(), 0));
+            static_cast<void>(::unlinkat(m_fd, encodedTemporary.constData(), 0));
             return {ImportWriteOutcome::Status::Failed, QString(ImportWriteFailureCode)};
         }
     }
@@ -194,11 +274,11 @@ ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString
     // user root byte-identical; never replace renameat with a
     // remove-then-create sequence, which would expose a missing-profile
     // window on rejection paths.
-    if (::renameat(root.get(), encodedTemporary.constData(), root.get(), encodedName.constData()) != 0) {
-        static_cast<void>(::unlinkat(root.get(), encodedTemporary.constData(), 0));
+    if (::renameat(m_fd, encodedTemporary.constData(), m_fd, encodedName.constData()) != 0) {
+        static_cast<void>(::unlinkat(m_fd, encodedTemporary.constData(), 0));
         return {ImportWriteOutcome::Status::Failed, QString(ImportWriteFailureCode)};
     }
-    if (!syncDirectory(root.get())) {
+    if (!syncDirectory(m_fd)) {
         // Requested truth is visible but the directory barrier failed; the
         // import is durably uncertain. The import result reports failure so
         // the caller cannot claim provenance it has not proven, and a later
@@ -206,45 +286,6 @@ ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString
         return {ImportWriteOutcome::Status::Failed, QStringLiteral("durability-uncertain")};
     }
     return {ImportWriteOutcome::Status::Written, {}};
-}
-
-std::optional<QByteArray> existingFileDigestIfIdentical(const QString &root, const QString &fileName,
-                                                        const QByteArray &content)
-{
-    if (injectedRootHasSymlinkedAncestor(root)) {
-        return std::nullopt;
-    }
-    const ScopedFd rootFd = openValidatedRoot(root);
-    if (rootFd.get() < 0) {
-        return std::nullopt;
-    }
-    const QByteArray encodedName = QFile::encodeName(fileName);
-    // Open without following links so a planted symlink can never stand in
-    // for the stored profile, then re-stat the opened descriptor.
-    const int rawFd = ::openat(rootFd.get(), encodedName.constData(),
-                               O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
-    if (rawFd < 0) {
-        return std::nullopt;
-    }
-    ScopedFd file(rawFd);
-    struct stat metadata {};
-    if (::fstat(file.get(), &metadata) != 0 || !S_ISREG(metadata.st_mode)) {
-        return std::nullopt;
-    }
-    if (metadata.st_size < 0 ||
-        static_cast<quint64>(metadata.st_size) != static_cast<quint64>(content.size())) {
-        return std::nullopt;
-    }
-    const std::optional<QByteArray> storedDigest =
-        readExactlyAndHash(file.get(), static_cast<size_t>(metadata.st_size));
-    if (!storedDigest.has_value()) {
-        return std::nullopt;
-    }
-    const QByteArray contentDigest = sha256(content);
-    if (*storedDigest != contentDigest) {
-        return std::nullopt;
-    }
-    return contentDigest;
 }
 
 } // namespace QindaQt::DisplayColor

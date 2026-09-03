@@ -171,9 +171,13 @@ Its authority contract:
   per-user ICC directory). The module never resolves HOME, XDG variables, or
   any default directory, and never reads a root it was not given.
 - Scanning is flat (no recursion), accepts `*.icc`/`*.icm` case-insensitively,
-  ignores dot-prefixed names, rejects a symlink in the root or any root
-  ancestor, never follows file symlinks, and caps candidates per root;
-  exceeding a bound sets `complete = false` with a diagnostic instead of
+  ignores dot-prefixed names, never follows file symlinks, and caps candidates
+  per root. Each injected root is resolved once to its canonical path before
+  enumeration; a `..` component, failed canonicalization, or mismatch between
+  the lexical absolute root and canonical root rejects it (including a symlink
+  in any root component). Every candidate is separately canonicalized and must
+  be a lexical descendant of that canonical root before any stat or read.
+  Exceeding a bound sets `complete = false` with a diagnostic instead of
   scanning forever. An unknown injected origin rejects that root before any
   enumeration; it never inherits built-in provenance.
 - Per file it stats, then reads only the 128-byte ICC header plus a bounded
@@ -209,9 +213,12 @@ a stored file would otherwise never re-enter the catalog — before touching the
 user root, computes the
 SHA-256 content digest as the lineage fingerprint (stored in the descriptor's
 `checksumSha256`), and copies the exact bytes into the injected user root
-through the ADR-0051 pattern: an existing root with no symlink component that
-is effective-user-owned and non-group/other-writable; an exclusive mode-0600 temporary; fsync; one
-atomic rename commit point; a directory barrier where supported. Re-importing
+through the ADR-0051 pattern: an existing root whose one canonical resolution
+contains no `..` or symlink redirection and that is effective-user-owned and
+non-group/other-writable; an exclusive mode-0600 temporary; fsync; one atomic
+rename commit point; a directory barrier where supported. The destination, or
+the canonical parent when it does not yet exist, must be lexically inside that
+same canonical root before any destination stat, read, or digest. Re-importing
 byte-identical content is an idempotent `AlreadyPresent`; a different file
 under the destination name is a conflict that leaves the root untouched;
 every rejection is atomic; an interrupted write leaves only a dot-prefixed

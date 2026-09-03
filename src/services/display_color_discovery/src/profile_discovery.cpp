@@ -288,32 +288,28 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
                                                  QStringLiteral("invalid-origin"), root.path));
             continue;
         }
-        const QFileInfo rootInfo(root.path);
         if (root.path.isEmpty()) {
             result.diagnostics.append(
                 diagnostic(DiscoverySeverity::Warning, QStringLiteral("invalid-root"), root.path));
             continue;
         }
-        if (rootInfo.isSymLink()) {
-            result.diagnostics.append(diagnostic(DiscoverySeverity::Warning,
-                                                 QStringLiteral("root-is-symlink"), root.path));
-            continue;
-        }
-        // AGENT-GUARD: QFileInfo::isSymLink() checks only the final root
-        // component. Walking parents prevents a path such as
-        // injected/redirect/icc from escaping through a symlinked redirect
-        // ancestor (P1.1) before QDir performs any enumeration.
-        if (injectedRootHasSymlinkedAncestor(root.path)) {
+        const std::optional<CanonicalRootContainment> containment =
+            CanonicalRootContainment::resolve(root.path);
+        if (!containment.has_value()) {
             result.diagnostics.append(diagnostic(
                 DiscoverySeverity::Warning, QStringLiteral("root-ancestor-is-symlink"), root.path));
             continue;
         }
+        const QFileInfo rootInfo(containment->canonicalRoot());
         if (!rootInfo.isDir() || !rootInfo.isReadable()) {
             result.diagnostics.append(diagnostic(DiscoverySeverity::Info,
                                                  QStringLiteral("root-unavailable"), root.path));
             continue;
         }
 
+        // The raw path is now proven to name the canonical root exactly. Keep
+        // it for diagnostics/sourcePath compatibility while containment uses
+        // only the retained canonical form.
         QDir directory(root.path);
         QStringList entries = directory.entryList(QDir::Files);
         std::sort(entries.begin(), entries.end());
@@ -330,8 +326,17 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
                 break;
             }
             ++candidates;
-            ExaminedFile examined = examineCandidateFile(directory.filePath(entry), root.origin,
-                                                         m_limits);
+            const QString candidatePath = directory.filePath(entry);
+            // AGENT-GUARD: Canonical containment is checked before QFileInfo,
+            // open, or metadata parsing touches the candidate. A symlinked or
+            // unresolvable entry is never discovery authority.
+            if (!containment->containsExistingPath(candidatePath)) {
+                result.diagnostics.append(diagnostic(
+                    DiscoverySeverity::Warning, QStringLiteral("candidate-outside-root"),
+                    candidatePath));
+                continue;
+            }
+            ExaminedFile examined = examineCandidateFile(candidatePath, root.origin, m_limits);
             if (examined.outcome == ExaminedFile::Outcome::Profile) {
                 examinedProfiles.append(examined.profile);
             }

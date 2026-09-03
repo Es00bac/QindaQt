@@ -39,8 +39,11 @@ Discovery reads only the 128-byte ICC header plus a bounded description tag
 profile's identity is its sanitized file stem, its origin is exactly the
 origin of the injected root it was found under, and its color semantics are
 unproven placeholders that can never satisfy the C0 truthful-sRGB-default
-rule until a consumer classifies them. A root is rejected before enumeration
-when it or any ancestor is a symlink or when its injected origin is unknown.
+rule until a consumer classifies them. Each root is canonicalized once before
+enumeration. A `..` component, canonicalization failure, mismatch between its
+lexical absolute and canonical paths (including any symlink component), or
+unknown injected origin rejects it. Every discovery candidate must canonicalize
+to a lexical descendant of the canonical root before it is inspected.
 Ordinary discovery reads no profile body beyond bounded metadata; candidates
 whose IDs and inspected metadata collide are compared byte-for-byte in bounded
 chunks solely to distinguish exact duplicates from conflicting content.
@@ -50,7 +53,11 @@ SHA-256 content digest as the profile lineage fingerprint, and stores the copy
 in the injected user root through the ADR-0051 durability pattern: an existing,
 no-symlink-component, effective-user-owned, non-group/other-writable root; an exclusive
 mode-0600 temporary name; fsync; an atomic rename commit point; and a
-directory barrier where supported. A dot-prefixed destination name is refused,
+directory barrier where supported. Import retains that one canonical root for
+the operation and requires the canonical destination — or the canonical parent
+of a destination that does not exist yet — to remain lexically inside it. Root
+and containment rejection precede every destination stat, read, digest, or
+mutation. A dot-prefixed destination name is refused,
 because discovery ignores dot names and such a file would otherwise be stored
 yet never re-enter the catalog. The same round-trip rule refuses any suffix
 other than case-insensitive `.icc` or `.icm`. Rejection is atomic, and an interrupted
