@@ -82,6 +82,7 @@ signals:
     void itemRegistered(const QindaQt::StatusNotifier::OwnerKey &key);
     void itemUnregistered(const QindaQt::StatusNotifier::OwnerKey &key);
     void hostRegistered(const QString &uniqueName);
+    void hostUnregistered(const QString &uniqueName);
     void stateChanged();
 
 private slots:
