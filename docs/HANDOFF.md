@@ -4,6 +4,14 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Terminal S1 descendant `00f2db99ce13df2f426abd93e277de3d33411041`
+  at manager merge `00b4f45`. Sessions are bounded, each owns its PTY/child, and shutdown completes only
+  when the captured process group is verifiably empty; profiles stay within the existing launch policy;
+  Settings1 persistence presents asynchronous apply outcomes accessibly and never replays; argv is
+  preserved exactly. Dina St Johnston (OpenAI Codex) accepted the second repair at `0/0/0/0`. Fresh
+  merged-tree Debug and Release each pass the terminal selector 15/15 under host-unset isolation; the broad safe Debug suite passes 427/427;
+  126-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass.
+
 - This integration merges exact accepted Launcher L1 descendant `26f366a4a2ab14fc341407f015d21685b8c8415f`
   at manager merge `71900bd`. The scanner, persistence, execution, and compiled applet adapters compose the
   pure L0 model behind injected seams; every adapter test now runs Core-only or offscreen with host display
