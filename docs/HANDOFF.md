@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T06:58:16-06:00 — Nested desktop status on main: after the Global Menu and Settings-route merges the private desktop stage lacked libqindaqt_global_menu_qml.so and the Audio/Bluetooth/Power route modules (fixed at `e51372a`, `197f104`; `desktop.virtual.boot.1080p` green again); the two `desktop.virtual.panel-visibility.*` rows still fail on main because the hidden left panel stays mapped at zero size with the Global Menu hosted — an interaction repair lane is open. Treat main's nested panel proof as red until that lands.
 - 2026-09-03T06:33:14-06:00 — Text Editor S2 integrated at `28bcd37` (ADR-0065); ADR numbering is assigned at integration when lanes collide.
 - 2026-09-03T06:07:45-06:00 — Terminal S2 (search, links) integrated at `9e3422e`.
 - 2026-09-03T05:37:29-06:00 — Global Menu G2 (`7de332f`) and File Manager S1 (`0b97954`) integrated; reconciliations `a1bac21` and `4609beb`; the dispatcher now hosts seven built-in applets and every dispatcher-level QML row needs a stub under `tests/shell/qml/imports/QindaQt/Shell/<Module>/` for each module `BuiltinAppletContent.qml` imports.
