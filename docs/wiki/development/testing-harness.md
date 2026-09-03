@@ -1694,6 +1694,31 @@ integration slice, which owns the transport, bus surface, and lock-state
 prerequisites; the model's `install(TARGETS …)` export exists but no
 packaged-qualification claim is made for C0 alone.
 
+## Power PB-2 production-upstream proof
+
+The focused production-adapter selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.power-service-(sysfs-backlight|upstream-composition|upower-adapter|profiles-adapter|logind-adapter|logind-actions|production-activation|boundary)$'
+```
+
+UPower, Power Profiles, and logind rows create one private `dbus-daemon` per
+fixture and connect only by its printed address. Production activation exports
+that same address as both bus environments to the activated executable and
+injects a backlight root below the configured build scratch directory. The
+rows cover daemon absence/loss/replacement, device removal, service and device
+property changes, hostile property types and ordinals, estimate bounds,
+modern/legacy profile roots and cookie holds, sanitized inhibitors,
+`PrepareForSleep`, `Can*` admission, no-prompt actions, duplicate operation
+lineage, sysfs disappearance/read-only/write/re-observation, the explicit
+composition modes, and installed activation descriptors.
+
+The selector does not contact an ambient system/session bus, the host
+`/sys/class/backlight`, hardware, polkit, uinput, a compositor, or a desktop
+session. It proves only the injected adapter and package contracts; physical
+battery/backlight behavior and suspend/resume remain hardware evidence.
+
 ## Required display matrix
 
 Single-output scenarios cover:

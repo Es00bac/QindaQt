@@ -28,6 +28,8 @@ ProductionBatteryCollaborator::ProductionBatteryCollaborator(
                 }
                 // Fail closed for the whole domain: backlight truth is not
                 // published without the AC/on-battery authority.
+                m_haveUpowerFacts = false;
+                m_upowerFacts = BatteryFacts{};
                 Q_EMIT statusUnavailable(m_generation, reasonCode);
             });
     connect(m_upower.get(), &UpowerBatteryCollaborator::authorityReplaced, this,

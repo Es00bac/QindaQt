@@ -4,11 +4,26 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
+#include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusVirtualObject>
 
 namespace QindaQt::Tests {
+
+struct FakeLogindInhibitorWire {
+    QString what;
+    QString who;
+    QString why;
+    QString mode;
+    quint32 uid = 0;
+    quint32 pid = 0;
+};
+
+QDBusArgument &operator<<(QDBusArgument &argument,
+                          const FakeLogindInhibitorWire &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                FakeLogindInhibitorWire &value);
 
 // Fake org.freedesktop.login1.Manager implemented as a QDBusVirtualObject with
 // wire-faithful property maps, a(ssssuu) inhibitor records (including UID and
@@ -74,3 +89,5 @@ private:
 };
 
 } // namespace QindaQt::Tests
+
+Q_DECLARE_METATYPE(QindaQt::Tests::FakeLogindInhibitorWire)

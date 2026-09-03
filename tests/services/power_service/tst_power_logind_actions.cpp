@@ -57,6 +57,7 @@ private Q_SLOTS:
     void challengeIsNotAdmittedWithoutPolkitUi();
     void errorReplyCompletesFailed();
     void ownerReplacementMidFlightCompletesUncertain();
+    void duplicateOperationIdDoesNotRedispatchOrDoubleComplete();
     void stoppedAuthorityRefusesActions();
     void absentAuthorityAdmitsNothing();
 };
@@ -180,6 +181,22 @@ void PowerLogindActionTests::ownerReplacementMidFlightCompletesUncertain()
     const CollaboratorOutcome outcome = finished.first().at(2).value<CollaboratorOutcome>();
     QCOMPARE(outcome.status, CollaboratorStatus::Uncertain);
     QCOMPARE(outcome.reasonCode, QStringLiteral("authority-replaced"));
+}
+
+void PowerLogindActionTests::duplicateOperationIdDoesNotRedispatchOrDoubleComplete()
+{
+    ActionRow row;
+    QVERIFY(row.start());
+    QTRY_VERIFY(row.authority->admittedActions().powerOff);
+    row.fake->setDeferNextActionReply(true);
+    QSignalSpy finished(row.authority.get(),
+                        &Upstream::LogindActionAuthority::actionFinished);
+    row.authority->submitAction(18, Upstream::SessionAction::PowerOff);
+    row.authority->submitAction(18, Upstream::SessionAction::PowerOff);
+    QTRY_COMPARE(row.fake->actionCalls.size(), 1);
+    row.fake->completeDeferredActionReply();
+    QTRY_COMPARE(finished.size(), 1);
+    QCOMPARE(finished.constFirst().at(1).toULongLong(), quint64(18));
 }
 
 void PowerLogindActionTests::stoppedAuthorityRefusesActions()

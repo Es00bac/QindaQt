@@ -4,6 +4,7 @@
 
 
 #include <QtDBus/QDBusArgument>
+#include <QtDBus/QDBusMetaType>
 
 #include <QtCore/QVariant>
 
@@ -17,16 +18,12 @@ constexpr char kPropertiesInterface[] = "org.freedesktop.DBus.Properties";
 
 QVariant inhibitorArrayValue(const QList<FakeLogindService::InhibitorSpec> &inhibitors)
 {
-    QDBusArgument argument;
-    argument.beginArray(QMetaType::fromType<QStringList>());
+    QList<FakeLogindInhibitorWire> values;
     for (const FakeLogindService::InhibitorSpec &inhibitor : inhibitors) {
-        argument.beginStructure();
-        argument << inhibitor.what << inhibitor.who << inhibitor.why << inhibitor.mode
-                 << inhibitor.uid << inhibitor.pid;
-        argument.endStructure();
+        values.push_back({inhibitor.what, inhibitor.who, inhibitor.why,
+                          inhibitor.mode, inhibitor.uid, inhibitor.pid});
     }
-    argument.endArray();
-    return QVariant::fromValue(argument);
+    return QVariant::fromValue(values);
 }
 
 QVariantMap managerPropertyMap(const bool lidClosed, const bool docked,
@@ -41,11 +38,33 @@ QVariantMap managerPropertyMap(const bool lidClosed, const bool docked,
 
 } // namespace
 
+QDBusArgument &operator<<(QDBusArgument &argument,
+                          const FakeLogindInhibitorWire &value)
+{
+    argument.beginStructure();
+    argument << value.what << value.who << value.why << value.mode << value.uid
+             << value.pid;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                FakeLogindInhibitorWire &value)
+{
+    argument.beginStructure();
+    argument >> value.what >> value.who >> value.why >> value.mode >> value.uid
+        >> value.pid;
+    argument.endStructure();
+    return argument;
+}
+
 FakeLogindService::FakeLogindService(const QDBusConnection &connection,
                                      QObject *parent)
     : QDBusVirtualObject(parent)
     , m_connection(connection)
 {
+    qDBusRegisterMetaType<FakeLogindInhibitorWire>();
+    qDBusRegisterMetaType<QList<FakeLogindInhibitorWire>>();
 }
 
 FakeLogindService::~FakeLogindService()
@@ -55,11 +74,15 @@ FakeLogindService::~FakeLogindService()
 
 bool FakeLogindService::registerService()
 {
-    if (!m_connection.registerService(QString::fromLatin1(kServiceName))) {
+    if (!m_connection.registerVirtualObject(QString::fromLatin1(kObjectPath), this,
+                                            QDBusConnection::SubPath)) {
         return false;
     }
-    return m_connection.registerVirtualObject(QString::fromLatin1(kObjectPath), this,
-                                              QDBusConnection::SubPath);
+    if (!m_connection.registerService(QString::fromLatin1(kServiceName))) {
+        m_connection.unregisterObject(QString::fromLatin1(kObjectPath));
+        return false;
+    }
+    return true;
 }
 
 void FakeLogindService::unregisterService()

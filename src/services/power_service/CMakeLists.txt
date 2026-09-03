@@ -22,6 +22,8 @@ target_sources(
         src/adapters/production_battery_collaborator.cpp
         src/adapters/sysfs_backlight_source.cpp
         src/adapters/upower_battery_collaborator.cpp
+        src/adapters/upower_device_decoder.cpp
+        src/adapters/upower_device_decoder_p.h
         src/adapters/upstream_composition.cpp
         src/adapters/upstream_dbus_util.cpp
         src/adapters/upstream_dbus_util.h

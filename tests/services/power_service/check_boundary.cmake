@@ -61,14 +61,14 @@ foreach(root IN LISTS power_paths)
         elseif(source MATCHES "/adapters/")
             set(forbidden_patterns "${common_forbidden_patterns}")
             # Each adapter family may use only its own transport.
-            if(source MATCHES "sysfs")
+            if(source MATCHES "/sysfs_backlight_source[^/]*$")
                 list(APPEND forbidden_patterns
                     "upower" "login1" "org.freedesktop.login1"
                     "org.freedesktop.UPower" "net.hadess.PowerProfiles" "<QtDBus/")
-            elseif(source MATCHES "upower|profiles")
+            elseif(source MATCHES "/(upower_|power_profiles_)[^/]*$")
                 list(APPEND forbidden_patterns
                     "login1" "org.freedesktop.login1" "/sys/class")
-            elseif(source MATCHES "logind")
+            elseif(source MATCHES "/logind_[^/]*$")
                 list(APPEND forbidden_patterns
                     "upower" "org.freedesktop.UPower" "net.hadess.PowerProfiles"
                     "/sys/class")

@@ -9,6 +9,7 @@
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
+#include <QtDBus/QDBusReply>
 #include <QtDBus/QDBusServiceWatcher>
 
 namespace QindaQt::Power::Upstream {
@@ -53,6 +54,8 @@ quint64 LogindActionAuthority::start()
     m_running = true;
     m_admitted = AdmittedActions{};
     m_activeOwner.clear();
+    m_pendingActions.clear();
+    m_seenOperationIds.clear();
     if (!m_connection.isConnected()) {
         m_running = false;
         return m_generation;
@@ -68,9 +71,6 @@ quint64 LogindActionAuthority::start()
         if (!runningGeneration(m_generation)) {
             return;
         }
-        // Resolve the current owner so operation fencing works even when the
-        // authority was already on the bus before this run started.
-        resolveCurrentOwner();
         refreshAdmittedActions();
     });
     return m_generation;
@@ -78,6 +78,12 @@ quint64 LogindActionAuthority::start()
 
 void LogindActionAuthority::stop()
 {
+    const QList<quint64> pending = m_pendingActions.keys();
+    for (const quint64 operationId : pending) {
+        finishAction(m_generation, operationId, CollaboratorStatus::Uncertain,
+                     QStringLiteral("authority-stopped"));
+    }
+    m_pendingActions.clear();
     m_running = false;
     m_admitted = AdmittedActions{};
     m_activeOwner.clear();
@@ -115,29 +121,25 @@ QString LogindActionAuthority::executeMethodName(const SessionAction action)
     return QString();
 }
 
-void LogindActionAuthority::resolveCurrentOwner()
-{
-    QDBusMessage ownerCall = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.DBus"),
-        QStringLiteral("/org/freedesktop/DBus"),
-        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
-    ownerCall.setArguments({QString::fromLatin1(kLogindServiceName)});
-    auto *ownerWatch =
-        new QDBusPendingCallWatcher(m_connection.asyncCall(ownerCall), this);
-    connect(ownerWatch, &QDBusPendingCallWatcher::finished, this,
-            [this, ownerWatch]() {
-                ownerWatch->deleteLater();
-                const QDBusPendingReply<QString> reply = *ownerWatch;
-                if (m_running && !reply.isError() && !reply.value().isEmpty()) {
-                    m_activeOwner = reply.value();
-                }
-            });
-}
-
 void LogindActionAuthority::refreshAdmittedActions()
 {
+    if (!m_running) {
+        return;
+    }
+    const QDBusReply<QString> owner = m_connection.interface()->serviceOwner(
+        QString::fromLatin1(kLogindServiceName));
+    ++m_refreshSerial;
+    if (!owner.isValid() || owner.value().isEmpty()) {
+        m_activeOwner.clear();
+        m_admitted = AdmittedActions{};
+        Q_EMIT admittedActionsChanged(m_admitted);
+        return;
+    }
+    m_activeOwner = owner.value();
     auto query = std::make_shared<PendingCanQuery>();
     query->outstanding = 4;
+    query->serial = m_refreshSerial;
+    query->owner = m_activeOwner;
     query->actions = AdmittedActions{};
     for (const SessionAction action :
          {SessionAction::PowerOff, SessionAction::Reboot, SessionAction::Suspend,
@@ -151,7 +153,7 @@ void LogindActionAuthority::callCanAction(
 {
     const quint64 generation = m_generation;
     QDBusMessage call = QDBusMessage::createMethodCall(
-        QString::fromLatin1(kLogindServiceName),
+        query->owner,
         QString::fromLatin1(kLogindObjectPath),
         QString::fromLatin1(kLogindManagerInterface), canMethodName(action));
     auto *watcher =
@@ -159,7 +161,9 @@ void LogindActionAuthority::callCanAction(
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, action, query, generation]() {
                 watcher->deleteLater();
-                if (!runningGeneration(generation)) {
+                if (!runningGeneration(generation)
+                    || query->serial != m_refreshSerial
+                    || query->owner != m_activeOwner) {
                     return;
                 }
                 const QDBusPendingReply<QString> reply = *watcher;
@@ -187,6 +191,12 @@ void LogindActionAuthority::submitAction(const quint64 operationId,
                      QStringLiteral("logind-unavailable"));
         return;
     }
+    if (m_seenOperationIds.contains(operationId)) {
+        // AGENT-GUARD: one lineage ID produces at most one terminal signal;
+        // replaying a caller ID must not dispatch or double-complete it.
+        return;
+    }
+    m_seenOperationIds.insert(operationId);
     bool admitted = false;
     switch (action) {
     case SessionAction::PowerOff: admitted = m_admitted.powerOff; break;
@@ -209,8 +219,9 @@ void LogindActionAuthority::callExecuteAction(const quint64 operationId,
 {
     const quint64 generation = m_generation;
     const QString ownerAtSubmission = m_activeOwner;
+    m_pendingActions.insert(operationId, ownerAtSubmission);
     QDBusMessage call = QDBusMessage::createMethodCall(
-        QString::fromLatin1(kLogindServiceName),
+        ownerAtSubmission,
         QString::fromLatin1(kLogindObjectPath),
         QString::fromLatin1(kLogindManagerInterface), executeMethodName(action));
     // One boolean argument; interactive is always false because QindaQt shows
@@ -221,20 +232,21 @@ void LogindActionAuthority::callExecuteAction(const quint64 operationId,
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, generation, operationId, ownerAtSubmission]() {
                 watcher->deleteLater();
-                if (!runningGeneration(generation)) {
+                if (!runningGeneration(generation)
+                    || !m_pendingActions.contains(operationId)) {
+                    return;
+                }
+                m_pendingActions.remove(operationId);
+                if (m_activeOwner != ownerAtSubmission) {
+                    finishAction(generation, operationId,
+                                 CollaboratorStatus::Uncertain,
+                                 QStringLiteral("authority-replaced"));
                     return;
                 }
                 if (watcher->reply().type() != QDBusMessage::ReplyMessage) {
                     finishAction(generation, operationId,
                                  CollaboratorStatus::Failed,
                                  QStringLiteral("action-rejected"));
-                    return;
-                }
-                if (!ownerAtSubmission.isEmpty()
-                    && m_activeOwner != ownerAtSubmission) {
-                    finishAction(generation, operationId,
-                                 CollaboratorStatus::Uncertain,
-                                 QStringLiteral("authority-replaced"));
                     return;
                 }
                 finishAction(generation, operationId,
@@ -260,19 +272,29 @@ void LogindActionAuthority::onLogindOwnerChanged(const QString &name,
                                                  const QString &newOwner)
 {
     Q_UNUSED(name)
+    Q_UNUSED(oldOwner)
+    Q_UNUSED(newOwner)
     if (!m_running) {
         return;
     }
-    if (newOwner.isEmpty()) {
+    const QDBusReply<QString> resolved = m_connection.interface()->serviceOwner(
+        QString::fromLatin1(kLogindServiceName));
+    const QString currentOwner = resolved.isValid() ? resolved.value() : QString();
+    if (currentOwner != m_activeOwner) {
+        const QList<quint64> pending = m_pendingActions.keys();
+        m_pendingActions.clear();
+        for (const quint64 operationId : pending) {
+            finishAction(m_generation, operationId, CollaboratorStatus::Uncertain,
+                         QStringLiteral("authority-replaced"));
+        }
+    }
+    if (currentOwner.isEmpty()) {
+        ++m_refreshSerial;
+        m_activeOwner.clear();
         m_admitted = AdmittedActions{};
         Q_EMIT admittedActionsChanged(m_admitted);
         return;
     }
-    if (!oldOwner.isEmpty() && oldOwner != newOwner) {
-        m_admitted = AdmittedActions{};
-        Q_EMIT admittedActionsChanged(m_admitted);
-    }
-    m_activeOwner = newOwner;
     refreshAdmittedActions();
 }
 

@@ -110,6 +110,10 @@ target_link_libraries(
     qindaqt_power_upower_adapter_tests
     PRIVATE QindaQt::PowerService Qt6::DBus Qt6::Test
 )
+target_compile_definitions(
+    qindaqt_power_upower_adapter_tests
+    PRIVATE QINDAQT_TEST_SCRATCH_DIR="${CMAKE_CURRENT_BINARY_DIR}/scratch"
+)
 qindaqt_enable_warnings(qindaqt_power_upower_adapter_tests)
 add_test(
     NAME qindaqt.power-service-upower-adapter

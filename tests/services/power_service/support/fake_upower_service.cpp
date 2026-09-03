@@ -40,11 +40,15 @@ FakeUpowerService::~FakeUpowerService()
 
 bool FakeUpowerService::registerService()
 {
-    if (!m_connection.registerService(QString::fromLatin1(kServiceName))) {
+    if (!m_connection.registerVirtualObject(QString::fromLatin1(kServicePath), this,
+                                            QDBusConnection::SubPath)) {
         return false;
     }
-    return m_connection.registerVirtualObject(QString::fromLatin1(kServicePath), this,
-                                              QDBusConnection::SubPath);
+    if (!m_connection.registerService(QString::fromLatin1(kServiceName))) {
+        m_connection.unregisterObject(QString::fromLatin1(kServicePath));
+        return false;
+    }
+    return true;
 }
 
 void FakeUpowerService::unregisterService()

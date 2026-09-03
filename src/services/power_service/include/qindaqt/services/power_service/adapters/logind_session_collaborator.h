@@ -8,6 +8,8 @@
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusServiceWatcher>
 
+#include <memory>
+
 namespace QindaQt::Power::Upstream {
 
 // AGENT-CONTRACT: Production session-authority adapter for
@@ -33,10 +35,19 @@ public:
     void stop() override;
 
 private:
+    struct RefreshCycle;
+
     void scheduleUnavailable(quint64 generation, const QString &reasonCode);
-    void refreshSession(quint64 generation);
-    void readProperties(quint64 generation);
-    void readInhibitors(quint64 generation);
+    [[nodiscard]] bool subscribeServiceSignals();
+    void beginRefresh();
+    void readProperties(const std::shared_ptr<RefreshCycle> &cycle);
+    void readInhibitors(const std::shared_ptr<RefreshCycle> &cycle);
+    void tryPublish(const std::shared_ptr<RefreshCycle> &cycle);
+    void failRefresh(const std::shared_ptr<RefreshCycle> &cycle,
+                     const QString &reasonCode);
+    [[nodiscard]] bool acceptReplyOwner(const std::shared_ptr<RefreshCycle> &cycle,
+                                        const QString &owner);
+    void adoptOwner(const QString &owner);
     void publishFacts(quint64 generation);
     void onLogindOwnerChanged(const QString &name, const QString &oldOwner,
                               const QString &newOwner);
@@ -44,15 +55,20 @@ private:
 
     QDBusConnection m_connection;
     QDBusServiceWatcher *m_watcher = nullptr;
+    std::shared_ptr<RefreshCycle> m_refresh;
+    QString m_activeOwner;
+    QString m_lastOwner;
     QList<Inhibitor> m_inhibitors;
     bool m_lidClosed = false;
     bool m_docked = false;
     bool m_preparingForSleep = false;
     bool m_lidProven = false;
-    int m_pendingReads = 0;
     quint64 m_generation = 0;
     quint64 m_nextGeneration = 0;
+    quint64 m_nextRefresh = 0;
     bool m_running = false;
+    bool m_signalsSubscribed = false;
+    bool m_epochAdvancedForLoss = false;
 
 private Q_SLOTS:
     void onLogindPropertiesChanged(const class QDBusMessage &message);

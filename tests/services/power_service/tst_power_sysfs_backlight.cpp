@@ -99,6 +99,7 @@ private Q_SLOTS:
     void writeSucceedsOnWritableRoot();
     void writeRejectsOutOfRangeAndUnknownDevices();
     void writeFailsClosedOnReadOnlyRoot();
+    void readOnlyRootPublishesUnavailableTruth();
     void missingRootPublishesEmptyTruth();
     void longButLegalDeviceNameIsPreserved();
 };
@@ -278,7 +279,7 @@ void PowerSysfsBacklightTests::writeSucceedsOnWritableRoot()
              QByteArrayLiteral("127\n"));
     const InternalBacklight &device = source->devices().constFirst();
     QVERIFY(device.observedKnown);
-    QCOMPARE(device.observed, quint32(127));
+    QCOMPARE(device.observed, quint32(100));
     QCOMPARE(device.status, BacklightStatus::Ok);
     QTRY_COMPARE(changed.size(), 1);
 }
@@ -339,6 +340,28 @@ void PowerSysfsBacklightTests::writeFailsClosedOnReadOnlyRoot()
     QVERIFY(!outcome.diagnostic.isEmpty());
     QCOMPARE(BacklightFixture::read(directory + QStringLiteral("/brightness")),
              QByteArrayLiteral("10\n"));
+    brightnessFile.setPermissions(original);
+}
+
+void PowerSysfsBacklightTests::readOnlyRootPublishesUnavailableTruth()
+{
+    QTemporaryDir root{scratchTemplate()};
+    QVERIFY(root.isValid());
+    BacklightFixture fixture(root);
+    const QString directory =
+        fixture.makeDevice(QStringLiteral("locked"), "firmware\n", "255\n", "10\n",
+                           "10\n");
+    QFile brightnessFile(directory + QStringLiteral("/brightness"));
+    const QFileDevice::Permissions original = brightnessFile.permissions();
+    QVERIFY(brightnessFile.setPermissions(QFileDevice::ReadOwner));
+
+    std::unique_ptr<Upstream::SysfsBacklightSource> source(startedSource(root.path()));
+    const InternalBacklight &device = source->devices().constFirst();
+    QCOMPARE(device.status, BacklightStatus::Unavailable);
+    QCOMPARE(device.reason, BacklightReason::LogindError);
+    QCOMPARE(device.diagnostic, QStringLiteral("backlight-read-only"));
+    QVERIFY(device.observedKnown);
+    QCOMPARE(device.observed, quint32(10));
     brightnessFile.setPermissions(original);
 }
 

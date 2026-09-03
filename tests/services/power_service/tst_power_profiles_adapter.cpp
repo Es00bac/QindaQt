@@ -119,14 +119,14 @@ void PowerProfilesAdapterTests::setProfileUsesStandardPropertySet()
     PowerServiceRequest request;
     request.kind = OperationKind::SetProfile;
     request.profileId = QStringLiteral("performance");
+    QSignalSpy completed(row.coordinator.get(),
+                         &PowerServiceCoordinator::operationCompleted);
     const OperationSubmission submission = row.coordinator->submit(request);
     QVERIFY(submission.pending);
     QTRY_COMPARE(row.fake->setProfileRequests.size(), 1);
     QCOMPARE(row.fake->setProfileRequests.constFirst(),
              QStringLiteral("performance"));
 
-    QSignalSpy completed(row.coordinator.get(),
-                         &PowerServiceCoordinator::operationCompleted);
     row.fake->setActiveProfile(QStringLiteral("performance"));
     row.fake->emitPropertiesChanged();
     QTRY_COMPARE(completed.size(), 1);
@@ -180,9 +180,8 @@ void PowerProfilesAdapterTests::acquireHoldRecordsUpstreamAndIsReleasable()
              OperationStatus::Succeeded);
     QTRY_COMPARE(row.fake->holdRequests.size(), 1);
     QCOMPARE(row.fake->holdRequests.constFirst().reason, QStringLiteral("test hold"));
-    QCOMPARE(row.fake->holdRequests.constFirst().application,
+    QCOMPARE(row.fake->holdRequests.constFirst().applicationId,
              QStringLiteral("QindaQt"));
-    QCOMPARE(row.fake->holdRequests.constFirst().appId, QStringLiteral("QindaQt"));
 
     // The hold becomes visible in facts and is releasable through its handle.
     row.fake->emitPropertiesChanged();
@@ -201,6 +200,8 @@ void PowerProfilesAdapterTests::acquireHoldRecordsUpstreamAndIsReleasable()
     QCOMPARE(released.first().at(1).value<OperationResult>().status,
              OperationStatus::Succeeded);
     QTRY_COMPARE(row.fake->releaseRequests.size(), 1);
+    QCOMPARE(row.fake->releaseRequests.constFirst(),
+             row.fake->holdRequests.constFirst().cookie);
 }
 
 void PowerProfilesAdapterTests::foreignHoldIsNotReleasable()
@@ -225,8 +226,8 @@ void PowerProfilesAdapterTests::foreignHoldIsNotReleasable()
     QVERIFY(release.pending);
     QTRY_COMPARE(completed.size(), 1);
     const OperationResult result = completed.first().at(1).value<OperationResult>();
-    // Upstream exposes no object path for holds this process did not acquire,
-    // so releasing foreign holds fails closed without any upstream call.
+    // Upstream exposes no cookie for holds this process did not acquire, so
+    // releasing foreign holds fails closed without any upstream call.
     QCOMPARE(result.status, OperationStatus::Unsupported);
     QCOMPARE(result.reasonCode, QStringLiteral("hold-not-releasable"));
     QCOMPARE(row.fake->releaseRequests.size(), 0);
@@ -367,9 +368,11 @@ void PowerProfilesAdapterTests::hostileWrongTypedActiveProfileFailsClosedMalform
 
     QDBusConnection hostileConnection = row.bus->openConnection(QStringLiteral("hostile"));
     HostilePpd hostile;
-    hostileConnection.registerService(QStringLiteral("org.freedesktop.UPower.PowerProfiles"));
-    hostileConnection.registerVirtualObject(QStringLiteral("/net/hadess/PowerProfiles"),
-                                            &hostile, QDBusConnection::SubPath);
+    QVERIFY(hostileConnection.registerVirtualObject(
+        QStringLiteral("/org/freedesktop/UPower/PowerProfiles"), &hostile,
+        QDBusConnection::SubPath));
+    QVERIFY(hostileConnection.registerService(
+        QStringLiteral("org.freedesktop.UPower.PowerProfiles")));
     row.battery.publish(fixtureBatteryFacts());
     row.session.publish(fixtureSessionFacts());
     QTRY_COMPARE(row.coordinator->snapshot().availability, Availability::Degraded);
