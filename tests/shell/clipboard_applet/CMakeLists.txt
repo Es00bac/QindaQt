@@ -134,11 +134,24 @@ qindaqt_enable_warnings(
 add_test(
     NAME qindaqt.clipboard-applet-composition-private-bus
     COMMAND qindaqt_clipboard_applet_composition_private_bus_tests
+            composesConsentOwnerOperationsAndCeilingPurge
 )
 set_tests_properties(
     qindaqt.clipboard-applet-composition-private-bus
     PROPERTIES LABELS "shell;clipboard;dbus;private-bus" TIMEOUT 30
 )
+
+foreach(consent_denial IN ITEMS missing malformed inherited-default ownerless)
+    add_test(
+        NAME qindaqt.clipboard-applet-consent-${consent_denial}
+        COMMAND qindaqt_clipboard_applet_composition_private_bus_tests
+                "withholdsDeniedConsentUntilFencedEmptySnapshot:${consent_denial}"
+    )
+    set_tests_properties(
+        qindaqt.clipboard-applet-consent-${consent_denial}
+        PROPERTIES LABELS "shell;clipboard;dbus;private-bus;negative-control" TIMEOUT 30
+    )
+endforeach()
 
 # AGENT-GUARD: every QML row runs through the compiled harness executable
 # whose build pulls these prerequisites, so a focused build of the declared

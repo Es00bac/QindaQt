@@ -310,7 +310,11 @@ installed-package rows run entirely offscreen against the in-process C0 model.
 The production additions include
 `qindaqt.clipboard-applet-composition-private-bus`, which joins the real public
 Clipboard1 client to a fake service on an ephemeral private bus and injects a
-fake Settings1 transport with exact user-consent provenance; the two
+fake Settings1 transport with exact user-consent provenance. Four registered
+`qindaqt.clipboard-applet-consent-*` negative-control rows independently deny
+missing, malformed, inherited-default, and ownerless consent, withhold existing
+content before the service purge, and require its generation-advanced empty
+snapshot before Disabled can be exposed; the two
 `production-panel-*-offscreen` rows instantiate the source dispatcher and
 compiled `Popup.Window` host with fatal warnings, host bus/display variables
 unset, Tab/Return/Space parity, accessibility state, and Escape closure. The

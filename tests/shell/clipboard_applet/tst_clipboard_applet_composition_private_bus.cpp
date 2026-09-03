@@ -78,29 +78,44 @@ public:
     void requestSnapshot(quint64 token, const QString &owner,
                          const QStringList &keys) override
     {
+        QCOMPARE(keys, QStringList{QStringLiteral("services.clipboardHistory")});
+        const QVariantMap wire = m_wire;
+        QMetaObject::invokeMethod(this, [this, token, owner, wire] {
+            Q_EMIT snapshotReceived(token, owner, wire);
+        }, Qt::QueuedConnection);
+    }
+
+    void setReply(const QVariant &value, const QString &sourceLayer,
+                  quint64 revision, bool includeKey = true)
+    {
         using Services::SettingsProtocol::SettingsWireStatus;
         using Services::SettingsProtocol::WireContract;
-        QCOMPARE(keys, QStringList{QStringLiteral("services.clipboardHistory")});
-        const QVariantMap wire{
+        QVariantMap values;
+        QVariantMap sources;
+        if (includeKey) {
+            values.insert(QStringLiteral("services.clipboardHistory"), value);
+            sources.insert(QStringLiteral("services.clipboardHistory"), sourceLayer);
+        }
+        m_wire = {
             {QLatin1StringView(WireContract::FieldStatus),
              quint32(SettingsWireStatus::Applied)},
             {QLatin1StringView(WireContract::FieldWireSchemaVersion),
              WireContract::WireSchemaVersion},
             {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
             {QLatin1StringView(WireContract::FieldEpoch), QStringLiteral("settings-a")},
-            {QLatin1StringView(WireContract::FieldRevision), quint64(1)},
-            {QLatin1StringView(WireContract::FieldValues),
-             QVariantMap{{QStringLiteral("services.clipboardHistory"), true}}},
-            {QLatin1StringView(WireContract::FieldSourceLayers),
-             QVariantMap{{QStringLiteral("services.clipboardHistory"),
-                          QStringLiteral("user-overrides")}}},
+            {QLatin1StringView(WireContract::FieldRevision), revision},
+            {QLatin1StringView(WireContract::FieldValues), values},
+            {QLatin1StringView(WireContract::FieldSourceLayers), sources},
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
-        QMetaObject::invokeMethod(this, [this, token, owner, wire] {
-            Q_EMIT snapshotReceived(token, owner, wire);
-        }, Qt::QueuedConnection);
     }
 
-    void announceOwner() { Q_EMIT ownerChanged(QStringLiteral(":settings.1")); }
+    void announceOwner(const QString &owner = QStringLiteral(":settings.1"))
+    {
+        Q_EMIT ownerChanged(owner);
+    }
+
+private:
+    QVariantMap m_wire;
 };
 
 class FakeClipboard1 final : public QObject {
@@ -195,15 +210,15 @@ Services::ClipboardModel::ClipboardEntryDescriptor descriptor(quint32 generation
 }
 
 Services::Clipboard::Snapshot snapshot(
-    bool privacyAllowed, quint64 revision,
+    quint32 generation, bool historyEnabled, bool privacyAllowed, quint64 revision,
     QList<Services::ClipboardModel::ClipboardEntryDescriptor> entries)
 {
     const auto encoded = Services::ClipboardModel::encodeDescriptorList(entries);
     Q_ASSERT(encoded.accepted());
     return {.epoch = 7,
-            .generation = std::numeric_limits<quint32>::max(),
+            .generation = generation,
             .revision = revision,
-            .historyEnabled = true,
+            .historyEnabled = historyEnabled,
             .privacyAllowed = privacyAllowed,
             .descriptorList = encoded.bytes};
 }
@@ -220,6 +235,8 @@ class ClipboardAppletCompositionPrivateBusTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void composesConsentOwnerOperationsAndCeilingPurge();
+    void withholdsDeniedConsentUntilFencedEmptySnapshot_data();
+    void withholdsDeniedConsentUntilFencedEmptySnapshot();
 };
 
 void ClipboardAppletCompositionPrivateBusTests::
@@ -240,7 +257,8 @@ void ClipboardAppletCompositionPrivateBusTests::
 
     Services::Clipboard::registerDBusTypes();
     FakeClipboard1 service(snapshot(
-        true, 7, {descriptor(std::numeric_limits<quint32>::max())}));
+        std::numeric_limits<quint32>::max(), true, true, 7,
+        {descriptor(std::numeric_limits<quint32>::max())}));
     QVERIFY(server.registerObject(QString::fromLatin1(Services::Clipboard::kObjectPath),
                                   &service,
                                   QDBusConnection::ExportScriptableSlots
@@ -249,6 +267,7 @@ void ClipboardAppletCompositionPrivateBusTests::
         QString::fromLatin1(Services::Clipboard::kServiceName)));
 
     FakeSettingsTransport settingsTransport;
+    settingsTransport.setReply(true, QStringLiteral("user-overrides"), 1);
     Services::SettingsClient::SettingsClient settings(
         settingsTransport, {QStringLiteral("services.clipboardHistory")},
         {.requestTimeoutMilliseconds = 1'000,
@@ -276,13 +295,15 @@ void ClipboardAppletCompositionPrivateBusTests::
     QTRY_COMPARE(service.copyCalls(), 1);
     QTRY_COMPARE(controller->pendingOperationCount(), 0);
 
-    service.publish(snapshot(false, 7, {}));
+    service.publish(snapshot(std::numeric_limits<quint32>::max(), true, false,
+                             7, {}));
     QTRY_COMPARE(controller->phaseText(), QStringLiteral("locked"));
     QCOMPARE(controller->phaseReasonText(),
              QStringLiteral("Clipboard history is withheld by privacy policy."));
     QCOMPARE(controller->entryCount(), 0);
 
-    service.publish(snapshot(true, 7, {}));
+    service.publish(snapshot(std::numeric_limits<quint32>::max(), true, true,
+                             7, {}));
     QTRY_COMPARE(controller->phaseText(), QStringLiteral("unavailable"));
     QCOMPARE(controller->phaseReasonText(),
              QStringLiteral("Clipboard service unavailable: "
@@ -298,6 +319,135 @@ void ClipboardAppletCompositionPrivateBusTests::
     QDBusConnection::disconnectFromBus(serverName);
     clientBus = QDBusConnection(QStringLiteral("released-client"));
     server = QDBusConnection(QStringLiteral("released-server"));
+}
+
+void ClipboardAppletCompositionPrivateBusTests::
+    withholdsDeniedConsentUntilFencedEmptySnapshot_data()
+{
+    QTest::addColumn<QVariant>("consentValue");
+    QTest::addColumn<QString>("sourceLayer");
+    QTest::addColumn<bool>("includeKey");
+    QTest::addColumn<bool>("announceInitialOwner");
+    QTest::addColumn<int>("expectedSettingsState");
+    QTest::addColumn<QString>("expectedInitialReason");
+
+    using SettingsState = Services::SettingsClient::ClientState;
+    QTest::newRow("missing")
+        << QVariant{} << QString{} << false << true
+        << int(SettingsState::Degraded)
+        << QStringLiteral("clipboard-consent-unavailable");
+    QTest::newRow("malformed")
+        << QVariant{QStringLiteral("true")} << QStringLiteral("user-overrides")
+        << true << true << int(SettingsState::Ready)
+        << QStringLiteral("clipboard-consent-denied");
+    QTest::newRow("inherited-default")
+        << QVariant{true} << QStringLiteral("system-defaults") << true << true
+        << int(SettingsState::Ready)
+        << QStringLiteral("clipboard-consent-denied");
+    QTest::newRow("ownerless")
+        << QVariant{true} << QStringLiteral("user-overrides") << true << false
+        << int(SettingsState::Authenticating)
+        << QStringLiteral("clipboard-consent-unavailable");
+}
+
+void ClipboardAppletCompositionPrivateBusTests::
+    withholdsDeniedConsentUntilFencedEmptySnapshot()
+{
+    QFETCH(QVariant, consentValue);
+    QFETCH(QString, sourceLayer);
+    QFETCH(bool, includeKey);
+    QFETCH(bool, announceInitialOwner);
+    QFETCH(int, expectedSettingsState);
+    QFETCH(QString, expectedInitialReason);
+
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    const QString serverName = connectionName(u"denial-server");
+    const QString clientName = connectionName(u"denial-client");
+    auto server = QDBusConnection::connectToBus(bus.address(), serverName);
+    auto clientBus = QDBusConnection::connectToBus(bus.address(), clientName);
+    QVERIFY(server.isConnected());
+    QVERIFY(clientBus.isConnected());
+
+    constexpr quint32 initialGeneration = 41;
+    constexpr quint32 purgedGeneration = initialGeneration + 1;
+    Services::Clipboard::registerDBusTypes();
+    FakeClipboard1 service(snapshot(
+        initialGeneration, true, true, 7, {descriptor(initialGeneration)}));
+    QVERIFY(server.registerObject(QString::fromLatin1(Services::Clipboard::kObjectPath),
+                                  &service,
+                                  QDBusConnection::ExportScriptableSlots
+                                      | QDBusConnection::ExportScriptableSignals));
+    QVERIFY(server.registerService(
+        QString::fromLatin1(Services::Clipboard::kServiceName)));
+
+    FakeSettingsTransport settingsTransport;
+    settingsTransport.setReply(consentValue, sourceLayer, 1, includeKey);
+    Services::SettingsClient::SettingsClient settings(
+        settingsTransport, {QStringLiteral("services.clipboardHistory")},
+        {.requestTimeoutMilliseconds = 1'000,
+         .debounceMilliseconds = 0,
+         .retryMilliseconds = {30'000}});
+    QVERIFY(settings.start(&error));
+    if (announceInitialOwner) {
+        settingsTransport.announceOwner();
+    }
+    QTRY_COMPARE(int(settings.state()), expectedSettingsState);
+
+    Applets::ManifestCatalog catalog;
+    QVERIFY2(catalog.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/applets"), &error),
+             qPrintable(error));
+    const auto policy = AppletHost::CapabilityPolicyLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/applet-policy/default.json"));
+    QVERIFY2(policy.ok, qPrintable(policy.error));
+
+    Shell::ClipboardAppletComposition composition(
+        catalog, policy.policy, settings, clientBus);
+    auto *controller = composition.access();
+    QVERIFY(controller != nullptr);
+    QTRY_COMPARE_WITH_TIMEOUT(
+        controller->phaseReasonText(),
+        QStringLiteral("Clipboard service unavailable: %1")
+            .arg(expectedInitialReason),
+        5'000);
+    QCOMPARE(controller->phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller->entryCount(), 0);
+
+    // AGENT-NOTE: Normalize every denial row to an explicit false override
+    // while Clipboard1 still exposes content. This makes each registered row
+    // bite if the composition's immediate withholding branch is removed.
+    settingsTransport.setReply(false, QStringLiteral("user-overrides"), 2);
+    if (announceInitialOwner) {
+        settings.refresh();
+    } else {
+        settingsTransport.announceOwner();
+    }
+    QTRY_COMPARE(settings.state(), Services::SettingsClient::ClientState::Ready);
+    QTRY_COMPARE(controller->phaseReasonText(),
+                 QStringLiteral("Clipboard service unavailable: "
+                                "clipboard-consent-denied"));
+    QCOMPARE(controller->phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller->entryCount(), 0);
+
+    service.publish(snapshot(purgedGeneration, false, true, 7, {}));
+    QTRY_COMPARE(controller->phaseText(), QStringLiteral("disabled"));
+    QCOMPARE(controller->phaseReasonText(),
+             QStringLiteral("Clipboard history is disabled."));
+    QVERIFY(!controller->isHistoryEnabled());
+    QCOMPARE(controller->entryCount(), 0);
+
+    QVERIFY(server.unregisterService(
+        QString::fromLatin1(Services::Clipboard::kServiceName)));
+    server.unregisterObject(QString::fromLatin1(Services::Clipboard::kObjectPath));
+    QDBusConnection::disconnectFromBus(clientName);
+    QDBusConnection::disconnectFromBus(serverName);
+    clientBus = QDBusConnection(QStringLiteral("released-denial-client"));
+    server = QDBusConnection(QStringLiteral("released-denial-server"));
 }
 
 QTEST_GUILESS_MAIN(ClipboardAppletCompositionPrivateBusTests)
