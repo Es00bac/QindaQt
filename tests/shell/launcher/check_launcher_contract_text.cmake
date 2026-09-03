@@ -29,7 +29,7 @@ endfunction()
 
 require_text(
     "docs/wiki/shell/applet-runtime.md"
-    "production QML dispatcher renders all six")
+    "production QML dispatcher renders all seven")
 forbid_text(
     "docs/wiki/shell/applet-runtime.md"
     "hosting it in the production panel dispatcher is a later lane")
