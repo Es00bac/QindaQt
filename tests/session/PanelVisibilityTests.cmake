@@ -53,6 +53,7 @@ if(
         qindaqt-desktop-session-probe
         qindaqt_shell_launcher_qmlplugin
         qindaqt_global_menu_qmlplugin
+        qindaqt_shell_clipboard_applet_runtimeplugin
     )
     install(
         FILES
@@ -63,6 +64,11 @@ if(
     # DesktopVirtualAppletModules.cmake owns the shared applet import and
     # loader closure for every nested row. Panel visibility adds only its
     # scenario-specific profile and probe dependencies here.
+
+    # BuiltinAppletContent now imports the compiled Clipboard applet module.
+    # Every private desktop row installs only DesktopVirtual, so stage that
+    # shell-linked module through its owning install helper as well.
+    qindaqt_install_clipboard_applet_runtime(DesktopVirtual)
 
     foreach(_panel_visibility_row IN ITEMS single-1080p single-wuxga)
         add_test(

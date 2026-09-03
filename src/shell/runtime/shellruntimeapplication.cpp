@@ -190,9 +190,9 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
         QDBusConnection::sessionBus());
     m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
         *m_settingsTransport,
-        QStringList{QStringLiteral("services.doNotDisturb"),
-                    QStringLiteral("accessibility.reducedMotion"),
+        QStringList{QStringLiteral("services.doNotDisturb"), QStringLiteral("accessibility.reducedMotion"),
                     QStringLiteral("panels.autoHideDelayMs"),
+                    QStringLiteral("services.clipboardHistory"),
                     Launcher::LauncherPersistenceController::pinnedKey(),
                     Launcher::LauncherPersistenceController::recentKey()});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
@@ -212,6 +212,7 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     m_powerApplet =
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    m_clipboardApplet = std::make_unique<ClipboardAppletComposition>(m_applets, m_appletPolicy, *m_settingsClient, sessionBus);
     m_windowActionsTransport = std::make_unique<
         ShellWindowActionsClient::QtShellWindowActionsTransport>(sessionBus);
     m_windowActionsClient = std::make_unique<
@@ -363,7 +364,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
-            m_launcherApplet->access(), m_globalMenuApplet->access());
+            m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -472,6 +473,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_windowActionsClient.reset();
     m_windowActionsTransport.reset();
     m_launcherApplet.reset();
+    m_clipboardApplet.reset();
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
     m_powerApplet.reset();

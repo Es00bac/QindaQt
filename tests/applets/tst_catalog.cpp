@@ -81,6 +81,8 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *launcher = catalog.findById(QStringLiteral("launcher"));
     const AppletManifest *globalMenu =
         catalog.findById(QStringLiteral("global-menu"));
+    const AppletManifest *clipboard =
+        catalog.findById(QStringLiteral("clipboard"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
@@ -90,6 +92,7 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(audio != nullptr);
     QVERIFY(launcher != nullptr);
     QVERIFY(globalMenu != nullptr);
+    QVERIFY(clipboard != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
@@ -108,6 +111,9 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(globalMenu->capabilities
             == QVector<Capability>({Capability::GlobalMenuRead,
                                     Capability::WindowActivate}));
+    QVERIFY(clipboard->capabilities
+            == QVector<Capability>({Capability::ClipboardRead,
+                                    Capability::ClipboardWrite}));
     QVERIFY(notificationCenter->placementZones
             == QVector<PlacementZone>({PlacementZone::PanelStart,
                                        PlacementZone::PanelCenter,

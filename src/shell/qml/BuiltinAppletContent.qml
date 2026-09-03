@@ -2,6 +2,7 @@
 import QtQuick
 import QindaQt.Shell.AudioApplet 1.0 as AudioAppletModule
 import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
+import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardAppletModule
 import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
@@ -16,6 +17,7 @@ Item {
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
+    property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
@@ -32,6 +34,10 @@ Item {
         ready && entryPoint === "qindaqt.applets.bluetooth"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
+    readonly property bool clipboardPreview:
+        !liveApplets && String(applet.plugin ?? "") === "clipboard"
+    readonly property bool clipboardReady:
+        (ready && entryPoint === "qindaqt.applets.clipboard") || clipboardPreview
     readonly property bool launcherPreview:
         !liveApplets && String(applet.plugin ?? "") === "launcher"
     readonly property bool launcherReady:
@@ -40,7 +46,7 @@ Item {
         ready && entryPoint === "qindaqt.applets.global-menu"
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady || launcherReady || globalMenuReady
+        || powerReady || clipboardReady || launcherReady || globalMenuReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -80,6 +86,23 @@ Item {
         globalMenuAppletAccess !== null ? globalMenuAppletAccess
                                        : inheritedGlobalMenuAccess()
 
+    function inheritedClipboardAccess() {
+        let candidate = root.parent
+        // AppletChip intentionally remains presentation-only. The panel rows
+        // carry this one controller facade, and the bounded lookup crosses
+        // only the existing wrapper instead of exposing a shell service bag.
+        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
+            if (typeof candidate.clipboardAppletAccess !== "undefined")
+                return candidate.clipboardAppletAccess
+            candidate = candidate.parent
+        }
+        return null
+    }
+
+    readonly property var effectiveClipboardAppletAccess:
+        clipboardAppletAccess !== null ? clipboardAppletAccess
+                                      : inheritedClipboardAccess()
+
     // AGENT-CONTRACT: BuiltinAppletRegistry is the compiled trust root; this
     // dispatcher is only its presentation inventory. Focused tests must fail
     // if a registered entry point lacks a renderer here.
@@ -88,6 +111,7 @@ Item {
                    : audioReady ? audio.implicitWidth
                    : bluetoothReady ? bluetooth.implicitWidth
                    : powerReady ? power.implicitWidth
+                   : clipboardReady ? clipboard.implicitWidth
                    : launcherReady ? launcher.implicitWidth
                    : globalMenuReady ? globalMenu.implicitWidth : 0
     implicitHeight: clockReady ? clock.implicitHeight
@@ -95,6 +119,7 @@ Item {
                     : audioReady ? audio.implicitHeight
                     : bluetoothReady ? bluetooth.implicitHeight
                     : powerReady ? power.implicitHeight
+                    : clipboardReady ? clipboard.implicitHeight
                     : launcherReady ? launcher.implicitHeight
                     : globalMenuReady ? globalMenu.implicitHeight : 0
 
@@ -137,6 +162,15 @@ Item {
         anchors.fill: parent
         visible: root.bluetoothReady
         access: root.bluetoothAppletAccess
+        theme: root.theme
+        vertical: root.vertical
+    }
+
+    ClipboardAppletModule.ClipboardPanelApplet {
+        id: clipboard
+        anchors.fill: parent
+        visible: root.clipboardReady
+        controller: root.effectiveClipboardAppletAccess
         theme: root.theme
         vertical: root.vertical
     }
