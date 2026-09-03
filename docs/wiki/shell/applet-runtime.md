@@ -49,9 +49,9 @@ allowing their static profile label to masquerade as live behavior.
 ## Current built-ins
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
-power, launcher, task list, global menu, and status tray packages. The
-compiled first-party registry contains seven audited entry points; the
-production QML dispatcher renders all seven:
+power, launcher, task list, global menu, status tray, and clipboard packages.
+The compiled first-party registry contains eight audited entry points. The
+production QML dispatcher renders all seven hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -101,7 +101,16 @@ production QML dispatcher renders all seven:
   denied `windows.activate` capability grants no arbitrary window control.
   The composition borrows the shell's one exact-owner window-actions client
   for authenticated active-window identity, and owner loss clears recursive
-  menu truth and closes activation authority.
+  menu truth and closes activation authority; and
+- `qindaqt.applets.clipboard` is a registered built-in with a manifest, policy
+  grants (`clipboard.read`, `clipboard.write`), a compiled
+  `QindaQt.Shell.ClipboardApplet` module, and a shell-private controller over
+  the injected `ClipboardClientInterface` seam presenting the volatile bounded
+  Clipboard C0 history. Production-shell dispatcher composition lands in a
+  follow-on lane, so the stock profile does not place the applet yet and the
+  production dispatcher does not render it; resolution to `ready` is covered
+  by the applet-runtime resolver tests. See
+  [Clipboard applet](clipboard-applet.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
