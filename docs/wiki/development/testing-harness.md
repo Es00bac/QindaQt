@@ -767,23 +767,31 @@ G2 adds `qindaqt.global-menu-runtime-composition-private-bus`, which feeds a
 revisioned authenticated identity through the public shell window-actions
 client, verifies registrar residency and one activation against a fake
 exporter, clears truth on provider loss, and reports `degraded` when another
-peer owns the registrar name. `qindaqt.global-menu-runtime-boundary-poison`
+peer owns the registrar name. The same private-bus row starts a second real
+provider process and proves both a compositor-PID mismatch and a regressed
+identity revision leave the facade unavailable and empty; an attempted action
+produces zero provider `Event` calls in both variants.
+`qindaqt.global-menu-runtime-boundary-poison`
 requires that composition to borrow the shared client and reject planted
 private-compositor/second-transport dependencies.
 
-All five Global Menu QML rows import the compiled
+All six Global Menu QML rows import the compiled
 `QindaQt.Shell.GlobalMenu` module under `QT_FATAL_WARNINGS=1`. The submenu row
 proves Up/Down/Right/Left traversal, Enter/Space activation exactly once,
 Escape and focus-loss closure, the six-level cap, and accessible popup/menu
-item state. `qindaqt.global-menu-installed-package` stages only
+item state. The production-panel keyboard row hosts the real
+`PanelAppletRow`/`BuiltinAppletContent` dispatcher and proves the key-only
+Tab → Down → Down → Right → Space route through a required `Popup.Window`.
+`qindaqt.global-menu-installed-package` stages only
 `GlobalMenuAppletRuntime`, authenticates the shell's relocated module library,
 and resolves the installed manifest under source poison. The shared
 `qindaqt.shell-runtime-component-closure` row independently includes this
 component and the Global Menu library in every shell-carrying component.
 
-Every transport process is the QtTest executable itself, and every bus is the
-fresh broker created by `dbus-run-session`; offscreen/package rows contact no
-inherited display, input, compositor, hardware, or network. These rows qualify
+Every bus is the fresh broker created by `dbus-run-session`; the hostile
+ownership variant's only additional process is the inert test exporter whose
+distinct bus-daemon PID is the negative-control input. Offscreen/package rows
+contact no inherited display, input, compositor, hardware, or network. These rows qualify
 production-shell instantiation, installed QML/manifest wiring, and submenu
 behavior, but not a foreign toolkit, real login session, or nested installed
 desktop. Those remain contained-session gates. See

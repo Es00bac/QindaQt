@@ -63,3 +63,18 @@ set_tests_properties(
     qindaqt.global-menu-applet-submenu-qml-offscreen
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
+
+add_test(
+    NAME qindaqt.global-menu-production-panel-keyboard-qml-offscreen
+    COMMAND
+        $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${PROJECT_SOURCE_DIR}/tests/shell/qml/imports"
+        -import "${CMAKE_BINARY_DIR}/qml"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuProductionPanelKeyboard.qml"
+)
+set_tests_properties(
+    qindaqt.global-menu-production-panel-keyboard-qml-offscreen
+    PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+        LABELS "shell;global-menu;runtime;offscreen;keyboard;hostile"
+)
