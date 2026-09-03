@@ -3,6 +3,9 @@
 # AGENT-NOTE: This module is intentionally not wired into src/shell/CMakeLists.txt
 # yet; the task-list T0 lane is source/static only. The integrating manager adds
 # the single add_subdirectory() line in the parent build when wiring this slice.
+# The T1 producer/operations subdirectories are likewise compiled and tested
+# here but not instantiated by the production shell (see
+# docs/wiki/shell/task-list.md).
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core)
 
@@ -31,3 +34,6 @@ target_link_libraries(qindaqt_shell_task_list PUBLIC Qt6::Core)
 target_compile_features(qindaqt_shell_task_list PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_task_list PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_task_list)
+
+add_subdirectory(producer)
+add_subdirectory(operations)

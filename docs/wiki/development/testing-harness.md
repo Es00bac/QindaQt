@@ -683,6 +683,37 @@ item property decoding, DBusMenu revisions, a rendered panel tray, and
 assistive-technology behavior remain separate later milestones with their own
 gates.
 
+## Current task-list proof
+
+The task list's complete source, producer, and operation boundary is selected
+with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
+```
+
+The twelve rows cover the pure T0 model (values, batch validation, grouping,
+intents, scope filtering, presentation), the T1 wire decoders and fact joiner
+(hostile payload shapes, duplicate/oversized/malformed inventories, collapsed
+native-identity classification, scope availability), the facts producer's
+owner lineage (signal-raced refresh fencing, malformed-reply degradation with
+retained generation, timeout retry, owner loss/replacement, late-reply
+fencing), and the operation adapter (Unavailable window-level intents with
+exact extension codes, stale-generation and degraded-source admission
+rejection, serialized Busy fencing, Submit/Release/Dock reply mapping,
+exactly-once Uncertain on timeout/owner change, and unsupported-authority
+pre-rejection). The Qt transport row runs a fake `org.qindaqt.Compositor1`
+service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
+for reads, signals, and mutations, including owner loss and replacement.
+
+Every transport process is the QtTest executable itself on a private bus; the
+rows contact no host session bus, compositor, display, input, hardware, or
+network. They do not qualify production-shell instantiation, QML presentation,
+or a live desktop task list; those remain later shell-composition and
+contained-session gates. See [Task list source model](../shell/task-list.md)
+and [ADR-0044](../adr/0044-inject-task-list-facts-into-the-shell.md).
+
 ## Current Settings1 and persistent quieting proof
 
 Settings persistence and its consumers are selected with:
