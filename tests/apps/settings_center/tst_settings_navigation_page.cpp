@@ -394,6 +394,9 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
       QAccessible::queryAccessibleInterface(compactAudioTab);
   QVERIFY(compactAudioAccessible != nullptr);
   QCOMPARE(compactAudioAccessible->role(), QAccessible::PageTab);
+  QCOMPARE(compactAudioAccessible->text(QAccessible::Name),
+           QStringLiteral("Audio"));
+  QVERIFY(compactAudioAccessible->state().selected);
 
   QTest::keyClick(window, Qt::Key_Escape);
   QTRY_COMPARE(window->activeFocusItem(), compactAudioTab);
@@ -491,6 +494,16 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   QVERIFY(audioLoader != nullptr);
   QCOMPARE(audioLoader->property("active").toBool(), true);
   QVERIFY(audioVolume != nullptr);
+  auto *audioTab = sceneItem(window->contentItem(),
+                             QStringLiteral("settingsNavButton_audio"));
+  QVERIFY(audioTab != nullptr);
+  auto *audioTabAccessible =
+      QAccessible::queryAccessibleInterface(audioTab);
+  QVERIFY(audioTabAccessible != nullptr);
+  QCOMPARE(audioTabAccessible->role(), QAccessible::PageTab);
+  QCOMPARE(audioTabAccessible->text(QAccessible::Name),
+           QStringLiteral("Audio"));
+  QVERIFY(audioTabAccessible->state().selected);
   auto *audioVolumeAccessible =
       QAccessible::queryAccessibleInterface(audioVolume);
   QVERIFY(audioVolumeAccessible != nullptr);
@@ -504,9 +517,6 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   QCOMPARE(audioHeadingAccessible->role(), QAccessible::Heading);
 
   QTest::keyClick(window, Qt::Key_Escape);
-  auto *audioTab = sceneItem(window->contentItem(),
-                             QStringLiteral("settingsNavButton_audio"));
-  QVERIFY(audioTab != nullptr);
   QTRY_COMPARE(window->activeFocusItem(), audioTab);
   QTest::keyClick(window, Qt::Key_Tab);
   QTRY_COMPARE(window->activeFocusItem(), audioVolume);

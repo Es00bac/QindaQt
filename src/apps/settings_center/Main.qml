@@ -71,8 +71,12 @@ T.ApplicationWindow {
                                     : sidebar.focusActiveButton()
     }
 
+    // AGENT-GUARD: Keep the plural `sequences` spelling for StandardKey.Quit.
+    // The singular `sequence` binds only one of the platform's multiple Quit
+    // key bindings and emits a QML warning that aborts the QT_FATAL_WARNINGS
+    // navigation-page test row during Main.qml construction.
     Shortcut {
-        sequence: StandardKey.Quit
+        sequences: [StandardKey.Quit]
         onActivated: root.close()
     }
 

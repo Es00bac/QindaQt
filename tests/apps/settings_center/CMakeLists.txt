@@ -85,10 +85,15 @@ add_test(
     NAME qindaqt.settings-navigation-page
     COMMAND qindaqt_settings_navigation_page_test
 )
+# AGENT-GUARD: The navigation-page row constructs Main.qml in-process under
+# QT_FATAL_WARNINGS=1, so any QML warning in the Settings Center host or a
+# route page aborts the row instead of passing silently. Child-process rows
+# (route construction, installed routes) deliberately tolerate absent-bus
+# qWarning diagnostics in main() and must not be registered as fatal.
 set_tests_properties(
     qindaqt.settings-navigation-page PROPERTIES
     LABELS "offscreen;settings;navigation"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
 # 4. QML QuickTest runner
