@@ -28,6 +28,20 @@ set_tests_properties(qindaqt.settings-color-apply PROPERTIES
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;color;model;apply")
 
+qt_add_executable(qindaqt_color_route_composition_tests
+    tst_color_route_composition.cpp color_settings_test_support.h)
+target_include_directories(qindaqt_color_route_composition_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_color_route_composition_tests
+    PRIVATE qindaqt_settings_color_backend_qml qindaqt_settings_color
+    Qt6::Qml Qt6::Test)
+qindaqt_enable_warnings(qindaqt_color_route_composition_tests)
+add_test(NAME qindaqt.settings-color-composition
+    COMMAND qindaqt_color_route_composition_tests)
+set_tests_properties(qindaqt.settings-color-composition PROPERTIES
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;color;composition")
+
 qt_add_executable(qindaqt_color_page_tests
     tst_color_page.cpp stub_color_settings_model.h)
 target_include_directories(qindaqt_color_page_tests PRIVATE "${PROJECT_SOURCE_DIR}")
