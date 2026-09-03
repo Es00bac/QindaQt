@@ -1,7 +1,7 @@
 # Platform delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T10:38:35-06:00
+- Last observation: 2026-09-03T11:20:47-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -19,4 +19,4 @@
 | QQ-005.09 Portal P1 host selection, toolkit reaction, fallback routing | EXECUTABLE integrated at manager merge `2c514ac` (ADR renumbered to 0059) | Program Manager (integrated) | merge `2c514ac` preserves exact accepted candidate `c33b4908f99cb1dfac04287383441d028ab8f25b` | Gertrude Blanch (OpenAI Codex, different worker, terminal ACCEPT `0/0/0/0`) | Preserve the selection/routing contract while later lanes implement non-Settings families | none | Route regressions with an exact reproduction | 2026-09-02T23:30:24-06:00 merged; portal 9/9 Debug/Release, docs 122, strict MkDocs, shape, diff, JSON, Team Board 16/16; broad suite the broad safe Debug suite passes 391/391 |
 | QQ-005.07 Display Color C1 discovery/import and persistent assignment | EXECUTABLE (widened) integrated at `f6b14b2` (ADR renumbered 0066) | Program Manager (integrated) | exact accepted product `4c4f2c4693ad519587a63077dbb30efc1cde38a0` under merge `f6b14b2` | Emmy Noether (OpenAI Codex; `a70d1d4` REJECT `0/4/5/1`, `57bcd04` REJECT `0/2/0/1`, `4c4f2c4` ACCEPT `0/0/0/0`) | Later: compositor application, Settings UI, nested HDR/WCG | none | Regressions with an exact reproduction | 2026-09-03T07:15:39-06:00 merged; rows 89/89 Debug/Release, broad 520/520, static gates |
 | QQ-005.04 Network secret agent (confined credential entry outside Network1) | final repair `dbeab3f` HANDOFF; final bounded recheck IN PROGRESS | Etta Falconer (OpenAI Codex `gpt-5.6-sol`, high) | repaired product `dbeab3fde389b0ed917c0e54e52db8e55d3f609e` on `worker/network-secret-agent` | Raman Parimala (OpenAI Codex, recheck in progress) | Accept → merge; reject → shelve with caveat | none | none | 2026-09-03T10:03:34-06:00 recheck launched |
-| QQ-005.04 Network N3 join a visible Wi-Fi (ConnectVisibleNetwork, agent-owned secrets, route Connect) | lane IN PROGRESS (usability blocker) | Ruth Lawrence (OpenAI Codex `gpt-5.6-sol`, high) | branch `worker/network-join` from main | to be assigned at handoff | Complete, one review, merge | none | none | 2026-09-03T10:38:35-06:00 launched |
+| QQ-005.04 Network N3 join a visible Wi-Fi (ConnectVisibleNetwork, agent-owned secrets, route Connect) | candidate `afee87d` HANDOFF; exact review IN PROGRESS (single funded round) | Ruth Lawrence (OpenAI Codex `gpt-5.6-sol`, high) | candidate `afee87d54e8d8a3369ce21515ea173a3c19d8207` on `worker/network-join` (base `196e69d`) | Lisa Piccirillo (OpenAI Codex, review in progress) | Review, then manager integration | none | none | 2026-09-03T11:20:47-06:00 review launched |
