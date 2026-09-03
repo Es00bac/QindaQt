@@ -23,8 +23,13 @@ image selections in volatile memory, subject to Clipboard1 privacy gates and
 the protocol's fixed capacity. Turning the preference off causes the resident
 service to purge history under the service contract.
 
-The saved value and the user's draft remain distinct. Apply sends one
-optimistic Settings1 commit against the exact owner, epoch, and revision.
+The saved consent value and the user's draft remain distinct. Only Boolean
+`true` sourced from `user-overrides` is presented as enabled; an inherited
+`true` from system, profile, or session defaults remains visibly off and leaves
+a direct On → Apply path that writes explicit opt-in. A later non-Boolean value
+makes the preference unavailable and revokes edit/apply admission while
+preserving any draft for recovery. Apply sends one optimistic Settings1 commit
+against the exact owner, epoch, and revision.
 Success remains Saving until a subsequent authoritative snapshot confirms the
 value. A conflict preserves the draft and offers an explicit “Apply my choice”
 action; cancellation restores the current confirmed value. Unknown commit
@@ -56,7 +61,8 @@ the confirmation rather than applying against stale truth. Submitted clears
 remain pending until the exact operation result and an authoritative snapshot
 at or beyond its observed revision converge. Rejection is failed truth;
 transport loss, malformed/inexact completion, or authority loss is uncertain
-truth and is never replayed.
+truth and is never replayed. Every Pending → Uncertain transition notifies QML
+immediately so visible busy state cannot remain stale.
 
 ## Composition, interaction, and accessibility
 
@@ -83,7 +89,9 @@ The `SettingsAppearanceRuntime` install component carries the Clipboard QML
 module and the statically composed Settings executable. Relocation tests run
 the installed executable from a sanitized stage while build-tree QML remains
 present, with host display variables removed and both D-Bus addresses pointed
-at nonexistent sockets.
+at nonexistent sockets. The Customize and Bluetooth lifecycle rows construct
+the complete Settings root in-process, so they explicitly link the static
+Clipboard QML module and plugin as part of their existing lifecycle proof.
 
 ## Verification and stopping point
 
@@ -96,10 +104,12 @@ env -u DBUS_SESSION_BUS_ADDRESS -u DISPLAY -u WAYLAND_DISPLAY \
   -R '^qindaqt\.settings-clipboard-'
 ```
 
-The six rows cover Settings1 draft/apply/conflict/uncertain/replacement truth,
-Clipboard1 metadata projection and exact-lineage clear admission, warning-fatal
-wide/compact page construction and accessibility, positive and hostile
-boundary scans, and staged relocation. Settings Center's focused selector adds
+The six rows cover Settings1 source-layer consent, explicit opt-in,
+malformed-domain fail-closed admission, draft/apply/conflict/uncertain/
+replacement truth, Clipboard1 metadata projection, exact-lineage clear
+admission, and uncertainty notification; warning-fatal wide/compact page
+construction and accessibility, positive and hostile boundary scans, and
+staged relocation. Settings Center's focused selector adds
 the typed route order, `Ctrl+9`, tab accessibility, Escape/Tab entry in both
 layouts, root construction, and the common installed package.
 

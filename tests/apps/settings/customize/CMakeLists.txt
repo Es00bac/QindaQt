@@ -82,6 +82,10 @@ target_link_libraries(
         qindaqt_settings_network
         qindaqt_settings_customize_qml
         qindaqt_settings_customize_qmlplugin
+        # AGENT-NOTE: Regression for Fern Hunt P1.4. Main.qml imports every
+        # route; an in-process host must link each static QML module and plugin.
+        qindaqt_settings_clipboard_qml
+        qindaqt_settings_clipboard_qmlplugin
         qindaqt_themes QindaQt::TokensQml
         Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
@@ -91,6 +95,7 @@ add_dependencies(
     qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qmlplugin
     qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_clipboard_qmlplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_window_lifecycle_tests)

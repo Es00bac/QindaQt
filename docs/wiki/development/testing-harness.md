@@ -1136,12 +1136,15 @@ env -u DBUS_SESSION_BUS_ADDRESS -u DISPLAY -u WAYLAND_DISPLAY \
 
 The six rows use injected fake Settings1 and Clipboard1 transports or absent
 private buses only. Preference coverage proves the schema-default-off baseline,
+rejects inherited `true` as consent while retaining a direct explicit-opt-in
+commit, revokes mutation after a later non-Boolean value, and covers
 draft/apply convergence, explicit conflict resolution, authority replacement,
 and uncertain-write no replay. Service coverage decodes only enough public
 descriptor metadata to count entries, presents capacity/privacy truth, and
 proves confirmation plus dispatch are fenced to exact owner, epoch, generation,
 and revision. Success waits for authoritative snapshot convergence; failure or
-uncertainty cannot replay the clear.
+uncertainty cannot replay the clear, and a transport-uncertain result must
+notify the Pending → Uncertain QML property transition.
 
 The page row runs with `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320
 compact software scenes. It checks metadata-only disclosure, accessible
@@ -1156,7 +1159,10 @@ developer QML tree remains present.
 The Settings Center selector additionally proves eight-route order, canonical
 startup, `Ctrl+9`, PageTab accessibility, Escape/Tab entry in both layouts,
 Loader exclusivity, construction under authority loss, and the common relocated
-package. These rows do not contact a host clipboard, data-control server,
+package. The pre-existing Customize and Bluetooth lifecycle rows construct the
+same root in-process and link the static Clipboard module/plugin, preventing an
+unresolved unconditional route import from bypassing their behavioral checks.
+These rows do not contact a host clipboard, data-control server,
 session/system bus, or compositor. They do not claim content presentation,
 individual-entry mutation, configurable retention, live Wayland capture, live
 AT-SPI, or nested-session screenshots.

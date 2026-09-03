@@ -13,14 +13,15 @@ namespace Services = QindaQt::Services;
 
 namespace {
 void establishSettings(FakeSettingsTransport &transport, const QString &owner,
-                       const QString &epoch, quint64 revision, bool enabled)
+                       const QString &epoch, quint64 revision, bool enabled,
+                       QString source = QStringLiteral("user-overrides"))
 {
     Q_EMIT transport.ownerChanged(owner);
     QTRY_VERIFY(!transport.snapshots.isEmpty());
     const auto request = transport.snapshots.takeFirst();
     Q_EMIT transport.snapshotReceived(
         request.token, request.owner,
-        settingsSnapshotWire(epoch, revision, enabled));
+        settingsSnapshotWire(epoch, revision, enabled, std::move(source)));
 }
 }
 
@@ -28,10 +29,78 @@ class ClipboardSettingsPreferenceTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void draftApplyConvergesFromOffDefault();
+    void inheritedTrueRequiresExplicitUserOptIn();
+    void malformedRefreshFailsClosed();
     void conflictRequiresExplicitChoice();
     void uncertainWriteIsNeverReplayed();
     void replacementPreservesDraftWithoutReplay();
 };
+
+// AGENT-NOTE: Regression for Fern Hunt P1.1. Effective profile truth is not
+// Clipboard1 consent, and the user must still be able to commit explicit opt-in.
+void ClipboardSettingsPreferenceTest::inheritedTrueRequiresExplicitUserOptIn()
+{
+    FakeSettingsTransport settingsTransport;
+    FakeClipboardTransport clipboardTransport;
+    Services::SettingsClient::SettingsClient settings(
+        settingsTransport, {QString::fromLatin1(ClipboardHistorySettingsKey)},
+        {.requestTimeoutMilliseconds = 100, .debounceMilliseconds = 0,
+         .retryMilliseconds = {10}});
+    Services::Clipboard::ClipboardClient clipboard(&clipboardTransport);
+    ClipboardSettingsModel model(settings, clipboard);
+    QVERIFY(settings.start());
+    establishSettings(settingsTransport, QStringLiteral(":1.24"),
+                      QStringLiteral("settings-a"), 3, true,
+                      QStringLiteral("profile-defaults"));
+
+    QTRY_VERIFY(model.preferenceReady());
+    QVERIFY(!model.historyEnabled());
+    QVERIFY(!model.draftHistoryEnabled());
+    QVERIFY(model.canEditPreference());
+    QVERIFY(model.setDraftHistoryEnabled(true));
+    QVERIFY(model.applyAvailable());
+    QVERIFY(model.applyPreference());
+    QCOMPARE(settingsTransport.commits.size(), 1);
+    const QVariantMap operation =
+        settingsTransport.commits.constFirst().operations.constFirst().toMap();
+    QCOMPARE(operation.value(QStringLiteral("value")), QVariant(true));
+}
+
+// AGENT-NOTE: Regression for Fern Hunt P1.2. A later non-Boolean domain value
+// makes the preference unavailable and must revoke edit and commit admission.
+void ClipboardSettingsPreferenceTest::malformedRefreshFailsClosed()
+{
+    FakeSettingsTransport settingsTransport;
+    FakeClipboardTransport clipboardTransport;
+    Services::SettingsClient::SettingsClient settings(
+        settingsTransport, {QString::fromLatin1(ClipboardHistorySettingsKey)},
+        {.requestTimeoutMilliseconds = 100, .debounceMilliseconds = 0,
+         .retryMilliseconds = {10}});
+    Services::Clipboard::ClipboardClient clipboard(&clipboardTransport);
+    ClipboardSettingsModel model(settings, clipboard);
+    QVERIFY(settings.start());
+    establishSettings(settingsTransport, QStringLiteral(":1.25"),
+                      QStringLiteral("settings-a"), 3, false);
+    QVERIFY(model.setDraftHistoryEnabled(true));
+    QVERIFY(model.preferenceDirty());
+
+    Q_EMIT settingsTransport.settingsChanged(
+        QStringLiteral(":1.25"), QStringLiteral("settings-a"), 4,
+        {QString::fromLatin1(ClipboardHistorySettingsKey)});
+    QTRY_VERIFY(!settingsTransport.snapshots.isEmpty());
+    const auto refresh = settingsTransport.snapshots.takeFirst();
+    Q_EMIT settingsTransport.snapshotReceived(
+        refresh.token, refresh.owner,
+        settingsSnapshotWireValue(QStringLiteral("settings-a"), 4,
+                                  QStringLiteral("not-a-boolean"),
+                                  QStringLiteral("user-overrides")));
+
+    QTRY_VERIFY(model.preferenceUnavailable());
+    QVERIFY(!model.canEditPreference());
+    QVERIFY(!model.applyAvailable());
+    QVERIFY(!model.applyPreference());
+    QCOMPARE(settingsTransport.commits.size(), 0);
+}
 
 void ClipboardSettingsPreferenceTest::draftApplyConvergesFromOffDefault()
 {

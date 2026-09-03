@@ -254,6 +254,7 @@ void ClipboardSettingsModel::retireClearAsUncertain(QString reason)
     m_clearState = ClearState::Uncertain;
     m_clearError = reason.isEmpty()
         ? QStringLiteral("The clear outcome is uncertain.") : reason.left(512);
+    Q_EMIT viewChanged();
 }
 
 } // namespace QindaQt::Apps::SettingsClipboard
