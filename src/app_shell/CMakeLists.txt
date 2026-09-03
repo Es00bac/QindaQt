@@ -114,3 +114,15 @@ install(
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
     COMPONENT TextEditor
 )
+
+# AGENT-CONTRACT: The Terminal links qindaqt_app_shell's C++ classes
+# directly (no QML engine), so its narrow single-component staged install
+# (tests/apps/terminal/run_installed_terminal.cmake, --component Terminal)
+# needs the shared library even though it does not need the QML plugin or
+# qmldir. Mirrors the Text Editor precedent above; added here because
+# src/app_shell is not the Terminal's owned path.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT Terminal
+)

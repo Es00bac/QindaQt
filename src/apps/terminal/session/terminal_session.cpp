@@ -83,7 +83,8 @@ void TerminalSession::clearView() {
   }
 }
 
-bool TerminalSession::start(const TerminalLaunchRequest &request) {
+bool TerminalSession::start(const TerminalLaunchRequest &request,
+                            const TerminalProfile &profile) {
   // ShutdownFailed means a child may still be alive; only restart()'s
   // escalation path may retire that generation. Exited generations were
   // already reaped, so their views can be disposed synchronously.
@@ -105,6 +106,7 @@ bool TerminalSession::start(const TerminalLaunchRequest &request) {
     m_backend.reset();
   }
   m_request = request;
+  m_profile = profile;
   return spawnGeneration();
 }
 
@@ -144,7 +146,7 @@ void TerminalSession::beginShutdown() {
 bool TerminalSession::spawnGeneration() {
   m_exitPublished = false;
   m_lastExit = {};
-  m_backend = m_backendFactory();
+  m_backend = m_backendFactory(m_profile);
   if (m_backend == nullptr) {
     publishExit({TerminalExitStatus::Kind::StartFailed, 0,
                  QStringLiteral("Terminal view could not be created")});

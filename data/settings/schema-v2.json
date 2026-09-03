@@ -280,6 +280,24 @@
       "domain": "services",
       "type": "boolean",
       "default": true
+    },
+    {
+      "key": "terminal.profiles",
+      "domain": "terminal",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "key": "terminal.defaultProfile",
+      "domain": "terminal",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "key": "terminal.restoreTabs",
+      "domain": "terminal",
+      "type": "boolean",
+      "default": false
     }
   ]
 }
