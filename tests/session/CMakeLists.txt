@@ -116,6 +116,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_runtime.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_sandbox.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage_closure.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology_model.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_nested_session.py"
@@ -137,6 +138,8 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_readiness_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_runtime_boundary_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_selector_boundary_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_stage_closure.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_stage_closure_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_topology_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_nested.py"
@@ -161,6 +164,7 @@ find_file(
 find_program(QINDAQT_DOTOOL dotool)
 find_program(QINDAQT_DESKTOP_BWRAP bwrap)
 find_program(QINDAQT_DESKTOP_DBUS_DAEMON dbus-daemon)
+find_program(QINDAQT_READELF readelf REQUIRED)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopSessionTests.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/PanelVisibilityTests.cmake")

@@ -130,6 +130,13 @@ library paths, and launches the staged shell with ambient loader, display,
 Wayland, and session-bus variables cleared. A new shell-carrying component is
 incomplete until it is added to this inventory and passes the same proof.
 
+Every new applet module imported or linked into the production shell must also
+be added to the data-driven `DesktopVirtual` applet-module inventory in
+`tests/session/DesktopVirtualAppletModules.cmake`. The non-nested
+`desktop.virtual.stage-closure` row must pass before a nested desktop is used as
+evidence; it rejects a missing linked library and a missing imported-module
+`qmldir` without waiting for shell readiness to time out.
+
 Task-list and status-tray manifests remain accepted contracts but resolve as
 `implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
 rendered by the production panel dispatcher. Profile plug-in IDs with
