@@ -19,10 +19,10 @@
     {
       "id": "glm",
       "name": "Z.AI GLM",
-      "status": "available",
-      "updatedAt": "2026-09-02T20:42:51-06:00",
-      "estimatedReturnAt": "",
-      "evidence": "Direct probe: `kimi -m zai-coding-plan/glm-5.3` answered; two GLM lanes (Audio Settings route, Power PB-2) are live."
+      "status": "unavailable",
+      "updatedAt": "2026-09-02T22:11:13-06:00",
+      "estimatedReturnAt": "2026-09-03T01:23:15-06:00",
+      "evidence": "kimi-code reported `provider.rate_limit: 429 Usage limit reached for 5 hour. Your limit will reset at 2026-09-03 15:23:15` (provider-local time; estimated 01:23 MDT). The bluetooth-bluez-b1 and controls-visual-fonts lanes died mid-work; their dirty trees are preserved as WIP commits and reassigned to Codex and Kimi."
     },
     {
       "id": "claude",
