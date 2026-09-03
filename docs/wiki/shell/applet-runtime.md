@@ -51,7 +51,7 @@ allowing their static profile label to masquerade as live behavior.
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, and clipboard packages.
 The compiled first-party registry contains nine audited entry points. The
-production QML dispatcher renders eight hosted entry points:
+production QML dispatcher renders all eight hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
