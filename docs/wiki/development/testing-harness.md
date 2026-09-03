@@ -1573,22 +1573,29 @@ env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
   --output-on-failure --no-tests=error
 ```
 
-`qindaqt.app-shell-menu-export-private-bus` serves the production dbusmenu
-object to the real client on `dbus-run-session`. An injected identity publisher
+`qindaqt.app-shell-menu-export-private-bus` serves the transport-owned complete
+dbusmenu v4 object to the real client on `dbus-run-session` and verifies the
+three grouped/property methods through introspection. An injected identity publisher
 proves exact numeric registration, native-Wayland no-numeric-id announcement,
-registrar owner loss/replacement, close teardown, disabled-action refusal, and
-exactly-once activation through `ApplicationCoordinator`. It runs offscreen
+registrar owner loss/replacement, rejected-close retention, accepted-close
+teardown, disabled-action refusal, and exactly-once activation through
+`ApplicationCoordinator`. `qindaqt.global-menu-dbusmenu-server` separately
+proves depth/property filtering, grouped calls, one activation, and atomic
+malformed-snapshot retention. It runs offscreen
 with fatal Qt warnings and host display/bus variables removed. The AppShell
 source-policy row keeps D-Bus out of the core, confines Qt's private Wayland
-hook to its adapter, rejects ambient session-bus lookup inside the module, and
-executes a planted lookup poison control.
+hook to its adapter, rejects ambient session-bus lookup, local lineage minting,
+and an AppShell-local dbusmenu declaration, and executes a planted lookup poison
+control.
 
 `qindaqt.file-manager-global-menu-shell-private-bus` launches the actual File
 Manager process against production `GlobalMenuAppletComposition` on the same
 private bus. Its test-only identity adapter supplies the child process's exact
-PID and window id as the compositor snapshot; the row requires the real menu,
-one shell-to-AppShell activation, and unavailable/empty shell state after the
-provider exits. This is deterministic private-bus evidence, not a host session,
+PID and window id as the compositor snapshot; the success variant requires the
+real menu, one shell-to-AppShell activation, and unavailable/empty shell state
+after the provider exits. PID-mismatch and window-ID-mismatch variants each
+require unavailable/empty shell state and zero activation while the same real
+child remains alive. This is deterministic private-bus evidence, not a host session,
 nested compositor, or native Wayland protocol qualification.
 
 ## File Manager S1 focused proof

@@ -45,6 +45,24 @@ foreach(path IN LISTS menu_export_files)
     endif()
 endforeach()
 
+# AGENT-NOTE: P1-02/P1-03 regression proof. Application exporters transport
+# content; the shell selector remains the only lineage issuer, and the complete
+# standard server remains owned by the accepted global-menu dbusmenu module.
+set(menu_export_combined "")
+foreach(path IN LISTS menu_export_files)
+    file(READ "${path}" content)
+    string(APPEND menu_export_combined "\n${content}")
+endforeach()
+if(menu_export_combined MATCHES "LocalExportLineage|QUuid::createUuid|ExportLineageSource|menu_exporter\\.h|GlobalMenuExporter")
+    message(FATAL_ERROR "AppShell menu export minted or imported shell lineage authority")
+endif()
+if(menu_export_combined MATCHES "Q_CLASSINFO\\(.*com\\.canonical\\.dbusmenu")
+    message(FATAL_ERROR "AppShell declared a second dbusmenu server")
+endif()
+if(NOT menu_export_combined MATCHES "global_menu/dbusmenu/dbusmenu_server\\.h")
+    message(FATAL_ERROR "AppShell did not consume the accepted dbusmenu server boundary")
+endif()
+
 # Negative control: prove the matcher rejects service lookup rather than
 # passing because the production tree happens not to contain the spelling.
 menu_export_has_forbidden("QDBusConnection::sessionBus()" poison_detected)

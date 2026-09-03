@@ -5,7 +5,10 @@
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
 
 #include <QCloseEvent>
+#include <QDBusMessage>
 #include <QDBusObjectPath>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QSignalSpy>
 #include <QWindow>
 #include <QtTest>
@@ -63,6 +66,20 @@ public:
 
 private:
   AppShell::MenuExport::WindowMenuIdentity m_identity;
+};
+
+class RejectingCloseWindow final : public QWindow {
+public:
+  bool rejectClose = true;
+
+protected:
+  bool event(QEvent *event) override {
+    if (event->type() == QEvent::Close && rejectClose) {
+      event->ignore();
+      return true;
+    }
+    return QWindow::event(event);
+  }
 };
 
 AppShell::ActionSpec action(bool enabled = true) {
@@ -124,6 +141,7 @@ class ApplicationMenuExportTest final : public QObject {
 private Q_SLOTS:
   void exportsRealDbusMenuAndActivatesThroughCoordinatorOnce();
   void retriesOnRegistrarReplacementAndTearsDownOnClose();
+  void rejectedCloseKeepsLiveMenuPublished();
   void publishesNativeWaylandAddressWithoutInventingWindowId();
   void productionIdentityRejectsOffscreenWindow();
 };
@@ -152,6 +170,27 @@ void ApplicationMenuExportTest::
   QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
   QCOMPARE(registrar.registrar.registerCount, 1);
   QCOMPARE(registrar.registrar.windowId, quint32{77});
+
+  // AGENT-NOTE: P1-03 regression proof: AppShell consumes the accepted
+  // GlobalMenu dbusmenu server, whose advertised v4 surface is complete.
+  const QDBusMessage introspection = QDBusMessage::createMethodCall(
+      providerBus.baseService(), QStringLiteral("/org/qindaqt/AppShell/Menu"),
+      QStringLiteral("org.freedesktop.DBus.Introspectable"),
+      QStringLiteral("Introspect"));
+  QDBusPendingCallWatcher introspectionCall(
+      consumerBus.asyncCall(introspection, 2'000));
+  QSignalSpy introspectionFinished(&introspectionCall,
+                                   &QDBusPendingCallWatcher::finished);
+  QTRY_COMPARE_WITH_TIMEOUT(introspectionFinished.size(), 1, 5'000);
+  const QDBusPendingReply<QString> xml = introspectionCall;
+  QVERIFY2(xml.isValid(), qPrintable(xml.error().message()));
+  for (const QString &method : {QStringLiteral("GetProperty"),
+                                QStringLiteral("EventGroup"),
+                                QStringLiteral("AboutToShowGroup")}) {
+    QVERIFY2(xml.value().contains(QStringLiteral("method name=\"") + method
+                                  + QStringLiteral("\"")),
+             qPrintable(method));
+  }
 
   Shell::GlobalMenu::DbusMenu::DbusMenuClient client(
       consumerBus, providerBus.baseService(),
@@ -218,13 +257,52 @@ void ApplicationMenuExportTest::
   QCOMPARE(second.registrar.registerCount, 1);
   QCOMPARE(composition.registeredWindowId(), std::optional<quint32>{91});
 
-  QCloseEvent closeEvent;
-  QCoreApplication::sendEvent(&window, &closeEvent);
-  QCOMPARE(composition.status(),
-           AppShell::MenuExport::MenuExportStatus::Disabled);
+  window.setVisible(true);
+  QVERIFY(window.close());
+  QTRY_COMPARE_WITH_TIMEOUT(
+      composition.status(), AppShell::MenuExport::MenuExportStatus::Disabled,
+      5'000);
   QTRY_COMPARE_WITH_TIMEOUT(second.registrar.unregisterCount, 1, 5'000);
   QDBusConnection::disconnectFromBus(
       QStringLiteral("app-shell-owner-provider"));
+}
+
+void ApplicationMenuExportTest::rejectedCloseKeepsLiveMenuPublished() {
+  // AGENT-NOTE: P1-01 regression proof: ApplicationShell rejects its first
+  // close while application consent is pending, so pre-dispatch teardown
+  // permanently withdrew a menu from a window that remained alive.
+  RegistrarFixture registrar(QStringLiteral("app-shell-rejected-close-registrar"));
+  QVERIFY(registrar.start());
+  auto providerBus = QDBusConnection::connectToBus(
+      QDBusConnection::SessionBus, QStringLiteral("app-shell-rejected-close-provider"));
+  QVERIFY(providerBus.isConnected());
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  RejectingCloseWindow window;
+  window.setVisible(true);
+  auto publisher = std::make_unique<FakeIdentityPublisher>(
+      AppShell::MenuExport::WindowMenuIdentity{
+          .kind = AppShell::MenuExport::WindowMenuIdentityKind::XWindow,
+          .registrarWindowId = 92});
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QVERIFY(composition.start());
+  QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
+
+  QVERIFY(!window.close());
+  QTest::qWait(100);
+  QVERIFY(window.isVisible());
+  QVERIFY(composition.published());
+  QCOMPARE(registrar.registrar.unregisterCount, 0);
+
+  window.rejectClose = false;
+  QVERIFY(window.close());
+  QTRY_COMPARE_WITH_TIMEOUT(
+      composition.status(), AppShell::MenuExport::MenuExportStatus::Disabled,
+      5'000);
+  QTRY_COMPARE_WITH_TIMEOUT(registrar.registrar.unregisterCount, 1, 5'000);
+  QDBusConnection::disconnectFromBus(
+      QStringLiteral("app-shell-rejected-close-provider"));
 }
 
 void ApplicationMenuExportTest::

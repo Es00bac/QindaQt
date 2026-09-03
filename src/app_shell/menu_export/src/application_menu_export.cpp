@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/app_shell/menu_export/application_menu_export.h>
 
-#include "dbusmenu_export_object_p.h"
-
 #include <qindaqt/app_shell/application_coordinator.h>
-#include <qindaqt/shell/global_menu/exporter/menu_exporter.h>
+#include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_server.h>
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
 
 #include <QDBusMessage>
@@ -13,17 +11,17 @@
 #include <QDBusServiceWatcher>
 #include <QEvent>
 #include <QPointer>
+#include <QTimer>
 #include <QWindow>
 
 #include <algorithm>
-#include <limits>
 #include <tuple>
 #include <utility>
 
 namespace QindaQt::AppShell::MenuExport {
 namespace {
 
-namespace Exporter = Shell::GlobalMenu::Exporter;
+namespace DbusMenu = Shell::GlobalMenu::DbusMenu;
 namespace Protocol = Shell::GlobalMenu::Protocol;
 namespace Registrar = Shell::GlobalMenu::Registrar;
 
@@ -32,13 +30,12 @@ constexpr auto kBusDaemonService = "org.freedesktop.DBus";
 constexpr auto kBusDaemonPath = "/org/freedesktop/DBus";
 constexpr auto kBusDaemonInterface = "org.freedesktop.DBus";
 
-class CoordinatorMenuSource final : public Exporter::MenuSource {
+class CoordinatorMenuProjection final {
 public:
-  CoordinatorMenuSource(const ApplicationCoordinator &coordinator,
-                        QUuid ownerWindowId)
-      : m_coordinator(coordinator), m_ownerWindowId(ownerWindowId) {}
+  explicit CoordinatorMenuProjection(const ApplicationCoordinator &coordinator)
+      : m_coordinator(coordinator) {}
 
-  void rebuild() {
+  [[nodiscard]] Protocol::MenuTree snapshot() const {
     QList<ActionSpec> actions = m_coordinator.actionRegistry().actions();
     std::sort(
         actions.begin(), actions.end(),
@@ -47,19 +44,16 @@ public:
                  std::tie(right.menuOrder, right.menuId, right.order, right.id);
         });
     Protocol::MenuTree tree;
-    tree.ownerWindowId = m_ownerWindowId;
-    m_actionsByTransportId.clear();
     for (qsizetype index = 0; index < actions.size();) {
       const QString menuId = actions.at(index).menuId;
       Protocol::MenuItem menu{
-          .id = QString::number(idFor(QStringLiteral("menu:") + menuId)),
+          .id = QStringLiteral("menu:") + menuId,
           .kind = Protocol::MenuItemKind::Submenu,
           .text = actions.at(index).menuLabel};
       while (index < actions.size() && actions.at(index).menuId == menuId) {
         const ActionSpec &action = actions.at(index++);
-        const qint32 transportId = idFor(QStringLiteral("action:") + action.id);
         menu.children.append(Protocol::MenuItem{
-            .id = QString::number(transportId),
+            .id = action.id,
             .kind = Protocol::MenuItemKind::Action,
             .text = action.label,
             .mnemonicIndex = -1,
@@ -69,65 +63,14 @@ public:
             .visible = true,
             .checkable = action.checkable,
             .checked = action.checked});
-        m_actionsByTransportId.insert(transportId, action.id);
       }
       tree.items.append(std::move(menu));
     }
-    m_snapshot = Exporter::MenuSnapshot{
-        .tree = std::move(tree), .complete = true, .defectCode = {}};
-  }
-
-  [[nodiscard]] Exporter::MenuSnapshot snapshot() const override {
-    return m_snapshot;
-  }
-
-  [[nodiscard]] const QHash<qint32, QString> &actionsByTransportId() const {
-    return m_actionsByTransportId;
+    return tree;
   }
 
 private:
-  qint32 idFor(const QString &stableId) {
-    const auto existing = m_transportIds.constFind(stableId);
-    if (existing != m_transportIds.cend()) {
-      return *existing;
-    }
-    const qint32 assigned = m_nextTransportId++;
-    m_transportIds.insert(stableId, assigned);
-    return assigned;
-  }
-
   const ApplicationCoordinator &m_coordinator;
-  QUuid m_ownerWindowId;
-  QHash<QString, qint32> m_transportIds;
-  QHash<qint32, QString> m_actionsByTransportId;
-  qint32 m_nextTransportId = 1;
-  Exporter::MenuSnapshot m_snapshot;
-};
-
-class LocalExportLineage final : public Exporter::ExportLineageSource {
-public:
-  explicit LocalExportLineage(QUuid ownerWindowId)
-      : m_ownerWindowId(ownerWindowId), m_epoch(QUuid::createUuid()) {}
-
-  void advance() {
-    if (m_revision != std::numeric_limits<quint64>::max()) {
-      ++m_revision;
-    }
-  }
-
-  std::optional<Exporter::ExportLineage>
-  lineageFor(const QUuid &ownerWindowId) const override {
-    if (ownerWindowId != m_ownerWindowId || m_epoch.isNull() ||
-        m_revision == 0) {
-      return std::nullopt;
-    }
-    return Exporter::ExportLineage{.epoch = m_epoch, .revision = m_revision};
-  }
-
-private:
-  QUuid m_ownerWindowId;
-  QUuid m_epoch;
-  quint64 m_revision = 0;
 };
 
 } // namespace
@@ -139,9 +82,15 @@ public:
           std::unique_ptr<WindowMenuIdentityPublisher> publisher)
       : q(owner), coordinator(coordinatorRef), window(&windowRef),
         sessionBus(std::move(bus)), identityPublisher(std::move(publisher)),
-        ownerWindowId(QUuid::createUuid()),
-        source(coordinatorRef, ownerWindowId), lineage(ownerWindowId),
-        exporter(source, lineage), exportObject(coordinatorRef) {}
+        projection(coordinatorRef) {
+    QObject::connect(&menuServer, &DbusMenu::DbusMenuServer::actionActivated,
+                     &q, [this](const QString &actionId) {
+                       // AGENT-CONTRACT: the accepted transport server only
+                       // identifies the action. AppShell rechecks current
+                       // known/enabled consent exactly as its local menu does.
+                       (void)coordinator.activateAction(actionId);
+                     });
+  }
 
   void setStatus(MenuExportStatus next, QString failure = {}) {
     if (status == next && failureCode == failure) {
@@ -153,18 +102,9 @@ public:
   }
 
   void refreshMenu() {
-    source.rebuild();
-    lineage.advance();
-    const Exporter::ExportResult result = exporter.refresh();
-    if (result.outcome != Exporter::ExportOutcome::Published &&
-        result.outcome != Exporter::ExportOutcome::Unchanged) {
+    if (!menuServer.publish(projection.snapshot())) {
       setStatus(MenuExportStatus::Disabled,
                 QStringLiteral("menu-snapshot-rejected"));
-      return;
-    }
-    const auto tree = exporter.lastAccepted();
-    if (tree) {
-      exportObject.publish(*tree, source.actionsByTransportId());
     }
   }
 
@@ -281,11 +221,8 @@ public:
   QPointer<QWindow> window;
   QDBusConnection sessionBus;
   std::unique_ptr<WindowMenuIdentityPublisher> identityPublisher;
-  QUuid ownerWindowId;
-  CoordinatorMenuSource source;
-  LocalExportLineage lineage;
-  Exporter::MenuExporter exporter;
-  DbusMenuExportObject exportObject;
+  CoordinatorMenuProjection projection;
+  DbusMenu::DbusMenuServer menuServer;
   QDBusServiceWatcher *registrarWatcher = nullptr;
   QMetaObject::Connection menusConnection;
   QString registrarOwner;
@@ -293,6 +230,7 @@ public:
   std::optional<WindowMenuIdentity> identity;
   std::optional<quint32> registeredWindowId;
   quint64 serial = 0;
+  quint64 closeCheckSerial = 0;
   MenuExportStatus status = MenuExportStatus::Disabled;
   bool started = false;
   bool objectRegistered = false;
@@ -330,9 +268,8 @@ bool ApplicationMenuExport::start() {
                  QStringLiteral("session-bus-unavailable"));
     return false;
   }
-  Shell::GlobalMenu::DbusMenu::registerDbusMenuWireTypes();
   if (!d->sessionBus.registerObject(
-          QString::fromLatin1(kMenuObjectPath), &d->exportObject,
+          QString::fromLatin1(kMenuObjectPath), &d->menuServer,
           QDBusConnection::ExportScriptableSlots |
               QDBusConnection::ExportScriptableSignals |
               QDBusConnection::ExportScriptableProperties)) {
@@ -397,10 +334,19 @@ QString ApplicationMenuExport::failureCode() const { return d->failureCode; }
 
 bool ApplicationMenuExport::eventFilter(QObject *watched, QEvent *event) {
   if (watched == d->window && event->type() == QEvent::Close) {
-    // AGENT-GUARD: retire the registrar/Wayland association before the
-    // surface closes. Waiting for QObject destruction leaves a stale menu
-    // address observable during deferred QML teardown.
-    stop();
+    const quint64 closeSerial = ++d->closeCheckSerial;
+    QTimer::singleShot(0, this, [this, closeSerial] {
+      if (!d->started || closeSerial != d->closeCheckSerial ||
+          d->window.isNull()) {
+        return;
+      }
+      // AGENT-GUARD: event filters run before ApplicationShell's consent
+      // handler. Withdraw only after the event turn proves the surface really
+      // closed; a rejected close leaves the live menu association intact.
+      if (!d->window->isVisible()) {
+        stop();
+      }
+    });
   }
   return QObject::eventFilter(watched, event);
 }

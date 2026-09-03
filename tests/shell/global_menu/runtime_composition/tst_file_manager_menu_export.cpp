@@ -105,14 +105,25 @@ class FileManagerMenuExportTest final : public QObject {
   Q_OBJECT
 
 private Q_SLOTS:
-  void shellConsumesRealFileManagerAndActivatesExactlyOnce();
+  void shellFencesRealFileManagerIdentity_data();
+  void shellFencesRealFileManagerIdentity();
 };
 
-void FileManagerMenuExportTest::
-    shellConsumesRealFileManagerAndActivatesExactlyOnce() {
+void FileManagerMenuExportTest::shellFencesRealFileManagerIdentity_data() {
+  QTest::addColumn<int>("identityVariant");
+  // AGENT-NOTE: P2-01 regression proof. These must remain real-process rows:
+  // same-process ownership fakes cannot prove the final PID/window join.
+  QTest::newRow("matching-pid-and-window") << 0;
+  QTest::newRow("mismatched-pid") << 1;
+  QTest::newRow("mismatched-window-id") << 2;
+}
+
+void FileManagerMenuExportTest::shellFencesRealFileManagerIdentity() {
+  QFETCH(int, identityVariant);
+  const QString tag = QString::fromLatin1(QTest::currentDataTag());
   auto shellBus = QDBusConnection::connectToBus(
       QDBusConnection::SessionBus,
-      QStringLiteral("file-manager-menu-export-shell"));
+      QStringLiteral("file-manager-menu-export-shell-") + tag);
   QVERIFY(shellBus.isConnected());
 
   CatalogFixture fixture;
@@ -169,19 +180,29 @@ void FileManagerMenuExportTest::
   QVERIFY2(fileManager.waitForStarted(5'000),
            qPrintable(fileManager.errorString()));
   QVERIFY(fileManager.processId() > 0);
-  QVERIFY(transport.publishIdentity(
-      static_cast<qint64>(fileManager.processId()), 77));
+  const qint64 publishedPid = static_cast<qint64>(fileManager.processId())
+      + (identityVariant == 1 ? 1 : 0);
+  const quint32 publishedWindowId = identityVariant == 2 ? 78 : 77;
+  QVERIFY(transport.publishIdentity(publishedPid, publishedWindowId));
   QTRY_VERIFY_WITH_TIMEOUT(client.identityAvailable(), 5'000);
-  QTRY_VERIFY_WITH_TIMEOUT(composition.access()->available(), 10'000);
-
-  const std::optional<QString> actionId = actionIdWithText(
-      composition.access()->items(), QStringLiteral("New Folder"));
-  QVERIFY(actionId.has_value());
-  composition.access()->activate(*actionId);
-  QTRY_COMPARE_WITH_TIMEOUT(activationCount(standardOutput), qsizetype{1},
-                            5'000);
-  QTest::qWait(150);
-  QCOMPARE(activationCount(standardOutput), qsizetype{1});
+  if (identityVariant == 0) {
+    QTRY_VERIFY_WITH_TIMEOUT(composition.access()->available(), 10'000);
+    const std::optional<QString> actionId = actionIdWithText(
+        composition.access()->items(), QStringLiteral("New Folder"));
+    QVERIFY(actionId.has_value());
+    composition.access()->activate(*actionId);
+    QTRY_COMPARE_WITH_TIMEOUT(activationCount(standardOutput), qsizetype{1},
+                              5'000);
+    QTest::qWait(150);
+    QCOMPARE(activationCount(standardOutput), qsizetype{1});
+  } else {
+    QTest::qWait(1'000);
+    QVERIFY(!composition.access()->available());
+    QVERIFY(composition.access()->items().isEmpty());
+    composition.access()->activate(QStringLiteral("1"));
+    QTest::qWait(250);
+    QCOMPARE(activationCount(standardOutput), qsizetype{0});
+  }
   QVERIFY(fileManager.state() != QProcess::NotRunning);
 
   fileManager.terminate();
@@ -199,7 +220,7 @@ void FileManagerMenuExportTest::
   composition.stop();
   client.stop();
   QDBusConnection::disconnectFromBus(
-      QStringLiteral("file-manager-menu-export-shell"));
+      QStringLiteral("file-manager-menu-export-shell-") + tag);
 }
 
 QTEST_GUILESS_MAIN(FileManagerMenuExportTest)

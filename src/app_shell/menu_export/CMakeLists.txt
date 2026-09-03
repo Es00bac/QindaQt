@@ -10,8 +10,6 @@ target_sources(
     qindaqt_app_shell_menu_export
     PRIVATE
         src/application_menu_export.cpp
-        src/dbusmenu_export_object.cpp
-        src/dbusmenu_export_object_p.h
         src/qt_window_menu_identity.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -25,7 +23,6 @@ target_link_libraries(
     PUBLIC QindaQt::AppShell Qt6::Core Qt6::DBus Qt6::Gui
     PRIVATE
         QindaQt::GlobalMenuDbusMenu
-        QindaQt::GlobalMenuExporter
         QindaQt::GlobalMenuProtocol
         QindaQt::GlobalMenuRegistrar
 )
