@@ -19,6 +19,8 @@ enum class DocumentError {
   WriteFailed,
   ExternalConflict,
   DestinationExists,
+  AlreadyOpen,
+  CapacityExceeded,
 };
 
 enum class LineEnding {

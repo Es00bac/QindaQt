@@ -3,7 +3,7 @@
 foreach(required_variable IN ITEMS
         QINDAQT_EDITOR_APP_SHELL_SOURCE_DIR
         QINDAQT_EDITOR_WINDOW_HEADER
-        QINDAQT_EDITOR_WINDOW_SOURCE)
+        QINDAQT_EDITOR_WINDOW_SOURCE_DIR)
     if(NOT DEFINED ${required_variable})
         message(FATAL_ERROR "${required_variable} is required")
     endif()
@@ -16,9 +16,10 @@ list(LENGTH editor_app_shell_files editor_bridge_file_count)
 if(editor_bridge_file_count EQUAL 0)
     message(FATAL_ERROR "Text Editor AppShell policy found no bridge/adapter files")
 endif()
+file(GLOB editor_window_files
+     "${QINDAQT_EDITOR_WINDOW_SOURCE_DIR}/editor_window*.cpp")
 list(APPEND editor_app_shell_files
-     "${QINDAQT_EDITOR_WINDOW_HEADER}"
-     "${QINDAQT_EDITOR_WINDOW_SOURCE}")
+     "${QINDAQT_EDITOR_WINDOW_HEADER}" ${editor_window_files})
 list(REMOVE_DUPLICATES editor_app_shell_files)
 
 list(LENGTH editor_app_shell_files editor_app_shell_file_count)
@@ -71,7 +72,7 @@ if(NOT QINDAQT_EDITOR_POLICY_POISON_PROBE)
             "${CMAKE_COMMAND}"
             "-DQINDAQT_EDITOR_APP_SHELL_SOURCE_DIR=${poison_app_shell}"
             "-DQINDAQT_EDITOR_WINDOW_HEADER=${poison_root}/ui/editor_window.h"
-            "-DQINDAQT_EDITOR_WINDOW_SOURCE=${poison_root}/ui/editor_window.cpp"
+            "-DQINDAQT_EDITOR_WINDOW_SOURCE_DIR=${poison_root}/ui"
             -DQINDAQT_EDITOR_POLICY_POISON_PROBE=ON
             -P "${CMAKE_CURRENT_LIST_FILE}"
         RESULT_VARIABLE poison_result

@@ -38,7 +38,7 @@ file(READ "${desktop}" desktop_contents)
 foreach(required_entry
         "Type=Application"
         "Name=QindaQt Text Editor"
-        "Exec=qindaqt-editor %f"
+        "Exec=qindaqt-editor %F"
         "MimeType=text/plain;"
         "Terminal=false")
     string(FIND "${desktop_contents}" "${required_entry}" entry_position)
@@ -75,6 +75,7 @@ execute_process(
             "${RUNTIME_PROBE}"
             --executable "${editor}"
             --data-dir "${INSTALL_PREFIX}/${INSTALL_DATADIR}"
+            --scratch-dir "${SCRATCH_ROOT}"
             --startup-limit-ms 400
             --pss-limit-kib 65536
     RESULT_VARIABLE runtime_result
