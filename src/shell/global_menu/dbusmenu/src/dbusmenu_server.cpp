@@ -63,6 +63,18 @@ std::optional<LayoutItem> findNode(const LayoutItem &node, qint32 id)
     return std::nullopt;
 }
 
+void appendProperties(const LayoutItem &node, const QStringList &names,
+                      PropertyEntryList &entries)
+{
+    entries.append(
+        {.id = node.id, .properties = selectedProperties(node.properties, names)});
+    for (const QVariant &childValue : node.children) {
+        if (childValue.canConvert<LayoutItem>()) {
+            appendProperties(childValue.value<LayoutItem>(), names, entries);
+        }
+    }
+}
+
 ShortcutList shortcutList(const QString &portableShortcut)
 {
     ShortcutList sequences;
@@ -169,6 +181,18 @@ PropertyEntryList DbusMenuServer::GetGroupProperties(
     const QList<qint32> &ids, const QStringList &propertyNames) const
 {
     PropertyEntryList result;
+    if (ids.isEmpty()) {
+        // AGENT-CONTRACT: dbusmenu v4 clients use an empty ids list to request
+        // every published item. The synthetic root is not application menu
+        // content, so traverse its bounded children in stable layout order.
+        for (const QVariant &childValue : m_layout.children) {
+            if (childValue.canConvert<LayoutItem>()) {
+                appendProperties(childValue.value<LayoutItem>(), propertyNames,
+                                 result);
+            }
+        }
+        return result;
+    }
     result.reserve(ids.size());
     for (qint32 id : ids) {
         if (const auto item = find(id)) {

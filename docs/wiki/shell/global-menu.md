@@ -159,10 +159,13 @@ server accepts only validated lineage-free canonical content, assigns bounded
 stable numeric wire IDs, and owns the remote revision. It implements
 `GetLayout`, `GetGroupProperties`, `GetProperty`, `Event`, `EventGroup`,
 `AboutToShow`, and `AboutToShowGroup`; layout depth and property-name filters
-are applied rather than discarded. Invalid content and revision/ID exhaustion
-retain the last complete snapshot. An admitted click emits the stable action ID
-once to the application-owned current-action gate. The server never issues the
-authenticated owner/epoch/revision used by shell invocation.
+are applied rather than discarded. The standard empty-ID
+`GetGroupProperties` form returns every published non-root item in stable
+layout order, with the requested property filter still applied. Invalid content
+and revision/ID exhaustion retain the last complete snapshot. An admitted
+click emits the stable action ID once to the application-owned current-action
+gate. The server never issues the authenticated owner/epoch/revision used by
+shell invocation.
 
 The client binds one injected connection to one exact
 provider unique name and object path. All method calls are asynchronous and

@@ -37,6 +37,7 @@ class DbusMenuServerTest final : public QObject
 
 private Q_SLOTS:
     void implementsFilteredV4SurfaceAndGroupedCalls();
+    void emptyGroupPropertyIdsReturnAllItems();
     void rejectedSnapshotPreservesPublishedTruth();
 };
 
@@ -92,6 +93,33 @@ void DbusMenuServerTest::implementsFilteredV4SurfaceAndGroupedCalls()
     QCOMPARE(server.AboutToShowGroup({completeSubmenu.id, 999}, showErrors),
              QList<int>{});
     QCOMPARE(showErrors, QList<int>{999});
+}
+
+void DbusMenuServerTest::emptyGroupPropertyIdsReturnAllItems()
+{
+    // AGENT-GUARD: dbusmenu v4 defines an empty ids argument as "all menu
+    // items". Treating it as an empty selection silently hides every item
+    // from clients that use the standard bulk-discovery form.
+    DbusMenu::DbusMenuServer server;
+    QVERIFY(server.publish(menuTree()));
+
+    quint32 revision = 0;
+    DbusMenu::LayoutItem root;
+    server.GetLayout(0, -1, {}, revision, root);
+    const DbusMenu::LayoutItem submenu = childAt(root, 0);
+    const DbusMenu::LayoutItem action = childAt(submenu, 0);
+
+    const DbusMenu::PropertyEntryList group =
+        server.GetGroupProperties({}, {QStringLiteral("label")});
+    QCOMPARE(group.size(), 2);
+    QCOMPARE(group.at(0).id, submenu.id);
+    const QVariantMap expectedSubmenuProperties{
+        {QStringLiteral("label"), QStringLiteral("File")}};
+    QCOMPARE(group.at(0).properties, expectedSubmenuProperties);
+    QCOMPARE(group.at(1).id, action.id);
+    const QVariantMap expectedActionProperties{
+        {QStringLiteral("label"), QStringLiteral("Open")}};
+    QCOMPARE(group.at(1).properties, expectedActionProperties);
 }
 
 void DbusMenuServerTest::rejectedSnapshotPreservesPublishedTruth()

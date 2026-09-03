@@ -215,12 +215,13 @@ real dbusmenu client, fake registrar owner replacement/loss, exact X window-id
 registration, native-Wayland no-numeric-id behavior, exactly-once activation,
 disabled-action refusal, rejected-close retention, and accepted-close teardown.
 The transport server row covers all v4 methods, depth/property filtering,
-grouped calls, and malformed-snapshot retention. The static matcher rejects a
-local lineage issuer or dbusmenu interface and proves itself with
-service-lookup poison. The remaining policy gate rejects palette
-literals, and theme selection. The installed-consumer row clears ambient QML
-import paths, checks the staged headers/QML/plugin payload, recompiles a C++
-consumer, runs it, and loads the staged QML module with `qmltestrunner`.
+explicit grouped calls, the empty-ID all-items form, and malformed-snapshot
+retention. The static matcher rejects a local lineage issuer or dbusmenu
+interface and proves itself with service-lookup poison. The remaining policy
+gate rejects palette literals, and theme selection. The installed-consumer row
+clears ambient QML import paths, checks the staged headers/QML/plugin payload,
+recompiles a C++ consumer, runs it, and loads the staged QML module with
+`qmltestrunner`.
 
 These gates do not qualify a real portal backend,
 Settings1/session client composition, compositor focus,

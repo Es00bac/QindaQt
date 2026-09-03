@@ -1580,13 +1580,13 @@ proves exact numeric registration, native-Wayland no-numeric-id announcement,
 registrar owner loss/replacement, rejected-close retention, accepted-close
 teardown, disabled-action refusal, and exactly-once activation through
 `ApplicationCoordinator`. `qindaqt.global-menu-dbusmenu-server` separately
-proves depth/property filtering, grouped calls, one activation, and atomic
-malformed-snapshot retention. It runs offscreen
-with fatal Qt warnings and host display/bus variables removed. The AppShell
-source-policy row keeps D-Bus out of the core, confines Qt's private Wayland
-hook to its adapter, rejects ambient session-bus lookup, local lineage minting,
-and an AppShell-local dbusmenu declaration, and executes a planted lookup poison
-control.
+proves depth/property filtering, explicit grouped calls, the standard empty-ID
+all-items request, one activation, and atomic malformed-snapshot retention. It
+runs offscreen with fatal Qt warnings and host display/bus variables removed.
+The AppShell source-policy row keeps D-Bus out of the core, confines Qt's
+private Wayland hook to its adapter, rejects ambient session-bus lookup, local
+lineage minting, and an AppShell-local dbusmenu declaration, and executes a
+planted lookup poison control.
 
 `qindaqt.file-manager-global-menu-shell-private-bus` launches the actual File
 Manager process against production `GlobalMenuAppletComposition` on the same
