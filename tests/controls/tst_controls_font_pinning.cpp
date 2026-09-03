@@ -39,7 +39,11 @@ namespace {
             | (static_cast<quint32>(static_cast<quint8>(p[2])) << 8)
             | static_cast<quint32>(static_cast<quint8>(p[3]));
     };
-    const quint32 numTables = be32(bytes.constData() + 4);
+    // AGENT-GUARD: numTables is the big-endian uint16 at offset 4 of the sfnt
+    // header; reading a wider field here would let a malformed fixture drive
+    // this scan past the end of the file buffer instead of failing cleanly.
+    const quint32 numTables = (static_cast<quint32>(static_cast<quint8>(bytes.at(4))) << 8)
+        | static_cast<quint8>(bytes.at(5));
     for (quint32 index = 0; index < numTables; ++index) {
         const char *record = bytes.constData() + 12 + 16 * index;
         if (qstrncmp(record, "name", 4) == 0) {
