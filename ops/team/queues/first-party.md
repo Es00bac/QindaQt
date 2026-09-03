@@ -1,7 +1,7 @@
 # First-party delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T05:22:08-06:00
+- Last observation: 2026-09-03T05:35:29-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -16,4 +16,4 @@
 | QQ-006.05 Power Settings route | lane IN PROGRESS | Hilda Geiringer (OpenAI Codex `gpt-5.6-sol`, high) | branch `worker/power-settings-route` from `main` `347d32f`; no candidate yet | to be assigned at handoff | Complete the candidate (append after bluetooth at Ctrl+8), then exact review | none | none | 2026-09-03T04:58:52-06:00 launched |
 | QQ-006.07 File Manager S1 mutation, trash, recovery | repair `9ade95a` HANDOFF; same-reviewer recheck IN PROGRESS | Phyllis Fox (OpenAI Codex `gpt-5.6-sol`, high) | repaired product `9ade95a9eea345ba7a19db9ef97d8bf126458817` on `worker/file-manager-s1` (ancestor `61283bf` rejected 0/1/2/2) | Kathleen Antonelli (Moonshot Kimi, recheck in progress) | Recheck, then manager integration | none | none | 2026-09-03T05:11:52-06:00 recheck launched |
 | QQ-006.06 Text Editor S2 multiple documents, find/replace, restore policy | candidate `a13aa62` HANDOFF; exact review IN PROGRESS | Beatrice Shilling (OpenAI Codex `gpt-5.6-sol`, high) | candidate `a13aa620f7ad1a4756b8a5e2ab8ae7887244d0b3` on `worker/text-editor-s2` (base `b2f5159`) | Olga Ladyzhenskaya (OpenAI Codex, review in progress) | Review, then manager integration | none | none | 2026-09-03T05:22:08-06:00 review launched |
-| QQ-006.08 Terminal S2 scrollback search and bounded links | candidate `0949cb9` HANDOFF (terminal 19/19 Debug/Release); exact review IN PROGRESS | Vera Molnar (OpenAI Codex `gpt-5.6-sol`, high) | candidate `0949cb985c1a3589135c42f330ae6630fb0f5573` on `worker/terminal-s2` (base `b2f5159`) | Sofia Kovalevskaya (OpenAI Codex, review in progress) | Review, then manager integration | none | none | 2026-09-03T05:17:01-06:00 review launched |
+| QQ-006.08 Terminal S2 scrollback search and bounded links | candidate `0949cb9` REJECTED 0/2/4/0 by Sofia Kovalevskaya (Codex): tab switching announces another session's search result, bidi format controls pass the link gate, plus four P2s; repair IN PROGRESS | Vera Molnar (OpenAI Codex `gpt-5.6-sol`, high) | rejected product `0949cb9` on `worker/terminal-s2`; repair in progress | Sofia Kovalevskaya (OpenAI Codex) rechecks the repaired descendant | Repair all six findings, then recheck | none | none | 2026-09-03T05:35:29-06:00 repair launched |
