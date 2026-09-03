@@ -2,22 +2,26 @@
 
 This page defines the accepted architecture for QindaQt power state, session
 power actions, idle reporting, and brightness. Its current maturity is
-**EXECUTABLE (PB-1)**: the PB-0 pure protocol/aggregation/brightness values
-and the PB-1 Wayland-free resident service/client slice are implemented with
-focused evidence. A production shell Power applet now consumes that public
-client boundary, while backlight providers, idle, session actions, and every
-live platform adapter remain pending as recorded below.
+**EXECUTABLE (PB-2 upstream adapters)**: the PB-0 pure values, PB-1 resident
+service/client, and production UPower, power-profiles-daemon, logind-session,
+logind-action, and injected-sysfs adapters are implemented with focused
+private-bus evidence. A production shell Power applet consumes the public
+client boundary. Idle, keyboard-backlight integration, the KWin backlight
+provider, and PB-3 session-action presentation remain pending.
 
 The durable choices are split across
 [ADR-0023](../adr/0023-split-power-authority-across-service-and-shell.md),
 [ADR-0024](../adr/0024-route-brightness-through-power1.md), and
-[ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md).
+[ADR-0025](../adr/0025-arbitrate-session-bound-power1-activation.md). The
+production adapter boundary and the refined direct-sysfs primitive are in
+[ADR-0060](../adr/0060-confine-production-power-upstreams.md).
 
 PB-0 fixed bounded values, hostile-input validation, canonical byte codecs,
 fixed QtDBus structures, and deterministic pure battery aggregation in
 [`power_protocol`](../reference/power1-v1.md). PB-1 added the resident
-`org.qindaqt.Power1` service and asynchronous client described below. No
-backlight, idle, key-inhibitor, or host-upstream maturity is claimed.
+`org.qindaqt.Power1` service and asynchronous client. PB-2 replaces its
+unavailable test collaborators only when the composition root explicitly
+selects production; the wire contract is unchanged.
 
 ## Authority map
 
@@ -29,8 +33,9 @@ backlight, idle, key-inhibitor, or host-upstream maturity is claimed.
 | Caller-relative `Can*` authorization | systemd-logind | Shell controller; never cached in `Power1` |
 | Power/suspend/hibernate keys | logind `handle-*` inhibitor locks | Shell controller |
 | Idle hint | compositor idle protocol plus logind | `Power1` idle collaborator |
-| Internal-panel brightness requests | KWin external-brightness protocol | `Power1` backlight provider applies through logind |
-| External brightness changes | Hardware/provider observation | Provider commits observed truth back to KWin |
+| Internal-panel brightness inventory | Kernel backlight sysfs | Injected-root adapter; bounded read and truthful writability |
+| Internal-panel brightness requests | No Power1 v1 method | Tested direct-sysfs primitive only; no public dispatch yet |
+| External brightness changes | Kernel `actual_brightness` | Adapter re-reads observed truth after a write |
 | Adaptive brightness | KWin | QindaQt exposes no competing adaptive loop |
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
 | External-monitor brightness | No v1 authority | Honest unavailable; PB-6 is reserved |
@@ -69,16 +74,18 @@ composition separate:
 | Module | Cohesive responsibility | State |
 | --- | --- | --- |
 | `power_protocol` | Bounded values, codecs, validation, result lineage, pure battery aggregation | PB-0 accepted candidate |
-| `power_service` | Resident ownership and collaborator orchestration only | PB-1 implemented |
+| `power_service` | Resident ownership, collaborator orchestration, and confined platform adapters | PB-2 production upstreams implemented |
 | `power_client` | Exact-owner asynchronous snapshots and operations | PB-1 implemented |
-| `power_backlight_provider` | Identity gate, logind apply, external observation, Wayland teardown | PB-2 |
-| `power_idle` | Compositor-idle observation and logind idle hints | PB-2 |
+| `power_backlight_provider` | Identity gate, KWin binding, external observation, Wayland teardown | Pending later slice |
+| `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
 
-The service orchestrator may not own UPower, logind, profile-daemon, Wayland,
-or sysfs transport objects. Power modules do not link Display implementation
-modules. Only the later PB-5 binding may consume the public Display client.
+The service coordinator may not own UPower, logind, profile-daemon, or sysfs
+transport objects. Dedicated adapters own those resources behind the injected
+PB-1 collaborator boundaries; the composition root owns adapter lifetimes.
+Power modules do not link Display implementation modules or Wayland. Only the
+later PB-5 binding may consume the public Display client.
 
 ## PB-1 resident service and client
 
@@ -108,12 +115,11 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
   clears. Intrinsically malformed or unavailable profile input is not retained
   for this recovery. A collision degrades only the profile domain; valid
   battery and session truth remains published.
-- The PB-1 process deliberately injects deterministic unavailable
-  collaborators: it owns `org.qindaqt.Power1` and speaks exact Power1 over
-  D-Bus, but publishes an honest `Unavailable/upstream-not-integrated`
-  snapshot with zero capabilities rather than touching host UPower,
-  power-profiles-daemon, or logind. The process exits on constructing-bus
-  loss and keeps no platform handles across a restart.
+- The deterministic PB-1 collaborators remain the explicit `unavailable`
+  mode. They publish `Unavailable/upstream-not-integrated` with zero
+  capabilities and never open an upstream bus. The installed descriptor and
+  user unit explicitly select `production`; the bare executable defaults to
+  `unavailable` so an unconfigured invocation is fail-closed.
 - `power_client` binds to the exact unique owner, publishes only
   `validateSnapshot`-accepted snapshots, coalesces invalidations, fences
   regressed epochs, equal-revision contradictions, and stale-owner replies,
@@ -127,6 +133,48 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
 
 The exact wire method and signal surface is recorded in the
 [Power1 reference](../reference/power1-v1.md).
+
+## PB-2 production upstream adapters
+
+Production composition injects one bus connection and one sysfs root. UPower
+provides the root `OnBattery` property and an atomic enumeration of battery,
+UPS, and line-power devices. Line power contributes AC truth only through its
+`Online` property. Only battery/UPS devices with `PowerSupply=true` enter the
+system-supply inventory, so peripheral batteries cannot affect PB-0
+aggregation; `IsPresent` is consulted only for batteries. The adapter accepts
+only exact property types and known state/level/warning ordinals; zero time
+estimates remain unknown, signed energy rate becomes its absolute magnitude,
+and a malformed or disappearing device withdraws the complete battery domain.
+Every multi-call refresh is pinned to one resolved unique owner.
+
+Power Profiles prefers the modern
+`org.freedesktop.UPower.PowerProfiles` name, path, and interface, then falls
+back to `net.hadess.PowerProfiles`. `ActiveProfileHolds` (legacy `Holds`) is
+projected without exposing daemon cookies. Hold acquisition uses the standard
+three-string `HoldProfile` call and records its unsigned cookie only inside the
+adapter for a later `ReleaseProfile(cookie)`.
+
+The logind session adapter atomically combines manager properties with
+`ListInhibitors`, discarding UID and PID before publication. `PrepareForSleep`
+updates observed truth and resume triggers a fresh read. A separate action
+authority queries `CanPowerOff`, `CanReboot`, `CanSuspend`, and
+`CanHibernate`; the published admitted set is presentation truth, while every
+submitted action re-queries its matching `Can*` from the exact current owner
+immediately before dispatch. Only that per-operation `yes` is authoritative.
+Action calls always use `interactive=false`, duplicate operation IDs never
+redispatch within one run, and owner loss during authorization or execution
+completes the operation as uncertain. Restart advances the generation before
+operation IDs may be reused; replies from the stopped generation are ignored
+before inspecting or mutating current-generation pending state. Power1 v1 has
+no session-action wire fields, so PB-3 must compose this boundary in the shell.
+
+The sysfs adapter enumerates only below its injected root. It publishes exact
+raw maximum and observed values, preferring `actual_brightness`, and reports
+malformed, disappearing, or read-only devices with typed fail-closed truth. A
+narrow write primitive is available only for a writable injected
+`brightness` file and re-reads observation after the write. No setuid helper,
+polkit prompt, fallback path, or host path exists in tests. Power1 v1 has no
+display-brightness method, so this primitive is not remotely dispatchable.
 
 ## Production shell consumer
 
@@ -146,17 +194,18 @@ write. Compiled offscreen interaction and relocated installed-package tests
 prove the renderer/host composition without contacting a user session bus,
 power daemon, display server, or hardware.
 
-Because PB-1's production process still injects unavailable collaborators, the
-applet currently renders `upstream-not-integrated` as unavailable and sends no
-operation in a real session. The applet is production UI for honest current
-truth, not evidence that a PB-2 provider exists.
+The packaged process now selects production adapters. The applet receives
+their validated public truth and remains capability-gated when any daemon or
+device is absent. This is private-fixture evidence, not a claim about a
+specific host's battery, profile daemon, logind policy, or backlight access.
 
 ## Internal-panel brightness
 
-The provider reads `/sys/class/backlight` and `/sys/class/drm` strictly
-read-only and writes brightness only through
-`org.freedesktop.login1.Session.SetBrightness`. It never writes sysfs and
-never opens `/dev/i2c*`.
+The implemented inventory adapter reads the configured backlight sysfs root
+and owns a direct, permission-gated write primitive as decided by ADR-0060. It
+does not inspect DRM, open `/dev/i2c*`, register a Wayland provider, or expose
+a Power1 v1 display-brightness method. The topology and KWin registration
+rules below remain the contract for a later provider slice.
 
 Registration is fail-closed. One device is exposed only when both conditions
 hold:
@@ -215,7 +264,7 @@ replace a foreign binding, preventing reciprocal restart loops.
 | --- | --- | --- |
 | PB-0 | Protocol values, pure aggregation, pure brightness model | None; three reviewable commits |
 | PB-1 | Wayland-free service/client, upstream collaborators, activation package | Accepted PB-0 |
-| PB-2 | Backlight provider, idle collaborator, session-bound activation | PB-1 plus routed supervisor contract |
+| PB-2 | Production upstream adapters; backlight provider, idle, and session-bound activation continue separately | PB-1 plus routed supervisor contract |
 | PB-3 | Shell session actions and all-or-nothing key inhibitors | Shell owner and Controls/overlay boundary |
 | PB-4 | Display D7 class-B brightness policy/method | Accepted Display D2 |
 | PB-5 | Display-client binding, shortcuts, Power/Brightness Settings routes | PB-2, PB-4, shared app routes |
@@ -231,8 +280,23 @@ theft), executable activation against a private `dbus-daemon` (honest
 unavailable truth, constructing-bus-loss exit, fresh epoch on replacement),
 an installed package/consumer gate that proves the descriptor and unit
 resolve the packaged executable and staged public headers compile a clean
-consumer, and a source-policy boundary test that rejects host UPower, logind,
-Wayland, sysfs, process, thread, and sibling-service dependencies.
+consumer, and a source-policy boundary test that keeps core orchestration
+host-free while rejecting Wayland, process/thread, cross-adapter transport,
+and sibling-service dependencies.
+
+PB-2 upstream verification adds registered `qindaqt.power-service-*` rows for
+UPower enumeration/property changes/device removal/owner replacement and
+hostile payloads; modern and legacy Power Profiles plus cookie holds; logind
+session truth, inhibitors, sleep observation, actions, owner fencing, and
+duplicate operation lineage; bounded sysfs enumeration/write/read-only cases;
+and D-Bus activation of the built process against all fakes on a private
+daemon. The production activation row is the build-root replacement for the
+legacy activation row: it proves descriptor-triggered name activation, exact
+unique-owner establishment, descriptor/unit contents, exit when the
+constructing bus dies, and a fresh owner, epoch, and process on an independent
+replacement bus. Scratch roots are under the assigned build tree. These rows
+never use an ambient bus, `/sys/class/backlight`, hardware, polkit, or a desktop
+session.
 
 Deterministic continuation starts with hostile codecs, aggregation and model
 properties; private-bus owner/epoch replacement; fake UPower/profile/logind
@@ -243,10 +307,11 @@ hardware hotkeys remain release evidence.
 
 ## Non-claims
 
-This contract does not prove a live UPower, power-profiles-daemon, or logind
-adapter, a successful backlight mutation, idle hint, session action, inhibitor,
-physical device, or host-session integration. The production applet is
-compiled and packaged, but PB-1's resident process honestly reports
-`upstream-not-integrated` until those adapters land. Progress beyond the
-recorded PB-1 platform slice requires the evidence tier defined by the
-relevant later slice.
+This contract proves production adapter behavior only against injected private
+services and fixture files. It does not claim a live host UPower,
+power-profiles-daemon, logind policy, polkit subject, suspend/resume cycle,
+physical backlight mutation, idle hint, keyboard backlight, KWin Wayland
+provider, external monitor, hardware key, or host-session integration. The
+logind action boundary has no Power1 v1 or shell presentation route, and the
+sysfs write primitive has no public Power1 v1 operation. Those later slices
+require their own executable and hardware evidence.
