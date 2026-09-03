@@ -23,6 +23,7 @@ from desktop_session_sandbox import FORBIDDEN_ENVIRONMENT, ReadOnlyMount, Sandbo
 from desktop_session_stage import resolve_stage
 from desktop_session_topology import interactive_matrix_topology
 from nested_session_scenario import VirtualOutputSpec
+from panel_visibility_capture import visibility_probe_command
 
 
 PROFILE_ID = "panel-visibility-proof"
@@ -57,12 +58,13 @@ def _role_process_ids(launch: object) -> dict[str, int]:
 
 
 def _run_visibility_probe(arguments: argparse.Namespace, environment: dict[str, str],
+                          parent_environment: dict[str, str],
                           state: RuntimeState) -> dict[str, object]:
     log_path = Path("/var/log/qindaqt-desktop/panel-visibility-probe.log")
     log = log_path.open("w", encoding="utf-8")
     try:
         process = subprocess.Popen(
-            [str(arguments.visibility_probe), str(arguments.weston_screenshooter)],
+            visibility_probe_command(arguments, parent_environment),
             env=environment, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
             stderr=log, text=True, start_new_session=True,
         )
@@ -302,7 +304,7 @@ def run_inner(arguments: argparse.Namespace) -> int:
         )
         runtime._measure_and_finish_probe(pids, evidence, readiness_probe)
         interaction = _run_visibility_probe(
-            arguments, launch.app_environment, state
+            arguments, launch.app_environment, launch.parent_environment or {}, state
         )
         evidence["panelVisibility"] = interaction
         evidence["panelVisibilityCaptures"] = _validate_captures(

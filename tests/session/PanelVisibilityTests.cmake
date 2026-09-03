@@ -28,6 +28,19 @@ set_tests_properties(
     desktop.virtual.panel-visibility.validator-unit
     PROPERTIES LABELS "unit;session;screenshot;wayland;layer-shell;visibility"
 )
+add_test(
+    NAME desktop.virtual.panel-visibility.capture-loader-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "PYTHONDONTWRITEBYTECODE=1"
+        "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_capture_loader_unit.py"
+)
+set_tests_properties(
+    desktop.virtual.panel-visibility.capture-loader-unit
+    PROPERTIES LABELS "unit;session;screenshot;wayland;visibility"
+)
 
 if(
     TARGET qindaqt-desktop-session-probe
