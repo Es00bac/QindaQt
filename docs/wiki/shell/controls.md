@@ -121,11 +121,14 @@ license text stored beside the fonts — through
 `QFontDatabase::addApplicationFont`, verifies each registration, substitutes
 the schema's `Inter` and `JetBrains Mono` family names to those registered
 families, fixes the C locale, and fails closed when a vendored file is
-missing, unreadable, or renamed. Registered application fonts take precedence
-over same-named host-installed fonts, so a host Noto package update cannot
-change the rendered glyph bytes; the row environment keeps the documented host
-fontconfig configuration because an empty configuration re-wraps text and
-removes the fallback glyph the baselines contain. Qt's software backend
+missing, unreadable, or renamed. The vendored name records declare the
+repository-owned families `QindaQt Sans` and `QindaQt Sans Mono`, which no
+host-installed font can declare, so the fixture cannot collide with or be
+shadowed by host Noto however Qt or fontconfig order their matches; a host
+Noto package update cannot change the rendered glyph bytes. The row
+environment keeps the documented host fontconfig configuration because an
+empty configuration re-wraps text and removes the fallback glyph the
+baselines contain. Qt's software backend
 renders every row and intentional baseline changes are stored in
 `tests/controls/baselines` for review; changing the vendored font files is a
 reviewed baseline regeneration under

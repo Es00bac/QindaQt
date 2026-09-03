@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "bluetooth",
+  "name": "Bluetooth",
+  "description": "Shows bounded Bluetooth1 adapter and device truth and offers policy-gated power, discovery, connect, and disconnect controls.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.bluetooth"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 72, "maximum": 140, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["bluetooth.read", "bluetooth.control"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

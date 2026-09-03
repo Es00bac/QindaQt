@@ -177,6 +177,45 @@ installed production-package/source-poison rows. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
+The production Bluetooth applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.bluetooth-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection/request rows are joined by an exact-owner public-client
+controller, compiled offscreen keyboard/accessibility and lease-close proof,
+an ordered post-moc controller-surface contract, mutation-sensitive
+pure/runtime dependency boundaries, and an installed production-package/source-
+poison row. `qindaqt.bluetooth-applet-surface` walks the controller-owned
+property, method, and enumerator slices of `staticMetaObject`, compares the
+property name/type/readable/writable/resettable/notify/constant/final fields
+and method signature/return/type/access/revision fields, plus each enumerator's
+name, enum name, scope, flag/scoped state, and key/value list, in order. It
+rejects a deliberately expanded test surface and constructs the production
+applet through an offscreen `QQmlEngine` to compare controller-specific
+QML-visible property and method names with the same literal contract.
+Token-pasted macros, public slots, and
+cross-header macro aliases therefore cannot evade the compiled gate. The
+textual boundary rows retain exact file/header allowlists, forbidden
+dependencies or symbols, and manifest/registry/profile/QML/composition presence
+contracts, with independent client/service, address, persistence, filesystem,
+adjacent-module, and composition-removal poisons. No row contacts the host
+session bus, display server, BlueZ, a radio, or pairing authority. The exact
+matrix and nonclaims are
+detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
+also clears ambient loader paths and requires CMake's runtime dependency
+resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
+The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
+profile built the production shell plus the focused targets, passed all eight
+registered Bluetooth-applet rows, and passed six adjacent public-client,
+manifest, catalog, resolver, notification-center applet offscreen, and
+shell-runtime-catalog rows. This
+is deterministic public-client/offscreen/package evidence only; it adds no
+private-bus, compositor, BlueZ, host-radio, or hardware claim.
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
@@ -264,18 +303,20 @@ under `tests/controls/fonts/` (SIL Open Font License 1.1) with
 `QFontDatabase::addApplicationFont`, verifies each registration exposes
 exactly the expected family, substitutes the theme schema's `Inter` and
 `JetBrains Mono` names to those registered families, fixes the C locale, and
-fails closed when a vendored file is missing, unreadable, or renamed.
-Registered application fonts take precedence over same-named host-installed
-fonts, so a host Noto package update cannot change the rendered bytes; the
-row environment otherwise keeps the documented host fontconfig configuration,
-because an empty configuration re-wraps text and removes the fallback glyph
-the baselines contain instead of pinning bytes.
+fails closed when a vendored file is missing, unreadable, or renamed. The
+vendored name records declare the repository-owned families `QindaQt Sans`
+and `QindaQt Sans Mono`, which no host-installed font can declare, so the
+fixture cannot collide with or be shadowed by host Noto however Qt or
+fontconfig order their matches; a host Noto package update cannot change the
+rendered bytes. The row environment otherwise keeps the documented host
+fontconfig configuration, because an empty configuration re-wraps text and
+removes the fallback glyph the baselines contain instead of pinning bytes.
 
-Four focused rows guard the pin. `qindaqt.controls-font-pinning` registers a
-marker-patched copy of the vendored Noto Sans Regular — one flipped byte in
-its name table, family strings untouched — and requires the engine resolving
-the schema's `Inter` family to serve the registered bytes, which fails if a
-same-named host font ever regains precedence. The three
+Four focused rows guard the pin. `qindaqt.controls-font-pinning` requires the
+engine resolving the schema's `Inter` family to resolve to the
+repository-owned `QindaQt Sans` family and to serve a name table
+byte-identical to the vendored Regular file, which fails if the substitution
+or registration ever falls back to host font bytes. The three
 `qindaqt.controls-font-fixture-missing`, `-corrupt`, and `-wrongfamily` rows
 drive the missing-file, unreadable-file, and wrong-family failure branches of
 the fixture loader and require the process to abort with the matching
@@ -655,6 +696,37 @@ This proves nested compositor keyboard behavior, not physical input, a real
 user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual
 screenshot baselines.
+
+## Current global-menu transport proof
+
+The complete G0 model/presentation and G1 transport boundary is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.global-menu-' --output-on-failure --no-tests=error
+```
+
+The five G1 rows add a bounded AppMenu registrar on a private
+`dbus-run-session`, hostile dbusmenu conversion, an exact-owner asynchronous
+client against a fake exporter, complete focused-window composition, and a
+source-boundary checker that must reject four planted runtime/platform
+poisons. The registrar row covers exact standard lookup/list calls,
+cross-caller replacement/unregister refusal, capacity, stale owner-generation
+rejection, name collision rollback, and automatic unique-owner retirement.
+The dbusmenu rows cover recursive wire marshalling, all standard calls,
+properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
+property tolerance, changed-equal (replayed) revision rejection, owner loss, and
+one Event for one accepted activation. Composition proves the applet snapshot
+comes from the focused registrar entry only after PID/name authentication and
+that loss or focus withdrawal clears authority.
+
+Every transport process is the QtTest executable itself, and every bus is the
+fresh broker created by `dbus-run-session`; the rows contact no inherited
+session bus, display, input, compositor, hardware, or network. They do not
+qualify production-shell instantiation, installed QML/manifest wiring,
+submenus, a foreign toolkit, or a live desktop. Those remain later shell and
+contained-session gates. See [Global application menu](../shell/global-menu.md)
+and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
 
 ## Current status-notifier foundation proof
 

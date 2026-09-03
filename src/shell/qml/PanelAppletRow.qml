@@ -10,6 +10,7 @@ Row {
     required property string zone
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     spacing: 4
 
@@ -30,6 +31,7 @@ Row {
             theme: root.theme
             liveApplets: root.liveApplets
             notificationCenterAppletAccess: root.notificationCenterAppletAccess
+            bluetoothAppletAccess: root.bluetoothAppletAccess
             powerAppletAccess: root.powerAppletAccess
         }
     }

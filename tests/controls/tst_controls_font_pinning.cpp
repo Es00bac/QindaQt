@@ -29,7 +29,9 @@ namespace {
 [[nodiscard]] QByteArray nameTableFor(const QString &path)
 {
     QFile file(path);
-    file.open(QIODevice::ReadOnly);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
     const QByteArray bytes = file.readAll();
     const auto be32 = [](const char *p) {
         return (static_cast<quint32>(static_cast<quint8>(p[0])) << 24)
