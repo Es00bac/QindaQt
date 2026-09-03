@@ -115,11 +115,19 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
 
-  // selectNext from 4 ("customize") wraps to 0 ("notifications")
+  // Bluetooth is appended after every established route.
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
+  // selectNext from 5 ("bluetooth") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 4 ("customize")
+  // selectPrevious from 0 wraps to 5 ("bluetooth")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
+  // selectPrevious from 5 -> 4 ("customize")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
 
@@ -157,12 +165,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(4));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("customize"));
 
+  QVERIFY(controller.selectIndex(5));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("bluetooth"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(5));
+  QVERIFY(!controller.selectIndex(6));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -220,7 +231,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 5);
+  QCOMPARE(list.size(), 6);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -242,6 +253,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(customizeMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("customize"));
 
+  const QVariantMap bluetoothMap = list.at(5).toMap();
+  QCOMPARE(bluetoothMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("bluetooth"));
+
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
            QStringLiteral("notifications"));
@@ -262,7 +277,11 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt4.value(QStringLiteral("id")).toString(),
            QStringLiteral("customize"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(5);
+  const QVariantMap itemAt5 = controller.routeAt(5);
+  QCOMPARE(itemAt5.value(QStringLiteral("id")).toString(),
+           QStringLiteral("bluetooth"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(6);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

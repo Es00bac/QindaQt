@@ -2,6 +2,7 @@
 #include "src/apps/settings_center/settings_navigation_controller.h"
 #include "src/apps/settings_center/settings_route_registry.h"
 #include "tests/apps/settings/network/stub_network_settings_model.h"
+#include "tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/design_tokens.h"
@@ -25,6 +26,7 @@
 
 using namespace QindaQt::Apps::SettingsCenter;
 using QindaQt::Apps::SettingsNetwork::TestSupport::StubNetworkSettingsModel;
+using QindaQt::Apps::SettingsBluetooth::TestSupport::StubBluetoothSettingsModel;
 
 namespace {
 
@@ -158,6 +160,7 @@ private:
   std::unique_ptr<StubQuietingModel> m_quieting;
   std::unique_ptr<StubAppearanceModel> m_appearance;
   std::unique_ptr<StubNetworkSettingsModel> m_network;
+  std::unique_ptr<StubBluetoothSettingsModel> m_bluetooth;
 };
 
 namespace {
@@ -202,6 +205,7 @@ void SettingsNavigationPageTest::initTestCase() {
   m_quieting = std::make_unique<StubQuietingModel>();
   m_appearance = std::make_unique<StubAppearanceModel>();
   m_network = std::make_unique<StubNetworkSettingsModel>();
+  m_bluetooth = std::make_unique<StubBluetoothSettingsModel>();
 }
 
 void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
@@ -223,6 +227,8 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -312,6 +318,8 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -386,6 +394,8 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -436,9 +446,31 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   QTest::keyClick(window, Qt::Key_Tab);
   QTRY_COMPARE(window->activeFocusItem(), networkScan);
 
+  QTest::keyClick(window, Qt::Key_5, Qt::ControlModifier);
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("bluetooth"));
+  auto *bluetoothLoader = sceneObject(
+      window->contentItem(), QStringLiteral("wideSettingsRouteBluetoothLoader"));
+  auto *bluetoothClose = sceneItem(
+      window->contentItem(), QStringLiteral("bluetoothCloseButton"));
+  QVERIFY(bluetoothLoader != nullptr);
+  QCOMPARE(bluetoothLoader->property("active").toBool(), true);
+  QVERIFY(bluetoothClose != nullptr);
+  QVERIFY(bluetoothClose->isEnabled());
+  QTest::keyClick(window, Qt::Key_Escape);
+  auto *bluetoothTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsNavButton_bluetooth"));
+  QVERIFY(bluetoothTab != nullptr);
+  auto *bluetoothAccessible = QAccessible::queryAccessibleInterface(bluetoothTab);
+  QVERIFY(bluetoothAccessible != nullptr);
+  QCOMPARE(bluetoothAccessible->role(), QAccessible::PageTab);
+  QVERIFY(bluetoothAccessible->state().selected);
+  QTRY_COMPARE(window->activeFocusItem(), bluetoothTab);
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_COMPARE(window->activeFocusItem(), bluetoothClose);
+
   // Shortcut Alt+Left returns to the immediately previous route.
   QTest::keyClick(window, Qt::Key_Left, Qt::AltModifier);
-  QCOMPARE(navigation.activeRouteId(), QStringLiteral("notifications"));
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("network"));
 }
 
 void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
@@ -471,6 +503,8 @@ void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
        QVariant::fromValue(static_cast<QObject *>(m_appearance.get()))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_network.get()))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);

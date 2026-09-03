@@ -152,6 +152,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Customize route](apps/customize-settings.md) documents the direct
   profile canvas: editor-session gestures, keyboard parity, atomic user-profile
   persistence, Settings1 selection truth, and fail-closed package boundaries.
+- [Settings Bluetooth route](apps/bluetooth-settings.md) documents the public-
+  client-only adapter/device inventory, exact-lineage admission, route-scoped
+  discovery lease, paired-device controls, and explicit BlueZ authority limit.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.

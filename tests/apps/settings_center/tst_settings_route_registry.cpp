@@ -215,13 +215,14 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 5);
+  QCOMPARE(registry.count(), 6);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
   QVERIFY(registry.hasRoute(QStringLiteral("display")));
   QVERIFY(registry.hasRoute(QStringLiteral("network")));
   QVERIFY(registry.hasRoute(QStringLiteral("customize")));
+  QVERIFY(registry.hasRoute(QStringLiteral("bluetooth")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -229,6 +230,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
   QCOMPARE(registry.indexOf(QStringLiteral("network")), 3);
   QCOMPARE(registry.indexOf(QStringLiteral("customize")), 4);
+  QCOMPARE(registry.indexOf(QStringLiteral("bluetooth")), 5);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -268,6 +270,13 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!customize->title.isEmpty());
   QVERIFY(!customize->description.isEmpty());
   QVERIFY(customize->available);
+
+  const auto bluetooth = registry.route(QStringLiteral("bluetooth"));
+  QVERIFY(bluetooth.has_value());
+  QCOMPARE(bluetooth->component, SettingsRouteComponent::Bluetooth);
+  QVERIFY(!bluetooth->title.isEmpty());
+  QVERIFY(!bluetooth->description.isEmpty());
+  QVERIFY(bluetooth->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {
