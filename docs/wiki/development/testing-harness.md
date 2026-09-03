@@ -210,12 +210,28 @@ ctest --test-dir build/dev \
 ```
 
 Its pure projection/control/request rows are joined by public-client controller,
-compiled offscreen keyboard/accessibility, runtime-boundary poison, and
+compiled offscreen keyboard/accessibility plus Session-button confirmation,
+runtime-boundary poison, and
 installed production-package/source-poison rows. The installed row requires
 the shell's directly linked Controls library and its Tokens dependency to
 resolve from the narrow relocated component. No row contacts the host
-session bus, display server, power daemon, or hardware. The exact matrix and
+session bus, system bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
+
+The transport-only session-action boundary is selected with:
+
+```sh
+DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev -R '^qindaqt\.session-actions-' \
+  --output-on-failure --no-tests=error
+```
+
+Its client row runs under `dbus-run-session` and injects the same private broker
+as both logical buses. Fake Session1, ScreenSaver, and login1 owners prove
+exact `Can*` gating, unavailable truth, serialized dispatch, owner fencing,
+bounded uncertain no-replay completion, and typed results. Boundary and poison
+rows prove every login1 symbol remains inside `src/services/session_actions`.
+The environment always poisons the host system-bus address.
 
 The production Bluetooth applet slice is selected with:
 
@@ -643,7 +659,12 @@ both descriptor consumers start, the notification-host PID remains stable
 across exactly one shell PID replacement, the replacement uses the same
 non-secret compositor argument contract, a second shell exit tears down the
 host, replacement-start failure fails closed, and initial second-child startup
-failure rolls back the first. These tests open no display and inject no input.
+failure rolls back the first. On a private session bus it additionally proves
+unrelated-PID rejection, live shell-PID admission, Session1 logout reply and
+shell/host/optional-agent stop order, and the exact XML surface. A disposable
+non-secret helper proves the optional network secret agent never blocks
+readiness and consumes exactly one restart. These tests open no display and
+inject no input.
 
 `qindaqt.notification-presentation-model` covers first-snapshot baselining
 without popup replay, new/replacement ordering, monotonic expiry, center-open
@@ -1241,28 +1262,31 @@ env -u DBUS_SESSION_BUS_ADDRESS \
   --output-on-failure --no-tests=error
 ```
 
-The six rows use an injected fake Power transport or absent private buses only.
+The six rows use an injected fake Power transport, an injected session-action
+stub, or absent private buses only.
 Model coverage proves bounded supply/profile/hold/brightness projection,
 textual state/warning/estimate truth, exact raw values, shared action admission,
 retained-stale presentation/admission closure, success convergence, retry-status
-recovery, owner replacement, and the absence of session-action invokables.
+recovery, owner replacement, and opaque session-client injection without model
+action authority.
 Slider coverage proves that a 120 ms burst sends one final raw request, exact
 normalized and raw-equivalent values send nothing, invalid or stale targets are
 rejected, and authority replacement cancels dispatch. The page row runs with
 `QT_FATAL_WARNINGS=1` in wide and compact
 software scenes and checks accessible role/name/value descriptions, disabled
-internal brightness, action wiring, and first-focus admission. The allow-list
-and independent poisons reject sibling/private service imports, direct D-Bus
-outside the named composition, and session actions. The installed row withholds
+internal brightness, Power/session action wiring, destructive confirmation,
+and first-focus admission. The allow-list and independent poisons reject
+sibling/private service imports, direct D-Bus outside the named composition,
+and direct platform-action authority outside `session_actions`. The installed row withholds
 the staged Power module while the developer module remains present, then proves
 the restored relocated route with both host buses unavailable.
 
 The Settings Center selector adds deterministic nine-route order, Ctrl+8,
 Power PageTab accessibility, Escape/Tab entry, exclusive wide/compact Loaders,
 canonical construction, and the common relocated package. No selector contacts
-UPower, power-profiles-daemon, logind, sysfs, Wayland, a host bus, or hardware.
-Session actions, internal-display mutation, live AT-SPI, and nested desktop
-screenshots remain outside this proof.
+UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, Wayland, a host bus,
+or hardware. Live session actions, internal-display mutation, live AT-SPI, and
+nested desktop screenshots remain outside this proof.
 
 ## Current Clipboard Settings route proof
 

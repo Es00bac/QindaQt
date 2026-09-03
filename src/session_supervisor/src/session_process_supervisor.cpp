@@ -2,6 +2,7 @@
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 
 #include "qindaqt/session_supervisor/direct_parent_process.h"
+#include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 
 #include <QCoreApplication>
@@ -15,6 +16,7 @@ namespace {
 
 constexpr int StopTimeoutMilliseconds = 2'000;
 constexpr int ShellRestartLimit = 1;
+constexpr int SecretAgentRestartLimit = 1;
 
 void setError(QString *error, QString message)
 {
@@ -50,12 +52,31 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
 {
     m_host.setProcessChannelMode(QProcess::ForwardedChannels);
     m_shell.setProcessChannelMode(QProcess::ForwardedChannels);
+    m_networkSecretAgent.setProcessChannelMode(QProcess::ForwardedChannels);
     connect(&m_host, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
         childFinished(ChildRole::NotificationHost, code, status);
     });
     connect(&m_shell, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
         childFinished(ChildRole::Shell, code, status);
     });
+    connect(&m_networkSecretAgent, &QProcess::finished, this,
+            [this](int, QProcess::ExitStatus) { networkSecretAgentEnded(); });
+    connect(&m_networkSecretAgent, &QProcess::started, this, [this] {
+        m_networkSecretAgentProcessId = m_networkSecretAgent.processId();
+        if (m_networkSecretAgentRestartCount > 0
+            && m_networkSecretAgentPreviousProcessId > 1) {
+            Q_EMIT networkSecretAgentRestarted(
+                m_networkSecretAgentPreviousProcessId,
+                m_networkSecretAgentProcessId);
+            m_networkSecretAgentPreviousProcessId = 0;
+        }
+    });
+    connect(&m_networkSecretAgent, &QProcess::errorOccurred, this,
+            [this](QProcess::ProcessError error) {
+                if (error == QProcess::FailedToStart) {
+                    networkSecretAgentEnded();
+                }
+            });
 }
 
 SessionProcessSupervisor::~SessionProcessSupervisor() { stop(); }
@@ -70,8 +91,11 @@ bool SessionProcessSupervisor::start(QString *error)
         return false;
     }
     m_shellRestartCount = 0;
+    m_networkSecretAgentRestartCount = 0;
     m_hostProcessId = 0;
     m_shellProcessId = 0;
+    m_networkSecretAgentProcessId = 0;
+    m_networkSecretAgentPreviousProcessId = 0;
     m_token = Services::NotificationPresentation::PresentationAccessToken::generate();
     const QString hostProgram = resolveExecutable(m_options.notificationHostExecutable);
     if (!TokenizedProcessLauncher::start(m_host, hostProgram, {}, *m_token, error)) {
@@ -89,6 +113,7 @@ bool SessionProcessSupervisor::start(QString *error)
         return false;
     }
     m_running = true;
+    startNetworkSecretAgent();
     setError(error, {});
     return true;
 }
@@ -104,18 +129,44 @@ void SessionProcessSupervisor::stop() noexcept
     // reentrant finished signals cannot launch a replacement. The restart
     // count is reset only after both children are stopped for the next session.
     m_token.reset();
+    if (m_shell.state() != QProcess::NotRunning) {
+        Q_EMIT childStopRequested(QStringLiteral("shell"));
+    }
     stopChild(m_shell);
+    if (m_host.state() != QProcess::NotRunning) {
+        Q_EMIT childStopRequested(QStringLiteral("notification-host"));
+    }
     stopChild(m_host);
+    if (m_networkSecretAgent.state() != QProcess::NotRunning) {
+        Q_EMIT childStopRequested(QStringLiteral("network-secret-agent"));
+    }
+    stopChild(m_networkSecretAgent);
     m_shellProcessId = 0;
     m_hostProcessId = 0;
+    m_networkSecretAgentProcessId = 0;
+    m_networkSecretAgentPreviousProcessId = 0;
     m_shellRestartCount = 0;
     m_stopping = false;
+}
+
+void SessionProcessSupervisor::requestLogout()
+{
+    if (!canLogout()) {
+        return;
+    }
+    stop();
+    Q_EMIT finished(0, QStringLiteral("logout requested"));
 }
 
 bool SessionProcessSupervisor::isRunning() const noexcept
 {
     return m_running && m_host.state() != QProcess::NotRunning
            && m_shell.state() != QProcess::NotRunning;
+}
+
+bool SessionProcessSupervisor::canLogout() const noexcept
+{
+    return isRunning() && !m_stopping;
 }
 
 qint64 SessionProcessSupervisor::notificationHostProcessId() const noexcept
@@ -129,6 +180,17 @@ qint64 SessionProcessSupervisor::shellProcessId() const noexcept
 }
 
 int SessionProcessSupervisor::shellRestartCount() const noexcept { return m_shellRestartCount; }
+
+qint64 SessionProcessSupervisor::networkSecretAgentProcessId() const noexcept
+{
+    return m_networkSecretAgent.state() == QProcess::NotRunning
+        ? 0 : m_networkSecretAgentProcessId;
+}
+
+int SessionProcessSupervisor::networkSecretAgentRestartCount() const noexcept
+{
+    return m_networkSecretAgentRestartCount;
+}
 
 QString SessionProcessSupervisor::resolveExecutable(const QString &configured) const
 {
@@ -166,6 +228,36 @@ bool SessionProcessSupervisor::startShell(QString *error, qint64 predecessorProc
     return true;
 }
 
+void SessionProcessSupervisor::startNetworkSecretAgent()
+{
+    QString program = resolveExecutable(m_options.networkSecretAgentExecutable);
+    // Optional autostart is intentionally sibling-only for a bare production
+    // name. Searching ambient PATH could launch a foreign development build.
+    if (program.isEmpty() || !QFileInfo(program).isExecutable()) {
+        m_networkSecretAgentProcessId = 0;
+        return;
+    }
+    QString ignored;
+    if (!SupervisedProcessLauncher::start(m_networkSecretAgent, program, {}, &ignored)) {
+        m_networkSecretAgentProcessId = 0;
+        return;
+    }
+}
+
+void SessionProcessSupervisor::networkSecretAgentEnded()
+{
+    if (!m_running || m_stopping
+        || m_networkSecretAgentRestartCount >= SecretAgentRestartLimit) {
+        m_networkSecretAgentProcessId = 0;
+        return;
+    }
+    const qint64 previousProcessId = m_networkSecretAgentProcessId;
+    ++m_networkSecretAgentRestartCount;
+    m_networkSecretAgentProcessId = 0;
+    m_networkSecretAgentPreviousProcessId = previousProcessId;
+    startNetworkSecretAgent();
+}
+
 void SessionProcessSupervisor::childFinished(ChildRole role, int exitCode,
                                              QProcess::ExitStatus exitStatus)
 {
@@ -200,12 +292,23 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     m_running = false;
     m_token.reset();
     if (role == ChildRole::NotificationHost) {
+        if (m_shell.state() != QProcess::NotRunning) {
+            Q_EMIT childStopRequested(QStringLiteral("shell"));
+        }
         stopChild(m_shell);
         m_shellProcessId = 0;
     } else {
+        if (m_host.state() != QProcess::NotRunning) {
+            Q_EMIT childStopRequested(QStringLiteral("notification-host"));
+        }
         stopChild(m_host);
         m_hostProcessId = 0;
     }
+    if (m_networkSecretAgent.state() != QProcess::NotRunning) {
+        Q_EMIT childStopRequested(QStringLiteral("network-secret-agent"));
+    }
+    stopChild(m_networkSecretAgent);
+    m_networkSecretAgentProcessId = 0;
     if (role == ChildRole::NotificationHost) {
         m_hostProcessId = 0;
     } else {

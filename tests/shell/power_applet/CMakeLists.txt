@@ -121,7 +121,7 @@ set_tests_properties(
     qindaqt.power-applet-offscreen
     PROPERTIES
         LABELS "shell;power;runtime;offscreen;accessibility"
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
 add_test(

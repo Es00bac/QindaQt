@@ -6,19 +6,23 @@ target_sources(
     qindaqt_session_supervisor_support
     PRIVATE
         src/direct_parent_process.cpp
+        src/supervised_process_launcher.cpp
         src/tokenized_process_launcher.cpp
         src/session_process_supervisor.cpp
+        src/session_service.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/session_supervisor/direct_parent_process.h
+            include/qindaqt/session_supervisor/supervised_process_launcher.h
             include/qindaqt/session_supervisor/tokenized_process_launcher.h
             include/qindaqt/session_supervisor/session_process_supervisor.h
+            include/qindaqt/session_supervisor/session_service.h
 )
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol Qt6::Core
+    PUBLIC QindaQt::NotificationPresentationProtocol Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
 set_target_properties(
@@ -41,3 +45,7 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 install(TARGETS qindaqt-session RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(
+    FILES org.qindaqt.Session1.xml
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
+)

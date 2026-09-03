@@ -18,12 +18,17 @@ set(allowed_public_include_prefixes
     "qindaqt/apps/settings_power/"
     "qindaqt/services/power_client/"
     "qindaqt/services/power_protocol/"
-    "qindaqt/services/brightness_model/")
+    "qindaqt/services/brightness_model/"
+    "qindaqt/services/session_actions/")
 
 foreach(source IN LISTS route_files)
     file(READ "${source}" contents)
-    if(contents MATCHES "power_(service|backlight_provider|idle)/|session_action|UPower|power-profiles-daemon|systemd/logind|/sys/class/backlight")
+    if(contents MATCHES "power_(service|backlight_provider|idle)/|UPower|power-profiles-daemon|systemd/logind|/sys/class/backlight")
         message(FATAL_ERROR "Power Settings crossed its public-client-only boundary in ${source}")
+    endif()
+    if(contents MATCHES "services/session_actions/" AND
+       NOT source MATCHES "/power_route_composition.cpp$")
+        message(FATAL_ERROR "Power Settings imported session actions outside its composition root in ${source}")
     endif()
     if((contents MATCHES "QtDBus|QDBus") AND
        NOT source MATCHES "/power_route_composition.cpp$")
@@ -85,7 +90,8 @@ endforeach()
 if(DEFINED SOURCE_ROOT)
     file(READ "${route_root}/CMakeLists.txt" cmake_contents)
     foreach(required IN ITEMS "QindaQt::PowerClient" "QindaQt::BrightnessModel"
-            "qindaqt_settings_power_qml" "PowerPage.qml"
+            "QindaQt::SessionActions" "qindaqt_settings_power_qml"
+            "PowerPage.qml" "PowerSessionSection.qml"
             "COMPONENT SettingsAppearanceRuntime")
         if(NOT cmake_contents MATCHES "${required}")
             message(FATAL_ERROR "Power Settings package registry is incomplete: ${required}")

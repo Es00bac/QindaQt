@@ -32,6 +32,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersWideTruthAndAccessibleControls();
   void routesKeyboardAndProfileActions();
+  void sessionActionsHaveKeyboardParityAndDestructiveConfirmation();
   void compactAndUnavailableFocusRemainAdmitted();
 
 private:
@@ -85,14 +86,14 @@ PowerPageTest::createPage(const QSize size) {
 void PowerPageTest::rendersWideTruthAndAccessibleControls() {
   auto [guard, page] = createPage(QSize(900, 700));
   QVERIFY(page != nullptr);
-  auto *boundary = findItem(page, QStringLiteral("powerAuthorityBoundary"));
+  auto *lock = findItem(page, QStringLiteral("powerSessionLock"));
   auto *profile = findItem(page, QStringLiteral("powerProfile_balanced"));
   auto *internal = findItem(page,
       QStringLiteral("powerInternalBrightness_internal-41-1"));
   auto *keyboard = findItem(page,
       QStringLiteral("powerKeyboardBrightness_keyboard-41-1"));
   auto *raw = findItem(page, QStringLiteral("powerInternalRaw_internal-41-1"));
-  QVERIFY(boundary != nullptr);
+  QVERIFY(lock != nullptr);
   QVERIFY(profile != nullptr);
   QVERIFY(internal != nullptr);
   QVERIFY(keyboard != nullptr);
@@ -105,10 +106,45 @@ void PowerPageTest::rendersWideTruthAndAccessibleControls() {
   QCOMPARE(sliderAccessible->role(), QAccessible::Slider);
   QVERIFY(sliderAccessible->text(QAccessible::Description)
               .contains(QStringLiteral("10000")));
-  auto *boundaryAccessible = QAccessible::queryAccessibleInterface(boundary);
-  QVERIFY(boundaryAccessible != nullptr);
-  QVERIFY(boundaryAccessible->text(QAccessible::Description)
-              .contains(QStringLiteral("Suspend")));
+  auto *lockAccessible = QAccessible::queryAccessibleInterface(lock);
+  QVERIFY(lockAccessible != nullptr);
+  QCOMPARE(lockAccessible->role(), QAccessible::Button);
+  QVERIFY(lockAccessible->text(QAccessible::Description)
+              .contains(QStringLiteral("Lock")));
+}
+
+void PowerPageTest::sessionActionsHaveKeyboardParityAndDestructiveConfirmation() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *lock = findItem(page, QStringLiteral("powerSessionLock"));
+  auto *suspend = findItem(page, QStringLiteral("powerSessionSuspend"));
+  auto *restart = findItem(page, QStringLiteral("powerSessionRestart"));
+  QVERIFY(lock != nullptr);
+  QVERIFY(suspend != nullptr);
+  QVERIFY(restart != nullptr);
+
+  lock->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), lock);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QCOMPARE(m_model->sessionActionState.requests,
+           QStringList({QStringLiteral("lock")}));
+
+  suspend->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QCOMPARE(m_model->sessionActionState.requests.constLast(),
+           QStringLiteral("suspend"));
+
+  restart->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QCOMPARE(m_model->sessionActionState.requests.size(), 2);
+  QObject *confirmation = page->findChild<QObject *>(
+      QStringLiteral("powerSessionConfirmation"));
+  QVERIFY(confirmation != nullptr);
+  QTRY_VERIFY(confirmation->property("opened").toBool());
+  QVERIFY(QMetaObject::invokeMethod(confirmation, "accept"));
+  QTRY_COMPARE(m_model->sessionActionState.requests.size(), 3);
+  QCOMPARE(m_model->sessionActionState.requests.constLast(),
+           QStringLiteral("reboot"));
 }
 
 void PowerPageTest::routesKeyboardAndProfileActions() {

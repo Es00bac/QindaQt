@@ -109,6 +109,13 @@ remembered storage.
 
 ## Package and proof boundary
 
+Production `qindaqt-session` starts the agent only when the executable is an
+installed sibling. It is non-essential: startup and registration never block
+session readiness, absence is silent unavailable truth, and an unexpected exit
+is restarted once. Logout and essential-child failure still stop it during the
+session teardown. Ambient `PATH` is not searched, preventing an unrelated
+development binary from being adopted by the production supervisor.
+
 The `QindaQtNetworkSecretAgent` install component carries the executable, QST
 theme, and the Tokens and Controls QML modules needed by the standalone
 process. Its focused test matrix covers controller hostility, prompt keyboard
@@ -119,4 +126,4 @@ harness](../development/testing-harness.md).
 
 This boundary does not claim VPN secrets, certificate selection, profile
 creation/editing, an agent-owned secret store, physical networking, systemd or
-D-Bus activation policy, or distribution autostart integration.
+D-Bus activation policy, or autostart outside the QindaQt session supervisor.

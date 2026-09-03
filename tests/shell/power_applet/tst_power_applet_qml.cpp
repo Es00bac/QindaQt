@@ -24,6 +24,38 @@ namespace {
 
 const QString kOwner = QStringLiteral(":1.42");
 
+class StubSessionActions final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool canLock MEMBER canLock NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canLogout MEMBER canLogout NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canSuspend MEMBER canSuspend NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canReboot MEMBER canReboot NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canPowerOff MEMBER canPowerOff NOTIFY availabilityChanged)
+    Q_PROPERTY(bool pending MEMBER pending NOTIFY pendingChanged)
+    Q_PROPERTY(QString feedback MEMBER feedback NOTIFY feedbackChanged)
+
+public:
+    bool canLock = true;
+    bool canLogout = true;
+    bool canSuspend = true;
+    bool canReboot = true;
+    bool canPowerOff = true;
+    bool pending = false;
+    QString feedback;
+    QStringList requests;
+
+    Q_INVOKABLE bool requestLock() { requests.append(QStringLiteral("lock")); return true; }
+    Q_INVOKABLE bool requestLogout() { requests.append(QStringLiteral("logout")); return true; }
+    Q_INVOKABLE bool requestSuspend() { requests.append(QStringLiteral("suspend")); return true; }
+    Q_INVOKABLE bool requestReboot() { requests.append(QStringLiteral("reboot")); return true; }
+    Q_INVOKABLE bool requestPowerOff() { requests.append(QStringLiteral("poweroff")); return true; }
+
+Q_SIGNALS:
+    void availabilityChanged();
+    void pendingChanged();
+    void feedbackChanged();
+};
+
 QVariantMap testTheme()
 {
     return {{QStringLiteral("cornerRadius"), 8},
@@ -70,7 +102,8 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
 {
     FakePowerTransport transport;
     Power::PowerClient client(&transport);
-    PowerAppletController controller(&client, true, true);
+    StubSessionActions sessionActions;
+    PowerAppletController controller(&client, true, true, &sessionActions);
     publishReady(client, transport);
 
     QQmlEngine engine;
@@ -164,6 +197,40 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
              Power::OperationKind::SetProfile);
     QCOMPARE(transport.operations.constLast().request.profileId,
              QStringLiteral("power-saver"));
+
+    auto *lock = root->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletLockButton"));
+    auto *suspend = root->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletSuspendButton"));
+    auto *restart = root->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletRestartButton"));
+    QVERIFY(lock != nullptr);
+    QVERIFY(suspend != nullptr);
+    QVERIFY(restart != nullptr);
+    QAccessibleInterface *lockInterface =
+        QAccessible::queryAccessibleInterface(lock);
+    QVERIFY(lockInterface != nullptr);
+    QCOMPARE(lockInterface->role(), QAccessible::Button);
+    QVERIFY(lockInterface->text(QAccessible::Description)
+                .contains(QStringLiteral("Lock")));
+
+    lock->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Space);
+    QCOMPARE(sessionActions.requests,
+             QStringList({QStringLiteral("lock")}));
+    suspend->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Space);
+    QCOMPARE(sessionActions.requests.constLast(), QStringLiteral("suspend"));
+    restart->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Space);
+    QCOMPARE(sessionActions.requests.size(), 2);
+    QObject *confirmation = root->findChild<QObject *>(
+        QStringLiteral("powerAppletSessionConfirmation"));
+    QVERIFY(confirmation != nullptr);
+    QTRY_VERIFY(confirmation->property("opened").toBool());
+    QVERIFY(QMetaObject::invokeMethod(confirmation, "accept"));
+    QTRY_COMPARE(sessionActions.requests.size(), 3);
+    QCOMPARE(sessionActions.requests.constLast(), QStringLiteral("reboot"));
 }
 
 QTEST_MAIN(PowerAppletQmlTests)
