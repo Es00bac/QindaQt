@@ -50,8 +50,8 @@ allowing their static profile label to masquerade as live behavior.
 
 The manifest catalog describes clock, notification center, power, launcher,
 task list, global menu, and status tray packages. The compiled first-party
-registry and production QML dispatcher currently contain three audited entry
-points:
+registry contains four audited entry points; the production QML dispatcher
+currently renders three of them:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -72,6 +72,14 @@ points:
   PB-1 currently supplies honest unavailable truth until its platform
   collaborators land, so the production applet remains visibly unavailable
   rather than inventing host state.
+
+The fourth registry entry, `qindaqt.applets.launcher`, is the compiled
+`QindaQt.Shell.Launcher` module over its shell-private controller (scanning,
+Settings1 persistence, and seam-based bounded execution; `applications.launch`
+gates activation). It passes resolution as `ready`, but hosting it in the
+production panel dispatcher is a later lane's slice, so production panels do
+not render launcher content yet. See [Launcher](launcher.md) and
+[ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
 
 The notification-center and power entries remain valid compiled applets when
 the shell starts without presentation-token provisioning, but the notification

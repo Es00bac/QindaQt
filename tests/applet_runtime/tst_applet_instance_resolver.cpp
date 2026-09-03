@@ -72,6 +72,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
 
     const QStringList expectedEntryPoints{
         QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
@@ -172,18 +173,20 @@ void AppletInstanceResolverTests::exposesCapabilitiesOnlyForRegisteredImplementa
     QString error;
     QVERIFY2(fixture.load(&error), qPrintable(error));
 
+    // The first-party registry now contains the launcher (L1); an
+    // implementation missing from the evaluated registry still fails closed.
+    const AppletRuntime::BuiltinAppletRegistry withoutLauncher(
+        QStringList{QStringLiteral("qindaqt.applets.clock")});
     const auto unavailable = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("launcher")), Profiles::Edge::Bottom,
-        fixture.catalog, fixture.policy, fixture.registry);
+        fixture.catalog, fixture.policy, withoutLauncher);
     QCOMPARE(AppletRuntime::toString(unavailable.status),
              QStringLiteral("implementation-unavailable"));
     QVERIFY(unavailable.grantedCapabilities.isEmpty());
 
-    const AppletRuntime::BuiltinAppletRegistry registry(
-        QStringList{QStringLiteral("qindaqt.applets.launcher")});
     const auto registered = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("launcher")), Profiles::Edge::Bottom,
-        fixture.catalog, fixture.policy, registry);
+        fixture.catalog, fixture.policy, fixture.registry);
     QVERIFY2(registered.ready(), qPrintable(registered.diagnostic));
     QCOMPARE(registered.grantedCapabilities,
              QStringList{QStringLiteral("applications.launch")});
