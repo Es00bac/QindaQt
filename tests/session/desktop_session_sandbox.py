@@ -247,6 +247,12 @@ def sandbox_environment(
         "KWIN_COMPOSE": "Q",
         "QT_QPA_PLATFORM": "wayland",
         "QT_QUICK_BACKEND": "software",
+        # AGENT-GUARD: A private desktop has no portal authority. Letting Qt
+        # activate the host-installed portal stack can transiently spawn a
+        # second dbus-daemon inside the PID namespace and invalidate the exact
+        # single-owner process proof.
+        "QT_NO_XDG_DESKTOP_PORTAL": "1",
+        "GTK_USE_PORTAL": "0",
         "QINDAQT_SESSION_RUN_ID": run_id,
     }
     if library_path:
