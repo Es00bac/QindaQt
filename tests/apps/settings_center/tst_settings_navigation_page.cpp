@@ -4,6 +4,8 @@
 #include "tests/apps/settings/audio/stub_audio_settings_model.h"
 #include "tests/apps/settings/network/stub_network_settings_model.h"
 #include "tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h"
+#include "tests/apps/settings/clipboard/stub_clipboard_settings_model.h"
+#include "tests/apps/settings/clipboard/clipboard_settings_center_assertions.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/design_tokens.h"
@@ -29,6 +31,7 @@ using namespace QindaQt::Apps::SettingsCenter;
 using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
 using QindaQt::Apps::SettingsNetwork::TestSupport::StubNetworkSettingsModel;
 using QindaQt::Apps::SettingsBluetooth::TestSupport::StubBluetoothSettingsModel;
+using QindaQt::Apps::SettingsClipboard::TestSupport::StubClipboardSettingsModel;
 
 namespace {
 
@@ -164,6 +167,7 @@ private:
   std::unique_ptr<StubNetworkSettingsModel> m_network;
   std::unique_ptr<StubAudioSettingsModel> m_audio;
   std::unique_ptr<StubBluetoothSettingsModel> m_bluetooth;
+  std::unique_ptr<StubClipboardSettingsModel> m_clipboard;
 };
 
 namespace {
@@ -210,6 +214,7 @@ void SettingsNavigationPageTest::initTestCase() {
   m_network = std::make_unique<StubNetworkSettingsModel>();
   m_audio = std::make_unique<StubAudioSettingsModel>();
   m_bluetooth = std::make_unique<StubBluetoothSettingsModel>();
+  m_clipboard = std::make_unique<StubClipboardSettingsModel>();
 }
 
 void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
@@ -235,6 +240,8 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
        QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -332,6 +339,8 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
        QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -413,6 +422,9 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
       sceneItem(window->contentItem(), QStringLiteral("audioOutputVolume_10"));
   QVERIFY(compactAudioVolume != nullptr);
   QTRY_COMPARE(window->activeFocusItem(), compactAudioVolume);
+
+  QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
+      *window, navigation, true);
 }
 
 void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
@@ -438,6 +450,8 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
        QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -558,6 +572,9 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
 
   QTest::keyClick(window, Qt::Key_Left, Qt::AltModifier);
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("audio"));
+
+  QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
+      *window, navigation, false);
 }
 
 void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
@@ -594,6 +611,8 @@ void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
        QVariant::fromValue(static_cast<QObject *>(m_audio.get()))},
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);

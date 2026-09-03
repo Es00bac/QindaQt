@@ -10,6 +10,7 @@ import QindaQt.SettingsApp.Network
 import QindaQt.SettingsApp.Customize
 import QindaQt.SettingsApp.Audio
 import QindaQt.SettingsApp.Bluetooth
+import QindaQt.SettingsApp.Clipboard
 
 T.ApplicationWindow {
     id: root
@@ -22,6 +23,7 @@ T.ApplicationWindow {
     property var customizeSettings: CustomizeRouteComposition.model
     property var audioSettings: null
     property var bluetoothSettings: null
+    property var clipboardSettings: ClipboardRouteComposition.model
     property bool applicationClosePending: false
     property bool bluetoothClosePending: false
 
@@ -84,6 +86,11 @@ T.ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+7"
         onActivated: root.navigation.selectRoute("bluetooth")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+9"
+        onActivated: root.navigation.selectRoute("clipboard")
     }
 
     Component.onCompleted: {
@@ -168,12 +175,14 @@ T.ApplicationWindow {
             applicationClosePending: root.applicationClosePending
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
+            clipboardSettings: root.clipboardSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             audioComponent: audioRouteComponent
             bluetoothComponent: bluetoothRouteComponent
+            clipboardComponent: clipboardRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -208,12 +217,14 @@ T.ApplicationWindow {
             applicationClosePending: root.applicationClosePending
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
+            clipboardSettings: root.clipboardSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             audioComponent: audioRouteComponent
             bluetoothComponent: bluetoothRouteComponent
+            clipboardComponent: clipboardRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -269,6 +280,15 @@ T.ApplicationWindow {
         BluetoothPage {
             objectName: "bluetoothPage"
             bluetoothSettings: root.bluetoothSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: clipboardRouteComponent
+        ClipboardPage {
+            objectName: "clipboardPage"
+            clipboardSettings: root.clipboardSettings
             onCloseRequested: root.close()
         }
     }
