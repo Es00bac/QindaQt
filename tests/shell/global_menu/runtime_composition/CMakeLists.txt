@@ -117,3 +117,15 @@ set_tests_properties(
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
+
+add_test(
+    NAME qindaqt.file-manager-global-menu-identity-variants-source-policy
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tst_file_manager_menu_export.cpp
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_file_manager_identity_variants.cmake
+)
+set_tests_properties(
+    qindaqt.file-manager-global-menu-identity-variants-source-policy
+    PROPERTIES LABELS "file-manager;shell;global-menu;policy"
+)
