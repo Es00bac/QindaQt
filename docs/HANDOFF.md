@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T09:33:11-06:00 — Main is nested-qualified again: boot.1080p and both panel-visibility rows green on `ff08ea2` after the staging and capture reconciliations; Clipboard applet C1 and Font F1 integrated.
 - 2026-09-03T09:25:01-06:00 — Clipboard applet C1 (`2abc448`), Font F1 (`045f1a1`), and the panel-visibility interaction repair (`ff08ea2`) merged and under batch verification; the DesktopVirtual route staging moved to `tests/session/DesktopSessionRouteStaging.cmake` (`fb2b280`) to restore the source-shape gate.
 - 2026-09-03T07:15:39-06:00 — Power Settings route (`a83f34e`) and Display Color C1 (`f6b14b2`, ADR-0066) integrated; any test that constructs the Settings Center's Main.qml in-process must link the static PowerBackend module (`3afa972`).
 - 2026-09-03T06:58:16-06:00 — Nested desktop status on main: after the Global Menu and Settings-route merges the private desktop stage lacked libqindaqt_global_menu_qml.so and the Audio/Bluetooth/Power route modules (fixed at `e51372a`, `197f104`; `desktop.virtual.boot.1080p` green again); the two `desktop.virtual.panel-visibility.*` rows still fail on main because the hidden left panel stays mapped at zero size with the Global Menu hosted — an interaction repair lane is open. Treat main's nested panel proof as red until that lands.
