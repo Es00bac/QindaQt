@@ -52,6 +52,31 @@ foreach(path IN LISTS applet_files)
     endif()
 endforeach()
 
+# AGENT-CONTRACT: the applet presentation renders only through the compiled
+# first-party boundary — every QML file imports QindaQt.Controls and resolves
+# QST-1 semantic roles from the QindaQt.Tokens singleton. Applet-owned
+# palette authority is forbidden: no hex color literals, no untyped theme
+# fallback maps. This scan runs in probe mode too, so the poison self-test
+# below proves it rejects a palette-carrying file.
+file(GLOB_RECURSE applet_qml_files
+     LIST_DIRECTORIES false
+     "${applet_directory}/*.qml")
+foreach(path IN LISTS applet_qml_files)
+    file(READ "${path}" qml_content)
+    if(qml_content MATCHES "#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]")
+        message(FATAL_ERROR
+                "${path}: task-list applet QML carries a hard-coded palette literal")
+    endif()
+    if(NOT qml_content MATCHES "import[ \t]+QindaQt\\.Controls")
+        message(FATAL_ERROR
+                "${path}: task-list applet QML does not import QindaQt.Controls")
+    endif()
+    if(NOT qml_content MATCHES "import[ \t]+QindaQt\\.Tokens")
+        message(FATAL_ERROR
+                "${path}: task-list applet QML does not import QindaQt.Tokens")
+    endif()
+endforeach()
+
 if(DEFINED POISON_PROBE AND POISON_PROBE)
     message(STATUS
             "Scanned ${applet_file_count} task-list applet files (probe mode)")
@@ -91,7 +116,10 @@ endif()
 # Bodies are numbered variables, not list elements, because realistic C++
 # bodies contain semicolons that would split a CMake list and silently
 # scramble the staged poison.
-set(poison_case_count 17)
+set(poison_case_count 18)
+set(poison_case_18_name "qml_palette_literal")
+set(poison_case_18_file "poison.qml")
+set(poison_case_18_body "import QtQuick\nItem { property color c: \"#2c312e\" }\n")
 set(poison_case_0_name "qdbus_symbol")
 set(poison_case_0_file "poison.cpp")
 set(poison_case_0_body "#include <QDBusConnection>\nvoid f() { QDBusConnection::sessionBus(); }\n")

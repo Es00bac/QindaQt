@@ -20,6 +20,21 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         "../../../src/shell_visibility_protocol"
         "${CMAKE_BINARY_DIR}/src/shell_visibility_protocol"
     )
+    # The T2 applet QML imports QindaQt.Controls/QindaQt.Tokens, so the
+    # standalone route must provide the themes/tokens/controls targets before
+    # the task-list module (the repository build reaches them through src/).
+    add_subdirectory(
+        "../../../src/themes"
+        "${CMAKE_BINARY_DIR}/src/themes"
+    )
+    add_subdirectory(
+        "../../../src/design_tokens"
+        "${CMAKE_BINARY_DIR}/src/design_tokens"
+    )
+    add_subdirectory(
+        "../../../src/controls"
+        "${CMAKE_BINARY_DIR}/src/controls"
+    )
     add_subdirectory(
         "../../../src/shell/task_list"
         "${CMAKE_BINARY_DIR}/src/shell/task_list"
@@ -194,7 +209,10 @@ qindaqt_add_task_list_applet_test(
 
 # Offscreen QML rows: one harness executable driving the REAL controller with
 # fakes against the compiled QindaQt.Shell.TaskList module; two ctest rows
-# select the phase-rendering and keyboard slots by QTest argv filter.
+# select the phase-rendering and keyboard slots by QTest argv filter. The
+# applet QML consumes QST-1 roles, so the harness publishes a real theme
+# through the staged Tokens/Controls plugin path before any row (audio applet
+# precedent); both plugin targets are build prerequisites of the executable.
 qt_add_executable(
     qindaqt_task_list_applet_qml_tests
     tst_task_list_applet_qml.cpp
@@ -205,7 +223,9 @@ target_link_libraries(
     qindaqt_task_list_applet_qml_tests
     PRIVATE
         QindaQt::ShellTaskListApplet
+        QindaQt::TokensQml
         qindaqt_shell_task_list_appletplugin
+        qindaqt_themes
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick
@@ -213,10 +233,17 @@ target_link_libraries(
 )
 target_compile_definitions(
     qindaqt_task_list_applet_qml_tests
-    PRIVATE QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    PRIVATE
+        QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_SOURCE_DIR="${task_list_boundary_source_root}"
 )
 qindaqt_enable_warnings(qindaqt_task_list_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_task_list_applet_qml_tests)
+add_dependencies(
+    qindaqt_task_list_applet_qml_tests
+    qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin
+)
 
 # AGENT-GUARD: QT_FATAL_WARNINGS=1 is load-bearing — the compiled module must
 # render warning-free offscreen. Do not drop it to silence a Qt warning; fix
@@ -239,6 +266,10 @@ endfunction()
 qindaqt_add_task_list_applet_qml_test(
     qindaqt.task-list-applet-qml-offscreen
     phasesRenderWithTruthfulObjectNames
+)
+qindaqt_add_task_list_applet_qml_test(
+    qindaqt.task-list-applet-qml-arrows-offscreen
+    arrowTraversalStopsAtStripEndpoints
 )
 qindaqt_add_task_list_applet_qml_test(
     qindaqt.task-list-applet-qml-keyboard-offscreen
@@ -283,12 +314,22 @@ if(TARGET qindaqt-shell)
             "-DQINDAQT_TASK_LIST_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/include"
             "-DQINDAQT_TASK_LIST_PRODUCER_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/producer/include"
             "-DQINDAQT_TASK_LIST_OPERATIONS_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/operations/include"
+            "-DQINDAQT_CONTROLS_MODULE_DIRECTORY=${CMAKE_BINARY_DIR}/qml/QindaQt/Controls"
+            "-DQINDAQT_TOKENS_MODULE_DIRECTORY=${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens"
+            "-DQINDAQT_CONTROLS_LIBRARY=$<TARGET_FILE:qindaqt_controls_qml>"
+            "-DQINDAQT_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_tokens_qml>"
+            "-DQINDAQT_THEMES_LIBRARY=$<TARGET_FILE:qindaqt_themes>"
+            "-DQINDAQT_DESIGN_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_design_tokens>"
+            "-DQINDAQT_THEMES_INCLUDE_DIR=${task_list_boundary_source_root}/src/themes/include"
+            "-DQINDAQT_DESIGN_TOKENS_INCLUDE_DIR=${task_list_boundary_source_root}/src/design_tokens/include"
+            "-DQINDAQT_THEME_FILE=${task_list_boundary_source_root}/data/themes/qinda-light.json"
             "-DQINDAQT_CONSUMER_SOURCE_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}/installed_task_list_consumer"
             "-DQINDAQT_CONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_task_list_cpp_consumer.cpp"
             "-DQINDAQT_QT6_DIR=${Qt6_DIR}"
             "-DQINDAQT_GENERATOR=${CMAKE_GENERATOR}"
             "-DQINDAQT_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
             "-DQINDAQT_STATIC_LIBRARY_SUFFIX=${CMAKE_STATIC_LIBRARY_SUFFIX}"
+            "-DQINDAQT_SHARED_LIBRARY_SUFFIX=${CMAKE_SHARED_LIBRARY_SUFFIX}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_task_list_applet.cmake"
     )
     set_tests_properties(

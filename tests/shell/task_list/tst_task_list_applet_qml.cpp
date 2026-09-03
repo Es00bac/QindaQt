@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
+#include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/themes/theme_loader.h"
+
 #include <QAccessible>
 #include <QQmlComponent>
 #include <QQmlEngine>
@@ -25,18 +28,46 @@ using TaskListOperationTest::FakeOperationAuthority;
 
 namespace {
 
-QVariantMap testTheme() {
-  return {{QStringLiteral("cornerRadius"), 6},
-          {QStringLiteral("colors"),
-           QVariantMap{{QStringLiteral("surfaceRaised"),
-                        QStringLiteral("#2c312e")},
-                       {QStringLiteral("border"), QStringLiteral("#3c433f")},
-                       {QStringLiteral("text"), QStringLiteral("#f2f1eb")},
-                       {QStringLiteral("textMuted"),
-                        QStringLiteral("#a9afa9")},
-                       {QStringLiteral("focus"), QStringLiteral("#7fb4ca")},
-                       {QStringLiteral("warning"),
-                        QStringLiteral("#e5a84b")}}}};
+// AGENT-NOTE: the applet QML resolves QST-1 roles from the read-only Tokens
+// singleton; without a published theme the strip renders undefined tokens and
+// the QT_FATAL_WARNINGS=1 rows would abort. Publication is the same seam
+// production composition uses, exercised through the generated plugin path
+// (audio applet precedent).
+bool publishTokens(QQmlEngine &engine, QString *error) {
+  QQmlComponent registration(&engine);
+  registration.setData(R"qml(
+      import QtQuick
+      import QindaQt.Tokens 1.0
+      QtObject { property int revision: Tokens.qstRevision }
+  )qml",
+                       QUrl(QStringLiteral("inline:token-registration.qml")));
+  for (int spin = 0; spin < 100 && registration.status() == QQmlComponent::Loading;
+       ++spin) {
+    QTest::qWait(10);
+  }
+  if (!registration.isReady()) {
+    *error = registration.errorString();
+    return false;
+  }
+  std::unique_ptr<QObject> registrationObject(registration.create());
+  if (registrationObject == nullptr) {
+    *error = registration.errorString();
+    return false;
+  }
+  auto *facade =
+      engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
+          "QindaQt.Tokens", "Tokens");
+  if (facade == nullptr) {
+    *error = QStringLiteral("QindaQt.Tokens singleton was not registered");
+    return false;
+  }
+  const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+  if (!loaded.ok) {
+    *error = loaded.error;
+    return false;
+  }
+  return facade->publish(loaded.theme, {}, error);
 }
 
 QVector<TaskWindowFact> threeEntryFacts() {
@@ -87,6 +118,20 @@ QQuickItem *entryButtonFor(QQuickItem *root, const QString &taskId) {
   return nullptr;
 }
 
+QString focusedTaskIdIn(QQuickItem *root) {
+  const auto buttons =
+      visualItemsNamed(root, QStringLiteral("taskListEntryButton"));
+  for (QQuickItem *button : buttons) {
+    if (button->hasActiveFocus()) {
+      return button->property("entry")
+          .toMap()
+          .value(QStringLiteral("taskId"))
+          .toString();
+    }
+  }
+  return QString();
+}
+
 QString g_appletError;
 
 std::unique_ptr<QObject> createApplet(QQmlEngine &engine,
@@ -101,7 +146,6 @@ std::unique_ptr<QObject> createApplet(QQmlEngine &engine,
   }
   std::unique_ptr<QObject> object(component.createWithInitialProperties(
       {{QStringLiteral("access"), QVariant::fromValue(&controller)},
-       {QStringLiteral("theme"), testTheme()},
        {QStringLiteral("vertical"), vertical}}));
   if (object == nullptr) {
     g_appletError = component.errorString();
@@ -124,6 +168,7 @@ class TaskListAppletQmlTests final : public QObject {
 
 private slots:
   void phasesRenderWithTruthfulObjectNames();
+  void arrowTraversalStopsAtStripEndpoints();
   void keyboardTraversalAndContextMenuDispatch();
 };
 
@@ -136,6 +181,8 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
 
   QQmlEngine engine;
   engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
   auto owned = createApplet(engine, controller, false);
   QVERIFY2(owned != nullptr, qPrintable(g_appletError));
   auto *root = qobject_cast<QQuickItem *>(owned.get());
@@ -276,6 +323,85 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
   deniedRoot->setParentItem(nullptr);
 }
 
+void TaskListAppletQmlTests::arrowTraversalStopsAtStripEndpoints() {
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port,
+                                      {true, true, true});
+  QVERIFY(publishFacts(source, authority, threeEntryFacts()) > 0);
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
+  QQuickWindow window;
+  window.setGeometry(0, 0, 900, 220);
+  window.show();
+  QTRY_VERIFY(window.isExposed());
+
+  // Horizontal strip: Left/Right traverse in canonical order, stop at both
+  // endpoints (KeyNavigation is null past the edge), and vertical arrows are
+  // inert.
+  auto owned = createApplet(engine, controller, false);
+  QVERIFY2(owned != nullptr, qPrintable(g_appletError));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  root->setParentItem(window.contentItem());
+  QQuickItem *first = entryButtonFor(root, QStringLiteral("w1"));
+  QVERIFY(first != nullptr);
+  first->forceActiveFocus();
+  QVERIFY(first->hasActiveFocus());
+  QTest::keyClick(&window, Qt::Key_Right);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("w2"));
+  QTest::keyClick(&window, Qt::Key_Right);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Right);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Down);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Left);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("w2"));
+  QTest::keyClick(&window, Qt::Key_Left);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("w1"));
+  QTest::keyClick(&window, Qt::Key_Left);
+  QCOMPARE(focusedTaskIdIn(root), QStringLiteral("w1"));
+  root->setParentItem(nullptr);
+  owned.reset();
+
+  // Vertical strip: Up/Down traverse with the same endpoint fencing and the
+  // horizontal arrows stay inert.
+  auto verticalOwned = createApplet(engine, controller, true);
+  QVERIFY2(verticalOwned != nullptr, qPrintable(g_appletError));
+  auto *verticalRoot = qobject_cast<QQuickItem *>(verticalOwned.get());
+  QVERIFY(verticalRoot != nullptr);
+  verticalRoot->setParentItem(window.contentItem());
+  QQuickItem *verticalFirst =
+      entryButtonFor(verticalRoot, QStringLiteral("w1"));
+  QVERIFY(verticalFirst != nullptr);
+  verticalFirst->forceActiveFocus();
+  QVERIFY(verticalFirst->hasActiveFocus());
+  QTest::keyClick(&window, Qt::Key_Down);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("w2"));
+  QTest::keyClick(&window, Qt::Key_Down);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Down);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Right);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("c1"));
+  QTest::keyClick(&window, Qt::Key_Up);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("w2"));
+  QTest::keyClick(&window, Qt::Key_Up);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("w1"));
+  QTest::keyClick(&window, Qt::Key_Up);
+  QCOMPARE(focusedTaskIdIn(verticalRoot), QStringLiteral("w1"));
+  verticalRoot->setParentItem(nullptr);
+  verticalOwned.reset();
+
+  // Traversal dispatched no operation.
+  QCOMPARE(port.calls.size(), 0);
+}
+
 void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   TaskListSource source;
   FakeOperationAuthority authority;
@@ -287,6 +413,8 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
 
   QQmlEngine engine;
   engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
   auto owned = createApplet(engine, controller, false);
   QVERIFY2(owned != nullptr, qPrintable(g_appletError));
   auto *root = qobject_cast<QQuickItem *>(owned.get());
@@ -300,19 +428,7 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   const auto commitLast = [&port] {
     port.complete(port.lastCall(), TaskListOperationStatus::Committed, {}, {});
   };
-  const auto focusedTaskId = [&root]() {
-    const auto buttons =
-        visualItemsNamed(root, QStringLiteral("taskListEntryButton"));
-    for (QQuickItem *button : buttons) {
-      if (button->hasActiveFocus()) {
-        return button->property("entry")
-            .toMap()
-            .value(QStringLiteral("taskId"))
-            .toString();
-      }
-    }
-    return QString();
-  };
+  const auto focusedTaskId = [&root]() { return focusedTaskIdIn(root); };
 
   // Tab/Backtab traverse the entry buttons in canonical order.
   QQuickItem *first = entryButtonFor(root, QStringLiteral("w1"));

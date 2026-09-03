@@ -8,7 +8,8 @@
 //   2. one fenced intent dispatch path: activateTask with the exact
 //      generation revision records exactly one operation-port call, and
 //   3. the packaged QML surface: the staged qml/TaskListApplet.qml
-//      instantiates offscreen against the real controller.
+//      instantiates offscreen against the real controller, with the QST-1
+//      theme published through the staged Tokens/Controls modules.
 //
 // Stage locations arrive as STAGE-RELATIVE compile definitions from the
 // harness script; the probe resolves them against its own executable location
@@ -30,9 +31,11 @@
 #include <memory>
 #include <optional>
 
+#include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/shell/task_list/applet/task_list_applet_controller.h>
 #include <qindaqt/shell/task_list/applet/task_list_applet_operation_port.h>
 #include <qindaqt/shell/task_list/producer/task_list_operation_authority.h>
+#include <qindaqt/themes/theme_loader.h>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_TaskListPlugin)
 
@@ -140,16 +143,42 @@ TaskWindowFact makeFact(const QString &windowId, const QString &applicationId)
     return fact;
 }
 
-QVariantMap testTheme()
+bool publishStagedTheme(QQmlEngine &engine)
 {
-    return {{QStringLiteral("cornerRadius"), 6},
-            {QStringLiteral("colors"),
-             QVariantMap{{QStringLiteral("surfaceRaised"),
-                          QStringLiteral("#2c312e")},
-                         {QStringLiteral("border"), QStringLiteral("#3c433f")},
-                         {QStringLiteral("text"), QStringLiteral("#f2f1eb")},
-                         {QStringLiteral("textMuted"), QStringLiteral("#a9afa9")},
-                         {QStringLiteral("warning"), QStringLiteral("#e5a84b")}}}};
+    // Mirror of the Controls test-support publication path, kept local so the
+    // consumer exercises only the staged public modules (clipboard precedent).
+    QQmlComponent registration(&engine);
+    registration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml",
+                         QUrl(QStringLiteral("inline:token-registration.qml")));
+    if (registration.isError()) {
+        qCritical("installed consumer: QindaQt.Tokens did not resolve: %s",
+                  qPrintable(registration.errorString()));
+        return false;
+    }
+
+    auto *facade = engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    if (!facade) {
+        qCritical("installed consumer: Tokens singleton not registered");
+        return false;
+    }
+
+    const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+        stagedPath(QINDAQT_STAGED_THEME_RELATIVE));
+    if (!loaded.ok) {
+        qCritical("installed consumer: staged theme refused: %s", qPrintable(loaded.error));
+        return false;
+    }
+    QString error;
+    if (!facade->publish(loaded.theme, {}, &error)) {
+        qCritical("installed consumer: theme publish failed: %s", qPrintable(error));
+        return false;
+    }
+    return true;
 }
 
 int visualItemsNamed(QQuickItem *root, const QString &name)
@@ -212,9 +241,13 @@ int main(int argc, char **argv)
     }
 
     // Staged QML module proof: instantiate the packaged TaskListApplet
-    // surface offscreen against the real controller.
+    // surface offscreen against the real controller. The surface consumes
+    // QST-1 roles, so the staged theme publishes first.
     QQmlEngine engine;
     engine.addImportPath(stagedPath(QINDAQT_STAGED_QML_RELATIVE));
+    if (!publishStagedTheme(engine)) {
+        return 5;
+    }
     QQmlComponent surface(
         &engine,
         QUrl::fromLocalFile(stagedPath(QINDAQT_STAGED_SURFACE_RELATIVE)));
@@ -225,7 +258,6 @@ int main(int argc, char **argv)
     }
     std::unique_ptr<QObject> surfaceObject(surface.createWithInitialProperties(
         {{QStringLiteral("access"), QVariant::fromValue(&controller)},
-         {QStringLiteral("theme"), testTheme()},
          {QStringLiteral("vertical"), false}}));
     if (!surfaceObject) {
         qCritical("installed consumer: staged surface did not instantiate: %s",

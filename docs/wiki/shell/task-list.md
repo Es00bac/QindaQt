@@ -225,6 +225,9 @@ owns no bus connection of its own:
   emitted mid-dispatch and attributes them strictly by token, drops results
   for unknown tokens, and keeps one pending marker per task until the exactly
   one terminal result arrives — state changes never clear a pending marker.
+  A dock dispatch names two tasks, so its single token marks **both**
+  participants pending and its terminal result releases both; neither side
+  may attract a second mutation while the dock is in flight.
 
 The manifest requests `windows.read`, `windows.activate`, and
 `windows.manage`; the installed policy grants them to the audited package
@@ -254,6 +257,17 @@ policy (Close All / Ungroup / Cancel) itself stays with the later shell
 composition lane. Rows show a typed one-letter icon placeholder derived from
 the application identity: no freedesktop/QIcon seam exists in the tree yet,
 and inventing one here would duplicate launcher's future authority.
+
+The compiled module follows the first-party presentation rule from
+[Module boundaries](../architecture/module-boundaries.md): both QML files
+import `QindaQt.Controls 1.0` explicitly (labels, the dismiss button, and the
+row focus ring are Controls primitives) and resolve every remaining color,
+spacing, radius, and type metric from the read-only QST-1 `QindaQt.Tokens`
+singleton. The applet owns no palette, theme map, or fallback colors — a
+boundary probe rejects hex literals and missing imports — and the row's
+context menu uses the QQC2 style palette because Controls ships no menu
+primitive yet. The composing shell publishes the theme through the same
+Tokens facade seam the offscreen rows exercise.
 
 Window-level activate/minimize/close still finish `Unavailable` through the T1
 adapter until the composition lane routes them through the published exact-owner
