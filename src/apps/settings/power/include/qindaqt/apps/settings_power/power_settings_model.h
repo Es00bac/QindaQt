@@ -125,6 +125,7 @@ private:
   std::optional<DebouncedBrightness> m_debounce;
   std::optional<PendingOperation> m_pending;
   std::optional<Convergence> m_convergence;
+  bool m_retrying = false;
   QString m_errorText;
   QString m_operationStatusText;
 };

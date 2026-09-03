@@ -1105,10 +1105,12 @@ env -u DBUS_SESSION_BUS_ADDRESS \
 The six rows use an injected fake Power transport or absent private buses only.
 Model coverage proves bounded supply/profile/hold/brightness projection,
 textual state/warning/estimate truth, exact raw values, shared action admission,
-success convergence, owner replacement, and the absence of session-action
-invokables. Slider coverage proves that a 120 ms burst sends one final raw
-request, rejects invalid or stale targets, and sends nothing after authority
-replacement. The page row runs with `QT_FATAL_WARNINGS=1` in wide and compact
+retained-stale presentation/admission closure, success convergence, retry-status
+recovery, owner replacement, and the absence of session-action invokables.
+Slider coverage proves that a 120 ms burst sends one final raw request, exact
+normalized and raw-equivalent values send nothing, invalid or stale targets are
+rejected, and authority replacement cancels dispatch. The page row runs with
+`QT_FATAL_WARNINGS=1` in wide and compact
 software scenes and checks accessible role/name/value descriptions, disabled
 internal brightness, action wiring, and first-focus admission. The allow-list
 and independent poisons reject sibling/private service imports, direct D-Bus

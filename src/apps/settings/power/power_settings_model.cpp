@@ -61,6 +61,9 @@ bool PowerSettingsModel::hasDisplaySnapshot() const noexcept {
 
 bool PowerSettingsModel::snapshotAdmitsBase() const noexcept {
   if (!hasDisplaySnapshot() || m_client.operationPending()) return false;
+  const auto state = m_client.state();
+  if (state != PowerClientState::Ready
+      && state != PowerClientState::Degraded) return false;
   return usableAvailability(m_client.snapshot().availability);
 }
 
@@ -203,6 +206,7 @@ bool PowerSettingsModel::retry() {
     reject(QStringLiteral("operation-busy"));
     return false;
   }
+  m_retrying = true;
   m_client.stop();
   m_client.start();
   m_errorText.clear();
@@ -241,6 +245,25 @@ bool PowerSettingsModel::requestKeyboardBrightness(const QString &rowId,
     return false;
   }
   const Snapshot snapshot = m_client.snapshot();
+  const Power::KeyboardBacklight *device = findKeyboard(snapshot, rowId);
+  if (device == nullptr) {
+    reject(QStringLiteral("stale-handle"));
+    return false;
+  }
+  const auto raw = Brightness::denormalizeRaw(
+      0, device->maximum, static_cast<quint32>(normalized));
+  // AGENT-GUARD: Returning a gesture to admitted observed truth must cancel
+  // its queued predecessor. Checking both representations avoids an
+  // idempotent raw write when multiple normalized positions round alike.
+  if (normalized == static_cast<int>(device->normalized)
+      || (raw.succeeded() && raw.value == device->value)) {
+    m_debounceTimer.stop();
+    m_debounce.reset();
+    m_errorText.clear();
+    m_operationStatusText.clear();
+    Q_EMIT viewChanged();
+    return true;
+  }
   m_debounce = DebouncedBrightness{rowId, normalized, m_client.owner(),
                                    snapshot.epoch, snapshot.revision};
   m_debounceTimer.start();
@@ -272,6 +295,11 @@ void PowerSettingsModel::dispatchDebouncedBrightness() {
       0, device->maximum, static_cast<quint32>(debounce.normalized));
   if (!raw.succeeded()) {
     reject(QStringLiteral("invalid-brightness"));
+    return;
+  }
+  if (device->valueKnown && raw.value == device->value) {
+    m_operationStatusText.clear();
+    Q_EMIT viewChanged();
     return;
   }
   const quint64 requestId = m_client.setKeyboardBrightness(device->handle,
@@ -318,6 +346,13 @@ void PowerSettingsModel::handleOperationCompleted(
 }
 
 void PowerSettingsModel::synchronizeAuthority() {
+  const auto state = m_client.state();
+  if (m_retrying && hasDisplaySnapshot()
+      && (state == PowerClientState::Ready
+          || state == PowerClientState::Degraded)) {
+    m_retrying = false;
+    m_operationStatusText.clear();
+  }
   if (m_debounce && (!hasDisplaySnapshot()
                      || m_client.owner() != m_debounce->owner
                      || m_client.snapshot().epoch != m_debounce->epoch)) {

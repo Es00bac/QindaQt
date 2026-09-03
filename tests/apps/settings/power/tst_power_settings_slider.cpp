@@ -16,6 +16,8 @@ class PowerSettingsSliderTest final : public QObject {
 private Q_SLOTS:
   void burstCoalescesToOneExactRawRequest();
   void invalidAndAuthorityChangedDebouncesSendNothing();
+  void unchangedNormalizedAndRawEquivalentDispatchNothing_data();
+  void unchangedNormalizedAndRawEquivalentDispatchNothing();
 };
 
 void PowerSettingsSliderTest::burstCoalescesToOneExactRawRequest() {
@@ -64,6 +66,33 @@ void PowerSettingsSliderTest::invalidAndAuthorityChangedDebouncesSendNothing() {
   QTest::qWait(180);
   QCOMPARE(transport.submissions.size(), 0);
   QVERIFY(model.errorText().contains(QStringLiteral("no change was sent")));
+}
+
+void PowerSettingsSliderTest::unchangedNormalizedAndRawEquivalentDispatchNothing_data() {
+  QTest::addColumn<int>("normalized");
+  QTest::newRow("exact-normalized") << 5'000;
+  QTest::newRow("same-raw-after-conversion") << 5'001;
+}
+
+void PowerSettingsSliderTest::unchangedNormalizedAndRawEquivalentDispatchNothing() {
+  // AGENT-NOTE: P2-2 regression — both exact normalized equality and a
+  // distinct normalized value mapping to the current raw value are no-ops.
+  QFETCH(int, normalized);
+  FakePowerTransport transport;
+  Power::PowerClient client(&transport);
+  PowerSettingsModel model(client);
+  publish(client, transport);
+  const QString id = model.keyboardBrightnessRows().first().toMap()
+                         .value(QStringLiteral("id")).toString();
+
+  QVERIFY(model.requestKeyboardBrightness(id, 4'000));
+  QVERIFY(model.busy());
+  QVERIFY(model.requestKeyboardBrightness(id, normalized));
+  QTest::qWait(180);
+  QCOMPARE(transport.submissions.size(), 0);
+  QVERIFY(!model.busy());
+  QVERIFY(model.operationStatusText().isEmpty());
+  QVERIFY(model.errorText().isEmpty());
 }
 
 QTEST_GUILESS_MAIN(PowerSettingsSliderTest)
