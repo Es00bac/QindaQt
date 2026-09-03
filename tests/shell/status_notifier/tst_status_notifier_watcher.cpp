@@ -20,6 +20,17 @@ using namespace QindaQt::StatusNotifier::TestSupport;
 namespace
 {
 
+class HostSignalRecorder final : public QObject
+{
+    Q_OBJECT
+
+public:
+    QStringList owners;
+
+public slots:
+    void record(const QString &owner) { owners.append(owner); }
+};
+
 // Blocking D-Bus calls from this thread would starve the watcher object,
 // which lives in the same thread: its slots can only be dispatched while the
 // event loop runs. Async calls plus QTRY_VERIFY keep the loop pumping.
@@ -73,8 +84,10 @@ private slots:
     void duplicateRegistrationIsIgnored();
     void rejectsMalformedRegistrations();
     void registersHostsAndTracksHostProperty();
+    void emitsHostUnregisteredWhenOwnerDisconnects();
     void retiresItemsWhenOwnerDisconnects();
     void refusesRegistrationsWhileNameOwnedElsewhere();
+    void degradedStartIsIdempotent();
     void stopReleasesNameAndClearsState();
     void enforcesItemCapacity();
 };
@@ -244,6 +257,47 @@ void StatusNotifierWatcherTests::registersHostsAndTracksHostProperty()
     QDBusConnection::disconnectFromBus(QStringLiteral("host-e"));
 }
 
+void StatusNotifierWatcherTests::emitsHostUnregisteredWhenOwnerDisconnects()
+{
+    // AGENT-NOTE: P1-1 regression: host retirement must emit the documented
+    // wire signal, not only update IsStatusNotifierHostRegistered.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection = connectToPrivateBus(bus.address(), QStringLiteral("watcher-host-loss"));
+    auto hostConnection = connectToPrivateBus(bus.address(), QStringLiteral("host-loss"));
+    QVERIFY(hostConnection.registerService(QStringLiteral("org.qindaqt.LossHost")));
+
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+    HostSignalRecorder recorder;
+    QVERIFY(watcherConnection.connect(
+        QString::fromLatin1(kWatcherServiceName),
+        QString::fromLatin1(kWatcherObjectPath),
+        QString::fromLatin1(kWatcherInterfaceName),
+        QStringLiteral("StatusNotifierHostUnregistered"),
+        &recorder,
+        SLOT(record(QString))));
+    QSignalSpy localSpy(&watcher, &StatusNotifierWatcherService::hostUnregistered);
+    QCOMPARE(watcherCall(hostConnection, QStringLiteral("RegisterStatusNotifierHost"),
+                         QVariant(QStringLiteral("org.qindaqt.LossHost")))
+                 .type(),
+             QDBusMessage::ReplyMessage);
+    const QString owner = hostConnection.baseService();
+    hostConnection = QDBusConnection(QString());
+    QDBusConnection::disconnectFromBus(QStringLiteral("host-loss"));
+
+    QTRY_COMPARE_WITH_TIMEOUT(recorder.owners.size(), 1, 5'000);
+    QCOMPARE(recorder.owners.constFirst(), owner);
+    QCOMPARE(localSpy.size(), 1);
+    QCOMPARE(watcher.registeredHosts(), QStringList());
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("watcher-host-loss"));
+}
+
 void StatusNotifierWatcherTests::retiresItemsWhenOwnerDisconnects()
 {
     if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
@@ -319,6 +373,32 @@ void StatusNotifierWatcherTests::refusesRegistrationsWhileNameOwnedElsewhere()
     QDBusConnection::disconnectFromBus(QStringLiteral("watcher-g1"));
     QDBusConnection::disconnectFromBus(QStringLiteral("watcher-g2"));
     QDBusConnection::disconnectFromBus(QStringLiteral("item-g"));
+}
+
+void StatusNotifierWatcherTests::degradedStartIsIdempotent()
+{
+    // AGENT-NOTE: P2-1 regression: repeated degraded starts preserve the
+    // initial successful NameOwnedElsewhere result.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto ownerConnection = connectToPrivateBus(bus.address(), QStringLiteral("watcher-idempotent-owner"));
+    auto degradedConnection = connectToPrivateBus(bus.address(), QStringLiteral("watcher-idempotent-degraded"));
+
+    StatusNotifierWatcherService owner(ownerConnection);
+    StatusNotifierWatcherService degraded(degradedConnection);
+    QVERIFY2(owner.start(&error), qPrintable(error));
+    QVERIFY2(degraded.start(&error), qPrintable(error));
+    QCOMPARE(degraded.state(), WatcherServiceState::NameOwnedElsewhere);
+    QVERIFY(degraded.start(&error));
+    QCOMPARE(degraded.state(), WatcherServiceState::NameOwnedElsewhere);
+    QCOMPARE(degraded.degradedReason(), QStringLiteral("watcher-name-owned-elsewhere"));
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("watcher-idempotent-owner"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("watcher-idempotent-degraded"));
 }
 
 void StatusNotifierWatcherTests::stopReleasesNameAndClearsState()

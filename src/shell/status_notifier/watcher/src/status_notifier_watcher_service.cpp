@@ -65,7 +65,10 @@ StatusNotifierWatcherService::~StatusNotifierWatcherService()
 bool StatusNotifierWatcherService::start(QString *errorMessage)
 {
     if (m_state != WatcherServiceState::Stopped) {
-        return m_state == WatcherServiceState::Active;
+        // Both published states are successful, stable outcomes. In
+        // particular, NameOwnedElsewhere is truthful degradation rather than
+        // a failed start; repeating start() must not change that result.
+        return true;
     }
     m_degradedReason.clear();
 
@@ -366,8 +369,11 @@ void StatusNotifierWatcherService::retireOwnerItems(const QString &uniqueName)
 void StatusNotifierWatcherService::retireHost(const QString &uniqueName)
 {
     if (m_hosts.remove(uniqueName)) {
-        // The KDE protocol defines no host-unregistered signal; hosts observe
-        // the IsStatusNotifierHostRegistered property after owner loss.
+        // AGENT-GUARD: P1-1 showed that changing only the property strands
+        // hosts which consume the documented four-signal watcher contract.
+        // Emit the wire retirement before local observers see the state.
+        emitHostSignal(QStringLiteral("StatusNotifierHostUnregistered"), uniqueName);
+        emit hostUnregistered(uniqueName);
         emit stateChanged();
     }
 }
