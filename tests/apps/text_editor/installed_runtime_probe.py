@@ -11,7 +11,6 @@ import re
 import select
 import statistics
 import subprocess
-import tempfile
 import time
 
 
@@ -19,6 +18,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--executable", required=True, type=Path)
     parser.add_argument("--data-dir", required=True, type=Path)
+    parser.add_argument("--scratch-dir", required=True, type=Path)
     parser.add_argument("--startup-limit-ms", required=True, type=int)
     parser.add_argument("--pss-limit-kib", required=True, type=int)
     return parser.parse_args()
@@ -67,59 +67,70 @@ def main() -> int:
     environment = os.environ.copy()
     environment["QT_QPA_PLATFORM"] = "offscreen"
     environment["XDG_DATA_DIRS"] = str(arguments.data_dir)
+    environment.pop("DISPLAY", None)
+    environment.pop("WAYLAND_DISPLAY", None)
+    environment.pop("DBUS_SESSION_BUS_ADDRESS", None)
+    environment["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/nonexistent"
 
-    with tempfile.TemporaryDirectory(prefix="qindaqt-editor-probe-") as root:
-        document = Path(root) / "probe.txt"
-        document.write_text("QindaQt editor private runtime probe\n", encoding="utf-8")
-        process = subprocess.Popen(
-            [
-                str(arguments.executable),
-                "--theme",
-                "qinda-dark",
-                "--report-startup",
-                str(document),
-            ],
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        try:
-            startup_ms = read_startup_line(process, timeout_seconds=10.0)
-            samples: list[int] = []
-            for _ in range(5):
-                samples.append(read_pss_kib(process.pid))
-                time.sleep(0.1)
-            pss_median_kib = int(statistics.median(samples))
-            if startup_ms > arguments.startup_limit_ms:
-                raise RuntimeError(
-                    f"first frame {startup_ms} ms exceeds "
-                    f"{arguments.startup_limit_ms} ms"
-                )
-            if pss_median_kib > arguments.pss_limit_kib:
-                raise RuntimeError(
-                    f"median PSS {pss_median_kib} KiB exceeds "
-                    f"{arguments.pss_limit_kib} KiB"
-                )
-            print(
-                json.dumps(
-                    {
-                        "startupFirstFrameMs": startup_ms,
-                        "pssSamplesKiB": samples,
-                        "pssMedianKiB": pss_median_kib,
-                    },
-                    sort_keys=True,
-                )
+    root = arguments.scratch_dir
+    root.mkdir(parents=True, exist_ok=True)
+    for name in ("home", "state", "data", "tmp"):
+        (root / name).mkdir(exist_ok=True)
+    environment["HOME"] = str(root / "home")
+    environment["XDG_STATE_HOME"] = str(root / "state")
+    environment["XDG_DATA_HOME"] = str(root / "data")
+    environment["TMPDIR"] = str(root / "tmp")
+    document = root / "probe.txt"
+    document.write_text("QindaQt editor private runtime probe\n", encoding="utf-8")
+    process = subprocess.Popen(
+        [
+            str(arguments.executable),
+            "--theme",
+            "qinda-dark",
+            "--report-startup",
+            str(document),
+        ],
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        startup_ms = read_startup_line(process, timeout_seconds=10.0)
+        samples: list[int] = []
+        for _ in range(5):
+            samples.append(read_pss_kib(process.pid))
+            time.sleep(0.1)
+        pss_median_kib = int(statistics.median(samples))
+        if startup_ms > arguments.startup_limit_ms:
+            raise RuntimeError(
+                f"first frame {startup_ms} ms exceeds "
+                f"{arguments.startup_limit_ms} ms"
             )
-        finally:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=5.0)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=5.0)
+        if pss_median_kib > arguments.pss_limit_kib:
+            raise RuntimeError(
+                f"median PSS {pss_median_kib} KiB exceeds "
+                f"{arguments.pss_limit_kib} KiB"
+            )
+        print(
+            json.dumps(
+                {
+                    "startupFirstFrameMs": startup_ms,
+                    "pssSamplesKiB": samples,
+                    "pssMedianKiB": pss_median_kib,
+                },
+                sort_keys=True,
+            )
+        )
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5.0)
     return 0
 
 

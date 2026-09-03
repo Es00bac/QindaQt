@@ -149,3 +149,4 @@ nav:
       - "ADR-0061: Authenticated shell window actions": adr/0061-authenticate-shell-window-actions-by-panel-owner.md
       - "ADR-0062: Bound launcher execution seams": adr/0062-bound-launcher-execution-behind-injected-seams.md
       - "ADR-0063: Authenticated active-window identity": adr/0063-project-authenticated-active-window-identity.md
+      - "ADR-0064: Text Editor path inventory": adr/0064-persist-text-editor-path-inventory.md

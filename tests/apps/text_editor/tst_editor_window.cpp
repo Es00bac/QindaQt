@@ -19,6 +19,8 @@
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QStatusBar>
+#include <QTabBar>
+#include <QTabWidget>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTextCursor>
@@ -28,6 +30,10 @@
 using namespace QindaQt::Apps::TextEditor;
 
 namespace {
+
+[[nodiscard]] DocumentStoreFactory localFactory() {
+  return [] { return std::make_unique<LocalDocumentStore>(); };
+}
 
 struct AnnouncementRecord final {
   QString message;
@@ -80,6 +86,8 @@ private slots:
   void externalChangeShowsNonDestructiveBanner();
   void announcementsFollowExternalTransitionsOnly();
   void hidingBannerRestoresEditorFocus();
+  void tabsKeepUndoAndSelectionIndependent();
+  void tabActionsTraverseAndExposeAccessibility();
   void firstFrameSignalIsOneShot();
 };
 
@@ -142,7 +150,7 @@ void EditorWindowTest::appearanceTracksAllBuiltinThemes() {
 void EditorWindowTest::standardActionsAndAccessibility() {
   const EditorAppearance style = appearance();
   QCOMPARE(style.sourceThemeId, QStringLiteral("qinda-dark"));
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), style);
+  EditorWindow window(localFactory(), style);
   QCOMPARE(window.palette().color(QPalette::Window),
            style.palette.color(QPalette::Window));
   QCOMPARE(window.editor()->font().family(), style.editorFont.family());
@@ -185,7 +193,7 @@ void EditorWindowTest::standardActionsAndAccessibility() {
 }
 
 void EditorWindowTest::editingPublishesDirtyState() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance());
+  EditorWindow window(localFactory(), appearance());
   window.show();
   window.editor()->setFocus();
   QTest::keyClicks(window.editor(), QStringLiteral("hello"));
@@ -216,7 +224,7 @@ void EditorWindowTest::externalChangeShowsNonDestructiveBanner() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance());
+  EditorWindow window(localFactory(), appearance());
   QVERIFY(window.controller()->openPath(path).ok());
   file.setFileName(path);
   QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
@@ -265,7 +273,7 @@ void EditorWindowTest::announcementsFollowExternalTransitionsOnly() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance());
+  EditorWindow window(localFactory(), appearance());
   QVERIFY(window.controller()->openPath(path).ok());
   QVector<AnnouncementRecord> announcements;
   AccessibilityAnnouncementCapture capture(announcements);
@@ -301,7 +309,7 @@ void EditorWindowTest::hidingBannerRestoresEditorFocus() {
   QCOMPARE(file.write("baseline"), qint64(8));
   file.close();
 
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance());
+  EditorWindow window(localFactory(), appearance());
   window.show();
   QVERIFY(window.controller()->openPath(path).ok());
   QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
@@ -320,8 +328,84 @@ void EditorWindowTest::hidingBannerRestoresEditorFocus() {
   QTRY_VERIFY(window.editor()->hasFocus());
 }
 
+void EditorWindowTest::tabsKeepUndoAndSelectionIndependent() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString first = directory.filePath(QStringLiteral("first.txt"));
+  const QString second = directory.filePath(QStringLiteral("second.txt"));
+  QFile file(first);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  QCOMPARE(file.write("first"), qint64(5));
+  file.close();
+  file.setFileName(second);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  QCOMPARE(file.write("second"), qint64(6));
+  file.close();
+
+  EditorWindow window(localFactory(), appearance());
+  QVERIFY(window.openDocuments({first, second, first}));
+  QCOMPARE(window.tabs()->count(), 2);
+  QCOMPARE(window.tabs()->currentIndex(), 0);
+  window.editor()->moveCursor(QTextCursor::End);
+  window.editor()->insertPlainText(QStringLiteral(" one"));
+  window.tabs()->setCurrentIndex(1);
+  window.editor()->moveCursor(QTextCursor::End);
+  window.editor()->insertPlainText(QStringLiteral(" two"));
+  window.editor()->undo();
+  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("second"));
+  window.tabs()->setCurrentIndex(0);
+  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("first one"));
+  window.editor()->undo();
+  QCOMPARE(window.editor()->toPlainText(), QStringLiteral("first"));
+}
+
+void EditorWindowTest::tabActionsTraverseAndExposeAccessibility() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString first = directory.filePath(QStringLiteral("first.txt"));
+  const QString second = directory.filePath(QStringLiteral("second.txt"));
+  for (const QString &path : {first, second}) {
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write("content"), qint64(7));
+  }
+  EditorWindow window(localFactory(), appearance());
+  QVERIFY(window.openDocuments({first, second}));
+  window.tabs()->setCurrentIndex(0);
+  auto *tabBar = window.tabs()->tabBar();
+  QCOMPARE(tabBar->accessibleName(), QStringLiteral("Document tabs"));
+  QVERIFY(!tabBar->accessibleDescription().isEmpty());
+  QAccessibleInterface *tabList =
+      QAccessible::queryAccessibleInterface(tabBar);
+  QVERIFY(tabList != nullptr);
+  QCOMPARE(tabList->role(), QAccessible::PageTabList);
+  QVERIFY(tabList->childCount() >= 2);
+  QAccessibleInterface *firstAccessibleTab = tabList->child(0);
+  QVERIFY(firstAccessibleTab != nullptr);
+  QCOMPARE(firstAccessibleTab->role(), QAccessible::PageTab);
+  QVERIFY(!firstAccessibleTab->text(QAccessible::Name).isEmpty());
+  QVERIFY(firstAccessibleTab->state().selectable);
+  QVERIFY(firstAccessibleTab->state().selected);
+  auto *next = window.findChild<QAction *>(QStringLiteral("tabNextAction"));
+  auto *previous =
+      window.findChild<QAction *>(QStringLiteral("tabPreviousAction"));
+  auto *secondTab =
+      window.findChild<QAction *>(QStringLiteral("tabSelect2Action"));
+  QCOMPARE(next->shortcut(), QKeySequence(QStringLiteral("Ctrl+Tab")));
+  QCOMPARE(previous->shortcut(),
+           QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
+  QCOMPARE(secondTab->shortcut(), QKeySequence(QStringLiteral("Ctrl+2")));
+  next->trigger();
+  QCOMPARE(window.tabs()->currentIndex(), 1);
+  QVERIFY(!firstAccessibleTab->state().selected);
+  next->trigger();
+  QCOMPARE(window.tabs()->currentIndex(), 0);
+  secondTab->trigger();
+  QCOMPARE(window.tabs()->currentIndex(), 1);
+}
+
 void EditorWindowTest::firstFrameSignalIsOneShot() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance());
+  EditorWindow window(localFactory(), appearance());
   QSignalSpy firstFrame(&window, &EditorWindow::firstFramePainted);
   window.show();
   QTRY_COMPARE(firstFrame.count(), 1);

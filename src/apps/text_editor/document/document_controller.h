@@ -28,6 +28,7 @@ public:
                               QObject *parent = nullptr);
 
   [[nodiscard]] const DocumentState &state() const;
+  [[nodiscard]] static QString normalizePath(const QString &path);
   void newDocument();
   [[nodiscard]] DocumentOperation openPath(const QString &path);
   void setText(const QString &text);
@@ -45,7 +46,6 @@ signals:
   void externalStateChanged(QindaQt::Apps::TextEditor::ExternalState state);
 
 private:
-  [[nodiscard]] static QString normalizePath(const QString &path);
   [[nodiscard]] static DocumentOperation
   fromSaveResult(const SaveResult &result);
   void adoptSuccessfulSave(const QString &path, const FileRevision &revision);
