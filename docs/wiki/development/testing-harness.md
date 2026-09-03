@@ -177,6 +177,21 @@ installed production-package/source-poison rows. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
+The registered Clipboard applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.clipboard-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection, controller fencing, seam, compiled offscreen
+keyboard/accessibility/real-pointer, boundary-poison, and staged
+installed-package/RPATH rows run entirely offscreen against the in-process C0
+model; no row contacts the host clipboard, session bus, display server, or
+hardware. The exact matrix and non-claims are detailed in
+[Clipboard applet](../shell/clipboard-applet.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

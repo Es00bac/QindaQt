@@ -48,10 +48,10 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
-The manifest catalog describes clock, notification center, power, launcher,
-task list, global menu, and status tray packages. The compiled first-party
-registry and production QML dispatcher currently contain three audited entry
-points:
+The manifest catalog describes clock, notification center, power, clipboard,
+launcher, task list, global menu, and status tray packages. The compiled
+first-party registry contains four audited entry points, of which the
+production QML dispatcher currently renders three:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -71,7 +71,16 @@ points:
   or replacement clears prior truth and ends a pending request without replay.
   PB-1 currently supplies honest unavailable truth until its platform
   collaborators land, so the production applet remains visibly unavailable
-  rather than inventing host state.
+  rather than inventing host state; and
+- `qindaqt.applets.clipboard` is a registered built-in with a manifest, policy
+  grants (`clipboard.read`, `clipboard.write`), a compiled
+  `QindaQt.Shell.ClipboardApplet` module, and a shell-private controller over
+  the injected `ClipboardClientInterface` seam presenting the volatile bounded
+  Clipboard C0 history. Production-shell dispatcher composition lands in a
+  follow-on lane, so the stock profile does not place the applet yet and the
+  production dispatcher does not render it; resolution to `ready` is covered
+  by the applet-runtime resolver tests. See
+  [Clipboard applet](clipboard-applet.md).
 
 The notification-center and power entries remain valid compiled applets when
 the shell starts without presentation-token provisioning, but the notification

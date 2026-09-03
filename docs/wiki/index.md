@@ -102,6 +102,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   milestones.
 - [Applet runtime](shell/applet-runtime.md) defines manifest, host, policy, and
   compiled-implementation gates and records which built-ins are genuinely live.
+- [Clipboard applet](shell/clipboard-applet.md) records the registered bounded
+  clipboard-history presentation slice: capability-gated controller over the
+  injected C0 seam, compiled QML, lock/privacy purge fencing, and packaged
+  install evidence.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes

@@ -55,6 +55,7 @@ target_sources(
     qindaqt_shell_clipboard_applet_runtime
     PRIVATE
         src/clipboard_applet_controller.cpp
+        src/clipboard_applet_controller_search.cpp
         src/clipboard_model_client_adapter.cpp
     PUBLIC
         FILE_SET HEADERS
