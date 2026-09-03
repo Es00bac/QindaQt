@@ -33,10 +33,21 @@ run_boundary(poison_status)
 if(poison_status EQUAL 0)
     message(FATAL_ERROR "session-actions boundary accepted direct login1 poison")
 endif()
-if(NOT poison_status_log MATCHES "Direct login1 authority escaped session_actions")
+if(NOT poison_status_log MATCHES "Direct session authority escaped session_actions")
     message(FATAL_ERROR
         "session-actions poison failed for the wrong reason:\n${poison_status_log}")
 endif()
 
+file(WRITE "${POISON_ROOT}/src/apps/settings/power/poison.cpp"
+    "const char *service = \"org.freedesktop.ScreenSaver\";\n")
+run_boundary(poison_status)
+if(poison_status EQUAL 0)
+    message(FATAL_ERROR "session-actions boundary accepted direct ScreenSaver poison")
+endif()
+if(NOT poison_status_log MATCHES "Direct session authority escaped session_actions")
+    message(FATAL_ERROR
+        "session-actions ScreenSaver poison failed for the wrong reason:\n${poison_status_log}")
+endif()
+
 file(REMOVE_RECURSE "${POISON_ROOT}")
-message(STATUS "session-actions boundary rejected direct login1 poison")
+message(STATUS "session-actions boundary rejected direct platform-authority poison")

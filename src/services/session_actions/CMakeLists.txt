@@ -7,7 +7,9 @@ add_library(QindaQt::SessionActions ALIAS qindaqt_session_actions)
 
 target_sources(
     qindaqt_session_actions
-    PRIVATE src/session_actions_client.cpp
+    PRIVATE
+        src/session_actions_client.cpp
+        src/session_actions_state.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

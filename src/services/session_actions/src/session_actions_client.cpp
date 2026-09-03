@@ -75,6 +75,9 @@ QString unavailableText(SessionAction action)
 
 struct SessionActionsClient::RefreshQuery final {
     quint64 serial = 0;
+    quint64 screenSaverEpoch = 0;
+    quint64 sessionEpoch = 0;
+    quint64 logindEpoch = 0;
     int outstanding = 0;
     SessionActionAvailability availability;
 };
@@ -117,21 +120,28 @@ void SessionActionsClient::start()
     m_running = true;
     auto installWatcher = [this](QDBusServiceWatcher *&slot,
                                  const char *service,
-                                 const QDBusConnection &connection) {
+                                 const QDBusConnection &connection,
+                                 SessionAction authority) {
         slot = new QDBusServiceWatcher(QString::fromLatin1(service), connection,
                                        QDBusServiceWatcher::WatchForOwnerChange,
                                        this);
         connect(slot, &QDBusServiceWatcher::serviceOwnerChanged, this,
-                [this](const QString &, const QString &, const QString &) {
+                [this, authority](const QString &, const QString &, const QString &) {
+                    advanceAuthorityEpoch(authority);
+                    ++m_refreshSerial;
+                    publishAvailability({});
                     scheduleRefresh();
                 });
     };
     if (m_sessionBus.isConnected()) {
-        installWatcher(m_sessionWatcher, SessionService, m_sessionBus);
-        installWatcher(m_screenSaverWatcher, ScreenSaverService, m_sessionBus);
+        installWatcher(m_sessionWatcher, SessionService, m_sessionBus,
+                       SessionAction::Logout);
+        installWatcher(m_screenSaverWatcher, ScreenSaverService, m_sessionBus,
+                       SessionAction::Lock);
     }
     if (m_systemBus.isConnected()) {
-        installWatcher(m_logindWatcher, LogindService, m_systemBus);
+        installWatcher(m_logindWatcher, LogindService, m_systemBus,
+                       SessionAction::Suspend);
     }
     scheduleRefresh();
 }
@@ -166,30 +176,6 @@ void SessionActionsClient::refresh()
     }
 }
 
-const SessionActionAvailability &SessionActionsClient::availability() const noexcept
-{
-    return m_availability;
-}
-
-bool SessionActionsClient::canLock() const noexcept { return m_availability.lock; }
-bool SessionActionsClient::canLogout() const noexcept { return m_availability.logout; }
-bool SessionActionsClient::canSuspend() const noexcept { return m_availability.suspend; }
-bool SessionActionsClient::canReboot() const noexcept { return m_availability.reboot; }
-bool SessionActionsClient::canPowerOff() const noexcept { return m_availability.powerOff; }
-bool SessionActionsClient::pending() const noexcept { return m_pending.has_value(); }
-QString SessionActionsClient::feedback() const { return m_feedback; }
-
-bool SessionActionsClient::requestLock() { return requestAction(SessionAction::Lock); }
-bool SessionActionsClient::requestLogout() { return requestAction(SessionAction::Logout); }
-bool SessionActionsClient::requestSuspend() { return requestAction(SessionAction::Suspend); }
-bool SessionActionsClient::requestReboot() { return requestAction(SessionAction::Reboot); }
-bool SessionActionsClient::requestPowerOff() { return requestAction(SessionAction::PowerOff); }
-
-void SessionActionsClient::clearFeedback()
-{
-    publishFeedback({});
-}
-
 void SessionActionsClient::scheduleRefresh()
 {
     if (m_running && !m_refreshDebounce.isActive()) {
@@ -205,12 +191,15 @@ void SessionActionsClient::refreshAvailability()
     const quint64 serial = ++m_refreshSerial;
     auto query = std::make_shared<RefreshQuery>();
     query->serial = serial;
-    query->availability.lock =
-        !serviceOwner(m_sessionBus, ScreenSaverService).isEmpty();
 
+    const QString screenSaverOwner = serviceOwner(m_sessionBus, ScreenSaverService);
     const QString sessionOwner = serviceOwner(m_sessionBus, SessionService);
     const QString logindOwner = serviceOwner(m_systemBus, LogindService);
-    query->outstanding = (sessionOwner.isEmpty() ? 0 : 1)
+    query->screenSaverEpoch = m_screenSaverEpoch;
+    query->sessionEpoch = m_sessionEpoch;
+    query->logindEpoch = m_logindEpoch;
+    query->outstanding = (screenSaverOwner.isEmpty() ? 0 : 1)
+        + (sessionOwner.isEmpty() ? 0 : 1)
         + (logindOwner.isEmpty() ? 0 : 3);
     if (query->outstanding == 0) {
         publishAvailability(query->availability);
@@ -227,6 +216,27 @@ void SessionActionsClient::refreshAvailability()
                 }
             }, Qt::SingleShotConnection);
 
+    if (!screenSaverOwner.isEmpty()) {
+        QDBusMessage call = QDBusMessage::createMethodCall(
+            screenSaverOwner, QString::fromLatin1(ScreenSaverPath),
+            QString::fromLatin1(ScreenSaverInterface), QStringLiteral("GetActive"));
+        auto *watcher = new QDBusPendingCallWatcher(m_sessionBus.asyncCall(call), this);
+        connect(watcher, &QDBusPendingCallWatcher::finished, this,
+                [this, watcher, query, screenSaverOwner] {
+                    const QDBusPendingReply<bool> reply = *watcher;
+                    watcher->deleteLater();
+                    if (query->serial != m_refreshSerial || !m_running) {
+                        return;
+                    }
+                    // AGENT-GUARD: Name ownership alone does not prove that the
+                    // standard /ScreenSaver lock interface exists.
+                    query->availability.lock = !reply.isError()
+                        && serviceOwner(m_sessionBus, ScreenSaverService) == screenSaverOwner
+                        && m_screenSaverEpoch == query->screenSaverEpoch;
+                    completeRefresh(query);
+                });
+    }
+
     if (!sessionOwner.isEmpty()) {
         QDBusMessage call = QDBusMessage::createMethodCall(
             sessionOwner, QString::fromLatin1(SessionPath),
@@ -240,7 +250,8 @@ void SessionActionsClient::refreshAvailability()
                         return;
                     }
                     query->availability.logout = !reply.isError() && reply.value()
-                        && serviceOwner(m_sessionBus, SessionService) == sessionOwner;
+                        && serviceOwner(m_sessionBus, SessionService) == sessionOwner
+                        && m_sessionEpoch == query->sessionEpoch;
                     completeRefresh(query);
                 });
     }
@@ -264,7 +275,8 @@ void SessionActionsClient::refreshAvailability()
                     }
                     const bool admitted = !reply.isError()
                         && reply.value() == QStringLiteral("yes")
-                        && serviceOwner(m_systemBus, LogindService) == logindOwner;
+                        && serviceOwner(m_systemBus, LogindService) == logindOwner
+                        && m_logindEpoch == query->logindEpoch;
                     switch (action) {
                     case SessionAction::Suspend: query->availability.suspend = admitted; break;
                     case SessionAction::Reboot: query->availability.reboot = admitted; break;
@@ -286,28 +298,6 @@ void SessionActionsClient::completeRefresh(const std::shared_ptr<RefreshQuery> &
     }
 }
 
-void SessionActionsClient::publishAvailability(
-    const SessionActionAvailability &availability)
-{
-    if (m_availability == availability) {
-        return;
-    }
-    m_availability = availability;
-    Q_EMIT availabilityChanged();
-}
-
-bool SessionActionsClient::cachedAvailable(SessionAction action) const noexcept
-{
-    switch (action) {
-    case SessionAction::Lock: return m_availability.lock;
-    case SessionAction::Logout: return m_availability.logout;
-    case SessionAction::Suspend: return m_availability.suspend;
-    case SessionAction::Reboot: return m_availability.reboot;
-    case SessionAction::PowerOff: return m_availability.powerOff;
-    }
-    return false;
-}
-
 QString SessionActionsClient::currentOwner(SessionAction action) const
 {
     if (action == SessionAction::Lock) {
@@ -317,6 +307,34 @@ QString SessionActionsClient::currentOwner(SessionAction action) const
         return serviceOwner(m_sessionBus, SessionService);
     }
     return serviceOwner(m_systemBus, LogindService);
+}
+
+quint64 SessionActionsClient::authorityEpoch(SessionAction action) const noexcept
+{
+    if (action == SessionAction::Lock) {
+        return m_screenSaverEpoch;
+    }
+    if (action == SessionAction::Logout) {
+        return m_sessionEpoch;
+    }
+    return m_logindEpoch;
+}
+
+bool SessionActionsClient::authorityMatches(const PendingAction &request) const
+{
+    return authorityEpoch(request.action) == request.authorityEpoch
+        && currentOwner(request.action) == request.owner;
+}
+
+void SessionActionsClient::advanceAuthorityEpoch(SessionAction action)
+{
+    if (action == SessionAction::Lock) {
+        ++m_screenSaverEpoch;
+    } else if (action == SessionAction::Logout) {
+        ++m_sessionEpoch;
+    } else {
+        ++m_logindEpoch;
+    }
 }
 
 bool SessionActionsClient::requestAction(SessionAction action)
@@ -341,18 +359,45 @@ bool SessionActionsClient::requestAction(SessionAction action)
         publishFeedback(tr("The session action request limit was reached."));
         return false;
     }
-    m_pending = PendingAction{m_nextRequestId, action, owner, false};
+    m_pending = PendingAction{m_nextRequestId, action, owner,
+                              authorityEpoch(action), false};
     m_actionDeadline.start();
     publishFeedback({});
     Q_EMIT pendingChanged();
     if (action == SessionAction::Lock) {
-        dispatchMutation();
+        authorizeLock();
     } else if (action == SessionAction::Logout) {
         authorizeLogout();
     } else {
         authorizeLogind();
     }
     return true;
+}
+
+void SessionActionsClient::authorizeLock()
+{
+    const PendingAction request = *m_pending;
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        request.owner, QString::fromLatin1(ScreenSaverPath),
+        QString::fromLatin1(ScreenSaverInterface), QStringLiteral("GetActive"));
+    auto *watcher = new QDBusPendingCallWatcher(m_sessionBus.asyncCall(call), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, request] {
+                const QDBusPendingReply<bool> reply = *watcher;
+                watcher->deleteLater();
+                if (!m_pending || m_pending->requestId != request.requestId) {
+                    return;
+                }
+                if (!authorityMatches(request)) {
+                    completePending(ActionStatus::Unavailable,
+                                    QStringLiteral("authority-replaced"));
+                } else if (reply.isError()) {
+                    completePending(ActionStatus::Unavailable,
+                                    QStringLiteral("lock-interface-unavailable"));
+                } else {
+                    dispatchMutation();
+                }
+            });
 }
 
 void SessionActionsClient::authorizeLogout()
@@ -369,7 +414,7 @@ void SessionActionsClient::authorizeLogout()
                 if (!m_pending || m_pending->requestId != request.requestId) {
                     return;
                 }
-                if (currentOwner(request.action) != request.owner) {
+                if (!authorityMatches(request)) {
                     completePending(ActionStatus::Unavailable,
                                     QStringLiteral("authority-replaced"));
                 } else if (reply.isError() || !reply.value()) {
@@ -395,7 +440,7 @@ void SessionActionsClient::authorizeLogind()
                 if (!m_pending || m_pending->requestId != request.requestId) {
                     return;
                 }
-                if (currentOwner(request.action) != request.owner) {
+                if (!authorityMatches(request)) {
                     completePending(ActionStatus::Unavailable,
                                     QStringLiteral("authority-replaced"));
                 } else if (reply.isError()
@@ -414,7 +459,7 @@ void SessionActionsClient::dispatchMutation()
         return;
     }
     const PendingAction request = *m_pending;
-    if (currentOwner(request.action) != request.owner) {
+    if (!authorityMatches(request)) {
         completePending(ActionStatus::Unavailable,
                         QStringLiteral("authority-replaced"));
         return;
@@ -447,7 +492,12 @@ void SessionActionsClient::dispatchMutation()
                 if (!m_pending || m_pending->requestId != request.requestId) {
                     return;
                 }
-                if (reply.type() == QDBusMessage::ReplyMessage) {
+                // AGENT-GUARD: A retired authority cannot confirm the current
+                // desktop's action; never replay it on the replacement.
+                if (!authorityMatches(request)) {
+                    completePending(ActionStatus::Uncertain,
+                                    QStringLiteral("authority-replaced"));
+                } else if (reply.type() == QDBusMessage::ReplyMessage) {
                     completePending(ActionStatus::Succeeded,
                                     QStringLiteral("applied"));
                 } else {
@@ -479,15 +529,6 @@ void SessionActionsClient::completePending(ActionStatus status,
     Q_EMIT actionFinished(SessionActionResult{request.requestId, request.action,
                                               status, reasonCode});
     scheduleRefresh();
-}
-
-void SessionActionsClient::publishFeedback(QString feedback)
-{
-    if (m_feedback == feedback) {
-        return;
-    }
-    m_feedback = std::move(feedback);
-    Q_EMIT feedbackChanged();
 }
 
 } // namespace QindaQt::Services::SessionActions

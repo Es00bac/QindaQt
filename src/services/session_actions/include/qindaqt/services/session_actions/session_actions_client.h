@@ -52,10 +52,10 @@ struct SessionActionResult final {
 // tests may point them at one private broker. Owner changes trigger one
 // coalesced refresh, never a recurring poll.
 //
-// AGENT-CONTRACT: cached Can* results are presentation facts only. Every
-// destructive dispatch repeats its Can* query against the exact current
-// unique owner. One request may be live and its bounded deadline never replays
-// an uncertain mutation.
+// AGENT-CONTRACT: cached capability results are presentation facts only. Lock
+// repeats its interface probe and every Can* action repeats its admission query
+// against the exact current unique owner. One request may be live and its
+// bounded deadline never replays an uncertain mutation.
 class SessionActionsClient final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool canLock READ canLock NOTIFY availabilityChanged)
@@ -107,6 +107,7 @@ private:
         quint64 requestId = 0;
         SessionAction action = SessionAction::Lock;
         QString owner;
+        quint64 authorityEpoch = 0;
         bool mutationDispatched = false;
     };
 
@@ -115,6 +116,7 @@ private:
     void completeRefresh(const std::shared_ptr<RefreshQuery> &query);
     void publishAvailability(const SessionActionAvailability &availability);
     [[nodiscard]] bool requestAction(SessionAction action);
+    void authorizeLock();
     void authorizeLogout();
     void authorizeLogind();
     void dispatchMutation();
@@ -122,6 +124,9 @@ private:
     void publishFeedback(QString feedback);
     [[nodiscard]] bool cachedAvailable(SessionAction action) const noexcept;
     [[nodiscard]] QString currentOwner(SessionAction action) const;
+    [[nodiscard]] quint64 authorityEpoch(SessionAction action) const noexcept;
+    [[nodiscard]] bool authorityMatches(const PendingAction &request) const;
+    void advanceAuthorityEpoch(SessionAction action);
 
     QDBusConnection m_sessionBus;
     QDBusConnection m_systemBus;
@@ -136,6 +141,9 @@ private:
     QString m_feedback;
     quint64 m_refreshSerial = 0;
     quint64 m_nextRequestId = 0;
+    quint64 m_screenSaverEpoch = 0;
+    quint64 m_sessionEpoch = 0;
+    quint64 m_logindEpoch = 0;
     bool m_running = false;
 };
 
