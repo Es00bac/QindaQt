@@ -2095,7 +2095,7 @@ The first whole-desktop harness boundary is selected with:
 ```sh
 cmake --build build/dev --parallel 1 --target qindaqt-desktop-session-probe
 ctest --test-dir build/dev --parallel 1 --output-on-failure \
-  -R '^desktop\.virtual\.(sandbox-unit|package-contract)$'
+  -R '^desktop\.virtual\.(sandbox-unit|package-contract|stage-closure)$'
 ```
 
 Building `qindaqt-desktop-session-probe` also builds the exact production graph
@@ -2118,6 +2118,26 @@ dual-row `kscreen-doctor` plus `KSC_KWayland.so` backend inputs and passes their
 exact paths. The sandbox binds each discovered installation prefix read-only;
 the outer and inner drivers preserve the exact selector/backend paths instead
 of encoding `/usr/bin` or a distribution-specific Qt plugin directory.
+
+`desktop.virtual.stage-closure` independently installs only the
+`DesktopVirtual` component into a fresh build-local prefix. Without starting a
+bus, bubblewrap, compositor, or display, it parses every staged ELF executable
+and shared library with `readelf`, resolves every `DT_NEEDED` edge through the
+artifact's installed RPATH/RUNPATH plus the configured system-library roots,
+and rejects source/build-tree fallback. The shell's linked Controls, Launcher,
+and Global Menu libraries must resolve inside that prefix. The row derives the
+five built-in applet imports from `BuiltinAppletContent.qml` and the production
+panel QML sources, and derives the complete Settings route inventory from
+`SettingsApp/Main.qml`; every non-embedded product import requires a regular
+staged `qmldir`. Customize and PowerBackend are explicit embedded-static
+exceptions and an exemption becomes invalid when its import disappears. The
+row then runs the staged shell's `--help` path and keeps the staged Settings
+Center alive offscreen with loader, display, Wayland, and host-bus state absent
+and the QML/data roots confined to the stage. Finally it copies the stage twice,
+removes Global Menu's shell-linked library in one copy and the Settings Power
+`qmldir` in the other, and requires each closure check to fail for that exact
+omission. This is a package/loadability guard, not nested-session or
+rendered-applet evidence.
 
 The registered live row is `desktop.virtual.boot.1080p`. It is intentionally
 inaccessible to an ordinary CTest invocation: the manager must allocate the
@@ -2394,11 +2414,15 @@ Focused runtime-boundary tests are separate from the generic stage, sandbox,
 and archive tests so failures identify the owning contract.
 
 The `DesktopVirtual` install component must carry the complete import closure
-of every Settings route compiled into `Main.qml`. That currently includes the
-Appearance, Display, and Network backing libraries, plugins, `qmldir` files,
-typeinfo, and every QML source named by those module directories, in addition
-to Tokens and Controls. The package contract authenticates the exact Network
-library/plugin pair, metadata, and all five deployed QML files. Missing
+of every Settings route compiled into `Main.qml`. Its external route inventory
+currently includes Appearance, Display, Network, Audio, Bluetooth, and Power
+backing libraries, plugins, `qmldir` files, typeinfo, and every QML source named
+by those module directories, in addition to Tokens and Controls. Customize and
+PowerBackend are linked into the Settings executable as embedded static QML
+modules, so the closure row records those two exceptions explicitly and proves
+the executable reaches its offscreen event loop. The package contract separately
+authenticates the exact Network library/plugin pair, metadata, and all five
+deployed QML files. Missing
 payloads, final-artifact symlinks, escaping symlinks, and traversal mutations
 fail closed. A contained intermediate directory symlink is accepted only when
 every resolved payload remains a regular file inside the same authenticated
@@ -2406,6 +2430,12 @@ module; it does not weaken stage containment or exact-payload checks. A
 package-only pass is
 insufficient if a required application does not map: topology readiness must observe the installed
 `org.qindaqt.Settings` window before interaction or capture can qualify a row.
+
+The component also carries one data-driven inventory for every applet module
+imported by the production panel dispatcher: Audio, Bluetooth, Global Menu,
+Launcher, and Power. The non-nested `desktop.virtual.stage-closure` row guards
+their `qmldir` payloads and the shell's direct shared-library closure before any
+private runtime is allocated.
 
 Every run retains distinct private parent/child Wayland sockets, the fake-seat
 pointer/keyboard pair plus the development input device, exact Meta+N surface
