@@ -37,6 +37,7 @@ if(
         qindaqt-panel-visibility-session-probe
         qindaqt-desktop-session-probe
         qindaqt_shell_launcher_qmlplugin
+        qindaqt_global_menu_qmlplugin
     )
     install(
         FILES
@@ -66,6 +67,7 @@ if(
     install(
         TARGETS
             qindaqt_shell_launcher_qml
+            qindaqt_global_menu_qml
             qindaqt_controls_qml
             qindaqt_tokens_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -91,6 +93,47 @@ if(
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/Launcher/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+
+    # AGENT-NOTE: qindaqt-shell also links the Global Menu G2 QML library
+    # (libqindaqt_global_menu_qml.so). The private desktop stage installs only
+    # the DesktopVirtual component, so the module and its SONAME must be staged
+    # here exactly like the launcher above; the G2 merge omitted this and the
+    # staged shell failed to load, leaving org.freedesktop.Notifications unowned.
+    qt_query_qml_module(
+        qindaqt_global_menu_qml
+        QMLDIR _qindaqt_panel_visibility_global_menu_qmldir
+        TYPEINFO _qindaqt_panel_visibility_global_menu_typeinfo
+        QML_FILES _qindaqt_panel_visibility_global_menu_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_panel_visibility_global_menu_deploy_paths
+    )
+    install(
+        TARGETS qindaqt_global_menu_qml qindaqt_global_menu_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_panel_visibility_global_menu_qmldir}"
+            "${_qindaqt_panel_visibility_global_menu_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_panel_visibility_global_menu_qml_files
+            _qindaqt_panel_visibility_global_menu_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )
