@@ -146,6 +146,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Network route](apps/network-settings.md) documents the first-party
   secret-free Network1 client surface: exact-owner inventory, stale and pending
   truth, bounded scan/connect/disconnect actions, and installed-route proof.
+- [Settings Audio route](apps/audio-settings.md) documents the first-party
+  Audio1 client surface: bounded device and stream inventory, default-device
+  selection, shared availability/admission truth, bounded volume/mute
+  intents, and installed-route proof.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party single-session
   terminal: launch policy, PTY/session lifecycle and teardown, the qtermwidget
   rendering adapter, and keyboard/accessibility boundaries.

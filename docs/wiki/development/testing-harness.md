@@ -813,6 +813,33 @@ Settings1 client suites remain authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
 compositor focus, screen-reader traversal, or the later platform-route matrix.
 
+## Current Audio Settings route proof
+
+The first-party Audio route over the public Audio1 client is selected with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
+  -R '^qindaqt\.settings-audio-(model|model-adversarial|page|boundary|boundary-poison)$'
+```
+
+The model row uses only the injected fake audio transport: it proves bounded
+device/stream projection with default identity, exact owner/epoch/revision
+exposure, capability and per-target admission, one-shot set-default, device
+and stream volume/mute dispatch with hostile level/serial refusal, degraded
+truth that stays admitted exactly as the client preflight admits it, and
+visible never-replayed uncertain outcomes. The adversarial row adds owner
+loss and replacement, epoch fencing of a pending operation and retired
+serials, ignored foreign and late completions, retained stale truth, and a
+retry that rediscovers without replaying. The offscreen page row proves
+accessible roles and names, action wiring including slider release and switch
+toggles, stale and owner-loss presentation, compact focus reveal, and Tab
+cycling. Boundary and poison rows fail on private service, WirePlumber,
+PipeWire, or Qt D-Bus sources, an invokable outside the closed intent
+surface, text entry, a stream-move surface, or a private dependency; the
+Settings Center installed-package row additionally withholds the installed
+Audio module and requires relocated-root failure before restoring it. No row
+contacts the host session bus, PipeWire, or WirePlumber.
+
 ## Current compositor proof
 
 The focused live checks are:
