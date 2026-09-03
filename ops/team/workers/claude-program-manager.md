@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-02T20:42:51-06:00
+updated_at: 2026-09-02T21:10:34-06:00
 ---
 
 # Claude Program Manager
@@ -34,3 +34,4 @@ updated_at: 2026-09-02T20:42:51-06:00
   persistent docs venv, reconfigured a fresh manager Debug root with 404
   registered rows, and opened six non-overlapping lanes (see
   `messages/team-operations/1788403371-claude-program-manager-wave-1.md`).
+- 2026-09-02T21:10:34-06:00 — Baseline truth on `74da463`: full Debug build 2,675/2,675; 385 non-nested rows, 357 pass; all 28 failures environmental (three Kerberos-transitive rows fixed by RUNPATH-patching the private prefix; 25 controls visual rows drift only by glyph rendering after today's host Noto update). Bluetooth B1 candidate `7061dd3` handed off and routed to the two rejecting reviewers. Opened wave-2 lanes: launcher-l1, tray-s1, bluetooth-bluez-b1, clipboard-service-c1, plus controls-visual-fonts.
