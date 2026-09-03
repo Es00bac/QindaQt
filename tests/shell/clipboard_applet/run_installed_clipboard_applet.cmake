@@ -71,7 +71,8 @@ foreach(relative IN ITEMS
         "qmldir"
         "qindaqt_shell_clipboard_applet.qmltypes"
         "qml/ClipboardApplet.qml"
-        "qml/ClipboardEntryRow.qml")
+        "qml/ClipboardEntryRow.qml"
+        "qml/ClipboardPanelApplet.qml")
     if(NOT EXISTS "${module_directory}/${relative}")
         message(FATAL_ERROR
                 "ClipboardApplet component stage is missing ${relative} — the install rule "

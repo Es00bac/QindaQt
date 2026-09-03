@@ -60,6 +60,12 @@ public:
                 return new ClipboardAppletHarness(engine);
             });
     }
+
+public slots:
+    void applicationAvailable()
+    {
+        QindaQt::Controls::TestSupport::pinDeterministicFonts();
+    }
 };
 
 QUICK_TEST_MAIN_WITH_SETUP(clipboard_applet_interactive, ClipboardAppletQmlSetup)

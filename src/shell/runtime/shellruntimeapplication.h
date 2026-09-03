@@ -2,6 +2,7 @@
 #pragma once
 
 #include "runtimeoptions.h"
+#include "clipboardappletcomposition.h"
 
 #include "qindaqt/applet_host/capability_policy.h"
 #include "qindaqt/applets/manifest_catalog.h"
@@ -169,6 +170,7 @@ private:
     // make resetRuntime optional or rely on member order for this pair.
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
+    std::unique_ptr<ClipboardAppletComposition> m_clipboardApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;

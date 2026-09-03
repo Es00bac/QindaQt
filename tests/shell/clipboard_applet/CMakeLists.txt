@@ -102,6 +102,57 @@ add_test(
     COMMAND qindaqt_clipboard_applet_seam_tests
 )
 
+qt_add_executable(
+    qindaqt_clipboard_applet_composition_private_bus_tests
+    tst_clipboard_applet_composition_private_bus.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/clipboardappletcomposition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/clipboardappletcomposition.h"
+)
+target_include_directories(
+    qindaqt_clipboard_applet_composition_private_bus_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}/src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_clipboard_applet_composition_private_bus_tests
+    PRIVATE
+        QindaQt::AppletRuntime
+        QindaQt::ClipboardClient
+        QindaQt::SettingsClient
+        QindaQt::ShellClipboardAppletRuntime
+        Qt6::DBus
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_clipboard_applet_composition_private_bus_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+)
+qindaqt_enable_warnings(
+    qindaqt_clipboard_applet_composition_private_bus_tests
+)
+add_test(
+    NAME qindaqt.clipboard-applet-composition-private-bus
+    COMMAND qindaqt_clipboard_applet_composition_private_bus_tests
+            composesConsentOwnerOperationsAndCeilingPurge
+)
+set_tests_properties(
+    qindaqt.clipboard-applet-composition-private-bus
+    PROPERTIES LABELS "shell;clipboard;dbus;private-bus" TIMEOUT 30
+)
+
+foreach(consent_denial IN ITEMS missing malformed inherited-default ownerless)
+    add_test(
+        NAME qindaqt.clipboard-applet-consent-${consent_denial}
+        COMMAND qindaqt_clipboard_applet_composition_private_bus_tests
+                "withholdsDeniedConsentUntilFencedEmptySnapshot:${consent_denial}"
+    )
+    set_tests_properties(
+        qindaqt.clipboard-applet-consent-${consent_denial}
+        PROPERTIES LABELS "shell;clipboard;dbus;private-bus;negative-control" TIMEOUT 30
+    )
+endforeach()
+
 # AGENT-GUARD: every QML row runs through the compiled harness executable
 # whose build pulls these prerequisites, so a focused build of the declared
 # test targets can never leave QML plugins or the manifest binaries unbuilt
@@ -110,6 +161,11 @@ add_custom_target(
     qindaqt_clipboard_applet_qml_test_prerequisites
     DEPENDS
         qindaqt_shell_clipboard_applet_runtimeplugin
+        qindaqt_shell_audio_applet_runtimeplugin
+        qindaqt_shell_bluetooth_applet_runtimeplugin
+        qindaqt_shell_power_applet_runtimeplugin
+        qindaqt_shell_launcher_qmlplugin
+        qindaqt_global_menu_qmlplugin
         qindaqt_controls_qmlplugin
         qindaqt_tokens_qmlplugin
         qindaqt_applet_manifest_tests
@@ -126,7 +182,15 @@ target_link_libraries(
     PRIVATE
         qindaqt_controls_test_support
         QindaQt::ShellClipboardAppletRuntime
+        QindaQt::ShellAudioAppletRuntime
+        QindaQt::ShellBluetoothAppletRuntime
+        QindaQt::ShellPowerAppletRuntime
+        QindaQt::ShellLauncherQml
+        QindaQt::GlobalMenuQml
+        qindaqt_shell_audio_applet_runtimeplugin
+        qindaqt_shell_bluetooth_applet_runtimeplugin
         qindaqt_shell_clipboard_applet_runtimeplugin
+        qindaqt_shell_power_applet_runtimeplugin
         Qt6::Core
         Qt6::Quick
         Qt6::QuickTest
@@ -172,6 +236,23 @@ qindaqt_add_clipboard_applet_qml_test(
     qindaqt.clipboard-applet-qml-interactive-offscreen
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletInteractive.qml"
 )
+qindaqt_add_clipboard_applet_qml_test(
+    qindaqt.clipboard-applet-production-panel-keyboard-offscreen
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelKeyboard.qml"
+)
+qindaqt_add_clipboard_applet_qml_test(
+    qindaqt.clipboard-applet-production-panel-return-offscreen
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelReturn.qml"
+)
+set_tests_properties(
+    qindaqt.clipboard-applet-production-panel-keyboard-offscreen
+    qindaqt.clipboard-applet-production-panel-return-offscreen
+    PROPERTIES
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+        ENVIRONMENT_MODIFICATION
+            "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+)
 
 # 6. Boundary and source policy test
 add_test(
@@ -179,6 +260,7 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         "-DQINDAQT_CLIPBOARD_APPLET_SOURCE_DIR=${CMAKE_SOURCE_DIR}/src/shell/clipboard_applet"
+        "-DQINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR=${CMAKE_SOURCE_DIR}/src/shell/runtime"
         "-DQINDAQT_CLIPBOARD_APPLET_POISON_DIRECTORY=${CMAKE_BINARY_DIR}/tests/clipboard_applet_poison_probe"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_clipboard_applet_boundary.cmake"
 )
@@ -222,4 +304,22 @@ add_test(
 set_tests_properties(
     qindaqt.clipboard-applet-installed-package
     PROPERTIES LABELS "package" RUN_SERIAL TRUE TIMEOUT 300
+)
+
+add_test(
+    NAME qindaqt.clipboard-applet-runtime-installed-package
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+        "-DQINDAQT_BUILD_ROOT=${CMAKE_BINARY_DIR}"
+        "-DQINDAQT_STAGE=${CMAKE_CURRENT_BINARY_DIR}/installed-clipboard-runtime"
+        "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
+        "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+        "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+        "-DQINDAQT_INSTALL_QMLDIR=${QT6_INSTALL_QML}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_clipboard_runtime.cmake"
+)
+set_tests_properties(
+    qindaqt.clipboard-applet-runtime-installed-package
+    PROPERTIES LABELS "shell;clipboard;installed;poison" RUN_SERIAL TRUE TIMEOUT 90
 )

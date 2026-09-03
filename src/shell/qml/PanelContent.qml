@@ -10,6 +10,7 @@ Item {
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
+    property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
@@ -40,6 +41,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
@@ -58,6 +60,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
@@ -77,6 +80,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
@@ -95,6 +99,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
@@ -113,6 +118,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
@@ -131,6 +137,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        clipboardAppletAccess: root.clipboardAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
