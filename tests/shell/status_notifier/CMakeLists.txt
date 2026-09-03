@@ -57,6 +57,7 @@ set_tests_properties(qindaqt.status-notifier-watcher PROPERTIES LABELS "shell;st
 
 qt_add_executable(qindaqt_status_notifier_item_client_tests
     tst_status_notifier_item_client.cpp
+    status_notifier_fake_item_test_support.h
     status_notifier_private_bus_test_support.h)
 target_link_libraries(qindaqt_status_notifier_item_client_tests
     PRIVATE QindaQt::StatusNotifierItemClient Qt6::Core Qt6::DBus Qt6::Test)
@@ -66,6 +67,7 @@ set_tests_properties(qindaqt.status-notifier-item-client PROPERTIES LABELS "shel
 
 qt_add_executable(qindaqt_status_notifier_monitor_tests
     tst_status_notifier_monitor.cpp
+    status_notifier_fake_item_test_support.h
     status_notifier_private_bus_test_support.h)
 target_link_libraries(qindaqt_status_notifier_monitor_tests
     PRIVATE

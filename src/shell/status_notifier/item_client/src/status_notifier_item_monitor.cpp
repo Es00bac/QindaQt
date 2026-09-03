@@ -8,6 +8,7 @@
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
+#include <QPointer>
 #include <QTimer>
 
 namespace QindaQt::StatusNotifier
@@ -42,6 +43,23 @@ void StatusNotifierItemMonitor::attach(StatusNotifierEventSink *sink)
         return; // Contract: null-first refusal and no re-attachment.
     }
     m_sink = sink;
+
+    // AGENT-CONTRACT: the watcher signals retire/re-admit individual items
+    // (e.g. after its owner-loss sweep); the owner-loss match below is the
+    // authoritative per-owner retire path. Both may fire for one loss — the
+    // registry refuses the duplicate as stale, so ordering is not a contract.
+    m_connection.connect(QString::fromLatin1(kWatcherServiceName),
+                         QString::fromLatin1(kWatcherObjectPath),
+                         QString::fromLatin1(kWatcherInterfaceName),
+                         QStringLiteral("StatusNotifierItemRegistered"),
+                         this,
+                         SLOT(handleItemRegistered(QString)));
+    m_connection.connect(QString::fromLatin1(kWatcherServiceName),
+                         QString::fromLatin1(kWatcherObjectPath),
+                         QString::fromLatin1(kWatcherInterfaceName),
+                         QStringLiteral("StatusNotifierItemUnregistered"),
+                         this,
+                         SLOT(handleItemUnregistered(QString)));
 
     auto *serviceWatcher = new QDBusServiceWatcher(
         QString::fromLatin1(kWatcherServiceName),
@@ -143,9 +161,8 @@ RegistryOutcome StatusNotifierItemMonitor::requestScroll(const OwnerKey &target,
     return outcome;
 }
 
-void StatusNotifierItemMonitor::handleWatcherServiceChange(const QString &serviceName)
+void StatusNotifierItemMonitor::handleWatcherServiceChange(const QString &)
 {
-    Q_UNUSED(serviceName)
     const QDBusReply<QString> owner =
         m_connection.interface()->serviceOwner(QString::fromLatin1(kWatcherServiceName));
     const bool live = owner.isValid() && !owner.value().isEmpty();
@@ -269,10 +286,14 @@ void StatusNotifierItemMonitor::fetchRegisteredItems()
         QStringLiteral("Get"));
     request << QVariant(QString::fromLatin1(kWatcherInterfaceName))
             << QVariant(QStringLiteral("RegisteredStatusNotifierItems"));
-    auto *watcher =
+    QPointer<QDBusPendingCallWatcher> watcher =
         new QDBusPendingCallWatcher(m_connection.asyncCall(request), this);
     QTimer::singleShot(m_fetchTimeoutMs, this, [this, watcher]() {
-        watcher->deleteLater();
+        // QPointer guard: the finished lambda may already have deleteLater()d
+        // (and event delivery freed) the watcher before this timer fires.
+        if (watcher) {
+            watcher->deleteLater();
+        }
         if (!m_populationInFlight || m_populationOutstanding != 0) {
             return; // Individual item timeouts still gate completion.
         }
