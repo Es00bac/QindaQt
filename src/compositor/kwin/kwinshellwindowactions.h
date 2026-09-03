@@ -107,6 +107,13 @@ public Q_SLOTS:
         const QString &windowId, const QString &epoch, const QString &revision);
     Q_SCRIPTABLE [[nodiscard]] QByteArray ActiveWindowIdentity();
 
+Q_SIGNALS:
+    // AGENT-CONTRACT: This signal is exported for descriptor/live-object
+    // parity but is never emitted through Qt, which would broadcast focus
+    // timing. sendDirectedIdentityInvalidation() sends the same wire member
+    // only to the authenticated shell owner.
+    Q_SCRIPTABLE void ActiveWindowIdentityChanged();
+
 private Q_SLOTS:
     void sendDirectedIdentityInvalidation();
 

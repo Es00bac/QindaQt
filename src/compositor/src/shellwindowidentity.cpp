@@ -369,7 +369,10 @@ std::optional<ShellWindowIdentitySnapshot> decodeShellWindowIdentitySnapshot(
     }
     quint64 revision = 0;
     const QString epoch = object.value(QStringLiteral("epoch")).toString();
-    if (epoch.isEmpty() || epoch.size() > ShellWindowActionMaximumEpochCharacters
+    // AGENT-GUARD: Apply the public action-generation rule even to an
+    // unavailable identity reply (whose identity revision may legitimately
+    // be zero). A merely nonempty epoch is not a usable action fence.
+    if (!ShellWindowGeneration{epoch, 1}.isValid()
         || !canonicalRevisionString(
             object.value(QStringLiteral("revision")).toString(), &revision)) {
         setError(error, QStringLiteral("active-window identity lineage is invalid"));
@@ -391,7 +394,8 @@ std::optional<ShellWindowIdentitySnapshot> decodeShellWindowIdentitySnapshot(
     if (status != QLatin1StringView("ok") || revision == 0
         || !canonicalRevisionString(
             object.value(QStringLiteral("actionRevision")).toString(),
-            &actionRevision) || actionRevision == 0) {
+            &actionRevision)
+        || !ShellWindowGeneration{epoch, actionRevision}.isValid()) {
         setError(error, QStringLiteral("active-window identity status is invalid"));
         return std::nullopt;
     }

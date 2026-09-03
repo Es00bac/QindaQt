@@ -63,6 +63,7 @@ private Q_SLOTS:
     void publishesTypedAbsences();
     void outageAdvancesIdentityLineage();
     void rejectsMalformedOrPartialFactsAtomically();
+    void rejectsInvalidActionGenerationEpochs();
     void authenticatesBeforeConsultingIdentitySource();
     void codecRejectsHostileTypesAndChangedFields();
 };
@@ -139,6 +140,30 @@ void ShellWindowIdentityTest::rejectsMalformedOrPartialFactsAtomically()
     malformed.activeWindow->processId = 1;
     QCOMPARE(store.publish(malformed), ShellWindowIdentityPublishResult::Rejected);
     QCOMPARE(store.snapshotJson(), retained);
+}
+
+void ShellWindowIdentityTest::rejectsInvalidActionGenerationEpochs()
+{
+    ShellWindowIdentityStore store(Epoch);
+    auto malformed = candidate();
+    malformed.actionGeneration.epoch = QStringLiteral(" padded-epoch ");
+    QCOMPARE(store.publish(malformed), ShellWindowIdentityPublishResult::Rejected);
+    QCOMPARE(store.revision(), quint64(0));
+
+    ShellWindowIdentitySnapshot snapshot{
+        ShellWindowIdentityStatus::Ok, QStringLiteral(" padded-epoch "), 1,
+        {QStringLiteral(" padded-epoch "), 7}, std::nullopt, {}, {}};
+    QString error;
+    QVERIFY(!decodeShellWindowIdentitySnapshot(
+        encodeShellWindowIdentitySnapshot(snapshot), &error));
+    QVERIFY(!error.isEmpty());
+
+    snapshot.status = ShellWindowIdentityStatus::Unavailable;
+    snapshot.actionGeneration = {};
+    snapshot.failureCode = QStringLiteral("identity-unavailable");
+    snapshot.message = QStringLiteral("test failure");
+    QVERIFY(!decodeShellWindowIdentitySnapshot(
+        encodeShellWindowIdentitySnapshot(snapshot), &error));
 }
 
 void ShellWindowIdentityTest::authenticatesBeforeConsultingIdentitySource()

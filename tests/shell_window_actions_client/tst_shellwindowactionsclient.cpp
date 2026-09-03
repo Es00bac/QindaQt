@@ -85,6 +85,7 @@ private Q_SLOTS:
     void timeoutIsUncertainWithoutReplay();
     void publishesIdentityAndRefreshesAfterInvalidation();
     void identityOwnerChangeAndRegressionFailClosed();
+    void invalidIdentityEpochFailsClosed();
 };
 
 void ShellWindowActionsClientTest::bindsExactOwnerAndCompletesMatchingReply()
@@ -243,6 +244,20 @@ void ShellWindowActionsClientTest::identityOwnerChangeAndRegressionFailClosed()
                              Generation.epoch, 1, Generation,
                              std::nullopt, {}, {}});
     QVERIFY(!client.identityAvailable());
+}
+
+void ShellWindowActionsClientTest::invalidIdentityEpochFailsClosed()
+{
+    FakeTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 100);
+    QVERIFY(client.start());
+    transport.owner(QStringLiteral(":1.invalid-epoch"));
+    transport.identityReply({Compositor::ShellWindowIdentityStatus::Ok,
+                             QStringLiteral(" padded-epoch "), 1,
+                             {QStringLiteral(" padded-epoch "), 3},
+                             std::nullopt, {}, {}});
+    QVERIFY(!client.identityAvailable());
+    QVERIFY(!client.identitySnapshot());
 }
 
 QTEST_GUILESS_MAIN(ShellWindowActionsClientTest)

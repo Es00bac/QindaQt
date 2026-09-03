@@ -265,6 +265,14 @@ broadcast. Panel-owner loss triggers one final directed invalidation and revokes
 the binding. The shell client rereads over the same exact-owner transport and
 withdraws its prior value while the read is pending.
 
+The signal is a scriptable Qt meta-object member and is exported alongside the
+scriptable methods, so live `org.freedesktop.DBus.Introspectable` output matches
+the immutable descriptor. The endpoint deliberately never emits that Qt signal:
+normal Qt D-Bus signal export would broadcast it. It instead sends the same
+declared wire member as a targeted message to the authenticated owner. The
+private-KWin contract row compares the live method/signal sets with the checked-
+in XML; parsing the XML alone is not parity evidence.
+
 An available schema-1 response is a complete compact JSON object:
 
 ```json
@@ -290,7 +298,10 @@ window-action fence changes. `epoch` is the same service epoch used by
 `Windows`; `(epoch, actionRevision)` is the exact visibility/action generation
 sampled with the facts. Consumers accept forward revision gaps but reject epoch
 changes without reset, revision regression, and changed bytes at an equal
-revision.
+revision. Both compositor publication and shell decoding apply
+`ShellWindowGeneration::isValid()` to the `(epoch, actionRevision)` fence;
+whitespace-padded, empty, oversized, zero-revision, or otherwise invalid action
+generations make identity unavailable rather than current truth.
 
 `activeWindow` is `null` when no admitted ordinary window is active. Otherwise
 `windowId` is its KWin UUID. `processId` is a positive decimal string or

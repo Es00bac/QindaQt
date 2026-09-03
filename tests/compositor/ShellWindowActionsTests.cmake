@@ -16,6 +16,7 @@ add_test(NAME compositor.shell-window-identity COMMAND qindaqt_shell_window_iden
 
 if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
     find_package(LayerShellQt 6.6.5 REQUIRED)
+    find_package(KWayland 6.6.5 EXACT REQUIRED)
     find_program(QINDAQT_SHELL_ACTIONS_DBUS_RUN_SESSION dbus-run-session)
     if(QINDAQT_SHELL_ACTIONS_DBUS_RUN_SESSION)
         qt_add_executable(
@@ -23,18 +24,26 @@ if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
             shellwindowactionsliveprobe.cpp
             shellwindowactionsliveclients.cpp
             shellwindowactionsliveclients.h
+            shellwindowactionslivecontract.cpp
+            shellwindowactionslivecontract.h
         )
         target_link_libraries(
             qindaqt_shell_window_actions_live_probe
             PRIVATE
                 QindaQt::ShellWindowActionsClient
                 LayerShellQt::Interface
+                Plasma::KWaylandClient
                 Qt6::DBus
                 Qt6::Gui
         )
         set_target_properties(
             qindaqt_shell_window_actions_live_probe
             PROPERTIES CXX_EXTENSIONS OFF
+        )
+        target_compile_definitions(
+            qindaqt_shell_window_actions_live_probe
+            PRIVATE
+                QINDAQT_COMPOSITOR_SHELL_DESCRIPTOR=\"${PROJECT_SOURCE_DIR}/compositor/dbus/org.qindaqt.CompositorShell1.xml\"
         )
         qindaqt_enable_warnings(qindaqt_shell_window_actions_live_probe)
         add_dependencies(

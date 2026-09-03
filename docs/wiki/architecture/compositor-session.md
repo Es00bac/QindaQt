@@ -299,6 +299,12 @@ refresh identity. Reads authenticate before touching KWin state, and change
 hints are targeted only to the exact shell peer that successfully read the
 snapshot. The unauthenticated `Compositor1` remains unchanged.
 
+The endpoint exports its scriptable identity signal for descriptor/live-object
+introspection parity but does not emit it through Qt's broadcast path; the
+authenticated unicast is assembled explicitly. The publisher and client codec
+both apply the public action-generation validity rule, so a malformed epoch is
+typed unavailability rather than a usable identity fence.
+
 These compositor facts are proof inputs, not registrar authority. A local
 process can still lodge bogus `RegisterWindow` claims, and an announced service
 name does not prove who owns it. Global Menu must join the numeric id or
