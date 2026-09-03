@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Audio applet descendant `14f3e670d66988ec87648f195b91e26c56a45fbf`
+  at manager merge `780981c`. The applet composes only the public AudioClient with separate read/control
+  grants and audited routing; the merge also carries the staging-closure repairs that ship the shell's
+  Controls/Tokens runtime dependency in every shell-carrying install component (Power, Bluetooth, Audio,
+  and the default component) with a new `qindaqt.shell-runtime-component-closure` row, after the first
+  manager merge attempt broke two installed-package rows and was reset. Fresh merged-tree Debug and
+  Release each pass the three applet selectors 22/22 and the integrity/runtime/closure rows 7/7; the broad safe Debug suite passes 396/396;
+  122-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-004.12
+  advances WIRED → EXECUTABLE.
+
 - This integration merges exact accepted Portal P1 candidate `c33b4908f99cb1dfac04287383441d028ab8f25b`
   at manager merge `2c514ac`. The installed `xdg-desktop-portal` 1.20.4 frontend, started on a private bus
   with a staged portal directory, selects the QindaQt Settings backend only under

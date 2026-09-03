@@ -58,6 +58,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `14f3e67` — The production Audio applet composes only the public AudioClient through a shell-private
+  controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled
+  keyboard-accessible QML, and exact-owner replacement fences. Integration exposed that the shell's new
+  Controls/Tokens link dependency was not staged by the Power, Bluetooth, or default install components;
+  the accepted staging-closure descendant ships that closure in every shell-carrying component and adds a
+  component-closure row. Reviews: `caaf7d9` accepted `0/0/0/0` on Codex, `b623b00` rejected `0/1/0/0`,
+  `14f3e67` accepted `0/0/0/0` by Frances Bilas (OpenAI Codex). The fresh merged tree passes applet 22/22 and
+  integrity/runtime/closure 7/7 in Debug and Release, the broad safe Debug suite passes 396/396, and all static gates. This advances
+  QQ-004.12 from WIRED to EXECUTABLE; physical devices and nested panel interaction remain.
+
 - `c33b490` — Portal P1 proves host frontend selection and toolkit reaction with the real `xdg-desktop-portal`
   1.20.4 on a private bus: the QindaQt Settings backend is selected only under `XDG_CURRENT_DESKTOP=qindaqt`,
   the frontend's values and `SettingChanged` follow the QindaQt projection, Qt's `xdgdesktopportal` platform
