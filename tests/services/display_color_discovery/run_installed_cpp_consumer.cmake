@@ -3,6 +3,7 @@
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY QINDAQT_INSTALL_PREFIX
                           QINDAQT_CONSUMER_SOURCE_DIRECTORY QINDAQT_CONSUMER_SOURCE
                           QINDAQT_INSTALL_LIBDIR QINDAQT_INSTALL_INCLUDEDIR
+                          QINDAQT_DISPLAY_COLOR_DISCOVERY_LIBRARY_NAME
                           QINDAQT_DISPLAY_COLOR_MODEL_LIBRARY_NAME QINDAQT_QT6_DIR)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed-consumer test input: ${required}")
@@ -22,10 +23,10 @@ endif()
 file(REMOVE_RECURSE "${install_prefix}")
 
 # AGENT-NOTE: P2.3 rejected an unscoped whole-tree install because the
-# mandated focused Display Color build does not produce unrelated libraries.
+# mandated focused build does not produce unrelated repository libraries.
 set(install_command
     "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}"
-    --component DisplayColorModelDevelopment
+    --component DisplayColorDiscoveryDevelopment
 )
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")
@@ -50,6 +51,7 @@ execute_process(
         "-DCMAKE_BUILD_TYPE=${QINDAQT_BUILD_TYPE}"
         "-DQt6_DIR=${QINDAQT_QT6_DIR}"
         "-DQINDAQT_STAGE_INCLUDE_DIR=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
+        "-DQINDAQT_DISPLAY_COLOR_DISCOVERY_LIBRARY=${install_prefix}/${QINDAQT_INSTALL_LIBDIR}/${QINDAQT_DISPLAY_COLOR_DISCOVERY_LIBRARY_NAME}"
         "-DQINDAQT_DISPLAY_COLOR_MODEL_LIBRARY=${install_prefix}/${QINDAQT_INSTALL_LIBDIR}/${QINDAQT_DISPLAY_COLOR_MODEL_LIBRARY_NAME}"
         "-DQINDAQT_CONSUMER_SOURCE=${QINDAQT_CONSUMER_SOURCE}"
     RESULT_VARIABLE configure_status
@@ -70,7 +72,7 @@ if(NOT build_status EQUAL 0)
     message(FATAL_ERROR "Installed consumer build failed:\n${build_output}${build_error}")
 endif()
 
-set(consumer "${consumer_build}/qindaqt_installed_display_color_consumer")
+set(consumer "${consumer_build}/qindaqt_installed_display_color_discovery_consumer")
 execute_process(
     COMMAND "${consumer}"
     RESULT_VARIABLE consumer_status
@@ -79,7 +81,7 @@ execute_process(
 )
 if(NOT consumer_status EQUAL 0)
     message(FATAL_ERROR
-        "Installed C++ DisplayColorModel consumer exited ${consumer_status}:\n"
+        "Installed C++ DisplayColorDiscovery consumer exited ${consumer_status}:\n"
         "${consumer_output}${consumer_error}"
     )
 endif()

@@ -153,3 +153,4 @@ nav:
       - "ADR-0063: Authenticated active-window identity": adr/0063-project-authenticated-active-window-identity.md
       - "ADR-0064: Identity-checked local file mutation": adr/0064-confine-file-mutation-to-identity-checked-local-authority.md
       - "ADR-0065: Text Editor path inventory": adr/0065-persist-text-editor-path-inventory.md
+      - "ADR-0066: Injected ICC roots and Settings1 assignments": adr/0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md

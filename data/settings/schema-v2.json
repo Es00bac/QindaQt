@@ -128,6 +128,12 @@
       "constraints": { "allowedValues": ["off", "automatic", "on"] }
     },
     {
+      "key": "displays.colorAssignments",
+      "domain": "displays",
+      "type": "object",
+      "default": {}
+    },
+    {
       "key": "input.pointerAcceleration",
       "domain": "input",
       "type": "number",
