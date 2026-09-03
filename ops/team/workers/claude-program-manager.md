@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-02T23:03:16-06:00
+updated_at: 2026-09-02T23:28:17-06:00
 ---
 
 # Claude Program Manager
@@ -38,3 +38,4 @@ updated_at: 2026-09-02T23:03:16-06:00
 - 2026-09-02T21:45:39-06:00 — Integrated Global Menu G1 `7c27ee5` at merge `729bebd` after Elizabeth Feinler's Kimi K3 ACCEPT `0/0/0/1`; merged tree passes global-menu 16/16 in Debug and Release, broad safe Debug suite 365/365, docs 117, strict MkDocs, shape, diff, JSON, and Team Board 16/16. Bluetooth B1 repair descendant `882cc0c` accepted by K3-256k `0/0/0/0`; K2.7 recheck pending.
 - 2026-09-02T22:07:00-06:00 — Integrated Bluetooth applet B1 `882cc0c` at merge `34a79c2` after both same-reviewer rechecks accepted `0/0/0/0`; merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release, boundary 7+6 and 5+4, broad safe Debug suite 373/373, docs 118, strict MkDocs, shape, diff, JSON, Team Board 16/16. QQ-004.14 ABSENT → EXECUTABLE. Reviews in flight: clipboard service (K3-256k), audio settings (Codex), audio applet (GLM-5.3).
 - 2026-09-02T23:03:16-06:00 — Integrated the BlueZ adapter `f44919a` at merge `d43463c` (ADR renumbered 0057); merged tree passes Bluetooth 15/15 Debug/Release, broad safe Debug 379/379, and static gates. Both Z.AI GLM and Moonshot Kimi hit 5-hour usage limits; every dead worker's dirty tree is preserved as a WIP commit and reviews moved to Codex; product lanes wait for the resets (~01:23 and ~01:40 MDT).
+- 2026-09-02T23:28:17-06:00 — Integrated the Clipboard C1 service `63e884c` at merge `f34f81a` (ADR renumbered 0058); merged tree passes clipboard 14/14, Settings-related 29/29 in Debug and Release, broad safe Debug 389/389 after a verified reconfigure, and static gates. QQ-005.06 WIRED → EXECUTABLE. The audio applet merge was reset off main after it broke two installed-package rows; its staging repair `b623b00` is under recheck.

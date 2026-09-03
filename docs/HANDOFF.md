@@ -4,6 +4,17 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Clipboard C1 service repair descendant
+  `63e884cfa2216d7dc492407e30c7ce28b8512ac0` at manager merge `f34f81a`. The resident host captures only
+  after an explicit user-override `services.clipboardHistory` opt-in (both shipped schemas now default to
+  `false`), pauses capture and withdraws readable truth unless the authenticated lock state is Unlocked,
+  bounds MIME/byte/offer limits, evicts remembered requests with exactly-once semantics preserved, and
+  ships D-Bus activation and a user unit. Evelyn Berezin (Kimi K3-256k) rejected the ancestor at `0/1/1/3`;
+  Ruth Lichterman (OpenAI Codex) accepted the repair at `0/0/0/0`. The candidate's ADR is renumbered from
+  the colliding 0056 to ADR-0058. Fresh merged-tree Debug and Release each pass clipboard 14/14 and the
+  Settings, notification-quieting, and appearance rows 29/29; the broad safe Debug suite passes 389/389; 121-document validation, strict
+  MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-005.06 advances WIRED → EXECUTABLE.
+
 - This integration merges exact independently accepted BlueZ adapter candidate
   `f44919a52f67515779f887b8d54a9bb2a57b3c4b` at manager merge `d43463c`. The adapter implements the
   accepted AdapterBackend port over an injected direct-QtDBus `org.bluez` connection (ObjectManager,

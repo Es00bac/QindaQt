@@ -558,8 +558,8 @@
           "id": "QQ-005.06",
           "title": "Private bounded clipboard history",
           "weight": 9,
-          "state": "WIRED",
-          "summary": "Clipboard C0 integrates a volatile bounded history model, canonical MIME/size policy, lock-private projection, metadata-only search, generation fencing, and atomic hostile decode behavior.",
+          "state": "EXECUTABLE",
+          "summary": "Clipboard C0 plus the C1 service: the volatile bounded history model, a bounded ext-data-control-v1 Wayland capture adapter that reads only admitted MIME types within byte limits, the private-bus org.qindaqt.Clipboard1 protocol and exact-owner client with bounded remembered-request eviction, and a resident host that captures only after an explicit user-override opt-in (schema default false), withdraws truth unless the authenticated lock state is Unlocked, and ships activation artifacts.",
           "evidence": [
             {
               "kind": "commit",
@@ -567,12 +567,12 @@
               "summary": "The independently accepted Clipboard C0 series is integrated after atomic decoder publication repair."
             },
             {
-              "kind": "source",
-              "reference": "docs/wiki/architecture/clipboard-service.md",
-              "summary": "The owning page records the model, privacy, validation, codec, and explicit resident-service boundary."
+              "kind": "commit",
+              "reference": "63e884cfa2216d7dc492407e30c7ce28b8512ac0",
+              "summary": "The Clipboard C1 service repair descendant is integrated (ADR-0058); Evelyn Berezin (Kimi K3-256k) rejected 405577c at 0/1/1/3 for first-start capture and cache exhaustion, and Ruth Lichterman (OpenAI Codex) accepted the repair at 0/0/0/0; the merged tree passes clipboard 14/14 and Settings-related 29/29 in Debug and Release."
             }
           ],
-          "caveat": "C0 has no live Wayland capture/offer adapter, resident service/client transport, persistence, production applet, or installed interaction proof."
+          "caveat": "C1 is qualified against a fake data-control server and private buses only: the shell applet composition, live nested capture proof, persistence, and physical/session qualification remain."
         },
         {
           "id": "QQ-005.07",

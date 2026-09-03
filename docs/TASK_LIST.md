@@ -58,6 +58,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `63e884c` — The Clipboard C1 service adds a bounded `ext-data-control-v1` capture adapter, the private-bus
+  `org.qindaqt.Clipboard1` protocol and exact-owner client with bounded remembered-request eviction, and a
+  resident host that captures only after an explicit user-override opt-in (the Settings1 schema default is
+  now `false`), withdraws truth unless the authenticated lock state is Unlocked, and ships activation
+  artifacts. Evelyn Berezin (Kimi K3-256k) rejected the first candidate at `0/1/1/3` for first-start capture
+  without consent and permanent request-cache exhaustion; Ruth Lichterman (OpenAI Codex) accepted the
+  repair at `0/0/0/0`. The fresh merged tree passes clipboard 14/14 and Settings-related 29/29 in Debug and
+  Release, the broad safe Debug suite passes 389/389, and all static gates; the candidate's ADR is renumbered to 0058. This advances
+  QQ-005.06 from WIRED to EXECUTABLE; applet composition, live nested capture, and persistence remain.
+
 - `f44919a` — The production BlueZ adapter reaches `org.bluez` through an injected direct-QtDBus
   connection behind the accepted AdapterBackend port, driving only adapter power, the reference-counted
   discovery lease, and paired-device connect/disconnect while BlueZ keeps pairing and trust authority;
