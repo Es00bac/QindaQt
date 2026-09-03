@@ -85,6 +85,7 @@ arbitration described above, with hostile coverage in
 is deliberately not instantiated by the production shell, consumes no
 transport, and claims no runtime qualification. Remaining work for later
 slices: a shell-side facts producer fed from public compositor/hybrid
-snapshots, the window-operation adapter behind the intent boundary, QST-1
-presentation, and installed keyboard/accessibility qualification per the
+snapshots, composition of the published exact-owner
+`src/shell_window_actions_client` behind accepted intents, QST-1 presentation,
+and installed keyboard/accessibility qualification per the
 [testing harness](../development/testing-harness.md).

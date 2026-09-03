@@ -3,6 +3,7 @@
 
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactiontypes.h"
+#include "qindaqt/compositor/shellwindowactions.h"
 
 #include <QObject>
 #include <QJsonArray>
@@ -72,6 +73,10 @@ public:
     [[nodiscard]] QJsonArray publicContainers() const;
     [[nodiscard]] std::optional<QJsonObject>
     publicSnapshot(const QString &containerId) const;
+    [[nodiscard]] bool executeShellWindowAction(
+        const QString &windowId,
+        ShellWindowAction action,
+        QString *error = nullptr);
 
     // Idempotent. Restores every Hybrid-owned client before destroying scene,
     // chrome, input, and shortcut collaborators.
@@ -130,6 +135,8 @@ private:
     void synchronizeChrome();
     void reconcileMinimizedContainers();
     void minimizeContainer(const QString &containerId);
+    [[nodiscard]] bool unminimizeContainer(const QString &containerId,
+                                           QString *error = nullptr);
     [[nodiscard]] bool requestCloseContainer(const QString &containerId,
                                              QString *error = nullptr);
     void closeAllMembers(const QString &containerId);

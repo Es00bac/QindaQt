@@ -9,10 +9,12 @@
 #include "kwinhybridsession.h"
 #include "kwinsceneadapter.h"
 #include "kwinshellvisibilitypublisher.h"
+#include "kwinshellwindowactions.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
 #include "mutationcontrol.h"
 #include "qindaqt/compositor/containercontrolbridge.h"
+#include "qindaqt/compositor/shellwindowactions.h"
 
 #include "windowcontainer.h"
 
@@ -32,6 +34,7 @@ namespace {
 
 constexpr auto ServiceName = "org.qindaqt.Compositor";
 constexpr auto ObjectPath = "/org/qindaqt/Compositor";
+constexpr auto ShellActionObjectPath = "/org/qindaqt/CompositorShell";
 
 } // namespace
 
@@ -69,6 +72,17 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
           m_developmentInputInjector.get(), m_developmentOutputSeam.get()))
 {
     m_hybridSession = std::make_unique<KWinHybridSession>(*m_registry, this);
+    m_shellCredentials = std::make_unique<QtBusShellCredentialSource>(m_bus);
+    m_shellPanelOwner = std::make_unique<KWinShellPanelOwnerSource>();
+    m_shellActionRegistry = std::make_unique<KWinShellWindowRegistry>(
+        *m_registry, *m_shellVisibility);
+    m_shellActionExecutor = std::make_unique<KWinShellWindowActionExecutor>(
+        *m_registry, *m_hybridSession);
+    m_shellActionController = std::make_unique<ShellWindowActionController>(
+        *m_shellCredentials, *m_shellPanelOwner, *m_shellActionRegistry,
+        *m_shellActionExecutor);
+    m_shellActionEndpoint = std::make_unique<KWinShellWindowActionsEndpoint>(
+        *m_shellActionController);
     m_shellVisibility->setHybridMaximizedProvider([this](const QString &containerId) {
         return m_hybridSession
             && m_hybridSession->isContainerMaximized(containerId);
@@ -117,7 +131,11 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
                                 // members belong to the versioned D-Bus surface.
                                 QDBusConnection::ExportScriptableSlots
                                     | QDBusConnection::ExportScriptableSignals);
-    if (!m_registeredObject) {
+    m_registeredShellActionObject = m_registeredObject
+        && m_bus.registerObject(QString::fromLatin1(ShellActionObjectPath),
+                                m_shellActionEndpoint.get(),
+                                QDBusConnection::ExportScriptableSlots);
+    if (!m_registeredObject || !m_registeredShellActionObject) {
         qWarning("QindaQt compositor control could not register on the session bus");
     }
 }
@@ -139,6 +157,9 @@ QindaQtKWinPlugin::~QindaQtKWinPlugin()
     }
     releasePublishedContainers();
 
+    if (m_registeredShellActionObject) {
+        m_bus.unregisterObject(QString::fromLatin1(ShellActionObjectPath));
+    }
     if (m_registeredObject) {
         m_bus.unregisterObject(QString::fromLatin1(ObjectPath));
     }
