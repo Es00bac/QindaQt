@@ -21,6 +21,8 @@ namespace QindaQt::Apps::SettingsBluetooth {
 // reply keeps all controls fenced until an authoritative snapshot converges.
 // This model owns at most one caller-scoped discovery lease; route departure
 // requests one serialized release and never automatically replays uncertainty.
+// A departure wait exists only for an admitted lease operation or a held lease;
+// an unsuccessful awaited acquire must not strand the application close path.
 class BluetoothSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading READ loading NOTIFY viewChanged)

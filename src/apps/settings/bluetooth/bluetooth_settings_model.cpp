@@ -81,7 +81,8 @@ bool BluetoothSettingsModel::departureReleasePending() const noexcept {
   // A release that cannot be admitted is completed by Bluetooth1's
   // caller-disappearance contract when the process closes; do not trap an
   // unavailable window indefinitely waiting for an operation we cannot send.
-  return m_releaseRequested && !m_automaticReleaseBlocked
+  return m_releaseRequested && m_discoveryLease.has_value()
+      && !m_automaticReleaseBlocked
       && exactSnapshotReady();
 }
 
@@ -387,6 +388,14 @@ void BluetoothSettingsModel::handleOperationCompleted(
     m_automaticReleaseBlocked = true;
     m_releaseRequested = false;
   }
+  // AGENT-GUARD: Departure may wait for an admitted acquire, but a terminal
+  // non-success cannot leave a release request behind when no lease exists;
+  // Main.qml otherwise rejects every later window close.
+  if (pending.request.kind == OperationKind::AcquireDiscovery
+      && !m_discoveryLease.has_value()) {
+    m_releaseRequested = false;
+    m_automaticReleaseBlocked = false;
+  }
   synchronizeAuthority();
 }
 
@@ -416,10 +425,16 @@ void BluetoothSettingsModel::synchronizeAuthority() {
   if (m_pending && (m_client.owner() != m_pending->owner
                     || (m_client.hasSnapshot()
                         && m_client.snapshot().epoch != m_pending->epoch))) {
+    const bool retiredAcquire =
+        m_pending->request.kind == OperationKind::AcquireDiscovery;
     m_pending.reset();
     m_convergence.reset();
     m_operationStatusText.clear();
     m_errorText = tr("Bluetooth authority changed. The operation was not replayed.");
+    if (retiredAcquire && !m_discoveryLease.has_value()) {
+      m_releaseRequested = false;
+      m_automaticReleaseBlocked = false;
+    }
   }
   retireLeaseFromCurrentTruth();
   if (m_convergence) {

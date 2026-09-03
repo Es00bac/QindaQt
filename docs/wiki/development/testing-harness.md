@@ -961,20 +961,26 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   --output-on-failure --no-tests=error
 ```
 
-The six rows use an injected fake Bluetooth transport or absent private buses
+The seven rows use an injected fake Bluetooth transport or absent private buses
 only. The model row proves bounded address-free adapter/device projection,
 class/icon/RSSI truth, exact owner/epoch/revision admission, paired-only
 connection actions, serialized pending/convergence fences, one discovery
-lease, and release on route departure. The page row runs with
+lease, and release on route departure. The adversarial model row proves that
+rejected, failed, uncertain, inexact, owner-lost, and owner-replaced acquisition
+cannot leave a wait-for-nothing close fence, and rejects duplicate identifiers,
+overlong names, and invalid class/RSSI values. The page row runs with
 `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320 compact software scenes and
 checks accessible role/state/name truth, disabled controls, action wiring, and
 the always-enabled host-entry Close target. The allow-list boundary scan and
 independent negative controls reject sibling application internals, parent
 escapes, private Bluetooth service headers, and pairing authority. The
-window-close row requires an admitted discovery release to finish before the
-host exits. The installed row stages the real runtime, requires failure while
-the installed Bluetooth module is withheld despite the developer tree, then
-launches the relocated route after restoration.
+window-close row uses a stub to isolate successful-release waiting, then uses
+the real client/model to prove rejected, uncertain, owner-lost, and owner-
+replaced pending acquires release the QML close fence; it also exercises
+Bluetooth Escape/Tab entry through the compact Settings host. The installed row
+stages the real runtime, requires failure while the installed Bluetooth module
+is withheld despite the developer tree, then launches the relocated route after
+restoration.
 
 The Settings Center selector adds deterministic six-route order, canonical
 startup, Ctrl+5, PageTab accessibility, Escape/Tab focus, responsive Loader

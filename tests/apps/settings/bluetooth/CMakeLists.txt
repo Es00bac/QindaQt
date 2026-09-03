@@ -21,6 +21,26 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_bluetooth_settings_adversarial_tests
+    tst_bluetooth_settings_adversarial.cpp
+    bluetooth_settings_test_support.h
+)
+target_link_libraries(
+    qindaqt_bluetooth_settings_adversarial_tests
+    PRIVATE qindaqt_settings_bluetooth Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_bluetooth_settings_adversarial_tests)
+add_test(
+    NAME qindaqt.settings-bluetooth-model-adversarial
+    COMMAND qindaqt_bluetooth_settings_adversarial_tests
+)
+set_tests_properties(
+    qindaqt.settings-bluetooth-model-adversarial PROPERTIES
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;bluetooth;model;adversarial;lifetime"
+)
+
+qt_add_executable(
     qindaqt_bluetooth_page_tests
     tst_bluetooth_page.cpp
     stub_bluetooth_settings_model.h

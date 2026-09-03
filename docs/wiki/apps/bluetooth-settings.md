@@ -48,7 +48,9 @@ lease held by this route. Navigating away, closing the Settings window, or
 destroying the model requests the same serialized release. Window close waits
 while an admitted acquire/release is outstanding. If departure occurs
 while acquisition is pending, release follows only after that exact acquisition
-completes successfully. Owner replacement retires the old lease locally
+completes successfully. A rejected, failed, uncertain, malformed, or owner-
+interrupted acquire establishes no lease, clears the departure wait, and cannot
+strand the Settings window. Owner replacement retires the old lease locally
 because no request may be sent to a different owner. A failed or uncertain
 release is surfaced and not replayed automatically. When public mutation
 authority is already unavailable, closing the process relies on Bluetooth1's
@@ -110,14 +112,18 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   -R '^qindaqt\.settings-bluetooth-'
 ```
 
-- the model row uses the injected fake Bluetooth transport to prove bounded,
+- the model rows use the injected fake Bluetooth transport to prove bounded,
   address-free projection, class/icon/RSSI truth, shared admission, paired-only
   connections, pending convergence, exact-owner replacement, and departure
-  release;
+  release; adversarial coverage additionally rejects duplicate identifiers,
+  overlong names, invalid class/RSSI values, and proves close-fence liveness
+  after rejected, failed, uncertain, inexact, owner-lost, or owner-replaced
+  discovery acquisition;
 - the warning-fatal page rows render wide and compact offscreen/software scenes
-  and proves accessible controls, disabled truth, shortcut-independent route
-  focus entry, action wiring, authority disclosure, and window-close waiting
-  for a discovery release;
+  and prove accessible controls, disabled truth, shortcut-independent route
+  focus entry, action wiring, authority disclosure, compact-host Escape/Tab
+  entry, successful-release waiting, and real-model window close after rejected,
+  uncertain, owner-lost, or owner-replaced acquisition;
 - boundary and negative-control rows enforce an allow-list-only include scan
   and reject sibling app internals, parent escapes, private service headers,
   and pairing authority; and
