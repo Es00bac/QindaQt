@@ -194,7 +194,7 @@ ctest --test-dir build/dev \
 
 That row independently installs default `QindaQt`, `AudioAppletRuntime`,
 `BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
-and `PowerAppletRuntime`
+`PowerAppletRuntime`, and `TaskListAppletRuntime`
 into build-local stages. It requires the staged shell to resolve each directly
 linked applet backing library and Controls from its own install library
 directory and Tokens from Controls' baked sibling RUNPATH, then launches
@@ -968,15 +968,21 @@ ctest --test-dir build/dev \
 Its rows cover the pure bounded strip projection (cap, overflow truth,
 determinism), the shell-private controller over fake authority/operation seams
 (cold-start Loading with the bounded transition to Degraded, capability gates,
-stale/foreign lineage refusal, exactly-once pending fences, synchronous
-in-dispatch completion attribution, owner loss), the bridge over the real T1
-adapter with a fake transport (truthful window-level `Unavailable`, serialized
-Busy, stale-generation and degraded-source rejection), fatal-warning-clean
-offscreen compiled-QML state and keyboard-traversal rows, a static boundary
-poison probe with injected-violation self-tests, and a relocated
-`TaskListAppletRuntime` installed-package proof whose consumer builds against
-only staged files and reruns after the whole stage moves with
-`LD_LIBRARY_PATH` unset. All rows run offscreen or on private fakes; none
+stale/foreign lineage refusal, exactly-once pending fences, the two-task dock
+dispatch fencing BOTH participants until its single terminal result,
+synchronous in-dispatch completion attribution, owner loss), the bridge over
+the real T1 adapter with a fake transport (truthful window-level
+`Unavailable`, serialized Busy, stale-generation and degraded-source
+rejection), fatal-warning-clean offscreen compiled-QML state rows plus
+keyboard traversal over the theme-published Tokens/Controls plugin path
+(Tab/Backtab, horizontal Left/Right and vertical Up/Down with endpoint stops,
+Return/Space/Menu, context-menu dispatch), a static boundary poison probe with
+injected-violation self-tests that also requires the explicit
+`QindaQt.Controls`/`QindaQt.Tokens` imports and rejects any applet-owned
+palette literal, and a relocated `TaskListAppletRuntime` installed-package
+proof whose consumer builds against only staged files (with the staged
+Controls/Tokens modules and theme) and reruns after the whole stage moves
+with `LD_LIBRARY_PATH` unset. All rows run offscreen or on private fakes; none
 contacts a host bus, display, compositor, or hardware, and no nested session
 is claimed.
 

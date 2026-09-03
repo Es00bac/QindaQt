@@ -67,6 +67,7 @@ private slots:
   void revisionMismatchIsStaleBeforeBusTraffic();
   void degradedAuthorityIsSourceNotReady();
   void controllerIntentReachesTheAdapterSynchronously();
+  void dockDispatchFencesBothParticipantsUntilTerminalResult();
 };
 
 void TaskListAppletOperationDispatchTests::windowActivateFinishesUnavailableWithoutBusTraffic() {
@@ -169,6 +170,63 @@ void TaskListAppletOperationDispatchTests::controllerIntentReachesTheAdapterSync
   QCOMPARE(fixture.operationTransport.calls.size(), 0);
   QCOMPARE(controller.pendingOperationCount(), 0);
   QCOMPARE(controller.feedbackPresent(), true);
+  QVERIFY(controller.feedback().startsWith(QStringLiteral("Activate: ")));
+  QCOMPARE(controller.feedbackStatus(), QStringLiteral("info"));
+}
+
+// Full-stack dock fencing: the real controller drives the real bridge and
+// adapter over the recording transport. AGENT-NOTE (negative control): on
+// rejected candidate da9f2fd only the target task carried the pending marker,
+// so the incoming container accepted the activation below and this row failed
+// at the transport-call count.
+void TaskListAppletOperationDispatchTests::dockDispatchFencesBothParticipantsUntilTerminalResult() {
+  DispatchFixture fixture;
+  const quint64 revision = fixture.publishReady();
+  QVERIFY(revision > 0);
+  Q_EMIT fixture.authority.stateChanged();
+  TaskListAppletController controller(fixture.source, fixture.authority,
+                                      fixture.bridge, {true, true, true});
+  QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+
+  QCOMPARE(controller.dockWindows(QStringLiteral("w1"), QStringLiteral("c1"),
+                                  QStringLiteral("horizontal"),
+                                  QStringLiteral("second"), 0.5, revision),
+           true);
+  QCOMPARE(fixture.operationTransport.calls.size(), 1);
+  QCOMPARE(controller.pendingOperationCount(), 1);
+
+  // The incoming participant is fenced exactly like the target: no intent and
+  // no reversed second dock may reach the adapter while the dock is in
+  // flight.
+  QCOMPARE(controller.activateTask(QStringLiteral("c1"), revision), false);
+  QVERIFY(controller.feedback().contains(
+      QStringLiteral("an operation is already pending")));
+  QCOMPARE(controller.minimizeTask(QStringLiteral("c1"), revision), false);
+  QCOMPARE(controller.dockWindows(QStringLiteral("c1"), QStringLiteral("w1"),
+                                  QStringLiteral("vertical"),
+                                  QStringLiteral("first"), 0.5, revision),
+           false);
+  QCOMPARE(fixture.operationTransport.calls.size(), 1);
+  QCOMPARE(controller.pendingOperationCount(), 1);
+
+  // The exactly-one terminal result releases both participants atomically.
+  const quint64 token = fixture.operationTransport.calls.constFirst().token;
+  const QJsonObject reply{
+      {QStringLiteral("protocol"),
+       QJsonObject{{QStringLiteral("major"), 1}, {QStringLiteral("minor"), 1}}},
+      {QStringLiteral("transactionId"), QStringLiteral("dock-generated")},
+      {QStringLiteral("containerId"), QStringLiteral("container-generated")},
+      {QStringLiteral("status"), QStringLiteral("docked")},
+      {QStringLiteral("revision"), QStringLiteral("1")}};
+  fixture.operationTransport.emitReply(
+      token, fixture.authority.owner,
+      QJsonDocument(reply).toJson(QJsonDocument::Compact));
+  QCOMPARE(controller.pendingOperationCount(), 0);
+
+  QCOMPARE(controller.activateTask(QStringLiteral("c1"), revision), true);
+  // Window-level activate finishes Unavailable in this adapter (ADR-0061), so
+  // the re-admitted intent settles synchronously with truthful feedback.
+  QCOMPARE(controller.pendingOperationCount(), 0);
   QVERIFY(controller.feedback().startsWith(QStringLiteral("Activate: ")));
   QCOMPARE(controller.feedbackStatus(), QStringLiteral("info"));
 }

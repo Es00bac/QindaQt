@@ -134,7 +134,11 @@ bool TaskListAppletController::dockWindows(
       target->primaryWindowId, incoming->primaryWindowId, orientation,
       position, ratio, revision);
   m_insidePortCall = false;
-  recordDispatch(token, targetTaskId, QStringLiteral("Dock"));
+  // AGENT-GUARD: the single dock dispatch fences BOTH participants; the
+  // pre-dispatch check above already refused when either task was pending,
+  // so recording only one side would let a second mutation reach the other
+  // participant while the dock is in flight.
+  recordDispatch(token, {targetTaskId, incomingTaskId}, QStringLiteral("Dock"));
   drainDeferredResults();
   reproject();
   return true;
@@ -180,7 +184,7 @@ bool TaskListAppletController::dispatchTaskIntent(
   m_insidePortCall = true;
   const quint64 token = m_operations.executeTaskIntent(request, outcome);
   m_insidePortCall = false;
-  recordDispatch(token, taskId, actionText);
+  recordDispatch(token, {taskId}, actionText);
   drainDeferredResults();
   reproject();
   return true;
@@ -243,14 +247,14 @@ bool TaskListAppletController::dispatchContainerOperation(
     break;
   }
   m_insidePortCall = false;
-  recordDispatch(token, taskId, actionText);
+  recordDispatch(token, {taskId}, actionText);
   drainDeferredResults();
   reproject();
   return true;
 }
 
 quint64 TaskListAppletController::recordDispatch(quint64 token,
-                                                 const QString &taskId,
+                                                 const QStringList &taskIds,
                                                  const QString &actionText) {
   if (token == 0) {
     // The port exhausted its token lineage without emitting a result; treat
@@ -261,10 +265,12 @@ quint64 TaskListAppletController::recordDispatch(quint64 token,
   }
   PendingOperation pending;
   pending.token = token;
-  pending.taskId = taskId;
+  pending.taskIds = taskIds;
   pending.actionText = actionText;
   m_pendingByToken.insert(token, pending);
-  m_pendingTasks.insert(taskId);
+  for (const QString &taskId : taskIds) {
+    m_pendingTasks.insert(taskId);
+  }
   return token;
 }
 
@@ -297,7 +303,9 @@ void TaskListAppletController::resolveResult(
   }
   const PendingOperation pending = it.value();
   m_pendingByToken.erase(it);
-  m_pendingTasks.remove(pending.taskId);
+  for (const QString &taskId : pending.taskIds) {
+    m_pendingTasks.remove(taskId);
+  }
   if (result.status != TaskListOperationStatus::Committed) {
     setFeedback(pending.actionText + QStringLiteral(": ") + result.message,
                 operationFeedbackStatus(result.status));

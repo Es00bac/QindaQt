@@ -63,6 +63,27 @@ target_compile_features(qindaqt_shell_task_list_applet PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_task_list_applet PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_task_list_applet)
 
+# The compiled module imports QindaQt.Controls/QindaQt.Tokens; their modules
+# must be built before qmlcachegen runs. In the repository build this
+# directory is processed before src/controls (launcher precedent), so the
+# ordering hook defers to the end of the src scope; a focused standalone
+# route that already added the targets takes it immediately.
+function(qindaqt_task_list_applet_qml_dependencies)
+    if(TARGET qindaqt_shell_task_list_applet AND TARGET qindaqt_controls_qmlplugin)
+        add_dependencies(qindaqt_shell_task_list_applet qindaqt_controls_qmlplugin)
+    endif()
+endfunction()
+if(TARGET qindaqt_controls_qmlplugin)
+    qindaqt_task_list_applet_qml_dependencies()
+else()
+    get_filename_component(QINDAQT_TASK_LIST_APPLET_REPO_ROOT
+                           "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." ABSOLUTE)
+    cmake_language(
+        DEFER DIRECTORY "${QINDAQT_TASK_LIST_APPLET_REPO_ROOT}/src"
+        CALL qindaqt_task_list_applet_qml_dependencies
+    )
+endif()
+
 # Qt owns the deploy-name calculation used by qmldir and QML tooling. Query it
 # once from the module target so installation cannot drift into a
 # hand-maintained second list.

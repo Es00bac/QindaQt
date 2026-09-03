@@ -4,23 +4,28 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
+import QindaQt.Tokens 1.0
 
 // One task-list strip row: standalone window or collapsed container. The row
 // renders only controller-projected values and dispatches intents with the
 // exact generationRevision it displays, so the T0 stale-id arbitration can
 // refuse actions against a generation the user no longer sees.
+//
+// AGENT-CONTRACT: all visuals derive from semantic QST-1 roles (QindaQt.Tokens)
+// and the QindaQt.Controls focus ring; no applet-owned palette or fallback
+// colors. The QQC2 ToolButton base supplies button behavior only (press,
+// clicked, enabled) — the same shape as QindaQt.Controls' own primitives.
 T.ToolButton {
     id: button
 
     required property var entry
     required property var access
-    required property var theme
     property bool vertical: false
-
-    readonly property var colors: theme.colors ?? ({})
 
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
+    hoverEnabled: true
     implicitWidth: vertical ? 40 : Math.max(96, Math.min(168, rowLayout.implicitWidth + 16))
     implicitHeight: vertical ? 56 : 28
 
@@ -58,7 +63,7 @@ T.ToolButton {
 
     contentItem: RowLayout {
         id: rowLayout
-        spacing: 6
+        spacing: Tokens.space["2"]
 
         // Typed icon placeholder: a deterministic one-letter badge. No icon
         // seam exists in this tree yet; the badge keeps the row shape stable.
@@ -66,65 +71,75 @@ T.ToolButton {
             objectName: "taskListEntryIcon"
             implicitWidth: 18
             implicitHeight: 18
-            radius: 4
-            color: button.colors.surfaceRaised ?? "#2c312e"
-            border.color: button.colors.border ?? "#3c433f"
+            radius: Tokens.radius.s
+            color: Tokens.bg.highest
+            border.color: Tokens.outline.strong
 
-            T.Label {
+            Text {
                 anchors.centerIn: parent
                 text: button.entry.iconText
-                color: button.colors.text ?? "#f2f1eb"
-                font.pixelSize: 11
+                color: Tokens.fg.default
+                font.family: Tokens.type.fontFamily
+                font.pointSize: Tokens.type.caption
                 Accessible.ignored: true
             }
         }
 
-        T.Label {
+        Text {
             id: titleText
             objectName: "taskListEntryTitle"
             Layout.fillWidth: true
             text: button.entry.title.length > 0
                   ? button.entry.title : button.entry.applicationName
-            color: button.enabled
-                   ? (button.colors.text ?? "#f2f1eb")
-                   : (button.colors.textMuted ?? "#a9afa9")
+            color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
             elide: Text.ElideRight
-            font.pixelSize: 11
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.caption
             Accessible.ignored: true
         }
 
         // Demand-attention truth is text, never color-only.
-        T.Label {
+        Text {
             objectName: "taskListEntryUrgentBadge"
             visible: button.entry.urgent
             text: "!"
-            color: button.colors.warning ?? "#e5a84b"
+            color: Tokens.status.warning.foreground
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.caption
             font.bold: true
             Accessible.ignored: true
         }
 
-        T.Label {
+        Text {
             objectName: "taskListEntryCountBadge"
             visible: button.entry.kind === "container"
             text: visible ? qsTr("%1 windows").arg(button.entry.windowCount) : ""
-            color: button.colors.textMuted ?? "#a9afa9"
-            font.pixelSize: 10
+            color: Tokens.fg.muted
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.caption
             Accessible.ignored: true
         }
     }
 
     background: Rectangle {
-        radius: button.theme.cornerRadius ?? 6
-        color: button.entry.active
-               ? (button.colors.surfaceRaised ?? "#2c312e")
-               : "transparent"
-        border.color: button.activeFocus
-                      ? (button.colors.focus ?? button.colors.border ?? "#3c433f")
-                      : (button.colors.border ?? "#3c433f")
-        border.width: button.activeFocus ? 2 : 1
+        radius: Tokens.radius.m
+        color: button.down ? Tokens.state.pressed
+             : button.hovered ? Tokens.state.hover
+             : button.entry.active ? Tokens.bg.raised
+             : "transparent"
+        border.color: Tokens.outline.divider
+        border.width: Tokens.space["1"] / 2
         opacity: button.entry.minimized ? 0.7 : 1.0
+
+        C.FocusRing {
+            objectName: "taskListEntryFocusRing"
+            anchors.fill: parent
+            control: button
+        }
     }
 
+    // QindaQt.Controls ships no menu primitive yet; the context menu uses the
+    // QQC2 style palette and owns no applet-side colors.
     T.Menu {
         id: contextMenu
         objectName: "taskListContextMenu"

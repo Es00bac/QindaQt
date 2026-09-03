@@ -4,19 +4,25 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
+import QindaQt.Tokens 1.0
 
 // Compiled task-list panel strip. The controller is the composed shell facade
 // injected above QML as `access`; this file owns no state, no transport, and
 // no window authority — every gesture re-enters the controller, which applies
 // capability, generation, and pending fences before any dispatch.
+//
+// AGENT-CONTRACT: presentation consumes semantic QST-1 roles through the
+// QindaQt.Tokens singleton and the compiled QindaQt.Controls primitives
+// (module-boundaries rule: first-party presentation imports QindaQt.Controls
+// explicitly). This file must not grow palette literals, theme-id knowledge,
+// or its own fallback colors — Controls/Tokens are the only theme authority.
 Item {
     id: root
 
     required property var access
-    required property var theme
     property bool vertical: false
 
-    readonly property var colors: theme.colors ?? ({})
     readonly property string phase: access !== null ? access.phaseText : "unavailable"
     readonly property bool stripVisible: access !== null && access.entryCount > 0
 
@@ -46,38 +52,34 @@ Item {
         flow: root.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
         rows: root.vertical ? -1 : 1
         columns: root.vertical ? 1 : -1
-        rowSpacing: 2
-        columnSpacing: 2
+        rowSpacing: Tokens.space["1"]
+        columnSpacing: Tokens.space["1"]
 
-        T.Label {
+        C.Label {
             id: loadingLabel
             objectName: "taskListLoadingLabel"
             visible: root.phase === "loading"
             text: qsTr("Loading…")
-            color: root.colors.textMuted ?? "#a9afa9"
-            font.pixelSize: 11
+            muted: true
         }
 
-        T.Label {
+        C.Label {
             id: unavailableLabel
             objectName: "taskListUnavailableLabel"
             visible: root.phase === "unavailable"
             text: qsTr("Task list unavailable")
-            color: root.colors.textMuted ?? "#a9afa9"
-            font.pixelSize: 11
-            Accessible.role: Accessible.StaticText
+            muted: true
             Accessible.name: root.access !== null
                 ? qsTr("Task list unavailable: %1").arg(root.access.phaseReasonText)
                 : qsTr("Task list unavailable")
         }
 
-        T.Label {
+        C.Label {
             id: emptyLabel
             objectName: "taskListEmptyLabel"
             visible: root.phase === "empty"
             text: qsTr("No windows")
-            color: root.colors.textMuted ?? "#a9afa9"
-            font.pixelSize: 11
+            muted: true
         }
 
         Repeater {
@@ -90,7 +92,6 @@ Item {
 
                 entry: modelData
                 access: root.access
-                theme: root.theme
                 vertical: root.vertical
 
                 KeyNavigation.left: root.vertical
@@ -106,28 +107,28 @@ Item {
 
         // Overflow truth: the controller caps presented rows and reports the
         // exact hidden count; the strip never silently drops entries.
-        T.Label {
+        C.Label {
             id: overflowIndicator
             objectName: "taskListOverflowIndicator"
             visible: root.access !== null && root.access.overflowCount > 0
             text: visible ? qsTr("+%1 more").arg(root.access.overflowCount) : ""
-            color: root.colors.textMuted ?? "#a9afa9"
-            font.pixelSize: 11
-            Accessible.role: Accessible.StaticText
+            muted: true
             Accessible.name: visible
                 ? qsTr("%1 further windows are not shown")
                       .arg(root.access !== null ? root.access.overflowCount : 0)
                 : ""
         }
 
-        // Degraded truth stays visible next to the retained rows.
-        T.Label {
+        // Degraded truth stays visible next to the retained rows. The warning
+        // status role, never color alone, marks the limitation.
+        Text {
             id: degradedBadge
             objectName: "taskListDegradedBadge"
             visible: root.phase === "degraded"
             text: qsTr("Limited")
-            color: root.colors.warning ?? "#e5a84b"
-            font.pixelSize: 11
+            color: Tokens.status.warning.foreground
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.caption
             Accessible.role: Accessible.StaticText
             Accessible.name: root.access !== null
                 ? qsTr("Task list source is limited: %1")
@@ -145,39 +146,35 @@ Item {
         modal: false
         focus: visible
         closePolicy: T.Popup.CloseOnEscape
-        padding: 8
+        padding: Tokens.space["2"]
         parent: root
 
         x: Math.round((root.width - width) / 2)
         y: Math.round((root.height - height) / 2)
 
         background: Rectangle {
-            radius: root.theme.cornerRadius ?? 6
-            color: root.colors.surfaceRaised ?? "#2c312e"
-            border.color: root.colors.border ?? "#3c433f"
+            radius: Tokens.radius.m
+            color: Tokens.bg.raised
+            border.color: Tokens.outline.strong
         }
 
         contentItem: RowLayout {
-            spacing: 8
+            spacing: Tokens.space["2"]
 
-            T.Label {
+            C.Label {
                 id: feedbackText
                 objectName: "taskListFeedbackText"
                 Layout.maximumWidth: 320
                 text: root.access !== null ? root.access.feedback : ""
-                color: root.colors.text ?? "#f2f1eb"
-                wrapMode: Text.Wrap
                 Accessible.role: Accessible.AlertMessage
-                Accessible.name: text
             }
 
-            T.Button {
+            C.Button {
                 id: feedbackDismiss
                 objectName: "taskListFeedbackDismiss"
                 text: qsTr("Dismiss")
-                focusPolicy: Qt.TabFocus
-                Accessible.role: Accessible.Button
-                Accessible.name: qsTr("Dismiss task list notice")
+                emphasized: false
+                accessibleDescription: qsTr("Dismiss task list notice")
                 onClicked: {
                     if (root.access !== null)
                         root.access.clearFeedback()

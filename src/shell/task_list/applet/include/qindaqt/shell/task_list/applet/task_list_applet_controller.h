@@ -121,7 +121,12 @@ private Q_SLOTS:
 private:
   struct PendingOperation {
     quint64 token = 0;
-    QString taskId;
+    // AGENT-GUARD: one dispatch may fence more than one task — dockWindows
+    // marks BOTH participants pending under its single token so neither side
+    // can attract a second mutation while the dock is in flight (wiki
+    // task-list contract: one pending marker per task). resolveResult must
+    // release every listed id when the exactly-one terminal result arrives.
+    QStringList taskIds;
     QString actionText;
   };
 
@@ -137,7 +142,7 @@ private:
                                   const QString &memberWindowId,
                                   const QString &actionText,
                                   ContainerOperation operation);
-  quint64 recordDispatch(quint64 token, const QString &taskId,
+  quint64 recordDispatch(quint64 token, const QStringList &taskIds,
                          const QString &actionText);
   void resolveResult(
       const ShellTaskList::Operations::TaskListOperationResult &result);
