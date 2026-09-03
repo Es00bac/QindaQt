@@ -621,6 +621,37 @@ user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual
 screenshot baselines.
 
+## Current global-menu transport proof
+
+The complete G0 model/presentation and G1 transport boundary is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.global-menu-' --output-on-failure --no-tests=error
+```
+
+The five G1 rows add a bounded AppMenu registrar on a private
+`dbus-run-session`, hostile dbusmenu conversion, an exact-owner asynchronous
+client against a fake exporter, complete focused-window composition, and a
+source-boundary checker that must reject four planted runtime/platform
+poisons. The registrar row covers exact standard lookup/list calls,
+cross-caller replacement/unregister refusal, capacity, stale owner-generation
+rejection, name collision rollback, and automatic unique-owner retirement.
+The dbusmenu rows cover recursive wire marshalling, all standard calls,
+properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
+property tolerance, lower and changed-equal revision rejection, owner loss, and
+one Event for one accepted activation. Composition proves the applet snapshot
+comes from the focused registrar entry only after PID/name authentication and
+that loss or focus withdrawal clears authority.
+
+Every transport process is the QtTest executable itself, and every bus is the
+fresh broker created by `dbus-run-session`; the rows contact no inherited
+session bus, display, input, compositor, hardware, or network. They do not
+qualify production-shell instantiation, installed QML/manifest wiring,
+submenus, a foreign toolkit, or a live desktop. Those remain later shell and
+contained-session gates. See [Global application menu](../shell/global-menu.md)
+and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
+
 ## Current status-notifier foundation proof
 
 The tray's source/unit boundary is selected with:
