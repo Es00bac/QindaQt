@@ -30,7 +30,9 @@ Schema v1 recognizes narrowly named requests for application launching;
 window read, activation, and management; global-menu and status-item access;
 notification, audio, power, clipboard, Bluetooth, display, and settings access.
 Read and control capabilities are separate where the platform service exposes
-both; Power applets request `power.read` and `power.control` independently.
+both. Power applets request `power.read` and `power.control`; the production
+Bluetooth applet requests `bluetooth.read` and `bluetooth.control`. Control is
+effective only with the corresponding read grant.
 
 The manifest is a request, never a grant. Runtime policy must combine package
 trust, user consent, host isolation, and service availability before exposing a
@@ -40,8 +42,8 @@ authority.
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes launcher,
-task-list, global-menu, status-tray, clock, notification-center, and power
-applets.
+task-list, global-menu, status-tray, clock, notification-center, Bluetooth, and
+power applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -57,6 +59,11 @@ production renderer receives a shell-private controller over the public
 PowerClient. Read denial prevents client observation; control denial keeps
 bounded rows visible but non-adjustable and rejects every mutation before
 dispatch.
+
+The Bluetooth manifest similarly separates read and control. Its audited
+renderer receives a shell-private controller over the public BluetoothClient;
+the grant cannot expose pairing/trust/keys, direct BlueZ or Agent1, addresses,
+or host-radio APIs because those surfaces do not exist on the controller.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

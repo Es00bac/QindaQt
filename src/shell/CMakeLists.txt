@@ -36,6 +36,7 @@ qt_add_qml_module(
         qml/PreviewControls.qml
         qml/WindowGroupPreview.qml
     DEPENDENCIES
+        TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
 )
 
@@ -44,6 +45,7 @@ target_link_libraries(
     PRIVATE
         qindaqt_profiles
         qindaqt_themes
+        QindaQt::ShellBluetoothAppletRuntime
         QindaQt::ShellPowerAppletRuntime
         Qt6::Core
         Qt6::Gui
@@ -74,6 +76,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         common/catalogpaths.cpp
         common/catalogpaths.h
         runtime/main.cpp
+        runtime/bluetoothappletcomposition.cpp
+        runtime/bluetoothappletcomposition.h
         runtime/globalshortcutregistrar.h
         runtime/compositoroutputauthority.cpp
         runtime/compositoroutputauthority.h
@@ -126,6 +130,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelContent.qml
             qml/RuntimePanel.qml
         DEPENDENCIES
+            TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
     )
 
@@ -143,6 +148,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface
             QindaQt::ShellVisibilityClient
+            QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellPowerAppletRuntime
             qindaqt_themes
             KF6::GlobalAccel
@@ -167,6 +173,38 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     qindaqt_enable_warnings(qindaqt-shell)
     qt_import_qml_plugins(qindaqt-shell)
     install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    # A narrow stage proves that the Bluetooth applet's production binary,
+    # compiled QML, manifest, selected profile, policy, and theme relocate as
+    # one package boundary.
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/applets/bluetooth.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT BluetoothAppletRuntime
+    )
     # A narrow stage lets the Power applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.

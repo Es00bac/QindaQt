@@ -59,6 +59,7 @@ class SessionLockStateMonitor;
 namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
+class BluetoothAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
@@ -139,6 +140,7 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;

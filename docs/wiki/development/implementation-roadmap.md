@@ -49,8 +49,8 @@ The repository currently builds and tests:
   live built-in locale-aware clock and capability-empty notification-center
   entries;
 - registered bounded Launcher and Task List source models; a compiled Audio
-  applet over the public AudioClient seam; a production compiled Power applet
-  over the public PowerClient seam; and the source/static Global Menu G0 model, authenticated
+  applet over the public AudioClient seam; production compiled Power and
+  Bluetooth applets over their public client seams; and the source/static Global Menu G0 model, authenticated
   ownership/export, Qt Widgets adapter, facade, and responsive offscreen QML;
 - a wired presentation-independent customization editor with shared pointer and
   keyboard intents, preview/commit/cancel, coordinator-lease fencing,
@@ -93,12 +93,12 @@ installed Notification Live shortcut, focus, Do Not Disturb, service/shell
 replacement, authenticated private-lock, scale, and teardown matrix is
 qualified. Alternative lockers and multi-seat support remain unqualified.
 Audio has a bounded service/runtime slice and the source tree now contains
-registered Launcher, Task List, Audio applet, Power applet, Global Menu G0,
+registered Launcher, Task List, Audio applet, Power applet, Bluetooth applet, Global Menu G0,
 Clipboard C0, and customization-editor foundations. These are deliberately
 not all live panel features: their owning pages identify the remaining
 production adapters, transports, hosts, and installed interaction gates.
-Bluetooth and clipboard applets remain absent. The StatusNotifier foundation
-is integrated; its production watcher/menu/icon transports, applet hosting, and
+The clipboard applet remains absent. The StatusNotifier foundation is
+integrated; its production watcher/menu/icon transports, applet hosting, and
 installed interaction remain later work.
 
 ## Milestones
@@ -108,8 +108,8 @@ installed interaction remain later work.
 | Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
 | Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
 | Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and installed Notification Live are qualified; notifications route through the exact-owner ordered public compositor-output authority, and S3 executes the WUXGA/fractional/theme matrix plus exact `WL-1` dual-output transfer; the Power applet has production manifest/registry/host/QML/package composition over public PB-1 truth; Global Menu G0 executes in focused tests; Launcher, Task List, Status Notifier tray, Audio applet, and the customization-editor domain are wired source slices; remaining production transports/hosts, Bluetooth/clipboard applets, reveal UI, complete whole-shell accessibility, and physical qualification remain) |
-| Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1, Display D0-D6 including authenticated resident process composition, resident Power PB-1 plus its production shell consumer, Bluetooth B0, resident Network N1 with confined NetworkManager transport, the public-client-only Network Settings N2 route, the pure Display Color C0 boundary, and the standard Settings v1 Portal P0 appearance backend execute; Clipboard C0 and Font F0 foundations are WIRED; Network credential/profile/radio mutation, secret-agent integration, persistence, session-runtime proof, and hardware qualification, production BlueZ/UI/hardware, live color/font discovery and application, clipboard capture/service/UI, Display nested convergence and hardware/resource qualification, production Power upstream adapters and hardware qualification, host portal selection/toolkit reaction, and every non-Settings portal family remain) |
+| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and installed Notification Live are qualified; notifications route through the exact-owner ordered public compositor-output authority, and S3 executes the WUXGA/fractional/theme matrix plus exact `WL-1` dual-output transfer; the Power and Bluetooth applets have production manifest/registry/host/QML/package composition over public clients while their upstream platform adapters remain bounded nonclaims; Global Menu G0 executes in focused tests; Launcher, Task List, Status Notifier tray, Audio applet, and the customization-editor domain are wired source slices; remaining production transports/hosts, clipboard applet, reveal UI, complete whole-shell accessibility, and physical qualification remain) |
+| Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1, Display D0-D6 including authenticated resident process composition, resident Power PB-1 plus its production shell consumer, Bluetooth B0, resident Network N1 with confined NetworkManager transport, the public-client-only Network Settings N2 route, the pure Display Color C0 boundary, and the standard Settings v1 Portal P0 appearance backend execute; Clipboard C0 and Font F0 foundations are WIRED; Network credential/profile/radio mutation, secret-agent integration, persistence, session-runtime proof, and hardware qualification, production BlueZ/hardware, live color/font discovery and application, clipboard capture/service/UI, Display nested convergence and hardware/resource qualification, production Power upstream adapters and hardware qualification, host portal selection/toolkit reaction, and every non-Settings portal family remain) |
 | First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (QST-1 and reusable QindaQt.Controls are independently qualified; Notifications, Appearance, Display, and Network are live installed Settings routes; typed responsive Settings Center S1 navigation, Text Editor S1, bounded local File Manager S0, single-session Terminal S0, and the narrow installed QindaQt.AppShell 1.0 action/lifecycle/portal/focus/accessibility boundary are executable; private S3 executes cross-app WUXGA, fractional-DPI, light/dusk/dark, and dual-output input/capture rows; remaining service routes, later File Manager and Terminal capabilities, app migrations, complete app keyboard/screen-reader coverage, and physical qualification remain) |
 | Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | Planned |
 
