@@ -8,6 +8,7 @@ import QindaQt.SettingsApp.Appearance
 import QindaQt.SettingsApp.Display
 import QindaQt.SettingsApp.Network
 import QindaQt.SettingsApp.Customize
+import QindaQt.SettingsApp.Audio
 
 T.ApplicationWindow {
     id: root
@@ -19,6 +20,7 @@ T.ApplicationWindow {
     property var networkSettings: null
     property var customizeSettings: CustomizeRouteComposition.model
     property bool applicationClosePending: false
+    property var audioSettings: null
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -61,6 +63,11 @@ T.ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Ctrl+6"
+        onActivated: root.navigation.selectRoute("audio")
+    }
+
+    Shortcut {
         sequence: "Alt+Left"
         onActivated: {
             if (root.navigation.previousRouteId.length > 0) {
@@ -75,6 +82,10 @@ T.ApplicationWindow {
                                     : sidebar.focusActiveButton()
     }
 
+    // AGENT-GUARD: Keep the plural `sequences` spelling for StandardKey.Quit.
+    // The singular `sequence` binds only one of the platform's multiple Quit
+    // key bindings and emits a QML warning that aborts the QT_FATAL_WARNINGS
+    // navigation-page test row during Main.qml construction.
     Shortcut {
         sequences: [StandardKey.Quit]
         onActivated: root.close()
@@ -108,10 +119,12 @@ T.ApplicationWindow {
             networkSettings: root.networkSettings
             customizeSettings: root.customizeSettings
             applicationClosePending: root.applicationClosePending
+            audioSettings: root.audioSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -144,10 +157,12 @@ T.ApplicationWindow {
             networkSettings: root.networkSettings
             customizeSettings: root.customizeSettings
             applicationClosePending: root.applicationClosePending
+            audioSettings: root.audioSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -185,6 +200,15 @@ T.ApplicationWindow {
         NetworkPage {
             objectName: "networkPage"
             networkSettings: root.networkSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: audioRouteComponent
+        AudioPage {
+            objectName: "audioPage"
+            audioSettings: root.audioSettings
             onCloseRequested: root.close()
         }
     }

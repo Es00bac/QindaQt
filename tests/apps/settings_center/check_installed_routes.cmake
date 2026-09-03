@@ -86,6 +86,16 @@ foreach(catalog IN ITEMS profiles applets)
     endif()
 endforeach()
 
+set(audio_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Audio")
+cmake_path(NORMAL_PATH audio_module OUTPUT_VARIABLE audio_module)
+cmake_path(IS_PREFIX install_prefix "${audio_module}" NORMALIZE audio_in_stage)
+if(NOT audio_in_stage OR NOT IS_DIRECTORY "${audio_module}")
+    message(FATAL_ERROR
+        "installed Settings Audio module is missing or outside stage: "
+        "${audio_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -96,6 +106,11 @@ set(build_network_module "${build_directory}/qml/QindaQt/SettingsApp/Network")
 if(NOT IS_DIRECTORY "${build_network_module}")
     message(FATAL_ERROR
         "package poison requires the developer Network QML tree to remain present")
+endif()
+set(build_audio_module "${build_directory}/qml/QindaQt/SettingsApp/Audio")
+if(NOT IS_DIRECTORY "${build_audio_module}")
+    message(FATAL_ERROR
+        "package poison requires the developer Audio QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")
@@ -178,8 +193,9 @@ if(NOT network_poison_status EQUAL 3)
         "build QML remained present:\n"
         "${network_poison_output}${network_poison_error}")
 endif()
-# Reinstall rather than trusting the rename restoration, then prove all five
-# complete routes below using only the staged prefix.
+# Reinstall rather than trusting the rename restoration, then repeat the
+# developer-tree poison for the Audio route the same way, and finally prove
+# all six complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}
     RESULT_VARIABLE reinstall_status
@@ -190,6 +206,53 @@ if(NOT reinstall_status EQUAL 0)
     message(FATAL_ERROR
         "staged Settings reinstall failed after package poison:\n"
         "${reinstall_output}${reinstall_error}")
+endif()
+
+set(withheld_audio_module "${audio_module}.withheld")
+file(RENAME "${audio_module}" "${withheld_audio_module}")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+            --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
+            --unset=QML_IMPORT_PATH
+            --unset=QML2_IMPORT_PATH
+            --unset=LD_LIBRARY_PATH
+            --unset=QT_PLUGIN_PATH
+            --unset=QT_QPA_PLATFORM_PLUGIN_PATH
+            QT_QPA_PLATFORM=offscreen
+            QT_QUICK_BACKEND=software
+            QML_DISABLE_DISK_CACHE=1
+            DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            XDG_CONFIG_HOME=${poison_sandbox}/config
+            XDG_DATA_HOME=${poison_sandbox}/data
+            XDG_DATA_DIRS=${poison_sandbox}/system-data
+            XDG_CACHE_HOME=${poison_sandbox}/cache
+            XDG_RUNTIME_DIR=${poison_sandbox}/runtime
+            "${SETTINGS_EXECUTABLE}" --page audio
+    WORKING_DIRECTORY "${poison_sandbox}"
+    TIMEOUT 3
+    RESULT_VARIABLE audio_poison_status
+    OUTPUT_VARIABLE audio_poison_output
+    ERROR_VARIABLE audio_poison_error
+)
+file(RENAME "${withheld_audio_module}" "${audio_module}")
+if(NOT audio_poison_status EQUAL 3)
+    message(FATAL_ERROR
+        "incomplete installed Settings Audio package returned "
+        "${audio_poison_status}, expected root-construction failure 3 while "
+        "build QML remained present:\n"
+        "${audio_poison_output}${audio_poison_error}")
+endif()
+execute_process(
+    COMMAND ${install_command}
+    RESULT_VARIABLE audio_reinstall_status
+    OUTPUT_VARIABLE audio_reinstall_output
+    ERROR_VARIABLE audio_reinstall_error
+)
+if(NOT audio_reinstall_status EQUAL 0)
+    message(FATAL_ERROR
+        "staged Settings reinstall failed after Audio package poison:\n"
+        "${audio_reinstall_output}${audio_reinstall_error}")
 endif()
 
 set(SANDBOX_ROOT "${install_prefix}/route-runtime")

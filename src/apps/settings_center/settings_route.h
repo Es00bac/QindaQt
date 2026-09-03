@@ -12,6 +12,7 @@ enum class SettingsRouteComponent {
   Display,
   Network,
   Customize,
+  Audio,
 };
 
 [[nodiscard]] QString
