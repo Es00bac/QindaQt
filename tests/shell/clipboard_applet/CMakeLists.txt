@@ -176,83 +176,88 @@ add_custom_target(
 # consumes QST-1 tokens that exist only after a theme is published; the
 # harness publishes qinda-light before any test, giving the rows real layout
 # for genuine pointer-event delivery and warning-free token evaluation.
-qt_add_executable(qindaqt_clipboard_applet_qml_tests qml_interactive_main.cpp)
-target_link_libraries(
-    qindaqt_clipboard_applet_qml_tests
-    PRIVATE
-        qindaqt_controls_test_support
-        QindaQt::ShellClipboardAppletRuntime
-        QindaQt::ShellAudioAppletRuntime
-        QindaQt::ShellBluetoothAppletRuntime
-        QindaQt::ShellPowerAppletRuntime
-        QindaQt::ShellLauncherQml
-        QindaQt::GlobalMenuQml
-        qindaqt_shell_audio_applet_runtimeplugin
-        qindaqt_shell_bluetooth_applet_runtimeplugin
-        qindaqt_shell_clipboard_applet_runtimeplugin
-        qindaqt_shell_power_applet_runtimeplugin
-        Qt6::Core
-        Qt6::Quick
-        Qt6::QuickTest
-        Qt6::Test
-)
-target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
-set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
-qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
-qt_import_qml_plugins(qindaqt_clipboard_applet_qml_tests)
-add_dependencies(
-    qindaqt_clipboard_applet_qml_tests
-    qindaqt_clipboard_applet_qml_test_prerequisites
-)
+# AGENT-GUARD: the QML rows link every hosted applet runtime; configurations
+# without the production shell (e.g. the compositor plugin dependency contract)
+# must not define them, exactly like the other applet test trees.
+if(TARGET qindaqt-shell)
+    qt_add_executable(qindaqt_clipboard_applet_qml_tests qml_interactive_main.cpp)
+    target_link_libraries(
+        qindaqt_clipboard_applet_qml_tests
+        PRIVATE
+            qindaqt_controls_test_support
+            QindaQt::ShellClipboardAppletRuntime
+            QindaQt::ShellAudioAppletRuntime
+            QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellPowerAppletRuntime
+            QindaQt::ShellLauncherQml
+            QindaQt::GlobalMenuQml
+            qindaqt_shell_audio_applet_runtimeplugin
+            qindaqt_shell_bluetooth_applet_runtimeplugin
+            qindaqt_shell_clipboard_applet_runtimeplugin
+            qindaqt_shell_power_applet_runtimeplugin
+            Qt6::Core
+            Qt6::Quick
+            Qt6::QuickTest
+            Qt6::Test
+    )
+    target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
+    set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
+    qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
+    qt_import_qml_plugins(qindaqt_clipboard_applet_qml_tests)
+    add_dependencies(
+        qindaqt_clipboard_applet_qml_tests
+        qindaqt_clipboard_applet_qml_test_prerequisites
+    )
 
-function(qindaqt_add_clipboard_applet_qml_test test_name test_input)
-    add_test(
-        NAME ${test_name}
-        COMMAND qindaqt_clipboard_applet_qml_tests -input "${test_input}"
+    function(qindaqt_add_clipboard_applet_qml_test test_name test_input)
+        add_test(
+            NAME ${test_name}
+            COMMAND qindaqt_clipboard_applet_qml_tests -input "${test_input}"
+        )
+        set_tests_properties(
+            ${test_name}
+            PROPERTIES
+                LABELS "offscreen"
+                ENVIRONMENT
+                    "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+                TIMEOUT 300
+        )
+    endfunction()
+
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-qml-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardApplet.qml"
+    )
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-qml-accessibility-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletAccessibility.qml"
+    )
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-qml-keyboard-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletKeyboard.qml"
+    )
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-qml-interactive-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletInteractive.qml"
+    )
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-production-panel-keyboard-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelKeyboard.qml"
+    )
+    qindaqt_add_clipboard_applet_qml_test(
+        qindaqt.clipboard-applet-production-panel-return-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelReturn.qml"
     )
     set_tests_properties(
-        ${test_name}
+        qindaqt.clipboard-applet-production-panel-keyboard-offscreen
+        qindaqt.clipboard-applet-production-panel-return-offscreen
         PROPERTIES
-            LABELS "offscreen"
             ENVIRONMENT
-                "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
-            TIMEOUT 300
+                "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
     )
-endfunction()
-
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-qml-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardApplet.qml"
-)
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-qml-accessibility-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletAccessibility.qml"
-)
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-qml-keyboard-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletKeyboard.qml"
-)
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-qml-interactive-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletInteractive.qml"
-)
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-production-panel-keyboard-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelKeyboard.qml"
-)
-qindaqt_add_clipboard_applet_qml_test(
-    qindaqt.clipboard-applet-production-panel-return-offscreen
-    "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardProductionPanelReturn.qml"
-)
-set_tests_properties(
-    qindaqt.clipboard-applet-production-panel-keyboard-offscreen
-    qindaqt.clipboard-applet-production-panel-return-offscreen
-    PROPERTIES
-        ENVIRONMENT
-            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
-        ENVIRONMENT_MODIFICATION
-            "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
-)
+endif()
 
 # 6. Boundary and source policy test
 add_test(
