@@ -18,6 +18,7 @@ T.ApplicationWindow {
     property var displaySettings: null
     property var networkSettings: null
     property var customizeSettings: CustomizeRouteComposition.model
+    property bool applicationClosePending: false
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -34,6 +35,7 @@ T.ApplicationWindow {
     onClosing: function(close) {
         const activeHost = root.isCompact ? compactRouteHost : wideRouteHost
         if (activeHost.requestApplicationClose()) {
+            root.applicationClosePending = true
             close.accepted = false
         }
     }
@@ -105,11 +107,13 @@ T.ApplicationWindow {
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
             customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 
@@ -139,11 +143,13 @@ T.ApplicationWindow {
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
             customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 

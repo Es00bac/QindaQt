@@ -800,12 +800,14 @@ lease-loss recovery. The page row runs warning-fatal, renders 720×720 compact
 and 1080×720 wide software scenes, checks accessible palette, panel, and zone
 identity plus keyboard activation, and verifies centered discard-dialog
 geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
-or Discard resolves it and preserves the pending prompt across wide/compact
-host reconstruction. Boundary and negative-control rows scan every C++ and QML
-file owned by the route: a synthesized forbidden shell, LayerShellQt,
-compositor, private-repository, or D-Bus dependency must make the checker fail.
-Only the named composition source may construct the public Settings1 Qt
-transport with `QDBusConnection`; adding that dependency anywhere else fails.
+or Discard resolves it and preserves both navigation and application-close
+prompts across wide-to-compact and compact-to-wide host reconstruction. The
+boundary row scans every C++ and QML file owned by the route and rejects shell,
+LayerShellQt, compositor, private-repository, or D-Bus dependencies. Its
+negative control plants the exact private
+`src/shell_customization/src/layout_editing_repository_p.h` include and requires
+rejection. Only the named composition source may construct the public Settings1
+Qt transport with `QDBusConnection`; adding that dependency anywhere else fails.
 
 `qindaqt.settings-customize-installed-route` stages the complete explicit
 Settings runtime component and runs the common hostile Settings package script.

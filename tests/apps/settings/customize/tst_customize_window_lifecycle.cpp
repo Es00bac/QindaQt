@@ -100,6 +100,7 @@ class CustomizeWindowLifecycleTests final : public QObject {
 private slots:
     void dirtyWindowCloseRequiresDecision();
     void pendingDepartureSurvivesResponsiveHostSwitch();
+    void pendingApplicationCloseSurvivesResponsiveHostSwitch();
 };
 
 void CustomizeWindowLifecycleTests::dirtyWindowCloseRequiresDecision()
@@ -136,6 +137,43 @@ void CustomizeWindowLifecycleTests::pendingDepartureSurvivesResponsiveHostSwitch
     QVERIFY(QMetaObject::invokeMethod(visibleDialog(harness.root.get()), "reject"));
     QTRY_COMPARE(harness.navigation.activeRouteId(), QStringLiteral("customize"));
     QVERIFY(harness.customize.dirty());
+}
+
+void CustomizeWindowLifecycleTests::pendingApplicationCloseSurvivesResponsiveHostSwitch()
+{
+    const auto verifyDirection = [](const QSize &initialSize,
+                                    const QSize &resizedSize,
+                                    const char *targetHostName) {
+        WindowHarness harness;
+        QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
+        harness.window->resize(initialSize);
+        harness.window->show();
+        QVERIFY(QTest::qWaitForWindowExposed(harness.window));
+        harness.customize.setDirty(true);
+
+        QVERIFY(!harness.window->close());
+        QTRY_VERIFY(visibleDialog(harness.root.get()) != nullptr);
+        QVERIFY(harness.root->property("applicationClosePending").toBool());
+        harness.window->resize(resizedSize);
+        QTRY_COMPARE(harness.window->size(), resizedSize);
+        auto *targetHost = harness.root->findChild<QObject *>(
+            QString::fromLatin1(targetHostName));
+        QVERIFY(targetHost != nullptr);
+        QTRY_VERIFY(visibleDialog(targetHost) != nullptr);
+        QVERIFY(harness.root->property("applicationClosePending").toBool());
+        QVERIFY(harness.window->isVisible());
+        QVERIFY(harness.customize.dirty());
+
+        QVERIFY(QMetaObject::invokeMethod(visibleDialog(targetHost), "reject"));
+        QTRY_VERIFY(!harness.root->property("applicationClosePending").toBool());
+        QTRY_VERIFY(harness.window->isVisible());
+        QVERIFY(harness.customize.dirty());
+    };
+
+    verifyDirection(QSize{720, 520}, QSize{440, 360},
+                    "compactSettingsRouteHost");
+    verifyDirection(QSize{440, 360}, QSize{720, 520},
+                    "wideSettingsRouteHost");
 }
 
 QTEST_MAIN(CustomizeWindowLifecycleTests)

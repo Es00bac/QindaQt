@@ -9,7 +9,7 @@ endforeach()
 file(REMOVE_RECURSE "${POISON_ROOT}")
 file(MAKE_DIRECTORY "${POISON_ROOT}")
 file(WRITE "${POISON_ROOT}/poison.cpp"
-     "#include <LayerShellQt/Shell>\n#include <QDBusConnection>\n")
+     "#include \"src/shell_customization/src/layout_editing_repository_p.h\"\n")
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -DSCAN_ROOT=${POISON_ROOT} -P "${CHECK_SCRIPT}"
     RESULT_VARIABLE poison_status
@@ -18,6 +18,6 @@ execute_process(
 )
 if(poison_status EQUAL 0)
     message(FATAL_ERROR
-        "Customize boundary poison was accepted:\n${poison_output}${poison_error}")
+        "Customize private-header poison was accepted:\n${poison_output}${poison_error}")
 endif()
 file(REMOVE_RECURSE "${POISON_ROOT}")
