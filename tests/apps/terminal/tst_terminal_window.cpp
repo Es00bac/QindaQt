@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMetaObject>
 #include <QSignalSpy>
 #include <QTest>
@@ -340,6 +341,15 @@ void TerminalWindowTest::
   QVERIFY(!view->accessibleDescription().isEmpty());
   QCOMPARE(view->focusPolicy(), Qt::StrongFocus);
   QCOMPARE(window->accessibleName(), QStringLiteral("QindaQt Terminal"));
+
+  auto *find = window->findChild<QAction *>(QStringLiteral("viewFindAction"));
+  auto *editor =
+      window->findChild<QLineEdit *>(QStringLiteral("terminalFindText"));
+  QVERIFY(find != nullptr && editor != nullptr);
+  find->trigger();
+  QTRY_VERIFY(editor->hasFocus());
+  QTest::keyClick(editor, Qt::Key_Escape);
+  QTRY_VERIFY(view->hasFocus());
 }
 
 void TerminalWindowTest::hostileResizeClampsEmbeddedView() {

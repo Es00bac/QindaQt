@@ -263,6 +263,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   application-owned child-PTY bridge — is pinned in
   [ADR-0040](../adr/0040-own-terminal-child-pty-and-bridge-through-teletype.md)
   (superseding ADR-0030).
+- Terminal search admission/counting and link detection/open policy remain
+  qtermwidget-free application components. Only the confined adapter maps an
+  admitted query to the pinned renderer search surface or extracts its bounded
+  live-screen tail; only the application-owned opener may confirm and dispatch
+  one absolute-program argv request. Neither extension changes PTY ownership.
 - Tests use public APIs first. Input-injection providers/devices, fake-device
   creation, output forcing, and similar backdoor authority must be absent from
   normal production sessions and clearly named as test interfaces. A versioned
