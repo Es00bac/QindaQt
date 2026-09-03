@@ -32,5 +32,9 @@
       <arg name="revision" type="s" direction="in"/>
       <arg name="resultJson" type="ay" direction="out"/>
     </method>
+    <method name="ActiveWindowIdentity">
+      <arg name="snapshotJson" type="ay" direction="out"/>
+    </method>
+    <signal name="ActiveWindowIdentityChanged"/>
   </interface>
 </node>

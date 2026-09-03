@@ -5,20 +5,20 @@ provider: OpenAI Codex
 model: gpt-5.6-sol
 reasoning: high
 status: handoff
-feature: QQ-004.10 Task list / QQ-004.07 Launcher compositor shell window actions
-worktree: /home/cabewse/work_SPaC3/container-wm-workers/compositor-window-actions
-started_at: 2026-09-02T22:33:03-06:00
-updated_at: 2026-09-03T00:00:59-06:00
+feature: QQ-004 Global Menu compositor active-window identity facts
+worktree: /home/cabewse/work_SPaC3/container-wm-workers/compositor-window-identity
+started_at: 2026-09-03T00:19:34-06:00
+updated_at: 2026-09-03T01:53:06-06:00
 ---
 
 # Sophie Germain
 
 - Role: Compositor integration implementer.
 - Provider/model: OpenAI Codex `gpt-5.6-sol` (reasoning high).
-- Status: handoff — repaired exact candidate `3690a056e667135d486da4fa60d7996882a4560a` is green and ready for Margaret Rock's exact recheck.
-- Exact base: `ffa6cfef1b71f9c52f7431d6daaa7beb132d6b7a` (rejected product ancestor `11f4c0a85851376623c34bfb8cfda2ddb5383bb3`).
-- Branch: `worker/compositor-window-actions`.
-- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/compositor-window-actions`.
+- Status: handoff — exact repaired product candidate `8505bdbd09961863538616efd3dd8e7ef834a126` is green and ready for Margaret Rock's exact re-review.
+- Exact base: `135fe652db422564b8eeb3dc85bfdf1f679c54eb`.
+- Branch: `worker/compositor-window-identity`.
+- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/compositor-window-identity`.
 - Product authority: `src/compositor/**`, `compositor/dbus/**`, `src/shell_window_actions_client/**`, `tests/compositor/**`, `tests/shell_window_actions_client/**`, named wiki pages and ADR, plus the lane's smallest additive shared registry edits.
 
 ## Updates
@@ -30,3 +30,9 @@ updated_at: 2026-09-03T00:00:59-06:00
 - 2026-09-02T23:47:34-06:00 — Reclaimed the rejected candidate repair: authenticate before semantic parsing, bound all entry fields and constant-size unauthenticated/unbound replies, add hostile unit/live coverage, and add real private-bus owner-replacement/no-replay plus timeout controls.
 - 2026-09-02T23:57:47-06:00 — Midpoint: raw fields now cross one bounded controller entry, only constant-time lengths precede the PID join, and pre-auth/oversized failures are echo-free; focused Debug 3/3, the updated private KWin row 1/1, documentation validation, strict MkDocs, and source-shape gates pass.
 - 2026-09-03T00:00:59-06:00 — Handoff: exact candidate `3690a056e667135d486da4fa60d7996882a4560a` passes strict Debug and Release compositor 48/48 plus client 2/2 selectors and every static gate; requesting Margaret Rock's exact-candidate recheck, then manager integration.
+- 2026-09-03T00:19:34-06:00 — Claimed the compositor active-window identity lane at exact integrated base `135fe652db422564b8eeb3dc85bfdf1f679c54eb`; confirmed G2 is blocked on independently authenticated PID and AppMenu window-id facts and began the pinned KWin 6.6.5 API audit.
+- 2026-09-03T00:46:16-06:00 — Midpoint: the authenticated, directed-signal identity projection and exact-owner client pass focused Debug unit/XML/private-bus rows 5/5; the private KWin live row now proves a native Wayland PID with typed-null AppMenu id and an XWayland PID/exact X window id, plus wrong-owner rejection, 1/1.
+- 2026-09-03T01:03:14-06:00 — Handoff: exact candidate `7e263bd0549d4ed64e8f15e6dac7709ccdfc7120` passes strict Debug and Release compositor 49/49 plus client 2/2 selectors, including the serial two-client KWin identity proof, and every static gate; requesting independent exact review then manager integration.
+- 2026-09-03T01:27:15-06:00 — Reclaimed the rejected candidate repair on descendant `25baca2`: add live descriptor/object signal parity, reject invalid action-generation epochs on publication and decode, and prove live AppMenu announcement validation plus late old-owner identity reply rejection.
+- 2026-09-03T01:43:54-06:00 — Midpoint: the live object now matches the checked-in method/signal contract, invalid lineage fails closed, and the private KWin proof passes valid plus overlong/malformed AppMenu announcements; focused Debug identity/client/private-bus rows and the expanded nested row are green.
+- 2026-09-03T01:53:06-06:00 — Handoff: exact repaired candidate `8505bdbd09961863538616efd3dd8e7ef834a126` passes Debug and Release compositor 49/49 plus client 2/2 selectors, Margaret Rock's invalid-epoch reproduction, and every static gate; requesting Margaret Rock's exact re-review then manager integration.

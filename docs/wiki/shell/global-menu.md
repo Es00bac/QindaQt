@@ -178,6 +178,40 @@ replace accepted truth. Owner loss retires pending replies and the snapshot.
 `Event` is sent at most once per admitted intent. Timeout or error is uncertain
 and reported without retry, preventing duplicate application activation.
 
+## Compositor identity consumption contract
+
+G2 consumes `CompositorShell1.ActiveWindowIdentity` through the existing
+exact-owner shell window-actions client; it must not construct another
+compositor connection or treat `Compositor1.Windows` as a PID source. The
+identity `revision` is the ownership model's `focusGeneration`. The client
+withdraws the snapshot on its directed change signal, then publishes only a
+complete monotonic reread. Composition samples identity, resolves credentials,
+and samples identity again; both reads must retain the same epoch, revision,
+active UUID, and action fence before `ProviderAuthenticator` may issue a proof.
+
+For XWayland, composition selects the registrar entry whose numeric id equals
+the compositor-projected `appMenuWindowId`, then requires the registrar entry's
+exact unique owner to have the compositor-projected PID. For native Wayland,
+the numeric id is deliberately `null`; composition uses only the paired
+service name/object path announced on that credentials-owned surface, resolves
+the name to one exact unique bus owner, and applies the same PID check. A null
+PID, missing X11 id, half/malformed Wayland address, owner replacement, PID
+mismatch, revision movement, or action-fence mismatch publishes unavailable.
+Registrar contents never fill a missing compositor fact.
+
+The client also rejects the complete identity reply unless its epoch and
+`actionRevision` satisfy the public compositor action-generation rule. A
+nonempty but whitespace-padded or otherwise invalid epoch must never surface as
+`identityAvailable`; composition does not add a more permissive lineage parser.
+
+This join prevents an arbitrary registrar claim from becoming authoritative,
+but it does not authenticate the standard registrar itself: any local peer can
+still register bogus window ids. It also does not prove an announced bus name's
+owner until the shell performs the exact-owner credential lookup, prevent a
+compromised application from exporting a malicious menu for its own window, or
+support a legitimate exporter delegated to another PID. Those cases fail
+closed under [ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
+
 ## Transport composition
 
 `QindaQt::GlobalMenuTransportComposition` is buildable but not instantiated by
