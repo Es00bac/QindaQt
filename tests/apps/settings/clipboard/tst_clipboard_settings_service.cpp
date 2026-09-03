@@ -158,10 +158,14 @@ void ClipboardSettingsServiceTest::uncertainClearIsNotReplayed()
     QVERIFY(model.requestClearHistory());
     QVERIFY(model.confirmClearHistory());
     const auto submitted = clipboardTransport.operations.constFirst();
+    // AGENT-NOTE: Regression for Fern Hunt P1.3. Pending-to-Uncertain changes
+    // Q_PROPERTY values, so it must notify the QML page immediately.
+    QSignalSpy viewSpy(&model, &ClipboardSettingsModel::viewChanged);
     Q_EMIT clipboardTransport.operationReply(
         submitted.owner, submitted.token, false, {},
         QStringLiteral("transport-timeout"));
     QTRY_VERIFY(model.clearUncertain());
+    QTRY_VERIFY(viewSpy.count() > 0);
     QTest::qWait(30);
     QCOMPARE(clipboardTransport.operations.size(), 1);
     QVERIFY(model.clearStatusText().contains(QStringLiteral("not retried")));

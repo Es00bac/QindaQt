@@ -76,7 +76,8 @@ public:
 };
 
 inline QVariantMap settingsSnapshotWire(QString epoch, quint64 revision,
-                                        bool enabled)
+                                        bool enabled,
+                                        QString source = QStringLiteral("user-overrides"))
 {
     const QString key = QString::fromLatin1(ClipboardHistorySettingsKey);
     return {{QLatin1StringView(WireContract::FieldStatus),
@@ -88,7 +89,25 @@ inline QVariantMap settingsSnapshotWire(QString epoch, quint64 revision,
             {QLatin1StringView(WireContract::FieldRevision), revision},
             {QLatin1StringView(WireContract::FieldValues), QVariantMap{{key, enabled}}},
             {QLatin1StringView(WireContract::FieldSourceLayers),
-             QVariantMap{{key, QStringLiteral("user-overrides")}}},
+             QVariantMap{{key, std::move(source)}}},
+            {QLatin1StringView(WireContract::FieldMessage), QString{}}};
+}
+
+inline QVariantMap settingsSnapshotWireValue(QString epoch, quint64 revision,
+                                             QVariant value, QString source)
+{
+    const QString key = QString::fromLatin1(ClipboardHistorySettingsKey);
+    return {{QLatin1StringView(WireContract::FieldStatus),
+             quint32(SettingsWireStatus::Applied)},
+            {QLatin1StringView(WireContract::FieldWireSchemaVersion),
+             WireContract::WireSchemaVersion},
+            {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+            {QLatin1StringView(WireContract::FieldEpoch), std::move(epoch)},
+            {QLatin1StringView(WireContract::FieldRevision), revision},
+            {QLatin1StringView(WireContract::FieldValues),
+             QVariantMap{{key, std::move(value)}}},
+            {QLatin1StringView(WireContract::FieldSourceLayers),
+             QVariantMap{{key, std::move(source)}}},
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
 

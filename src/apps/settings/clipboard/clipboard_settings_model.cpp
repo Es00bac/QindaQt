@@ -16,6 +16,13 @@ using Services::SettingsProtocol::SettingsWireStatus;
 
 namespace {
 constexpr qsizetype MaximumDiagnosticLength = 512;
+
+bool isExplicitClipboardConsent(const QVariant &value, const QVariant &source)
+{
+    return value.metaType().id() == QMetaType::Bool && value.toBool()
+        && source.metaType().id() == QMetaType::QString
+        && source.toString() == QLatin1String("user-overrides");
+}
 }
 
 ClipboardSettingsModel::ClipboardSettingsModel(
@@ -69,7 +76,7 @@ bool ClipboardSettingsModel::preferenceUnavailable() const noexcept
 bool ClipboardSettingsModel::canEditPreference() const noexcept
 {
     return m_hasPreferenceBaseline && m_settingsClient.state() == ClientState::Ready
-        && !preferenceSaving();
+        && (preferenceReady() || preferenceConflict());
 }
 
 bool ClipboardSettingsModel::preferenceDirty() const noexcept
@@ -200,6 +207,8 @@ void ClipboardSettingsModel::handleSettingsSnapshot()
     const auto &snapshot = *m_settingsClient.snapshot();
     const QVariant value = snapshot.values.value(
         QString::fromLatin1(ClipboardHistorySettingsKey));
+    const QVariant source = snapshot.sourceLayers.value(
+        QString::fromLatin1(ClipboardHistorySettingsKey));
     if (value.metaType().id() != QMetaType::Bool) {
         setPreferenceState(PreferenceState::Unavailable,
                            QStringLiteral("Clipboard history has an invalid Settings1 value."));
@@ -209,7 +218,10 @@ void ClipboardSettingsModel::handleSettingsSnapshot()
         && (snapshot.owner != m_settingsOwner || snapshot.epoch != m_settingsEpoch);
     m_settingsOwner = snapshot.owner;
     m_settingsEpoch = snapshot.epoch;
-    m_historyEnabled = value.toBool();
+    // AGENT-GUARD: Clipboard1 recognizes only an explicit user-overrides true
+    // as consent. Presenting an inherited true as enabled would manufacture
+    // consent and also remove the direct opt-in commit path.
+    m_historyEnabled = isExplicitClipboardConsent(value, source);
     if (!m_hasPreferenceBaseline || !m_preferenceDirty) {
         m_draftEnabled = m_historyEnabled;
         m_preferenceDirty = false;
@@ -258,8 +270,10 @@ void ClipboardSettingsModel::handleSettingsCommit(const CommitOutcome &outcome)
     if (outcome.status == SettingsWireStatus::Conflict) {
         const QVariant current = outcome.currentValues.value(
             QString::fromLatin1(ClipboardHistorySettingsKey));
+        const QVariant currentSource = outcome.currentSourceLayers.value(
+            QString::fromLatin1(ClipboardHistorySettingsKey));
         if (current.metaType().id() == QMetaType::Bool
-            && current.toBool() == m_draftEnabled) {
+            && isExplicitClipboardConsent(current, currentSource) == m_draftEnabled) {
             m_waitingPreferenceSnapshot = true;
             setPreferenceState(PreferenceState::Saving);
         } else {
