@@ -115,6 +115,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_readiness.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_runtime.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_sandbox.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_shutdown.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_stage_closure.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktop_session_topology.py"

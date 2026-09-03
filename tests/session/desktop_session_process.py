@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
+from desktop_session_shutdown import OrderlyShutdownError, terminate_orderly_roles
 from desktop_session_topology import DesktopTopology, desktop_1080p_topology
 
 
@@ -269,9 +270,11 @@ def identity_is_live(
 def terminate_processes(
     identities: Iterable[ProcessIdentity],
     *,
+    orderly_roles: Iterable[str] = (),
     term_seconds: float = 3.0,
     kill_seconds: float = 2.0,
     proc_root: Path = Path("/proc"),
+    signal_process: Callable[[int, int], None] = os.kill,
     signal_group: Callable[[int, int], None] = os.killpg,
     monotonic: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
@@ -329,6 +332,16 @@ def terminate_processes(
     for item in tracked:
         if item.pid not in remaining_pids:
             phase_by_pid[item.pid] = "already-exited"
+    try:
+        phase_by_pid.update(terminate_orderly_roles(
+            tracked, orderly_roles,
+            is_live=lambda item: identity_is_live(item, proc_root=proc_root),
+            signal_process=signal_process, term_seconds=term_seconds,
+            monotonic=monotonic, sleep=sleep,
+        ))
+    except OrderlyShutdownError as error:
+        raise ProcessContractError(str(error)) from error
+    remaining = live()
     if remaining:
         before = {item.pid for item in remaining}
         signal_live_groups(signal.SIGTERM)
