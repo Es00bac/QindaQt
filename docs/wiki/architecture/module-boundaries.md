@@ -53,6 +53,7 @@ tests, and the wiki page describing its contract.
 | `src/services/power_client` | Exact-owner asynchronous Power1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty recovery, and stale-reply rejection | Public power protocol plus Qt Core/DBus; never service implementation, upstream daemons, or QML |
 | `src/services/brightness_model` | Pure stable-ID fixture validation, mirror-collapsed display/keyboard composition, and integer raw-range conversion | Public power protocol plus Qt Core; never Display1 headers, connector identity, topology input, transport, persistence, clocks, QML, or mutation |
 | `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, shell-owned interruption/privacy-policy composition, and global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models/policies, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
+| `src/shell/audio_applet` | Pure Audio applet projection values plus a separately linked shell-private `AudioClient` controller and compiled QML renderer | Pure target: public Audio1 protocol plus Qt Core. Runtime target: pure target, public audio client, and Qt QML/Quick; never audio-service internals, WirePlumber, PipeWire, GLib, direct platform transport, files, or persistence |
 | `src/shell/bluetooth_applet` | Pure Bluetooth applet projection/request values plus a separately linked shell-private `BluetoothClient` controller and compiled QML renderer | Pure target: public Bluetooth protocol plus Qt Core. Runtime target: pure target, public Bluetooth client, and Qt QML/Quick; never Bluetooth service/model, BlueZ/BluezQt, Agent1/pairing/trust, host radios, addresses in presentation, files, or persistence |
 | `src/shell/power_applet` | Pure Power applet projection/request values plus a separately linked shell-private `PowerClient` controller and compiled QML renderer | Pure target: public power protocol and brightness model plus Qt Core. Runtime target: pure target, public power client, and Qt QML/Quick; never power-service internals, host daemons, direct platform transport, files, or persistence |
 | `src/shell/global_menu` | Separate focused targets: canonical bounded menu/action values and authenticated active-window provider ownership policy (protocol/policy), the fail-closed export lineage authority, the Qt Widgets menu adapter, and the shell-owned applet facade whose Qt Quick component owns this applet's presentation policy (orientation, overflow, focus, activation surfaces) | Protocol/policy: public protocol values plus Qt Core. Adapter target additionally Qt Gui/Widgets. Applet-presentation target additionally Qt Quick for its own component; never D-Bus transport, KWin objects, or action execution |
@@ -229,6 +230,13 @@ implemented; do not use placeholder modules to bypass a boundary.
   controller owns one bounded caller-scoped discovery lease, releases it on
   popup close/teardown, and exposes no pairing, trust, key, Agent1, address,
   or BlueZ surface. See [Bluetooth applet](../shell/bluetooth-applet.md).
+- The Audio applet receives only its shell-private controller over the
+  public `AudioClient`. Manifest/policy `audio.read` and `audio.control`
+  grants gate observation and mutation independently; the controller clears
+  stale truth and pending operations on exact-owner replacement without
+  replay, and exposes no PipeWire, WirePlumber, stream-move,
+  default-device, or service-internal surface. See
+  [Audio applet](../shell/audio-applet.md).
 - Shell-wide presentation shortcuts are shell-owned actions registered through
   a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
   and user remapping; neither profile data nor applet QML may register or

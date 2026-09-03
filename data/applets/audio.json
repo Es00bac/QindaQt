@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "audio",
+  "name": "Audio",
+  "description": "Shows bounded Audio1 device and application-stream truth and offers policy-gated volume and mute controls.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.audio"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 72, "maximum": 140, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["audio.read", "audio.control"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

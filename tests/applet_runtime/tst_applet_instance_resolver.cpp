@@ -71,11 +71,21 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringLiteral("ready"));
 
     const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.audio"),
         QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
+
+    const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("audio")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(audio.ready(), qPrintable(audio.diagnostic));
+    QCOMPARE(audio.entryPoint, QStringLiteral("qindaqt.applets.audio"));
+    QCOMPARE(audio.grantedCapabilities,
+             QStringList({QStringLiteral("audio.control"),
+                          QStringLiteral("audio.read")}));
 
     const auto power = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("power")), Profiles::Edge::Top,

@@ -41,9 +41,9 @@ authority.
 
 ## Catalog behavior
 
-The built-in catalog lives in `data/applets`. It currently describes launcher,
-task-list, global-menu, status-tray, clock, notification-center, Bluetooth, and
-power applets.
+The built-in catalog lives in `data/applets`. It currently describes
+launcher, task-list, global-menu, status-tray, clock, notification-center,
+audio, Bluetooth, and power applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -64,6 +64,14 @@ The Bluetooth manifest similarly separates read and control. Its audited
 renderer receives a shell-private controller over the public BluetoothClient;
 the grant cannot expose pairing/trust/keys, direct BlueZ or Agent1, addresses,
 or host-radio APIs because those surfaces do not exist on the controller.
+
+The Audio manifest requests `audio.read` and `audio.control` under the same
+separation. Its audited renderer receives a shell-private controller over
+the public `AudioClient`; read denial suppresses observation entirely, and
+control denial keeps rows visible but refuses every mutation before dispatch.
+The grant cannot expose PipeWire, WirePlumber, stream moves, default-device
+changes, or service internals because those surfaces do not exist on the
+controller.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
