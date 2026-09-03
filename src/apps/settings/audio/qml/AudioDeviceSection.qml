@@ -18,12 +18,47 @@ ColumnLayout {
     required property string emptyText
     required property string kindPrefix
 
-    // The first projected row registers its entry control for the page's
-    // focus entry and Tab cycle. The Repeater recreates every delegate on
-    // each projection change, so registration refreshes with each model
-    // reset; the destroying delegate clears it so a stale pointer is never
+    // Projected rows register their first/last enabled, admitted action
+    // control for the page's focus entry and Tab cycle. Registration is
+    // keyed by row index so the section target is always the first enabled,
+    // admitted control in traversal order — never a control the projection
+    // disabled (AGENT-GUARD: the Settings host forceActiveFocus()es
+    // firstActionTarget directly; handing it a disabled control strands host
+    // entry focus). The Repeater recreates every delegate on each projection
+    // change, so registration refreshes with each model reset; the
+    // destroying delegate withdraws its row so a stale pointer is never
     // handed to forceActiveFocus.
     property Item firstActionTarget: null
+    property Item lastActionTarget: null
+    property var actionRegistrations: ({})
+
+    function updateActionRegistration(index, delegate) {
+        root.actionRegistrations[index] = delegate
+        root.refreshActionTargets()
+    }
+
+    function removeActionRegistration(index) {
+        delete root.actionRegistrations[index]
+        root.refreshActionTargets()
+    }
+
+    function refreshActionTargets() {
+        const indices = Object.keys(root.actionRegistrations).map(Number)
+        indices.sort((a, b) => a - b)
+        let first = null
+        let last = null
+        for (const index of indices) {
+            const delegate = root.actionRegistrations[index]
+            if (first === null && delegate.firstEnabledAction !== null) {
+                first = delegate.firstEnabledAction
+            }
+            if (delegate.lastEnabledAction !== null) {
+                last = delegate.lastEnabledAction
+            }
+        }
+        root.firstActionTarget = first
+        root.lastActionTarget = last
+    }
 
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
@@ -49,18 +84,29 @@ ColumnLayout {
                 .arg(deviceRow.modelData.displayName)
                 .arg(deviceRow.modelData.stateText)
 
-            Component.onCompleted: {
-                if (deviceRow.index === 0) {
-                    root.firstActionTarget = deviceRow.modelData.isDefault
-                            ? levelRow.entryControl : setDefaultButton
-                }
-            }
-            Component.onDestruction: {
-                if (root.firstActionTarget === setDefaultButton
-                        || root.firstActionTarget === levelRow.entryControl) {
-                    root.firstActionTarget = null
-                }
-            }
+            // Traversal order inside a row is set-default, volume, mute; the
+            // enabled flag already folds in admission (Button derives it from
+            // available && !busy) and the projection's can-set fences.
+            readonly property Item firstEnabledAction:
+                setDefaultButton.visible && setDefaultButton.enabled
+                    ? setDefaultButton
+                    : levelRow.entryControl.enabled ? levelRow.entryControl
+                    : muteSwitch.enabled ? muteSwitch : null
+            readonly property Item lastEnabledAction:
+                muteSwitch.enabled ? muteSwitch
+                : levelRow.entryControl.enabled ? levelRow.entryControl
+                : setDefaultButton.visible && setDefaultButton.enabled
+                  ? setDefaultButton : null
+
+            onFirstEnabledActionChanged:
+                root.updateActionRegistration(deviceRow.index, deviceRow)
+            onLastEnabledActionChanged:
+                root.updateActionRegistration(deviceRow.index, deviceRow)
+
+            Component.onCompleted:
+                root.updateActionRegistration(deviceRow.index, deviceRow)
+            Component.onDestruction:
+                root.removeActionRegistration(deviceRow.index)
 
             contentItem: ColumnLayout {
                 spacing: Tokens.space["2"]
@@ -126,6 +172,7 @@ ColumnLayout {
                     }
 
                     Switch {
+                        id: muteSwitch
                         objectName: root.kindPrefix + "Mute_"
                                     + deviceRow.modelData.serial
                         text: qsTr("Mute")

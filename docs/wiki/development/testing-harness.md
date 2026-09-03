@@ -833,7 +833,15 @@ serials, ignored foreign and late completions, retained stale truth, and a
 retry that rediscovers without replaying. The offscreen page row proves
 accessible roles and names, action wiring including slider release and switch
 toggles, stale and owner-loss presentation, compact focus reveal, and Tab
-cycling. Boundary and poison rows fail on private service, WirePlumber,
+cycling in both directions, including the negative control that host entry
+targets the first enabled, admitted action when the default output admits
+none of its own controls. The Settings Center navigation page row proves the
+integrated route end to end: Ctrl+5 selection, `settingsNavButton_audio` and
+`settingsCompactTab_audio` accessible PageTab roles, Escape return to the
+active route tab, and Tab entry into the page's declared first focus target
+in both the 720×520 and 440×360 host layouts, with
+`wideSettingsRouteAudioLoader`/`compactSettingsRouteAudioLoader` activation.
+Boundary and poison rows fail on private service, WirePlumber,
 PipeWire, or Qt D-Bus sources, an invokable outside the closed intent
 surface, text entry, a stream-move surface, or a private dependency; the
 Settings Center installed-package row additionally withholds the installed

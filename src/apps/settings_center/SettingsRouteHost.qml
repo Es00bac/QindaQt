@@ -48,7 +48,12 @@ Item {
             return false
         }
         target.forceActiveFocus(Qt.TabFocusReason)
-        return true
+        // AGENT-NOTE: callers (route tab KeyNavigation, Escape-return focus)
+        // and tests rely on this reporting whether focus actually moved.
+        // forceActiveFocus() returns void; confirm the item holds active
+        // focus so a disabled or not-yet-focusable target is reported as a
+        // failure instead of a silent success.
+        return target.activeFocus
     }
 
     Loader {
