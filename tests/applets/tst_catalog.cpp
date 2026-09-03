@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 8);
+    QCOMPARE(catalog.manifests().size(), 9);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -51,6 +51,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("notification-center"),
         QStringLiteral("bluetooth"),
         QStringLiteral("power"),
+        QStringLiteral("audio"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {
@@ -75,12 +76,14 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
         catalog.findById(QStringLiteral("notification-center"));
     const AppletManifest *bluetooth = catalog.findById(QStringLiteral("bluetooth"));
     const AppletManifest *power = catalog.findById(QStringLiteral("power"));
+    const AppletManifest *audio = catalog.findById(QStringLiteral("audio"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
     QVERIFY(notificationCenter != nullptr);
     QVERIFY(bluetooth != nullptr);
     QVERIFY(power != nullptr);
+    QVERIFY(audio != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
@@ -91,6 +94,9 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(power->capabilities
             == QVector<Capability>({Capability::PowerRead,
                                     Capability::PowerControl}));
+    QVERIFY(audio->capabilities
+            == QVector<Capability>({Capability::AudioRead,
+                                    Capability::AudioControl}));
     QVERIFY(notificationCenter->placementZones
             == QVector<PlacementZone>({PlacementZone::PanelStart,
                                        PlacementZone::PanelCenter,

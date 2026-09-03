@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QindaQt.Shell.AudioApplet 1.0 as AudioAppletModule
 import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 
@@ -11,6 +12,7 @@ Item {
     property bool vertical: false
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     readonly property var runtime: applet.runtime ?? ({})
@@ -20,12 +22,15 @@ Item {
         ready && entryPoint === "qindaqt.applets.clock"
     readonly property bool notificationCenterReady:
         ready && entryPoint === "qindaqt.applets.notification-center"
+    readonly property bool audioReady:
+        ready && entryPoint === "qindaqt.applets.audio"
     readonly property bool bluetoothReady:
         ready && entryPoint === "qindaqt.applets.bluetooth"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
     readonly property bool hasLiveContent:
-        clockReady || notificationCenterReady || bluetoothReady || powerReady
+        clockReady || notificationCenterReady || audioReady || bluetoothReady
+        || powerReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -35,10 +40,12 @@ Item {
     // if a registered entry point lacks a renderer here.
     implicitWidth: clockReady ? clock.implicitWidth
                    : notificationCenterReady ? notifications.implicitWidth
+                   : audioReady ? audio.implicitWidth
                    : bluetoothReady ? bluetooth.implicitWidth
                    : powerReady ? power.implicitWidth : 0
     implicitHeight: clockReady ? clock.implicitHeight
                     : notificationCenterReady ? notifications.implicitHeight
+                    : audioReady ? audio.implicitHeight
                     : bluetoothReady ? bluetooth.implicitHeight
                     : powerReady ? power.implicitHeight : 0
 
@@ -67,6 +74,13 @@ Item {
         access: root.powerAppletAccess
         theme: root.theme
         vertical: root.vertical
+    }
+
+    AudioAppletModule.AudioApplet {
+        id: audio
+        anchors.fill: parent
+        visible: root.audioReady
+        controller: root.audioAppletAccess
     }
 
     BluetoothAppletModule.BluetoothApplet {
