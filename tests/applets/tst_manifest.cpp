@@ -74,10 +74,11 @@ void ManifestTest::roundTripsEveryFirstPartyManifest()
     const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/applets"));
     const QStringList fileNames =
         directory.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    QCOMPARE(fileNames.size(), 10);
+    QCOMPARE(fileNames.size(), 11);
     QVERIFY(fileNames.contains(QStringLiteral("audio.json")));
     QVERIFY(fileNames.contains(QStringLiteral("bluetooth.json")));
     QVERIFY(fileNames.contains(QStringLiteral("clipboard.json")));
+    QVERIFY(fileNames.contains(QStringLiteral("status-notifier.json")));
     for (const QString &fileName : fileNames) {
         const ManifestLoadResult loaded = ManifestLoader::fromFile(directory.filePath(fileName));
         QVERIFY2(loaded.ok, qPrintable(loaded.error));
