@@ -187,20 +187,25 @@ ctest --test-dir build/dev \
 
 Its pure projection/request rows are joined by an exact-owner public-client
 controller, compiled offscreen keyboard/accessibility and lease-close proof,
-mutation-sensitive pure/runtime boundary gates, and an installed
-production-package/source-poison row. The boundary rows use exact header
-allowlists, positively close the controller's line-splice/whitespace-normalized
-QML surface with exact declaration lists plus literal macro-name occurrence
-counts, and independently poison client/service, single-line, wrapped,
-comment-glued, paren-gap, and line-spliced property/invokable additions,
-address, persistence, filesystem, and adjacent-module escapes. No row contacts
-the host session bus, display server, BlueZ, a radio, or pairing authority. The
-exact matrix and nonclaims are
+an ordered post-moc controller-surface contract, mutation-sensitive
+pure/runtime dependency boundaries, and an installed production-package/source-
+poison row. `qindaqt.bluetooth-applet-surface` walks the controller-owned
+property, method, and enumerator slices of `staticMetaObject`, compares the
+complete attribute/signature lists in order, rejects a deliberately expanded
+test surface, and constructs the production applet through an offscreen
+`QQmlEngine` to compare controller-specific QML-visible property and method
+names with the same literal contract. Token-pasted macros, public slots, and
+cross-header macro aliases therefore cannot evade the compiled gate. The
+textual boundary rows remain limited to exact file/header allowlists and
+forbidden dependencies or symbols, with independent client/service, address,
+persistence, filesystem, and adjacent-module poisons. No row contacts the host
+session bus, display server, BlueZ, a radio, or pairing authority. The exact
+matrix and nonclaims are
 detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
 also clears ambient loader paths and requires CMake's runtime dependency
 resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
 The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
-profile built the production shell plus the focused targets, passed all seven
+profile built the production shell plus the focused targets, passed all eight
 registered Bluetooth-applet rows, and passed six adjacent public-client,
 manifest, catalog, resolver, dispatcher, and shell-runtime-catalog rows. This
 is deterministic public-client/offscreen/package evidence only; it adds no

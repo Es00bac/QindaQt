@@ -12,7 +12,7 @@ Debug/Release executable and package evidence)**. The B1 slice includes the audi
 manifest/registry/policy path, stock-profile placement, production shell
 composition, keyboard-accessible compiled QML, static mutation gates, and a
 relocated installed-package test. Fresh strict GCC 15.3 Debug and Release roots
-each built the production shell and focused targets, passed the seven-row B1
+each built the production shell and focused targets, passed the eight-row B1
 selector, and passed six adjacent public-client, manifest, catalog, resolver,
 dispatcher, and shell-catalog rows. Bluetooth B0 still composes its
 deterministic empty backend, so a normal activated service truthfully makes the
@@ -119,6 +119,19 @@ The composition, client, controller, and renderer are GUI-thread confined.
 panel windows borrow only the controller and are destroyed before it. The
 client is stopped after the controller's shutdown hook.
 
+The controller's QML authority is a literal compiled-surface contract. The
+focused surface test walks only the controller-owned slices of its post-moc
+`staticMetaObject`, beginning at `propertyOffset()`, `methodOffset()`, and
+`enumeratorOffset()`. It compares every property attribute, notify signature,
+method signature/return/type/access/revision, and enumerator in declaration
+order. It also constructs the production applet through an offscreen
+`QQmlEngine`, reflects the controller-specific names visible to QML relative
+to a plain `QObject`, and compares them with the same literal property and
+method names. An added, removed, reordered, or changed meta-object member fails
+the gate regardless of source spelling, including token-pasted macros and
+public slots. A test-local derived surface with an added property, slot, signal,
+and enum is the negative control for the shared comparison path.
+
 ## Compiled interaction
 
 `BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal,
@@ -165,8 +178,9 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-request-state` | All five B0 operations, capability/state admission, exact kind/lineage completion, terminal failure/uncertainty, and no replay |
 | `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, serialization, exact-owner replacement, typed feedback, and discovery close teardown |
 | `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
+| `qindaqt.bluetooth-applet-surface` | Ordered post-moc property/method/enumerator contract, non-vacuous expanded-surface rejection, and offscreen QML-visible name equality |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
-| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header, line-splice/whitespace-normalized controller surface, and literal property/invokable macro-name counts; eleven independent service, single/wrapped/comment-glued invokable, wrapped/paren-gap/line-spliced property, address-accessor, persistence, file, and standard-path poisons |
+| `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; five independent service-include, address-accessor, persistence, file, and standard-path poisons |
 | `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
