@@ -4,9 +4,9 @@
       "id": "openai",
       "name": "OpenAI / Codex",
       "status": "available",
-      "updatedAt": "2026-08-31T05:55:04-06:00",
+      "updatedAt": "2026-09-02T20:42:51-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The native collaboration runtime is live for the Program Manager, Portal P0 exact reviewer, and resumed S3 implementer; one native slot remains available."
+      "evidence": "Direct probe: `codex exec -m gpt-5.6-sol` answered; two Codex lanes (Bluetooth B1 repair, Global Menu G1) are live."
     },
     {
       "id": "gemini",
@@ -19,26 +19,26 @@
     {
       "id": "glm",
       "name": "Z.AI GLM",
-      "status": "degraded",
-      "updatedAt": "2026-08-31T05:55:04-06:00",
+      "status": "available",
+      "updatedAt": "2026-09-02T20:42:51-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The user reports GLM usage cannot be checked and supplied a z.ai Server Not Found capture; no current GLM process or quota claim is being used."
+      "evidence": "Direct probe: `kimi -m zai-coding-plan/glm-5.3` answered; two GLM lanes (Audio Settings route, Power PB-2) are live."
     },
     {
       "id": "claude",
       "name": "Anthropic Claude",
       "status": "available",
-      "updatedAt": "2026-08-31T05:55:04-06:00",
+      "updatedAt": "2026-09-02T20:42:51-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The user reports some Claude capacity remains and the local Claude Code 2.1.241 route responds; repaired Network Settings N2 is staged for exact rereview after the serialized Portal lane terminates."
+      "evidence": "Claude Code `claude-fable-5-1` is the Program Manager process."
     },
     {
       "id": "kimi",
       "name": "Moonshot Kimi",
       "status": "available",
-      "updatedAt": "2026-08-31T05:55:04-06:00",
+      "updatedAt": "2026-09-02T20:42:51-06:00",
       "estimatedReturnAt": "",
-      "evidence": "The user reports full Kimi availability. No Kimi worker is currently claimed, so this capacity record does not create worker liveness."
+      "evidence": "Direct probe: `kimi -m kimi-code/k3` answered; two Kimi lanes (Clipboard applet C1, Audio applet production) are live."
     }
   ]
 }
