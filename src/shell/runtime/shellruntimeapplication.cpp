@@ -12,6 +12,7 @@
 #include "notificationcentershortcut.h"
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
+#include "panelvisibilityruntime.h"
 #include "powerappletcomposition.h"
 #include "qtcompositoroutputauthority.h"
 #include "runtimepanelwindowfactory.h"
@@ -56,7 +57,7 @@ ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
     m_outputDebounce.setInterval(0);
     connect(&m_outputDebounce, &QTimer::timeout, this, [this] {
         QString error;
-        if (!reconcileSurfaces(&error)) {
+        if (!reconcileSurfaces(&error) || !settlePanelVisibility(&error)) {
             qWarning().noquote() << "QindaQt shell kept its prior surface set:" << error;
         }
     });
@@ -190,6 +191,8 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
         *m_settingsTransport,
         QStringList{QStringLiteral("services.doNotDisturb"),
+                    QStringLiteral("accessibility.reducedMotion"),
+                    QStringLiteral("panels.autoHideDelayMs"),
                     Launcher::LauncherPersistenceController::pinnedKey(),
                     Launcher::LauncherPersistenceController::recentKey()});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
@@ -248,6 +251,21 @@ void ShellRuntimeApplication::restartWindowActionsIdentity()
     if (!m_windowActionsClient->identitySnapshot()) {
         m_windowActionsRetry.start();
     }
+}
+
+void ShellRuntimeApplication::initializePanelVisibility(
+    const Profiles::LayoutProfile &profile)
+{
+    m_interactions = std::make_unique<ShellOrchestration::PanelInteractionStore>();
+    m_panelVisibilityShortcutRegistrar =
+        std::make_unique<KGlobalAccelShortcutRegistrar>();
+    m_panelVisibility = std::make_unique<PanelVisibilityRuntime>(
+        m_application, *m_interactions, *m_settingsClient,
+        *m_panelVisibilityShortcutRegistrar, profile,
+        m_themes.current().value(QStringLiteral("motionDuration")).toInt());
+    connect(m_interactions.get(),
+            &ShellOrchestration::PanelInteractionStore::interactionsChanged,
+            this, &ShellRuntimeApplication::scheduleOutputReconcile);
 }
 
 bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
@@ -353,12 +371,9 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         ShellVisibilityClient::QtCompositorVisibilityTransport>();
     m_visibilityClient = std::make_unique<
         ShellVisibilityClient::CompositorVisibilityClient>(*m_visibilityTransport);
-    m_interactions = std::make_unique<ShellOrchestration::PanelInteractionStore>();
+    initializePanelVisibility(profile);
     connect(m_visibilityClient.get(),
             &ShellVisibilityClient::CompositorVisibilityClient::stateChanged,
-            this, &ShellRuntimeApplication::scheduleOutputReconcile);
-    connect(m_interactions.get(),
-            &ShellOrchestration::PanelInteractionStore::interactionsChanged,
             this, &ShellRuntimeApplication::scheduleOutputReconcile);
 
     if (!m_visibilityClient->start(error)) {
@@ -407,7 +422,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         }
     }
 
-    if (!reconcileSurfaces(error)) {
+    if (!reconcileSurfaces(error) || !settlePanelVisibility(error)) {
         resetRuntime();
         return false;
     }
@@ -442,6 +457,8 @@ void ShellRuntimeApplication::resetRuntime()
     m_settingsRouteLauncher.reset();
     m_quietingSettingsBridge.reset();
     m_outputAuthority.reset();
+    m_panelVisibility.reset();
+    m_panelVisibilityShortcutRegistrar.reset();
     m_interactions.reset();
     m_visibilityClient.reset();
     m_visibilityTransport.reset();
@@ -471,6 +488,37 @@ void ShellRuntimeApplication::resetRuntime()
     m_sessionLockTransport.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();
+}
+
+bool ShellRuntimeApplication::settlePanelVisibility(QString *error)
+{
+    if (!m_panelVisibility || !m_controller) {
+        return true;
+    }
+    const bool authorityAvailable = m_visibilityClient
+        && !m_visibilityClient->safeVisibleRequired()
+        && m_visibilityClient->snapshot().has_value();
+    // One hide transition may acquire an animation hold after the pure plan
+    // was applied. Reevaluate in the same event turn so the compositor never
+    // paints an intermediate unmapped frame before the animation starts.
+    for (int pass = 0; pass != 3; ++pass) {
+        bool immediateReconcile = false;
+        if (!m_panelVisibility->synchronize(
+                m_controller->currentPlan(), authorityAvailable,
+                &immediateReconcile, error)) {
+            return false;
+        }
+        if (!immediateReconcile) {
+            return true;
+        }
+        if (!reconcileSurfaces(error)) {
+            return false;
+        }
+    }
+    if (error != nullptr) {
+        *error = QStringLiteral("panel visibility animation did not settle");
+    }
+    return false;
 }
 
 } // namespace QindaQt::Shell

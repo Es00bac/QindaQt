@@ -73,6 +73,7 @@ class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
 class NotificationQuietingSettingsBridge;
+class PanelVisibilityRuntime;
 class PowerAppletComposition;
 class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
@@ -97,9 +98,11 @@ private:
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
     void restartWindowActionsIdentity();
+    void initializePanelVisibility(const Profiles::LayoutProfile &profile);
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
+    [[nodiscard]] bool settlePanelVisibility(QString *error);
     void startNotificationOutputAuthority();
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
@@ -124,6 +127,9 @@ private:
         m_windowActionsClient;
     std::unique_ptr<QtCompositorOutputAuthority> m_outputAuthority;
     std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
+    std::unique_ptr<KGlobalAccelShortcutRegistrar>
+        m_panelVisibilityShortcutRegistrar;
+    std::unique_ptr<PanelVisibilityRuntime> m_panelVisibility;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
         m_presentationAccessToken;
     std::unique_ptr<
