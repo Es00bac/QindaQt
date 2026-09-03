@@ -96,7 +96,7 @@
           "title": "Window-aware hiding, reveal/hold, and dynamic reservation",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries but lack complete installed nested interaction proof. The remaining producers (pointer containment/edge reveal, bounded owner-fenced popup hold leases, hide/reveal animation with reduced motion, shortcut reveal/hold) are integrated behind the visibility policy with signed 64-bit Settings1 decoding, and the installed private nested desktop proves hide-under-window, edge reveal, shortcut reveal, popup hold, restore on move/close, and the always-panel reservation by framebuffer capture joined to panel geometry at 1080p and WUXGA.",
+          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries. Pointer containment and edge reveal, bounded owner-fenced popup hold leases, hide/reveal animation with reduced motion, and shortcut reveal/hold are composed behind the visibility policy with signed 64-bit Settings1 decoding. On the host's system KWin 6.6.6, the installed private nested desktop proves hide-under-window, edge reveal, shortcut reveal, popup hold, restore on move/close, and the always-panel reservation by framebuffer capture joined to panel geometry at 1080p and WUXGA, with deterministic orderly teardown.",
           "evidence": [
             {
               "kind": "source",
@@ -112,9 +112,14 @@
               "kind": "commit",
               "reference": "5232a88c",
               "summary": "The exact panel-visibility candidate e644187 (Dana Ulery, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting Settings1 integer decoding, unbounded popup holds, a capture validator not joined to geometry, and an unproven move/close row) is integrated; the nested rows first failed on main because the Global Menu merge had not staged its QML library in the private desktop component (e51372a) and the Settings Center lacked three route modules (197f104), then because phase capture sampled KWin's transient teardown surface (interaction repair cae66fc, ff08ea2, Dana Ulery ACCEPT 0/0/0/0); on the reconciled tree desktop.virtual.boot.1080p and both panel-visibility rows pass serially with no survivors."
+            },
+            {
+              "kind": "commit",
+              "reference": "b5c8d87675394a5597248ada1af22249217016b1",
+              "summary": "The exact KWin 6.6.6 repair 1d86b134 (Dana Ulery, OpenAI Codex, ACCEPT 0/0/0/1) is integrated with orderly nested shutdown, strict process diagnostics, and child-only loader injection. Fresh manager verification on system KWin 6.6.6 passes 125/125 focused rows in Debug and Release, 586/586 broad Debug rows, and all 8 serialized DesktopVirtual package, boot, validator, loader, and 1080p/WUXGA panel-visibility rows."
             }
           ],
-          "caveat": "The direct WYSIWYG Settings surface is a separate step; multi-output and hotplug panel behaviour and physical-input qualification remain."
+          "caveat": "The direct WYSIWYG Settings surface is a separate step; multi-output and hotplug panel behaviour and physical-input qualification remain. The accepted reviewer P3 records an inherited File Manager source-shape warning outside this candidate."
         },
         {
           "id": "QQ-004.03",
