@@ -2,6 +2,14 @@
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+set(QINDAQT_EDITOR_TEST_ROOT "${CMAKE_CURRENT_BINARY_DIR}/isolated")
+foreach(directory IN ITEMS home state data tmp)
+    file(MAKE_DIRECTORY "${QINDAQT_EDITOR_TEST_ROOT}/${directory}")
+endforeach()
+set(QINDAQT_EDITOR_TEST_ENV
+    "HOME=${QINDAQT_EDITOR_TEST_ROOT}/home;XDG_STATE_HOME=${QINDAQT_EDITOR_TEST_ROOT}/state;XDG_DATA_HOME=${QINDAQT_EDITOR_TEST_ROOT}/data;TMPDIR=${QINDAQT_EDITOR_TEST_ROOT}/tmp;DISPLAY=;WAYLAND_DISPLAY=;DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
 function(qindaqt_add_editor_test target source test_name)
     qt_add_executable(${target} ${source})
     target_link_libraries(${target} PRIVATE qindaqt_editor_support Qt6::Test)
@@ -9,6 +17,9 @@ function(qindaqt_add_editor_test target source test_name)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(${target})
     add_test(NAME ${test_name} COMMAND ${target})
+    set_tests_properties(${test_name} PROPERTIES
+        ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
+    )
 endfunction()
 
 qindaqt_add_editor_test(
@@ -36,6 +47,43 @@ set_tests_properties(
     PROPERTIES LABELS "performance;editor" RUN_SERIAL TRUE TIMEOUT 30
 )
 qindaqt_add_editor_test(
+    qindaqt_editor_document_collection_tests
+    tst_document_collection.cpp
+    qindaqt.editor-multiple-documents
+)
+qindaqt_add_editor_test(
+    qindaqt_editor_find_replace_tests
+    tst_find_replace.cpp
+    qindaqt.editor-find-replace-offscreen
+)
+target_compile_definitions(
+    qindaqt_editor_find_replace_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+    qindaqt.editor-find-replace-offscreen
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+)
+qindaqt_add_editor_test(
+    qindaqt_editor_restore_state_tests
+    tst_restore_state.cpp
+    qindaqt.editor-restore-state
+)
+qindaqt_add_editor_test(
+    qindaqt_editor_restore_policy_tests
+    tst_restore_policy.cpp
+    qindaqt.editor-restore-policy-offscreen
+)
+target_link_libraries(
+    qindaqt_editor_restore_policy_tests PRIVATE qindaqt_settings_client
+)
+target_compile_definitions(
+    qindaqt_editor_restore_policy_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+    qindaqt.editor-restore-policy-offscreen
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+)
+qindaqt_add_editor_test(
     qindaqt_editor_window_tests
     tst_editor_window.cpp
     qindaqt.editor-window-offscreen
@@ -45,7 +93,7 @@ target_compile_definitions(
 )
 set_tests_properties(
     qindaqt.editor-window-offscreen
-    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
 qindaqt_add_editor_test(
@@ -58,7 +106,7 @@ target_compile_definitions(
 )
 set_tests_properties(
     qindaqt.editor-app-shell-offscreen
-    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
 # AGENT-CONTRACT: The generic AppShell policy cannot see consumer code. This
@@ -70,13 +118,14 @@ add_test(
         "${CMAKE_COMMAND}"
         "-DQINDAQT_EDITOR_APP_SHELL_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/apps/text_editor/app_shell"
         "-DQINDAQT_EDITOR_WINDOW_HEADER=${PROJECT_SOURCE_DIR}/src/apps/text_editor/ui/editor_window.h"
-        "-DQINDAQT_EDITOR_WINDOW_SOURCE=${PROJECT_SOURCE_DIR}/src/apps/text_editor/ui/editor_window.cpp"
+        "-DQINDAQT_EDITOR_WINDOW_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src/apps/text_editor/ui"
         "-DQINDAQT_EDITOR_POLICY_POISON_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/editor-app-shell-policy-poison"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_editor_app_shell_source_policy.cmake"
 )
 set_tests_properties(
     qindaqt.editor-app-shell-source-policy
     PROPERTIES LABELS "editor;app-shell;policy"
+               ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
 )
 
 add_test(
@@ -85,15 +134,31 @@ add_test(
             "-DDESKTOP_FILE=${PROJECT_SOURCE_DIR}/src/apps/text_editor/org.qindaqt.TextEditor.desktop"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_desktop_metadata.cmake"
 )
+set_tests_properties(
+    qindaqt.editor-desktop-metadata
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
+)
 add_test(
-    NAME qindaqt.editor-cli-rejects-multiple-paths
+    NAME qindaqt.editor-cli-multiple-paths
     COMMAND "${CMAKE_COMMAND}"
             "-DEDITOR_EXECUTABLE=$<TARGET_FILE:qindaqt-editor>"
+            "-DCLI_ROOT=${QINDAQT_EDITOR_TEST_ROOT}/cli-multiple"
+            "-DTHEME_DIRECTORY=${PROJECT_SOURCE_DIR}/data/themes"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_cli_rejection.cmake"
 )
 set_tests_properties(
-    qindaqt.editor-cli-rejects-multiple-paths
-    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    qindaqt.editor-cli-multiple-paths
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen"
+)
+add_test(
+    NAME qindaqt.editor-cli-hostile-argv
+    COMMAND "${CMAKE_COMMAND}"
+            "-DEDITOR_EXECUTABLE=$<TARGET_FILE:qindaqt-editor>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_cli_hostile.cmake"
+)
+set_tests_properties(
+    qindaqt.editor-cli-hostile-argv
+    PROPERTIES ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV};QT_QPA_PLATFORM=offscreen"
 )
 
 # AGENT-CONTRACT: This row resolves themes and metadata only from a clean staged
@@ -108,6 +173,7 @@ add_test(
             "-DCONFIGURATION=$<CONFIG>"
             "-DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}"
             "-DRUNTIME_PROBE=${CMAKE_CURRENT_SOURCE_DIR}/installed_runtime_probe.py"
+            "-DSCRATCH_ROOT=${QINDAQT_EDITOR_TEST_ROOT}/installed-runtime"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_editor.cmake"
 )
 set_tests_properties(
@@ -116,4 +182,5 @@ set_tests_properties(
         LABELS "package;editor"
         RUN_SERIAL TRUE
         TIMEOUT 240
+        ENVIRONMENT "${QINDAQT_EDITOR_TEST_ENV}"
 )

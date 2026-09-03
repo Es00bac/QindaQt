@@ -2,7 +2,7 @@ file(READ "${DESKTOP_FILE}" desktop)
 foreach(required
         "Type=Application"
         "Name=QindaQt Text Editor"
-        "Exec=qindaqt-editor %f"
+        "Exec=qindaqt-editor %F"
         "Categories=Qt;Utility;TextEditor;"
         "MimeType=text/plain;"
         "Terminal=false")

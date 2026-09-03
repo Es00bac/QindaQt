@@ -8,10 +8,21 @@ target_sources(
         app_shell/editor_app_shell_bridge.cpp
         app_shell/fail_closed_file_selection_adapter.cpp
         app_shell/native_file_selection_adapter.cpp
+        document/close_consent.cpp
+        document/document_collection.cpp
         document/document_controller.cpp
         document/document_state.cpp
         document/local_document_store.cpp
+        find/find_replace_engine.cpp
+        restore/restore_state_store.cpp
+        restore/text_editor_restore_policy.cpp
+        ui/document_title.cpp
         ui/editor_appearance.cpp
+        ui/editor_document_view.cpp
+        ui/find_replace_bar.cpp
+        ui/editor_window_actions.cpp
+        ui/editor_window_find.cpp
+        ui/editor_window_restore.cpp
         ui/editor_window.cpp
     PUBLIC
         app_shell/editor_action_catalog.h
@@ -19,14 +30,23 @@ target_sources(
         app_shell/fail_closed_file_selection_adapter.h
         app_shell/file_selection_adapter.h
         app_shell/native_file_selection_adapter.h
+        document/close_consent.h
+        document/document_collection.h
         document/document_controller.h
         document/document_state.h
         document/document_store.h
         document/document_types.h
         document/local_document_store.h
+        find/find_replace_engine.h
+        restore/restore_state_store.h
+        restore/text_editor_restore_policy.h
+        ui/document_title.h
         ui/editor_appearance.h
+        ui/editor_document_view.h
+        ui/find_replace_bar.h
         ui/editor_window.h
 )
+target_link_libraries(qindaqt_editor_support PRIVATE qindaqt_settings_client)
 target_include_directories(qindaqt_editor_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
     qindaqt_editor_support
@@ -43,7 +63,9 @@ set_target_properties(qindaqt_editor_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_editor_support)
 
 qt_add_executable(qindaqt-editor main.cpp)
-target_link_libraries(qindaqt-editor PRIVATE qindaqt_editor_support)
+target_link_libraries(
+    qindaqt-editor PRIVATE qindaqt_editor_support qindaqt_settings_client
+)
 target_compile_features(qindaqt-editor PRIVATE cxx_std_20)
 
 # AGENT-CONTRACT: qindaqt_app_shell is QindaQt::AppShell's SHARED backing

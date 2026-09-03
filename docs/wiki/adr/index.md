@@ -64,6 +64,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0061](0061-authenticate-shell-window-actions-by-panel-owner.md) | Accepted | Authenticate shell window actions by the exact panel Wayland owner PID |
 | [ADR-0062](0062-bound-launcher-execution-behind-injected-seams.md) | Accepted | Bound launcher execution behind injected seams |
 | [ADR-0063](0063-project-authenticated-active-window-identity.md) | Accepted | Project authenticated active-window identity to the exact shell owner |
+| [ADR-0064](0064-persist-text-editor-path-inventory.md) | Accepted | Persist only Text Editor's bounded path inventory |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

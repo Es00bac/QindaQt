@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "document/local_document_store.h"
+#include "restore/restore_state_store.h"
+#include "restore/text_editor_restore_policy.h"
 #include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDBusConnection>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
@@ -19,8 +24,7 @@
 
 namespace {
 
-[[nodiscard]] QStringList
-themeSearchDirectories(const QString &explicitDirectory) {
+QStringList themeSearchDirectories(const QString &explicitDirectory) {
   QStringList directories;
   if (!explicitDirectory.isEmpty()) {
     directories.append(QFileInfo(explicitDirectory).absoluteFilePath());
@@ -35,8 +39,8 @@ themeSearchDirectories(const QString &explicitDirectory) {
   return directories;
 }
 
-[[nodiscard]] QindaQt::Themes::LoadResult
-loadTheme(const QString &themeId, const QStringList &directories) {
+QindaQt::Themes::LoadResult loadTheme(const QString &themeId,
+                                      const QStringList &directories) {
   static const QRegularExpression safeId(
       QStringLiteral("^[a-z0-9][a-z0-9-]{0,63}$"));
   if (!safeId.match(themeId).hasMatch()) {
@@ -56,9 +60,20 @@ loadTheme(const QString &themeId, const QStringList &directories) {
           .error = QStringLiteral("Theme '%1' was not found").arg(themeId)};
 }
 
+QString editorStateDirectory() {
+  QString root = qEnvironmentVariable("XDG_STATE_HOME");
+  if (root.isEmpty()) {
+    root = QDir::home().filePath(QStringLiteral(".local/state"));
+  }
+  return QDir(root).filePath(QStringLiteral("qindaqt/text-editor"));
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
+  using namespace QindaQt::Apps::TextEditor;
+  using namespace QindaQt::Services::SettingsClient;
+
   QElapsedTimer startupTimer;
   startupTimer.start();
   QApplication application(argc, argv);
@@ -83,12 +98,17 @@ int main(int argc, char **argv) {
   parser.addOption(
       {QStringLiteral("report-startup"),
        QStringLiteral("Print milliseconds to the first painted frame")});
-  parser.addPositionalArgument(QStringLiteral("file"),
-                               QStringLiteral("Local UTF-8 file to open"),
-                               QStringLiteral("[file]"));
+  parser.addOption(
+      {QStringLiteral("check-open-paths"),
+       QStringLiteral("Load positional documents, report paths, and exit")});
+  parser.addPositionalArgument(QStringLiteral("files"),
+                               QStringLiteral("Local UTF-8 files to open"),
+                               QStringLiteral("[file...]"));
   parser.process(application);
-  if (parser.positionalArguments().size() > 1) {
-    std::fprintf(stderr, "qindaqt-editor: open one document at a time\n");
+  const QStringList paths = parser.positionalArguments();
+  if (paths.size() > DocumentCollection::maximumDocuments) {
+    std::fprintf(stderr, "qindaqt-editor: at most %d documents may be opened\n",
+                 DocumentCollection::maximumDocuments);
     return 2;
   }
 
@@ -99,9 +119,7 @@ int main(int argc, char **argv) {
     std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(theme.error));
     return 3;
   }
-  const auto appearance =
-      QindaQt::Apps::TextEditor::EditorAppearanceAdapter::fromTheme(
-          theme.theme);
+  const auto appearance = EditorAppearanceAdapter::fromTheme(theme.theme);
   if (!appearance.ok()) {
     std::fprintf(stderr, "qindaqt-editor: %s\n",
                  qPrintable(appearance.diagnostic));
@@ -115,13 +133,44 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  QindaQt::Apps::TextEditor::EditorWindow window(
-      std::make_unique<QindaQt::Apps::TextEditor::LocalDocumentStore>(),
-      *appearance.appearance);
+  const DocumentStoreFactory factory = [] {
+    return std::make_unique<LocalDocumentStore>();
+  };
+  if (parser.isSet(QStringLiteral("check-open-paths"))) {
+    // The CLI admission proof needs document policy only. Exiting before
+    // Settings1 composition guarantees the isolated row cannot discover or
+    // activate an ambient session-bus service.
+    EditorWindow window(factory, *appearance.appearance);
+    QString diagnostic;
+    if (!window.openDocuments(paths, &diagnostic)) {
+      std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
+      return 4;
+    }
+    std::printf("open-documents=%d\n", window.documents()->count());
+    for (const QString &path : window.documents()->openPaths()) {
+      std::printf("path=%s\n", qPrintable(path));
+    }
+    return 0;
+  }
+
+  // Settings1 owns only the Boolean policy. The editor-owned state file below
+  // contains paths and active index only; check-theme exits before either
+  // collaborator can touch a bus or user-state path.
+  QtSettingsTransport settingsTransport(QDBusConnection::sessionBus());
+  SettingsClient settingsClient(settingsTransport,
+                                TextEditorKeys::scopedKeys());
+  QString settingsError;
+  if (!settingsClient.start(&settingsError)) {
+    std::fprintf(stderr, "qindaqt-editor: settings unavailable (%s)\n",
+                 qPrintable(settingsError));
+  }
+  TextEditorRestorePolicy restorePolicy(settingsClient);
+  RestoreStateStore restoreStore(editorStateDirectory());
+  EditorWindow window(factory, *appearance.appearance, nullptr, &restorePolicy,
+                      &restoreStore);
   if (parser.isSet(QStringLiteral("report-startup"))) {
     QObject::connect(
-        &window, &QindaQt::Apps::TextEditor::EditorWindow::firstFramePainted,
-        &window,
+        &window, &EditorWindow::firstFramePainted, &window,
         [&startupTimer] {
           std::printf("startup-first-frame-ms=%lld\n",
                       static_cast<long long>(startupTimer.elapsed()));
@@ -129,15 +178,14 @@ int main(int argc, char **argv) {
         },
         Qt::SingleShotConnection);
   }
-  if (!parser.positionalArguments().isEmpty()) {
-    const auto result =
-        window.controller()->openPath(parser.positionalArguments().first());
-    if (!result.ok()) {
-      std::fprintf(stderr, "qindaqt-editor: %s\n",
-                   qPrintable(result.diagnostic));
+  if (!paths.isEmpty()) {
+    QString diagnostic;
+    if (!window.openDocuments(paths, &diagnostic)) {
+      std::fprintf(stderr, "qindaqt-editor: %s\n", qPrintable(diagnostic));
       return 4;
     }
   }
+  window.restoreIfEnabled();
   window.show();
   return application.exec();
 }
