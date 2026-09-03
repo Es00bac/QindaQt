@@ -1518,9 +1518,9 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error \
 
 | Row | Evidence |
 | --- | --- |
-| `qindaqt.network-secret-agent-controller` | foreign/non-interactive/unknown request refusal, exact hint projection, bounded values, timeout/cancel, storage choice, malformed UTF-8 and duplicate-field rejection, byte wiping and redacted diagnostics |
-| `qindaqt.network-secret-agent-prompt` | QST/QindaQt.Controls construction, field bounds, accessible labels and states, show/remember controls, Escape cancellation, submission and editor clearing under fatal QML warnings |
-| `qindaqt.network-secret-agent-dbus` | private fake AgentManager/Settings owner, Register/Unregister, presence name, exact caller, owner replacement, delayed GetSecrets, CancelGetSecrets, Save/Delete typed no-ops, and standard remembered/not-saved flags |
+| `qindaqt.network-secret-agent-controller` | foreign/non-interactive/unknown request refusal, exact hint projection, recursive aggregate/depth/container bounds, timeout/cancel, storage choice, malformed UTF-8 and duplicate-field rejection, shared byte/UTF-16 allocation wiping, and a self-proved real Qt diagnostic capture with credential-canary exclusion |
+| `qindaqt.network-secret-agent-prompt` | QST/QindaQt.Controls construction, field bounds, accessible checkbox labels/roles/states, Tab/Shift+Tab, show/hide echo state, remember state, Escape, Enter, window-close cancellation, submission, and editor clearing under fatal QML warnings |
+| `qindaqt.network-secret-agent-dbus` | private fake AgentManager/Settings owner, Register/Unregister, presence name, exact caller, owner replacement, delayed GetSecrets, CancelGetSecrets, recursively scrubbed Save/Delete storage no-ops, and standard remembered/not-saved flags |
 | `qindaqt.network-secret-agent-installed` | independently staged component finds its relocated theme and QML modules without the developer tree |
 | `qindaqt.network-secret-agent-boundary` | process confinement, no Network1 reverse dependency, persistence/logging bans |
 | `qindaqt.network-secret-agent-boundary-poison` | rejects an injected dependency on the public Network1 protocol |

@@ -6,6 +6,7 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QPointer>
+#include <QtCore/QVariantList>
 
 class QQmlEngine;
 
@@ -22,7 +23,7 @@ public:
                                 Completion completion) override;
   void cancelPrompt(quint64 requestId) override;
 
-  Q_INVOKABLE void submit(qulonglong requestId, const QVariantMap &values,
+  Q_INVOKABLE void submit(qulonglong requestId, const QVariantList &editors,
                           bool remember);
   Q_INVOKABLE void cancelByUser(qulonglong requestId);
 

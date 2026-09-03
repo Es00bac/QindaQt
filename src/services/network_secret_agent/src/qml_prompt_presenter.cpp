@@ -62,7 +62,7 @@ void QmlPromptPresenter::cancelPrompt(const quint64 requestId) {
 }
 
 void QmlPromptPresenter::submit(const qulonglong requestId,
-                                const QVariantMap &values,
+                                const QVariantList &editors,
                                 const bool remember) {
   auto it = m_active.find(requestId);
   if (it == m_active.end()) {
@@ -74,9 +74,17 @@ void QmlPromptPresenter::submit(const qulonglong requestId,
   result.requestId = requestId;
   result.accepted = true;
   result.remember = remember;
-  for (const PromptField &field : std::as_const(active.request.fields)) {
-    const QString text = values.value(field.key).toString();
-    result.values.append({field.key, text.toUtf8()});
+  for (qsizetype index = 0; index < active.request.fields.size(); ++index) {
+    const PromptField &field = active.request.fields.at(index);
+    QObject *editor = index < editors.size()
+                          ? editors.at(index).value<QObject *>()
+                          : nullptr;
+    QVariant text = editor != nullptr ? editor->property("text") : QVariant{};
+    QByteArray bytes = takeSecretUtf8(text);
+    if (editor != nullptr) {
+      editor->setProperty("text", QString{});
+    }
+    result.values.append({field.key, std::move(bytes)});
   }
   if (active.window != nullptr) {
     active.window->deleteLater();
