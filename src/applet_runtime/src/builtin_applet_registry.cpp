@@ -24,6 +24,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.power"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.global-menu"),
+        QStringLiteral("qindaqt.applets.clipboard"),
     });
 }
 

@@ -134,3 +134,20 @@ same snapshot's `sourceLayers` map names `user-overrides` for that key. A
 `SystemDefaults` or `ProfileDefaults` value is ordinary resolved configuration,
 not user consent, even if it is Boolean `true`. Missing, malformed, unavailable,
 or differently sourced truth keeps capture disabled and purges prior history.
+
+## Known first-party keys
+
+The schema data files (`data/settings/schema-v*.json`) remain the exhaustive
+key registry. One key is owned by the Display Color lane and has semantics
+beyond the generic value bounds:
+
+- `displays.colorAssignments` (object, default `{}`) — per-output ICC profile
+  assignment intents persisted by the Display Color C1 discovery/assignment
+  provider. Each entry maps a display stable ID to exactly
+  `{ "profile": <identifier>, "lineage": <64 lowercase hex SHA-256 or empty> }`;
+  the value domain above bounds the object, and the stricter record grammar,
+  document bounds, and draft/apply/conflict truth are specified in the
+  [Display color model](../architecture/display-color-model.md) page. Settings1
+  enforces only the generic JSON/resource and top-level object constraints;
+  the Display Color consumer performs the stricter assignment-record decode
+  and refuses drafts while confirmed persisted content is unusable.

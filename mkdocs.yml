@@ -49,6 +49,7 @@ nav:
       - Applet runtime: shell/applet-runtime.md
       - Audio applet: shell/audio-applet.md
       - Bluetooth applet: shell/bluetooth-applet.md
+      - Clipboard applet: shell/clipboard-applet.md
       - Production panel surfaces: shell/panel-surfaces.md
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
@@ -153,3 +154,5 @@ nav:
       - "ADR-0063: Authenticated active-window identity": adr/0063-project-authenticated-active-window-identity.md
       - "ADR-0064: Identity-checked local file mutation": adr/0064-confine-file-mutation-to-identity-checked-local-authority.md
       - "ADR-0065: Text Editor path inventory": adr/0065-persist-text-editor-path-inventory.md
+      - "ADR-0066: Injected ICC roots and Settings1 assignments": adr/0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md
+      - "ADR-0067: Confined fontconfig discovery": adr/0067-confine-fontconfig-behind-font-discovery.md

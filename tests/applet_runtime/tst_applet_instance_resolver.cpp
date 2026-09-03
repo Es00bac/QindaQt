@@ -76,6 +76,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     const QStringList expectedEntryPoints{
         QStringLiteral("qindaqt.applets.audio"),
         QStringLiteral("qindaqt.applets.bluetooth"),
+        QStringLiteral("qindaqt.applets.clipboard"),
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
@@ -109,6 +110,15 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(bluetooth.grantedCapabilities,
              QStringList({QStringLiteral("bluetooth.control"),
                           QStringLiteral("bluetooth.read")}));
+
+    const auto clipboard = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("clipboard")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(clipboard.ready(), qPrintable(clipboard.diagnostic));
+    QCOMPARE(clipboard.entryPoint, QStringLiteral("qindaqt.applets.clipboard"));
+    QCOMPARE(clipboard.grantedCapabilities,
+             QStringList({QStringLiteral("clipboard.read"),
+                          QStringLiteral("clipboard.write")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()

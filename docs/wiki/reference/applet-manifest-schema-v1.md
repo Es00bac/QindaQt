@@ -43,7 +43,7 @@ authority.
 
 The built-in catalog lives in `data/applets`. It currently describes
 launcher, task-list, global-menu, status-tray, clock, notification-center,
-audio, Bluetooth, and power applets.
+audio, Bluetooth, power, and clipboard applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -86,6 +86,12 @@ facade over authenticated active-window identity and guarded dbusmenu events;
 it never receives the compositor client, a general window action surface, or
 registrar ownership authority. The shell, not manifest data, owns the standard
 registrar name on its injected session bus.
+
+The Clipboard manifest requests both `clipboard.read` and `clipboard.write`.
+The audited renderer receives a shell-private controller over the injected
+`ClipboardClientInterface` seam. Read denial withholds all observation; write
+denial keeps bounded browsing visible but refuses every mutating intent
+(select/promote, pin, delete, clear) before dispatch.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
