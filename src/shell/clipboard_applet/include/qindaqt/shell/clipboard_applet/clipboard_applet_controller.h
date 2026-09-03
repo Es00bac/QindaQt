@@ -160,8 +160,10 @@ private:
     quint64 m_baselineRevision = 0;
     // A same-generation authority purge is valid only at UINT32_MAX. It proves
     // C0 pinned the generation and latched content-operation exhaustion. Keep
-    // that state distinct from hostile-snapshot rejection: the current owner
-    // is unavailable-until-restart, while a fresh owner baseline recovers.
+    // that state distinct from hostile-snapshot rejection and subordinate to
+    // any active privacy/history denial: the current owner becomes
+    // unavailable-until-restart only after authority returns, while a fresh
+    // owner baseline recovers.
     bool m_lineageExhausted = false;
     // A structurally impossible snapshot poisons its exact lineage. Merely
     // flipping privacy/capability flags at the same generation/revision may

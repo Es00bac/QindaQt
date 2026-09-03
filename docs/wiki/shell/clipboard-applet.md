@@ -134,8 +134,10 @@ generation so changing a flag or revision cannot arm rejected content;
 recovery requires a later valid generation or a fresh owner baseline. Other
 structural refusals poison their exact lineage until a later valid snapshot.
 Rejection is not a permanent latch. A valid ceiling purge is not rejection:
-it has its own typed unavailable reason after authority returns, and a new
-owner's mandatory empty baseline clears that terminal state.
+while privacy or history authority remains denied, that registered phase owns
+presentation; only after both authorities return does the purge have its typed
+unavailable reason. A new owner's mandatory empty baseline clears that terminal
+state.
 
 ## Privacy, lock purge, and generation fencing
 
@@ -157,8 +159,10 @@ A lock is an authenticated authority denial, not a presentation hint:
   never resolve again, and unlock cannot redisclose pre-lock content.
 - At `UINT32_MAX`, C0 cannot bump generation but still performs the purge and
   leaves revision unchanged. The controller accepts that empty denial as valid
-  and shows the normal `locked` phase while the session is locked. On unlock it
-  reports `unavailable` with
+  and keeps the applicable registered denial phase: `locked` for either a
+  session lock or independent host privacy denial, and `disabled` for history
+  denial. Once the session is unlocked and both privacy and history authority
+  are restored, it reports `unavailable` with
   `lineage-exhausted-restart-required`, because C0 refuses every later content
   operation for that model lifetime. Owner loss/replacement clears the latch;
   the replacement owner must still establish the existing content-empty fresh
