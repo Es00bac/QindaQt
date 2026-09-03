@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellwindowactionsliveclients.h"
 
+#include <KWayland/Client/appmenu.h>
+#include <KWayland/Client/registry.h>
+#include <KWayland/Client/surface.h>
+
 #include <QBackingStore>
 #include <QColor>
 #include <QCoreApplication>
@@ -8,12 +12,18 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QGuiApplication>
+#include <QElapsedTimer>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPainter>
+#include <QProcess>
+#include <QSocketNotifier>
 #include <QTextStream>
 #include <QTimer>
 #include <QWindow>
+#include <QtGui/qguiapplication_platform.h>
+
+#include <cstdio>
 
 namespace QindaQt::Compositor::TestSupport {
 namespace {
@@ -64,13 +74,78 @@ private:
 } // namespace
 
 int runShellWindowActionsLiveWindow(QGuiApplication &application,
-                                    const QString &title)
+                                    const QString &title,
+                                    bool announceAppMenu)
 {
     PaintedWindow window;
     window.setTitle(title);
     window.resize(360, 240);
     window.show();
     QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
+
+    KWayland::Client::Registry registry;
+    KWayland::Client::AppMenuManager *appMenuManager = nullptr;
+    KWayland::Client::AppMenu *appMenu = nullptr;
+    if (announceAppMenu) {
+        auto *native = application.nativeInterface<
+            QNativeInterface::QWaylandApplication>();
+        if (!native || !native->display()) {
+            return 4;
+        }
+        QObject::connect(
+            &registry, &KWayland::Client::Registry::appMenuAnnounced,
+            &application, [&](quint32 name, quint32 version) {
+                if (appMenu) return;
+                appMenuManager = registry.createAppMenuManager(
+                    name, version, &application);
+                auto *surface = KWayland::Client::Surface::fromWindow(&window);
+                if (!appMenuManager || !appMenuManager->isValid() || !surface) {
+                    return;
+                }
+                appMenu = appMenuManager->create(surface, &window);
+                if (appMenu && appMenu->isValid()) {
+                    appMenu->setAddress(
+                        QString::fromLatin1(ShellWindowActionsLiveAppMenuService),
+                        QString::fromLatin1(ShellWindowActionsLiveAppMenuPath));
+                }
+            });
+        registry.create(native->display());
+        registry.setup();
+        QElapsedTimer wait;
+        wait.start();
+        while ((!appMenu || !appMenu->isValid()) && wait.elapsed() < 2'000) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
+        }
+        if (!appMenu || !appMenu->isValid()) {
+            return 5;
+        }
+    }
+
+    QTextStream input(stdin);
+    QSocketNotifier inputNotifier(fileno(stdin), QSocketNotifier::Read,
+                                  &application);
+    QObject::connect(&inputNotifier, &QSocketNotifier::activated,
+                     &application, [&] {
+        const QString command = input.readLine();
+        if (!appMenu) return;
+        if (command == QLatin1StringView("valid")) {
+            appMenu->setAddress(
+                QString::fromLatin1(ShellWindowActionsLiveAppMenuService),
+                QString::fromLatin1(ShellWindowActionsLiveAppMenuPath));
+        } else if (command == QLatin1StringView("overlong-service")) {
+            appMenu->setAddress(QStringLiteral("org.") + QString(252, u'a'),
+                                QString::fromLatin1(
+                                    ShellWindowActionsLiveAppMenuPath));
+        } else if (command == QLatin1StringView("malformed-service")) {
+            appMenu->setAddress(QStringLiteral("invalid"),
+                                QString::fromLatin1(
+                                    ShellWindowActionsLiveAppMenuPath));
+        } else if (command == QLatin1StringView("malformed-path")) {
+            appMenu->setAddress(
+                QString::fromLatin1(ShellWindowActionsLiveAppMenuService),
+                QStringLiteral("/org/qindaqt/bad-menu"));
+        }
+    });
     QTextStream(stdout)
         << ShellWindowActionsLiveClientMarker
         << QJsonDocument(QJsonObject{
@@ -81,7 +156,11 @@ int runShellWindowActionsLiveWindow(QGuiApplication &application,
         << Qt::endl;
     QTimer::singleShot(TimeoutMilliseconds * 2, &application,
                        &QCoreApplication::quit);
-    return application.exec();
+    const int result = application.exec();
+    if (appMenu) appMenu->release();
+    if (appMenuManager) appMenuManager->release();
+    if (registry.isValid()) registry.release();
+    return result;
 }
 
 int runUnauthorizedIdentityClient()
@@ -138,6 +217,68 @@ bool isFailClosedUnauthorizedIdentityReply(const QByteArray &output)
         && !object.contains(QStringLiteral("revision"))
         && !object.contains(QStringLiteral("actionRevision"))
         && !object.contains(QStringLiteral("activeWindow"));
+}
+
+bool proveUnauthorizedShellCalls(const QString &executable,
+                                 const QString &windowId,
+                                 const QString &epoch,
+                                 quint64 revision,
+                                 QString *failure)
+{
+    QProcess attacker;
+    attacker.setProgram(executable);
+    attacker.setArguments({QStringLiteral("--unauthorized"), windowId, epoch,
+                           QString::number(revision)});
+    attacker.start();
+    if (!attacker.waitForFinished(3000) || attacker.exitCode() != 0) {
+        if (failure) {
+            *failure = QStringLiteral("unbound caller failed: %1")
+                           .arg(QString::fromUtf8(attacker.readAllStandardError()));
+        }
+        return false;
+    }
+    QJsonParseError parseError;
+    QJsonDocument document = QJsonDocument::fromJson(
+        attacker.readAllStandardOutput().trimmed(), &parseError);
+    if (parseError.error != QJsonParseError::NoError
+        || document.object().value(QStringLiteral("status")).toString()
+            != QStringLiteral("unauthorized")) {
+        if (failure) *failure = QStringLiteral("unbound action caller was admitted");
+        return false;
+    }
+
+    attacker.start(executable, {QStringLiteral("--unauthorized-hostile")});
+    if (!attacker.waitForFinished(5000) || attacker.exitCode() != 0) {
+        if (failure) *failure = QStringLiteral("hostile-size caller failed");
+        return false;
+    }
+    const QByteArray hostileOutput = attacker.readAllStandardOutput().trimmed();
+    document = QJsonDocument::fromJson(hostileOutput, &parseError);
+    const QJsonObject hostile = document.object();
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()
+        || hostileOutput.size() >= 512
+        || hostile.value(QStringLiteral("status")).toString()
+            != QStringLiteral("unauthorized")
+        || hostile.value(QStringLiteral("failure")).toObject()
+               .value(QStringLiteral("code")).toString()
+            != QStringLiteral("caller-pid-mismatch")
+        || hostile.contains(QStringLiteral("windowId"))
+        || hostile.contains(QStringLiteral("epoch"))
+        || hostile.contains(QStringLiteral("revision"))) {
+        if (failure) {
+            *failure = QStringLiteral("hostile-size reply was not bounded and echo-free");
+        }
+        return false;
+    }
+
+    attacker.start(executable, {QStringLiteral("--unauthorized-identity")});
+    if (!attacker.waitForFinished(3000) || attacker.exitCode() != 0
+        || !isFailClosedUnauthorizedIdentityReply(
+            attacker.readAllStandardOutput().trimmed())) {
+        if (failure) *failure = QStringLiteral("unbound identity caller leaked facts");
+        return false;
+    }
+    return true;
 }
 
 } // namespace QindaQt::Compositor::TestSupport

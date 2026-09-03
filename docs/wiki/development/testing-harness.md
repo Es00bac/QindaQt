@@ -977,6 +977,15 @@ native X11 window id. A wrong-PID identity read must be bounded,
 input, D-Bus session,
 hardware, or `tests/session` desktop scenario.
 
+That row also introspects the live `CompositorShell1` object and compares its
+complete method and signal name sets with the checked-in XML. The native
+Wayland client announces one valid KDE AppMenu service/path through KWayland on
+the same Qt Wayland connection; the row observes those exact values, then
+replaces them with an overlong service, a malformed service, and a malformed
+path in separate phases. Each hostile phase must publish typed unavailability,
+and each intervening valid announcement must recover with a later identity
+revision.
+
 The deterministic companion rows are `compositor.shell-window-actions` for
 bound-PID admission, unbound authority, authenticate-before-parse hostile
 fields, authenticated entry bounds, echo-free fixed failures, stale-before-
@@ -989,7 +998,8 @@ announcements, malformed payload rejection, and echo-free authorization;
 serialization, owner/timeout/malformed uncertainty with no replay, real
 private-bus owner replacement plus late-old-reply rejection, a real-bus client
 timeout, ordinary transport round trip, directed identity invalidation,
-monotonic refresh, and fail-closed identity withdrawal.
+monotonic refresh, invalid-generation rejection, identity-specific late-old-
+owner reply rejection, and fail-closed identity withdrawal.
 
 These tests boot beneath disposable XDG trees and private D-Bus sessions. Two
 or more `QBackingStore`-backed probe windows commit real Wayland buffers and

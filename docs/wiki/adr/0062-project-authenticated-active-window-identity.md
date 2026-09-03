@@ -33,6 +33,9 @@ one `ActiveWindowIdentity` snapshot and a no-payload
 caller's unique-name PID against the sole committed `dock` layer-surface owner
 before consulting KWin. After one successful read, invalidations are targeted
 only to that exact bus peer; they are not broadcast session-bus signals.
+The endpoint still declares and exports the signal through its Qt meta-object so
+live introspection matches the immutable XML. It never emits the Qt signal;
+delivery uses a targeted D-Bus message with the declared member name.
 
 The complete schema-1 snapshot has its own monotonic `(epoch, revision)`
 lineage. Its epoch is the window-action/visibility service epoch and it carries
@@ -57,7 +60,9 @@ over its existing transport and compositor-owner binding. It accepts one
 monotonic identity lineage, withdraws facts immediately on invalidation,
 owner replacement, timeout, malformed payload, revision regression, or an
 equal-revision content collision, and never creates a second compositor
-client.
+client. Publication and decoding both apply the public
+`ShellWindowGeneration::isValid()` rule to the carried action fence; an invalid
+epoch cannot become available client truth.
 
 ## Consequences
 
@@ -77,9 +82,11 @@ client.
   out-of-process menu exporter with a different PID also fails closed until a
   separately authenticated delegation protocol exists.
 - Focused tests require fake identity/credential sources, strict wire decoding,
-  exact-owner private-bus refresh, and a private virtual-KWin row comparing a
-  native Wayland PID and an XWayland XRes PID/window id to real clients while
-  rejecting an unbound caller.
+  exact-owner private-bus refresh and late-old-owner reply rejection, and a
+  private virtual-KWin row comparing the live object to its XML, a native
+  Wayland PID and valid KDE AppMenu announcement, overlong and malformed
+  service plus malformed path withdrawal/recovery, and an XWayland XRes
+  PID/window id to real clients while rejecting an unbound caller.
 
 ## Revisit when
 

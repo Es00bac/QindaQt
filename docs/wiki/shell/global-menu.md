@@ -199,6 +199,11 @@ PID, missing X11 id, half/malformed Wayland address, owner replacement, PID
 mismatch, revision movement, or action-fence mismatch publishes unavailable.
 Registrar contents never fill a missing compositor fact.
 
+The client also rejects the complete identity reply unless its epoch and
+`actionRevision` satisfy the public compositor action-generation rule. A
+nonempty but whitespace-padded or otherwise invalid epoch must never surface as
+`identityAvailable`; composition does not add a more permissive lineage parser.
+
 This join prevents an arbitrary registrar claim from becoming authoritative,
 but it does not authenticate the standard registrar itself: any local peer can
 still register bogus window ids. It also does not prove an announced bus name's

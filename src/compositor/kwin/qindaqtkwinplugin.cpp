@@ -141,7 +141,10 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
     m_registeredShellActionObject = m_registeredObject
         && m_bus.registerObject(QString::fromLatin1(ShellActionObjectPath),
                                 m_shellActionEndpoint.get(),
-                                QDBusConnection::ExportScriptableSlots);
+                                // The signal is declared for introspection but
+                                // its delivery remains an authenticated unicast.
+                                QDBusConnection::ExportScriptableSlots
+                                    | QDBusConnection::ExportScriptableSignals);
     if (!m_registeredObject || !m_registeredShellActionObject) {
         qWarning("QindaQt compositor control could not register on the session bus");
     }
