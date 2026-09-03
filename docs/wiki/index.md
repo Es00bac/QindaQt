@@ -105,6 +105,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Bluetooth applet](shell/bluetooth-applet.md) records the production
   public-client-only B1 projection, serialized controls, discovery-lease
   teardown, compiled accessibility, and explicit pairing/hardware nonclaims.
+- [Clipboard applet](shell/clipboard-applet.md) records the registered bounded
+  clipboard-history presentation slice: capability-gated controller over the
+  injected C0 seam, compiled QML, lock/privacy purge fencing, and packaged
+  install evidence.
 - [Testing harness](development/testing-harness.md) defines isolated nested
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
