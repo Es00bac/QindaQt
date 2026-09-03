@@ -75,9 +75,7 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Display color model](architecture/display-color-model.md) records the pure
   Display Color C0 values, validated ICC descriptor metadata, deterministic
   catalog and assignment-intent evaluation, and fail-closed snapshot lineage;
-  the C1 lanes add injected-root ICC discovery/import with lineage
-  fingerprints and Settings1-backed persistent assignment, while compositor
-  application and Settings UI remain later milestones.
+  profile import, transport, and application are later milestones.
 - [Notification presentation](shell/notification-presentation.md) records the
   bounded production popup/center behavior, Settings1-fed interruption policy,
   authenticated lock-state privacy gate, and unqualified boundaries.

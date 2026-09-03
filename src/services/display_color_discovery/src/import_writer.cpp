@@ -2,6 +2,8 @@
 
 #include "import_writer_p.h"
 
+#include "path_safety_p.h"
+
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QFile>
 
@@ -150,6 +152,9 @@ std::optional<QByteArray> readExactlyAndHash(int fd, size_t payloadSize)
 ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString &fileName,
                                           const QByteArray &content)
 {
+    if (injectedRootHasSymlinkedAncestor(userRoot)) {
+        return {ImportWriteOutcome::Status::Failed, QString(ImportRootUnsafeCode)};
+    }
     const ScopedFd root = openValidatedRoot(userRoot);
     if (root.get() < 0) {
         return {ImportWriteOutcome::Status::Failed, QString(ImportRootUnsafeCode)};
@@ -206,6 +211,9 @@ ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString
 std::optional<QByteArray> existingFileDigestIfIdentical(const QString &root, const QString &fileName,
                                                         const QByteArray &content)
 {
+    if (injectedRootHasSymlinkedAncestor(root)) {
+        return std::nullopt;
+    }
     const ScopedFd rootFd = openValidatedRoot(root);
     if (rootFd.get() < 0) {
         return std::nullopt;

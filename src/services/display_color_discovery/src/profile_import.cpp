@@ -123,7 +123,7 @@ ImportResult importProfileFromSource(const QList<DiscoveryRoot> &roots,
     const QFileInfo sourceInfo(sourcePath);
     const QString baseName = sourceInfo.fileName();
     if (sanitizeProfileIdFromFileName(iccFileStem(baseName)).isEmpty() ||
-        !destinationNameIsSafe(baseName)) {
+        !destinationNameIsSafe(baseName) || !hasDiscoverableIccExtension(baseName)) {
         result.status = ImportStatus::SourceNameUnsafe;
         result.reasonCode = QStringLiteral("source-name-unsafe");
         return result;

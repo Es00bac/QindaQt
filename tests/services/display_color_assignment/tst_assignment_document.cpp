@@ -31,6 +31,7 @@ private slots:
     void encodesFailClosedOnInvalidRecords();
     void validatesDrafts();
     void appliesDraftsPurely();
+    void retainsAssignmentsForDisconnectedOutputs();
 
 private:
     const QString m_hex = QString::fromLatin1(kHex64);
@@ -233,6 +234,25 @@ void AssignmentDocumentTests::appliesDraftsPurely()
     const ColorAssignmentApplyResult refused = applyColorAssignmentDraft(AssignmentDocument{}, flood);
     QVERIFY(!refused.ok);
     QCOMPARE(refused.reasonCode, QStringLiteral("output-cap-exceeded"));
+}
+
+void AssignmentDocumentTests::retainsAssignmentsForDisconnectedOutputs()
+{
+    AssignmentDocument base;
+    base.records.append({QStringLiteral("connected"), QStringLiteral("old"), QByteArray()});
+    base.records.append({QStringLiteral("disconnected"), QStringLiteral("kept"), QByteArray()});
+    ColorAssignmentDraft draft;
+    draft.entries.append(
+        {QStringLiteral("connected"), QStringLiteral("updated"), QByteArray(), false});
+
+    // AGENT-NOTE: P2.4 required the disconnected-output retention policy to
+    // be explicit and pinned instead of emerging accidentally from merge code.
+    const ColorAssignmentApplyResult result = applyColorAssignmentDraft(base, draft);
+    QVERIFY(result.ok);
+    QCOMPARE(result.next.records.size(), 2);
+    QCOMPARE(result.next.records.at(0).profileId, QStringLiteral("updated"));
+    QCOMPARE(result.next.records.at(1).outputStableId, QStringLiteral("disconnected"));
+    QCOMPARE(result.next.records.at(1).profileId, QStringLiteral("kept"));
 }
 
 QTEST_MAIN(AssignmentDocumentTests)

@@ -171,9 +171,11 @@ Its authority contract:
   per-user ICC directory). The module never resolves HOME, XDG variables, or
   any default directory, and never reads a root it was not given.
 - Scanning is flat (no recursion), accepts `*.icc`/`*.icm` case-insensitively,
-  ignores dot-prefixed names, never follows symlinks, and caps candidates per
-  root; exceeding a bound sets `complete = false` with a diagnostic instead of
-  scanning forever.
+  ignores dot-prefixed names, rejects a symlink in the root or any root
+  ancestor, never follows file symlinks, and caps candidates per root;
+  exceeding a bound sets `complete = false` with a diagnostic instead of
+  scanning forever. An unknown injected origin rejects that root before any
+  enumeration; it never inherits built-in provenance.
 - Per file it stats, then reads only the 128-byte ICC header plus a bounded
   tag table and description tag. A tag table or description tag that exceeds
   its scan bound is truncated or skipped with an Info diagnostic while the
@@ -183,10 +185,13 @@ Its authority contract:
   produce bounded diagnostics and are skipped; they never abort the scan.
 - The declared profile size must equal the actual file size exactly;
   discovered descriptors keep `checksumSha256` empty because the module never
-  interprets or digests the profile body. Profile identity is the sanitized
-  file stem through the C0 identifier grammar, and the display name comes
-  from the parsed `desc`/`mluc` description with the sanitized stem as the
-  deterministic fallback.
+  interprets or digests the profile body. Ordinary discovery does not read the
+  remainder. Only when two candidates collide on one ID and all inspected
+  metadata is equal does discovery compare their raw content in bounded chunks;
+  unequal or unverifiable content drops the ID, while exact bytes collapse.
+  Profile identity is the sanitized file stem through the C0 identifier
+  grammar, and the display name comes from the parsed `desc`/`mluc`
+  description with the sanitized stem as the deterministic fallback.
 - Discovered semantics are unproven placeholders (`Custom` gamut, non-sRGB
   transfer). They can never satisfy the C0 truthful-sRGB-default rule, so a
   scanned profile cannot become the "default sRGB" until a consumer classifies
@@ -198,13 +203,14 @@ Its authority contract:
 
 `importUserProfile` validates the complete source (regular, non-symlink,
 readable, within [128 bytes, 4 MiB], valid header, declared equal to actual,
-C0-safe destination name — dot-prefixed names are refused, because discovery
-ignores dot names and a stored file would otherwise never re-enter the
-catalog) before touching the user root, computes the
+C0-safe destination name with a case-insensitive `.icc` or `.icm` suffix —
+dot-prefixed and other suffixes are refused, because discovery ignores them and
+a stored file would otherwise never re-enter the catalog — before touching the
+user root, computes the
 SHA-256 content digest as the lineage fingerprint (stored in the descriptor's
 `checksumSha256`), and copies the exact bytes into the injected user root
-through the ADR-0051 pattern: an existing non-symlink, effective-user-owned,
-non-group/other-writable root; an exclusive mode-0600 temporary; fsync; one
+through the ADR-0051 pattern: an existing root with no symlink component that
+is effective-user-owned and non-group/other-writable; an exclusive mode-0600 temporary; fsync; one
 atomic rename commit point; a directory barrier where supported. Re-importing
 byte-identical content is an idempotent `AlreadyPresent`; a different file
 under the destination name is a conflict that leaves the root untouched;
@@ -227,6 +233,11 @@ authority. The strict document shape is one record per output stable ID with
 exactly `profile` (C0 identifier grammar) and `lineage` (empty or exactly 64
 lowercase hex characters — the raw SHA-256 import fingerprint's canonical
 form); decoding is all-or-nothing, capped at the C0 32-output aggregate.
+Records for outputs absent from the current live inventory are retained until
+an explicit draft removes them. Persistence owns user intent rather than live
+connectivity; transient unplug/hotplug must not silently erase that intent, and
+the later application lane remains responsible for joining records to live
+outputs.
 
 `SettingsAssignmentStore` composes the public Settings1 client and reports
 typed truth:

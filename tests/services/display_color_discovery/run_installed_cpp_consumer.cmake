@@ -22,8 +22,11 @@ endif()
 # confines this destructive operation to the current CMake build tree.
 file(REMOVE_RECURSE "${install_prefix}")
 
+# AGENT-NOTE: P2.3 rejected an unscoped whole-tree install because the
+# mandated focused build does not produce unrelated repository libraries.
 set(install_command
     "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}"
+    --component DisplayColorDiscoveryDevelopment
 )
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")

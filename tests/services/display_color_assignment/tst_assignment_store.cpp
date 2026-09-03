@@ -84,6 +84,14 @@ public:
                 const QVariantList &operations) override
     {
         commits.append({token, owner, epoch, baseRevision, operations});
+        if (completeSynchronously) {
+            const QVariantMap operation = operations.first().toMap();
+            const QVariant value = operation.value(QLatin1StringView(WC::FieldValue));
+            Q_EMIT commitReceived(token, owner,
+                                  commitWire(SettingsWireStatus::Applied, baseRevision,
+                                             baseRevision + 1, value,
+                                             QStringList{QLatin1String(kKey)}));
+        }
     }
     void requestActivation() override { ++activations; }
 
@@ -105,6 +113,7 @@ public:
     QList<CommitRequest> commits;
     int activations = 0;
     bool startSucceeds = true;
+    bool completeSynchronously = false;
 };
 
 QindaQt::Services::SettingsClient::ClientTiming testTiming()
@@ -126,6 +135,8 @@ private slots:
     void readyViewDecodesTheConfirmedSnapshot();
     void rejectsWritesWithoutConfirmedAuthority();
     void applySendsOptimisticCommitAndReportsApplied();
+    void mismatchedAuthoritativeApplyIsUncertain();
+    void synchronousCompletionTerminatesTheApply();
     void appliedNoOpIsDistinguishedFromChange();
     void conflictIsReportedAndNeverReplayed();
     void uncertainTimeoutIsTerminalWithoutReplay();
@@ -238,6 +249,58 @@ void AssignmentStoreTests::applySendsOptimisticCommitAndReportsApplied()
     QTRY_VERIFY(store.document().availability == DocumentAvailability::Ready);
     QCOMPARE(store.document().revision, quint64{5});
     QCOMPARE(store.document().document.records.first().profileId, QStringLiteral("better"));
+}
+
+void AssignmentStoreTests::mismatchedAuthoritativeApplyIsUncertain()
+{
+    FakeTransport transport;
+    SettingsClient client(transport, {QLatin1String(kKey)}, testTiming());
+    QVERIFY(client.start());
+    SettingsAssignmentStore store(client);
+    bringReady(transport, client, assignmentValue(QStringLiteral("old"), QString()));
+
+    ColorAssignmentDraft draft;
+    draft.entries.append({QStringLiteral("DP-1"), QStringLiteral("wanted"), QByteArray(), false});
+    QSignalSpy finishedSpy(&store, &SettingsAssignmentStore::applyFinished);
+    QVERIFY(store.applyDraft(draft));
+
+    // AGENT-NOTE: P1.4 rejected trusting a wire Applied status when its
+    // authoritative document differed from the exact submitted merge.
+    Q_EMIT transport.commitReceived(
+        transport.commits.first().token, transport.commits.first().owner,
+        commitWire(SettingsWireStatus::Applied, 4, 5,
+                   assignmentValue(QStringLiteral("different"), QString()),
+                   QStringList{QLatin1String(kKey)}));
+    QCOMPARE(finishedSpy.count(), 1);
+    const auto outcome = finishedSpy.first().first().value<AssignmentApplyOutcome>();
+    QCOMPARE(outcome.status, ApplyStatus::Uncertain);
+    QCOMPARE(outcome.reasonCode, QStringLiteral("applied-truth-mismatch"));
+    QVERIFY(outcome.persistedDocument.records.isEmpty());
+    QVERIFY(!store.writeInFlight());
+}
+
+void AssignmentStoreTests::synchronousCompletionTerminatesTheApply()
+{
+    FakeTransport transport;
+    SettingsClient client(transport, {QLatin1String(kKey)}, testTiming());
+    QVERIFY(client.start());
+    SettingsAssignmentStore store(client);
+    bringReady(transport, client, assignmentValue(QStringLiteral("old"), QString()));
+    transport.completeSynchronously = true;
+
+    ColorAssignmentDraft draft;
+    draft.entries.append({QStringLiteral("DP-1"), QStringLiteral("wanted"), QByteArray(), false});
+    QSignalSpy finishedSpy(&store, &SettingsAssignmentStore::applyFinished);
+
+    // AGENT-NOTE: P2.2 rejected arming m_applyInFlight after the injected
+    // client call because a direct synchronous completion was then ignored.
+    QVERIFY(store.applyDraft(draft));
+    QCOMPARE(finishedSpy.count(), 1);
+    const auto outcome = finishedSpy.first().first().value<AssignmentApplyOutcome>();
+    QCOMPARE(outcome.status, ApplyStatus::Applied);
+    QCOMPARE(outcome.persistedDocument.records.first().profileId, QStringLiteral("wanted"));
+    QVERIFY(!store.writeInFlight());
+    QVERIFY(!client.writeInFlight());
 }
 
 void AssignmentStoreTests::appliedNoOpIsDistinguishedFromChange()

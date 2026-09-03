@@ -54,6 +54,7 @@ private slots:
     void recoversFromInterruptedWrite();
     void failsClosedWithoutAUsableUserRoot();
     void importedProfileReappearsInDiscovery();
+    void rejectsNamesDiscoveryCannotEnumerate();
 
 private:
     QTemporaryDir m_tree = makeTree(QStringLiteral("tree"));
@@ -241,6 +242,20 @@ void ProfileImportTests::failsClosedWithoutAUsableUserRoot()
     const ImportResult unsafe = ProfileDiscovery(rootsWithImport(loose)).importUserProfile(source);
     QCOMPARE(unsafe.status, ImportStatus::WriteFailed);
     QCOMPARE(unsafe.reasonCode, QStringLiteral("invalid-user-root"));
+
+    // AGENT-NOTE: P1.1 applies to the import writer as well as discovery: a
+    // symlinked root ancestor must never redirect the atomic copy externally.
+    const QString injected = m_tree.filePath(QStringLiteral("redirect-injected"));
+    const QString outside = m_tree.filePath(QStringLiteral("redirect-outside"));
+    QVERIFY(QDir().mkpath(injected) && QDir().mkpath(outside + QStringLiteral("/user")));
+    QVERIFY(QFile::link(QFileInfo(outside).absoluteFilePath(),
+                        injected + QStringLiteral("/redirect")));
+    const QString redirected = injected + QStringLiteral("/redirect/user");
+    const ImportResult redirectedResult =
+        ProfileDiscovery(rootsWithImport(redirected)).importUserProfile(source);
+    QCOMPARE(redirectedResult.status, ImportStatus::WriteFailed);
+    QCOMPARE(redirectedResult.reasonCode, QStringLiteral("invalid-user-root"));
+    QVERIFY(!QFile::exists(outside + QStringLiteral("/user/x.icc")));
 }
 
 void ProfileImportTests::importedProfileReappearsInDiscovery()
@@ -264,6 +279,24 @@ void ProfileImportTests::importedProfileReappearsInDiscovery()
     // Discovery itself does not re-verify content digests (bounded reads);
     // the import result remains the provenance proof.
     QVERIFY(scanned.profiles.first().descriptor.checksumSha256.isEmpty());
+}
+
+void ProfileImportTests::rejectsNamesDiscoveryCannotEnumerate()
+{
+    QVERIFY(m_tree.isValid());
+    const QString user = m_tree.filePath(QStringLiteral("suffix-user"));
+    const QString sources = m_tree.filePath(QStringLiteral("suffix-src"));
+    QVERIFY(QDir().mkpath(user) && QDir().mkpath(sources));
+    const QString source = sources + QStringLiteral("/valid-profile.txt");
+    QVERIFY(writeFileBytes(source, buildIccFileBytes(640, QStringLiteral("Valid"))));
+
+    // AGENT-NOTE: P1.2 rejected an import success for a destination suffix
+    // that the discovery enumerator necessarily filters out.
+    ProfileDiscovery discovery(rootsWithImport(user));
+    const ImportResult imported = discovery.importUserProfile(source);
+    QCOMPARE(imported.status, ImportStatus::SourceNameUnsafe);
+    QVERIFY(discovery.discoverCatalog().profiles.isEmpty());
+    QCOMPARE(countFiles(user), qsizetype{0});
 }
 
 QTEST_MAIN(ProfileImportTests)

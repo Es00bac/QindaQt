@@ -62,6 +62,10 @@ QString iccStatusDetail(ProfileValidationStatus status);
 // The file base name without its final extension (used for profile identity).
 QString iccFileStem(const QString &fileName);
 
+// True exactly for the suffixes discovery enumerates. Import must share this
+// predicate so every successful stored name can re-enter the catalog.
+bool hasDiscoverableIccExtension(const QString &fileName);
+
 // Region reader over an in-memory buffer; slices or returns empty.
 IccRegionReader memoryRegionReader(const QByteArray &content);
 

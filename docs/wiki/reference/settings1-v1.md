@@ -124,5 +124,7 @@ beyond the generic value bounds:
   `{ "profile": <identifier>, "lineage": <64 lowercase hex SHA-256 or empty> }`;
   the value domain above bounds the object, and the stricter record grammar,
   document bounds, and draft/apply/conflict truth are specified in the
-  [Display color model](../architecture/display-color-model.md) page. Generic
-  object validation still rejects any malformed record before persistence.
+  [Display color model](../architecture/display-color-model.md) page. Settings1
+  enforces only the generic JSON/resource and top-level object constraints;
+  the Display Color consumer performs the stricter assignment-record decode
+  and refuses drafts while confirmed persisted content is unusable.

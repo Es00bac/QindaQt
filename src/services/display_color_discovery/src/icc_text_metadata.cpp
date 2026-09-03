@@ -238,6 +238,13 @@ QString iccFileStem(const QString &fileName)
     return fileName.left(dot);
 }
 
+bool hasDiscoverableIccExtension(const QString &fileName)
+{
+    const QString suffix = fileName.section(QLatin1Char('.'), -1, -1);
+    return suffix.compare(QLatin1String("icc"), Qt::CaseInsensitive) == 0 ||
+           suffix.compare(QLatin1String("icm"), Qt::CaseInsensitive) == 0;
+}
+
 IccRegionReader memoryRegionReader(const QByteArray &content)
 {
     return [&content](quint32 offset, quint32 length) -> QByteArray {
@@ -268,6 +275,12 @@ IccProfileDescriptor assembleDescriptor(DiscoveryOrigin origin, const QString &f
         break;
     case DiscoveryOrigin::UserImported:
         descriptor.origin = ProfileOrigin::UserImported;
+        break;
+    default:
+        // AGENT-GUARD: DiscoveryOrigin is public injected configuration. An
+        // unknown value must never inherit IccProfileDescriptor's BuiltIn
+        // default and acquire trusted repository provenance (P2.1).
+        descriptor.wireValid = false;
         break;
     }
     descriptor.gamut = ColorSpaceGamut::Custom;
