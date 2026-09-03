@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-03T00:20:01-06:00
+updated_at: 2026-09-03T00:40:31-06:00
 ---
 
 # Claude Program Manager
@@ -43,3 +43,4 @@ updated_at: 2026-09-03T00:20:01-06:00
 - 2026-09-03T00:04:19-06:00 — Integrated the Audio applet composition `14f3e67` at merge `780981c` after the staging-closure repairs; merged tree passes applet 22/22, integrity/runtime/closure 7/7 Debug/Release, broad safe Debug 396/396, and static gates. QQ-004.12 WIRED → EXECUTABLE. Six integrations since the handover.
 - 2026-09-03T00:14:37-06:00 — Integrated Power PB-2 `6cef8b5` at merge `4ae7f89` (ADR renumbered 0060); merged tree passes power 26/26 Debug/Release under an unreachable system bus, broad safe Debug 403/403, and static gates. Global Menu G2 composition blocked on missing compositor identity facts; a compositor identity lane is queued behind the accepted window-actions candidate.
 - 2026-09-03T00:20:01-06:00 — Integrated the authenticated compositor window-action boundary `3690a05` at merge `135fe65` (ADR renumbered 0061); merged tree passes compositor 35/35 non-nested, window-actions 4/4 with the nested row, the sixteen kwin rows 16/16 serially, broad safe Debug 406/406, and static gates. Eight integrations since the handover. Compositor identity lane opened; Terminal S1 under review.
+- 2026-09-03T00:40:31-06:00 — Integrated the Customize Settings canvas `2500a3d` at merge `ce5541e`; merged tree passes customize and domain rows 17/17, Settings Center 9/9 Debug/Release, broad safe Debug 412/412, and static gates. QQ-004.08 WIRED → EXECUTABLE. Nine integrations since the handover.

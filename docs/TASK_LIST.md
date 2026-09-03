@@ -58,6 +58,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `2500a3d` — The direct Customize Settings canvas composes the integrated customization-editor domain into an
+  installed `qindaqt-settings --page customize` route: a scaled WYSIWYG canvas with a manifest-sourced applet
+  palette and properties pane, pointer drag through the domain's preview bracket with exactly one undo step
+  per gesture, complete keyboard parity with accessible identities, Settings1 profile selection, atomic
+  user-profile persistence, and dirty-draft discard confirmation on route departure and window close across
+  responsive host switches. Klara Dan von Neumann (Kimi K3) rejected the first candidate at `0/0/2/3`; Adele
+  Goldstine (OpenAI Codex) rejected two descendants at `0/0/2/0` and `0/0/1/0` and accepted the third repair
+  at `0/0/0/0`. The fresh merged tree passes customize 17/17 (route plus domain rows) and Settings Center 9/9 in Debug and Release,
+  the broad safe Debug suite passes 412/412, and all static gates. This advances QQ-004.08 from WIRED to EXECUTABLE; live-shell binding, reveal
+  affordances, and the nested matrix remain.
+
 - `3690a05` — The compositor exposes an authenticated `CompositorShell1` window-action boundary (activate,
   minimize, unminimize, close, raise) admitted only for the D-Bus caller whose unix credentials match the
   bound panel-owning shell client, with authentication before any parsing, explicit entry bounds,
