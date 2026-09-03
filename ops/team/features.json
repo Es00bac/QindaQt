@@ -235,8 +235,8 @@
           "id": "QQ-004.10",
           "title": "Task list",
           "weight": 2,
-          "state": "WIRED",
-          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are integrated, and the compositor now exposes an authenticated CompositorShell1 window-action boundary (activate, minimize, unminimize, close, raise) admitted only for the D-Bus caller whose credentials match the bound panel-owning shell client, with authentication before parsing, bounded constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing, and an exact-owner asynchronous shell client; CompositorShell1 now also projects a revisioned, authenticated active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced app-menu service/path) with an exported change signal validated by the public generation rule on both sides and consumed through the exact-owner shell client.",
+          "state": "EXECUTABLE",
+          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are integrated, and the compositor now exposes an authenticated CompositorShell1 window-action boundary (activate, minimize, unminimize, close, raise) admitted only for the D-Bus caller whose credentials match the bound panel-owning shell client, with authentication before parsing, bounded constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing, and an exact-owner asynchronous shell client; CompositorShell1 now also projects a revisioned, authenticated active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced app-menu service/path) with an exported change signal validated by the public generation rule on both sides and consumed through the exact-owner shell client. T1 adds the shell-side facts producer over the exact-owner Compositor1 window inventory (never combined with visibility scope truth) with fail-closed state on failure and stop, and a serialized exactly-once operation adapter matched on the full canonical reply lineage.",
           "evidence": [
             {
               "kind": "commit",
@@ -257,9 +257,14 @@
               "kind": "commit",
               "reference": "8505bdbd09961863538616efd3dd8e7ef834a126",
               "summary": "Authenticated active-window identity facts (ADR-0063) are integrated after Margaret Rock (OpenAI Codex, different worker) rejected 7e263bd at 0/2/1/0 and accepted the repair at 0/0/0/0; the merged tree passes compositor 36/36 non-nested rows, window-actions/identity rows, and client rows in Debug and Release plus the nested rows serially."
+            },
+            {
+              "kind": "commit",
+              "reference": "90fe40088e656dbd757650690edd2c0e2b6126ca",
+              "summary": "The exact Task list T1 candidate bf555ed (Grete Hermann, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting torn scope truth, missing fail-closed state, forgeable reply lineage, an impossible DockWindows revision, and a silent cold start; lineage Irma Wyman/Kimi -> Vivienne Malone-Mayes-Codex) is integrated; the merged tree passes task-list, shell-runtime, and applet rows 22/22 in Debug and Release, the static gates, and the broad safe Debug suite 547/547."
             }
           ],
-          "caveat": "The shell-side facts producer and operation adapter (paused Kimi lane, WIP preserved), QST presentation, applet hosting, and installed keyboard/accessibility proof remain; the window-action boundary is proven against private virtual KWin only."
+          "caveat": "QST presentation, applet registration, production shell hosting, and installed nested interaction proof remain."
         },
         {
           "id": "QQ-004.11",

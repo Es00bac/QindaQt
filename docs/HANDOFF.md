@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T09:40:00-06:00 — Task list T1 integrated at `90fe400`.
 - 2026-09-03T09:33:11-06:00 — Main is nested-qualified again: boot.1080p and both panel-visibility rows green on `ff08ea2` after the staging and capture reconciliations; Clipboard applet C1 and Font F1 integrated.
 - 2026-09-03T09:25:01-06:00 — Clipboard applet C1 (`2abc448`), Font F1 (`045f1a1`), and the panel-visibility interaction repair (`ff08ea2`) merged and under batch verification; the DesktopVirtual route staging moved to `tests/session/DesktopSessionRouteStaging.cmake` (`fb2b280`) to restore the source-shape gate.
 - 2026-09-03T07:15:39-06:00 — Power Settings route (`a83f34e`) and Display Color C1 (`f6b14b2`, ADR-0066) integrated; any test that constructs the Settings Center's Main.qml in-process must link the static PowerBackend module (`3afa972`).
