@@ -4,6 +4,19 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Global Menu G1 candidate
+  `7c27ee5b1b50746e59f70360d89b0e959328dd47` at manager merge `729bebd`. The registrar owns
+  `com.canonical.AppMenu.Registrar` on an injected session-bus connection, keys registrations to the
+  caller's exact unique name, and retires them on owner loss; the dbusmenu client decodes `GetLayout`
+  replies with bounded depth, item counts, and string lengths, treats property-update signals as
+  invalidations followed by a complete revisioned reread, and rejects replayed revisions; the transport
+  coordinator binds both to the G0 proof-bound lineage. ADR-0056 records the standard-protocol adoption.
+  Elizabeth Feinler (Kimi K3) accepted the exact candidate at `0/0/0/1`; the sole P3 (harness prose claiming
+  a lower-revision row that no test drives) is corrected in this integration. Fresh merged-tree Debug and
+  Release each pass the complete 16/16 global-menu selector; 117-document validation, strict MkDocs,
+  source shape, diff, JSON, and Team Board 16/16 pass. The broad safe Debug suite on the merged tree (all 404 registered rows minus the serialized nested-compositor rows and the 25 controls visual rows that drift only by host font rendering) passes 365/365 after a full 2,715-action incremental build.
+  Shell composition, applet wiring, submenu popups, and installed-session proof remain later lanes.
+
 - This integration merges exact independently accepted S3 readiness candidate
   `4d4b3dc395d80135a8f66f5ffcb2395cf1874c60`. The installed private desktop
   executes WUXGA, 1440p at 125%, 1080p at 150%, light/dusk/dark themes, and
