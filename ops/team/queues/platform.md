@@ -1,7 +1,7 @@
 # Platform delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T06:21:56-06:00
+- Last observation: 2026-09-03T06:34:26-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -17,3 +17,4 @@
 | QQ-005.08 Font F1 discovery provider, persistence composition, bootstrap wiring | candidate `abc76f3` REJECTED 0/6/1/0 by Cecilia Berdichevsky (Codex); repair REASSIGNED to Codex after the second Kimi usage limit (partial repair preserved at `48229fd3`) | Mary Ellen Rudin-Codex (OpenAI Codex `gpt-5.6-sol`, high) taking over from Ruth Teitelbaum (Kimi) | rejected product `abc76f3` on `worker/font-discovery-f1`; WIP `48229fd3` | Cecilia Berdichevsky (OpenAI Codex) rechecks the repaired descendant | Finish the seven-finding repair, then recheck | none | none | 2026-09-03T06:21:56-06:00 reassigned |
 | QQ-005.09 Portal P1 host selection, toolkit reaction, fallback routing | EXECUTABLE integrated at manager merge `2c514ac` (ADR renumbered to 0059) | Program Manager (integrated) | merge `2c514ac` preserves exact accepted candidate `c33b4908f99cb1dfac04287383441d028ab8f25b` | Gertrude Blanch (OpenAI Codex, different worker, terminal ACCEPT `0/0/0/0`) | Preserve the selection/routing contract while later lanes implement non-Settings families | none | Route regressions with an exact reproduction | 2026-09-02T23:30:24-06:00 merged; portal 9/9 Debug/Release, docs 122, strict MkDocs, shape, diff, JSON, Team Board 16/16; broad suite the broad safe Debug suite passes 391/391 |
 | QQ-005.07 Display Color C1 discovery/import and persistent assignment | repair `57bcd04` REJECTED 0/2/0/1 by Emmy Noether (Codex) on recheck: a `..` component hides a linked ancestor from the root checker, and import inspects a destination beyond a linked ancestor before rejecting; second repair round IN PROGRESS (canonical-path containment) | Olive Hazlett-Codex (OpenAI Codex `gpt-5.6-sol`, high) | rejected product `57bcd04` on `worker/display-color-c1`; repair in progress | Emmy Noether (OpenAI Codex) rechecks the repaired descendant | Repair with canonical containment before any destination inspection, then recheck | none | none | 2026-09-03T06:20:09-06:00 repair launched |
+| QQ-005.04 Network secret agent (confined credential entry outside Network1) | lane IN PROGRESS | Etta Falconer (OpenAI Codex `gpt-5.6-sol`, high) | branch `worker/network-secret-agent` from `main` `9033df8`; no candidate yet | to be assigned at handoff | Complete the candidate, then exact review | none | none | 2026-09-03T06:34:26-06:00 launched |
