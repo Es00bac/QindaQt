@@ -19,6 +19,28 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_network_settings_agent_gate_tests
+    tst_network_settings_agent_gate.cpp
+    network_settings_test_support.h
+)
+target_include_directories(
+    qindaqt_network_settings_agent_gate_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_network_settings_agent_gate_tests
+    PRIVATE qindaqt_settings_network Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_network_settings_agent_gate_tests)
+add_test(
+    NAME qindaqt.network-settings-agent-gate
+    COMMAND qindaqt_network_settings_agent_gate_tests
+)
+set_tests_properties(
+    qindaqt.network-settings-agent-gate
+    PROPERTIES LABELS "settings;network;secret-agent;hostile"
+)
+
+qt_add_executable(
     qindaqt_network_settings_model_adversarial_tests
     tst_network_settings_model_adversarial.cpp
     network_settings_test_support.h

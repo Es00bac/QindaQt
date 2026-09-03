@@ -2,6 +2,8 @@
 
 #include <qindaqt/apps/settings_network/network_settings_model.h>
 
+#include <algorithm>
+
 namespace QindaQt::Apps::SettingsNetwork {
 namespace {
 
@@ -53,6 +55,27 @@ bool NetworkSettingsModel::connectKnownNetwork(
 
 bool NetworkSettingsModel::connectVisibleNetwork(
     const QString &accessPointId) {
+  const QVariantList points = accessPoints();
+  const auto projected = std::find_if(
+      points.cbegin(), points.cend(), [&accessPointId](const QVariant &entry) {
+        return entry.toMap().value(QStringLiteral("id")).toString()
+               == accessPointId;
+      });
+  if (projected == points.cend()) {
+    rejectAction(QStringLiteral("access-point-not-found"));
+    return false;
+  }
+  const QVariantMap row = projected->toMap();
+  if (!row.value(QStringLiteral("connectAvailable")).toBool()) {
+    // AGENT-GUARD: The invokable must consume the exact availability projected
+    // to QML. Re-evaluating only Network1 admission here bypasses route-owned
+    // secret-agent presence truth for secured first-use connections.
+    const QString reason =
+        row.value(QStringLiteral("connectBlockedReason")).toString();
+    rejectAction(reason.isEmpty() ? QStringLiteral("visible-network-unavailable")
+                                  : reason);
+    return false;
+  }
   QString error;
   if (!m_client.connectVisibleNetwork(accessPointId, &error)) {
     rejectAction(error);
@@ -160,6 +183,9 @@ QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
   }
   if (reason == QStringLiteral("visible-network-control-unsupported")) {
     return tr("Creating network profiles is not permitted by the network service.");
+  }
+  if (reason == QStringLiteral("secret-agent-unavailable")) {
+    return tr("No secret agent is available to prompt for this secured network.");
   }
   if (reason == QStringLiteral("hidden-network-unsupported")
       || reason == QStringLiteral("wep-network-unsupported")

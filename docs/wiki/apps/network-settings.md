@@ -49,10 +49,12 @@ The route relies on public intent admission and disables an action when the
 snapshot lacks the corresponding capability, the target is not eligible,
 truth is stale, another operation is pending, or an authoritative snapshot
 refresh is scheduled or in flight. Both displayed availability and dispatch
-consume the client's same public operation-admission predicate. A successful
-reply triggers a refresh and does not optimistically edit any list. Timeout,
-owner replacement, or another uncertain result stays visible and is never
-automatically replayed.
+consume the same projected row predicate. The visible-network invokable
+revalidates that row and returns a typed rejection without calling Network1
+when route-owned secret-agent presence or any public admission fact disables
+Connect. A successful reply triggers a refresh and does not optimistically
+edit any list. Timeout, owner replacement, or another uncertain result stays
+visible and is never automatically replayed.
 
 ## Credential and authority boundary
 
@@ -111,12 +113,15 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
 - the model row proves bounded projection, exact lineage, public capability and
   secret-agent-presence admission, one-shot scan/saved-connect/visible-connect/
   disconnect dispatch, and secret-free errors;
+- the agent-gate row proves a secured unsaved network with absent-agent
+  `connectAvailable=false` cannot dispatch through the invokable and returns
+  the typed `secret-agent-unavailable` rejection;
 - the adversarial row proves malformed/stale handling, owner loss and A→B→A
   replacement, ignored late replies, mismatched operation lineage, redaction,
   and absence of credential/radio mutation APIs;
