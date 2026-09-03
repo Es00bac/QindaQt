@@ -73,6 +73,12 @@ The grant cannot expose PipeWire, WirePlumber, stream moves, default-device
 changes, or service internals because those surfaces do not exist on the
 controller.
 
+The Launcher manifest requests `applications.launch`. The production shell
+grants it only to the audited compiled launcher entry point, then injects a
+shell-private controller whose scanner roots are explicit composition inputs
+and whose process/session-bus execution routes remain behind bounded seams.
+The manifest cannot choose roots, executable authority, or persistence keys.
+
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
 API rule or a new manifest schema version.

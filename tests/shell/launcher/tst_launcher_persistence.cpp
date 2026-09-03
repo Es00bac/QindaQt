@@ -99,7 +99,7 @@ private Q_SLOTS:
     void conflictRevertsToTheConfirmedValue();
     void unknownSchemaKeyFailsClosed();
     void uncertainCommitsAreNeverReplayed();
-    void transportLossRefusesNewWrites();
+    void transportLossClearsTruthAndRefusesNewWrites();
     void writesAreSerialized();
     void recentListStaysBounded();
 };
@@ -257,7 +257,7 @@ void LauncherPersistenceTests::uncertainCommitsAreNeverReplayed()
     QCOMPARE(wired.transport.commits.size(), 1);
 }
 
-void LauncherPersistenceTests::transportLossRefusesNewWrites()
+void LauncherPersistenceTests::transportLossClearsTruthAndRefusesNewWrites()
 {
     WiredController wired;
     wired.publishBaseline(
@@ -266,9 +266,9 @@ void LauncherPersistenceTests::transportLossRefusesNewWrites()
 
     Q_EMIT wired.transport.busDisconnected();
     QTRY_VERIFY(!wired.controller.persistenceReady());
-    // Fail closed: last confirmed values remain visible, new writes refuse.
-    QCOMPARE(wired.controller.pinned().ids(),
-             QStringList({ QStringLiteral("kept.app") }));
+    // Settings identities are owner-bound: loss clears prior truth, and new
+    // writes remain unavailable until a replacement publishes a baseline.
+    QVERIFY(wired.controller.pinned().ids().isEmpty());
     QCOMPARE(wired.controller.pin(QStringLiteral("new.app")),
              PersistenceMutation::Unavailable);
     QVERIFY(wired.transport.commits.isEmpty());

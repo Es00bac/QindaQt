@@ -77,6 +77,7 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *bluetooth = catalog.findById(QStringLiteral("bluetooth"));
     const AppletManifest *power = catalog.findById(QStringLiteral("power"));
     const AppletManifest *audio = catalog.findById(QStringLiteral("audio"));
+    const AppletManifest *launcher = catalog.findById(QStringLiteral("launcher"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
@@ -84,6 +85,7 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(bluetooth != nullptr);
     QVERIFY(power != nullptr);
     QVERIFY(audio != nullptr);
+    QVERIFY(launcher != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
@@ -97,6 +99,8 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(audio->capabilities
             == QVector<Capability>({Capability::AudioRead,
                                     Capability::AudioControl}));
+    QVERIFY(launcher->capabilities
+            == QVector<Capability>({Capability::ApplicationLaunch}));
     QVERIFY(notificationCenter->placementZones
             == QVector<PlacementZone>({PlacementZone::PanelStart,
                                        PlacementZone::PanelCenter,

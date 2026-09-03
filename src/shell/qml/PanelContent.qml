@@ -11,6 +11,7 @@ Item {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
+    property var launcherAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -39,6 +40,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 
     PanelAppletRow {
@@ -55,6 +57,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 
     PanelAppletRow {
@@ -72,6 +75,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 
     PanelAppletColumn {
@@ -88,6 +92,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 
     PanelAppletColumn {
@@ -104,6 +109,7 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 
     PanelAppletColumn {
@@ -120,5 +126,6 @@ Item {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 }

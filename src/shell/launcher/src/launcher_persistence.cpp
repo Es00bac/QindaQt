@@ -73,7 +73,7 @@ void LauncherPersistenceController::handleSnapshot()
 {
   const auto &snapshot = m_client.snapshot();
   if (!snapshot) {
-    m_confirmedBaseline = false;
+    clearAuthoritativeTruth();
     return;
   }
   // A snapshot that arrives while a commit is in flight is the optimistic
@@ -156,10 +156,31 @@ void LauncherPersistenceController::handleUncertain(const QString &message)
 
 void LauncherPersistenceController::handleClientState()
 {
+  if (m_client.state() != ClientState::Ready) {
+    // AGENT-GUARD: Pinned/recent identities are Settings1-owner truth. Keeping
+    // them whenever the client lacks Ready authority would let an owner loss,
+    // replacement, or malformed resync preserve stale presentation state.
+    clearAuthoritativeTruth();
+  }
   if (m_client.state() == ClientState::Unavailable && !writeInFlight()) {
     setStatusText(QStringLiteral("Settings persistence is unavailable"));
   }
   Q_EMIT stateChanged();
+}
+
+void LauncherPersistenceController::clearAuthoritativeTruth()
+{
+  m_confirmedBaseline = false;
+  m_confirmedPinned.clear();
+  m_confirmedRecent.clear();
+  if (!m_pinned.ids().isEmpty()) {
+    m_pinned = PinnedApplications();
+    Q_EMIT pinnedChanged();
+  }
+  if (!m_recent.ids().isEmpty()) {
+    m_recent = RecentApplications();
+    Q_EMIT recentChanged();
+  }
 }
 
 void LauncherPersistenceController::revertToConfirmed(const QString &key)
