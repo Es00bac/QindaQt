@@ -50,7 +50,16 @@ function(qindaqt_add_shell_launcher_test target source test_name)
     target_link_libraries(${target} PRIVATE QindaQt::ShellLauncher Qt6::Test)
     qindaqt_enable_warnings(${target})
     add_test(NAME ${test_name} COMMAND ${target})
+    set_tests_properties(
+        ${test_name}
+        PROPERTIES ENVIRONMENT_MODIFICATION
+            "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+    )
 endfunction()
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime")
+file(CHMOD "${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 
 qindaqt_add_shell_launcher_test(
     qindaqt_desktop_entry_parser_tests
@@ -85,6 +94,15 @@ qindaqt_add_shell_launcher_test(
 
 # L1 adapter and applet tests; they exist only where the runtime target does.
 if(TARGET qindaqt_shell_launcher_runtime)
+    get_target_property(launcher_runtime_links
+                        qindaqt_shell_launcher_runtime INTERFACE_LINK_LIBRARIES)
+    foreach(gui_library IN ITEMS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+        if(gui_library IN_LIST launcher_runtime_links)
+            message(FATAL_ERROR
+                "Launcher runtime leaks ${gui_library} to headless adapter consumers")
+        endif()
+    endforeach()
+
     function(qindaqt_add_launcher_runtime_test target source test_name)
         qt_add_executable(${target} ${source})
         target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -94,7 +112,13 @@ if(TARGET qindaqt_shell_launcher_runtime)
         )
         qindaqt_enable_warnings(${target})
         add_test(NAME ${test_name} COMMAND ${target})
-        set_tests_properties(${test_name} PROPERTIES LABELS "shell;launcher;runtime")
+        set_tests_properties(
+            ${test_name}
+            PROPERTIES
+                LABELS "shell;launcher;runtime"
+                ENVIRONMENT_MODIFICATION
+                    "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+        )
     endfunction()
 
     qindaqt_add_launcher_runtime_test(
@@ -160,6 +184,8 @@ if(TARGET qindaqt_shell_launcher_runtime)
         PROPERTIES
             LABELS "shell;launcher;runtime;offscreen;accessibility"
             ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
     )
 
     add_test(
@@ -172,7 +198,25 @@ if(TARGET qindaqt_shell_launcher_runtime)
     )
     set_tests_properties(
         qindaqt.launcher-runtime-boundary
-        PROPERTIES LABELS "shell;launcher;runtime;policy;hostile"
+        PROPERTIES
+            LABELS "shell;launcher;runtime;policy;hostile"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+    )
+
+    add_test(
+        NAME qindaqt.launcher-contract-text
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DSOURCE_ROOT=${launcher_source_root}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_launcher_contract_text.cmake"
+    )
+    set_tests_properties(
+        qindaqt.launcher-contract-text
+        PROPERTIES
+            LABELS "shell;launcher;documentation;policy;hostile"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
     )
 
     if(TARGET qindaqt_applet_runtime)
@@ -198,7 +242,11 @@ if(TARGET qindaqt_shell_launcher_runtime)
         )
         set_tests_properties(
             qindaqt.launcher-installed-package
-            PROPERTIES LABELS "shell;launcher;runtime;installed;poison" TIMEOUT 120
+            PROPERTIES
+                LABELS "shell;launcher;runtime;installed;poison"
+                TIMEOUT 120
+                ENVIRONMENT_MODIFICATION
+                    "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
         )
     endif()
 endif()

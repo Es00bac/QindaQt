@@ -4,6 +4,7 @@
 #include "launcher_runtime_test_support.h"
 
 #include <QSignalSpy>
+#include <QScopeGuard>
 #include <QtTest>
 
 #include <sys/stat.h>
@@ -33,6 +34,7 @@ private Q_SLOTS:
     void mapsSubdirectoriesIntoDesktopIds();
     void degradesOnHostileAndUnreadableEntries();
     void confinesSymlinksAndRefusesNonRegularEntries();
+    void inaccessibleAndDanglingApplicationTreesDegrade();
     void hiddenHigherPrecedenceEntryShadowsLowerRoot();
     void missingApplicationsTreeIsNormalNotDegraded();
     void watcherRefreshRepublishesWithFencedGeneration();
@@ -156,6 +158,39 @@ void ApplicationScannerTests::confinesSymlinksAndRefusesNonRegularEntries()
     QVERIFY(diagnosticIds.contains(QStringLiteral("hang")));
 }
 
+void ApplicationScannerTests::inaccessibleAndDanglingApplicationTreesDegrade()
+{
+    QTemporaryDir parent;
+    QVERIFY(parent.isValid());
+    const QString unreadableRoot = parent.path() + QStringLiteral("/unreadable");
+    const QString danglingRoot = parent.path() + QStringLiteral("/dangling");
+    QVERIFY(QDir().mkpath(unreadableRoot + QStringLiteral("/applications")));
+    QVERIFY(QDir().mkpath(danglingRoot));
+    QCOMPARE(::chmod(QFile::encodeName(unreadableRoot).constData(), 0000), 0);
+    const auto restorePermissions = qScopeGuard([&unreadableRoot] {
+        ::chmod(QFile::encodeName(unreadableRoot).constData(), 0700);
+    });
+    QVERIFY(QFile::link(danglingRoot + QStringLiteral("/missing-applications"),
+                        danglingRoot + QStringLiteral("/applications")));
+
+    ApplicationScanner scanner({ unreadableRoot, danglingRoot });
+    QVERIFY(scanner.start());
+    QVERIFY(scanner.catalog().has_value());
+    QVERIFY(scanner.catalog()->entries().isEmpty());
+    QCOMPARE(scanner.scanDiagnostics().size(), 2);
+
+    bool sawUnreadable = false;
+    bool sawDangling = false;
+    for (const auto &diagnostic : scanner.scanDiagnostics()) {
+        sawUnreadable = sawUnreadable
+            || diagnostic.message.contains(QStringLiteral("not readable"));
+        sawDangling = sawDangling
+            || diagnostic.message.contains(QStringLiteral("dangling"));
+    }
+    QVERIFY(sawUnreadable);
+    QVERIFY(sawDangling);
+}
+
 void ApplicationScannerTests::hiddenHigherPrecedenceEntryShadowsLowerRoot()
 {
     QTemporaryDir rootA;
@@ -251,5 +286,5 @@ void ApplicationScannerTests::orderingIsDeterministic()
                                   QStringLiteral("zeta") }));
 }
 
-QTEST_MAIN(ApplicationScannerTests)
+QTEST_GUILESS_MAIN(ApplicationScannerTests)
 #include "tst_application_scanner.moc"

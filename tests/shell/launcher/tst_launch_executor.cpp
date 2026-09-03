@@ -291,5 +291,5 @@ void LaunchExecutorTests::sanitizedEnvironmentDropsUnlistedVariables()
     QVERIFY(!sanitized.contains(QStringLiteral("PROMPT_COMMAND")));
 }
 
-QTEST_MAIN(LaunchExecutorTests)
+QTEST_GUILESS_MAIN(LaunchExecutorTests)
 #include "tst_launch_executor.moc"

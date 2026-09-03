@@ -9,6 +9,7 @@ if(NOT DEFINED SOURCE_ROOT)
 endif()
 
 set(module_root "${SOURCE_ROOT}/src/shell/launcher")
+set(test_root "${SOURCE_ROOT}/tests/shell/launcher")
 file(GLOB pure_sources
     "${module_root}/src/application_catalog.cpp"
     "${module_root}/src/desktop_entry_parser.cpp"
@@ -34,6 +35,41 @@ if(pure_count EQUAL 0 AND NOT LAUNCHER_POLICY_SKIP_POISON)
 endif()
 
 set(violations "")
+
+if(NOT LAUNCHER_POLICY_SKIP_POISON)
+    # AGENT-GUARD: Headless adapter consumers must never regain a transitive
+    # GUI platform dependency. QTEST_MAIN changes construction based on link
+    # defines, so enforce both the target boundary and explicit guiless mains.
+    file(READ "${module_root}/CMakeLists.txt" launcher_cmake)
+    string(REGEX MATCH
+        "target_link_libraries\\([ \t\r\n]*qindaqt_shell_launcher_runtime[^\\)]*\\)"
+        runtime_link_block "${launcher_cmake}")
+    if(runtime_link_block STREQUAL "")
+        list(APPEND violations
+            "${module_root}/CMakeLists.txt: runtime link interface was not found")
+    else()
+        foreach(token IN ITEMS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+            string(FIND "${runtime_link_block}" "${token}" hit)
+            if(NOT hit EQUAL -1)
+                list(APPEND violations
+                    "${module_root}/CMakeLists.txt: runtime leaks '${token}' to headless consumers")
+            endif()
+        endforeach()
+    endif()
+
+    foreach(test_source IN ITEMS
+            tst_application_scanner.cpp
+            tst_launch_executor.cpp
+            tst_launcher_persistence.cpp
+            tst_launcher_controller.cpp)
+        file(READ "${test_root}/${test_source}" test_contents)
+        string(FIND "${test_contents}" "QTEST_GUILESS_MAIN" guiless_main)
+        if(guiless_main EQUAL -1)
+            list(APPEND violations
+                "${test_root}/${test_source}: adapter test must use QTEST_GUILESS_MAIN")
+        endif()
+    endforeach()
+endif()
 
 function(launcher_forbid files description)
     foreach(path IN LISTS ${files})

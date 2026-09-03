@@ -68,6 +68,7 @@ private Q_SLOTS:
     void activationRequiresTheGrant();
     void activationLaunchesAndRecordsRecent();
     void degradedTruthReachesTheProjection();
+    void rootAccessFailuresReachTheProjection();
     void nullCollaboratorsFailClosed();
 };
 
@@ -199,6 +200,21 @@ void LauncherControllerTests::degradedTruthReachesTheProjection()
     QCOMPARE(allItems(controller.sections()).size(), 1);
 }
 
+void LauncherControllerTests::rootAccessFailuresReachTheProjection()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    QVERIFY(QFile::link(root.path() + QStringLiteral("/missing-applications"),
+                        root.path() + QStringLiteral("/applications")));
+
+    ApplicationScanner scanner({ root.path() });
+    QVERIFY(scanner.start());
+    LauncherAppletController controller(&scanner, nullptr, nullptr, false);
+    QCOMPARE(controller.phase(), QStringLiteral("degraded"));
+    QVERIFY(controller.diagnostic().contains(QStringLiteral("dangling")));
+    QVERIFY(controller.sections().isEmpty());
+}
+
 void LauncherControllerTests::nullCollaboratorsFailClosed()
 {
     LauncherAppletController controller(nullptr, nullptr, nullptr, false);
@@ -213,5 +229,5 @@ void LauncherControllerTests::nullCollaboratorsFailClosed()
     QVERIFY(controller.sections().isEmpty());
 }
 
-QTEST_MAIN(LauncherControllerTests)
+QTEST_GUILESS_MAIN(LauncherControllerTests)
 #include "tst_launcher_controller.moc"

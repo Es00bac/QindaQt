@@ -11,8 +11,11 @@ Core library: no Qt Gui, Qt Quick, Qt DBus, or KDE frameworks, and no
 filesystem, environment, session bus, or process access. The L1 adapters
 (namespace `QindaQt::Shell::Launcher`, targets
 `qindaqt_shell_launcher_runtime` and the `QindaQt.Shell.Launcher` QML module)
-own that platform reach behind dedicated seams. The model boundary is
-accepted in [ADR-0042](../adr/0042-launcher-model-without-execution.md); the
+own that platform reach behind dedicated seams. The runtime target exposes no
+Qt Gui/QML/Quick dependency, so scanner, execution, persistence, and controller
+consumers remain `QCoreApplication` processes; only the separately linked QML
+module and offscreen QML test initialize a GUI application. The model boundary
+is accepted in [ADR-0042](../adr/0042-launcher-model-without-execution.md); the
 L1 execution/activation boundary in
 [ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
 
@@ -124,9 +127,11 @@ completed rebuild publishes a monotonically increasing generation with the
 `catalogChanged` signal so consumers fence stale reactions. Unreadable roots
 or files and oversized documents produce scanner-level diagnostics (bounded,
 truncation-flagged) and set the surface's `Degraded` truth together with the
-catalog's document diagnostics; a root without an `applications/` tree is
-normal and never degrades. The raw text and absolute path of each winning
-document are retained (bounded) exclusively for the execution adapter.
+catalog's document diagnostics. Existing unreadable data roots and dangling
+top-level `applications` links also degrade; a readable root without an
+`applications/` tree is normal and never degrades. The raw text and absolute
+path of each winning document are retained (bounded) exclusively for the
+execution adapter.
 
 ### Pinned/recent persistence
 
@@ -237,6 +242,7 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, degraded truth, null-collaborator fail-closed. |
 | `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
 | `qindaqt.launcher-runtime-boundary` | Source policy: pure model platform-free; platform reach confined to adapter files; poison negative control. |
+| `qindaqt.launcher-contract-text` | Mutation-sensitive launcher/applet-runtime/ADR and safety-comment truth for registry readiness, inert process fixtures, and wholesale stored-list rejection. |
 | `qindaqt.launcher-installed-package` | Manifest/policy and complete compiled Launcher/Controls/Tokens import closure move to a new prefix, the original prefix disappears, and the warning-clean null-controller module loads only from the relocated stage under source/build poison. |
 
 ## Non-claims
@@ -245,5 +251,7 @@ This slice proves no production panel hosting (a later lane wires the
 dispatcher), no startup-notification activation tokens, no Settings1 schema
 registration of the launcher keys (persistence against the production service
 reports `UnknownKey` until then), no real session-bus activation, and no
-physical or nested-session behavior. Tests use injected roots and fakes;
-`/bin/true` and `/bin/false` are inert process-start fixtures only.
+physical or nested-session behavior. Headless rows use `QCoreApplication`; all
+launcher rows remove inherited display and session-bus endpoints, while the
+two genuine GUI rows force offscreen software rendering. Tests use injected
+roots and fakes. `/bin/true` and `/bin/false` are inert process-start fixtures only.

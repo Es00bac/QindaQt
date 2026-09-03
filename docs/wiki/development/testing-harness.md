@@ -187,16 +187,21 @@ ctest --test-dir build/dev \
 
 Its adapter rows cover injected-root fixture trees with canonical containment,
 escaping-link and FIFO/non-regular negative controls, capped reads, debounced
-watcher refresh with generation fencing, Settings1 persistence round trips and
+watcher refresh with generation fencing, explicit inaccessible-root and
+dangling-top-level-link degradation, Settings1 persistence round trips and
 unchanged-authority post-uncertainty convergence against a scripted fake
 transport, and seam-based execution with entry-policy action inheritance and a
 recording spawner/activator. The only real children are the inert `/bin/true`
 and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
 QST provisioning, pinned/recent/category/search rendering, persistence failure,
 Tab and cross-section traversal, Return/Space activation, Escape, and accessible
-enabled/denied/unavailable states. A runtime source-boundary poison gate and a
-relocated complete-import-closure installed-package proof finish the slice. No row contacts the host
-session bus, display server, real user applications, or hardware. The exact
+enabled/denied/unavailable states. A runtime source-boundary poison gate, a
+mutation-sensitive documentation/comment contract row, and a relocated
+complete-import-closure installed-package proof finish the slice. No row
+contacts the host session bus, display server, real user applications, or
+hardware: headless rows construct `QCoreApplication`, inherited display/bus
+endpoints are removed from every launcher row, and GUI rows force the offscreen
+software backend. The exact
 matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
 [ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
 

@@ -84,7 +84,9 @@ function(qindaqt_add_launcher_runtime)
     )
     # AGENT-CONTRACT: The runtime target may use the filesystem (scanner),
     # process spawning (spawner), and the session bus (activator) only inside
-    # its dedicated adapter files; the boundary tests enforce the split.
+    # its dedicated adapter files; the boundary tests enforce the split. It
+    # remains display-free: Gui/Qml/Quick belong only to the QML module so
+    # Core adapter consumers cannot initialize a platform plugin transitively.
     target_link_libraries(
         qindaqt_shell_launcher_runtime
         PUBLIC
@@ -92,8 +94,6 @@ function(qindaqt_add_launcher_runtime)
             QindaQt::SettingsClient
             Qt6::Core
             Qt6::DBus
-            Qt6::Qml
-            Qt6::Quick
     )
     target_compile_features(qindaqt_shell_launcher_runtime PUBLIC cxx_std_20)
     set_target_properties(qindaqt_shell_launcher_runtime
