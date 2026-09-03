@@ -1725,6 +1725,58 @@ integration slice, which owns the transport, bus surface, and lock-state
 prerequisites; the model's `install(TARGETS …)` export exists but no
 packaged-qualification claim is made for C0 alone.
 
+## Display Color C0 model and C1 discovery/assignment proof
+
+The focused Display Color selector is:
+
+```sh
+ctest --test-dir build/<debug|release> \
+  -R '^qindaqt\.display-color-' \
+  --output-on-failure --no-tests=error
+```
+
+The C0 pure-model rows (header validation, catalog, model, boundary,
+boundary-poison, installed C++ consumer) are unchanged. The C1 discovery and
+assignment rows extend the same selector with:
+
+- `qindaqt.display-color-discovery` — injected-root enumeration and
+  classification, hostile-file diagnostics (empty, truncated, garbage,
+  mislabeled declared/actual size, declared oversize, planted symlinks,
+  unsafe file names), order-independent conflicting-duplicate rejection,
+  exact-duplicate collapse, bounded enumeration truth, 'desc'/'mluc'
+  description parsing, and the unproven-semantics guarantee that a scanned
+  profile can never become the truthful sRGB default.
+- `qindaqt.display-color-discovery-import` — atomic import truth: validated
+  copies with SHA-256 lineage fingerprints, idempotent re-import, rejection
+  atomicity for hostile sources, destination conflicts, interrupted-write
+  recovery (stale temporary removal, directory collision fail-closed),
+  missing/unusable injected user roots, and the discovery round trip of an
+  imported profile.
+- `qindaqt.display-color-discovery-boundary` and
+  `qindaqt.display-color-discovery-boundary-poison` — the discovery module's
+  no-transport/no-GUI/no-Display1/no-Settings dependency policy and its
+  poison-negative proof.
+- `qindaqt.display-color-assignment-document` — strict canonical codec round
+  trips, deterministic record ordering, empty/absent document truth, hostile
+  document rejection (shapes, grammars, lineage hex, output cap), fail-closed
+  encoding, draft validation including duplicate targets, and pure draft
+  application with cap enforcement.
+- `qindaqt.display-color-assignment-store` — optimistic apply over the public
+  Settings1 client seam with a fake transport: applied and applied-no-op
+  truth with authoritative-value verification, conflict and uncertain-timeout
+  terminal outcomes without replay, unusable-document fail-closed refusal,
+  and unavailable truth on transport loss.
+- `qindaqt.display-color-assignment-boundary`,
+  `qindaqt.display-color-assignment-boundary-poison`, and
+  `qindaqt.display-color-assignment-installed-cpp-consumer` — the assignment
+  module's dependency policy, its poison proof, and an installed staged
+  consumer composing the pure codec and the store without any D-Bus daemon.
+
+All rows are deterministic in-process evidence. None claims compositor
+application, HDR/WCG runtime behavior, colord interaction, or physical
+hardware qualification; discovery tests read only injected temporary roots,
+and no test touches the host's real profile directories.
+
 ## Required display matrix
 
 Single-output scenarios cover:

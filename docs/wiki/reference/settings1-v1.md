@@ -111,3 +111,18 @@ in-flight guard and backs off. Replacement publishes old-owner loss before
 installing the next exact-owner subscription, and pending replies are fenced by
 the generation that initiated them. An epoch cannot change within one unique
 owner; an equal-revision baseline cannot contradict accepted values or sources.
+
+## Known first-party keys
+
+The schema data files (`data/settings/schema-v*.json`) remain the exhaustive
+key registry. One key is owned by the Display Color lane and has semantics
+beyond the generic value bounds:
+
+- `displays.colorAssignments` (object, default `{}`) — per-output ICC profile
+  assignment intents persisted by the Display Color C1 discovery/assignment
+  provider. Each entry maps a display stable ID to exactly
+  `{ "profile": <identifier>, "lineage": <64 lowercase hex SHA-256 or empty> }`;
+  the value domain above bounds the object, and the stricter record grammar,
+  document bounds, and draft/apply/conflict truth are specified in the
+  [Display color model](../architecture/display-color-model.md) page. Generic
+  object validation still rejects any malformed record before persistence.
