@@ -1,12 +1,13 @@
 # QindaQt Terminal
 
-`qindaqt-terminal` is QindaQt's first-party terminal. S1 is an ordinary Qt 6
+`qindaqt-terminal` is QindaQt's first-party terminal. S2 is an ordinary Qt 6
 desktop client with up to eight independent tabs in one window. Every tab owns
 the complete S0 PTY/child/teletype lifecycle, may select a validated profile at
 creation, and participates in teardown-first close and quit. User profiles,
 the default profile, and the tab-restore policy are persisted through the
-public Settings1 client. Search, links, GPU qualification, global-menu export,
-and advanced VT behavior remain explicit deferrals, not hidden claims.
+public Settings1 client. S2 adds bounded per-session scrollback search and
+confirmed URL/local-path handling. GPU qualification, global-menu export, and
+advanced VT behavior remain explicit deferrals, not hidden claims.
 
 Launch policy, session lifecycle, rendering adaptation, and presentation are
 separate owners inside `src/apps/terminal`. The qtermwidget dependency and its
@@ -148,6 +149,61 @@ persists the restore *policy* but deliberately has no content-bearing inventory
 to restore yet; startup opens one tab using the confirmed default profile (or
 the built-in default after a definitive Settings1 failure).
 
+## Per-session scrollback search
+
+Each session owns volatile find text, case sensitivity, regex mode, current
+match, and find-bar visibility. `Ctrl+Shift+F` opens the non-modal in-window
+bar, `F3` and `Shift+F3` traverse with wrap, and Escape clears renderer
+highlights, hides the bar, and returns focus to that session. Switching tabs
+restores the selected session's volatile bar without copying its query to
+another tab. Search text is never sent to Settings1 or any persistence surface.
+
+The qtermwidget-free admission policy limits patterns to 256 UTF-16 code units,
+snapshots to 4 MiB, and reported matches to 10,000. Literal search is always
+escaped. Regex mode supports literals, classes, anchors, alternation, groups
+that are not quantified, one variable repetition on a non-group atom, up to
+eight optional atoms, and exact repetitions no greater than 32. It rejects
+lookarounds/extensions, backreferences, quantified groups, multiple variable
+repetitions, empty-string matches, invalid syntax, controls, and unpaired
+surrogates before qtermwidget's synchronous search is invoked. This closed
+subset is intentional: admitting general hostile patterns would permit
+GUI-thread denial of service.
+
+An accepted query uses the confined adapter's pinned qtermwidget 2.4 SearchBar
+surface. The adapter enables its all-match renderer highlight and uses its
+current-match selection/scroll behavior; the application UI never includes a
+qtermwidget header or inspects an emulator object. Accessible status says
+`Match N of M`, `No matches`, or the bounded refusal reason and publishes a Qt
+accessibility name-change event. Match truth therefore does not depend on
+highlight color.
+
+## Visible links and confirmed opening
+
+The adapter derives at most 256 link presentation values from the current live
+screen tail, capped at 512 KiB. Detection accepts explicit `http://` and
+`https://` URLs plus absolute local paths. Each target is capped at 2,048
+UTF-16 code units; controls and unpaired surrogates are removed, terminal
+punctuation and unmatched closing delimiters are excluded, and quoted absolute
+paths may contain spaces. URL/path text is never normalized: Unicode
+homoglyphs, IDNs, and punycode remain exactly as printed, and the tooltip says
+that hostname spelling was not normalized.
+
+Nothing auto-activates. The fixed AppShell/local catalog includes Select
+Previous Link, Select Next Link, Copy Link, and Open Link; the terminal context
+menu presents the same actions, and their Shift-modified shortcuts provide
+bounded keyboard traversal. Selection announces `Link N of M` and the exact
+display text in the accessible session status. Copy writes only that exact
+control-free target.
+
+Open first shows a plain-text confirmation naming the exact URL or path. After
+confirmation, an injected spawner receives the resolved absolute `xdg-open`
+program and exactly one argv element; no shell string or interpolation exists.
+Production intentionally uses `QProcess::startDetached`: the desktop opener is
+a dispatch request with no terminal PTY or session job to own, and the selected
+handler has an independent lifetime. Terminal teardown therefore neither
+abandons a child session nor kills an application the user chose to open.
+Tests inject recording confirmation/spawn seams and never run a real opener.
+
 ## Rendering adapter boundary
 
 `qtermwidget6` is linked only by the terminal's rendering adapter, and only as
@@ -173,8 +229,9 @@ the retained Exited session must not spin. Each
 descriptor has exactly one writer, buffers are bounded (64 KiB) with
 drop-newest backpressure, and the adapter keeps fork/exec, reaping, and view
 disposal. `qindaqt-terminal` links the adapter; the support library with
-policy, PTY bridge, session, and presentation links Qt and QST only, making
-the boundary enforceable at link time.
+policy, PTY bridge, session, search/link values, and presentation links Qt and
+QST only, making the boundary enforceable at link time. The S2 adapter public
+boundary contains only typed search and link values, never qtermwidget types.
 
 ## Keyboard and accessibility semantics
 
@@ -196,6 +253,13 @@ name, Shift-modified terminal-safe shortcut, and window-shortcut context.
 | `editPasteSelectionAction` | `Ctrl+Shift+Insert` | Paste primary selection |
 | `editSelectAllAction` | `Ctrl+Shift+A` | Select the whole buffer |
 | `viewClearAction` | `Ctrl+Shift+K` | Clear display and scrollback |
+| `viewFindAction` | `Ctrl+Shift+F` | Open the active session's find bar |
+| `viewFindNextAction` | `F3` | Select the next match with wrap |
+| `viewFindPreviousAction` | `Shift+F3` | Select the previous match with wrap |
+| `linkNextAction` | `Ctrl+Shift+L` | Select the next visible link with wrap |
+| `linkPreviousAction` | `Ctrl+Shift+Alt+L` | Select the previous visible link with wrap |
+| `linkCopyAction` | `Ctrl+Shift+Y` | Copy the exact selected link target |
+| `linkOpenAction` | `Ctrl+Shift+O` | Confirm and open the exact selected target |
 | `fileQuitAction` | `Ctrl+Shift+Q` | Guaranteed-teardown close and quit |
 
 No window action binds a plain `Ctrl+<letter>` readline sequence (`C`, `S`,
@@ -210,13 +274,13 @@ selection) available. The embedded view takes focus
 when published, has `StrongFocus` policy, an accessible name and description,
 and the window exposes its title, session status, and accessible status text.
 Deep screen-reader bridge qualification stays a cross-application milestone
-(QQ-006.09), not an S1 claim.
+(QQ-006.09), not an S2 claim.
 
 The same fixed commands are projected through `QindaQt.AppShell 1.0` as
-`session.*`, `edit.*`, `view.clear`, and `file.quit` action identifiers.
+`session.*`, `edit.*`, `view.*`, `link.*`, and `file.quit` action identifiers.
 External activation is routed back to the corresponding local `QAction`, so a
 later global-menu exporter cannot bypass local enablement or lifecycle policy.
-S1 publishes the catalog but does not implement that exporter.
+The application publishes the catalog but does not implement that exporter.
 
 ## QST-1 theme and appearance
 
@@ -293,7 +357,14 @@ traversal/movement, and
 PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
 rejection, and staged installed metadata with installed-prefix theme
-resolution. Every Widgets-linked row sets `QT_QPA_PLATFORM=offscreen`, so
+resolution. S2 adds literal/case/regex policy, hostile-regex admission timing,
+match/no-match/wrap and focus return through a fake adapter, deterministic
+real-PTY search and current-selection highlighting through the production
+adapter, per-session volatile find state, link punctuation/quote/parenthesis/
+control/overlength/homoglyph cases, exact recording-spawner argv and
+confirmation, context-menu/AppShell routing, and qtermwidget include poison.
+The combined search/link UI row also sets `QT_FATAL_WARNINGS=1`. Every
+Widgets-linked row sets `QT_QPA_PLATFORM=offscreen`, so
 the selector runs in display-less environments with no display variables
 set. The installed and CLI rows
 exit before any window or session exists.
@@ -301,20 +372,21 @@ exit before any window or session exists.
 The S0 milestone separately required an exact private-Wayland live lane for
 the real shell's UTF-8 and ANSI rendering, keyboard-to-child byte flow,
 resize/SIGWINCH, populated select/copy and paste, normal and signal exit truth,
-restart/close teardown, first frame, and aggregate PSS. This S1 worker does not
+restart/close teardown, first frame, and aggregate PSS. This S2 worker does not
 rerun or extend nested-session evidence. Physical-display/GPU behavior and
-host-compositor interaction remain outside S1.
+host-compositor interaction remain outside S2.
 
-## Bounded S1 deferrals
+## Bounded S2 exclusions
 
 - The restore-policy flag is persisted, but tab inventory and terminal content
   are intentionally not; startup restores no prior session bytes or argv.
-- Search, OSC-8 hyperlinks, click-to-open, and link tooltips stay disabled.
+- OSC-8 semantic hyperlinks are not interpreted; S2 detects only printed
+  `http(s)` text and absolute local paths, and never click-to-opens them.
 - The GPU/scrolling optimizations of the widget are upstream concerns; no
   rendering-performance claim is made.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
 - A QindaQt-branded icon and global-menu export wait for later branding and
-  shell-integration slices; S1 only publishes the AppShell action catalog.
+  shell-integration slices; S2 only publishes the AppShell action catalog.
 - Whole-application assistive-technology proof, the nested screenshot matrix,
   and physical display/input qualification remain later integration gates.

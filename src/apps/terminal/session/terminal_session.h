@@ -82,6 +82,12 @@ public:
   void pastePrimarySelectionToSession();
   void selectAllInView();
   void clearView();
+  [[nodiscard]] TerminalSearchResult
+  searchScrollback(const TerminalSearchQuery &query,
+                   TerminalSearchDirection direction);
+  void clearScrollbackSearch();
+  [[nodiscard]] TerminalLinkSelection selectVisibleLink(int delta);
+  [[nodiscard]] TerminalLinkSelection currentVisibleLink();
 
 signals:
   void stateChanged(QindaQt::Apps::Terminal::TerminalSession::State state);
@@ -93,6 +99,7 @@ signals:
   void viewDisposalRequested();
   void selectionAvailable(bool hasSelection);
   void titleReceived(const QString &title);
+  void linkContextRequested(const QPoint &globalPosition);
   void shutdownFinished(bool clean, const QString &diagnostic);
 
 private:

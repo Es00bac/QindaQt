@@ -6,19 +6,23 @@
 #include "ui/terminal_appearance.h"
 
 #include <QByteArray>
+#include <QList>
 #include <QEvent>
 #include <QSocketNotifier>
 #include <QString>
 
 class QTermWidget;
+class QAction;
+class QLineEdit;
 
 namespace QindaQt::Apps::Terminal {
 
 class TerminalPtyBridge;
 
-// AGENT-CONTRACT (ADR-0040, superseding ADR-0030): This is the only
-// translation unit in the repository that includes qtermwidget6 headers or
-// links qtermwidget6. The pinned upstream teletype contract remains:
+// AGENT-CONTRACT (ADR-0040, superseding ADR-0030): This adapter's private
+// implementation units are the only Terminal sources that include
+// qtermwidget6 headers; only its target links qtermwidget6. The pinned
+// upstream teletype contract remains:
 //  - startTerminalTeletype() opens the widget's PTY and re-exposes keyboard
 //    bytes on the sendData signal;
 //  - getPtySlaveFd() yields the slave used as the child-output channel;
@@ -63,6 +67,12 @@ public:
   void clearView() override;
   [[nodiscard]] bool hasSelectedText() const override;
   void sendTextToSession(const QString &text) override;
+  [[nodiscard]] TerminalSearchResult
+  searchScrollback(const TerminalSearchQuery &query,
+                   TerminalSearchDirection direction) override;
+  void clearScrollbackSearch() override;
+  [[nodiscard]] TerminalLinkSelection selectVisibleLink(int delta) override;
+  [[nodiscard]] TerminalLinkSelection currentVisibleLink() override;
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
@@ -73,6 +83,10 @@ private:
   void closeChildChannel();
   void forwardChildOutput(const char *data, int length);
   void flushChildOutputToWidget();
+  void initializeSearchSurface();
+  [[nodiscard]] QString captureHistory(qsizetype byteLimit, bool retainTail,
+                                       bool *overflow) const;
+  [[nodiscard]] QList<TerminalLink> refreshVisibleLinks();
 
   QTermWidget *m_widget = nullptr;
   TerminalViewAppearance m_appearance;
@@ -90,6 +104,14 @@ private:
   QString m_transportDiagnostic;
   ProcessId m_childPid = 0;
   bool m_shutdownRequested = false;
+  QLineEdit *m_searchEditor = nullptr;
+  QAction *m_searchMatchCase = nullptr;
+  QAction *m_searchRegex = nullptr;
+  QAction *m_searchHighlightAll = nullptr;
+  TerminalSearchQuery m_searchQuery;
+  int m_searchMatchIndex = -1;
+  QList<TerminalLink> m_visibleLinks;
+  int m_visibleLinkIndex = -1;
 };
 
 } // namespace QindaQt::Apps::Terminal

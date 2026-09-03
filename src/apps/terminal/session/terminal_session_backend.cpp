@@ -8,4 +8,19 @@ TerminalSessionBackend::TerminalSessionBackend(QObject *parent)
 
 TerminalSessionBackend::~TerminalSessionBackend() = default;
 
+TerminalSearchResult TerminalSessionBackend::searchScrollback(
+    const TerminalSearchQuery &, TerminalSearchDirection) {
+  return {.diagnostic = QStringLiteral("Scrollback search is unavailable")};
+}
+
+void TerminalSessionBackend::clearScrollbackSearch() {}
+
+TerminalLinkSelection TerminalSessionBackend::selectVisibleLink(int) {
+  return {};
+}
+
+TerminalLinkSelection TerminalSessionBackend::currentVisibleLink() {
+  return {};
+}
+
 } // namespace QindaQt::Apps::Terminal

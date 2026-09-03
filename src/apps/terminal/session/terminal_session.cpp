@@ -82,6 +82,30 @@ void TerminalSession::clearView() {
   }
 }
 
+TerminalSearchResult TerminalSession::searchScrollback(
+    const TerminalSearchQuery &query, TerminalSearchDirection direction) {
+  return m_backend != nullptr
+             ? m_backend->searchScrollback(query, direction)
+             : TerminalSearchResult{
+                   .diagnostic = QStringLiteral("Scrollback is unavailable")};
+}
+
+void TerminalSession::clearScrollbackSearch() {
+  if (m_backend != nullptr) {
+    m_backend->clearScrollbackSearch();
+  }
+}
+
+TerminalLinkSelection TerminalSession::selectVisibleLink(int delta) {
+  return m_backend != nullptr ? m_backend->selectVisibleLink(delta)
+                              : TerminalLinkSelection{};
+}
+
+TerminalLinkSelection TerminalSession::currentVisibleLink() {
+  return m_backend != nullptr ? m_backend->currentVisibleLink()
+                              : TerminalLinkSelection{};
+}
+
 bool TerminalSession::start(const TerminalLaunchRequest &request,
                             const TerminalProfile &profile) {
   // AGENT-GUARD: Reaping the group leader does not prove that its descendants
@@ -181,6 +205,8 @@ bool TerminalSession::spawnGeneration() {
           &TerminalSession::selectionAvailable);
   connect(m_backend.get(), &TerminalSessionBackend::titleChanged, this,
           &TerminalSession::titleReceived);
+  connect(m_backend.get(), &TerminalSessionBackend::linkContextRequested, this,
+          &TerminalSession::linkContextRequested);
 
   setState(State::Running);
   emit terminalWidgetChanged(m_backend->terminalWidget());

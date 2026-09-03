@@ -31,6 +31,13 @@ inline constexpr const char *EditPaste = "edit.paste";
 inline constexpr const char *EditPasteSelection = "edit.paste-selection";
 inline constexpr const char *EditSelectAll = "edit.select-all";
 inline constexpr const char *ViewClear = "view.clear";
+inline constexpr const char *ViewFind = "view.find";
+inline constexpr const char *ViewFindNext = "view.find-next";
+inline constexpr const char *ViewFindPrevious = "view.find-previous";
+inline constexpr const char *LinkNext = "link.next";
+inline constexpr const char *LinkPrevious = "link.previous";
+inline constexpr const char *LinkCopy = "link.copy";
+inline constexpr const char *LinkOpen = "link.open";
 inline constexpr const char *FileQuit = "file.quit";
 } // namespace AppShellActionIds
 

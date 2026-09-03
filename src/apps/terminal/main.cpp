@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "links/terminal_link_opener.h"
 #include "profiles/terminal_profile_settings.h"
 #include "session/process_liveness.h"
 #include "session/terminal_launch_policy.h"
@@ -242,8 +243,14 @@ int main(int argc, char **argv) {
       std::move(context), std::move(factory), &monitor, TeardownBounds{},
       nullptr);
 
+  DetachedTerminalLinkSpawner linkSpawner;
+  MessageBoxTerminalLinkConfirmation linkConfirmation;
+  TerminalLinkOpener linkOpener(TerminalLinkOpener::resolveXdgOpen(),
+                                &linkSpawner, &linkConfirmation);
+
   TerminalWindow window(std::move(collection), *appearance.appearance,
-                        availableThemeIds(themeDirectories), &profileSettings);
+                        availableThemeIds(themeDirectories), &profileSettings,
+                        &linkOpener);
   window.resize(800, 500);
   bool firstSessionStarted = false;
   const auto startFirstSession = [&window, &profileSettings, &settingsClient,
