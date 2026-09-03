@@ -47,8 +47,9 @@ public:
   ~ApplicationScanner() override;
 
   // Performs the initial synchronous rebuild and installs watchers. Fails
-  // only on a contract violation (empty root list); missing or unreadable
-  // roots degrade the published catalog instead of failing startup.
+  // only on a contract violation (empty root list). A syscall-confirmed
+  // missing root is normal; unreadable roots and indeterminate root metadata
+  // degrade the published catalog instead of failing startup.
   [[nodiscard]] bool start(QString *error = nullptr);
   void stop();
   [[nodiscard]] bool started() const noexcept { return m_started; }

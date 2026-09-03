@@ -34,8 +34,11 @@ own seam, leaving the L0 model untouched:
   a file grows after metadata inspection. File count and decode ceilings apply;
   rebuilds publish a
   monotonically increasing generation so consumers fence stale reactions;
-  a debounced `QFileSystemWatcher` drives refresh. Unreadable roots, files,
-  and oversized documents are degraded truth with diagnostics, never fatal.
+  a debounced `QFileSystemWatcher` drives refresh. Root and applications-tree
+  status checks treat only syscall-confirmed `ENOENT` as normal absence;
+  permission-denied ancestor traversal and every other indeterminate status
+  are degraded truth with bounded diagnostics. Unreadable files and oversized
+  documents likewise degrade, never fatally.
 - **Execution planning** re-extracts only the four execution keys (`Exec`,
   `Terminal`, `Path`, `DBusActivatable`) from the raw document the scanner
   already validated and retained. The pure model still never carries a

@@ -127,11 +127,12 @@ completed rebuild publishes a monotonically increasing generation with the
 `catalogChanged` signal so consumers fence stale reactions. Unreadable roots
 or files and oversized documents produce scanner-level diagnostics (bounded,
 truncation-flagged) and set the surface's `Degraded` truth together with the
-catalog's document diagnostics. Existing unreadable data roots and dangling
-top-level `applications` links also degrade; a readable root without an
-`applications/` tree is normal and never degrades. The raw text and absolute
-path of each winning document are retained (bounded) exclusively for the
-execution adapter.
+catalog's document diagnostics. Root and `applications/` metadata checks are
+errno-aware: only a syscall-confirmed `ENOENT` is normal absence; denied
+ancestor traversal or any other indeterminate status degrades with a bounded
+diagnostic. Existing unreadable data roots and dangling top-level
+`applications` links also degrade. The raw text and absolute path of each
+winning document are retained (bounded) exclusively for the execution adapter.
 
 ### Pinned/recent persistence
 
@@ -235,14 +236,14 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-search-ranker` | Ranking, normalization, ties. |
 | `qindaqt.launcher-pinned-recent` | L0 pinned/recent model bounds and outcomes. |
 | `qindaqt.launcher-presentation` | L0 presentation states and focus order. |
-| `qindaqt.launcher-application-scanner` | Fixture trees, precedence, subdirectory ids, escaping application-tree links, FIFO/non-regular refusal, hostile/unreadable/oversized entries, hidden shadowing, watcher refresh, generation fencing, document retention, deterministic order. |
+| `qindaqt.launcher-application-scanner` | Fixture trees, precedence, subdirectory ids, escaping application-tree links, FIFO/non-regular refusal, hostile/unreadable/oversized entries, denied ancestor traversal versus confirmed absence, hidden shadowing, watcher refresh, generation fencing, document retention, deterministic order. |
 | `qindaqt.launcher-execution` | Entry/action key scope, quoting, field-code expansion/refusal, no-shell-interpolation, output ceilings. |
 | `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, entry-policy inheritance by actions, hostile action-key inverse control, terminal policy routing/refusal, failure truth, inert fixture spawns, environment sanitization. |
 | `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
-| `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, degraded truth, null-collaborator fail-closed. |
+| `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, denied-ancestor degraded truth with bounded diagnostics, null-collaborator fail-closed. |
 | `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
 | `qindaqt.launcher-runtime-boundary` | Source policy: pure model platform-free; platform reach confined to adapter files; poison negative control. |
-| `qindaqt.launcher-contract-text` | Mutation-sensitive launcher/applet-runtime/ADR and safety-comment truth for registry readiness, inert process fixtures, and wholesale stored-list rejection. |
+| `qindaqt.launcher-contract-text` | Mutation-sensitive launcher/applet-runtime/ADR and safety-comment truth for registry readiness, inert process fixtures, wholesale stored-list rejection, and ENOENT-only normal root absence. |
 | `qindaqt.launcher-installed-package` | Manifest/policy and complete compiled Launcher/Controls/Tokens import closure move to a new prefix, the original prefix disappears, and the warning-clean null-controller module loads only from the relocated stage under source/build poison. |
 
 ## Non-claims

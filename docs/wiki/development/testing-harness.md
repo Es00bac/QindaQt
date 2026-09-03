@@ -187,11 +187,12 @@ ctest --test-dir build/dev \
 
 Its adapter rows cover injected-root fixture trees with canonical containment,
 escaping-link and FIFO/non-regular negative controls, capped reads, debounced
-watcher refresh with generation fencing, explicit inaccessible-root and
-dangling-top-level-link degradation, Settings1 persistence round trips and
-unchanged-authority post-uncertainty convergence against a scripted fake
-transport, and seam-based execution with entry-policy action inheritance and a
-recording spawner/activator. The only real children are the inert `/bin/true`
+watcher refresh with generation fencing, explicit inaccessible-root,
+non-traversable-ancestor, and dangling-top-level-link degradation (with only
+syscall-confirmed absence remaining normal), Settings1 persistence round trips
+and unchanged-authority post-uncertainty convergence against a scripted fake
+transport, and seam-based execution with entry-policy action inheritance and
+a recording spawner/activator. The only real children are the inert `/bin/true`
 and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
 QST provisioning, pinned/recent/category/search rendering, persistence failure,
 Tab and cross-section traversal, Return/Space activation, Escape, and accessible

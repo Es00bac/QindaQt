@@ -57,6 +57,19 @@ forbid_text(
     "src/shell/launcher/src/launcher_persistence.h"
     "list is truncated at the model ceiling")
 
+require_text(
+    "src/shell/launcher/src/application_scanner.cpp"
+    "return errno == ENOENT ? PathPresence::Missing : PathPresence::Indeterminate")
+require_text(
+    "tests/shell/launcher/tst_application_scanner.cpp"
+    "root cannot reproduce ancestor traversal denial")
+require_text(
+    "docs/wiki/shell/launcher.md"
+    "only a syscall-confirmed `ENOENT` is normal absence")
+forbid_text(
+    "src/shell/launcher/src/application_scanner.cpp"
+    "if (!rootInfo.exists() && !rootInfo.isSymLink())")
+
 if(contract_failed)
     message(FATAL_ERROR "Launcher contract text guard failed")
 endif()
