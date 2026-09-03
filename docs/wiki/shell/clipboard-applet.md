@@ -66,7 +66,7 @@ Phases, exposed as `phaseText` with a fixed `phaseReasonText`:
 | `degraded` | Owner available but limited: read-only browsing; every mutating control is visibly disabled, and the controller refuses mutations anyway. |
 | `locked` | Session locked **or** privacy denied (distinct registered reason texts; no seventh phase). Content withheld. |
 | `disabled` | History disabled by user setting. |
-| `unavailable` | Owner lost, client unavailable, read capability denied, or a refused incoming snapshot (`invalid-snapshot`). |
+| `unavailable` | Owner lost, client unavailable, read capability denied, a refused incoming snapshot (`invalid-snapshot`), or a valid generation-ceiling purge that requires the Clipboard owner to restart (`lineage-exhausted-restart-required`). |
 
 Rows are bounded to `kMaxPresentedEntries` (32). Projection order is a stable
 partition — every pinned entry first, then every unpinned entry, each class in
@@ -103,12 +103,19 @@ projection or retained controller state:
   aggregate byte claim must be empty. These contradictions have distinct typed
   `SnapshotGateDecision` refusals rather than becoming retained hidden state.
   Withdrawing either authority must also advance generation from the last
-  accepted snapshot, matching C0's mandatory purge fence.
-- **Lineage monotonicity.** Accepted (generation, revision) is a high-water
-  mark: anything below it is stale or replayed and refused; re-stating the
-  exact accepted lineage is an idempotent re-delivery. Entries whose id
-  generation disagrees with the snapshot's own generation are refused (the C0
-  model purges on generation change, so mixed lineage cannot be legitimate).
+  accepted snapshot, matching C0's mandatory purge fence, except at
+  `UINT32_MAX`: that valid purge remains at the ceiling, empties content, and
+  latches terminal lineage exhaustion for the current owner.
+- **Lineage monotonicity.** Generation and revision are independent high-water
+  marks. C0 owns one revision counter for the full model lifetime and never
+  resets it on a generation advance, so either counter regressing is stale or
+  replayed and refused. At a higher generation, non-empty content with the
+  unchanged revision is also impossible: the purge itself leaves the new
+  generation empty, while any later admission would advance revision first.
+  Re-stating the exact accepted lineage and content is an idempotent
+  re-delivery. Entries whose id generation disagrees with the snapshot's own
+  generation are refused (the C0 model purges on generation change, so mixed
+  lineage cannot be legitimate).
 - **Owner lineage.** Content is accepted only under the owner recorded with
   the baseline. Owner loss or replacement voids the whole baseline — content,
   high-water fences, pending intents, search state — and the next snapshot
@@ -126,7 +133,9 @@ the rejection, and a structurally impossible authority snapshot poisons its
 generation so changing a flag or revision cannot arm rejected content;
 recovery requires a later valid generation or a fresh owner baseline. Other
 structural refusals poison their exact lineage until a later valid snapshot.
-Rejection is not a permanent latch.
+Rejection is not a permanent latch. A valid ceiling purge is not rejection:
+it has its own typed unavailable reason after authority returns, and a new
+owner's mandatory empty baseline clears that terminal state.
 
 ## Privacy, lock purge, and generation fencing
 
@@ -146,6 +155,16 @@ A lock is an authenticated authority denial, not a presentation hint:
   state.
 - The generation bump fences the whole pre-lock lineage: pre-lock entry ids
   never resolve again, and unlock cannot redisclose pre-lock content.
+- At `UINT32_MAX`, C0 cannot bump generation but still performs the purge and
+  leaves revision unchanged. The controller accepts that empty denial as valid
+  and shows the normal `locked` phase while the session is locked. On unlock it
+  reports `unavailable` with
+  `lineage-exhausted-restart-required`, because C0 refuses every later content
+  operation for that model lifetime. Owner loss/replacement clears the latch;
+  the replacement owner must still establish the existing content-empty fresh
+  baseline before the applet returns to `ready`. Any content, revision change,
+  or generation change claimed by the exhausted owner is impossible and is
+  refused whole.
 
 Search reply freshness uses a controller-internal monotonically increasing
 query generation plus the complete snapshot lineage at dispatch: generation,
@@ -211,9 +230,9 @@ ctest --test-dir build/dev -R '^qindaqt\.clipboard-applet-' --output-on-failure
 | `qindaqt.clipboard-applet-model` | Pure projection: phases, fail-closed ordering, pinned-first partition, bounds, accessibility phrases, determinism, and exact whole-projection rejection of floor/bound/hostile-match violations. |
 | `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing with presented owner-A content, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion. |
 | `qindaqt.clipboard-applet-fencing` | Hostile-seam attribution: unique-but-unordered ids, complete generation/revision/entry-set search fencing, superseded-reply flushes inside dispatch calls, injected/duplicated completions, cross-request synchronous drain, monotonic promote ticks. |
-| `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, (generation, revision) high-water, owner-lineage fencing with owner-A content, fail-closed rejection and recovery, missing/mismatched completion-lineage rejection, promote-tick exhaustion. |
+| `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, independent generation/lifetime-revision high-waters, impossible post-purge content, owner-lineage fencing with owner-A content, ceiling-exhaustion owner recovery, fail-closed rejection and recovery, missing/mismatched completion-lineage rejection, promote-tick exhaustion. |
 | `qindaqt.clipboard-applet-snapshot-invariants` | Whole C0 snapshot truth: nonzero generation, denied/disabled emptiness, exact aggregate sum, unique identities, pin ceiling, and denied-content lineage poisoning. |
-| `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, independent and overlapping host denials surviving unlock, error mapping, owner fencing over the real C0 model. |
+| `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, valid real-C0 purge at the generation ceiling with typed restart-required truth, independent and overlapping host denials surviving unlock, error mapping, owner fencing over the real C0 model. |
 | `qindaqt.clipboard-applet-qml-offscreen` | Compiled module states: ready/degraded/locked/disabled/unavailable/empty/search presentation. |
 | `qindaqt.clipboard-applet-qml-accessibility-offscreen` | Accessible roles, names, descriptions, and enabled/busy state for every interactive element: search field and clear, Pin, Delete, both Clear buttons, feedback dismissal (alert role). |
 | `qindaqt.clipboard-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal across every interactive element and Space/Return/Delete keyboard activation with exact intent arguments. |

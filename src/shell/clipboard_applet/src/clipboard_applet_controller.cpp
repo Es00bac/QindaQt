@@ -211,6 +211,14 @@ void ClipboardAppletController::reproject()
         // until a fresh valid snapshot is accepted.
         state = ClientState::Unavailable;
         reason = QStringLiteral("invalid-snapshot");
+    } else if (m_lineageExhausted && !locked) {
+        // A valid purge at UINT32_MAX leaves C0 unable to admit, promote,
+        // remove, pin, clear, or search for this model lifetime. Do not call
+        // that valid terminal state an invalid snapshot, and do not present
+        // active controls that can only fail. Owner replacement resets this
+        // latch through dropAcceptedBaseline().
+        state = ClientState::Unavailable;
+        reason = QStringLiteral("lineage-exhausted-restart-required");
     } else if (!m_hasBaseline && ownerAvailable
                && (state == ClientState::Ready || state == ClientState::Degraded)) {
         // No accepted snapshot under the current owner yet: the documented
@@ -249,11 +257,13 @@ void ClipboardAppletController::onSnapshotChanged(
     const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
     const bool hadBaseline = m_hasBaseline;
+    const bool wasLineageExhausted = m_lineageExhausted;
     const auto previousSnapshot = m_snapshot;
     const quint32 previousGeneration = m_baselineGeneration;
     acceptSnapshot(snapshot);
     if (hadBaseline && m_hasBaseline && m_snapshot != previousSnapshot) {
-        if (m_baselineGeneration != previousGeneration) {
+        if (m_baselineGeneration != previousGeneration
+            || (!wasLineageExhausted && m_lineageExhausted)) {
             cancelPendingForGeneration(previousGeneration);
         }
         if (m_isSearchActive) {
