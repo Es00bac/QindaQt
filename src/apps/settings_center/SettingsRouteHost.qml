@@ -12,11 +12,13 @@ Item {
     property var networkSettings: null
     required property var customizeSettings
     property var audioSettings: null
+    property var bluetoothSettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
     property Component networkComponent: null
     property Component audioComponent: null
+    property Component bluetoothComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -42,6 +44,8 @@ Item {
               ? customizeLoader
             : navigation.activeRouteComponent === "audio"
               ? audioLoader
+            : navigation.activeRouteComponent === "bluetooth"
+              ? bluetoothLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -167,6 +171,18 @@ Item {
     }
 
     Loader {
+        id: bluetoothLoader
+        objectName: host.objectNamePrefix + "BluetoothLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "bluetooth"
+                && host.bluetoothComponent !== null
+        sourceComponent: host.bluetoothComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -180,7 +196,8 @@ Item {
                         && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
                         && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
                         && host.navigation.activeRouteComponent !== "customize"
-                        && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)
+                        && (host.navigation.activeRouteComponent !== "bluetooth" || host.bluetoothComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }
