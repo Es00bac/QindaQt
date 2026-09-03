@@ -80,6 +80,7 @@ composition separate:
 | `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
+| [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard mutation and no session actions | Installed eighth Settings route; no platform maturity claim |
 
 The service coordinator may not own UPower, logind, profile-daemon, or sysfs
 transport objects. Dedicated adapters own those resources behind the injected
