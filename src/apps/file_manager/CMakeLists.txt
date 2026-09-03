@@ -4,11 +4,28 @@ qt_add_library(qindaqt_file_manager_support STATIC)
 target_sources(
     qindaqt_file_manager_support
     PRIVATE
+        app_shell/file_manager_action_catalog.cpp
+        mutation/device_resolver.cpp
+        mutation/home_trash.cpp
+        mutation/local_mutation_backend.cpp
+        mutation/mutation_controller.cpp
+        mutation/mutation_types.cpp
+        mutation/safe_path_operations.cpp
+        mutation/safe_tree_operations.cpp
         model/launch_intent.cpp
         model/local_directory_lister.cpp
         model/navigation_controller.cpp
         model/navigation_history.cpp
     PUBLIC
+        app_shell/file_manager_action_catalog.h
+        mutation/device_resolver.h
+        mutation/home_trash.h
+        mutation/local_mutation_backend.h
+        mutation/mutation_backend.h
+        mutation/mutation_controller.h
+        mutation/mutation_types.h
+        mutation/safe_path_operations.h
+        mutation/safe_tree_operations.h
         model/directory_lister.h
         model/file_manager_types.h
         model/launch_intent.h
@@ -17,7 +34,10 @@ target_sources(
         model/navigation_history.h
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(qindaqt_file_manager_support PUBLIC Qt6::Core Qt6::Gui)
+target_link_libraries(
+    qindaqt_file_manager_support
+    PUBLIC QindaQt::AppShell Qt6::Core Qt6::Gui
+)
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_file_manager_support)
@@ -37,6 +57,7 @@ qt_add_qml_module(
         ui/Breadcrumb.qml
         ui/EntryList.qml
         ui/StatePane.qml
+        ui/MutationDialogs.qml
 )
 
 set(qindaqt_file_manager_install_bindir "${CMAKE_INSTALL_BINDIR}")
@@ -73,6 +94,7 @@ target_link_libraries(
     PRIVATE
         qindaqt_file_manager_support
         QindaQt::DesignTokens
+        QindaQt::AppShell
         QindaQt::TokensQml
         qindaqt_themes
         Qt6::Core
@@ -81,14 +103,19 @@ target_link_libraries(
         Qt6::Quick
         Qt6::QuickControls2
 )
-add_dependencies(qindaqt-file-manager qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin)
+add_dependencies(
+    qindaqt-file-manager
+    qindaqt_app_shellplugin
+    qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin
+)
 target_compile_features(qindaqt-file-manager PRIVATE cxx_std_20)
 set_target_properties(
     qindaqt-file-manager
     PROPERTIES
         CXX_EXTENSIONS OFF
         INSTALL_RPATH
-            "$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/Tokens"
+            "$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/AppShell;$ORIGIN/${qindaqt_file_manager_qml_relative_path}/QindaQt/Tokens"
 )
 qindaqt_enable_warnings(qindaqt-file-manager)
 
@@ -109,13 +136,20 @@ install(
 )
 
 # FileManager is a usable package component, not merely an executable payload.
-# Repeat its two public QML runtime dependencies into the same component so
+# Repeat its three public QML runtime dependencies into the same component so
 # component-only staging and downstream packages cannot omit a backing library,
-# plugin, qmldir, or Controls source named by qmldir.
+# plugin, qmldir, or QML source named by qmldir.
 qt_query_qml_module(
     qindaqt_tokens_qml
     QMLDIR qindaqt_file_manager_tokens_qmldir
     TYPEINFO qindaqt_file_manager_tokens_typeinfo
+)
+qt_query_qml_module(
+    qindaqt_app_shell
+    QMLDIR qindaqt_file_manager_app_shell_qmldir
+    TYPEINFO qindaqt_file_manager_app_shell_typeinfo
+    QML_FILES qindaqt_file_manager_app_shell_qml_files
+    QML_FILES_DEPLOY_PATHS qindaqt_file_manager_app_shell_deploy_paths
 )
 qt_query_qml_module(
     qindaqt_controls_qml
@@ -124,6 +158,34 @@ qt_query_qml_module(
     QML_FILES qindaqt_file_manager_controls_qml_files
     QML_FILES_DEPLOY_PATHS qindaqt_file_manager_controls_deploy_paths
 )
+install(
+    TARGETS
+        qindaqt_app_shell
+        qindaqt_app_shellplugin
+    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
+    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell" COMPONENT FileManager
+)
+install(
+    FILES
+        "${qindaqt_file_manager_app_shell_qmldir}"
+        "${qindaqt_file_manager_app_shell_typeinfo}"
+    DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT FileManager
+)
+foreach(qml_file deploy_path IN ZIP_LISTS
+        qindaqt_file_manager_app_shell_qml_files
+        qindaqt_file_manager_app_shell_deploy_paths)
+    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+    cmake_path(GET deploy_path FILENAME deploy_name)
+    install(
+        FILES "${qml_file}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell/${deploy_directory}"
+        RENAME "${deploy_name}"
+        COMPONENT FileManager
+    )
+endforeach()
+
 install(
     TARGETS
         qindaqt_tokens_qml

@@ -8,6 +8,9 @@ Rectangle {
     id: root
 
     required property var navigationController
+    required property var mutationController
+    required property var appCoordinator
+    property alias primaryFocusItem: newFolderButton
 
     implicitHeight: row.implicitHeight + Tokens.space["3"] * 2
     color: Tokens.bg.raised
@@ -18,6 +21,15 @@ Rectangle {
         anchors.margins: Tokens.space["3"]
         spacing: Tokens.space["2"]
 
+        Qinda.Button {
+            id: newFolderButton
+            objectName: "newFolderButton"
+            text: qsTr("New Folder")
+            available: !root.mutationController.busy
+            emphasized: true
+            accessibleDescription: qsTr("Create a folder in the current location")
+            onClicked: root.appCoordinator.activateAction("file.new-folder")
+        }
         Qinda.Button {
             objectName: "navigateBackButton"
             text: qsTr("Back")
@@ -43,6 +55,14 @@ Rectangle {
             onClicked: root.navigationController.goUp()
         }
         Item { Layout.fillWidth: true }
+        Qinda.Button {
+            objectName: "restoreLastButton"
+            text: qsTr("Restore")
+            available: root.mutationController.canRestore
+            emphasized: false
+            accessibleDescription: qsTr("Restore the last item moved to Trash")
+            onClicked: root.appCoordinator.activateAction("file.restore-last")
+        }
         Qinda.Button {
             objectName: "refreshButton"
             text: qsTr("Refresh")

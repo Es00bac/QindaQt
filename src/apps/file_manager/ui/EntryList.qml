@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as T
 import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as Qinda
 
@@ -8,6 +9,12 @@ Item {
     id: root
 
     required property var navigationController
+    required property var appCoordinator
+
+    function currentEntry() {
+        return listView.currentIndex >= 0
+            ? root.navigationController.entries[listView.currentIndex] : null
+    }
 
     function activateCurrent() {
         if (listView.currentIndex >= 0) {
@@ -66,6 +73,11 @@ Item {
                 if (event.key === Qt.Key_Backspace) {
                     root.navigationController.goUp()
                     event.accepted = true
+                } else if (event.key === Qt.Key_Menu
+                           || (event.key === Qt.Key_F10
+                               && (event.modifiers & Qt.ShiftModifier))) {
+                    contextMenu.popup()
+                    event.accepted = true
                 }
             }
 
@@ -101,12 +113,43 @@ Item {
                     id: hoverArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: listView.currentIndex = delegateRoot.index
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: (mouse) => {
+                        listView.currentIndex = delegateRoot.index
+                        if (mouse.button === Qt.RightButton)
+                            contextMenu.popup()
+                    }
                     onDoubleClicked: {
                         listView.currentIndex = delegateRoot.index
                         root.activateCurrent()
                     }
                 }
+            }
+        }
+
+        T.Menu {
+            id: contextMenu
+            objectName: "entryContextMenu"
+
+            T.MenuItem {
+                objectName: "contextRenameAction"
+                text: qsTr("Rename")
+                onTriggered: root.appCoordinator.activateAction("file.rename")
+            }
+            T.MenuItem {
+                objectName: "contextCopyAction"
+                text: qsTr("Copy To…")
+                onTriggered: root.appCoordinator.activateAction("file.copy")
+            }
+            T.MenuItem {
+                objectName: "contextMoveAction"
+                text: qsTr("Move To…")
+                onTriggered: root.appCoordinator.activateAction("file.move")
+            }
+            T.MenuItem {
+                objectName: "contextTrashAction"
+                text: qsTr("Move to Trash")
+                onTriggered: root.appCoordinator.activateAction("file.trash")
             }
         }
 
