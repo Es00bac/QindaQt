@@ -1732,6 +1732,34 @@ events, primary-transfer sequences beyond the one exact dual-row transfer,
 mirroring, GPU/OpenGL/DRM, physical input, perceptual baseline comparison, and
 physical hardware remain unqualified.
 
+## Bluetooth BlueZ B1 private-bus proof
+
+The focused selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.bluetooth-bluez-'
+```
+
+`bluetooth-bluez-adapter` and `bluetooth-bluez-operations` each start their
+own private `dbus-daemon`, inject that connection into the production
+`BluezAdapterBackend`, and provide a fake exact owner of `org.bluez`. They
+cover absent startup, ObjectManager inventory, Adapter1/Device1 property and
+interface churn, bounded hostile values, deterministic duplicate suppression,
+power, one-session reference-counted discovery, connect/disconnect replies,
+caller and BlueZ owner loss, owner return, and late-reply fencing. The mode row
+proves only exact `deterministic` opts out of the packaged production default.
+The installed-boundary row stages only `QindaQtBluetoothB1` and verifies its
+archive plus exact two-header public surface without private transport/store
+leaks. The boundary and boundary-poison rows enforce module direction, the
+permitted BlueZ method set, injected-bus test isolation, composition linkage,
+install component registration, and hostile-checker rejection.
+
+These rows never use the ambient session/system bus, a host BlueZ, rfkill,
+Bluetooth hardware, uinput, or a nested compositor. They do not qualify a
+physical adapter, a distribution BlueZ build, pairing Agent1, suspend/resume,
+or Bluetooth audio routing.
+
 ## Clipboard C0 model proof
 
 The focused Clipboard C0 selector is:
