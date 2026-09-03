@@ -64,10 +64,15 @@ private slots:
 void ControlsVisualTests::initTestCase()
 {
     pinDeterministicFonts();
-    QVERIFY2(QFontDatabase::families().contains(QStringLiteral("Noto Sans")),
-             "visual fixture requires the named Noto Sans host family");
-    QVERIFY2(QFontDatabase::families().contains(QStringLiteral("Noto Sans Mono")),
-             "visual fixture requires the named Noto Sans Mono host family");
+    // AGENT-GUARD: These are the substitution targets, not host-font checks.
+    // The vendored fixture in QINDAQT_CONTROLS_FONT_DIR declares these
+    // repository-owned families; pinDeterministicFonts() fails closed when a
+    // fixture file is missing, unreadable, or renamed, so reaching this point
+    // means the families were registered from repository-owned font bytes.
+    QVERIFY2(QFontDatabase::families().contains(QStringLiteral("QindaQt Sans")),
+             "byte-pinned visual fixture must expose the registered QindaQt Sans family");
+    QVERIFY2(QFontDatabase::families().contains(QStringLiteral("QindaQt Sans Mono")),
+             "byte-pinned visual fixture must expose the registered QindaQt Sans Mono family");
 }
 
 void ControlsVisualTests::matchesReviewedBaselines_data()
