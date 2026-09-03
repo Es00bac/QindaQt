@@ -36,6 +36,17 @@ void registerItem(QDBusConnection &itemConnection, const QString &path)
     QCOMPARE(pending.reply().type(), QDBusMessage::ReplyMessage);
 }
 
+void emitItemUnregistered(QDBusConnection &watcherConnection,
+                          const QString &serviceId)
+{
+    auto message = QDBusMessage::createSignal(
+        QString::fromLatin1(kWatcherObjectPath),
+        QString::fromLatin1(kWatcherInterfaceName),
+        QStringLiteral("StatusNotifierItemUnregistered"));
+    message << QVariant(serviceId);
+    QVERIFY(watcherConnection.send(message));
+}
+
 } // namespace
 
 class StatusNotifierMonitorTests final : public QObject
@@ -45,6 +56,7 @@ class StatusNotifierMonitorTests final : public QObject
 private slots:
     void populatesRegistryFromLiveWatcher();
     void populatesTwoPathsFromOneOwner();
+    void preservesOwnerGenerationAfterLastPathRetires();
     void populatesRootObjectPath();
     void removesItemAndFreesOwnerOnDisconnect();
     void rebaselinesPopulationWhenWatcherRestarts();
@@ -138,6 +150,61 @@ void StatusNotifierMonitorTests::populatesTwoPathsFromOneOwner()
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-multi"));
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-multi"));
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-multi"));
+}
+
+void StatusNotifierMonitorTests::preservesOwnerGenerationAfterLastPathRetires()
+{
+    // AGENT-NOTE: second-review P1-1 regression: a path-retirement signal is
+    // not owner loss. A later path from the same live unique owner and watcher
+    // epoch must retain its generation even when no item slot survived.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-watcher-path-turnover"));
+    auto monitorConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-client-path-turnover"));
+    auto itemConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-item-path-turnover"));
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+
+    auto first = std::make_unique<FakeStatusNotifierItem>();
+    auto second = std::make_unique<FakeStatusNotifierItem>();
+    first->id = QStringLiteral("org.qindaqt.turnover.first");
+    second->id = QStringLiteral("org.qindaqt.turnover.second");
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/One"), first.get()));
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/Two"), second.get()));
+    registerItem(itemConnection, QStringLiteral("/One"));
+
+    StatusNotifierRegistry registry;
+    StatusNotifierItemMonitor monitor(monitorConnection, registry, 500);
+    monitor.attach(&registry);
+    QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 1, 2'000);
+    const quint64 epoch = registry.currentWatcherEpoch();
+    const quint64 generation = registry.itemKeys().constFirst().generation;
+    const QString owner = itemConnection.baseService();
+
+    emitItemUnregistered(watcherConnection, owner + QStringLiteral("/One"));
+    QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 0, 2'000);
+    QVERIFY(registry.isOwnerLive(owner));
+    QCOMPARE(registry.currentWatcherEpoch(), epoch);
+    QCOMPARE(registry.currentGeneration(owner), generation);
+
+    registerItem(itemConnection, QStringLiteral("/Two"));
+    QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 1, 2'000);
+    const OwnerKey replacement = registry.itemKeys().constFirst();
+    QCOMPARE(replacement.uniqueName, owner);
+    QCOMPARE(replacement.objectPath, QStringLiteral("/Two"));
+    QCOMPARE(replacement.generation, generation);
+    QCOMPARE(registry.currentWatcherEpoch(), epoch);
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-path-turnover"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-path-turnover"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-path-turnover"));
 }
 
 void StatusNotifierMonitorTests::populatesRootObjectPath()

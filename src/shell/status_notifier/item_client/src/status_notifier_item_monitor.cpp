@@ -239,6 +239,7 @@ void StatusNotifierItemMonitor::handleNameOwnerChanged(const QString &name,
     // are refused by the registry as stale — harmless by design.
     const quint64 generation = m_registry.currentGeneration(name);
     m_sink->ownerLost(m_epoch, name, generation);
+    m_ownerGenerations.remove(name);
     for (auto iterator = m_slots.begin(); iterator != m_slots.end();) {
         if (iterator.key().startsWith(name + QLatin1Char('/'))) {
             if (iterator->populationPending) {
@@ -392,16 +393,11 @@ void StatusNotifierItemMonitor::watchItemOwner(const QString &uniqueName,
     if (m_slots.contains(slotKey)) {
         return;
     }
-    // AGENT-GUARD: P1-3 showed that beginOwnerGeneration per path invalidates
-    // the first client and wedges population. An owner gets exactly one
-    // generation per monitor epoch; all of its object paths share it.
-    quint64 generation = 0;
-    for (auto iterator = m_slots.cbegin(); iterator != m_slots.cend(); ++iterator) {
-        if (iterator->key.uniqueName == uniqueName) {
-            generation = iterator->key.generation;
-            break;
-        }
-    }
+    // AGENT-GUARD: Item-path lifetime is shorter than unique-owner lifetime.
+    // The owner ledger, not surviving path slots, is the epoch-generation
+    // authority; otherwise retiring its last path lets a later path rebase a
+    // still-live owner within the same watcher epoch.
+    quint64 generation = m_ownerGenerations.value(uniqueName);
     if (generation == 0) {
         generation = m_sink->beginOwnerGeneration(m_epoch, uniqueName);
     }
@@ -410,6 +406,7 @@ void StatusNotifierItemMonitor::watchItemOwner(const QString &uniqueName,
         // observed and last-known-good truth is left untouched.
         return;
     }
+    m_ownerGenerations.insert(uniqueName, generation);
     OwnerKey key;
     key.uniqueName = uniqueName;
     key.objectPath = objectPath;
@@ -458,6 +455,7 @@ void StatusNotifierItemMonitor::resetEpochState()
         delete iterator->client;
     }
     m_slots.clear();
+    m_ownerGenerations.clear();
     m_populationOutstanding = 0;
     m_populationInFlight = false;
 }
