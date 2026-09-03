@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+#pragma once
+
+#include <qindaqt/shell/status_notifier/status_notifier_types.h>
+#include <qindaqt/shell/status_notifier/status_notifier_validation.h>
+
+#include <QtDBus/QDBusConnection>
+
+#include <QtCore/QObject>
+
+#include <functional>
+
+namespace QindaQt::StatusNotifier
+{
+
+// Wire-side details that the ADR-0032 value model deliberately has no slot
+// for. They are recorded for later composition — the Global Menu G1 lane
+// consumes `menuObjectPath` through the shared dbusmenu adapter, and window
+// routing consumes `windowId` — but they never reach the registry descriptor
+// and are never rendered by this module.
+struct ItemWireDetails {
+    quint32 windowId = 0;
+    QString overlayIconName;
+    bool itemIsMenu = false;
+    // The DBusMenu exporter object path; recorded but not rendered here.
+    QString menuObjectPath;
+
+    friend bool operator==(const ItemWireDetails &, const ItemWireDetails &) = default;
+};
+
+// Result of one asynchronous descriptor fetch. `replyReceived` is false when
+// no usable reply ever arrived (D-Bus error, timeout, or the generation fence
+// discarded a late reply); consumers must still treat the key as observed
+// during population by registering the invalid descriptor, because the
+// registry counts an admitted-or-rejected current-epoch registration as
+// observing its exact live key.
+struct ItemDescriptorFetch {
+    bool replyReceived = false;
+    // The exact key the fetch was issued for, generation included, so
+    // consumers can route and fence without keeping their own bookkeeping.
+    OwnerKey key;
+    ItemDescriptor descriptor;
+    ItemWireDetails wire;
+    ValidationOutcome validation;
+    // The owner generation the fetch was tagged with; consumers fence on it.
+    quint64 generation = 0;
+
+    friend bool operator==(const ItemDescriptorFetch &, const ItemDescriptorFetch &) = default;
+};
+
+// AGENT-CONTRACT: Asynchronous reader for one org.kde.StatusNotifierItem
+// object. It fetches the full property set (Category, Id, Title, Status,
+// WindowId, IconName, IconPixmap, OverlayIconName, AttentionIconName,
+// AttentionPixmap, AttentionMovieName, ToolTip, ItemIsMenu, Menu), decodes
+// hostile input defensively, validates through the foundation admission gate,
+// and re-fetches whenever any New* signal arrives.
+//
+// Bounds and fail-closed behavior: pixmap dimensions, byte counts, aggregate
+// counts, and text budgets are enforced by the foundation validators; a decode
+// shape error or an out-of-bounds value yields an invalid `validation` while
+// the descriptor still carries the decoded content so the registry can degrade
+// truthfully. Unknown properties are ignored; properties with unexpected
+// types are ignored; a missing property decodes to its default.
+//
+// Late-reply fencing: every emitted result is tagged with the owner generation
+// captured at construction; the injected `GenerationFence` is consulted before
+// a result is emitted and a fenced reply is dropped silently, so a reply that
+// races owner loss or a watcher rebaseline can never resurrect a removed item.
+//
+// Lifetime and threading: the injected connection is not owned and must
+// outlive the client. All signal traffic stays on the constructing thread;
+// there is no internal synchronization. The intent calls (activate and
+// friends) are fire-and-forget and do not validate: callers must evaluate and
+// revalidate a RequestIntent through the registry before dispatching.
+class StatusNotifierItemClient : public QObject
+{
+    Q_OBJECT
+
+public:
+    using GenerationFence = std::function<bool(quint64 generation)>;
+
+    StatusNotifierItemClient(QDBusConnection connection,
+                             const OwnerKey &key,
+                             GenerationFence generationFence,
+                             int fetchTimeoutMs = 5'000,
+                             QObject *parent = nullptr);
+    ~StatusNotifierItemClient() override;
+
+    [[nodiscard]] OwnerKey key() const;
+
+    // Starts an asynchronous fetch; concurrent New* notifications coalesce
+    // into at most one in-flight fetch. Does nothing while a fetch is in
+    // flight or when the generation fence already reports the owner stale.
+    void fetchDescriptor();
+
+    void activate(int x, int y);
+    void secondaryActivate(int x, int y);
+    void contextMenu(int x, int y);
+    // Orientation must be exactly "horizontal" or "vertical"; anything else
+    // is refused (returns false) and nothing is sent.
+    [[nodiscard]] bool scroll(int delta, const QString &orientation);
+
+signals:
+    void descriptorFetched(const QindaQt::StatusNotifier::ItemDescriptorFetch &result);
+
+private slots:
+    void handleNewTitle();
+    void handleNewIcon();
+    void handleNewAttentionIcon();
+    void handleNewOverlayIcon();
+    void handleNewToolTip();
+    void handleNewStatus(const QString &status);
+    void handleNewIconThemePath(const QString &path);
+
+private:
+    void scheduleRefetch();
+    void sendIntent(const QString &member, const QList<QVariant> &arguments);
+    void finishFetch(ItemDescriptorFetch result);
+    [[nodiscard]] bool fenceOpen() const;
+
+    QDBusConnection m_connection;
+    OwnerKey m_key;
+    GenerationFence m_generationFence;
+    int m_fetchTimeoutMs;
+    bool m_fetchInFlight = false;
+};
+
+} // namespace QindaQt::StatusNotifier
+
+Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemWireDetails)
+Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemDescriptorFetch)

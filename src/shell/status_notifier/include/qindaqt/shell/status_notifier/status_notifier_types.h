@@ -23,12 +23,16 @@ enum class ItemStatus : quint32 {
     NeedsAttention = 2,
 };
 
-// The three user-visible item operations the tray can intend. S0 records and
+// The user-visible item operations the tray can intend. S0 records and
 // validates these intents only; nothing in this module executes them.
+// Scroll (added with the S1 transport milestone) is validated like the other
+// intents but carries no keyboard route yet, so presentation records it
+// truthfully as pointer-only.
 enum class RequestKind : quint32 {
     Activate = 0,
     ContextMenu = 1,
     SecondaryActivate = 2,
+    Scroll = 3,
 };
 
 enum class PresentationState : quint32 {
