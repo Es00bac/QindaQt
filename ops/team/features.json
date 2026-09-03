@@ -255,21 +255,21 @@
           "id": "QQ-004.12",
           "title": "Audio applet",
           "weight": 2,
-          "state": "WIRED",
-          "summary": "The bounded Audio applet model, controller, and compiled QML module are registered against the public AudioClient boundary with fail-closed focused tests.",
+          "state": "EXECUTABLE",
+          "summary": "The production Audio applet composes only the public AudioClient through a shell-private controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled keyboard-accessible QML, exact-owner replacement fences, and pure/runtime boundary gates with independent poisons; every install component that carries the production shell now ships its Controls/Tokens runtime closure, proven by a component-closure row.",
           "evidence": [
             {
               "kind": "commit",
-              "reference": "85962f1ebbbf66d1b6ae0626925d62fa5e64782a",
-              "summary": "The accepted Audio applet is integrated with URI-correct QML output and focused model/controller tests."
+              "reference": "14f3e670d66988ec87648f195b91e26c56a45fbf",
+              "summary": "The accepted composition (caaf7d9, rechecked 0/0/0/0 on Codex) plus the staging-closure repairs (b623b00 rejected 0/1/0/0, 14f3e67 accepted 0/0/0/0 by Frances Bilas) are integrated; the merged tree passes applet 22/22, integrity/runtime/closure 7/7 in Debug and Release."
             },
             {
               "kind": "test",
-              "reference": "361e601373daf3cbf5f2874b753e7469ca467665",
-              "summary": "The frozen combined checkpoint passed 236/236 tests and warning-free source/documentation gates."
+              "reference": "docs/wiki/shell/audio-applet.md",
+              "summary": "The owning page records the production composition rows, the boundary poisons, and explicit nonclaims."
             }
           ],
-          "caveat": "Manifest/policy registration, production shell composition, rendered interaction, and physical-device qualification remain."
+          "caveat": "Audio truth still comes from the isolated Audio1 runtime: physical devices, nested panel interaction, and hardware qualification remain."
         },
         {
           "id": "QQ-004.13",
