@@ -167,6 +167,26 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
   return {};
 }
 
+// The option registrations live outside main() to keep the composition root
+// within the function-length budget after the F1 font bootstrap line.
+void registerCommandLineOptions(QCommandLineParser &parser) {
+  parser.addOption({QStringLiteral("theme"), QStringLiteral("QindaQt theme identifier"),
+                    QStringLiteral("id"), QStringLiteral("qinda-dark")});
+  parser.addOption({QStringLiteral("theme-directory"),
+                    QStringLiteral("Additional local theme directory"), QStringLiteral("path")});
+  parser.addOption({QStringLiteral("check-theme"),
+                    QStringLiteral("Validate the selected theme through QST-1 and exit")});
+  parser.addOption(
+      {QStringLiteral("check-qml-root"),
+       QStringLiteral("Construct the QML root for an installed-package probe and exit")});
+  parser.addOption(
+      {QStringLiteral("check-ui-contract"),
+       QStringLiteral("Verify the mutation action and accessible object contract and exit")});
+  parser.addOption(
+      {QStringLiteral("check-ui-actions"),
+       QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
+}
+
 } // namespace
 
 // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
@@ -187,21 +207,7 @@ int main(int argc, char **argv) {
   parser.setApplicationDescription(QStringLiteral("QindaQt local file manager"));
   parser.addHelpOption();
   parser.addVersionOption();
-  parser.addOption({QStringLiteral("theme"), QStringLiteral("QindaQt theme identifier"),
-                    QStringLiteral("id"), QStringLiteral("qinda-dark")});
-  parser.addOption({QStringLiteral("theme-directory"),
-                    QStringLiteral("Additional local theme directory"), QStringLiteral("path")});
-  parser.addOption({QStringLiteral("check-theme"),
-                    QStringLiteral("Validate the selected theme through QST-1 and exit")});
-  parser.addOption(
-      {QStringLiteral("check-qml-root"),
-       QStringLiteral("Construct the QML root for an installed-package probe and exit")});
-  parser.addOption(
-      {QStringLiteral("check-ui-contract"),
-       QStringLiteral("Verify the mutation action and accessible object contract and exit")});
-  parser.addOption(
-      {QStringLiteral("check-ui-actions"),
-       QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
+  registerCommandLineOptions(parser);
   parser.addPositionalArgument(QStringLiteral("folder"),
                                QStringLiteral("Local folder to open"), QStringLiteral("[folder]"));
   parser.process(application);
