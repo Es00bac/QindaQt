@@ -160,7 +160,18 @@ Every capture is joined to the exact compositor-authority surface inventory
 taken for that phase. Before capture, the probe polls through asynchronous
 layer-surface teardown and admits only a settled inventory; a mapped 0x0 role,
 malformed geometry, or geometry outside the framebuffer cannot qualify a
-hidden phase. The deterministic `validator-unit` row injects a fake authority
+hidden phase. Authority-settlement failures and framebuffer-capture failures
+are reported separately so a missing capture dependency cannot be mistaken for
+a visibility-policy failure.
+
+The system-KWin qualification intentionally combines `/usr/bin/kwin_wayland`
+with the private Weston 15 parent. The sandbox-wide loader path belongs to KWin
+and excludes the parent prefix; otherwise KWin can load an ABI-incompatible
+private `libkwin`. The capture probe therefore gives only its
+`weston-screenshooter` child the already-authenticated loader path used by the
+parent Weston process. `desktop.virtual.panel-visibility.capture-loader-unit`
+rejects a missing, relative, or partially empty path and pins that command
+boundary. The deterministic `validator-unit` row injects a fake authority
 and poll timer to prove that a transitional 0x0 role is ignored until the role
 is absent, and that a role which never disappears times out fail-closed. The
 validator derives stable left and bottom panel
@@ -174,6 +185,14 @@ post-close absence, authenticated process evidence, bounded
 cleanup phases, and a final observed empty survivor set.
 `desktop.virtual.sandbox-unit` remains a prerequisite and no host display, bus,
 input node, uinput device, or hardware is used.
+
+At terminal cleanup the harness sends `SIGTERM` to the authenticated shared
+KWin/session process group. Depending on exit ordering, KWin 6.6.6 may append
+`Session process has crashed` after all eight captures even though the row has
+completed and the final survivor set is empty. That teardown-only diagnostic is
+not a panel phase failure; the evidence document's completed capture set,
+terminal-phase ledger, and independent survivor observation distinguish it from
+an early session loss.
 
 These rows qualify 100% 1080p and WUXGA on the private Weston/KWin path. They do
 not claim fractional scaling, multi-output behavior, GPU/OpenGL rendering,

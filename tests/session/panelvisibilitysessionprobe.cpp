@@ -169,7 +169,8 @@ QJsonObject key(const char *name, bool pressed)
             {QStringLiteral("pressed"), pressed}};
 }
 
-bool capture(const QString &tool, const QString &phase)
+bool capture(const QString &tool, const QString &libraryPath,
+             const QString &phase, QString *failure)
 {
     QDir directory(QStringLiteral("/var/lib/qindaqt-evidence"));
     const QStringList beforeList = directory.entryList(
@@ -179,10 +180,31 @@ bool capture(const QString &tool, const QString &phase)
     auto environment = QProcessEnvironment::systemEnvironment();
     environment.insert(QStringLiteral("WAYLAND_DISPLAY"),
                        QStringLiteral("qindaqt-parent-wayland"));
+    const QString inherited = environment.value(QStringLiteral("LD_LIBRARY_PATH"));
+    environment.insert(
+        QStringLiteral("LD_LIBRARY_PATH"),
+        inherited.isEmpty() ? libraryPath
+                            : QStringLiteral("%1:%2").arg(libraryPath, inherited));
+    // AGENT-GUARD: Apply the private Weston closure only to this capture child.
+    // Exporting it to the probe or compositor lets system KWin load the private
+    // prefix's incompatible libkwin and invalidates the release-matched proof.
     process.setProcessEnvironment(environment);
     process.setWorkingDirectory(directory.path());
     process.start(tool);
-    if (!process.waitForFinished(5'000) || process.exitCode() != 0) {
+    if (!process.waitForStarted(5'000)) {
+        *failure = QStringLiteral("could not start: %1").arg(process.errorString());
+        return false;
+    }
+    if (!process.waitForFinished(5'000)) {
+        process.kill();
+        process.waitForFinished();
+        *failure = QStringLiteral("timed out");
+        return false;
+    }
+    if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+        const QString output = QString::fromUtf8(
+            process.readAllStandardError() + process.readAllStandardOutput()).trimmed();
+        *failure = QStringLiteral("exited %1: %2").arg(process.exitCode()).arg(output);
         return false;
     }
     const QStringList after = directory.entryList(
@@ -191,23 +213,45 @@ bool capture(const QString &tool, const QString &phase)
     for (const QString &candidate : after) {
         if (!before.contains(candidate)) {
             if (!created.isEmpty()) {
+                *failure = QStringLiteral("created more than one fresh PNG");
                 return false;
             }
             created = candidate;
         }
     }
-    return !created.isEmpty()
-        && directory.rename(created, QStringLiteral("panel-%1.png").arg(phase));
+    if (created.isEmpty()) {
+        *failure = QStringLiteral("created no fresh PNG");
+        return false;
+    }
+    if (!directory.rename(created, QStringLiteral("panel-%1.png").arg(phase))) {
+        *failure = QStringLiteral("could not name the phase PNG");
+        return false;
+    }
+    return true;
 }
 
 bool requirePhase(QDBusInterface &endpoint, QJsonArray *items,
                   const std::function<bool(const QJsonArray &)> &ready,
                   const QSize &output,
-                  const QString &captureTool, const QString &phase,
+                  const QString &captureTool, const QString &captureLibraryPath,
+                  const QString &phase,
                   QJsonArray *evidence)
 {
-    if (!waitFor(endpoint, ready, output, items) || !capture(captureTool, phase)) {
-        QTextStream(stderr) << "panel phase failed: " << phase << '\n';
+    if (!waitFor(endpoint, ready, output, items)) {
+        const auto visibility = call(
+            endpoint, QStringLiteral("ShellVisibilitySnapshot"));
+        QTextStream(stderr)
+            << "panel authority phase failed: " << phase << '\n'
+            << "last surface authority: "
+            << QJsonDocument(*items).toJson(QJsonDocument::Compact) << '\n'
+            << "last visibility authority: "
+            << QJsonDocument(visibility).toJson(QJsonDocument::Compact) << '\n';
+        return false;
+    }
+    QString captureFailure;
+    if (!capture(captureTool, captureLibraryPath, phase, &captureFailure)) {
+        QTextStream(stderr) << "panel capture failed: " << phase << ": "
+                            << captureFailure << '\n';
         return false;
     }
     evidence->append(QJsonObject{{QStringLiteral("phase"), phase},
@@ -223,7 +267,7 @@ int main(int argc, char **argv)
 
     QGuiApplication application(argc, argv);
     application.setQuitOnLastWindowClosed(false);
-    if (application.arguments().size() != 2 || application.screens().size() != 1) {
+    if (application.arguments().size() != 3 || application.screens().size() != 1) {
         return 2;
     }
     auto *const bus = QDBusConnection::sessionBus().interface();
@@ -256,7 +300,9 @@ int main(int argc, char **argv)
             && !mappedPanel(items, QStringLiteral("left"), 40, outputSize);
     };
     const QString captureTool = application.arguments().at(1);
+    const QString captureLibraryPath = application.arguments().at(2);
     if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("window-overlap-hidden"), &phases)) {
         return 5;
     }
@@ -287,12 +333,14 @@ int main(int argc, char **argv)
             && mappedPanel(items, QStringLiteral("left"), 40, outputSize, 40);
     };
     if (!requirePhase(endpoint, &observed, leftVisible, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
     }
     client.showFullScreen();
     client.requestActivate();
     if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("window-close-hidden"), &phases)) {
         return 7;
     }
@@ -302,6 +350,7 @@ int main(int argc, char **argv)
     }
     client.close();
     if (!requirePhase(endpoint, &observed, leftVisible, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("window-closed-restored"), &phases)) {
         return 7;
     }
@@ -315,6 +364,7 @@ int main(int argc, char **argv)
             && mappedPanel(items, QStringLiteral("bottom"), 48, outputSize);
     };
     if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("edge-revealed"), &phases)) {
         return 9;
     }
@@ -333,6 +383,7 @@ int main(int argc, char **argv)
         return 12;
     }
     if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("shortcut-revealed"), &phases)) {
         return 13;
     }
@@ -345,6 +396,7 @@ int main(int argc, char **argv)
     }
     QThread::msleep(1'700);
     if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("popup-held"), &phases)) {
         return 15;
     }
@@ -353,6 +405,7 @@ int main(int argc, char **argv)
         return 16;
     }
     if (!requirePhase(endpoint, &observed, bottomHidden, outputSize, captureTool,
+                      captureLibraryPath,
                       QStringLiteral("popup-closed"), &phases)) {
         return 17;
     }
