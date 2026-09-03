@@ -166,9 +166,9 @@ ctest --test-dir build/dev -R '^qindaqt\.audio-applet-' --output-on-failure
 | Test | Scope |
 | --- | --- |
 | `qindaqt.audio-applet-model` | Clamping, missing/invalid-wire fail-closed behavior, ordering, label fallbacks, unknown levels, bounds and overflow, default labels beyond the window, pending marking, and degraded retention. |
-| `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay. |
+| `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay, including a stale old-owner reply dropped after replacement. |
 | `qindaqt.audio-applet-offscreen` | Compiled module loading, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. |
-| `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test. |
+| `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test; four independent poison mutations (D-Bus transport include, service-internal include, QML include, QObject derivation) must each be rejected. |
 | `qindaqt.audio-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, WirePlumber/PipeWire/GLib surfaces, process/file access, and D-Bus in the controller/QML; the shell composition root may construct the public Qt transport. Includes a poison negative control. |
 | `qindaqt.audio-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison. |
 

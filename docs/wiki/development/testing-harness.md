@@ -172,9 +172,11 @@ ctest --test-dir build/dev \
 ```
 
 Its pure projection rows are joined by a public-client controller with
-read/control grant separation and exact-owner replacement cleanup, a compiled
-offscreen keyboard/accessibility row, pure/runtime boundary gates with a
-service-internal poison negative control, and an installed
+read/control grant separation and exact-owner replacement cleanup (including a
+stale old-owner reply dropped after replacement), a compiled
+offscreen keyboard/accessibility row, pure/runtime boundary gates with
+independent service-internal/transport/QML/QObject poison negative controls,
+and an installed
 production-package/source-poison row that also requires the staged KF6
 GlobalAccel artifact to resolve through the relocated shell's relative
 RUNPATH. All rows use an injected fake transport or a relocated package

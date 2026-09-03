@@ -141,9 +141,12 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
-    // AGENT-GUARD: declaration order makes each borrowed dependency outlive
-    // its consumer: the applet compositions precede the window factory that
-    // injects their facades into panel QML.
+    // AGENT-GUARD: teardown safety comes from ~ShellRuntimeApplication()
+    // unconditionally calling resetRuntime(), which tears the window factory
+    // down before the applet compositions. Declaration order alone does NOT
+    // protect these members: they are declared after m_windowFactory, so
+    // reverse-order destruction would destroy the compositions first. Do not
+    // make resetRuntime optional or rely on member order for this pair.
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
