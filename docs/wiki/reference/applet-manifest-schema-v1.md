@@ -40,8 +40,8 @@ authority.
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes launcher,
-task-list, global-menu, status-tray, clock, notification-center, and power
-applets.
+task-list, global-menu, status-tray, clock, notification-center, power, and
+clipboard applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 
@@ -57,6 +57,12 @@ production renderer receives a shell-private controller over the public
 PowerClient. Read denial prevents client observation; control denial keeps
 bounded rows visible but non-adjustable and rejects every mutation before
 dispatch.
+
+The Clipboard manifest requests both `clipboard.read` and `clipboard.write`.
+The audited renderer receives a shell-private controller over the injected
+`ClipboardClientInterface` seam. Read denial withholds all observation; write
+denial keeps bounded browsing visible but refuses every mutating intent
+(select/promote, pin, delete, clear) before dispatch.
 
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor

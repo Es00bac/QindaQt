@@ -34,7 +34,23 @@ add_test(
     COMMAND qindaqt_clipboard_applet_controller_tests
 )
 
-# 3. Client Seam tests
+# 3. Controller fencing tests (hostile seam attribution)
+qt_add_executable(qindaqt_clipboard_applet_fencing_tests tst_clipboard_applet_fencing.cpp)
+target_link_libraries(
+    qindaqt_clipboard_applet_fencing_tests
+    PRIVATE
+        QindaQt::ShellClipboardAppletRuntime
+        QindaQt::ClipboardModel
+        Qt6::Core
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_clipboard_applet_fencing_tests)
+add_test(
+    NAME qindaqt.clipboard-applet-fencing
+    COMMAND qindaqt_clipboard_applet_fencing_tests
+)
+
+# 4. Client seam tests
 qt_add_executable(qindaqt_clipboard_applet_seam_tests tst_clipboard_applet_seam.cpp)
 target_link_libraries(
     qindaqt_clipboard_applet_seam_tests
@@ -64,7 +80,7 @@ add_custom_target(
         qindaqt_applet_catalog_tests
 )
 
-# 4. QML rows through the theme-published compiled harness. The applet's QML
+# 5. QML rows through the theme-published compiled harness. The applet's QML
 # consumes QST-1 tokens that exist only after a theme is published; the
 # harness publishes qinda-light before any test, giving the rows real layout
 # for genuine pointer-event delivery and warning-free token evaluation.
@@ -121,7 +137,7 @@ qindaqt_add_clipboard_applet_qml_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_ClipboardAppletInteractive.qml"
 )
 
-# 5. Boundary & Source Policy test
+# 6. Boundary and source policy test
 add_test(
     NAME qindaqt.clipboard-applet-boundary-policy
     COMMAND
@@ -131,7 +147,7 @@ add_test(
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_clipboard_applet_boundary.cmake"
 )
 
-# 6. Installed component consumer/probe: validates the ClipboardApplet install
+# 7. Installed component consumer/probe: validates the ClipboardApplet install
 # rules end-to-end (public boundary, archives, QML module, plugin, manifest)
 # from a fresh staged prefix, including the relocated-consumer RPATH truth.
 add_test(

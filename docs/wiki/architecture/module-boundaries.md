@@ -54,6 +54,7 @@ tests, and the wiki page describing its contract.
 | `src/services/brightness_model` | Pure stable-ID fixture validation, mirror-collapsed display/keyboard composition, and integer raw-range conversion | Public power protocol plus Qt Core; never Display1 headers, connector identity, topology input, transport, persistence, clocks, QML, or mutation |
 | `src/shell` | Qt Quick panel/notification presentation, production window factories, narrow built-in-applet facades, shell-owned interruption/privacy-policy composition, and global-action controllers | `core`, `profiles`, `themes`, `applet_runtime`, `shell_layout`, `shell_orchestration`, `shell_surface`, public service clients/models/policies, and focused KDE Framework clients behind private adapters; never LayerShellQt or service implementations directly |
 | `src/shell/power_applet` | Pure Power applet projection/request values plus a separately linked shell-private `PowerClient` controller and compiled QML renderer | Pure target: public power protocol and brightness model plus Qt Core. Runtime target: pure target, public power client, and Qt QML/Quick; never power-service internals, host daemons, direct platform transport, files, or persistence |
+| `src/shell/clipboard_applet` | Pure Clipboard applet projection values plus a separately linked runtime target holding the injected client seam, its in-process C0 model adapter, the shell-private controller, and the compiled QML renderer | Pure target: public clipboard model values plus Qt Core. Runtime target: pure target, public clipboard model, and Qt QML/Quick; never clipboard-service/transport internals, Wayland/X11 selection access, host clipboard engines, D-Bus, files, or persistence |
 | `src/shell/global_menu` | Separate focused targets: canonical bounded menu/action values and authenticated active-window provider ownership policy (protocol/policy), the fail-closed export lineage authority, the Qt Widgets menu adapter, and the shell-owned applet facade whose Qt Quick component owns this applet's presentation policy (orientation, overflow, focus, activation surfaces) | Protocol/policy: public protocol values plus Qt Core. Adapter target additionally Qt Gui/Widgets. Applet-presentation target additionally Qt Quick for its own component; never D-Bus transport, KWin objects, or action execution |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin window registry, generation-retaining output inventory, development-only virtual-output adapter, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid/shell-visibility limits, Qt Core/DBus, and explicit KWin 6.6.5 extension points |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
@@ -211,6 +212,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   PowerClient. Manifest/policy `power.read` and `power.control` decisions gate
   observation and mutation separately; the renderer never sees a transport,
   service implementation, upstream daemon, or reusable general-power object.
+- The Clipboard applet receives only its shell-private controller over the
+  injected `ClipboardClientInterface` seam. Manifest/policy `clipboard.read`
+  and `clipboard.write` decisions gate observation and mutation separately;
+  the renderer never sees the C0 model, a transport, or a reusable
+  general-clipboard object. See [Clipboard applet](../shell/clipboard-applet.md).
 - Shell-wide presentation shortcuts are shell-owned actions registered through
   a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
   and user remapping; neither profile data nor applet QML may register or
