@@ -1,7 +1,7 @@
 # First-party delivery queue
 
-- Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T12:30:34-06:00
+- Workgroup manager: Codex Program Manager (OpenAI Codex `gpt-5.6-sol`, reasoning high)
+- Last observation: 2026-09-03T13:03:46-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -4,11 +4,11 @@ role: Program Manager and final integrator
 provider: Anthropic Claude Code
 model: claude-fable-5-1
 reasoning: high
-status: working
-feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
+status: handoff
+feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-03T02:12:11-06:00
+updated_at: 2026-09-03T12:57:47-06:00
 ---
 
 # Claude Program Manager
@@ -18,8 +18,8 @@ updated_at: 2026-09-03T02:12:11-06:00
   `ops/team/queues/**`. Took over the manager loop from the OpenAI Codex
   Program Manager on 2026-09-02T20:42:51-06:00 at the user's direction.
 - Provider/model: Anthropic Claude Code, `claude-fable-5-1`, reasoning high.
-- Status: working — dispatching wave-1 lanes, preserving build infrastructure on
-  persistent disk, routing exact reviews, and integrating accepted candidates.
+- Status: handoff — transferred `main`, the five named live lanes, verification
+  roots, and the real-install plan to the Codex Program Manager at `0770b572`.
 - Exact base: `74da46345c7a5094d45c756ad8b23ca87591fcd3`.
 - Branch: `main`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm`.
