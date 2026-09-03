@@ -4,6 +4,19 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted BlueZ adapter candidate
+  `f44919a52f67515779f887b8d54a9bb2a57b3c4b` at manager merge `d43463c`. The adapter implements the
+  accepted AdapterBackend port over an injected direct-QtDBus `org.bluez` connection (ObjectManager,
+  Adapter1, Device1, PropertiesChanged), calls only Properties.Set(Powered), StartDiscovery,
+  StopDiscovery, Connect, and Disconnect, retires truth on BlueZ owner loss, bounds hostile values, and is
+  selected by the composition root in production with an explicit deterministic escape hatch. Betty
+  Holberton (Kimi K3) accepted the exact candidate at `0/0/0/2`; both P3s (an observed-property
+  overstatement and a wording precision) are corrected here, and the candidate's ADR is renumbered from
+  the colliding 0056 to ADR-0057. Fresh merged-tree Debug and Release each pass the complete 15/15
+  Bluetooth service selector including the whole-repository staged-install row; the broad safe Debug
+  suite passes 379/379; 119-document validation, strict MkDocs, source shape, diff, JSON, and Team
+  Board 16/16 pass. Physical radios, pairing UX, Settings UI, and hardware qualification remain later.
+
 - This integration merges exact independently accepted Bluetooth applet B1 repair descendant
   `882cc0cdbb31ee9d619c625a2856aee90c7a49b0` at manager merge `34a79c2`. The regex-based positive
   controller-surface gate that four reviewers had split over is replaced by a compiled QMetaObject

@@ -534,7 +534,7 @@
           "title": "Bluetooth devices",
           "weight": 9,
           "state": "EXECUTABLE",
-          "summary": "Bluetooth B0 integrates a bounded Bluetooth1 protocol, deterministic least-authority device model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and installed public package with pairing/trust authority retained in BlueZ.",
+          "summary": "Bluetooth B0 plus the production BlueZ adapter: the bounded Bluetooth1 protocol, deterministic least-authority model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and a production AdapterBackend over an injected direct-QtDBus org.bluez connection that drives only adapter power, the reference-counted discovery lease, and paired-device connect/disconnect, retiring truth on BlueZ owner loss and bounding hostile properties, with the composition root defaulting to production and an explicit deterministic mode for tests.",
           "evidence": [
             {
               "kind": "commit",
@@ -545,9 +545,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/bluetooth-service.md",
               "summary": "Fresh manager-tree verification passes the eight source/private-bus rows; exact review passes 9/9 including staged install, 70/70 direct assertions, mutation-sensitive package poison, source shape, and documentation gates."
+            },
+            {
+              "kind": "commit",
+              "reference": "f44919a52f67515779f887b8d54a9bb2a57b3c4b",
+              "summary": "The independently accepted BlueZ adapter (ADR-0057) is integrated; Betty Holberton's Kimi K3 exact review found 0/0/0/2 with 14/14 Bluetooth rows under an unreachable host system bus in Debug and Release; the merged tree passes 15/15 including the whole-repository staged-install row."
             }
           ],
-          "caveat": "B0 uses a deterministic unavailable backend. Production BlueZ transport, physical adapters/rfkill, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings/shell UI, and hardware/resource qualification remain."
+          "caveat": "The adapter is qualified only against a fake org.bluez on a private bus: physical adapters/rfkill, a host BlueZ build, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings UI, and hardware/resource qualification remain."
         },
         {
           "id": "QQ-005.06",
