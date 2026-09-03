@@ -18,6 +18,23 @@ all navigation and filesystem policy; AppShell owns only the standard menu,
 shortcut dispatch, focus reporting, and close-decision protocol (see
 [Module boundaries](../architecture/module-boundaries.md)).
 
+## First-party global-menu export
+
+File Manager opts its existing deterministic AppShell action catalog into
+`QindaQt::AppShell::MenuExport` after the real `ApplicationShell` window is
+constructed. With no usable session bus, registrar owner, or platform window
+identity, export remains disabled/waiting and the application continues
+normally. XWayland registers the real window id; native Wayland announces the
+unique bus name and dbusmenu path through Qt's KDE appmenu platform hook, with
+no invented numeric id. The shell independently authenticates those facts
+against the focused surface and provider PID.
+
+The in-window `MenuBar` remains visible and authoritative. Registrar presence
+or successful publication is not evidence that a shell actually hosts the
+menu. Either local or shell activation enters the same
+`ApplicationCoordinator::activateAction()` enabled-action gate, and the shell
+path emits the File Manager action request exactly once.
+
 ## S0 user experience
 
 One window browses one local folder tree at a time, starting at the user's
@@ -184,6 +201,9 @@ rationale and boundary.
 - `fileManagerActionCatalog()` contributes the closed mutation action set to
   AppShell. `ApplicationCoordinator` transports activation and close requests
   but never examines a path or decides whether an operation is recoverable.
+- `composeFileManagerMenuExport()` is the application composition boundary. It
+  lends the primary window, coordinator, and session-bus connection to the
+  opt-in AppShell exporter; it contains no filesystem or shell authority.
 - QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`EntryList`/`StatePane`
   collaborators) owns only presentation: layout, keyboard routing to the
   controller's invokable methods, accessible names/roles, and the
@@ -194,7 +214,8 @@ All expected errors cross the lister/launcher/mutation boundaries as typed
 values plus bounded human-readable diagnostics. There is no D-Bus authority,
 shell-private dependency, global worker pool, or exception-based failure
 channel. The one mutation worker and its backend are private implementation
-details with constructor-visible ownership.
+details with constructor-visible ownership. The optional menu transport is a
+borrowed AppShell adapter, not File Manager domain authority.
 
 The `model/**` C++ headers and build target are private implementation
 surfaces and are not installed or ABI-stable. The executable name, desktop ID,
@@ -259,7 +280,10 @@ startup boundary waits at most five seconds and reports either the QML error or
 an explicit timeout before it attempts singleton publication.
 
 S1 adds mutation, Trash, controller, action-catalog, UI-contract, UI-action, and
-boundary-policy rows. Fixture trees exercise Unicode/control-character names,
+boundary-policy rows. The first-party export slice adds a private-bus row that
+runs the real File Manager against the production shell global-menu
+composition, injects its exact child PID and window id, activates New Folder
+once, and proves owner exit clears the shell menu. Fixture trees exercise Unicode/control-character names,
 overlong rejection, permissions, collision, before/during-operation vanishing,
 identity change, nested and root symlink poison, cancellation cleanup, Trash
 round trips, an in-flight nested-directory swap, unique names, restore

@@ -2,13 +2,15 @@
 
 `QindaQt.AppShell 1.0` is the narrow participation shell for first-party QML
 applications. It standardizes application-owned lifecycle decisions, stable
-action/menu export, optional Settings/session readiness, file-portal request
+action/menu projection, opt-in global-menu export, optional Settings/session readiness, file-portal request
 mediation, bounded typed errors, focus reporting, and one accessible QST-themed
 window surface. It is not a route registry, domain framework, service client,
 or process supervisor.
 
 The durable extraction decision and prohibited responsibilities are recorded
 in [ADR-0027](../adr/0027-extract-a-narrow-first-party-application-shell.md).
+The opt-in transport composition is recorded in
+[ADR-0065](../adr/0065-compose-first-party-menu-export-through-appshell.md).
 [QST-1](../architecture/design-tokens.md) and
 [QindaQt.Controls 1.0](../shell/controls.md) remain the presentation authorities.
 
@@ -22,8 +24,17 @@ dialog, or contacts a portal. The application and its injected public adapters
 resolve every emitted quit or portal request and may retain copies of value
 results.
 
-`src/app_shell` depends inward on Qt Core/Gui/QML/Quick plus the public QST-1 and
-Controls modules. Applications may depend on AppShell; AppShell may not depend
+`QindaQt::AppShell::MenuExport::ApplicationMenuExport` is a separate opt-in
+composition module. It borrows one coordinator, one real `QWindow`, one
+injected session-bus connection, and one owned identity publisher for the
+window lifetime. This keeps D-Bus and toolkit identity discovery out of the
+coordinator and QML module. Destruction or a window-close event withdraws the
+published identity and registrar entry before the surface is retired.
+
+The core `src/app_shell` target depends inward on Qt Core/Gui/QML/Quick plus the public QST-1 and
+Controls modules. The opt-in `menu_export` target depends on the accepted
+global-menu protocol/exporter/dbusmenu/registrar public boundaries and Qt
+Core/DBus/Gui. Applications may depend on AppShell; AppShell may not depend
 on `src/apps`, service implementations or clients, shell internals, KWin,
 LayerShellQt, or application domain models. An app that does not need Settings
 or session integration declares that hook `NotRequired`; AppShell never probes
@@ -62,8 +73,30 @@ Activation emits `activationRequested(actionId)` only for a known enabled
 action. It does not toggle domain state or invoke a callback itself. The owning
 application executes the command, then explicitly updates enabled/checked
 projection. These are window-local actions; AppShell never registers
-KGlobalAccel. The snapshot is suitable input for a later global-menu exporter,
-but this module does not implement or contact one.
+KGlobalAccel.
+
+The opt-in `ApplicationMenuExport` turns that same deterministic snapshot into
+the accepted canonical menu tree and serves a standard dbusmenu object at
+`/org/qindaqt/AppShell/Menu`. It supplies explicit window-local lineage to the
+accepted exporter; the exporter still never invents ownership lineage. Menu
+changes publish whole snapshots, and a dbusmenu `clicked` event calls
+`ApplicationCoordinator::activateAction()` once. The coordinator therefore
+rechecks the same known/enabled consent gate used by the in-window menu before
+emitting `actionRequested`; transport failures and uncertain replies are never
+replayed.
+
+All bus calls are asynchronous. An unavailable bus or identity fails closed.
+The composition watches the standard AppMenu registrar owner, withdraws its
+old association on loss/replacement, and registers again only against the new
+exact owner. On XWayland, the Qt platform must be `xcb` and the real `QWindow`
+WId is the registrar window id. On native Wayland, there is deliberately no
+numeric id: the confined Qt platform adapter announces the injected unique bus
+name and object path through Qt's KDE appmenu platform hook after a native
+Wayland surface exists. Those are exactly the facts G2 projects to the shell;
+the shell, not the application, proves their bus-owner PID matches the focused
+surface. `published` means only that the endpoint and association exist—it is
+not proof that the shell hosts the menu, so local `MenuBar` presentation stays
+visible and authoritative.
 
 ### Lifecycle and quit ownership
 
@@ -172,13 +205,18 @@ stale fencing, optional integration/degraded projection, serialized portal
 requests and invalid results, focus-name bounds, offscreen QST/Controls loading,
 initial keyboard focus, native-title window identity, application-named page
 accessibility, and the visible degraded notice. A static policy gate rejects
-platform/service dependencies, palette
+platform/service dependencies from the core and rejects ambient bus lookup or
+private-toolkit-hook leakage from the opt-in exporter. Private-bus rows add a
+real dbusmenu client, fake registrar owner replacement/loss, exact X window-id
+registration, native-Wayland no-numeric-id behavior, exactly-once activation,
+disabled-action refusal, and close teardown. The static matcher proves itself
+with service-lookup poison. The remaining policy gate rejects palette
 literals, and theme selection. The installed-consumer row clears ambient QML
 import paths, checks the staged headers/QML/plugin payload, recompiles a C++
 consumer, runs it, and loads the staged QML module with `qmltestrunner`.
 
-These S0 gates do not qualify a concrete app migration, a real portal backend,
-Settings1/session client composition, a global-menu exporter, compositor focus,
+These gates do not qualify a real portal backend,
+Settings1/session client composition, compositor focus,
 live assistive technology, nested-session capture, or physical display/DPI.
 Those become later vertical slices using this boundary; they must not be
 claimed from the module tests alone.
@@ -189,5 +227,8 @@ close consent through `requestQuit`/`resolveQuit`, and mediates Open/Save As
 through a fail-closed-by-default `PortalRequest` adapter. Its
 [AppShell participation](text-editor.md#appshell-participation) section
 records the consumer-side contract and focused test row; a real portal
-backend, a global-menu exporter, and Settings/session hook composition remain
-separate, still-unqualified outcomes.
+backend and Settings/session hook composition remain separate, still-unqualified
+outcomes. Text Editor and Terminal can opt in with the same one-line recipe as
+File Manager: retain `compose(..., QDBusConnection::sessionBus())` beside their
+primary-window/coordinator composition and keep their local menu visible unless
+a future authenticated shell-hosted signal says otherwise.
