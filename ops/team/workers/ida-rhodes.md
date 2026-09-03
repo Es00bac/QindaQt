@@ -8,7 +8,7 @@ status: handoff
 feature: QQ-004.15 Clipboard applet
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/clipboard-applet-c1
 started_at: 2026-09-02T20:46:28-06:00
-updated_at: 2026-09-02T22:29:44-06:00
+updated_at: 2026-09-03T05:18:11-06:00
 ---
 
 # Ida Rhodes
@@ -16,9 +16,12 @@ updated_at: 2026-09-02T22:29:44-06:00
 - Role: Clipboard applet C1 implementer (compiled bounded applet over the
   integrated Clipboard C0 model)
 - Provider/model: Moonshot Kimi, `kimi-code/k3`, reasoning high
-- Status: handoff — exact candidate `759c639bc3978644447f78b3d223830581890d6c`,
-  tree `1946d264f48691e7f9827bdb35153f480f6fc555`, all focused and adjacent
-  selectors green in strict Debug and Release plus all static gates.
+- Status: handoff — exact repair candidate `e3e2dbaa819cd981313849b9c7b996cc3459345d`,
+  tree `a23a092349153cd3411b536f0be7c301baf221e8`, descendant of rejected
+  `759c639` via preserved GLM repair start `841f043`; all focused (11/11) and
+  adjacent (6/6 + 4/4) selectors green in strict Debug and Release plus all
+  static gates; new interactive/keyboard rows demonstrated failing on the
+  rejected tree.
 - Exact base: `74da46345c7a5094d45c756ad8b23ca87591fcd3`.
 - Branch: `worker/clipboard-applet-c1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/clipboard-applet-c1`.
@@ -53,3 +56,22 @@ updated_at: 2026-09-02T22:29:44-06:00
   `759c639bc3978644447f78b3d223830581890d6c`; details, evidence, and caveats in
   `ops/team/messages/shell-clipboard-applet/1788409784-ida-rhodes-handoff.md`.
   Requested: independent exact review, then manager integration.
+- 2026-09-03T05:00:00-06:00 — repair claim after Jean Bartik's REJECT
+  (P0/P1/P2/P3 = 0/4/4/1) on `759c639`. Resumed on Kimi; Kathleen Booth-GLM's
+  partial repair is preserved verbatim in `841f043`. Kept her snapshot
+  admission gate, adapter privacy composition, QML pin-serial/search fixes,
+  completion-lineage and tick-exhaustion repairs; fixed her admission-test
+  contradiction (stale replays must fail closed, not be retained), a QList
+  `.first()` crash on empty rows, and the unavailable-fallback baseline hole
+  (no fresh-owner baseline from snapshots delivered while the client reports
+  Unavailable). Completed: admission test registration, hostile model test
+  rework to exact rejection assertions, owner-fencing with presented owner-A
+  content, overlapping-denial seam row, exact-args interactive/keyboard rows,
+  full accessibility + Tab/Backtab coverage, genuine installed-stage
+  relocation ($ORIGIN RPATH, patchelf, LD_LIBRARY_PATH unset), wiki updates.
+- 2026-09-03T05:18:11-06:00 — handoff. Repair candidate
+  `e3e2dbaa819cd981313849b9c7b996cc3459345d`; finding-by-finding closure map,
+  commands, counts, and caveats in
+  `ops/team/messages/shell-clipboard-applet/1788434291-ida-rhodes-handoff.md`.
+  Requested: independent exact review by Jean Bartik (Codex) of the exact new
+  product SHA, then manager integration.
