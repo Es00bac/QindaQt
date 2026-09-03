@@ -83,11 +83,16 @@ the sole platform adapter and policy authority.
 The page uses only QST-1 semantic roles and QindaQt.Controls. At compact
 sizes the same ordered content remains vertically scrollable. Page Up/Page
 Down and Ctrl+Home/Ctrl+End move through it, and changing keyboard focus
-reveals the focused control. The page declares the first output device's
-entry control — its set-default button, or its volume slider when that device
-is already the default — as the Settings host entry target, falls back to
-Retry or Close when no inventory exists, and keeps forward and reverse Tab
-navigation within the route.
+reveals the focused control. The page nominates the first enabled, admitted
+control in traversal order — set-default, volume, then mute within each row;
+output rows before input rows before stream rows — as the Settings host entry
+target, recomputed whenever the projection changes, so a control the
+snapshot disabled (for example a default output with `canSetVolume == false`)
+is never targeted while another admitted action exists. When no admitted
+control exists the page falls back to Retry or Close, and forward Tab from
+Close wraps to the entry target while reverse Tab returns to the preceding
+enabled control (Retry when visible, otherwise the last admitted control in
+the route), keeping the cycle inside the route.
 
 Device and stream rows expose accessible names, descriptions, and current
 state. Sliders announce the target and the known percent level; switches
@@ -113,7 +118,14 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   retained stale truth, and retry rediscovery without replay;
 - the page row proves accessible controls, action wiring including slider
   release and switch toggles, stale/owner-loss fail-closed presentation,
-  compact focus reveal, and keyboard cycling; and
+  compact focus reveal, and keyboard cycling — including the negative
+  control where a valid snapshot leaves the default output with no admitted
+  control and host entry must fall through to the first admitted action
+  elsewhere, and reverse Tab from Close reaching the preceding enabled
+  control with Retry visible and hidden; and
+- the Settings Center navigation row additionally proves Ctrl+5 selection,
+  the Audio route tab's accessible name/role, and Tab entry plus Escape
+  return in both the wide (720×520) and compact (440×360) host layouts.
 - the boundary and poison rows reject private service, WirePlumber/PipeWire,
   and Qt D-Bus sources, an invokable outside the closed intent surface, text
   entry, a stream-move surface, or a private service dependency.

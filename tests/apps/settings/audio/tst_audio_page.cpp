@@ -53,7 +53,8 @@ private Q_SLOTS:
   void rendersInventoryAccessibly();
   void routesDefaultVolumeMuteAndRetryIntents();
   void showsStaleTruthLabeledAndOwnerLossEmpty();
-  void keepsCompactFocusVisibleAndClosesTheCycle();
+    void keepsCompactFocusVisibleAndClosesTheCycle();
+  void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
 
@@ -261,6 +262,81 @@ void AudioPageTest::keepsCompactFocusVisibleAndClosesTheCycle() {
   QTRY_COMPARE(m_view->activeFocusItem(), close);
   QTest::keyClick(m_view.get(), Qt::Key_Tab);
   QTRY_COMPARE(m_view->activeFocusItem(), entry);
+
+  // Reverse Tab from Close must reach the preceding enabled, admitted
+  // control (the last stream row's volume) instead of looping on Close.
+  auto *lastStreamVolume =
+      findItem(page, QStringLiteral("audioStreamVolume_40"));
+  QVERIFY(lastStreamVolume != nullptr);
+  QVERIFY(lastStreamVolume->isEnabled());
+  close->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), close);
+  QTest::keyClick(m_view.get(), Qt::Key_Backtab);
+  QTRY_COMPARE(m_view->activeFocusItem(), lastStreamVolume);
+
+  // With Retry visible, reverse Tab from Close moves to Retry.
+  m_model->ready = false;
+  m_model->unavailable = true;
+  m_model->statusText = QStringLiteral("The audio service is unavailable.");
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  auto *retry = findItem(page, QStringLiteral("audioRetryButton"));
+  QVERIFY(retry != nullptr);
+  QVERIFY(retry->isVisible());
+  close->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), close);
+  QTest::keyClick(m_view.get(), Qt::Key_Backtab);
+  QTRY_COMPARE(m_view->activeFocusItem(), retry);
+}
+
+void AudioPageTest::disabledDefaultFallsThroughToFirstAdmittedAction() {
+  auto [guard, page] = createPage(QSize(420, 320));
+  QVERIFY(page != nullptr);
+
+  // Valid public Audio1 projection with an admitted action on a
+  // non-default output while the default output admits none of its own
+  // controls (canSetVolume/canSetMute false). Host entry must target the
+  // first enabled, admitted control in traversal order, never the disabled
+  // default-output slider.
+  auto outputDevices = m_model->outputDevices;
+  auto firstRow = outputDevices.at(0).toMap();
+  firstRow[QStringLiteral("volumeAvailable")] = false;
+  firstRow[QStringLiteral("muteAvailable")] = false;
+  outputDevices[0] = firstRow;
+  m_model->outputDevices = outputDevices;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+
+  auto *disabledVolume =
+      findItem(page, QStringLiteral("audioOutputVolume_10"));
+  auto *disabledMute = findItem(page, QStringLiteral("audioOutputMute_10"));
+  auto *admittedDefault =
+      findItem(page, QStringLiteral("audioOutputDefault_12"));
+  QVERIFY(disabledVolume != nullptr);
+  QVERIFY(disabledMute != nullptr);
+  QVERIFY(admittedDefault != nullptr);
+  QVERIFY(!disabledVolume->isEnabled());
+  QVERIFY(!disabledMute->isEnabled());
+  QVERIFY(admittedDefault->isEnabled());
+
+  auto *target = page->property("firstFocusTarget").value<QQuickItem *>();
+  QCOMPARE(target, admittedDefault);
+  QVERIFY(target->isEnabled());
+  target->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), target);
+
+  // A later projection change that re-admits the default output's volume
+  // must recompute the entry target back to traversal-first control.
+  firstRow[QStringLiteral("volumeAvailable")] = true;
+  outputDevices[0] = firstRow;
+  m_model->outputDevices = outputDevices;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  target = page->property("firstFocusTarget").value<QQuickItem *>();
+  disabledVolume = findItem(page, QStringLiteral("audioOutputVolume_10"));
+  QVERIFY(disabledVolume != nullptr);
+  QCOMPARE(target, disabledVolume);
+  QVERIFY(target->isEnabled());
 }
 
 void AudioPageTest::supportsDocumentPagingKeys() {

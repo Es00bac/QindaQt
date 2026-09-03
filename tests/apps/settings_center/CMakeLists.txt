@@ -45,6 +45,7 @@ set_tests_properties(
 qt_add_executable(
     qindaqt_settings_navigation_page_test
     tst_settings_navigation_page.cpp
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
 )
 target_include_directories(qindaqt_settings_navigation_page_test PRIVATE ${PROJECT_SOURCE_DIR})

@@ -13,11 +13,24 @@ T.Page {
     required property var audioSettings
     signal closeRequested()
 
-    readonly property Item firstFocusTarget: retryButton.visible
-        ? retryButton
-        : outputSection.firstActionTarget !== null
-          ? outputSection.firstActionTarget
-          : closeButton
+    // Focus entry follows visual traversal order: the first enabled,
+    // admitted control of the output, input, then stream sections, then
+    // Retry, then Close. Sections recompute their target from the live
+    // projection, so a control the snapshot disabled is never nominated
+    // (AGENT-GUARD: the Settings host forceActiveFocus()es this target).
+    readonly property Item firstFocusTarget:
+        outputSection.firstActionTarget !== null ? outputSection.firstActionTarget
+        : inputSection.firstActionTarget !== null ? inputSection.firstActionTarget
+        : streamSection.firstActionTarget !== null ? streamSection.firstActionTarget
+        : retryButton.visible ? retryButton
+        : closeButton
+
+    // Reverse-Tab exit from Close: the last enabled, admitted control in
+    // traversal order (streams, then input, then output sections).
+    readonly property Item lastActionTarget:
+        streamSection.lastActionTarget !== null ? streamSection.lastActionTarget
+        : inputSection.lastActionTarget !== null ? inputSection.lastActionTarget
+        : outputSection.lastActionTarget
 
     title: qsTr("Audio")
 
@@ -189,6 +202,7 @@ T.Page {
                     }
 
                     AudioDeviceSection {
+                        id: inputSection
                         audioSettings: root.audioSettings
                         kindPrefix: "audioInput"
                         sectionTitle: qsTr("Input devices")
@@ -200,6 +214,7 @@ T.Page {
                     }
 
                     AudioStreamSection {
+                        id: streamSection
                         audioSettings: root.audioSettings
                         streamRows: root.audioSettings.streams
                     }
@@ -252,7 +267,8 @@ T.Page {
                 text: qsTr("Close")
                 KeyNavigation.tab: root.firstFocusTarget
                 KeyNavigation.backtab: retryButton.visible ? retryButton
-                                                            : closeButton
+                    : root.lastActionTarget !== null ? root.lastActionTarget
+                    : closeButton
                 onClicked: root.closeRequested()
             }
         }
