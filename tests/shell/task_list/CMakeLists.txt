@@ -32,7 +32,10 @@ function(qindaqt_add_task_list_test target source test_name)
 endfunction()
 
 function(qindaqt_add_task_list_transport_test target source test_name)
-    qt_add_executable(${target} ${source})
+    # Extra headers with Q_OBJECT fakes must be listed as target sources so
+    # AUTOMOC mocs them; a shared fake header cannot use the <basename>.moc
+    # include pattern from an unrelated test source.
+    qt_add_executable(${target} ${source} ${ARGN})
     target_link_libraries(
         ${target}
         PRIVATE
@@ -105,9 +108,18 @@ qindaqt_add_task_list_transport_test(
     qindaqt_task_list_operation_adapter_tests
     tst_task_list_operation_adapter.cpp
     qindaqt.task-list-operation-adapter
+    task_list_operation_test_support.h
 )
 set_tests_properties(
     qindaqt.task-list-operation-adapter PROPERTIES LABELS "shell;task-list"
+)
+qindaqt_add_task_list_transport_test(
+    qindaqt_task_list_operation_results_tests
+    tst_task_list_operation_results.cpp
+    qindaqt.task-list-operation-results
+)
+set_tests_properties(
+    qindaqt.task-list-operation-results PROPERTIES LABELS "shell;task-list"
 )
 qindaqt_add_task_list_transport_test(
     qindaqt_task_list_qt_transports_tests

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/shell/task_list/operations/task_list_operation_transport.h"
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/producer/task_list_producer_transport.h"
 
