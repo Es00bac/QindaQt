@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # AGENT-NOTE: This module is intentionally not wired into src/shell/CMakeLists.txt
-# yet; the task-list T0 lane is source/static only. The integrating manager adds
-# the single add_subdirectory() line in the parent build when wiring this slice.
-# The T1 producer/operations subdirectories are likewise compiled and tested
-# here but not instantiated by the production shell (see
+# yet; the production shell composition is a separate lane. The T1
+# producer/operations subdirectories and the T2 applet subdirectory are
+# compiled and tested here but not instantiated by the production shell (see
 # docs/wiki/shell/task-list.md).
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core)
@@ -37,3 +36,4 @@ qindaqt_enable_warnings(qindaqt_shell_task_list)
 
 add_subdirectory(producer)
 add_subdirectory(operations)
+add_subdirectory(applet)

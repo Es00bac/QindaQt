@@ -50,7 +50,7 @@ allowing their static profile label to masquerade as live behavior.
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, and clipboard packages.
-The compiled first-party registry contains eight audited entry points. The
+The compiled first-party registry contains nine audited entry points. The
 production QML dispatcher renders all seven hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
@@ -111,6 +111,15 @@ production QML dispatcher renders all seven hosted entry points:
   production dispatcher does not render it; resolution to `ready` is covered
   by the applet-runtime resolver tests. See
   [Clipboard applet](clipboard-applet.md).
+- `qindaqt.applets.task-list` is a registered built-in with a manifest, policy
+  decisions (`windows.read`, `windows.activate`, `windows.manage` granted to
+  the audited package by the trust default and explicitly denied to
+  third-party packages), a compiled `QindaQt.Shell.TaskList` module, and a
+  shell-private controller over the injected T0 source and T1
+  authority/operation seams. Production-shell dispatcher composition is the
+  later hosting lane, so the production dispatcher does not render it yet;
+  resolution to `ready` is covered by the applet-runtime resolver tests. See
+  [Task list source model](task-list.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
@@ -126,7 +135,7 @@ Every install component that carries `qindaqt-shell` is independently
 runnable through the shell's relative loader layout. The current inventory is
 the default `QindaQt` component plus `AudioAppletRuntime`,
 `BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
-and `PowerAppletRuntime`.
+`PowerAppletRuntime`, and `TaskListAppletRuntime`.
 Each carries every directly linked applet backing library plus
 `qindaqt_controls_qml` in the install library directory and
 `qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
@@ -139,7 +148,9 @@ library paths, and launches the staged shell with ambient loader, display,
 Wayland, and session-bus variables cleared. A new shell-carrying component is
 incomplete until it is added to this inventory and passes the same proof.
 
-Task-list and status-tray manifests remain accepted contracts but resolve as
+Task-list and status-tray manifests remain accepted contracts. Task list now
+resolves `ready` as a registered built-in (the hosting lane that renders it in
+the production dispatcher is still separate); status tray resolves as
 `implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
 rendered by the production panel dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for

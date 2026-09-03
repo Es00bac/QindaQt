@@ -958,6 +958,28 @@ or a live desktop task list; those remain later shell-composition and
 contained-session gates. See [Task list source model](../shell/task-list.md)
 and [ADR-0044](../adr/0044-inject-task-list-facts-into-the-shell.md).
 
+The registered task-list applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.task-list-applet-' --output-on-failure --no-tests=error
+```
+
+Its rows cover the pure bounded strip projection (cap, overflow truth,
+determinism), the shell-private controller over fake authority/operation seams
+(cold-start Loading with the bounded transition to Degraded, capability gates,
+stale/foreign lineage refusal, exactly-once pending fences, synchronous
+in-dispatch completion attribution, owner loss), the bridge over the real T1
+adapter with a fake transport (truthful window-level `Unavailable`, serialized
+Busy, stale-generation and degraded-source rejection), fatal-warning-clean
+offscreen compiled-QML state and keyboard-traversal rows, a static boundary
+poison probe with injected-violation self-tests, and a relocated
+`TaskListAppletRuntime` installed-package proof whose consumer builds against
+only staged files and reruns after the whole stage moves with
+`LD_LIBRARY_PATH` unset. All rows run offscreen or on private fakes; none
+contacts a host bus, display, compositor, or hardware, and no nested session
+is claimed.
+
 ## Current Settings1 and persistent quieting proof
 
 Settings persistence and its consumers are selected with:

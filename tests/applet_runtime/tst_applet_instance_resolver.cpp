@@ -81,7 +81,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
-        QStringLiteral("qindaqt.applets.power")};
+        QStringLiteral("qindaqt.applets.power"),
+        QStringLiteral("qindaqt.applets.task-list")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
 
     const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
@@ -119,6 +120,16 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(clipboard.grantedCapabilities,
              QStringList({QStringLiteral("clipboard.read"),
                           QStringLiteral("clipboard.write")}));
+
+    const auto taskList = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("task-list")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(taskList.ready(), qPrintable(taskList.diagnostic));
+    QCOMPARE(taskList.entryPoint, QStringLiteral("qindaqt.applets.task-list"));
+    QCOMPARE(taskList.grantedCapabilities,
+             QStringList({QStringLiteral("windows.activate"),
+                          QStringLiteral("windows.manage"),
+                          QStringLiteral("windows.read")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
