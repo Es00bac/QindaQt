@@ -16,6 +16,17 @@ target_sources(
         src/power_service_operations.cpp
         src/resident_power_service.cpp
         src/unavailable_power_collaborators.cpp
+        src/adapters/logind_action_authority.cpp
+        src/adapters/logind_session_collaborator.cpp
+        src/adapters/power_profiles_collaborator.cpp
+        src/adapters/production_battery_collaborator.cpp
+        src/adapters/sysfs_backlight_source.cpp
+        src/adapters/upower_battery_collaborator.cpp
+        src/adapters/upstream_composition.cpp
+        src/adapters/upstream_dbus_util.cpp
+        src/adapters/upstream_dbus_util.h
+        src/adapters/upstream_identity.cpp
+        src/adapters/upstream_identity.h
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -24,6 +35,13 @@ target_sources(
             include/qindaqt/services/power_service/power_service_coordinator.h
             include/qindaqt/services/power_service/resident_power_service.h
             include/qindaqt/services/power_service/unavailable_power_collaborators.h
+            include/qindaqt/services/power_service/adapters/logind_action_authority.h
+            include/qindaqt/services/power_service/adapters/logind_session_collaborator.h
+            include/qindaqt/services/power_service/adapters/power_profiles_collaborator.h
+            include/qindaqt/services/power_service/adapters/production_battery_collaborator.h
+            include/qindaqt/services/power_service/adapters/sysfs_backlight_source.h
+            include/qindaqt/services/power_service/adapters/upower_battery_collaborator.h
+            include/qindaqt/services/power_service/adapters/upstream_composition.h
 )
 target_link_libraries(
     qindaqt_power_service
