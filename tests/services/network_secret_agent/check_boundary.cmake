@@ -32,6 +32,24 @@ if(controller_test_content MATCHES
         "Network secret-agent diagnostics proof discards the captured channel")
 endif()
 
+# AGENT-GUARD: The controller row is the executable evidence for the admission
+# policy's inclusive depth/item limits. Keep every accepted/rejected pair named
+# here so deleting a boundary case also breaks the registered policy check.
+foreach(required_policy_proof
+        "enforcesNestedContainerCountBounds"
+        "variant-list-256" "variant-list-257"
+        "variant-map-256" "variant-map-257"
+        "variant-hash-256" "variant-hash-257"
+        "string-list-256" "string-list-257"
+        "enforcesVariantDepthBounds"
+        "variant-depth-8" "variant-depth-9"
+        "string-list-depth-7" "string-list-depth-8")
+    if(NOT controller_test_content MATCHES "${required_policy_proof}")
+        message(FATAL_ERROR
+            "Network secret-agent policy proof lost ${required_policy_proof}")
+    endif()
+endforeach()
+
 # AGENT-NOTE: Raman P3-1 was a proof-precision finding. The focused prompt row
 # must retain explicit navigation/state and Enter/window-close cases.
 set(prompt_test
