@@ -24,6 +24,14 @@ using QindaQt::ShellLauncher::SourceDocument;
 inline constexpr qint64 maxDesktopFileBytes = 4LL * maxDocumentCodeUnits;
 inline constexpr int debounceMilliseconds = 200;
 
+bool isWithinRoot(const QString &canonicalRoot, const QString &canonicalPath)
+{
+  if (canonicalRoot.isEmpty() || canonicalPath.isEmpty())
+    return false;
+  return canonicalPath == canonicalRoot
+      || canonicalPath.startsWith(canonicalRoot + QDir::separator());
+}
+
 QString entryIdFor(const QString &relativePath)
 {
   QString id = relativePath;
@@ -94,25 +102,40 @@ void ApplicationScanner::addScanDiagnostic(const QString &sourceId, const QStrin
 }
 
 void ApplicationScanner::scanDirectory(const QString &directoryPath,
+                                       const QString &canonicalRoot,
                                        const QString &relativePrefix,
                                        int *remainingFiles, bool *ceilingHit,
-                                       QStringList *watchedDirectories)
+                                       QStringList *watchedDirectories,
+                                       QSet<QString> *visitedDirectories)
 {
-  QDir directory(directoryPath);
+  const QFileInfo directoryInfo(directoryPath);
+  const QString canonicalDirectory = directoryInfo.canonicalFilePath();
+  if (!directoryInfo.isDir()
+      || !isWithinRoot(canonicalRoot, canonicalDirectory)) {
+    addScanDiagnostic(relativePrefix.isEmpty() ? directoryPath : relativePrefix,
+                      QStringLiteral("applications directory escapes its data root"));
+    return;
+  }
+  if (visitedDirectories->contains(canonicalDirectory)) {
+    addScanDiagnostic(relativePrefix.isEmpty() ? directoryPath : relativePrefix,
+                      QStringLiteral("applications directory contains a link cycle"));
+    return;
+  }
+  visitedDirectories->insert(canonicalDirectory);
+
+  QDir directory(canonicalDirectory);
   if (!directory.isReadable()) {
     addScanDiagnostic(relativePrefix.isEmpty() ? directoryPath : relativePrefix,
                       QStringLiteral("applications directory is not readable"));
     return;
   }
-  watchedDirectories->append(directoryPath);
+  watchedDirectories->append(canonicalDirectory);
 
   // Deterministic scan order: entry-name sorted, files before recursion into
   // sorted subdirectories, so identical trees always build identical input.
-  // AGENT-GUARD: No type/readable filter — unreadable entries and dangling
-  // symlinks (Qt lists them only under QDir::System) must reach the open path
-  // so they surface as diagnostics instead of vanishing silently. Symlinked
-  // directories are never followed: a link cycle would otherwise recurse past
-  // every ceiling.
+  // AGENT-GUARD: Include QDir::System so hostile non-regular nodes and dangling
+  // symlinks become diagnostics. Canonical containment is checked before any
+  // recursion or file open; link cycles are fenced by visitedDirectories.
   const QFileInfoList entries = directory.entryInfoList(
       QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot,
       QDir::Name | QDir::IgnoreCase);
@@ -123,10 +146,14 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
         ? entry.fileName()
         : relativePrefix + QLatin1Char('/') + entry.fileName();
     if (entry.isDir()) {
-      if (entry.isSymLink())
+      const QString canonicalEntry = entry.canonicalFilePath();
+      if (!isWithinRoot(canonicalRoot, canonicalEntry)) {
+        addScanDiagnostic(relative,
+                          QStringLiteral("applications directory escapes its data root"));
         continue;
-      scanDirectory(entry.absoluteFilePath(), relative, remainingFiles,
-                    ceilingHit, watchedDirectories);
+      }
+      scanDirectory(canonicalEntry, canonicalRoot, relative, remainingFiles,
+                    ceilingHit, watchedDirectories, visitedDirectories);
       continue;
     }
     if (!entry.fileName().endsWith(QLatin1String(".desktop")))
@@ -140,7 +167,14 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
     --*remainingFiles;
 
     const QString sourceId = entryIdFor(relative);
-    if (entry.size() > maxDesktopFileBytes) {
+    const QString canonicalEntry = entry.canonicalFilePath();
+    if (!entry.isFile() || !isWithinRoot(canonicalRoot, canonicalEntry)) {
+      addScanDiagnostic(sourceId,
+                        QStringLiteral("desktop entry is not a contained regular file"));
+      continue;
+    }
+    const QFileInfo canonicalInfo(canonicalEntry);
+    if (canonicalInfo.size() > maxDesktopFileBytes) {
       addScanDiagnostic(sourceId,
                         QStringLiteral("desktop file exceeds the byte ceiling"));
       continue;
@@ -148,16 +182,24 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
     // AGENT-NOTE: Directories alone do not report content edits on every
     // backend, so each desktop file is watched as well; the file ceiling
     // keeps the watch set bounded.
-    watchedDirectories->append(entry.absoluteFilePath());
-    QFile file(entry.absoluteFilePath());
+    watchedDirectories->append(canonicalEntry);
+    QFile file(canonicalEntry);
     if (!file.open(QIODevice::ReadOnly)) {
       addScanDiagnostic(sourceId, QStringLiteral("desktop file is not readable"));
       continue;
     }
-    const QByteArray bytes = file.readAll();
-    // readAll on an unbounded device is safe here: size was checked above and
-    // the byte ceiling dominates any concurrently appended content by one
-    // parser ceiling check after decoding.
+    // AGENT-GUARD: Never use readAll() here. A regular file can grow after its
+    // metadata check; one capped read keeps allocation and latency bounded.
+    const QByteArray bytes = file.read(maxDesktopFileBytes + 1);
+    if (file.error() != QFileDevice::NoError) {
+      addScanDiagnostic(sourceId, QStringLiteral("desktop file could not be read"));
+      continue;
+    }
+    if (bytes.size() > maxDesktopFileBytes) {
+      addScanDiagnostic(sourceId,
+                        QStringLiteral("desktop file exceeds the byte ceiling"));
+      continue;
+    }
     const QString text = QString::fromUtf8(bytes);
     if (text.size() > maxDocumentCodeUnits) {
       addScanDiagnostic(sourceId,
@@ -168,7 +210,7 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
     // retained; the catalog claims ids in the same order, so execution always
     // sees exactly the document that won the catalog.
     if (!m_documents.contains(sourceId)) {
-      m_documents.insert(sourceId, RetainedDocument { text, entry.absoluteFilePath() });
+      m_documents.insert(sourceId, RetainedDocument { text, canonicalEntry });
     }
     m_pendingDocuments->append(SourceDocument { sourceId, text });
   }
@@ -177,12 +219,20 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
 void ApplicationScanner::scanRoot(const QString &root, int *remainingFiles,
                                   bool *ceilingHit)
 {
-  const QString applicationsDir = root + QLatin1String("/applications");
+  const QFileInfo rootInfo(root);
+  const QString canonicalRoot = rootInfo.canonicalFilePath();
+  const QString applicationsDir = QDir(root).filePath(QStringLiteral("applications"));
   if (!QFileInfo::exists(applicationsDir))
     return; // A root without an applications tree is normal, not degradation.
+  if (canonicalRoot.isEmpty()) {
+    addScanDiagnostic(root, QStringLiteral("data root cannot be canonicalized"));
+    return;
+  }
   QStringList watched;
-  scanDirectory(applicationsDir, QString(), remainingFiles, ceilingHit, &watched);
-  if (m_watcher)
+  QSet<QString> visitedDirectories;
+  scanDirectory(applicationsDir, canonicalRoot, QString(), remainingFiles,
+                ceilingHit, &watched, &visitedDirectories);
+  if (m_watcher && !watched.isEmpty())
     m_watcher->addPaths(watched);
 }
 

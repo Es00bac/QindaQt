@@ -89,8 +89,10 @@ capability/client state.
 The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, or power state.
 
-Launcher, task-list, global-menu, and status-tray manifests remain accepted
-contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
+Task-list, global-menu, and status-tray manifests remain accepted contracts but
+resolve as `implementation-unavailable`. Launcher instead resolves `ready` at
+the registry gate described above, while remaining absent from the production
+panel dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
 status-tray value and ownership foundation is documented in

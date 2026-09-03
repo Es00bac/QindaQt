@@ -93,11 +93,10 @@ private:
   bool m_confirmedBaseline = false;
 };
 
-// Validates and normalizes one stored id list: every element must be a valid
-// desktop-entry id, duplicates collapse keeping first occurrence, and the
-// list is truncated at the model ceiling. Returns false when the stored value
-// has the wrong shape entirely (not a list of strings); the caller then
-// treats the key as absent rather than partially trusting it.
+// Validates one stored id list: every element must be a valid, unique
+// desktop-entry id and the complete list must fit the model ceiling. Returns
+// false for any shape, element, duplicate, or size violation; the caller then
+// treats the whole key as absent rather than partially trusting it.
 [[nodiscard]] bool normalizeStoredIdList(const QVariant &stored, int ceiling,
                                          QStringList *ids);
 

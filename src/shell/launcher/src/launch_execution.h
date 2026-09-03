@@ -21,8 +21,9 @@ inline constexpr int maxArguments = 64;
 inline constexpr int maxExpandedCodeUnits = 8192;
 } // namespace ExecutionBounds
 
-// The execution-relevant keys of one desktop-entry document (or one action
-// group within it), extracted under fixed ceilings.
+// The execution-relevant keys of one desktop-entry document, or the Exec-only
+// projection of one action group, extracted under fixed ceilings. Actions
+// inherit Terminal/Path/DBusActivatable from the entry-level group.
 struct ExecutionKeys {
   QString exec; // keyfile-unescaped, field codes still present
   QString path; // working directory; empty when absent
@@ -51,11 +52,12 @@ struct ExecutionParseResult {
   bool ok() const { return keys.has_value(); }
 };
 
-// Extracts the execution keys of the primary entry group (actionId empty) or
-// of one `[Desktop Action <id>]` group from raw keyfile text. Total over its
+// Extracts all execution keys of the primary entry group (actionId empty), or
+// only Exec from one `[Desktop Action <id>]` group. Total over its
 // input: hostile documents produce a typed error, never an exception or a
-// partially decoded value. Locale-suffixed and unknown keys are ignored
-// without decoding, mirroring the L0 parser's hostile-input rule.
+// partially decoded value. Locale-suffixed, unknown, and action-local
+// Terminal/Path/DBusActivatable keys are ignored without decoding, mirroring
+// the L0 parser's hostile-input rule and desktop-action scope.
 class LaunchExecutionParser {
 public:
   static ExecutionParseResult parse(const QString &documentText,

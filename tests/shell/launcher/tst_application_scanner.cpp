@@ -6,6 +6,8 @@
 #include <QSignalSpy>
 #include <QtTest>
 
+#include <sys/stat.h>
+
 using namespace QindaQt::Shell::Launcher;
 using namespace QindaQt::ShellLauncher;
 using namespace QindaQt::Tests::Launcher;
@@ -30,6 +32,7 @@ private Q_SLOTS:
     void scansInjectedRootsInPrecedenceOrder();
     void mapsSubdirectoriesIntoDesktopIds();
     void degradesOnHostileAndUnreadableEntries();
+    void confinesSymlinksAndRefusesNonRegularEntries();
     void hiddenHigherPrecedenceEntryShadowsLowerRoot();
     void missingApplicationsTreeIsNormalNotDegraded();
     void watcherRefreshRepublishesWithFencedGeneration();
@@ -114,6 +117,43 @@ void ApplicationScannerTests::degradesOnHostileAndUnreadableEntries()
         diagnosticIds.append(diagnostic.sourceId);
     QVERIFY(diagnosticIds.contains(QStringLiteral("huge")));
     QVERIFY(diagnosticIds.contains(QStringLiteral("dangling")));
+}
+
+void ApplicationScannerTests::confinesSymlinksAndRefusesNonRegularEntries()
+{
+    QTemporaryDir parent;
+    QVERIFY(parent.isValid());
+    const QString outsideRoot = parent.path() + QStringLiteral("/outside");
+    const QString escapedRoot = parent.path() + QStringLiteral("/escaped-root");
+    const QString fifoRoot = parent.path() + QStringLiteral("/fifo-root");
+    QVERIFY(QDir().mkpath(outsideRoot + QStringLiteral("/applications")));
+    QVERIFY(QDir().mkpath(escapedRoot));
+    QVERIFY(QDir().mkpath(fifoRoot + QStringLiteral("/applications")));
+    QVERIFY(writeDesktopFile(outsideRoot, QStringLiteral("escaped.desktop"),
+                             minimalEntry(QStringLiteral("Escaped"),
+                                          QStringLiteral("true"))));
+    QVERIFY(QFile::link(outsideRoot + QStringLiteral("/applications"),
+                        escapedRoot + QStringLiteral("/applications")));
+
+    const QString fifoPath =
+        fifoRoot + QStringLiteral("/applications/hang.desktop");
+    QCOMPARE(::mkfifo(QFile::encodeName(fifoPath).constData(), 0600), 0);
+
+    ApplicationScanner scanner({ escapedRoot, fifoRoot });
+    QVERIFY(scanner.start());
+    QVERIFY(scanner.catalog().has_value());
+    QVERIFY(scanner.catalog()->entries().isEmpty());
+    QVERIFY(!scanner.catalog()->entry(QStringLiteral("escaped")).has_value());
+
+    QStringList diagnosticIds;
+    bool sawEscape = false;
+    for (const auto &diagnostic : scanner.scanDiagnostics()) {
+        diagnosticIds.append(diagnostic.sourceId);
+        sawEscape = sawEscape || diagnostic.message.contains(
+            QStringLiteral("escapes"));
+    }
+    QVERIFY(sawEscape);
+    QVERIFY(diagnosticIds.contains(QStringLiteral("hang")));
 }
 
 void ApplicationScannerTests::hiddenHigherPrecedenceEntryShadowsLowerRoot()

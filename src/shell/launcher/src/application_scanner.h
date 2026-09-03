@@ -6,6 +6,7 @@
 
 #include <QHash>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
@@ -87,9 +88,11 @@ private:
   void rebuild();
   void scheduleRebuild();
   void scanRoot(const QString &root, int *remainingFiles, bool *ceilingHit);
-  void scanDirectory(const QString &applicationsDir, const QString &relativePrefix,
+  void scanDirectory(const QString &applicationsDir, const QString &canonicalRoot,
+                     const QString &relativePrefix,
                      int *remainingFiles, bool *ceilingHit,
-                     QStringList *watchedDirectories);
+                     QStringList *watchedDirectories,
+                     QSet<QString> *visitedDirectories);
   void addScanDiagnostic(const QString &sourceId, const QString &message);
 
   QStringList m_roots;

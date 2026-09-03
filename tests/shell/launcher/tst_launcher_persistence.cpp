@@ -243,16 +243,18 @@ void LauncherPersistenceTests::uncertainCommitsAreNeverReplayed()
     QVERIFY(!wired.controller.statusText().isEmpty());
 
     // No automatic replay, ever: the resync snapshot is the only recovery.
+    // The authority deliberately remains byte-for-byte equal to the baseline;
+    // this is the former regression where confirmed-vs-confirmed comparison
+    // left the optimistic live mutation behind.
     QTest::qWait(50);
     QCOMPARE(wired.transport.commits.size(), 1);
     const qsizetype snapshotsBefore = wired.transport.snapshots.size();
     QTRY_COMPARE(wired.transport.snapshots.size(), snapshotsBefore + 1);
     wired.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
-        kEpoch, 1,
-        {{ LauncherPersistenceController::pinnedKey(),
-           idList({ QStringLiteral("org.qindaqt.editor") }) }}));
-    QTRY_COMPARE(wired.controller.pinned().ids(),
-                 QStringList({ QStringLiteral("org.qindaqt.editor") }));
+        kEpoch, 0, {}));
+    QTRY_VERIFY(wired.controller.persistenceReady());
+    QTRY_VERIFY(wired.controller.pinned().ids().isEmpty());
+    QCOMPARE(wired.transport.commits.size(), 1);
 }
 
 void LauncherPersistenceTests::transportLossRefusesNewWrites()

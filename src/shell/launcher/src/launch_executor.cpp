@@ -47,9 +47,8 @@ LaunchOutcome LaunchExecutor::launch(const QString &entryId,
     return refuse(QStringLiteral("entry document is not retained"));
   }
 
-  // Entry-level execution keys decide the dispatch surface: a
-  // DBusActivatable entry activates over D-Bus for every action, while the
-  // action group's own Exec/Path/Terminal apply only when spawning.
+  // Entry-level execution keys decide the dispatch surface and working
+  // directory for every action. Desktop Action groups contribute only Exec.
   const auto entryParsed = LaunchExecutionParser::parse(*document);
   if (!entryParsed.ok()) {
     return refuse(QStringLiteral("entry execution data is unusable: %1")
@@ -74,10 +73,11 @@ LaunchOutcome LaunchExecutor::launch(const QString &entryId,
     return refuse(QStringLiteral("entry execution data is unusable: %1")
                       .arg(parsed.message));
   }
-  const ExecutionKeys &keys = *parsed.keys;
+  const ExecutionKeys &actionKeys = *parsed.keys;
+  const ExecutionKeys &entryKeys = *entryParsed.keys;
 
   const auto planned = ExecFieldCodeExpander::expand(
-      keys.exec,
+      actionKeys.exec,
       ExecExpansionValues { intent.intent->displayName, intent.intent->iconName,
                             m_scanner.documentPath(entryId) });
   if (!planned.ok()) {
@@ -85,7 +85,7 @@ LaunchOutcome LaunchExecutor::launch(const QString &entryId,
                       .arg(planned.message));
   }
 
-  if (keys.terminal) {
+  if (entryKeys.terminal) {
     if (m_terminalCommand.isEmpty()) {
       // AGENT-NOTE: Terminal=true without a wired terminal policy is a
       // truthful refusal, never a silent fallback to a shell. Wiring the
@@ -96,7 +96,7 @@ LaunchOutcome LaunchExecutor::launch(const QString &entryId,
     request.program = m_terminalCommand.constFirst();
     request.arguments = m_terminalCommand.mid(1)
         + QStringList { planned.plan->program } + planned.plan->arguments;
-    request.workingDirectory = keys.path;
+    request.workingDirectory = entryKeys.path;
     const SpawnResult result = m_spawner.spawn(request);
     m_lastOutcome = result.ok
         ? LaunchOutcome { LaunchStatus::Spawned, {} }
@@ -108,7 +108,7 @@ LaunchOutcome LaunchExecutor::launch(const QString &entryId,
   SpawnRequest request;
   request.program = planned.plan->program;
   request.arguments = planned.plan->arguments;
-  request.workingDirectory = keys.path;
+  request.workingDirectory = entryKeys.path;
   const SpawnResult result = m_spawner.spawn(request);
   m_lastOutcome = result.ok
       ? LaunchOutcome { LaunchStatus::Spawned, {} }

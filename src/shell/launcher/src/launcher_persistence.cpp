@@ -94,8 +94,12 @@ void LauncherPersistenceController::handleSnapshot()
     setStatusText(QStringLiteral("Stored recent list is malformed and was ignored"));
   }
 
-  const bool pinnedDidChange = pinned != m_confirmedPinned;
-  const bool recentDidChange = recent != m_confirmedRecent;
+  // AGENT-GUARD: Compare authority with live optimistic state, not only the
+  // previous confirmed snapshot. After an uncertain commit the authoritative
+  // resync may be byte-for-byte unchanged while the live model still contains
+  // the unconfirmed draft; it must converge without replay (ADR-0012).
+  const bool pinnedDidChange = pinned != m_pinned.ids();
+  const bool recentDidChange = recent != m_recent.ids();
   m_confirmedPinned = pinned;
   m_confirmedRecent = recent;
   m_confirmedBaseline = true;

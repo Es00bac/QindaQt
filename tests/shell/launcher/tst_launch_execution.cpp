@@ -45,18 +45,24 @@ void LaunchExecutionTests::parsesPrimaryAndActionExecutionKeys()
     QVERIFY(!primary.keys->dbusActivatable);
 
     const QString text = document(
-        QStringLiteral("Exec=fixture\nTerminal=true\nDBusActivatable=true\n"),
+        QStringLiteral("Exec=fixture\nPath=/entry/path\n"
+                       "Terminal=true\nDBusActivatable=true\n"),
         QStringLiteral("Actions=new-window;\n\n[Desktop Action new-window]\n"
-                       "Name=New Window\nExec=fixture --new-window\n"));
+                       "Name=New Window\nExec=fixture --new-window\n"
+                       "Terminal=false\nPath=/action/path\n"
+                       "DBusActivatable=false\n"));
     const auto action = LaunchExecutionParser::parse(text, QStringLiteral("new-window"));
     QVERIFY2(action.ok(), qPrintable(action.message));
     QCOMPARE(action.keys->exec, QStringLiteral("fixture --new-window"));
-    // Action groups do not inherit the entry group's Terminal/DBusActivatable.
+    // The action parser contributes only Exec. Unsupported action-local policy
+    // keys cannot replace entry-level dispatch or working-directory truth.
+    QVERIFY(action.keys->path.isEmpty());
     QVERIFY(!action.keys->terminal);
     QVERIFY(!action.keys->dbusActivatable);
 
     const auto entry = LaunchExecutionParser::parse(text);
     QVERIFY(entry.ok());
+    QCOMPARE(entry.keys->path, QStringLiteral("/entry/path"));
     QVERIFY(entry.keys->terminal);
     QVERIFY(entry.keys->dbusActivatable);
 
@@ -96,6 +102,19 @@ void LaunchExecutionTests::rejectsHostileExecutionGroups()
     const auto localized = LaunchExecutionParser::parse(document(
         QStringLiteral("Exec[de]=fixture --german\nDBusActivatable=false\n")));
     QCOMPARE(localized.error, ExecutionParseError::MissingExec);
+
+    // Hostile policy lookalikes inside an action group are opaque. Invalid
+    // values there must neither poison action Exec nor influence dispatch.
+    const auto hostileAction = LaunchExecutionParser::parse(document(
+        QStringLiteral("Exec=fixture\n"),
+        QStringLiteral("Actions=hostile;\n[Desktop Action hostile]\n"
+                       "Name=Hostile\nExec=fixture --action\n"
+                       "Terminal=maybe\nPath=bad\\qpath\n"
+                       "DBusActivatable=maybe\n")),
+        QStringLiteral("hostile"));
+    QVERIFY2(hostileAction.ok(), qPrintable(hostileAction.message));
+    QCOMPARE(hostileAction.keys->exec, QStringLiteral("fixture --action"));
+    QVERIFY(hostileAction.keys->path.isEmpty());
 }
 
 void LaunchExecutionTests::expandsFieldCodesWithoutAShell()

@@ -2,7 +2,7 @@
 
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_ROOT QINDAQT_STAGE
                           QINDAQT_PROBE QINDAQT_INSTALL_QMLDIR
-                          QINDAQT_INSTALL_DATADIR QINDAQT_BUILD_QMLDIR)
+                          QINDAQT_INSTALL_DATADIR)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed launcher input: ${required}")
     endif()
@@ -15,6 +15,8 @@ if(NOT stage_is_in_build OR stage STREQUAL build_root)
     message(FATAL_ERROR "Launcher stage must be a child of its build tree")
 endif()
 file(REMOVE_RECURSE "${stage}")
+set(relocated_stage "${stage}-relocated")
+file(REMOVE_RECURSE "${relocated_stage}")
 
 execute_process(
     COMMAND "${QINDAQT_CMAKE}" --install "${build_root}"
@@ -27,11 +29,25 @@ if(NOT install_status EQUAL 0)
         "Launcher stage install failed:\n${install_output}${install_error}")
 endif()
 
+# AGENT-GUARD: Execute only after the entire installed prefix moves. Keeping
+# the original path or a build-QML fallback would make this row vacuous for
+# absolute import/RUNPATH regressions.
+file(RENAME "${stage}" "${relocated_stage}" RESULT relocate_status)
+if(NOT relocate_status STREQUAL "0")
+    message(FATAL_ERROR "Launcher stage relocation failed: ${relocate_status}")
+endif()
+if(EXISTS "${stage}" OR NOT IS_DIRECTORY "${relocated_stage}")
+    message(FATAL_ERROR "Launcher stage did not move exclusively to its new prefix")
+endif()
+set(stage "${relocated_stage}")
+
 set(staged_qml "${stage}/${QINDAQT_INSTALL_QMLDIR}")
 set(staged_data "${stage}/${QINDAQT_INSTALL_DATADIR}/qindaqt")
 foreach(required_path IN ITEMS
         "${staged_qml}/QindaQt/Shell/Launcher/qmldir"
         "${staged_qml}/QindaQt/Shell/Launcher/LauncherApplet.qml"
+        "${staged_qml}/QindaQt/Controls/qmldir"
+        "${staged_qml}/QindaQt/Tokens/qmldir"
         "${staged_data}/applets/launcher.json"
         "${staged_data}/applet-policy/default.json")
     if(NOT EXISTS "${required_path}")
@@ -56,6 +72,7 @@ execute_process(
     COMMAND "${QINDAQT_CMAKE}" -E env
             QT_QPA_PLATFORM=offscreen
             QT_QUICK_BACKEND=software
+            QT_FATAL_WARNINGS=1
             QML_IMPORT_TRACE=1
             "XDG_RUNTIME_DIR=${poison}/runtime"
             "XDG_DATA_DIRS=${poison}"
@@ -64,7 +81,6 @@ execute_process(
             "--applets-dir=${staged_data}/applets"
             "--policy=${staged_data}/applet-policy/default.json"
             "--staged-qml=${staged_qml}"
-            "--fallback-qml=${QINDAQT_BUILD_QMLDIR}"
     RESULT_VARIABLE probe_status
     OUTPUT_VARIABLE probe_output
     ERROR_VARIABLE probe_error)
@@ -80,4 +96,4 @@ if(staged_hit EQUAL -1)
         "Probe never loaded from the staged prefix:\n${probe_output}${probe_error}")
 endif()
 
-message(STATUS "Installed compiled launcher applet and source-poison proof passed")
+message(STATUS "Relocated compiled launcher applet and source-poison proof passed")

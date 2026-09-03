@@ -244,9 +244,14 @@ ExecutionParseResult LaunchExecutionParser::parse(const QString &documentText,
     // extension's escape grammar cannot reach execution planning.
     if (!target || key.contains(QLatin1Char('[')))
       continue;
+    // Desktop Action groups define only their own Exec. Dispatch policy and
+    // working directory remain entry-level; action-local lookalikes are
+    // ignored without decoding so they cannot replace or poison that policy.
+    const bool actionGroup = !actionId.isEmpty();
     const bool recognized = key == QLatin1String("Exec")
-        || key == QLatin1String("Terminal") || key == QLatin1String("Path")
-        || key == QLatin1String("DBusActivatable");
+        || (!actionGroup && (key == QLatin1String("Terminal")
+                             || key == QLatin1String("Path")
+                             || key == QLatin1String("DBusActivatable")));
     if (!recognized)
       continue;
     if (seenKeys.contains(key)) {

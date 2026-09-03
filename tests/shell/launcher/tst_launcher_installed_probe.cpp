@@ -31,10 +31,7 @@ int main(int argc, char **argv)
     const QCommandLineOption stagedQml(QStringLiteral("staged-qml"),
                                        QStringLiteral("staged QML import root"),
                                        QStringLiteral("path"));
-    const QCommandLineOption fallbackQml(QStringLiteral("fallback-qml"),
-                                         QStringLiteral("build QML import root"),
-                                         QStringLiteral("path"));
-    parser.addOptions({ appletsDir, policyFile, stagedQml, fallbackQml });
+    parser.addOptions({ appletsDir, policyFile, stagedQml });
     parser.process(app);
 
     Applets::ManifestCatalog catalog;
@@ -67,13 +64,10 @@ int main(int argc, char **argv)
     }
 
     QQmlEngine engine;
-    // The staged root comes first so the module cannot silently resolve from
-    // the build tree; Tokens/Controls are sibling modules of the same build.
-    // The driver runs with QML_IMPORT_TRACE=1 and asserts the plugin library
-    // loaded from the staged prefix (compiled modules report qrc: URLs, so
-    // the plugin-load trace is the honest provenance check).
+    // The moved staged root is the only injected import root. Tokens and
+    // Controls are siblings inside that prefix; no build-tree fallback can
+    // conceal an absolute-path regression.
     engine.addImportPath(parser.value(stagedQml));
-    engine.addImportPath(parser.value(fallbackQml));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.Launcher"),
                              QStringLiteral("LauncherApplet"));

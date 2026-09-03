@@ -17,7 +17,7 @@ Item {
 
     required property var access
     property bool vertical: false
-    readonly property bool available: access !== null
+    readonly property bool available: access !== null && Tokens.ready
 
     objectName: "launcherApplet"
     implicitWidth: vertical ? 40 : Math.max(46, summary.implicitWidth + 12)
@@ -38,24 +38,21 @@ Item {
             focusSearch()
             return
         }
-        if (flatIndex >= totalRows)
+        if (flatIndex >= totalRows || !browserContent.item)
             return
-        for (let i = 0; i < sectionRepeater.count; ++i) {
-            const sectionItem = sectionRepeater.itemAt(i)
-            if (sectionItem && sectionItem.focusRowAt(flatIndex))
-                return
-        }
+        browserContent.item.focusRow(flatIndex)
     }
 
     function focusSearch() {
-        searchField.forceActiveFocus()
+        if (browserContent.item)
+            browserContent.item.focusSearch()
     }
 
     function openBrowser() {
         if (!root.available)
             return
         browser.open()
-        searchField.forceActiveFocus()
+        focusSearch()
     }
 
     T.ToolButton {
@@ -75,13 +72,17 @@ Item {
                                 : ""
 
         onClicked: root.openBrowser()
+        Keys.onReturnPressed: root.openBrowser()
+        Keys.onEnterPressed: root.openBrowser()
         Accessible.onPressAction: root.openBrowser()
 
         contentItem: Text {
             text: summary.text
-            color: summary.enabled ? Tokens.fg.default : Tokens.fg.disabled
-            font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.caption
+            color: Tokens.ready
+                   ? (summary.enabled ? Tokens.fg.default : Tokens.fg.disabled)
+                   : "transparent"
+            font.family: Tokens.ready ? Tokens.type.fontFamily : ""
+            font.pointSize: Tokens.ready ? Tokens.type.caption : 10
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
@@ -94,104 +95,146 @@ Item {
 
         objectName: "launcherAppletPopup"
         width: 340
-        height: Math.min(480, contentColumn.implicitHeight + padding * 2)
-        padding: Tokens.space["3"]
+        height: Math.min(480, (browserContent.item
+                              ? browserContent.item.implicitHeight : 0)
+                             + padding * 2)
+        padding: Tokens.ready ? Tokens.space["3"] : 0
         modal: false
         focus: true
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
 
         background: Rectangle {
-            radius: Tokens.radius.l
-            color: Tokens.bg.raised
-            border.color: Tokens.outline.divider
+            radius: Tokens.ready ? Tokens.radius.l : 0
+            color: Tokens.ready ? Tokens.bg.raised : "transparent"
+            border.color: Tokens.ready ? Tokens.outline.divider : "transparent"
         }
 
-        contentItem: ColumnLayout {
-            id: contentColumn
+        contentItem: Loader {
+            id: browserContent
 
-            spacing: Tokens.space["2"]
-
-            TextField {
-                id: searchField
-
-                objectName: "launcherSearchField"
-                Layout.fillWidth: true
-                enabled: root.available
-                text: root.available ? root.access.query : ""
-                placeholderText: qsTr("Search applications")
-                accessibleName: qsTr("Search applications")
-                accessibleDescription:
-                    qsTr("Type to filter applications; press Down to move to the results")
-                onTextEdited: if (root.available)
-                    root.access.query = text
-                Keys.onDownPressed: root.focusRow(0)
-                Keys.onReturnPressed: root.focusRow(0)
-                Keys.onEnterPressed: root.focusRow(0)
-            }
-
-            Label {
-                objectName: "launcherAppletDiagnostic"
-                Layout.fillWidth: true
-                visible: root.available && root.access.diagnostic !== ""
-                text: visible ? root.access.diagnostic : ""
-                muted: true
-            }
-
-            Label {
-                objectName: "launcherAppletFeedback"
-                Layout.fillWidth: true
-                visible: root.available && root.access.feedback !== ""
-                text: visible ? root.access.feedback : ""
-                Accessible.role: Accessible.AlertMessage
-            }
-
-            Label {
-                objectName: "launcherAppletEmpty"
-                Layout.fillWidth: true
-                visible: root.available && root.totalRows === 0
-                         && root.access.phase !== "loading"
-                text: root.access.query.length > 0
-                      ? qsTr("No applications match the search")
-                      : qsTr("No applications are installed")
-                muted: true
-            }
-
-            T.ScrollView {
-                objectName: "launcherAppletResults"
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                implicitHeight: Math.min(360, sectionColumn.implicitHeight)
-                clip: true
-
+            active: root.available
+            sourceComponent: Component {
                 ColumnLayout {
-                    id: sectionColumn
+                    id: contentColumn
 
-                    width: parent.width
-                    spacing: Tokens.space["1"]
+                    function focusRow(flatIndex) {
+                        for (let i = 0; i < sectionRepeater.count; ++i) {
+                            const sectionItem = sectionRepeater.itemAt(i)
+                            if (sectionItem && sectionItem.focusRowAt(flatIndex))
+                                return
+                        }
+                    }
 
-                    Repeater {
-                        id: sectionRepeater
+                    function focusSearch() {
+                        searchField.forceActiveFocus()
+                    }
 
-                        model: root.available ? root.access.sections : []
+                    spacing: Tokens.space["2"]
 
-                        LauncherSection {
-                            required property var modelData
-                            required property int index
+                    TextField {
+                        id: searchField
 
-                            readonly property int computedBase: {
-                                let base = 0
-                                const list = root.access.sections
-                                for (let i = 0; i < index; ++i)
-                                    base += list[i].items ? list[i].items.length : 0
-                                return base
+                        objectName: "launcherSearchField"
+                        Layout.fillWidth: true
+                        enabled: root.available
+                        text: root.available ? root.access.query : ""
+                        placeholderText: qsTr("Search applications")
+                        accessibleName: qsTr("Search applications")
+                        accessibleDescription:
+                            qsTr("Type to filter applications; press Down to move to the results")
+                        onTextEdited: if (root.available)
+                            root.access.query = text
+                        Keys.onDownPressed: root.focusRow(0)
+                        Keys.onReturnPressed: root.focusRow(0)
+                        Keys.onEnterPressed: root.focusRow(0)
+                    }
+
+                    Label {
+                        objectName: "launcherAppletDiagnostic"
+                        Layout.fillWidth: true
+                        visible: root.available && root.access.diagnostic !== ""
+                        text: visible ? root.access.diagnostic : ""
+                        muted: true
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                        Accessible.role: Accessible.AlertMessage
+                    }
+
+                    Label {
+                        objectName: "launcherAppletPersistenceStatus"
+                        Layout.fillWidth: true
+                        visible: root.available
+                                 && root.access.persistenceStatus !== ""
+                        text: visible ? root.access.persistenceStatus : ""
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                        Accessible.role: Accessible.AlertMessage
+                    }
+
+                    Label {
+                        objectName: "launcherAppletFeedback"
+                        Layout.fillWidth: true
+                        visible: root.available && root.access.feedback !== ""
+                        text: visible ? root.access.feedback : ""
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                        Accessible.role: Accessible.AlertMessage
+                    }
+
+                    Label {
+                        objectName: "launcherAppletEmpty"
+                        Layout.fillWidth: true
+                        visible: root.available && root.totalRows === 0
+                                 && root.access.phase !== "loading"
+                        text: root.available && root.access.query.length > 0
+                              ? qsTr("No applications match the search")
+                              : qsTr("No applications are installed")
+                        muted: true
+                    }
+
+                    T.ScrollView {
+                        objectName: "launcherAppletResults"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        implicitHeight: Math.min(360, sectionColumn.implicitHeight)
+                        clip: true
+                        focusPolicy: Qt.NoFocus
+
+                        ColumnLayout {
+                            id: sectionColumn
+
+                            width: parent.width
+                            spacing: Tokens.space["1"]
+
+                            Repeater {
+                                id: sectionRepeater
+
+                                model: root.available ? root.access.sections : []
+
+                                LauncherSection {
+                                    required property var modelData
+                                    required property int index
+
+                                    readonly property int computedBase: {
+                                        let base = 0
+                                        const list = root.access.sections
+                                        for (let i = 0; i < index; ++i) {
+                                            const earlierSection = list[i]
+                                            if (earlierSection && earlierSection.items)
+                                                base += earlierSection.items.length
+                                        }
+                                        return base
+                                    }
+
+                                    Layout.fillWidth: true
+                                    section: modelData
+                                    controller: root.access
+                                    vertical: root.vertical
+                                    flatBase: computedBase
+                                    onFlatFocusRequested: flatIndex =>
+                                        root.focusRow(flatIndex)
+                                }
                             }
-
-                            Layout.fillWidth: true
-                            section: modelData
-                            controller: root.access
-                            vertical: root.vertical
-                            flatBase: computedBase
-                            onFlatFocusRequested: flatIndex => root.focusRow(flatIndex)
                         }
                     }
                 }
