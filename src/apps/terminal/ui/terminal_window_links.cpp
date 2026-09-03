@@ -43,12 +43,16 @@ void TerminalWindow::copyCurrentLink() {
   if (m_activeSession == nullptr) {
     return;
   }
-  TerminalLinkSelection selection = m_linkBySession.value(m_activeSession);
+  const TerminalLinkSelection cached = m_linkBySession.value(m_activeSession);
+  const TerminalLinkSelection selection = m_activeSession->currentVisibleLink();
+  presentLinkSelection(selection);
   if (!selection.found) {
-    selection = m_activeSession->currentVisibleLink();
-    presentLinkSelection(selection);
+    return;
   }
-  if (!selection.found) {
+  // AGENT-GUARD: Child output and scrolling can change after traversal.
+  // Never copy a cached target unless the current viewport still reports the
+  // same selection; one stale activation must only refresh truth (review P2-2).
+  if (cached.found && cached.link != selection.link) {
     return;
   }
   QApplication::clipboard()->setText(selection.link.target);
@@ -62,12 +66,13 @@ void TerminalWindow::openCurrentLink() {
     showStatusMessage(QStringLiteral("Link opener is unavailable"), true);
     return;
   }
-  TerminalLinkSelection selection = m_linkBySession.value(m_activeSession);
+  const TerminalLinkSelection cached = m_linkBySession.value(m_activeSession);
+  const TerminalLinkSelection selection = m_activeSession->currentVisibleLink();
+  presentLinkSelection(selection);
   if (!selection.found) {
-    selection = m_activeSession->currentVisibleLink();
-    presentLinkSelection(selection);
+    return;
   }
-  if (!selection.found) {
+  if (cached.found && cached.link != selection.link) {
     return;
   }
   const TerminalLinkOpenResult result = m_linkOpener->open(selection.link, this);

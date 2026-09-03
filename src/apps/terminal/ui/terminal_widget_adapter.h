@@ -110,6 +110,7 @@ private:
   QAction *m_searchHighlightAll = nullptr;
   TerminalSearchQuery m_searchQuery;
   int m_searchMatchIndex = -1;
+  bool m_searchRendererActive = false;
   QList<TerminalLink> m_visibleLinks;
   int m_visibleLinkIndex = -1;
 };

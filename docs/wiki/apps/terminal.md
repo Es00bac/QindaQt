@@ -152,11 +152,14 @@ the built-in default after a definitive Settings1 failure).
 ## Per-session scrollback search
 
 Each session owns volatile find text, case sensitivity, regex mode, current
-match, and find-bar visibility. `Ctrl+Shift+F` opens the non-modal in-window
-bar, `F3` and `Shift+F3` traverse with wrap, and Escape clears renderer
-highlights, hides the bar, and returns focus to that session. Switching tabs
-restores the selected session's volatile bar without copying its query to
-another tab. Search text is never sent to Settings1 or any persistence surface.
+match/result announcement, and find-bar visibility. `Ctrl+Shift+F` opens the
+non-modal in-window bar, `F3` and `Shift+F3` traverse with wrap, and Escape
+clears renderer highlights, hides the bar, and returns focus to that session
+without discarding its logical match position. A later `F3` or `Shift+F3`
+resumes in the requested direction from that position. Switching tabs restores
+the selected session's complete volatile bar and accessible result without
+copying or announcing another tab's state. Search text is never sent to
+Settings1 or any persistence surface.
 
 The qtermwidget-free admission policy limits patterns to 256 UTF-16 code units,
 snapshots to 4 MiB, and reported matches to 10,000. Literal search is always
@@ -181,14 +184,19 @@ highlight color.
 
 The adapter derives at most 256 link presentation values from the current live
 screen tail, capped at 512 KiB. Detection accepts explicit `http://` and
-`https://` URLs plus absolute local paths. Each target is capped at 2,048
-UTF-16 code units; controls and unpaired surrogates are removed, terminal
-punctuation and unmatched closing delimiters are excluded, and quoted absolute
-paths may contain spaces. URL/path text is never normalized: Unicode
-homoglyphs, IDNs, and punycode remain exactly as printed, and the tooltip says
-that hostname spelling was not normalized.
+`https://` URLs plus absolute local paths, including the root path `/`;
+`file://` URLs are explicitly outside the admitted set. Each target is capped
+at 2,048 UTF-16 code units; Unicode control and format characters (including
+bidi controls and zero-width joiners) plus unpaired surrogates are removed,
+terminal punctuation and unmatched closing delimiters are excluded, and
+quoted absolute paths may contain spaces. URL/path text is otherwise never
+normalized: Unicode homoglyphs, IDNs, and punycode remain exactly as printed,
+and the tooltip says that hostname spelling was not normalized.
 
-Nothing auto-activates. The fixed AppShell/local catalog includes Select
+Nothing auto-activates. Copy and Open re-read the current viewport immediately
+before acting; if the traversed selection disappeared or changed, that request
+only refreshes presentation truth and neither copies, confirms, nor dispatches
+the stale target. The fixed AppShell/local catalog includes Select
 Previous Link, Select Next Link, Copy Link, and Open Link; the terminal context
 menu presents the same actions, and their Shift-modified shortcuts provide
 bounded keyboard traversal. Selection announces `Link N of M` and the exact

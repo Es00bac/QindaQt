@@ -113,6 +113,26 @@ void TerminalWidgetAdapterTest::
   QCOMPARE(result.total, 2);
   QCOMPARE(result.current, 1);
   QVERIFY(adapter.hasSelectedText());
+
+  // AGENT-NOTE: Regression for review P2-1. Escape clears renderer highlight
+  // through this boundary but must retain the session's logical position, so
+  // backward navigation from match one wraps to match two.
+  const TerminalSearchQuery regexQuery{
+      .pattern = QStringLiteral("n.e+dle"),
+      .caseSensitive = true,
+      .regularExpression = true};
+  result =
+      adapter.searchScrollback(regexQuery, TerminalSearchDirection::Initial);
+  QCOMPARE(result.current, 1);
+  adapter.clearScrollbackSearch();
+  result = adapter.searchScrollback(literal,
+                                    TerminalSearchDirection::Previous);
+  QCOMPARE(result.current, 2);
+  QVERIFY(result.wrapped);
+
+  result =
+      adapter.searchScrollback(literal, TerminalSearchDirection::Initial);
+  QCOMPARE(result.current, 1);
   result = adapter.searchScrollback(literal, TerminalSearchDirection::Next);
   QCOMPARE(result.current, 2);
   result = adapter.searchScrollback(literal, TerminalSearchDirection::Next);

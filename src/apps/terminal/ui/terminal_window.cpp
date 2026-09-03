@@ -129,6 +129,7 @@ void TerminalWindow::wireCollection() {
             m_selectionBySession.remove(session);
             m_titlesBySession.remove(session);
             m_searchBySession.remove(session);
+            m_searchResultBySession.remove(session);
             m_findVisibleBySession.remove(session);
             m_linkBySession.remove(session);
             disconnect(session, nullptr, this, nullptr);

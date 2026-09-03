@@ -1467,15 +1467,20 @@ production-adapter coverage. Search policy exercises literal/case/regex modes,
 no-match truth, pattern/result limits, and rejects a 4 MiB hostile
 nested-quantifier fixture before regex execution under a 100 ms local bound.
 The fake-adapter UI row covers the non-modal bar, `Ctrl+Shift+F`, F3 in both
-directions, per-session volatile queries/visibility, accessible match status,
-Escape focus routing, and link traversal/copy/open/context actions. The
-production adapter row starts one deterministic `/bin/sh` child on the real
-application-owned PTY bridge, waits for fixed output, then proves current-match
-selection, next/previous wrap, case/no-match truth, hostile-regex refusal, and
-visible URL/path enumeration before explicitly reaping that fixture.
+directions, complete per-session query/visibility/current-result restoration,
+accessible match status without cross-tab announcements, Escape focus routing,
+and link traversal/copy/open/context actions, including stale-viewport
+activation refusal. The production adapter row starts one deterministic
+`/bin/sh` child on the real application-owned PTY bridge, waits for fixed
+output, then proves current-match selection, next/previous wrap, backward
+position resumption after highlight clearing, case/no-match truth,
+hostile-regex refusal, and visible URL/path enumeration before explicitly
+reaping that fixture.
 
 Link policy covers trailing punctuation, quotes, balanced/unbalanced
-parentheses, overlength, controls, punycode, and a Unicode homoglyph hostname.
+parentheses, overlength, control and Unicode-format characters, punycode, a
+Unicode homoglyph hostname, absolute root detection, and registered local and
+host `file://` rejection rows.
 Recording confirmation and spawner seams require the exact displayed target as
 one argv element and prove cancellation and spawn failure without executing a
 real `xdg-open`. The boundary poison compiles the public support API while

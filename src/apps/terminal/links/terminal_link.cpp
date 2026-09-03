@@ -21,12 +21,22 @@ namespace {
     const QChar character = input.at(index);
     if (character.isHighSurrogate() && index + 1 < input.size() &&
         input.at(index + 1).isLowSurrogate()) {
+      const QChar low = input.at(index + 1);
+      const auto category =
+          QChar::category(QChar::surrogateToUcs4(character, low));
+      if (category == QChar::Other_Control ||
+          category == QChar::Other_Format) {
+        ++index;
+        continue;
+      }
       output.append(character);
-      output.append(input.at(++index));
+      output.append(low);
+      ++index;
       continue;
     }
     if (character.isLowSurrogate() || character.isHighSurrogate() ||
-        character.isNull() || character.category() == QChar::Other_Control) {
+        character.isNull() || character.category() == QChar::Other_Control ||
+        character.category() == QChar::Other_Format) {
       if (character.isSpace()) {
         output.append(QLatin1Char(' '));
       }
@@ -105,8 +115,7 @@ QList<TerminalLink> detectTerminalLinks(const QString &visibleOutput) {
                                                  Qt::CaseInsensitive) == 0 ||
                       text.mid(index, 8).compare(QStringLiteral("https://"),
                                                  Qt::CaseInsensitive) == 0);
-    const bool local = boundary && text.at(index) == QLatin1Char('/') &&
-                       index + 1 < text.size() && !text.at(index + 1).isSpace();
+    const bool local = boundary && text.at(index) == QLatin1Char('/');
     if (!web && !local) {
       ++index;
       continue;
