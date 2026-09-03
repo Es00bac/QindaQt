@@ -5,21 +5,21 @@ provider: OpenAI
 model: gpt-5.6-sol
 reasoning: high
 status: handoff
-feature: QQ-004.02 Window-aware hiding, reveal/hold, and dynamic reservation
-worktree: /home/cabewse/work_SPaC3/container-wm-workers/panel-visibility-proof
-started_at: 2026-09-03T02:15:47-06:00
-updated_at: 2026-09-03T06:00:37-06:00
+feature: QQ-004.02 Window-aware panel hiding on integrated main
+worktree: /home/cabewse/work_SPaC3/container-wm-workers/panel-visibility-main-repair
+started_at: 2026-09-03T06:59:28-06:00
+updated_at: 2026-09-03T07:37:02-06:00
 ---
 
 # Erna Hoover-Codex
 
 - Role: Shell interaction engineer.
 - Provider/model: OpenAI `gpt-5.6-sol` (high reasoning).
-- Status: handoff — exact repaired candidate `e64418798cdc2ef7e4244f07664f8c9fda98a862` closes Dana Ulery's four P1 findings.
-- Exact base: `349f805b685c0b5b1ad146d600dc1c3fa528281d`.
-- Branch: `worker/panel-visibility-proof`.
-- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/panel-visibility-proof`.
-- Product authority: additive `src/shell_visibility*/**`, `src/shell/runtime/*visibility*`, new `panelvisibility*` runtime producers, focused tests, new `tests/session` rows/drivers, panel-visibility/testing-harness docs, and minimal additive shared wiring.
+- Status: handoff — exact candidate `cae66fcd5f3245c7cbea82728928d69acaee0ef1` waits for settled compositor authority before hidden-phase capture.
+- Exact base: `22b31b94e0da12f0be54c5d0d3c48b639815e562`.
+- Branch: `worker/panel-visibility-main-repair`.
+- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/panel-visibility-main-repair`.
+- Product authority: `src/shell_visibility*/**`, visibility runtime producers, conditional Global Menu composition/applet paths, focused visibility and Global Menu tests, additive session tests, panel-visibility/global-menu docs, this worker record, and thread messages.
 
 ## Updates
 
@@ -29,3 +29,6 @@ updated_at: 2026-09-03T06:00:37-06:00
 - 2026-09-03T05:01:15-06:00 — Resumed the same QQ-004.02 lane to reproduce and repair P1-1 through P1-4 from Dana Ulery's exact rejection verdict; path authority and exact base remain unchanged.
 - 2026-09-03T05:34:06-06:00 — All four repairs have focused executable coverage; the first repaired 1080p installed row passed with an authoritative move from `(0,30,722x517)` to `(0,336,722x517)`, eight panel-region captures, post-close absence, and survivor-free teardown.
 - 2026-09-03T06:00:37-06:00 — Handed off repaired product candidate `e64418798cdc2ef7e4244f07664f8c9fda98a862` (tree `bfde197b3d9a41f5536b2324bf30f947e284020c`) after strict Debug/Release, two final serial nested matrices, hostile validators, documentation, shape, JSON, whitespace, containment, and survivor gates passed.
+- 2026-09-03T06:59:28-06:00 — Claimed the integrated-main repair at exact base `22b31b94e0da12f0be54c5d0d3c48b639815e562`; read the normative module, visibility, Global Menu, and complete contained-desktop harness contracts before diagnosis.
+- 2026-09-03T07:35:59-06:00 — Isolated the failure to phase qualification accepting KWin's transient mapped/committed 0x0 teardown role, not a Global Menu popup lease; the fake-authority/timer regression, 41-row Debug/Release matrices, and two serial passes of both visibility scenarios plus boot are green with no KWin survivors.
+- 2026-09-03T07:37:02-06:00 — Handed off immutable product candidate `cae66fcd5f3245c7cbea82728928d69acaee0ef1` (tree `1e127cb8870a101547a8f48ecfd927553600915d`) for independent exact review; the only unavailable green gate is the unchanged exact-base source-shape violation in the active desktop-stage lane.
