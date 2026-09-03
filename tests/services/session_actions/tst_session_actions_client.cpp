@@ -4,6 +4,8 @@
 
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusContext>
+#include <QtDBus/QDBusMessage>
+#include <QtCore/QScopeGuard>
 #include <QtCore/QUuid>
 #include <QtTest>
 
@@ -17,15 +19,35 @@ class FakeScreenSaver final : public QObject, protected QDBusContext {
 
 public:
     int lockCount = 0;
+    int getActiveCount = 0;
     bool holdReply = false;
+    std::optional<QDBusMessage> delayedLockReply;
 
 public Q_SLOTS:
+    bool GetActive()
+    {
+        ++getActiveCount;
+        return false;
+    }
+
     void Lock()
     {
         ++lockCount;
         if (holdReply && calledFromDBus()) {
             setDelayedReply(true);
+            delayedLockReply = message().createReply();
         }
+    }
+
+public:
+    bool sendDelayedLockReply(const QDBusConnection &bus)
+    {
+        if (!delayedLockReply) {
+            return false;
+        }
+        const bool sent = bus.send(*delayedLockReply);
+        delayedLockReply.reset();
+        return sent;
     }
 };
 
@@ -88,7 +110,7 @@ public Q_SLOTS:
 
 class PrivateServices final {
 public:
-    PrivateServices()
+    explicit PrivateServices(bool registerScreenSaverObject = true)
         : clientConnectionName(
               QStringLiteral("qindaqt-session-actions-test-%1")
                   .arg(QUuid::createUuid().toString(QUuid::WithoutBraces)))
@@ -100,7 +122,9 @@ public:
         QVERIFY(bus.isConnected());
         QVERIFY(clientBus.isConnected());
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));
-        QVERIFY(bus.registerObject(QStringLiteral("/ScreenSaver"), &screenSaver, flags));
+        if (registerScreenSaverObject) {
+            QVERIFY(bus.registerObject(QStringLiteral("/ScreenSaver"), &screenSaver, flags));
+        }
         QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Session1")));
         QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/Session1"), &session, flags));
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.login1")));
@@ -133,7 +157,9 @@ class SessionActionsClientTest final : public QObject {
 
 private Q_SLOTS:
     void canChecksPublishTypedFailClosedTruth();
+    void ownedScreenSaverWithoutInterfaceIsUnavailable();
     void dispatchRepeatsAdmissionAndSerializes();
+    void delayedSuccessFromReplacedOwnerIsUncertain();
     void mutationTimeoutIsUncertainAndNeverReplays();
     void ownerLossWithdrawsAvailabilityWithoutPolling();
 };
@@ -160,6 +186,19 @@ void SessionActionsClientTest::canChecksPublishTypedFailClosedTruth()
     QVERIFY(client.feedback().contains(QStringLiteral("unavailable")));
 }
 
+void SessionActionsClientTest::ownedScreenSaverWithoutInterfaceIsUnavailable()
+{
+    PrivateServices services(false);
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    client.start();
+    QTRY_VERIFY(client.canLogout());
+
+    QVERIFY(!client.canLock());
+    QVERIFY(!client.requestLock());
+    QCOMPARE(services.screenSaver.lockCount, 0);
+    QVERIFY(client.feedback().contains(QStringLiteral("unavailable")));
+}
+
 void SessionActionsClientTest::dispatchRepeatsAdmissionAndSerializes()
 {
     PrivateServices services;
@@ -181,8 +220,10 @@ void SessionActionsClientTest::dispatchRepeatsAdmissionAndSerializes()
     QCOMPARE(result.action, SessionAction::Suspend);
     QCOMPARE(result.status, ActionStatus::Succeeded);
 
+    const int baselineGetActive = services.screenSaver.getActiveCount;
     QVERIFY(client.requestLock());
     QTRY_COMPARE(services.screenSaver.lockCount, 1);
+    QVERIFY(services.screenSaver.getActiveCount >= baselineGetActive + 1);
     QTRY_COMPARE(finished.size(), 2);
 
     const int baselineLogoutCan = services.session.canCount;
@@ -190,6 +231,49 @@ void SessionActionsClientTest::dispatchRepeatsAdmissionAndSerializes()
     QTRY_COMPARE(services.session.logoutCount, 1);
     QTRY_COMPARE(finished.size(), 3);
     QVERIFY(services.session.canCount >= baselineLogoutCan + 1);
+}
+
+void SessionActionsClientTest::delayedSuccessFromReplacedOwnerIsUncertain()
+{
+    PrivateServices services;
+    services.screenSaver.holdReply = true;
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    QSignalSpy finished(&client, &SessionActionsClient::actionFinished);
+    client.start();
+    QTRY_VERIFY(client.canLock());
+
+    QVERIFY(client.requestLock());
+    QTRY_COMPARE(services.screenSaver.lockCount, 1);
+    QTRY_VERIFY(services.screenSaver.delayedLockReply.has_value());
+
+    const QString replacementName =
+        QStringLiteral("qindaqt-session-actions-replacement-%1")
+            .arg(QUuid::createUuid().toString(QUuid::WithoutBraces));
+    QDBusConnection replacementBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, replacementName);
+    FakeScreenSaver replacement;
+    QVERIFY(replacementBus.isConnected());
+    QVERIFY(services.bus.unregisterService(
+        QStringLiteral("org.freedesktop.ScreenSaver")));
+    QVERIFY(replacementBus.registerService(
+        QStringLiteral("org.freedesktop.ScreenSaver")));
+    QVERIFY(replacementBus.registerObject(QStringLiteral("/ScreenSaver"),
+                                          &replacement,
+                                          QDBusConnection::ExportAllSlots));
+    const auto replacementCleanup = qScopeGuard([&] {
+        replacementBus.unregisterObject(QStringLiteral("/ScreenSaver"));
+        replacementBus.unregisterService(QStringLiteral("org.freedesktop.ScreenSaver"));
+        QDBusConnection::disconnectFromBus(replacementName);
+    });
+    QVERIFY(services.screenSaver.sendDelayedLockReply(services.bus));
+
+    QTRY_COMPARE(finished.size(), 1);
+    const auto result = qvariant_cast<SessionActionResult>(finished.first().first());
+    QCOMPARE(result.action, SessionAction::Lock);
+    QCOMPARE(result.status, ActionStatus::Uncertain);
+    QCOMPARE(result.reasonCode, QStringLiteral("authority-replaced"));
+    QCOMPARE(services.screenSaver.lockCount, 1);
+    QCOMPARE(replacement.lockCount, 0);
 }
 
 void SessionActionsClientTest::ownerLossWithdrawsAvailabilityWithoutPolling()
