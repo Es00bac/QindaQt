@@ -105,6 +105,18 @@ The production shell now owns the following producers behind that store:
   then requests the authoritative plan again before unmapping. Reveal animates
   the already-authorized mapped surface back to full opacity.
 
+The final unmap crosses an asynchronous layer-shell boundary. After the
+animation lease is released and the shell hides the window, compositor
+authority may briefly retain the old mapped/committed role while its geometry
+has already collapsed to zero. That record is teardown in progress, not a
+hidden panel state and not evidence of another popup lease. In particular, the
+hosted Global Menu participates in the ordinary popup lease only while its
+popup is visible; its presence does not keep an unrelated panel window alive.
+Consumers that qualify a completed visibility transition must wait for a
+settled authority snapshot: every published surface geometry is positive and
+inside the framebuffer, and a hidden panel's role is absent. A role that never
+reaches that state fails closed at the observation deadline.
+
 The runtime reads only exact typed settings. `panels.autoHideDelayMs` is the
 canonical signed 64-bit integer produced by the Settings1 codec, while
 `accessibility.reducedMotion` is an exact boolean. Missing or malformed
@@ -145,7 +157,13 @@ The driver archives eight checksum-validated, nonuniform private-parent
 framebuffer captures: overlap-hidden, moved-away, close-hidden,
 closed-restored, edge-revealed, shortcut-revealed, popup-held, and popup-closed.
 Every capture is joined to the exact compositor-authority surface inventory
-taken for that phase. The validator derives stable left and bottom panel
+taken for that phase. Before capture, the probe polls through asynchronous
+layer-surface teardown and admits only a settled inventory; a mapped 0x0 role,
+malformed geometry, or geometry outside the framebuffer cannot qualify a
+hidden phase. The deterministic `validator-unit` row injects a fake authority
+and poll timer to prove that a transitional 0x0 role is ignored until the role
+is absent, and that a role which never disappears times out fail-closed. The
+validator derives stable left and bottom panel
 rectangles only from mapped/committed authority records, samples all pixels in
 the corresponding rectangle, and requires each hidden/visible pair to have a
 different region digest. Identical unrelated images therefore fail even when

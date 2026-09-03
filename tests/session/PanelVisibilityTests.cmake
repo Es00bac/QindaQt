@@ -1,18 +1,32 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp")
+qt_add_executable(
+    qindaqt-panel-visibility-phase-settlement-tests
+    "${CMAKE_CURRENT_SOURCE_DIR}/tst_panelvisibilityphasewaiter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
+)
+target_link_libraries(
+    qindaqt-panel-visibility-phase-settlement-tests
+    PRIVATE Qt6::Core Qt6::Test
+)
+set_target_properties(
+    qindaqt-panel-visibility-phase-settlement-tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt-panel-visibility-phase-settlement-tests)
 add_test(
     NAME desktop.virtual.panel-visibility.validator-unit
     COMMAND
-        "${CMAKE_COMMAND}" -E env
-        "PYTHONDONTWRITEBYTECODE=1"
-        "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp"
-        "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
+        "${CMAKE_COMMAND}"
+        "-DPYTHON=${Python3_EXECUTABLE}"
+        "-DVALIDATOR=${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_panel_visibility_unit.py"
+        "-DSETTLEMENT_TEST=$<TARGET_FILE:qindaqt-panel-visibility-phase-settlement-tests>"
+        "-DTMP_ROOT=${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_panel_visibility_unit.cmake"
 )
 set_tests_properties(
     desktop.virtual.panel-visibility.validator-unit
-    PROPERTIES LABELS "unit;session;screenshot;visibility"
+    PROPERTIES LABELS "unit;session;screenshot;wayland;layer-shell;visibility"
 )
 
 if(
@@ -23,6 +37,7 @@ if(
     qt_add_executable(
         qindaqt-panel-visibility-session-probe
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionprobe.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionwindowproof.cpp"
     )
     target_link_libraries(
