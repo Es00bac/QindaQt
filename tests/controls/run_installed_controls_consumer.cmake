@@ -4,7 +4,8 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY
                           QINDAQT_INSTALL_PREFIX QINDAQT_QML_INSTALL_DIR
                           QINDAQT_QMLTESTRUNNER QINDAQT_QMLLINT
                           QINDAQT_QT_QML_IMPORT_ROOT QINDAQT_CONSUMER_QML
-                          QINDAQT_EXPECTED_QML_DEPLOY_PATHS)
+                          QINDAQT_EXPECTED_QML_DEPLOY_PATHS
+                          QINDAQT_INSTALL_COMPONENT)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed-controls input: ${required}")
     endif()
@@ -17,11 +18,17 @@ if(NOT prefix_is_in_build OR install_prefix STREQUAL build_directory)
     message(FATAL_ERROR "Refusing to replace a staged prefix outside the test build tree")
 endif()
 
-# AGENT-GUARD: A clean stage prevents removed QML/plugin install rules from
-# passing through stale payload. The prefix guard above confines deletion to
+# AGENT-GUARD: The install is scoped to the ControlsQmlModules component the
+# test declares in tests/controls/CMakeLists.txt. An unscoped whole-tree
+# install requires every unrelated installable target of the repository to be
+# built, which breaks this row after the lane-prescribed focused build. The
+# component stages exactly the QindaQt/Controls and QindaQt/Tokens payloads.
+# The staged prefix is also removed first so removed QML/plugin install rules
+# cannot pass through stale payload; the prefix guard confines deletion to
 # this test's build directory.
 file(REMOVE_RECURSE "${install_prefix}")
-set(install_command "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}")
+set(install_command "${QINDAQT_CMAKE}" --install "${build_directory}"
+        --prefix "${install_prefix}" --component "${QINDAQT_INSTALL_COMPONENT}")
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")
 endif()

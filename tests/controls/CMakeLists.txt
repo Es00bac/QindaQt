@@ -24,6 +24,7 @@ target_compile_definitions(
         QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
         QINDAQT_CONTROLS_TEST_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
         QINDAQT_CONTROLS_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+        QINDAQT_CONTROLS_PINNED_THEME_DIR="${CMAKE_CURRENT_BINARY_DIR}/pinned-themes"
 )
 qindaqt_enable_warnings(qindaqt_controls_test_support)
 add_dependencies(
@@ -100,6 +101,32 @@ foreach(theme IN LISTS qindaqt_controls_visual_themes)
         qindaqt_add_controls_visual_test(${scale} "${theme}" "${theme}-ordinary")
     endforeach()
 endforeach()
+
+# AGENT-CONTRACT: This row is the host-Noto-hidden canary for the byte-pinned
+# fixture. It reruns the theme row that previously bypassed the registered
+# families (qinda-high-contrast names "Noto Sans"/"Noto Sans Mono" in the
+# product catalog) under the checked-in fontconfig that rejects exactly those
+# host families while keeping every other documented host font and rendering
+# rule. A fixture that renders any host Noto byte drifts against the reviewed
+# baseline here and fails. XDG_CACHE_HOME keeps fontconfig's cache inside the
+# build tree; do not remove it or the row writes to the user's cache.
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/fontconfig-no-noto-cache")
+add_test(
+    NAME qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_VISUAL_TEST=$<TARGET_FILE:qindaqt_controls_visual_tests>"
+        "-DQINDAQT_SCALE=100"
+        "-DQINDAQT_ROW=qinda-high-contrast-compact"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_controls_visual_row.cmake"
+)
+set_tests_properties(
+    qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact
+    PROPERTIES
+        LABELS "controls;visual;fonts"
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1.0;QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough;QINDAQT_CONTROLS_TEST_SCALE=1.0;FONTCONFIG_FILE=${CMAKE_CURRENT_SOURCE_DIR}/fontconfig/no-noto/fonts.conf;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/fontconfig-no-noto-cache"
+)
 
 qt_add_executable(qindaqt_controls_font_pinning_tests tst_controls_font_pinning.cpp)
 target_link_libraries(
@@ -185,10 +212,75 @@ add_test(
         "-DQINDAQT_QT_QML_IMPORT_ROOT=$<TARGET_FILE_DIR:Qt6::qmllint>/../qml"
         "-DQINDAQT_CONSUMER_QML=${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_installed_controls.qml"
         "-DQINDAQT_EXPECTED_QML_DEPLOY_PATHS=$<JOIN:$<TARGET_PROPERTY:qindaqt_controls_qml,QINDAQT_QML_DEPLOY_PATHS>,|>"
+        "-DQINDAQT_INSTALL_COMPONENT=ControlsQmlModules"
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_controls_consumer.cmake"
 )
 set_tests_properties(
     qindaqt.controls-installed-import
     PROPERTIES LABELS "controls;package" RUN_SERIAL TRUE TIMEOUT 60
+)
+
+# AGENT-CONTRACT: qindaqt.controls-installed-import must pass after the
+# lane-prescribed focused Controls build (the visual, behavior, font, and
+# memory test targets), whose closure is exactly the two QML modules staged
+# below. The product install rules for those modules live in the
+# SettingsAppearanceRuntime component, whose closure also carries the Settings
+# Center executable and every Settings route, so installing that component
+# would require building unrelated libraries. This per-consumer component is
+# declared from tests/controls because product paths under src/ are not this
+# lane's to edit; it mirrors the TextEditor per-consumer component precedent
+# in src/controls/CMakeLists.txt and must keep staging exactly the
+# QindaQt/Controls and QindaQt/Tokens payloads, at the destinations and
+# deploy paths the product rules use, with no additional files.
+qt_query_qml_module(
+    qindaqt_controls_qml
+    QML_FILES qindaqt_controls_test_qml_files
+    QML_FILES_DEPLOY_PATHS qindaqt_controls_test_qml_deploy_paths
+)
+foreach(qml_file deploy_path IN ZIP_LISTS
+        qindaqt_controls_test_qml_files qindaqt_controls_test_qml_deploy_paths)
+    if(NOT IS_ABSOLUTE "${qml_file}")
+        set(qml_file "${PROJECT_SOURCE_DIR}/src/controls/${qml_file}")
+    endif()
+    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+    cmake_path(GET deploy_path FILENAME deploy_name)
+    install(
+        FILES "${qml_file}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls/${deploy_directory}"
+        RENAME "${deploy_name}"
+        COMPONENT ControlsQmlModules
+    )
+endforeach()
+install(
+    TARGETS qindaqt_controls_qml qindaqt_controls_qmlplugin
+    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT ControlsQmlModules
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT ControlsQmlModules
+    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT ControlsQmlModules
+)
+install(
+    FILES
+        "${CMAKE_BINARY_DIR}/qml/QindaQt/Controls/qmldir"
+        "${CMAKE_BINARY_DIR}/qml/QindaQt/Controls/qindaqt_controls.qmltypes"
+    DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT ControlsQmlModules
+)
+install(
+    TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+    RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT ControlsQmlModules
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT ControlsQmlModules
+    ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT ControlsQmlModules
+)
+install(
+    FILES
+        "${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens/qmldir"
+        "${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens/qindaqt_tokens.qmltypes"
+    DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+    COMPONENT ControlsQmlModules
 )

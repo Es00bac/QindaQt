@@ -117,18 +117,27 @@ separately proves the transformed duration rather than overriding animation in
 the visual harness. The fixture registers the Noto Sans Regular/SemiBold/Bold
 and Noto Sans Mono Regular files vendored under `tests/controls/fonts/` —
 Copyright 2022 The Noto Project Authors, SIL Open Font License 1.1, with the
-license text stored beside the fonts — through
-`QFontDatabase::addApplicationFont`, verifies each registration, substitutes
-the schema's `Inter` and `JetBrains Mono` family names to those registered
-families, fixes the C locale, and fails closed when a vendored file is
-missing, unreadable, or renamed. The vendored name records declare the
-repository-owned families `QindaQt Sans` and `QindaQt Sans Mono`, which no
-host-installed font can declare, so the fixture cannot collide with or be
-shadowed by host Noto however Qt or fontconfig order their matches; a host
-Noto package update cannot change the rendered glyph bytes. The row
+license text stored beside the fonts, and with valid OpenType table checksums
+and `head.checkSumAdjustment` enforced by the pinning row — through
+`QFontDatabase::addApplicationFont`, verifies each registration, and rewrites
+every theme catalog family (`Inter`, `JetBrains Mono`, `Noto Sans`, `Noto
+Sans Mono`, and anything else `data/themes/*.json` names) onto the registered
+families through pinned runtime theme copies plus `QFont` substitutions,
+because a substitution cannot redirect a family the host actually has
+installed. It fixes the C locale and fails closed when a vendored file is
+missing, unreadable, renamed, or checksum-invalid. The vendored name records
+declare the repository-owned families `QindaQt Sans` and `QindaQt Sans Mono`,
+which no host-installed font can declare, so the fixture cannot collide with
+or be shadowed by host Noto however Qt or fontconfig order their matches; a
+host Noto package update cannot change the rendered glyph bytes. The row
 environment keeps the documented host fontconfig configuration because an
 empty configuration re-wraps text and removes the fallback glyph the
-baselines contain. Qt's software backend
+baselines contain; the dedicated
+`qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact` canary row
+reruns the previously bypassing high-contrast row under the checked-in
+host-Noto-hidden fontconfig described in the
+[testing harness](../development/testing-harness.md#current-reusable-controls-proof).
+Qt's software backend
 renders every row and intentional baseline changes are stored in
 `tests/controls/baselines` for review; changing the vendored font files is a
 reviewed baseline regeneration under
@@ -146,9 +155,10 @@ runs matched bare-Qt-Quick and token-plus-controls offscreen processes, reads
 five `smaps_rollup` PSS samples from each exact PID over three pairs, and records
 the median delta without inventing a machine-independent threshold.
 
-The focused selector currently discovers 33 tests: one behavior gate, 25
-process-isolated visual rows, font pinning, three font-fixture fail-closed
-controls, source policy, staged installed import, and PSS measurement.
+The focused selector currently discovers 34 tests: one behavior gate, 25
+process-isolated visual rows, the host-Noto-hidden canary row, font pinning,
+three font-fixture fail-closed controls, source policy, staged installed
+import, and PSS measurement.
 
 These are compiled QML, software-renderer, packaging, and process-memory
 checks. They do not qualify live assistive technology, compositor focus,
