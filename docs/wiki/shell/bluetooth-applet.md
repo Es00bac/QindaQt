@@ -151,6 +151,8 @@ read access was granted.
    disposable stage, clears ambient loader paths, resolves the staged
    executable's runtime dependencies, and requires KF6, Controls, and Tokens
    to resolve to their exact relocated artifacts through relative RUNPATHs.
+   The shared shell-component closure row separately launches this component,
+   the Audio and Power components, and default `QindaQt` in isolation.
 
 ## Focused verification
 

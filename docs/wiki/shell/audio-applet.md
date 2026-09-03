@@ -151,7 +151,8 @@ The module is registered through these additive seams:
 4. The `AudioAppletRuntime` install component stages the production shell,
    its directly linked Controls library, the Tokens library at Controls'
    baked sibling RUNPATH, compiled QML, manifest, selected profile, policy,
-   and theme for a relocation/poison test.
+   and theme for a relocation/poison test. The default `QindaQt` component
+   carries the same shell/Controls/Tokens loader closure.
 
 The preview injects no live audio facade and therefore renders the
 deterministic static fixtures rather than live audio state.
@@ -172,6 +173,7 @@ ctest --test-dir build/dev -R '^qindaqt\.audio-applet-' --output-on-failure
 | `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test; four independent poison mutations (D-Bus transport include, service-internal include, QML include, QObject derivation) must each be rejected. |
 | `qindaqt.audio-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, WirePlumber/PipeWire/GLib surfaces, process/file access, and D-Bus in the controller/QML; the shell composition root may construct the public Qt transport. Includes a poison negative control. |
 | `qindaqt.audio-applet-installed-package` | Relocated shell/data, exact staged KF6 and Controls/Tokens loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison. |
+| `qindaqt.shell-runtime-component-closure` | Each component that carries `qindaqt-shell` installs alone, resolves Controls/Tokens from its own relative stage, and runs `--help` with ambient loader, display, Wayland, and session-bus variables cleared. |
 
 The boundary gates also run without configure:
 

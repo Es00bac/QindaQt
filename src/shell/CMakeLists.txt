@@ -178,7 +178,25 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
 
     qindaqt_enable_warnings(qindaqt-shell)
     qt_import_qml_plugins(qindaqt-shell)
-    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT QindaQt
+    )
+    # AGENT-CONTRACT: The default component is a runnable shell package, just
+    # like each narrow applet component below. Keep the shell's directly linked
+    # Controls library and Controls' Tokens dependency in their relative
+    # $ORIGIN layouts or a component-filtered install fails before main().
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT QindaQt
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT QindaQt
+    )
     # A narrow stage proves that the Bluetooth applet's production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate as
     # one package boundary.
