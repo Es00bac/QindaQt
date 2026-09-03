@@ -65,6 +65,7 @@ nav:
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
       - Bluetooth1 protocol 1: reference/bluetooth1-v1.md
+      - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
@@ -140,3 +141,4 @@ nav:
       - "ADR-0055: Network Settings through Network1": adr/0055-compose-network-settings-through-network1.md
       - "ADR-0056: Standard AppMenu/dbusmenu transports": adr/0056-adopt-standard-appmenu-dbusmenu-transports.md
       - "ADR-0057: Injected direct BlueZ transport": adr/0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md
+      - "ADR-0058: Volatile clipboard capture host": adr/0058-isolate-clipboard-capture-in-a-volatile-host.md
