@@ -21,6 +21,8 @@ class TstClipboardAppletFencing : public QObject {
 
 private Q_SLOTS:
     void testSearchReplyFreshnessWithUnorderedIds();
+    void testSnapshotRevisionChangeReissuesAndFencesSearch();
+    void testSearchMatchesMustBelongToDispatchSnapshot();
     void testHostileSynchronousFlushCannotDisplaySupersededReply();
     void testSynchronousCompletionLeavesNoPendingRecord();
     void testUnknownAndDuplicateCompletionsAreIgnored();
@@ -28,12 +30,83 @@ private Q_SLOTS:
     void testDeferredCompletionForEarlierRequestAttributesById();
 };
 
+void TstClipboardAppletFencing::testSnapshotRevisionChangeReissuesAndFencesSearch()
+{
+    // AGENT-NOTE (P1-1): e3e2dba fenced live queries only when generation
+    // changed. A same-generation removal advances revision, so its late search
+    // reply could re-present metadata that no longer exists in the snapshot.
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 7;
+    client.m_snapshot.revision = 1;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    const auto removed = floorValidDescriptor(7, 3, QStringLiteral("secret"));
+    setSnapshotEntries(client.m_snapshot, {removed});
+
+    ClipboardAppletController controller(&client, true, true);
+    controller.setSearchQuery(QStringLiteral("secret"));
+    QCOMPARE(client.m_nextRequestId, quint64(501));
+    const quint64 revisionOneRequest = client.m_nextRequestId;
+
+    client.m_snapshot.revision = 2;
+    client.m_snapshot.entries.clear();
+    client.m_snapshot.totalPayloadBytes = 0;
+    client.emitSnapshot();
+
+    // A changed snapshot must issue a query pinned to its new complete
+    // lineage, even though generation stayed seven.
+    QCOMPARE(client.m_nextRequestId, quint64(502));
+    QCOMPARE(controller.searchResultCount(), 0);
+
+    SearchOutcome late;
+    late.matches = {removed};
+    client.emitSearchReply(revisionOneRequest, late);
+    QCOMPARE(controller.searchResultCount(), 0);
+    QCOMPARE(controller.entryCount(), 0);
+
+    SearchOutcome current;
+    client.emitSearchReply(client.m_nextRequestId, current);
+    QCOMPARE(controller.searchResultCount(), 0);
+    QCOMPARE(controller.entryCount(), 0);
+}
+
+void TstClipboardAppletFencing::testSearchMatchesMustBelongToDispatchSnapshot()
+{
+    // AGENT-NOTE (P1-1): request-id/generation fences are insufficient when a
+    // hostile completion fabricates a floor-valid descriptor absent from the
+    // exact snapshot entry set used to dispatch the query.
+    HostileScriptedClient client;
+    client.m_snapshot.generation = 8;
+    client.m_snapshot.revision = 4;
+    client.m_snapshot.historyEnabled = true;
+    client.m_snapshot.privacyAllowed = true;
+    const auto member = floorValidDescriptor(8, 3, QStringLiteral("real metadata"));
+    setSnapshotEntries(client.m_snapshot, {member});
+
+    ClipboardAppletController controller(&client, true, true);
+    controller.setSearchQuery(QStringLiteral("metadata"));
+    const quint64 requestId = client.m_nextRequestId;
+
+    SearchOutcome fabricated;
+    fabricated.matches = {
+        floorValidDescriptor(8, 4, QStringLiteral("fabricated metadata"))
+    };
+    client.emitSearchReply(requestId, fabricated);
+    QCOMPARE(controller.searchResultCount(), 0);
+    QCOMPARE(controller.entryCount(), 0);
+}
+
 void TstClipboardAppletFencing::testSearchReplyFreshnessWithUnorderedIds()
 {
     UnorderedFakeClient client;
     client.m_snapshot.generation = 7;
+    client.m_snapshot.revision = 1;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
+    const auto alpha = floorValidDescriptor(7, 3, QStringLiteral("alpha result"));
+    const auto beta = floorValidDescriptor(7, 4, QStringLiteral("beta result"));
+    const auto gamma = floorValidDescriptor(7, 5, QStringLiteral("gamma result"));
+    setSnapshotEntries(client.m_snapshot, {alpha, beta, gamma});
 
     ClipboardAppletController controller(&client, true, true);
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
@@ -52,26 +125,25 @@ void TstClipboardAppletFencing::testSearchReplyFreshnessWithUnorderedIds()
     QCOMPARE(betaId, quint64(101));
     QVERIFY(betaId < alphaId);
 
-    auto matchWith = [](const char *preview) {
+    auto matchWith = [](const ClipboardEntryDescriptor &descriptor) {
         SearchOutcome outcome;
-        outcome.matches.append(
-            floorValidDescriptor(7, 3, QString::fromLatin1(preview)));
+        outcome.matches.append(descriptor);
         return outcome;
     };
 
     // Late reply for the superseded "alpha" query must be dropped even
     // though its id (902) is numerically larger than the live query's (101).
-    client.deliverSearchReply(alphaId, matchWith("alpha result"));
+    client.deliverSearchReply(alphaId, matchWith(alpha));
     QCOMPARE(controller.searchQuery(), QStringLiteral("beta"));
     QCOMPARE(controller.searchResultCount(), 0);
 
     // The live "beta" reply must be accepted.
-    client.deliverSearchReply(betaId, matchWith("beta result"));
+    client.deliverSearchReply(betaId, matchWith(beta));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
 
     // A duplicated or replayed stale reply must not replace current results.
-    client.deliverSearchReply(alphaId, matchWith("alpha hijack"));
+    client.deliverSearchReply(alphaId, matchWith(alpha));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
 
@@ -80,26 +152,30 @@ void TstClipboardAppletFencing::testSearchReplyFreshnessWithUnorderedIds()
     controller.setSearchQuery(QStringLiteral("gamma"));
     QCOMPARE(client.m_issuedSearchRequestIds.size(), 3);
     const quint64 gammaId = client.m_issuedSearchRequestIds.last();
-    client.deliverSearchReply(betaId, matchWith("beta hijack"));
+    client.deliverSearchReply(betaId, matchWith(beta));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("beta result"));
-    client.deliverSearchReply(gammaId, matchWith("gamma result"));
+    client.deliverSearchReply(gammaId, matchWith(gamma));
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma result"));
 }
 void TstClipboardAppletFencing::testHostileSynchronousFlushCannotDisplaySupersededReply()
 {
     HostileScriptedClient client;
     client.m_snapshot.generation = 3;
+    client.m_snapshot.revision = 1;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
+    const auto alpha = floorValidDescriptor(3, 7, QStringLiteral("alpha stale secret"));
+    const auto gamma = floorValidDescriptor(3, 8, QStringLiteral("gamma live result"));
+    const auto delta = floorValidDescriptor(3, 9, QStringLiteral("delta sync result"));
+    setSnapshotEntries(client.m_snapshot, {alpha, gamma, delta});
 
     ClipboardAppletController controller(&client, true, true);
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
 
-    auto outcomeWithPreview = [](const char *preview) {
+    auto outcomeWith = [](const ClipboardEntryDescriptor &descriptor) {
         SearchOutcome outcome;
-        outcome.matches.append(
-            floorValidDescriptor(3, 7, QString::fromLatin1(preview)));
+        outcome.matches.append(descriptor);
         return outcome;
     };
 
@@ -109,7 +185,7 @@ void TstClipboardAppletFencing::testHostileSynchronousFlushCannotDisplaySupersed
 
     // Queue the stale alpha reply and arm the flush: issuing "gamma" (id 502)
     // will re-entrantly emit the alpha reply inside requestSearch().
-    client.queueSearchReply(alphaId, outcomeWithPreview("alpha stale secret"));
+    client.queueSearchReply(alphaId, outcomeWith(alpha));
     client.m_flushQueuedReplyDuringNextSearch = true;
     controller.setSearchQuery(QStringLiteral("gamma"));
 
@@ -119,19 +195,19 @@ void TstClipboardAppletFencing::testHostileSynchronousFlushCannotDisplaySupersed
 
     // The real gamma reply — async, correct id — is accepted.
     const quint64 gammaId = 502;
-    client.emitSearchReply(gammaId, outcomeWithPreview("gamma live result"));
+    client.emitSearchReply(gammaId, outcomeWith(gamma));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma live result"));
 
     // Replaying the stale alpha reply afterwards still changes nothing.
-    client.emitSearchReply(alphaId, outcomeWithPreview("alpha replay hijack"));
+    client.emitSearchReply(alphaId, outcomeWith(alpha));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("gamma live result"));
 
     // Benign variant: a seam that ALSO answers the new request synchronously
     // inside the call still attributes correctly by id.
     client.m_answerSearchSynchronously = true;
-    client.m_scriptedSearchOutcome = outcomeWithPreview("delta sync result");
+    client.m_scriptedSearchOutcome = outcomeWith(delta);
     controller.setSearchQuery(QStringLiteral("delta"));
     QCOMPARE(controller.searchResultCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("delta sync result"));
@@ -142,8 +218,8 @@ void TstClipboardAppletFencing::testSynchronousCompletionLeavesNoPendingRecord()
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    client.m_snapshot.entries.append(
-        floorValidDescriptor(3, 7, QStringLiteral("entry")));
+    setSnapshotEntries(client.m_snapshot,
+                       {floorValidDescriptor(3, 7, QStringLiteral("entry"))});
 
     client.m_completeOperationsSynchronously = true;
     client.m_scriptedCompletion.code = OperationErrorCode::None;
@@ -174,8 +250,8 @@ void TstClipboardAppletFencing::testUnknownAndDuplicateCompletionsAreIgnored()
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    client.m_snapshot.entries.append(
-        floorValidDescriptor(3, 7, QStringLiteral("entry")));
+    setSnapshotEntries(client.m_snapshot,
+                       {floorValidDescriptor(3, 7, QStringLiteral("entry"))});
 
     ClipboardAppletController controller(&client, true, true);
 
@@ -217,7 +293,8 @@ void TstClipboardAppletFencing::testPromoteTicksAreStrictlyMonotonic()
     auto desc = floorValidDescriptor(3, 7, QStringLiteral("entry"));
     desc.admittedTick = 999998;
     desc.lastUsedTick = 1000000;
-    client.m_snapshot.entries.append(desc);
+    client.m_snapshot.revision = 1;
+    setSnapshotEntries(client.m_snapshot, {desc});
 
     client.m_completeOperationsSynchronously = true;
     client.m_scriptedCompletion.code = OperationErrorCode::None;
@@ -236,6 +313,7 @@ void TstClipboardAppletFencing::testPromoteTicksAreStrictlyMonotonic()
 
     // A snapshot whose entries carry even higher ticks lifts the floor.
     client.m_snapshot.entries.first().lastUsedTick = secondTick + 500;
+    client.m_snapshot.revision = 2;
     client.emitSnapshot();
     QVERIFY(controller.selectEntry(3, 7));
     const quint64 thirdTick = client.m_operations.at(2).tick;
@@ -251,10 +329,10 @@ void TstClipboardAppletFencing::testDeferredCompletionForEarlierRequestAttribute
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    client.m_snapshot.entries.append(
-        floorValidDescriptor(3, 7, QStringLiteral("first")));
-    client.m_snapshot.entries.append(
-        floorValidDescriptor(3, 8, QStringLiteral("second")));
+    setSnapshotEntries(
+        client.m_snapshot,
+        {floorValidDescriptor(3, 7, QStringLiteral("first")),
+         floorValidDescriptor(3, 8, QStringLiteral("second"))});
 
     ClipboardAppletController controller(&client, true, true);
 

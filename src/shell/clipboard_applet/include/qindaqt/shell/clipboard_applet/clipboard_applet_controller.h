@@ -108,6 +108,12 @@ private:
         quint32 generation = 0;
     };
 
+    struct PendingSearchRequest {
+        quint64 queryGeneration = 0;
+        quint32 snapshotGeneration = 0;
+        quint64 snapshotRevision = 0;
+    };
+
     void reproject();
     void setFeedback(const QString &message, const QString &status = QStringLiteral("error"));
     void cancelPendingForGeneration(quint32 oldGeneration);
@@ -116,7 +122,12 @@ private:
     void rejectSnapshot();
     void dispatchSearch();
     void abandonSearch();
-    void applySearchOutcome(const QindaQt::Services::ClipboardModel::SearchOutcome &outcome);
+    void applySearchOutcome(
+        const QindaQt::Services::ClipboardModel::SearchOutcome &outcome,
+        const PendingSearchRequest &request);
+    void rememberRejectedLineage(
+        const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot,
+        bool generationMustAdvance = false);
     void resolveCompletion(quint64 requestId, const OperationOutcome &outcome);
     void noteObservedTicks(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
     void drainDeferredSignals();
@@ -146,6 +157,14 @@ private:
     QString m_baselineOwner;
     quint32 m_baselineGeneration = 0;
     quint64 m_baselineRevision = 0;
+    // A structurally impossible snapshot poisons its exact lineage. Merely
+    // flipping privacy/capability flags at the same generation/revision may
+    // not turn rejected content into presentable content; recovery requires a
+    // later valid snapshot (or a new owner baseline).
+    bool m_hasRejectedLineage = false;
+    quint32 m_rejectedGeneration = 0;
+    quint64 m_rejectedRevision = 0;
+    bool m_rejectedGenerationMustAdvance = false;
     // True while the last incoming snapshot was refused by an admission fence;
     // presentation withholds everything until a fresh valid snapshot lands.
     bool m_snapshotRejected = false;
@@ -157,10 +176,11 @@ private:
     // AGENT-GUARD: reply freshness is fenced by this controller-internal
     // monotonically increasing query generation, never by ordering of
     // client-supplied request ids — the client seam promises uniqueness
-    // only. Every in-flight request id maps to the generation that issued
-    // it; replies carrying any other generation are dropped.
+    // only. Every in-flight request id maps to the query generation and exact
+    // snapshot lineage that issued it; replies carrying any other attribution
+    // are dropped.
     quint64 m_searchQueryGeneration = 0;
-    QHash<quint64, quint64> m_pendingSearchRequests;
+    QHash<quint64, PendingSearchRequest> m_pendingSearchRequests;
 
     // AGENT-GUARD: seams may emit operationCompleted/searchCompleted
     // synchronously INSIDE the dispatch call, before the returned request id

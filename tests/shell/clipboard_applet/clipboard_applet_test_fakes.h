@@ -38,6 +38,27 @@ inline QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor floorValidDes
     return descriptor;
 }
 
+inline qint64 descriptorPayloadBytes(
+    const QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor &descriptor)
+{
+    qint64 total = 0;
+    for (const auto &format : descriptor.formats) {
+        total += format.payloadBytes;
+    }
+    return total;
+}
+
+inline void setSnapshotEntries(
+    HistorySnapshot &snapshot,
+    const QList<QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor> &entries)
+{
+    snapshot.entries = entries;
+    snapshot.totalPayloadBytes = 0;
+    for (const auto &entry : entries) {
+        snapshot.totalPayloadBytes += descriptorPayloadBytes(entry);
+    }
+}
+
 // Scripted client seam issuing deliberately unique-but-unordered request ids
 // and delivering replies in caller-chosen order. AGENT-GUARD: the public seam
 // promises id uniqueness only — these ids reproduce the exact disorder a real

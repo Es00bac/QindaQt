@@ -140,10 +140,13 @@ ClipboardAppletProjection ClipboardAppletModel::project(
     // projection instead of copying hostile labels/previews or counting an
     // oversized collection. The controller gates earlier for its lineage
     // bookkeeping — this is the defense-in-depth layer for any direct caller.
-    if (assessSnapshot(snapshot) != SnapshotGateDecision::Accept
-        || (isSearchActive
-            && assessDescriptorList(searchResults, snapshot.generation)
-                != SnapshotGateDecision::Accept)) {
+    const bool mayPresentContent = ownerAvailable
+        && (clientState == ClientState::Ready || clientState == ClientState::Degraded);
+    if (mayPresentContent
+        && (assessSnapshot(snapshot) != SnapshotGateDecision::Accept
+            || (isSearchActive
+                && assessDescriptorList(searchResults, snapshot.generation)
+                    != SnapshotGateDecision::Accept))) {
         proj.phase = Phase::Unavailable;
         proj.phaseReasonText = QStringLiteral("Clipboard history data was refused.");
         proj.emptyReasonText = proj.phaseReasonText;

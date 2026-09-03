@@ -249,17 +249,26 @@ void ClipboardAppletController::onSnapshotChanged(
     const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
     const bool hadBaseline = m_hasBaseline;
+    const auto previousSnapshot = m_snapshot;
     const quint32 previousGeneration = m_baselineGeneration;
     acceptSnapshot(snapshot);
-    if (hadBaseline && m_hasBaseline && m_baselineGeneration != previousGeneration) {
-        cancelPendingForGeneration(previousGeneration);
+    if (hadBaseline && m_hasBaseline && m_snapshot != previousSnapshot) {
+        if (m_baselineGeneration != previousGeneration) {
+            cancelPendingForGeneration(previousGeneration);
+        }
         if (m_isSearchActive) {
-            // Re-run the live query against the new generation; any reply to the
-            // pre-transition request is fenced out by the query-generation bump.
-            if (!m_searchQuery.isEmpty() && m_client) {
+            // AGENT-GUARD: every complete snapshot change supersedes the live
+            // query, including same-generation revision/entry-set changes.
+            // Clear results immediately before reissuing so removed metadata
+            // cannot remain visible while the new answer is pending.
+            abandonSearch();
+            if (m_snapshot.historyEnabled && m_snapshot.privacyAllowed
+                && !m_searchQuery.isEmpty() && m_client
+                && m_client->clientState() == ClientState::Ready) {
                 dispatchSearch();
             } else {
-                clearSearch();
+                m_isSearchActive = false;
+                m_searchQuery.clear();
             }
         }
     }
@@ -321,7 +330,9 @@ void ClipboardAppletController::resolveCompletion(
     if (it == m_pendingRequests.constEnd()) {
         return;
     }
-    if (outcome.id.isValid() && !(outcome.id == it->id)) {
+    const bool entryOperation = it->kind != OperationKind::Clear;
+    if ((entryOperation && (!outcome.id.isValid() || !(outcome.id == it->id)))
+        || (!entryOperation && outcome.id.isValid())) {
         return;
     }
     const PendingRequest request = it.value();
@@ -353,12 +364,12 @@ void ClipboardAppletController::drainDeferredSignals()
         if (it == m_pendingSearchRequests.constEnd()) {
             continue;
         }
-        const quint64 replyQueryGeneration = it.value();
+        const PendingSearchRequest request = it.value();
         m_pendingSearchRequests.erase(it);
-        if (replyQueryGeneration != m_searchQueryGeneration) {
+        if (request.queryGeneration != m_searchQueryGeneration) {
             continue;
         }
-        applySearchOutcome(outcome);
+        applySearchOutcome(outcome, request);
     }
 }
 

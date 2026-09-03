@@ -115,6 +115,7 @@ private Q_SLOTS:
     void testOwnerReplacementNeverRedisclosesOwnerAContent();
     void testFreshOwnerBaselineMustBeContentEmpty();
     void testMismatchedCompletionIsRejectedAndMarkerStays();
+    void testInvalidEntryCompletionIsRejectedAndMarkerStays();
     void testPromoteTickExhaustionFailsClosed();
 };
 
@@ -383,6 +384,7 @@ void TstClipboardAppletAdmission::testMismatchedCompletionIsRejectedAndMarkerSta
     second.id.serial = 2;
     second.preview = QStringLiteral("entry-B");
     snapshot.entries.append(second);
+    snapshot.totalPayloadBytes = 2;
     client.current = snapshot;
     ClipboardAppletController controller(&client, true, true);
     QCOMPARE(controller.entryCount(), 2);
@@ -405,6 +407,36 @@ void TstClipboardAppletAdmission::testMismatchedCompletionIsRejectedAndMarkerSta
     OperationOutcome genuine;
     genuine.code = OperationErrorCode::None;
     genuine.id = { 8, 1 };
+    client.complete(client.lastRequestId, genuine);
+    QCOMPARE(controller.pendingOperationCount(), 0);
+    QVERIFY(controller.selectEntry(8, 1));
+}
+
+void TstClipboardAppletAdmission::testInvalidEntryCompletionIsRejectedAndMarkerStays()
+{
+    // AGENT-NOTE (P2-1): e3e2dba rejected only a different VALID entry id.
+    // An invalid id still completed an entry operation, erased its trusted
+    // record/marker, and admitted a duplicate operation. Only Clear may carry
+    // an invalid completion id.
+    AdmissionFakeClient client;
+    client.current = floorValidSnapshot(8, 1, QStringLiteral("entry-A"));
+    ClipboardAppletController controller(&client, true, true);
+
+    QVERIFY(controller.selectEntry(8, 1));
+    QCOMPARE(controller.pendingOperationCount(), 1);
+
+    OperationOutcome missingLineage;
+    missingLineage.code = OperationErrorCode::None;
+    QVERIFY(!missingLineage.id.isValid());
+    client.complete(client.lastRequestId, missingLineage);
+
+    QCOMPARE(controller.pendingOperationCount(), 1);
+    QVERIFY(!controller.selectEntry(8, 1));
+    QVERIFY(!controller.feedbackPresent());
+
+    OperationOutcome genuine;
+    genuine.code = OperationErrorCode::None;
+    genuine.id = {8, 1};
     client.complete(client.lastRequestId, genuine);
     QCOMPARE(controller.pendingOperationCount(), 0);
     QVERIFY(controller.selectEntry(8, 1));
