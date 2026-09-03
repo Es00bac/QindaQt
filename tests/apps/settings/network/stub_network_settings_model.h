@@ -20,6 +20,10 @@ class StubNetworkSettingsModel final : public QObject {
   Q_PROPERTY(bool scanAvailable MEMBER scanAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool credentialEntrySupported MEMBER credentialEntrySupported
                  CONSTANT)
+  Q_PROPERTY(bool secretAgentRegistered MEMBER secretAgentRegistered NOTIFY
+                 viewChanged)
+  Q_PROPERTY(QString secretAgentStatusText MEMBER secretAgentStatusText NOTIFY
+                 viewChanged)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText MEMBER operationStatusText NOTIFY
@@ -44,6 +48,9 @@ public:
   bool reloadAvailable = true;
   bool scanAvailable = true;
   bool credentialEntrySupported = false;
+  bool secretAgentRegistered = true;
+  QString secretAgentStatusText =
+      QStringLiteral("The QindaQt credential prompt is registered.");
   QString statusText = QStringLiteral("Connected to the internet");
   QString errorText;
   QString operationStatusText;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <qindaqt/apps/settings_network/network_settings_model.h>
+#include <qindaqt/apps/settings_network/network_secret_agent_presence.h>
 
 #include <qindaqt/services/network_model/network_intent_policy.h>
 #include <qindaqt/services/network_model/network_model_state.h>
@@ -141,7 +142,14 @@ QString displayName(const KnownNetwork &network) {
 
 NetworkSettingsModel::NetworkSettingsModel(
     QindaQt::Network::Client::NetworkClient &client, QObject *parent)
-    : QObject(parent), m_client(client) {
+    : NetworkSettingsModel(client, QDBusConnection::sessionBus(), parent) {}
+
+NetworkSettingsModel::NetworkSettingsModel(
+    QindaQt::Network::Client::NetworkClient &client,
+    const QDBusConnection &presenceConnection, QObject *parent)
+    : QObject(parent), m_client(client),
+      m_secretAgentPresence(
+          std::make_unique<NetworkSecretAgentPresence>(presenceConnection)) {
   connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::stateChanged, this,
           &NetworkSettingsModel::viewChanged);
@@ -160,7 +168,12 @@ NetworkSettingsModel::NetworkSettingsModel(
   connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::operationUncertain, this,
           &NetworkSettingsModel::handleOperationUncertain);
+  connect(m_secretAgentPresence.get(),
+          &NetworkSecretAgentPresence::registeredChanged, this,
+          &NetworkSettingsModel::viewChanged);
 }
+
+NetworkSettingsModel::~NetworkSettingsModel() = default;
 
 bool NetworkSettingsModel::loading() const noexcept {
   return m_client.state() == ClientState::Connecting;
@@ -196,6 +209,19 @@ bool NetworkSettingsModel::scanAvailable() const {
       .requestScan(QindaQt::Network::RequestScanIntent{
           kScanDeadlineMilliseconds})
       .allowed;
+}
+
+bool NetworkSettingsModel::secretAgentRegistered() const noexcept {
+  return m_secretAgentPresence->registered();
+}
+
+QString NetworkSettingsModel::secretAgentStatusText() const {
+  return secretAgentRegistered()
+             ? tr("The QindaQt credential prompt is registered with "
+                  "NetworkManager. Credentials still bypass this page and "
+                  "Network1.")
+             : tr("No QindaQt credential prompt is registered. Secured saved "
+                  "networks that need a credential may fail to connect.");
 }
 
 QString NetworkSettingsModel::statusText() const {

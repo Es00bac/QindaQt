@@ -37,6 +37,7 @@ nav:
       - Power and brightness: architecture/power-service.md
       - Pure brightness model: architecture/brightness-model.md
       - Network service: architecture/network-service.md
+      - Network secret agent: architecture/network-secret-agent.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
       - Font preferences: architecture/font-preferences.md
@@ -157,3 +158,4 @@ nav:
       - "ADR-0066: Injected ICC roots and Settings1 assignments": adr/0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md
       - "ADR-0067: Confined fontconfig discovery": adr/0067-confine-fontconfig-behind-font-discovery.md
       - "ADR-0068: First-party AppShell menu export": adr/0068-compose-first-party-menu-export-through-appshell.md
+      - "ADR-0069: Confined network credential entry": adr/0069-confine-network-credential-entry.md

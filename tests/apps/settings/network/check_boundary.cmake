@@ -9,10 +9,21 @@ file(GLOB_RECURSE route_cpp LIST_DIRECTORIES false
      "${route_root}/*.h" "${route_root}/*.cpp")
 foreach(source IN LISTS route_cpp)
     file(READ "${source}" content)
+    cmake_path(GET source FILENAME source_name)
+    set(is_presence_boundary false)
+    if(source_name MATCHES "^(network_secret_agent_presence|network_settings_model)\\.(h|cpp)$")
+        set(is_presence_boundary true)
+    endif()
     if(content MATCHES "services/network_(service|manager_adapter|qt_transport)/"
-       OR content MATCHES "<NetworkManager.h>|QtDBus|QDBus|NMClient|nm_client_|libnm")
+       OR content MATCHES "<NetworkManager.h>|NMClient|nm_client_|libnm"
+       OR (content MATCHES "QtDBus|QDBus" AND NOT is_presence_boundary))
         message(FATAL_ERROR
             "Network Settings crossed the public NetworkClient boundary in ${source}")
+    endif()
+    if(source_name MATCHES "^network_secret_agent_presence\\.(h|cpp)$"
+       AND (content MATCHES "QDBusMessage|QDBusInterface|createMethodCall|asyncCall|\\.call\\("))
+        message(FATAL_ERROR
+            "Network Settings presence observer gained a callable D-Bus surface in ${source}")
     endif()
     if(content MATCHES "Q_SLOT|Q_SLOTS")
         message(FATAL_ERROR

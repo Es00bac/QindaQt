@@ -56,15 +56,17 @@ automatically replayed.
 The route has no password, passphrase, certificate, private-key, secret-agent,
 profile-editor, or radio-mutation API. Connecting means activating an existing
 stored known-network profile. NetworkManager may separately consult an
-external secret agent; Network1 and this route never receive that exchange. If
-the external agent is absent or cannot satisfy a secured profile, the route
-reports that the stored-network connection failed and explains that
-credentials can only come from an external NetworkManager secret agent.
+`qindaqt-network-secret-agent`; Network1 and this route never receive that
+exchange. The route observes only ownership of the agent's presence-only
+session-bus name. It shows whether the first-party agent is registered and
+explains that secured activation cannot request new credentials while it is
+absent.
 
-Neither QML nor the route model imports private Network service headers, Qt
-D-Bus, libnm, or NetworkManager. The resident boundary remains the sole
-platform adapter and policy authority; see [Network service
-architecture](../architecture/network-service.md).
+Neither QML nor the route model imports private Network service headers, libnm,
+or NetworkManager. One private presence observer uses Qt D-Bus name-owner
+truth; it has no object path or callable interface and never receives a
+credential. See [Network service architecture](../architecture/network-service.md)
+and [Network secret agent](../architecture/network-secret-agent.md).
 
 ## Responsive interaction and accessibility
 
@@ -111,8 +113,9 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   and absence of credential/radio mutation APIs;
 - the page row proves accessible controls, action wiring, stale/owner-loss
   fail-closed behavior, compact focus reveal, and keyboard cycling; and
-- boundary and poison rows reject private service headers, direct Qt D-Bus,
-  a radio invokable, credential text input, or a private service dependency.
+- boundary and poison rows reject private service headers, Qt D-Bus outside
+  the exact presence observer/model seam, callable D-Bus from that observer, a
+  radio invokable, credential text input, or a private service dependency.
 
 The same selector runs in strict Debug and Release builds. Settings Center's
 route and installed-package rows additionally prove canonical startup,
@@ -120,6 +123,7 @@ complete relocated construction, withheld-module failure, and hostile route
 rejection. Tests use fake public transports or absent private buses and never
 touch host networking.
 
-This slice does not claim credential entry, secret-agent ownership, profile
+This route still does not claim credential payload handling, profile
 creation/editing, software-radio mutation, persistence, a shell applet,
-physical network/radio qualification, or session-runtime integration.
+physical network/radio qualification, or session-runtime integration. The
+separate process owns the bounded credential-entry claim.
