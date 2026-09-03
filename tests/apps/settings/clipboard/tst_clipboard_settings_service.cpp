@@ -5,6 +5,8 @@
 #include <qindaqt/services/clipboard_client/clipboard_client.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QEvent>
 #include <QtTest>
 
 using namespace QindaQt::Apps::SettingsClipboard;
@@ -158,14 +160,16 @@ void ClipboardSettingsServiceTest::uncertainClearIsNotReplayed()
     QVERIFY(model.requestClearHistory());
     QVERIFY(model.confirmClearHistory());
     const auto submitted = clipboardTransport.operations.constFirst();
-    // AGENT-NOTE: Regression for Fern Hunt P1.3. Pending-to-Uncertain changes
-    // Q_PROPERTY values, so it must notify the QML page immediately.
+    // AGENT-NOTE: Regression for Fern Hunt P1.3/P2.1. Deliver only the
+    // client's queued completion so a later fetch timeout cannot satisfy this
+    // Pending-to-Uncertain notification assertion.
     QSignalSpy viewSpy(&model, &ClipboardSettingsModel::viewChanged);
     Q_EMIT clipboardTransport.operationReply(
         submitted.owner, submitted.token, false, {},
         QStringLiteral("transport-timeout"));
-    QTRY_VERIFY(model.clearUncertain());
-    QTRY_VERIFY(viewSpy.count() > 0);
+    QCoreApplication::sendPostedEvents(&clipboard, QEvent::MetaCall);
+    QVERIFY(model.clearUncertain());
+    QCOMPARE(viewSpy.count(), 1);
     QTest::qWait(30);
     QCOMPARE(clipboardTransport.operations.size(), 1);
     QVERIFY(model.clearStatusText().contains(QStringLiteral("not retried")));

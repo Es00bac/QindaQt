@@ -1144,7 +1144,10 @@ descriptor metadata to count entries, presents capacity/privacy truth, and
 proves confirmation plus dispatch are fenced to exact owner, epoch, generation,
 and revision. Success waits for authoritative snapshot convergence; failure or
 uncertainty cannot replay the clear, and a transport-uncertain result must
-notify the Pending → Uncertain QML property transition.
+notify the Pending → Uncertain QML property transition. That assertion drains
+only the client's queued operation completion and requires exactly one model
+notification before any fetch timeout, preventing a later state-change signal
+from becoming a false positive.
 
 The page row runs with `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320
 compact software scenes. It checks metadata-only disclosure, accessible
