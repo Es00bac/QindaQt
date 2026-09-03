@@ -40,13 +40,25 @@ file(
     "${fontconfig_root}/*.h"
     "${fontconfig_root}/*.cpp"
 )
+
+# AGENT-CONTRACT: Qt D-Bus and QGuiApplication are confined to the F1 session
+# bootstrap composition translation unit and its public header (review
+# findings P1-1/P1-6); the discovery provider itself stays transport-free.
+set(composition_header "${fontconfig_root}/include/qindaqt/services/font_discovery/font_session_bootstrap.h")
+set(composition_source "${fontconfig_root}/src/font_session_bootstrap.cpp")
+
 foreach(source IN LISTS discovery_sources)
     file(READ "${source}" content)
-    if(content MATCHES "<QtDBus/" OR content MATCHES "<QtQml/" OR content MATCHES "<QtQuick/"
-       OR content MATCHES "<QtWidgets/" OR content MATCHES "QGuiApplication"
-       OR content MATCHES "<QtCore/QProcess")
+    if(content MATCHES "<QtQml/" OR content MATCHES "<QtQuick/"
+       OR content MATCHES "<QtWidgets/" OR content MATCHES "<QtCore/QProcess")
         message(FATAL_ERROR "Forbidden font-discovery dependency in ${source}")
+    endif()
+    if(NOT source STREQUAL composition_source AND NOT source STREQUAL composition_header)
+        if(content MATCHES "<QtDBus/" OR content MATCHES "<QDBus"
+           OR content MATCHES "QGuiApplication")
+            message(FATAL_ERROR "Transport/GUI import outside the session bootstrap composition in ${source}")
+        endif()
     endif()
 endforeach()
 
-message(STATUS "Font discovery is the sole fontconfig boundary and stays transport-free")
+message(STATUS "Font discovery is the sole fontconfig boundary; D-Bus/Gui confined to the session bootstrap composition")

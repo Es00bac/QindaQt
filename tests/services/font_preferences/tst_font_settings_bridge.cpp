@@ -121,12 +121,14 @@ class FontSettingsBridgeTests final : public QObject {
 private slots:
     void syncsConfirmedSnapshotAtomically();
     void invalidSnapshotValuesPreserveLastKnownGood();
+    void wrongTypedSnapshotValuesAreRejectedWholesale();
     void writesAreRefusedWithoutBaseline();
     void invalidDraftIsRefused();
     void roundTripAppliesDraftThroughSettingsKeys();
     void conflictStopsSequenceWithoutReplay();
     void uncertainWriteIsNeverReplayed();
     void transportLossFailsClosed();
+    void malformedPostCommitSnapshotStopsTheSequence();
 };
 
 void FontSettingsBridgeTests::syncsConfirmedSnapshotAtomically()
@@ -177,6 +179,30 @@ void FontSettingsBridgeTests::invalidSnapshotValuesPreserveLastKnownGood()
     QTRY_VERIFY(!bridge.lastSyncError().isEmpty());
     // AGENT-GUARD: The hostile hinting value decodes to nothing; the
     // coordinator, its revision, and the LKG snapshot are all untouched.
+    QCOMPARE(coordinator.preferences(), FontPreferences::systemDefaults());
+    QCOMPARE(coordinator.revision(), 1);
+    QCOMPARE(coordinator.lastKnownGoodPreferences(), FontPreferences::systemDefaults());
+}
+
+void FontSettingsBridgeTests::wrongTypedSnapshotValuesAreRejectedWholesale()
+{
+    // AGENT-NOTE: review finding P1-4 (rejected candidate abc76f3) — on the
+    // unrepaired tree this wrong-typed authoritative snapshot was coerced
+    // (family 123 -> "123", pointSize "12.5" -> 12.5) and published as the
+    // confirmed baseline.
+    FakeTransport transport;
+    SettingsClient client(transport, FontSettingsBridge::scopedKeys(), TestTiming);
+    FontPreferencesCoordinator coordinator;
+    FontSettingsBridge bridge(client, coordinator);
+    QVERIFY(client.start());
+
+    QVariantMap wrongTyped = fontsValues();
+    wrongTyped.insert(QStringLiteral("fonts.family"), 123);
+    wrongTyped.insert(QStringLiteral("fonts.pointSize"), QStringLiteral("12.5"));
+    driveBaseline(transport, client, wrongTyped);
+
+    QTRY_VERIFY(bridge.hasBaseline());
+    QTRY_VERIFY(!bridge.lastSyncError().isEmpty());
     QCOMPARE(coordinator.preferences(), FontPreferences::systemDefaults());
     QCOMPARE(coordinator.revision(), 1);
     QCOMPARE(coordinator.lastKnownGoodPreferences(), FontPreferences::systemDefaults());
@@ -374,6 +400,59 @@ void FontSettingsBridgeTests::transportLossFailsClosed()
     QString error;
     QVERIFY(!bridge.applyPreferences(draft, &error));
     QVERIFY(transport.commits.isEmpty());
+}
+
+void FontSettingsBridgeTests::malformedPostCommitSnapshotStopsTheSequence()
+{
+    // AGENT-NOTE: review finding P1-5 (rejected candidate abc76f3) — on the
+    // unrepaired tree a malformed authoritative refresh after an Applied
+    // commit still advanced the write sequence (nextCommits=1); the repair
+    // ends the sequence with the remaining keys NotAttempted.
+    FakeTransport transport;
+    SettingsClient client(transport, FontSettingsBridge::scopedKeys(), TestTiming);
+    FontPreferencesCoordinator coordinator;
+    FontSettingsBridge bridge(client, coordinator);
+    QSignalSpy finished(&bridge, &FontSettingsBridge::applyFinished);
+    QVERIFY(client.start());
+
+    QVariantMap currentValues = fontsValues();
+    driveBaseline(transport, client, currentValues, 1);
+
+    FontPreferences draft;
+    draft.setFamily(QStringLiteral("Liberation Mono"));
+    QVERIFY(bridge.applyPreferences(draft));
+    QVERIFY(bridge.applyInFlight());
+    QTRY_COMPARE(transport.commits.size(), 1);
+    const auto commit = transport.commits.takeFirst();
+    const QString firstKey = FontSettingsBridge::scopedKeys().first();
+    Q_EMIT transport.commitReceived(commit.token, commit.owner,
+                                    commitWire(SettingsWireStatus::Applied,
+                                               QStringLiteral("epoch-1"), 1, 2, firstKey,
+                                               draft.family()));
+
+    // The follow-up authoritative snapshot is malformed (wrong-typed value);
+    // it must fence the sequence instead of launching the next key write.
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    const auto snapshot = transport.snapshots.takeFirst();
+    QVariantMap malformed = currentValues;
+    malformed.insert(firstKey, draft.family());
+    malformed.insert(QStringLiteral("fonts.hinting"), 42);
+    Q_EMIT transport.snapshotReceived(snapshot.token, snapshot.owner,
+                                      snapshotWire(QStringLiteral("epoch-1"), 2, malformed));
+
+    QTRY_COMPARE(finished.size(), 1);
+    QVERIFY(!bridge.applyInFlight());
+    QVERIFY(!bridge.lastSyncError().isEmpty());
+    QCOMPARE(transport.commits.size(), 0);
+    QCOMPARE(bridge.lastApplyResults().size(), 6);
+    QCOMPARE(bridge.lastApplyResults().first().key, firstKey);
+    QCOMPARE(bridge.lastApplyResults().first().outcome, FontSettingsBridge::KeyOutcome::Applied);
+    for (int i = 1; i < 6; ++i) {
+        QCOMPARE(bridge.lastApplyResults().at(i).outcome,
+                 FontSettingsBridge::KeyOutcome::NotAttempted);
+    }
+    // The coordinator keeps its last-known-good preferences throughout.
+    QCOMPARE(coordinator.preferences(), FontPreferences::systemDefaults());
 }
 
 QTEST_GUILESS_MAIN(FontSettingsBridgeTests)

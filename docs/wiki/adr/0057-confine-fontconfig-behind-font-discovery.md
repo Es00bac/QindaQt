@@ -49,15 +49,27 @@ needs cross-process font authority yet.
    reject the whole pattern rather than truncating into an aliased family
    identity; ordering is an explicit sort, never fontconfig cache order.
 4. `font_preferences` gains the Settings1 persistence composition
-   (`FontSettingsBridge`) and the pre-window bootstrap helper
-   (`FontSettingsBootstrap`) additively. Qt D-Bus stays a PRIVATE dependency
-   imported only by the bootstrap composition source; the F0 pure sources
-   remain transport-free, and the F0 boundary gate
-   (`qindaqt.font-preferences-boundary`) now enforces exactly that confinement.
-5. First-party applications (Settings Center, Text Editor, File Manager,
-   Terminal) call `FontSettingsBootstrap::applyFromSessionSettings` once
-   before creating any window; the shell is untouched. A missing or
-   unavailable preference source changes nothing.
+   (`FontSettingsBridge`) additively and stays transport-free: no
+   `font_preferences` source imports Qt D-Bus, and the F0 boundary gate
+   (`qindaqt.font-preferences-boundary`) enforces exactly that.
+5. The pre-window bootstrap is the production composition root
+   `FontSessionBootstrap` in `font_discovery` (the top of the font module
+   DAG: `font_discovery` already depends on `font_preferences`; placing the
+   composition there keeps the DAG acyclic). Each first-party application
+   (Settings Center, Text Editor, File Manager, Terminal) makes exactly one
+   guarded `FontSessionBootstrap::applyFromSessionSettings()` call before
+   `QGuiApplication` construction — safe on Qt 6.11 because pre-construction
+   `QGuiApplication::setFont()` persists as the application default font and
+   blocking D-Bus calls work without an application object (an event loop
+   does not, so the read is a bounded blocking exchange on a private
+   `connectToBus()` connection; the shared `sessionBus()` is never created
+   pre-application). The composition reads the confirmed `fonts.*` snapshot,
+   invokes the provider with `FontDiscoveryRequest::productionDefault()`, and
+   applies the confirmed typography only when the live catalog resolves the
+   family. Qt D-Bus and Qt Gui are PRIVATE dependencies confined to
+   `font_session_bootstrap.cpp`, enforced by `qindaqt.font-discovery-boundary`.
+   The shell is untouched. A missing or unavailable preference source changes
+   nothing.
 
 ## Consequences
 

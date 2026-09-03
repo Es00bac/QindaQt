@@ -12,11 +12,10 @@ file(
 )
 list(APPEND font_sources "${SOURCE_ROOT}/src/services/font_preferences/CMakeLists.txt")
 
-# AGENT-CONTRACT: The F1 Settings1 composition confines Qt D-Bus to exactly
-# this translation unit; every other font_preferences source stays
-# transport-free (ADR-0047).
-set(dbus_allowed_source "${SOURCE_ROOT}/src/services/font_preferences/src/font_settings_bootstrap.cpp")
-
+# AGENT-CONTRACT: font_preferences is fully transport-free. The F1 pre-window
+# production composition (the only Qt D-Bus consumer in the font stack) lives
+# in font_discovery/src/font_session_bootstrap.cpp; no font_preferences source
+# may import Qt D-Bus (ADR-0047).
 foreach(source IN LISTS font_sources)
     file(READ "${source}" content)
     if(content MATCHES "qindaqt/services/display_" OR content MATCHES "QindaQt::Display"
@@ -25,8 +24,8 @@ foreach(source IN LISTS font_sources)
        OR content MATCHES "<QtCore/QProcess" OR content MATCHES "<QtCore/QThread")
         message(FATAL_ERROR "Forbidden font-preferences dependency in ${source}")
     endif()
-    if(content MATCHES "<QtDBus/" AND NOT source STREQUAL dbus_allowed_source)
-        message(FATAL_ERROR "Qt D-Bus import outside the bootstrap composition in ${source}")
+    if(content MATCHES "<QtDBus/" OR content MATCHES "<QDBus")
+        message(FATAL_ERROR "Qt D-Bus import inside the pure font-preferences module: ${source}")
     endif()
 endforeach()
 

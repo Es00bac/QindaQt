@@ -31,8 +31,10 @@ struct FontDiscoveryLimits final {
 // exactly these injected inputs; the FcConfig never escapes the module. Tests
 // always inject an explicit configurationFile and fontDirectories so the
 // host's default fontconfig configuration and host font directories are never
-// consulted. Only the production composition (productionDefault()) resolves
-// the default fontconfig configuration.
+// consulted. Only the exact productionDefault() shape (empty configuration
+// file AND no injected directories) may resolve the default fontconfig
+// configuration; a request with injected directories but no configuration
+// file is ill-formed and rejected fail-closed (review finding P1-2).
 struct FontDiscoveryRequest final {
     QStringList fontDirectories;
     QString configurationFile;

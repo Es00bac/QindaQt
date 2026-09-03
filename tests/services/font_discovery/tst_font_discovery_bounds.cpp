@@ -45,30 +45,35 @@ void FontDiscoveryBoundsTests::truncationKeepsDeterministicPrefix()
 
 void FontDiscoveryBoundsTests::manyFilesStayBounded()
 {
+    // AGENT-NOTE: review finding P2-1 (rejected candidate abc76f3) — the
+    // bounded-directory row must stage thousands of entries, not eight.
     Stage stage;
     QVERIFY(stage.root.isValid());
     QVERIFY(QDir().mkpath(stage.fontsPath()));
-    for (int i = 0; i < 8; ++i) {
-        const QString name = QStringLiteral("copy-%1.ttf").arg(i);
-        QVERIFY(QFile::copy(QStringLiteral(QINDAQT_FONT_FIXTURES)
-                                + QStringLiteral("/NotoSansLycian-Regular.ttf"),
-                            stage.fontsPath() + QLatin1Char('/') + name));
+    constexpr int FileCount = 3'000;
+    for (int i = 0; i < FileCount; ++i) {
+        const QString name = QStringLiteral("copy-%1.ttf").arg(i, 4, 10, QLatin1Char('0'));
+        QVERIFY(copyFixtureAs(QStringLiteral("NotoSansLycian-Regular.ttf"), name,
+                              stage.fontsPath()));
     }
     QVERIFY(stageConfiguration(stage));
 
     FontDiscoveryRequest request = requestFor(stage);
     const FontDiscoveryResult complete = FontDiscoveryProvider(request).discover();
     QVERIFY2(complete.available, qPrintable(complete.diagnostic));
-    QCOMPARE(complete.facts.size(), 8);
+    QVERIFY(!complete.truncated);
+    QCOMPARE(complete.facts.size(), FileCount);
+    for (const auto &fact : complete.facts) {
+        QCOMPARE(fact.family, QStringLiteral("Noto Sans Lycian"));
+    }
 
-    request.limits.maximumFacts = 3;
+    request.limits.maximumFacts = 100;
     const FontDiscoveryResult bounded = FontDiscoveryProvider(request).discover();
     QVERIFY2(bounded.available, qPrintable(bounded.diagnostic));
     QVERIFY(bounded.truncated);
-    QCOMPARE(bounded.facts.size(), 3);
-    for (const auto &fact : bounded.facts) {
-        QCOMPARE(fact.family, QStringLiteral("Noto Sans Lycian"));
-    }
+    QCOMPARE(bounded.facts.size(), 100);
+    // The truncated result is the deterministic prefix of the complete run.
+    QCOMPARE(bounded.facts, complete.facts.sliced(0, 100));
 }
 
 QTEST_GUILESS_MAIN(FontDiscoveryBoundsTests)

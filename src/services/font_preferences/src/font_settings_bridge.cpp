@@ -87,7 +87,8 @@ void FontSettingsBridge::handleSnapshot()
     m_hasBaseline = true;
 
     QString syncError;
-    if (m_coordinator.updateFromSettings(m_client.snapshot()->values, &syncError)) {
+    const bool synced = m_coordinator.updateFromSettings(m_client.snapshot()->values, &syncError);
+    if (synced) {
         m_syncError.clear();
         Q_EMIT snapshotSynced();
     } else {
@@ -98,6 +99,17 @@ void FontSettingsBridge::handleSnapshot()
 
     if (m_sequenceActive && m_waitingSnapshot) {
         m_waitingSnapshot = false;
+        if (!synced) {
+            // AGENT-GUARD (review finding P1-5): A malformed post-commit
+            // snapshot must not advance the write sequence -- the next write
+            // would carry an unverifiable authority state. The already Applied
+            // key keeps its confirmed truth, every later key stays
+            // NotAttempted, and the sequence ends unreplayed per the
+            // Appearance no-replay rules (ADR-0028).
+            abortRemainingNotAttempted();
+            finishSequence();
+            return;
+        }
         advanceSequence();
     }
 }
