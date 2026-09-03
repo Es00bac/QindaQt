@@ -14,8 +14,9 @@ namespace QindaQt::Services::FontDiscovery {
 using QindaQt::Services::FontPreferences::FontPreferences;
 
 // AGENT-CONTRACT: Bounds the synchronous pre-application Settings1 exchange
-// (activation, owner lookup, snapshot read) so a missing or slow preference
-// source can delay application startup by at most this many milliseconds.
+// (activation, initial owner lookup, snapshot read, and owner
+// reauthentication) so a missing or slow preference source can delay
+// application startup by at most this many milliseconds.
 inline constexpr int DefaultBootstrapTimeoutMilliseconds = 750;
 
 // AGENT-CONTRACT: FontSessionBootstrap is the Font F1 production composition
@@ -31,9 +32,9 @@ inline constexpr int DefaultBootstrapTimeoutMilliseconds = 750;
 //
 // Fail-closed on every path: an unset or absent session bus (never
 // autolaunched), an absent or slow Settings1 service, a malformed or
-// wrong-typed snapshot, unavailable discovery, or a confirmed family that
-// does not resolve in the live catalog all change nothing and return false
-// with a bounded diagnostic.
+// wrong-typed snapshot, owner loss/replacement in flight, unavailable
+// discovery, or a confirmed family that does not resolve in the live catalog
+// all change nothing and return false with a bounded diagnostic.
 class FontSessionBootstrap final {
 public:
     FontSessionBootstrap() = delete;

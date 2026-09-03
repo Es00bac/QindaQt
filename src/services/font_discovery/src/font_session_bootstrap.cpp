@@ -89,6 +89,31 @@ bool blockingCall(const QDBusConnection &connection, const QDBusMessage &message
     return true;
 }
 
+bool readUniqueOwner(const QDBusConnection &connection, int timeoutMilliseconds,
+                     QString *ownerOut, QString *diagnostic)
+{
+    QDBusMessage ownerCall = QDBusMessage::createMethodCall(
+        QString::fromLatin1(BusService), QString::fromLatin1(BusPath),
+        QString::fromLatin1(BusInterface), QStringLiteral("GetNameOwner"));
+    ownerCall << QString::fromLatin1(WireContract::ServiceName);
+    QDBusMessage ownerReply;
+    if (!blockingCall(connection, ownerCall, timeoutMilliseconds, &ownerReply, diagnostic)) {
+        return false;
+    }
+    if (ownerReply.arguments().size() != 1
+        || ownerReply.arguments().constFirst().metaType().id() != QMetaType::QString) {
+        setDiagnostic(diagnostic, QStringLiteral("settings owner reply is malformed"));
+        return false;
+    }
+    const QString owner = ownerReply.arguments().constFirst().toString();
+    if (!owner.startsWith(QLatin1Char(':'))) {
+        setDiagnostic(diagnostic, QStringLiteral("settings service owner is not a unique name"));
+        return false;
+    }
+    *ownerOut = owner;
+    return true;
+}
+
 // AGENT-CONTRACT: Mirrors the fencing essentials of SettingsClient snapshot
 // validation (exact field set, exact-typed envelope fields, exact key scope)
 // for the one-shot blocking read; a failure here must leave the composition
@@ -175,23 +200,9 @@ std::optional<FontPreferences> FontSessionBootstrap::readConfirmedPreferences(
     connection.call(activation, QDBus::Block,
                     qMin(remaining(), ActivationBudgetMilliseconds));
 
-    QDBusMessage ownerCall = QDBusMessage::createMethodCall(
-        QString::fromLatin1(BusService), QString::fromLatin1(BusPath),
-        QString::fromLatin1(BusInterface), QStringLiteral("GetNameOwner"));
-    ownerCall << QString::fromLatin1(WireContract::ServiceName);
-    QDBusMessage ownerReply;
-    if (!blockingCall(connection, ownerCall, qMin(remaining(), OwnerBudgetMilliseconds),
-                      &ownerReply, diagnostic)) {
-        return std::nullopt;
-    }
-    if (ownerReply.arguments().size() != 1
-        || ownerReply.arguments().constFirst().metaType().id() != QMetaType::QString) {
-        setDiagnostic(diagnostic, QStringLiteral("settings owner reply is malformed"));
-        return std::nullopt;
-    }
-    const QString owner = ownerReply.arguments().constFirst().toString();
-    if (!owner.startsWith(QLatin1Char(':'))) {
-        setDiagnostic(diagnostic, QStringLiteral("settings service owner is not a unique name"));
+    QString owner;
+    if (!readUniqueOwner(connection, qMin(remaining(), OwnerBudgetMilliseconds),
+                         &owner, diagnostic)) {
         return std::nullopt;
     }
 
@@ -203,6 +214,21 @@ std::optional<FontPreferences> FontSessionBootstrap::readConfirmedPreferences(
     snapshotCall << keys;
     QDBusMessage snapshotReply;
     if (!blockingCall(connection, snapshotCall, remaining(), &snapshotReply, diagnostic)) {
+        return std::nullopt;
+    }
+
+    // AGENT-GUARD: A call sent to a unique name can still return after that
+    // process relinquishes Settings1. Re-resolve the well-known name before
+    // accepting the reply; loss or replacement makes the in-flight snapshot
+    // stale even when its envelope is otherwise valid.
+    QString confirmedOwner;
+    if (!readUniqueOwner(connection, qMin(remaining(), OwnerBudgetMilliseconds),
+                         &confirmedOwner, diagnostic)) {
+        return std::nullopt;
+    }
+    if (confirmedOwner != owner) {
+        setDiagnostic(diagnostic,
+                      QStringLiteral("settings service owner changed during snapshot read"));
         return std::nullopt;
     }
     if (snapshotReply.arguments().size() != 1) {

@@ -125,6 +125,12 @@ void FontSettingsBridge::handleSnapshot()
 
 void FontSettingsBridge::handleStateChanged()
 {
+    if (m_client.state() != SettingsClient::ClientState::Ready) {
+        // AGENT-GUARD: hasBaseline() reports current write authority, not LKG
+        // availability. Any non-Ready client state revokes that authority;
+        // only a later complete domain-valid snapshot may restore it.
+        m_hasBaseline = false;
+    }
     if (!m_sequenceActive || !m_waitingSnapshot) {
         return;
     }

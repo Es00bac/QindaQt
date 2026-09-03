@@ -125,8 +125,10 @@ with the public Settings1 client, following the ADR-0028 recovery contract:
   current snapshot cannot serve as a later write baseline. The sequence never
   claims to be one atomic transaction.
 - The bridge fails closed on transport loss: writes are refused unless the
-  client is Ready, owner loss ends an in-flight sequence, and the coordinator
-  keeps its last-known-good preferences throughout.
+  client is Ready, every non-Ready state removes public write-baseline
+  authority until a later complete valid snapshot, owner loss ends an
+  in-flight sequence, and the coordinator keeps its last-known-good
+  preferences throughout.
 
 ## Font F1 first-party bootstrap wiring
 
@@ -146,11 +148,14 @@ The composition:
 2. Reads the confirmed `fonts.*` snapshot through a **private**
    `connectToBus()` session-bus connection with bounded blocking calls
    (`DefaultBootstrapTimeoutMilliseconds`, 750 ms total across activation,
-   owner lookup, and the snapshot read). The shared `sessionBus()` is never
-   created pre-application, so later in-process consumers of it keep their
-   event-dispatcher integration. The snapshot envelope is validated
-   fail-closed (exact field set, exact-typed status/schema/epoch/revision,
-   exact key scope) and decoded through the exact-typed
+   initial owner lookup, snapshot read, and owner reauthentication). The
+   snapshot call targets the resolved unique name, then the well-known name is
+   resolved again before the reply is accepted; owner loss or replacement in
+   flight rejects the snapshot. The shared `sessionBus()` is never created
+   pre-application, so later in-process consumers of it keep their
+   event-dispatcher integration. The snapshot envelope is validated fail-closed
+   (exact field set, exact-typed status/schema/epoch/revision, exact key scope)
+   and decoded through the exact-typed
    `FontPreferencesCodec::fromSettingsMap`.
 3. Runs the discovery provider with
    `FontDiscoveryRequest::productionDefault()` — the only request shape

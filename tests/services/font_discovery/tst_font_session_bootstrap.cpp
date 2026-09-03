@@ -26,6 +26,7 @@ private slots:
     void probeWithWrongTypedSnapshotChangesNothing();
     void probeWithMalformedEnvelopeChangesNothing();
     void probeWithUnresolvedFamilyChangesNothing();
+    void probeRejectsSnapshotAfterOwnerLoss();
     void probeAppliesConfirmedPreferencesFromFakeService();
     void probeAppliesConfirmedPreferencesFromRealService();
 };
@@ -163,6 +164,34 @@ void FontSessionBootstrapTests::probeWithUnresolvedFamilyChangesNothing()
     QVERIFY2(outcome.completed, qPrintable(outcome.raw));
     QVERIFY(!outcome.applied);
     QVERIFY(outcome.family != QStringLiteral("QindaQt Missing Family XYZ"));
+}
+
+void FontSessionBootstrapTests::probeRejectsSnapshotAfterOwnerLoss()
+{
+    // AGENT-NOTE: review finding P1-1 (rejected candidate 84367aa) — the
+    // resolved unique owner relinquishes Settings1 before returning a valid
+    // snapshot. That candidate applied the stale reply because it never
+    // reauthenticated the well-known name after the blocking call.
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    QTemporaryDir scratch;
+    QVERIFY(scratch.isValid());
+    const QString fontconfigFile = stageFixtureFontconfig(scratch);
+    QVERIFY(!fontconfigFile.isEmpty());
+
+    ServiceChild service;
+    QVERIFY(service.start(busChildEnvironment(bus, scratch.filePath(QStringLiteral("service-home")),
+                                              {}),
+                          {QString::fromLatin1(FakeServiceModePrefix)
+                           + QStringLiteral("owner-loss")},
+                          bus.connection()));
+
+    const ProbeOutcome outcome =
+        runProbeChild(busChildEnvironment(bus, scratch.filePath(QStringLiteral("probe-home")),
+                                          fontconfigFile));
+    QVERIFY2(outcome.completed, qPrintable(outcome.raw));
+    QVERIFY(!outcome.applied);
+    QVERIFY(outcome.family != QStringLiteral("Liberation Mono"));
 }
 
 void FontSessionBootstrapTests::probeAppliesConfirmedPreferencesFromFakeService()
