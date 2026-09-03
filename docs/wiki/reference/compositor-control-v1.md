@@ -255,6 +255,74 @@ each intent and may update UI only from a later reconciled compositor snapshot.
 None of this changes `Compositor1`: its unauthenticated production mutators
 remain `control-disabled`.
 
+### Active-window identity snapshot
+
+The same authenticated object exposes `ActiveWindowIdentity() -> ay` and the
+no-argument `ActiveWindowIdentityChanged` signal. Authentication happens before
+the producer reads active-window state. After a successful read, KWin sends the
+invalidation only to that exact shell unique owner; no focus or process fact is
+broadcast. Panel-owner loss triggers one final directed invalidation and revokes
+the binding. The shell client rereads over the same exact-owner transport and
+withdraws its prior value while the read is pending.
+
+The signal is a scriptable Qt meta-object member and is exported alongside the
+scriptable methods, so live `org.freedesktop.DBus.Introspectable` output matches
+the immutable descriptor. The endpoint deliberately never emits that Qt signal:
+normal Qt D-Bus signal export would broadcast it. It instead sends the same
+declared wire member as a targeted message to the authenticated owner. The
+private-KWin contract row compares the live method/signal sets with the checked-
+in XML; parsing the XML alone is not parity evidence.
+
+An available schema-1 response is a complete compact JSON object:
+
+```json
+{
+  "status": "ok",
+  "schemaVersion": 1,
+  "epoch": "compositor-service-epoch",
+  "revision": "17",
+  "actionRevision": "42",
+  "activeWindow": {
+    "windowId": "72bfa847-6e42-48d7-9303-334e6c6a8bd3",
+    "processId": "8241",
+    "appMenuWindowId": 4194309,
+    "appMenuServiceName": "org.example.Editor",
+    "appMenuObjectPath": "/org/example/Editor/Menu"
+  }
+}
+```
+
+`revision` is the identity/focus generation and strictly advances whenever the
+published active UUID, identity facts, appmenu announcement, or associated
+window-action fence changes. `epoch` is the same service epoch used by
+`Windows`; `(epoch, actionRevision)` is the exact visibility/action generation
+sampled with the facts. Consumers accept forward revision gaps but reject epoch
+changes without reset, revision regression, and changed bytes at an equal
+revision. Both compositor publication and shell decoding apply
+`ShellWindowGeneration::isValid()` to the `(epoch, actionRevision)` fence;
+whitespace-padded, empty, oversized, zero-revision, or otherwise invalid action
+generations make identity unavailable rather than current truth.
+
+`activeWindow` is `null` when no admitted ordinary window is active. Otherwise
+`windowId` is its KWin UUID. `processId` is a positive decimal string or
+`null`: native Wayland uses the client connection's kernel credentials, while
+XWayland uses KWin's XRes `LOCAL_CLIENT_PID` result for the X client id.
+`appMenuWindowId` is that exact nonzero X11 client window id for XWayland and is
+`null` for native Wayland; the KDE Wayland appmenu protocol identifies its menu
+by the paired service/path instead of inventing a registrar number. The service
+and object path are both strings or both `null`, reflecting only a valid pair
+already announced through the KDE appmenu protocol or the corresponding
+`_KDE_NET_WM_APPMENU_SERVICE_NAME` and
+`_KDE_NET_WM_APPMENU_OBJECT_PATH` properties. No value is inferred from the
+AppMenu registrar.
+
+Before the first valid publication or after a sampling defect, `status` is
+`unavailable` with retained `epoch`/`revision` and a typed `failure`; no facts
+are usable. An unauthenticated caller receives a fixed compact `unauthorized`
+object with no epoch, revisions, UUID, PID, menu id, or appmenu address. Field
+and payload limits are enforced before publication or acceptance. The complete
+trust decision and registrar limitation are [ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
+
 ## Development qualification-surface evidence
 
 `DevelopmentShellSurfaces` is a read-only qualification seam, not a supported

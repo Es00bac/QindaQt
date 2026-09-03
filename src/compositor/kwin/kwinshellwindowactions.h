@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/compositor/shellwindowactions.h"
+#include "qindaqt/compositor/shellwindowidentity.h"
 
 #include <QDBusConnection>
 #include <QDBusContext>
@@ -17,6 +18,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 class KWinHybridSession;
 class KWinShellVisibilityPublisher;
+class KWinShellWindowIdentityPublisher;
 class ManagedWindowRegistry;
 
 class QtBusShellCredentialSource final : public ShellWindowCredentialSource
@@ -40,6 +42,9 @@ class KWinShellPanelOwnerSource final : public QObject,
 public:
     explicit KWinShellPanelOwnerSource(QObject *parent = nullptr);
     [[nodiscard]] std::optional<qint64> shellPanelProcessId() const override;
+
+Q_SIGNALS:
+    void shellPanelOwnerChanged();
 
 private:
     void track(KWin::LayerSurfaceV1Interface *surface);
@@ -82,7 +87,11 @@ class KWinShellWindowActionsEndpoint final : public QObject, protected QDBusCont
 
 public:
     explicit KWinShellWindowActionsEndpoint(
-        ShellWindowActionController &controller,
+        ShellWindowActionController &actionController,
+        ShellWindowIdentityController &identityController,
+        KWinShellWindowIdentityPublisher &identityPublisher,
+        KWinShellPanelOwnerSource &panelOwner,
+        QDBusConnection connection,
         QObject *parent = nullptr);
 
 public Q_SLOTS:
@@ -96,13 +105,27 @@ public Q_SLOTS:
         const QString &windowId, const QString &epoch, const QString &revision);
     Q_SCRIPTABLE [[nodiscard]] QByteArray RaiseWindow(
         const QString &windowId, const QString &epoch, const QString &revision);
+    Q_SCRIPTABLE [[nodiscard]] QByteArray ActiveWindowIdentity();
+
+Q_SIGNALS:
+    // AGENT-CONTRACT: This signal is exported for descriptor/live-object
+    // parity but is never emitted through Qt, which would broadcast focus
+    // timing. sendDirectedIdentityInvalidation() sends the same wire member
+    // only to the authenticated shell owner.
+    Q_SCRIPTABLE void ActiveWindowIdentityChanged();
+
+private Q_SLOTS:
+    void sendDirectedIdentityInvalidation();
 
 private:
     [[nodiscard]] QByteArray submit(ShellWindowAction action,
                                     const QString &windowId,
                                     const QString &epoch,
                                     const QString &revision);
-    ShellWindowActionController &m_controller;
+    ShellWindowActionController &m_actionController;
+    ShellWindowIdentityController &m_identityController;
+    QDBusConnection m_connection;
+    QString m_boundIdentityOwner;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

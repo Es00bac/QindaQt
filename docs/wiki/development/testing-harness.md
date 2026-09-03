@@ -1030,24 +1030,43 @@ proofs; they do not replace the complete-suite gate.
 `compositor.kwin-shell-window-actions` runs serially under a private session
 bus, disposable build-root XDG directories, and the cache-pinned KWin 6.6.5
 virtual runtime. One fake shell process maps a committed `scope=dock` layer
-surface while two separate Wayland client processes map real buffered ordinary
-windows. From the bound shell PID it observes the current Windows/visibility
+surface while separate native Wayland and XWayland client processes map real
+buffered ordinary windows. From the bound shell PID it observes the current Windows/visibility
 fence and proves activate, minimize, unminimize, raise-order, and request-close
 effects through `CompositorShell1`; a separate bus process using the same valid
 UUID/generation must receive `unauthorized`. That wrong-PID process also sends
 megabyte-scale window, epoch, and revision fields and requires a compact reply
-with no echoed field. The row uses no host display, input, D-Bus session,
+with no echoed field. The same row compares the projected Wayland PID with its
+real child process and requires a typed-null AppMenu window id, then compares
+the XWayland XRes PID and exact projected AppMenu id with that child's PID and
+native X11 window id. A wrong-PID identity read must be bounded,
+`unauthorized`, and contain no identity fact. The row uses no host display,
+input, D-Bus session,
 hardware, or `tests/session` desktop scenario.
+
+That row also introspects the live `CompositorShell1` object and compares its
+complete method and signal name sets with the checked-in XML. The native
+Wayland client announces one valid KDE AppMenu service/path through KWayland on
+the same Qt Wayland connection; the row observes those exact values, then
+replaces them with an overlong service, a malformed service, and a malformed
+path in separate phases. Each hostile phase must publish typed unavailability,
+and each intervening valid announcement must recover with a later identity
+revision.
 
 The deterministic companion rows are `compositor.shell-window-actions` for
 bound-PID admission, unbound authority, authenticate-before-parse hostile
 fields, authenticated entry bounds, echo-free fixed failures, stale-before-
 lookup, unknown UUID, Hybrid routing, executor failure, and fixed rate bounds;
+`compositor.shell-window-identity` for fake credential/source ordering,
+revision and action-generation fencing, typed absence, paired appmenu
+announcements, malformed payload rejection, and echo-free authorization;
 `compositor.dbus-contract` for exact XML parity; and
 `qindaqt.shell-window-actions-{client,private-bus}` for exact-owner async
 serialization, owner/timeout/malformed uncertainty with no replay, real
 private-bus owner replacement plus late-old-reply rejection, a real-bus client
-timeout, and an ordinary transport round trip.
+timeout, ordinary transport round trip, directed identity invalidation,
+monotonic refresh, invalid-generation rejection, identity-specific late-old-
+owner reply rejection, and fail-closed identity withdrawal.
 
 These tests boot beneath disposable XDG trees and private D-Bus sessions. Two
 or more `QBackingStore`-backed probe windows commit real Wayland buffers and
