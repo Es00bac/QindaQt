@@ -132,8 +132,9 @@ The module is registered through these additive seams:
    `ShellRuntimeApplication`, and `RuntimePanelWindowFactory` injects only the
    controller into QML.
 4. The `PowerAppletRuntime` install component stages the production shell,
-   compiled QML resources, manifest, selected profile, policy, and theme for a
-   relocation/poison test.
+   its directly linked Controls library, the Tokens library at Controls'
+   baked sibling RUNPATH, compiled QML resources, manifest, selected profile,
+   policy, and theme for a relocation/poison test.
 
 ## Focused tests
 
@@ -152,7 +153,7 @@ ctest --test-dir build/dev -R '^qindaqt\.power-applet-' --output-on-failure
 | `qindaqt.power-applet-offscreen` | Compiled QML loading, keyboard activation, profile and slider interaction, accessible roles/names/descriptions, and real controller dispatch. |
 | `qindaqt.power-applet-boundary` | Static policy gate rejecting transport, QML, QObject, platform, and hardware tokens outside the declared include roots. |
 | `qindaqt.power-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, host daemons, process/file, and hardware access; controller/QML also reject direct D-Bus while the shell root may construct the public Qt transport. Includes a poison negative control. |
-| `qindaqt.power-applet-installed-package` | Relocated production shell and data resolve under source-path poison, the binary contains the compiled applet module, and `--list` discovers the staged Power manifest. |
+| `qindaqt.power-applet-installed-package` | Relocated production shell and data resolve under source-path poison, Controls/Tokens resolve only from the staged relative loader paths, the binary contains the compiled applet module, and `--list` discovers the staged Power manifest. |
 
 The boundary gate also runs without configure:
 

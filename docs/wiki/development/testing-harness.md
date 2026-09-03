@@ -177,12 +177,12 @@ stale old-owner reply dropped after replacement), a compiled
 offscreen keyboard/accessibility row, pure/runtime boundary gates with
 independent service-internal/transport/QML/QObject poison negative controls,
 and an installed
-production-package/source-poison row that also requires the staged KF6
-GlobalAccel artifact to resolve through the relocated shell's relative
-RUNPATH. All rows use an injected fake transport or a relocated package
-stage; no row contacts the host session bus, PipeWire, WirePlumber, display
-server, or hardware. The exact matrix and non-claims are detailed in
-[Audio applet](../shell/audio-applet.md).
+production-package/source-poison row that also requires the staged KF6,
+Controls, and Tokens artifacts to resolve through the relocated shell's and
+Controls library's relative RUNPATHs. All rows use an injected fake transport
+or a relocated package stage; no row contacts the host session bus, PipeWire,
+WirePlumber, display server, or hardware. The exact matrix and non-claims are
+detailed in [Audio applet](../shell/audio-applet.md).
 
 The production Power applet slice is selected with:
 
@@ -194,7 +194,9 @@ ctest --test-dir build/dev \
 
 Its pure projection/control/request rows are joined by public-client controller,
 compiled offscreen keyboard/accessibility, runtime-boundary poison, and
-installed production-package/source-poison rows. No row contacts the host
+installed production-package/source-poison rows. The installed row requires
+the shell's directly linked Controls library and its Tokens dependency to
+resolve from the narrow relocated component. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
@@ -209,7 +211,9 @@ ctest --test-dir build/dev \
 Its pure projection/request rows are joined by an exact-owner public-client
 controller, compiled offscreen keyboard/accessibility and lease-close proof,
 mutation-sensitive pure/runtime boundary gates, and an installed
-production-package/source-poison row. The boundary rows use exact header
+production-package/source-poison row. That installed row requires the staged
+shell's KF6, Controls, and Tokens dependencies to resolve from their exact
+relocated paths. The boundary rows use exact header
 allowlists, positively close the controller's line-splice/whitespace-normalized
 QML surface with exact declaration lists plus literal macro-name occurrence
 counts, and independently poison client/service, single-line, wrapped,

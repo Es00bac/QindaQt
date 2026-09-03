@@ -211,6 +211,20 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
         COMPONENT BluetoothAppletRuntime
     )
+    # AGENT-CONTRACT: Every narrow component that stages qindaqt-shell must
+    # carry its directly linked Controls library and the Tokens library at
+    # Controls' baked $ORIGIN/../Tokens sibling path. Otherwise the staged
+    # shell fails before its applet catalog can be inspected.
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT BluetoothAppletRuntime
+    )
     # A narrow stage lets the Audio applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -246,12 +260,15 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     # The audio applet renders through the shared QindaQt.Controls and
     # QindaQt.Tokens QML modules. Controls carries a baked
     # $ORIGIN/../Tokens RUNPATH (the sibling-module layout built by
-    # src/controls), so the component ships controls beside the shell's
-    # libdir while the relocated test stage supplies the tokens artifact at
-    # that exact sibling path.
+    # src/controls), so this component must preserve that runtime closure.
     install(
         TARGETS qindaqt_controls_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
         COMPONENT AudioAppletRuntime
     )
     # A narrow stage lets the Power applet prove that the production binary,
@@ -284,6 +301,16 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         FILES
             "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT PowerAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT PowerAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
         COMPONENT PowerAppletRuntime
     )
 endif()

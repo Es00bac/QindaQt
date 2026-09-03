@@ -71,6 +71,7 @@ file(GET_RUNTIME_DEPENDENCIES
     RESOLVED_DEPENDENCIES_VAR resolved_dependencies
     UNRESOLVED_DEPENDENCIES_VAR unresolved_dependencies)
 set(resolved_kf6_dependency "")
+set(resolved_controls_dependency "")
 foreach(resolved_dependency IN LISTS resolved_dependencies)
     cmake_path(GET resolved_dependency FILENAME dependency_name)
     if(dependency_name STREQUAL QINDAQT_KF6_GLOBALACCEL_SONAME)
@@ -80,6 +81,13 @@ foreach(resolved_dependency IN LISTS resolved_dependencies)
         endif()
         file(REAL_PATH "${resolved_dependency}" resolved_kf6_dependency)
     endif()
+    if(dependency_name STREQUAL "libqindaqt_controls_qml.so")
+        if(NOT resolved_controls_dependency STREQUAL "")
+            message(FATAL_ERROR
+                "Bluetooth applet stage resolved duplicate Controls runtime artifacts")
+        endif()
+        file(REAL_PATH "${resolved_dependency}" resolved_controls_dependency)
+    endif()
 endforeach()
 file(REAL_PATH
     "${stage_library_dir}/${QINDAQT_KF6_GLOBALACCEL_SONAME}"
@@ -88,6 +96,51 @@ if(NOT resolved_kf6_dependency STREQUAL expected_kf6_dependency)
     message(FATAL_ERROR
         "Staged shell did not resolve KF6 GlobalAccel from its relocated libdir: "
         "expected ${expected_kf6_dependency}, resolved ${resolved_kf6_dependency}")
+endif()
+
+set(expected_controls_dependency
+    "${stage_library_dir}/libqindaqt_controls_qml.so")
+if(NOT EXISTS "${expected_controls_dependency}")
+    message(FATAL_ERROR
+        "Bluetooth applet stage is missing ${expected_controls_dependency}")
+endif()
+file(REAL_PATH "${expected_controls_dependency}" expected_controls_dependency)
+if(NOT resolved_controls_dependency STREQUAL expected_controls_dependency)
+    message(FATAL_ERROR
+        "Staged shell did not resolve QindaQt.Controls from its relocated libdir: "
+        "expected ${expected_controls_dependency}, "
+        "resolved ${resolved_controls_dependency}")
+endif()
+
+# Controls carries an installed $ORIGIN/../Tokens RUNPATH. Authenticate the
+# transitive dependency separately so a host Tokens library cannot make this
+# narrow component appear complete.
+file(GET_RUNTIME_DEPENDENCIES
+    LIBRARIES "${expected_controls_dependency}"
+    RESOLVED_DEPENDENCIES_VAR controls_dependencies
+    UNRESOLVED_DEPENDENCIES_VAR controls_unresolved)
+set(resolved_tokens_dependency "")
+foreach(resolved_dependency IN LISTS controls_dependencies)
+    cmake_path(GET resolved_dependency FILENAME dependency_name)
+    if(dependency_name STREQUAL "libqindaqt_tokens_qml.so")
+        if(NOT resolved_tokens_dependency STREQUAL "")
+            message(FATAL_ERROR
+                "Bluetooth applet stage resolved duplicate Tokens runtime artifacts")
+        endif()
+        file(REAL_PATH "${resolved_dependency}" resolved_tokens_dependency)
+    endif()
+endforeach()
+set(expected_tokens_dependency "${stage}/Tokens/libqindaqt_tokens_qml.so")
+if(NOT EXISTS "${expected_tokens_dependency}")
+    message(FATAL_ERROR
+        "Bluetooth applet stage is missing ${expected_tokens_dependency}")
+endif()
+file(REAL_PATH "${expected_tokens_dependency}" expected_tokens_dependency)
+if(NOT resolved_tokens_dependency STREQUAL expected_tokens_dependency)
+    message(FATAL_ERROR
+        "Staged Bluetooth Controls did not resolve QindaQt.Tokens from its "
+        "baked sibling path: expected ${expected_tokens_dependency}, "
+        "resolved ${resolved_tokens_dependency}")
 endif()
 
 file(STRINGS "${shell}" compiled_qml
@@ -139,4 +192,4 @@ if(bluetooth_entry EQUAL -1)
 endif()
 
 message(STATUS
-    "Installed compiled Bluetooth applet, exact KF6 loader path, and source-poison proof passed")
+    "Installed compiled Bluetooth applet, exact KF6/Controls/Tokens loader paths, and source-poison proof passed")
