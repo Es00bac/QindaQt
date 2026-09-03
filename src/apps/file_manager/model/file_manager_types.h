@@ -19,6 +19,11 @@ struct DirectoryEntry final {
   bool isReadable = true;
   qint64 size = 0;
   QDateTime lastModified;
+  quint64 device = 0;
+  quint64 inode = 0;
+  qint64 identitySize = 0;
+  qint64 modifiedNanoseconds = 0;
+  quint32 mode = 0;
 
   [[nodiscard]] bool operator==(const DirectoryEntry &) const = default;
 };
