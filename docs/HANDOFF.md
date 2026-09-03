@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T04:58:12-06:00 — Bluetooth Settings route integrated at `500a33e` (merge `111dedb`); Settings Center order is now appearance, display, network, customize, audio, bluetooth.
 - 2026-09-03T04:42:48-06:00 — Controls visual fixtures pinned at `5cf24a2`; the broad safe suite now runs the visual rows again (465 rows).
 - 2026-09-03T04:32:48-06:00 — Audio Settings route integrated at `fac8d6a` (merge `f6d47db`); Bluetooth Settings route accepted and merging; Global Menu G2 `f7a49c5`, panel-visibility proof `a52561f`, File Manager S1 `61283bf`, and the controls-fonts repair `b7b5208` are in exact review; Text Editor S2 and Terminal S2 lanes started; GLM is limited until 20:25 and Kimi has recovered.
 - This integration merges exact accepted compositor identity descendant
