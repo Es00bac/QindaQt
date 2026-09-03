@@ -54,6 +54,7 @@ quint64 LogindActionAuthority::start()
     m_running = true;
     m_admitted = AdmittedActions{};
     m_activeOwner.clear();
+    m_pendingAuthorizations.clear();
     m_pendingActions.clear();
     m_seenOperationIds.clear();
     if (!m_connection.isConnected()) {
@@ -78,6 +79,12 @@ quint64 LogindActionAuthority::start()
 
 void LogindActionAuthority::stop()
 {
+    const QList<quint64> authorizing = m_pendingAuthorizations.keys();
+    m_pendingAuthorizations.clear();
+    for (const quint64 operationId : authorizing) {
+        finishAction(m_generation, operationId, CollaboratorStatus::Uncertain,
+                     QStringLiteral("authority-stopped"));
+    }
     const QList<quint64> pending = m_pendingActions.keys();
     for (const quint64 operationId : pending) {
         finishAction(m_generation, operationId, CollaboratorStatus::Uncertain,
@@ -197,28 +204,70 @@ void LogindActionAuthority::submitAction(const quint64 operationId,
         return;
     }
     m_seenOperationIds.insert(operationId);
-    bool admitted = false;
-    switch (action) {
-    case SessionAction::PowerOff: admitted = m_admitted.powerOff; break;
-    case SessionAction::Reboot: admitted = m_admitted.reboot; break;
-    case SessionAction::Suspend: admitted = m_admitted.suspend; break;
-    case SessionAction::Hibernate: admitted = m_admitted.hibernate; break;
-    }
-    // AGENT-GUARD: admission is checked at dispatch, not cached across the
-    // call; an action whose Can* answer was not "yes" never reaches logind.
-    if (!admitted) {
+    callCanAtDispatch(operationId, action);
+}
+
+void LogindActionAuthority::callCanAtDispatch(const quint64 operationId,
+                                               const SessionAction action)
+{
+    const QDBusReply<QString> resolved = m_connection.interface()->serviceOwner(
+        QString::fromLatin1(kLogindServiceName));
+    if (!resolved.isValid() || resolved.value().isEmpty()) {
         finishAction(m_generation, operationId, CollaboratorStatus::Unsupported,
                      QStringLiteral("action-not-admitted"));
         return;
     }
-    callExecuteAction(operationId, action);
+    const quint64 generation = m_generation;
+    const QString ownerAtSubmission = resolved.value();
+    m_pendingAuthorizations.insert(operationId, ownerAtSubmission);
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        ownerAtSubmission, QString::fromLatin1(kLogindObjectPath),
+        QString::fromLatin1(kLogindManagerInterface), canMethodName(action));
+    auto *watcher =
+        new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, generation, operationId, action,
+             ownerAtSubmission]() {
+                watcher->deleteLater();
+                if (!m_pendingAuthorizations.contains(operationId)) {
+                    return;
+                }
+                m_pendingAuthorizations.remove(operationId);
+                if (!runningGeneration(generation)) {
+                    return;
+                }
+                const QDBusReply<QString> currentOwner =
+                    m_connection.interface()->serviceOwner(
+                        QString::fromLatin1(kLogindServiceName));
+                if (!currentOwner.isValid()
+                    || currentOwner.value() != ownerAtSubmission
+                    || m_activeOwner != ownerAtSubmission) {
+                    finishAction(generation, operationId,
+                                 CollaboratorStatus::Uncertain,
+                                 QStringLiteral("authority-replaced"));
+                    return;
+                }
+                const QDBusPendingReply<QString> reply = *watcher;
+                // AGENT-GUARD: the cached admitted set is never dispatch
+                // authority. Only this exact-owner, per-operation "yes" may
+                // cross into an action call; errors, "no", "na", and
+                // "challenge" all terminate without an upstream mutation.
+                if (reply.isError()
+                    || reply.value() != QStringLiteral("yes")) {
+                    finishAction(generation, operationId,
+                                 CollaboratorStatus::Unsupported,
+                                 QStringLiteral("action-not-admitted"));
+                    return;
+                }
+                callExecuteAction(operationId, action, ownerAtSubmission);
+            });
 }
 
 void LogindActionAuthority::callExecuteAction(const quint64 operationId,
-                                              const SessionAction action)
+                                              const SessionAction action,
+                                              const QString &ownerAtSubmission)
 {
     const quint64 generation = m_generation;
-    const QString ownerAtSubmission = m_activeOwner;
     m_pendingActions.insert(operationId, ownerAtSubmission);
     QDBusMessage call = QDBusMessage::createMethodCall(
         ownerAtSubmission,
@@ -237,7 +286,12 @@ void LogindActionAuthority::callExecuteAction(const quint64 operationId,
                     return;
                 }
                 m_pendingActions.remove(operationId);
-                if (m_activeOwner != ownerAtSubmission) {
+                const QDBusReply<QString> currentOwner =
+                    m_connection.interface()->serviceOwner(
+                        QString::fromLatin1(kLogindServiceName));
+                if (!currentOwner.isValid()
+                    || currentOwner.value() != ownerAtSubmission
+                    || m_activeOwner != ownerAtSubmission) {
                     finishAction(generation, operationId,
                                  CollaboratorStatus::Uncertain,
                                  QStringLiteral("authority-replaced"));
@@ -281,6 +335,12 @@ void LogindActionAuthority::onLogindOwnerChanged(const QString &name,
         QString::fromLatin1(kLogindServiceName));
     const QString currentOwner = resolved.isValid() ? resolved.value() : QString();
     if (currentOwner != m_activeOwner) {
+        const QList<quint64> authorizing = m_pendingAuthorizations.keys();
+        m_pendingAuthorizations.clear();
+        for (const quint64 operationId : authorizing) {
+            finishAction(m_generation, operationId, CollaboratorStatus::Uncertain,
+                         QStringLiteral("authority-replaced"));
+        }
         const QList<quint64> pending = m_pendingActions.keys();
         m_pendingActions.clear();
         for (const quint64 operationId : pending) {

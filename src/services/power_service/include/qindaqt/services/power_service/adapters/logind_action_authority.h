@@ -32,10 +32,12 @@ struct AdmittedActions {
 // controller, on an injected bus connection. CanPowerOff/CanReboot/CanSuspend/
 // CanHibernate define the admitted set: only a "yes" answer admits an action,
 // because Power1 v1 provides no polkit UI ("challenge" stays unadmitted and
-// the controller must surface it, not answer it). Actions are executed only
-// through this admission gate with generation-fenced, exactly-once completion
-// carrying CollaboratorOutcome values; an upstream owner replacement mid-flight
-// completes as Uncertain. QindaQt never passes interactive=true.
+// the controller must surface it, not answer it). The published set is
+// presentation truth only: every submitted action re-queries its matching Can*
+// method from the exact current owner before dispatch. Authorization and action
+// stages share generation-fenced, exactly-once completion; an upstream owner
+// replacement in either stage completes as Uncertain. QindaQt never passes
+// interactive=true.
 class LogindActionAuthority final : public QObject
 {
     Q_OBJECT
@@ -66,7 +68,9 @@ private:
     };
 
     void callCanAction(SessionAction action, const std::shared_ptr<PendingCanQuery> &query);
-    void callExecuteAction(quint64 operationId, SessionAction action);
+    void callCanAtDispatch(quint64 operationId, SessionAction action);
+    void callExecuteAction(quint64 operationId, SessionAction action,
+                           const QString &ownerAtSubmission);
     void finishAction(quint64 generation, quint64 operationId,
                       CollaboratorStatus status, const QString &reasonCode);
     void onLogindOwnerChanged(const QString &name, const QString &oldOwner,
@@ -79,6 +83,7 @@ private:
     QDBusServiceWatcher *m_watcher = nullptr;
     AdmittedActions m_admitted;
     QString m_activeOwner;
+    QHash<quint64, QString> m_pendingAuthorizations;
     QHash<quint64, QString> m_pendingActions;
     QSet<quint64> m_seenOperationIds;
     quint64 m_generation = 0;

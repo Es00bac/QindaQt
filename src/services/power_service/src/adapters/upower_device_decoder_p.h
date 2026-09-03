@@ -16,9 +16,11 @@ struct UpowerDeviceTruth {
 };
 
 // Converts one complete org.freedesktop.UPower.Device property map without
-// retaining its object path. Missing optional values become canonical unknown
-// truth; a present value with the wrong D-Bus type or an unknown enum fails the
-// complete device.
+// retaining its object path. AGENT-CONTRACT: Online is authoritative only for
+// line power, PowerSupply gates battery/UPS admission, and IsPresent is read
+// only for batteries, matching org.freedesktop.UPower.Device.xml. Missing
+// optional values become canonical unknown truth; a present value with the
+// wrong D-Bus type or an unknown enum fails the complete device.
 [[nodiscard]] bool decodeUpowerDevice(const QString &objectPath,
                                       const QVariantMap &properties,
                                       UpowerDeviceTruth &truth);

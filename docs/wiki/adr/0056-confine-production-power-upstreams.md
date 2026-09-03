@@ -33,13 +33,17 @@ unconfigured invocation cannot contact platform authorities.
 Every D-Bus refresh resolves a unique owner and publishes only an atomic set of
 replies from that owner. Owner loss or replacement withdraws the domain,
 advances service epoch where an accepted authority existed, and rejects stale
-replies. UPower decoding requires exact property types and known ordinals.
+replies. UPower decoding requires exact property types and known ordinals;
+`Online` defines line-power truth, `PowerSupply=false` excludes peripheral
+battery or UPS devices from the system inventory, and `IsPresent` is
+battery-only.
 Power Profiles supports the current
 `org.freedesktop.UPower.PowerProfiles` root plus the legacy
 `net.hadess.PowerProfiles` root; holds use the daemon's unsigned cookie and
 never expose it as a public handle. logind drops inhibitor UID/PID fields and
-admits an action only for an exact `yes` Can* reply; `challenge` never opens a
-polkit UI.
+admits an action only after a fresh exact-owner `Can*` query at dispatch returns
+`yes`; the earlier published admission set cannot authorize execution, and
+`challenge` never opens a polkit UI.
 
 The sysfs adapter touches only its injected root. It reads bounded decimal
 `max_brightness`, `brightness`, and `actual_brightness` values and reports a

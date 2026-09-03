@@ -126,6 +126,11 @@ public:
         for (const QString &open : openedConnections) {
             QDBusConnection::disconnectFromBus(open);
         }
+        stopDaemon();
+    }
+
+    void stopDaemon()
+    {
         if (daemon.state() == QProcess::NotRunning) {
             return;
         }
@@ -160,6 +165,11 @@ public:
     pid_t servicePid = 0;
 };
 
+bool processExists(const pid_t pid)
+{
+    return QFileInfo::exists(QStringLiteral("/proc/%1").arg(pid));
+}
+
 void writeBacklightFixture(const QString &root)
 {
     auto write = [root](const QString &name, const QByteArray &content) {
@@ -180,6 +190,7 @@ FakeUpowerService::DeviceSpec productionBattery()
 {
     QVariantMap properties;
     properties.insert(QStringLiteral("Type"), QVariant(uint(2)));
+    properties.insert(QStringLiteral("PowerSupply"), QVariant(true));
     properties.insert(QStringLiteral("IsPresent"), QVariant(true));
     properties.insert(QStringLiteral("State"), QVariant(uint(2)));
     properties.insert(QStringLiteral("Percentage"), QVariant(42.5));
@@ -232,6 +243,7 @@ private Q_SLOTS:
     void defaultModeKeepsUnavailableTruth();
     void invalidModeExitsFailClosed();
     void packagedDescriptorSelectsProduction();
+    void constructingBusLossExitsAndReplacementStartsFresh();
 };
 
 void PowerProductionActivationTests::productionModePublishesFakeUpstreamTruth()
@@ -376,6 +388,69 @@ void PowerProductionActivationTests::packagedDescriptorSelectsProduction()
     unit.close();
     QVERIFY(unitContent.contains(
         QStringLiteral("/qindaqt-power-service --upstream=production")));
+}
+
+void PowerProductionActivationTests::constructingBusLossExitsAndReplacementStartsFresh()
+{
+    registerDBusTypes();
+    ProductionBus firstBus;
+    QVERIFY(firstBus.start(QStringLiteral("--upstream=production")));
+    firstBus.connectionName =
+        QStringLiteral("qindaqt-production-lifetime-first-%1")
+            .arg(QUuid::createUuid().toString(QUuid::Id128));
+    firstBus.connection =
+        QDBusConnection::connectToBus(firstBus.address, firstBus.connectionName);
+    QVERIFY(firstBus.connection.isConnected());
+
+    activateAndWaitForOwner(firstBus.connection, &firstBus.servicePid);
+    QVERIFY(firstBus.servicePid > 0);
+    QtPowerTransport firstTransport(firstBus.connection);
+    PowerClient firstClient(&firstTransport);
+    firstClient.start();
+    QTRY_VERIFY_WITH_TIMEOUT(firstClient.hasSnapshot(), 10'000);
+    const QString firstOwner = firstClient.owner();
+    const quint64 firstEpoch = firstClient.snapshot().epoch;
+    const pid_t firstPid = firstBus.servicePid;
+    QVERIFY(firstOwner.startsWith(QLatin1Char(':')));
+    QVERIFY(firstEpoch != 0);
+
+    firstBus.stopDaemon();
+    QTRY_VERIFY_WITH_TIMEOUT(!processExists(firstPid), 10'000);
+    firstBus.servicePid = 0;
+    firstClient.stop();
+
+    ProductionBus secondBus;
+    QVERIFY(secondBus.start(QStringLiteral("--upstream=production")));
+    secondBus.connectionName =
+        QStringLiteral("qindaqt-production-lifetime-second-%1")
+            .arg(QUuid::createUuid().toString(QUuid::Id128));
+    secondBus.connection =
+        QDBusConnection::connectToBus(secondBus.address, secondBus.connectionName);
+    QVERIFY(secondBus.connection.isConnected());
+    // Reserve one unique name before activation so the new independent bus
+    // cannot coincidentally assign the same textual owner as the first bus.
+    const QDBusConnection reservation =
+        secondBus.openConnection(QStringLiteral("owner-reservation"));
+    QVERIFY(reservation.isConnected());
+
+    activateAndWaitForOwner(secondBus.connection, &secondBus.servicePid);
+    QVERIFY(secondBus.servicePid > 0);
+    QtPowerTransport secondTransport(secondBus.connection);
+    PowerClient secondClient(&secondTransport);
+    secondClient.start();
+    QTRY_VERIFY_WITH_TIMEOUT(secondClient.hasSnapshot(), 10'000);
+    const QString secondOwner = secondClient.owner();
+    const quint64 secondEpoch = secondClient.snapshot().epoch;
+    const pid_t secondPid = secondBus.servicePid;
+    QVERIFY(secondOwner.startsWith(QLatin1Char(':')));
+    QVERIFY(secondOwner != firstOwner);
+    QVERIFY(secondEpoch != firstEpoch);
+    QVERIFY(secondPid != firstPid);
+
+    secondBus.stopDaemon();
+    QTRY_VERIFY_WITH_TIMEOUT(!processExists(secondPid), 10'000);
+    secondBus.servicePid = 0;
+    secondClient.stop();
 }
 
 QTEST_GUILESS_MAIN(PowerProductionActivationTests)
