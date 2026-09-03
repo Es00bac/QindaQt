@@ -68,3 +68,64 @@ set_tests_properties(
     qindaqt.global-menu-runtime-composition-private-bus
     PROPERTIES TIMEOUT 20 LABELS "shell;global-menu;runtime;private-bus;hostile"
 )
+
+qt_add_executable(
+    qindaqt_file_manager_menu_export_tests
+    tst_file_manager_menu_export.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.h"
+)
+target_include_directories(
+    qindaqt_file_manager_menu_export_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}/src/shell/runtime"
+)
+target_compile_definitions(
+    qindaqt_file_manager_menu_export_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_BUILD_DIR="${CMAKE_BINARY_DIR}"
+        QINDAQT_TEST_DATA_DIR="${CMAKE_CURRENT_BINARY_DIR}/file-manager-data"
+        QINDAQT_FILE_MANAGER="$<TARGET_FILE:qindaqt-file-manager>"
+)
+add_dependencies(qindaqt_file_manager_menu_export_tests qindaqt-file-manager)
+target_link_libraries(
+    qindaqt_file_manager_menu_export_tests
+    PRIVATE
+        QindaQt::AppletHost
+        QindaQt::AppletRuntime
+        QindaQt::GlobalMenuApplet
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        QindaQt::GlobalMenuTransportComposition
+        QindaQt::ShellWindowActionsClient
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_file_manager_menu_export_tests)
+add_test(
+    NAME qindaqt.file-manager-global-menu-shell-private-bus
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_file_manager_menu_export_tests>
+)
+set_tests_properties(
+    qindaqt.file-manager-global-menu-shell-private-bus
+    PROPERTIES
+        TIMEOUT 30
+        LABELS "file-manager;shell;global-menu;runtime;private-bus;offscreen"
+        ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+add_test(
+    NAME qindaqt.file-manager-global-menu-identity-variants-source-policy
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tst_file_manager_menu_export.cpp
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_file_manager_identity_variants.cmake
+)
+set_tests_properties(
+    qindaqt.file-manager-global-menu-identity-variants-source-policy
+    PROPERTIES LABELS "file-manager;shell;global-menu;policy"
+)

@@ -114,3 +114,5 @@ install(
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
     COMPONENT TextEditor
 )
+
+add_subdirectory(menu_export)
