@@ -38,13 +38,31 @@ QString sanitizeSessionTitle(const QString &rawTitle) {
   QString sanitized;
   sanitized.reserve(qMin(rawTitle.size(), kMaxSessionTitleLength + 1));
   bool pendingSpace = false;
-  for (const QChar character : rawTitle) {
+  for (qsizetype index = 0; index < rawTitle.size(); ++index) {
+    const QChar character = rawTitle.at(index);
     if (character.isSpace()) {
       pendingSpace = !sanitized.isEmpty();
       continue;
     }
+    if (character.isHighSurrogate()) {
+      if (index + 1 >= rawTitle.size() ||
+          !rawTitle.at(index + 1).isLowSurrogate()) {
+        continue;
+      }
+      if (pendingSpace && !sanitized.isEmpty()) {
+        sanitized.append(QLatin1Char(' '));
+      }
+      pendingSpace = false;
+      if (sanitized.size() + 2 > kMaxSessionTitleLength) {
+        break;
+      }
+      sanitized.append(character);
+      sanitized.append(rawTitle.at(++index));
+      continue;
+    }
     if (character.category() == QChar::Other_Control ||
-        character.category() == QChar::Other_Format) {
+        character.category() == QChar::Other_Format ||
+        character.isLowSurrogate()) {
       continue;
     }
     if (pendingSpace) {
@@ -73,15 +91,16 @@ TerminalSessionCollection::~TerminalSessionCollection() {
   // forced synchronous escalation (backend close, then SIGTERM/SIGKILL to
   // the captured process group), which is the documented forced-destruction
   // path; beginShutdown() remains the only bounded, wait-confirmed route.
-  m_sessions.clear();
+  while (!m_sessions.isEmpty()) {
+    delete m_sessions.takeLast();
+  }
 }
 
 TerminalSessionCollection::AddResult
 TerminalSessionCollection::addSession(const TerminalProfile &profile) {
   if (m_sessions.size() >= kMaxSessions) {
     const QString diagnostic =
-        QStringLiteral("Session limit reached (%1 tabs)")
-            .arg(kMaxSessions);
+        QStringLiteral("Session limit reached (%1 tabs)").arg(kMaxSessions);
     emit sessionAddRejected(diagnostic);
     return {.session = nullptr, .diagnostic = diagnostic};
   }
@@ -98,8 +117,8 @@ TerminalSessionCollection::addSession(const TerminalProfile &profile) {
     return {.session = nullptr, .diagnostic = resolution.outcome.diagnostic};
   }
 
-  auto *session = new TerminalSession(m_backendFactory, m_monitor, m_bounds,
-                                      this);
+  auto *session =
+      new TerminalSession(m_backendFactory, m_monitor, m_bounds, this);
   wireSession(session);
   m_sessions.append(session);
   emit sessionAdded(session);
@@ -109,8 +128,7 @@ TerminalSessionCollection::addSession(const TerminalProfile &profile) {
   return {.session = session, .diagnostic = {}};
 }
 
-void TerminalSessionCollection::requestCloseSession(
-    TerminalSession *session) {
+void TerminalSessionCollection::requestCloseSession(TerminalSession *session) {
   if (session == nullptr || !m_sessions.contains(session)) {
     return;
   }
@@ -122,7 +140,7 @@ void TerminalSessionCollection::requestCloseSession(
   if (session->state() == TerminalSession::State::ShutdownFailed) {
     emit sessionCloseFailed(
         session, QStringLiteral("Session child survived teardown; close is "
-                                 "refused"));
+                                "refused"));
     return;
   }
   if (session->state() == TerminalSession::State::ShuttingDown) {
@@ -176,8 +194,7 @@ TerminalSession *TerminalSessionCollection::sessionAt(int index) const {
                                                  : nullptr;
 }
 
-int TerminalSessionCollection::indexOf(
-    const TerminalSession *session) const {
+int TerminalSessionCollection::indexOf(const TerminalSession *session) const {
   return static_cast<int>(
       m_sessions.indexOf(const_cast<TerminalSession *>(session)));
 }

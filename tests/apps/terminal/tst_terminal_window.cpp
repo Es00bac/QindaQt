@@ -25,15 +25,6 @@ using namespace QindaQt::Apps::Terminal;
 
 namespace {
 
-TerminalLaunchRequest validRequest() {
-  return TerminalLaunchRequest{
-      .program = QStringLiteral("/bin/qindaqt-test-shell"),
-      .arguments = {},
-      .workingDirectory = {},
-      .environment = {QStringLiteral("PATH=/usr/bin")},
-      .title = {}};
-}
-
 TerminalViewAppearance testAppearance() {
   const auto theme = QindaQt::Themes::ThemeLoader::fromFile(
       QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
@@ -68,9 +59,7 @@ public:
   [[nodiscard]] QWidget *terminalWidget() override { return &view; }
   void copySelectionToClipboard() override { ++copyCalls; }
   void pasteClipboardToSession() override { ++pasteCalls; }
-  void pastePrimarySelectionToSession() override {
-    ++pasteSelectionCalls;
-  }
+  void pastePrimarySelectionToSession() override { ++pasteSelectionCalls; }
   void selectAllInView() override { ++selectAllCalls; }
   void clearView() override { ++clearCalls; }
   [[nodiscard]] bool hasSelectedText() const override { return true; }
@@ -80,7 +69,9 @@ public:
 class InstantExitMonitor final : public ProcessMonitor {
 public:
   [[nodiscard]] ProcessExitInfo reap(ProcessId) override {
-    return {.state = ProcessState::Exited, .signaled = false, .code = 0,
+    return {.state = ProcessState::Exited,
+            .signaled = false,
+            .code = 0,
             .statusKnown = true};
   }
   [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
@@ -91,7 +82,9 @@ public:
 class NeverExitMonitor final : public ProcessMonitor {
 public:
   [[nodiscard]] ProcessExitInfo reap(ProcessId) override {
-    return {.state = ProcessState::Running, .signaled = false, .code = 0,
+    return {.state = ProcessState::Running,
+            .signaled = false,
+            .code = 0,
             .statusKnown = true};
   }
   [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
@@ -106,24 +99,37 @@ struct WindowHarness final {
   StubBackend *stub = nullptr;
   int createdBackends = 0;
 
-  std::unique_ptr<TerminalWindow> makeWindow() {
+  std::unique_ptr<TerminalWindow> makeWindow(bool startSession = true) {
     // The survivor scenario exercises the failed-escalation ownership path
     // (P1-2) with tiny injected bounds; the default proves clean close.
-    ProcessMonitor *monitor =
-        survivorScenario ? static_cast<ProcessMonitor *>(&neverExit)
-                         : static_cast<ProcessMonitor *>(&instantExit);
+    ProcessMonitor *monitor = survivorScenario
+                                  ? static_cast<ProcessMonitor *>(&neverExit)
+                                  : static_cast<ProcessMonitor *>(&instantExit);
     StubBackend **created = &stub;
     int *backends = &createdBackends;
-    TerminalSession::BackendFactory factory = [created, backends]() {
-      auto backend = std::make_unique<StubBackend>();
-      *created = backend.get();
-      ++*backends;
-      return std::unique_ptr<TerminalSessionBackend>(std::move(backend));
-    };
-    auto session = std::make_unique<TerminalSession>(
-        std::move(factory), monitor, TeardownBounds{30, 30, 30, 1});
-    return std::make_unique<TerminalWindow>(std::move(session),
-                                            testAppearance());
+    TerminalSession::BackendFactory factory =
+        [created, backends](const TerminalProfile &) {
+          auto backend = std::make_unique<StubBackend>();
+          *created = backend.get();
+          ++*backends;
+          return std::unique_ptr<TerminalSessionBackend>(std::move(backend));
+        };
+    TerminalSessionContext context{
+        .baseEnvironment = {QStringLiteral("PATH=/usr/bin"),
+                            QStringLiteral("LANG=C.UTF-8")},
+        .fallbackProgram = QStringLiteral("/bin/true"),
+        .fallbackArguments = {},
+        .workingDirectory = {}};
+    auto collection = std::make_unique<TerminalSessionCollection>(
+        std::move(context), std::move(factory), monitor,
+        TeardownBounds{30, 30, 30, 1});
+    auto window = std::make_unique<TerminalWindow>(
+        std::move(collection), testAppearance(),
+        QStringList{QStringLiteral("qinda-dark")}, nullptr);
+    if (startSession) {
+      window->newSessionWithDefaultProfile();
+    }
+    return window;
   }
 };
 
@@ -154,19 +160,19 @@ private slots:
 
 void TerminalWindowTest::windowEmbedsOnlyPublishedWidgets() {
   WindowHarness harness;
-  auto window = harness.makeWindow();
+  auto window = harness.makeWindow(false);
 
   // The window is constructed before the first start; presentation must not
   // guess or create a terminal view by itself.
-  QVERIFY(window->session()->terminalWidget() == nullptr);
-  QVERIFY(window->session()->start(validRequest()));
+  QVERIFY(window->session() == nullptr);
+  window->newSessionWithDefaultProfile();
+  QVERIFY(window->session() != nullptr);
   QCOMPARE(window->session()->state(), TerminalSession::State::Running);
   QVERIFY(window->session()->terminalWidget() != nullptr);
   QVERIFY(window->session()->terminalWidget() == &harness.stub->view);
 }
 
-void TerminalWindowTest::
-    actionsCarryStableIdentityAndShiftModifiedShortcuts() {
+void TerminalWindowTest::actionsCarryStableIdentityAndShiftModifiedShortcuts() {
   WindowHarness harness;
   auto window = harness.makeWindow();
 
@@ -175,6 +181,13 @@ void TerminalWindowTest::
     const char *shortcut;
   };
   const QVector<Expectation> expectations = {
+      {"tabNewAction", "Ctrl+Shift+T"},
+      {"tabCloseAction", "Ctrl+Shift+W"},
+      {"tabNextAction", "Ctrl+Shift+Right"},
+      {"tabPreviousAction", "Ctrl+Shift+Left"},
+      {"tabMoveLeftAction", "Ctrl+Shift+Alt+Left"},
+      {"tabMoveRightAction", "Ctrl+Shift+Alt+Right"},
+      {"profileManageAction", "Ctrl+Shift+P"},
       {"sessionRestartAction", "Ctrl+Shift+R"},
       {"editCopyAction", "Ctrl+Shift+C"},
       {"editPasteAction", "Ctrl+Shift+V"},
@@ -184,8 +197,8 @@ void TerminalWindowTest::
       {"fileQuitAction", "Ctrl+Shift+Q"},
   };
   for (const auto &expectation : expectations) {
-    const auto action = window->findChild<QAction *>(
-        QLatin1String(expectation.objectName));
+    const auto action =
+        window->findChild<QAction *>(QLatin1String(expectation.objectName));
     QVERIFY2(action != nullptr, expectation.objectName);
     // Sequence equality avoids platform string abbreviations
     // ("Ctrl+Shift+Ins") while still asserting the exact binding.
@@ -197,8 +210,7 @@ void TerminalWindowTest::
   }
 }
 
-void TerminalWindowTest::
-    noWindowShortcutUsesPlainReadlineControlSequences() {
+void TerminalWindowTest::noWindowShortcutUsesPlainReadlineControlSequences() {
   WindowHarness harness;
   auto window = harness.makeWindow();
 
@@ -218,55 +230,50 @@ void TerminalWindowTest::
       continue; // Menu-title actions created by QMenuBar are not commands.
     }
     const QString sequence = action->shortcut().toString();
-    QVERIFY2(!forbidden.contains(sequence),
-             qPrintable(QStringLiteral("%1 uses %2")
-                            .arg(action->objectName(), sequence)));
+    QVERIFY2(
+        !forbidden.contains(sequence),
+        qPrintable(
+            QStringLiteral("%1 uses %2").arg(action->objectName(), sequence)));
   }
 }
 
-void TerminalWindowTest::
-    clipboardAndSelectionActionsRouteThroughSession() {
+void TerminalWindowTest::clipboardAndSelectionActionsRouteThroughSession() {
   WindowHarness harness;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
   QVERIFY(harness.stub != nullptr);
 
   // Copy is enabled only by an actual selection event, mirroring the real
   // adapter's copyAvailable forwarding.
   QVERIFY(!window->findChild<QAction *>(QStringLiteral("editCopyAction"))
                ->isEnabled());
-  QVERIFY(QMetaObject::invokeMethod(window->session(),
-                                    "selectionAvailable",
+  QVERIFY(QMetaObject::invokeMethod(window->session(), "selectionAvailable",
                                     Q_ARG(bool, true)));
   QVERIFY(window->findChild<QAction *>(QStringLiteral("editCopyAction"))
               ->isEnabled());
 
-  auto *copy =
-      window->findChild<QAction *>(QStringLiteral("editCopyAction"));
+  auto *copy = window->findChild<QAction *>(QStringLiteral("editCopyAction"));
   QVERIFY(copy != nullptr);
   copy->trigger();
   QCOMPARE(harness.stub->copyCalls, 1);
 
-  auto *paste =
-      window->findChild<QAction *>(QStringLiteral("editPasteAction"));
+  auto *paste = window->findChild<QAction *>(QStringLiteral("editPasteAction"));
   QVERIFY(paste != nullptr);
   paste->trigger();
   QCOMPARE(harness.stub->pasteCalls, 1);
 
-  auto *pasteSelection = window->findChild<QAction *>(
-      QStringLiteral("editPasteSelectionAction"));
+  auto *pasteSelection =
+      window->findChild<QAction *>(QStringLiteral("editPasteSelectionAction"));
   QVERIFY(pasteSelection != nullptr);
   pasteSelection->trigger();
   QCOMPARE(harness.stub->pasteSelectionCalls, 1);
 
-  auto *selectAll = window->findChild<QAction *>(
-      QStringLiteral("editSelectAllAction"));
+  auto *selectAll =
+      window->findChild<QAction *>(QStringLiteral("editSelectAllAction"));
   QVERIFY(selectAll != nullptr);
   selectAll->trigger();
   QCOMPARE(harness.stub->selectAllCalls, 1);
 
-  auto *clear =
-      window->findChild<QAction *>(QStringLiteral("viewClearAction"));
+  auto *clear = window->findChild<QAction *>(QStringLiteral("viewClearAction"));
   QVERIFY(clear != nullptr);
   clear->trigger();
   QCOMPARE(harness.stub->clearCalls, 1);
@@ -275,7 +282,6 @@ void TerminalWindowTest::
 void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
   WindowHarness harness;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
 
   auto *status =
       window->findChild<QLabel *>(QStringLiteral("qindaqtTerminalStatus"));
@@ -290,25 +296,24 @@ void TerminalWindowTest::exitStatusIsReportedWithSeverityDistinction() {
   QCOMPARE(status->palette().color(QPalette::WindowText),
            testAppearance().windowPalette.color(QPalette::WindowText));
 
-  const TerminalExitStatus crash{TerminalExitStatus::Kind::Signal,
-                                 int{SIGKILL}, {}};
+  const TerminalExitStatus crash{
+      TerminalExitStatus::Kind::Signal, int{SIGKILL}, {}};
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, crash)));
   QVERIFY(status->text().contains(QLatin1String("SIGKILL")));
   QCOMPARE(status->palette().color(QPalette::WindowText),
            testAppearance().statusDangerForeground);
 
-  const TerminalExitStatus failed{
-      TerminalExitStatus::Kind::StartFailed, 0,
-      QStringLiteral("channel unavailable")};
+  const TerminalExitStatus failed{TerminalExitStatus::Kind::StartFailed, 0,
+                                  QStringLiteral("channel unavailable")};
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, failed)));
   QVERIFY(status->text().startsWith(QLatin1String("Error:")));
   QVERIFY(status->text().contains(QLatin1String("channel unavailable")));
 
   // P2-5: an unknown exit is surfaced as its own truth, never as success.
-  const TerminalExitStatus unknown{TerminalExitStatus::Kind::UnknownExit, 0,
-                                   {}};
+  const TerminalExitStatus unknown{
+      TerminalExitStatus::Kind::UnknownExit, 0, {}};
   QVERIFY(QMetaObject::invokeMethod(window->session(), "sessionFinished",
                                     Q_ARG(TerminalExitStatus, unknown)));
   QCOMPARE(status->text(), QStringLiteral("Session exited (status unknown)"));
@@ -320,7 +325,6 @@ void TerminalWindowTest::
     accessibilityMetadataIsPresentAndFocusIsOnTerminalView() {
   WindowHarness harness;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
   window->show();
   QVERIFY(QTest::qWaitForWindowExposed(window.get()));
 
@@ -335,7 +339,6 @@ void TerminalWindowTest::
 void TerminalWindowTest::hostileResizeClampsEmbeddedView() {
   WindowHarness harness;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
   auto *view = window->session()->terminalWidget();
   QVERIFY(view != nullptr);
 
@@ -364,10 +367,9 @@ void TerminalWindowTest::closeRequestsShutdownBeforeQuitSignal() {
   // P1 regression, part 2 — behavior: a shown window's close must complete
   // the session teardown without any quit leaving the application early.
   WindowHarness harness;
-  auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
-  QSignalSpy shutdownSpy(window->session(),
-                         &TerminalSession::shutdownFinished);
+  auto window = harness.makeWindow(false);
+  window->newSessionWithDefaultProfile();
+  QSignalSpy shutdownSpy(window->session(), &TerminalSession::shutdownFinished);
   QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
   QSignalSpy aboutToQuitSpy(guiApplication, &QCoreApplication::aboutToQuit);
 
@@ -377,15 +379,15 @@ void TerminalWindowTest::closeRequestsShutdownBeforeQuitSignal() {
   QTest::qWait(200);
   QCOMPARE(shutdownSpy.count(), 1);
   QCOMPARE(quitSpy.count(), 1);
-  QCOMPARE(window->session()->state(),
-           TerminalSession::State::ShutdownComplete);
+  QCOMPARE(window->sessions()->count(), 0);
+  QVERIFY(window->session() == nullptr);
   QCOMPARE(aboutToQuitSpy.count(), 0);
 
   // P1 regression, part 3 — source binding: main() must wire the seam and
   // the queued quit before the first show, so the wiring cannot silently
   // regress while this harness cannot execute main() itself.
-  QFile mainSource(QStringLiteral(QINDAQT_SOURCE_DIR
-                                  "/src/apps/terminal/main.cpp"));
+  QFile mainSource(
+      QStringLiteral(QINDAQT_SOURCE_DIR "/src/apps/terminal/main.cpp"));
   QVERIFY(mainSource.open(QIODevice::ReadOnly));
   const QString source = QString::fromUtf8(mainSource.readAll());
   const qsizetype wiring =
@@ -401,20 +403,17 @@ void TerminalWindowTest::closeRequestsShutdownBeforeQuitSignal() {
 
 void TerminalWindowTest::viewActionStatesTrackSessionTruth() {
   WindowHarness harness;
-  auto window = harness.makeWindow();
+  auto window = harness.makeWindow(false);
 
-  auto *copy =
-      window->findChild<QAction *>(QStringLiteral("editCopyAction"));
-  auto *paste =
-      window->findChild<QAction *>(QStringLiteral("editPasteAction"));
-  auto *pasteSelection = window->findChild<QAction *>(
-      QStringLiteral("editPasteSelectionAction"));
-  auto *selectAll = window->findChild<QAction *>(
-      QStringLiteral("editSelectAllAction"));
-  auto *clear =
-      window->findChild<QAction *>(QStringLiteral("viewClearAction"));
-  auto *restart = window->findChild<QAction *>(
-      QStringLiteral("sessionRestartAction"));
+  auto *copy = window->findChild<QAction *>(QStringLiteral("editCopyAction"));
+  auto *paste = window->findChild<QAction *>(QStringLiteral("editPasteAction"));
+  auto *pasteSelection =
+      window->findChild<QAction *>(QStringLiteral("editPasteSelectionAction"));
+  auto *selectAll =
+      window->findChild<QAction *>(QStringLiteral("editSelectAllAction"));
+  auto *clear = window->findChild<QAction *>(QStringLiteral("viewClearAction"));
+  auto *restart =
+      window->findChild<QAction *>(QStringLiteral("sessionRestartAction"));
   QVERIFY(copy && paste && pasteSelection && selectAll && clear && restart);
 
   // P2-4: without a live view the view operations are disabled, exactly as
@@ -425,15 +424,14 @@ void TerminalWindowTest::viewActionStatesTrackSessionTruth() {
   QVERIFY(!clear->isEnabled());
   QVERIFY(!copy->isEnabled());
 
-  QVERIFY(window->session()->start(validRequest()));
+  window->newSessionWithDefaultProfile();
   QVERIFY(paste->isEnabled());
   QVERIFY(pasteSelection->isEnabled());
   QVERIFY(selectAll->isEnabled());
   QVERIFY(clear->isEnabled());
   QVERIFY(!copy->isEnabled()); // No selection event yet.
 
-  QVERIFY(QMetaObject::invokeMethod(window->session(),
-                                    "selectionAvailable",
+  QVERIFY(QMetaObject::invokeMethod(window->session(), "selectionAvailable",
                                     Q_ARG(bool, true)));
   QVERIFY(copy->isEnabled());
 
@@ -452,9 +450,7 @@ void TerminalWindowTest::quitIsRefusedWhileSurvivorRemains() {
   WindowHarness harness;
   harness.survivorScenario = true;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
-  QSignalSpy shutdownSpy(window->session(),
-                         &TerminalSession::shutdownFinished);
+  QSignalSpy shutdownSpy(window->session(), &TerminalSession::shutdownFinished);
   QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
 
   window->show();
@@ -464,8 +460,7 @@ void TerminalWindowTest::quitIsRefusedWhileSurvivorRemains() {
   QCOMPARE(shutdownSpy.count(), 1);
   QVERIFY(!shutdownSpy.first().first().toBool());
   QCOMPARE(quitSpy.count(), 0);
-  QCOMPARE(window->session()->state(),
-           TerminalSession::State::ShutdownFailed);
+  QCOMPARE(window->session()->state(), TerminalSession::State::ShutdownFailed);
   // The window is re-shown with the failure visible; close stays refused.
   QVERIFY(window->isVisible());
   window->close();
@@ -484,23 +479,17 @@ void TerminalWindowTest::restartThenCloseSpawnsNothingBeforeQuit() {
   // with createdBackends == 2 and a second widget publication.
   WindowHarness harness; // InstantExitMonitor: generation 1 reaps on tick 1.
   auto window = harness.makeWindow();
-  QSignalSpy widgetSpy(window->session(),
-                       &TerminalSession::terminalWidgetChanged);
-  QSignalSpy shutdownSpy(window->session(),
-                         &TerminalSession::shutdownFinished);
+  QSignalSpy shutdownSpy(window->session(), &TerminalSession::shutdownFinished);
   QSignalSpy quitSpy(window.get(), &TerminalWindow::closeShutdownFinished);
-  QVERIFY(window->session()->start(validRequest()));
   window->show();
   QVERIFY(QTest::qWaitForWindowExposed(window.get()));
 
-  auto *restart = window->findChild<QAction *>(
-      QStringLiteral("sessionRestartAction"));
-  auto *quit =
-      window->findChild<QAction *>(QStringLiteral("fileQuitAction"));
+  auto *restart =
+      window->findChild<QAction *>(QStringLiteral("sessionRestartAction"));
+  auto *quit = window->findChild<QAction *>(QStringLiteral("fileQuitAction"));
   QVERIFY(restart != nullptr && quit != nullptr);
   restart->trigger(); // Real action route: enterShutdownSequence(true).
-  QCOMPARE(window->session()->state(),
-           TerminalSession::State::ShuttingDown);
+  QCOMPARE(window->session()->state(), TerminalSession::State::ShuttingDown);
   quit->trigger(); // Real close route: closeEvent while ShuttingDown.
   QVERIFY(!window->isVisible());
   window->close(); // Double close while ShuttingDown stays idempotent.
@@ -508,11 +497,9 @@ void TerminalWindowTest::restartThenCloseSpawnsNothingBeforeQuit() {
 
   QCOMPARE(shutdownSpy.count(), 1);
   QVERIFY(shutdownSpy.first().first().toBool());
-  QCOMPARE(window->session()->state(),
-           TerminalSession::State::ShutdownComplete);
+  QCOMPARE(window->sessions()->count(), 0);
   QCOMPARE(harness.createdBackends, 1); // No generation 2, ever.
-  QCOMPARE(widgetSpy.count(), 1);       // One widget publication, ever.
-  QVERIFY(window->session()->terminalWidget() == nullptr);
+  QVERIFY(window->session() == nullptr);
   QCOMPARE(quitSpy.count(), 1); // Quit exactly once, after generation 1.
 }
 
@@ -523,17 +510,13 @@ void TerminalWindowTest::exitedStateDisablesPasteAndKeepsScrollbackOps() {
   // real selection stay available for the dead generation's buffer.
   WindowHarness harness;
   auto window = harness.makeWindow();
-  QVERIFY(window->session()->start(validRequest()));
-  auto *copy =
-      window->findChild<QAction *>(QStringLiteral("editCopyAction"));
-  auto *paste =
-      window->findChild<QAction *>(QStringLiteral("editPasteAction"));
-  auto *pasteSelection = window->findChild<QAction *>(
-      QStringLiteral("editPasteSelectionAction"));
-  auto *selectAll = window->findChild<QAction *>(
-      QStringLiteral("editSelectAllAction"));
-  auto *clear =
-      window->findChild<QAction *>(QStringLiteral("viewClearAction"));
+  auto *copy = window->findChild<QAction *>(QStringLiteral("editCopyAction"));
+  auto *paste = window->findChild<QAction *>(QStringLiteral("editPasteAction"));
+  auto *pasteSelection =
+      window->findChild<QAction *>(QStringLiteral("editPasteSelectionAction"));
+  auto *selectAll =
+      window->findChild<QAction *>(QStringLiteral("editSelectAllAction"));
+  auto *clear = window->findChild<QAction *>(QStringLiteral("viewClearAction"));
   QVERIFY(copy && paste && pasteSelection && selectAll && clear);
 
   QVERIFY(QMetaObject::invokeMethod(window->session(), "selectionAvailable",

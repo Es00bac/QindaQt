@@ -8,8 +8,8 @@
 namespace QindaQt::Apps::Terminal {
 
 TerminalSession::TerminalSession(BackendFactory backendFactory,
-                                 ProcessMonitor *monitor,
-                                 TeardownBounds bounds, QObject *parent)
+                                 ProcessMonitor *monitor, TeardownBounds bounds,
+                                 QObject *parent)
     : QObject(parent), m_backendFactory(std::move(backendFactory)),
       m_monitor(monitor), m_bounds(bounds) {
   m_pollTimer.setInterval(m_bounds.pollIntervalMs);
@@ -92,6 +92,13 @@ bool TerminalSession::start(const TerminalLaunchRequest &request,
       m_state == State::ShutdownFailed) {
     return false;
   }
+  const ProfileValidation profileValidation = validateTerminalProfile(profile);
+  if (!profileValidation.ok) {
+    publishExit({TerminalExitStatus::Kind::StartFailed, 0,
+                 profileValidation.diagnostic});
+    setState(State::Exited);
+    return false;
+  }
   if (request.program.isEmpty()) {
     // A rejected start is a terminal generation outcome, not a silent
     // return to Idle: the published StartFailed status and the state must
@@ -146,6 +153,12 @@ void TerminalSession::beginShutdown() {
 bool TerminalSession::spawnGeneration() {
   m_exitPublished = false;
   m_lastExit = {};
+  if (!m_backendFactory) {
+    publishExit({TerminalExitStatus::Kind::StartFailed, 0,
+                 QStringLiteral("Terminal view factory is unavailable")});
+    setState(State::Exited);
+    return false;
+  }
   m_backend = m_backendFactory(m_profile);
   if (m_backend == nullptr) {
     publishExit({TerminalExitStatus::Kind::StartFailed, 0,
@@ -203,8 +216,7 @@ void TerminalSession::enterShutdownSequence(bool restartAfterwards) {
   m_pollTimer.start();
 }
 
-void TerminalSession::completeShutdown(bool clean,
-                                       const QString &diagnostic) {
+void TerminalSession::completeShutdown(bool clean, const QString &diagnostic) {
   m_pollTimer.stop();
   m_phase = ShutdownPhase::None;
   if (clean) {
@@ -259,8 +271,7 @@ void TerminalSession::advanceShutdownPhase() {
       // stuck uninterruptible state, which is reported honestly instead of
       // being mislabelled as a clean exit.
       completeShutdown(
-          false,
-          QStringLiteral("Terminal child did not exit after SIGKILL"));
+          false, QStringLiteral("Terminal child did not exit after SIGKILL"));
     }
     break;
   case ShutdownPhase::None:

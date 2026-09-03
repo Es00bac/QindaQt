@@ -37,9 +37,8 @@ QString profileLabel(const TerminalProfile &profile,
 } // namespace
 
 TerminalProfileDialog::TerminalProfileDialog(
-    const QList<TerminalProfile> &userProfiles,
-    const QString &defaultProfileId, bool restoreTabs,
-    const QStringList &themeIds, QWidget *parent)
+    const QList<TerminalProfile> &userProfiles, const QString &defaultProfileId,
+    bool restoreTabs, const QStringList &themeIds, QWidget *parent)
     : QDialog(parent), m_userProfiles(userProfiles),
       m_defaultProfileId(defaultProfileId), m_restoreTabs(restoreTabs) {
   setObjectName(QStringLiteral("terminalProfileDialog"));
@@ -65,8 +64,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   auto *listButtons = new QHBoxLayout();
   auto *addButton = new QPushButton(QStringLiteral("Add"), listSide);
   addButton->setObjectName(QStringLiteral("profileAddButton"));
-  auto *removeButton =
-      new QPushButton(QStringLiteral("Remove"), listSide);
+  auto *removeButton = new QPushButton(QStringLiteral("Remove"), listSide);
   removeButton->setObjectName(QStringLiteral("profileRemoveButton"));
   auto *defaultButton =
       new QPushButton(QStringLiteral("Set as Default"), listSide);
@@ -94,8 +92,8 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
       QStringLiteral("Shell arguments, one per line"));
   m_shellArguments->setPlaceholderText(
       QStringLiteral("One argument per line; never shell-interpreted"));
-  m_shellArguments->setMaximumBlockCount(
-      TerminalLaunchPolicy::kMaxArguments + 1);
+  m_shellArguments->setMaximumBlockCount(TerminalLaunchPolicy::kMaxArguments +
+                                         1);
   m_shellArguments->setMaximumHeight(90);
   m_fontFamily = new QLineEdit(formSide);
   m_fontFamily->setObjectName(QStringLiteral("profileFontFamilyEdit"));
@@ -121,8 +119,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_bellPolicy->addItem(QStringLiteral("Audible"));
   formLayout->addRow(QStringLiteral("Name"), m_name);
   formLayout->addRow(QStringLiteral("Shell program"), m_shellProgram);
-  formLayout->addRow(QStringLiteral("Shell arguments"),
-                     m_shellArguments);
+  formLayout->addRow(QStringLiteral("Shell arguments"), m_shellArguments);
   formLayout->addRow(QStringLiteral("Font family"), m_fontFamily);
   formLayout->addRow(QStringLiteral("Font size"), m_fontSize);
   formLayout->addRow(QStringLiteral("Color scheme"), m_colorScheme);
@@ -136,8 +133,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   m_restoreTabsCheck =
       new QCheckBox(QStringLiteral("Restore tabs on startup"), this);
   m_restoreTabsCheck->setObjectName(QStringLiteral("restoreTabsCheck"));
-  m_restoreTabsCheck->setAccessibleName(
-      m_restoreTabsCheck->text());
+  m_restoreTabsCheck->setAccessibleName(m_restoreTabsCheck->text());
   m_restoreTabsCheck->setChecked(m_restoreTabs);
   layout->addWidget(m_restoreTabsCheck);
   auto *buttons = new QDialogButtonBox(
@@ -157,21 +153,20 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
   };
   connect(m_name, &QLineEdit::textEdited, this, writeBack);
   connect(m_shellProgram, &QLineEdit::textEdited, this, writeBack);
-  connect(m_shellArguments, &QPlainTextEdit::textChanged, this,
-          writeBack);
+  connect(m_shellArguments, &QPlainTextEdit::textChanged, this, writeBack);
   connect(m_fontFamily, &QLineEdit::textEdited, this, writeBack);
   connect(m_fontSize, &QSpinBox::valueChanged, this, writeBack);
-  connect(m_colorScheme, &QComboBox::currentIndexChanged, this,
-          writeBack);
+  connect(m_colorScheme, &QComboBox::currentIndexChanged, this, writeBack);
   connect(m_scrollback, &QSpinBox::valueChanged, this, writeBack);
-  connect(m_bellPolicy, &QComboBox::currentIndexChanged, this,
-          writeBack);
+  connect(m_bellPolicy, &QComboBox::currentIndexChanged, this, writeBack);
   connect(addButton, &QPushButton::clicked, this, [this] {
     writeFieldsToSelected();
+    if (m_userProfiles.size() >= TerminalProfile::kMaxUserProfiles) {
+      return;
+    }
     TerminalProfile profile = builtinDefaultProfile();
     profile.id = generateProfileId();
-    profile.name = QStringLiteral("Profile %1")
-                       .arg(m_userProfiles.size() + 1);
+    profile.name = QStringLiteral("Profile %1").arg(m_userProfiles.size() + 1);
     m_userProfiles.append(profile);
     refreshList();
     m_list->setCurrentRow(m_list->count() - 1);
@@ -184,7 +179,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
     if (m_defaultProfileId == profile->id) {
       m_defaultProfileId = builtinDefaultProfileId();
     }
-    m_userProfiles.removeAll(*profile);
+    m_userProfiles.removeAt(m_list->currentRow() - 1);
     refreshList();
     m_list->setCurrentRow(m_list->count() - 1);
   });
@@ -201,8 +196,7 @@ void TerminalProfileDialog::buildUi(const QStringList &themeIds) {
 
 bool TerminalProfileDialog::selectedIsBuiltin() const {
   const auto *item = m_list->currentItem();
-  return item != nullptr &&
-         item->data(kBuiltinRole).toBool();
+  return item != nullptr && item->data(kBuiltinRole).toBool();
 }
 
 TerminalProfile *TerminalProfileDialog::selectedProfile() {
@@ -213,23 +207,19 @@ TerminalProfile *TerminalProfileDialog::selectedProfile() {
   // Row 0 is the built-in entry; user profiles follow in m_userProfiles
   // order, kept in sync by refreshList().
   const int index = row - 1;
-  return index >= 0 && index < m_userProfiles.size()
-             ? &m_userProfiles[index]
-             : nullptr;
+  return index >= 0 && index < m_userProfiles.size() ? &m_userProfiles[index]
+                                                     : nullptr;
 }
 
 void TerminalProfileDialog::refreshList() {
   const int previousRow = m_list->currentRow();
   m_list->clear();
-  auto *builtinItem =
-      new QListWidgetItem(profileLabel(builtinDefaultProfile(),
-                                       m_defaultProfileId),
-                          m_list);
+  auto *builtinItem = new QListWidgetItem(
+      profileLabel(builtinDefaultProfile(), m_defaultProfileId), m_list);
   builtinItem->setData(kBuiltinRole, true);
   for (int index = 0; index < m_userProfiles.size(); ++index) {
     auto *item = new QListWidgetItem(
-        profileLabel(m_userProfiles.at(index), m_defaultProfileId),
-        m_list);
+        profileLabel(m_userProfiles.at(index), m_defaultProfileId), m_list);
     item->setData(kBuiltinRole, false);
   }
   if (m_list->count() > 0) {
@@ -246,15 +236,14 @@ void TerminalProfileDialog::loadSelectedIntoFields() {
   m_name->setEnabled(profile != nullptr);
   m_shellProgram->setText(effective.shellProgram);
   m_shellProgram->setEnabled(profile != nullptr);
-  m_shellArguments->setPlainText(effective.shellArguments.join(
-      QLatin1Char('\n')));
+  m_shellArguments->setPlainText(
+      effective.shellArguments.join(QLatin1Char('\n')));
   m_shellArguments->setEnabled(profile != nullptr);
   m_fontFamily->setText(effective.fontFamily);
   m_fontFamily->setEnabled(profile != nullptr);
   m_fontSize->setValue(effective.fontSize);
   m_fontSize->setEnabled(profile != nullptr);
-  const int schemeIndex =
-      m_colorScheme->findText(effective.colorSchemeId);
+  const int schemeIndex = m_colorScheme->findText(effective.colorSchemeId);
   m_colorScheme->setCurrentIndex(qMax(0, schemeIndex));
   m_colorScheme->setEnabled(profile != nullptr);
   m_scrollback->setValue(effective.scrollbackLines);
@@ -273,9 +262,8 @@ void TerminalProfileDialog::writeFieldsToSelected() {
   profile->name = m_name->text();
   profile->shellProgram = m_shellProgram->text();
   QStringList arguments;
-  const QStringList lines =
-      m_shellArguments->toPlainText().split(QLatin1Char('\n'),
-                                            Qt::SkipEmptyParts);
+  const QStringList lines = m_shellArguments->toPlainText().split(
+      QLatin1Char('\n'), Qt::SkipEmptyParts);
   for (const QString &line : lines) {
     if (!line.trimmed().isEmpty()) {
       arguments.append(line);
@@ -306,10 +294,9 @@ void TerminalProfileDialog::accept() {
   for (const TerminalProfile &profile : std::as_const(m_userProfiles)) {
     const ProfileValidation validation = validateTerminalProfile(profile);
     if (!validation.ok) {
-      problems.append(QStringLiteral("%1: %2")
-                          .arg(profile.name.isEmpty() ? profile.id
-                                                      : profile.name,
-                               validation.diagnostic));
+      problems.append(QStringLiteral("%1: %2").arg(
+          profile.name.isEmpty() ? profile.id : profile.name,
+          validation.diagnostic));
     }
   }
   const bool defaultKnown =

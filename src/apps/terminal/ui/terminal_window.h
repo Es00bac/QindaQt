@@ -93,6 +93,7 @@ private:
   void attachSessionView(TerminalSession *session);
   void detachSessionView();
   void addSessionWithProfile(const TerminalProfile &profile);
+  void closeSessionFromPresentation(TerminalSession *session);
   void closeActiveSession();
   void activateRelativeTab(int delta);
   void moveActiveTab(int delta);

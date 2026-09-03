@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "profiles/terminal_profile.h"
 
+#include "session/terminal_launch_policy.h"
+
+#include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QRegularExpression>
+#include <QSet>
 #include <QUuid>
 
+#include <cmath>
 #include <optional>
 
 namespace QindaQt::Apps::Terminal {
@@ -29,8 +34,16 @@ const QRegularExpression &themeIdPattern() {
 }
 
 bool isPrintableText(const QString &text) {
-  for (const QChar character : text) {
-    if (!character.isPrint()) {
+  for (qsizetype index = 0; index < text.size(); ++index) {
+    const QChar character = text.at(index);
+    if (character.isHighSurrogate()) {
+      if (index + 1 >= text.size() || !text.at(index + 1).isLowSurrogate()) {
+        return false;
+      }
+      ++index;
+      continue;
+    }
+    if (character.isLowSurrogate() || !character.isPrint()) {
       return false;
     }
   }
@@ -51,15 +64,14 @@ ProfileValidation fail(const QString &diagnostic) {
 }
 
 ProfileValidation validateShellArguments(const QStringList &arguments) {
-  if (arguments.size() > 64) {
+  if (arguments.size() > TerminalLaunchPolicy::kMaxArguments) {
     return fail(QStringLiteral("Shell argument list exceeds the 64-entry "
                                "bound"));
   }
   for (const QString &argument : arguments) {
-    if (argument.size() > 4096) {
-      return fail(
-          QStringLiteral("A shell argument exceeds the 4096-character "
-                         "bound"));
+    if (argument.toUtf8().size() > TerminalLaunchPolicy::kMaxArgumentLength) {
+      return fail(QStringLiteral("A shell argument exceeds the 4096-character "
+                                 "bound"));
     }
     if (hasControlCharacters(argument)) {
       return fail(QStringLiteral("Shell arguments must not contain control "
@@ -117,7 +129,8 @@ std::optional<TerminalProfile> profileFromJson(const QJsonValue &value) {
     // JSON numbers decode as double; reject fractional values instead of
     // silently truncating hostile input.
     const double size = fontSize.toDouble();
-    if (size != static_cast<double>(static_cast<int>(size))) {
+    if (size < 0.0 || size > TerminalProfile::kMaxFontSize ||
+        size != std::floor(size)) {
       return std::nullopt;
     }
     profile.fontSize = static_cast<int>(size);
@@ -126,20 +139,19 @@ std::optional<TerminalProfile> profileFromJson(const QJsonValue &value) {
   }
   profile.colorSchemeId =
       object.value(QStringLiteral("colorSchemeId")).toString();
-  const QJsonValue scrollback =
-      object.value(QStringLiteral("scrollbackLines"));
+  const QJsonValue scrollback = object.value(QStringLiteral("scrollbackLines"));
   if (scrollback.isDouble()) {
     const double lines = scrollback.toDouble();
-    if (lines != static_cast<double>(static_cast<int>(lines))) {
+    if (lines < 0.0 || lines > TerminalProfile::kMaxScrollbackLines ||
+        lines != std::floor(lines)) {
       return std::nullopt;
     }
     profile.scrollbackLines = static_cast<int>(lines);
   } else if (!scrollback.isUndefined()) {
     return std::nullopt;
   }
-  const QString bell =
-      object.value(QStringLiteral("bellPolicy")).toString(QStringLiteral(
-          "silent"));
+  const QString bell = object.value(QStringLiteral("bellPolicy"))
+                           .toString(QStringLiteral("silent"));
   if (bell == QLatin1String("audible")) {
     profile.bellPolicy = TerminalProfile::BellPolicy::Audible;
   } else if (bell == QLatin1String("silent")) {
@@ -172,7 +184,8 @@ ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
         QStringLiteral("Profile name must contain printable characters"));
   }
   if (!profile.shellProgram.isEmpty()) {
-    if (profile.shellProgram.size() > 4096) {
+    if (profile.shellProgram.toUtf8().size() >
+        TerminalLaunchPolicy::kMaxProgramLength) {
       return fail(QStringLiteral("Shell program path exceeds the "
                                  "4096-character bound"));
     }
@@ -180,9 +193,12 @@ ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
       return fail(QStringLiteral("Shell program path must not contain "
                                  "control characters"));
     }
+    if (!QDir::isAbsolutePath(profile.shellProgram)) {
+      return fail(QStringLiteral("Shell program must be an absolute path"));
+    }
   }
-  const ProfileValidation arguments = validateShellArguments(
-      profile.shellArguments);
+  const ProfileValidation arguments =
+      validateShellArguments(profile.shellArguments);
   if (!arguments.ok) {
     return arguments;
   }
@@ -191,8 +207,7 @@ ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
                                "program"));
   }
   if (!profile.fontFamily.isEmpty()) {
-    if (profile.fontFamily.size() >
-        TerminalProfile::kMaxFontFamilyLength) {
+    if (profile.fontFamily.size() > TerminalProfile::kMaxFontFamilyLength) {
       return fail(QStringLiteral("Font family exceeds the %1-character bound")
                       .arg(TerminalProfile::kMaxFontFamilyLength));
     }
@@ -219,6 +234,34 @@ ProfileValidation validateTerminalProfile(const TerminalProfile &profile) {
     return fail(QStringLiteral("Scrollback must be between 0 and %1 lines")
                     .arg(TerminalProfile::kMaxScrollbackLines));
   }
+  if (profile.bellPolicy != TerminalProfile::BellPolicy::Silent &&
+      profile.bellPolicy != TerminalProfile::BellPolicy::Audible) {
+    return fail(QStringLiteral("Bell policy is not recognized"));
+  }
+  return {.ok = true, .diagnostic = {}};
+}
+
+ProfileValidation
+validateTerminalProfileList(const QList<TerminalProfile> &profiles) {
+  if (profiles.size() > TerminalProfile::kMaxUserProfiles) {
+    return fail(QStringLiteral("Profile list exceeds the %1-entry bound")
+                    .arg(TerminalProfile::kMaxUserProfiles));
+  }
+  QSet<QString> identities;
+  for (const TerminalProfile &profile : profiles) {
+    const ProfileValidation validation = validateTerminalProfile(profile);
+    if (!validation.ok) {
+      return validation;
+    }
+    if (profile.id == builtinDefaultProfileId()) {
+      return fail(QStringLiteral("A user profile cannot use the built-in "
+                                 "profile identifier"));
+    }
+    if (identities.contains(profile.id)) {
+      return fail(QStringLiteral("Profile identifiers must be unique"));
+    }
+    identities.insert(profile.id);
+  }
   return {.ok = true, .diagnostic = {}};
 }
 
@@ -237,12 +280,12 @@ const TerminalProfile &builtinDefaultProfile() {
   return profile;
 }
 
-QString builtinDefaultProfileId() {
-  return builtinDefaultProfile().id;
-}
+QString builtinDefaultProfileId() { return builtinDefaultProfile().id; }
 
 QString generateProfileId() {
-  return QUuid::createUuid().toString(QUuid::WithoutBraces);
+  QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+  id.remove(QLatin1Char('-'));
+  return id;
 }
 
 QString encodeTerminalProfiles(const QList<TerminalProfile> &profiles,
@@ -250,13 +293,8 @@ QString encodeTerminalProfiles(const QList<TerminalProfile> &profiles,
   if (ok != nullptr) {
     *ok = false;
   }
-  if (profiles.size() > TerminalProfile::kMaxUserProfiles) {
+  if (!validateTerminalProfileList(profiles).ok) {
     return {};
-  }
-  for (const TerminalProfile &profile : profiles) {
-    if (!validateTerminalProfile(profile).ok) {
-      return {};
-    }
   }
   QJsonArray array;
   for (const TerminalProfile &profile : profiles) {
@@ -265,14 +303,13 @@ QString encodeTerminalProfiles(const QList<TerminalProfile> &profiles,
   if (ok != nullptr) {
     *ok = true;
   }
-  return QString::fromUtf8(
-      QJsonDocument(array).toJson(QJsonDocument::Compact));
+  return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact));
 }
 
 ProfileListCodecResult decodeTerminalProfiles(const QString &json) {
   QJsonParseError parseError{};
-  const QJsonDocument document = QJsonDocument::fromJson(json.toUtf8(),
-                                                         &parseError);
+  const QJsonDocument document =
+      QJsonDocument::fromJson(json.toUtf8(), &parseError);
   if (parseError.error != QJsonParseError::NoError || !document.isArray()) {
     return {.ok = false,
             .diagnostic = QStringLiteral("Profile document is not valid "
@@ -289,9 +326,18 @@ ProfileListCodecResult decodeTerminalProfiles(const QString &json) {
   ProfileListCodecResult result{.ok = true, .diagnostic = {}, .profiles = {}};
   for (const QJsonValue &value : array) {
     const auto profile = profileFromJson(value);
-    if (profile.has_value()) {
-      result.profiles.append(*profile);
+    if (!profile.has_value()) {
+      return {.ok = false,
+              .diagnostic = QStringLiteral("Profile document contains an "
+                                           "invalid entry"),
+              .profiles = {}};
     }
+    result.profiles.append(*profile);
+  }
+  const ProfileValidation validation =
+      validateTerminalProfileList(result.profiles);
+  if (!validation.ok) {
+    return {.ok = false, .diagnostic = validation.diagnostic, .profiles = {}};
   }
   return result;
 }

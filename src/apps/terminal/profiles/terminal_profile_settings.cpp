@@ -7,6 +7,7 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <optional>
 
 namespace QindaQt::Apps::Terminal {
 namespace {
@@ -16,7 +17,7 @@ using QindaQt::Services::SettingsClient::CommitOutcome;
 using QindaQt::Services::SettingsClient::SettingsClient;
 using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
 
-// The id format accepted for terminal.defaultProfile: the built-in id,
+// The id format accepted for services.terminalDefaultProfile: the built-in id,
 // empty (built-in default), or a user profile id shape.
 bool isAdmissibleDefaultProfileId(const QString &id) {
   if (id.isEmpty() || id == builtinDefaultProfileId()) {
@@ -29,7 +30,45 @@ bool isAdmissibleDefaultProfileId(const QString &id) {
 
 QVariantMap ledgerEntry(const QString &result, const QString &message) {
   return {{QStringLiteral("result"), result},
-          {QStringLiteral("message"), message}};
+          {QStringLiteral("message"), message.left(512)}};
+}
+
+struct DecodedSettings final {
+  QList<TerminalProfile> profiles;
+  QString defaultProfileId;
+  bool restoreTabs = false;
+};
+
+std::optional<DecodedSettings> decodeSettings(const QVariantMap &values) {
+  const QVariant profilesValue = values.value(QString(TerminalKeys::Profiles));
+  const QVariant defaultValue =
+      values.value(QString(TerminalKeys::DefaultProfile));
+  const QVariant restoreValue =
+      values.value(QString(TerminalKeys::RestoreTabs));
+  if (profilesValue.metaType().id() != QMetaType::QString ||
+      defaultValue.metaType().id() != QMetaType::QString ||
+      restoreValue.metaType().id() != QMetaType::Bool) {
+    return std::nullopt;
+  }
+  const ProfileListCodecResult decoded =
+      decodeTerminalProfiles(profilesValue.toString());
+  if (!decoded.ok) {
+    return std::nullopt;
+  }
+  QString defaultId = defaultValue.toString();
+  if (defaultId.isEmpty()) {
+    defaultId = builtinDefaultProfileId();
+  }
+  const bool defaultKnown =
+      defaultId == builtinDefaultProfileId() ||
+      std::any_of(decoded.profiles.begin(), decoded.profiles.end(),
+                  [&defaultId](const TerminalProfile &profile) {
+                    return profile.id == defaultId;
+                  });
+  if (!isAdmissibleDefaultProfileId(defaultId) || !defaultKnown) {
+    return std::nullopt;
+  }
+  return DecodedSettings{decoded.profiles, defaultId, restoreValue.toBool()};
 }
 
 } // namespace
@@ -40,13 +79,15 @@ QStringList TerminalKeys::scopedKeys() {
 
 TerminalProfileSettings::TerminalProfileSettings(SettingsClient &client,
                                                  QObject *parent)
-    : QObject(parent), m_client(client) {
+    : QObject(parent), m_client(client),
+      m_defaultProfileId(builtinDefaultProfileId()) {
   connect(&m_client, &SettingsClient::snapshotChanged, this,
           [this] { handleSnapshot(); });
-  connect(&m_client, &SettingsClient::commitFinished, this,
-          [this](const CommitOutcome &outcome) {
-            handleCommitFinished(QVariant::fromValue(outcome));
-          });
+  connect(&m_client, &SettingsClient::stateChanged, this,
+          [this] { handleClientState(); });
+  connect(
+      &m_client, &SettingsClient::commitFinished, this,
+      [this](const CommitOutcome &outcome) { handleCommitFinished(outcome); });
   connect(&m_client, &SettingsClient::commitUncertain, this,
           [this](const QString &message) { handleCommitUncertain(message); });
   // A baseline may already be installed before this controller connects.
@@ -69,19 +110,14 @@ TerminalProfile TerminalProfileSettings::defaultProfile() const {
 bool TerminalProfileSettings::applyProfiles(
     const QList<TerminalProfile> &profiles, const QString &defaultProfileId,
     bool restoreTabs) {
-  if (m_ledgerActive ||
+  if (m_ledgerActive || !m_baselineReceived ||
       m_client.state() != ClientState::Ready ||
       !m_client.snapshot().has_value() || m_client.writeInFlight()) {
     return false;
   }
-  if (profiles.size() > TerminalProfile::kMaxUserProfiles ||
+  if (!validateTerminalProfileList(profiles).ok ||
       !isAdmissibleDefaultProfileId(defaultProfileId)) {
     return false;
-  }
-  for (const TerminalProfile &profile : profiles) {
-    if (!validateTerminalProfile(profile).ok) {
-      return false;
-    }
   }
   // defaultProfile must reference a listed profile or the built-in default.
   if (defaultProfileId != builtinDefaultProfileId() &&
@@ -107,6 +143,8 @@ bool TerminalProfileSettings::applyProfiles(
              {QString(TerminalKeys::RestoreTabs), QVariant(restoreTabs)}};
   m_ledgerEntries.clear();
   m_ledgerActive = true;
+  m_waitingForSnapshot = false;
+  m_sequenceAborted = false;
   writeNextQueued();
   return true;
 }
@@ -116,43 +154,65 @@ void TerminalProfileSettings::handleSnapshot() {
   if (!snapshot.has_value()) {
     return;
   }
-  bool changed = !m_baselineReceived;
+  const auto decoded = decodeSettings(snapshot->values);
+  if (!decoded.has_value()) {
+    resetToBuiltins();
+    if (m_ledgerActive && m_pendingKey.isEmpty()) {
+      const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreTabs)
+                                            : m_queue.first().key;
+      abortLedger(key, QStringLiteral("failed"),
+                  QStringLiteral("Settings snapshot contains invalid "
+                                 "terminal profile data"));
+    }
+    return;
+  }
+  const bool hadLineage = !m_confirmedOwner.isEmpty();
+  const bool lineageChanged =
+      hadLineage && (snapshot->owner != m_confirmedOwner ||
+                     snapshot->epoch != m_confirmedEpoch);
+  const bool changed = !m_baselineReceived ||
+                       decoded->profiles != m_userProfiles ||
+                       decoded->defaultProfileId != m_defaultProfileId ||
+                       decoded->restoreTabs != m_restoreTabs;
+  m_userProfiles = decoded->profiles;
+  m_defaultProfileId = decoded->defaultProfileId;
+  m_restoreTabs = decoded->restoreTabs;
   m_baselineReceived = true;
-
-  // Fail-closed decode: a malformed value never replaces confirmed state.
-  const QVariant profilesValue =
-      snapshot->values.value(QString(TerminalKeys::Profiles));
-  if (profilesValue.metaType().id() == QMetaType::QString) {
-    const auto decoded = decodeTerminalProfiles(profilesValue.toString());
-    if (decoded.ok && decoded.profiles != m_userProfiles) {
-      m_userProfiles = decoded.profiles;
-      changed = true;
-    }
-  }
-  const QVariant defaultValue =
-      snapshot->values.value(QString(TerminalKeys::DefaultProfile));
-  if (defaultValue.metaType().id() == QMetaType::QString) {
-    const QString id = defaultValue.toString();
-    if (isAdmissibleDefaultProfileId(id) && id != m_defaultProfileId) {
-      m_defaultProfileId = id;
-      changed = true;
-    }
-  }
-  const QVariant restoreValue =
-      snapshot->values.value(QString(TerminalKeys::RestoreTabs));
-  if (restoreValue.metaType().id() == QMetaType::Bool) {
-    const bool policy = restoreValue.toBool();
-    if (policy != m_restoreTabs) {
-      m_restoreTabs = policy;
-      changed = true;
-    }
-  }
+  m_confirmedOwner = snapshot->owner;
+  m_confirmedEpoch = snapshot->epoch;
   if (changed) {
     emit profilesChanged();
   }
+  if (lineageChanged && m_ledgerActive) {
+    const QString key = m_queue.isEmpty() ? QString(TerminalKeys::RestoreTabs)
+                                          : m_queue.first().key;
+    abortLedger(key, QStringLiteral("conflict"),
+                QStringLiteral("Settings authority changed; explicit "
+                               "re-apply is required"));
+    return;
+  }
   // The client re-syncs after every commit; the next queued write may only
   // carry the fresh base revision.
+  m_waitingForSnapshot = false;
   writeNextQueued();
+}
+
+void TerminalProfileSettings::handleClientState() {
+  if (m_client.state() == ClientState::Ready) {
+    return;
+  }
+  // The terminal has no authority to retain user profiles across transport
+  // loss or owner replacement. Existing sessions keep their copied profile,
+  // while new-session policy immediately falls back to the built-in value.
+  resetToBuiltins();
+  if ((m_client.state() == ClientState::Unavailable ||
+       m_client.state() == ClientState::Degraded) &&
+      m_ledgerActive && m_pendingKey.isEmpty()) {
+    m_queue.clear();
+    m_waitingForSnapshot = false;
+    m_sequenceAborted = true;
+    finalizeLedger();
+  }
 }
 
 void TerminalProfileSettings::writeNextQueued() {
@@ -165,35 +225,36 @@ void TerminalProfileSettings::writeNextQueued() {
     // the sequence (an invalidation snapshot must not double-send).
     return;
   }
-  if (m_client.state() != ClientState::Ready || m_client.writeInFlight()) {
+  if (m_waitingForSnapshot || !m_baselineReceived ||
+      m_client.state() != ClientState::Ready || m_client.writeInFlight()) {
     return;
   }
   const QueuedWrite write = m_queue.takeFirst();
   QString error;
   if (!m_client.setUserValue(write.key, write.value, &error)) {
     abortLedger(write.key, QStringLiteral("failed"),
-                error.isEmpty() ? QStringLiteral("Write was refused")
-                                : error);
+                error.isEmpty() ? QStringLiteral("Write was refused") : error);
     return;
   }
   m_pendingKey = write.key;
 }
 
-void TerminalProfileSettings::handleCommitFinished(const QVariant &variant) {
+void TerminalProfileSettings::handleCommitFinished(
+    const CommitOutcome &outcome) {
   if (!m_ledgerActive || m_pendingKey.isEmpty()) {
     return;
   }
-  const CommitOutcome outcome = variant.value<CommitOutcome>();
   const QString key = m_pendingKey;
   m_pendingKey.clear();
   const QVariant intended = m_intendedValues.value(key);
 
   switch (outcome.status) {
   case SettingsWireStatus::Applied:
-    m_ledgerEntries.insert(key, ledgerEntry(QStringLiteral("applied"),
-                                            outcome.message));
+    m_ledgerEntries.insert(
+        key, ledgerEntry(QStringLiteral("applied"), outcome.message));
     // Next write waits for the automatic post-commit refresh (handleSnapshot
     // drives writeNextQueued); the final snapshot also confirms the value.
+    m_waitingForSnapshot = true;
     break;
   case SettingsWireStatus::Conflict: {
     // Conflict whose authoritative value already matches the draft counts
@@ -201,8 +262,9 @@ void TerminalProfileSettings::handleCommitFinished(const QVariant &variant) {
     // the confirmed state and aborts (explicit re-apply required).
     const QVariant authoritative = outcome.currentValues.value(key);
     if (authoritative.isValid() && authoritative == intended) {
-      m_ledgerEntries.insert(key, ledgerEntry(QStringLiteral("applied"),
-                                              outcome.message));
+      m_ledgerEntries.insert(
+          key, ledgerEntry(QStringLiteral("applied"), outcome.message));
+      m_waitingForSnapshot = true;
     } else {
       abortLedger(key, QStringLiteral("conflict"),
                   outcome.message.isEmpty()
@@ -250,6 +312,8 @@ void TerminalProfileSettings::abortLedger(const QString &key,
                                           const QString &message) {
   m_ledgerEntries.insert(key, ledgerEntry(result, message));
   m_queue.clear();
+  m_waitingForSnapshot = false;
+  m_sequenceAborted = true;
   finalizeLedger();
 }
 
@@ -263,8 +327,9 @@ void TerminalProfileSettings::finalizeLedger() {
   }
   // Final truth check against the freshest snapshot: a differing value is
   // a conflict even when every commit reply said Applied.
-  if (const auto snapshot = m_client.snapshot();
-      snapshot.has_value() && !m_intendedValues.isEmpty()) {
+  if (const auto snapshot = m_client.snapshot(); !m_sequenceAborted &&
+                                                 snapshot.has_value() &&
+                                                 !m_intendedValues.isEmpty()) {
     for (auto it = m_intendedValues.begin(); it != m_intendedValues.end();
          ++it) {
       const QVariant actual = snapshot->values.value(it.key());
@@ -290,9 +355,24 @@ void TerminalProfileSettings::finalizeLedger() {
     ledger.append(entry);
   }
   m_ledgerActive = false;
+  m_waitingForSnapshot = false;
+  m_sequenceAborted = false;
   m_ledgerEntries.clear();
   m_intendedValues.clear();
   emit applyFinished(ledger);
+}
+
+void TerminalProfileSettings::resetToBuiltins() {
+  const bool changed = m_baselineReceived || !m_userProfiles.isEmpty() ||
+                       m_defaultProfileId != builtinDefaultProfileId() ||
+                       m_restoreTabs;
+  m_userProfiles.clear();
+  m_defaultProfileId = builtinDefaultProfileId();
+  m_restoreTabs = false;
+  m_baselineReceived = false;
+  if (changed) {
+    emit profilesChanged();
+  }
 }
 
 } // namespace QindaQt::Apps::Terminal

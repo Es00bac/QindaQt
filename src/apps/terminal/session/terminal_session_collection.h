@@ -23,8 +23,7 @@ struct TerminalSessionContext final {
   QStringList fallbackArguments;
   QString workingDirectory;
 
-  [[nodiscard]] bool operator==(const TerminalSessionContext &) const =
-      default;
+  [[nodiscard]] bool operator==(const TerminalSessionContext &) const = default;
 };
 
 // Pure request assembly: profile shell policy goes through the exact same
@@ -67,10 +66,10 @@ public:
     QString diagnostic;
   };
   // Validates the profile, resolves its launch request through the launch
-  // policy, creates the session, and starts it. A typed start failure (for
-  // example an unresolvable profile shell) still adds the session so its
-  // diagnostic is visible and Restartable; an invalid profile or a full
-  // list is refused with sessionAddRejected and a null session.
+  // policy, creates the session, and starts it. A backend start failure still
+  // adds the session so its diagnostic is visible and restartable. An invalid
+  // profile, unresolvable command, or full list is refused with
+  // sessionAddRejected and a null session.
   [[nodiscard]] AddResult addSession(const TerminalProfile &profile);
 
   // S0 semantics per session: refused while a SIGKILL survivor is owned

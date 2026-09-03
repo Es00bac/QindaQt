@@ -6,11 +6,9 @@
 
 #include <qtermwidget.h>
 
-#include <QDir>
-#include <QFile>
 #include <QEvent>
+#include <QFile>
 #include <QSocketNotifier>
-#include <QStandardPaths>
 #include <QTimer>
 
 #include <cerrno>
@@ -66,9 +64,8 @@ void writeAllToStderr(const char *message) {
   const auto length = static_cast<ssize_t>(std::strlen(message));
   ssize_t written = 0;
   while (written < length) {
-    const ssize_t chunk =
-        ::write(STDERR_FILENO, message + written,
-                static_cast<size_t>(length - written));
+    const ssize_t chunk = ::write(STDERR_FILENO, message + written,
+                                  static_cast<size_t>(length - written));
     if (chunk <= 0) {
       return;
     }
@@ -132,8 +129,7 @@ void closeChildDescriptors() {
     writeAllToStderr("qindaqt-terminal: cannot set controlling terminal\n");
     ::_exit(126);
   }
-  if (::dup2(slave, STDIN_FILENO) == -1 ||
-      ::dup2(slave, STDOUT_FILENO) == -1 ||
+  if (::dup2(slave, STDIN_FILENO) == -1 || ::dup2(slave, STDOUT_FILENO) == -1 ||
       ::dup2(slave, STDERR_FILENO) == -1) {
     writeAllToStderr("qindaqt-terminal: cannot wire standard streams\n");
     ::_exit(126);
@@ -234,16 +230,16 @@ void TerminalWidgetAdapter::makeWidgetTransportByteTransparent() {
   // a typed diagnostic instead of silently rendering mutated bytes.
   termios settings{};
   if (::tcgetattr(m_widgetSlaveFd, &settings) != 0) {
-    m_transportDiagnostic = QStringLiteral(
-        "Cannot read the rendering teletype settings");
+    m_transportDiagnostic =
+        QStringLiteral("Cannot read the rendering teletype settings");
     return;
   }
   // OPOST off disables every output translation; the cast keeps the bitwise
   // complement unsigned so -Wsign-conversion stays clean.
   settings.c_oflag &= static_cast<tcflag_t>(~OPOST);
   if (::tcsetattr(m_widgetSlaveFd, TCSANOW, &settings) != 0) {
-    m_transportDiagnostic = QStringLiteral(
-        "Cannot clear rendering teletype output processing");
+    m_transportDiagnostic =
+        QStringLiteral("Cannot clear rendering teletype output processing");
     return;
   }
   termios verified{};
@@ -267,72 +263,6 @@ TerminalWidgetAdapter::~TerminalWidgetAdapter() {
   }
 }
 
-void TerminalWidgetAdapter::applyAppearance() {
-  if (m_widget == nullptr) {
-    return;
-  }
-  // AGENT-NOTE (P3-3): the scheme document is per-instance (pid + counter)
-  // and installed atomically. The temporary file is created with NewOnly —
-  // an exclusive create that fails instead of truncating through a
-  // pre-planted symlink — and the install removes a crash-stale target
-  // (possible after PID reuse) before renaming, so a stale file can never
-  // make the install fail or race its contents.
-  const QString cacheDirectory =
-      QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-  if (!cacheDirectory.isEmpty() && QDir().mkpath(cacheDirectory)) {
-    static int instanceCounter = 0;
-    // AGENT-CONTRACT (qtermwidget 2.4): setColorScheme(path) attempts a
-    // custom-file load only when the final path ends in `.colorscheme`.
-    // Another extension silently selects its built-in white default even
-    // when the file exists and contains a valid Konsole document.
-    const QString baseName =
-        QStringLiteral("qindaqt-terminal-scheme-%1-%2.colorscheme")
-            .arg(::getpid())
-            .arg(++instanceCounter);
-    const QString targetPath = QDir(cacheDirectory).filePath(baseName);
-    const QString temporaryPath = targetPath + QStringLiteral(".tmp");
-    {
-      QFile schemeFile(temporaryPath);
-      if (schemeFile.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
-        const QByteArray document =
-            TerminalColorSchemeDocument::render(m_appearance).toUtf8();
-        if (schemeFile.write(document) == document.size() &&
-            schemeFile.flush()) {
-          schemeFile.close();
-          // Replace-safe install (P3-3): a stale target can only exist after
-          // PID reuse from a crashed instance of this same pid/counter name,
-          // so removing it first is safe; QFile::rename does not overwrite.
-          if (QFile::exists(targetPath)) {
-            QFile::remove(targetPath);
-          }
-          if (QFile::rename(temporaryPath, targetPath)) {
-            m_schemePath = targetPath;
-            m_widget->setColorScheme(m_schemePath);
-          }
-        }
-      }
-    }
-    QFile::remove(temporaryPath);
-  }
-  // Font and window palette come from the same QST generation even when the
-  // scheme file failed; the widget then keeps its built-in scheme, which is
-  // a visible but non-fatal degradation recorded in the wiki. The profile
-  // may override the family/size on top of the QST projection; unknown
-  // families fall back through QFont matching (documented degradation, not
-  // a launch failure).
-  QFont terminalFont = m_appearance.terminalFont;
-  if (!m_profile.fontFamily.isEmpty()) {
-    terminalFont.setFamily(m_profile.fontFamily);
-  }
-  if (m_profile.fontSize > 0) {
-    terminalFont.setPointSize(m_profile.fontSize);
-  }
-  m_widget->setTerminalFont(terminalFont);
-  // The scrollback bound is a profile-owned presentation limit; the widget
-  // owns the buffer itself.
-  m_widget->setHistorySize(m_profile.scrollbackLines);
-}
-
 bool TerminalWidgetAdapter::eventFilter(QObject *watched, QEvent *event) {
   if (watched == m_widget && event->type() == QEvent::Resize) {
     // AGENT-NOTE (ADR-0040): the child lives on the bridge PTY, so its
@@ -349,8 +279,8 @@ bool TerminalWidgetAdapter::eventFilter(QObject *watched, QEvent *event) {
   return TerminalSessionBackend::eventFilter(watched, event);
 }
 
-TerminalSessionBackend::StartOutcome TerminalWidgetAdapter::start(
-    const TerminalLaunchRequest &request) {
+TerminalSessionBackend::StartOutcome
+TerminalWidgetAdapter::start(const TerminalLaunchRequest &request) {
   if (m_shutdownRequested) {
     return {.ok = false,
             .diagnostic = QStringLiteral("Session is shutting down")};
@@ -361,10 +291,10 @@ TerminalSessionBackend::StartOutcome TerminalWidgetAdapter::start(
   }
   if (m_bridge == nullptr || !m_bridge->isOpen() || m_widgetSlaveFd < 0) {
     return {.ok = false,
-            .diagnostic = m_bridgeDiagnostic.isEmpty()
-                              ? QStringLiteral(
-                                    "Terminal channel is unavailable")
-                              : m_bridgeDiagnostic};
+            .diagnostic =
+                m_bridgeDiagnostic.isEmpty()
+                    ? QStringLiteral("Terminal channel is unavailable")
+                    : m_bridgeDiagnostic};
   }
   if (!m_transportDiagnostic.isEmpty()) {
     // Fail-closed byte-transparency gate (P2: double line discipline): a
@@ -383,8 +313,7 @@ TerminalSessionBackend::StartOutcome TerminalWidgetAdapter::start(
   for (const QString &argument : request.arguments) {
     strings.arguments.push_back(argument.toLocal8Bit());
   }
-  strings.environment.reserve(
-      static_cast<size_t>(request.environment.size()));
+  strings.environment.reserve(static_cast<size_t>(request.environment.size()));
   for (const QString &entry : request.environment) {
     strings.environment.push_back(entry.toLocal8Bit());
   }
@@ -450,8 +379,7 @@ void TerminalWidgetAdapter::closeChildChannel() {
   }
 }
 
-void TerminalWidgetAdapter::forwardChildOutput(const char *data,
-                                               int length) {
+void TerminalWidgetAdapter::forwardChildOutput(const char *data, int length) {
   if (data == nullptr || length <= 0 || m_widgetSlaveFd < 0) {
     return;
   }

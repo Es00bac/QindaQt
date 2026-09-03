@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+using QindaQt::Apps::Terminal::builtinDefaultProfile;
 using QindaQt::Apps::Terminal::TerminalAppearanceAdapter;
 using QindaQt::Apps::Terminal::TerminalSessionBackend;
 using QindaQt::Apps::Terminal::TerminalViewAppearance;
@@ -43,9 +44,8 @@ private slots:
 };
 
 void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {
-  TerminalWidgetAdapter adapter(darkAppearance());
-  QSignalSpy selectionSpy(&adapter,
-                          &TerminalSessionBackend::selectionChanged);
+  TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
+  QSignalSpy selectionSpy(&adapter, &TerminalSessionBackend::selectionChanged);
 
   adapter.selectAllInView();
 
@@ -54,14 +54,15 @@ void TerminalWidgetAdapterTest::blankGridDoesNotPublishCopyAvailability() {
   QVERIFY(!adapter.hasSelectedText());
 }
 
-void TerminalWidgetAdapterTest::customSchemePaintsRequestedTerminalBackground() {
+void TerminalWidgetAdapterTest::
+    customSchemePaintsRequestedTerminalBackground() {
   const TerminalViewAppearance appearance = darkAppearance();
   QCOMPARE(appearance.terminalBackground, QColor(QStringLiteral("#171a18")));
 
   // The adapter owns and deletes its widget. Declare the host first so the
   // adapter is destroyed first and QLayout never becomes a competing owner.
   QWidget host;
-  TerminalWidgetAdapter adapter(appearance);
+  TerminalWidgetAdapter adapter(appearance, builtinDefaultProfile());
   auto *layout = new QVBoxLayout(&host);
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);

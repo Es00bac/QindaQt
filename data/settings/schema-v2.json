@@ -282,20 +282,20 @@
       "default": true
     },
     {
-      "key": "terminal.profiles",
-      "domain": "terminal",
+      "key": "services.terminalProfiles",
+      "domain": "services",
       "type": "string",
-      "default": ""
+      "default": "[]"
     },
     {
-      "key": "terminal.defaultProfile",
-      "domain": "terminal",
+      "key": "services.terminalDefaultProfile",
+      "domain": "services",
       "type": "string",
-      "default": ""
+      "default": "builtin-default"
     },
     {
-      "key": "terminal.restoreTabs",
-      "domain": "terminal",
+      "key": "services.terminalRestoreTabs",
+      "domain": "services",
       "type": "boolean",
       "default": false
     }
