@@ -69,7 +69,7 @@ def main() -> int:
         (arguments.launcher, "qindaqt-wm"),
         (arguments.probe, "window-action probe"),
         (arguments.dbus_runner, "dbus-run-session"),
-        (arguments.kwin, "pinned KWin 6.6.5"),
+        (arguments.kwin, "pinned KWin 6.6.6"),
     ):
         if not path.is_file():
             print(f"{description} unavailable: {path}", file=sys.stderr)

@@ -15,8 +15,8 @@ target_link_libraries(
 add_test(NAME compositor.shell-window-identity COMMAND qindaqt_shell_window_identity_tests)
 
 if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
-    find_package(LayerShellQt 6.6.5 REQUIRED)
-    find_package(KWayland 6.6.5 EXACT REQUIRED)
+    find_package(LayerShellQt 6.6.6 REQUIRED)
+    find_package(KWayland 6.6.6 EXACT REQUIRED)
     find_program(QINDAQT_SHELL_ACTIONS_DBUS_RUN_SESSION dbus-run-session)
     if(QINDAQT_SHELL_ACTIONS_DBUS_RUN_SESSION)
         qt_add_executable(

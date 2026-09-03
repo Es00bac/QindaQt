@@ -109,8 +109,22 @@ def _make_spec(arguments: argparse.Namespace, run_id: str, paths: Any) -> Sandbo
     system_path = sorted(
         {str(PurePosixPath(sandbox_path_for(tool, mounts)).parent) for tool in tools}
     )
+    # AGENT-GUARD: only the compositor's own prefix may shape the sandbox-wide
+    # library, Qt plugin, and QML search paths. The parent Weston prefix gets
+    # LD_LIBRARY_PATH in its own environment (desktop_session_launch); exporting
+    # it globally made a system KWin load a private-prefix libkwin and reject the
+    # release-matched plugin ("mismatching plugin version").
+    parent_tools = {
+        Path(getattr(arguments, name)).resolve(strict=True)
+        for name in ("weston", "weston_screenshooter")
+        if interactive and getattr(arguments, name, None)
+    }
+    compositor_inputs = [
+        tool for tool in mounted_inputs
+        if Path(tool).resolve(strict=True) not in parent_tools
+    ]
     library_path, qt_plugin_path, qml_import_path = library_search_roots(
-        mounted_inputs
+        compositor_inputs
     )
     environment = sandbox_environment(
         run_id=run_id,

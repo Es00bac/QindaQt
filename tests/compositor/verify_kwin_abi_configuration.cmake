@@ -7,7 +7,7 @@ endif()
 include("${QINDAQT_KWIN_ABI_MODULE}")
 qindaqt_resolve_kwin_abi("${QINDAQT_KWIN_MANIFEST}" resolved_abi)
 
-if(NOT resolved_abi STREQUAL "6.6.5")
+if(NOT resolved_abi STREQUAL "6.6.6")
     message(FATAL_ERROR "resolved unexpected KWin ABI: ${resolved_abi}")
 endif()
 if(DEFINED CACHE{QINDAQT_KWIN_ABI_VERSION})

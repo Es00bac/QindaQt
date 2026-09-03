@@ -53,10 +53,10 @@ strict:
 | --- | --- | --- |
 | Qt | 6.11 or newer, including Core, DBus, Gui, QML, Quick, Quick Controls, Test, and Widgets | `qt6-base 6.11.1-1`, `qt6-declarative 6.11.1-3`, `qt6-wayland 6.11.1-1` |
 | Extra CMake Modules | 6.0 or newer | `extra-cmake-modules 6.27.0-1` |
-| KWin | **6.6.5 exactly** | `kwin 6.6.5-4` |
-| Plasma Activities | **6.6.5 exactly** | `plasma-activities 6.6.5-1` |
-| KDecoration3 | 6.6 or newer | `kdecoration 6.6.5-1` |
-| LayerShellQt | 6.6.5 or newer | `layer-shell-qt 6.6.5-2` |
+| KWin | **6.6.6 exactly** | `kwin 6.6.6` (Gentoo `kde-plasma/kwin-6.6.6`) |
+| Plasma Activities | **6.6.6 exactly** | `plasma-activities 6.6.6` |
+| KDecoration3 | 6.6 or newer | `kdecoration 6.6.6` |
+| LayerShellQt | 6.6.6 or newer | `layer-shell-qt 6.6.6` |
 | KF6 CoreAddons and GlobalAccel | 6.0 or newer | `kcoreaddons 6.27.0-1`, `kglobalaccel 6.27.0-1` |
 | XDG desktop portal runtime | 1.20 or newer; QindaQt supplies only Settings | `xdg-desktop-portal` plus at least one of `xdg-desktop-portal-kde`, `xdg-desktop-portal-gtk`, or `xdg-desktop-portal-lxqt` for explicitly routed fallback families |
 | fontconfig | 2.x development headers, used only by the font discovery provider ([ADR-0067](docs/wiki/adr/0067-confine-fontconfig-behind-font-discovery.md)) | `fontconfig 2.17.1-1` |
@@ -77,8 +77,8 @@ sudo pacman -S --needed \
   fontconfig xorg-xdpyinfo xorg-xwayland
 ```
 
-Rolling repositories may already have moved beyond KWin 6.6.5. In that case,
-the default presets must use a coherent 6.6.5 package snapshot/cache; do not
+Rolling repositories may already have moved beyond KWin 6.6.6. In that case,
+the default presets must use a coherent 6.6.6 package snapshot/cache; do not
 force CMake past its exact ABI check. A current rolling stack can still build
 and test the production panel client without the native plugin through an
 explicit bridge-only configuration:

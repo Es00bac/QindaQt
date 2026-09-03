@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt (Wayland)
+Comment=QindaQt desktop session on KWin
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-wm --drm
+TryExec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-wm
+DesktopNames=QindaQt
