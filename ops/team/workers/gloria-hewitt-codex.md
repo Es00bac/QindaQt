@@ -5,17 +5,17 @@ provider: OpenAI Codex
 model: gpt-5.6-sol
 reasoning: high
 status: handoff
-feature: QQ-004.11 Status-notifier tray S1 rejected-candidate repair
+feature: QQ-004.11 Status-notifier tray S1 second rejected-candidate repair
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/tray-s1
 started_at: 2026-09-03T06:44:45-06:00
-updated_at: 2026-09-03T07:06:42-06:00
+updated_at: 2026-09-03T07:29:14-06:00
 ---
 
 # Gloria Hewitt-Codex
 
 - Role: Status-notifier transport repair implementer.
 - Provider/model: OpenAI Codex `gpt-5.6-sol`, reasoning high.
-- Status: handoff — exact candidate `4c8e47b28d2d92711bf433c8d2a5afc9be59030f` is green and ready for independent exact review.
+- Status: handoff — exact candidate `0e5fed95535a578c269b86cbfbe7f291f698819b` closes the second-review P1/P3 findings and is ready for Marjorie Lee Browne's exact recheck.
 - Exact base: `ce9228d9694622d503d92a38d01986f8f124f188`.
 - Branch: `worker/tray-s1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/tray-s1`.
@@ -29,3 +29,6 @@ updated_at: 2026-09-03T07:06:42-06:00
 - 2026-09-03T06:44:45-06:00 — claim repair of the independently rejected S1 candidate; read the exact verdict and governing tray architecture, then began reproducing P1-1 through P1-8, P2-1, and P3-1 in reviewer order.
 - 2026-09-03T06:52:38-06:00 — reproduced all ten findings; isolated watcher retirement/idempotence, signed wire coordinates, exact property typing and real timeout classification, per-owner multi-path generations, root-path parsing, theme-root confinement, size bounds, and the stale adapter policy comment.
 - 2026-09-03T07:06:42-06:00 — handoff of exact product candidate `4c8e47b28d2d92711bf433c8d2a5afc9be59030f`; Debug and Release tray selectors passed 7/7 each (102 QTest functions per profile), documentation/source-shape/diff gates passed, and no lane-owned private bus remained.
+- 2026-09-03T07:21:12-06:00 — reclaimed the same lane for the second repair round after Marjorie Lee Browne rejected `4c8e47b`; reproduced the code path that forgets a still-live owner's epoch generation after its last item slot retires and began a registered private-bus regression plus decoder-policy documentation correction.
+- 2026-09-03T07:28:08-06:00 — midpoint: both new registered controls fail on the rejected behavior and pass after repair; prescribed Debug and Release configurations, focused builds, all seven tray rows (103 QTest functions per profile), strict docs, source-shape, and diff gates are green.
+- 2026-09-03T07:29:14-06:00 — handoff of exact product candidate `0e5fed95535a578c269b86cbfbe7f291f698819b` (tree `5adaf207e77f88b77b2e1c40726a72edb9416925`); no lane-owned private bus remained after verification.
