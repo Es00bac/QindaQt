@@ -316,7 +316,7 @@
           "title": "Power and brightness applet",
           "weight": 2,
           "state": "EXECUTABLE",
-          "summary": "The production Power applet composes exact-owner PB-1 truth through a shell-private public-client controller, audited manifest/registry/host routing, compiled QML, keyboard/accessibility interaction, and fail-closed request lineage.",
+          "summary": "The production Power applet composes exact-owner PB-1 truth through a shell-private public-client controller, audited manifest/registry/host routing, compiled QML, keyboard/accessibility interaction, and fail-closed request lineage. Session actions: org.qindaqt.Session1 logout on the session supervisor, a bounded session-actions client (screen-saver lock probed on the object, login1 suspend/restart/shutdown behind Can* checks, owner/epoch re-fenced replies), Session sections in the Power applet and page with confirmations, and Meta+L (ADR-0070).",
           "evidence": [
             {
               "kind": "commit",
@@ -327,9 +327,14 @@
               "kind": "test",
               "reference": "docs/wiki/shell/power-applet.md",
               "summary": "Debug and Release each pass 6/6 applet rows, 8/8 Power rows, and 11/11 direct manifest cases plus package and boundary poison gates."
+            },
+            {
+              "kind": "commit",
+              "reference": "70763c7bdc2b22db6da231b2cbb56d489da48a4d",
+              "summary": "The exact session-actions candidate 23d99f5 (Wei Ho, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting a name-only lock availability and stale-reply acceptance) is integrated; on the system KWin 6.6.6 the merged tree passes 61/61 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 582/582."
             }
           ],
-          "caveat": "Live upstream power adapters, successful host brightness/profile mutation, nested panel interaction, and physical-device qualification remain."
+          "caveat": "Physical suspend/resume and lock-screen qualification on real hardware, nested panel interaction, and hotplug remain."
         },
         {
           "id": "QQ-004.14",
@@ -580,7 +585,7 @@
           "title": "Network connectivity",
           "weight": 11,
           "state": "EXECUTABLE",
-          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed. A confined NetworkManager secret agent (ADR-0069) now prompts for WPA-PSK, WEP, and 802.1X identity/password outside Network1, which stays secret-free. N3 adds ConnectVisibleNetwork: Network1 creates and activates a profile for a visible open/WPA-PSK/SAE access point with agent-owned secrets, and the Network Settings page offers Connect for unknown networks with truthful agent-presence facts.",
+          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed. A confined NetworkManager secret agent (ADR-0069) now prompts for WPA-PSK, WEP, and 802.1X identity/password outside Network1, which stays secret-free. N3 adds ConnectVisibleNetwork: Network1 creates and activates a profile for a visible open/WPA-PSK/SAE access point with agent-owned secrets, and the Network Settings page offers Connect for unknown networks with truthful agent-presence facts. The secret agent is started with the session by the supervisor as a non-essential, restart-once child.",
           "evidence": [
             {
               "kind": "commit",
