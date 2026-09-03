@@ -8,6 +8,7 @@
 #include <QtTest>
 
 #include <sys/stat.h>
+#include <unistd.h>
 
 using namespace QindaQt::Shell::Launcher;
 using namespace QindaQt::ShellLauncher;
@@ -35,8 +36,9 @@ private Q_SLOTS:
     void degradesOnHostileAndUnreadableEntries();
     void confinesSymlinksAndRefusesNonRegularEntries();
     void inaccessibleAndDanglingApplicationTreesDegrade();
+    void inaccessibleAncestorDegrades();
     void hiddenHigherPrecedenceEntryShadowsLowerRoot();
-    void missingApplicationsTreeIsNormalNotDegraded();
+    void confirmedMissingPathsAreNormalNotDegraded();
     void watcherRefreshRepublishesWithFencedGeneration();
     void retainsDocumentsForTheExecutionAdapter();
     void orderingIsDeterministic();
@@ -191,6 +193,31 @@ void ApplicationScannerTests::inaccessibleAndDanglingApplicationTreesDegrade()
     QVERIFY(sawDangling);
 }
 
+void ApplicationScannerTests::inaccessibleAncestorDegrades()
+{
+    if (::geteuid() == 0)
+        QSKIP("root cannot reproduce ancestor traversal denial");
+
+    QTemporaryDir fixture;
+    QVERIFY(fixture.isValid());
+    const QString blocked = fixture.path() + QStringLiteral("/blocked");
+    const QString dataRoot = blocked + QStringLiteral("/data-root");
+    QVERIFY(QDir().mkpath(dataRoot + QStringLiteral("/applications")));
+    QCOMPARE(::chmod(QFile::encodeName(blocked).constData(), 0000), 0);
+    const auto restorePermissions = qScopeGuard([&blocked] {
+        ::chmod(QFile::encodeName(blocked).constData(), 0700);
+    });
+
+    ApplicationScanner scanner({ dataRoot });
+    QVERIFY(scanner.start());
+    QVERIFY(scanner.catalog().has_value());
+    QVERIFY(scanner.catalog()->entries().isEmpty());
+    QCOMPARE(scanner.scanDiagnostics().size(), 1);
+    QCOMPARE(scanner.scanDiagnostics().constFirst().sourceId, dataRoot);
+    QVERIFY(scanner.scanDiagnostics().constFirst().message.contains(
+        QStringLiteral("cannot be determined")));
+}
+
 void ApplicationScannerTests::hiddenHigherPrecedenceEntryShadowsLowerRoot()
 {
     QTemporaryDir rootA;
@@ -207,14 +234,15 @@ void ApplicationScannerTests::hiddenHigherPrecedenceEntryShadowsLowerRoot()
     QVERIFY(!scanner.catalog()->entry(QStringLiteral("ghost")).has_value());
 }
 
-void ApplicationScannerTests::missingApplicationsTreeIsNormalNotDegraded()
+void ApplicationScannerTests::confirmedMissingPathsAreNormalNotDegraded()
 {
     QTemporaryDir emptyRoot;
     QTemporaryDir root;
     QVERIFY(emptyRoot.isValid() && root.isValid());
+    const QString missingRoot = emptyRoot.path() + QStringLiteral("/missing-root");
     writeEntry(root.path(), QStringLiteral("one.desktop"), QStringLiteral("One"));
 
-    ApplicationScanner scanner({ emptyRoot.path(), root.path() });
+    ApplicationScanner scanner({ missingRoot, emptyRoot.path(), root.path() });
     QVERIFY(scanner.start());
     QVERIFY(scanner.scanDiagnostics().isEmpty());
     QCOMPARE(scanner.catalog()->entries().size(), 1);

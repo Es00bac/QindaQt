@@ -8,7 +8,11 @@
 
 #include <qindaqt/services/settings_client/settings_client.h>
 
+#include <QScopeGuard>
 #include <QtTest>
+
+#include <sys/stat.h>
+#include <unistd.h>
 
 using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Services::SettingsProtocol;
@@ -69,6 +73,7 @@ private Q_SLOTS:
     void activationLaunchesAndRecordsRecent();
     void degradedTruthReachesTheProjection();
     void rootAccessFailuresReachTheProjection();
+    void inaccessibleAncestorReachesTheProjection();
     void nullCollaboratorsFailClosed();
 };
 
@@ -212,6 +217,30 @@ void LauncherControllerTests::rootAccessFailuresReachTheProjection()
     LauncherAppletController controller(&scanner, nullptr, nullptr, false);
     QCOMPARE(controller.phase(), QStringLiteral("degraded"));
     QVERIFY(controller.diagnostic().contains(QStringLiteral("dangling")));
+    QVERIFY(controller.sections().isEmpty());
+}
+
+void LauncherControllerTests::inaccessibleAncestorReachesTheProjection()
+{
+    if (::geteuid() == 0)
+        QSKIP("root cannot reproduce ancestor traversal denial");
+
+    QTemporaryDir fixture;
+    QVERIFY(fixture.isValid());
+    const QString blocked = fixture.path() + QStringLiteral("/blocked");
+    const QString dataRoot = blocked + QStringLiteral("/data-root");
+    QVERIFY(QDir().mkpath(dataRoot + QStringLiteral("/applications")));
+    QCOMPARE(::chmod(QFile::encodeName(blocked).constData(), 0000), 0);
+    const auto restorePermissions = qScopeGuard([&blocked] {
+        ::chmod(QFile::encodeName(blocked).constData(), 0700);
+    });
+
+    ApplicationScanner scanner({ dataRoot });
+    QVERIFY(scanner.start());
+    LauncherAppletController controller(&scanner, nullptr, nullptr, false);
+    QCOMPARE(controller.phase(), QStringLiteral("degraded"));
+    QVERIFY(controller.diagnostic().contains(
+        QStringLiteral("cannot be determined")));
     QVERIFY(controller.sections().isEmpty());
 }
 

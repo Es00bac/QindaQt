@@ -9,6 +9,9 @@
 #include <QFileSystemWatcher>
 #include <QTimer>
 
+#include <cerrno>
+#include <sys/stat.h>
+
 namespace QindaQt::Shell::Launcher {
 namespace {
 
@@ -23,6 +26,21 @@ using QindaQt::ShellLauncher::SourceDocument;
 // before decoding so a hostile file cannot force an oversized allocation.
 inline constexpr qint64 maxDesktopFileBytes = 4LL * maxDocumentCodeUnits;
 inline constexpr int debounceMilliseconds = 200;
+
+enum class PathPresence {
+  Present,
+  Missing,
+  Indeterminate,
+};
+
+PathPresence pathPresence(const QString &path)
+{
+  struct stat pathStatus {};
+  const QByteArray nativePath = QFile::encodeName(path);
+  if (::lstat(nativePath.constData(), &pathStatus) == 0)
+    return PathPresence::Present;
+  return errno == ENOENT ? PathPresence::Missing : PathPresence::Indeterminate;
+}
 
 bool isWithinRoot(const QString &canonicalRoot, const QString &canonicalPath)
 {
@@ -219,12 +237,22 @@ void ApplicationScanner::scanDirectory(const QString &directoryPath,
 void ApplicationScanner::scanRoot(const QString &root, int *remainingFiles,
                                   bool *ceilingHit)
 {
+  // AGENT-GUARD: QFileInfo maps both ENOENT and metadata errors such as EACCES
+  // to exists()==false. Only a syscall-confirmed ENOENT is normal absence;
+  // every other status failure must remain visible as degraded launcher truth.
+  const PathPresence rootPresence = pathPresence(root);
+  if (rootPresence == PathPresence::Missing)
+    return;
+  if (rootPresence == PathPresence::Indeterminate) {
+    addScanDiagnostic(root,
+                      QStringLiteral("data root status cannot be determined"));
+    return;
+  }
+
   const QFileInfo rootInfo(root);
   // An absent injected data directory is normal on XDG systems. Existing but
   // unreadable/non-directory roots are different: suppressing them would make
   // a broken installation indistinguishable from an empty catalog.
-  if (!rootInfo.exists() && !rootInfo.isSymLink())
-    return;
   const QString canonicalRoot = rootInfo.canonicalFilePath();
   if (!rootInfo.isDir() || canonicalRoot.isEmpty()) {
     addScanDiagnostic(root, QStringLiteral("data root cannot be canonicalized"));
@@ -237,6 +265,16 @@ void ApplicationScanner::scanRoot(const QString &root, int *remainingFiles,
 
   const QString applicationsDir =
       QDir(canonicalRoot).filePath(QStringLiteral("applications"));
+  const PathPresence applicationsPresence = pathPresence(applicationsDir);
+  if (applicationsPresence == PathPresence::Missing)
+    return; // A readable root without an applications tree is normal.
+  if (applicationsPresence == PathPresence::Indeterminate) {
+    addScanDiagnostic(
+        applicationsDir,
+        QStringLiteral("applications directory status cannot be determined"));
+    return;
+  }
+
   const QFileInfo applicationsInfo(applicationsDir);
   if (applicationsInfo.isSymLink()
       && applicationsInfo.canonicalFilePath().isEmpty()) {
@@ -244,8 +282,6 @@ void ApplicationScanner::scanRoot(const QString &root, int *remainingFiles,
                       QStringLiteral("applications directory link is dangling"));
     return;
   }
-  if (!applicationsInfo.exists())
-    return; // A readable root without an applications tree is normal.
   QStringList watched;
   QSet<QString> visitedDirectories;
   scanDirectory(applicationsDir, canonicalRoot, QString(), remainingFiles,
