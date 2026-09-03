@@ -1,4 +1,4 @@
-import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
+import QindaQt.Shell.GlobalMenu as GlobalMenuComponents
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
@@ -117,7 +117,7 @@ Item {
             const entries = [];
             collectEntries(applet, entries);
             compare(entries.length, 4);
-            // Submenu entries (presented visibly, but disabled in G0)
+            // Empty submenu entries (presented visibly, but disabled)
             verify(!entries[0].enabled);
             compare(entries[0].Accessible.focusable, false);
             verify(!entries[1].enabled);

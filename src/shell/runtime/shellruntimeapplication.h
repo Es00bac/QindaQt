@@ -33,6 +33,11 @@ class CompositorVisibilityClient;
 class QtCompositorVisibilityTransport;
 }
 
+namespace QindaQt::ShellWindowActionsClient {
+class QtShellWindowActionsTransport;
+class ShellWindowActionsClient;
+}
+
 namespace QindaQt::Services::NotificationPresentationClient {
 class NotificationPresentationClient;
 class QtNotificationPresentationTransport;
@@ -61,6 +66,7 @@ namespace QindaQt::Shell {
 class RuntimePanelWindowFactory;
 class AudioAppletComposition;
 class BluetoothAppletComposition;
+class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
 class LauncherAppletComposition;
 class NotificationCenterAppletAccess;
@@ -90,6 +96,7 @@ private:
                                          QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
+    void restartWindowActionsIdentity();
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
@@ -111,6 +118,10 @@ private:
         m_visibilityTransport;
     std::unique_ptr<ShellVisibilityClient::CompositorVisibilityClient>
         m_visibilityClient;
+    std::unique_ptr<ShellWindowActionsClient::QtShellWindowActionsTransport>
+        m_windowActionsTransport;
+    std::unique_ptr<ShellWindowActionsClient::ShellWindowActionsClient>
+        m_windowActionsClient;
     std::unique_ptr<QtCompositorOutputAuthority> m_outputAuthority;
     std::unique_ptr<ShellOrchestration::PanelInteractionStore> m_interactions;
     std::optional<Services::NotificationPresentation::PresentationAccessToken>
@@ -154,11 +165,13 @@ private:
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
+    std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
     std::unique_ptr<NotificationCenterShortcut> m_notificationCenterShortcut;
     QTimer m_outputDebounce;
+    QTimer m_windowActionsRetry;
 };
 
 } // namespace QindaQt::Shell

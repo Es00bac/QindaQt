@@ -24,6 +24,7 @@ set(shell_components
     QindaQt
     AudioAppletRuntime
     BluetoothAppletRuntime
+    GlobalMenuAppletRuntime
     LauncherAppletRuntime
     PowerAppletRuntime)
 
@@ -73,8 +74,10 @@ foreach(component IN LISTS shell_components)
     set(tokens "${stage}/Tokens/libqindaqt_tokens_qml.so")
     set(launcher
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_shell_launcher_qml.so")
+    set(global_menu
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_global_menu_qml.so")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
-                                   "${launcher}")
+                                   "${launcher}" "${global_menu}")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")
@@ -123,6 +126,24 @@ foreach(component IN LISTS shell_components)
             "${expected_launcher}, resolved ${resolved_launcher}")
     endif()
 
+    set(resolved_global_menu "")
+    foreach(dependency IN LISTS shell_dependencies)
+        cmake_path(GET dependency FILENAME dependency_name)
+        if(dependency_name STREQUAL "libqindaqt_global_menu_qml.so")
+            if(NOT resolved_global_menu STREQUAL "")
+                message(FATAL_ERROR
+                    "${component} shell resolved duplicate Global Menu libraries")
+            endif()
+            file(REAL_PATH "${dependency}" resolved_global_menu)
+        endif()
+    endforeach()
+    file(REAL_PATH "${global_menu}" expected_global_menu)
+    if(NOT resolved_global_menu STREQUAL expected_global_menu)
+        message(FATAL_ERROR
+            "${component} shell did not resolve staged Global Menu: expected "
+            "${expected_global_menu}, resolved ${resolved_global_menu}")
+    endif()
+
     file(GET_RUNTIME_DEPENDENCIES
         LIBRARIES "${controls}"
         RESOLVED_DEPENDENCIES_VAR controls_dependencies
@@ -164,4 +185,4 @@ foreach(component IN LISTS shell_components)
 endforeach()
 
 message(STATUS
-    "Every shell-carrying install component has runnable Launcher/Controls/Tokens closure")
+    "Every shell-carrying install component has runnable GlobalMenu/Launcher/Controls/Tokens closure")

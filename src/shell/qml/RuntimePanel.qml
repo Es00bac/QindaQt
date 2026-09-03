@@ -12,6 +12,7 @@ Window {
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
 
     visible: false
     color: "transparent"
@@ -28,5 +29,6 @@ Window {
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 }

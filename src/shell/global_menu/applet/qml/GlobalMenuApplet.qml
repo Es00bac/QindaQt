@@ -1,18 +1,10 @@
 // AGENT-NOTE: consumes only GlobalMenuAppletAccess's public Q_PROPERTY/
 // Q_INVOKABLE surface (see applet/include/.../globalmenuappletaccess.h).
-// G0 wires no live publisher anywhere in the shell, so `available` stays
-// false and this renders the same unavailable placeholder as an unprovisioned
-// notification center; do not read this component's presence as a live
-// global menu.
 
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
 
-// AGENT-GUARD: top-level "submenu" entries must stay visibly present but
-// non-activating (disabled, no activation call) — G0 has no submenu popup,
-// and rendering them as clickable fakes would pretend an interaction that
-// does not exist. Only enabled "action" entries activate.
 Item {
     id: root
 
@@ -35,6 +27,11 @@ Item {
     // is hidden rather than painted partially inside the clipped geometry.
     readonly property bool indicatorFits: vertical ? height >= (measuredIndicatorHeight() + 4) : width >= (measuredIndicatorWidth() + spacing)
     readonly property real spacing: 12
+
+    onAvailableChanged: {
+        if (!available)
+            submenuPopup.close()
+    }
 
     function measuredTextWidth(text) {
         const str = String(text ?? "");
@@ -147,10 +144,18 @@ Item {
 
         anchors.centerIn: parent
         visible: !root.available
-        text: qsTr("Menu unavailable")
+        text: access !== null && String(access.phase ?? "") === "degraded"
+              ? qsTr("Menu degraded") : qsTr("Menu unavailable")
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"
         font.pixelSize: 12
+    }
+
+    GlobalMenuPopup {
+        id: submenuPopup
+        access: root.access
+        theme: root.theme
+        maximumDepth: 6
     }
 
     Row {
@@ -216,16 +221,22 @@ Item {
 
         required property var modelData
         readonly property bool isAction: String(modelData.kind ?? "action") === "action"
-        readonly property bool itemEnabled: isAction && Boolean(modelData.enabled)
+        readonly property bool isSubmenu: String(modelData.kind ?? "") === "submenu"
+        readonly property bool itemEnabled: Boolean(modelData.enabled)
+            && (isAction || (isSubmenu && (modelData.children ?? []).length > 0))
 
         // AGENT-GUARD: one named activation path is shared by pointer click,
         // keyboard activation, and assistive-technology press. AbstractButton
         // suppresses clicked() and keyboard activation while disabled, but an
         // AT press has no such gate; the explicit enabled check keeps
-        // non-activating entries (disabled actions, G0 submenus) honest.
+        // non-activating entries (disabled actions and empty submenus) honest.
         function pressAction() {
-            if (entry.enabled)
-                root.access.activate(entry.modelData.id);
+            if (!entry.enabled)
+                return
+            if (entry.isSubmenu)
+                submenuPopup.openMenu(entry.modelData, entry)
+            else
+                root.access.activate(entry.modelData.id)
 
         }
 
@@ -244,11 +255,18 @@ Item {
         Accessible.focusable: entry.enabled
         Accessible.checkable: Boolean(modelData.checkable ?? false)
         Accessible.checked: Boolean(modelData.checked ?? false)
-        Accessible.name: String(modelData.text ?? "") + (isAction ? "" : qsTr(" (submenu unavailable)"))
+        Accessible.name: String(modelData.text ?? "")
+        Accessible.description: isSubmenu ? qsTr("Opens submenu") : ""
         onClicked: entry.pressAction()
         Accessible.onPressAction: entry.pressAction()
         Keys.onReturnPressed: entry.pressAction()
         Keys.onEnterPressed: entry.pressAction()
+        Keys.onDownPressed: event => {
+            if (entry.isSubmenu) {
+                entry.pressAction()
+                event.accepted = true
+            }
+        }
 
         contentItem: Text {
             id: label

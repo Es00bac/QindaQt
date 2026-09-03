@@ -36,6 +36,9 @@ class PowerAppletController;
 namespace Launcher {
 class LauncherAppletController;
 }
+namespace GlobalMenu {
+class GlobalMenuAppletAccess;
+}
 
 class RuntimePanelWindowFactory final : public ShellSurface::PanelWindowFactory {
 public:
@@ -48,7 +51,8 @@ public:
                               AudioApplet::AudioAppletController *audioAppletAccess,
                               BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
                               PowerApplet::PowerAppletController *powerAppletAccess,
-                              Launcher::LauncherAppletController *launcherAppletAccess);
+                              Launcher::LauncherAppletController *launcherAppletAccess,
+                              GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -66,6 +70,7 @@ private:
     BluetoothApplet::BluetoothAppletController *m_bluetoothAppletAccess = nullptr;
     PowerApplet::PowerAppletController *m_powerAppletAccess = nullptr;
     Launcher::LauncherAppletController *m_launcherAppletAccess = nullptr;
+    GlobalMenu::GlobalMenuAppletAccess *m_globalMenuAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 
