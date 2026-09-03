@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <qindaqt/services/power_service/adapters/sysfs_backlight_source.h>
+#include <qindaqt/services/power_service/adapters/upstream_composition.h>
 #include <qindaqt/services/power_service/resident_power_service.h>
-#include <qindaqt/services/power_service/unavailable_power_collaborators.h>
 
+#include <QtCore/QCommandLineOption>
+#include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QLoggingCategory>
 #include <QtDBus/QDBusConnection>
@@ -18,6 +21,35 @@ int main(int argc, char **argv)
     QCoreApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
     QCoreApplication::setOrganizationDomain(QStringLiteral("qindaqt.org"));
 
+    // AGENT-NOTE: the bare binary defaults to the PB-1 unavailable upstream so
+    // an unconfigured execution never contacts a host bus; the packaged
+    // descriptor and user unit pass --upstream=production explicitly.
+    QCommandLineParser parser;
+    parser.setApplicationDescription(
+        QStringLiteral("QindaQt resident Power1 service"));
+    parser.addOptions({
+        {QStringLiteral("upstream"),
+         QStringLiteral("Upstream collaborator mode: production or unavailable."),
+         QStringLiteral("mode"),
+         QStringLiteral("unavailable")},
+        {QStringLiteral("backlight-root"),
+         QStringLiteral("Injected backlight sysfs root for production mode."),
+         QStringLiteral("path"),
+         QString::fromLatin1(Upstream::kSysfsBacklightDefaultRoot)},
+    });
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(application);
+
+    const auto mode =
+        Upstream::parseUpstreamMode(parser.value(QStringLiteral("upstream")));
+    if (!mode.has_value()) {
+        qCritical("Power1 rejected unknown upstream mode '%s'",
+                  qPrintable(parser.value(QStringLiteral("upstream"))));
+        return 1;
+    }
+    const QString backlightRoot = parser.value(QStringLiteral("backlight-root"));
+
     QDBusConnection sessionConnection = QDBusConnection::sessionBus();
     // AGENT-GUARD: This activated process belongs to exactly the bus that
     // constructed it. Bus replacement must terminate the process; reconnecting
@@ -31,15 +63,17 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // AGENT-NOTE: PB-1 deliberately injects the deterministic unavailable
-    // collaborators; the resident process never contacts host UPower,
-    // power-profiles-daemon, or logind. Later slices replace only this
-    // composition.
-    auto battery = std::make_unique<UnavailableBatteryCollaborator>();
-    auto profiles = std::make_unique<UnavailableProfileCollaborator>();
-    auto session = std::make_unique<UnavailableSessionCollaborator>();
-    ResidentPowerService service(std::move(battery), std::move(profiles),
-                                 std::move(session), sessionConnection);
+    // The upstream bus is opened only for production mode; the unavailable
+    // mode never constructs a system-bus connection at all.
+    const QDBusConnection upstreamConnection =
+        mode == Upstream::UpstreamMode::Production
+        ? QDBusConnection::systemBus()
+        : QDBusConnection(QStringLiteral("power1-upstream-unused"));
+    Upstream::UpstreamComposition composition =
+        Upstream::composeUpstream(mode.value(), upstreamConnection, backlightRoot);
+    ResidentPowerService service(std::move(composition.battery),
+                                 std::move(composition.profiles),
+                                 std::move(composition.session), sessionConnection);
     const PowerServiceStartStatus status = service.start();
     if (status != PowerServiceStartStatus::Started) {
         qCritical("Power1 startup failed with status %u",

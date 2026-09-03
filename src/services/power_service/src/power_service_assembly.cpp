@@ -26,13 +26,28 @@ bool validKeyboardDevice(const KeyboardBacklight &device)
         && (!device.canSet || device.valueKnown);
 }
 
+// Mirrors the PB-0 protocol rules for internal backlights so facts accepted
+// here can never fail whole-snapshot validation later.
+bool validInternalDevice(const InternalBacklight &device)
+{
+    return !device.deviceName.isEmpty()
+        && isBoundedText(device.deviceName, kMaxNameUtf8Bytes) && device.internal
+        && device.maximum <= kMaximumRawBrightness
+        && (device.observedKnown
+                ? device.maximum > 0 && device.observed <= device.maximum
+                : device.observed == 0)
+        && (device.status == BacklightStatus::Ok) == (device.reason == BacklightReason::None)
+        && isBoundedText(device.diagnostic, kMaxDiagnosticUtf8Bytes);
+}
+
 } // namespace
 
 bool sanitizeBatteryFacts(const BatteryFacts &input, const quint64 epoch,
                           BatteryFacts &output)
 {
     if (input.supplies.size() > kMaxPowerSupplies
-        || input.keyboardBacklights.size() > kMaxKeyboardBacklights) {
+        || input.keyboardBacklights.size() > kMaxKeyboardBacklights
+        || input.internalBacklights.size() > kMaxInternalBacklights) {
         return false;
     }
     BatteryFacts candidate;
@@ -68,6 +83,20 @@ bool sanitizeBatteryFacts(const BatteryFacts &input, const quint64 epoch,
         ids.insert(stamped.handle.opaqueId);
         candidate.keyboardBacklights.push_back(stamped);
     }
+    for (const InternalBacklight &device : input.internalBacklights) {
+        InternalBacklight stamped = device;
+        stamped.deviceName = sanitizeText(device.deviceName, kMaxNameUtf8Bytes);
+        stamped.diagnostic = sanitizeText(device.diagnostic, kMaxDiagnosticUtf8Bytes);
+        stamped.handle.epoch = epoch;
+        stamped.handle.opaqueId =
+            sanitizeText(device.handle.opaqueId, kMaxOpaqueIdUtf8Bytes);
+        if (!nonemptyBounded(stamped.handle.opaqueId, kMaxOpaqueIdUtf8Bytes)
+            || ids.contains(stamped.handle.opaqueId) || !validInternalDevice(stamped)) {
+            return false;
+        }
+        ids.insert(stamped.handle.opaqueId);
+        candidate.internalBacklights.push_back(stamped);
+    }
     output = candidate;
     return true;
 }
@@ -79,6 +108,9 @@ QSet<QString> batteryOpaqueIds(const BatteryFacts &facts)
         ids.insert(supply.handle.opaqueId);
     }
     for (const KeyboardBacklight &device : facts.keyboardBacklights) {
+        ids.insert(device.handle.opaqueId);
+    }
+    for (const InternalBacklight &device : facts.internalBacklights) {
         ids.insert(device.handle.opaqueId);
     }
     return ids;
@@ -172,6 +204,7 @@ Snapshot assembleSnapshot(const AssemblyInput &input)
         snapshot.source.onBattery = input.battery->onBattery;
         snapshot.supplies = input.battery->supplies;
         snapshot.keyboardBacklights = input.battery->keyboardBacklights;
+        snapshot.internalBacklights = input.battery->internalBacklights;
         // AGENT-GUARD: Public handles must carry the epoch being published.
         // Stored domain facts keep their acceptance-time epoch; every assembly
         // restamps so an authority replacement invalidates all earlier handles.
@@ -179,6 +212,9 @@ Snapshot assembleSnapshot(const AssemblyInput &input)
             supply.handle.epoch = input.epoch;
         }
         for (KeyboardBacklight &device : snapshot.keyboardBacklights) {
+            device.handle.epoch = input.epoch;
+        }
+        for (InternalBacklight &device : snapshot.internalBacklights) {
             device.handle.epoch = input.epoch;
         }
     }
@@ -197,6 +233,9 @@ Snapshot assembleSnapshot(const AssemblyInput &input)
     }
     if (input.battery != nullptr) {
         snapshot.capabilities |= Capability::Supplies | Capability::KeyboardBacklight;
+        if (!snapshot.internalBacklights.isEmpty()) {
+            snapshot.capabilities |= Capability::InternalBacklight;
+        }
     }
     if (input.profiles != nullptr) {
         snapshot.capabilities |= Capability::Profiles | Capability::ProfileHolds;
