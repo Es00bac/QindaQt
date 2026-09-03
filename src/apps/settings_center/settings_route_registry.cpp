@@ -150,6 +150,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool customizeRegistered = registerRoute(customizeRoute);
   Q_ASSERT(customizeRegistered);
   Q_UNUSED(customizeRegistered);
+
+  const SettingsRoute audioRoute{
+      .id = QStringLiteral("audio"),
+      .component = SettingsRouteComponent::Audio,
+      .title = QCoreApplication::translate("SettingsCenter", "Audio"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Output, input, volumes, and application streams"),
+      .iconName = QStringLiteral("audio-card"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool audioRegistered = registerRoute(audioRoute);
+  Q_ASSERT(audioRegistered);
+  Q_UNUSED(audioRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {
