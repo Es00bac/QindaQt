@@ -8,7 +8,7 @@ status: working
 feature: Route the handoff's named lanes, integrate accepted desktop blockers, verify main, and maintain product truth
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-03T12:58:04-06:00
-updated_at: 2026-09-03T13:07:09-06:00
+updated_at: 2026-09-03T13:35:22-06:00
 ---
 
 # Codex Program Manager
@@ -36,3 +36,10 @@ updated_at: 2026-09-03T13:07:09-06:00
   Tray S2 `b10692c` handoffs. Routed Bluetooth to Kathrin Bringmann's final
   recheck and Tray to the newly assigned Rózsa Péter exact review; all four
   candidate reviews are live in isolated detached worktrees.
+- 2026-09-03T13:35:22-06:00 — Integrated accepted Task List T2 `1e32f0a` at
+  `431856a5` and reconciled its exact dispatcher-count guard at `328f8b5e`;
+  manager evidence is 33/33 focused in both profiles, strict static gates, all
+  592 broad-safe rows across the corrected rerun, and serialized DesktopVirtual
+  8/8 on system KWin 6.6.6. Shelved terminally rejected Bluetooth pairing
+  `7025a1c` (`0/0/1/0`) and Tray S2 `b10692c` (`0/1/0/0`); no further repair or
+  combined hosting lane is authorized. Color Settings remains in final review.
