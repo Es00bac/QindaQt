@@ -298,6 +298,12 @@
       "domain": "services",
       "type": "boolean",
       "default": false
+    },
+    {
+      "key": "services.textEditorRestoreDocuments",
+      "domain": "services",
+      "type": "boolean",
+      "default": false
     }
   ]
 }

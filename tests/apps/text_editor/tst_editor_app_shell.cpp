@@ -26,6 +26,10 @@ using namespace QindaQt::AppShell;
 
 namespace {
 
+[[nodiscard]] DocumentStoreFactory localFactory() {
+  return [] { return std::make_unique<LocalDocumentStore>(); };
+}
+
 // A minimal test double that resolves every request with one fixed path,
 // simulating a user who always picks the same file without contacting any
 // real host chooser.
@@ -149,11 +153,12 @@ private slots:
 
 void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
   const QList<ActionSpec> catalog = editorActionCatalog();
-  QCOMPARE(catalog.size(), 11);
+  QCOMPARE(catalog.size(), 29);
 
-  const QSet<QString> expectedIds{
+  QSet<QString> expectedIds{
       QString::fromLatin1(AppShellActionIds::FileNew),
       QString::fromLatin1(AppShellActionIds::FileOpen),
+      QString::fromLatin1(AppShellActionIds::FileCloseTab),
       QString::fromLatin1(AppShellActionIds::FileSave),
       QString::fromLatin1(AppShellActionIds::FileSaveAs),
       QString::fromLatin1(AppShellActionIds::FileQuit),
@@ -163,13 +168,26 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
       QString::fromLatin1(AppShellActionIds::EditCopy),
       QString::fromLatin1(AppShellActionIds::EditPaste),
       QString::fromLatin1(AppShellActionIds::EditSelectAll),
+      QString::fromLatin1(AppShellActionIds::EditFind),
+      QString::fromLatin1(AppShellActionIds::EditReplace),
+      QString::fromLatin1(AppShellActionIds::EditFindNext),
+      QString::fromLatin1(AppShellActionIds::EditFindPrevious),
+      QString::fromLatin1(AppShellActionIds::EditFindClose),
+      QString::fromLatin1(AppShellActionIds::TabNext),
+      QString::fromLatin1(AppShellActionIds::TabPrevious),
+      QString::fromLatin1(AppShellActionIds::RestoreDocuments),
   };
+  for (int index = 1; index <= 9; ++index) {
+    expectedIds.insert(QStringLiteral("tabs.select-%1").arg(index));
+  }
   QSet<QString> actualIds;
   for (const ActionSpec &action : catalog) {
     actualIds.insert(action.id);
     QVERIFY(!action.shortcut.isEmpty());
     QVERIFY(action.menuId == QStringLiteral("file") ||
-            action.menuId == QStringLiteral("edit"));
+            action.menuId == QStringLiteral("edit") ||
+            action.menuId == QStringLiteral("tabs") ||
+            action.menuId == QStringLiteral("settings"));
   }
   QCOMPARE(actualIds, expectedIds);
 
@@ -181,10 +199,10 @@ void EditorAppShellTest::catalogMatchesDocumentedActionsAndValidates() {
 
 void EditorAppShellTest::
     publishesAtomicMenuSnapshotWithSyncedInitialProjection() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   const QVariantList menus = window.appShellCoordinator().menus();
-  QCOMPARE(menus.size(), 2);
+  QCOMPARE(menus.size(), 4);
 
   const QVariantMap fileNew =
       findAction(menus, QStringLiteral("file"),
@@ -206,7 +224,7 @@ void EditorAppShellTest::
 }
 
 void EditorAppShellTest::dirtyStateProjectsFileSaveEnabled() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.show();
   window.editor()->setFocus();
@@ -220,7 +238,7 @@ void EditorAppShellTest::dirtyStateProjectsFileSaveEnabled() {
 }
 
 void EditorAppShellTest::activatingKnownActionTriggersTheLocalCommand() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.editor()->insertPlainText(QStringLiteral("select me"));
   QVERIFY(!window.editor()->textCursor().hasSelection());
@@ -233,7 +251,7 @@ void EditorAppShellTest::activatingKnownActionTriggersTheLocalCommand() {
 }
 
 void EditorAppShellTest::closeRoutesThroughAppShellQuitConsent() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   window.show();
   QSignalSpy approved(&window.appShellCoordinator(),
@@ -247,7 +265,7 @@ void EditorAppShellTest::closeRoutesThroughAppShellQuitConsent() {
 }
 
 void EditorAppShellTest::fileSelectionFailsClosedWithoutARealDialog() {
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FailClosedFileSelectionAdapter>());
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
@@ -266,8 +284,7 @@ void EditorAppShellTest::
     cancelledFileSelectionPreservesStateAndAllowsNextRequest() {
   auto adapter = std::make_unique<CancellingFileSelectionAdapter>();
   auto *adapterProbe = adapter.get();
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
-                      std::move(adapter));
+  EditorWindow window(localFactory(), appearance(), std::move(adapter));
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
 
@@ -321,8 +338,7 @@ void EditorAppShellTest::stalePortalReplyIsFencedBeforeExactRecovery() {
 
   auto adapter = std::make_unique<StaleThenExactFileSelectionAdapter>(path);
   auto *adapterProbe = adapter.get();
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
-                      std::move(adapter));
+  EditorWindow window(localFactory(), appearance(), std::move(adapter));
   QSignalSpy finished(&window.appShellCoordinator(),
                       &ApplicationCoordinator::portalFinished);
 
@@ -351,7 +367,7 @@ void EditorAppShellTest::injectedAdapterResolvesAnOpenRequest() {
   QCOMPARE(file.write("picked by the fixed adapter"), qint64(27));
   file.close();
 
-  EditorWindow window(std::make_unique<LocalDocumentStore>(), appearance(),
+  EditorWindow window(localFactory(), appearance(),
                       std::make_unique<FixedFileSelectionAdapter>(path));
   QVERIFY(window.appShellCoordinator().activateAction(
       QString::fromLatin1(AppShellActionIds::FileOpen)));

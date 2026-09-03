@@ -31,8 +31,22 @@ QString DocumentController::normalizePath(const QString &path) {
   }
   const QFileInfo info(path);
   const QString canonical = info.canonicalFilePath();
-  return QDir::cleanPath(canonical.isEmpty() ? info.absoluteFilePath()
-                                             : canonical);
+  if (!canonical.isEmpty()) {
+    return QDir::cleanPath(canonical);
+  }
+  if (info.exists() || info.isSymLink() || info.fileName().isEmpty()) {
+    return {};
+  }
+
+  // AGENT-GUARD: A prospective Save As path must derive from the canonical
+  // parent. Keeping a lexical symlinked parent would let one file acquire two
+  // controllers after creation and violate ADR-0065's single-owner invariant.
+  const QString canonicalParent =
+      QFileInfo(info.absolutePath()).canonicalFilePath();
+  if (canonicalParent.isEmpty()) {
+    return {};
+  }
+  return QDir::cleanPath(QDir(canonicalParent).filePath(info.fileName()));
 }
 
 void DocumentController::newDocument() {

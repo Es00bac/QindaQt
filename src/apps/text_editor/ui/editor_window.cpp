@@ -1,69 +1,82 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "editor_window.h"
 
-#include "app_shell/editor_action_catalog.h"
 #include "app_shell/native_file_selection_adapter.h"
+#include "document/close_consent.h"
+#include "restore/restore_state_store.h"
+#include "ui/document_title.h"
+#include "ui/editor_document_view.h"
+#include "ui/find_replace_bar.h"
 
+#include <QAbstractButton>
 #include <QAccessible>
 #include <QAccessibleAnnouncementEvent>
-#include <QAction>
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QFileInfo>
-#include <QHBoxLayout>
-#include <QKeySequence>
-#include <QLabel>
-#include <QMenu>
-#include <QMenuBar>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QPaintEvent>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QStatusBar>
-#include <QTextCursor>
-#include <QTextDocument>
+#include <QTabBar>
+#include <QTabWidget>
+#include <QUrl>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Apps::TextEditor {
-namespace {
-
-[[nodiscard]] QString colorCss(const QColor &color) {
-  return color.name(QColor::HexArgb);
-}
-
-} // namespace
 
 EditorWindow::EditorWindow(
-    DocumentStorePtr store, EditorAppearance appearance,
+    DocumentStoreFactory storeFactory, EditorAppearance appearance,
     std::unique_ptr<FileSelectionAdapter> fileSelectionAdapter,
+    TextEditorRestorePolicy *restorePolicy, RestoreStateStore *restoreStore,
     QWidget *parent)
-    : QMainWindow(parent),
-      m_controller(new DocumentController(std::move(store), this)),
-      m_appearance(std::move(appearance)),
+    : QMainWindow(parent), m_appearance(std::move(appearance)),
       m_appShellBridge(fileSelectionAdapter
                            ? std::move(fileSelectionAdapter)
-                           : std::make_unique<NativeFileSelectionAdapter>(
-                                 this),
-                       this) {
+                           : std::make_unique<NativeFileSelectionAdapter>(this),
+                       this),
+      m_restorePolicy(restorePolicy), m_restoreStore(restoreStore) {
   setObjectName(QStringLiteral("qindaqtEditorWindow"));
   setAccessibleName(tr("QindaQt Text Editor"));
   resize(920, 680);
   setMinimumSize(420, 320);
+  setAcceptDrops(true);
+  setPalette(m_appearance.palette);
+  setFont(m_appearance.interfaceFont);
+
+  m_documents = new DocumentCollection(std::move(storeFactory), this);
   createCentralSurface();
+  connectCollection();
   createActions();
+  const AddDocumentResult initial = m_documents->addUntitled();
+  Q_ASSERT(initial.ok());
   createMenus();
   publishAppShellProjection();
-  connectState();
-  applyAppearance();
   updateDocumentPresentation();
-  m_editor->setFocus(Qt::OtherFocusReason);
+  connectRestorePolicy();
+  if (editor()) {
+    editor()->setFocus(Qt::OtherFocusReason);
+  }
 }
 
-DocumentController *EditorWindow::controller() const { return m_controller; }
-QPlainTextEdit *EditorWindow::editor() const { return m_editor; }
+DocumentController *EditorWindow::controller() const {
+  return m_documents->at(m_tabs->currentIndex());
+}
+
+QPlainTextEdit *EditorWindow::editor() const {
+  DocumentController *active = controller();
+  EditorDocumentView *view = m_views.value(active);
+  return view ? view->editor() : nullptr;
+}
+
 QindaQt::AppShell::ApplicationCoordinator &EditorWindow::appShellCoordinator() {
   return m_appShellBridge.coordinator();
 }
@@ -75,443 +88,284 @@ void EditorWindow::createCentralSurface() {
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  m_externalBanner = new QWidget(surface);
-  m_externalBanner->setObjectName(QStringLiteral("externalChangeBanner"));
-  m_externalBanner->setAccessibleName(tr("External file change warning"));
-  auto *bannerLayout = new QHBoxLayout(m_externalBanner);
-  bannerLayout->setContentsMargins(12, 8, 12, 8);
-  m_externalLabel = new QLabel(m_externalBanner);
-  m_externalLabel->setObjectName(QStringLiteral("externalChangeMessage"));
-  m_externalLabel->setWordWrap(true);
-  m_externalLabel->setAccessibleName(tr("External file status"));
-  m_reloadButton = new QPushButton(tr("&Reload"), m_externalBanner);
-  m_reloadButton->setObjectName(QStringLiteral("reloadExternalAction"));
-  m_reloadButton->setAccessibleName(tr("Reload file from disk"));
-  m_saveAsButton = new QPushButton(tr("Save &As…"), m_externalBanner);
-  m_saveAsButton->setObjectName(QStringLiteral("saveAsExternalAction"));
-  m_saveAsButton->setAccessibleName(
-      tr("Save this document under a different name"));
-  bannerLayout->addWidget(m_externalLabel, 1);
-  bannerLayout->addWidget(m_reloadButton);
-  bannerLayout->addWidget(m_saveAsButton);
-  m_externalBanner->hide();
-
-  m_editor = new QPlainTextEdit(surface);
-  m_editor->setObjectName(QStringLiteral("documentEditor"));
-  m_editor->setAccessibleName(tr("Document text"));
-  m_editor->setAccessibleDescription(
-      tr("Edit the current local UTF-8 plain-text document"));
-  m_editor->setTabChangesFocus(false);
-  m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
-  layout->addWidget(m_externalBanner);
-  layout->addWidget(m_editor, 1);
+  m_tabs = new QTabWidget(surface);
+  m_tabs->setObjectName(QStringLiteral("documentTabs"));
+  m_tabs->setTabsClosable(true);
+  m_tabs->setMovable(false);
+  m_tabs->setDocumentMode(true);
+  m_tabs->tabBar()->setAccessibleName(tr("Document tabs"));
+  m_tabs->tabBar()->setAccessibleDescription(
+      tr("Switch among open text documents"));
+  m_findBar = new FindReplaceBar(surface);
+  layout->addWidget(m_tabs, 1);
+  layout->addWidget(m_findBar);
   setCentralWidget(surface);
-  setTabOrder(m_editor, m_reloadButton);
-  setTabOrder(m_reloadButton, m_saveAsButton);
-  setTabOrder(m_saveAsButton, m_editor);
-
   statusBar()->setObjectName(QStringLiteral("editorStatusBar"));
+  statusBar()->setAccessibleName(tr("Editor status"));
   statusBar()->showMessage(tr("Ready"));
 }
 
-void EditorWindow::createActions() {
-  const auto addAction = [this](const QString &objectName, const QString &text,
-                                const QKeySequence::StandardKey key,
-                                const auto &handler) {
-    auto *action = new QAction(text, this);
-    action->setObjectName(objectName);
-    action->setShortcut(QKeySequence(key));
-    action->setShortcutContext(Qt::WindowShortcut);
-    connect(action, &QAction::triggered, this, handler);
-    return action;
-  };
-
-  m_actions.fileNew =
-      addAction(QStringLiteral("fileNewAction"), tr("&New"), QKeySequence::New,
-                [this] { newInteractively(); });
-  m_actions.fileOpen =
-      addAction(QStringLiteral("fileOpenAction"), tr("&Open…"),
-                QKeySequence::Open, [this] { openInteractively(); });
-  m_actions.fileSave =
-      addAction(QStringLiteral("fileSaveAction"), tr("&Save"),
-                QKeySequence::Save, [this] { (void)saveInteractively(); });
-  m_actions.fileSaveAs =
-      addAction(QStringLiteral("fileSaveAsAction"), tr("Save &As…"),
-                QKeySequence::SaveAs, [this] { (void)saveAsInteractively(); });
-  m_actions.fileQuit = addAction(QStringLiteral("fileQuitAction"), tr("&Quit"),
-                                 QKeySequence::Quit, [this] { close(); });
-
-  const auto addEditorAction =
-      [this](const QString &objectName, const QString &text,
-             const QKeySequence::StandardKey key, const auto &handler) {
-        auto *action = new QAction(text, this);
-        action->setObjectName(objectName);
-        action->setShortcut(QKeySequence(key));
-        action->setShortcutContext(Qt::WindowShortcut);
-        connect(action, &QAction::triggered, m_editor, handler);
-        return action;
-      };
-  m_actions.editUndo =
-      addEditorAction(QStringLiteral("editUndoAction"), tr("&Undo"),
-                      QKeySequence::Undo, &QPlainTextEdit::undo);
-  m_actions.editRedo =
-      addEditorAction(QStringLiteral("editRedoAction"), tr("&Redo"),
-                      QKeySequence::Redo, &QPlainTextEdit::redo);
-  m_actions.editCut =
-      addEditorAction(QStringLiteral("editCutAction"), tr("Cu&t"),
-                      QKeySequence::Cut, &QPlainTextEdit::cut);
-  m_actions.editCopy =
-      addEditorAction(QStringLiteral("editCopyAction"), tr("&Copy"),
-                      QKeySequence::Copy, &QPlainTextEdit::copy);
-  m_actions.editPaste =
-      addEditorAction(QStringLiteral("editPasteAction"), tr("&Paste"),
-                      QKeySequence::Paste, &QPlainTextEdit::paste);
-  m_actions.editSelectAll =
-      addEditorAction(QStringLiteral("editSelectAllAction"), tr("Select &All"),
-                      QKeySequence::SelectAll, &QPlainTextEdit::selectAll);
-
-  m_actions.editUndo->setEnabled(false);
-  m_actions.editRedo->setEnabled(false);
-  m_actions.editCut->setEnabled(false);
-  m_actions.editCopy->setEnabled(false);
-  m_actions.editPaste->setEnabled(m_editor->canPaste());
-  connect(m_editor, &QPlainTextEdit::undoAvailable, m_actions.editUndo,
-          &QAction::setEnabled);
-  connect(m_editor, &QPlainTextEdit::redoAvailable, m_actions.editRedo,
-          &QAction::setEnabled);
-  connect(m_editor, &QPlainTextEdit::copyAvailable, m_actions.editCut,
-          &QAction::setEnabled);
-  connect(m_editor, &QPlainTextEdit::copyAvailable, m_actions.editCopy,
-          &QAction::setEnabled);
-  connect(QApplication::clipboard(), &QClipboard::dataChanged,
-          m_actions.editPaste,
-          [this] { m_actions.editPaste->setEnabled(m_editor->canPaste()); });
-
-  m_appShellActionIds = {
-      {QString::fromLatin1(AppShellActionIds::FileNew), m_actions.fileNew},
-      {QString::fromLatin1(AppShellActionIds::FileOpen), m_actions.fileOpen},
-      {QString::fromLatin1(AppShellActionIds::FileSave), m_actions.fileSave},
-      {QString::fromLatin1(AppShellActionIds::FileSaveAs),
-       m_actions.fileSaveAs},
-      {QString::fromLatin1(AppShellActionIds::FileQuit), m_actions.fileQuit},
-      {QString::fromLatin1(AppShellActionIds::EditUndo), m_actions.editUndo},
-      {QString::fromLatin1(AppShellActionIds::EditRedo), m_actions.editRedo},
-      {QString::fromLatin1(AppShellActionIds::EditCut), m_actions.editCut},
-      {QString::fromLatin1(AppShellActionIds::EditCopy), m_actions.editCopy},
-      {QString::fromLatin1(AppShellActionIds::EditPaste),
-       m_actions.editPaste},
-      {QString::fromLatin1(AppShellActionIds::EditSelectAll),
-       m_actions.editSelectAll},
-  };
-}
-
-void EditorWindow::createMenus() {
-  auto *fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->setObjectName(QStringLiteral("fileMenu"));
-  fileMenu->addAction(m_actions.fileNew);
-  fileMenu->addAction(m_actions.fileOpen);
-  fileMenu->addSeparator();
-  fileMenu->addAction(m_actions.fileSave);
-  fileMenu->addAction(m_actions.fileSaveAs);
-  fileMenu->addSeparator();
-  fileMenu->addAction(m_actions.fileQuit);
-
-  auto *editMenu = menuBar()->addMenu(tr("&Edit"));
-  editMenu->setObjectName(QStringLiteral("editMenu"));
-  editMenu->addAction(m_actions.editUndo);
-  editMenu->addAction(m_actions.editRedo);
-  editMenu->addSeparator();
-  editMenu->addAction(m_actions.editCut);
-  editMenu->addAction(m_actions.editCopy);
-  editMenu->addAction(m_actions.editPaste);
-  editMenu->addSeparator();
-  editMenu->addAction(m_actions.editSelectAll);
-}
-
-void EditorWindow::publishAppShellProjection() {
-  // AGENT-GUARD: This must run after createActions() so the local QAction
-  // enabled states below are already settled, and before any presentation
-  // update runs, so the published snapshot never lags the visible menu.
-  const QindaQt::AppShell::Error published =
-      m_appShellBridge.publishActionCatalog();
-  Q_ASSERT(published.ok());
-  Q_UNUSED(published);
-  for (auto it = m_appShellActionIds.cbegin(); it != m_appShellActionIds.cend();
-       ++it) {
-    (void)m_appShellBridge.setActionEnabled(it.key(), it.value()->isEnabled());
-  }
-  m_appShellBridge.bindActivationTargets(m_appShellActionIds);
-}
-
-void EditorWindow::connectState() {
-  connect(
-      m_editor->document(), &QTextDocument::contentsChange, this,
-      [this](const int position, const int charsRemoved, const int charsAdded) {
-        if (m_replacingContents) {
-          return;
-        }
-        QTextCursor addedText(m_editor->document());
-        addedText.setPosition(position);
-        addedText.setPosition(position + charsAdded, QTextCursor::KeepAnchor);
-        QString insertedText = addedText.selectedText();
-        insertedText.replace(QChar::ParagraphSeparator, u'\n');
-        insertedText.replace(QChar::LineSeparator, u'\n');
-        m_controller->applyTextEdit(position, charsRemoved,
-                                    std::move(insertedText));
-      });
-  connect(m_controller, &DocumentController::contentsReplacementRequested, this,
-          [this](const QString &text) {
-            m_replacingContents = true;
-            m_editor->setPlainText(text);
-            m_editor->document()->setModified(false);
-            m_replacingContents = false;
-            m_editor->moveCursor(QTextCursor::Start);
-            m_editor->setFocus(Qt::OtherFocusReason);
-          });
-  connect(m_controller, &DocumentController::stateChanged, this,
-          &EditorWindow::updateDocumentPresentation);
-  connect(m_controller, &DocumentController::externalStateChanged, this,
-          &EditorWindow::announceExternalState);
-  connect(m_reloadButton, &QPushButton::clicked, this,
-          &EditorWindow::reloadInteractively);
-  connect(m_saveAsButton, &QPushButton::clicked, this,
-          [this] { (void)saveAsInteractively(); });
-
-  for (auto it = m_appShellActionIds.cbegin(); it != m_appShellActionIds.cend();
-       ++it) {
-    connect(it.value(), &QAction::enabledChanged, this,
-            [this, id = it.key()](bool enabled) {
-              (void)m_appShellBridge.setActionEnabled(id, enabled);
-            });
-  }
+void EditorWindow::connectCollection() {
+  connect(m_documents, &DocumentCollection::documentAdded, this,
+          &EditorWindow::addDocumentView);
+  connect(m_documents, &DocumentCollection::documentAboutToRemove, this,
+          &EditorWindow::removeDocumentView);
+  connect(m_documents, &DocumentCollection::documentsChanged, this,
+          &EditorWindow::persistRestoreState);
+  connect(m_tabs, &QTabWidget::currentChanged, this, [this] {
+    updateDocumentPresentation();
+    persistRestoreState();
+    if (editor()) {
+      editor()->setFocus(Qt::TabFocusReason);
+    }
+  });
+  connect(m_tabs, &QTabWidget::tabCloseRequested, this,
+          &EditorWindow::closeTab);
+  connect(m_findBar, &FindReplaceBar::closed, this, [this] {
+    if (editor()) {
+      editor()->setFocus(Qt::ShortcutFocusReason);
+    }
+    updateActionStates();
+  });
   connect(&m_appShellBridge.coordinator(),
           &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
           this, [this](quint64 requestId, const QString &) {
             (void)m_appShellBridge.coordinator().resolveQuit(
-                requestId,
-                confirmDiscardOrSave() == PendingAction::Continue);
+                requestId, confirmWindowClose() == PendingAction::Continue);
           });
   connect(&m_appShellBridge.coordinator(),
           &QindaQt::AppShell::ApplicationCoordinator::quitApproved, this,
-          [this](quint64) { m_pendingCloseApproved = true; });
+          [this](quint64) {
+            persistRestoreState();
+            m_pendingCloseApproved = true;
+          });
 }
 
-void EditorWindow::applyAppearance() {
-  setPalette(m_appearance.palette);
-  setFont(m_appearance.interfaceFont);
-  m_editor->setFont(m_appearance.editorFont);
+void EditorWindow::addDocumentView(DocumentController *controller,
+                                   const int index) {
+  auto *view = new EditorDocumentView(controller, m_appearance, m_tabs);
+  m_views.insert(controller, view);
+  m_tabs->insertTab(index, view, tr("Untitled"));
+  connect(view, &EditorDocumentView::presentationChanged, this,
+          [this, controller] { updateDocumentPresentation(controller); });
+  connect(view, &EditorDocumentView::reloadRequested, this, [this, controller] {
+    reloadInteractively(m_documents->indexOf(controller));
+  });
+  connect(view, &EditorDocumentView::saveAsRequested, this, [this, controller] {
+    (void)saveDocumentAs(m_documents->indexOf(controller));
+  });
+  connect(view->editor(), &QPlainTextEdit::undoAvailable, this,
+          [this] { updateActionStates(); });
+  connect(view->editor(), &QPlainTextEdit::redoAvailable, this,
+          [this] { updateActionStates(); });
+  connect(view->editor(), &QPlainTextEdit::copyAvailable, this,
+          [this] { updateActionStates(); });
+  m_tabs->setCurrentIndex(index);
+  updateDocumentPresentation(controller);
 }
 
-void EditorWindow::applyExternalBannerAppearance(const ExternalState state) {
-  const bool warning = state == ExternalState::Changed;
-  const QColor background =
-      warning ? m_appearance.warningBackground : m_appearance.dangerBackground;
-  const QColor foreground =
-      warning ? m_appearance.warningForeground : m_appearance.dangerForeground;
-  m_externalBanner->setStyleSheet(
-      QStringLiteral("#externalChangeBanner { background: %1; border-bottom: "
-                     "1px solid %2; }"
-                     "#externalChangeMessage { color: %3; }"
-                     "#externalChangeBanner QPushButton:focus { border: 2px "
-                     "solid %4; border-radius: %5px; }")
-          .arg(colorCss(background), colorCss(foreground), colorCss(foreground),
-               colorCss(m_appearance.focusRing),
-               QString::number(m_appearance.mediumRadius)));
-}
-
-void EditorWindow::updateDocumentPresentation() {
-  const DocumentState &state = m_controller->state();
-  const QString name =
-      state.isUntitled() ? tr("Untitled") : QFileInfo(state.path()).fileName();
-  setWindowTitle(tr("%1[*] — QindaQt Text Editor").arg(name));
-  setWindowFilePath(state.path());
-  setWindowModified(state.isDirty());
-  m_editor->document()->setModified(state.isDirty());
-  m_actions.fileSave->setEnabled(state.isDirty());
-  updateExternalBanner(state.externalState());
-  if (state.externalState() == ExternalState::Changed) {
-    statusBar()->showMessage(tr("File changed outside the editor"));
-  } else if (state.externalState() == ExternalState::Missing) {
-    statusBar()->showMessage(tr("File was removed outside the editor"));
-  } else if (state.externalState() == ExternalState::Unreadable) {
-    statusBar()->showMessage(tr("File can no longer be checked"));
-  } else if (state.isDirty()) {
-    statusBar()->showMessage(tr("Modified"));
-  } else if (state.isUntitled()) {
-    statusBar()->showMessage(tr("Ready"));
-  } else {
-    statusBar()->showMessage(tr("Saved"));
+void EditorWindow::removeDocumentView(DocumentController *controller,
+                                      const int index) {
+  EditorDocumentView *view = m_views.take(controller);
+  if (index >= 0 && index < m_tabs->count()) {
+    m_tabs->removeTab(index);
   }
+  delete view;
 }
 
-void EditorWindow::updateExternalBanner(const ExternalState state) {
-  if (m_renderedExternalState == state) {
-    return;
-  }
-  m_renderedExternalState = state;
-
-  QString text;
-  switch (state) {
-  case ExternalState::InSync: {
-    QWidget *focused = QApplication::focusWidget();
-    const bool recoveryHadFocus =
-        focused != nullptr && (focused == m_externalBanner ||
-                               m_externalBanner->isAncestorOf(focused));
-    m_externalBanner->hide();
-    if (recoveryHadFocus) {
-      m_editor->setFocus(Qt::OtherFocusReason);
+void EditorWindow::updateDocumentPresentation(DocumentController *changed) {
+  if (changed) {
+    const int index = m_documents->indexOf(changed);
+    if (index >= 0) {
+      const QString raw = changed->state().isUntitled()
+                              ? tr("Untitled")
+                              : QFileInfo(changed->state().path()).fileName();
+      QString title = sanitizeDocumentTitle(raw);
+      if (title.isEmpty()) {
+        title = tr("Untitled");
+      }
+      if (changed->state().isDirty()) {
+        title.append(QLatin1Char('*'));
+      }
+      m_tabs->setTabText(index, title);
+      m_tabs->setTabToolTip(index, changed->state().path());
     }
+  } else {
+    for (int index = 0; index < m_documents->count(); ++index) {
+      updateDocumentPresentation(m_documents->at(index));
+    }
+  }
+
+  DocumentController *active = controller();
+  EditorDocumentView *view = m_views.value(active);
+  if (!active || !view) {
     return;
   }
-  case ExternalState::Changed:
-    text = tr("Warning: This file changed outside QindaQt Text Editor. Reload "
-              "it or save your text under a different name.");
-    break;
-  case ExternalState::Missing:
-    text = tr("Error: This file was removed outside QindaQt Text Editor. Save "
-              "your text under a different name.");
-    break;
-  case ExternalState::Unreadable:
-    text = tr("Error: This file can no longer be checked. Saving over it is "
-              "blocked; use Save As.");
-    break;
+  QString name = m_tabs->tabText(m_tabs->currentIndex());
+  if (name.endsWith(QLatin1Char('*'))) {
+    name.chop(1);
   }
-  applyExternalBannerAppearance(state);
-  m_externalLabel->setText(text);
-  m_externalLabel->setAccessibleDescription(text);
-  m_reloadButton->setEnabled(state == ExternalState::Changed);
-  m_externalBanner->show();
+  setWindowTitle(tr("%1[*] — QindaQt Text Editor").arg(name));
+  setWindowFilePath(active->state().path());
+  setWindowModified(active->state().isDirty());
+  statusBar()->showMessage(view->statusText());
+  updateActionStates();
 }
 
-void EditorWindow::announceExternalState(const ExternalState state) {
-  if (state == ExternalState::InSync) {
-    return;
-  }
-  QAccessibleAnnouncementEvent event(m_externalLabel, m_externalLabel->text());
-  event.setPoliteness(QAccessible::AnnouncementPoliteness::Assertive);
-  QAccessible::updateAccessibility(&event);
-}
-
-EditorWindow::PendingAction EditorWindow::confirmDiscardOrSave() {
-  if (!m_controller->state().isDirty()) {
+EditorWindow::PendingAction
+EditorWindow::confirmDocumentClose(const int index) {
+  DocumentController *document = m_documents->at(index);
+  if (!document || !document->state().isDirty()) {
     return PendingAction::Continue;
   }
   const QMessageBox::StandardButton choice = QMessageBox::warning(
-      this, tr("Unsaved changes"), tr("Save changes before continuing?"),
+      this, tr("Unsaved changes"), tr("Save this document before closing it?"),
       QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
       QMessageBox::Save);
-  if (choice == QMessageBox::Cancel) {
-    return PendingAction::Cancel;
-  }
-  if (choice == QMessageBox::Save && !saveInteractively()) {
+  if (choice == QMessageBox::Cancel ||
+      (choice == QMessageBox::Save && !saveDocument(index))) {
     return PendingAction::Cancel;
   }
   return PendingAction::Continue;
 }
 
-bool EditorWindow::saveInteractively() {
-  if (m_controller->state().isUntitled()) {
-    return saveAsInteractively();
+EditorWindow::PendingAction EditorWindow::confirmWindowClose() {
+  QList<DocumentController *> docs;
+  bool anyDirty = false;
+  for (int index = 0; index < m_documents->count(); ++index) {
+    docs.append(m_documents->at(index));
+    anyDirty = anyDirty || m_documents->at(index)->state().isDirty();
   }
-  const DocumentOperation result = m_controller->save();
-  if (!result.ok()) {
-    showOperationError(result.error == DocumentError::ExternalConflict
-                           ? tr("File changed outside the editor")
-                           : tr("Could not save document"),
-                       result);
-    return false;
+  if (!anyDirty) {
+    return PendingAction::Continue;
   }
-  return true;
+
+  QMessageBox prompt(QMessageBox::Warning, tr("Unsaved documents"),
+                     tr("Save changes to these documents before closing?\n%1")
+                         .arg(boundedDirtyDocumentSummary(docs)),
+                     QMessageBox::NoButton, this);
+  QAbstractButton *saveAll =
+      prompt.addButton(tr("Save All"), QMessageBox::AcceptRole);
+  QAbstractButton *discardAll =
+      prompt.addButton(tr("Discard All"), QMessageBox::DestructiveRole);
+  QAbstractButton *cancel = prompt.addButton(QMessageBox::Cancel);
+  prompt.setDefaultButton(qobject_cast<QPushButton *>(saveAll));
+  prompt.exec();
+  CloseChoice choice = CloseChoice::Cancel;
+  if (prompt.clickedButton() == saveAll) {
+    choice = CloseChoice::SaveAll;
+  } else if (prompt.clickedButton() == discardAll) {
+    choice = CloseChoice::DiscardAll;
+  } else if (prompt.clickedButton() != cancel) {
+    return PendingAction::Cancel;
+  }
+  const ClosePlan plan = makeClosePlan(docs, choice);
+  if (!plan.proceed) {
+    return PendingAction::Cancel;
+  }
+  for (const int index : plan.saveIndexes) {
+    if (!saveDocument(index)) {
+      return PendingAction::Cancel;
+    }
+  }
+  return PendingAction::Continue;
 }
 
-bool EditorWindow::saveAsInteractively() {
-  // AGENT-CONTRACT: File selection is mediated by AppShell's fail-closed
-  // portal request (docs/wiki/apps/application-shell.md), so the suggested
-  // name is a bare base name rather than a full initial path.
-  const QString suggestedName =
-      m_controller->state().isUntitled()
-          ? QString()
-          : QFileInfo(m_controller->state().path()).fileName();
-  const std::optional<QString> path =
-      m_appShellBridge.requestSaveFile(suggestedName);
-  if (!path) {
-    return false;
+void EditorWindow::closeTab(const int index) {
+  if (confirmDocumentClose(index) == PendingAction::Cancel) {
+    return;
   }
+  (void)m_documents->removeAt(index);
+  if (m_documents->count() == 0) {
+    (void)m_documents->addUntitled();
+  }
+}
 
-  DocumentOperation result = m_controller->saveAs(*path, false);
-  if (result.error == DocumentError::DestinationExists) {
-    const auto answer = QMessageBox::question(
-        this, tr("Replace existing file?"),
-        tr("A file with this name already exists. Replace its contents?"),
-        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-    if (answer != QMessageBox::Yes) {
+bool EditorWindow::addPath(const QString &path, QString *diagnostic) {
+  const int existing = m_documents->indexOfPath(path);
+  if (existing >= 0) {
+    selectTab(existing);
+    return true;
+  }
+  DocumentController *initial =
+      m_documents->count() == 1 ? m_documents->at(0) : nullptr;
+  if (initial && initial->state().isUntitled() && !initial->state().isDirty()) {
+    const DocumentOperation opened = initial->openPath(path);
+    if (!opened.ok()) {
+      if (diagnostic) {
+        *diagnostic = opened.diagnostic.left(512);
+      }
       return false;
     }
-    result = m_controller->saveAs(*path, true);
+    updateDocumentPresentation(initial);
+    return true;
   }
+  const AddDocumentResult result = m_documents->openPath(path);
   if (!result.ok()) {
-    showOperationError(tr("Could not save document"), result);
+    if (diagnostic) {
+      *diagnostic = result.operation.diagnostic.left(512);
+    }
     return false;
   }
+  selectTab(result.index);
   return true;
 }
 
-void EditorWindow::openInteractively() {
-  if (confirmDiscardOrSave() == PendingAction::Cancel) {
-    return;
+bool EditorWindow::openDocuments(const QStringList &paths,
+                                 QString *diagnostic) {
+  m_explicitStartupPaths = true;
+  bool complete = true;
+  for (const QString &path : paths) {
+    QString currentDiagnostic;
+    if (!addPath(path, &currentDiagnostic)) {
+      if (complete && diagnostic) {
+        *diagnostic = currentDiagnostic;
+      }
+      complete = false;
+    }
   }
-  const std::optional<QString> path = m_appShellBridge.requestOpenFile();
-  if (!path) {
-    return;
-  }
-  const DocumentOperation result = m_controller->openPath(*path);
-  if (!result.ok()) {
-    showOperationError(tr("Could not open document"), result);
+  persistRestoreState();
+  return complete;
+}
+
+void EditorWindow::dragEnterEvent(QDragEnterEvent *event) {
+  if (event->mimeData()->hasUrls()) {
+    const QList<QUrl> urls = event->mimeData()->urls();
+    const bool localAndBounded =
+        urls.size() <= DocumentCollection::maximumDocuments &&
+        std::all_of(urls.cbegin(), urls.cend(),
+                    [](const QUrl &url) { return url.isLocalFile(); });
+    if (localAndBounded) {
+      event->acceptProposedAction();
+    }
   }
 }
 
-void EditorWindow::newInteractively() {
-  if (confirmDiscardOrSave() == PendingAction::Continue) {
-    m_controller->newDocument();
+void EditorWindow::dropEvent(QDropEvent *event) {
+  QStringList paths;
+  for (const QUrl &url : event->mimeData()->urls()) {
+    if (!url.isLocalFile() ||
+        paths.size() >= DocumentCollection::maximumDocuments) {
+      event->ignore();
+      return;
+    }
+    paths.append(url.toLocalFile());
   }
-}
-
-void EditorWindow::reloadInteractively() {
-  if (confirmDiscardOrSave() == PendingAction::Cancel) {
-    return;
+  QString diagnostic;
+  if (!openDocuments(paths, &diagnostic)) {
+    announceStatus(diagnostic);
   }
-  const DocumentOperation result =
-      m_controller->openPath(m_controller->state().path());
-  if (!result.ok()) {
-    showOperationError(tr("Could not reload document"), result);
-  }
-}
-
-void EditorWindow::showOperationError(const QString &title,
-                                      const DocumentOperation &result) {
-  QMessageBox::critical(this, title,
-                        result.diagnostic.isEmpty() ? tr("The operation failed")
-                                                    : result.diagnostic);
+  event->acceptProposedAction();
 }
 
 void EditorWindow::closeEvent(QCloseEvent *event) {
-  // AGENT-GUARD: Close consent is mediated by AppShell's quit lifecycle
-  // (docs/wiki/apps/application-shell.md). requestQuit() synchronously emits
-  // quitDecisionRequested, whose connectState() handler runs
-  // confirmDiscardOrSave() and calls resolveQuit() before requestQuit()
-  // returns here — that nested resolveQuit() already clears the
-  // coordinator's pending ID, so requestQuit()'s own return value is stale
-  // by the time we see it and must not be used as the approval signal. Read
-  // the decision only from m_pendingCloseApproved, set by the quitApproved
-  // handler below.
+  // AGENT-GUARD: AppShell's exact quit ID is the only close authority. The
+  // synchronous application decision may clear the coordinator request before
+  // requestQuit returns, so approval is read only from quitApproved.
   m_pendingCloseApproved = false;
   (void)m_appShellBridge.coordinator().requestQuit(
       QStringLiteral("window-close"));
-  if (m_pendingCloseApproved) {
-    event->accept();
-  } else {
-    event->ignore();
-  }
+  m_pendingCloseApproved ? event->accept() : event->ignore();
 }
 
 void EditorWindow::paintEvent(QPaintEvent *event) {
@@ -520,6 +374,14 @@ void EditorWindow::paintEvent(QPaintEvent *event) {
     m_firstFramePublished = true;
     emit firstFramePainted();
   }
+}
+
+void EditorWindow::announceStatus(const QString &message) {
+  const QString bounded = message.left(512);
+  statusBar()->showMessage(bounded);
+  QAccessibleAnnouncementEvent event(statusBar(), bounded);
+  event.setPoliteness(QAccessible::AnnouncementPoliteness::Polite);
+  QAccessible::updateAccessibility(&event);
 }
 
 } // namespace QindaQt::Apps::TextEditor

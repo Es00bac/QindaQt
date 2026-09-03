@@ -2295,6 +2295,32 @@ The selector does not contact an ambient system/session bus, the host
 session. It proves only the injected adapter and package contracts; physical
 battery/backlight behavior and suspend/resume remain hardware evidence.
 
+## Text Editor S2 focused proof
+
+The `^qindaqt\.editor-` selector is a process-local proof for Text Editor's
+multi-document, find/replace, restore-policy, packaging, and retained S1
+persistence contracts. Every row receives HOME, XDG state/data, and TMPDIR
+beneath the configured build tree, empty display/session-bus variables, and a
+nonexistent system-bus address. Qt presentation rows use only the offscreen
+platform; file selection and Settings1 are injected fakes or disconnected
+transports.
+
+The selector includes independent tab state/undo and canonical duplicate-path
+coverage; bounded dirty summaries and sanitized tab labels; AppShell action
+IDs and tab shortcuts; literal, whole-word, case, wrap, no-match, hostile-regex,
+and one-step Replace All behavior; exact paths-only atomic restore files with
+malformed, oversize, final-symlink, and symlinked-ancestor rejection; Settings1
+baseline loss, conflict, fresh confirmation, and no-replay uncertainty; `%F`
+desktop metadata; bounded multi-path/hostile CLI probes; source-boundary poison;
+and installed-prefix theme/startup/PSS evidence. All rows that launch offscreen
+Qt register `QT_FATAL_WARNINGS=1`, including the two CLI scripts and installed
+package probe; a dedicated registry-policy row prevents those properties from
+silently regressing.
+
+These rows do not start a compositor, use a host chooser, contact an ambient
+bus, synthesize input, qualify a real portal/global menu, capture screenshots,
+or claim whole-application assistive-technology coverage.
+
 ## Required display matrix
 
 Single-output scenarios cover:
