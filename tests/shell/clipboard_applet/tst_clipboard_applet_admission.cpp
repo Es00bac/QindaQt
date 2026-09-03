@@ -335,9 +335,9 @@ void TstClipboardAppletAdmission::testGenerationCeilingExhaustionRecoversOnFresh
 {
     // A purge at UINT32_MAX cannot advance generation. It is valid C0 truth,
     // but it also proves that this owner's model refuses all later content
-    // operations. The applet reports that typed condition until a fresh owner
-    // supplies its mandatory empty baseline; it must not latch invalid-snapshot
-    // forever across the owner re-bind.
+    // operations. The privacy-denied phase owns presentation until authority
+    // returns; only then does the applet report the typed terminal condition.
+    // A fresh owner's mandatory empty baseline must clear that state.
     AdmissionFakeClient client;
     client.current = floorValidSnapshot(
         std::numeric_limits<quint32>::max(), 1, QStringLiteral("before-ceiling-purge"), 10);
@@ -350,10 +350,16 @@ void TstClipboardAppletAdmission::testGenerationCeilingExhaustionRecoversOnFresh
     purged.historyEnabled = true;
     purged.privacyAllowed = false;
     client.publishSnapshot(purged);
+    QCOMPARE(controller.phaseText(), QStringLiteral("locked"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard history is withheld by privacy policy."));
+    QCOMPARE(controller.entryCount(), 0);
+
+    purged.privacyAllowed = true;
+    client.publishSnapshot(purged);
     QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
     QCOMPARE(controller.phaseReasonText(),
              QStringLiteral("Clipboard service unavailable: lineage-exhausted-restart-required"));
-    QCOMPARE(controller.entryCount(), 0);
 
     client.publishState(ClientState::Unavailable, false, QStringLiteral("owner-A"));
     client.publishState(ClientState::Ready, true, QStringLiteral("owner-B"));

@@ -211,12 +211,15 @@ void ClipboardAppletController::reproject()
         // until a fresh valid snapshot is accepted.
         state = ClientState::Unavailable;
         reason = QStringLiteral("invalid-snapshot");
-    } else if (m_lineageExhausted && !locked) {
+    } else if (m_lineageExhausted && !locked
+               && m_snapshot.privacyAllowed && m_snapshot.historyEnabled) {
         // A valid purge at UINT32_MAX leaves C0 unable to admit, promote,
         // remove, pin, clear, or search for this model lifetime. Do not call
-        // that valid terminal state an invalid snapshot, and do not present
-        // active controls that can only fail. Owner replacement resets this
-        // latch through dropAcceptedBaseline().
+        // that valid terminal state an invalid snapshot. AGENT-GUARD: privacy
+        // or history denial still owns its registered phase while authority
+        // is absent; restart-required becomes presentable only after every
+        // authority returns. Owner replacement resets this latch through
+        // dropAcceptedBaseline().
         state = ClientState::Unavailable;
         reason = QStringLiteral("lineage-exhausted-restart-required");
     } else if (!m_hasBaseline && ownerAvailable

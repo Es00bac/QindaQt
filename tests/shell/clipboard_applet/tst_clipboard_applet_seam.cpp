@@ -18,6 +18,7 @@ private Q_SLOTS:
     void testFailClosedLocking();
     void testLockPurgesContentAndFencesGeneration();
     void testLockPurgeAtGenerationCeilingIsValidButRequiresRestart();
+    void testHostPrivacyPurgeAtGenerationCeilingPreservesDeniedPhase();
     void testIndependentHostDenialSurvivesUnlock();
     void testOverlappingHostDenialDuringLockSurvivesUnlock();
     void testSearchThroughSeam();
@@ -169,6 +170,47 @@ void TstClipboardAppletSeam::testLockPurgeAtGenerationCeilingIsValidButRequiresR
     const auto afterPurge = model.admit(
         value, counters.generation, QStringLiteral("App"), 101);
     QCOMPARE(afterPurge.error, ClipboardError::LineageExhausted);
+}
+
+void TstClipboardAppletSeam::testHostPrivacyPurgeAtGenerationCeilingPreservesDeniedPhase()
+{
+    // AGENT-NOTE (P2-1 fifth-round regression): 28308f0 let the terminal
+    // exhaustion latch outrank C0's independent privacy-authority bit. The
+    // registered privacy-denied phase must remain visible until that authority
+    // returns; only then does restart-required exhaustion become actionable.
+    const HistoryCounters counters {
+        std::numeric_limits<quint32>::max(), 1, 9
+    };
+    ClipboardHistoryModel model(HistoryLimits {}, counters);
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue value;
+    value.formats = { { QStringLiteral("text/plain"), "host-denial-secret" } };
+    const auto admitted = model.admit(
+        value, counters.generation, QStringLiteral("App"), 100);
+    QVERIFY(admitted.accepted());
+
+    ClipboardModelClientAdapter adapter(&model);
+    ClipboardAppletController controller(&adapter, true, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 1);
+
+    adapter.setHostPrivacyDenied(true);
+    QCOMPARE(adapter.isLocked(), false);
+    QCOMPARE(model.generation(), std::numeric_limits<quint32>::max());
+    QCOMPARE(model.revision(), quint64(10));
+    QVERIFY(model.snapshot().entries.isEmpty());
+    QCOMPARE(controller.phaseText(), QStringLiteral("locked"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard history is withheld by privacy policy."));
+    QCOMPARE(controller.entryCount(), 0);
+
+    adapter.setHostPrivacyDenied(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Allowed);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: lineage-exhausted-restart-required"));
 }
 
 void TstClipboardAppletSeam::testIndependentHostDenialSurvivesUnlock()
