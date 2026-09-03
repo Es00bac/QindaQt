@@ -36,9 +36,9 @@
       "id": "kimi",
       "name": "Moonshot Kimi",
       "status": "unavailable",
-      "updatedAt": "2026-09-02T22:58:21-06:00",
-      "estimatedReturnAt": "2026-09-03T01:40:00-06:00",
-      "evidence": "kimi-code reported `provider.auth_error: 403 You have reached your 5-hour usage limit` at 22:57 MDT; the window opened about 20:40 MDT, so the reset is estimated at 01:40 MDT. Dirty Kimi trees are preserved as WIP commits; reviews move to Codex, product lanes wait for the reset."
+      "updatedAt": "2026-09-03T01:47:08-06:00",
+      "estimatedReturnAt": "2026-09-03T02:20:00-06:00",
+      "evidence": "Direct probe at 01:46 MDT still returned `provider.auth_error: 403 5-hour usage limit`; next probe 02:20 MDT. Paused Kimi lanes (task-list, tray, clipboard-applet repair, font-discovery) keep their preserved WIP."
     }
   ]
 }
