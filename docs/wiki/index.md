@@ -166,6 +166,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Power route](apps/power-settings.md) documents bounded supply,
   profile/hold, and brightness truth, exact-lineage admission and convergence,
   keyboard-slider debounce, and the explicit session-action boundary.
+- [Settings Color route](apps/color-settings.md) documents the per-display
+  ICC assignment surface: Display1 inventory, C1 discovery/import catalog,
+  Settings1 draft/apply truth with conflict/no-replay fencing, and the
+  explicit compositor-application boundary.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering

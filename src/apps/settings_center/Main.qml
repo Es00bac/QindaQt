@@ -12,6 +12,8 @@ import QindaQt.SettingsApp.Audio
 import QindaQt.SettingsApp.Bluetooth
 import QindaQt.SettingsApp.Power
 import QindaQt.SettingsApp.PowerBackend
+import QindaQt.SettingsApp.Color
+import QindaQt.SettingsApp.ColorBackend
 
 T.ApplicationWindow {
     id: root
@@ -25,6 +27,7 @@ T.ApplicationWindow {
     property var audioSettings: null
     property var bluetoothSettings: null
     property var powerSettings: PowerRouteComposition.model
+    property var colorSettings: ColorRouteComposition.model
     property bool applicationClosePending: false
     property bool bluetoothClosePending: false
 
@@ -94,10 +97,18 @@ T.ApplicationWindow {
         onActivated: root.navigation.selectRoute("power")
     }
 
+    Shortcut {
+        sequence: "Ctrl+0"
+        onActivated: root.navigation.selectRoute("color")
+    }
+
     Component.onCompleted: {
         if (root.bluetoothSettings !== null)
             root.bluetoothSettings.setRouteActive(
                         root.navigation.activeRouteComponent === "bluetooth")
+        if (root.colorSettings !== null)
+            root.colorSettings.setRouteActive(
+                        root.navigation.activeRouteComponent === "color")
     }
 
     Connections {
@@ -106,6 +117,9 @@ T.ApplicationWindow {
             if (root.bluetoothSettings !== null)
                 root.bluetoothSettings.setRouteActive(
                             root.navigation.activeRouteComponent === "bluetooth")
+            if (root.colorSettings !== null)
+                root.colorSettings.setRouteActive(
+                            root.navigation.activeRouteComponent === "color")
         }
     }
 
@@ -177,6 +191,7 @@ T.ApplicationWindow {
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
+            colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
@@ -184,6 +199,7 @@ T.ApplicationWindow {
             audioComponent: audioRouteComponent
             bluetoothComponent: bluetoothRouteComponent
             powerComponent: powerRouteComponent
+            colorComponent: colorRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -219,6 +235,7 @@ T.ApplicationWindow {
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
+            colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
@@ -226,6 +243,7 @@ T.ApplicationWindow {
             audioComponent: audioRouteComponent
             bluetoothComponent: bluetoothRouteComponent
             powerComponent: powerRouteComponent
+            colorComponent: colorRouteComponent
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -290,6 +308,15 @@ T.ApplicationWindow {
         PowerPage {
             objectName: "powerPage"
             powerSettings: root.powerSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: colorRouteComponent
+        ColorPage {
+            objectName: "colorPage"
+            colorSettings: root.colorSettings
             onCloseRequested: root.close()
         }
     }

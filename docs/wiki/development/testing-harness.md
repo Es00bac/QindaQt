@@ -1171,12 +1171,52 @@ outside the named composition, and session actions. The installed row withholds
 the staged Power module while the developer module remains present, then proves
 the restored relocated route with both host buses unavailable.
 
-The Settings Center selector adds deterministic eight-route order, Ctrl+8,
+The Settings Center selector adds deterministic route order, Ctrl+8,
 Power PageTab accessibility, Escape/Tab entry, exclusive wide/compact Loaders,
 canonical construction, and the common relocated package. No selector contacts
 UPower, power-profiles-daemon, logind, sysfs, Wayland, a host bus, or hardware.
 Session actions, internal-display mutation, live AT-SPI, and nested desktop
 screenshots remain outside this proof.
+
+## Current Color Settings route proof
+
+The public-boundary model, apply fencing, warning-fatal page, hostile
+boundary, and relocated package are selected with:
+
+```sh
+env -u DBUS_SESSION_BUS_ADDRESS \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev -R '^qindaqt\.settings-color-' \
+  --output-on-failure --no-tests=error
+```
+
+The seven rows use injected fake Display1/Settings1 transports and temporary
+discovery roots only. The model row proves output/assignment/catalog
+projection, exact owner/epoch/revision admission, unusable-document and
+stale-retained closure, selection fencing across hotplug, disconnected-record
+read-only truth, and the absence of compositor-application invokables. The
+apply row proves fenced draft dispatch, no-op refusal, conflict and uncertain
+outcomes without replay, in-flight fencing, owner replacement, and the C1
+import refresh and typed rejections. The page row runs with
+`QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320 compact software scenes and
+checks accessible role/state/name truth, disabled controls, action wiring,
+the compositor-application disclosure, and always-admitted host-entry
+targets. The navigation-page row drives the real Settings Center host under
+`QT_FATAL_WARNINGS=1` in both layouts: Ctrl+0 selection, Color PageTab
+accessibility, Escape/Tab entry, and exclusive wide/compact Color Loaders.
+The allow-list boundary scan and independent negative controls
+reject compositor symbols, system color daemons, private Display service
+headers, sibling application internals, and direct D-Bus outside the named
+composition root. The installed row stages the real runtime, requires failure
+while the installed Color module is withheld despite the developer tree, then
+launches the relocated route after restoration.
+
+The Settings Center registry/controller rows add deterministic nine-route
+order, canonical construction, and the common relocated package. No
+selector contacts a host bus, a host display, a real ICC directory, Wayland,
+or hardware. Compositor/display profile application, colord integration,
+HDR/WCG runtime behavior, live AT-SPI, and nested desktop screenshots remain
+outside this proof.
 
 ## Current Settings Center navigation S1 proof
 
@@ -1195,17 +1235,17 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all eight route roots under private-bus loss,
+forms, desktop identity, all nine route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,
-reinstalls the runtime component, and only then proves all eight complete
+reinstalls the runtime component, and only then proves all nine complete
 routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. Settings1 route models use independent transports, while Network,
-Audio, Bluetooth, and Power use their distinct public service clients. Focused construction
+Audio, Bluetooth, Power, and Color use their distinct public service clients. Focused construction
 rows prove unavailable startup surfaces; public client suites remain
 authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,

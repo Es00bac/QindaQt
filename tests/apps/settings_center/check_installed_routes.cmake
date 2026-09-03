@@ -117,6 +117,16 @@ if(NOT power_in_stage OR NOT IS_DIRECTORY "${power_module}")
         "${power_module}")
 endif()
 
+set(color_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Color")
+cmake_path(NORMAL_PATH color_module OUTPUT_VARIABLE color_module)
+cmake_path(IS_PREFIX install_prefix "${color_module}" NORMALIZE color_in_stage)
+if(NOT color_in_stage OR NOT IS_DIRECTORY "${color_module}")
+    message(FATAL_ERROR
+        "installed Settings Color module is missing or outside stage: "
+        "${color_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")

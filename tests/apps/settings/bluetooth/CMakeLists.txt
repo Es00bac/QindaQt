@@ -94,10 +94,13 @@ target_link_libraries(
     qindaqt_settings_network_qml qindaqt_settings_customize_qml
     qindaqt_settings_customize_qmlplugin qindaqt_settings_bluetooth
     qindaqt_settings_bluetooth_qml
-    # AGENT-NOTE: Main.qml imports every route module; the Power backend
-    # module is static, so any in-process Main.qml host must link it.
+    # AGENT-NOTE: Main.qml imports every route module; the Power and Color
+    # backend modules are static, so any in-process Main.qml host must link
+    # them.
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
+    qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
     qindaqt_themes Qt6::Quick Qt6::Test
 )
@@ -107,6 +110,7 @@ add_dependencies(
     qindaqt_settings_network_qmlplugin
     qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_customize_qmlplugin
     qindaqt_settings_audio_qmlplugin qindaqt_settings_power_qmlplugin
+    qindaqt_settings_color_qmlplugin
     qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_window_close_tests)

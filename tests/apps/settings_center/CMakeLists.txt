@@ -63,6 +63,8 @@ target_link_libraries(
     qindaqt_settings_power
     qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
+    qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -89,6 +91,8 @@ add_dependencies(
     qindaqt_settings_bluetooth_qml qindaqt_settings_bluetooth_qmlplugin
     qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin
+    qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_color_qml qindaqt_settings_color_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
