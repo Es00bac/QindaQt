@@ -54,10 +54,10 @@ accepted and rejected targets for assistive technology. No application
 departure discards silently: dirty profile selection is rejected, while the
 route Close action, the platform Quit shortcut, title-bar close, or selecting
 another Settings route opens the same modal discard confirmation. Cancelling
-that prompt keeps the window open and returns navigation to Customize. Crossing
-the responsive host threshold while a navigation decision is pending
-reconstructs the prompt in the active host; resizing cannot accept or discard
-the draft.
+that prompt keeps the window open and returns navigation to Customize. A pending
+navigation or application-close decision is window-owned shared state, so
+crossing the responsive host threshold reconstructs the prompt in the active
+host; resizing cannot accept, discard, or strand the draft.
 
 ## Settings1, persistence, and failure truth
 
@@ -102,13 +102,16 @@ wide layouts with a software `QQuickView`, checks the canvas and contextual
 controls, validates accessible names for palette/panel/zone elements, exercises
 keyboard activation, and proves the discard dialog is centered in the window
 overlay. The window-lifecycle row proves a dirty title-bar close opens that
-dialog, Cancel keeps the window and draft, and a pending navigation decision
-survives wide/compact host reconstruction. Positive and deliberately poisoned
-boundary rows scan every owned C++ header/source and QML file and reject shell,
-LayerShellQt, compositor, private repository, and D-Bus imports. The sole
-direct `QDBusConnection` exception is the named route-composition source that
-constructs the public Settings1 transport. The installed row reuses the
-sanitized Settings package harness and proves the relocated module and catalogs.
+dialog, Cancel keeps the window and draft, and pending navigation plus
+application-close decisions survive wide-to-compact and compact-to-wide host
+reconstruction. The positive boundary row scans every owned C++ header/source
+and QML file and rejects shell, LayerShellQt, compositor, private repository,
+and D-Bus imports. Its hostile control plants the exact private
+`src/shell_customization/src/layout_editing_repository_p.h` include and requires
+rejection. The sole direct `QDBusConnection` exception is the named
+route-composition source that constructs the public Settings1 transport. The
+installed row reuses the sanitized Settings package harness and proves the
+relocated module and catalogs.
 
 These tests use injected transports, temporary stores, and offscreen rendering.
 They do not contact a host session bus, compositor, hardware, or input device.

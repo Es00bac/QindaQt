@@ -65,9 +65,11 @@ Customize owns a separate Settings1 client for `panels.layoutProfile`, an
 audited profile/manifest catalog, a profiles store adapter, and one public
 customization-editor session. Its QML composition is engine-singleton scoped,
 so responsive host reconstruction and route changes retain the draft and
-lease. It shares no request tokens or editing lease with
-another route. The [Customize route](customize-settings.md) defines its gesture,
-persistence, conflict, and failure truth.
+lease. Pending application-close truth is window-owned rather than host-local,
+so either responsive host reconstructs the same unresolved modal. It shares no
+request tokens or editing lease with another route. The
+[Customize route](customize-settings.md) defines its gesture, persistence,
+conflict, and failure truth.
 
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the

@@ -18,7 +18,8 @@ Item {
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
-    property bool applicationClosePending: false
+    required property bool applicationClosePending
+    signal applicationCloseResolved()
     readonly property bool customizeDeparturePending:
         host.presentationActive && host.customizeSettings.dirty
         && host.navigation.activeRouteComponent !== "customize"
@@ -57,15 +58,13 @@ Item {
         return true
     }
 
-    // AGENT-GUARD: A top-level close must remain rejected until the route's
-    // existing discard dialog resolves the dirty draft. Loader construction is
-    // asynchronous, so keep the request pending rather than accepting a close
-    // while the active responsive host is still creating CustomizeRoute.
+    // AGENT-GUARD: Main.qml owns applicationClosePending because responsive
+    // reconstruction destroys this host. The active host must keep loading the
+    // dialog until Cancel or Discard resolves that shared close decision.
     function requestApplicationClose() {
         if (!host.presentationActive || !host.customizeSettings.dirty) {
             return false
         }
-        host.applicationClosePending = true
         if (customizeLoader.item !== null) {
             customizeLoader.item.requestClose()
         }
@@ -141,8 +140,8 @@ Item {
         CustomizeRoute {
             customizeSettings: host.customizeSettings
             navigation: host.navigation
-            onCloseRequested: host.applicationClosePending = false
-            onCloseCancelled: host.applicationClosePending = false
+            onCloseRequested: host.applicationCloseResolved()
+            onCloseCancelled: host.applicationCloseResolved()
         }
     }
 

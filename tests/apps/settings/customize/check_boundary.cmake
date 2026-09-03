@@ -14,6 +14,14 @@ endif()
 
 set(forbidden_pattern
     "LayerShellQt|shell_surface|shell/runtime|shell/qml|KWin/|kwin\\.h|wayland-server")
+set(private_module_path_pattern
+    "#[ \t]*include[ \t]*[<\"][^>\"\r\n]*src/(shell_customization|shell_customization_editor|profiles)/")
+set(private_module_subdir_pattern
+    "#[ \t]*include[ \t]*[<\"][^>\"\r\n]*(shell_customization|shell_customization_editor|profiles)/(src|include)/")
+set(private_header_pattern
+    "#[ \t]*include[ \t]*[<\"][^>\"\r\n]*_p\\.h[>\"]")
+set(private_src_path_pattern
+    "#[ \t]*include[ \t]*[<\"][^>\"\r\n]*src/[^>\"\r\n]+/src/[^>\"\r\n]*[>\"]")
 foreach(source IN LISTS customize_boundary_files)
     if(NOT EXISTS "${source}")
         message(FATAL_ERROR "missing Customize boundary source: ${source}")
@@ -22,6 +30,13 @@ foreach(source IN LISTS customize_boundary_files)
     if(contents MATCHES "${forbidden_pattern}")
         message(FATAL_ERROR
             "Customize editor core crossed a shell/compositor/session-bus boundary: ${source}")
+    endif()
+    if(contents MATCHES "${private_module_path_pattern}"
+       OR contents MATCHES "${private_module_subdir_pattern}"
+       OR contents MATCHES "${private_header_pattern}"
+       OR contents MATCHES "${private_src_path_pattern}")
+        message(FATAL_ERROR
+            "Customize editor imported a private repository header: ${source}")
     endif()
     if(contents MATCHES "QDBusConnection"
        AND NOT source STREQUAL
