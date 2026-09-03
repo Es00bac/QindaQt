@@ -24,6 +24,7 @@ void TerminalWindow::showFindBar() {
   }
   m_findVisibleBySession.insert(m_activeSession, true);
   m_findBar->setQuery(m_searchBySession.value(m_activeSession));
+  m_findBar->presentResult(m_searchResultBySession.value(m_activeSession));
   m_findBar->show();
   m_findBar->focusEditor();
 }
@@ -58,6 +59,10 @@ void TerminalWindow::runSearch(TerminalSearchDirection direction) {
   m_searchBySession.insert(m_activeSession, query);
   const TerminalSearchResult result =
       m_activeSession->searchScrollback(query, direction);
+  // AGENT-GUARD: Query, visibility, and renderer position are all session
+  // state. Cache the matching result with them or a tab switch can announce
+  // another session's match truth (review P1-1).
+  m_searchResultBySession.insert(m_activeSession, result);
   if (findBarShown) {
     m_findBar->presentResult(result);
   }
@@ -71,6 +76,7 @@ void TerminalWindow::restoreSearchPresentation() {
   }
   m_findBar->setQuery(m_searchBySession.value(m_activeSession));
   m_findBar->setVisible(m_findVisibleBySession.value(m_activeSession, false));
+  m_findBar->presentResult(m_searchResultBySession.value(m_activeSession));
 }
 
 } // namespace QindaQt::Apps::Terminal

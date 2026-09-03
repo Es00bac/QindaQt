@@ -170,6 +170,7 @@ private:
   QHash<const TerminalSession *, bool> m_selectionBySession;
   QHash<const TerminalSession *, QString> m_titlesBySession;
   QHash<const TerminalSession *, TerminalSearchQuery> m_searchBySession;
+  QHash<const TerminalSession *, TerminalSearchResult> m_searchResultBySession;
   QHash<const TerminalSession *, bool> m_findVisibleBySession;
   QHash<const TerminalSession *, TerminalLinkSelection> m_linkBySession;
   bool m_quitRequested = false;

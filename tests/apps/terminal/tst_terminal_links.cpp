@@ -48,7 +48,11 @@ class TerminalLinksTest final : public QObject {
 private slots:
   void detectsUrlsPathsAndTrimsPresentationPunctuation();
   void stripsControlsAndPreservesHostnameSpelling();
+  void rejectsUnicodeFormatControls();
+  void detectsAbsoluteRootPath();
   void rejectsOverlongAndUnsupportedTargets();
+  void rejectsFileUrls_data();
+  void rejectsFileUrls();
   void openerConfirmsExactTargetAndUsesOneArgvElement();
   void openerCancellationAndFailureNeverSpawnOrShellParse();
 };
@@ -78,12 +82,53 @@ void TerminalLinksTest::stripsControlsAndPreservesHostnameSpelling() {
   QVERIFY(!links.at(2).target.contains(QChar(0x0007)));
 }
 
+void TerminalLinksTest::rejectsUnicodeFormatControls() {
+  // AGENT-NOTE: Regression for review P1-2. Other_Format is security-relevant
+  // presentation syntax (bidi controls and zero-width joiners), not safe link
+  // payload merely because it is outside Other_Control.
+  for (const QChar format : {QChar(0x202e), QChar(0x200d)}) {
+    const QString hostile = QStringLiteral("/safe/report") + format +
+                            QStringLiteral("fdp.exe");
+    const TerminalLink direct{TerminalLinkKind::LocalPath, hostile, hostile,
+                              QStringLiteral("hostile")};
+    QVERIFY(!isAdmittedTerminalLink(direct));
+    const auto detected = detectTerminalLinks(hostile);
+    QCOMPARE(detected.size(), 1);
+    QVERIFY(!detected.constFirst().target.contains(format));
+  }
+}
+
+void TerminalLinksTest::detectsAbsoluteRootPath() {
+  // AGENT-NOTE: Regression for review P2-3: QDir admits the absolute root and
+  // the scanner must not require a character after its slash.
+  const auto links = detectTerminalLinks(QStringLiteral("root: / next"));
+  QCOMPARE(links.size(), 1);
+  QCOMPARE(links.constFirst().kind, TerminalLinkKind::LocalPath);
+  QCOMPARE(links.constFirst().target, QStringLiteral("/"));
+}
+
 void TerminalLinksTest::rejectsOverlongAndUnsupportedTargets() {
   const QString overlong = QStringLiteral("https://example.test/") +
                            QString(kTerminalLinkTargetLimit, QLatin1Char('x'));
   const auto links = detectTerminalLinks(
       overlong + QStringLiteral(" ftp://example.test relative/path"));
   QVERIFY(links.isEmpty());
+}
+
+void TerminalLinksTest::rejectsFileUrls_data() {
+  QTest::addColumn<QString>("printedTarget");
+  // AGENT-NOTE: These registered negative-control rows close review P2-4 and
+  // make any later widening from explicit http(s) to file URLs observable.
+  QTest::newRow("file-url-local") << QStringLiteral("file:///home/user/file");
+  QTest::newRow("file-url-host") << QStringLiteral("file://server/share");
+}
+
+void TerminalLinksTest::rejectsFileUrls() {
+  QFETCH(QString, printedTarget);
+  QVERIFY(detectTerminalLinks(printedTarget).isEmpty());
+  const TerminalLink direct{TerminalLinkKind::WebUrl, printedTarget,
+                            printedTarget, QStringLiteral("unsupported")};
+  QVERIFY(!isAdmittedTerminalLink(direct));
 }
 
 void TerminalLinksTest::openerConfirmsExactTargetAndUsesOneArgvElement() {

@@ -38,6 +38,11 @@ public:
   int clearCalls = 0;
   int matchIndex = 0;
   int linkIndex = 0;
+  QList<TerminalLink> links{
+      {TerminalLinkKind::WebUrl, QStringLiteral("https://example.test"),
+       QStringLiteral("https://example.test"), QStringLiteral("Exact web target")},
+      {TerminalLinkKind::LocalPath, QStringLiteral("/home/user/file"),
+       QStringLiteral("/home/user/file"), QStringLiteral("Exact local target")}};
 
   StartOutcome start(const TerminalLaunchRequest &) override {
     return {.ok = true, .diagnostic = {}};
@@ -86,21 +91,28 @@ public:
   }
   void clearScrollbackSearch() override { ++clearCalls; }
   TerminalLinkSelection selectVisibleLink(int delta) override {
-    const QList<TerminalLink> links{
-        {TerminalLinkKind::WebUrl, QStringLiteral("https://example.test"),
-         QStringLiteral("https://example.test"), QStringLiteral("Exact web target")},
-        {TerminalLinkKind::LocalPath, QStringLiteral("/home/user/file"),
-         QStringLiteral("/home/user/file"), QStringLiteral("Exact local target")}};
+    if (links.isEmpty()) {
+      return {};
+    }
+    linkIndex = qBound(0, linkIndex, static_cast<int>(links.size()) - 1);
     const int old = linkIndex;
-    linkIndex = (linkIndex + delta + 2) % 2;
+    const int count = static_cast<int>(links.size());
+    linkIndex = (linkIndex + delta + count) % count;
     return {.found = true,
             .current = linkIndex + 1,
-            .total = 2,
+            .total = count,
             .wrapped = delta < 0 ? linkIndex > old : linkIndex < old,
             .link = links.at(linkIndex)};
   }
   TerminalLinkSelection currentVisibleLink() override {
-    return selectVisibleLink(0);
+    if (links.isEmpty()) {
+      return {};
+    }
+    linkIndex = qBound(0, linkIndex, static_cast<int>(links.size()) - 1);
+    return {.found = true,
+            .current = linkIndex + 1,
+            .total = static_cast<int>(links.size()),
+            .link = links.at(linkIndex)};
   }
 };
 
@@ -178,6 +190,7 @@ private slots:
   void findBarHasKeyboardParityStatusAndFocusReturn();
   void findTextAndVisibilityArePerSessionAndVolatile();
   void linksTraverseCopyOpenAndPopulateContextMenu();
+  void staleLinkSelectionCannotCopyOrOpen();
 };
 
 void TerminalSearchLinksUiTest::findBarHasKeyboardParityStatusAndFocusReturn() {
@@ -234,23 +247,59 @@ void TerminalSearchLinksUiTest::findTextAndVisibilityArePerSessionAndVolatile() 
       window->findChild<QLineEdit *>(QStringLiteral("terminalFindText"));
   auto *tabs = window->findChild<QTabBar *>();
   auto *bar = window->findChild<QWidget *>(QStringLiteral("terminalFindBar"));
-  QVERIFY(find && editor && tabs && bar);
+  auto *status =
+      window->findChild<QLabel *>(QStringLiteral("terminalFindStatus"));
+  QVERIFY(find && editor && tabs && bar && status);
 
   find->trigger();
   QTest::keyClicks(editor, QStringLiteral("first-only"));
+  QTRY_COMPARE(status->text(), QStringLiteral("Match 1 of 2"));
   window->newSessionWithDefaultProfile();
   QCOMPARE(harness.backends.size(), 2);
   tabs->setCurrentIndex(1);
   QVERIFY(bar->isHidden());
   find->trigger();
   QCOMPARE(editor->text(), QString());
-  QTest::keyClicks(editor, QStringLiteral("second-only"));
+  QTest::keyClicks(editor, QStringLiteral("missing"));
+  QTRY_COMPARE(status->text(), QStringLiteral("No matches"));
 
+  // AGENT-NOTE: Regression for review P1-1. Returning to the first session
+  // restores its visible and accessible match truth, never tab two's result.
   tabs->setCurrentIndex(0);
   QCOMPARE(editor->text(), QStringLiteral("first-only"));
   QVERIFY(!bar->isHidden());
+  QCOMPARE(status->text(), QStringLiteral("Match 1 of 2"));
+  QCOMPARE(status->accessibleName(),
+           QStringLiteral("Search status: Match 1 of 2"));
   tabs->setCurrentIndex(1);
-  QCOMPARE(editor->text(), QStringLiteral("second-only"));
+  QCOMPARE(editor->text(), QStringLiteral("missing"));
+  QCOMPARE(status->text(), QStringLiteral("No matches"));
+}
+
+void TerminalSearchLinksUiTest::staleLinkSelectionCannotCopyOrOpen() {
+  Harness harness;
+  auto window = harness.window();
+  auto *next = window->findChild<QAction *>(QStringLiteral("linkNextAction"));
+  auto *copy = window->findChild<QAction *>(QStringLiteral("linkCopyAction"));
+  auto *open = window->findChild<QAction *>(QStringLiteral("linkOpenAction"));
+  QVERIFY(next && copy && open);
+
+  next->trigger();
+  QApplication::clipboard()->setText(QStringLiteral("unchanged"));
+  harness.backend->links = {
+      {TerminalLinkKind::WebUrl, QStringLiteral("https://new.example"),
+       QStringLiteral("https://new.example"), QStringLiteral("new")}};
+
+  // AGENT-NOTE: Regression for review P2-2. Activation must refresh current
+  // viewport truth and stop when it differs from the traversed selection.
+  copy->trigger();
+  QCOMPARE(QApplication::clipboard()->text(), QStringLiteral("unchanged"));
+  harness.backend->links = {
+      {TerminalLinkKind::WebUrl, QStringLiteral("https://newer.example"),
+       QStringLiteral("https://newer.example"), QStringLiteral("newer")}};
+  open->trigger();
+  QCOMPARE(harness.confirmation.calls, 0);
+  QCOMPARE(harness.spawner.calls, 0);
 }
 
 void TerminalSearchLinksUiTest::linksTraverseCopyOpenAndPopulateContextMenu() {

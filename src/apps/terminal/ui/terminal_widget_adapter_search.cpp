@@ -128,11 +128,43 @@ TerminalSearchResult TerminalWidgetAdapter::searchScrollback(
     m_searchEditor->setText(query.pattern);
     m_widget->setSelectionStart(0, 0);
     m_widget->setSelectionEnd(0, 0);
+    const bool startBackward =
+        direction == TerminalSearchDirection::Previous && scan.result.found;
     static_cast<void>(QMetaObject::invokeMethod(
-        m_widget, "find", Qt::DirectConnection));
+        m_widget, startBackward ? "findPrevious" : "find",
+        Qt::DirectConnection));
     m_searchQuery = query;
-    m_searchMatchIndex = scan.result.found ? 0 : -1;
+    m_searchMatchIndex = scan.result.found
+                             ? (startBackward
+                                    ? static_cast<int>(scan.matches.size()) - 1
+                                    : 0)
+                             : -1;
+    m_searchRendererActive = scan.result.found;
+    scan.result.wrapped = startBackward;
   } else if (scan.result.found) {
+    if (!m_searchRendererActive) {
+      // AGENT-GUARD: Escape removes renderer highlights, but the application
+      // remembers this session's logical match. Rehydrate qtermwidget to that
+      // exact match before applying Next/Previous; treating the query as new
+      // makes Shift+F3 resume forward from match one (review P2-1).
+      const QSignalBlocker editorBlocker(m_searchEditor);
+      const QSignalBlocker caseBlocker(m_searchMatchCase);
+      const QSignalBlocker regexBlocker(m_searchRegex);
+      const QSignalBlocker highlightBlocker(m_searchHighlightAll);
+      m_searchMatchCase->setChecked(query.caseSensitive);
+      m_searchRegex->setChecked(query.regularExpression);
+      m_searchHighlightAll->setChecked(true);
+      m_searchEditor->setText(query.pattern);
+      m_widget->setSelectionStart(0, 0);
+      m_widget->setSelectionEnd(0, 0);
+      static_cast<void>(QMetaObject::invokeMethod(
+          m_widget, "find", Qt::DirectConnection));
+      for (int index = 0; index < m_searchMatchIndex; ++index) {
+        static_cast<void>(QMetaObject::invokeMethod(
+            m_widget, "findNext", Qt::DirectConnection));
+      }
+      m_searchRendererActive = true;
+    }
     if (m_searchMatchIndex < 0) {
       static_cast<void>(QMetaObject::invokeMethod(
           m_widget, "find", Qt::DirectConnection));
@@ -172,8 +204,9 @@ void TerminalWidgetAdapter::clearScrollbackSearch() {
       QMetaObject::invokeMethod(m_widget, "find", Qt::DirectConnection));
   static_cast<void>(QMetaObject::invokeMethod(
       m_widget, "noMatchFound", Qt::DirectConnection));
-  m_searchQuery = {};
-  m_searchMatchIndex = -1;
+  // Query and logical index belong to the session even while highlights are
+  // hidden. The next navigation request rehydrates renderer state from them.
+  m_searchRendererActive = false;
 }
 
 QList<TerminalLink> TerminalWidgetAdapter::refreshVisibleLinks() {
@@ -182,6 +215,11 @@ QList<TerminalLink> TerminalWidgetAdapter::refreshVisibleLinks() {
     m_visibleLinkIndex = -1;
     return {};
   }
+  const bool hadSelection = m_visibleLinkIndex >= 0 &&
+                            m_visibleLinkIndex < m_visibleLinks.size();
+  const TerminalLink selected = hadSelection
+                                    ? m_visibleLinks.at(m_visibleLinkIndex)
+                                    : TerminalLink{};
   QString tail = captureHistory(kTerminalVisibleOutputLimit, true, nullptr);
   const QStringList lines = tail.split(QLatin1Char('\n'));
   const int visibleLineCount = qMax(1, m_widget->screenLinesCount());
@@ -190,9 +228,10 @@ QList<TerminalLink> TerminalWidgetAdapter::refreshVisibleLinks() {
   m_visibleLinks = detectTerminalLinks(tail);
   if (m_visibleLinks.isEmpty()) {
     m_visibleLinkIndex = -1;
-  } else if (m_visibleLinkIndex < 0 ||
-             m_visibleLinkIndex >= m_visibleLinks.size()) {
+  } else if (!hadSelection) {
     m_visibleLinkIndex = 0;
+  } else {
+    m_visibleLinkIndex = static_cast<int>(m_visibleLinks.indexOf(selected));
   }
   return m_visibleLinks;
 }
@@ -201,6 +240,14 @@ TerminalLinkSelection TerminalWidgetAdapter::selectVisibleLink(int delta) {
   static_cast<void>(refreshVisibleLinks());
   if (m_visibleLinks.isEmpty()) {
     return {};
+  }
+  if (m_visibleLinkIndex < 0) {
+    m_visibleLinkIndex =
+        delta < 0 ? static_cast<int>(m_visibleLinks.size()) - 1 : 0;
+    return {.found = true,
+            .current = m_visibleLinkIndex + 1,
+            .total = static_cast<int>(m_visibleLinks.size()),
+            .link = m_visibleLinks.at(m_visibleLinkIndex)};
   }
   const int oldIndex = m_visibleLinkIndex;
   const int linkCount = static_cast<int>(m_visibleLinks.size());
@@ -216,7 +263,7 @@ TerminalLinkSelection TerminalWidgetAdapter::selectVisibleLink(int delta) {
 
 TerminalLinkSelection TerminalWidgetAdapter::currentVisibleLink() {
   static_cast<void>(refreshVisibleLinks());
-  if (m_visibleLinks.isEmpty()) {
+  if (m_visibleLinks.isEmpty() || m_visibleLinkIndex < 0) {
     return {};
   }
   return {.found = true,
