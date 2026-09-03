@@ -1597,6 +1597,8 @@ after the provider exits. PID-mismatch and window-ID-mismatch variants each
 require unavailable/empty shell state and zero activation while the same real
 child remains alive. This is deterministic private-bus evidence, not a host session,
 nested compositor, or native Wayland protocol qualification.
+`qindaqt.file-manager-global-menu-identity-variants-source-policy` keeps both
+hostile variants and their real child-PID boundary registered in the test graph.
 
 ## File Manager S1 focused proof
 
