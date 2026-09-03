@@ -693,7 +693,7 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
 ```
 
-The twelve rows cover the pure T0 model (values, batch validation, grouping,
+The thirteen rows cover the pure T0 model (values, batch validation, grouping,
 intents, scope filtering, presentation), the T1 wire decoders and fact joiner
 (hostile payload shapes, duplicate/oversized/malformed inventories, collapsed
 native-identity classification, scope availability), the facts producer's
