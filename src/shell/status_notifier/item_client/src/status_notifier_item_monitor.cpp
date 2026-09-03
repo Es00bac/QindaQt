@@ -23,8 +23,9 @@ StatusNotifierItemMonitor::StatusNotifierItemMonitor(QDBusConnection connection,
     , m_registry(registry)
     , m_fetchTimeoutMs(fetchTimeoutMs)
 {
-    // See the watcher service for why the match rule service is empty.
-    m_connection.connect(QString{},
+    // AGENT-GUARD: Match the bus daemon as sender. Path/interface/member are
+    // forgeable by another peer, which must not retire a live registry owner.
+    m_connection.connect(QStringLiteral("org.freedesktop.DBus"),
                          QStringLiteral("/org/freedesktop/DBus"),
                          QStringLiteral("org.freedesktop.DBus"),
                          QStringLiteral("NameOwnerChanged"),
@@ -229,8 +230,8 @@ void StatusNotifierItemMonitor::handleNameOwnerChanged(const QString &name,
                                                        const QString &oldOwner,
                                                        const QString &newOwner)
 {
-    Q_UNUSED(oldOwner)
-    if (m_sink == nullptr || !newOwner.isEmpty() || !m_registry.isOwnerLive(name)) {
+    if (m_sink == nullptr || name != oldOwner || !isValidUniqueBusName(name)
+        || !newOwner.isEmpty() || !m_registry.isOwnerLive(name)) {
         return;
     }
     // The owner disconnected: retire it with its current generation so the

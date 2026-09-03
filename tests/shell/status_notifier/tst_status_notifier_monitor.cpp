@@ -59,6 +59,7 @@ private slots:
     void preservesOwnerGenerationAfterLastPathRetires();
     void populatesRootObjectPath();
     void removesItemAndFreesOwnerOnDisconnect();
+    void rejectsPeerForgedOwnerLoss();
     void rebaselinesPopulationWhenWatcherRestarts();
     void degradesTruthfullyWhileKeepingLastKnownGood();
     void dispatchesOnlyValidatedIntents();
@@ -276,6 +277,59 @@ void StatusNotifierMonitorTests::removesItemAndFreesOwnerOnDisconnect()
 
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-b"));
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-b"));
+}
+
+void StatusNotifierMonitorTests::rejectsPeerForgedOwnerLoss()
+{
+    // AGENT-NOTE: third-review P1-1 regression: both the watcher and monitor
+    // must authenticate NameOwnerChanged to the bus daemon. A peer can forge
+    // the same path/interface/member and loss payload while the owner lives.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-watcher-forged-loss"));
+    auto monitorConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-client-forged-loss"));
+    auto itemConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-item-forged-loss"));
+    auto peerConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("mon-peer-forged-loss"));
+
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+    auto item = std::make_unique<FakeStatusNotifierItem>();
+    item->id = QStringLiteral("org.qindaqt.forged.loss.target");
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/One"), item.get()));
+    registerItem(itemConnection, QStringLiteral("/One"));
+
+    StatusNotifierRegistry registry;
+    StatusNotifierItemMonitor monitor(monitorConnection, registry, 500);
+    monitor.attach(&registry);
+    QTRY_COMPARE_WITH_TIMEOUT(registry.count(), 1, 2'000);
+    const QString owner = itemConnection.baseService();
+    QVERIFY(registry.isOwnerLive(owner));
+
+    auto forgedLoss = QDBusMessage::createSignal(
+        QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("NameOwnerChanged"));
+    forgedLoss << QVariant(owner) << QVariant(owner) << QVariant(QString());
+    QVERIFY(peerConnection.send(forgedLoss));
+    QTest::qWait(250);
+
+    QVERIFY(itemConnection.isConnected());
+    QVERIFY(registry.isOwnerLive(owner));
+    QCOMPARE(registry.count(), 1);
+    QCOMPARE(watcher.registeredItems().size(), qsizetype(1));
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-forged-loss"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-forged-loss"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-forged-loss"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-peer-forged-loss"));
 }
 
 void StatusNotifierMonitorTests::rebaselinesPopulationWhenWatcherRestarts()

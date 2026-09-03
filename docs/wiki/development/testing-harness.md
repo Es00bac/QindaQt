@@ -652,8 +652,9 @@ The four transport rows (`watcher`, `item-client`, `monitor`, `icon`) run
 against a private session bus: the fixture spawns `dbus-daemon --session` and
 every connection targets that address, so no test touches the host bus or
 desktop. The watcher row covers registration by bare path and by service name,
-unique-name keying, owner-loss retirement, protocol properties/signals, and
-`NameOwnedElsewhere` truthful degradation. The item-client row covers live
+unique-name keying, bus-daemon-authenticated owner-loss retirement, protocol
+properties/signals, and `NameOwnedElsewhere` truthful degradation. The
+item-client row covers live
 descriptor fetches, New*-signal refetch coalescing, hostile wire payloads
 (oversized pixmaps, malformed structs, bad tooltips, unknown or missing
 properties), bounded strings, late-reply generation fencing, and recorded
@@ -667,8 +668,10 @@ and deterministic fallback. DBusMenu rendering, a rendered panel tray, and
 assistive-technology behavior remain separate later milestones with their own
 gates.
 
-The S1 rejection-repair controls additionally require the host-unregistered
-wire signal and idempotent degraded startup; signed `(int, int)` item actions;
+The S1 rejection-repair controls additionally require rejection of a
+peer-forged `NameOwnerChanged` loss while its target owner remains connected;
+the host-unregistered wire signal and idempotent degraded startup; signed
+`(int, int)` item actions;
 strict known-property wire types; distinct live-owner timeout and immediate
 transport-error outcomes; one generation shared by simultaneous and sequential
 paths from the same live owner within one watcher epoch; root-path population;

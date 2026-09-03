@@ -28,11 +28,12 @@ namespace QindaQt::StatusNotifier
 // bounded initial population from RegisteredStatusNotifierItems; the
 // completion event is emitted only after every population key was observed
 // (admitted or rejected) or timed out. StatusNotifierItemRegistered/Unregistered
-// drive mid-epoch additions and removals, and a per-owner NameOwnerChanged
-// loss drives ownerLost with the current generation, which also frees the
-// registry's bounded owner slot. Watcher disappearance itself does not touch
-// the registry: presentation degrades through isWatcherLive() while
-// last-known-good items stay visible and actionable.
+// drive mid-epoch additions and removals, and a bus-daemon-authenticated
+// per-owner NameOwnerChanged loss drives ownerLost with the current
+// generation, which also frees the registry's bounded owner slot. Watcher
+// disappearance itself does not touch the registry: presentation degrades
+// through isWatcherLive() while last-known-good items stay visible and
+// actionable.
 //
 // Request intents (Activate, SecondaryActivate, ContextMenu, Scroll) are
 // validated as RequestIntents through the registry — evaluateRequest plus an
