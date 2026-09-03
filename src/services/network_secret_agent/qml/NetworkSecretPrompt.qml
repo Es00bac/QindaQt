@@ -42,14 +42,16 @@ Window {
     }
 
     function submitPrompt() {
-        const values = {}
+        const editors = []
         for (let index = 0; index < fieldRepeater.count; ++index) {
             const item = fieldRepeater.itemAt(index)
-            values[item.fieldKey] = item.editor.text
+            editors.push(item.editor)
         }
         completing = true
+        // C++ converts and overwrites each editor allocation synchronously;
+        // this pointer-only list never duplicates credential strings in JS.
+        presenter.submit(requestId, editors, rememberCheck.checked)
         wipeEditors()
-        presenter.submit(requestId, values, rememberCheck.checked)
         close()
     }
 

@@ -41,15 +41,15 @@ public:
                     OwnerProvider ownerProvider, QObject *parent = nullptr);
 
 public Q_SLOTS:
-  Q_SCRIPTABLE void GetSecrets(const NmSettingsMap &connection,
+  Q_SCRIPTABLE void GetSecrets(NmSettingsMap connection,
                                const QDBusObjectPath &connectionPath,
                                const QString &settingName,
                                const QStringList &hints, quint32 flags);
   Q_SCRIPTABLE void CancelGetSecrets(const QDBusObjectPath &connectionPath,
                                      const QString &settingName);
-  Q_SCRIPTABLE void SaveSecrets(const NmSettingsMap &connection,
+  Q_SCRIPTABLE void SaveSecrets(NmSettingsMap connection,
                                 const QDBusObjectPath &connectionPath);
-  Q_SCRIPTABLE void DeleteSecrets(const NmSettingsMap &connection,
+  Q_SCRIPTABLE void DeleteSecrets(NmSettingsMap connection,
                                   const QDBusObjectPath &connectionPath);
 
 private:

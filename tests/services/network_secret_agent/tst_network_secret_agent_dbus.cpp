@@ -98,10 +98,14 @@ QDBusMessage getSecretsMessage(const QString &destination, const QString &path,
 }
 
 QDBusMessage storageMessage(const QString &destination, const QString &method) {
+  NmSettingsMap connection = connectionMap();
+  connection[QStringLiteral("802-11-wireless-security")]
+            [QStringLiteral("psk")] =
+      QString::fromUtf8("private-bus-storage-canary");
   QDBusMessage message = QDBusMessage::createMethodCall(
       destination, QString::fromLatin1(kSecretAgentPath),
       QString::fromLatin1(kSecretAgentInterface), method);
-  message.setArguments({QVariant::fromValue(connectionMap()),
+  message.setArguments({QVariant::fromValue(connection),
                         QDBusObjectPath(QStringLiteral(
                             "/org/freedesktop/NetworkManager/Settings/7"))});
   return message;

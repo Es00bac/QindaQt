@@ -5,9 +5,41 @@
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
+#include <algorithm>
+
 using namespace QindaQt::Network::SecretAgent;
 
 namespace {
+
+QStringList *activeDiagnostics = nullptr;
+
+void captureDiagnostic(QtMsgType, const QMessageLogContext &,
+                       const QString &message) {
+  if (activeDiagnostics != nullptr) {
+    activeDiagnostics->append(message);
+  }
+}
+
+class DiagnosticCapture final {
+public:
+  DiagnosticCapture() : m_previous(qInstallMessageHandler(captureDiagnostic)) {
+    Q_ASSERT(activeDiagnostics == nullptr);
+    activeDiagnostics = &messages;
+  }
+
+  ~DiagnosticCapture() {
+    activeDiagnostics = nullptr;
+    qInstallMessageHandler(m_previous);
+  }
+
+  DiagnosticCapture(const DiagnosticCapture &) = delete;
+  DiagnosticCapture &operator=(const DiagnosticCapture &) = delete;
+
+  QStringList messages;
+
+private:
+  QtMessageHandler m_previous = nullptr;
+};
 
 class FakeAuthority final : public ConnectionAuthority {
 public:
@@ -78,10 +110,13 @@ class SecretAgentControllerTest final : public QObject {
 
 private Q_SLOTS:
   void refusesNonInteractiveUnknownAndForeignRequests();
+  void acceptsAccountedNestedConnectionValues();
+  void refusesNestedOverBudgetConnectionBeforePrompt();
   void returnsOnlyRequestedFieldsAndStorageChoice();
   void refusesDuplicateAndMalformedPromptValues();
   void cancelsByKeyAndTimeout();
-  void wipesByteBuffersAndNeverLogsCanary();
+  void wipesSharedSecretAllocations();
+  void capturesDiagnosticsAndNeverLogsCanary();
 };
 
 void SecretAgentControllerTest::
@@ -114,6 +149,53 @@ void SecretAgentControllerTest::
   QVERIFY(!controller.requestSecrets(candidate, capture));
 
   QCOMPARE(results, QList<SecretAgentResult>(6, SecretAgentResult::NoSecrets));
+  QVERIFY(prompt.requests.isEmpty());
+}
+
+void SecretAgentControllerTest::
+    acceptsAccountedNestedConnectionValues() {
+  FakePrompt prompt;
+  FakeAuthority authority;
+  QList<SecretAgentResult> results;
+  SecretAgentController controller(prompt, authority);
+  auto candidate = request();
+  candidate.connection[QStringLiteral("802-11-wireless-security")]
+                      [QStringLiteral("vendor-payload")] =
+      QVariantList{QByteArray("bounded"),
+                   QVariantMap{{QStringLiteral("enabled"), true}}};
+
+  QVERIFY(controller.requestSecrets(
+      candidate, [&results](const SecretAgentResult result, SecretReply reply) {
+        reply.wipe();
+        results.append(result);
+      }));
+  QCOMPARE(prompt.requests.size(), 1);
+  controller.cancel(candidate.connectionPath, candidate.settingName);
+  QCOMPARE(results, {SecretAgentResult::UserCanceled});
+}
+
+void SecretAgentControllerTest::
+    refusesNestedOverBudgetConnectionBeforePrompt() {
+  // AGENT-NOTE: Raman P1-2 requires the aggregate bound to traverse nested
+  // a{sv} containers; the 81,920-byte payload was accepted by f06d2fd.
+  FakePrompt prompt;
+  FakeAuthority authority;
+  QList<SecretAgentResult> results;
+  SecretAgentController controller(prompt, authority);
+  auto candidate = request();
+  QVariantList nested;
+  for (int index = 0; index < 80; ++index) {
+    nested.append(QByteArray(1'024, static_cast<char>('a' + (index % 26))));
+  }
+  candidate.connection[QStringLiteral("802-11-wireless-security")]
+                      [QStringLiteral("vendor-payload")] = nested;
+
+  QVERIFY(!controller.requestSecrets(
+      candidate, [&results](const SecretAgentResult result, SecretReply reply) {
+        reply.wipe();
+        results.append(result);
+      }));
+  QCOMPARE(results, {SecretAgentResult::NoSecrets});
   QVERIFY(prompt.requests.isEmpty());
 }
 
@@ -242,25 +324,59 @@ void SecretAgentControllerTest::cancelsByKeyAndTimeout() {
   QCOMPARE(controller.pendingCount(), 0);
 }
 
-void SecretAgentControllerTest::wipesByteBuffersAndNeverLogsCanary() {
+void SecretAgentControllerTest::wipesSharedSecretAllocations() {
+  // AGENT-NOTE: Raman P1-1 reproduced that f06d2fd detached before filling,
+  // leaving every alias of the actual QString/QByteArray allocation intact.
   SecretValue value{QStringLiteral("psk"), QByteArray("canary-S3cr3t")};
-  char *buffer = value.bytes.data();
+  const QByteArray byteAlias = value.bytes;
+  const char *buffer = value.bytes.constData();
   const qsizetype length = value.bytes.size();
   value.wipe();
   QVERIFY(value.bytes.isEmpty());
   for (qsizetype index = 0; index < length; ++index) {
     QCOMPARE(buffer[index], '\0');
+    QCOMPARE(byteAlias.at(index), '\0');
   }
+
+  const QString directSecret = QString::fromUtf8("canary-UTF16-S3cr3t");
+  const QString nestedSecret = QString::fromUtf8("nested-canary-S3cr3t");
+  const QByteArray nestedBytes("nested-byte-canary");
+  NmSettingsMap settings{
+      {QStringLiteral("802-11-wireless-security"),
+       {{QStringLiteral("psk"), directSecret},
+        {QStringLiteral("vendor-secrets"),
+         QVariantList{nestedSecret, nestedBytes}}}}};
+  wipeSettingsMap(settings);
+  QVERIFY(settings.isEmpty());
+  QVERIFY(std::all_of(directSecret.cbegin(), directSecret.cend(),
+                      [](const QChar character) { return character.isNull(); }));
+  QVERIFY(std::all_of(nestedSecret.cbegin(), nestedSecret.cend(),
+                      [](const QChar character) { return character.isNull(); }));
+  QVERIFY(std::all_of(nestedBytes.cbegin(), nestedBytes.cend(),
+                      [](const char byte) { return byte == '\0'; }));
+
+  QVariant editorValue = QString::fromUtf8("qml-editor-canary");
+  const QString editorAlias = editorValue.toString();
+  QCOMPARE(takeSecretUtf8(editorValue), QByteArray("qml-editor-canary"));
+  QVERIFY(!editorValue.isValid());
+  QVERIFY(std::all_of(editorAlias.cbegin(), editorAlias.cend(),
+                      [](const QChar character) { return character.isNull(); }));
+}
+
+void SecretAgentControllerTest::capturesDiagnosticsAndNeverLogsCanary() {
+  // AGENT-NOTE: Raman P1-3 found f06d2fd's empty handler captured nothing and
+  // the assertion scanned test-authored text. Prove this real channel first.
+  DiagnosticCapture diagnostics;
+  qWarning("diagnostic-capture-canary");
+  QCOMPARE(diagnostics.messages,
+           QStringList{QStringLiteral("diagnostic-capture-canary")});
+  diagnostics.messages.clear();
 
   FakePrompt prompt;
   FakeAuthority authority;
   SecretAgentController controller(prompt, authority);
-  QStringList diagnostics;
-  const auto previous = qInstallMessageHandler(
-      [](QtMsgType, const QMessageLogContext &, const QString &) {});
   QVERIFY(controller.requestSecrets(
-      request(), [&diagnostics](SecretAgentResult, SecretReply reply) {
-        diagnostics.append(QStringLiteral("request completed"));
+      request(), [](SecretAgentResult, SecretReply reply) {
         reply.wipe();
       }));
   const quint64 id = prompt.requests.first().requestId;
@@ -268,8 +384,8 @@ void SecretAgentControllerTest::wipesByteBuffersAndNeverLogsCanary() {
                  true,
                  false,
                  {{QStringLiteral("psk"), QByteArray("canary-S3cr3t")}}});
-  qInstallMessageHandler(previous);
-  QVERIFY(std::none_of(diagnostics.cbegin(), diagnostics.cend(),
+  QVERIFY(std::none_of(diagnostics.messages.cbegin(),
+                       diagnostics.messages.cend(),
                        [](const QString &line) {
                          return line.contains(QStringLiteral("canary-S3cr3t"));
                        }));

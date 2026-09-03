@@ -42,6 +42,12 @@ these facts hold:
 - every requested hint maps to a supported field; and
 - `ALLOW_INTERACTION` (`0x1`) is set and no unknown flag bit is set.
 
+The 65,536-byte aggregate budget traverses supported nested lists, string
+lists, maps, and hashes, counts container/key overhead and scalar payloads,
+and permits at most 256 entries per nested container and eight nested levels.
+An invalid value or any metatype the admission walker cannot account for is
+rejected rather than treated as zero bytes.
+
 The other recognized NetworkManager request bits are `REQUEST_NEW` (`0x2`),
 `USER_REQUESTED` (`0x4`), and `WPS_PBC_ACTIVE` (`0x8`). They do not weaken the
 interaction requirement. A non-interactive, foreign, unknown-connection,
@@ -71,14 +77,22 @@ completion is ignored.
 
 ## Secret and storage contract
 
-Secrets exist only in prompt editors, short-lived `QByteArray` values, and the
-standard `GetSecrets` reply. The reply contains exactly the requested setting
-and fields. This process has no settings store, secret store, cache, QindaQt
-D-Bus credential API, or payload logging. Editor strings are cleared before
-submission or close; byte buffers are overwritten and the temporary reply map
-is cleared immediately after synchronous D-Bus serialization. No `QString`
-secret is retained by the process. Diagnostics contain fixed redacted text
-only.
+Secrets exist only in prompt editors, short-lived `QByteArray` values, the
+standard method inputs, and the standard `GetSecrets` reply. The QML boundary
+passes editor object references rather than constructing a JavaScript secret
+map. C++ converts each editor value to UTF-8, overwrites the dynamically owned
+shared UTF-16 allocation in place, and clears the editor before completion.
+The reply contains exactly the requested setting and fields. This process has
+no settings store, secret store, cache, QindaQt D-Bus credential API, or
+payload logging.
+
+All directly owned byte and UTF-16 allocations are overwritten without a
+copy-on-write detach before release. The temporary reply map is overwritten
+and cleared immediately after synchronous D-Bus serialization. Every
+`GetSecrets`, `SaveSecrets`, and `DeleteSecrets` input map is recursively
+overwritten on method return, including rejected calls, because the standard
+inputs can contain NetworkManager-owned secrets. No `QString` secret is
+retained by the process. Diagnostics contain fixed redacted text only.
 
 The remember checkbox controls NetworkManager's standard per-secret flags:
 
@@ -89,8 +103,9 @@ The remember checkbox controls NetworkManager's standard per-secret flags:
 
 The agent never sets `AGENT_OWNED` (`1`), because it owns no storage. It also
 never uses `NOT_REQUIRED` (`4`) for a field it requested. Authenticated
-`SaveSecrets` and `DeleteSecrets` return the standard typed void
-acknowledgement as no-ops: NetworkManager owns any remembered storage.
+`SaveSecrets` and `DeleteSecrets` recursively scrub their input and return the
+standard typed void acknowledgement as storage no-ops: NetworkManager owns any
+remembered storage.
 
 ## Package and proof boundary
 

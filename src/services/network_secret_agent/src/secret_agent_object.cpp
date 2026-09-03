@@ -4,6 +4,7 @@
 
 #include "secret_request_policy_p.h"
 
+#include <QtCore/QScopeGuard>
 #include <QtDBus/QDBusMessage>
 
 namespace QindaQt::Network::SecretAgent {
@@ -17,11 +18,14 @@ SecretAgentObject::SecretAgentObject(SecretAgentController &controller,
   registerSecretAgentDBusTypes();
 }
 
-void SecretAgentObject::GetSecrets(const NmSettingsMap &connection,
+void SecretAgentObject::GetSecrets(NmSettingsMap connection,
                                    const QDBusObjectPath &connectionPath,
                                    const QString &settingName,
                                    const QStringList &hints,
                                    const quint32 flags) {
+  const auto wipeInput = qScopeGuard([&connection] {
+    wipeSettingsMap(connection);
+  });
   if (!calledFromDBus()) {
     return;
   }
@@ -48,16 +52,20 @@ void SecretAgentObject::CancelGetSecrets(const QDBusObjectPath &connectionPath,
   m_controller.cancel(connectionPath.path(), settingName);
 }
 
-void SecretAgentObject::SaveSecrets(const NmSettingsMap &connection,
+void SecretAgentObject::SaveSecrets(NmSettingsMap connection,
                                     const QDBusObjectPath &connectionPath) {
-  Q_UNUSED(connection)
+  const auto wipeInput = qScopeGuard([&connection] {
+    wipeSettingsMap(connection);
+  });
   Q_UNUSED(connectionPath)
   acknowledgeStorageNoOp();
 }
 
-void SecretAgentObject::DeleteSecrets(const NmSettingsMap &connection,
+void SecretAgentObject::DeleteSecrets(NmSettingsMap connection,
                                       const QDBusObjectPath &connectionPath) {
-  Q_UNUSED(connection)
+  const auto wipeInput = qScopeGuard([&connection] {
+    wipeSettingsMap(connection);
+  });
   Q_UNUSED(connectionPath)
   acknowledgeStorageNoOp();
 }

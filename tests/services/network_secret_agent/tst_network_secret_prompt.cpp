@@ -6,6 +6,7 @@
 
 #include <QtCore/QEventLoop>
 #include <QtCore/QTimer>
+#include <QtGui/QAccessible>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QWindow>
 #include <QtQml/QQmlComponent>
@@ -89,6 +90,8 @@ class NetworkSecretPromptTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void showsBoundedAccessibleFieldsAndEscapeCancels();
+  void traversesControlsAndExposesCheckboxStates();
+  void enterSubmitsAndWindowCloseCancels();
   void submitsAndClearsEditors();
 
 private:
@@ -133,6 +136,136 @@ void NetworkSecretPromptTest::showsBoundedAccessibleFieldsAndEscapeCancels() {
   QTest::keyClick(window, Qt::Key_Escape);
   QTRY_VERIFY(completed);
   QVERIFY(!result.accepted);
+}
+
+void NetworkSecretPromptTest::traversesControlsAndExposesCheckboxStates() {
+  // AGENT-NOTE: Raman P3-1 found f06d2fd's proof table broader than its
+  // direct coverage. Exercise Tab/Shift+Tab, echo state, and checkbox a11y.
+  bool completed = false;
+  QVERIFY(m_presenter->showPrompt(
+      {3,
+       QStringLiteral("Keyboard Wi-Fi"),
+       QStringLiteral("/org/freedesktop/NetworkManager/Settings/9"),
+       QStringLiteral("802-11-wireless-security"),
+       {{QStringLiteral("psk"), QStringLiteral("Wi-Fi password"), true, 64}}},
+      [&completed](PromptResult value) {
+        value.wipe();
+        completed = true;
+      }));
+  QTRY_VERIFY(promptWindow() != nullptr);
+  QQuickWindow *window = promptWindow();
+  auto *field =
+      findItem(window->contentItem(), QStringLiteral("networkSecretField-psk"));
+  auto *show =
+      findItem(window->contentItem(), QStringLiteral("networkSecretShow"));
+  auto *remember =
+      findItem(window->contentItem(), QStringLiteral("networkSecretRemember"));
+  QVERIFY(field != nullptr);
+  QVERIFY(show != nullptr);
+  QVERIFY(remember != nullptr);
+
+  window->requestActivate();
+  QTRY_VERIFY(window->isActive());
+  field->forceActiveFocus();
+  QVERIFY(field->hasActiveFocus());
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_VERIFY(show->hasActiveFocus());
+  QTest::keyClick(window, Qt::Key_Tab);
+  QTRY_VERIFY(remember->hasActiveFocus());
+  QTest::keyClick(window, Qt::Key_Tab, Qt::ShiftModifier);
+  QTRY_VERIFY(show->hasActiveFocus());
+  QTest::keyClick(window, Qt::Key_Tab, Qt::ShiftModifier);
+  QTRY_VERIFY(field->hasActiveFocus());
+
+  QAccessibleInterface *showAccessible =
+      QAccessible::queryAccessibleInterface(show);
+  QAccessibleInterface *rememberAccessible =
+      QAccessible::queryAccessibleInterface(remember);
+  QVERIFY(showAccessible != nullptr);
+  QVERIFY(rememberAccessible != nullptr);
+  QCOMPARE(showAccessible->role(), QAccessible::CheckBox);
+  QCOMPARE(rememberAccessible->role(), QAccessible::CheckBox);
+  QVERIFY(!showAccessible->state().checked);
+  QVERIFY(!rememberAccessible->state().checked);
+  const int concealedEchoMode = field->property("echoMode").toInt();
+  QVERIFY(show->setProperty("checked", true));
+  QVERIFY(remember->setProperty("checked", true));
+  QTRY_VERIFY(showAccessible->state().checked);
+  QTRY_VERIFY(rememberAccessible->state().checked);
+  QTRY_VERIFY(field->property("echoMode").toInt() != concealedEchoMode);
+  QVERIFY(show->setProperty("checked", false));
+  QTRY_COMPARE(field->property("echoMode").toInt(), concealedEchoMode);
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_VERIFY(completed);
+}
+
+void NetworkSecretPromptTest::enterSubmitsAndWindowCloseCancels() {
+  PromptResult submitted;
+  bool completed = false;
+  bool editorClearedAtCompletion = false;
+  QPointer<QQuickItem> observedField;
+  QVERIFY(m_presenter->showPrompt(
+      {4,
+       QStringLiteral("Enter Wi-Fi"),
+       QStringLiteral("/org/freedesktop/NetworkManager/Settings/10"),
+       QStringLiteral("802-11-wireless-security"),
+       {{QStringLiteral("psk"), QStringLiteral("Wi-Fi password"), true, 64}}},
+      [&submitted, &completed, &editorClearedAtCompletion,
+       &observedField](PromptResult value) {
+        editorClearedAtCompletion =
+            observedField != nullptr &&
+            observedField->property("text").toString().isEmpty();
+        submitted = std::move(value);
+        completed = true;
+      }));
+  QTRY_VERIFY(promptWindow() != nullptr);
+  QQuickWindow *window = promptWindow();
+  auto *field =
+      findItem(window->contentItem(), QStringLiteral("networkSecretField-psk"));
+  QVERIFY(field != nullptr);
+  observedField = field;
+  window->requestActivate();
+  QTRY_VERIFY(window->isActive());
+  field->setProperty("text", QStringLiteral("enter-canary"));
+  field->forceActiveFocus();
+  QTest::keyClick(window, Qt::Key_Return);
+  QTRY_VERIFY(completed);
+  QVERIFY(submitted.accepted);
+  QCOMPARE(submitted.values.first().bytes, QByteArray("enter-canary"));
+  QVERIFY(editorClearedAtCompletion);
+  submitted.wipe();
+  QTRY_VERIFY(promptWindow() == nullptr);
+
+  PromptResult closed;
+  completed = false;
+  editorClearedAtCompletion = false;
+  observedField.clear();
+  QVERIFY(m_presenter->showPrompt(
+      {5,
+       QStringLiteral("Close Wi-Fi"),
+       QStringLiteral("/org/freedesktop/NetworkManager/Settings/11"),
+       QStringLiteral("802-11-wireless-security"),
+       {{QStringLiteral("psk"), QStringLiteral("Wi-Fi password"), true, 64}}},
+      [&closed, &completed, &editorClearedAtCompletion,
+       &observedField](PromptResult value) {
+        editorClearedAtCompletion =
+            observedField != nullptr &&
+            observedField->property("text").toString().isEmpty();
+        closed = std::move(value);
+        completed = true;
+      }));
+  QTRY_VERIFY(promptWindow() != nullptr);
+  window = promptWindow();
+  field =
+      findItem(window->contentItem(), QStringLiteral("networkSecretField-psk"));
+  QVERIFY(field != nullptr);
+  observedField = field;
+  field->setProperty("text", QStringLiteral("close-canary"));
+  window->close();
+  QTRY_VERIFY(completed);
+  QVERIFY(!closed.accepted);
+  QVERIFY(editorClearedAtCompletion);
 }
 
 void NetworkSecretPromptTest::submitsAndClearsEditors() {

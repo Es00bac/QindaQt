@@ -4,30 +4,74 @@
 
 #include <QtDBus/QDBusMetaType>
 
-#include <algorithm>
-
 namespace QindaQt::Network::SecretAgent {
 namespace {
 
+void overwriteOwnedStorage(void *data, const qsizetype bytes) noexcept {
+  auto *volatileData = static_cast<volatile unsigned char *>(data);
+  for (qsizetype index = 0; index < bytes; ++index) {
+    volatileData[index] = 0U;
+  }
+}
+
 void wipeByteArray(QByteArray &bytes) noexcept {
   if (!bytes.isEmpty()) {
-    bytes.detach();
-    std::fill(bytes.begin(), bytes.end(), '\0');
+    // AGENT-GUARD: Do not call non-const data(), detach(), or fill() here.
+    // Qt implicit-sharing would preserve the original secret allocation.
+    if (bytes.capacity() >= bytes.size()) {
+      auto *data = const_cast<char *>(bytes.constData());
+      overwriteOwnedStorage(data, bytes.size());
+    }
     bytes.clear();
+  }
+}
+
+void wipeString(QString &text) noexcept {
+  if (!text.isEmpty()) {
+    // DBus/QML values own dynamic storage. A zero-capacity QString is an
+    // external/static view and must not be written through.
+    if (text.capacity() >= text.size()) {
+      auto *data = const_cast<QChar *>(text.constData());
+      overwriteOwnedStorage(data,
+                            text.size() * qsizetype(sizeof(QChar)));
+    }
+    text.clear();
   }
 }
 
 void wipeVariant(QVariant &value) noexcept {
   if (value.metaType() == QMetaType::fromType<QString>()) {
-    QString text = value.toString();
-    text.fill(QChar::Null);
-    text.clear();
-    value.clear();
+    auto *text = static_cast<QString *>(value.data());
+    wipeString(*text);
   } else if (value.metaType() == QMetaType::fromType<QByteArray>()) {
-    QByteArray bytes = value.toByteArray();
-    wipeByteArray(bytes);
-    value.clear();
+    auto *bytes = static_cast<QByteArray *>(value.data());
+    wipeByteArray(*bytes);
+  } else if (value.metaType() == QMetaType::fromType<QVariantList>()) {
+    QVariantList nested = value.toList();
+    for (QVariant &entry : nested) {
+      wipeVariant(entry);
+    }
+    nested.clear();
+  } else if (value.metaType() == QMetaType::fromType<QVariantMap>()) {
+    QVariantMap nested = value.toMap();
+    for (QVariant &entry : nested) {
+      wipeVariant(entry);
+    }
+    nested.clear();
+  } else if (value.metaType() == QMetaType::fromType<QVariantHash>()) {
+    QVariantHash nested = value.toHash();
+    for (QVariant &entry : nested) {
+      wipeVariant(entry);
+    }
+    nested.clear();
+  } else if (value.metaType() == QMetaType::fromType<QStringList>()) {
+    QStringList nested = value.toStringList();
+    for (QString &entry : nested) {
+      wipeString(entry);
+    }
+    nested.clear();
   }
+  value.clear();
 }
 
 } // namespace
@@ -51,6 +95,18 @@ void SecretReply::wipe() noexcept {
 void registerSecretAgentDBusTypes() {
   qRegisterMetaType<NmSettingsMap>();
   qDBusRegisterMetaType<NmSettingsMap>();
+}
+
+QByteArray takeSecretUtf8(QVariant &value) noexcept {
+  if (value.metaType() != QMetaType::fromType<QString>()) {
+    wipeVariant(value);
+    return {};
+  }
+  auto *text = static_cast<QString *>(value.data());
+  QByteArray result = text->toUtf8();
+  wipeString(*text);
+  value.clear();
+  return result;
 }
 
 void wipeSettingsMap(NmSettingsMap &settings) noexcept {

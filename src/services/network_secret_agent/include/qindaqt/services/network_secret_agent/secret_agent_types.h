@@ -82,6 +82,10 @@ struct GetSecretsRequest final {
 };
 
 void registerSecretAgentDBusTypes();
+// AGENT-CONTRACT: These consume mutable, dynamically owned Qt values. They
+// overwrite shared backing allocations before clearing the passed container;
+// takeSecretUtf8 returns a separately owned byte buffer or empty on mismatch.
+[[nodiscard]] QByteArray takeSecretUtf8(QVariant &value) noexcept;
 void wipeSettingsMap(NmSettingsMap &settings) noexcept;
 
 } // namespace QindaQt::Network::SecretAgent
