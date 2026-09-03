@@ -355,6 +355,10 @@ QVariantList NetworkSettingsModel::accessPoints() const {
             || point.security == SecuritySuite::Wpa2Personal
             || point.security == SecuritySuite::Wpa3Personal);
     const bool promptAvailable = !secured || secretAgentRegistered();
+    QString blockedReason = verdict.reasonCode;
+    if (blockedReason.isEmpty() && secured && !secretAgentRegistered()) {
+      blockedReason = QStringLiteral("secret-agent-unavailable");
+    }
     rows.append(QVariantMap{
         {QStringLiteral("id"), accessPointId},
         {QStringLiteral("deviceInterface"), point.deviceInterface},
@@ -371,7 +375,7 @@ QVariantList NetworkSettingsModel::accessPoints() const {
         {QStringLiteral("connectAvailable"),
          !saved && promptAvailable && m_client.operationAdmissionReady()
              && verdict.allowed},
-        {QStringLiteral("connectBlockedReason"), verdict.reasonCode},
+        {QStringLiteral("connectBlockedReason"), blockedReason},
         {QStringLiteral("promptStatusText"),
          !supportedKind
              ? tr("This network type is not supported for first-time "
