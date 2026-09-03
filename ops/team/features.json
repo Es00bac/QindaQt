@@ -417,6 +417,11 @@
               "kind": "test",
               "reference": "docs/wiki/development/testing-harness.md",
               "summary": "Fresh independent archives prove all four profiles, bounded PSS, capture content, 12/12 false host-reachability flags, empty teardown, canonical shell readiness, and dual [WL-1, WL-0] authority with interaction and capture on WL-1."
+            },
+            {
+              "kind": "commit",
+              "reference": "0a59236adf1b9f1d153f7c606bbf61ecde5e885f",
+              "summary": "The desktop stage closure guard (Ingrid Daubechies, OpenAI Codex, ACCEPT 0/0/0/0) adds desktop.virtual.stage-closure, proving the DesktopVirtual component loads every staged executable and QML module; it and the whole suite pass against the host's system KWin 6.6.6 after the ABI pin moved from the private 6.6.5 prefix (a5c1c20)."
             }
           ],
           "caveat": "S3 advances this step to EXECUTABLE without claiming portrait/rotation, heterogeneous mixed-output scales, hotplug/lid behavior, complete whole-shell keyboard/screen-reader coverage, physical input/display, GPU/DRM, or perceptual baseline qualification."
@@ -570,7 +575,7 @@
           "title": "Network connectivity",
           "weight": 11,
           "state": "EXECUTABLE",
-          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed.",
+          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed. A confined NetworkManager secret agent (ADR-0069) now prompts for WPA-PSK, WEP, and 802.1X identity/password outside Network1, which stays secret-free.",
           "evidence": [
             {
               "kind": "commit",
@@ -581,9 +586,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/network-service.md",
               "summary": "Fresh manager Debug and Release graphs each build 111/111 actions and pass 21/21 rows; exact rereview also passes 40/40 repeated mutation-sensitive executions and the positive boundary, six-poison negative, and installed lifecycle selector 3/3."
+            },
+            {
+              "kind": "commit",
+              "reference": "287ba6de7eda8a3b0560f467f602c130db252ac7",
+              "summary": "The exact secret-agent candidate dbeab3f (Raman Parimala, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds covering secret wiping, request budgets, the diagnostic canary, and proof-table coverage) is integrated with its ADR renumbered to 0069; the merged tree, built against the host's system KWin 6.6.6, passes the focused batch 118/118 in Debug and Release, the static gates, the broad safe Debug suite 569/569, and 88 Release Settings/network/app-shell rows."
             }
           ],
-          "caveat": "N1 qualifies the deterministic process/software boundary only. Stored-profile compatibility, external secret-agent integration and credential entry, persistence, Settings/shell UI, physical radio mutation, distribution policy, and hardware qualification remain."
+          "caveat": "Joining a visible network (N3, in review), session autostart of the agent (session-actions lane), certificates/VPN, physical radios, and installed-session qualification remain."
         },
         {
           "id": "QQ-005.05",
@@ -849,7 +859,7 @@
           "title": "Shared application-shell contracts",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, an installed consumer, and a typed Text Editor migration.",
+          "summary": "The narrow QindaQt.AppShell 1.0 boundary is integrated with atomic action/menu values, lifecycle and integration state, fail-closed portal result handling, close consent, keyboard/focus reporting, truthful degraded presentation, accessibility identity, an installed consumer, and a typed Text Editor migration. First-party global-menu export now exists: the AppShell composes the accepted exporter and dbusmenu transport over an injected session bus with proof-bound lineage, and the File Manager is the first exporting consumer.",
           "evidence": [
             {
               "kind": "commit",
@@ -865,9 +875,14 @@
               "kind": "commit",
               "reference": "d0e0809",
               "summary": "The exact independently accepted Text Editor AppShell migration is replayed and passes manager-tree focused, adjacent, package, documentation, and source-policy verification."
+            },
+            {
+              "kind": "commit",
+              "reference": "a8c171c884797e128a10ac662b1f56a6f7ef4315",
+              "summary": "The exact menu-export candidate e37d906 (Trachette Jackson, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting a second lineage authority, a second dbusmenu server, close-withdrawal, and missing mismatch variants) is integrated with its ADR renumbered to 0068; the merged tree, built against the host's system KWin 6.6.6, passes the focused batch 118/118 in Debug and Release, the static gates, the broad safe Debug suite 569/569, and 88 Release Settings/network/app-shell rows."
             }
           ],
-          "caveat": "Real portal adapters, remaining application migrations, global-menu export, live assistive-technology consumption, nested screenshots, and physical display/DPI qualification remain later slices."
+          "caveat": "Real portal adapters, Text Editor/Terminal menu export wiring, remaining application migrations, live assistive-technology consumption, nested screenshots, and physical display qualification remain."
         },
         {
           "id": "QQ-006.04",
@@ -894,7 +909,7 @@
           "title": "Settings pages and live platform-service routes",
           "weight": 15,
           "state": "WIRED",
-          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, and Power are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority. Power composes the public Power client into supply inventory, admitted profile selection, read-only holds, and debounced brightness sliders with exact admission fencing and no session actions.",
+          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, Power, and Clipboard are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority. Power composes the public Power client into supply inventory, admitted profile selection, read-only holds, and debounced brightness sliders with exact admission fencing and no session actions.",
           "evidence": [
             {
               "kind": "commit",
@@ -950,9 +965,14 @@
               "kind": "commit",
               "reference": "a83f34ee17e39762444b0d699150d0d50e6c84f0",
               "summary": "The exact Power Settings route candidate 0392aee (Julia Robinson, Moonshot Kimi, REJECT 0/0/2/1 on the ancestor; Argelia Velez-Rodriguez, OpenAI Codex, substitute recheck ACCEPT 0/0/0/1 after the Kimi usage limit) is integrated at Ctrl+8; a manager reconciliation (3afa972) links the static PowerBackend module into the in-process Main.qml test hosts; the merged tree passes Settings, power, and display-color rows 89/89 in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite 520/520."
+            },
+            {
+              "kind": "commit",
+              "reference": "22d9f234b626650cba675d4e05990c82e7777587",
+              "summary": "The exact Clipboard Settings route candidate 6f4f728 (Fern Hunt, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds) is integrated at Ctrl+9 through the delegated registry merge 76abbad; the merged tree, built against the host's system KWin 6.6.6, passes the focused batch 118/118 in Debug and Release, the static gates, the broad safe Debug suite 569/569, and 88 Release Settings/network/app-shell rows."
             }
           ],
-          "caveat": "Clipboard (accepted candidate in review), brightness beyond the Power page, color, font, and portal pages remain. Network credential entry (secret agent lane open), secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence, physical audio devices, Bluetooth adapters/pairing, and physical batteries/backlights remain separate too."
+          "caveat": "Color (lane open), font, and portal pages remain. Network joining of visible networks is in review; physical hardware and session-runtime proof remain separate."
         },
         {
           "id": "QQ-006.06",
