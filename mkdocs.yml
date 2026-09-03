@@ -137,3 +137,4 @@ nav:
       - "ADR-0053: Authenticated Display1 runtime": adr/0053-compose-display1-from-authenticated-runtime-authorities.md
       - "ADR-0054: Standard Settings portal appearance": adr/0054-export-appearance-through-the-standard-settings-portal.md
       - "ADR-0055: Network Settings through Network1": adr/0055-compose-network-settings-through-network1.md
+      - "ADR-0056: Standard AppMenu/dbusmenu transports": adr/0056-adopt-standard-appmenu-dbusmenu-transports.md

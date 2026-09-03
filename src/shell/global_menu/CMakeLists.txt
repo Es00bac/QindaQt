@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-# AGENT-NOTE: G0 boundary. protocol/ownership/exporter/qt_widgets_adapter/
-# applet are all buildable, testable modules with no live transport wired
-# anywhere in the shell yet. Registering the "global-menu" entry point in
-# BuiltinAppletRegistry, wiring GlobalMenuApplet.qml into
-# BuiltinAppletContent.qml, and instantiating GlobalMenuAppletAccess from
-# qindaqt-shell are explicit G1 work that requires compiler-verified evidence
-# this milestone does not yet have. See docs/wiki/shell/global-menu.md.
+# AGENT-NOTE: G1 provides buildable production transports and a composition
+# library, but deliberately does not instantiate them in qindaqt-shell. The
+# applet registry, installed QML, submenu presentation, and runtime focus
+# adapter remain owned by the later shell-composition lane. See
+# docs/wiki/shell/global-menu.md and ADR-0056.
 add_subdirectory(protocol)
 add_subdirectory(ownership)
 add_subdirectory(exporter)
 add_subdirectory(qt_widgets_adapter)
 add_subdirectory(applet)
+add_subdirectory(registrar)
+add_subdirectory(dbusmenu)
+add_subdirectory(composition)
