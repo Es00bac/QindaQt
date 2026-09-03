@@ -11,6 +11,10 @@
 
 namespace QindaQt::Compositor {
 
+inline constexpr qsizetype ShellWindowActionMaximumWindowIdCharacters = 64;
+inline constexpr qsizetype ShellWindowActionMaximumEpochCharacters = 128;
+inline constexpr qsizetype ShellWindowActionMaximumRevisionCharacters = 20;
+
 enum class ShellWindowAction {
     Activate,
     Minimize,
@@ -48,7 +52,8 @@ struct ShellWindowActionRequest final
     QString callerUniqueName;
     ShellWindowAction action = ShellWindowAction::Activate;
     QString windowId;
-    ShellWindowGeneration generation;
+    QString epoch;
+    QString revision;
 };
 
 struct ShellWindowActionResult final
@@ -107,9 +112,10 @@ struct ShellWindowActionLimits final
 
 using ShellActionClock = std::function<qint64()>;
 
-// Synchronous policy only. Every dependency is borrowed, must outlive the
-// controller, and is called on its owning thread. The controller never queues
-// or retries an action.
+// Synchronous wire-admission policy only. Every dependency is borrowed, must
+// outlive the controller, and is called on its owning thread. Raw action fields
+// are parsed only after the live cross-transport PID join succeeds. The
+// controller never queues or retries an action.
 class ShellWindowActionController final
 {
 public:

@@ -907,16 +907,20 @@ surface while two separate Wayland client processes map real buffered ordinary
 windows. From the bound shell PID it observes the current Windows/visibility
 fence and proves activate, minimize, unminimize, raise-order, and request-close
 effects through `CompositorShell1`; a separate bus process using the same valid
-UUID/generation must receive `unauthorized`. The row uses no host display,
-input, D-Bus session, hardware, or `tests/session` desktop scenario.
+UUID/generation must receive `unauthorized`. That wrong-PID process also sends
+megabyte-scale window, epoch, and revision fields and requires a compact reply
+with no echoed field. The row uses no host display, input, D-Bus session,
+hardware, or `tests/session` desktop scenario.
 
 The deterministic companion rows are `compositor.shell-window-actions` for
-bound-PID admission, unbound authority, stale-before-lookup, unknown UUID,
-Hybrid routing, executor failure, and fixed rate bounds;
+bound-PID admission, unbound authority, authenticate-before-parse hostile
+fields, authenticated entry bounds, echo-free fixed failures, stale-before-
+lookup, unknown UUID, Hybrid routing, executor failure, and fixed rate bounds;
 `compositor.dbus-contract` for exact XML parity; and
 `qindaqt.shell-window-actions-{client,private-bus}` for exact-owner async
-serialization, owner/timeout/malformed uncertainty with no replay, and a real
-private-bus transport round trip.
+serialization, owner/timeout/malformed uncertainty with no replay, real
+private-bus owner replacement plus late-old-reply rejection, a real-bus client
+timeout, and an ordinary transport round trip.
 
 These tests boot beneath disposable XDG trees and private D-Bus sessions. Two
 or more `QBackingStore`-backed probe windows commit real Wayland buffers and

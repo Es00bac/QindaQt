@@ -52,21 +52,30 @@ or caller-supplied PID is never authority.
 `ActivateWindow`, `MinimizeWindow`, `UnminimizeWindow`, `CloseWindow`, and
 `RaiseWindow` take one KWin window UUID plus the epoch and decimal-string
 revision of the coherent `ShellVisibilitySnapshot` generation the shell used.
-Authentication precedes generation and window lookup; a stale generation is
-rejected before window lookup. The compositor revalidates the live window and
-its current Hybrid ownership immediately before dispatch. Independent windows
-use KWin's ordinary public actions. A Hybrid member routes through the existing
-page, group-minimize, close-confirmation, and group-stacking policy; the shell
+The raw entry is limited to 64 UTF-16 code units for the window ID, 128 for the
+epoch, and 20 for the revision. Before the PID join, the controller may read
+only those constant-time lengths; it cannot scan, parse, normalize, or reflect
+their content. Unbound and unauthenticated outcomes are fixed compact replies
+that omit all three caller fields. After successful authentication and rate
+admission, the controller rejects an oversized entry without reflection and
+only then parses the generation and UUID. A stale generation is rejected before
+window lookup. The compositor revalidates the live window and its current
+Hybrid ownership immediately before dispatch. Independent windows use KWin's
+ordinary public actions. A Hybrid member routes through the existing page,
+group-minimize, close-confirmation, and group-stacking policy; the shell
 boundary never directly changes one member in isolation. Close always requests
 the client's normal close path and never kills a process.
 
 Replies use the closed statuses `admitted`, `stale`, `unknown-window`,
-`unauthorized`, and `control-disabled`, echo the action/window/generation, and
-carry a stable failure code when not admitted. Admission is rate bounded per
-authenticated unique bus owner. The server never queues or replays an action,
-and the asynchronous shell client permits one request in flight, binds it to
-the exact compositor unique owner and observed generation, and treats timeout,
-owner replacement, or transport loss as uncertain without retry.
+`unauthorized`, and `control-disabled`; semantically processed replies echo the
+action/window/generation, while pre-authentication, rate, and entry-bound
+failures echo only the fixed action. Every failure carries a stable code.
+Admission is rate bounded per authenticated unique bus owner. The server never
+queues or replays an action, and the asynchronous shell client permits one
+request in flight, binds it to the exact compositor unique owner and observed
+generation, and treats timeout, owner replacement, or transport loss as
+uncertain without retry. Replacement withdraws the old binding before
+completion, and a late reply from the old unique owner is discarded.
 
 ## Consequences
 
@@ -76,10 +85,12 @@ owner replacement, or transport loss as uncertain without retry.
   an overlap with two panel-owner PIDs fails closed until only one remains.
 - The task-list and launcher lanes consume one public asynchronous client and
   must supply the exact generation associated with the displayed intent.
-- Unit tests require fake credentials, owner, registry, clock, and executor;
-  private-bus tests require exact-owner replacement and no-replay coverage;
-  nested KWin evidence must prove a bound panel owner is admitted and a second
-  local caller is rejected.
+- Unit tests require fake credentials, owner, registry, clock, and executor,
+  including megabyte-scale pre-authentication and authenticated entry-bound
+  negatives with no lookup or reflected field; private-bus tests require exact-
+  owner replacement, late-old-reply rejection, no replay, and a real-bus client
+  timeout; nested KWin evidence must prove a bound panel owner is admitted and
+  a second local caller receives a bounded echo-free hostile-size rejection.
 - PID equality is a live cross-transport credential join, not a durable shell
   identity or a general capability for applets and applications.
 
