@@ -78,7 +78,12 @@ data location's `color/icc` (production: `/usr/share/color/icc`,
 `/usr/local/share/color/icc`) is a `System` root. No repository-shipped
 `BuiltIn` root exists yet. Because the roots derive from the XDG locations,
 tests that redirect `XDG_DATA_HOME`/`XDG_DATA_DIRS` never read host profile
-directories. Discovery runs only while the route is active (a route hook
+directories. The C1 writer fails closed on a missing user root, so the
+composition provisions the `UserImported` root at startup: a root it creates
+is made mode 0700 (EUID-owned, non-group/other-writable, exactly the
+writer's admission contract), while an existing directory keeps the user's
+own permissions and stays subject to the writer's fail-closed validation.
+Discovery runs only while the route is active (a route hook
 mirrors the Bluetooth lease pattern), so an idle Settings process never
 scans.
 
@@ -147,7 +152,10 @@ disconnected-record presentation, and the absent compositor invokables. The
 apply row covers fenced draft dispatch, displayed-availability-equals-
 admission, no-op refusal, conflict/uncertain no-replay, in-flight fencing,
 owner replacement, and the import refresh/rejection flows — all over
-injected fake transports and temporary discovery roots. The warning-fatal
+injected fake transports and temporary discovery roots. The composition row
+redirects the XDG data locations to a fresh home and proves the composition
+provisions the mode-0700 EUID-owned user import root and that a first import
+through the public C1 provider succeeds on that fresh home. The warning-fatal
 page row renders wide and compact software scenes, verifies action wiring,
 accessible roles/descriptions, the authority disclosure, and the
 always-admitted focus targets. The navigation-page row drives the real
