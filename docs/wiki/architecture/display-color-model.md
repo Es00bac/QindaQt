@@ -7,11 +7,17 @@ per-output capability and assignment-intent values, truthful degraded states,
 and a fingerprinted atomic snapshot with fail-closed lineage. It applies no
 profile, mutates no compositor or display, reads no host color configuration,
 and claims no HDR/ICC *application*; every consumer is a later, separately
-reviewed lane. Focused build/tests pass; until independent exact-commit review
-accepts this preserved boundary, this page remains a normative candidate
-contract rather than integrated evidence. The recovery that finished this
-slice preserved the original Solene Ward model bytes and repaired only the
-defects recorded in the handoff.
+reviewed lane. The C1 lanes (`display_color_discovery` and
+`display_color_assignment`, recorded in
+[ADR-0057](../adr/0057-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md))
+deliver live ICC profile discovery/import over injected roots and persistent
+per-output assignment intents through Settings1; compositor application,
+Settings UI, colord integration, HDR/WCG runtime claims, and physical
+hardware qualification remain later slices. Focused build/tests pass; until
+independent exact-commit review accepts this preserved boundary, this page
+remains a normative candidate contract rather than integrated evidence. The
+recovery that finished the C0 slice preserved the original Solene Ward model
+bytes and repaired only the defects recorded in the handoff.
 
 ## Module boundary
 
@@ -151,3 +157,103 @@ NaN/enum/list atomic rejection, 32-output aggregate cap), the source-policy
 boundary row, its poison-negative proof, and an installed staged-header C++
 consumer. Every row is deterministic model evidence; none is transport,
 compositor, display, or color-application evidence.
+
+## C1 discovery and import boundary
+
+`display_color_discovery` turns injected filesystem roots into C0 import
+metadata; the decision record is
+[ADR-0057](../adr/0057-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md).
+Its authority contract:
+
+- Roots are injected by the composition root together with their origin
+  (`BuiltIn` for repository-shipped profiles, `System` for the standard
+  system directories such as `/usr/share/color/icc`, `UserImported` for the
+  per-user ICC directory). The module never resolves HOME, XDG variables, or
+  any default directory, and never reads a root it was not given.
+- Scanning is flat (no recursion), accepts `*.icc`/`*.icm` case-insensitively,
+  ignores dot-prefixed names, never follows symlinks, and caps candidates per
+  root; exceeding a bound sets `complete = false` with a diagnostic instead of
+  scanning forever.
+- Per file it stats, then reads only the 128-byte ICC header plus a bounded
+  tag table and description tag. Hostile or damaged files — empty,
+  truncated, garbage, mislabeled (declared size disagreeing with actual),
+  declared oversize, symlinked, or C0-invalid metadata — produce bounded
+  diagnostics and are skipped; they never abort the scan.
+- The declared profile size must equal the actual file size exactly;
+  discovered descriptors keep `checksumSha256` empty because the module never
+  interprets or digests the profile body. Profile identity is the sanitized
+  file stem through the C0 identifier grammar, and the display name comes
+  from the parsed `desc`/`mluc` description with the sanitized stem as the
+  deterministic fallback.
+- Discovered semantics are unproven placeholders (`Custom` gamut, non-sRGB
+  transfer). They can never satisfy the C0 truthful-sRGB-default rule, so a
+  scanned profile cannot become the "default sRGB" until a consumer classifies
+  its real gamut/transfer and publishes it through `ColorModel::setCatalog`.
+- The catalog result is deduplicated and sorted through C0
+  `normalizeAndSortCatalog`; conflicting duplicate identifiers (same stem,
+  different content) drop both entries order-independently with a
+  diagnostic, exactly as C0 would.
+
+`importUserProfile` validates the complete source (regular, non-symlink,
+readable, within [128 bytes, 4 MiB], valid header, declared equal to actual,
+C0-safe destination name) before touching the user root, computes the
+SHA-256 content digest as the lineage fingerprint (stored in the descriptor's
+`checksumSha256`), and copies the exact bytes into the injected user root
+through the ADR-0051 pattern: an existing non-symlink, effective-user-owned,
+non-group/other-writable root; an exclusive mode-0600 temporary; fsync; one
+atomic rename commit point; a directory barrier where supported. Re-importing
+byte-identical content is an idempotent `AlreadyPresent`; a different file
+under the destination name is a conflict that leaves the root untouched;
+every rejection is atomic; an interrupted write leaves only a dot-prefixed
+temporary that the next import removes and discovery ignores; a
+post-commit directory-barrier failure reports `DurabilityUncertain` instead
+of claiming provenance.
+
+## C1 persistent assignment boundary
+
+`display_color_assignment` persists per-output assignment intents as the
+documented `displays.colorAssignments` Settings1 value (see the
+[Settings1 reference](../reference/settings1-v1.md) and
+[ADR-0057](../adr/0057-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md)).
+Settings1 is the persistence authority because the schema already supports
+bounded object values in the `displays` domain and supplies revision,
+conflict, epoch, and no-replay semantics a second journal would only
+duplicate; the C0 revisioned snapshot remains the only applied-assignment
+authority. The strict document shape is one record per output stable ID with
+exactly `profile` (C0 identifier grammar) and `lineage` (empty or exactly 64
+lowercase hex characters — the raw SHA-256 import fingerprint's canonical
+form); decoding is all-or-nothing, capped at the C0 32-output aggregate.
+
+`SettingsAssignmentStore` composes the public Settings1 client and reports
+typed truth:
+
+- `document()` distinguishes `Ready` (confirmed snapshot decoded into a
+  usable document, with epoch and revision), `Unavailable` (no confirmed
+  authority — transport lost, owner replacement, or before the first
+  snapshot; the last confirmed document is retained but never reported as
+  live), and `UnusableDocument` (confirmed but hostile or unknown-shape
+  value, with the decode reason).
+- `applyDraft` validates the draft (valid stable IDs and profile grammar,
+  32-byte-or-empty lineage, no duplicate targets, output cap), refuses
+  without confirmed usable authority, refuses to merge into an unusable
+  document so unknown formats can never be silently overwritten, and sends
+  the merged document as one optimistic transaction fenced with the
+  confirmed revision.
+- `applyFinished` reports `Applied` (verified against the reply's
+  authoritative current value), `AppliedNoOp` (unchanged revision, no
+  changed keys), `Conflict` (base revision rejected — rebase required),
+  `Uncertain` (timeout, bus loss, or an invalid reply — never replayed;
+  resync and re-apply explicitly), or `Failed`. A service epoch change can
+  never arrive as a commit outcome; it surfaces as `Unavailable` truth plus
+  `Uncertain` for any in-flight write.
+
+The composition root gives the store its own client scoped to the assignment
+key and serializes calls; the store never starts, stops, or refreshes the
+client and never talks D-Bus itself. Compositor application, the Settings
+surface that would edit drafts, and lineage verification of applied profile
+bytes remain later lanes.
+
+### Focused proof
+
+The focused proof rows for C0 and C1 are documented in the
+[testing harness](../development/testing-harness.md#display-color-c0-model-and-c1-discoveryassignment-proof).
