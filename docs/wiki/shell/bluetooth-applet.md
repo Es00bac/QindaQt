@@ -158,12 +158,15 @@ read access was granted.
    purpose-specific controller. `RuntimePanelWindowFactory` injects only that
    controller.
 4. The `BluetoothAppletRuntime` install component stages the production shell,
-   compiled QML, manifest, selected profile, policy, and theme for relocation
-   under source-path poison. Its package test supplies the exact build-selected
-   KF6 GlobalAccel platform artifact inside the disposable stage, clears
-   ambient loader paths, resolves the staged executable's runtime dependencies,
-   and requires the KF6 SONAME to resolve to that exact relocated artifact
-   through the shell's relative install RUNPATH.
+   its directly linked Controls library, the Tokens library at Controls'
+   baked sibling RUNPATH, compiled QML, manifest, selected profile, policy,
+   and theme for relocation under source-path poison. Its package test supplies
+   the exact build-selected KF6 GlobalAccel platform artifact inside the
+   disposable stage, clears ambient loader paths, resolves the staged
+   executable's runtime dependencies, and requires KF6, Controls, and Tokens
+   to resolve to their exact relocated artifacts through relative RUNPATHs.
+   The shared shell-component closure row separately launches this component,
+   the Audio and Power components, and default `QindaQt` in isolation.
 
 ## Focused verification
 
@@ -182,7 +185,7 @@ ctest --test-dir build/dev \
 | `qindaqt.bluetooth-applet-surface` | Ordered post-moc property/method/enumerator contract, non-vacuous expanded-surface rejection, and offscreen QML-visible name equality |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
 | `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; eleven manifest/registry/profile/QML/composition presence tokens; five dependency poisons plus a profile-and-QML composition-removal poison |
-| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
+| `qindaqt.bluetooth-applet-installed-package` | Relocated shell/data, exact staged KF6 and Controls/Tokens loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison |
 
 Both static gates can run before configuring a build:
 

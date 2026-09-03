@@ -24,6 +24,9 @@ class CapabilityPolicy;
 namespace QindaQt::Shell {
 
 class NotificationCenterAppletAccess;
+namespace AudioApplet {
+class AudioAppletController;
+}
 namespace BluetoothApplet {
 class BluetoothAppletController;
 }
@@ -39,6 +42,7 @@ public:
                               const Applets::ManifestCatalog &applets,
                               const AppletHost::CapabilityPolicy &policy,
                               NotificationCenterAppletAccess *notificationCenterAccess,
+                              AudioApplet::AudioAppletController *audioAppletAccess,
                               BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
                               PowerApplet::PowerAppletController *powerAppletAccess);
     ~RuntimePanelWindowFactory() override;
@@ -54,6 +58,7 @@ private:
     QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
     NotificationCenterAppletAccess *m_notificationCenterAccess = nullptr;
+    AudioApplet::AudioAppletController *m_audioAppletAccess = nullptr;
     BluetoothApplet::BluetoothAppletController *m_bluetoothAppletAccess = nullptr;
     PowerApplet::PowerAppletController *m_powerAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;

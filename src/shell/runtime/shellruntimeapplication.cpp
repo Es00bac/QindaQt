@@ -2,6 +2,7 @@
 #include "shellruntimeapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "notificationcenterappletaccess.h"
@@ -182,6 +183,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
+    m_audioApplet =
+        std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
     m_bluetoothApplet =
         std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
     m_powerApplet =
@@ -267,8 +270,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
-            m_notificationCenterAccess.get(), m_bluetoothApplet->access(),
-            m_powerApplet->access());
+            m_notificationCenterAccess.get(), m_audioApplet->access(),
+            m_bluetoothApplet->access(), m_powerApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -369,6 +372,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_audioApplet.reset();
     m_bluetoothApplet.reset();
     m_powerApplet.reset();
     m_notificationCenterAccess.reset();

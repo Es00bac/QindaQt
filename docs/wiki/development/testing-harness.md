@@ -163,6 +163,42 @@ ctest --test-dir build/dev \
 Its math, composition, and dependency-policy rows are detailed in the
 [pure brightness model contract](../architecture/brightness-model.md).
 
+The production Audio applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.audio-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection rows are joined by a public-client controller with
+read/control grant separation and exact-owner replacement cleanup (including a
+stale old-owner reply dropped after replacement), a compiled
+offscreen keyboard/accessibility row, pure/runtime boundary gates with
+independent service-internal/transport/QML/QObject poison negative controls,
+and an installed
+production-package/source-poison row that also requires the staged KF6,
+Controls, and Tokens artifacts to resolve through the relocated shell's and
+Controls library's relative RUNPATHs. All rows use an injected fake transport
+or a relocated package stage; no row contacts the host session bus, PipeWire,
+WirePlumber, display server, or hardware. The exact matrix and non-claims are
+detailed in [Audio applet](../shell/audio-applet.md).
+
+The shared production-shell install closure is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.shell-runtime-component-closure$' \
+  --output-on-failure --no-tests=error
+```
+
+That row independently installs default `QindaQt`, `AudioAppletRuntime`,
+`BluetoothAppletRuntime`, and `PowerAppletRuntime` into build-local stages. It
+requires the staged shell to resolve Controls from its own install library
+directory and Tokens from Controls' baked sibling RUNPATH, then launches
+`--help` with ambient loader, display, Wayland, and session-bus variables
+cleared. It contacts no compositor, host bus, service, or hardware.
+
 The production Power applet slice is selected with:
 
 ```sh
@@ -173,7 +209,9 @@ ctest --test-dir build/dev \
 
 Its pure projection/control/request rows are joined by public-client controller,
 compiled offscreen keyboard/accessibility, runtime-boundary poison, and
-installed production-package/source-poison rows. No row contacts the host
+installed production-package/source-poison rows. The installed row requires
+the shell's directly linked Controls library and its Tokens dependency to
+resolve from the narrow relocated component. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
@@ -189,7 +227,9 @@ Its pure projection/request rows are joined by an exact-owner public-client
 controller, compiled offscreen keyboard/accessibility and lease-close proof,
 an ordered post-moc controller-surface contract, mutation-sensitive
 pure/runtime dependency boundaries, and an installed production-package/source-
-poison row. `qindaqt.bluetooth-applet-surface` walks the controller-owned
+poison row. That installed row requires the staged
+shell's KF6, Controls, and Tokens dependencies to resolve from their exact
+relocated paths. `qindaqt.bluetooth-applet-surface` walks the controller-owned
 property, method, and enumerator slices of `staticMetaObject`, compares the
 property name/type/readable/writable/resettable/notify/constant/final fields
 and method signature/return/type/access/revision fields, plus each enumerator's

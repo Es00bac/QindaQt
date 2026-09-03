@@ -107,8 +107,8 @@ public:
 };
 
 // Pure projection of one Audio1 snapshot plus the controller's pending-request
-// set into the bounded applet presentation state. No QObject, no transport,
-// no snapshot retention beyond one build.
+// set into the bounded applet presentation state. It carries no object
+// machinery, no transport, and no snapshot retention beyond one build.
 class AudioAppletModel {
 public:
     // AGENT-GUARD: A snapshot whose wireValid flag is false must never reach

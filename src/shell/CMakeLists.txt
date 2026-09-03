@@ -36,6 +36,7 @@ qt_add_qml_module(
         qml/PreviewControls.qml
         qml/WindowGroupPreview.qml
     DEPENDENCIES
+        TARGET qindaqt_shell_audio_applet_runtime
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
 )
@@ -45,6 +46,7 @@ target_link_libraries(
     PRIVATE
         qindaqt_profiles
         qindaqt_themes
+        QindaQt::ShellAudioAppletRuntime
         QindaQt::ShellBluetoothAppletRuntime
         QindaQt::ShellPowerAppletRuntime
         Qt6::Core
@@ -76,6 +78,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         common/catalogpaths.cpp
         common/catalogpaths.h
         runtime/main.cpp
+        runtime/audioappletcomposition.cpp
+        runtime/audioappletcomposition.h
         runtime/bluetoothappletcomposition.cpp
         runtime/bluetoothappletcomposition.h
         runtime/globalshortcutregistrar.h
@@ -130,6 +134,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelContent.qml
             qml/RuntimePanel.qml
         DEPENDENCIES
+            TARGET qindaqt_shell_audio_applet_runtime
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
     )
@@ -148,6 +153,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface
             QindaQt::ShellVisibilityClient
+            QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellPowerAppletRuntime
             qindaqt_themes
@@ -172,7 +178,25 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
 
     qindaqt_enable_warnings(qindaqt-shell)
     qt_import_qml_plugins(qindaqt-shell)
-    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT QindaQt
+    )
+    # AGENT-CONTRACT: The default component is a runnable shell package, just
+    # like each narrow applet component below. Keep the shell's directly linked
+    # Controls library and Controls' Tokens dependency in their relative
+    # $ORIGIN layouts or a component-filtered install fails before main().
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT QindaQt
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT QindaQt
+    )
     # A narrow stage proves that the Bluetooth applet's production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate as
     # one package boundary.
@@ -205,6 +229,66 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
         COMPONENT BluetoothAppletRuntime
     )
+    # AGENT-CONTRACT: Every narrow component that stages qindaqt-shell must
+    # carry its directly linked Controls library and the Tokens library at
+    # Controls' baked $ORIGIN/../Tokens sibling path. Otherwise the staged
+    # shell fails before its applet catalog can be inspected.
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT BluetoothAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT BluetoothAppletRuntime
+    )
+    # A narrow stage lets the Audio applet prove that the production binary,
+    # compiled QML, manifest, selected profile, policy, and theme relocate
+    # together without requiring unrelated first-party applications.
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/applets/audio.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        FILES
+            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT AudioAppletRuntime
+    )
+    # The audio applet renders through the shared QindaQt.Controls and
+    # QindaQt.Tokens QML modules. Controls carries a baked
+    # $ORIGIN/../Tokens RUNPATH (the sibling-module layout built by
+    # src/controls), so this component must preserve that runtime closure.
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT AudioAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT AudioAppletRuntime
+    )
     # A narrow stage lets the Power applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -235,6 +319,16 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         FILES
             "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT PowerAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT PowerAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
         COMPONENT PowerAppletRuntime
     )
 endif()
