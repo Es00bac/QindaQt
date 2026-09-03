@@ -10,6 +10,7 @@ target_sources(
     PRIVATE
         src/dbusmenu_client.cpp
         src/dbusmenu_decoder.cpp
+        src/dbusmenu_server.cpp
         src/dbusmenu_wire.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -17,6 +18,7 @@ target_sources(
         FILES
             include/qindaqt/shell/global_menu/dbusmenu/dbusmenu_client.h
             include/qindaqt/shell/global_menu/dbusmenu/dbusmenu_decoder.h
+            include/qindaqt/shell/global_menu/dbusmenu/dbusmenu_server.h
             include/qindaqt/shell/global_menu/dbusmenu/dbusmenu_wire.h
 )
 target_link_libraries(

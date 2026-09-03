@@ -7,6 +7,7 @@
 #include <QtCore/QVariantList>
 #include <QtCore/QVariantMap>
 #include <QtDBus/QDBusArgument>
+#include <QtDBus/QDBusVariant>
 
 namespace QindaQt::Shell::GlobalMenu::DbusMenu
 {
@@ -31,8 +32,16 @@ struct RemovedPropertyEntry final {
     QStringList names;
 };
 
+struct EventEntry final {
+    qint32 id = 0;
+    QString eventId;
+    QDBusVariant data;
+    quint32 timestamp = 0;
+};
+
 using PropertyEntryList = QList<PropertyEntry>;
 using RemovedPropertyEntryList = QList<RemovedPropertyEntry>;
+using EventEntryList = QList<EventEntry>;
 using ShortcutList = QList<QStringList>;
 
 QDBusArgument &operator<<(QDBusArgument &argument, const LayoutItem &item);
@@ -41,6 +50,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const PropertyEntry &entry);
 const QDBusArgument &operator>>(const QDBusArgument &argument, PropertyEntry &entry);
 QDBusArgument &operator<<(QDBusArgument &argument, const RemovedPropertyEntry &entry);
 const QDBusArgument &operator>>(const QDBusArgument &argument, RemovedPropertyEntry &entry);
+QDBusArgument &operator<<(QDBusArgument &argument, const EventEntry &entry);
+const QDBusArgument &operator>>(const QDBusArgument &argument, EventEntry &entry);
 void registerDbusMenuWireTypes();
 
 } // namespace QindaQt::Shell::GlobalMenu::DbusMenu
@@ -48,6 +59,8 @@ void registerDbusMenuWireTypes();
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::LayoutItem)
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::PropertyEntry)
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::RemovedPropertyEntry)
+Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::EventEntry)
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::PropertyEntryList)
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::RemovedPropertyEntryList)
+Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::EventEntryList)
 Q_DECLARE_METATYPE(QindaQt::Shell::GlobalMenu::DbusMenu::ShortcutList)

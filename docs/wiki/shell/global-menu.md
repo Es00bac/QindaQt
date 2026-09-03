@@ -152,9 +152,22 @@ and partial startup rolls back.
   meaningful only through the injected `RegistrarWindowIdSource`, which maps a
   compositor-authenticated opaque identity or returns no match.
 
-## dbusmenu client transport
+## dbusmenu transport
 
-`QindaQt::GlobalMenuDbusMenu` binds one injected connection to one exact
+`QindaQt::GlobalMenuDbusMenu` owns both sides of the standard v4 protocol. Its
+server accepts only validated lineage-free canonical content, assigns bounded
+stable numeric wire IDs, and owns the remote revision. It implements
+`GetLayout`, `GetGroupProperties`, `GetProperty`, `Event`, `EventGroup`,
+`AboutToShow`, and `AboutToShowGroup`; layout depth and property-name filters
+are applied rather than discarded. The standard empty-ID
+`GetGroupProperties` form returns every published non-root item in stable
+layout order, with the requested property filter still applied. Invalid content
+and revision/ID exhaustion retain the last complete snapshot. An admitted
+click emits the stable action ID once to the application-owned current-action
+gate. The server never issues the authenticated owner/epoch/revision used by
+shell invocation.
+
+The client binds one injected connection to one exact
 provider unique name and object path. All method calls are asynchronous and
 bounded to a two-second default timeout. `LayoutUpdated` and
 `ItemsPropertiesUpdated` are invalidation hints: publication always waits for
@@ -245,6 +258,43 @@ client to the composition. The global-menu runtime neither discovers nor owns
 a second compositor connection. `identityChanged` drives focus refresh, so the
 client's owner-loss and monotonic reread rules are also the menu's stale-truth
 withdrawal boundary.
+
+## First-party AppShell export
+
+`QindaQt::AppShell::MenuExport` composes the deterministic AppShell action
+snapshot into lineage-free canonical content and the accepted transport-owned
+standard dbusmenu server. It
+borrows the application's session-bus connection and primary `QWindow`; no
+global lookup exists inside the module. The application issues no local owner,
+epoch, or revision and never invokes `MenuExporter`; the production shell's
+authenticated selector remains the single authority that stamps lineage after
+wire decoding. A shell `clicked` request crosses once into
+`ApplicationCoordinator::activateAction()`, where current enabled/action
+consent is checked identically to the local menu.
+
+Registration is exact and platform-specific. On `xcb`, the real
+`QWindow::winId()` is registered asynchronously with the current exact owner
+of `com.canonical.AppMenu.Registrar`. On native Wayland, no numeric id is
+fabricated: one confined Qt 6.11 platform adapter uses the KDE appmenu hook to
+associate that surface with the application's unique bus name and
+`/org/qindaqt/AppShell/Menu`. The production G2 shell then performs the actual
+PID/window or PID/announced-address authentication described above. Registrar
+owner loss/replacement withdraws the prior association and retries against the
+new owner. An accepted close withdraws after the surface retires; a rejected
+close retains the association, and composition/window destruction always
+withdraws it. None of these
+states proves that the shell currently renders the menu, so first-party local
+menu bars remain present.
+
+File Manager is the first consumer. Its executable retains one composition
+object beside its coordinator and window. Text Editor and Terminal may repeat
+that line without importing File Manager or shell runtime code. The private-bus
+integration row runs the real File Manager process and production
+`GlobalMenuAppletComposition`, injects the exact child PID/window id as the
+compositor snapshot, activates `file.new-folder` once through dbusmenu, and
+requires provider exit to clear the applet. The same real-process row supplies
+a wrong PID and a wrong registrar window ID separately; both keep the facade
+unavailable/empty and produce zero application activations.
 
 ## Qt Widgets adapter
 
@@ -371,6 +421,7 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-transport-composition-private-bus`, and
 `qindaqt.global-menu-transport-boundary-poison`. G2 adds
 `qindaqt.global-menu-runtime-composition-private-bus`,
+`qindaqt.file-manager-global-menu-shell-private-bus`,
 `qindaqt.global-menu-runtime-boundary-poison`,
 `qindaqt.global-menu-applet-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,

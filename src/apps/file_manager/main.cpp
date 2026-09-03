@@ -301,6 +301,7 @@ int main(int argc, char **argv) {
   if (engine.rootObjects().isEmpty()) {
     return 3;
   }
+  [[maybe_unused]] auto menuExport = QindaQt::Apps::FileManager::composeFileManagerMenuExport(*appCoordinator, engine.rootObjects().constFirst());
   // Keep the injected C++ controllers alive while QML tears down. The engine
   // was constructed before them, so relying on automatic stack destruction
   // would invalidate required bindings during package probes.
