@@ -77,6 +77,16 @@ if(NOT customize_in_stage OR NOT IS_DIRECTORY "${customize_module}")
         "installed Settings Customize module is missing or outside stage: "
         "${customize_module}")
 endif()
+
+set(bluetooth_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Bluetooth")
+cmake_path(NORMAL_PATH bluetooth_module OUTPUT_VARIABLE bluetooth_module)
+cmake_path(IS_PREFIX install_prefix "${bluetooth_module}" NORMALIZE bluetooth_in_stage)
+if(NOT bluetooth_in_stage OR NOT IS_DIRECTORY "${bluetooth_module}")
+    message(FATAL_ERROR
+        "installed Settings Bluetooth module is missing or outside stage: "
+        "${bluetooth_module}")
+endif()
 foreach(catalog IN ITEMS profiles applets)
     set(catalog_path
         "${install_prefix}/${INSTALL_DATADIR}/qindaqt/${catalog}")
@@ -96,6 +106,11 @@ set(build_network_module "${build_directory}/qml/QindaQt/SettingsApp/Network")
 if(NOT IS_DIRECTORY "${build_network_module}")
     message(FATAL_ERROR
         "package poison requires the developer Network QML tree to remain present")
+endif()
+set(build_bluetooth_module "${build_directory}/qml/QindaQt/SettingsApp/Bluetooth")
+if(NOT IS_DIRECTORY "${build_bluetooth_module}")
+    message(FATAL_ERROR
+        "package poison requires the developer Bluetooth QML tree to remain present")
 endif()
 
 set(withheld_module "${appearance_module}.withheld")
