@@ -166,6 +166,9 @@ observation.
 Network1 never requests `GetSecrets`, receives a password/PSK/certificate or
 private key, or exposes NetworkManager setting maps. Connect activates only an
 existing stored connection. If NetworkManager requires credentials, it talks
-to an external registered secret agent outside this interface and process.
-Raw D-Bus/libnm error text is not public; callers see stable bounded reason
-codes. Credential-entry and secret-agent interoperability remain unqualified.
+to the separately deployed first-party registered secret agent outside this
+interface and process. Raw D-Bus/libnm error text is not public; callers see
+stable bounded reason codes. Network1 remains unqualified for credential
+payloads by design; the separate [Network secret
+agent](../architecture/network-secret-agent.md) owns that interoperability
+claim.

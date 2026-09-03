@@ -77,6 +77,27 @@ add_test(
     COMMAND "${CMAKE_COMMAND}" -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
 )
+
+qt_add_executable(
+    qindaqt_network_secret_agent_presence_tests
+    tst_network_secret_agent_presence.cpp
+)
+target_link_libraries(
+    qindaqt_network_secret_agent_presence_tests
+    PRIVATE qindaqt_settings_network Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_network_secret_agent_presence_tests)
+add_test(
+    NAME qindaqt.settings-network-secret-agent-presence
+    COMMAND qindaqt_network_secret_agent_presence_tests
+)
+set_tests_properties(
+    qindaqt.settings-network-secret-agent-presence
+    PROPERTIES
+        LABELS "settings;network;secret-agent;private-bus"
+        TIMEOUT 20
+        ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
 set_tests_properties(
     qindaqt.network-settings-boundary PROPERTIES
     LABELS "settings;network;boundary"

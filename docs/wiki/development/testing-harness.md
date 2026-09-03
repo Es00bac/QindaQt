@@ -1503,8 +1503,35 @@ exposes a host device or profile. The production adapter cannot observe or
 mutate the host. No
 test toggles a host radio, scans a host interface, activates a host profile, or
 requests a credential. The result qualifies the process/software boundary,
-not physical Wi-Fi, Ethernet, radios, external secret agents, credential entry,
-or distribution policy integration.
+not physical Wi-Fi, Ethernet, radios, credential entry, or distribution policy
+integration.
+
+## Current network secret-agent proof
+
+The standalone credential process and the Settings presence observer run in
+both strict-warning configurations with:
+
+```sh
+ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^(qindaqt\.network-secret-agent-|qindaqt\.settings-network-secret-agent-presence$)'
+```
+
+| Row | Evidence |
+| --- | --- |
+| `qindaqt.network-secret-agent-controller` | foreign/non-interactive/unknown request refusal, exact hint projection, bounded values, timeout/cancel, storage choice, malformed UTF-8 and duplicate-field rejection, byte wiping and redacted diagnostics |
+| `qindaqt.network-secret-agent-prompt` | QST/QindaQt.Controls construction, field bounds, accessible labels and states, show/remember controls, Escape cancellation, submission and editor clearing under fatal QML warnings |
+| `qindaqt.network-secret-agent-dbus` | private fake AgentManager/Settings owner, Register/Unregister, presence name, exact caller, owner replacement, delayed GetSecrets, CancelGetSecrets, Save/Delete typed no-ops, and standard remembered/not-saved flags |
+| `qindaqt.network-secret-agent-installed` | independently staged component finds its relocated theme and QML modules without the developer tree |
+| `qindaqt.network-secret-agent-boundary` | process confinement, no Network1 reverse dependency, persistence/logging bans |
+| `qindaqt.network-secret-agent-boundary-poison` | rejects an injected dependency on the public Network1 protocol |
+| `qindaqt.settings-network-secret-agent-presence` | isolated session-bus name-owner transitions only; no system-bus or agent object access |
+
+The D-Bus rows start an abstract-address private broker and inject distinct
+connections. They do not contact a host bus, NetworkManager daemon, profile,
+radio, keyring, filesystem store, or network. The installed row stops after UI
+resource construction. These rows qualify the standard software contract and
+bounded prompt, not physical network success, VPN/certificate secrets,
+autostart policy, or an agent-owned store.
 
 ## Current Audio1 proof
 
