@@ -39,6 +39,66 @@ foreach(required_path IN ITEMS
     endif()
 endforeach()
 
+# The narrow component is a runnable shell package, so authenticate the new
+# direct Controls dependency and its baked sibling Tokens dependency before
+# launch. Merely finding either artifact in the stage would not prove that the
+# loader follows the installed relative RUNPATH.
+unset(ENV{LD_LIBRARY_PATH})
+unset(ENV{DYLD_LIBRARY_PATH})
+file(GET_RUNTIME_DEPENDENCIES
+    EXECUTABLES "${shell}"
+    RESOLVED_DEPENDENCIES_VAR resolved_dependencies
+    UNRESOLVED_DEPENDENCIES_VAR unresolved_dependencies)
+set(resolved_controls_dependency "")
+foreach(resolved_dependency IN LISTS resolved_dependencies)
+    cmake_path(GET resolved_dependency FILENAME dependency_name)
+    if(dependency_name STREQUAL "libqindaqt_controls_qml.so")
+        if(NOT resolved_controls_dependency STREQUAL "")
+            message(FATAL_ERROR
+                "Power applet stage resolved duplicate Controls runtime artifacts")
+        endif()
+        file(REAL_PATH "${resolved_dependency}" resolved_controls_dependency)
+    endif()
+endforeach()
+if(resolved_controls_dependency STREQUAL "")
+    message(FATAL_ERROR "Power applet stage did not resolve QindaQt.Controls")
+endif()
+cmake_path(IS_PREFIX stage "${resolved_controls_dependency}" NORMALIZE
+           controls_is_staged)
+if(NOT controls_is_staged)
+    message(FATAL_ERROR
+        "Power applet Controls dependency escaped its relocated stage: "
+        "${resolved_controls_dependency}")
+endif()
+
+file(GET_RUNTIME_DEPENDENCIES
+    LIBRARIES "${resolved_controls_dependency}"
+    RESOLVED_DEPENDENCIES_VAR controls_dependencies
+    UNRESOLVED_DEPENDENCIES_VAR controls_unresolved)
+set(resolved_tokens_dependency "")
+foreach(resolved_dependency IN LISTS controls_dependencies)
+    cmake_path(GET resolved_dependency FILENAME dependency_name)
+    if(dependency_name STREQUAL "libqindaqt_tokens_qml.so")
+        if(NOT resolved_tokens_dependency STREQUAL "")
+            message(FATAL_ERROR
+                "Power applet stage resolved duplicate Tokens runtime artifacts")
+        endif()
+        file(REAL_PATH "${resolved_dependency}" resolved_tokens_dependency)
+    endif()
+endforeach()
+set(expected_tokens_dependency "${stage}/Tokens/libqindaqt_tokens_qml.so")
+if(NOT EXISTS "${expected_tokens_dependency}")
+    message(FATAL_ERROR
+        "Power applet stage is missing ${expected_tokens_dependency}")
+endif()
+file(REAL_PATH "${expected_tokens_dependency}" expected_tokens_dependency)
+if(NOT resolved_tokens_dependency STREQUAL expected_tokens_dependency)
+    message(FATAL_ERROR
+        "Staged Power Controls did not resolve QindaQt.Tokens from its baked "
+        "sibling path: expected ${expected_tokens_dependency}, "
+        "resolved ${resolved_tokens_dependency}")
+endif()
+
 # The module URI and QML type name are compiled into the production binary;
 # source-only or manifest-only registrations cannot satisfy this check.
 file(STRINGS "${shell}" compiled_qml
@@ -59,6 +119,8 @@ file(CHMOD "${poison}/runtime"
 
 execute_process(
     COMMAND "${QINDAQT_CMAKE}" -E env
+            --unset=LD_LIBRARY_PATH
+            --unset=DYLD_LIBRARY_PATH
             QT_QPA_PLATFORM=offscreen
             QT_QUICK_BACKEND=software
             "XDG_RUNTIME_DIR=${poison}/runtime"
@@ -87,4 +149,5 @@ if(power_entry EQUAL -1)
         "Staged shell did not resolve the installed Power manifest:\n${list_output}")
 endif()
 
-message(STATUS "Installed compiled Power applet and source-poison proof passed")
+message(STATUS
+    "Installed compiled Power applet, Controls/Tokens loader paths, and source-poison proof passed")
