@@ -27,10 +27,14 @@ private slots:
   void rejectsMalformedWindowsPayload();
   void rejectsHostileWindowEntries();
   void rejectsOversizedWindowsPayload();
+  void windowsInventoryRequiresTheSchemaTwoFence();
+  void windowsInventoryBoundIsExact();
   void rejectsMalformedContainersPayload();
   void rejectsHostileContainerEntries();
   void rejectsMalformedScopePayload();
   void rejectsHostileScopeEntries();
+  void scopeSnapshotRequiresCompleteLineage();
+  void scopeSnapshotBoundIsExact();
 };
 
 void TaskListWireTests::decodesValidInventories() {
@@ -81,7 +85,89 @@ void TaskListWireTests::rejectsMalformedWindowsPayload() {
   QCOMPARE(TaskListWireDecoder::decodeWindows(
                rawRoot({{QStringLiteral("status"), QStringLiteral("ok")}}))
                .error,
-           TaskListWireError::MalformedPayload);
+           TaskListWireError::UnsupportedSchema);
+}
+
+// AGENT-NOTE: Review finding P1-1/P2-1 (rejected candidate 3a5ae17): the
+// schema-2 Windows() fence (epoch, revision, generationAvailable) names the
+// retained ShellVisibilitySnapshot generation; the decoder must require it so
+// the producer never joins scope truth without an exact lineage fence.
+void TaskListWireTests::windowsInventoryRequiresTheSchemaTwoFence() {
+  auto payload = [](const QJsonObject &extra) {
+    QJsonObject root{{QStringLiteral("status"), QStringLiteral("ok")},
+                     {QStringLiteral("schemaVersion"), 2},
+                     {QStringLiteral("epoch"), kScopeEpoch},
+                     {QStringLiteral("revision"), QStringLiteral("1")},
+                     {QStringLiteral("generationAvailable"), true},
+                     {QStringLiteral("windows"), QJsonArray{}}};
+    for (auto it = extra.constBegin(); it != extra.constEnd(); ++it) {
+      if (it.value().type() == QJsonValue::Undefined) {
+        root.remove(it.key());
+      } else {
+        root.insert(it.key(), it.value());
+      }
+    }
+    return rawRoot(root);
+  };
+  const auto undefined = [] { return QJsonValue(QJsonValue::Undefined); };
+  QCOMPARE(TaskListWireDecoder::decodeWindows(payload({})).error,
+           TaskListWireError::None);
+  // Schema 1 (or none) predates the fence and is not task-list input.
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("schemaVersion"), 1}}))
+               .error,
+           TaskListWireError::UnsupportedSchema);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("schemaVersion"), undefined()}}))
+               .error,
+           TaskListWireError::UnsupportedSchema);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("epoch"), undefined()}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("epoch"),
+                         QStringLiteral("not-a-uuid")}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("revision"), undefined()}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("revision"),
+                         QStringLiteral("007")}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("generationAvailable"),
+                         undefined()}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  // An available generation can never carry the zero revision.
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("revision"), QStringLiteral("0")}}))
+               .error,
+           TaskListWireError::InvalidLineage);
+  // Before the first visibility generation the fence is legitimately zero.
+  QCOMPARE(TaskListWireDecoder::decodeWindows(
+               payload({{QStringLiteral("revision"), QStringLiteral("0")},
+                        {QStringLiteral("generationAvailable"), false}}))
+               .error,
+           TaskListWireError::None);
+}
+
+// AGENT-NOTE: Review finding P2-1 (rejected candidate 3a5ae17): the 4,096 /
+// 4,097 T1 Windows() boundary must be a registered row, not a scratch check.
+void TaskListWireTests::windowsInventoryBoundIsExact() {
+  const StandardScene atLimit = standaloneScene(4096);
+  const auto decoded = TaskListWireDecoder::decodeWindows(atLimit.windows);
+  QVERIFY2(decoded.ok(), qPrintable(decoded.message));
+  QCOMPARE(decoded.windows.size(), 4096);
+
+  const StandardScene overLimit = standaloneScene(4097);
+  QCOMPARE(TaskListWireDecoder::decodeWindows(overLimit.windows).error,
+           TaskListWireError::LimitExceeded);
 }
 
 void TaskListWireTests::rejectsHostileWindowEntries() {
@@ -227,10 +313,120 @@ void TaskListWireTests::rejectsHostileScopeEntries() {
                                        QStringLiteral("output-1"),
                                        {QStringLiteral("ws-1")}),
                         scopeEntryJson(QStringLiteral("w1"),
-                                       QStringLiteral("output-2"),
+                                       QStringLiteral("output-1"),
                                        {QStringLiteral("ws-2")})}))
                .error,
            TaskListWireError::DuplicateScopeId);
+}
+
+// AGENT-NOTE: Review finding P1-1 (rejected candidate 3a5ae17): the decoder
+// previously ignored the required outputGeneration/scope/outputs fields,
+// accepted a non-UUID epoch, and never validated window output membership, so
+// foreign-lineage scope payloads published as current truth.
+void TaskListWireTests::scopeSnapshotRequiresCompleteLineage() {
+  auto mutate = [](const QByteArray &base, const QByteArray &key,
+                   const QByteArray &replacement) {
+    QByteArray copy = base;
+    return copy.replace(key, replacement);
+  };
+  const QByteArray valid = scopePayload(
+      {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")})});
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(valid).error,
+           TaskListWireError::None);
+
+  // The three required top-level fields the rejected candidate ignored.
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               mutate(valid, "\"outputGeneration\":\"1\",", ""))
+               .error,
+           TaskListWireError::InvalidLineage);
+  QByteArray noScope = QJsonDocument(
+                           QJsonObject{{QStringLiteral("status"),
+                                        QStringLiteral("ok")},
+                                       {QStringLiteral("schemaVersion"), 1},
+                                       {QStringLiteral("epoch"), kScopeEpoch},
+                                       {QStringLiteral("revision"),
+                                        QStringLiteral("1")},
+                                       {QStringLiteral("outputGeneration"),
+                                        QStringLiteral("1")},
+                                       {QStringLiteral("outputs"),
+                                        QJsonArray{outputJson(
+                                            QStringLiteral("output-1"))}},
+                                       {QStringLiteral("windows"),
+                                        QJsonArray{}}})
+                           .toJson(QJsonDocument::Compact);
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(noScope).error,
+           TaskListWireError::InvalidScope);
+  QByteArray noOutputs = QJsonDocument(
+                             QJsonObject{{QStringLiteral("status"),
+                                          QStringLiteral("ok")},
+                                         {QStringLiteral("schemaVersion"), 1},
+                                         {QStringLiteral("epoch"), kScopeEpoch},
+                                         {QStringLiteral("revision"),
+                                          QStringLiteral("1")},
+                                         {QStringLiteral("outputGeneration"),
+                                          QStringLiteral("1")},
+                                         {QStringLiteral("scope"),
+                                          QJsonObject{{QStringLiteral(
+                                                           "workspaceId"),
+                                                       QStringLiteral(
+                                                           "workspace-1")}}},
+                                         {QStringLiteral("windows"),
+                                          QJsonArray{}}})
+                             .toJson(QJsonDocument::Compact);
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(noOutputs).error,
+           TaskListWireError::InvalidScope);
+
+  // A non-UUID epoch is not lineage.
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               mutate(valid, kScopeEpoch.toUtf8(), "e"))
+               .error,
+           TaskListWireError::InvalidLineage);
+
+  // A window scoped to an output the snapshot does not declare rejects the
+  // complete candidate.
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               scopePayload({scopeEntryJson(QStringLiteral("w1"),
+                                            QStringLiteral("output-foreign"),
+                                            {QStringLiteral("ws-1")})}))
+               .error,
+           TaskListWireError::InvalidScope);
+
+  // Output entries must carry identity, geometry, and scale; duplicates and
+  // hostile scales reject the whole snapshot.
+  QByteArray duplicateOutputs = valid;
+  duplicateOutputs.replace(
+      QByteArrayLiteral("\"outputs\":["),
+      QByteArrayLiteral("\"outputs\":[") +
+          QJsonDocument(outputJson(QStringLiteral("output-1")))
+              .toJson(QJsonDocument::Compact) +
+          QByteArrayLiteral(","));
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(duplicateOutputs).error,
+           TaskListWireError::InvalidScope);
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               mutate(valid, "\"scale\":1", "\"scale\":17"))
+               .error,
+           TaskListWireError::InvalidScope);
+  QByteArray missingGeometry = valid;
+  missingGeometry.replace(
+      QJsonDocument(outputJson(QStringLiteral("output-1")))
+          .toJson(QJsonDocument::Compact),
+      QByteArrayLiteral("{\"id\":\"output-1\",\"scale\":1}"));
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(missingGeometry).error,
+           TaskListWireError::InvalidScope);
+}
+
+// AGENT-NOTE: Review finding P2-1 (rejected candidate 3a5ae17): the scope
+// snapshot 4,096 / 4,097 boundary must be a registered row.
+void TaskListWireTests::scopeSnapshotBoundIsExact() {
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               standaloneScene(4096).scope)
+               .error,
+           TaskListWireError::None);
+  QCOMPARE(TaskListWireDecoder::decodeScopeSnapshot(
+               standaloneScene(4097).scope)
+               .error,
+           TaskListWireError::LimitExceeded);
 }
 
 QTEST_GUILESS_MAIN(TaskListWireTests)

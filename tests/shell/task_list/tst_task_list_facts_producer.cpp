@@ -70,6 +70,13 @@ private slots:
   void ownerReplacementRebindsReads();
   void invalidFactsRejectedBySourceDegrade();
   void stopIsSafeDuringRefresh();
+  void tornScopeFenceRereadsOnceThenDegrades();
+  void regressedScopeRevisionIsRejected();
+  void coherentEpochReplacementPublishes();
+  void degradationPublishesStateChanged();
+  void joinFailurePublishesStateChanged();
+  void stopWithdrawsAvailability();
+  void thousandsOfWindowsPublish();
 };
 
 void TaskListFactsProducerTests::publishesCoherentGeneration() {
@@ -281,6 +288,233 @@ void TaskListFactsProducerTests::stopIsSafeDuringRefresh() {
                         QStringLiteral(":1.1"), standardScene());
   }
   QCOMPARE(source.status(), TaskListSourceStatus::Loading);
+}
+
+// AGENT-NOTE: Review finding P1-1 (rejected candidate 3a5ae17): a scope
+// snapshot whose (epoch, revision) does not exactly match the schema-2
+// Windows() fence is torn truth. The producer must discard it, re-read once,
+// and degrade fail-closed with notification if the mismatch persists — never
+// publish foreign output truth.
+void TaskListFactsProducerTests::tornScopeFenceRereadsOnceThenDegrades() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  QCOMPARE(source.revision(), quint64(1));
+  const TaskGeneration retained = source.generation();
+  QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+
+  // Scope at revision 2 while the Windows() fence still names revision 1.
+  StandardScene torn = standardScene();
+  torn.scope = scopePayload(
+      {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")}),
+       scopeEntryJson(QStringLiteral("w2"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")}),
+       scopeEntryJson(QStringLiteral("w3"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")})},
+      2);
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
+  transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
+                      torn);
+  // Discarded without publishing; exactly one re-read follows.
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  QCOMPARE(source.revision(), quint64(1));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 3, 2'000);
+
+  // A persistently torn fence degrades fail-closed and notifies.
+  transport.emitScene(transport.requestedTokens.at(2), QStringLiteral(":1.1"),
+                      torn);
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+  QCOMPARE(source.generation(), retained);
+  QVERIFY(stateSpy.size() >= 1);
+}
+
+// AGENT-NOTE: Review finding P1-1 (rejected candidate 3a5ae17): under one
+// owner and epoch, a scope revision that regresses below (or collides with
+// changed bytes at) the accepted lineage is foreign truth and must degrade,
+// not publish.
+void TaskListFactsProducerTests::regressedScopeRevisionIsRejected() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+
+  // Advance the accepted lineage to revision 2.
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
+  transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
+                      standardScene(2));
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  QCOMPARE(source.revision(), quint64(2));
+  const TaskGeneration retained = source.generation();
+  QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+
+  // A coherent-fence refresh at the regressed revision 1 is rejected.
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 3, 2'000);
+  transport.emitScene(transport.requestedTokens.at(2), QStringLiteral(":1.1"),
+                      standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+  QCOMPARE(source.revision(), quint64(2));
+  QCOMPARE(source.generation(), retained);
+  QVERIFY(stateSpy.size() >= 1);
+}
+
+// Positive control for the lineage fence: a coherent epoch replacement under
+// the same owner (compositor instance restart) must still publish.
+void TaskListFactsProducerTests::coherentEpochReplacementPublishes() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+
+  const QString newEpoch =
+      QStringLiteral("bbbbbbbb-3ee6-4cc5-bf64-3d46cab972d0");
+  StandardScene restarted;
+  restarted.windows = windowsPayload(
+      {windowJson(QStringLiteral("w1"), QStringLiteral("app.one"))}, 1,
+      newEpoch);
+  restarted.containers = containersPayload({});
+  restarted.scope = scopePayload(
+      {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")})},
+      1, newEpoch);
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
+  transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
+                      restarted);
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  QCOMPARE(source.revision(), quint64(2));
+  QCOMPARE(source.generation().entries.size(), 1);
+}
+
+// AGENT-NOTE: Review finding P1-2 (rejected candidate 3a5ae17): failRefresh()
+// degraded the source without emitting the only producer notification. Every
+// observable degradation must publish fail-closed availability through
+// stateChanged.
+void TaskListFactsProducerTests::degradationPublishesStateChanged() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  const TaskGeneration retained = source.generation();
+  QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+
+  // failRefresh path: a malformed scope reply degrades and must notify.
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
+  StandardScene broken = standardScene(2);
+  broken.scope = QByteArrayLiteral(
+      "{\"status\":\"ok\",\"schemaVersion\":1,\"revision\":\"2\",\"windows\":[]}");
+  transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
+                      broken);
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+  QCOMPARE(source.generation(), retained);
+  QVERIFY(stateSpy.size() >= 1);
+}
+
+// AGENT-NOTE: Review finding P1-2 (rejected candidate 3a5ae17): the
+// join-failure path had the same missing notification as failRefresh().
+void TaskListFactsProducerTests::joinFailurePublishesStateChanged() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  const TaskGeneration retained = source.generation();
+  QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+
+  // Two active windows pass the decoders but violate the T0 batch contract.
+  StandardScene hostile = standardScene(2);
+  hostile.windows = windowsPayload(
+      {windowJson(QStringLiteral("w1"), QStringLiteral("app.one"), {}, true),
+       windowJson(QStringLiteral("w9"), QStringLiteral("app.nine"), {}, true)},
+      2);
+  hostile.containers = containersPayload({});
+  hostile.scope = scopePayload(
+      {scopeEntryJson(QStringLiteral("w1"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")}),
+       scopeEntryJson(QStringLiteral("w9"), QStringLiteral("output-1"),
+                      {QStringLiteral("ws-1")})},
+      2);
+  transport.emitInvalidation(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 2, 2'000);
+  transport.emitScene(transport.requestedTokens.at(1), QStringLiteral(":1.1"),
+                      hostile);
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+  QCOMPARE(source.generation(), retained);
+  QVERIFY(stateSpy.size() >= 1);
+}
+
+// AGENT-NOTE: Review finding P1-2 (rejected candidate 3a5ae17): stop() left a
+// Ready source, the bound owner, and container lineage live, so the operation
+// adapter kept admitting mutations. Stop must withdraw owner-bound truth,
+// degrade fail-closed, and notify.
+void TaskListFactsProducerTests::stopWithdrawsAvailability() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standardScene());
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  const TaskGeneration retained = source.generation();
+  QVERIFY(producer.containerLineage(QStringLiteral("c1")).has_value());
+  QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+
+  producer.stop();
+  QCOMPARE(stateSpy.size(), 1);
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+  QCOMPARE(producer.uniqueOwner(), QString());
+  QVERIFY(!producer.containerLineage(QStringLiteral("c1")).has_value());
+  // The last accepted generation stays visible; nothing new can publish.
+  QCOMPARE(source.generation(), retained);
+  transport.emitScene(quint64(99), QStringLiteral(":1.1"), standardScene());
+  QTest::qWait(30);
+  QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
+}
+
+// AGENT-NOTE: Review finding P2-1 (rejected candidate 3a5ae17): the at-limit
+// 4,096-window scene must be a registered producer row, not a scratch check.
+void TaskListFactsProducerTests::thousandsOfWindowsPublish() {
+  TaskListSource source;
+  FakeProducerTransport transport;
+  TaskListFactsProducer producer(transport, source, fastTiming());
+  QVERIFY(producer.start());
+  transport.emitOwner(QStringLiteral(":1.1"));
+  QTRY_COMPARE_WITH_TIMEOUT(transport.requestedTokens.size(), 1, 2'000);
+  transport.emitScene(transport.requestedTokens.constFirst(),
+                      QStringLiteral(":1.1"), standaloneScene(4096));
+  QCOMPARE(source.status(), TaskListSourceStatus::Ready);
+  QCOMPARE(source.generation().entries.size(), 4096);
 }
 
 QTEST_GUILESS_MAIN(TaskListFactsProducerTests)
