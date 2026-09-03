@@ -219,6 +219,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
+            QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
             qindaqt_themes
             KF6::GlobalAccel

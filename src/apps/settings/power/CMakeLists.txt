@@ -37,7 +37,7 @@ qt_add_qml_module(
 )
 target_link_libraries(
     qindaqt_settings_power_backend_qml
-    PRIVATE qindaqt_settings_power QindaQt::TokensQml
+    PRIVATE qindaqt_settings_power QindaQt::SessionActions QindaQt::TokensQml
             Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
 )
 set_target_properties(qindaqt_settings_power_backend_qml PROPERTIES
@@ -56,6 +56,7 @@ qt_add_qml_module(
         qml/PowerBrightnessSection.qml
         qml/PowerPage.qml
         qml/PowerProfileSection.qml
+        qml/PowerSessionSection.qml
         qml/PowerSupplySection.qml
 )
 target_link_libraries(
@@ -92,6 +93,7 @@ install(
         qml/PowerBrightnessSection.qml
         qml/PowerPage.qml
         qml/PowerProfileSection.qml
+        qml/PowerSessionSection.qml
         qml/PowerSupplySection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power"
     COMPONENT SettingsAppearanceRuntime

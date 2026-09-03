@@ -5,6 +5,7 @@
 #include <qindaqt/apps/settings_power/power_settings_model.h>
 #include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
+#include <qindaqt/services/session_actions/session_actions_client.h>
 
 #include <QtDBus/QDBusConnection>
 
@@ -14,14 +15,21 @@ class PowerRouteComposition::Private final {
 public:
   Private()
       : transport(QDBusConnection::sessionBus()), client(&transport),
-        model(client) {
+        sessionActions(QDBusConnection::sessionBus(),
+                       QDBusConnection::systemBus()),
+        model(client, &sessionActions) {
     client.start();
+    sessionActions.start();
   }
 
-  ~Private() { client.stop(); }
+  ~Private() {
+    sessionActions.stop();
+    client.stop();
+  }
 
   Power::QtPowerTransport transport;
   Power::PowerClient client;
+  Services::SessionActions::SessionActionsClient sessionActions;
   PowerSettingsModel model;
 };
 

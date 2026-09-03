@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
+#include "qindaqt/session_supervisor/session_service.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QTextStream>
+#include <QtDBus/QDBusConnection>
 
 #include <utility>
 
@@ -29,6 +31,9 @@ int main(int argc, char *argv[])
          QStringLiteral("qindaqt-notification-host")},
         {QStringLiteral("shell"), QStringLiteral("Shell executable."),
          QStringLiteral("path"), QStringLiteral("qindaqt-shell")},
+        {QStringLiteral("network-secret-agent"),
+         QStringLiteral("Optional NetworkManager secret-agent executable."),
+         QStringLiteral("path"), QStringLiteral("qindaqt-network-secret-agent")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Shell theme id."),
@@ -48,11 +53,20 @@ int main(int argc, char *argv[])
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));
     options.shellExecutable = parser.value(QStringLiteral("shell"));
+    options.networkSecretAgentExecutable =
+        parser.value(QStringLiteral("network-secret-agent"));
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
     options.compositorProcessId = *compositorProcessId;
     SessionProcessSupervisor supervisor(std::move(options));
     if (!supervisor.start(&error)) {
+        QTextStream(stderr) << QCoreApplication::applicationName() << ": "
+                            << error << '\n';
+        return 2;
+    }
+    SessionService sessionService(supervisor, QDBusConnection::sessionBus());
+    if (!sessionService.start(&error)) {
+        supervisor.stop();
         QTextStream(stderr) << QCoreApplication::applicationName() << ": "
                             << error << '\n';
         return 2;

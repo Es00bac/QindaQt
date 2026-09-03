@@ -23,6 +23,8 @@ T.Page {
         ? profileSection.firstActionTarget
         : brightnessSection.firstActionTarget !== null
           ? brightnessSection.firstActionTarget
+          : sessionSection.firstActionTarget !== null
+            ? sessionSection.firstActionTarget
           : retryButton.visible && retryButton.enabled ? retryButton
           : closeButton
 
@@ -98,14 +100,6 @@ T.Page {
             Accessible.name: text
         }
 
-        StateCard {
-            objectName: "powerAuthorityBoundary"
-            Layout.fillWidth: true
-            status: StateCard.Information
-            title: qsTr("Session actions are not on this page")
-            message: qsTr("Suspend, hibernate, restart, power off, and lock remain outside the Power1 Settings boundary.")
-        }
-
         Flickable {
             id: viewport
             objectName: "powerFormViewport"
@@ -154,6 +148,10 @@ T.Page {
                     PowerBrightnessSection {
                         id: brightnessSection
                         powerSettings: root.powerSettings
+                    }
+                    PowerSessionSection {
+                        id: sessionSection
+                        sessionActions: root.powerSettings.sessionActions
                     }
                 }
             }
