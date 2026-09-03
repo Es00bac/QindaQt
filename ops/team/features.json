@@ -171,7 +171,7 @@
           "title": "Global application menu",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests.",
+          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests. G2 composes the accepted transports into the production shell: the shell owns the AppMenu registrar, binds menu truth to the authenticated compositor identity snapshot (ADR-0063), hosts the compiled QindaQt.Shell.GlobalMenu applet with keyboard-reachable submenu popups in the panel dispatcher, and ships it as a closed GlobalMenuAppletRuntime install component.",
           "evidence": [
             {
               "kind": "commit",
@@ -187,9 +187,14 @@
               "kind": "commit",
               "reference": "7c27ee5b1b50746e59f70360d89b0e959328dd47",
               "summary": "The independently accepted Global Menu G1 transports (registrar, dbusmenu client/decoder, composition, ADR-0056) are integrated; Kimi K3 exact review 0/0/0/1, Debug and Release 16/16 reproduced on the merged tree."
+            },
+            {
+              "kind": "commit",
+              "reference": "7de332fa1c6d76a5dbe35a5ad57bd31c9a9d6a5e",
+              "summary": "The exact Global Menu G2 candidate 24240e9 (Joan Ball, OpenAI Codex, ACCEPT 0/0/0/1 after the keyboard-path and two-process ownership rejections) is integrated; the merged tree passes global-menu, applet, shell-runtime, launcher, and adjacent applet rows 87/87 in Debug and Release, the static gates, and the broad safe Debug suite 485/485 after two manager reconciliations (the launcher documentation guard now expects seven dispatcher entries, and the omitted QindaQt.Shell.GlobalMenu test-import stub was added at 4609beb)."
             }
           ],
-          "caveat": "G1 is executable transport behavior under injected fakes and private buses, not a live panel feature: shell runtime instantiation, applet-registry/manifest wiring, installed QML packaging, submenu popups, foreign-toolkit exporters, and installed-session qualification remain."
+          "caveat": "G2 hosts the global menu in the production panel over injected registrar/exporter fakes and the compositor identity snapshot; first-party application menu export, foreign-toolkit (GTK) exporters, and installed nested-session qualification remain."
         },
         {
           "id": "QQ-004.07",
@@ -943,7 +948,7 @@
           "title": "QindaQt File Manager",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime.",
+          "summary": "The native File Manager S0 local browsing slice is integrated with bounded CLI intent, asynchronous directory listing, navigation history, keyboard-accessible QST/Controls presentation, desktop metadata, and a relocatable component-only installed runtime. S1 adds recoverable local mutation (new folder, rename, copy, move, trash, restore, empty trash) with freedesktop Trash records, atomic no-replace primitives, changed-underneath identity checks, off-GUI-thread execution with cancellation, and keyboard/accessible confirmations through the AppShell action catalog.",
           "evidence": [
             {
               "kind": "commit",
@@ -954,9 +959,14 @@
               "kind": "test",
               "reference": "docs/wiki/apps/file-manager.md",
               "summary": "The owning page records the model, presentation, package, containment, failure, and explicit S0 authority boundaries."
+            },
+            {
+              "kind": "commit",
+              "reference": "0b9795426898b4c089e52cff011285361ae39dc4",
+              "summary": "The exact File Manager S1 candidate 9ade95a (Kathleen Antonelli, Moonshot Kimi, ACCEPT 0/0/0/0 after rejecting the QML identity precision loss, orphan-trash collision, and racing-overwrite defects) is integrated; the merged tree passes file-manager rows in Debug and Release under host isolation, the static gates, and the broad safe Debug suite 485/485."
             }
           ],
-          "caveat": "S0 is deliberately read-only and local: file mutation, mounts, trash, search, previews, portals, recovery, nested screenshots, and whole-application assistive-technology qualification remain later slices."
+          "caveat": "Mounts, search, previews, portals, nested screenshots, and whole-application assistive-technology qualification remain later slices."
         },
         {
           "id": "QQ-006.08",
