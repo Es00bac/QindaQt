@@ -1,7 +1,7 @@
 # First-party delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-02T23:04:00-06:00
+- Last observation: 2026-09-02T23:32:24-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -11,4 +11,4 @@
 | QQ-006 remaining first-party work | See `features.json` | unclaimed | base `b6c4669`; no worktree | unclaimed | Refill after one current candidate freezes or a non-overlapping exact owner is appointed | Settings registries, AppShell, installed package, and cross-app accessibility matrices are shared gates | Read First-party threads before claiming | File Manager, Appearance, and Terminal S0 rows in the prior queue are already integrated and were removed as stale coordination entries |
 | QQ-006.02 Controls visual gate host independence | gate repair PAUSED (GLM then Kimi usage limits); WIP preserved at `f5b182c` | Erna Schneider Hoover (Moonshot Kimi `kimi-code/k3`, high) | branch `worker/controls-visual-fonts`; worktree `container-wm-workers/controls-visual-fonts` | unassigned | Resume when Kimi returns; the branch also carries main-synced copies of unrelated files that merge cleanly | none | none | 2026-09-02T23:04:00-06:00 paused by provider outage |
 | QQ-006.05 Audio Settings route | candidate `ce66a98` REJECTED 0/2/1/2 by Joan Clarke (Codex); repair PAUSED (Kimi usage limit); WIP preserved at `2d49ab8` | Milly Koss (Moonshot Kimi `kimi-for-coding` K2.7, high) | rejected product `ce66a98` on `worker/audio-settings-route`; WIP `2d49ab8` | Joan Clarke (OpenAI Codex) rechecks the repaired descendant | Resume the repair when Kimi returns | Settings Center registry edits also pending from the customize repair | none | 2026-09-02T23:04:00-06:00 paused by provider outage |
-| QQ-006.08 Terminal S1 sessions/tabs, profiles, persistence | EXECUTABLE S0 → lane PAUSED (Kimi usage limit); WIP preserved at `832077f` | Kathleen Booth (Moonshot Kimi `kimi-for-coding` K2.7, high) | branch `worker/terminal-s1`; worktree `container-wm-workers/terminal-s1` | unassigned | Resume when Kimi returns | none | none | 2026-09-02T23:04:00-06:00 paused by provider outage |
+| QQ-006.08 Terminal S1 sessions/tabs, profiles, persistence | EXECUTABLE S0 → candidate in progress (resumed on Codex) | Mary Coombs (OpenAI Codex `gpt-5.6-sol`, high) replacing Kathleen Booth (Kimi, provider limit) | WIP preserved at `832077f`; branch `worker/terminal-s1`; worktree `container-wm-workers/terminal-s1` | unassigned until handoff (different worker) | Bounded multi-session tab strip, validated profiles, Settings1 persistence, AppShell actions; Debug/Release `^qindaqt\.terminal-` | The font lane (paused) adds one bootstrap line to `main.cpp` | none | 2026-09-02T23:32:24-06:00 resumed by manager dispatch |
