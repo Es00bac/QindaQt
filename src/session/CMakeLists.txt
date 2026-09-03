@@ -39,3 +39,17 @@ set_target_properties(qindaqt-wm PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-wm)
 
 install(TARGETS qindaqt-wm RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+# Display-manager session entry (SDDM, GDM, greetd list wayland-sessions).
+# AGENT-NOTE: the entry execs the installed launcher by absolute path with the
+# DRM backend; the launcher itself resolves the KWin plugin root from its own
+# install prefix, so a relocated prefix keeps working without editing this file.
+configure_file(
+    "${PROJECT_SOURCE_DIR}/data/session/qindaqt.desktop.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/qindaqt.desktop"
+    @ONLY
+)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt.desktop"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/wayland-sessions"
+)

@@ -63,7 +63,7 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         ${_qindaqt_kwin_abi_test_arguments}
-        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.5
+        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.6
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_abi_configuration.cmake"
 )
 add_test(
@@ -110,7 +110,7 @@ set_tests_properties(
 if(TARGET qindaqt_kwin_input_adapter)
     find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
     find_package(KDecoration3 6.6 REQUIRED CONFIG)
-    find_package(KWin 6.6.5 EXACT REQUIRED CONFIG)
+    find_package(KWin 6.6.6 EXACT REQUIRED CONFIG)
     qt_add_executable(
         qindaqt_kwin_input_adapter_tests
         tst_kwininputadapter.cpp

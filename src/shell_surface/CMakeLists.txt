@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-find_package(LayerShellQt 6.6.5 REQUIRED)
+find_package(LayerShellQt 6.6.6 REQUIRED)
 
 qt_add_library(qindaqt_shell_surface STATIC)
 add_library(QindaQt::ShellSurface ALIAS qindaqt_shell_surface)

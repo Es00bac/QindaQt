@@ -6,7 +6,7 @@ function(qindaqt_resolve_kwin_abi manifest_path output_variable)
     # AGENT-GUARD: KWin plugins have a patch-release binary ABI. This literal,
     # the immutable source manifest, find_package(EXACT), and PluginFactory_iid
     # must advance together only after the compositor matrix is rerun.
-    set(_qindaqt_supported_kwin_abi "6.6.5")
+    set(_qindaqt_supported_kwin_abi "6.6.6")
 
     if(DEFINED QINDAQT_KWIN_ABI_VERSION
        AND NOT "${QINDAQT_KWIN_ABI_VERSION}" STREQUAL "${_qindaqt_supported_kwin_abi}")

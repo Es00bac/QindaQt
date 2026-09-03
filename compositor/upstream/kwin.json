@@ -3,11 +3,11 @@
   "upstream": {
     "project": "KWin",
     "repository": "https://invent.kde.org/plasma/kwin.git",
-    "release": "6.6.5",
-    "ref": "refs/tags/v6.6.5",
-    "tagObject": "1b035282ff05101a3441113648a93f57fe0351c1",
-    "commit": "b04d59c03749484a8a0ed5a8d4cda515a267c59b",
-    "tree": "99868e7da683d59f3ed90b0f0fe7ebfa4be5bc2b"
+    "release": "6.6.6",
+    "ref": "refs/tags/v6.6.6",
+    "tagObject": "43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff",
+    "commit": "9bf2235fad10de9048c634e376bf12e56b3023e6",
+    "tree": "88f96f8cde49c51552d82f60fd461b6e8b950685"
   },
   "integrationContract": {
     "strategy": "small downstream patch series plus release-matched binary plugins",

@@ -14,13 +14,13 @@ The source manifest pins one immutable upstream state:
 
 | Field | Value |
 | --- | --- |
-| Release/ref | KWin `6.6.5`, `refs/tags/v6.6.5` |
+| Release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
 | Tag object | `1b035282ff05101a3441113648a93f57fe0351c1` |
 | Commit | `b04d59c03749484a8a0ed5a8d4cda515a267c59b` |
 | Tree | `99868e7da683d59f3ed90b0f0fe7ebfa4be5bc2b` |
 | Current downstream patches | Zero |
-| KWin CMake target | `KWin::kwin`, found with version `6.6.5 EXACT` |
-| Plugin factory ABI/IID | `KWin::PluginFactory`, `org.kde.kwin.PluginFactoryInterface6.6.5` |
+| KWin CMake target | `KWin::kwin`, found with version `6.6.6 EXACT` |
+| Plugin factory ABI/IID | `KWin::PluginFactory`, `org.kde.kwin.PluginFactoryInterface6.6.6` |
 
 This is a binary plugin ABI, not a compatibility range. QindaQt must rebuild
 and rerun the compositor matrix for every KWin patch release. The manifest
@@ -28,7 +28,7 @@ records KWin's Qt minimum as 6.10.0 while QindaQt's baseline is Qt 6.11.
 
 The supported ABI is not a CMake option. Configuration removes the former
 cache entry, rejects a conflicting value, verifies the fixed ABI against the
-manifest, and requests `find_package(KWin 6.6.5 EXACT)`. With
+manifest, and requests `find_package(KWin 6.6.6 EXACT)`. With
 `QINDAQT_BUILD_KWIN_PLUGIN=ON` (the default), missing exact KWin or Qt
 DBus/Widgets dependencies are fatal. Only an explicit `OFF` selects a
 bridge-only build.

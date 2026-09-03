@@ -29,7 +29,7 @@ from nested_session_scenario import (
 )
 
 
-KWIN_ABI = "6.6.5"
+KWIN_ABI = "6.6.6"
 
 
 def extract_probe_result(stdout: str) -> dict[str, Any]:

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from desktop_session_host_tools import library_search_roots
 from desktop_session_lifecycle import LIFECYCLE_TRACE_ENVIRONMENT
 from desktop_session_matrix import DesktopMatrixScenario
 from desktop_session_process import RuntimeState, spawn_logged_process, wait_for_path
@@ -149,6 +150,21 @@ def _start_services(
     return bus.pid
 
 
+
+def _parent_library_environment(
+    arguments: argparse.Namespace, environment: Mapping[str, str]
+) -> dict[str, str]:
+    """Give the parent Weston (and its screenshooter) their own prefix libraries."""
+
+    parent_environment = dict(environment)
+    weston_libraries, _plugins, _qml = library_search_roots([Path(arguments.weston)])
+    if weston_libraries:
+        existing = parent_environment.get("LD_LIBRARY_PATH", "")
+        parent_environment["LD_LIBRARY_PATH"] = ":".join(
+            weston_libraries + ([existing] if existing else [])
+        )
+    return parent_environment
+
 def _start_fractional_parent(
     arguments: argparse.Namespace,
     environment: dict[str, str],
@@ -156,7 +172,7 @@ def _start_fractional_parent(
     virtual: VirtualOutputSpec,
     parent_socket: str,
 ) -> tuple[dict[str, str], int, int]:
-    parent_environment = dict(environment)
+    parent_environment = _parent_library_environment(arguments, environment)
     parent_bus_path = Path(environment["XDG_RUNTIME_DIR"]) / "qindaqt-parent-bus"
     parent_bus = spawn_logged_process(
         "parent-private-bus",
@@ -201,7 +217,7 @@ def _start_parent(
             arguments, environment, state, virtual, parent_socket
         )
     else:
-        parent_environment = dict(environment)
+        parent_environment = _parent_library_environment(arguments, environment)
         parent = spawn_logged_process(
             "parent-compositor",
             [str(arguments.weston), "--backend=headless", "--renderer=pixman",
@@ -210,7 +226,7 @@ def _start_parent(
              f"--height={virtual.pixel_height}", "--scale=1",
              f"--socket={parent_socket}",
              "--log=/var/log/qindaqt-desktop/parent-compositor-weston.log"],
-            environment,
+            parent_environment,
         )
         state.track(parent, [arguments.weston])
         bus_pid, parent_pid = None, parent.pid
@@ -233,6 +249,10 @@ def _start_desktop(
         arguments, environment, state, scenario
     )
     compositor_environment = dict(environment)
+    # AGENT-NOTE: inside the sandbox journald is unreachable, so Qt would drop
+    # every qCritical from KWin, the session, and the shell; force stderr so the
+    # compositor log carries the shell's own exit reason.
+    compositor_environment["QT_FORCE_STDERR_LOGGING"] = "1"
     if parent_environment is not None:
         compositor_environment["WAYLAND_DISPLAY"] = "qindaqt-parent-wayland"
     scenario_path = (
@@ -244,7 +264,11 @@ def _start_desktop(
     compositor = spawn_logged_process(
         "compositor",
         [str(stage.executables["launcher"]), "--plugin-root",
-         str(stage.compositor_plugin.parents[2]), backend,
+         str(stage.compositor_plugin.parents[2]),
+         # AGENT-GUARD: name the configured KWin explicitly; the launcher's
+         # PATH default could otherwise pick a different KWin release inside
+         # the sandbox and reject the release-matched plugin.
+         "--kwin", str(arguments.kwin_wayland), backend,
          "--width", str(virtual.logical_width),
          "--height", str(virtual.logical_height),
          "--scale", str(virtual.scale), "--output-count", str(virtual.output_count),

@@ -19,7 +19,7 @@ The repository currently builds and tests:
   singleton;
 - a Qt Quick shell preview showing panels, applets, and the shared-title-bar
   window-container concept at arbitrary preview dimensions;
-- an exact KWin 6.6.5 source/ABI pin, the `qindaqt-wm` launcher, a
+- an exact KWin 6.6.6 source/ABI pin, the `qindaqt-wm` launcher, a
   release-matched plugin, and an atomic versioned container-control bridge;
 - deterministic live KWin integration covering three mapped Wayland windows,
   rootless XWayland, output/input inventories, page activation, detach,

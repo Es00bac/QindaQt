@@ -315,7 +315,7 @@ session bus, display server, or hardware. The exact matrix and non-claims are
 detailed in [Clipboard applet](../shell/clipboard-applet.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
-Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
+Plasma Activities to 6.6.6 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
 binary plugin instead of weakening or bypassing its exact CMake check. A full
 default-preset build against the coherent qualified stack in the repository
