@@ -270,8 +270,8 @@
           "id": "QQ-004.11",
           "title": "Status-notifier tray",
           "weight": 2,
-          "state": "WIRED",
-          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state.",
+          "state": "EXECUTABLE",
+          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state. S1 adds the production StatusNotifierWatcher transport with truthful ownership, the item client/monitor with bounded facts and one owner generation per watcher epoch, the D-BusMenu adapter, and the icon renderer confined to injected roots.",
           "evidence": [
             {
               "kind": "commit",
@@ -282,9 +282,14 @@
               "kind": "test",
               "reference": "docs/wiki/shell/status-tray.md",
               "summary": "Manager verification passes 3/3 registered rows and 17/25/9 direct value, registry, and presentation cases, plus strict source and documentation gates."
+            },
+            {
+              "kind": "commit",
+              "reference": "e3eacddeb070375c8c4d136fee687c09cca48503",
+              "summary": "The exact tray S1 candidate 68009bb (Marjorie Lee Browne, OpenAI Codex, ACCEPT 0/0/0/0 after three rejected rounds covering watcher signals, activation signatures, owner generations, root object paths, wrong-typed properties, timeout truth, icon-root confinement, image bounds, and foreign owner-loss signals; lineage Jean Sammet/Kimi -> Gloria Hewitt-Codex) is integrated; the merged tree passes tray, shell-runtime, and applet rows 16/16 in Debug and Release, the static gates, and the broad safe Debug suite 551/551."
             }
           ],
-          "caveat": "A production StatusNotifierWatcher transport, D-BusMenu adapter, icon renderer, applet registration, shell composition, and installed nested interaction remain."
+          "caveat": "Applet registration, shell composition, and installed nested interaction proof remain."
         },
         {
           "id": "QQ-004.12",
