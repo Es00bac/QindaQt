@@ -973,7 +973,7 @@
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation.",
+          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation. S2 adds per-session scrollback search (bounded regex, wrap, keyboard parity, accessible announcements) and bounded link presentation with confirmed argv-only opening through the injected spawner.",
           "evidence": [
             {
               "kind": "commit",
@@ -989,9 +989,14 @@
               "kind": "commit",
               "reference": "00f2db99ce13df2f426abd93e277de3d33411041",
               "summary": "Terminal S1 is integrated after Dina St Johnston (OpenAI Codex, different worker) rejected 08481f4 at 0/2/1/1 (process-group leak, unpresented apply failures) and 34439e8 at 0/0/1/0 (vacuous dialog proof) and accepted the second repair at 0/0/0/0; the merged tree passes terminal 15/15 in Debug and Release under isolation."
+            },
+            {
+              "kind": "commit",
+              "reference": "9e3422e96bc749fd923826b7f1c02be57d899b80",
+              "summary": "The exact Terminal S2 candidate e030a42 (Sofia Kovalevskaya, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting cross-session search announcements and bidi format controls in the link gate) is integrated; the merged tree passes terminal, app-shell, and editor rows 34/34 in Debug and Release under host isolation, the static gates, and the broad safe Debug suite 489/489."
             }
           ],
-          "caveat": "Search, links, GPU rendering, global-menu export, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain later slices."
+          "caveat": "GPU rendering, global-menu export, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain."
         },
         {
           "id": "QQ-006.09",

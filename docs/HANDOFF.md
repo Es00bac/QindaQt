@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T06:07:45-06:00 — Terminal S2 (search, links) integrated at `9e3422e`.
 - 2026-09-03T05:37:29-06:00 — Global Menu G2 (`7de332f`) and File Manager S1 (`0b97954`) integrated; reconciliations `a1bac21` and `4609beb`; the dispatcher now hosts seven built-in applets and every dispatcher-level QML row needs a stub under `tests/shell/qml/imports/QindaQt/Shell/<Module>/` for each module `BuiltinAppletContent.qml` imports.
 - 2026-09-03T04:58:12-06:00 — Bluetooth Settings route integrated at `500a33e` (merge `111dedb`); Settings Center order is now appearance, display, network, customize, audio, bluetooth.
 - 2026-09-03T04:42:48-06:00 — Controls visual fixtures pinned at `5cf24a2`; the broad safe suite now runs the visual rows again (465 rows).

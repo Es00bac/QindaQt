@@ -1,7 +1,7 @@
 # First-party delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T06:02:46-06:00
+- Last observation: 2026-09-03T06:07:45-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -17,4 +17,4 @@
 | QQ-006.03/QQ-004.06 First-party global-menu export (AppShell composition + File Manager consumer) | lane IN PROGRESS | Mary Cartwright (OpenAI Codex `gpt-5.6-sol`, high) | branch `worker/app-menu-export` from `main` `f84d3ae`; no candidate yet | to be assigned at handoff | Complete the candidate, then exact review | none | none | 2026-09-03T05:38:42-06:00 launched |
 | QQ-006.07 File Manager S1 mutation, trash, recovery | EXECUTABLE (widened) integrated at `0b97954` | Program Manager (integrated) | exact accepted product `9ade95a9eea345ba7a19db9ef97d8bf126458817` under merge `0b97954` | Kathleen Antonelli (Moonshot Kimi; `61283bf` REJECT `0/1/2/2`, `9ade95a` ACCEPT `0/0/0/0`) | Later slices: mounts, search, previews, portals | none | Regressions with an exact reproduction | 2026-09-03T05:37:29-06:00 merged; file-manager rows Debug/Release, broad 485/485, static gates |
 | QQ-006.06 Text Editor S2 multiple documents, find/replace, restore policy | repair `d68f8b1` HANDOFF; same-reviewer recheck IN PROGRESS | Beatrice Shilling (OpenAI Codex `gpt-5.6-sol`, high) | repaired product `d68f8b1576db9e0e185ff203a883721203197116` on `worker/text-editor-s2` (ancestor `a13aa62` rejected 0/2/2/0) | Olga Ladyzhenskaya (OpenAI Codex, recheck in progress) | Recheck, then manager integration | none | none | 2026-09-03T05:55:22-06:00 recheck launched |
-| QQ-006.08 Terminal S2 scrollback search and bounded links | `e030a42` ACCEPTED 0/0/0/0 by Sofia Kovalevskaya (Codex) on recheck; merged onto main at `9e3422e` (clean); manager verification IN PROGRESS | Program Manager (integrating) | exact accepted product `e030a42d1440591b73685ac464912e3c500dafdd` under merge `9e3422e` | Sofia Kovalevskaya (OpenAI Codex; `0949cb9` REJECT `0/2/4/0`, `e030a42` ACCEPT `0/0/0/0`) | Terminal/app-shell/editor rows Debug/Release, static gates, broad suite; then ledgers | none | none | 2026-09-03T06:02:46-06:00 verification running |
+| QQ-006.08 Terminal S2 scrollback search and bounded links | EXECUTABLE (widened) integrated at `9e3422e` | Program Manager (integrated) | exact accepted product `e030a42d1440591b73685ac464912e3c500dafdd` under merge `9e3422e` | Sofia Kovalevskaya (OpenAI Codex; `0949cb9` REJECT `0/2/4/0`, `e030a42` ACCEPT `0/0/0/0`) | Later slices: GPU rendering, menu export, AT proof, nested screenshots | none | Regressions with an exact reproduction | 2026-09-03T06:07:45-06:00 merged; rows 34/34 Debug/Release, broad 489/489, static gates |
