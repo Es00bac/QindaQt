@@ -1689,14 +1689,17 @@ non-canonical media, aggregate-overflow claims, unsanitized metadata).
 The C1 rows add `clipboard-protocol` hostile structures and canonical QCDL
 snapshots, `clipboard-client` exact-owner/epoch/revision fencing and uncertain
 operation results, `clipboard-service` opt-in/lock/purge/copy behavior,
+`clipboard-settings-consent` schema/profile-default denial plus explicit
+user-override acceptance, `clipboard-request-cache` FIFO result eviction and
+the exact 64-caller ceiling,
 `clipboard-private-bus` real client/service round trips and owner loss on an
 ephemeral private `dbus-daemon`, and `clipboard-wayland-adapter` compiled
 generated-client behavior against an in-process `libwayland-server` fake. The
 fake advertises both selection kinds and services nonblocking pipes so MIME
-preflight, sensitive no-read behavior, and the one-MiB read ceiling exercise
-the real adapter without `WAYLAND_DISPLAY` inheritance. Boundary-poison and
-pinned-XML checksum rows reject persistence/logging dependencies and protocol
-drift.
+preflight, sensitive no-read behavior, the one-MiB read ceiling, advertised-name
+and pending-offer bounds, global removal, and compositor disconnect exercise the
+real adapter without `WAYLAND_DISPLAY` inheritance. Boundary-poison and pinned-
+XML checksum rows reject persistence/logging dependencies and protocol drift.
 
 All runtime roots are below the assigned build tree. These tests never connect
 to the host clipboard, Wayland display, session bus, compositor, hardware, or

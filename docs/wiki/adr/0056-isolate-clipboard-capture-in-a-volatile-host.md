@@ -30,9 +30,10 @@ as separate modules with public injected seams.
 
 Authenticate the Wayland peer with `SO_PEERCRED` and provide only that PID to
 the fail-closed session-lock monitor. Capture requires a confirmed Settings1
-opt-in, conclusively unlocked authenticated state, and a live data-control
-device. Any authority loss stops capture and purges the model. Do not fall back
-to `wlr-data-control`; report the adapter unavailable.
+Boolean `true` sourced specifically from `user-overrides`, conclusively unlocked
+authenticated state, and a live data-control device. Schema and profile defaults
+are not consent. Any authority loss stops capture and purges the model. Do not
+fall back to `wlr-data-control`; report the adapter unavailable.
 
 Expose only canonical bounded QCDL descriptor bytes over Clipboard1. Fence all
 mutations by exact owner, process epoch, model generation, snapshot revision,
@@ -56,8 +57,9 @@ state authority.
   ordinary toolkit clipboard behavior is unaffected.
 - The resident process is intentionally session-volatile and restart changes
   epoch, invalidating all earlier client authority.
-- The Settings schema's legacy default remains a separate schema-owner
-  migration; the host itself starts disabled and trusts only a confirmed value.
+- Both shipped Settings schemas default clipboard history off. The host also
+  rejects a true schema/profile default, preserving explicit consent if a
+  future default regresses.
 
 ## Revisit when
 

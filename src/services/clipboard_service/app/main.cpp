@@ -7,6 +7,8 @@
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
+#include "clipboard_history_consent.h"
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
@@ -47,14 +49,8 @@ int main(int argc, char **argv)
         settingsTransport, {QStringLiteral("services.clipboardHistory")});
     QObject::connect(&settingsClient, &SettingsClient::SettingsClient::snapshotChanged,
                      &service, [&settingsClient, &service] {
-        const auto &snapshot = settingsClient.snapshot();
-        const QVariant value = snapshot.has_value()
-            ? snapshot->values.value(QStringLiteral("services.clipboardHistory"))
-            : QVariant{};
-        // AGENT-GUARD: missing, wrong-typed, or unconfirmed Settings1 truth is
-        // denial. The host never inherits an optimistic local default.
-        service.host()->setHistoryOptIn(value.metaType().id() == QMetaType::Bool
-                                        && value.toBool());
+        service.host()->setHistoryOptIn(
+            Clipboard::hasExplicitHistoryConsent(settingsClient.snapshot()));
     });
     QObject::connect(&settingsClient, &SettingsClient::SettingsClient::stateChanged,
                      &service, [&settingsClient, &service] {

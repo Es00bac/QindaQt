@@ -8,6 +8,9 @@
 
 namespace QindaQt::Services::ClipboardWayland {
 
+inline constexpr qsizetype kMaxAdvertisedMediaTypesPerOffer = 64;
+inline constexpr qsizetype kMaxPendingOffers = 16;
+
 enum class SelectionKind {
     Clipboard,
     Primary,

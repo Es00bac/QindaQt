@@ -111,3 +111,12 @@ in-flight guard and backs off. Replacement publishes old-owner loss before
 installing the next exact-owner subscription, and pending replies are fenced by
 the generation that initiated them. An epoch cannot change within one unique
 owner; an equal-revision baseline cannot contradict accepted values or sources.
+
+## Clipboard-history consent key
+
+`services.clipboardHistory` is Boolean and defaults to `false` in both shipped
+settings schemas. Clipboard1 treats a resolved `true` as consent only when the
+same snapshot's `sourceLayers` map names `user-overrides` for that key. A
+`SystemDefaults` or `ProfileDefaults` value is ordinary resolved configuration,
+not user consent, even if it is Boolean `true`. Missing, malformed, unavailable,
+or differently sourced truth keeps capture disabled and purges prior history.

@@ -5,6 +5,7 @@
 #include <qindaqt/services/clipboard_service/clipboard_host.h>
 
 #include <QtCore/QHash>
+#include <QtCore/QList>
 #include <QtDBus/QDBusContext>
 
 namespace QindaQt::Services::Clipboard {
@@ -44,9 +45,13 @@ Q_SIGNALS:
 
 private:
     struct Remembered { OperationRequest request; OperationResult result; };
+    struct CallerRequests {
+        QHash<quint64, Remembered> byId;
+        QList<quint64> oldestFirst;
+    };
     OperationResult submit(OperationRequest request);
     ClipboardHost *m_host = nullptr;
-    QHash<QString, QHash<quint64, Remembered>> m_remembered;
+    QHash<QString, CallerRequests> m_remembered;
 };
 
 } // namespace QindaQt::Services::Clipboard

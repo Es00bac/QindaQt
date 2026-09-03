@@ -202,35 +202,42 @@ advertised MIME names have been classified. Sensitive or one-time markers
 refuse the entire offer without opening a payload pipe. Unknown formats are
 ignored; the remaining canonical storable formats are deduplicated and capped
 at the C0 format and one-MiB aggregate item bounds. A transfer exceeding the
-bound is discarded. The adapter has no `wlr-data-control` fallback: absence or
-replacement of either required global withdraws availability truth instead of
-silently selecting another protocol contract.
+bound is discarded. Each offer may advertise at most 64 names and each retained
+name is limited to the C0 127-code-unit media-name bound; exceeding either limit
+refuses the offer before opening a payload pipe. At most 16 introduced but
+unselected offers are retained, with the oldest destroyed before admitting a
+new one. The adapter has no `wlr-data-control` fallback: compositor disconnect,
+or absence/removal/replacement of either required global, withdraws availability
+truth and cancels capture instead of silently selecting another protocol
+contract.
 
 The production adapter uses a private Wayland connection and authenticates its
 peer with `SO_PEERCRED`. The resulting compositor PID is the only PID accepted
 by the injected `SessionLockState` monitor. Capture is enabled only while all
 three facts are simultaneously true:
 
-1. Settings1 has confirmed `services.clipboardHistory` as a Boolean `true`;
+1. Settings1 has confirmed `services.clipboardHistory` as Boolean `true` whose
+   `sourceLayers` entry is exactly `user-overrides`;
 2. authenticated lock state is conclusively `Unlocked`; and
 3. the data-control device is available.
 
 Startup, Settings1 uncertainty, owner loss, lock transition, and protocol loss
 all fail closed. Turning the opt-in off or losing unlocked truth purges the C0
-model before readable metadata can be published. The schema currently declares
-the key with a legacy default of `true`; the host deliberately does not infer
-consent from that declaration and remains disabled until Settings1 returns a
-confirmed value. Changing the schema default to off is a separate schema-owner
-migration and remains required before default-on installations can claim the
-intended product default.
+model before readable metadata can be published. Both shipped settings schemas
+default the key to `false`. Defense in depth keeps schema and profile defaults
+outside the consent boundary even if either later resolves to Boolean `true`:
+only an explicit user override can enable capture.
 
 `clipboard_service` owns the model, all payload bytes, the adapter, and the
 private D-Bus name in one Qt event-loop thread. It installs a D-Bus activation
 file and a hardened systemd user unit. There is no state directory, recovery
 journal, payload logging, or disk codec. The bus object keeps a bounded
 per-unique-caller request cache: repeating the same request identity returns
-the original result, while reusing an identity for different arguments is
-rejected. Losing a caller's unique name drops only that caller's cache.
+the original result while it is retained, while reusing a retained identity for
+different arguments is rejected. Each caller retains the newest 64 results;
+admitting a fresh identity evicts the oldest retained result. Losing a caller's
+unique name drops only that caller's cache, and a 65th simultaneous caller is
+refused without allocating another cache.
 
 ## Clipboard1 and client fencing
 
