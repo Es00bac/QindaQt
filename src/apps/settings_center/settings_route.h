@@ -13,6 +13,7 @@ enum class SettingsRouteComponent {
   Network,
   Customize,
   Audio,
+  Bluetooth,
 };
 
 [[nodiscard]] QString
