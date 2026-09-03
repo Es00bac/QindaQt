@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Portal P1 candidate `c33b4908f99cb1dfac04287383441d028ab8f25b`
+  at manager merge `2c514ac`. The installed `xdg-desktop-portal` 1.20.4 frontend, started on a private bus
+  with a staged portal directory, selects the QindaQt Settings backend only under
+  `XDG_CURRENT_DESKTOP=qindaqt`, exposes the QindaQt color-scheme/accent/contrast projection and its
+  `SettingChanged` propagation, and a Qt offscreen probe under the `xdgdesktopportal` platform theme
+  follows it live; non-Settings families route through an explicit fallback table and never resolve to
+  QindaQt. Gertrude Blanch (OpenAI Codex) accepted the exact candidate at `0/0/0/0`. The candidate's ADR is
+  renumbered to ADR-0059. Fresh merged-tree Debug and Release each pass the portal selector 9/9;
+  the broad safe Debug suite passes 391/391; 122-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass.
+
 - This integration merges exact accepted Clipboard C1 service repair descendant
   `63e884cfa2216d7dc492407e30c7ce28b8512ac0` at manager merge `f34f81a`. The resident host captures only
   after an explicit user-override `services.clipboardHistory` opt-in (both shipped schemas now default to

@@ -58,6 +58,15 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `c33b490` — Portal P1 proves host frontend selection and toolkit reaction with the real `xdg-desktop-portal`
+  1.20.4 on a private bus: the QindaQt Settings backend is selected only under `XDG_CURRENT_DESKTOP=qindaqt`,
+  the frontend's values and `SettingChanged` follow the QindaQt projection, Qt's `xdgdesktopportal` platform
+  theme reacts live, and every non-Settings family routes through an explicit fail-closed fallback table
+  (ADR-0059). Gertrude Blanch (OpenAI Codex, a different worker) accepted it at P0/P1/P2/P3 `0/0/0/0` with
+  9/9 in Debug and Release; the fresh merged tree repeats 9/9, the broad safe Debug suite passes 391/391, and all static gates. QQ-005.09
+  stays EXECUTABLE with host selection and Qt reaction now proven; GTK/Flatpak reaction and the other
+  portal families remain.
+
 - `63e884c` — The Clipboard C1 service adds a bounded `ext-data-control-v1` capture adapter, the private-bus
   `org.qindaqt.Clipboard1` protocol and exact-owner client with bounded remembered-request eviction, and a
   resident host that captures only after an explicit user-override opt-in (the Settings1 schema default is

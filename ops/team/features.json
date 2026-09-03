@@ -619,7 +619,7 @@
           "title": "Portal interoperability and desktop policy export",
           "weight": 12,
           "state": "EXECUTABLE",
-          "summary": "The standard Settings v1 appearance backend executes a bounded exact-owner Settings1/QST projection through the standard desktop-portal endpoint, activation and installed-package boundary.",
+          "summary": "The standard Settings v1 appearance backend executes through the standard desktop-portal endpoint, and Portal P1 proves with the real xdg-desktop-portal 1.20.4 on a private bus that the QindaQt backend is selected only under XDG_CURRENT_DESKTOP=qindaqt, that the frontend's Settings values and SettingChanged follow the QindaQt projection, that Qt's xdgdesktopportal platform theme reacts to it, and that every non-Settings family is routed through an explicit fail-closed fallback table.",
           "evidence": [
             {
               "kind": "commit",
@@ -630,9 +630,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/portal-service.md",
               "summary": "Strict Debug and Release each build 97/97 and pass the seven-row contained portal selector; source and staged hostile controls reject OpenURI, Background, duplicates, extras and private headers."
+            },
+            {
+              "kind": "commit",
+              "reference": "c33b4908f99cb1dfac04287383441d028ab8f25b",
+              "summary": "Portal P1 (ADR-0059) is integrated; Gertrude Blanch (OpenAI Codex, different worker) accepted it at 0/0/0/0 with the real-frontend selector 9/9 in Debug and Release; the merged tree repeats 9/9."
             }
           ],
-          "caveat": "P0 does not qualify host frontend selection, toolkit reaction, chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or any other portal family."
+          "caveat": "P1 proves selection and Qt toolkit reaction against the installed frontend on a private bus only; GTK/Flatpak reaction, installed-session qualification, and every non-Settings portal family implementation remain later outcomes."
         }
       ],
       "stoppingPoint": {
