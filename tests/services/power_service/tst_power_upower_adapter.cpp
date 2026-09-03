@@ -33,6 +33,7 @@ QVariantMap batteryProperties()
 {
     QVariantMap properties;
     properties.insert(QStringLiteral("Type"), QVariant(uint(2)));
+    properties.insert(QStringLiteral("PowerSupply"), QVariant(true));
     properties.insert(QStringLiteral("IsPresent"), QVariant(true));
     properties.insert(QStringLiteral("State"), QVariant(uint(2)));
     properties.insert(QStringLiteral("Percentage"), QVariant(55.5));
@@ -56,8 +57,18 @@ FakeUpowerService::DeviceSpec linePowerDevice()
 {
     QVariantMap properties;
     properties.insert(QStringLiteral("Type"), QVariant(uint(1)));
-    properties.insert(QStringLiteral("IsPresent"), QVariant(true));
+    properties.insert(QStringLiteral("Online"), QVariant(true));
     return {kLinePath, properties};
+}
+
+FakeUpowerService::DeviceSpec peripheralBatteryDevice()
+{
+    QVariantMap properties;
+    properties.insert(QStringLiteral("Type"), QVariant(uint(2)));
+    properties.insert(QStringLiteral("PowerSupply"), QVariant(false));
+    properties.insert(QStringLiteral("IsPresent"), QVariant(true));
+    return {QStringLiteral("/org/freedesktop/UPower/devices/mouse_hidpp_battery_0"),
+            properties};
 }
 
 // One adapter plus coordinator running with fake sibling collaborators, so
@@ -129,11 +140,11 @@ private Q_SLOTS:
 void PowerUpowerAdapterTests::publishesSuppliesAcAndOnBatteryTruth()
 {
     UpowerRow row;
-    QVERIFY(row.start({batteryDevice(), linePowerDevice(),
+    QVERIFY(row.start({batteryDevice(), linePowerDevice(), peripheralBatteryDevice(),
                        [] {
                            QVariantMap properties;
                            properties.insert(QStringLiteral("Type"), QVariant(uint(3)));
-                           properties.insert(QStringLiteral("IsPresent"), QVariant(true));
+                           properties.insert(QStringLiteral("PowerSupply"), QVariant(true));
                            properties.insert(QStringLiteral("Percentage"),
                                              QVariant(90.0));
                            properties.insert(QStringLiteral("BatteryLevel"),
@@ -187,6 +198,7 @@ void PowerUpowerAdapterTests::absentOptionalPropertiesYieldUnknownFlags()
 {
     QVariantMap properties;
     properties.insert(QStringLiteral("Type"), QVariant(uint(2)));
+    properties.insert(QStringLiteral("PowerSupply"), QVariant(true));
     properties.insert(QStringLiteral("IsPresent"), QVariant(true));
     UpowerRow row;
     QVERIFY(row.start({{kBatteryPath, properties}}, false));
@@ -237,17 +249,22 @@ void PowerUpowerAdapterTests::deviceAddedAndRemovedUpdateSupplies()
 void PowerUpowerAdapterTests::devicePropertiesChangedUpdatesSupply()
 {
     UpowerRow row;
-    QVERIFY(row.start({batteryDevice()}, true));
+    QVERIFY(row.start({batteryDevice(), linePowerDevice()}, true));
     QTRY_COMPARE(row.coordinator->snapshot().supplies.size(), 1);
+    QVERIFY(row.coordinator->snapshot().source.acPresent);
 
     QVariantMap properties = batteryProperties();
     properties.insert(QStringLiteral("Percentage"), QVariant(90.0));
     properties.insert(QStringLiteral("State"), QVariant(uint(1)));
-    row.fake->setDevices({{kBatteryPath, properties}});
+    QVariantMap lineProperties;
+    lineProperties.insert(QStringLiteral("Type"), QVariant(uint(1)));
+    lineProperties.insert(QStringLiteral("Online"), QVariant(false));
+    row.fake->setDevices({{kBatteryPath, properties}, {kLinePath, lineProperties}});
     row.fake->emitDevicePropertiesChanged(kBatteryPath);
     QTRY_COMPARE(row.coordinator->snapshot().supplies.constFirst().percentage, 90.0);
     QCOMPARE(row.coordinator->snapshot().supplies.constFirst().state,
              ChargeState::Charging);
+    QVERIFY(!row.coordinator->snapshot().source.acPresent);
 }
 
 void PowerUpowerAdapterTests::onBatteryServicePropertyChangeUpdatesTruth()
@@ -364,6 +381,7 @@ void PowerUpowerAdapterTests::oversizeEnumerationDegradesThroughSanitization()
     for (int index = 0; index < 9; ++index) {
         QVariantMap properties;
         properties.insert(QStringLiteral("Type"), QVariant(uint(2)));
+        properties.insert(QStringLiteral("PowerSupply"), QVariant(true));
         properties.insert(QStringLiteral("IsPresent"), QVariant(true));
         devices.push_back({QStringLiteral("/org/freedesktop/UPower/devices/battery_B%1")
                                .arg(index),

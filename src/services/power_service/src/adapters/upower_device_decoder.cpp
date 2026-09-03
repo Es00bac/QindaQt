@@ -96,17 +96,43 @@ bool decodeUpowerDevice(const QString &objectPath, const QVariantMap &properties
         return true;
     }
 
-    bool present = false;
-    bool hasPresent = false;
-    if (!optionalExact(properties, QStringLiteral("IsPresent"),
-                       QMetaType::fromType<bool>(), present, hasPresent)
-        || !hasPresent) {
-        return false;
-    }
     if (type == kLinePower) {
-        candidate.acPresent = present;
+        bool online = false;
+        bool hasOnline = false;
+        if (!optionalExact(properties, QStringLiteral("Online"),
+                           QMetaType::fromType<bool>(), online, hasOnline)
+            || !hasOnline) {
+            return false;
+        }
+        candidate.acPresent = online;
         truth = candidate;
         return true;
+    }
+
+    bool powerSupply = false;
+    bool hasPowerSupply = false;
+    if (!optionalExact(properties, QStringLiteral("PowerSupply"),
+                       QMetaType::fromType<bool>(), powerSupply,
+                       hasPowerSupply)
+        || !hasPowerSupply) {
+        return false;
+    }
+    if (!powerSupply) {
+        // UPower enumerates peripheral batteries too. They are valid devices,
+        // but they do not supply the system and must never enter PB-0's
+        // aggregate-battery policy.
+        truth = candidate;
+        return true;
+    }
+
+    bool present = true;
+    if (type == kBattery) {
+        bool hasPresent = false;
+        if (!optionalExact(properties, QStringLiteral("IsPresent"),
+                           QMetaType::fromType<bool>(), present, hasPresent)
+            || !hasPresent) {
+            return false;
+        }
     }
 
     PowerSupply supply;

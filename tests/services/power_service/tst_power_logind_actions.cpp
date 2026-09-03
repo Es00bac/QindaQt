@@ -54,6 +54,7 @@ private Q_SLOTS:
     void admittedActionsChangeSignalFires();
     void admittedActionExecutesWithInteractiveFalse();
     void unadmittedActionsNeverReachLogind();
+    void cachedYesThatFlipsToNoNeverReachesLogind();
     void challengeIsNotAdmittedWithoutPolkitUi();
     void errorReplyCompletesFailed();
     void ownerReplacementMidFlightCompletesUncertain();
@@ -117,8 +118,31 @@ void PowerLogindActionTests::unadmittedActionsNeverReachLogind()
     QSignalSpy finished(row.authority.get(),
                         &Upstream::LogindActionAuthority::actionFinished);
     row.authority->submitAction(12, Upstream::SessionAction::Reboot);
-    QCOMPARE(finished.size(), 1);
+    QTRY_COMPARE(finished.size(), 1);
     const CollaboratorOutcome outcome = finished.first().at(2).value<CollaboratorOutcome>();
+    QCOMPARE(outcome.status, CollaboratorStatus::Unsupported);
+    QCOMPARE(outcome.reasonCode, QStringLiteral("action-not-admitted"));
+    QCOMPARE(row.fake->actionCalls.size(), 0);
+}
+
+void PowerLogindActionTests::cachedYesThatFlipsToNoNeverReachesLogind()
+{
+    ActionRow row;
+    QVERIFY(row.start());
+    QTRY_VERIFY(row.authority->admittedActions().powerOff);
+
+    // Do not refresh the presentation cache. Dispatch itself must consult the
+    // current caller-relative logind answer and reject this stale historical
+    // "yes" before any PowerOff call is sent.
+    row.fake->setCanAnswers(QStringLiteral("no"), QStringLiteral("no"),
+                            QStringLiteral("challenge"), QStringLiteral("na"));
+    QVERIFY(row.authority->admittedActions().powerOff);
+    QSignalSpy finished(row.authority.get(),
+                        &Upstream::LogindActionAuthority::actionFinished);
+    row.authority->submitAction(19, Upstream::SessionAction::PowerOff);
+    QTRY_COMPARE(finished.size(), 1);
+    const CollaboratorOutcome outcome =
+        finished.constFirst().at(2).value<CollaboratorOutcome>();
     QCOMPARE(outcome.status, CollaboratorStatus::Unsupported);
     QCOMPARE(outcome.reasonCode, QStringLiteral("action-not-admitted"));
     QCOMPARE(row.fake->actionCalls.size(), 0);
@@ -132,7 +156,7 @@ void PowerLogindActionTests::challengeIsNotAdmittedWithoutPolkitUi()
     QSignalSpy finished(row.authority.get(),
                         &Upstream::LogindActionAuthority::actionFinished);
     row.authority->submitAction(13, Upstream::SessionAction::Suspend);
-    QCOMPARE(finished.size(), 1);
+    QTRY_COMPARE(finished.size(), 1);
     QCOMPARE(finished.first().at(2).value<CollaboratorOutcome>().status,
              CollaboratorStatus::Unsupported);
     QCOMPARE(row.fake->actionCalls.size(), 0);

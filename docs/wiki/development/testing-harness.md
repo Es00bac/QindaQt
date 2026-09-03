@@ -1708,11 +1708,16 @@ fixture and connect only by its printed address. Production activation exports
 that same address as both bus environments to the activated executable and
 injects a backlight root below the configured build scratch directory. The
 rows cover daemon absence/loss/replacement, device removal, service and device
-property changes, hostile property types and ordinals, estimate bounds,
-modern/legacy profile roots and cookie holds, sanitized inhibitors,
-`PrepareForSleep`, `Can*` admission, no-prompt actions, duplicate operation
-lineage, sysfs disappearance/read-only/write/re-observation, the explicit
-composition modes, and installed activation descriptors.
+property changes, line-power `Online` transitions, exclusion of peripheral
+`PowerSupply=false` batteries from mixed inventories, hostile property types
+and ordinals, estimate bounds, modern/legacy profile roots and cookie holds,
+sanitized inhibitors, `PrepareForSleep`, dispatch-time `Can*` reauthorization,
+no-prompt actions, duplicate operation lineage, sysfs
+disappearance/read-only/write/re-observation, the explicit composition modes,
+and installed activation descriptors. The production activation row also
+proves exact name ownership, constructing-bus-loss exit, and fresh
+owner/epoch/process truth on an independent replacement bus, preserving the
+legacy activation contract without using its `/tmp` fixture.
 
 The selector does not contact an ambient system/session bus, the host
 `/sys/class/backlight`, hardware, polkit, uinput, a compositor, or a desktop

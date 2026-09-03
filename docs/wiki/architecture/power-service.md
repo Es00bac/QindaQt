@@ -77,7 +77,7 @@ composition separate:
 | `power_service` | Resident ownership, collaborator orchestration, and confined platform adapters | PB-2 production upstreams implemented |
 | `power_client` | Exact-owner asynchronous snapshots and operations | PB-1 implemented |
 | `power_backlight_provider` | Identity gate, KWin binding, external observation, Wayland teardown | Pending later slice |
-| `power_idle` | Compositor-idle observation and logind idle hints | PB-2 |
+| `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
 
@@ -138,11 +138,14 @@ The exact wire method and signal surface is recorded in the
 
 Production composition injects one bus connection and one sysfs root. UPower
 provides the root `OnBattery` property and an atomic enumeration of battery,
-UPS, and line-power devices. The adapter accepts only exact property types and
-known state/level/warning ordinals; zero time estimates remain unknown, signed
-energy rate becomes its absolute magnitude, and a malformed or disappearing
-device withdraws the complete battery domain. Every multi-call refresh is
-pinned to one resolved unique owner.
+UPS, and line-power devices. Line power contributes AC truth only through its
+`Online` property. Only battery/UPS devices with `PowerSupply=true` enter the
+system-supply inventory, so peripheral batteries cannot affect PB-0
+aggregation; `IsPresent` is consulted only for batteries. The adapter accepts
+only exact property types and known state/level/warning ordinals; zero time
+estimates remain unknown, signed energy rate becomes its absolute magnitude,
+and a malformed or disappearing device withdraws the complete battery domain.
+Every multi-call refresh is pinned to one resolved unique owner.
 
 Power Profiles prefers the modern
 `org.freedesktop.UPower.PowerProfiles` name, path, and interface, then falls
@@ -155,10 +158,13 @@ The logind session adapter atomically combines manager properties with
 `ListInhibitors`, discarding UID and PID before publication. `PrepareForSleep`
 updates observed truth and resume triggers a fresh read. A separate action
 authority queries `CanPowerOff`, `CanReboot`, `CanSuspend`, and
-`CanHibernate`; only `yes` is admitted, action calls always use
-`interactive=false`, duplicate operation IDs never redispatch, and owner loss
-completes an in-flight action as uncertain. Power1 v1 has no session-action
-wire fields, so PB-3 must compose this boundary in the shell.
+`CanHibernate`; the published admitted set is presentation truth, while every
+submitted action re-queries its matching `Can*` from the exact current owner
+immediately before dispatch. Only that per-operation `yes` is authoritative.
+Action calls always use `interactive=false`, duplicate operation IDs never
+redispatch, and owner loss during authorization or execution completes the
+operation as uncertain. Power1 v1 has no session-action wire fields, so PB-3
+must compose this boundary in the shell.
 
 The sysfs adapter enumerates only below its injected root. It publishes exact
 raw maximum and observed values, preferring `actual_brightness`, and reports
@@ -282,8 +288,13 @@ hostile payloads; modern and legacy Power Profiles plus cookie holds; logind
 session truth, inhibitors, sleep observation, actions, owner fencing, and
 duplicate operation lineage; bounded sysfs enumeration/write/read-only cases;
 and D-Bus activation of the built process against all fakes on a private
-daemon. Scratch roots are under the assigned build tree. These rows never use
-an ambient bus, `/sys/class/backlight`, hardware, polkit, or a desktop session.
+daemon. The production activation row is the build-root replacement for the
+legacy activation row: it proves descriptor-triggered name activation, exact
+unique-owner establishment, descriptor/unit contents, exit when the
+constructing bus dies, and a fresh owner, epoch, and process on an independent
+replacement bus. Scratch roots are under the assigned build tree. These rows
+never use an ambient bus, `/sys/class/backlight`, hardware, polkit, or a desktop
+session.
 
 Deterministic continuation starts with hostile codecs, aggregation and model
 properties; private-bus owner/epoch replacement; fake UPower/profile/logind
