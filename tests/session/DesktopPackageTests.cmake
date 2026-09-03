@@ -67,11 +67,18 @@ add_test(
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/PanelAppletColumn.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/PanelContent.qml"
         --qml-source "${PROJECT_SOURCE_DIR}/src/shell/qml/RuntimePanel.qml"
+        # AGENT-NOTE: Ingrid Daubechies P1 on rejected candidate 99b0619:
+        # omitting SettingsApp/Main.qml let this row pass while its staged
+        # Audio, Bluetooth, and Power route imports were unloadable.
+        --qml-source "${PROJECT_SOURCE_DIR}/src/apps/settings_center/Main.qml"
+        --embedded-qml-module QindaQt.SettingsApp.Customize
+        --embedded-qml-module QindaQt.SettingsApp.PowerBackend
         ${_qindaqt_desktop_system_library_arguments}
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_controls_qml>"
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_global_menu_qml>"
         --required-shell-library "$<TARGET_FILE_NAME:qindaqt_shell_launcher_qml>"
         --negative-library "$<TARGET_FILE_NAME:qindaqt_global_menu_qml>"
+        --negative-qml-module QindaQt.SettingsApp.Power
         --configuration "$<CONFIG>"
 )
 set_tests_properties(
