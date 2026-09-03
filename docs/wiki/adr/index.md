@@ -61,6 +61,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0058](0058-isolate-clipboard-capture-in-a-volatile-host.md) | Accepted | Isolate clipboard capture and payloads in a volatile resident host |
 | [ADR-0059](0059-route-unimplemented-portal-families-explicitly.md) | Accepted | Route unimplemented portal families through an explicit fail-closed table |
 | [ADR-0060](0060-confine-production-power-upstreams.md) | Accepted | Confine production power upstreams behind injected adapters |
+| [ADR-0061](0061-authenticate-shell-window-actions-by-panel-owner.md) | Accepted | Authenticate shell window actions by the exact panel Wayland owner PID |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

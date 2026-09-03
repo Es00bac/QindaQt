@@ -45,3 +45,7 @@ add_test(
     NAME compositor.shell-visibility-refresh-scheduler
     COMMAND qindaqt_shell_visibility_refresh_scheduler_tests
 )
+
+# AGENT-NOTE: Keep focused shell-boundary registrations out of the near-limit
+# directory file.
+include("${CMAKE_CURRENT_LIST_DIR}/ShellWindowActionsTests.cmake")

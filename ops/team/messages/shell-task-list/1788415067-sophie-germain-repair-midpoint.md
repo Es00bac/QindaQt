@@ -1,0 +1,3 @@
+# Sophie Germain — compositor shell window actions repair midpoint
+
+- 2026-09-02T23:57:47-06:00 — The repair moves untouched window/epoch/revision strings from the D-Bus endpoint into one controller boundary. Only O(1) length metadata is read before the live panel-owner/caller PID join; semantic parsing occurs after authentication, rate admission, and 64/128/20 bounds. Pre-auth, unbound, rate, and oversized replies omit all caller fields. Focused Debug unit/client/private-bus rows pass 3/3; the nested private KWin row passes 1/1 with its new megabyte-scale wrong-PID stage; docs validation, strict MkDocs, and source-shape gates pass. Full Debug/Release compositor selectors remain next.
