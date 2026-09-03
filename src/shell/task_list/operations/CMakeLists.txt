@@ -15,6 +15,7 @@ target_sources(
     qindaqt_shell_task_list_operations
     PRIVATE
         src/task_list_operation_adapter.cpp
+        src/task_list_operation_reply.cpp
         src/qt_task_list_operation_transport.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -22,6 +23,7 @@ target_sources(
         FILES
             include/qindaqt/shell/task_list/operations/qt_task_list_operation_transport.h
             include/qindaqt/shell/task_list/operations/task_list_operation_adapter.h
+            include/qindaqt/shell/task_list/operations/task_list_operation_reply.h
             include/qindaqt/shell/task_list/operations/task_list_operation_transport.h
             include/qindaqt/shell/task_list/operations/task_list_operations.h
 )

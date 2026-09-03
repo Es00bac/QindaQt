@@ -85,16 +85,32 @@ connection (the same owner-binding pattern as the integrated compositor output
 authority), never the replaceable well-known name and never the host
 compositor outside a real session.
 
-One refresh joins three reads under that owner: `Windows()` (identity,
-activation, minimized, taskbar policy, container membership), `Containers()`
-(container revisions and authority), and `ShellVisibilitySnapshot()` (the sole
-public output/workspace scope authority — `Windows()` carries neither). All
-three `WindowsChanged`, `ContainerCommitted`, and `ShellVisibilityChanged`
-signals are treated as invalidation hints only. An invalidation racing the
-three reads fences the whole refresh: the complete set is discarded and
-re-read once after a fixed-leading debounce, so a published generation never
-mixes two compositor states. There is no polling beyond that debounce and a
+One refresh reads three inventories under that owner: `Windows()` (schema 2:
+identity, activation, minimized, taskbar policy, container membership, plus
+the shell-action fence), `Containers()` (container revisions and authority),
+and `ShellVisibilitySnapshot()` (the sole public output/workspace scope
+authority — `Windows()` carries neither). The two window inventories are never
+merged freely: window facts come only from `Windows()`, scope facts only from
+the snapshot, and a refresh is published only when the snapshot's
+`(epoch, revision)` exactly matches the fence `Windows()` schema 2 names for
+the retained snapshot generation of the same owner. A mismatched fence means
+the two reads raced a compositor update; the complete set is discarded and
+re-read once after the fixed-leading debounce, and a persistent mismatch
+degrades the source instead of publishing torn truth. All three
+`WindowsChanged`, `ContainerCommitted`, and `ShellVisibilityChanged` signals
+are invalidation hints only, and an invalidation racing the reads likewise
+fences the whole refresh. There is no polling beyond that debounce and a
 bounded retry backoff after failures.
+
+The producer retains the accepted scope lineage `(owner, epoch, revision,
+payload)`. Under one owner and epoch, a revision regression — or changed bytes
+at an equal revision — is foreign lineage and rejects the refresh fail-closed;
+a changed epoch is a compositor instance restart and adopts a fresh lineage,
+and an owner change resets it. The wire decoder validates the complete
+snapshot schema before any of this: UUID-shaped epoch, canonical
+`outputGeneration`, the `scope` selector, the declared `outputs` (bounded,
+unique, with geometry and scale), and output membership for every window — an
+incomplete or unknown-output payload rejects the whole snapshot.
 
 Classification deliberately reuses the compositor's collapsed native identity
 instead of fanning out per-container `Snapshot` reads (which could never be
@@ -107,6 +123,12 @@ is marked `Degraded` and the last accepted generation stays visible. A
 standalone window with `skipTaskbar == true` opted out of task lists and
 produces no fact. Suppressed members copy the primary's output/workspace
 scope, because the primary's placement describes the whole container.
+
+Every observable availability change — owner loss or replacement, malformed or
+torn reads, lineage rejection, join failure, timeout, and `stop()` — is
+published through `stateChanged`, and `stop()` additionally withdraws the
+bound owner and container lineage so the operation adapter admits nothing
+against a dead producer.
 
 Two honest substitutions hold until the protocol grows (see below):
 `applicationName` falls back to the application id, and every fact's `urgent`
@@ -122,9 +144,23 @@ against the producer's exact unique owner, the accepted generation revision
 the container lineage of the accepted generation (`UnknownContainer`).
 Requests are serialized: one in flight, a second request is rejected `Busy`
 rather than queued, because a queued intent would act on a generation the user
-no longer sees. Each admitted request gets one monotonic token; a transaction
-is submitted exactly once, and timeouts, malformed replies, or owner loss in
-flight finish as `Uncertain` and are never resubmitted.
+no longer sees. Each admitted request gets one token embedding a
+process-unique adapter-lifetime ordinal, so a late reply from a destroyed
+adapter instance — whose pending calls the transport may still retain — can
+never settle a reconstructed adapter's request. A transaction is submitted
+exactly once, and timeouts, malformed replies, or owner loss in flight finish
+as `Uncertain` and are never resubmitted.
+
+Replies settle only on the canonical reply lineage: a `Submit` reply must echo
+the protocol (major 1, minor at most 1), the exact `transactionId` and
+`containerId` of the submitted transaction, a known `status`, and — for
+`committed` — the fenced container revision advanced by exactly one. A reply
+missing or contradicting any echo finishes `Uncertain`
+(`reply-lineage-mismatch`), because the transaction may have committed.
+`DockWindows` replies carry compositor-generated ids, so they are validated
+for protocol, id presence, and revision shape; `ReleaseContainer` replies
+carry only `status` and `failure` on the wire and are matched by the
+exact-owner pending-call binding alone.
 
 The operations the protocol admits are wired through:
 
@@ -141,20 +177,31 @@ the adapter rejects them for `hybrid-process` containers
 process-local Hybrid topology remains the compositor's own authority
 ([hybrid topology](../architecture/hybrid-topology.md)).
 
-## Protocol extension requests
+## Window operations and remaining protocol gaps
 
-Compositor1 1.1 does not expose the following; each is a candidate compositor
-lane, not a shell workaround:
+Window-level `activate`, `minimize`, `unminimize`, `close`, and `raise` exist
+today on the authenticated `org.qindaqt.CompositorShell1` surface
+([ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md)),
+not on Compositor1, and are consumed through the published exact-owner
+`src/shell_window_actions_client` with the displayed
+`ShellVisibilitySnapshot` generation `(epoch, revision)` as fence. The
+task-list adapter therefore finishes window-level T0 intents as `Unavailable`
+(codes `compositor-window-*-unavailable` /
+`compositor-container-*-unavailable`) only until the later shell composition
+lane routes accepted intents through that client; no new Compositor1 window
+operation is requested, and this module must not grow its own identity or
+action reader — the authenticated active-window identity
+([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md)) is a
+separate single-client concern.
 
-1. Window-level `activate`, `minimize`, and `close` operations for ordinary
-   windows and for whole containers (the adapter finishes these T0 intents as
-   `Unavailable` with codes `compositor-window-*-unavailable` /
-   `compositor-container-*-unavailable`).
-2. Per-window `urgent`/demands-attention state in `Windows()` (the producer
+Compositor1 1.1 still does not expose the following; each is a candidate
+compositor lane, not a shell workaround:
+
+1. Per-window `urgent`/demands-attention state in `Windows()` (the producer
    currently publishes `urgent: false` for every fact).
-3. An application display name in `Windows()` (the producer currently
+2. An application display name in `Windows()` (the producer currently
    publishes `applicationName == applicationId`).
-4. Mutation authority for `hybrid-process` containers, if task-list page
+3. Mutation authority for `hybrid-process` containers, if task-list page
    activation/detach should cover production groups.
 
 Container close policy (Close All / Ungroup / Cancel) stays with the later

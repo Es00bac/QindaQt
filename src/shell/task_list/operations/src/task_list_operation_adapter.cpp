@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/shell/task_list/operations/task_list_operation_adapter.h"
 
+#include "qindaqt/shell/task_list/operations/task_list_operation_reply.h"
 #include "qindaqt/shell/task_list/operations/task_list_operation_transport.h"
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 
@@ -8,8 +9,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <atomic>
 #include <cmath>
-#include <limits>
 #include <utility>
 
 namespace QindaQt::ShellTaskList::Operations {
@@ -22,6 +23,19 @@ using Producer::TaskListContainerAuthority;
 constexpr qsizetype kMaxOperationIdentifierLength = 256;
 constexpr int kDefaultReplyTimeoutMilliseconds = 5000;
 constexpr int kMaximumReplyTimeoutMilliseconds = 60'000;
+constexpr quint64 kMaxInstanceOrdinal = 0xFFFFFFFFULL;
+constexpr quint64 kMaxTokenSequence = 0xFFFFFFFFULL;
+
+// AGENT-NOTE: Tokens embed a process-wide adapter-lifetime ordinal so a late
+// reply from a destroyed adapter — whose pending calls the transport may
+// still retain — can never match a reconstructed adapter's in-flight request
+// (review finding P1-3 on candidate 3a5ae17). The counter is a monotonic
+// lineage nonce, not shared mutable state: it is only ever incremented.
+quint64 nextInstanceOrdinal() {
+  static std::atomic<quint64> ordinal{0};
+  const quint64 value = ordinal.fetch_add(1, std::memory_order_relaxed) + 1;
+  return value <= kMaxInstanceOrdinal ? value : 0;
+}
 
 bool validOperationIdentifier(const QString &value) {
   return !value.isEmpty() && value.size() <= kMaxOperationIdentifierLength;
@@ -38,29 +52,14 @@ TaskListOperationResult makeResult(quint64 token,
   return result;
 }
 
-// Canonical decimal-string revision, matching the wire encoding.
-bool parseWireRevision(const QJsonValue &value, quint64 *destination) {
-  if (!value.isString()) {
-    return false;
-  }
-  const QString text = value.toString();
-  bool converted = false;
-  const quint64 parsed = text.toULongLong(&converted, 10);
-  if (!converted || QString::number(parsed) != text) {
-    return false;
-  }
-  *destination = parsed;
-  return true;
-}
-
-QByteArray submitRequestJson(quint64 token, const QString &containerId,
+QByteArray submitRequestJson(const QString &transactionId,
+                             const QString &containerId,
                              quint64 expectedContainerRevision,
                              const QJsonObject &operation) {
   const QJsonObject request{
       {QStringLiteral("protocol"),
        QJsonObject{{QStringLiteral("major"), 1}, {QStringLiteral("minor"), 1}}},
-      {QStringLiteral("transactionId"),
-       QStringLiteral("tasklist-%1").arg(token)},
+      {QStringLiteral("transactionId"), transactionId},
       {QStringLiteral("containerId"), containerId},
       {QStringLiteral("expectedRevision"),
        QString::number(expectedContainerRevision)},
@@ -81,7 +80,8 @@ TaskListOperationAdapter::TaskListOperationAdapter(
           replyTimeoutMilliseconds > 0 &&
                   replyTimeoutMilliseconds <= kMaximumReplyTimeoutMilliseconds
               ? replyTimeoutMilliseconds
-              : kDefaultReplyTimeoutMilliseconds) {
+              : kDefaultReplyTimeoutMilliseconds),
+      m_instanceOrdinal(nextInstanceOrdinal()) {
   m_replyTimeout.setSingleShot(true);
   connect(&m_replyTimeout, &QTimer::timeout, this,
           &TaskListOperationAdapter::handleReplyTimeout);
@@ -107,10 +107,12 @@ quint64 TaskListOperationAdapter::executeTaskIntent(
     return token; // admission already finished with a fenced rejection
   }
 
-  // AGENT-CONTRACT: Compositor1 1.1 has no window-level activate, minimize,
-  // or close operation, and container close policy belongs to the shell
-  // composition lane. These finish Unavailable rather than inventing a
-  // private compositor path; the codes name the exact extension requested.
+  // AGENT-CONTRACT: Window-level activate/minimize/close are not Compositor1
+  // operations; they live on the authenticated CompositorShell1 surface
+  // (ADR-0061) and are routed by the later shell composition lane through the
+  // published src/shell_window_actions_client. These finish Unavailable
+  // rather than inventing a private compositor path; the codes name
+  // Compositor1's missing surface.
   m_inFlight.reset();
   const bool container = outcome.entryKind == TaskEntryKind::Container;
   QString code;
@@ -176,10 +178,14 @@ quint64 TaskListOperationAdapter::activateContainerPage(
         QStringLiteral("Submit mutates control-bridge containers only")));
     return token;
   }
+  const QString transactionId = QStringLiteral("tasklist-%1").arg(token);
   const QByteArray payload = submitRequestJson(
-      token, containerId, lineage->revision,
+      transactionId, containerId, lineage->revision,
       QJsonObject{{QStringLiteral("type"), QStringLiteral("activate-page")},
                   {QStringLiteral("pageId"), pageId}});
+  m_inFlight->transactionId = transactionId;
+  m_inFlight->containerId = containerId;
+  m_inFlight->expectedContainerRevision = lineage->revision;
   if (!m_transport.submitTransaction(token, owner, payload)) {
     finishInFlight(makeResult(token, TaskListOperationStatus::TransportFailure,
                               QStringLiteral("transport-unavailable"),
@@ -216,10 +222,14 @@ quint64 TaskListOperationAdapter::detachWindow(const QString &containerId,
         QStringLiteral("Submit mutates control-bridge containers only")));
     return token;
   }
+  const QString transactionId = QStringLiteral("tasklist-%1").arg(token);
   const QByteArray payload = submitRequestJson(
-      token, containerId, lineage->revision,
+      transactionId, containerId, lineage->revision,
       QJsonObject{{QStringLiteral("type"), QStringLiteral("detach-window")},
                   {QStringLiteral("windowId"), windowId}});
+  m_inFlight->transactionId = transactionId;
+  m_inFlight->containerId = containerId;
+  m_inFlight->expectedContainerRevision = lineage->revision;
   if (!m_transport.submitTransaction(token, owner, payload)) {
     finishInFlight(makeResult(token, TaskListOperationStatus::TransportFailure,
                               QStringLiteral("transport-unavailable"),
@@ -256,6 +266,8 @@ quint64 TaskListOperationAdapter::releaseContainer(
                        "only")));
     return token;
   }
+  m_inFlight->containerId = containerId;
+  m_inFlight->expectedContainerRevision = lineage->revision;
   if (!m_transport.releaseContainer(token, owner, containerId)) {
     finishInFlight(makeResult(token, TaskListOperationStatus::TransportFailure,
                               QStringLiteral("transport-unavailable"),
@@ -321,62 +333,45 @@ void TaskListOperationAdapter::handleReply(quint64 token,
       m_inFlight->owner != uniqueOwner) {
     return;
   }
-  const PendingKind kind = m_inFlight->kind;
+  const InFlightOperation request = *m_inFlight;
+  TaskListReplyExpectation expectation;
+  expectation.kind = request.kind == PendingKind::Submit
+                         ? TaskListOperationKind::Submit
+                         : request.kind == PendingKind::Release
+                               ? TaskListOperationKind::Release
+                               : TaskListOperationKind::Dock;
+  expectation.transactionId = request.transactionId;
+  expectation.containerId = request.containerId;
+  expectation.expectedContainerRevision = request.expectedContainerRevision;
+  const TaskListReplyClassification classification =
+      TaskListOperationReplyCodec::classify(expectation, payload);
 
-  QJsonParseError parseError;
-  const QJsonDocument document = QJsonDocument::fromJson(payload, &parseError);
-  if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-    finishInFlight(makeResult(
-        token, TaskListOperationStatus::Uncertain,
-        QStringLiteral("malformed-reply"),
-        QStringLiteral("the compositor reply is not a JSON object; the "
-                       "transaction may have committed")));
-    return;
-  }
-  const QJsonObject root = document.object();
-  const QString status = root.value(QLatin1StringView("status")).toString();
-  const QJsonObject failure =
-      root.value(QLatin1StringView("failure")).toObject();
-  const QString code = failure.value(QLatin1StringView("code")).toString();
-  const QString message =
-      failure.value(QLatin1StringView("message")).toString();
-
-  const QString committedStatus =
-      kind == PendingKind::Submit
-          ? QStringLiteral("committed")
-          : kind == PendingKind::Release ? QStringLiteral("released")
-                                         : QStringLiteral("docked");
-  if (status == committedStatus) {
+  switch (classification.verdict) {
+  case TaskListReplyVerdict::Committed:
     finishInFlight(makeResult(token, TaskListOperationStatus::Committed, {},
                               {}));
     return;
-  }
-  if (status == QLatin1StringView("conflict")) {
+  case TaskListReplyVerdict::Conflict: {
     auto result = makeResult(token, TaskListOperationStatus::Conflict,
-                             code.isEmpty()
-                                 ? QStringLiteral("revision-conflict")
-                                 : code,
-                             message);
-    quint64 current = 0;
-    if (parseWireRevision(root.value(QLatin1StringView("revision")),
-                          &current)) {
-      result.currentContainerRevision = current;
+                             classification.code, classification.message);
+    if (classification.hasCurrentContainerRevision) {
+      result.currentContainerRevision =
+          classification.currentContainerRevision;
     }
     finishInFlight(std::move(result));
     return;
   }
-  if (status == QLatin1StringView("rejected")) {
+  case TaskListReplyVerdict::Rejected:
     finishInFlight(makeResult(token, TaskListOperationStatus::Rejected,
-                              code.isEmpty() ? QStringLiteral("rejected")
-                                             : code,
-                              message));
+                              classification.code, classification.message));
+    return;
+  case TaskListReplyVerdict::UncertainMalformed:
+  case TaskListReplyVerdict::UncertainLineage:
+  case TaskListReplyVerdict::UncertainUnknownStatus:
+    finishInFlight(makeResult(token, TaskListOperationStatus::Uncertain,
+                              classification.code, classification.message));
     return;
   }
-  finishInFlight(makeResult(
-      token, TaskListOperationStatus::Uncertain,
-      QStringLiteral("malformed-reply"),
-      QStringLiteral("the compositor reply status is unknown; the transaction "
-                     "may have committed")));
 }
 
 void TaskListOperationAdapter::handleFailure(quint64 token,
@@ -467,7 +462,11 @@ quint64 TaskListOperationAdapter::admit(PendingKind kind,
                   QStringLiteral("operation-token-exhausted"),
                   QStringLiteral("operation lineage is exhausted"));
   }
-  m_inFlight = InFlightOperation{token, owner, kind};
+  InFlightOperation operation;
+  operation.token = token;
+  operation.owner = owner;
+  operation.kind = kind;
+  m_inFlight = operation;
   *admittedOwner = owner;
   return token;
 }
@@ -490,12 +489,10 @@ void TaskListOperationAdapter::finishInFlight(TaskListOperationResult result) {
 }
 
 quint64 TaskListOperationAdapter::nextToken() {
-  if (m_nextToken == 0) {
+  if (m_instanceOrdinal == 0 || m_sequence > kMaxTokenSequence) {
     return 0;
   }
-  const quint64 token = m_nextToken;
-  m_nextToken = token == std::numeric_limits<quint64>::max() ? 0 : token + 1;
-  return token;
+  return (m_instanceOrdinal << 32) | m_sequence++;
 }
 
 } // namespace QindaQt::ShellTaskList::Operations

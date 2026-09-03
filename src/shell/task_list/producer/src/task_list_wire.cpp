@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/shell/task_list/producer/task_list_wire.h"
 
-#include "qindaqt/shell/task_list/task_list_types.h"
-#include "qindaqt/shell_visibility_protocol/wire_limits.h"
+#include "task_list_wire_detail.h"
 
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QSet>
 
@@ -14,133 +12,11 @@
 namespace QindaQt::ShellTaskList::Producer {
 namespace {
 
-using ShellVisibilityProtocol::WireLimits;
+using namespace Detail;
 
 // Containers never outnumber their members, and a published container holds
 // at least two windows (docs/wiki/architecture/window-containers.md).
 constexpr qsizetype kMaxWireContainers = kMaxWindowFacts / 2;
-
-QString errorMessage(const char *context, const QString &detail) {
-  return QString::fromLatin1(context) + QStringLiteral(": ") + detail;
-}
-
-bool isCleanText(const QString &value) {
-  if (value.contains(QChar::Null)) {
-    return false;
-  }
-  for (qsizetype index = 0; index < value.size(); ++index) {
-    const QChar character = value.at(index);
-    if (character.category() == QChar::Other_Control ||
-        character.category() == QChar::Other_Format) {
-      return false;
-    }
-    if (character.isHighSurrogate()) {
-      if (index + 1 >= value.size() ||
-          !value.at(index + 1).isLowSurrogate()) {
-        return false;
-      }
-      ++index;
-    } else if (character.isLowSurrogate()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool readIdentifier(const QJsonObject &object, QLatin1StringView key,
-                    bool allowEmpty, QString *destination) {
-  const QJsonValue value = object.value(key);
-  if (!value.isString()) {
-    return false;
-  }
-  const QString text = value.toString();
-  if ((!allowEmpty && text.isEmpty()) || text.size() > kMaxIdLength ||
-      !isCleanText(text)) {
-    return false;
-  }
-  *destination = text;
-  return true;
-}
-
-bool readBoundedText(const QJsonObject &object, QLatin1StringView key,
-                     QString *destination) {
-  const QJsonValue value = object.value(key);
-  if (!value.isString()) {
-    return false;
-  }
-  const QString text = value.toString();
-  if (text.size() > kMaxIdLength || !isCleanText(text)) {
-    return false;
-  }
-  *destination = text;
-  return true;
-}
-
-bool readBoolean(const QJsonObject &object, QLatin1StringView key,
-                 bool *destination) {
-  const QJsonValue value = object.value(key);
-  if (!value.isBool()) {
-    return false;
-  }
-  *destination = value.toBool();
-  return true;
-}
-
-// Revisions and generations are unsigned decimal JSON strings, never numbers
-// (compositor-control-v1.md); canonical form rejects leading zeros and junk.
-bool readCanonicalRevision(const QJsonValue &value, quint64 *destination) {
-  if (!value.isString()) {
-    return false;
-  }
-  const QString text = value.toString();
-  bool converted = false;
-  const quint64 parsed = text.toULongLong(&converted, 10);
-  if (!converted || parsed == 0 || QString::number(parsed) != text) {
-    return false;
-  }
-  *destination = parsed;
-  return true;
-}
-
-bool parseRoot(QByteArrayView payload, const char *context,
-               QJsonObject *root, TaskListWireError *error, QString *message) {
-  if (payload.size() > WireLimits::MaxPayloadBytes) {
-    *error = TaskListWireError::PayloadTooLarge;
-    *message = errorMessage(context, QStringLiteral("payload exceeds the shell wire limit"));
-    return false;
-  }
-  QJsonParseError parseError;
-  const QJsonDocument document = QJsonDocument::fromJson(
-      QByteArray(payload.data(), payload.size()), &parseError);
-  if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-    *error = TaskListWireError::MalformedPayload;
-    *message = errorMessage(context, QStringLiteral("payload is not a JSON object"));
-    return false;
-  }
-  *root = document.object();
-  return true;
-}
-
-bool requireOkStatus(const QJsonObject &root, const char *context,
-                     TaskListWireError *error, QString *message) {
-  const QJsonValue status = root.value(QLatin1StringView("status"));
-  if (!status.isString()) {
-    *error = TaskListWireError::MalformedPayload;
-    *message = errorMessage(context, QStringLiteral("status is missing"));
-    return false;
-  }
-  if (status.toString() == QLatin1StringView("unavailable")) {
-    *error = TaskListWireError::Unavailable;
-    *message = errorMessage(context, QStringLiteral("inventory is unavailable"));
-    return false;
-  }
-  if (status.toString() != QLatin1StringView("ok")) {
-    *error = TaskListWireError::MalformedPayload;
-    *message = errorMessage(context, QStringLiteral("status is unknown"));
-    return false;
-  }
-  return true;
-}
 
 bool readWindowEntry(const QJsonValue &value, TaskListWireWindow *window) {
   if (!value.isObject()) {
@@ -190,48 +66,6 @@ bool readContainerEntry(const QJsonValue &value,
   return false;
 }
 
-bool readScopeEntry(const QJsonValue &value, TaskListWireScope *scope) {
-  if (!value.isObject()) {
-    return false;
-  }
-  const QJsonObject object = value.toObject();
-  if (!readIdentifier(object, QLatin1StringView("id"), false,
-                      &scope->windowId) ||
-      !readIdentifier(object, QLatin1StringView("outputId"), false,
-                      &scope->outputId) ||
-      !readBoolean(object, QLatin1StringView("onAllWorkspaces"),
-                   &scope->onAllWorkspaces)) {
-    return false;
-  }
-  const QJsonValue workspaces = object.value(QLatin1StringView("workspaceIds"));
-  if (!workspaces.isArray()) {
-    return false;
-  }
-  const QJsonArray entries = workspaces.toArray();
-  // AGENT-GUARD: onAllWorkspaces requires an empty workspace list; accepting
-  // both would make scope filtering depend on producer choice.
-  if (scope->onAllWorkspaces != entries.isEmpty()) {
-    return false;
-  }
-  if (entries.size() > WireLimits::MaxScopeMemberships) {
-    return false;
-  }
-  QSet<QString> seen;
-  for (const QJsonValue &entry : entries) {
-    if (!entry.isString()) {
-      return false;
-    }
-    const QString workspaceId = entry.toString();
-    if (workspaceId.isEmpty() || workspaceId.size() > kMaxIdLength ||
-        !isCleanText(workspaceId) || seen.contains(workspaceId)) {
-      return false;
-    }
-    seen.insert(workspaceId);
-    scope->workspaceIds.append(workspaceId);
-  }
-  return true;
-}
-
 } // namespace
 
 TaskListWindowsResult TaskListWireDecoder::decodeWindows(
@@ -244,6 +78,33 @@ TaskListWindowsResult TaskListWireDecoder::decodeWindows(
                        &result.message)) {
     return result;
   }
+  // AGENT-GUARD: Only schema 2 carries the shell-action fence naming the
+  // retained ShellVisibilitySnapshot generation. Without it the producer
+  // cannot prove a coherent join, so older or absent schemas are rejected.
+  quint64 schemaVersion = 0;
+  const QJsonValue version = root.value(QLatin1StringView("schemaVersion"));
+  if (!version.isDouble() ||
+      (schemaVersion = static_cast<quint64>(version.toDouble())) != 2 ||
+      static_cast<double>(schemaVersion) != version.toDouble()) {
+    result.error = TaskListWireError::UnsupportedSchema;
+    result.message = errorMessage("compositor windows",
+                                  QStringLiteral("schema version is unsupported"));
+    return result;
+  }
+  const QJsonValue available =
+      root.value(QLatin1StringView("generationAvailable"));
+  if (!readIdentifier(root, QLatin1StringView("epoch"), false, &result.epoch) ||
+      !isUuidShape(result.epoch) ||
+      !readFenceRevision(root.value(QLatin1StringView("revision")),
+                         &result.revision) ||
+      !available.isBool() ||
+      (available.toBool() && result.revision == 0)) {
+    result.error = TaskListWireError::InvalidLineage;
+    result.message = errorMessage("compositor windows",
+                                  QStringLiteral("shell-action fence is invalid"));
+    return result;
+  }
+  result.generationAvailable = available.toBool();
   const QJsonValue windows = root.value(QLatin1StringView("windows"));
   if (!windows.isArray()) {
     result.error = TaskListWireError::MalformedPayload;
@@ -322,71 +183,6 @@ TaskListContainersResult TaskListWireDecoder::decodeContainers(
     }
     seenIds.insert(container.containerId);
     result.containers.append(std::move(container));
-  }
-  return result;
-}
-
-TaskListScopeResult TaskListWireDecoder::decodeScopeSnapshot(
-    QByteArrayView payload) {
-  TaskListScopeResult result;
-  QJsonObject root;
-  if (!parseRoot(payload, "compositor scope snapshot", &root, &result.error,
-                 &result.message) ||
-      !requireOkStatus(root, "compositor scope snapshot", &result.error,
-                       &result.message)) {
-    return result;
-  }
-  quint64 schemaVersion = 0;
-  const QJsonValue version = root.value(QLatin1StringView("schemaVersion"));
-  if (!version.isDouble() ||
-      (schemaVersion = static_cast<quint64>(version.toDouble())) != 1 ||
-      static_cast<double>(schemaVersion) != version.toDouble()) {
-    result.error = TaskListWireError::UnsupportedSchema;
-    result.message = errorMessage("compositor scope snapshot",
-                                  QStringLiteral("schema version is unsupported"));
-    return result;
-  }
-  if (!readIdentifier(root, QLatin1StringView("epoch"), false,
-                      &result.snapshot.epoch) ||
-      !readCanonicalRevision(root.value(QLatin1StringView("revision")),
-                             &result.snapshot.revision)) {
-    result.error = TaskListWireError::InvalidLineage;
-    result.message = errorMessage("compositor scope snapshot",
-                                  QStringLiteral("epoch or revision is invalid"));
-    return result;
-  }
-  const QJsonValue windows = root.value(QLatin1StringView("windows"));
-  if (!windows.isArray()) {
-    result.error = TaskListWireError::MalformedPayload;
-    result.message = errorMessage("compositor scope snapshot",
-                                  QStringLiteral("window collection is missing"));
-    return result;
-  }
-  const QJsonArray entries = windows.toArray();
-  if (entries.size() > WireLimits::MaxWindows) {
-    result.error = TaskListWireError::LimitExceeded;
-    result.message = errorMessage("compositor scope snapshot",
-                                  QStringLiteral("window count exceeds the bound"));
-    return result;
-  }
-  QSet<QString> seenIds;
-  result.snapshot.scopes.reserve(entries.size());
-  for (const QJsonValue &entry : entries) {
-    TaskListWireScope scope;
-    if (!readScopeEntry(entry, &scope)) {
-      result.error = TaskListWireError::InvalidScope;
-      result.message = errorMessage("compositor scope snapshot",
-                                    QStringLiteral("window scope entry is invalid"));
-      return result;
-    }
-    if (seenIds.contains(scope.windowId)) {
-      result.error = TaskListWireError::DuplicateScopeId;
-      result.message = errorMessage("compositor scope snapshot",
-                                    QStringLiteral("duplicate scope window id"));
-      return result;
-    }
-    seenIds.insert(scope.windowId);
-    result.snapshot.scopes.append(std::move(scope));
   }
   return result;
 }

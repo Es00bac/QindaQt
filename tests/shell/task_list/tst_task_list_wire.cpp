@@ -48,6 +48,10 @@ void TaskListWireTests::decodesValidInventories() {
   QVERIFY(!windows.windows.at(1).skipTaskbar);
   QVERIFY(windows.windows.at(2).skipTaskbar);
   QVERIFY(windows.windows.at(2).minimized);
+  // The schema-2 fence names the same generation the scope snapshot carries.
+  QCOMPARE(windows.epoch, kScopeEpoch);
+  QCOMPARE(windows.revision, quint64(1));
+  QVERIFY(windows.generationAvailable);
 
   const auto containers = TaskListWireDecoder::decodeContainers(scene.containers);
   QVERIFY2(containers.ok(), qPrintable(containers.message));
@@ -59,6 +63,7 @@ void TaskListWireTests::decodesValidInventories() {
 
   const auto scope = TaskListWireDecoder::decodeScopeSnapshot(scene.scope);
   QVERIFY2(scope.ok(), qPrintable(scope.message));
+  QCOMPARE(scope.snapshot.epoch, kScopeEpoch);
   QCOMPARE(scope.snapshot.revision, quint64(1));
   QCOMPARE(scope.snapshot.scopes.size(), 3);
   QCOMPARE(scope.snapshot.scopes.at(0).outputId, QStringLiteral("output-1"));
@@ -93,23 +98,22 @@ void TaskListWireTests::rejectsMalformedWindowsPayload() {
 // retained ShellVisibilitySnapshot generation; the decoder must require it so
 // the producer never joins scope truth without an exact lineage fence.
 void TaskListWireTests::windowsInventoryRequiresTheSchemaTwoFence() {
-  auto payload = [](const QJsonObject &extra) {
+  auto payload = [](const QJsonObject &extra,
+                    std::initializer_list<const char *> remove = {}) {
     QJsonObject root{{QStringLiteral("status"), QStringLiteral("ok")},
                      {QStringLiteral("schemaVersion"), 2},
                      {QStringLiteral("epoch"), kScopeEpoch},
                      {QStringLiteral("revision"), QStringLiteral("1")},
                      {QStringLiteral("generationAvailable"), true},
                      {QStringLiteral("windows"), QJsonArray{}}};
+    for (const char *key : remove) {
+      root.remove(QLatin1StringView(key));
+    }
     for (auto it = extra.constBegin(); it != extra.constEnd(); ++it) {
-      if (it.value().type() == QJsonValue::Undefined) {
-        root.remove(it.key());
-      } else {
-        root.insert(it.key(), it.value());
-      }
+      root.insert(it.key(), it.value());
     }
     return rawRoot(root);
   };
-  const auto undefined = [] { return QJsonValue(QJsonValue::Undefined); };
   QCOMPARE(TaskListWireDecoder::decodeWindows(payload({})).error,
            TaskListWireError::None);
   // Schema 1 (or none) predates the fence and is not task-list input.
@@ -117,12 +121,10 @@ void TaskListWireTests::windowsInventoryRequiresTheSchemaTwoFence() {
                payload({{QStringLiteral("schemaVersion"), 1}}))
                .error,
            TaskListWireError::UnsupportedSchema);
-  QCOMPARE(TaskListWireDecoder::decodeWindows(
-               payload({{QStringLiteral("schemaVersion"), undefined()}}))
+  QCOMPARE(TaskListWireDecoder::decodeWindows(payload({}, {"schemaVersion"}))
                .error,
            TaskListWireError::UnsupportedSchema);
-  QCOMPARE(TaskListWireDecoder::decodeWindows(
-               payload({{QStringLiteral("epoch"), undefined()}}))
+  QCOMPARE(TaskListWireDecoder::decodeWindows(payload({}, {"epoch"}))
                .error,
            TaskListWireError::InvalidLineage);
   QCOMPARE(TaskListWireDecoder::decodeWindows(
@@ -130,8 +132,7 @@ void TaskListWireTests::windowsInventoryRequiresTheSchemaTwoFence() {
                          QStringLiteral("not-a-uuid")}}))
                .error,
            TaskListWireError::InvalidLineage);
-  QCOMPARE(TaskListWireDecoder::decodeWindows(
-               payload({{QStringLiteral("revision"), undefined()}}))
+  QCOMPARE(TaskListWireDecoder::decodeWindows(payload({}, {"revision"}))
                .error,
            TaskListWireError::InvalidLineage);
   QCOMPARE(TaskListWireDecoder::decodeWindows(
@@ -140,8 +141,7 @@ void TaskListWireTests::windowsInventoryRequiresTheSchemaTwoFence() {
                .error,
            TaskListWireError::InvalidLineage);
   QCOMPARE(TaskListWireDecoder::decodeWindows(
-               payload({{QStringLiteral("generationAvailable"),
-                         undefined()}}))
+               payload({}, {"generationAvailable"}))
                .error,
            TaskListWireError::InvalidLineage);
   // An available generation can never carry the zero revision.

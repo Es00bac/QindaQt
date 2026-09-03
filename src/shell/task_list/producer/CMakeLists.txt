@@ -15,6 +15,8 @@ target_sources(
         src/task_list_fact_joiner.cpp
         src/task_list_facts_producer.cpp
         src/task_list_wire.cpp
+        src/task_list_wire_detail.h
+        src/task_list_scope_wire.cpp
         src/qt_task_list_producer_transport.cpp
     PUBLIC
         FILE_SET HEADERS

@@ -905,17 +905,23 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
 ```
 
-The thirteen rows cover the pure T0 model (values, batch validation, grouping,
+The fourteen rows cover the pure T0 model (values, batch validation, grouping,
 intents, scope filtering, presentation), the T1 wire decoders and fact joiner
-(hostile payload shapes, duplicate/oversized/malformed inventories, collapsed
+(hostile payload shapes, duplicate/oversized/malformed inventories, exact
+4,096/4,097 window and scope bounds, schema-2 fence and complete-snapshot
+lineage validation including UUID epochs and output membership, collapsed
 native-identity classification, scope availability), the facts producer's
-owner lineage (signal-raced refresh fencing, malformed-reply degradation with
-retained generation, timeout retry, owner loss/replacement, late-reply
-fencing), and the operation adapter (Unavailable window-level intents with
-exact extension codes, stale-generation and degraded-source admission
-rejection, serialized Busy fencing, Submit/Release/Dock reply mapping,
-exactly-once Uncertain on timeout/owner change, and unsupported-authority
-pre-rejection). The Qt transport row runs a fake `org.qindaqt.Compositor1`
+owner lineage (signal-raced refresh fencing, torn window/scope fence re-read
+and fail-closed degradation, scope revision regression/collision rejection,
+coherent epoch replacement, malformed-reply degradation with retained
+generation, degradation/stop `stateChanged` notification, stop availability
+withdrawal, timeout retry, owner loss/replacement, late-reply fencing, and the
+4,096-window stress scene), and the operation adapter (Unavailable
+window-level intents with exact extension codes, stale-generation and
+degraded-source admission rejection, stopped-producer admission fencing,
+serialized Busy fencing, Submit/Release/Dock reply mapping, canonical Submit
+reply lineage with forged/recycled/cross-lifetime rejection, exactly-once
+Uncertain on timeout/owner change, and unsupported-authority pre-rejection). The Qt transport row runs a fake `org.qindaqt.Compositor1`
 service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
 for reads, signals, and mutations, including owner loss and replacement.
 

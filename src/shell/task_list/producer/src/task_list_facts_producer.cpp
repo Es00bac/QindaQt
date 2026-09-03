@@ -97,7 +97,24 @@ void TaskListFactsProducer::stop() {
   m_timerPurpose = TimerPurpose::None;
   m_inFlight.reset();
   m_dirty = false;
+  m_tornFenceRetry = false;
+  m_retryIndex = 0;
   m_transport.stop();
+  // AGENT-GUARD: Stop withdraws owner-bound truth fail-closed: without this
+  // the operation adapter keeps admitting mutations against a dead producer
+  // (review finding P1-2 on candidate 3a5ae17). The last accepted generation
+  // stays visible; only availability and lineage are revoked.
+  m_owner.clear();
+  m_lineage.clear();
+  m_scopeEpoch.clear();
+  m_scopePayload.clear();
+  m_scopeRevision = 0;
+  m_hasScopeLineage = false;
+  if (m_source.status() == TaskListSourceStatus::Ready) {
+    m_lastError = QStringLiteral("task-list facts producer stopped");
+    m_source.markDegraded();
+  }
+  emitStateIfChanged();
 }
 
 quint64 TaskListFactsProducer::publishedRevision() const {
@@ -128,8 +145,15 @@ void TaskListFactsProducer::handleServiceOwnerChanged(
   m_timerPurpose = TimerPurpose::None;
   m_inFlight.reset();
   m_dirty = false;
+  m_tornFenceRetry = false;
   m_retryIndex = 0;
   m_owner = uniqueOwner;
+  // Scope lineage is bound to (owner, epoch, revision); a new owner starts a
+  // fresh lineage.
+  m_scopeEpoch.clear();
+  m_scopePayload.clear();
+  m_scopeRevision = 0;
+  m_hasScopeLineage = false;
 
   if (uniqueOwner.isEmpty()) {
     // Owner loss keeps the last accepted generation visible but refuses every
@@ -199,6 +223,7 @@ void TaskListFactsProducer::handleScopeRead(quint64 token,
     failRefresh(decoded.message, true);
     return;
   }
+  m_inFlight->scopePayload = payload;
   m_inFlight->scope = std::move(decoded);
   maybeFinishRefresh();
 }
@@ -287,27 +312,83 @@ void TaskListFactsProducer::maybeFinishRefresh() {
     return;
   }
 
+  // AGENT-GUARD: The Windows() schema-2 fence names the exact
+  // ShellVisibilitySnapshot generation the window inventory was sampled
+  // against. Joining scope truth without an exact (epoch, revision) match
+  // publishes foreign output/workspace truth (review finding P1-1 on
+  // candidate 3a5ae17). A mismatch means the two reads raced a compositor
+  // update: discard, re-read once, and degrade if the mismatch persists.
+  const TaskListWindowsResult &windows = *finished.windows;
+  const TaskListScopeResult &scope = *finished.scope;
+  const bool fenceCoherent = windows.generationAvailable &&
+                             windows.epoch == scope.snapshot.epoch &&
+                             windows.revision == scope.snapshot.revision;
+  if (!fenceCoherent) {
+    if (!m_tornFenceRetry) {
+      m_tornFenceRetry = true;
+      scheduleDebounce(m_timing.debounceMilliseconds);
+      return;
+    }
+    m_tornFenceRetry = false;
+    failRefresh(QStringLiteral("compositor window inventory and scope "
+                               "snapshot generations do not match"),
+                true);
+    return;
+  }
+  m_tornFenceRetry = false;
+
+  // AGENT-GUARD: Under one owner and epoch, revision regression or changed
+  // bytes at an equal revision is foreign lineage; fail closed. A changed
+  // epoch is a compositor instance restart and adopts a fresh lineage.
+  if (!scopeLineageAdmits(scope, finished.scopePayload)) {
+    failRefresh(QStringLiteral("compositor scope snapshot lineage regressed "
+                               "or collided"),
+                true);
+    return;
+  }
+  m_scopeEpoch = scope.snapshot.epoch;
+  m_scopeRevision = scope.snapshot.revision;
+  m_scopePayload = finished.scopePayload;
+  m_hasScopeLineage = true;
+
   TaskListJoinResult joined = TaskListFactJoiner::join(
       finished.windows->windows, finished.containers->containers,
       finished.scope->snapshot);
   if (!joined.ok()) {
     degrade(joined.error.message);
     scheduleRetry();
+    emitStateIfChanged();
     return;
   }
   publishJoined(std::move(joined));
+}
+
+bool TaskListFactsProducer::scopeLineageAdmits(
+    const TaskListScopeResult &scope, const QByteArray &payload) const {
+  if (!m_hasScopeLineage || scope.snapshot.epoch != m_scopeEpoch) {
+    return true;
+  }
+  if (scope.snapshot.revision > m_scopeRevision) {
+    return true;
+  }
+  return scope.snapshot.revision == m_scopeRevision &&
+         payload == m_scopePayload;
 }
 
 void TaskListFactsProducer::failRefresh(const QString &message,
                                         bool permitRetry) {
   const bool followUp = m_dirty;
   m_dirty = false;
+  m_tornFenceRetry = false;
   m_inFlight.reset();
   m_requestTimeout.stop();
   degrade(message);
   if (!m_started) {
     return;
   }
+  // AGENT-GUARD: Every observable degradation notifies (review finding P1-2
+  // on candidate 3a5ae17); consumers re-read status through stateChanged.
+  emitStateIfChanged();
   if (followUp) {
     scheduleDebounce(m_timing.debounceMilliseconds);
   } else if (permitRetry) {
