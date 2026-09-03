@@ -1,14 +1,17 @@
 # Bluetooth service
 
-Bluetooth1 is QindaQt's typed, restart-aware control and observation boundary
-for Bluetooth. The D-Bus-activated `qindaqt-bluetooth-service` owns
-`org.qindaqt.Bluetooth1`; BlueZ remains the owner of pairing, trust, keys,
-device records, profiles, and authorization. Bluetooth1 forwards pairing,
-trust, and record-removal intents to that authority and publishes one bounded
-Agent1 prompt; it does not store trust, duplicate BlueZ records, touch rfkill,
-or own Bluetooth audio nodes (PipeWire does).
+QindaQt's Bluetooth service exposes two typed, restart-aware wire revisions on
+one D-Bus name. The frozen `org.qindaqt.Bluetooth1` object remains available to
+existing clients, while `org.qindaqt.Bluetooth2` is the current control and
+observation boundary. BlueZ remains the owner of pairing, trust, keys, device
+records, profiles, and authorization. Bluetooth2 forwards pairing, trust, and
+record-removal intents to that authority and publishes one bounded Agent1
+prompt; it does not store trust, duplicate BlueZ records, touch rfkill, or own
+Bluetooth audio nodes (PipeWire does).
 
-The exact wire contract is in the [Bluetooth1 reference](../reference/bluetooth1-v1.md).
+The exact wire contracts are in the frozen
+[Bluetooth1 reference](../reference/bluetooth1-v1.md) and current
+[Bluetooth2 reference](../reference/bluetooth2-v2.md).
 The authority split and Agent1 pairing projection are recorded in
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
 The production transport boundary is recorded in
@@ -18,11 +21,11 @@ The production transport boundary is recorded in
 
 | Module | Responsibility | Boundary |
 | --- | --- | --- |
-| `bluetooth_protocol` | Typed values, fixed D-Bus marshalling, limits, and fail-closed validation | Qt Core/DBus only; no transport or platform handles |
+| `bluetooth_protocol` | Frozen Bluetooth1 and current Bluetooth2 typed values, fixed D-Bus marshalling, shared limits, and fail-closed validation | Qt Core/DBus only; no transport or platform handles |
 | `bluetooth_model` | Backend port, authoritative lineage/lease coordination, operation validation, and the deterministic platform adapter | Public Bluetooth protocol plus Qt Core/DBus; no QML, no shell, no D-Bus service registration |
 | `bluetooth_bluez_adapter` | Exact-owner BlueZ ObjectManager transport, bounded property mapping, discovery leases, device operations, and one registered Agent1 prompt | Public `AdapterBackend` plus Qt Core/DBus; no service residency, QML, local pairing/trust store, rfkill, or platform handles in public headers |
-| `bluetooth_client` | Exact-owner discovery, snapshot fetching, invalidation coalescing, timeout recovery, one ordinary operation lane, and one prompt-reply lane | Depends only on the protocol and Qt Core/DBus |
-| `bluetooth_service` | Resident D-Bus object/name ownership, caller-scoped lease watching, process entry point, backend selection, and activation artifacts | Qt main thread publishes D-Bus; composes either production BlueZ or the deterministic backend through the same port |
+| `bluetooth_client` | Exact-owner Bluetooth2 discovery, snapshot fetching, invalidation coalescing, timeout recovery, one ordinary operation lane, and one prompt-reply lane | Depends only on the protocol and Qt Core/DBus |
+| `bluetooth_service` | Resident frozen-Bluetooth1/current-Bluetooth2 object and name ownership, caller-scoped lease watching, process entry point, backend selection, and activation artifacts | Qt main thread publishes D-Bus; composes either production BlueZ or the deterministic backend through the same port |
 
 ## Authority and handle lineage
 
@@ -80,7 +83,7 @@ dropped by the owner token and backend run generation.
 The adapter consumes `org.freedesktop.DBus.ObjectManager`, AgentManager1,
 Adapter1, Device1, and standard `PropertiesChanged`. It observes Address,
 Alias/Name, Powered, Discovering, Adapter, Class, Icon, RSSI, Paired,
-Connected, and Trusted, publishing only bounded Bluetooth1 values. It calls
+Connected, and Trusted, publishing only bounded current-protocol values. It calls
 Properties.Set(Powered/Trusted), StartDiscovery, StopDiscovery, Connect,
 Disconnect, Pair, CancelPairing, and RemoveDevice. Every call is addressed to
 the current exact BlueZ owner. Names are bounded without splitting UTF-8,
@@ -89,26 +92,29 @@ RSSI values map fail-closed, unknown interfaces are ignored, and duplicate
 adapter or device addresses deterministically retain the lexicographically
 first BlueZ object path.
 
-On each exact owner, the adapter registers one `org.bluez.Agent1` with
-`KeyboardDisplay` capability through AgentManager1. RequestConfirmation,
+On each exact owner that publishes at least one Adapter1 object, the adapter
+registers one `org.bluez.Agent1` with `KeyboardDisplay` capability through
+AgentManager1. It unregisters that exact agent path before shutdown, owner
+replacement, or loss of the final adapter. RequestConfirmation,
 RequestPasskey, RequestPinCode, DisplayPasskey, DisplayPinCode,
 AuthorizeService, and Cancel map to one snapshot prompt. Prompt text is
 bounded, passkeys stay six-digit display values, PIN replies are 1–16 ASCII
 alphanumeric characters, and at most one prompt is pending. A second request
-is rejected busy. The pending BlueZ method reply is accepted only through the
-typed Bluetooth1 reply matching its prompt kind; after 60 seconds, prompt
+is rejected busy. Every published prompt carries a nonzero prompt ID. The
+pending BlueZ method reply is accepted only through the typed Bluetooth2 reply
+matching both that exact ID and its prompt kind; after 60 seconds, prompt
 cancellation, adapter stop, or exact-owner loss it is rejected and cleared.
 Display-only prompts have no held method reply, but CancelPrompt still asks
 BlueZ to cancel the associated Device1 pairing. No PIN, key, or authorization
 decision is persisted by QindaQt.
 
-BlueZ discovery is sender-scoped while Bluetooth1 leases are caller-scoped.
+BlueZ discovery is sender-scoped while the QindaQt leases are caller-scoped.
 The adapter therefore shares one BlueZ StartDiscovery call for concurrent
 local leases, reference-counts those leases by caller and adapter, and stops
 its session only when the final local reference disappears. A Discovering
 session reported by BlueZ without a local lease is represented internally by
 one bounded synthetic lease so the B0 model invariant remains truthful; the
-synthetic row never crosses the Bluetooth1 wire.
+synthetic row never crosses either Bluetooth wire revision.
 
 The composition root reads `QINDAQT_BLUETOOTH_BACKEND`. Only the exact value
 `deterministic` selects B0's empty in-memory backend; unset, `production`, and
@@ -119,15 +125,18 @@ the accepted BlueZ authority split is unchanged (ADR-0057).
 
 ## Operations and discovery leases
 
-`SetPowered`, `AcquireDiscovery`, `ReleaseDiscovery`, `Connect`, `Disconnect`,
-`Pair`, `CancelPairing`, `Remove`, `SetTrusted`, and the four prompt reply
-methods return a typed result carrying the initiating epoch/revision. The
+Bluetooth1 retains only `SetPowered`, `AcquireDiscovery`, `ReleaseDiscovery`,
+`Connect`, and `Disconnect`. Bluetooth2 additionally exposes `Pair`,
+`CancelPairing`, `Remove`, `SetTrusted`, and four prompt reply methods. Every
+operation returns a typed result carrying the initiating epoch/revision. The
 service rejects unavailable state, stale handles, malformed callers, unknown
 kinds, out-of-bound lease counts, discovery or connect on an unpowered
 adapter, connect of an unpaired or already-connected device, and disconnect
 of an unconnected one. Pairing and removal are admitted only against current
 device truth; prompt replies use a separate client lane so the BlueZ `Pair`
-call may remain pending while the user answers. A timeout, owner replacement, backend replacement,
+call may remain pending while the user answers. A reply with an absent or stale
+prompt ID is rejected as `no-prompt` and cannot authorize a replacement prompt.
+A timeout, owner replacement, backend replacement,
 model stop, or a failed refetch makes a dispatched operation `Uncertain`;
 callers resnapshot and must not retry automatically.
 
@@ -145,7 +154,7 @@ its discovery sessions and connections, matching BlueZ truth.
 ## Activation and hardening
 
 The build installs the executable, configured D-Bus activation descriptor,
-canonical introspection XML, and a systemd user unit. The user unit is D-Bus
+canonical introspection XML for both revisions, and a systemd user unit. The user unit is D-Bus
 named, restricts address families to `AF_UNIX`, bounds tasks, drops
 capabilities, and enables the available filesystem, kernel, namespace,
 personality, privilege, and syscall hardening. It carries no ordering
@@ -179,8 +188,9 @@ objects or the service implementation.
 
 ## Qualification boundary
 
-Focused protocol tests cover exact registered signatures, real-writer
-signature emission, meta-type round trips, ordering, lease bounds, and the
+Focused protocol tests cover the frozen Bluetooth1 signature and projection,
+the additive Bluetooth2 signature, real-writer signature emission, meta-type
+round trips, ordering, lease bounds, exact prompt-ID matching, and the
 hostile malformed matrix (addresses, RSSI, battery, role, capability bits,
 state contradictions, unstructured reason codes, oversized arrays). Model
 tests cover publication, lineage preservation, policy rejections including
@@ -202,9 +212,11 @@ BlueZ absence, ObjectManager inventory, property and interface churn, power,
 shared/refcounted discovery, paired-device connect/disconnect success and
 failure, hostile values, deterministic duplicate suppression, owner loss and
 return, deferred-reply fencing, an exact staged B1 component surface, and
-source-boundary poison controls. The Agent1 row covers registration and each
-supported prompt kind, typed replies, display cancellation, timeout, explicit
-BlueZ cancellation, malformed values, trust/removal, and owner-loss rejection.
+source-boundary poison controls. The Agent1 row covers registration and exact
+unregistration, each supported prompt kind, exact-ID typed replies, stale-ID
+rejection, display cancellation, timeout, explicit BlueZ cancellation,
+canonical cancellation reasons, malformed values, trust/removal, and owner-loss
+rejection.
 
 That evidence qualifies the production adapter only against the injected fake.
 It does not qualify physical radios, a host BlueZ build, interoperability with

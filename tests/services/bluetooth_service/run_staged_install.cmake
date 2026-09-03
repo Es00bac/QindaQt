@@ -55,11 +55,13 @@ set(staged_unit
     "${install_prefix}/${QINDAQT_INSTALL_SYSTEMDUSERUNITDIR}/qindaqt-bluetooth-service.service")
 set(staged_xml
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/dbus-1/interfaces/org.qindaqt.Bluetooth1.xml")
+set(staged_current_xml
+    "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/dbus-1/interfaces/org.qindaqt.Bluetooth2.xml")
 set(staged_protocol
     "${install_prefix}/${QINDAQT_INSTALL_LIBDIR}/${QINDAQT_BLUETOOTH_PROTOCOL_LIBRARY_NAME}")
 
 foreach(staged IN ITEMS staged_executable staged_activation staged_unit staged_xml
-                        staged_protocol)
+                        staged_current_xml staged_protocol)
     if(NOT EXISTS "${${staged}}")
         message(FATAL_ERROR "Staged Bluetooth1 artifact missing: ${${staged}}")
     endif()

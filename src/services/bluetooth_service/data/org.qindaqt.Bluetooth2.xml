@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/qindaqt/Bluetooth2">
+  <interface name="org.qindaqt.Bluetooth2">
+    <method name="GetSnapshot">
+      <arg name="snapshot" type="(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(tu(tt)ssq))" direction="out"/>
+    </method>
+    <method name="SetPowered"><arg name="adapter" type="(tt)" direction="in"/><arg name="powered" type="b" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="AcquireDiscovery"><arg name="adapter" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="ReleaseDiscovery"><arg name="adapter" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="Connect"><arg name="device" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="Disconnect"><arg name="device" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="Pair"><arg name="device" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="CancelPairing"><arg name="device" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="Remove"><arg name="device" type="(tt)" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="SetTrusted"><arg name="device" type="(tt)" direction="in"/><arg name="trusted" type="b" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="ReplyConfirmation"><arg name="promptId" type="t" direction="in"/><arg name="accept" type="b" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="ReplyPasskey"><arg name="promptId" type="t" direction="in"/><arg name="passkey" type="u" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="ReplyPin"><arg name="promptId" type="t" direction="in"/><arg name="pin" type="s" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <method name="CancelPrompt"><arg name="promptId" type="t" direction="in"/><arg name="result" type="(uuttttss)" direction="out"/></method>
+    <signal name="Changed"><arg name="epoch" type="t"/><arg name="revision" type="t"/></signal>
+  </interface>
+</node>

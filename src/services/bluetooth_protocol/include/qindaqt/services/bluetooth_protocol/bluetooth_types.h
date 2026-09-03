@@ -137,11 +137,31 @@ struct Device {
     friend bool operator==(const Device &, const Device &) = default;
 };
 
+// Bluetooth1's frozen v1 wire shape. Keep this projection distinct from the
+// current Device value so additions cannot silently alter old decoders.
+struct Bluetooth1Device {
+    Handle handle;
+    Handle adapterHandle;
+    QString address;
+    QString name;
+    DeviceClass deviceClass = DeviceClass::Unknown;
+    DeviceRole role = DeviceRole::Unknown;
+    bool paired = false;
+    bool connected = false;
+    bool rssiKnown = false;
+    qint16 rssi = 0;
+    bool batteryKnown = false;
+    quint8 batteryPercent = 0;
+
+    friend bool operator==(const Bluetooth1Device &, const Bluetooth1Device &) = default;
+};
+
 // One bounded prompt is part of the same epoch/revision snapshot as device
 // truth. `detail` carries a zero-padded passkey/PIN when displayed;
 // `serviceUuid` is populated only for AuthorizeService. An inactive prompt is
 // exactly the default value and carries no stale device handle or text.
 struct PairingPrompt {
+    quint64 promptId = 0;
     PairingPromptKind kind = PairingPromptKind::None;
     Handle device;
     QString detail;
@@ -156,8 +176,26 @@ struct PairingPrompt {
     friend bool operator==(const PairingPrompt &, const PairingPrompt &) = default;
 };
 
-struct Snapshot {
+// AGENT-CONTRACT: org.qindaqt.Bluetooth1.GetSnapshot stays byte-compatible
+// with the pre-pairing v1 ABI. Current clients use Snapshot on the additive
+// org.qindaqt.Bluetooth2 interface.
+struct Bluetooth1Snapshot {
     quint32 schemaVersion = 1;
+    quint64 epoch = 0;
+    quint64 revision = 0;
+    Availability availability = Availability::Starting;
+    Capabilities capabilities;
+    QString reasonCode;
+    QString diagnostic;
+    QList<Adapter> adapters;
+    QList<Bluetooth1Device> devices;
+    bool wireValid = true;
+
+    friend bool operator==(const Bluetooth1Snapshot &, const Bluetooth1Snapshot &) = default;
+};
+
+struct Snapshot {
+    quint32 schemaVersion = 2;
     quint64 epoch = 0;
     quint64 revision = 0;
     Availability availability = Availability::Starting;
@@ -214,6 +252,7 @@ struct OperationRequest {
     bool powered = false;
     bool accepted = false;
     bool trusted = false;
+    quint64 promptId = 0;
     PairingInput input{};
     quint8 inputSize = 0;
 
@@ -244,8 +283,10 @@ Q_DECLARE_METATYPE(QindaQt::Bluetooth::PairingPromptKind)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Handle)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Adapter)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Device)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::Bluetooth1Device)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::DeviceRole)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::PairingPrompt)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::Bluetooth1Snapshot)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Snapshot)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationRequest)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationResult)

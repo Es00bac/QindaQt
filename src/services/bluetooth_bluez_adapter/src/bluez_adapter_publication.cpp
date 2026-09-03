@@ -121,6 +121,7 @@ void BluezAdapterBackend::publish()
     }
     BackendInventory inventory;
     inventory.adapters = d->store.projectAdapters();
+    d->pairingAgent.setAdapterAvailable(!inventory.adapters.isEmpty());
     QSet<QString> adapterAddresses;
     for (const BackendAdapter &adapter : inventory.adapters) {
         adapterAddresses.insert(adapter.address);

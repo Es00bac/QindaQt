@@ -1,7 +1,7 @@
 # QindaQt Settings — Bluetooth route
 
 `qindaqt-settings --page bluetooth` is the first-party Bluetooth inventory and
-connection surface. It composes only the public Bluetooth1 client and keeps
+connection surface. It composes only the public current Bluetooth2 client and keeps
 BlueZ, the resident service implementation, D-Bus transport, and hardware out
 of the route boundary. The route offers power, discovery, connection, pairing,
 forget, and trust intents only when its current exact public snapshot admits
@@ -38,7 +38,9 @@ current handle epoch, public capabilities, adapter power, paired/connected
 state, discovery ownership, and the absence of another ordinary pending
 operation. Prompt replies have a separately fenced pending lane so BlueZ may
 hold `Pair` while awaiting input. A
-submitted request pins its owner, epoch, and initiating revision. Its success
+submitted request pins its owner, epoch, initiating revision, and, for a prompt
+reply, the exact nonzero prompt ID. A prompt replacement therefore invalidates
+an already composed reply instead of applying it to the new prompt. Its success
 does not optimistically edit rows: controls remain fenced until a matching
 authoritative snapshot reaches the result's minimum revision. Late or
 mismatched completions cannot reopen availability. Failures remain visible and
@@ -70,7 +72,7 @@ this page releases its own reference.
 Pairing, trust, untrust, and removal stay in BlueZ as established by
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The page
 does not create a second authority: its public-client invokables forward Pair,
-CancelPairing, Remove, and SetTrusted to BlueZ through Bluetooth1 and wait for
+CancelPairing, Remove, and SetTrusted to BlueZ through Bluetooth2 and wait for
 the next authoritative snapshot. Unpaired discovered devices have a Pair
 button; paired rows expose Forget and a checked Trust control.
 
@@ -82,7 +84,7 @@ is stored by the route. Owner or epoch loss clears the prompt and all reply
 authority. Neither QML nor the model imports private Bluetooth service headers,
 Qt D-Bus, BlueZ APIs, or another application's internals. See
 [Bluetooth service architecture](../architecture/bluetooth-service.md) and the
-[Bluetooth1 reference](../reference/bluetooth1-v1.md) for the public contract.
+[Bluetooth2 reference](../reference/bluetooth2-v2.md) for the public contract.
 
 ## Responsive interaction and accessibility
 
@@ -97,6 +99,7 @@ states are visible text rather than color-only cues.
 The declared host-entry focus target is the Close action. It is always enabled
 and admitted, including empty, unavailable, degraded, and busy states, so Tab
 from the active route tab never lands on a disabled domain action. Escape
+rejects the exact active prompt when its reply lane is free; otherwise it
 returns focus to the active wide or compact Bluetooth tab. Ctrl+7 selects the
 route, while the platform Quit shortcut closes the window after requesting
 discovery release.
@@ -136,7 +139,7 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
 - the warning-fatal page rows render wide and compact offscreen/software scenes
   and prove accessible controls, disabled truth, shortcut-independent route
   focus entry, Pair/Forget/Trust and prompt action wiring, accessible entry and
-  confirmation keyboard parity, authority disclosure, compact-host Escape/Tab
+  confirmation keyboard parity including Escape rejection, authority disclosure, compact-host Escape/Tab
   entry, successful-release waiting, and real-model window close after rejected,
   uncertain, owner-lost, or owner-replaced acquisition;
 - boundary and negative-control rows enforce an allow-list-only include scan

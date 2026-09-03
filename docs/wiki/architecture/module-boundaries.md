@@ -79,11 +79,11 @@ tests, and the wiki page describing its contract.
 | `src/services/audio_protocol` | Audio1 typed values, fixed D-Bus structures, aggregate/text limits, and fail-closed validation | Qt Core/DBus only; never transport state, QML, or platform objects |
 | `src/services/audio_client` | Exact-owner asynchronous Audio1 discovery/snapshots, invalidation coalescing, serialized operations, timeout/uncertainty, and stale-reply rejection | Public Audio1 protocol plus Qt Core/DBus; never service implementation, WirePlumber, or QML |
 | `src/services/audio_service` | Audio backend abstraction, operation coordinator, resident D-Bus object/process, and confined libwireplumber adapter | Public Audio1 protocol plus Qt Core/DBus and private WirePlumber/GLib worker; never shell/settings UI or PipeWire configuration |
-| `src/services/bluetooth_protocol` | Bluetooth1 typed values, fixed D-Bus structures, aggregate/text limits, and fail-closed validation | Qt Core/DBus only; never transport state, QML, or platform objects |
-| `src/services/bluetooth_model` | Adapter backend port, authoritative epoch/serial/lease/prompt coordination, operation validation, deterministic B0 platform adapter, and restart lineage | Public Bluetooth1 protocol plus Qt Core/DBus; never QML, shell, local pairing/trust persistence, or D-Bus service ownership |
+| `src/services/bluetooth_protocol` | Frozen Bluetooth1 and current Bluetooth2 typed values, fixed D-Bus structures, aggregate/text limits, and fail-closed validation | Qt Core/DBus only; never transport state, QML, or platform objects |
+| `src/services/bluetooth_model` | Adapter backend port, authoritative epoch/serial/lease/prompt coordination, operation validation, deterministic B0 platform adapter, and restart lineage | Public Bluetooth protocol plus Qt Core/DBus; never QML, shell, local pairing/trust persistence, or D-Bus service ownership |
 | `src/services/bluetooth_bluez_adapter` | Exact-owner BlueZ ObjectManager transport, bounded Adapter1/Device1 mapping, caller-scoped discovery, BlueZ-owned device mutations, and one bounded Agent1 prompt | Public Bluetooth model port plus Qt Core/DBus; never service residency, QML/shell/settings, local pairing/trust/record persistence, rfkill, ambient bus lookup inside the adapter, or platform handles in public headers |
-| `src/services/bluetooth_client` | Exact-owner asynchronous Bluetooth1 discovery/snapshots, invalidation coalescing, separate ordinary/prompt operation lanes, timeout/uncertainty, and stale-reply rejection | Public Bluetooth1 protocol plus Qt Core/DBus; never service implementation, BluezQt, or QML |
-| `src/services/bluetooth_service` | Resident D-Bus object/name ownership, caller-scoped discovery-lease watching, pairing/reply wire methods, process entry point, and activation/hardening artifacts | Public Bluetooth1 model/protocol plus Qt Core/DBus; forwards authority to BlueZ through its injected backend and never stores pairing/trust, supervises BlueZ, or imports shell/settings UI/QML |
+| `src/services/bluetooth_client` | Exact-owner asynchronous Bluetooth2 discovery/snapshots, invalidation coalescing, separate ordinary/prompt operation lanes, timeout/uncertainty, and stale-reply rejection | Public Bluetooth protocol plus Qt Core/DBus; never service implementation, BluezQt, or QML |
+| `src/services/bluetooth_service` | Resident frozen-Bluetooth1/current-Bluetooth2 object/name ownership, caller-scoped discovery-lease watching, pairing/reply wire methods, process entry point, and activation/hardening artifacts | Public Bluetooth model/protocol plus Qt Core/DBus; forwards authority to BlueZ through its injected backend and never stores pairing/trust, supervises BlueZ, or imports shell/settings UI/QML |
 | `src/services/network_protocol` | Network1 bounded values, identity normalization, fail-closed validation/redaction, and canonical byte codecs | Qt Core only; never transport state, D-Bus, NetworkManager, platform objects, credentials, or QML |
 | `src/services/network_model` | Pure lineage high-water, scan-lease reconciliation, intent admission, and atomic projection | Public Network1 protocol plus Qt Core; never clocks/timers, transport, platform state, persistence, credentials, or QML |
 | `src/services/network_client` | Exact-owner asynchronous snapshots and operations, bounded timeout/retry, uncertain outcomes, and injected transport composition | Public Network1 protocol/model plus Qt Core; never a concrete transport, D-Bus, NetworkManager, radios, credentials, or QML |
@@ -188,10 +188,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   the pure foundation, never the reverse.
   See [Status notifier tray](../shell/status-tray.md) and
   [ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md).
-- Bluetooth consumers depend on the typed Bluetooth1 client. BlueZ owns
-  pairing, trust, keys, device records, and authorization; Bluetooth1 exposes
+- Current Bluetooth consumers depend on the typed Bluetooth2 client; the
+  frozen Bluetooth1 object remains available to existing v1 clients. BlueZ owns
+  pairing, trust, keys, device records, and authorization. Bluetooth2 exposes
   inventory, adapter power, bounded caller-scoped discovery leases, device
-  operations, and a bounded Agent1 prompt/reply projection. Bluetooth1 forwards
+  operations, and a bounded exact-ID Agent1 prompt/reply projection. It forwards
   every pairing/trust/removal decision to BlueZ and stores none of it. See [Bluetooth service](bluetooth-service.md) and
   [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
 - Network consumers depend on the typed Network1 client. The N0 direction

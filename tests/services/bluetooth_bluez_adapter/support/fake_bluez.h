@@ -134,6 +134,7 @@ public:
     int connectCalls = 0;
     int disconnectCalls = 0;
     int registerAgentCalls = 0;
+    int unregisterAgentCalls = 0;
     int pairCalls = 0;
     int cancelPairingCalls = 0;
     int removeDeviceCalls = 0;
@@ -151,6 +152,7 @@ private:
     void deviceConnect(const QString &path, const QDBusMessage &request);
     void deviceDisconnect(const QString &path, const QDBusMessage &request);
     void registerAgent(const QDBusMessage &request);
+    void unregisterAgent(const QDBusMessage &request);
     void devicePair(const QString &path, const QDBusMessage &request);
     void deviceCancelPairing(const QString &path, const QDBusMessage &request);
     void adapterRemoveDevice(const QString &path, const QDBusMessage &request);

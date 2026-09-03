@@ -1,26 +1,26 @@
 # Bluetooth applet
 
 `src/shell/bluetooth_applet` owns the production panel Bluetooth applet. A pure
-target projects bounded Bluetooth1 values and evaluates operation admission; a
+target projects bounded current Bluetooth2 values and evaluates operation admission; a
 separately linked shell-private controller borrows the public
 `BluetoothClient` and exposes only owned presentation values to compiled QML.
 Neither target imports the Bluetooth service/model, BlueZ, BluezQt, or
-host-radio APIs; prompt truth and replies cross only the Bluetooth1 client.
+host-radio APIs; prompt truth and replies cross only the Bluetooth2 client.
 
 Current maturity: **qualified production built-in composition (focused
-Debug/Release executable and package evidence)**. The B1 slice includes the audited
+Debug/Release executable, private-bus, and package evidence)**. The B1 slice includes the audited
 manifest/registry/policy path, stock-profile placement, production shell
 composition, keyboard-accessible compiled QML, static mutation gates, and a
 relocated installed-package test. Fresh strict GCC 15.3 Debug and Release roots
 each built the production shell and focused targets, passed the eight-row B1
 selector, and passed six adjacent public-client, manifest, catalog, resolver,
-notification-center applet offscreen, and shell-catalog rows. Bluetooth B0 still composes its
-deterministic empty backend, so a normal activated service truthfully makes the
-applet unavailable until the separately reviewed BluezQt runtime adapter
-lands. This consumer does not advance platform hardware maturity by itself.
+notification-center applet offscreen, and shell-catalog rows. The activated
+service now composes the direct-QtDBus production BlueZ adapter by default;
+tests qualify it only against an injected fake BlueZ on a private bus. This
+consumer does not advance platform hardware maturity by itself.
 
 The service authority and pairing ownership remain those of
-[Bluetooth1](../architecture/bluetooth-service.md) and
+[Bluetooth service](../architecture/bluetooth-service.md) and
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The applet
 does not initiate pairing or accept PIN/passkey entry, but presents the one
 current prompt and may confirm or cancel it.
@@ -40,7 +40,7 @@ epoch/revision to zero. Old rows never survive as actionable last-known-good
 state. The pure projector validates direct test inputs again, even though the
 public client already validates snapshots before publication.
 
-Bluetooth1's bounds remain the applet bounds: at most eight adapters and 256
+The protocol's bounds remain the applet bounds: at most eight adapters and 256
 devices. Rows sort deterministically by opaque handle serial. QML receives
 opaque `adapter-<epoch>-<serial>` and `device-<epoch>-<serial>` row IDs, not
 Bluetooth addresses, object paths, D-Bus owners, or platform handles. A
@@ -79,9 +79,11 @@ entry and display prompts truthfully direct the user to Settings and retain a
 Cancel action.
 
 Only one ordinary operation and one prompt reply may be live at a time. Each request pins the unique owner,
-operation kind, target handle, initiating epoch, and initiating revision before
-one public-client dispatch. The matching request ID and an exact initiating
-lineage are required for completion; success additionally requires the same
+operation kind, target handle, initiating epoch, initiating revision, and, for
+a prompt reply, the exact nonzero prompt ID before one public-client dispatch.
+The matching request ID and an exact initiating lineage are required for
+completion; a stale prompt reply is rejected rather than applied to a later
+prompt. Success additionally requires the same
 epoch and an observed revision at least as new as the initiating revision.
 Malformed, stale, timed-out, or owner-interrupted results become typed user
 uncertainty. Rejection, unsupported, busy, and failed results remain distinct
@@ -140,12 +142,13 @@ and enum is the negative control for the shared comparison path.
 
 ## Compiled interaction
 
-`BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal,
-Escape-closeable details popup. Adapter power/discovery and paired-device
+`BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal
+details popup. Adapter power/discovery and paired-device
 connect/disconnect are ordinary keyboard-operable buttons with complete
 accessible names and descriptions. An inline prompt has complete accessible
-text and keyboard-operable Confirm/Cancel actions; Escape cancels the prompt
-before it closes the popup. Failure/uncertainty feedback is exposed as an
+text and keyboard-operable Confirm/Cancel actions; an application-window Escape
+shortcut cancels the exact active prompt, when its reply lane is free, before
+closing the popup. Failure/uncertainty feedback is exposed as an
 accessible alert. Horizontal and vertical panels use the same controller;
 the vertical summary uses a compact text label without changing behavior.
 

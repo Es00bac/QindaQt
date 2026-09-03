@@ -353,6 +353,7 @@ QString BluetoothModel::validateRequest(const OperationRequest &request,
     }
     case OperationKind::ReplyConfirmation:
         if (!m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+            || m_snapshot.pairingPrompt.promptId != request.promptId
             || m_snapshot.pairingPrompt.device != request.target
             || (m_snapshot.pairingPrompt.kind != PairingPromptKind::ConfirmPasskey
                 && m_snapshot.pairingPrompt.kind
@@ -362,17 +363,19 @@ QString BluetoothModel::validateRequest(const OperationRequest &request,
         return {};
     case OperationKind::ReplyPasskey:
         return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+                && m_snapshot.pairingPrompt.promptId == request.promptId
                 && m_snapshot.pairingPrompt.device == request.target
                 && m_snapshot.pairingPrompt.kind == PairingPromptKind::EnterPasskey
             ? QString{} : QStringLiteral("no-prompt");
     case OperationKind::ReplyPin:
         return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+                && m_snapshot.pairingPrompt.promptId == request.promptId
                 && m_snapshot.pairingPrompt.device == request.target
                 && m_snapshot.pairingPrompt.kind == PairingPromptKind::EnterPin
             ? QString{} : QStringLiteral("no-prompt");
     case OperationKind::CancelPrompt:
-        return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
-                && m_snapshot.pairingPrompt.active()
+        return m_snapshot.capabilities.testFlag(Capability::PairingPrompt) && m_snapshot.pairingPrompt.active()
+                && m_snapshot.pairingPrompt.promptId == request.promptId
                 && m_snapshot.pairingPrompt.device == request.target
             ? QString{} : QStringLiteral("no-prompt");
     default:
@@ -417,14 +420,11 @@ OperationSubmission BluetoothModel::submit(const OperationRequest &request,
     const quint64 operationId = m_nextOperationId++;
     m_pending.insert(operationId, pending);
 
-    BackendRequest backendRequest;
-    backendRequest.kind = request.kind;
-    backendRequest.powered = request.powered;
-    backendRequest.accepted = request.accepted;
-    backendRequest.trusted = request.trusted;
-    backendRequest.input = request.input;
-    backendRequest.inputSize = request.inputSize;
-    backendRequest.callerId = callerId;
+    BackendRequest backendRequest{
+        .kind = request.kind, .adapterAddress = {}, .deviceAddress = {},
+        .powered = request.powered, .accepted = request.accepted, .trusted = request.trusted,
+        .promptId = request.promptId, .input = request.input,
+        .inputSize = request.inputSize, .callerId = callerId};
     if (const Adapter *adapter = findAdapter(request.target.serial); adapter != nullptr) {
         backendRequest.adapterAddress = adapter->address;
     }

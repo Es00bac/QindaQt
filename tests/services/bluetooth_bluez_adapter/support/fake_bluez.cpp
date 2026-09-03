@@ -62,6 +62,11 @@ bool FakeBluezServiceObject::handleMessage(const QDBusMessage &message,
         m_bluez->registerAgent(message);
         return true;
     }
+    if (path == QLatin1String("/org/bluez") && interfaceName == QLatin1String("org.bluez.AgentManager1")
+        && member == QLatin1String("UnregisterAgent")) {
+        m_bluez->unregisterAgent(message);
+        return true;
+    }
     if (interfaceName == QLatin1String("org.freedesktop.DBus.Properties")
         && member == QLatin1String("Set") && message.arguments().size() == 3) {
         m_bluez->propertySet(path, message.arguments().value(0).toString(),
@@ -169,13 +174,10 @@ bool FakeBluez::returnAsNewOwner()
         it.value().deferConnect = false;
         it.value().deferredConnectRequests.clear();
     }
-    startDiscoveryCalls = 0;
-    stopDiscoveryCalls = 0;
-    connectCalls = 0;
-    disconnectCalls = 0;
-    registerAgentCalls = 0;
-    pairCalls = 0;
-    cancelPairingCalls = 0;
+    startDiscoveryCalls = stopDiscoveryCalls = 0;
+    connectCalls = disconnectCalls = 0;
+    registerAgentCalls = unregisterAgentCalls = 0;
+    pairCalls = cancelPairingCalls = 0;
     removeDeviceCalls = 0;
     m_agentOwner.clear();
     m_agentPath.clear();

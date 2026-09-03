@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 
     using namespace QindaQt::Bluetooth;
 
-    if (kSchemaVersion != 1) {
+    if (kBluetooth1SchemaVersion != 1 || kSchemaVersion != 2) {
         return 1;
     }
     if (QLatin1String(kServiceName) != QLatin1String("org.qindaqt.Bluetooth1")) {
@@ -28,6 +28,11 @@ int main(int argc, char **argv)
     }
     if (QLatin1String(kInterfaceName) != QLatin1String("org.qindaqt.Bluetooth1")) {
         return 4;
+    }
+    if (QLatin1String(kCurrentObjectPath) != QLatin1String("/org/qindaqt/Bluetooth2")
+        || QLatin1String(kCurrentInterfaceName)
+            != QLatin1String("org.qindaqt.Bluetooth2")) {
+        return 8;
     }
     if (!isCanonicalAddress(QStringLiteral("AA:BB:CC:00:11:22"))) {
         return 5;

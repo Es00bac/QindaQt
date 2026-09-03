@@ -18,6 +18,22 @@ Item {
     implicitWidth: vertical ? 40 : Math.max(52, summary.implicitWidth + 12)
     implicitHeight: vertical ? 40 : 28
 
+    function closeDetailsFromEscape() {
+        if (root.access !== null && root.access.pairingPromptVisible
+                && !root.access.pairingReplyPending)
+            root.access.cancelPrompt()
+        details.close()
+    }
+
+    Shortcut {
+        // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
+        // an integer key code and silently fails in the offscreen Quick path.
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: details.opened
+        onActivated: root.closeDetailsFromEscape()
+    }
+
     ToolButton {
         id: summary
         objectName: "bluetoothAppletSummary"
@@ -58,7 +74,7 @@ Item {
         padding: 12
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnPressOutside
 
         onOpened: {
             if (root.access !== null)

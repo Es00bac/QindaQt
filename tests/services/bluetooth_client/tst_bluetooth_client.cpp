@@ -428,6 +428,7 @@ void BluetoothClientTests::pairingReplyUsesIndependentLane()
     transport.setOwner(kOwner());
     Snapshot prompt = bluetoothClientSnapshot();
     prompt.pairingPrompt = {
+        .promptId = 101,
         .kind = PairingPromptKind::ConfirmPasskey,
         .device = prompt.devices.constFirst().handle,
         .detail = QStringLiteral("123456"),
@@ -444,6 +445,7 @@ void BluetoothClientTests::pairingReplyUsesIndependentLane()
     QCOMPARE(transport.submissions[0].request.kind, OperationKind::Disconnect);
     QCOMPARE(transport.submissions[1].request.kind,
              OperationKind::ReplyConfirmation);
+    QCOMPARE(transport.submissions[1].request.promptId, quint64(101));
     transport.emitOperationReply(
         kOwner(), replyId, true,
         {.kind = OperationKind::ReplyConfirmation,

@@ -245,8 +245,9 @@ textual boundary rows retain exact file/header allowlists, forbidden
 dependencies or symbols, and manifest/registry/profile/QML/composition presence
 contracts, with independent client/service, address, persistence, filesystem,
 adjacent-module, and composition-removal poisons. No row contacts the host
-session bus, display server, BlueZ, a radio, or pairing authority. The exact
-matrix and nonclaims are
+session bus, display server, BlueZ, a radio, or pairing authority. The
+offscreen row additionally proves that Escape rejects the exact current prompt
+before closing the popup. The exact matrix and nonclaims are
 detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
 also clears ambient loader paths and requires CMake's runtime dependency
 resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
@@ -1188,14 +1189,14 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
 The seven rows use an injected fake Bluetooth transport or absent private buses
 only. The model row proves bounded address-free adapter/device projection,
 class/icon/RSSI truth, exact owner/epoch/revision admission, paired-only
-connection actions, serialized pending/convergence fences, one discovery
+connection actions, exact prompt-ID forwarding, serialized pending/convergence fences, one discovery
 lease, and release on route departure. The adversarial model row proves that
 rejected, failed, uncertain, inexact, owner-lost, and owner-replaced acquisition
 cannot leave a wait-for-nothing close fence, and rejects duplicate identifiers,
 overlong names, and invalid class/RSSI values. The page row runs with
 `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320 compact software scenes and
-checks accessible role/state/name truth, disabled controls, action wiring, and
-the always-enabled host-entry Close target. The allow-list boundary scan and
+checks accessible role/state/name truth, disabled controls, action wiring,
+Escape prompt rejection, and the always-enabled host-entry Close target. The allow-list boundary scan and
 independent negative controls reject sibling application internals, parent
 escapes, private Bluetooth service headers, and pairing authority. The
 window-close row uses a stub to isolate successful-release waiting, then uses
@@ -2613,11 +2614,14 @@ install component registration, and hostile-checker rejection.
 `qindaqt.bluetooth-bluez-pairing` uses the same private-bus fixture and proves
 AgentManager1 registration of the injected `KeyboardDisplay` Agent1, all seven
 supported Agent1 methods (confirmation, passkey/PIN entry and display,
-authorization, and cancellation), typed replies while Device1.Pair remains
-pending, one-prompt admission, the 60-second timeout seam, explicit cancel,
-BlueZ owner loss, malformed passkey/PIN/display values, Trusted mutation, and
-RemoveDevice. Bluetooth1 protocol and Qt transport rows separately pin the new
-fixed struct signatures and every public pairing method name.
+authorization, and cancellation), exact prompt-ID replies while Device1.Pair
+remains pending, stale-ID rejection across prompt replacement, one-prompt
+admission, the 60-second timeout seam, explicit cancel, canonical cancellation
+reason tokens, Agent1 unregistration on shutdown and final-adapter loss, BlueZ
+owner loss, malformed passkey/PIN/display values, Trusted mutation, and
+RemoveDevice. Protocol and Qt transport rows separately pin both the frozen
+Bluetooth1 v1 signature/method set and the additive Bluetooth2 signature,
+prompt IDs, and pairing methods.
 
 These rows never use the ambient session/system bus, a host BlueZ, rfkill,
 Bluetooth hardware, uinput, or a nested compositor. They do not qualify a

@@ -16,6 +16,23 @@ ColumnLayout {
     spacing: Tokens.space["2"]
     visible: promptActive
 
+    function cancelActivePrompt() {
+        if (prompt.confirmationAvailable === true)
+            bluetoothSettings.replyConfirmation(false)
+        else
+            bluetoothSettings.cancelPrompt()
+    }
+
+    Shortcut {
+        // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
+        // an integer key code and silently fails in the offscreen Quick path.
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: root.promptActive
+                 && !root.bluetoothSettings.pairingReplyPending
+        onActivated: root.cancelActivePrompt()
+    }
+
     function promptMessage() {
         if (prompt.kind === "confirm-passkey")
             return qsTr("Confirm that %1 shows passkey %2.")
@@ -124,9 +141,7 @@ ColumnLayout {
                     text: qsTr("Cancel")
                     accessibleDescription: qsTr("Cancel the pairing request for %1")
                         .arg(root.prompt.deviceLabel ?? qsTr("Bluetooth device"))
-                    onClicked: root.prompt.confirmationAvailable === true
-                               ? root.bluetoothSettings.replyConfirmation(false)
-                               : root.bluetoothSettings.cancelPrompt()
+                    onClicked: root.cancelActivePrompt()
                 }
             }
         }

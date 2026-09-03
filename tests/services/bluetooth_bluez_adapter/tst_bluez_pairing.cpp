@@ -21,6 +21,9 @@ private Q_SLOTS:
     void displayPromptCanBeCanceled_data();
     void displayPromptCanBeCanceled();
     void promptTimeoutFailsClosed();
+    void stalePromptReplyCannotAuthorizeReplacement();
+    void unregistersAgentOnAdapterLossAndShutdown();
+    void cancelPairingUsesCanonicalReason();
     void ownerLossFailsClosed();
     void foreignCallerCannotCreatePrompt();
     void malformedDisplayFailsClosed_data();
@@ -35,7 +38,9 @@ private:
                                      const OperationKind kind,
                                      const QString &input = {})
     {
-        OperationRequest request{.kind = kind, .target = prompt.device};
+        OperationRequest request{.kind = kind,
+                                 .target = prompt.device,
+                                 .promptId = prompt.promptId};
         if (!input.isEmpty()) {
             const bool encoded = setPairingInput(request.input, request.inputSize, input);
             Q_ASSERT(encoded);
@@ -194,12 +199,126 @@ void BluezPairingTests::displayPromptCanBeCanceled()
     const OperationSubmission canceled = harness.model->submit(
         replyFor(harness.model->snapshot().pairingPrompt, OperationKind::CancelPrompt),
         QStringLiteral(":1.22"));
-    QCOMPARE(harness.awaitResult(completed, canceled.operationId)->status,
-             OperationStatus::Succeeded);
+    const std::optional<OperationResult> cancelResult =
+        harness.awaitResult(completed, canceled.operationId);
+    QVERIFY(cancelResult.has_value());
+    QCOMPARE(cancelResult->status, OperationStatus::Succeeded);
+    QCOMPARE(cancelResult->reasonCode, QStringLiteral("prompt-cancelled"));
     QCOMPARE(harness.awaitResult(completed, pairing.operationId)->status,
              OperationStatus::Rejected);
     QCOMPARE(harness.fake->cancelPairingCalls, 1);
     QVERIFY(!harness.model->snapshot().pairingPrompt.active());
+}
+
+void BluezPairingTests::stalePromptReplyCannotAuthorizeReplacement()
+{
+    BluezHarness harness(7209);
+    QVERIFY(harness.ready());
+    const QString adapterPath = harness.fake->addAdapter(
+        QStringLiteral("hci0"), QString::fromLatin1(kAdapterAddress), {}, true);
+    (void)harness.fake->addDevice(adapterPath, QString::fromLatin1(kDeviceAddress), {});
+    QVERIFY(harness.fake->takeOwnership());
+    harness.model->start();
+    QVERIFY(harness.waitReady());
+    QVERIFY(harness.waitUntil([&harness] { return harness.fake->registerAgentCalls == 1; }));
+    QSignalSpy completed(harness.model.get(), &BluetoothModel::operationCompleted);
+    const Handle device = harness.model->snapshot().devices.constFirst().handle;
+
+    const OperationSubmission firstPair = harness.model->submit(
+        {.kind = OperationKind::Pair, .target = device}, QStringLiteral(":1.27"));
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.model->snapshot().pairingPrompt.active();
+    }));
+    const PairingPrompt stalePrompt = harness.model->snapshot().pairingPrompt;
+    const OperationSubmission firstCancel = harness.model->submit(
+        {.kind = OperationKind::CancelPairing, .target = device},
+        QStringLiteral(":1.27"));
+    QCOMPARE(harness.awaitResult(completed, firstCancel.operationId)->status,
+             OperationStatus::Succeeded);
+    QCOMPARE(harness.awaitResult(completed, firstPair.operationId)->status,
+             OperationStatus::Rejected);
+
+    const OperationSubmission secondPair = harness.model->submit(
+        {.kind = OperationKind::Pair, .target = device}, QStringLiteral(":1.27"));
+    QVERIFY(harness.waitUntil([&harness, stalePrompt] {
+        const PairingPrompt current = harness.model->snapshot().pairingPrompt;
+        return current.active() && current.promptId != stalePrompt.promptId;
+    }));
+    OperationRequest staleReply = replyFor(stalePrompt,
+                                           OperationKind::ReplyConfirmation);
+    staleReply.accepted = true;
+    const OperationSubmission rejected = harness.model->submit(
+        staleReply, QStringLiteral(":1.27"));
+    QVERIFY(!rejected.pending);
+    QCOMPARE(rejected.immediateResult.status, OperationStatus::Rejected);
+    QCOMPARE(rejected.immediateResult.reasonCode, QStringLiteral("no-prompt"));
+    QVERIFY(harness.model->snapshot().pairingPrompt.active());
+    QVERIFY(!harness.model->snapshot().devices.constFirst().paired);
+
+    OperationRequest cleanup = replyFor(harness.model->snapshot().pairingPrompt,
+                                        OperationKind::ReplyConfirmation);
+    cleanup.accepted = false;
+    const OperationSubmission cleanupReply = harness.model->submit(
+        cleanup, QStringLiteral(":1.27"));
+    QCOMPARE(harness.awaitResult(completed, cleanupReply.operationId)->status,
+             OperationStatus::Succeeded);
+    QCOMPARE(harness.awaitResult(completed, secondPair.operationId)->status,
+             OperationStatus::Rejected);
+}
+
+void BluezPairingTests::unregistersAgentOnAdapterLossAndShutdown()
+{
+    BluezHarness harness(7210);
+    QVERIFY(harness.ready());
+    const QString firstAdapter = harness.fake->addAdapter(
+        QStringLiteral("hci0"), QString::fromLatin1(kAdapterAddress), {}, true);
+    QVERIFY(harness.fake->takeOwnership());
+    harness.model->start();
+    QVERIFY(harness.waitReady());
+    QVERIFY(harness.waitUntil([&harness] { return harness.fake->registerAgentCalls == 1; }));
+
+    harness.fake->removeAdapterObject(firstAdapter);
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.fake->unregisterAgentCalls == 1;
+    }));
+    (void)harness.fake->addAdapter(
+        QStringLiteral("hci1"), QStringLiteral("AA:BB:CC:00:11:23"), {}, true);
+    QVERIFY(harness.waitUntil([&harness] { return harness.fake->registerAgentCalls == 2; }));
+
+    harness.model->stop();
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.fake->unregisterAgentCalls == 2;
+    }));
+}
+
+void BluezPairingTests::cancelPairingUsesCanonicalReason()
+{
+    BluezHarness harness(7211);
+    QVERIFY(harness.ready());
+    const QString adapterPath = harness.fake->addAdapter(
+        QStringLiteral("hci0"), QString::fromLatin1(kAdapterAddress), {}, true);
+    (void)harness.fake->addDevice(adapterPath, QString::fromLatin1(kDeviceAddress), {});
+    QVERIFY(harness.fake->takeOwnership());
+    harness.model->start();
+    QVERIFY(harness.waitReady());
+    QVERIFY(harness.waitUntil([&harness] { return harness.fake->registerAgentCalls == 1; }));
+    QSignalSpy completed(harness.model.get(), &BluetoothModel::operationCompleted);
+    const Handle device = harness.model->snapshot().devices.constFirst().handle;
+    const OperationSubmission pairing = harness.model->submit(
+        {.kind = OperationKind::Pair, .target = device}, QStringLiteral(":1.28"));
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.model->snapshot().pairingPrompt.active();
+    }));
+    const OperationSubmission canceled = harness.model->submit(
+        {.kind = OperationKind::CancelPairing, .target = device},
+        QStringLiteral(":1.28"));
+    const std::optional<OperationResult> result =
+        harness.awaitResult(completed, canceled.operationId);
+    QVERIFY(result.has_value());
+    QCOMPARE(result->status, OperationStatus::Succeeded);
+    QCOMPARE(result->reasonCode, QStringLiteral("pairing-cancelled"));
+    QCOMPARE(harness.awaitResult(completed, pairing.operationId)->status,
+             OperationStatus::Rejected);
 }
 
 void BluezPairingTests::promptTimeoutFailsClosed()

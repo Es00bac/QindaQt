@@ -294,7 +294,7 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
     }
     case OperationKind::CancelPairing:
         finish(operationId, BackendOperationStatus::Succeeded,
-               QStringLiteral("pairing-canceled"));
+               QStringLiteral("pairing-cancelled"));
         return;
     case OperationKind::RemoveDevice: {
         const auto before = m_state.devices.size();
