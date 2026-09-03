@@ -17,6 +17,26 @@ qindaqt_add_file_manager_test(
     qindaqt.file-manager-navigation-history
 )
 qindaqt_add_file_manager_test(
+    qindaqt_file_manager_local_mutation_tests
+    tst_local_mutation_backend.cpp
+    qindaqt.file-manager-local-mutation
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_home_trash_tests
+    tst_home_trash.cpp
+    qindaqt.file-manager-home-trash
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_mutation_controller_tests
+    tst_mutation_controller.cpp
+    qindaqt.file-manager-mutation-controller
+)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_action_catalog_tests
+    tst_file_manager_action_catalog.cpp
+    qindaqt.file-manager-action-catalog
+)
+qindaqt_add_file_manager_test(
     qindaqt_file_manager_local_lister_tests
     tst_local_directory_lister.cpp
     qindaqt.file-manager-local-lister
@@ -49,6 +69,33 @@ add_test(
 set_tests_properties(
     qindaqt.file-manager-cli-rejects-multiple-paths
     PROPERTIES LABELS "file-manager" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+add_test(
+    NAME qindaqt.file-manager-mutation-ui-offscreen
+    COMMAND $<TARGET_FILE:qindaqt-file-manager>
+            --theme-directory "${PROJECT_SOURCE_DIR}/data/themes"
+            --check-ui-contract "${CMAKE_BINARY_DIR}"
+)
+set_tests_properties(
+    qindaqt.file-manager-mutation-ui-offscreen
+    PROPERTIES
+        LABELS "file-manager"
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+add_test(
+    NAME qindaqt.file-manager-mutation-boundary
+    COMMAND "${CMAKE_COMMAND}"
+            "-DSOURCE_ROOT=${PROJECT_SOURCE_DIR}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_mutation_boundary.cmake"
+)
+set_tests_properties(
+    qindaqt.file-manager-mutation-boundary
+    PROPERTIES LABELS "file-manager;policy"
 )
 
 add_test(

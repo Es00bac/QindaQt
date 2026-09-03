@@ -161,6 +161,11 @@ QVariantList NavigationController::entries() const {
         {QStringLiteral("isReadable"), entry.isReadable},
         {QStringLiteral("size"), entry.size},
         {QStringLiteral("modified"), entry.lastModified},
+        {QStringLiteral("device"), QVariant::fromValue(entry.device)},
+        {QStringLiteral("inode"), QVariant::fromValue(entry.inode)},
+        {QStringLiteral("identitySize"), entry.identitySize},
+        {QStringLiteral("modifiedNanoseconds"), entry.modifiedNanoseconds},
+        {QStringLiteral("mode"), entry.mode},
     });
   }
   return list;

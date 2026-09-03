@@ -57,6 +57,10 @@ void TestLocalDirectoryLister::listsAndSortsDirectoriesBeforeFilesCaseInsensitiv
   QCOMPARE(result.entries.at(3).name, QStringLiteral("Banana.txt"));
   QVERIFY(result.entries.at(0).isDirectory);
   QVERIFY(!result.entries.at(2).isDirectory);
+  QVERIFY(result.entries.at(0).device > 0);
+  QVERIFY(result.entries.at(0).inode > 0);
+  QVERIFY(result.entries.at(0).mode > 0);
+  QCOMPARE(result.entries.at(2).identitySize, result.entries.at(2).size);
 }
 
 void TestLocalDirectoryLister::flagsHiddenSymlinkAndUnreadableEntries() {

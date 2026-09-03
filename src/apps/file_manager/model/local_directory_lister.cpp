@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "local_directory_lister.h"
+#include "mutation/local_mutation_backend.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -73,6 +74,13 @@ ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
     entry.isReadable = info.isReadable();
     entry.size = entry.isDirectory ? 0 : info.size();
     entry.lastModified = info.lastModified();
+    if (const auto identity = LocalMutationBackend::identityForPath(entry.absolutePath)) {
+      entry.device = identity->device;
+      entry.inode = identity->inode;
+      entry.identitySize = identity->size;
+      entry.modifiedNanoseconds = identity->modifiedNanoseconds;
+      entry.mode = identity->mode;
+    }
     result.entries.append(std::move(entry));
   }
   std::sort(result.entries.begin(), result.entries.end(), lessThan);
