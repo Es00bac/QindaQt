@@ -24,8 +24,20 @@ class CapabilityPolicy;
 namespace QindaQt::Shell {
 
 class NotificationCenterAppletAccess;
+namespace AudioApplet {
+class AudioAppletController;
+}
+namespace BluetoothApplet {
+class BluetoothAppletController;
+}
 namespace PowerApplet {
 class PowerAppletController;
+}
+namespace Launcher {
+class LauncherAppletController;
+}
+namespace GlobalMenu {
+class GlobalMenuAppletAccess;
 }
 
 class RuntimePanelWindowFactory final : public ShellSurface::PanelWindowFactory {
@@ -36,7 +48,11 @@ public:
                               const Applets::ManifestCatalog &applets,
                               const AppletHost::CapabilityPolicy &policy,
                               NotificationCenterAppletAccess *notificationCenterAccess,
-                              PowerApplet::PowerAppletController *powerAppletAccess);
+                              AudioApplet::AudioAppletController *audioAppletAccess,
+                              BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
+                              PowerApplet::PowerAppletController *powerAppletAccess,
+                              Launcher::LauncherAppletController *launcherAppletAccess,
+                              GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -50,7 +66,11 @@ private:
     QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
     NotificationCenterAppletAccess *m_notificationCenterAccess = nullptr;
+    AudioApplet::AudioAppletController *m_audioAppletAccess = nullptr;
+    BluetoothApplet::BluetoothAppletController *m_bluetoothAppletAccess = nullptr;
     PowerApplet::PowerAppletController *m_powerAppletAccess = nullptr;
+    Launcher::LauncherAppletController *m_launcherAppletAccess = nullptr;
+    GlobalMenu::GlobalMenuAppletAccess *m_globalMenuAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

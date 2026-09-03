@@ -215,18 +215,24 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 4);
+  QCOMPARE(registry.count(), 7);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
   QVERIFY(registry.hasRoute(QStringLiteral("display")));
   QVERIFY(registry.hasRoute(QStringLiteral("network")));
+  QVERIFY(registry.hasRoute(QStringLiteral("customize")));
+  QVERIFY(registry.hasRoute(QStringLiteral("audio")));
+  QVERIFY(registry.hasRoute(QStringLiteral("bluetooth")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
   QCOMPARE(registry.indexOf(QStringLiteral("appearance")), 1);
   QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
   QCOMPARE(registry.indexOf(QStringLiteral("network")), 3);
+  QCOMPARE(registry.indexOf(QStringLiteral("customize")), 4);
+  QCOMPARE(registry.indexOf(QStringLiteral("audio")), 5);
+  QCOMPARE(registry.indexOf(QStringLiteral("bluetooth")), 6);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -259,6 +265,29 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!network->title.isEmpty());
   QVERIFY(!network->description.isEmpty());
   QVERIFY(network->available);
+
+  const auto customize = registry.route(QStringLiteral("customize"));
+  QVERIFY(customize.has_value());
+  QCOMPARE(customize->component, SettingsRouteComponent::Customize);
+  QVERIFY(!customize->title.isEmpty());
+  QVERIFY(!customize->description.isEmpty());
+  QVERIFY(customize->available);
+
+  const auto audio = registry.route(QStringLiteral("audio"));
+  QVERIFY(audio.has_value());
+  QCOMPARE(audio->id, QStringLiteral("audio"));
+  QCOMPARE(audio->component, SettingsRouteComponent::Audio);
+  QVERIFY(!audio->title.isEmpty());
+  QVERIFY(!audio->description.isEmpty());
+  QVERIFY(audio->available);
+
+  const auto bluetooth = registry.route(QStringLiteral("bluetooth"));
+  QVERIFY(bluetooth.has_value());
+  QCOMPARE(bluetooth->id, QStringLiteral("bluetooth"));
+  QCOMPARE(bluetooth->component, SettingsRouteComponent::Bluetooth);
+  QVERIFY(!bluetooth->title.isEmpty());
+  QVERIFY(!bluetooth->description.isEmpty());
+  QVERIFY(bluetooth->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

@@ -25,6 +25,11 @@ namespace QindaQt::Shell::AudioApplet {
 // protocol's snapshot-unique serial so devices and streams share one
 // identity space, exactly as Audio1 guarantees.
 //
+// AGENT-CONTRACT: The manifest/policy grants are evaluated once by shell
+// composition and injected here. Read denial suppresses observation
+// entirely; control is effective only together with read, and control
+// denial keeps rows visible but rejects every mutation before dispatch.
+//
 // AGENT-NOTE: A pending entry whose serial disappears from the current
 // snapshot is dropped from both maps without feedback; any late result for
 // that request then arrives as an unknown request ID and is ignored. This is
@@ -32,6 +37,8 @@ namespace QindaQt::Shell::AudioApplet {
 class AudioAppletController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString phaseText READ phaseText NOTIFY stateReprojected)
+    Q_PROPERTY(bool controlGranted READ isControlGranted NOTIFY
+                   stateReprojected)
     Q_PROPERTY(QString phaseReasonText READ phaseReasonText NOTIFY
                    stateReprojected)
     Q_PROPERTY(QVariantList deviceRows READ deviceRows NOTIFY stateReprojected)
@@ -53,10 +60,16 @@ class AudioAppletController final : public QObject {
 
 public:
     explicit AudioAppletController(Audio::AudioClient *client,
+                                   bool audioReadGranted,
+                                   bool audioControlGranted,
                                    QObject *parent = nullptr);
 
     [[nodiscard]] QString phaseText() const;
     [[nodiscard]] QString phaseReasonText() const;
+    [[nodiscard]] bool isControlGranted() const noexcept
+    {
+        return m_controlGranted;
+    }
     [[nodiscard]] QVariantList deviceRows() const;
     [[nodiscard]] QVariantList streamRows() const;
     [[nodiscard]] QString defaultOutputLabel() const
@@ -127,6 +140,8 @@ private:
     QHash<quint64, PendingRequest> m_pendingBySerial;
     QHash<quint64, quint64> m_serialByRequestId;
     QString m_feedback;
+    bool m_readGranted = false;
+    bool m_controlGranted = false;
 };
 
 } // namespace QindaQt::Shell::AudioApplet

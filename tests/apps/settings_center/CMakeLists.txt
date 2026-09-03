@@ -45,7 +45,9 @@ set_tests_properties(
 qt_add_executable(
     qindaqt_settings_navigation_page_test
     tst_settings_navigation_page.cpp
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
 )
 target_include_directories(qindaqt_settings_navigation_page_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
@@ -54,6 +56,9 @@ target_link_libraries(
     qindaqt_settings_appearance
     qindaqt_settings_display
     qindaqt_settings_network
+    qindaqt_settings_customize_qml
+    qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_bluetooth
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -75,6 +80,9 @@ add_dependencies(
     qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
     qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qml qindaqt_settings_network_qmlplugin
+    qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_audio_qml qindaqt_settings_audio_qmlplugin
+    qindaqt_settings_bluetooth_qml qindaqt_settings_bluetooth_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
@@ -83,10 +91,15 @@ add_test(
     NAME qindaqt.settings-navigation-page
     COMMAND qindaqt_settings_navigation_page_test
 )
+# AGENT-GUARD: The navigation-page row constructs Main.qml in-process under
+# QT_FATAL_WARNINGS=1, so any QML warning in the Settings Center host or a
+# route page aborts the row instead of passing silently. Child-process rows
+# (route construction, installed routes) deliberately tolerate absent-bus
+# qWarning diagnostics in main() and must not be registered as fatal.
 set_tests_properties(
     qindaqt.settings-navigation-page PROPERTIES
     LABELS "offscreen;settings;navigation"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
 )
 
 # 4. QML QuickTest runner
@@ -144,7 +157,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance" RUN_SERIAL TRUE TIMEOUT 15
+    LABELS "offscreen;settings;appearance;customize;audio" RUN_SERIAL TRUE TIMEOUT 25
 )
 
 # 8. Installed staged package test

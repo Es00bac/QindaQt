@@ -4,6 +4,124 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T04:58:12-06:00 — Bluetooth Settings route integrated at `500a33e` (merge `111dedb`); Settings Center order is now appearance, display, network, customize, audio, bluetooth.
+- 2026-09-03T04:42:48-06:00 — Controls visual fixtures pinned at `5cf24a2`; the broad safe suite now runs the visual rows again (465 rows).
+- 2026-09-03T04:32:48-06:00 — Audio Settings route integrated at `fac8d6a` (merge `f6d47db`); Bluetooth Settings route accepted and merging; Global Menu G2 `f7a49c5`, panel-visibility proof `a52561f`, File Manager S1 `61283bf`, and the controls-fonts repair `b7b5208` are in exact review; Text Editor S2 and Terminal S2 lanes started; GLM is limited until 20:25 and Kimi has recovered.
+- This integration merges exact accepted compositor identity descendant
+  `8505bdbd09961863538616efd3dd8e7ef834a126` at `58496e8` (ADR renumbered to 0063) and exact accepted
+  launcher hosting candidate `7ecdb36f53c60ea03bea40197f17c9cc6bf9b9e1` at `6f5e213`. The authenticated
+  boundary now publishes active-window identity facts to the bound shell owner with an exported, validated
+  change signal; the launcher applet renders in the production panels with a closed `LauncherAppletRuntime`
+  component. Fresh merged-tree Debug and Release each pass compositor 36/36, window-actions/identity and
+  client rows, launcher 17/17, and the integrity/runtime/closure/installed rows under host-unset isolation;
+  the sixteen nested KWin rows pass serially; the broad safe Debug suite passes 430/430; 127-document validation, strict MkDocs, source shape,
+  diff, JSON, and Team Board 16/16 pass. QQ-004.07 advances WIRED → EXECUTABLE.
+
+- This integration merges exact accepted Terminal S1 descendant `00f2db99ce13df2f426abd93e277de3d33411041`
+  at manager merge `00b4f45`. Sessions are bounded, each owns its PTY/child, and shutdown completes only
+  when the captured process group is verifiably empty; profiles stay within the existing launch policy;
+  Settings1 persistence presents asynchronous apply outcomes accessibly and never replays; argv is
+  preserved exactly. Dina St Johnston (OpenAI Codex) accepted the second repair at `0/0/0/0`. Fresh
+  merged-tree Debug and Release each pass the terminal selector 15/15 under host-unset isolation; the broad safe Debug suite passes 427/427;
+  126-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass.
+
+- This integration merges exact accepted Launcher L1 descendant `26f366a4a2ab14fc341407f015d21685b8c8415f`
+  at manager merge `71900bd`. The scanner, persistence, execution, and compiled applet adapters compose the
+  pure L0 model behind injected seams; every adapter test now runs Core-only or offscreen with host display
+  and bus variables unset after a reviewer proved the earlier rows attached to the host desktop. Kay
+  McNulty (OpenAI Codex) accepted the third repair at `0/0/0/0`. The candidate's ADR is renumbered to
+  ADR-0062. Fresh merged-tree Debug and Release each pass launcher 15/15 and applet integrity rows under
+  isolation; the broad safe Debug suite passes 421/421; 126-document validation, strict MkDocs, source shape, diff, JSON, and Team Board
+  16/16 pass. Production panel hosting of the launcher applet remains a composition lane.
+
+- This integration merges exact accepted Customize canvas descendant `2500a3d71343f238ce30fd0d98f5cc2aa9a95809`
+  at manager merge `ce5541e`. The `customize` route composes only the public customization-editor,
+  shell-customization, profiles, and Settings1 boundaries into a WYSIWYG panel/applet canvas with
+  pointer/keyboard parity, atomic persistence, and discard confirmation on every departure path,
+  including window close across the wide/compact host switch; its boundary scan is allow-list-only. Adele
+  Goldstine (OpenAI Codex) accepted the third repair at `0/0/0/0`. Fresh merged-tree Debug and Release each
+  pass customize 17/17 (route plus domain rows) and Settings Center 9/9; the broad safe Debug suite passes 412/412; 125-document validation, strict
+  MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-004.08 advances WIRED → EXECUTABLE.
+
+- This integration merges exact accepted compositor window-actions descendant
+  `3690a056e667135d486da4fa60d7996882a4560a` at manager merge `135fe65`. A new authenticated
+  `org.qindaqt.CompositorShell1` boundary admits activate/minimize/unminimize/close/raise only for the
+  D-Bus caller whose credentials match the bound panel-owning Wayland client, authenticates before any
+  parsing, bounds every entry field, replies constant-size to unauthenticated or unbound callers, fences
+  by generation, rate-limits, routes Hybrid members through container policy, and ships an exact-owner
+  shell client; the unauthenticated `Compositor1` mutators stay `control-disabled`. Margaret Rock (OpenAI
+  Codex) accepted the repair at `0/0/0/0`. The candidate's ADR is renumbered to ADR-0061. Fresh merged-tree
+  Debug and Release each pass compositor 35/35 non-nested rows and the window-action rows 4/4 including the
+  nested live row; the sixteen `compositor.kwin-` rows pass 16/16 serially; the broad safe Debug suite passes 406/406; 124-document validation, strict MkDocs, source shape, diff,
+  JSON, and Team Board 16/16 pass.
+
+- This integration merges exact accepted Power PB-2 descendant `6cef8b582aeb33522829d6ae838269f31aad7611`
+  at manager merge `4ae7f89`. The resident Power1 service now composes production UPower, logind,
+  power-profiles, and backlight adapters over injected buses and roots, defaulting to production with an
+  explicit deterministic mode; UPower line-power/PowerSupply semantics, dispatch-time logind
+  re-authorization, and generation-fenced pending maps were each forced by an exact rejection. Ida Holz
+  (OpenAI Codex) accepted the final descendant at `0/0/0/0`. The candidate's ADR is renumbered to ADR-0060.
+  Fresh merged-tree Debug and Release each pass the power selector 26/26 with the host system bus
+  unreachable; the broad safe Debug suite passes 403/403; 123-document validation, strict MkDocs, source shape, diff, JSON, and Team Board
+  16/16 pass.
+
+- This integration merges exact accepted Audio applet descendant `14f3e670d66988ec87648f195b91e26c56a45fbf`
+  at manager merge `780981c`. The applet composes only the public AudioClient with separate read/control
+  grants and audited routing; the merge also carries the staging-closure repairs that ship the shell's
+  Controls/Tokens runtime dependency in every shell-carrying install component (Power, Bluetooth, Audio,
+  and the default component) with a new `qindaqt.shell-runtime-component-closure` row, after the first
+  manager merge attempt broke two installed-package rows and was reset. Fresh merged-tree Debug and
+  Release each pass the three applet selectors 22/22 and the integrity/runtime/closure rows 7/7; the broad safe Debug suite passes 396/396;
+  122-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-004.12
+  advances WIRED → EXECUTABLE.
+
+- This integration merges exact accepted Portal P1 candidate `c33b4908f99cb1dfac04287383441d028ab8f25b`
+  at manager merge `2c514ac`. The installed `xdg-desktop-portal` 1.20.4 frontend, started on a private bus
+  with a staged portal directory, selects the QindaQt Settings backend only under
+  `XDG_CURRENT_DESKTOP=qindaqt`, exposes the QindaQt color-scheme/accent/contrast projection and its
+  `SettingChanged` propagation, and a Qt offscreen probe under the `xdgdesktopportal` platform theme
+  follows it live; non-Settings families route through an explicit fallback table and never resolve to
+  QindaQt. Gertrude Blanch (OpenAI Codex) accepted the exact candidate at `0/0/0/0`. The candidate's ADR is
+  renumbered to ADR-0059. Fresh merged-tree Debug and Release each pass the portal selector 9/9;
+  the broad safe Debug suite passes 391/391; 122-document validation, strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass.
+
+- This integration merges exact accepted Clipboard C1 service repair descendant
+  `63e884cfa2216d7dc492407e30c7ce28b8512ac0` at manager merge `f34f81a`. The resident host captures only
+  after an explicit user-override `services.clipboardHistory` opt-in (both shipped schemas now default to
+  `false`), pauses capture and withdraws readable truth unless the authenticated lock state is Unlocked,
+  bounds MIME/byte/offer limits, evicts remembered requests with exactly-once semantics preserved, and
+  ships D-Bus activation and a user unit. Evelyn Berezin (Kimi K3-256k) rejected the ancestor at `0/1/1/3`;
+  Ruth Lichterman (OpenAI Codex) accepted the repair at `0/0/0/0`. The candidate's ADR is renumbered from
+  the colliding 0056 to ADR-0058. Fresh merged-tree Debug and Release each pass clipboard 14/14 and the
+  Settings, notification-quieting, and appearance rows 29/29; the broad safe Debug suite passes 389/389; 121-document validation, strict
+  MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-005.06 advances WIRED → EXECUTABLE.
+
+- This integration merges exact independently accepted BlueZ adapter candidate
+  `f44919a52f67515779f887b8d54a9bb2a57b3c4b` at manager merge `d43463c`. The adapter implements the
+  accepted AdapterBackend port over an injected direct-QtDBus `org.bluez` connection (ObjectManager,
+  Adapter1, Device1, PropertiesChanged), calls only Properties.Set(Powered), StartDiscovery,
+  StopDiscovery, Connect, and Disconnect, retires truth on BlueZ owner loss, bounds hostile values, and is
+  selected by the composition root in production with an explicit deterministic escape hatch. Betty
+  Holberton (Kimi K3) accepted the exact candidate at `0/0/0/2`; both P3s (an observed-property
+  overstatement and a wording precision) are corrected here, and the candidate's ADR is renumbered from
+  the colliding 0056 to ADR-0057. Fresh merged-tree Debug and Release each pass the complete 15/15
+  Bluetooth service selector including the whole-repository staged-install row; the broad safe Debug
+  suite passes 379/379; 119-document validation, strict MkDocs, source shape, diff, JSON, and Team
+  Board 16/16 pass. Physical radios, pairing UX, Settings UI, and hardware qualification remain later.
+
+- This integration merges exact independently accepted Bluetooth applet B1 repair descendant
+  `882cc0cdbb31ee9d619c625a2856aee90c7a49b0` at manager merge `34a79c2`. The regex-based positive
+  controller-surface gate that four reviewers had split over is replaced by a compiled QMetaObject
+  surface test comparing the complete ordered property, method, and enumerator surface and the
+  QML-visible names, with token-paste, public-slot, and enum negative controls; the textual
+  composition-chain contracts (stock-profile placement, QML delegate wiring, shell composition
+  tokens) and dependency-policy poisons are retained. Cecilia Payne (Kimi K2.7) and Chien-Shiung Wu
+  (Kimi K3-256k) each accepted the descendant at `0/0/0/0`. Fresh merged-tree Debug and Release each
+  pass Bluetooth 8/8 and adjacent 6/6; direct boundary gates pass 7+6 and 5+4; 118-document validation,
+  strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. The broad safe Debug suite on the merged tree passes 373/373 after a clean incremental build (nested-compositor rows and the 25 host-font-drifted controls visual rows excluded as recorded).
+  QQ-004.14 advances from ABSENT to EXECUTABLE; the BlueZ adapter, pairing UX, nested interaction,
+  and hardware remain later outcomes.
+
 - This integration merges exact independently accepted Global Menu G1 candidate
   `7c27ee5b1b50746e59f70360d89b0e959328dd47` at manager merge `729bebd`. The registrar owns
   `com.canonical.AppMenu.Registrar` on an injected session-bus connection, keys registrations to the

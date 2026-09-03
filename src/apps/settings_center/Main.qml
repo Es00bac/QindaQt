@@ -7,6 +7,9 @@ import QindaQt.Controls 1.0 as Controls
 import QindaQt.SettingsApp.Appearance
 import QindaQt.SettingsApp.Display
 import QindaQt.SettingsApp.Network
+import QindaQt.SettingsApp.Customize
+import QindaQt.SettingsApp.Audio
+import QindaQt.SettingsApp.Bluetooth
 
 T.ApplicationWindow {
     id: root
@@ -16,6 +19,11 @@ T.ApplicationWindow {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    property var customizeSettings: CustomizeRouteComposition.model
+    property var audioSettings: null
+    property var bluetoothSettings: null
+    property bool applicationClosePending: false
+    property bool bluetoothClosePending: false
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -28,6 +36,25 @@ T.ApplicationWindow {
     minimumHeight: 320
     color: Tokens.bg.base
     title: qsTr("QindaQt Settings — %1").arg(currentRouteTitle)
+
+    onClosing: function(close) {
+        if (root.bluetoothSettings !== null)
+            root.bluetoothSettings.setRouteActive(false)
+        const activeHost = root.isCompact ? compactRouteHost : wideRouteHost
+        const bluetoothWaiting = root.bluetoothSettings !== null
+                && root.bluetoothSettings.departureReleasePending
+        // AGENT-GUARD: Resolve the discovery release first. Customize may
+        // complete its discard flow with Qt.quit(), which would bypass this
+        // window-close fence if both decisions were opened concurrently.
+        const customizeWaiting = bluetoothWaiting
+                ? false : activeHost.requestApplicationClose()
+        if (bluetoothWaiting)
+            root.bluetoothClosePending = true
+        if (customizeWaiting)
+            root.applicationClosePending = true
+        if (bluetoothWaiting || customizeWaiting)
+            close.accepted = false
+    }
 
     Shortcut {
         sequence: "Ctrl+1"
@@ -50,6 +77,44 @@ T.ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Ctrl+6"
+        onActivated: root.navigation.selectRoute("audio")
+    }
+
+    Shortcut {
+        sequence: "Ctrl+7"
+        onActivated: root.navigation.selectRoute("bluetooth")
+    }
+
+    Component.onCompleted: {
+        if (root.bluetoothSettings !== null)
+            root.bluetoothSettings.setRouteActive(
+                        root.navigation.activeRouteComponent === "bluetooth")
+    }
+
+    Connections {
+        target: root.navigation
+        function onActiveRouteChanged() {
+            if (root.bluetoothSettings !== null)
+                root.bluetoothSettings.setRouteActive(
+                            root.navigation.activeRouteComponent === "bluetooth")
+        }
+    }
+
+    Connections {
+        target: root.bluetoothSettings
+        enabled: root.bluetoothSettings !== null
+        function onViewChanged() {
+            if (root.bluetoothClosePending
+                    && !root.bluetoothSettings.departureReleasePending) {
+                root.bluetoothClosePending = false
+                if (!root.applicationClosePending)
+                    Qt.callLater(root.close)
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "Alt+Left"
         onActivated: {
             if (root.navigation.previousRouteId.length > 0) {
@@ -64,8 +129,12 @@ T.ApplicationWindow {
                                     : sidebar.focusActiveButton()
     }
 
+    // AGENT-GUARD: Keep the plural `sequences` spelling for StandardKey.Quit.
+    // The singular `sequence` binds only one of the platform's multiple Quit
+    // key bindings and emits a QML warning that aborts the QT_FATAL_WARNINGS
+    // navigation-page test row during Main.qml construction.
     Shortcut {
-        sequence: StandardKey.Quit
+        sequences: [StandardKey.Quit]
         onActivated: root.close()
     }
 
@@ -95,11 +164,18 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
+            audioSettings: root.audioSettings
+            bluetoothSettings: root.bluetoothSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
+            bluetoothComponent: bluetoothRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 
@@ -128,11 +204,18 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
+            audioSettings: root.audioSettings
+            bluetoothSettings: root.bluetoothSettings
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
+            audioComponent: audioRouteComponent
+            bluetoothComponent: bluetoothRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 
@@ -168,6 +251,24 @@ T.ApplicationWindow {
         NetworkPage {
             objectName: "networkPage"
             networkSettings: root.networkSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: audioRouteComponent
+        AudioPage {
+            objectName: "audioPage"
+            audioSettings: root.audioSettings
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: bluetoothRouteComponent
+        BluetoothPage {
+            objectName: "bluetoothPage"
+            bluetoothSettings: root.bluetoothSettings
             onCloseRequested: root.close()
         }
     }

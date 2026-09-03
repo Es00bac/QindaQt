@@ -8,6 +8,10 @@
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 #include "qindaqt/apps/settings_display/display_settings_model.h"
 #include "qindaqt/apps/settings_network/network_settings_model.h"
+#include "qindaqt/apps/settings_audio/audio_settings_model.h"
+#include "qindaqt/apps/settings_bluetooth/bluetooth_settings_model.h"
+#include "qindaqt/services/bluetooth_client/bluetooth_client.h"
+#include "qindaqt/services/bluetooth_client/qt_bluetooth_transport.h"
 #include "qindaqt/services/display_client/client.h"
 #include "qindaqt/services/display_client/display_coordinator.h"
 #include "qindaqt/services/display_client/qt_display_transport.h"
@@ -15,6 +19,8 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/network_qt_transport/qt_network_transport.h"
+#include "qindaqt/services/audio_client/audio_client.h"
+#include "qindaqt/services/audio_client/qt_audio_transport.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -179,6 +185,25 @@ int main(int argc, char **argv) {
              qPrintable(networkClientError));
   }
 
+  // AGENT-CONTRACT: The Audio route consumes only the public Audio1
+  // client/transport boundary. It never links the resident service or the
+  // confined WirePlumber/GLib worker and cannot see PipeWire objects.
+  QindaQt::Audio::QtAudioTransport audioTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::Audio::AudioClient audioClient(&audioTransport);
+  QindaQt::Apps::SettingsAudio::AudioSettingsModel audioSettings(audioClient);
+  audioClient.start();
+
+  // AGENT-CONTRACT: Bluetooth Settings receives only the public Bluetooth1
+  // client. Pairing, trust, remove, Agent1, and BlueZ objects remain outside
+  // this process boundary; the route model owns its caller-scoped lease.
+  QindaQt::Bluetooth::QtBluetoothTransport bluetoothTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::Bluetooth::BluetoothClient bluetoothClient(&bluetoothTransport);
+  QindaQt::Apps::SettingsBluetooth::BluetoothSettingsModel bluetoothSettings(
+      bluetoothClient);
+  bluetoothClient.start();
+
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
@@ -195,6 +220,10 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&displaySettings))},
       {QStringLiteral("networkSettings"),
        QVariant::fromValue(static_cast<QObject *>(&networkSettings))},
+      {QStringLiteral("audioSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&audioSettings))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&bluetoothSettings))},
   });
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),

@@ -5,6 +5,7 @@
 
 #include <QHash>
 #include <QPair>
+#include <QSet>
 #include <QSharedPointer>
 #include <QSignalSpy>
 #include <QTest>
@@ -15,12 +16,14 @@
 #include <vector>
 
 using QindaQt::Apps::Terminal::ProcessExitInfo;
+using QindaQt::Apps::Terminal::ProcessGroupState;
 using QindaQt::Apps::Terminal::ProcessId;
 using QindaQt::Apps::Terminal::ProcessMonitor;
 using QindaQt::Apps::Terminal::ProcessState;
 using QindaQt::Apps::Terminal::TeardownBounds;
 using QindaQt::Apps::Terminal::TerminalExitStatus;
 using QindaQt::Apps::Terminal::TerminalLaunchRequest;
+using QindaQt::Apps::Terminal::TerminalProfile;
 using QindaQt::Apps::Terminal::TerminalSession;
 using QindaQt::Apps::Terminal::TerminalSessionBackend;
 
@@ -30,12 +33,12 @@ constexpr ProcessId kFirstPid = 4242;
 constexpr ProcessId kSecondPid = 4243;
 
 TerminalLaunchRequest validRequest() {
-  return TerminalLaunchRequest{
-      .program = QStringLiteral("/bin/qindaqt-test-shell"),
-      .arguments = {QStringLiteral("-l")},
-      .workingDirectory = {},
-      .environment = {QStringLiteral("PATH=/usr/bin")},
-      .title = {}};
+  return TerminalLaunchRequest{.program =
+                                   QStringLiteral("/bin/qindaqt-test-shell"),
+                               .arguments = {QStringLiteral("-l")},
+                               .workingDirectory = {},
+                               .environment = {QStringLiteral("PATH=/usr/bin")},
+                               .title = {}};
 }
 
 // Shared per-backend statistics that outlive the backend object itself, so
@@ -52,9 +55,8 @@ class FakeBackend;
 // deterministic child identity per generation.
 class FakeBackend final : public TerminalSessionBackend {
 public:
-  FakeBackend(bool failStart, QString failureDiagnostic,
-              ProcessId pid, QSharedPointer<BackendStats> stats,
-              QObject *parent = nullptr)
+  FakeBackend(bool failStart, QString failureDiagnostic, ProcessId pid,
+              QSharedPointer<BackendStats> stats, QObject *parent = nullptr)
       : TerminalSessionBackend(parent), m_failStart(failStart),
         m_failureDiagnostic(std::move(failureDiagnostic)), m_pid(pid),
         m_stats(std::move(stats)) {}
@@ -69,7 +71,8 @@ public:
       return {.ok = false, .diagnostic = m_failureDiagnostic};
     }
     m_widget = new QWidget();
-    m_widget->setObjectName(QStringLiteral("fakeTerminalView%1").arg(qlonglong(m_pid)));
+    m_widget->setObjectName(
+        QStringLiteral("fakeTerminalView%1").arg(qlonglong(m_pid)));
     m_stats->lastWidget = m_widget;
     return {.ok = true, .diagnostic = {}};
   }
@@ -84,19 +87,27 @@ public:
   [[nodiscard]] ProcessId shellProcessId() const override { return m_pid; }
   [[nodiscard]] QWidget *terminalWidget() override { return m_widget; }
 
-  void copySelectionToClipboard() override { m_viewOperations.append(QStringLiteral("copy")); }
-  void pasteClipboardToSession() override { m_viewOperations.append(QStringLiteral("paste")); }
-  void pastePrimarySelectionToSession() override { m_viewOperations.append(QStringLiteral("paste-selection")); }
-  void selectAllInView() override { m_viewOperations.append(QStringLiteral("select-all")); }
-  void clearView() override { m_viewOperations.append(QStringLiteral("clear")); }
+  void copySelectionToClipboard() override {
+    m_viewOperations.append(QStringLiteral("copy"));
+  }
+  void pasteClipboardToSession() override {
+    m_viewOperations.append(QStringLiteral("paste"));
+  }
+  void pastePrimarySelectionToSession() override {
+    m_viewOperations.append(QStringLiteral("paste-selection"));
+  }
+  void selectAllInView() override {
+    m_viewOperations.append(QStringLiteral("select-all"));
+  }
+  void clearView() override {
+    m_viewOperations.append(QStringLiteral("clear"));
+  }
   [[nodiscard]] bool hasSelectedText() const override { return false; }
   void sendTextToSession(const QString &text) override { Q_UNUSED(text); }
 
   [[nodiscard]] int shutdownCalls() const { return m_stats->shutdownCalls; }
   [[nodiscard]] QStringList events() const { return m_events; }
-  [[nodiscard]] QStringList viewOperations() const {
-    return m_viewOperations;
-  }
+  [[nodiscard]] QStringList viewOperations() const { return m_viewOperations; }
 
 private:
   bool m_failStart = false;
@@ -121,12 +132,22 @@ public:
         --scripted.value();
         return {.state = ProcessState::Running, .signaled = false, .code = 0};
       }
+      m_emptyGroups.insert(pid);
       return m_exitDisposition;
     }
     if (m_defaultRunning) {
       return {.state = ProcessState::Running, .signaled = false, .code = 0};
     }
+    if (m_exitDisposition.state == ProcessState::Exited) {
+      m_emptyGroups.insert(pid);
+    }
     return m_exitDisposition;
+  }
+
+  [[nodiscard]] ProcessGroupState
+  processGroupState(ProcessId processGroupId) override {
+    return m_emptyGroups.contains(processGroupId) ? ProcessGroupState::Empty
+                                                  : ProcessGroupState::NonEmpty;
   }
 
   [[nodiscard]] bool signalProcessGroup(ProcessId groupLeader,
@@ -140,12 +161,10 @@ public:
   }
   void setExitDisposition(ProcessState state, bool signaled, int code,
                           bool statusKnown = true) {
-    m_exitDisposition =
-        ProcessExitInfo{state, signaled, code, statusKnown};
+    m_exitDisposition = ProcessExitInfo{state, signaled, code, statusKnown};
   }
   void setDefaultRunning(bool running) { m_defaultRunning = running; }
-  [[nodiscard]] const QVector<QPair<ProcessId, int>> &
-  signalsSent() const {
+  [[nodiscard]] const QVector<QPair<ProcessId, int>> &signalsSent() const {
     return m_signals;
   }
 
@@ -153,6 +172,7 @@ private:
   QHash<ProcessId, int> m_runningReaps;
   ProcessExitInfo m_exitDisposition{ProcessState::Exited, false, 0};
   QVector<QPair<ProcessId, int>> m_signals;
+  QSet<ProcessId> m_emptyGroups;
   bool m_defaultRunning = false;
   bool m_refuseSignals = false;
 };
@@ -165,16 +185,16 @@ struct SessionHarness final {
 
   std::unique_ptr<TerminalSession> makeSession(bool failStart = false) {
     SessionHarness *self = this;
-    TerminalSession::BackendFactory factory = [self, failStart]() {
-      auto stats = QSharedPointer<BackendStats>::create();
-      const ProcessId pid = kFirstPid + self->createdBackends;
-      ++self->createdBackends;
-      self->backendStats.push_back(stats);
-      return std::unique_ptr<TerminalSessionBackend>(
-          std::make_unique<FakeBackend>(failStart,
-                                        QStringLiteral("cannot fork"), pid,
-                                        stats));
-    };
+    TerminalSession::BackendFactory factory =
+        [self, failStart](const TerminalProfile &) {
+          auto stats = QSharedPointer<BackendStats>::create();
+          const ProcessId pid = kFirstPid + self->createdBackends;
+          ++self->createdBackends;
+          self->backendStats.push_back(stats);
+          return std::unique_ptr<TerminalSessionBackend>(
+              std::make_unique<FakeBackend>(
+                  failStart, QStringLiteral("cannot fork"), pid, stats));
+        };
     return std::make_unique<TerminalSession>(std::move(factory), &monitor,
                                              bounds);
   }
@@ -215,8 +235,7 @@ void TerminalSessionTest::successfulStartPublishesWidgetAndRunningState() {
   SessionHarness harness;
   harness.monitor.setDefaultRunning(true);
   auto session = harness.makeSession();
-  QSignalSpy widgetSpy(session.get(),
-                       &TerminalSession::terminalWidgetChanged);
+  QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
   QSignalSpy stateSpy(session.get(), &TerminalSession::stateChanged);
 
   QVERIFY(session->start(validRequest()));
@@ -249,8 +268,7 @@ void TerminalSessionTest::
   SessionHarness harness;
   auto session = harness.makeSession(/*failStart=*/true);
   QSignalSpy exitSpy(session.get(), &TerminalSession::sessionFinished);
-  QSignalSpy widgetSpy(session.get(),
-                       &TerminalSession::terminalWidgetChanged);
+  QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
 
   QVERIFY(!session->start(validRequest()));
   QCOMPARE(session->state(), TerminalSession::State::Exited);
@@ -284,8 +302,7 @@ void TerminalSessionTest::exitCodesAndSignalsArePublishedDistinctly() {
   QVERIFY(crashSession->start(validRequest()));
   pump(200);
   QCOMPARE(crashSpy.count(), 1);
-  const auto crashStatus =
-      crashSpy.first().first().value<TerminalExitStatus>();
+  const auto crashStatus = crashSpy.first().first().value<TerminalExitStatus>();
   QCOMPARE(crashStatus.kind, TerminalExitStatus::Kind::Signal);
   QCOMPARE(crashStatus.code, int{SIGKILL});
 }
@@ -303,8 +320,7 @@ void TerminalSessionTest::duplicateExitPublicationIsSuppressed() {
   QCOMPARE(session->state(), TerminalSession::State::Exited);
 }
 
-void TerminalSessionTest::
-    shutdownCompletesWhenChildExitsAfterMasterClose() {
+void TerminalSessionTest::shutdownCompletesWhenChildExitsAfterMasterClose() {
   SessionHarness harness;
   // AGENT-NOTE: The scripted exit exhausts within a handful of 1 ms poll
   // ticks, while the close grace is widened to 500 ms so no plausible timer
@@ -368,8 +384,7 @@ void TerminalSessionTest::restartReplacesGenerationWithoutBackendReuse() {
   harness.monitor.setDefaultRunning(true);
   harness.monitor.scriptRunningThenExit(kFirstPid, 5);
   auto session = harness.makeSession();
-  QSignalSpy widgetSpy(session.get(),
-                       &TerminalSession::terminalWidgetChanged);
+  QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
   QSignalSpy shutdownSpy(session.get(), &TerminalSession::shutdownFinished);
   QVERIFY(session->start(validRequest()));
 
@@ -409,8 +424,7 @@ void TerminalSessionTest::closeCancelsPendingRestartAndSpawnsNothing() {
   harness.monitor.setDefaultRunning(true);
   harness.monitor.scriptRunningThenExit(kFirstPid, 5);
   auto session = harness.makeSession();
-  QSignalSpy widgetSpy(session.get(),
-                       &TerminalSession::terminalWidgetChanged);
+  QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
   QVERIFY(session->start(validRequest()));
 
   QVERIFY(session->restart());
@@ -427,8 +441,7 @@ void TerminalSessionTest::closeCancelsPendingRestartAndSpawnsNothing() {
   QVERIFY(session->terminalWidget() == nullptr);
 }
 
-void TerminalSessionTest::
-    unknownExitIsPublishedInsteadOfFabricatedSuccess() {
+void TerminalSessionTest::unknownExitIsPublishedInsteadOfFabricatedSuccess() {
   // P2-5: when another reaper consumed the waitpid status, the session must
   // publish an unknown-exit outcome rather than a fabricated normal exit 0.
   SessionHarness harness;
@@ -467,12 +480,10 @@ void TerminalSessionTest::disposalOrderIsViewThenBackend() {
   QVERIFY(session->start(validRequest()));
   auto *backendStats = harness.backendStats.at(0).data();
   QStringList disposalOrder;
-  connect(session.get(), &TerminalSession::viewDisposalRequested,
-          session.get(), [&disposalOrder] {
-            disposalOrder.append(QStringLiteral("view"));
-          });
-  connect(session.get(), &TerminalSession::viewDisposalRequested,
-          session.get(), [backendStats, &disposalOrder] {
+  connect(session.get(), &TerminalSession::viewDisposalRequested, session.get(),
+          [&disposalOrder] { disposalOrder.append(QStringLiteral("view")); });
+  connect(session.get(), &TerminalSession::viewDisposalRequested, session.get(),
+          [backendStats, &disposalOrder] {
             // The backend's own shutdown has not run yet at this point.
             disposalOrder.append(backendStats->shutdownCalls == 0
                                      ? QStringLiteral("before-backend")
@@ -508,8 +519,7 @@ void TerminalSessionTest::presentationOperationsRouteThroughBackend() {
   QCOMPARE(harness.createdBackends, 1);
   // No crash: routing went through exactly the started generation.
   QVERIFY(session->terminalWidget() != nullptr);
-  QVERIFY(session->terminalWidget() ==
-          harness.backendStats.at(0)->lastWidget);
+  QVERIFY(session->terminalWidget() == harness.backendStats.at(0)->lastWidget);
 }
 
 void TerminalSessionTest::destructorEscalatesForShuttingDownSession() {

@@ -8,7 +8,11 @@ Item {
     required property var theme
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var audioAppletAccess: null
+    property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
+    property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -34,7 +38,11 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletRow {
@@ -48,7 +56,11 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletRow {
@@ -63,7 +75,11 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -77,7 +93,11 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -91,7 +111,11 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 
     PanelAppletColumn {
@@ -105,6 +129,10 @@ Item {
         theme: root.theme
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        audioAppletAccess: root.audioAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
+        globalMenuAppletAccess: root.globalMenuAppletAccess
     }
 }

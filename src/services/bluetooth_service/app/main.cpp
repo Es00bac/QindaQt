@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <qindaqt/services/bluetooth_bluez_adapter/bluez_adapter_backend.h>
+#include <qindaqt/services/bluetooth_bluez_adapter/bluez_backend_mode.h>
 #include <qindaqt/services/bluetooth_model/deterministic_backend_factory.h>
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
 
@@ -8,6 +10,7 @@
 #include <QtDBus/QDBusConnection>
 
 #include <memory>
+#include <utility>
 
 using namespace QindaQt::Bluetooth;
 
@@ -30,11 +33,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // B0 platform adapter: deterministic and initially empty, so an activated
-    // process without the BluezQt runtime lane publishes a truthful
-    // Unavailable/no-adapter snapshot instead of fabricated inventory. See
-    // ADR-0037 for the replacement boundary.
-    auto backend = makeDeterministicAdapterBackend();
+    // AGENT-CONTRACT: Backend selection is explicit and fails closed to
+    // production (ADR-0057): only the exact value "deterministic" selects the
+    // B0 empty backend. Production consumes org.bluez on the system bus
+    // through an injected connection and tolerates BlueZ absence at startup.
+    const QString requestedBackend = qEnvironmentVariable("QINDAQT_BLUETOOTH_BACKEND");
+    std::unique_ptr<AdapterBackend> backend;
+    if (resolveBluetoothBackendMode(requestedBackend)
+        == BluetoothBackendMode::Deterministic) {
+        backend = makeDeterministicAdapterBackend();
+    } else {
+        backend = std::make_unique<BluezAdapterBackend>(
+            QDBusConnection::systemBus());
+    }
     ResidentBluetoothService service(std::move(backend), sessionConnection);
     const ServiceStartStatus status = service.start();
     if (status != ServiceStartStatus::Started) {

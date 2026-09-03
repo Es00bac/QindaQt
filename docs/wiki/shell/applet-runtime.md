@@ -48,10 +48,10 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
-The manifest catalog describes clock, notification center, power, launcher,
-task list, global menu, and status tray packages. The compiled first-party
-registry and production QML dispatcher currently contain three audited entry
-points:
+The manifest catalog describes clock, notification center, audio, Bluetooth,
+power, launcher, task list, global menu, and status tray packages. The
+compiled first-party registry contains seven audited entry points; the
+production QML dispatcher renders all seven:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -71,18 +71,68 @@ points:
   or replacement clears prior truth and ends a pending request without replay.
   PB-1 currently supplies honest unavailable truth until its platform
   collaborators land, so the production applet remains visibly unavailable
-  rather than inventing host state.
+  rather than inventing host state; and
+- `qindaqt.applets.audio` renders bounded Audio1 device and application-stream
+  truth and only capability-admitted volume and mute controls. Its
+  shell-private controller consumes only the public `AudioClient`;
+  `audio.read` gates observation and `audio.control` gates serialized
+  mutation. Owner loss or replacement clears prior truth and pending work
+  without replay. Until the platform WirePlumber adapter is the activated
+  backend, the resident service reports honest unavailable/degraded truth,
+  which the applet presents as-is.
+- `qindaqt.applets.bluetooth` renders bounded adapter/device truth and only
+  capability-admitted adapter power, one caller-scoped discovery lease, and
+  paired-device connect/disconnect. Its shell-private controller consumes the
+  public `BluetoothClient`, fails closed on owner/epoch/revision loss, releases
+  discovery on close/teardown, and exposes no address, pairing, trust, Agent1,
+  BlueZ, or audio authority. Bluetooth B0 currently reports the deterministic
+  empty backend, so production truth remains unavailable until the platform
+  adapter lands; and
+- `qindaqt.applets.launcher` renders the compiled
+  `QindaQt.Shell.Launcher` module over its shell-private composition of
+  injected-root scanning, public Settings1 persistence, and seam-based bounded
+  execution. The audited `applications.launch` grant gates activation, owner
+  loss clears persistence truth, and a null controller leaves the preview
+  visibly disabled. See [Launcher](launcher.md) and
+  [ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md); and
+- `qindaqt.applets.global-menu` renders the compiled
+  `QindaQt.Shell.GlobalMenu` module over the shell-owned AppMenu registrar and
+  dbusmenu coordinator. `global-menu.read` gates observation; the explicitly
+  denied `windows.activate` capability grants no arbitrary window control.
+  The composition borrows the shell's one exact-owner window-actions client
+  for authenticated active-window identity, and owner loss clears recursive
+  menu truth and closes activation authority.
 
-The notification-center and power entries remain valid compiled applets when
-the shell starts without presentation-token provisioning, but the notification
-facade is absent and its control is visibly disabled. Power access is
-independent of the notification token and fails closed on its own
-capability/client state.
+The notification-center, audio, Bluetooth, and power entries remain valid
+compiled applets when the shell starts without presentation-token
+provisioning, but the notification facade is absent and its control is
+visibly disabled. Audio, Power, and Bluetooth access are independent of the
+notification token and fail closed on their own capability/client state.
 The preview keeps deterministic static applet fixtures rather than connecting
-to live clock, notification, or power state.
+to live clock, notification, global-menu, audio, Bluetooth, or power state.
 
-Launcher, task-list, global-menu, and status-tray manifests remain accepted
-contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
+## Installed shell component closure
+
+Every install component that carries `qindaqt-shell` is independently
+runnable through the shell's relative loader layout. The current inventory is
+the default `QindaQt` component plus `AudioAppletRuntime`,
+`BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
+and `PowerAppletRuntime`.
+Each carries every directly linked applet backing library plus
+`qindaqt_controls_qml` in the install library directory and
+`qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
+baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
+on another component to supply either library.
+
+`qindaqt.shell-runtime-component-closure` installs each member of that
+inventory alone beneath the active build root, authenticates both resolved
+library paths, and launches the staged shell with ambient loader, display,
+Wayland, and session-bus variables cleared. A new shell-carrying component is
+incomplete until it is added to this inventory and passes the same proof.
+
+Task-list and status-tray manifests remain accepted contracts but resolve as
+`implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
+rendered by the production panel dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
 status-tray value and ownership foundation is documented in

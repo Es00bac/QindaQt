@@ -4,23 +4,19 @@ if(NOT DEFINED SOURCE_ROOT)
     message(FATAL_ERROR "SOURCE_ROOT is required")
 endif()
 
-# AGENT-GUARD: PB-1 is Wayland-free and host-free by contract. These poison
-# negatives keep a future adapter edit from silently importing host UPower,
-# logind, Wayland, sysfs, process, thread, or sibling-service implementation
-# dependencies into the resident service or client. Real adapters arrive in
-# later slices and must live in their own modules or justify an ADR.
+# AGENT-GUARD: The resident Power1 orchestration (everything outside adapters/)
+# stays Wayland-free and host-free by contract: it must never mention upstream
+# daemons, sysfs paths, processes, or threads. The production adapters under
+# adapters/ are the only place allowed to name org.freedesktop.UPower,
+# org.freedesktop.login1, power-profiles-daemon, or a sysfs root, and each
+# adapter family is additionally fenced against the other families' transports
+# (see ADR-0060). These poison negatives fail the change that violates them.
 set(power_paths
     "${SOURCE_ROOT}/src/services/power_service"
     "${SOURCE_ROOT}/src/services/power_client")
-set(forbidden_patterns
-    "upower"
-    "libupower"
-    "sd-login"
-    "systemd/sd"
-    "login1"
-    "org.freedesktop.login1"
-    "org.freedesktop.UPower"
-    "net.hadess.PowerProfiles"
+
+# Forbidden everywhere in the power service and client, including adapters.
+set(common_forbidden_patterns
     "wayland-client"
     "QtWayland"
     "<QtGui/"
@@ -28,11 +24,24 @@ set(forbidden_patterns
     "<QtQuick/"
     "QProcess"
     "QThread"
-    "/sys/class"
     "brightness_model"
     "audio_"
     "display_"
-    "session_supervisor")
+    "session_supervisor"
+    "sd-login"
+    "systemd/sd"
+    "libupower")
+
+# Forbidden in orchestration (non-adapter) files: naming an upstream daemon,
+# bus path, or sysfs root there reintroduces the PB-1 violation.
+set(core_forbidden_patterns
+    ${common_forbidden_patterns}
+    "upower"
+    "login1"
+    "org.freedesktop.login1"
+    "org.freedesktop.UPower"
+    "net.hadess.PowerProfiles"
+    "/sys/class")
 
 foreach(root IN LISTS power_paths)
     file(
@@ -44,10 +53,35 @@ foreach(root IN LISTS power_paths)
     list(APPEND power_sources "${root}/CMakeLists.txt")
     foreach(source IN LISTS power_sources)
         file(READ "${source}" content)
+        if(source MATCHES "CMakeLists\\.txt$")
+            # Build manifests legitimately list adapter sources; they are not
+            # orchestration code and are fenced with the common patterns only.
+            set(forbidden_patterns "${common_forbidden_patterns}")
+            set(scope "manifest")
+        elseif(source MATCHES "/adapters/")
+            set(forbidden_patterns "${common_forbidden_patterns}")
+            # Each adapter family may use only its own transport.
+            if(source MATCHES "/sysfs_backlight_source[^/]*$")
+                list(APPEND forbidden_patterns
+                    "upower" "login1" "org.freedesktop.login1"
+                    "org.freedesktop.UPower" "net.hadess.PowerProfiles" "<QtDBus/")
+            elseif(source MATCHES "/(upower_|power_profiles_)[^/]*$")
+                list(APPEND forbidden_patterns
+                    "login1" "org.freedesktop.login1" "/sys/class")
+            elseif(source MATCHES "/logind_[^/]*$")
+                list(APPEND forbidden_patterns
+                    "upower" "org.freedesktop.UPower" "net.hadess.PowerProfiles"
+                    "/sys/class")
+            endif()
+            set(scope "adapter")
+        else()
+            set(forbidden_patterns "${core_forbidden_patterns}")
+            set(scope "core")
+        endif()
         foreach(pattern IN LISTS forbidden_patterns)
             if(content MATCHES "${pattern}")
                 message(FATAL_ERROR
-                    "Forbidden Power PB-1 dependency '${pattern}' in ${source}")
+                    "Forbidden Power ${scope} dependency '${pattern}' in ${source}")
             endif()
         endforeach()
     endforeach()
@@ -81,4 +115,4 @@ foreach(source IN LISTS service_sources)
     endif()
 endforeach()
 
-message(STATUS "Power PB-1 boundary is Wayland-free, host-free, and implementation-separated")
+message(STATUS "Power boundary holds: core host-free, adapters transport-fenced")

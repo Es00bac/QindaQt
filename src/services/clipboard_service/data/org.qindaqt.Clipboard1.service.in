@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.qindaqt.Clipboard1
+Exec=@KDE_INSTALL_FULL_BINDIR@/qindaqt-clipboard-host
+SystemdService=qindaqt-clipboard-host.service

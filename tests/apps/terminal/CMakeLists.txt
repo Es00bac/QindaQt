@@ -38,6 +38,11 @@ qindaqt_add_terminal_test(
     qindaqt.terminal-session
 )
 qindaqt_add_terminal_test(
+    qindaqt_terminal_process_group_tests
+    tst_terminal_process_group.cpp
+    qindaqt.terminal-process-group
+)
+qindaqt_add_terminal_test(
     qindaqt_terminal_appearance_tests
     tst_terminal_appearance.cpp
     qindaqt.terminal-appearance
@@ -48,6 +53,25 @@ target_compile_definitions(
 )
 
 qindaqt_add_terminal_test(
+    qindaqt_terminal_profiles_tests
+    tst_terminal_profiles.cpp
+    qindaqt.terminal-profiles
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_session_collection_tests
+    tst_terminal_session_collection.cpp
+    qindaqt.terminal-session-collection
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_profile_settings_tests
+    tst_terminal_profile_settings.cpp
+    qindaqt.terminal-profile-settings
+)
+target_link_libraries(
+    qindaqt_terminal_profile_settings_tests PRIVATE qindaqt_settings_client
+)
+
+qindaqt_add_terminal_test(
     qindaqt_terminal_window_tests
     tst_terminal_window.cpp
     qindaqt.terminal-window-offscreen
@@ -55,6 +79,24 @@ qindaqt_add_terminal_test(
 target_compile_definitions(
     qindaqt_terminal_window_tests
     PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_app_shell_tests
+    tst_terminal_app_shell.cpp
+    qindaqt.terminal-app-shell
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_tabs_tests
+    tst_terminal_tabs.cpp
+    qindaqt.terminal-tabs-offscreen
+)
+target_compile_definitions(
+    qindaqt_terminal_tabs_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+    qindaqt.terminal-tabs-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
 )
 
 # This is intentionally the only focused test that links the production

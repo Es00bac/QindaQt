@@ -30,7 +30,8 @@
       "applets": [
         {"id": "launcher", "plugin": "application-launcher"},
         {"id": "tasks", "plugin": "grouped-task-list"},
-        {"id": "workspaces", "plugin": "workspace-switcher"}
+        {"id": "workspaces", "plugin": "workspace-switcher"},
+        {"id": "applications", "plugin": "launcher"}
       ]
     }
   ]

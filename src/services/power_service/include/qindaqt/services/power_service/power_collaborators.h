@@ -28,11 +28,17 @@ struct CollaboratorOutcome {
 // backlights, and AC/on-battery truth. Handle epochs in facts are ignored; the
 // coordinator stamps the resident epoch on every public handle using the
 // opaque ID as the stable device key.
+// AGENT-NOTE: PB-2 additionally carries internal-panel backlight devices
+// observed from an injected sysfs root inside these same facts. The bus
+// authority (UPower) gates the whole battery domain: when it is unavailable
+// the backlight rows are dropped with it rather than published without
+// AC/on-battery truth. See docs/wiki/architecture/power-service.md.
 struct BatteryFacts {
   bool acPresent = false;
   bool onBattery = false;
   QList<PowerSupply> supplies;
   QList<KeyboardBacklight> keyboardBacklights;
+  QList<InternalBacklight> internalBacklights;
 };
 
 // Facts owned by the power-profile authority: supported profiles, the active
@@ -58,10 +64,11 @@ struct SessionFacts {
 // every emission with the producing generation (an equality token, never an
 // ordered value), and publishes only immutable value copies through signals.
 // stop() invalidates that run; emissions from a stopped or superseded
-// generation are dropped by the coordinator. Real UPower, power-profiles-daemon,
-// and logind adapters arrive in later slices and must not leak thread-affine
-// or raw upstream identity (object paths, serial numbers, UID, PID) through
-// these boundaries. See docs/wiki/architecture/power-service.md.
+// generation are dropped by the coordinator. The production UPower,
+// power-profiles-daemon, logind, and sysfs-backlight implementations live
+// under the adapters/ subboundary and must not leak thread-affine or raw
+// upstream identity (object paths, serial numbers, UID, PID) through these
+// boundaries. See docs/wiki/architecture/power-service.md and ADR-0060.
 class BatteryCollaborator : public QObject {
   Q_OBJECT
 

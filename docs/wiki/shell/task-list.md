@@ -169,6 +169,7 @@ and the operation adapter, both covered by hostile unit rows and a private-bus
 transport row in `tests/shell/task_list` (see the
 [testing harness](../development/testing-harness.md)). Both slices are
 registered in the combined source/test build but are deliberately not
-instantiated by the production shell; shell composition, QST-1 presentation,
-and installed keyboard/accessibility qualification remain later slices and are
-not claimed here.
+instantiated by the production shell; shell composition (including composition
+of the published exact-owner `src/shell_window_actions_client` behind accepted
+window intents), QST-1 presentation, and installed keyboard/accessibility
+qualification remain later slices and are not claimed here.

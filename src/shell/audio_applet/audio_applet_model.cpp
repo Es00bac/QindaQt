@@ -2,7 +2,7 @@
 
 #include "audio_applet_model.h"
 
-#include <QtCore/QObject>
+#include <QtCore/QCoreApplication>
 
 #include <algorithm>
 #include <cmath>
@@ -11,6 +11,9 @@ namespace QindaQt::Shell::AudioApplet {
 
 namespace {
 
+// AGENT-NOTE: The pure projection is deliberately not an object type;
+// translate() keeps the fallback labels translatable without giving the
+// value type object machinery the pure boundary gate must reject.
 QString deviceLabel(const Audio::Device &device)
 {
     // The description is the user-facing string; the short name is the
@@ -20,7 +23,7 @@ QString deviceLabel(const Audio::Device &device)
         return device.description;
     if (!device.name.isEmpty())
         return device.name;
-    return QObject::tr("Unknown device");
+    return QCoreApplication::translate("AudioAppletModel", "Unknown device");
 }
 
 QString streamLabel(const Audio::Stream &stream)
@@ -29,7 +32,7 @@ QString streamLabel(const Audio::Stream &stream)
         return stream.applicationName;
     if (!stream.mediaName.isEmpty())
         return stream.mediaName;
-    return QObject::tr("Unknown stream");
+    return QCoreApplication::translate("AudioAppletModel", "Unknown stream");
 }
 
 const Audio::Device *findDevice(const Audio::Snapshot &snapshot,

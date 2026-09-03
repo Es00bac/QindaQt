@@ -181,6 +181,43 @@ def validate_service_metadata(path: Path) -> None:
         raise ValueError("service metadata must not imply caller authentication")
 
 
+def validate_shell_descriptor(path: Path) -> None:
+    interface = ET.parse(path).getroot().find("interface")
+    if interface is None or interface.get("name") != "org.qindaqt.CompositorShell1":
+        raise ValueError("shell descriptor must contain org.qindaqt.CompositorShell1")
+    expected_methods = {
+        "ActivateWindow",
+        "MinimizeWindow",
+        "UnminimizeWindow",
+        "CloseWindow",
+        "RaiseWindow",
+        "ActiveWindowIdentity",
+    }
+    methods = {element.get("name") for element in interface.findall("method")}
+    if methods != expected_methods:
+        raise ValueError(
+            f"shell method drift: expected {sorted(expected_methods)}, got {sorted(methods)}"
+        )
+    expected_arguments = [
+        ("windowId", "s", "in"),
+        ("epoch", "s", "in"),
+        ("revision", "s", "in"),
+        ("resultJson", "ay", "out"),
+    ]
+    for method_name in sorted(expected_methods - {"ActiveWindowIdentity"}):
+        validate_method_signature(interface, method_name, expected_arguments)
+    validate_method_signature(
+        interface, "ActiveWindowIdentity", [("snapshotJson", "ay", "out")]
+    )
+    signals = interface.findall("signal")
+    if [signal.get("name") for signal in signals] != [
+        "ActiveWindowIdentityChanged"
+    ]:
+        raise ValueError("shell interface must expose only identity invalidation")
+    if signals[0].findall("arg"):
+        raise ValueError("ActiveWindowIdentityChanged must carry no facts")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("descriptor", type=Path)
@@ -188,6 +225,9 @@ def main() -> int:
     arguments = parser.parse_args()
     validate_descriptor(arguments.descriptor)
     validate_service_metadata(arguments.service_metadata)
+    validate_shell_descriptor(
+        arguments.descriptor.with_name("org.qindaqt.CompositorShell1.xml")
+    )
     return 0
 
 

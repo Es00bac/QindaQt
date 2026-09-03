@@ -19,10 +19,11 @@
     {
       "id": "glm",
       "name": "Z.AI GLM",
-      "status": "available",
-      "updatedAt": "2026-09-02T20:42:51-06:00",
-      "estimatedReturnAt": "",
-      "evidence": "Direct probe: `kimi -m zai-coding-plan/glm-5.3` answered; two GLM lanes (Audio Settings route, Power PB-2) are live."
+      "status": "unavailable",
+      "updatedAt": "2026-09-03T04:28:43-06:00",
+      "estimatedReturnAt": "2026-09-03T20:25:42-06:00",
+      "evidence": "Direct probe at 01:25 MDT: `kimi -m zai-coding-plan/glm-5.3-flash` answered after the 5-hour window reset; the display-color lane is relaunched on GLM flash with polling watchers.",
+      "note": "429 \"Usage limit reached for 5 hour ... reset at 2026-09-03 20:25:42\" observed on two lanes around 02:45; partial work preserved as WIP commits and reassigned to Kimi"
     },
     {
       "id": "claude",
@@ -36,9 +37,10 @@
       "id": "kimi",
       "name": "Moonshot Kimi",
       "status": "available",
-      "updatedAt": "2026-09-02T20:42:51-06:00",
+      "updatedAt": "2026-09-03T04:28:43-06:00",
       "estimatedReturnAt": "",
-      "evidence": "Direct probe: `kimi -m kimi-code/k3` answered; two Kimi lanes (Clipboard applet C1, Audio applet production) are live."
+      "evidence": "Direct probes at 01:46, 02:02, and 02:12 MDT still returned the 403 5-hour usage limit; next probe on the 02:20 reminder and again at 02:45. Paused Kimi lanes keep their preserved WIP.",
+      "note": "5-hour window reset confirmed by a k3 probe at 04:30; four Kimi processes running (one review, three resumed lanes)"
     }
   ]
 }

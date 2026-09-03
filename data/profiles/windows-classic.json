@@ -22,7 +22,8 @@
         {"id": "tasks", "plugin": "task-list"},
         {"id": "tray", "plugin": "system-tray"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "clock", "plugin": "clock"},
+        {"id": "applications", "plugin": "launcher"}
       ]
     }
   ]

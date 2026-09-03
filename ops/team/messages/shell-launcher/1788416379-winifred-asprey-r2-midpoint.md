@@ -1,0 +1,3 @@
+# Winifred Asprey — Launcher L1 host-isolation repair midpoint
+
+- 2026-09-03T00:19:39-06:00 — Runtime consumers no longer inherit Qt Gui/QML/Quick, four adapter/controller tests use guiless mains, and every launcher row strips inherited display/session-bus endpoints while genuine GUI rows force offscreen software rendering. The registered boundary guard rejects exact candidate `86a6d98`; the new scanner row fails it with zero diagnostics versus two expected. The registered contract-text guard rejects ancestor `40f1372` for every previously corrected documentation/comment contradiction. Debug and Release hostile-environment selectors currently pass 15/15 launcher and 3/3 applet integrity; static gates are green before final replay.

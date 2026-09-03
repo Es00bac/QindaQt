@@ -20,7 +20,8 @@
         {"id": "workspaces", "plugin": "workspace-switcher"},
         {"id": "command", "plugin": "command-palette"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "clock", "plugin": "clock"},
+        {"id": "applications", "plugin": "launcher"}
       ]
     }
   ]

@@ -13,9 +13,9 @@ namespace QindaQt::Shell::GlobalMenu
 // The complete authority offered to the panel applet, mirroring
 // NotificationCenterAppletAccess: shell composition publishes authoritative
 // state; QML only reads it and requests an activation, and every request is
-// re-checked against the current tree here before it leaves this facade. G0
-// wires no live publisher, so `available` stays false and `items` stays
-// empty until a later milestone's transport calls publishTree().
+// re-checked against the current tree here before it leaves this facade. G2
+// wires the shell-owned transport composition; absence or loss of its exact
+// authenticated provider keeps `available` false and `items` empty.
 //
 // AGENT-CONTRACT (threading): an instance lives on, and all publishers and
 // QML must use it on, the Qt GUI thread; there is no internal locking. A
@@ -32,20 +32,20 @@ class GlobalMenuAppletAccess final : public QObject
     Q_OBJECT
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
     Q_PROPERTY(QVariantList items READ items NOTIFY itemsChanged)
+    Q_PROPERTY(QString phase READ phase NOTIFY phaseChanged)
+    Q_PROPERTY(QString reasonCode READ reasonCode NOTIFY phaseChanged)
 
 public:
     explicit GlobalMenuAppletAccess(QObject *parent = nullptr);
 
     [[nodiscard]] bool available() const noexcept;
-    // Top-level items only, each a QVariantMap with exactly
-    // {id, kind, text, mnemonicIndex, enabled, checkable, checked} where
-    // `kind` is "action" or "submenu". Hidden items and separators are
-    // omitted. G0 presents no submenu popup: `activate()` opens only
-    // "action" entries, and presentation must render "submenu" entries as
-    // visibly non-activating until the popup milestone. Submenu expansion is
-    // presentation's job in a later milestone; G0 keeps this facade flat and
-    // honest about what it actually offers.
+    // Top-level items plus recursively owned submenu children. Every map has
+    // {id, kind, text, mnemonicIndex, shortcutText, enabled, checkable,
+    // checked, children}; hidden entries are omitted and separators exist only
+    // in submenu children. `activate()` still admits actions only.
     [[nodiscard]] QVariantList items() const;
+    [[nodiscard]] QString phase() const;
+    [[nodiscard]] QString reasonCode() const;
 
     Q_INVOKABLE void activate(const QString &actionId);
 
@@ -55,19 +55,24 @@ public:
     // unavailable state instead of any part of its content.
     void publishTree(const Protocol::MenuTree &tree);
     void publishUnavailable();
+    void publishDegraded(const QString &reasonCode);
 
 Q_SIGNALS:
     void activationRequested(QString actionId);
     void availableChanged();
     void itemsChanged();
+    void phaseChanged();
 
 private:
     void setAvailable(bool available);
     void setTopLevelProjection(QVariantList projection);
+    void setPhase(QString phase, QString reasonCode);
 
     bool m_available = false;
     Protocol::MenuTree m_tree;
     QVariantList m_topLevelProjection;
+    QString m_phase = QStringLiteral("unavailable");
+    QString m_reasonCode;
 };
 
 } // namespace QindaQt::Shell::GlobalMenu

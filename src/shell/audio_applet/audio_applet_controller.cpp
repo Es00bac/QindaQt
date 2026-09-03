@@ -72,9 +72,13 @@ const Stream *findStream(const Snapshot &snapshot, quint64 serial)
 } // namespace
 
 AudioAppletController::AudioAppletController(AudioClient *client,
+                                             const bool audioReadGranted,
+                                             const bool audioControlGranted,
                                              QObject *parent)
     : QObject(parent)
     , m_client(client)
+    , m_readGranted(audioReadGranted)
+    , m_controlGranted(audioReadGranted && audioControlGranted)
 {
     // AGENT-GUARD: The controller is presentation-only. It must never start,
     // stop, or parent the client; shell composition owns the client lifetime,
@@ -99,6 +103,11 @@ QString AudioAppletController::phaseText() const
 
 QString AudioAppletController::phaseReasonText() const
 {
+    // AGENT-GUARD: A read denial is policy, not service truth. It must present
+    // as a stable access sentence, never as a client reason code that could
+    // masquerade as live Audio1 state.
+    if (!m_readGranted)
+        return tr("Audio access was not granted to this applet.");
     return stablePhaseReasonText(m_model.phaseReasonCode());
 }
 
@@ -184,6 +193,15 @@ void AudioAppletController::reproject()
 {
     prunePendingAgainstSnapshot();
 
+    // AGENT-GUARD: Read denial suppresses observation entirely. The pure
+    // model must never see grant policy, so the controller substitutes an
+    // empty unavailable projection instead of forwarding client truth.
+    if (!m_readGranted) {
+        m_model = AudioAppletModel::project(Phase::Unavailable, {}, nullptr, {});
+        Q_EMIT stateReprojected();
+        return;
+    }
+
     QSet<quint64> pendingSerials;
     pendingSerials.reserve(m_pendingBySerial.size());
     for (auto it = m_pendingBySerial.constBegin();
@@ -263,6 +281,16 @@ bool AudioAppletController::beginRequest(quint64 serial, bool isStream,
             "Audio information is not available, so the change was not sent."));
         return false;
     }
+
+    // The grant evaluation, not QML-visible state, decides whether a mutation
+    // may leave the shell. Control without read is already folded into
+    // m_controlGranted at construction, mirroring the Power applet.
+    if (!m_controlGranted) {
+        publishFeedback(
+            tr("Audio controls are not allowed for this applet."));
+        return false;
+    }
+
     const Snapshot snapshot = m_client->snapshot();
 
     if (m_pendingBySerial.contains(serial)) {

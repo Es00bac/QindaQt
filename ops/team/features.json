@@ -195,8 +195,8 @@
           "id": "QQ-004.07",
           "title": "Launcher",
           "weight": 2,
-          "state": "WIRED",
-          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, presentation projection, and execution-free launch intents are registered in the combined source and test graph.",
+          "state": "EXECUTABLE",
+          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, and execution-free intents are joined by L1 production adapters: an injected-root desktop-entry scanner with canonical containment, non-regular-file refusal, capped reads, debounced generation-fenced refresh, and errno-aware degraded truth; Settings1 pinned/recent persistence with uncertainty convergence; a seam-based bounded execution adapter with entry-level policy inheritance and no shell interpolation; and a compiled, registered, fatal-warning-clean QindaQt.Shell.Launcher applet with persistence status, keyboard traversal, and accessibility, proven under host-unset isolation; the compiled launcher applet is now hosted in the production qindaqt-shell panels and the preview through a shell-private composition with production seams (explicit XDG roots, the shell's Settings1 client, the real spawner/activator), a LauncherAppletRuntime install component covered by the component-closure row, and installed/source-poison rows.",
           "evidence": [
             {
               "kind": "commit",
@@ -207,16 +207,26 @@
               "kind": "source",
               "reference": "docs/wiki/shell/launcher.md",
               "summary": "The owning page records the bounded model and later production-adapter boundary."
+            },
+            {
+              "kind": "commit",
+              "reference": "26f366a4a2ab14fc341407f015d21685b8c8415f",
+              "summary": "Launcher L1 (ADR-0062) is integrated after Kay McNulty (OpenAI Codex, different worker) rejected three candidates (0/5/3/2, 1/0/2/0, 0/0/1/0) and accepted the third repair at 0/0/0/0; the merged tree passes launcher 15/15 and applet integrity rows in Debug and Release under host-unset isolation."
+            },
+            {
+              "kind": "commit",
+              "reference": "7ecdb36f53c60ea03bea40197f17c9cc6bf9b9e1",
+              "summary": "Launcher L2 shell hosting is integrated after Annie Cannon (Z.AI GLM 5.3) accepted it at 0/0/0/2; the merged tree passes launcher 17/17, integrity/runtime/closure/installed rows in Debug and Release under host-unset isolation."
             }
           ],
-          "caveat": "Installed-application scanning, Settings1 persistence, QML presentation, safe process execution, and production shell hosting remain."
+          "caveat": "Activation tokens, nested-session interaction proof, and installed keyboard/accessibility qualification remain."
         },
         {
           "id": "QQ-004.10",
           "title": "Task list",
           "weight": 2,
           "state": "WIRED",
-          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are registered in the combined source and test graph.",
+          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are integrated, and the compositor now exposes an authenticated CompositorShell1 window-action boundary (activate, minimize, unminimize, close, raise) admitted only for the D-Bus caller whose credentials match the bound panel-owning shell client, with authentication before parsing, bounded constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing, and an exact-owner asynchronous shell client; CompositorShell1 now also projects a revisioned, authenticated active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced app-menu service/path) with an exported change signal validated by the public generation rule on both sides and consumed through the exact-owner shell client.",
           "evidence": [
             {
               "kind": "commit",
@@ -227,9 +237,19 @@
               "kind": "source",
               "reference": "docs/wiki/shell/task-list.md",
               "summary": "The owning page records the public-facts boundary and production adapter work still required."
+            },
+            {
+              "kind": "commit",
+              "reference": "3690a056e667135d486da4fa60d7996882a4560a",
+              "summary": "The authenticated shell window-action boundary (ADR-0061) is integrated after Margaret Rock (OpenAI Codex, different worker) rejected 11f4c0a at 0/1/1/0 and accepted the repair at 0/0/0/0; the merged tree passes compositor 35/35 non-nested rows, the four window-action rows including the nested live row, in Debug and Release."
+            },
+            {
+              "kind": "commit",
+              "reference": "8505bdbd09961863538616efd3dd8e7ef834a126",
+              "summary": "Authenticated active-window identity facts (ADR-0063) are integrated after Margaret Rock (OpenAI Codex, different worker) rejected 7e263bd at 0/2/1/0 and accepted the repair at 0/0/0/0; the merged tree passes compositor 36/36 non-nested rows, window-actions/identity rows, and client rows in Debug and Release plus the nested rows serially."
             }
           ],
-          "caveat": "A compositor facts producer, window-operation adapter, QST presentation, and installed keyboard/accessibility proof remain."
+          "caveat": "The shell-side facts producer and operation adapter (paused Kimi lane, WIP preserved), QST presentation, applet hosting, and installed keyboard/accessibility proof remain; the window-action boundary is proven against private virtual KWin only."
         },
         {
           "id": "QQ-004.11",
@@ -255,21 +275,21 @@
           "id": "QQ-004.12",
           "title": "Audio applet",
           "weight": 2,
-          "state": "WIRED",
-          "summary": "The bounded Audio applet model, controller, and compiled QML module are registered against the public AudioClient boundary with fail-closed focused tests.",
+          "state": "EXECUTABLE",
+          "summary": "The production Audio applet composes only the public AudioClient through a shell-private controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled keyboard-accessible QML, exact-owner replacement fences, and pure/runtime boundary gates with independent poisons; every install component that carries the production shell now ships its Controls/Tokens runtime closure, proven by a component-closure row.",
           "evidence": [
             {
               "kind": "commit",
-              "reference": "85962f1ebbbf66d1b6ae0626925d62fa5e64782a",
-              "summary": "The accepted Audio applet is integrated with URI-correct QML output and focused model/controller tests."
+              "reference": "14f3e670d66988ec87648f195b91e26c56a45fbf",
+              "summary": "The accepted composition (caaf7d9, rechecked 0/0/0/0 on Codex) plus the staging-closure repairs (b623b00 rejected 0/1/0/0, 14f3e67 accepted 0/0/0/0 by Frances Bilas) are integrated; the merged tree passes applet 22/22, integrity/runtime/closure 7/7 in Debug and Release."
             },
             {
               "kind": "test",
-              "reference": "361e601373daf3cbf5f2874b753e7469ca467665",
-              "summary": "The frozen combined checkpoint passed 236/236 tests and warning-free source/documentation gates."
+              "reference": "docs/wiki/shell/audio-applet.md",
+              "summary": "The owning page records the production composition rows, the boundary poisons, and explicit nonclaims."
             }
           ],
-          "caveat": "Manifest/policy registration, production shell composition, rendered interaction, and physical-device qualification remain."
+          "caveat": "Audio truth still comes from the isolated Audio1 runtime: physical devices, nested panel interaction, and hardware qualification remain."
         },
         {
           "id": "QQ-004.13",
@@ -295,10 +315,21 @@
           "id": "QQ-004.14",
           "title": "Bluetooth applet",
           "weight": 2,
-          "state": "ABSENT",
-          "summary": "No integrated Bluetooth applet can inspect, pair, connect, or disconnect devices.",
-          "evidence": [],
-          "caveat": "The platform provider and least-authority presentation path remain."
+          "state": "EXECUTABLE",
+          "summary": "The production Bluetooth applet composes only the public Bluetooth client through a shell-private controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled keyboard-accessible QML, exact-owner replacement fences, a compiled QMetaObject controller-surface contract, and textual composition-chain and dependency-policy gates with independent poisons.",
+          "evidence": [
+            {
+              "kind": "commit",
+              "reference": "882cc0cdbb31ee9d619c625a2856aee90c7a49b0",
+              "summary": "The exact repair descendant is integrated after Cecilia Payne (Kimi K2.7) and Chien-Shiung Wu (Kimi K3-256k) each accepted it at 0/0/0/0; the merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release plus direct boundary gates 7+6 and 5+4."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/shell/bluetooth-applet.md",
+              "summary": "The owning page records the eight focused rows, the meta-object surface gate, the composition-chain presence contracts, and explicit production boundaries."
+            }
+          ],
+          "caveat": "B1 composes the B0 client whose resident service still runs the deterministic unavailable backend: the production BlueZ adapter, pairing/agent UX, nested panel interaction, physical adapters, and hardware qualification remain separate outcomes."
         },
         {
           "id": "QQ-004.15",
@@ -313,8 +344,8 @@
           "id": "QQ-004.08",
           "title": "Direct WYSIWYG customization and reveal affordances",
           "weight": 11,
-          "state": "WIRED",
-          "summary": "The integrated customization-editor domain connects pointer/keyboard intents, preview/commit/cancel, repository leases, deterministic acceptance, undo/redo dirty truth, atomic user-profile persistence, and accessibility identities to the production customization/profile boundaries.",
+          "state": "EXECUTABLE",
+          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.",
           "evidence": [
             {
               "kind": "commit",
@@ -330,9 +361,14 @@
               "kind": "test",
               "reference": "docs/wiki/shell/customization-editor.md",
               "summary": "Six focused suites cover intent, gesture, session, dirty state, persistence, keyboard, and accessibility behavior."
+            },
+            {
+              "kind": "commit",
+              "reference": "2500a3d71343f238ce30fd0d98f5cc2aa9a95809",
+              "summary": "The customize canvas is integrated after Klara Dan von Neumann (Kimi K3) rejected a6ea864 at 0/0/2/3 and Adele Goldstine (OpenAI Codex) rejected two descendants before accepting the third repair at 0/0/0/0; the merged tree passes customize 17/17 (route plus domain rows), and Settings Center 9/9 in Debug and Release."
             }
           ],
-          "caveat": "The Settings drag/drop canvas, provisional live-shell binding, reveal affordance, rendered matrix, and installed session behavior remain."
+          "caveat": "The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes."
         },
         {
           "id": "QQ-004.09",
@@ -478,7 +514,7 @@
           "title": "Power status/actions and coherent brightness",
           "weight": 13,
           "state": "EXECUTABLE",
-          "summary": "PB-1 adds the resident Power1 service, exact-owner asynchronous client/transport, package and private activation/residency boundary over PB-0, with fail-closed sibling-domain publication across identity collisions, replacement, battery disappearance, and intrinsic malformed updates.",
+          "summary": "PB-0 values/aggregation, the resident PB-1 Power1 service/client boundary, and PB-2 production upstream adapters: UPower (line-power Online, PowerSupply, battery IsPresent semantics), logind actions re-authorized at dispatch time with generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight adapter, selected by the composition root in production with an explicit deterministic mode and proven against fake services on private buses.",
           "evidence": [
             {
               "kind": "commit",
@@ -494,9 +530,14 @@
               "kind": "source",
               "reference": "docs/wiki/architecture/power-service.md",
               "summary": "The owning page records resident publication authority, identity precedence and recovery, operation admission, and remaining upstream/UI boundaries."
+            },
+            {
+              "kind": "commit",
+              "reference": "6cef8b582aeb33522829d6ae838269f31aad7611",
+              "summary": "PB-2 (ADR-0060) is integrated after Ida Holz (OpenAI Codex, different worker) rejected f93effe at 0/2/1/1 and 92d9dec at 0/1/0/0 and accepted the second repair at 0/0/0/0 with 26/26 power rows in Debug and Release."
             }
           ],
-          "caveat": "PB-1 uses bounded injected/unavailable collaborators. Production UPower/logind/profile/brightness adapters, policy persistence, Settings UI, physical hardware, and suspend/hotplug qualification remain later slices; its production shell consumer is recorded under QQ-004.13."
+          "caveat": "PB-2 is qualified only against fake UPower/logind/profiles services and a temporary sysfs tree: physical batteries, backlights, suspend/resume, hotplug, Settings UI, and hardware qualification remain; its shell consumer is recorded under QQ-004.13."
         },
         {
           "id": "QQ-005.04",
@@ -523,7 +564,7 @@
           "title": "Bluetooth devices",
           "weight": 9,
           "state": "EXECUTABLE",
-          "summary": "Bluetooth B0 integrates a bounded Bluetooth1 protocol, deterministic least-authority device model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and installed public package with pairing/trust authority retained in BlueZ.",
+          "summary": "Bluetooth B0 plus the production BlueZ adapter: the bounded Bluetooth1 protocol, deterministic least-authority model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and a production AdapterBackend over an injected direct-QtDBus org.bluez connection that drives only adapter power, the reference-counted discovery lease, and paired-device connect/disconnect, retiring truth on BlueZ owner loss and bounding hostile properties, with the composition root defaulting to production and an explicit deterministic mode for tests.",
           "evidence": [
             {
               "kind": "commit",
@@ -534,16 +575,21 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/bluetooth-service.md",
               "summary": "Fresh manager-tree verification passes the eight source/private-bus rows; exact review passes 9/9 including staged install, 70/70 direct assertions, mutation-sensitive package poison, source shape, and documentation gates."
+            },
+            {
+              "kind": "commit",
+              "reference": "f44919a52f67515779f887b8d54a9bb2a57b3c4b",
+              "summary": "The independently accepted BlueZ adapter (ADR-0057) is integrated; Betty Holberton's Kimi K3 exact review found 0/0/0/2 with 14/14 Bluetooth rows under an unreachable host system bus in Debug and Release; the merged tree passes 15/15 including the whole-repository staged-install row."
             }
           ],
-          "caveat": "B0 uses a deterministic unavailable backend. Production BlueZ transport, physical adapters/rfkill, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings/shell UI, and hardware/resource qualification remain."
+          "caveat": "The adapter is qualified only against a fake org.bluez on a private bus: physical adapters/rfkill, a host BlueZ build, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings UI, and hardware/resource qualification remain."
         },
         {
           "id": "QQ-005.06",
           "title": "Private bounded clipboard history",
           "weight": 9,
-          "state": "WIRED",
-          "summary": "Clipboard C0 integrates a volatile bounded history model, canonical MIME/size policy, lock-private projection, metadata-only search, generation fencing, and atomic hostile decode behavior.",
+          "state": "EXECUTABLE",
+          "summary": "Clipboard C0 plus the C1 service: the volatile bounded history model, a bounded ext-data-control-v1 Wayland capture adapter that reads only admitted MIME types within byte limits, the private-bus org.qindaqt.Clipboard1 protocol and exact-owner client with bounded remembered-request eviction, and a resident host that captures only after an explicit user-override opt-in (schema default false), withdraws truth unless the authenticated lock state is Unlocked, and ships activation artifacts.",
           "evidence": [
             {
               "kind": "commit",
@@ -551,12 +597,12 @@
               "summary": "The independently accepted Clipboard C0 series is integrated after atomic decoder publication repair."
             },
             {
-              "kind": "source",
-              "reference": "docs/wiki/architecture/clipboard-service.md",
-              "summary": "The owning page records the model, privacy, validation, codec, and explicit resident-service boundary."
+              "kind": "commit",
+              "reference": "63e884cfa2216d7dc492407e30c7ce28b8512ac0",
+              "summary": "The Clipboard C1 service repair descendant is integrated (ADR-0058); Evelyn Berezin (Kimi K3-256k) rejected 405577c at 0/1/1/3 for first-start capture and cache exhaustion, and Ruth Lichterman (OpenAI Codex) accepted the repair at 0/0/0/0; the merged tree passes clipboard 14/14 and Settings-related 29/29 in Debug and Release."
             }
           ],
-          "caveat": "C0 has no live Wayland capture/offer adapter, resident service/client transport, persistence, production applet, or installed interaction proof."
+          "caveat": "C1 is qualified against a fake data-control server and private buses only: the shell applet composition, live nested capture proof, persistence, and physical/session qualification remain."
         },
         {
           "id": "QQ-005.07",
@@ -603,7 +649,7 @@
           "title": "Portal interoperability and desktop policy export",
           "weight": 12,
           "state": "EXECUTABLE",
-          "summary": "The standard Settings v1 appearance backend executes a bounded exact-owner Settings1/QST projection through the standard desktop-portal endpoint, activation and installed-package boundary.",
+          "summary": "The standard Settings v1 appearance backend executes through the standard desktop-portal endpoint, and Portal P1 proves with the real xdg-desktop-portal 1.20.4 on a private bus that the QindaQt backend is selected only under XDG_CURRENT_DESKTOP=qindaqt, that the frontend's Settings values and SettingChanged follow the QindaQt projection, that Qt's xdgdesktopportal platform theme reacts to it, and that every non-Settings family is routed through an explicit fail-closed fallback table.",
           "evidence": [
             {
               "kind": "commit",
@@ -614,9 +660,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/portal-service.md",
               "summary": "Strict Debug and Release each build 97/97 and pass the seven-row contained portal selector; source and staged hostile controls reject OpenURI, Background, duplicates, extras and private headers."
+            },
+            {
+              "kind": "commit",
+              "reference": "c33b4908f99cb1dfac04287383441d028ab8f25b",
+              "summary": "Portal P1 (ADR-0059) is integrated; Gertrude Blanch (OpenAI Codex, different worker) accepted it at 0/0/0/0 with the real-frontend selector 9/9 in Debug and Release; the merged tree repeats 9/9."
             }
           ],
-          "caveat": "P0 does not qualify host frontend selection, toolkit reaction, chooser, URI, notification, inhibit, screencast/remote-desktop, consent, or any other portal family."
+          "caveat": "P1 proves selection and Qt toolkit reaction against the installed frontend on a private bus only; GTK/Flatpak reaction, installed-session qualification, and every non-Settings portal family implementation remain later outcomes."
         }
       ],
       "stoppingPoint": {
@@ -748,9 +799,14 @@
               "kind": "test",
               "reference": "docs/wiki/development/testing-harness.md",
               "summary": "Independent Debug and Release Controls selectors passed 29/29, including 25 visual rows, behavior, source policy, PSS, and installed import."
+            },
+            {
+              "kind": "commit",
+              "reference": "5cf24a27d13600413d10549fdcf3d627bf6725e2",
+              "summary": "The exact accepted Controls visual gate candidate b7b5208 (Jean Hall, OpenAI Codex, ACCEPT 0/0/0/0 after one rejected round) vendors byte-pinned OFL font fixtures so the 25 controls visual rows no longer depend on host font packages; the merged tree passes controls 34/34 in Debug and Release, the visual rows twice consecutively, the static gates, and the broad safe Debug suite 465/465 with the visual rows included again."
             }
           ],
-          "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step."
+          "caveat": "Whole-application assistive-technology and nested-session qualification remains a cross-app step. The visual baselines are pinned to vendored font bytes (ADR-0021 amendment); host font updates no longer drift them."
         },
         {
           "id": "QQ-006.03",
@@ -802,7 +858,7 @@
           "title": "Settings pages and live platform-service routes",
           "weight": 15,
           "state": "WIRED",
-          "summary": "Notifications, Appearance, Display, and Network are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions.",
+          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, and Bluetooth are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority.",
           "evidence": [
             {
               "kind": "commit",
@@ -833,9 +889,29 @@
               "kind": "test",
               "reference": "docs/wiki/apps/network-settings.md",
               "summary": "Strict Debug and Release each pass 14/14 focused route rows, 5/5 public-client/package/policy rows, 5/5 mutation proof, and broader Network 25/25 plus Settings 9/9 review sweeps."
+            },
+            {
+              "kind": "commit",
+              "reference": "fac8d6a185e21f611cc7d1ff27b34d1c7c61ca44",
+              "summary": "The exact Audio Settings route candidate d10abe2 (Joan Clarke, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds) is integrated through the delegated registry-reconciliation merge f6d47db; the merged tree passes all Settings rows in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite with zero failures."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/apps/audio-settings.md",
+              "summary": "The owning page records the public-client-only Audio route, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "500a33e1719429b9fb0573f880fe42c8c57cb736",
+              "summary": "The exact Bluetooth Settings route candidate 24129a2 (Dorothy Denning, Z.AI GLM, ACCEPT 0/0/0/0 after one rejected round) is integrated through the delegated registry-reconciliation merge 111dedb (appended after Audio at Ctrl+7); the merged tree passes all Settings and Bluetooth rows 64/64 in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite 472/472."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/apps/bluetooth-settings.md",
+              "summary": "The owning page records the public-client-only Bluetooth route, the discovery lease released on route departure and window close, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
             }
           ],
-          "caveat": "Audio, power, brightness, Bluetooth, clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence remains separate too."
+          "caveat": "Power, brightness, clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence, physical audio devices, and physical Bluetooth adapters/pairing remain separate too."
         },
         {
           "id": "QQ-006.06",
@@ -887,7 +963,7 @@
           "title": "QindaQt Terminal",
           "weight": 8,
           "state": "EXECUTABLE",
-          "summary": "The native Terminal S0 single-session slice is integrated with owned child PTY lifetime, nonblocking teletype bridging, bounded launch policy, QindaQt theme projection, selection/copy truth, qtermwidget confinement, desktop packaging, and deterministic teardown.",
+          "summary": "The native Terminal S0 single-session slice is joined by S1: a bounded multi-session tab strip where every session owns its PTY/child with process-group-complete teardown (HUP, TERM, KILL escalation and verified emptiness before ownership release), validated profiles within the existing launch policy, Settings1 persistence with presented asynchronous apply outcomes and no-replay truth, AppShell action-catalog exposure, exact argv preservation, and keyboard/accessibility parity under host-unset isolation.",
           "evidence": [
             {
               "kind": "commit",
@@ -898,9 +974,14 @@
               "kind": "test",
               "reference": "docs/wiki/apps/terminal.md",
               "summary": "The owning page records the PTY, process, qtermwidget, theme, packaging, and explicit S0 authority boundaries; the unchanged production bytes also retain the accepted private-Weston 40/40 evidence."
+            },
+            {
+              "kind": "commit",
+              "reference": "00f2db99ce13df2f426abd93e277de3d33411041",
+              "summary": "Terminal S1 is integrated after Dina St Johnston (OpenAI Codex, different worker) rejected 08481f4 at 0/2/1/1 (process-group leak, unpresented apply failures) and 34439e8 at 0/0/1/0 (vacuous dialog proof) and accepted the second repair at 0/0/0/0; the merged tree passes terminal 15/15 in Debug and Release under isolation."
             }
           ],
-          "caveat": "Multiple tabs and profiles, settings persistence, shell/global-menu integration, whole-application assistive-technology proof, nested screenshot matrices, and physical display/input qualification remain later slices."
+          "caveat": "Search, links, GPU rendering, global-menu export, whole-application assistive-technology proof, the nested screenshot matrix, and physical display/input qualification remain later slices."
         },
         {
           "id": "QQ-006.09",

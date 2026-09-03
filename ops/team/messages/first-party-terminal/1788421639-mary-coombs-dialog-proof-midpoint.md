@@ -1,0 +1,3 @@
+# Terminal S1 dialog proof material finding — Mary Coombs
+
+- 2026-09-03T01:47:19-06:00 — The production-path test now opens `TerminalWindow::manageProfiles()` through `profileManageAction`, enters its real modal loop, and drives Apply through the injected Settings1 transport. The initial conflict fixture used the unchanged draft value and correctly remained pending; after changing the authoritative value to a genuine mismatch, conflict, confirmed rejection, bus loss, owner loss, and timeout all leave the dialog visible/modal/enabled with accessible per-key text. The all-applied fake sequence closes it and makes the same live-dialog predicate false, providing the required non-vacuity control.

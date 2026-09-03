@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Controls as T
+import QindaQt.Tokens 1.0
+
+T.Control {
+    id: root
+
+    required property var customizeSettings
+    padding: Tokens.space["4"]
+    Accessible.ignored: true
+
+    background: Rectangle {
+        color: Tokens.bg.base
+        radius: Tokens.radius.l
+        border.width: Tokens.space["1"] / 2
+        border.color: Tokens.outline.divider
+    }
+
+    contentItem: Item {
+        id: canvasHost
+
+        Rectangle {
+            id: outputFrame
+            objectName: "customizeOutputCanvas"
+            anchors.centerIn: parent
+            width: Math.min(parent.width, parent.height * 16 / 9)
+            height: width * 9 / 16
+            color: Tokens.bg.base
+            border.width: Tokens.space["1"] / 2
+            border.color: Tokens.outline.strong
+            radius: Tokens.radius.s
+
+            Text {
+                anchors.centerIn: parent
+                text: qsTr("Representative output · 1920 × 1080")
+                color: Tokens.fg.muted
+                font.family: Tokens.type.fontFamily
+                font.pointSize: Tokens.type.caption
+            }
+
+            Repeater {
+                model: root.customizeSettings.panels
+
+                delegate: Rectangle {
+                    id: panelSurface
+                    required property var modelData
+
+                    readonly property real canvasScale: outputFrame.width / 1920
+                    readonly property bool horizontal:
+                        panelSurface.modelData.edge === "top"
+                        || panelSurface.modelData.edge === "bottom"
+
+                    objectName: "customizeCanvasPanel_" + panelSurface.modelData.id
+                    x: panelSurface.modelData.x * canvasScale
+                    y: panelSurface.modelData.y * canvasScale
+                    width: panelSurface.modelData.width * canvasScale
+                    height: panelSurface.modelData.height * canvasScale
+                    color: Tokens.bg.highest
+                    border.width: root.customizeSettings.visualDragActive
+                                  ? Tokens.space["1"] : Tokens.space["1"] / 2
+                    border.color: root.customizeSettings.dropAccepted
+                                  ? Tokens.status.success.foreground
+                                  : Tokens.accent.default
+                    radius: Tokens.radius.s
+
+                    TapHandler {
+                        onTapped: root.customizeSettings.selectPanel(
+                                      panelSurface.modelData.id)
+                    }
+
+                    Repeater {
+                        model: ["start", "center", "end"]
+
+                        delegate: Item {
+                            id: zone
+                            required property string modelData
+                            required property int index
+
+                            readonly property var zoneApplets:
+                                panelSurface.modelData.applets.filter(
+                                    item => item.zone === zone.modelData)
+
+                            x: panelSurface.horizontal
+                               ? index * panelSurface.width / 3 : 0
+                            y: panelSurface.horizontal
+                               ? 0 : index * panelSurface.height / 3
+                            width: panelSurface.horizontal
+                                   ? panelSurface.width / 3 : panelSurface.width
+                            height: panelSurface.horizontal
+                                    ? panelSurface.height : panelSurface.height / 3
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: Tokens.space["1"] / 2
+                                radius: Tokens.radius.s
+                                color: root.customizeSettings.visualDragActive
+                                       ? Tokens.state.hover : "transparent"
+                                border.width: root.customizeSettings.visualDragActive
+                                              ? Tokens.space["1"] / 2 : 0
+                                border.color: Tokens.outline.strong
+                            }
+
+                            DropArea {
+                                anchors.fill: parent
+                                keys: ["application/x-qindaqt-customize-applet"]
+                                onEntered: drag => {
+                                    root.customizeSettings.hoverDropTarget(
+                                        panelSurface.modelData.id,
+                                        zone.modelData, "")
+                                    drag.accepted = root.customizeSettings.dropAccepted
+                                }
+                                onDropped: drop => {
+                                    if (root.customizeSettings.dropAccepted) {
+                                        root.customizeSettings.commitDrag()
+                                        drop.acceptProposedAction()
+                                    } else {
+                                        root.customizeSettings.cancelDrag()
+                                    }
+                                }
+                            }
+
+                            Flow {
+                                anchors.fill: parent
+                                anchors.margins: Tokens.space["1"]
+                                spacing: Tokens.space["1"]
+
+                                Repeater {
+                                    model: zone.zoneApplets
+
+                                    delegate: Rectangle {
+                                        id: chip
+                                        required property var modelData
+
+                                        width: Math.min(implicitWidth,
+                                                        Math.max(16, zone.width))
+                                        height: Math.min(28,
+                                                         Math.max(12, zone.height))
+                                        implicitWidth: chipLabel.implicitWidth
+                                                       + Tokens.space["2"]
+                                        color: Tokens.accent.subtle
+                                        border.width: Tokens.space["1"] / 2
+                                        border.color: Tokens.outline.strong
+                                        radius: Tokens.radius.s
+
+                                        Text {
+                                            id: chipLabel
+                                            anchors.centerIn: parent
+                                            width: Math.max(0, parent.width
+                                                                 - Tokens.space["2"])
+                                            text: chip.modelData.name
+                                            color: Tokens.fg.default
+                                            font.family: Tokens.type.fontFamily
+                                            font.pointSize: Tokens.type.caption
+                                            elide: Text.ElideRight
+                                        }
+
+                                        TapHandler {
+                                            onTapped: root.customizeSettings.selectApplet(
+                                                panelSurface.modelData.id,
+                                                chip.modelData.id)
+                                        }
+                                        DragHandler {
+                                            id: chipDrag
+                                            target: null
+                                            enabled: root.customizeSettings.canEdit
+                                            onActiveChanged: {
+                                                if (active) {
+                                                    root.customizeSettings.startAppletDrag(
+                                                        panelSurface.modelData.id,
+                                                        chip.modelData.id)
+                                                } else if (root.customizeSettings.visualDragActive) {
+                                                    root.customizeSettings.cancelDrag()
+                                                }
+                                            }
+                                        }
+                                        Drag.active: chipDrag.active
+                                        Drag.source: chip
+                                        Drag.mimeData: ({
+                                            "application/x-qindaqt-customize-applet":
+                                                chip.modelData.pluginId
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

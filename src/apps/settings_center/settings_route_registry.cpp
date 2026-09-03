@@ -134,6 +134,52 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool networkRegistered = registerRoute(networkRoute);
   Q_ASSERT(networkRegistered);
   Q_UNUSED(networkRegistered);
+
+  const SettingsRoute customizeRoute{
+      .id = QStringLiteral("customize"),
+      .component = SettingsRouteComponent::Customize,
+      .title = QCoreApplication::translate("SettingsCenter", "Customize"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Panels, applets, placement, and layout profiles"),
+      .iconName = QStringLiteral("preferences-desktop-plasma"),
+      .category =
+          QCoreApplication::translate("SettingsCenter", "Personalization"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool customizeRegistered = registerRoute(customizeRoute);
+  Q_ASSERT(customizeRegistered);
+  Q_UNUSED(customizeRegistered);
+
+  const SettingsRoute audioRoute{
+      .id = QStringLiteral("audio"),
+      .component = SettingsRouteComponent::Audio,
+      .title = QCoreApplication::translate("SettingsCenter", "Audio"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Output, input, volumes, and application streams"),
+      .iconName = QStringLiteral("audio-card"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool audioRegistered = registerRoute(audioRoute);
+  Q_ASSERT(audioRegistered);
+  Q_UNUSED(audioRegistered);
+
+  const SettingsRoute bluetoothRoute{
+      .id = QStringLiteral("bluetooth"),
+      .component = SettingsRouteComponent::Bluetooth,
+      .title = QCoreApplication::translate("SettingsCenter", "Bluetooth"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Adapters, discovery, and paired devices"),
+      .iconName = QStringLiteral("preferences-system-bluetooth"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool bluetoothRegistered = registerRoute(bluetoothRoute);
+  Q_ASSERT(bluetoothRegistered);
+  Q_UNUSED(bluetoothRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

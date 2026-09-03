@@ -52,7 +52,7 @@ RowLayout {
 
         readonly property bool adjustable:
             (row?.canSetVolume ?? false) && (row?.volumeKnown ?? false)
-                 && !root.pending
+                 && (controller?.controlGranted ?? false) && !root.pending
 
         visible: row?.volumeKnown ?? false
         Layout.preferredWidth: 140
@@ -62,11 +62,18 @@ RowLayout {
         value: row?.volume ?? 0.0
         enabled: adjustable
         accessibleName: qsTr("Volume for %1").arg(root.streamName)
-        accessibleDescription: adjustable
-            ? qsTr("Sets the volume from 0 to 100 percent")
-            : root.pending ? qsTr("Volume change in progress")
-                           : qsTr("This application stream does not allow volume changes")
-        onMoved: if (!pressed && adjustable)
+        accessibleDescription: root.pending
+            ? qsTr("Volume change in progress")
+            : !(controller?.controlGranted ?? false)
+                  ? qsTr("Volume changes are not allowed for %1").arg(root.streamName)
+                  : (row?.canSetVolume ?? false)
+                        ? qsTr("Sets the volume from 0 to 100 percent")
+                        : qsTr("This application stream does not allow volume changes")
+
+        // See AudioDeviceRow: dispatch on every moved; the row's pending
+        // state disables the slider, and Qt 6.11 pressed=true during keyboard
+        // steps makes `pressed` unusable as a dispatch gate.
+        onMoved: if (adjustable)
                      controller.requestVolume(row.serial, true, value)
     }
 
@@ -83,7 +90,7 @@ RowLayout {
 
         readonly property bool adjustable:
             (row?.canSetMute ?? false) && (row?.muteKnown ?? false)
-                 && !root.pending
+                 && (controller?.controlGranted ?? false) && !root.pending
 
         visible: row?.muteKnown ?? false
         text: qsTr("Mute")
