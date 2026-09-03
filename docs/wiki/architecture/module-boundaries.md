@@ -37,7 +37,7 @@ tests, and the wiki page describing its contract.
 | `src/services/settings_protocol` | Generic Settings1 constants, typed outcomes, recursive JSON-native codecs, and resource bounds | Qt Core/DBus only; never settings schema/model, shell, or QML |
 | `src/services/settings_service` | D-Bus activation/ownership, user-file lifecycle, copy-on-write persistence, revision authority, and changed-key publication | Public `settings` and settings protocol plus Qt Core/DBus; never shell/QML/lock/presenter authority |
 | `src/services/settings_client` | Activation, exact-owner/epoch asynchronous snapshots and writes, timeout/uncertainty recovery, and DND-scoped state projection | Settings protocol plus Qt Core/DBus; never service persistence, shell presentation, or settings files |
-| `src/services/portal` | Pure Settings1/QST appearance projection, exact-lineage availability source, standard Settings-backend D-Bus adapter, resident process, and appearance-only activation package | Public settings client, themes, QST-1, and Qt Core/Gui/DBus; policy sources never import D-Bus, and the module never imports Settings persistence/service internals, applications, QML, shell, compositor, or non-Settings portal authority |
+| `src/services/portal` | Pure Settings1/QST appearance projection, exact-lineage availability source, standard Settings-backend D-Bus adapter, resident process, appearance-only activation package, and fail-closed frontend selection policy | Public settings client, themes, QST-1, and Qt Core/Gui/DBus; policy sources never import D-Bus, and the module never imports Settings persistence/service internals, applications, QML, shell, compositor, or non-Settings portal implementation authority |
 | `src/services/display_protocol` | Display1 versioned values, hostile-input limits, semantic validation, canonical byte codec, and QtDBus value serialization | Qt Core and serialization-only Qt DBus; never connection/name/service/XML/client/platform state |
 | `src/services/display_identity` | Pure privacy-preserving stable-ID resolution plus schema-v2 registry values and v1 migration | Qt Core only; never EDID acquisition, Settings persistence, runtime UUID authority, or logs of private material |
 | `src/services/display_topology` | Pure candidate validation, normalization, logical geometry, mirror projection, canonical fingerprint, diff, and no-op | Public display protocol plus Qt Core; never KWin, Wayland, stored preferences, or mutation |
@@ -110,7 +110,10 @@ implemented; do not use placeholder modules to bypass a boundary.
 - The portal appearance policy consumes a complete public Settings1 snapshot
   and public QST-1 derivation; it never reads settings files or imports the
   service repository. Only its private adapter imports Qt D-Bus, and only the
-  standard Settings backend interface is registered. See
+  standard Settings backend interface is registered. Its installed frontend
+  selector explicitly orders external fallback providers and keeps unlisted
+  families closed; it does not grant this module their implementation
+  authority. See
   [XDG Settings portal appearance backend](portal-service.md).
 - First-party presentation imports [QindaQt.Controls 1.0](../shell/controls.md)
   explicitly. Controls consume complete QST roles without inspecting theme

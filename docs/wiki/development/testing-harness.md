@@ -800,15 +800,35 @@ Settings1 executables, observes both owners and PIDs, proves read-only standard
 truth, kills the daemon, requires both processes to exit, and repeats on a
 fresh daemon with fresh owners/PIDs. The staged-package row reruns that process
 proof through the installed portal executable and themes, validates the D-Bus
-descriptor, hardened systemd unit, Settings-only `.portal` declaration and
-selector, then proves source and installed-private-header poison rejection.
-Mutation controls independently add the installed standard Background family
-to `.portal` and selector artifacts and add duplicate Settings entries; the
-exact singleton checker must reject every mutation while accepting the
-unmodified source and installed files.
-Host session-bus variables are removed before every daemon starts. These rows
-do not contact, select, or modify the user's portal frontend or installed
-packages; host/toolkit integration remains a downstream release check. See
+descriptor, hardened systemd unit, Settings-only `.portal` declaration, exact
+selector, and one installed copy of each runtime artifact, then proves source
+and installed-private-header poison rejection.
+
+`qindaqt.portal-frontend-selection` stages only the QindaQt metadata plus the
+installed KDE provider declaration, starts the real `xdg-desktop-portal` on a
+private `dbus-run-session` bus, and injects a FileChooser-only object at the KDE
+backend name. It proves exact Settings `ReadAll`/`Read` projection and live
+`SettingChanged`, KDE-first FileChooser routing, Background rejection, and
+that another `XDG_CURRENT_DESKTOP` cannot select QindaQt. The auxiliary
+Documents and PermissionStore names are reserved by the test process so the
+frontend cannot activate host services.
+
+`qindaqt.portal-frontend-toolkit` uses the same private fixture and launches a
+Qt 6 Widgets probe with `QT_QPA_PLATFORM=offscreen` and
+`QT_QPA_PLATFORMTHEME=xdgdesktopportal`. It requires initial Dark
+`QStyleHints::colorScheme()`, a contrasting palette derived and applied by the
+probe, then a live Light hint signal and matching derived palette. The row does
+not assert automatic replacement of an application's explicit palette.
+
+The staged-package row repeats both frontend rows with the installed selector,
+`.portal`, executable, and theme/schema paths. Mutation controls independently
+open the default/Background routes, advertise a non-Settings family from
+QindaQt, and add duplicate Settings entries; the exact singleton checker must
+reject every mutation while accepting the unmodified source and installed
+files. Host session-bus variables are removed before every daemon starts.
+These rows do not contact or modify the user's portal frontend, host D-Bus
+services, or installed packages. They do not qualify GTK/GSettings, Flatpak,
+an installed desktop session, or any real non-Settings implementation. See
 [XDG Settings portal appearance backend](../architecture/portal-service.md).
 
 ## Current Appearance Settings S0 proof
