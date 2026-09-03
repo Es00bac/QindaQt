@@ -25,6 +25,7 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     ui/terminal_profile_dialog.cpp
     ui/terminal_tab_bar.cpp
     ui/terminal_window.cpp
+    ui/terminal_window_actions.cpp
 )
 set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     app_shell/terminal_action_catalog.h
@@ -79,6 +80,7 @@ qt_add_library(qindaqt_terminal_adapter STATIC)
 target_sources(
     qindaqt_terminal_adapter
     PRIVATE ui/terminal_widget_adapter.cpp
+            ui/terminal_widget_adapter_appearance.cpp
     PUBLIC ui/terminal_widget_adapter.h
 )
 target_include_directories(
@@ -137,6 +139,26 @@ qindaqt_enable_warnings(qindaqt-terminal)
 install(
     TARGETS qindaqt-terminal
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT Terminal
+)
+# The Terminal component is self-contained: its C++ AppShell action catalog
+# dependency and AppShell's linked Controls/Tokens backing libraries are
+# installed in their established sibling module directories. Declaring the
+# component mappings here keeps this application-owned packaging rule out of
+# the shared modules.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT Terminal
+)
+install(
+    TARGETS qindaqt_controls_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT Terminal
+)
+install(
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT Terminal
 )
 install(

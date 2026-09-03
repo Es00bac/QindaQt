@@ -70,6 +70,14 @@ struct ProfileValidation final {
 [[nodiscard]] ProfileValidation
 validateTerminalProfile(const TerminalProfile &profile);
 
+// Validates one complete user list atomically: every entry is valid, ids are
+// unique, no entry impersonates the immutable built-in profile, and the list
+// stays within kMaxUserProfiles. Callers must use this before publishing or
+// encoding a list; accepting only a valid prefix would make hostile Settings1
+// data look authoritative.
+[[nodiscard]] ProfileValidation
+validateTerminalProfileList(const QList<TerminalProfile> &profiles);
+
 // The immutable built-in profile used before any Settings1 baseline and as
 // the fallback whenever persisted data is missing or invalid.
 [[nodiscard]] const TerminalProfile &builtinDefaultProfile();
@@ -85,17 +93,15 @@ struct ProfileListCodecResult final {
   QString diagnostic;
   QList<TerminalProfile> profiles;
 
-  [[nodiscard]] bool operator==(const ProfileListCodecResult &) const =
-      default;
+  [[nodiscard]] bool operator==(const ProfileListCodecResult &) const = default;
 };
 
-// Canonical JSON codec for the Settings1 `terminal.profiles` value (a single
-// string carrying a JSON array). Encode refuses more than
+// Canonical JSON codec for the Settings1 `services.terminalProfiles` value (a
+// single string carrying a JSON array). Encode refuses more than
 // TerminalProfile::kMaxUserProfiles entries. Decode is fail-closed: a
-// structurally malformed document is rejected wholesale (ok=false, consumer
-// keeps last confirmed state); a well-formed document drops individually
-// invalid entries, never repairs them. Unknown fields are ignored so newer
-// writers stay readable.
+// structurally malformed document or invalid/duplicate entry is rejected
+// wholesale (ok=false, consumer applies built-in defaults). Unknown fields
+// are ignored so newer writers stay readable.
 [[nodiscard]] QString
 encodeTerminalProfiles(const QList<TerminalProfile> &profiles, bool *ok);
 [[nodiscard]] ProfileListCodecResult

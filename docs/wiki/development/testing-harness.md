@@ -1213,6 +1213,34 @@ hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
 Settings/shell UI. Those are later isolated hardware and integrated-session
 gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
+## Terminal S1 focused proof
+
+The display-less terminal slice is selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.terminal-' --output-on-failure
+```
+
+In addition to the S0 launch, PTY, teardown, appearance, metadata, CLI, and
+relocatable-install rows, S1 adds focused profile, session-collection,
+Settings1, AppShell, and tab-strip rows. The profile row rejects hostile names,
+identifiers, argv, ranges, duplicate identities, malformed JSON, and oversized
+lists, then proves canonical round trips and literal argv resolution. The
+collection row proves the eight-session bound, reordering, per-session close,
+close-all, forced destruction, and bounded child-title sanitization. The fake
+Settings1 row proves complete typed baselines, fixed-order one-key commits with
+a fresh snapshot between writes, conflict abort, fail-closed owner loss, and
+uncertain no-replay. The AppShell row validates the fixed action catalog and
+routes activation to the local command. `qindaqt.terminal-tabs-offscreen` runs
+with `QT_QPA_PLATFORM=offscreen` and `QT_FATAL_WARNINGS=1`; it proves stable
+Shift-modified WindowShortcut bindings, selection/movement/close behavior, and
+PageTabList/PageTab accessible names and roles.
+
+These rows use injected backends, process monitors, and Settings transports.
+They open no PTY child, session bus, display, network, or host desktop. They do
+not qualify global-menu export, restored tab inventory, whole-application AT,
+nested screenshots, GPU rendering, or physical display/input behavior.
+
 ## D1 deterministic display model
 
 The focused `qindaqt.display-*` unit rows cover bounded protocol/codecs,

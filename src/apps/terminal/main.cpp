@@ -76,16 +76,14 @@ loadTheme(const QString &themeId, const QStringList &directories) {
 [[nodiscard]] QStringList availableThemeIds(const QStringList &directories) {
   QStringList ids;
   for (const QString &directory : directories) {
-    const QFileInfoList entries =
-        QDir(directory).entryInfoList({QStringLiteral("*.json")},
-                                      QDir::Files, QDir::Name);
+    const QFileInfoList entries = QDir(directory).entryInfoList(
+        {QStringLiteral("*.json")}, QDir::Files, QDir::Name);
     for (const QFileInfo &entry : entries) {
       const QString id = entry.completeBaseName();
       if (ids.contains(id)) {
         continue;
       }
-      if (QindaQt::Themes::ThemeLoader::fromFile(entry.absoluteFilePath())
-              .ok) {
+      if (QindaQt::Themes::ThemeLoader::fromFile(entry.absoluteFilePath()).ok) {
         ids.append(id);
       }
     }
@@ -94,24 +92,7 @@ loadTheme(const QString &themeId, const QStringList &directories) {
   return ids;
 }
 
-} // namespace
-} // namespace QindaQt::Apps::Terminal
-
-int main(int argc, char **argv) {
-  using namespace QindaQt::Apps::Terminal;
-
-  QApplication application(argc, argv);
-  application.setApplicationName(QStringLiteral("qindaqt-terminal"));
-  application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
-  application.setOrganizationName(QStringLiteral("QindaQt"));
-  application.setDesktopFileName(QStringLiteral("org.qindaqt.Terminal"));
-  // AGENT-GUARD: Without this, hiding the only window on close would end the
-  // event loop before the bounded session escalation fires a single tick and
-  // the teardown guarantee would be defeated (P1 review defect). The queued
-  // closeShutdownFinished -> quit connection below is then the only quit
-  // path, and it runs strictly after the child is confirmed gone.
-  TerminalWindow::prepareApplicationQuitFlow(application);
-  QCommandLineParser parser;
+void configureCommandLine(QCommandLineParser &parser) {
   parser.setApplicationDescription(
       QStringLiteral("QindaQt terminal for the configured shell"));
   parser.addHelpOption();
@@ -135,6 +116,27 @@ int main(int argc, char **argv) {
                     QStringLiteral("Argument passed verbatim to the shell "
                                    "(repeatable, never shell-interpreted)"),
                     QStringLiteral("value")});
+}
+
+} // namespace
+} // namespace QindaQt::Apps::Terminal
+
+int main(int argc, char **argv) {
+  using namespace QindaQt::Apps::Terminal;
+
+  QApplication application(argc, argv);
+  application.setApplicationName(QStringLiteral("qindaqt-terminal"));
+  application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
+  application.setOrganizationName(QStringLiteral("QindaQt"));
+  application.setDesktopFileName(QStringLiteral("org.qindaqt.Terminal"));
+  // AGENT-GUARD: Without this, hiding the only window on close would end the
+  // event loop before the bounded session escalation fires a single tick and
+  // the teardown guarantee would be defeated (P1 review defect). The queued
+  // closeShutdownFinished -> quit connection below is then the only quit
+  // path, and it runs strictly after the child is confirmed gone.
+  TerminalWindow::prepareApplicationQuitFlow(application);
+  QCommandLineParser parser;
+  configureCommandLine(parser);
   parser.process(application);
   // Positional arguments are rejected so no caller can mistake this CLI for
   // shell-string semantics: a command is always argv here.
@@ -152,8 +154,7 @@ int main(int argc, char **argv) {
     std::fprintf(stderr, "qindaqt-terminal: %s\n", qPrintable(theme.error));
     return 3;
   }
-  const auto appearance =
-      TerminalAppearanceAdapter::fromTheme(theme.theme);
+  const auto appearance = TerminalAppearanceAdapter::fromTheme(theme.theme);
   if (!appearance.ok()) {
     std::fprintf(stderr, "qindaqt-terminal: %s\n",
                  qPrintable(appearance.diagnostic));
@@ -162,14 +163,13 @@ int main(int argc, char **argv) {
   application.setPalette(appearance.appearance->windowPalette);
   application.setFont(appearance.appearance->interfaceFont);
   if (parser.isSet(QStringLiteral("check-theme"))) {
-    std::printf("%s qst-%d\n",
-                qPrintable(appearance.appearance->sourceThemeId),
+    std::printf("%s qst-%d\n", qPrintable(appearance.appearance->sourceThemeId),
                 QindaQt::DesignTokens::DesignTokens::qstRevision);
     return 0;
   }
 
-  const QStringList baseEnvironment = QProcessEnvironment::systemEnvironment()
-                                          .toStringList();
+  const QStringList baseEnvironment =
+      QProcessEnvironment::systemEnvironment().toStringList();
   const auto environment =
       TerminalLaunchPolicy::childEnvironment(baseEnvironment);
   if (!environment.outcome.ok) {
@@ -178,7 +178,8 @@ int main(int argc, char **argv) {
     return 4;
   }
   const auto resolution = TerminalLaunchPolicy::resolveShell(
-      parser.value(QStringLiteral("shell")), parser.values(QStringLiteral("arg")),
+      parser.value(QStringLiteral("shell")),
+      parser.values(QStringLiteral("arg")),
       parser.value(QStringLiteral("working-directory")), baseEnvironment);
   if (!resolution.outcome.ok) {
     std::fprintf(stderr, "qindaqt-terminal: %s\n",
@@ -188,6 +189,7 @@ int main(int argc, char **argv) {
 
   const QStringList themeDirectories =
       themeSearchDirectories(parser.value(QStringLiteral("theme-directory")));
+  const QString launchThemeId = parser.value(QStringLiteral("theme"));
 
   // Settings1 persistence (profiles, default profile, restore flag). The
   // client is constructed after the --check-theme exit above so this row
@@ -198,9 +200,11 @@ int main(int argc, char **argv) {
   QindaQt::Services::SettingsClient::SettingsClient settingsClient(
       settingsTransport, TerminalKeys::scopedKeys());
   QString settingsError;
-  if (!settingsClient.start(&settingsError)) {
-    std::fprintf(stderr, "qindaqt-terminal: settings unavailable (%s); "
-                         "built-in profile defaults apply\n",
+  const bool settingsStarted = settingsClient.start(&settingsError);
+  if (!settingsStarted) {
+    std::fprintf(stderr,
+                 "qindaqt-terminal: settings unavailable (%s); "
+                 "built-in profile defaults apply\n",
                  qPrintable(settingsError));
   }
   TerminalProfileSettings profileSettings(settingsClient);
@@ -210,9 +214,13 @@ int main(int argc, char **argv) {
   // generation per session; an unresolvable theme yields a null backend,
   // which the session reports as a typed StartFailed exit (fail-closed).
   TerminalSession::BackendFactory factory =
-      [&themeDirectories](const TerminalProfile &profile) {
-        const auto profileTheme =
-            loadTheme(profile.colorSchemeId, themeDirectories);
+      [&themeDirectories, &launchThemeId](const TerminalProfile &profile) {
+        // Preserve the S0 --theme contract for the immutable built-in
+        // profile. User profiles carry their own Settings1-backed QST theme.
+        const QString themeId = profile.id == builtinDefaultProfileId()
+                                    ? launchThemeId
+                                    : profile.colorSchemeId;
+        const auto profileTheme = loadTheme(themeId, themeDirectories);
         if (!profileTheme.ok) {
           return std::unique_ptr<TerminalSessionBackend>(nullptr);
         }
@@ -222,8 +230,7 @@ int main(int argc, char **argv) {
           return std::unique_ptr<TerminalSessionBackend>(nullptr);
         }
         return std::unique_ptr<TerminalSessionBackend>(
-            new TerminalWidgetAdapter(*profileAppearance.appearance,
-                                      profile));
+            new TerminalWidgetAdapter(*profileAppearance.appearance, profile));
       };
 
   TerminalSessionContext context;
@@ -236,18 +243,42 @@ int main(int argc, char **argv) {
       nullptr);
 
   TerminalWindow window(std::move(collection), *appearance.appearance,
-                        availableThemeIds(themeDirectories),
-                        &profileSettings);
+                        availableThemeIds(themeDirectories), &profileSettings);
   window.resize(800, 500);
-  window.newSessionWithDefaultProfile();
-  if (auto *active = window.session();
-      active != nullptr &&
-      active->lastExit().kind == TerminalExitStatus::Kind::StartFailed) {
-    // The window stays available so the typed failure and Restart action
-    // are user-visible; a start failure is not a launcher failure.
-    std::fprintf(stderr, "qindaqt-terminal: %s\n",
-                 qPrintable(active->lastExit().diagnostic));
-  }
+  bool firstSessionStarted = false;
+  const auto startFirstSession = [&window, &profileSettings, &settingsClient,
+                                  &settingsStarted, &firstSessionStarted] {
+    if (firstSessionStarted) {
+      return;
+    }
+    const auto state = settingsClient.state();
+    const bool definitiveFallback =
+        !settingsStarted ||
+        state == QindaQt::Services::SettingsClient::ClientState::Degraded ||
+        (state == QindaQt::Services::SettingsClient::ClientState::Unavailable &&
+         !settingsClient.lastError().isEmpty());
+    // A successfully started client begins Unavailable while activation is
+    // still pending. Do not race that transient state with startup: a
+    // persisted default profile must win when an owner is discoverable.
+    if (!profileSettings.baselineReceived() && !definitiveFallback) {
+      return;
+    }
+    firstSessionStarted = true;
+    window.newSessionWithDefaultProfile();
+    if (auto *active = window.session();
+        active != nullptr &&
+        active->lastExit().kind == TerminalExitStatus::Kind::StartFailed) {
+      std::fprintf(stderr, "qindaqt-terminal: %s\n",
+                   qPrintable(active->lastExit().diagnostic));
+    }
+  };
+  QObject::connect(&profileSettings, &TerminalProfileSettings::profilesChanged,
+                   &window, startFirstSession);
+  QObject::connect(
+      &settingsClient,
+      &QindaQt::Services::SettingsClient::SettingsClient::stateChanged, &window,
+      startFirstSession);
+  startFirstSession();
   window.connectQuitAfterCloseShutdown(application);
   window.show();
   return application.exec();

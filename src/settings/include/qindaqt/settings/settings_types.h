@@ -24,9 +24,6 @@ enum class SettingDomain {
     WindowManagement,
     Accessibility,
     Services,
-    // First-party application settings (QQ-006.08 Terminal S1); keys are
-    // terminal.* and documented in docs/wiki/apps/terminal.md.
-    Terminal,
 };
 
 enum class SettingValueType {

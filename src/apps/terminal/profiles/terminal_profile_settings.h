@@ -10,8 +10,9 @@
 #include <QVariantList>
 
 namespace QindaQt::Services::SettingsClient {
+struct CommitOutcome;
 class SettingsClient;
-}
+} // namespace QindaQt::Services::SettingsClient
 
 namespace QindaQt::Apps::Terminal {
 
@@ -19,11 +20,12 @@ namespace QindaQt::Apps::Terminal {
 // data/settings/schema-v2.json). The scopedKeys() order is the fixed
 // optimistic-commit order; it is also the client's exact snapshot scope.
 namespace TerminalKeys {
-inline constexpr QLatin1String Profiles{QLatin1String("terminal.profiles")};
+inline constexpr QLatin1String Profiles{
+    QLatin1String("services.terminalProfiles")};
 inline constexpr QLatin1String DefaultProfile{
-    QLatin1String("terminal.defaultProfile")};
+    QLatin1String("services.terminalDefaultProfile")};
 inline constexpr QLatin1String RestoreTabs{
-    QLatin1String("terminal.restoreTabs")};
+    QLatin1String("services.terminalRestoreTabs")};
 [[nodiscard]] QStringList scopedKeys();
 } // namespace TerminalKeys
 
@@ -36,10 +38,9 @@ inline constexpr QLatin1String RestoreTabs{
 // other conflict or confirmed rejection aborts the sequence; an uncertain
 // outcome (timeout/owner loss/bus loss) is never replayed. Before the
 // first baseline and after unrecoverable transport loss the built-in
-// defaults apply (fail-closed); the last confirmed state is retained
-// across transient loss and never presented as new authority. Profile
-// values are the only persisted content — never session bytes or
-// scrollback.
+// defaults apply (fail-closed); old confirmed values are never presented as
+// current authority during loss/replacement. Profile values are the only
+// persisted content — never session bytes or scrollback.
 class TerminalProfileSettings final : public QObject {
   Q_OBJECT
 
@@ -50,13 +51,12 @@ public:
   ~TerminalProfileSettings() override;
 
   // Confirmed state from the last valid snapshot (built-in defaults before
-  // any baseline). Retained, not refreshed, while transport is lost.
+  // any baseline). Transport loss invalidates that authority immediately,
+  // so these accessors return built-in defaults until a new baseline lands.
   [[nodiscard]] QList<TerminalProfile> userProfiles() const {
     return m_userProfiles;
   }
-  [[nodiscard]] QString defaultProfileId() const {
-    return m_defaultProfileId;
-  }
+  [[nodiscard]] QString defaultProfileId() const { return m_defaultProfileId; }
   [[nodiscard]] bool restoreTabsPolicy() const { return m_restoreTabs; }
   [[nodiscard]] bool baselineReceived() const { return m_baselineReceived; }
   // The default profile: the confirmed user default when set, otherwise
@@ -87,12 +87,15 @@ private:
   };
 
   void handleSnapshot();
-  void handleCommitFinished(const QVariant &outcome);
+  void handleClientState();
+  void handleCommitFinished(
+      const QindaQt::Services::SettingsClient::CommitOutcome &outcome);
   void handleCommitUncertain(const QString &message);
   void writeNextQueued();
   void finalizeLedger();
   void abortLedger(const QString &key, const QString &result,
                    const QString &message);
+  void resetToBuiltins();
 
   QindaQt::Services::SettingsClient::SettingsClient &m_client;
 
@@ -100,12 +103,16 @@ private:
   QString m_defaultProfileId;
   bool m_restoreTabs = false;
   bool m_baselineReceived = false;
+  QString m_confirmedOwner;
+  QString m_confirmedEpoch;
 
   QList<QueuedWrite> m_queue;
   QString m_pendingKey;
   QVariantMap m_intendedValues;
   QVariantMap m_ledgerEntries; // key -> {result, message}
   bool m_ledgerActive = false;
+  bool m_waitingForSnapshot = false;
+  bool m_sequenceAborted = false;
 };
 
 } // namespace QindaQt::Apps::Terminal

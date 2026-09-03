@@ -1,45 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/terminal_window.h"
 
-#include "app_shell/terminal_action_catalog.h"
 #include "app_shell/terminal_app_shell_bridge.h"
 #include "profiles/terminal_profile_settings.h"
 #include "session/terminal_launch_policy.h"
-#include "ui/terminal_profile_dialog.h"
 #include "ui/terminal_tab_bar.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QCloseEvent>
-#include <QFile>
-#include <QMenuBar>
 #include <QResizeEvent>
 #include <QStatusBar>
 #include <QVBoxLayout>
 
-#include <cstdio>
-
 namespace QindaQt::Apps::Terminal {
 namespace {
-
-// AGENT-GUARD: These defaults exist for keyboard semantics, not decoration.
-// None of them uses a plain Ctrl+<letter> sequence: readline owns Ctrl+C/S/Q/A
-// and friends inside the child, so window shortcuts must stay Shift-modified
-// or they would steal flow control from every interactive program.
-constexpr auto kNewTabShortcut = "Ctrl+Shift+T";
-constexpr auto kCloseTabShortcut = "Ctrl+Shift+W";
-constexpr auto kNextTabShortcut = "Ctrl+Shift+Right";
-constexpr auto kPreviousTabShortcut = "Ctrl+Shift+Left";
-constexpr auto kMoveTabLeftShortcut = "Ctrl+Shift+Alt+Left";
-constexpr auto kMoveTabRightShortcut = "Ctrl+Shift+Alt+Right";
-constexpr auto kManageProfilesShortcut = "Ctrl+Shift+P";
-constexpr auto kRestartShortcut = "Ctrl+Shift+R";
-constexpr auto kCopyShortcut = "Ctrl+Shift+C";
-constexpr auto kPasteShortcut = "Ctrl+Shift+V";
-constexpr auto kPasteSelectionShortcut = "Ctrl+Shift+Insert";
-constexpr auto kSelectAllShortcut = "Ctrl+Shift+A";
-constexpr auto kClearShortcut = "Ctrl+Shift+K";
-constexpr auto kQuitShortcut = "Ctrl+Shift+Q";
 
 [[nodiscard]] QString signalName(int signalNumber) {
   switch (signalNumber) {
@@ -114,8 +89,8 @@ TerminalWindow::TerminalWindow(
   publishAppShellProjection();
   rebuildProfileMenu();
   if (m_profileSettings != nullptr) {
-    connect(m_profileSettings, &TerminalProfileSettings::profilesChanged,
-            this, &TerminalWindow::rebuildProfileMenu);
+    connect(m_profileSettings, &TerminalProfileSettings::profilesChanged, this,
+            &TerminalWindow::rebuildProfileMenu);
   }
 
   connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) {
@@ -124,10 +99,11 @@ TerminalWindow::TerminalWindow(
     if (session != nullptr && session != m_activeSession) {
       setActiveSession(session);
     }
+    updateTabActionStates();
   });
   connect(m_tabBar, &QTabBar::tabCloseRequested, this, [this](int index) {
     if (auto *session = m_tabBar->tabData(index).value<TerminalSession *>()) {
-      m_sessions->requestCloseSession(session);
+      closeSessionFromPresentation(session);
     }
   });
 
@@ -151,162 +127,6 @@ void TerminalWindow::connectQuitAfterCloseShutdown(
   // terminal state, not merely the close intent.
   QObject::connect(this, &TerminalWindow::closeShutdownFinished, &application,
                    &QCoreApplication::quit, Qt::QueuedConnection);
-}
-
-void TerminalWindow::buildActions() {
-  const auto addTerminalAction = [this](QAction **action,
-                                        const QString &objectName,
-                                        const QString &text,
-                                        const char *shortcut,
-                                        const QString &statusTip) {
-    *action = new QAction(text, this);
-    (*action)->setObjectName(objectName);
-    (*action)->setShortcut(QKeySequence(QLatin1String(shortcut)));
-    (*action)->setShortcutContext(Qt::WindowShortcut);
-    (*action)->setStatusTip(statusTip);
-    (*action)->setToolTip(statusTip);
-  };
-
-  addTerminalAction(&m_newTabAction, QStringLiteral("tabNewAction"),
-                    QStringLiteral("New Tab"), kNewTabShortcut,
-                    QStringLiteral("Open a new terminal tab with the default "
-                                   "profile"));
-  addTerminalAction(&m_closeTabAction, QStringLiteral("tabCloseAction"),
-                    QStringLiteral("Close Tab"), kCloseTabShortcut,
-                    QStringLiteral("Close the active terminal tab"));
-  addTerminalAction(&m_nextTabAction, QStringLiteral("tabNextAction"),
-                    QStringLiteral("Next Tab"), kNextTabShortcut,
-                    QStringLiteral("Switch to the next terminal tab"));
-  addTerminalAction(&m_previousTabAction,
-                    QStringLiteral("tabPreviousAction"),
-                    QStringLiteral("Previous Tab"), kPreviousTabShortcut,
-                    QStringLiteral("Switch to the previous terminal tab"));
-  addTerminalAction(&m_moveTabLeftAction, QStringLiteral("tabMoveLeftAction"),
-                    QStringLiteral("Move Tab Left"), kMoveTabLeftShortcut,
-                    QStringLiteral("Move the active terminal tab one "
-                                   "position left"));
-  addTerminalAction(&m_moveTabRightAction,
-                    QStringLiteral("tabMoveRightAction"),
-                    QStringLiteral("Move Tab Right"), kMoveTabRightShortcut,
-                    QStringLiteral("Move the active terminal tab one "
-                                   "position right"));
-  addTerminalAction(&m_manageProfilesAction,
-                    QStringLiteral("profileManageAction"),
-                    QStringLiteral("Manage Profiles…"),
-                    kManageProfilesShortcut,
-                    QStringLiteral("Edit terminal profiles and tab restore"));
-  addTerminalAction(&m_restartAction, QStringLiteral("sessionRestartAction"),
-                    QStringLiteral("Restart Session"), kRestartShortcut,
-                    QStringLiteral("Close this session and start a fresh "
-                                   "one with the same profile"));
-  addTerminalAction(&m_copyAction, QStringLiteral("editCopyAction"),
-                    QStringLiteral("Copy"), kCopyShortcut,
-                    QStringLiteral("Copy the terminal selection to the "
-                                   "clipboard"));
-  addTerminalAction(&m_pasteAction, QStringLiteral("editPasteAction"),
-                    QStringLiteral("Paste"), kPasteShortcut,
-                    QStringLiteral("Paste the clipboard into the terminal"));
-  addTerminalAction(&m_pasteSelectionAction,
-                    QStringLiteral("editPasteSelectionAction"),
-                    QStringLiteral("Paste Selection"),
-                    kPasteSelectionShortcut,
-                    QStringLiteral("Paste the primary selection into the "
-                                   "terminal"));
-  addTerminalAction(&m_selectAllAction, QStringLiteral("editSelectAllAction"),
-                    QStringLiteral("Select All"), kSelectAllShortcut,
-                    QStringLiteral("Select the entire terminal buffer"));
-  addTerminalAction(&m_clearAction, QStringLiteral("viewClearAction"),
-                    QStringLiteral("Clear Display"), kClearShortcut,
-                    QStringLiteral("Clear the terminal display and "
-                                   "scrollback"));
-  addTerminalAction(&m_quitAction, QStringLiteral("fileQuitAction"),
-                    QStringLiteral("Quit"), kQuitShortcut,
-                    QStringLiteral("Close every session and quit"));
-
-  connect(m_newTabAction, &QAction::triggered, this,
-          [this] { newSessionWithDefaultProfile(); });
-  connect(m_closeTabAction, &QAction::triggered, this,
-          [this] { closeActiveSession(); });
-  connect(m_nextTabAction, &QAction::triggered, this,
-          [this] { activateRelativeTab(1); });
-  connect(m_previousTabAction, &QAction::triggered, this,
-          [this] { activateRelativeTab(-1); });
-  connect(m_moveTabLeftAction, &QAction::triggered, this,
-          [this] { moveActiveTab(-1); });
-  connect(m_moveTabRightAction, &QAction::triggered, this,
-          [this] { moveActiveTab(1); });
-  connect(m_manageProfilesAction, &QAction::triggered, this,
-          [this] { manageProfiles(); });
-  connect(m_restartAction, &QAction::triggered, this, [this] {
-    // A rejected restart has already published its typed failure through
-    // sessionFinished, which the status bar renders.
-    if (m_activeSession != nullptr) {
-      static_cast<void>(m_activeSession->restart());
-    }
-  });
-  connect(m_copyAction, &QAction::triggered, this, [this] {
-    if (m_activeSession != nullptr) {
-      m_activeSession->copySelectionToClipboard();
-    }
-  });
-  connect(m_pasteAction, &QAction::triggered, this, [this] {
-    if (m_activeSession != nullptr) {
-      m_activeSession->pasteClipboardToSession();
-    }
-  });
-  connect(m_pasteSelectionAction, &QAction::triggered, this, [this] {
-    if (m_activeSession != nullptr) {
-      m_activeSession->pastePrimarySelectionToSession();
-    }
-  });
-  connect(m_selectAllAction, &QAction::triggered, this, [this] {
-    if (m_activeSession != nullptr) {
-      m_activeSession->selectAllInView();
-    }
-  });
-  connect(m_clearAction, &QAction::triggered, this, [this] {
-    if (m_activeSession != nullptr) {
-      m_activeSession->clearView();
-    }
-  });
-  connect(m_quitAction, &QAction::triggered, this, &TerminalWindow::close);
-
-  updateViewActionStates();
-}
-
-void TerminalWindow::buildMenus() {
-  auto *fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
-  fileMenu->setObjectName(QStringLiteral("sessionMenu"));
-  fileMenu->addAction(m_newTabAction);
-  m_profileMenu =
-      fileMenu->addMenu(QStringLiteral("New Tab With Profil&e"));
-  m_profileMenu->setObjectName(QStringLiteral("profileNewTabMenu"));
-  fileMenu->addAction(m_closeTabAction);
-  fileMenu->addSeparator();
-  fileMenu->addAction(m_quitAction);
-
-  auto *sessionMenu = menuBar()->addMenu(QStringLiteral("&Session"));
-  sessionMenu->setObjectName(QStringLiteral("sessionCommandsMenu"));
-  sessionMenu->addAction(m_restartAction);
-  sessionMenu->addSeparator();
-  sessionMenu->addAction(m_previousTabAction);
-  sessionMenu->addAction(m_nextTabAction);
-  sessionMenu->addSeparator();
-  sessionMenu->addAction(m_moveTabLeftAction);
-  sessionMenu->addAction(m_moveTabRightAction);
-  sessionMenu->addSeparator();
-  sessionMenu->addAction(m_manageProfilesAction);
-
-  auto *editMenu = menuBar()->addMenu(QStringLiteral("&Edit"));
-  editMenu->setObjectName(QStringLiteral("editMenu"));
-  editMenu->addAction(m_copyAction);
-  editMenu->addAction(m_pasteAction);
-  editMenu->addAction(m_pasteSelectionAction);
-  editMenu->addAction(m_selectAllAction);
-
-  auto *viewMenu = menuBar()->addMenu(QStringLiteral("&View"));
-  viewMenu->setObjectName(QStringLiteral("viewMenu"));
-  viewMenu->addAction(m_clearAction);
 }
 
 void TerminalWindow::buildStatusBar() {
@@ -385,8 +205,8 @@ void TerminalWindow::wireCollection() {
                                 true);
             }
           });
-  connect(m_sessions.get(), &TerminalSessionCollection::allSessionsClosed,
-          this, [this](bool clean, const QString &diagnostic) {
+  connect(m_sessions.get(), &TerminalSessionCollection::allSessionsClosed, this,
+          [this](bool clean, const QString &diagnostic) {
             updateTabActionStates();
             updateViewActionStates();
             if (!clean) {
@@ -444,55 +264,6 @@ void TerminalWindow::wireSessionPresentation(TerminalSession *session) {
           });
 }
 
-void TerminalWindow::publishAppShellProjection() {
-  // AGENT-GUARD (ADR-0027): publish only after the QAction tree exists so
-  // enabled defaults are settled, then mirror every enabledChanged so the
-  // exported snapshot never lags the live actions.
-  const auto error = m_appShellBridge->publishActionCatalog();
-  if (!error.ok()) {
-    std::fprintf(stderr,
-                 "qindaqt-terminal: AppShell catalog was rejected: %s\n",
-                 qPrintable(error.message));
-    std::fflush(stderr);
-  }
-  const QHash<QString, QAction *> targets{
-      {QString::fromLatin1(AppShellActionIds::SessionNewTab), m_newTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionCloseTab),
-       m_closeTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionRestart),
-       m_restartAction},
-      {QString::fromLatin1(AppShellActionIds::SessionManageProfiles),
-       m_manageProfilesAction},
-      {QString::fromLatin1(AppShellActionIds::SessionNextTab),
-       m_nextTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionPreviousTab),
-       m_previousTabAction},
-      {QString::fromLatin1(AppShellActionIds::SessionMoveTabLeft),
-       m_moveTabLeftAction},
-      {QString::fromLatin1(AppShellActionIds::SessionMoveTabRight),
-       m_moveTabRightAction},
-      {QString::fromLatin1(AppShellActionIds::EditCopy), m_copyAction},
-      {QString::fromLatin1(AppShellActionIds::EditPaste), m_pasteAction},
-      {QString::fromLatin1(AppShellActionIds::EditPasteSelection),
-       m_pasteSelectionAction},
-      {QString::fromLatin1(AppShellActionIds::EditSelectAll),
-       m_selectAllAction},
-      {QString::fromLatin1(AppShellActionIds::ViewClear), m_clearAction},
-      {QString::fromLatin1(AppShellActionIds::FileQuit), m_quitAction},
-  };
-  m_appShellBridge->bindActivationTargets(targets);
-  for (auto it = targets.begin(); it != targets.end(); ++it) {
-    const QString id = it.key();
-    static_cast<void>(m_appShellBridge->setActionEnabled(id,
-                                                         it.value()->isEnabled()));
-    connect(it.value(), &QAction::enabledChanged, this,
-            [this, id](bool enabled) {
-              static_cast<void>(m_appShellBridge->setActionEnabled(id,
-                                                                   enabled));
-            });
-  }
-}
-
 void TerminalWindow::setActiveSession(TerminalSession *session) {
   if (session == nullptr || session == m_activeSession) {
     return;
@@ -506,6 +277,7 @@ void TerminalWindow::setActiveSession(TerminalSession *session) {
   }
   updateStatusForState(session->state());
   updateViewActionStates();
+  updateTabActionStates();
   updateWindowTitle();
 }
 
@@ -542,9 +314,22 @@ void TerminalWindow::addSessionWithProfile(const TerminalProfile &profile) {
 }
 
 void TerminalWindow::closeActiveSession() {
-  if (m_activeSession != nullptr) {
-    m_sessions->requestCloseSession(m_activeSession);
+  closeSessionFromPresentation(m_activeSession);
+}
+
+void TerminalWindow::closeSessionFromPresentation(TerminalSession *session) {
+  if (session == nullptr) {
+    return;
   }
+  // AGENT-GUARD: Closing the final tab is application quit intent, not merely
+  // an empty-window mutation. Route it through closeEvent so teardown-first
+  // quit and survivor refusal remain identical for the tab button, shortcut,
+  // File > Quit, and window decoration.
+  if (m_sessions->count() == 1) {
+    close();
+    return;
+  }
+  m_sessions->requestCloseSession(session);
 }
 
 void TerminalWindow::activateRelativeTab(int delta) {
@@ -552,8 +337,7 @@ void TerminalWindow::activateRelativeTab(int delta) {
   if (count < 2) {
     return;
   }
-  const int next =
-      (m_tabBar->currentIndex() + delta + count) % count;
+  const int next = (m_tabBar->currentIndex() + delta + count) % count;
   if (auto *session = m_tabBar->tabData(next).value<TerminalSession *>()) {
     setActiveSession(session);
   }
@@ -562,104 +346,10 @@ void TerminalWindow::activateRelativeTab(int delta) {
 void TerminalWindow::moveActiveTab(int delta) {
   const int from = m_tabBar->currentIndex();
   const int target = from + delta;
-  if (m_activeSession == nullptr || target < 0 ||
-      target >= m_tabBar->count()) {
+  if (m_activeSession == nullptr || target < 0 || target >= m_tabBar->count()) {
     return;
   }
   m_sessions->moveSession(m_activeSession, target);
-}
-
-void TerminalWindow::manageProfiles() {
-  if (m_profileSettings == nullptr) {
-    showStatusMessage(
-        QStringLiteral("Profiles are unavailable: settings transport is "
-                       "not running"),
-        true);
-    return;
-  }
-  TerminalProfileDialog dialog(m_profileSettings->userProfiles(),
-                               m_profileSettings->defaultProfileId(),
-                               m_profileSettings->restoreTabsPolicy(),
-                               m_themeIds, this);
-  if (dialog.exec() != QDialog::Accepted) {
-    return;
-  }
-  const bool queued = m_profileSettings->applyProfiles(
-      dialog.userProfiles(), dialog.defaultProfileId(),
-      dialog.restoreTabs());
-  if (!queued) {
-    showStatusMessage(
-        QStringLiteral("Profiles could not be saved right now; the settings "
-                       "service is unavailable or a save is in progress"),
-        true);
-  }
-}
-
-void TerminalWindow::rebuildProfileMenu() {
-  if (m_profileMenu == nullptr) {
-    return;
-  }
-  m_profileMenu->clear();
-  const auto addProfileEntry = [this](const TerminalProfile &profile) {
-    QAction *action = m_profileMenu->addAction(
-        QStringLiteral("New Tab With \"%1\"").arg(profile.name));
-    action->setObjectName(QStringLiteral("newTabWithProfileAction-%1")
-                              .arg(profile.id));
-    connect(action, &QAction::triggered, this,
-            [this, profile] { addSessionWithProfile(profile); });
-  };
-  addProfileEntry(builtinDefaultProfile());
-  if (m_profileSettings != nullptr) {
-    const QList<TerminalProfile> profiles = m_profileSettings->userProfiles();
-    for (const TerminalProfile &profile : profiles) {
-      addProfileEntry(profile);
-    }
-  }
-}
-
-TerminalProfile TerminalWindow::currentDefaultProfile() const {
-  return m_profileSettings != nullptr ? m_profileSettings->defaultProfile()
-                                      : builtinDefaultProfile();
-}
-
-void TerminalWindow::updateViewActionStates() {
-  // AGENT-CONTRACT (P2-4): action enabled state must match observable
-  // reality of the ACTIVE session. View operations need a live view; copy
-  // additionally needs a selection; paste additionally needs a live
-  // generation — the Exited state deliberately retains the widget for
-  // scrollback, but no child exists to receive pasted input. Restart is
-  // refused while an escalation is in flight and while a SIGKILL survivor
-  // is owned (ShutdownFailed).
-  const TerminalSession *active = m_activeSession;
-  const auto state =
-      active != nullptr ? active->state() : TerminalSession::State::Idle;
-  const bool viewLive = active != nullptr &&
-                        active->terminalWidget() != nullptr &&
-                        state != TerminalSession::State::ShuttingDown;
-  const bool generationLive = state == TerminalSession::State::Running;
-  const bool hasSelection =
-      active != nullptr && m_selectionBySession.value(active, false);
-  m_copyAction->setEnabled(hasSelection && viewLive);
-  m_pasteAction->setEnabled(generationLive);
-  m_pasteSelectionAction->setEnabled(generationLive);
-  m_selectAllAction->setEnabled(viewLive);
-  m_clearAction->setEnabled(viewLive);
-  m_restartAction->setEnabled(
-      active != nullptr && state != TerminalSession::State::ShuttingDown &&
-      state != TerminalSession::State::ShutdownFailed);
-}
-
-void TerminalWindow::updateTabActionStates() {
-  const int count = m_sessions->count();
-  const bool boundReached = count >= TerminalSessionCollection::kMaxSessions;
-  m_newTabAction->setEnabled(!boundReached);
-  m_closeTabAction->setEnabled(count > 0);
-  const bool many = count > 1;
-  m_nextTabAction->setEnabled(many);
-  m_previousTabAction->setEnabled(many);
-  m_moveTabLeftAction->setEnabled(many);
-  m_moveTabRightAction->setEnabled(many);
-  m_manageProfilesAction->setEnabled(m_profileSettings != nullptr);
 }
 
 void TerminalWindow::updateStatusForState(TerminalSession::State state) {
@@ -692,8 +382,7 @@ void TerminalWindow::updateStatusForState(TerminalSession::State state) {
     break;
   case TerminalSession::State::ShutdownFailed:
     text = QStringLiteral("Session close failed");
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusDangerForeground);
+    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
     break;
   }
   showStatusMessage(text, false, palette);
@@ -708,10 +397,9 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
     text = QStringLiteral("Session exited (code %1)").arg(status.code);
     break;
   case TerminalExitStatus::Kind::Signal:
-    text = QStringLiteral("Session terminated by %1")
-               .arg(signalName(status.code));
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusDangerForeground);
+    text =
+        QStringLiteral("Session terminated by %1").arg(signalName(status.code));
+    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
     break;
   case TerminalExitStatus::Kind::UnknownExit:
     // Another reaper consumed the status; the truth is "exited, code
@@ -722,8 +410,7 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
     break;
   case TerminalExitStatus::Kind::StartFailed:
     text = QStringLiteral("Error: %1").arg(status.diagnostic);
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusDangerForeground);
+    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
     break;
   case TerminalExitStatus::Kind::None:
     return;
@@ -734,8 +421,7 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
 void TerminalWindow::showStatusMessage(const QString &text, bool danger) {
   QPalette palette = m_appearance.windowPalette;
   if (danger) {
-    palette.setColor(QPalette::WindowText,
-                     m_appearance.statusDangerForeground);
+    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
   }
   showStatusMessage(text, danger, palette);
 }
