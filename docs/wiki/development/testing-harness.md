@@ -796,11 +796,16 @@ The model row uses an injected Settings transport, real editing repository and
 coordinator adapter, and temporary profile store. It proves converging preview,
 one durable gesture history boundary, cancel and rejection rollback,
 pointer/keyboard insertion parity, persistence, conflict truth, and explicit
-lease-loss recovery. The page row renders 720×720 compact and 1080×720 wide
-software scenes and checks accessible palette, panel, and zone identity plus
-keyboard activation. Boundary and negative-control rows scan only the route's
-owned source: a synthesized forbidden shell, LayerShellQt, compositor, private
-repository, or D-Bus dependency must make the checker fail.
+lease-loss recovery. The page row runs warning-fatal, renders 720×720 compact
+and 1080×720 wide software scenes, checks accessible palette, panel, and zone
+identity plus keyboard activation, and verifies centered discard-dialog
+geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
+or Discard resolves it and preserves the pending prompt across wide/compact
+host reconstruction. Boundary and negative-control rows scan every C++ and QML
+file owned by the route: a synthesized forbidden shell, LayerShellQt,
+compositor, private-repository, or D-Bus dependency must make the checker fail.
+Only the named composition source may construct the public Settings1 Qt
+transport with `QDBusConnection`; adding that dependency anywhere else fails.
 
 `qindaqt.settings-customize-installed-route` stages the complete explicit
 Settings runtime component and runs the common hostile Settings package script.

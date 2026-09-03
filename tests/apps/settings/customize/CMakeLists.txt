@@ -55,7 +55,54 @@ set_tests_properties(
     qindaqt.settings-customize-page PROPERTIES
     LABELS "offscreen;settings;customize;accessibility"
     ENVIRONMENT
-        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
+)
+
+qt_add_executable(
+    qindaqt_settings_customize_window_lifecycle_tests
+    tst_customize_window_lifecycle.cpp
+    stub_customize_settings_model.h
+)
+target_include_directories(
+    qindaqt_settings_customize_window_lifecycle_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_compile_definitions(
+    qindaqt_settings_customize_window_lifecycle_tests PRIVATE
+    QINDAQT_SETTINGS_SOURCE_DIR="${PROJECT_SOURCE_DIR}/src/apps/settings_center"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_window_lifecycle_tests
+    PRIVATE
+        QindaQt::SettingsNavigation
+        qindaqt_settings_appearance
+        qindaqt_settings_display
+        qindaqt_settings_network
+        qindaqt_settings_customize_qml
+        qindaqt_settings_customize_qmlplugin
+        qindaqt_themes QindaQt::TokensQml
+        Qt6::Quick Qt6::QuickControls2 Qt6::Test
+)
+add_dependencies(
+    qindaqt_settings_customize_window_lifecycle_tests
+    qindaqt_settings_appearance_qmlplugin
+    qindaqt_settings_display_qmlplugin
+    qindaqt_settings_network_qmlplugin
+    qindaqt_settings_customize_qmlplugin
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_window_lifecycle_tests)
+add_test(
+    NAME qindaqt.settings-customize-window-lifecycle
+    COMMAND qindaqt_settings_customize_window_lifecycle_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-window-lifecycle PROPERTIES
+    LABELS "offscreen;settings;customize;lifecycle"
+    ENVIRONMENT
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
 )
 
 add_test(

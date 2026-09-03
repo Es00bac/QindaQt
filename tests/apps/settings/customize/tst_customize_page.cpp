@@ -115,6 +115,12 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
         QStringLiteral("customizeDiscardDialog"));
     QVERIFY(discardDialog != nullptr);
     QTRY_VERIFY(discardDialog->property("visible").toBool());
+    const qreal expectedX = (view.width()
+                             - discardDialog->property("width").toReal()) / 2.0;
+    const qreal expectedY = (view.height()
+                             - discardDialog->property("height").toReal()) / 2.0;
+    QVERIFY(qAbs(discardDialog->property("x").toReal() - expectedX) < 1.0);
+    QVERIFY(qAbs(discardDialog->property("y").toReal() - expectedY) < 1.0);
     QVERIFY(QMetaObject::invokeMethod(discardDialog, "reject"));
 }
 

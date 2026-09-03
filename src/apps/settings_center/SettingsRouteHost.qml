@@ -10,6 +10,7 @@ Item {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    required property var customizeSettings
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
@@ -17,9 +18,9 @@ Item {
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
+    property bool applicationClosePending: false
     readonly property bool customizeDeparturePending:
-        host.presentationActive && customizeLoader.item !== null
-        && customizeLoader.item.dirty
+        host.presentationActive && host.customizeSettings.dirty
         && host.navigation.activeRouteComponent !== "customize"
 
     readonly property Loader currentLoader: customizeDeparturePending
@@ -53,6 +54,21 @@ Item {
             return false
         }
         target.forceActiveFocus(Qt.TabFocusReason)
+        return true
+    }
+
+    // AGENT-GUARD: A top-level close must remain rejected until the route's
+    // existing discard dialog resolves the dirty draft. Loader construction is
+    // asynchronous, so keep the request pending rather than accepting a close
+    // while the active responsive host is still creating CustomizeRoute.
+    function requestApplicationClose() {
+        if (!host.presentationActive || !host.customizeSettings.dirty) {
+            return false
+        }
+        host.applicationClosePending = true
+        if (customizeLoader.item !== null) {
+            customizeLoader.item.requestClose()
+        }
         return true
     }
 
@@ -109,13 +125,25 @@ Item {
         active: host.presentationActive
                 && ((host.navigation.activeRouteAvailable
                      && host.navigation.activeRouteComponent === "customize")
-                    || (item !== null && item.dirty))
+                    || host.customizeDeparturePending
+                    || host.applicationClosePending)
         sourceComponent: customizeRouteComponent
+        onLoaded: {
+            if (host.customizeDeparturePending
+                    || host.applicationClosePending) {
+                item.requestClose()
+            }
+        }
     }
 
     Component {
         id: customizeRouteComponent
-        CustomizeRoute { navigation: host.navigation }
+        CustomizeRoute {
+            customizeSettings: host.customizeSettings
+            navigation: host.navigation
+            onCloseRequested: host.applicationClosePending = false
+            onCloseCancelled: host.applicationClosePending = false
+        }
     }
 
     Loader {

@@ -92,7 +92,9 @@ The interaction contract is:
 - Ctrl+1, Ctrl+2, Ctrl+3, and Ctrl+4 select Notifications, Appearance,
   Display, and Network respectively;
 - Alt+Left selects the immediately previous route; and
-- the platform Quit shortcut closes the ordinary application window.
+- the platform Quit shortcut closes the ordinary application window unless
+  Customize owns a dirty draft, in which case the same modal discard decision
+  as title-bar close and route departure must resolve first.
 
 The navigation containers expose `PageTabList`; each route exposes `PageTab`,
 an accessible name/description, and truthful selected state. Unavailable tabs
