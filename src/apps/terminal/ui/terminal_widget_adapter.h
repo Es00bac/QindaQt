@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "profiles/terminal_profile.h"
 #include "session/terminal_session_backend.h"
 #include "ui/terminal_appearance.h"
 
@@ -34,7 +35,11 @@ class TerminalWidgetAdapter final : public TerminalSessionBackend {
 public:
   // Builds the widget, enters teletype mode, and opens the bridge PTY.
   // Never forks here: start() owns child creation so failures stay typed.
+  // The profile bounds scrollback, applies font family/size overrides on
+  // top of the QST-derived appearance, selects the bell policy, and names
+  // the theme whose projection produced the appearance.
   explicit TerminalWidgetAdapter(const TerminalViewAppearance &appearance,
+                                 const TerminalProfile &profile,
                                  QObject *parent = nullptr);
   ~TerminalWidgetAdapter() override;
 
@@ -71,6 +76,7 @@ private:
 
   QTermWidget *m_widget = nullptr;
   TerminalViewAppearance m_appearance;
+  TerminalProfile m_profile;
   QString m_schemePath;
   TerminalPtyBridge *m_bridge = nullptr;
   QString m_slavePath;

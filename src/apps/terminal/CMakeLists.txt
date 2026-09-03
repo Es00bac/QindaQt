@@ -11,22 +11,39 @@
 find_package(qtermwidget6 2.4...<2.5 REQUIRED)
 
 set(QINDAQT_TERMINAL_SUPPORT_SOURCES
+    app_shell/terminal_action_catalog.cpp
+    app_shell/terminal_app_shell_bridge.cpp
+    profiles/terminal_profile.cpp
+    profiles/terminal_profile_settings.cpp
     session/process_liveness.cpp
     session/pty_bridge.cpp
     session/terminal_launch_policy.cpp
     session/terminal_session.cpp
     session/terminal_session_backend.cpp
+    session/terminal_session_collection.cpp
     ui/terminal_appearance.cpp
+    ui/terminal_profile_apply_status.cpp
+    ui/terminal_profile_dialog.cpp
+    ui/terminal_tab_bar.cpp
     ui/terminal_window.cpp
+    ui/terminal_window_actions.cpp
 )
 set(QINDAQT_TERMINAL_SUPPORT_HEADERS
+    app_shell/terminal_action_catalog.h
+    app_shell/terminal_app_shell_bridge.h
+    profiles/terminal_profile.h
+    profiles/terminal_profile_settings.h
     session/process_liveness.h
     session/pty_bridge.h
     session/terminal_launch_policy.h
     session/terminal_session.h
     session/terminal_session_backend.h
+    session/terminal_session_collection.h
     session/terminal_session_types.h
     ui/terminal_appearance.h
+    ui/terminal_profile_apply_status.h
+    ui/terminal_profile_dialog.h
+    ui/terminal_tab_bar.h
     ui/terminal_window.h
 )
 
@@ -39,10 +56,19 @@ target_sources(
 target_include_directories(
     qindaqt_terminal_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
 )
+# AppShell is consumed exactly like the Text Editor (ADR-0027): the C++
+# coordinator and action catalog are public, the QML surface stays unused.
+# The Settings1 client is a private implementation dependency of the
+# profile persistence controller (ADR-0028); its headers stay out of the
+# support library's public include surface.
 target_link_libraries(
     qindaqt_terminal_support
-    PUBLIC QindaQt::DesignTokens qindaqt_themes Qt6::Core Qt6::Gui
-           Qt6::Widgets
+    PUBLIC QindaQt::AppShell QindaQt::DesignTokens qindaqt_themes Qt6::Core
+           Qt6::Gui Qt6::Widgets
+)
+target_link_libraries(
+    qindaqt_terminal_support
+    PRIVATE qindaqt_settings_client
 )
 target_compile_features(qindaqt_terminal_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_terminal_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -56,6 +82,7 @@ qt_add_library(qindaqt_terminal_adapter STATIC)
 target_sources(
     qindaqt_terminal_adapter
     PRIVATE ui/terminal_widget_adapter.cpp
+            ui/terminal_widget_adapter_appearance.cpp
     PUBLIC ui/terminal_widget_adapter.h
 )
 target_include_directories(
@@ -75,15 +102,65 @@ qindaqt_enable_warnings(qindaqt_terminal_adapter)
 
 qt_add_executable(qindaqt-terminal main.cpp)
 target_link_libraries(
-    qindaqt-terminal PRIVATE qindaqt_terminal_adapter
+    qindaqt-terminal PRIVATE qindaqt_terminal_adapter qindaqt_settings_client
 )
 target_compile_features(qindaqt-terminal PRIVATE cxx_std_20)
-set_target_properties(qindaqt-terminal PROPERTIES CXX_EXTENSIONS OFF)
+
+# AGENT-CONTRACT: qindaqt_app_shell is QindaQt::AppShell's SHARED backing
+# library (src/app_shell/CMakeLists.txt), installed beside the QML module
+# tree rather than CMAKE_INSTALL_BINDIR. Without this relative RPATH the
+# installed terminal cannot resolve libqindaqt_app_shell.so even though the
+# build tree links successfully. Mirrors src/apps/text_editor.
+set(qindaqt_terminal_install_bindir "${CMAKE_INSTALL_BINDIR}")
+cmake_path(
+    ABSOLUTE_PATH qindaqt_terminal_install_bindir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+    NORMALIZE
+    OUTPUT_VARIABLE qindaqt_terminal_install_bindir_absolute
+)
+set(qindaqt_terminal_install_qmldir "${QT6_INSTALL_QML}")
+cmake_path(
+    ABSOLUTE_PATH qindaqt_terminal_install_qmldir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+    NORMALIZE
+    OUTPUT_VARIABLE qindaqt_terminal_install_qmldir_absolute
+)
+cmake_path(
+    RELATIVE_PATH qindaqt_terminal_install_qmldir_absolute
+    BASE_DIRECTORY "${qindaqt_terminal_install_bindir_absolute}"
+    OUTPUT_VARIABLE qindaqt_terminal_qml_relative_path
+)
+set_target_properties(
+    qindaqt-terminal
+    PROPERTIES
+        CXX_EXTENSIONS OFF
+        INSTALL_RPATH "$ORIGIN/${qindaqt_terminal_qml_relative_path}/QindaQt/AppShell"
+)
 qindaqt_enable_warnings(qindaqt-terminal)
 
 install(
     TARGETS qindaqt-terminal
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT Terminal
+)
+# The Terminal component is self-contained: its C++ AppShell action catalog
+# dependency and AppShell's linked Controls/Tokens backing libraries are
+# installed in their established sibling module directories. Declaring the
+# component mappings here keeps this application-owned packaging rule out of
+# the shared modules.
+install(
+    TARGETS qindaqt_app_shell
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/AppShell"
+    COMPONENT Terminal
+)
+install(
+    TARGETS qindaqt_controls_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+    COMPONENT Terminal
+)
+install(
+    TARGETS qindaqt_tokens_qml
+    LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT Terminal
 )
 install(

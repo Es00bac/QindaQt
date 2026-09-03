@@ -9,6 +9,20 @@
 
 The wire schema version is independent of persisted settings schema v2.
 
+### Terminal application scope
+
+The Terminal S1 client uses three schema-v2 keys in the existing `services`
+domain. `services.terminalProfiles` is a string containing the terminal-owned
+canonical JSON profile array (default `[]`),
+`services.terminalDefaultProfile` is a string naming the built-in or one listed
+user profile (default `builtin-default`), and `services.terminalRestoreTabs` is
+a Boolean policy flag (default `false`). The client
+requests all three in every snapshot and rejects the logical value as a whole
+when any field is absent, incorrectly typed, or internally inconsistent. It
+persists no session content, scrollback, argv history, title, process identity,
+or tab inventory. Profile structure and bounds are owned by the
+[Terminal application contract](../apps/terminal.md#profiles-and-settings1-persistence).
+
 ## Methods and signal
 
 `GetSnapshot(keys)` returns status, exact wire-schema version, active persisted
