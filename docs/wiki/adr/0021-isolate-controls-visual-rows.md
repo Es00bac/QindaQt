@@ -1,6 +1,6 @@
 # ADR-0021: Isolate every Controls visual row in its own process
 
-- **Status:** Accepted
+- **Status:** Accepted, amended 2026-09-02
 - **Date:** 2026-08-27
 - **Owners:** Controls and testing working groups
 - **Supersedes:** None
@@ -56,3 +56,54 @@ reduced-motion duration comes from QST rather than a test override.
 Reconsider only when a replacement runner proves the same exact row identity,
 lifetime isolation, QST-derived motion boundary, DPR/pixel assertions,
 generate-versus-compare parity, and deterministic reviewed baselines.
+
+## Amended (2026-09-02): fonts are byte-pinned fixtures
+
+**Context.** The original decision left glyph sources to "deterministic
+environment substitution": the fixture substituted the schema's `Inter` and
+`JetBrains Mono` names with whatever `Noto Sans` and `Noto Sans Mono` the host
+image had installed. The host Noto package updated on 2026-09-02 after the
+baselines were captured on 2026-08-27, and every visual row failed with
+glyph-rendering drift while the layout stayed identical. Environment
+substitution therefore did not keep the gate deterministic across host font
+updates.
+
+**Amendment.** The visual fixture now vendors the exact font files it renders
+into `tests/controls/fonts/` (Noto Sans Regular/SemiBold/Bold and Noto Sans
+Mono Regular, SIL Open Font License 1.1). Their name records are rewritten to
+the repository-owned families `QindaQt Sans` and `QindaQt Sans Mono`; the
+glyph data stays byte-identical to upstream. The fixture registers the files
+through `QFontDatabase::addApplicationFont`, requires every registration to
+expose exactly the expected family, and substitutes the theme schema's
+`Inter` and `JetBrains Mono` names to those repository-owned families.
+Because no host font can declare the renamed families, the fixture cannot
+collide with or be shadowed by host-installed Noto regardless of Qt's
+match order, so a host Noto package update can no longer change the rendered
+bytes. Registration failure is fatal. The `qindaqt.controls-font-pinning`
+row proves the substituted family resolves to the vendored bytes, and three
+`qindaqt.controls-font-fixture-*` rows prove the fail-closed behavior.
+
+The row environment deliberately keeps the documented host fontconfig
+configuration. An empty or missing fontconfig configuration is not a font
+byte pin: measured on 2026-09-02 it changes glyph advances (the gallery
+header description re-wraps from two lines to one) and removes the host
+fallback face that supplies the checked ThemeCard glyph, so baselines
+captured under it would embed a different rasterization environment instead
+of pinning bytes. Process isolation, the QST motion boundary, DPR/pixel
+assertions, and reviewed baselines are unchanged; this amendment only changes
+where glyph bytes come from.
+
+**Consequences.**
+
+- A host font package update can no longer fail or silently alter the gate;
+  only a reviewed change to the vendored fixture can.
+- Renewing the vendored fonts is a deliberate baseline regeneration with
+  review of the exact glyph diff, not an ambient host event.
+- The substitution of `Inter`/`JetBrains Mono` names to the registered
+  repository-owned families remains, so the fixture still exercises the theme
+  schema's font fields.
+- The gate still depends on the documented host fontconfig configuration for
+  rasterization parameters and Latin-supplement fallback glyphs; a host
+  fontconfig configuration change or a removed DejaVu package therefore still
+  requires baseline review, and is visible as baseline drift rather than as a
+  silent pass.

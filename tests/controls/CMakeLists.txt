@@ -23,6 +23,7 @@ target_compile_definitions(
         QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
         QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
         QINDAQT_CONTROLS_TEST_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
+        QINDAQT_CONTROLS_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fonts"
 )
 qindaqt_enable_warnings(qindaqt_controls_test_support)
 add_dependencies(
@@ -98,6 +99,45 @@ foreach(theme IN LISTS qindaqt_controls_visual_themes)
     foreach(scale IN ITEMS 125 150)
         qindaqt_add_controls_visual_test(${scale} "${theme}" "${theme}-ordinary")
     endforeach()
+endforeach()
+
+qt_add_executable(qindaqt_controls_font_pinning_tests tst_controls_font_pinning.cpp)
+target_link_libraries(
+    qindaqt_controls_font_pinning_tests
+    PRIVATE qindaqt_controls_test_support Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_controls_font_pinning_tests)
+add_test(NAME qindaqt.controls-font-pinning COMMAND qindaqt_controls_font_pinning_tests)
+set_tests_properties(
+    qindaqt.controls-font-pinning
+    PROPERTIES LABELS "controls;fonts" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+qt_add_executable(
+    qindaqt_controls_font_fixture_negative_tests
+    tst_controls_font_fixture_negative.cpp
+)
+target_link_libraries(
+    qindaqt_controls_font_fixture_negative_tests
+    PRIVATE qindaqt_controls_test_support Qt6::Gui
+)
+qindaqt_enable_warnings(qindaqt_controls_font_fixture_negative_tests)
+
+foreach(mode IN ITEMS missing corrupt wrongfamily)
+    add_test(
+        NAME qindaqt.controls-font-fixture-${mode}
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DQINDAQT_NEGATIVE_EXECUTABLE=$<TARGET_FILE:qindaqt_controls_font_fixture_negative_tests>"
+            "-DQINDAQT_MODE=${mode}"
+            "-DQINDAQT_FONT_DIR=${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+            "-DQINDAQT_RUNTIME_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_controls_font_fixture_negative.cmake"
+    )
+    set_tests_properties(
+        qindaqt.controls-font-fixture-${mode}
+        PROPERTIES LABELS "controls;fonts" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
 endforeach()
 
 add_test(

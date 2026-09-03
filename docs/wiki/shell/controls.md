@@ -114,13 +114,22 @@ Each row verifies its actual device-pixel ratio and captured pixel dimensions
 before comparison and waits through the gallery control's published QST motion
 duration before requesting reviewed frames. The reduced-motion behavior row
 separately proves the transformed duration rather than overriding animation in
-the visual harness. The fixture substitutes the schema's `Inter` and
-`JetBrains Mono` family names with the required `Noto Sans` and
-`Noto Sans Mono` families from the documented host image, fixes the C locale,
-uses Qt's software backend, and stores intentional baseline changes in
-`tests/controls/baselines` for review. This is named environment substitution,
-not a repository-owned font-byte/hash pin; changing either installed family
-still requires baseline review.
+the visual harness. The fixture registers the Noto Sans Regular/SemiBold/Bold
+and Noto Sans Mono Regular files vendored under `tests/controls/fonts/` —
+Copyright 2022 The Noto Project Authors, SIL Open Font License 1.1, with the
+license text stored beside the fonts — through
+`QFontDatabase::addApplicationFont`, verifies each registration, substitutes
+the schema's `Inter` and `JetBrains Mono` family names to those registered
+families, fixes the C locale, and fails closed when a vendored file is
+missing, unreadable, or renamed. Registered application fonts take precedence
+over same-named host-installed fonts, so a host Noto package update cannot
+change the rendered glyph bytes; the row environment keeps the documented host
+fontconfig configuration because an empty configuration re-wraps text and
+removes the fallback glyph the baselines contain. Qt's software backend
+renders every row and intentional baseline changes are stored in
+`tests/controls/baselines` for review; changing the vendored font files is a
+reviewed baseline regeneration under
+[ADR-0021](../adr/0021-isolate-controls-visual-rows.md).
 
 A static gate rejects built-in theme IDs, `sourceThemeId`, palette hex literals,
 and every production QML import outside `QtQuick`, `QtQuick.Controls`,
@@ -134,9 +143,9 @@ runs matched bare-Qt-Quick and token-plus-controls offscreen processes, reads
 five `smaps_rollup` PSS samples from each exact PID over three pairs, and records
 the median delta without inventing a machine-independent threshold.
 
-The focused selector currently discovers 29 tests: one behavior gate, 25
-process-isolated visual rows, source policy, staged installed import, and PSS
-measurement.
+The focused selector currently discovers 33 tests: one behavior gate, 25
+process-isolated visual rows, font pinning, three font-fixture fail-closed
+controls, source policy, staged installed import, and PSS measurement.
 
 These are compiled QML, software-renderer, packaging, and process-memory
 checks. They do not qualify live assistive technology, compositor focus,
