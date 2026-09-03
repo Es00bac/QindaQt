@@ -195,6 +195,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool powerRegistered = registerRoute(powerRoute);
   Q_ASSERT(powerRegistered);
   Q_UNUSED(powerRegistered);
+
+  const SettingsRoute clipboardRoute{
+      .id = QStringLiteral("clipboard"),
+      .component = SettingsRouteComponent::Clipboard,
+      .title = QCoreApplication::translate("SettingsCenter", "Clipboard"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Private history preference, state, and clearing"),
+      .iconName = QStringLiteral("edit-paste"),
+      .category = QCoreApplication::translate("SettingsCenter", "Personalization"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool clipboardRegistered = registerRoute(clipboardRoute);
+  Q_ASSERT(clipboardRegistered);
+  Q_UNUSED(clipboardRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {
