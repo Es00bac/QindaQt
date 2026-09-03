@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+include(TaskListRuntimeInstall.cmake)
+
 # Launcher declares its runtime after early source dependencies exist. At this
 # point the complete source graph is available, so materialize it before the
 # preview and production QML modules name it.
@@ -555,62 +557,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         COMPONENT ClipboardAppletRuntime
     )
 
-    # A narrow stage proves that the task-list applet's production binary,
-    # compiled QML, manifest, selected profile, policy, and theme relocate as
-    # one package boundary.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applets/task-list.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT TaskListAppletRuntime
-    )
-    # AGENT-CONTRACT: Every narrow component that stages qindaqt-shell must
-    # carry its directly linked Controls library and the Tokens library at
-    # Controls' baked $ORIGIN/../Tokens sibling path. Otherwise the staged
-    # shell fails before its applet catalog can be inspected.
-    install(
-        TARGETS qindaqt_controls_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_shell_launcher_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT TaskListAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT TaskListAppletRuntime
-    )
+    qindaqt_install_task_list_shell_runtime()
 
     # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet directly,
     # so every component that stages qindaqt-shell must stage that module too.

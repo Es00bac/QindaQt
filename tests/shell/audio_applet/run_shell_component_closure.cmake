@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_SHELL_BUILD_ROOT
-                          QINDAQT_SHELL_CMAKE QINDAQT_STAGE_ROOT
+                          QINDAQT_SHELL_CMAKE QINDAQT_SHELL_INSTALL_CMAKE
+                          QINDAQT_STAGE_ROOT
                           QINDAQT_INSTALL_BINDIR QINDAQT_INSTALL_LIBDIR)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing shell component-closure input: ${required}")
@@ -18,8 +19,9 @@ if(NOT stage_is_in_build OR stage_root STREQUAL build_root)
 endif()
 
 # AGENT-GUARD: This is the complete component inventory for install rules that
-# carry qindaqt-shell in src/shell/CMakeLists.txt. Add every future
-# shell-carrying component here so its isolated runtime closure cannot regress.
+# carry qindaqt-shell in the shell CMake boundary. Add every future
+# shell-carrying component and owning install module here so its isolated
+# runtime closure cannot regress.
 set(shell_components
     QindaQt
     AudioAppletRuntime
@@ -34,6 +36,8 @@ set(shell_components
 # An added shell install rule must extend the executable cases below instead
 # of silently escaping component-isolation coverage.
 file(READ "${QINDAQT_SHELL_CMAKE}" shell_cmake)
+file(READ "${QINDAQT_SHELL_INSTALL_CMAKE}" shell_install_cmake)
+string(APPEND shell_cmake "\n${shell_install_cmake}")
 string(REGEX MATCHALL
     "install\\([ \t\r\n]*TARGETS[ \t\r\n]+qindaqt-shell[ \t\r\n][^\\)]*\\)"
     shell_install_rules "${shell_cmake}")
