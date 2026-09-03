@@ -116,7 +116,11 @@ The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
 provisioning, but the notification facade is absent and its control is
 visibly disabled. Audio, Power, and Bluetooth access are independent of the
-notification token and fail closed on their own capability/client state.
+notification token and fail closed on their own capability/client state. The
+Power controller additionally borrows one shell-owned session-actions client;
+its Session buttons never enter the reusable applet API. Meta+L uses the
+existing audited global-shortcut registrar and dispatches the same typed Lock
+request as the popup.
 The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, global-menu, audio, Bluetooth, or power state.
 

@@ -179,3 +179,8 @@ QML, or UI behavior. Aggregate-battery policy is the pure `power_aggregation`
 collaborator described above. Brightness composition is the separate pure
 [`brightness_model`](../architecture/brightness-model.md) module; it consumes
 these values without gaining transport or mutation authority.
+
+Lock, logout, suspend, reboot, and power-off are intentionally not Power1
+methods or capabilities. First-party presentation receives those typed facts
+from the separate session-actions client, whose logout wire is documented in
+[Session1 version 1](session1-v1.md); this does not widen PB-0/PB-1.

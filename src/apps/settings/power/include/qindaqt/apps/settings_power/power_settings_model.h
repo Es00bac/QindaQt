@@ -14,8 +14,8 @@ namespace QindaQt::Apps::SettingsPower {
 
 // Route-owned projection and closed intent facade for one borrowed,
 // same-thread public PowerClient. The caller owns and outlives the model.
-// QML receives copied display values and route-local row IDs, never a
-// transport, platform adapter, or session-action authority.
+// QML receives copied display values, route-local row IDs, and one opaque
+// purpose-built session-actions facade, never a transport or platform adapter.
 //
 // AGENT-CONTRACT: displayed availability and final dispatch share one
 // admission predicate pinned to exact owner/epoch/revision truth. One
@@ -31,6 +31,7 @@ class PowerSettingsModel final : public QObject {
   Q_PROPERTY(bool busy READ busy NOTIFY viewChanged)
   Q_PROPERTY(bool retryAvailable READ retryAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool sessionActionsSupported READ sessionActionsSupported CONSTANT)
+  Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
   Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText READ operationStatusText NOTIFY viewChanged)
@@ -44,6 +45,7 @@ class PowerSettingsModel final : public QObject {
 
 public:
   explicit PowerSettingsModel(Power::PowerClient &client,
+                              QObject *sessionActions = nullptr,
                               QObject *parent = nullptr);
 
   [[nodiscard]] bool loading() const noexcept;
@@ -53,9 +55,8 @@ public:
   [[nodiscard]] bool stale() const noexcept;
   [[nodiscard]] bool busy() const noexcept;
   [[nodiscard]] bool retryAvailable() const noexcept;
-  [[nodiscard]] constexpr bool sessionActionsSupported() const noexcept {
-    return false;
-  }
+  [[nodiscard]] bool sessionActionsSupported() const noexcept;
+  [[nodiscard]] QObject *sessionActions() const noexcept;
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] const QString &errorText() const noexcept { return m_errorText; }
   [[nodiscard]] const QString &operationStatusText() const noexcept {
@@ -120,6 +121,7 @@ private:
   [[nodiscard]] QString failureText(const QString &reason) const;
 
   Power::PowerClient &m_client;
+  QObject *m_sessionActions = nullptr;
   QTimer m_debounceTimer;
   QTimer m_convergenceTimer;
   std::optional<DebouncedBrightness> m_debounce;

@@ -12,11 +12,12 @@
 namespace QindaQt::Shell::PowerApplet {
 
 // Shell-private adapter from the exact-owner PowerClient to bounded values
-// consumable by compiled panel QML. Presentation never sees transport objects,
+// consumable by compiled panel QML. The injected session-actions object is a
+// separate purpose-built facade; presentation never sees transport objects,
 // wire handles, or a service lookup.
 //
-// AGENT-CONTRACT: The borrowed client must outlive this controller and share
-// its thread. Shell composition owns client start/stop. This adapter never
+// AGENT-CONTRACT: Both borrowed objects must outlive this controller and share
+// its thread. Shell composition owns their start/stop. This adapter never
 // retries an operation: owner loss and uncertain completion end the local
 // request and require a newly observed snapshot plus a new user gesture.
 class PowerAppletController final : public QObject
@@ -33,11 +34,13 @@ class PowerAppletController final : public QObject
     Q_PROPERTY(bool operationPending READ operationPending NOTIFY stateChanged)
     Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
+    Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
 
 public:
     explicit PowerAppletController(Power::PowerClient *client,
                                    bool powerReadGranted,
                                    bool powerControlGranted,
+                                   QObject *sessionActions = nullptr,
                                    QObject *parent = nullptr);
 
     [[nodiscard]] QString phase() const;
@@ -51,6 +54,7 @@ public:
     [[nodiscard]] bool operationPending() const noexcept;
     [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
     [[nodiscard]] QString feedback() const { return m_feedback; }
+    [[nodiscard]] QObject *sessionActions() const noexcept;
 
     // `normalized` uses Power1's exact 0..10000 scale. The controller resolves
     // the opaque ID only within the current snapshot, converts using the
@@ -90,6 +94,7 @@ private:
     quint64 m_pendingRevision = 0;
     quint64 m_requestId = 0;
     QString m_feedback;
+    QObject *m_sessionActions = nullptr;
 };
 
 } // namespace QindaQt::Shell::PowerApplet

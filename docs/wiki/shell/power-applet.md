@@ -3,13 +3,14 @@
 `src/shell/power_applet` owns the pure projection and the shell-private runtime
 adapter for the production panel Power applet: battery summary and per-supply rows, charge
 states, bounded time-remaining truth, critical/low/full severity, brightness
-control rows, profile choices, and serialized mutation lifecycles. The pure
+control rows, profile choices, serialized mutation lifecycles, and an injected
+Session controls section. The pure
 target consumes only public PB-0 values —
 [`power_protocol`](../reference/power1-v1.md) and
 [`brightness_model`](../architecture/brightness-model.md) — plus Qt Core. A
-separate runtime target borrows the public `PowerClient` and exposes bounded
-values to compiled QML; neither target reaches into `power_service` or a host
-power daemon. The accepted authority split lives in
+separate runtime target borrows the public `PowerClient` and purpose-built
+`SessionActionsClient` and exposes bounded values to compiled QML; neither
+target reaches into `power_service` or names a platform daemon. The accepted authority split lives in
 [Power and brightness architecture](../architecture/power-service.md) and the
 applet resolution rules in [Applet runtime](applet-runtime.md).
 
@@ -119,6 +120,16 @@ accessible alert for failure/uncertainty feedback are part of the production
 contract. The preview injects no live access object and therefore shows a
 disabled, deterministic fallback.
 
+The popup's Session section contains Lock, Log out, Suspend, Restart, and Shut
+down. Each button follows the client's typed availability and single pending
+fence. Lock and Suspend dispatch directly; Log out, Restart, and Shut down
+require a focused modal confirmation whose Cancel and OK paths are keyboard
+operable. The client calls ScreenSaver on the session bus, authenticated
+Session1 for logout, and login1 only after an exact `Can* == "yes"` check.
+Owner loss or the five-second mutation deadline produces uncertain no-replay
+feedback. The existing audited global-shortcut registrar binds Meta+L to the
+same lock request; registration failure leaves the visible path intact.
+
 ## Production seams
 
 The module is registered through these additive seams:
@@ -152,7 +163,7 @@ ctest --test-dir build/dev -R '^qindaqt\.power-applet-' --output-on-failure
 | `qindaqt.power-applet-control-rows` | Composition-owner fence, availability/reason projection, identity and accessibility phrases, deterministic row order. |
 | `qindaqt.power-applet-request-state` | Begin legality, lineage completion rules, stale-reply discard, typed failure feedback, owner-loss uncertainty, terminal immutability. |
 | `qindaqt.power-applet-controller` | Public-client projection, read/control denial, bounded profile and brightness dispatch, serialization, result fencing, and owner replacement without replay. |
-| `qindaqt.power-applet-offscreen` | Compiled QML loading, keyboard activation, profile and slider interaction, accessible roles/names/descriptions, and real controller dispatch. |
+| `qindaqt.power-applet-offscreen` | Compiled QML loading, keyboard activation, profile/slider/session interaction, destructive confirmation, accessible roles/names/descriptions, and real controller dispatch. |
 | `qindaqt.power-applet-boundary` | Static policy gate rejecting transport, QML, QObject, platform, and hardware tokens outside the declared include roots. |
 | `qindaqt.power-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, host daemons, process/file, and hardware access; controller/QML also reject direct D-Bus while the shell root may construct the public Qt transport. Includes a poison negative control. |
 | `qindaqt.power-applet-installed-package` | Relocated production shell and data resolve under source-path poison, Controls/Tokens resolve only from the staged relative loader paths, the binary contains the compiled applet module, and `--list` discovers the staged Power manifest. |
@@ -166,8 +177,8 @@ cmake -DSOURCE_ROOT=<repository> -P tests/shell/power_applet/check_boundary.cmak
 ## Non-claims
 
 This slice proves no live UPower or power-profiles-daemon adapter, successful
-host brightness mutation, display-brightness write, session action, idle
-integration, physical hardware, or nested compositor interaction. It owns no
+host brightness mutation, display-brightness write, live host power mutation,
+idle integration, physical hardware, or nested compositor interaction. It owns no
 aggregation, estimate, threshold, or platform policy: those remain Power1 and
 brightness-composition authority. Installed proof is relocation and source
 policy evidence, not a claim that unavailable PB-1 data has become live.
