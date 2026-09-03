@@ -77,6 +77,7 @@ qt_add_qml_module(
     QML_FILES
         qml/ClipboardApplet.qml
         qml/ClipboardEntryRow.qml
+        qml/ClipboardPanelApplet.qml
 )
 
 # AGENT-CONTRACT: the runtime target composes the pure projection with the
@@ -152,3 +153,35 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
     COMPONENT ClipboardApplet
 )
+
+# Shell-bearing install components need the compiled module even though the
+# applet's development component remains independently consumable. This
+# additive helper prevents each shell component from hand-maintaining a
+# subtly different QML runtime closure.
+function(qindaqt_install_clipboard_applet_runtime component_name)
+    foreach(qml_name IN ITEMS ClipboardApplet.qml ClipboardEntryRow.qml
+                              ClipboardPanelApplet.qml)
+        install(
+            FILES "${PROJECT_SOURCE_DIR}/src/shell/clipboard_applet/qml/${qml_name}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet/qml"
+            COMPONENT "${component_name}"
+        )
+    endforeach()
+    install(
+        TARGETS qindaqt_shell_clipboard_applet_runtime
+                qindaqt_shell_clipboard_applet_runtimeplugin
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
+            COMPONENT "${component_name}"
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
+            COMPONENT "${component_name}"
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
+            COMPONENT "${component_name}"
+    )
+    install(
+        FILES
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/ClipboardApplet/qmldir"
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/ClipboardApplet/qindaqt_shell_clipboard_applet.qmltypes"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
+        COMPONENT "${component_name}"
+    )
+endfunction()

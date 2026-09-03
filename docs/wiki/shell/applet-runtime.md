@@ -51,7 +51,7 @@ allowing their static profile label to masquerade as live behavior.
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, and clipboard packages.
 The compiled first-party registry contains eight audited entry points. The
-production QML dispatcher renders all seven hosted entry points:
+production QML dispatcher renders all eight hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -105,11 +105,11 @@ production QML dispatcher renders all seven hosted entry points:
 - `qindaqt.applets.clipboard` is a registered built-in with a manifest, policy
   grants (`clipboard.read`, `clipboard.write`), a compiled
   `QindaQt.Shell.ClipboardApplet` module, and a shell-private controller over
-  the injected `ClipboardClientInterface` seam presenting the volatile bounded
-  Clipboard C0 history. Production-shell dispatcher composition lands in a
-  follow-on lane, so the stock profile does not place the applet yet and the
-  production dispatcher does not render it; resolution to `ready` is covered
-  by the applet-runtime resolver tests. See
+  the injected `ClipboardClientInterface` seam presenting public Clipboard1
+  truth only after exact Settings1 user consent. The production dispatcher
+  hosts its keyboard-capable history popup and every stock family places one
+  utility slot adjacent to notification center. Owner loss clears stale truth,
+  and Clipboard1-v1 pin requests fail closed. See
   [Clipboard applet](clipboard-applet.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
@@ -118,15 +118,16 @@ provisioning, but the notification facade is absent and its control is
 visibly disabled. Audio, Power, and Bluetooth access are independent of the
 notification token and fail closed on their own capability/client state.
 The preview keeps deterministic static applet fixtures rather than connecting
-to live clock, notification, global-menu, audio, Bluetooth, or power state.
+to live clock, notification, global-menu, clipboard, audio, Bluetooth, or power
+state.
 
 ## Installed shell component closure
 
 Every install component that carries `qindaqt-shell` is independently
 runnable through the shell's relative loader layout. The current inventory is
 the default `QindaQt` component plus `AudioAppletRuntime`,
-`BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
-and `PowerAppletRuntime`.
+`BluetoothAppletRuntime`, `ClipboardAppletRuntime`, `GlobalMenuAppletRuntime`,
+`LauncherAppletRuntime`, and `PowerAppletRuntime`.
 Each carries every directly linked applet backing library plus
 `qindaqt_controls_qml` in the install library directory and
 `qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
@@ -141,7 +142,8 @@ incomplete until it is added to this inventory and passes the same proof.
 
 Task-list and status-tray manifests remain accepted contracts but resolve as
 `implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
-rendered by the production panel dispatcher. Profile plug-in IDs with
+rendered by the production panel dispatcher; Clipboard joins them when its
+public clients expose consented ready truth. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
 status-tray value and ownership foundation is documented in

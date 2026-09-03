@@ -1,8 +1,31 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-foreach(required_variable IN ITEMS QINDAQT_CLIPBOARD_APPLET_SOURCE_DIR)
+foreach(required_variable IN ITEMS QINDAQT_CLIPBOARD_APPLET_SOURCE_DIR
+                                   QINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR)
     if(NOT DEFINED ${required_variable})
         message(FATAL_ERROR "${required_variable} is required")
+    endif()
+endforeach()
+
+file(GLOB composition_files
+     "${QINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR}/clipboardappletcomposition.cpp"
+     "${QINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR}/clipboardappletcomposition.h")
+list(LENGTH composition_files composition_file_count)
+if(NOT composition_file_count EQUAL 2)
+    message(FATAL_ERROR "Clipboard composition boundary must contain its exact source pair")
+endif()
+foreach(path IN LISTS composition_files)
+    file(READ "${path}" content)
+    # The shell composition may use public Clipboard1/Settings1 clients and
+    # QDBusConnection. It may not bypass them through the service/model host,
+    # Wayland, host clipboard APIs, or private implementation headers.
+    if(content MATCHES "clipboard_(service|wayland_adapter|history)(_p)?\\.h"
+       OR content MATCHES "ClipboardHost|ResidentClipboardService"
+       OR content MATCHES "QClipboard|QApplication|QGuiApplication::clipboard"
+       OR content MATCHES "wayland-client|wayland-server|wl-copy|wl-paste"
+       OR content MATCHES "(src|qindaqt)/services/(clipboard_service|clipboard_wayland_adapter)/")
+        message(FATAL_ERROR
+            "${path}: Clipboard composition bypassed its public client boundary")
     endif()
 endforeach()
 
@@ -90,6 +113,7 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
             COMMAND
                 "${CMAKE_COMMAND}"
                 "-DQINDAQT_CLIPBOARD_APPLET_SOURCE_DIR=${poison_root}"
+                "-DQINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR=${QINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR}"
                 "-DQINDAQT_CLIPBOARD_APPLET_POISON_PROBE=ON"
                 -P "${CMAKE_CURRENT_LIST_FILE}"
             RESULT_VARIABLE poison_result
@@ -102,8 +126,29 @@ if(NOT QINDAQT_CLIPBOARD_APPLET_POISON_PROBE)
                     "Clipboard Applet boundary policy accepted the ${poison_name} poison case")
         endif()
     endforeach()
+
+    set(composition_poison "${poison_root}/composition")
+    file(MAKE_DIRECTORY "${composition_poison}")
+    file(WRITE "${composition_poison}/clipboardappletcomposition.cpp"
+         "#include <qindaqt/services/clipboard_service/clipboard_host.h>\n")
+    file(WRITE "${composition_poison}/clipboardappletcomposition.h" "#pragma once\n")
+    execute_process(
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DQINDAQT_CLIPBOARD_APPLET_SOURCE_DIR=${QINDAQT_CLIPBOARD_APPLET_SOURCE_DIR}"
+            "-DQINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR=${composition_poison}"
+            "-DQINDAQT_CLIPBOARD_APPLET_POISON_PROBE=ON"
+            -P "${CMAKE_CURRENT_LIST_FILE}"
+        RESULT_VARIABLE composition_poison_result
+        OUTPUT_QUIET
+        ERROR_QUIET)
+    if(composition_poison_result EQUAL 0)
+        file(REMOVE_RECURSE "${poison_root}")
+        message(FATAL_ERROR
+            "Clipboard composition boundary accepted a private service poison")
+    endif()
     file(REMOVE_RECURSE "${poison_root}")
 endif()
 
 message(STATUS
-        "Validated ${applet_file_count} Clipboard Applet source/QML files and poison probe rejection")
+        "Validated ${applet_file_count} Clipboard Applet files, composition pair, and poison rejection")

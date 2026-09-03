@@ -45,6 +45,7 @@ qt_add_qml_module(
         TARGET qindaqt_global_menu_qml
         TARGET qindaqt_shell_audio_applet_runtime
         TARGET qindaqt_shell_bluetooth_applet_runtime
+        TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
 )
 
@@ -55,6 +56,7 @@ target_link_libraries(
         qindaqt_themes
         QindaQt::ShellAudioAppletRuntime
         QindaQt::ShellBluetoothAppletRuntime
+        QindaQt::ShellClipboardAppletRuntime
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         QindaQt::GlobalMenuQml
@@ -125,6 +127,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/audioappletcomposition.h
         runtime/bluetoothappletcomposition.cpp
         runtime/bluetoothappletcomposition.h
+        runtime/clipboardappletcomposition.cpp
+        runtime/clipboardappletcomposition.h
         runtime/globalshortcutregistrar.h
         runtime/compositoroutputauthority.cpp
         runtime/compositoroutputauthority.h
@@ -185,6 +189,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_global_menu_qml
             TARGET qindaqt_shell_audio_applet_runtime
             TARGET qindaqt_shell_bluetooth_applet_runtime
+            TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
     )
 
@@ -193,6 +198,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         PRIVATE
             qindaqt_profiles
             QindaQt::AppletRuntime
+            QindaQt::ClipboardClient
             QindaQt::NotificationPresentationClient
             QindaQt::NotificationPresentationModel
             QindaQt::NotificationPresentationPolicy
@@ -209,6 +215,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::GlobalMenuTransportComposition
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
@@ -507,6 +514,55 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "Tokens"
         COMPONENT GlobalMenuAppletRuntime
     )
+
+    # Clipboard's narrow production component proves the live shell, audited
+    # manifest inputs, compiled applet module, and loader closure relocate as
+    # one runnable package boundary.
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applets/clipboard.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
+                qindaqt_global_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ClipboardAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT ClipboardAppletRuntime
+    )
+
+    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet directly,
+    # so every component that stages qindaqt-shell must stage that module too.
+    foreach(shell_component IN ITEMS
+            QindaQt AudioAppletRuntime BluetoothAppletRuntime
+            ClipboardAppletRuntime GlobalMenuAppletRuntime
+            LauncherAppletRuntime PowerAppletRuntime)
+        qindaqt_install_clipboard_applet_runtime("${shell_component}")
+    endforeach()
 endif()
 
 # The Clipboard applet's packaged component carries its own manifest, mirroring
