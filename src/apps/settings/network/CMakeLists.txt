@@ -6,6 +6,7 @@ target_sources(
     qindaqt_settings_network
     PRIVATE
         network_secret_agent_presence.cpp
+        network_settings_actions.cpp
         network_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS

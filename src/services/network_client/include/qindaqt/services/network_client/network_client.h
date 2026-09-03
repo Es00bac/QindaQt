@@ -50,6 +50,8 @@ public:
                                    QString *error = nullptr);
     [[nodiscard]] bool connectKnownNetwork(const QString &knownNetworkId,
                                            QString *error = nullptr);
+    [[nodiscard]] bool connectVisibleNetwork(const QString &accessPointId,
+                                             QString *error = nullptr);
     [[nodiscard]] bool disconnectDevice(const QString &deviceInterface,
                                         QString *error = nullptr);
     [[nodiscard]] bool setRadio(RadioKind kind, bool enable,

@@ -267,7 +267,7 @@ ValidationResult validateSnapshot(const Snapshot &snapshot) {
   const Capabilities knownCapabilityBits =
       Capability::Connectivity | Capability::Scan |
       Capability::KnownNetworkControl | Capability::RadioControl |
-      Capability::ActiveConnectionControl;
+      Capability::ActiveConnectionControl | Capability::VisibleNetworkControl;
   if (!inRange(static_cast<quint32>(snapshot.availability),
                static_cast<quint32>(Availability::Degraded))
       || !inRange(static_cast<quint32>(snapshot.connectivity),
@@ -361,7 +361,7 @@ ValidationResult validateOperationResult(const OperationResult &result) {
     return reject(QStringLiteral("operation-wire-invalid"));
   }
   if (!inRange(static_cast<quint32>(result.kind),
-               static_cast<quint32>(OperationKind::SetRadio))
+               static_cast<quint32>(OperationKind::ConnectVisibleNetwork))
       || !inRange(static_cast<quint32>(result.status),
                   static_cast<quint32>(OperationStatus::Busy))) {
     return reject(QStringLiteral("operation-enum-out-of-range"));

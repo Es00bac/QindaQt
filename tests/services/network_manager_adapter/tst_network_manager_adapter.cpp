@@ -146,6 +146,7 @@ Facts validFacts() {
                               SecuritySuite::Wpa2Personal}};
   facts.scanSupported = true;
   facts.knownNetworkControlSupported = true;
+  facts.visibleNetworkControlSupported = true;
   facts.radioControlSupported = true;
   facts.disconnectSupported = true;
   return facts;
@@ -191,6 +192,7 @@ void NetworkManagerAdapterTests::mapsBoundedSecretFreeFacts() {
   const BackendObservation result =
       observed.first().at(1).value<BackendObservation>();
   QCOMPARE(result.availability, Availability::Ready);
+  QVERIFY(result.capabilities.testFlag(Capability::VisibleNetworkControl));
   QCOMPARE(result.devices.first().interfaceName, QStringLiteral("enp3s0"));
   const auto cafePoint =
       std::find_if(result.accessPoints.cbegin(), result.accessPoints.cend(),
@@ -266,6 +268,11 @@ void NetworkManagerAdapterTests::
   connect.identifier =
       knownNetworkId(QByteArray("Cafe"), SecuritySuite::Wpa2Personal);
   requests.append(connect);
+  BackendOperationRequest visible;
+  visible.kind = OperationKind::ConnectVisibleNetwork;
+  visible.identifier = visibleAccessPointId(
+      QStringLiteral("wlan0"), QStringLiteral("02:aa:bb:cc:dd:ee"));
+  requests.append(visible);
   BackendOperationRequest disconnect;
   disconnect.kind = OperationKind::DisconnectActive;
   disconnect.identifier = QStringLiteral("wlan0");
@@ -285,8 +292,8 @@ void NetworkManagerAdapterTests::
     fake->finish(id, success);
     ++id;
   }
-  QCOMPARE(fake->calls.size(), 4);
-  QCOMPARE(finished.size(), 4);
+  QCOMPARE(fake->calls.size(), 5);
+  QCOMPARE(finished.size(), 5);
   backend.cancel(99);
   QCOMPARE(fake->cancelled, QList<quint64>{99});
 }

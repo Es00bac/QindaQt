@@ -18,6 +18,7 @@ private Q_SLOTS:
   void publishesValidatedAtomicSnapshots();
   void rejectsMalformedBackendAndRedactsDiagnostics();
   void admitsTypedOperationsAndFencesLineage();
+  void admitsVisibleNetworksAndRefusesUnsupportedKinds();
   void immediateStopFencesQueuedDispatchExactlyOnce();
   void timesOutExactlyOnceWithoutReplay();
   void authorityReplacementRequiresFreshPublicOwner();
@@ -42,6 +43,59 @@ void NetworkServiceTests::publishesValidatedAtomicSnapshots() {
   QCOMPARE(coordinator.snapshot().revision, quint64(2));
   QVERIFY(validateSnapshot(coordinator.snapshot()).accepted);
   QVERIFY(!coordinator.snapshotPayload().isEmpty());
+}
+
+void NetworkServiceTests::admitsVisibleNetworksAndRefusesUnsupportedKinds() {
+  FakeNetworkBackend backend;
+  NetworkServiceCoordinator coordinator(&backend);
+  QVERIFY(coordinator.start(QStringLiteral(":1.57")));
+  backend.publish(readyNetworkObservation());
+  const AccessPoint newPoint = coordinator.snapshot().accessPoints.at(1);
+
+  NetworkServiceRequest request;
+  request.kind = OperationKind::ConnectVisibleNetwork;
+  request.initiatingEpoch = coordinator.snapshot().epoch;
+  request.initiatingRevision = coordinator.snapshot().revision;
+  request.identifier =
+      visibleAccessPointId(newPoint.deviceInterface, newPoint.bssid);
+  const OperationSubmission accepted = coordinator.submit(request);
+  QVERIFY(accepted.pending);
+  QTRY_COMPARE_WITH_TIMEOUT(backend.calls.size(), 1, 2'000);
+  QCOMPARE(backend.calls.first().request.kind,
+           OperationKind::ConnectVisibleNetwork);
+  QCOMPARE(backend.calls.first().request.identifier, request.identifier);
+  BackendOperationOutcome success;
+  success.status = BackendOperationStatus::Succeeded;
+  backend.finish(accepted.operationId, success);
+
+  BackendObservation unsupported = readyNetworkObservation();
+  unsupported.accessPoints[1].security = SecuritySuite::Wpa2Enterprise;
+  backend.publish(unsupported);
+  const AccessPoint enterprisePoint = coordinator.snapshot().accessPoints.at(1);
+  request.initiatingRevision = coordinator.snapshot().revision;
+  request.identifier = visibleAccessPointId(enterprisePoint.deviceInterface,
+                                            enterprisePoint.bssid);
+  const OperationSubmission enterprise = coordinator.submit(request);
+  QVERIFY(!enterprise.pending);
+  QCOMPARE(enterprise.immediateResult.status, OperationStatus::Unsupported);
+  QCOMPARE(enterprise.immediateResult.reasonCode,
+           QStringLiteral("enterprise-network-unsupported"));
+  QCOMPARE(backend.calls.size(), 1);
+
+  unsupported.accessPoints[1].security = SecuritySuite::Open;
+  unsupported.accessPoints[1].hidden = true;
+  unsupported.accessPoints[1].ssid.clear();
+  backend.publish(unsupported);
+  const AccessPoint hiddenPoint = coordinator.snapshot().accessPoints.at(1);
+  request.initiatingRevision = coordinator.snapshot().revision;
+  request.identifier =
+      visibleAccessPointId(hiddenPoint.deviceInterface, hiddenPoint.bssid);
+  const OperationSubmission hidden = coordinator.submit(request);
+  QVERIFY(!hidden.pending);
+  QCOMPARE(hidden.immediateResult.status, OperationStatus::Unsupported);
+  QCOMPARE(hidden.immediateResult.reasonCode,
+           QStringLiteral("hidden-network-unsupported"));
+  QCOMPARE(backend.calls.size(), 1);
 }
 
 void NetworkServiceTests::immediateStopFencesQueuedDispatchExactlyOnce() {

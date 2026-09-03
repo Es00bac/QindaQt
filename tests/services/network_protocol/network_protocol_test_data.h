@@ -38,7 +38,7 @@ inline Snapshot validSnapshot() {
   snapshot.capabilities =
       Capability::Connectivity | Capability::Scan |
       Capability::KnownNetworkControl | Capability::RadioControl |
-      Capability::ActiveConnectionControl;
+      Capability::ActiveConnectionControl | Capability::VisibleNetworkControl;
   snapshot.connectivity = ConnectivityKind::Full;
   snapshot.radios = {Radio{RadioKind::Wifi, true, true, true}};
   snapshot.devices = {ethernetDevice(), wifiDevice()};

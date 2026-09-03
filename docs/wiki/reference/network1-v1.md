@@ -24,6 +24,7 @@ results are canonical N0 byte arrays (`ay`):
 | `GetSnapshot` | `() → (ay)` | canonical `Snapshot` |
 | `RequestScan` | `(t epoch, t revision, x deadlineMs) → (ay)` | canonical `OperationResult` |
 | `ConnectKnownNetwork` | `(t epoch, t revision, s knownNetworkId) → (ay)` | canonical `OperationResult` |
+| `ConnectVisibleNetwork` | `(t epoch, t revision, s accessPointId) → (ay)` | canonical `OperationResult` |
 | `DisconnectActive` | `(t epoch, t revision, s deviceInterface) → (ay)` | canonical `OperationResult` |
 | `SetRadio` | `(t epoch, t revision, u radioKind, b enable) → (ay)` | canonical `OperationResult` |
 | `Changed` | signal `(t epoch, t revision)` | tells clients to refetch |
@@ -67,8 +68,9 @@ reason/diagnostic, radios, devices, access points, known networks, active
 connections, and scan phase/lease.
 
 Unavailable and degraded snapshots require a reason. Capability bits are
-exactly `Connectivity`, `Scan`, `KnownNetworkControl`, `RadioControl`, and
-`ActiveConnectionControl`; unknown bits are rejected. Referential integrity is
+exactly `Connectivity`, `Scan`, `KnownNetworkControl`, `RadioControl`,
+`ActiveConnectionControl`, and `VisibleNetworkControl`; unknown bits are
+rejected. Referential integrity is
 structural: an access point sits on a Wi-Fi device; an active connection
 references an existing device and known network; radio kinds, device
 interfaces, per-device BSSIDs, network ids, and active device references are
@@ -85,6 +87,10 @@ unique.
 - A known-network id is the 64-character lowercase SHA-256 hex digest over the
   raw SSID octets and security suite. It is a correlation pseudonym, not
   confidentiality for a guessable SSID.
+- A visible-access-point id is the 64-character lowercase SHA-256 hex digest
+  over the normalized device interface, a zero separator, and normalized
+  BSSID. It selects only an access point already present in the initiating
+  snapshot and reveals neither its SSID nor any credential on the method wire.
 - Security suites are `Open`, `Wep`, `Wpa2Personal`, `Wpa2Enterprise`,
   `Wpa3Personal`, and `Wpa3Enterprise`.
 
@@ -140,6 +146,7 @@ are only 0 or 1 and decoded `wireValid` must be true.
 ## Intents and operation results
 
 Inputs are `RequestScanIntent`, `ConnectIntent` for a known-network id,
+`ConnectVisibleIntent` for an opaque visible-access-point id,
 `DisconnectIntent` for a device interface, and `SetRadioIntent` for a radio kind
 and boolean state. No input can carry a credential. The redactor recognizes
 secret-shaped keys and bounded nested maps; both client transport and resident
@@ -147,9 +154,11 @@ service reject credential-shaped or over-budget values before dispatch. Public
 diagnostics pass through the same fail-closed redactor.
 
 Admission refuses absent/not-ready snapshots, unsupported capabilities,
-invalid scan deadlines, busy/live scans, unknown networks, already-active
-connections, unknown or idle devices, absent/hardware-disabled radios, and
-redundant radio state. Rejection changes no state.
+invalid scan deadlines, busy/live scans, unknown networks or access points,
+already-active connections, unknown or idle devices, absent/hardware-disabled
+radios, and redundant radio state. First-use connection additionally refuses
+hidden, WEP, enterprise, and already-known networks. Those network-type
+refusals are typed `Unsupported`; rejection changes no state.
 
 Operation status is `Succeeded`, `Rejected`, `Unsupported`, `Failed`,
 `Uncertain`, or `Busy`; non-success requires a reason. At most one service
@@ -164,11 +173,20 @@ observation.
 ## Credential and error boundary
 
 Network1 never requests `GetSecrets`, receives a password/PSK/certificate or
-private key, or exposes NetworkManager setting maps. Connect activates only an
-existing stored connection. If NetworkManager requires credentials, it talks
-to the separately deployed first-party registered secret agent outside this
-interface and process. Raw D-Bus/libnm error text is not public; callers see
-stable bounded reason codes. Network1 remains unqualified for credential
-payloads by design; the separate [Network secret
+private key, or exposes NetworkManager setting maps. `ConnectKnownNetwork`
+activates an existing stored connection. `ConnectVisibleNetwork` may submit
+one bounded partial 802.11 wireless profile to NetworkManager and activate it
+against the selected observed access point. Open profiles have no wireless
+security setting. WPA2 Personal uses `key-mgmt=wpa-psk`; WPA3 Personal uses
+`key-mgmt=sae`. Both secured forms omit the PSK property and set its secret
+flags to `AGENT_OWNED`, so NetworkManager must request the value separately
+from a registered secret agent.
+
+The partial profile and its `AddAndActivateConnection` call remain private to
+the libnm adapter. If NetworkManager requires credentials, it talks to the
+separately deployed first-party registered secret agent outside this interface
+and process. Raw D-Bus/libnm error text is not public; callers see stable
+bounded reason codes. Network1 remains unqualified for credential payloads by
+design; the separate [Network secret
 agent](../architecture/network-secret-agent.md) owns that interoperability
 claim.

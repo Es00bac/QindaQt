@@ -34,6 +34,7 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool reload()"
         "Q_INVOKABLE bool requestScan()"
         "Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId)"
+        "Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId)"
         "Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface)"
     )
     foreach(invokable IN LISTS invokables)

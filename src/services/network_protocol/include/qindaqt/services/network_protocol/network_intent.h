@@ -25,6 +25,13 @@ struct ConnectIntent {
   friend bool operator==(const ConnectIntent &, const ConnectIntent &) = default;
 };
 
+struct ConnectVisibleIntent {
+  QString accessPointId;
+
+  friend bool operator==(const ConnectVisibleIntent &,
+                         const ConnectVisibleIntent &) = default;
+};
+
 struct DisconnectIntent {
   QString deviceInterface;
 
@@ -43,5 +50,6 @@ struct SetRadioIntent {
 
 Q_DECLARE_METATYPE(QindaQt::Network::RequestScanIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::ConnectIntent)
+Q_DECLARE_METATYPE(QindaQt::Network::ConnectVisibleIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::DisconnectIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::SetRadioIntent)

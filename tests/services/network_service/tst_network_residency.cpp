@@ -99,6 +99,19 @@ void NetworkResidencyTests::clientOperatesOverFixedPrivateBusContract() {
   QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 5'000);
   QCOMPARE(finished.first().at(0).value<OperationResult>().status,
            OperationStatus::Succeeded);
+  QTRY_VERIFY_WITH_TIMEOUT(client.operationAdmissionReady(), 5'000);
+  const AccessPoint visible = client.projection().accessPoints.at(1);
+  const QString accessPointId =
+      visibleAccessPointId(visible.deviceInterface, visible.bssid);
+  QVERIFY(client.connectVisibleNetwork(accessPointId));
+  QTRY_COMPARE_WITH_TIMEOUT(fake->calls.size(), 2, 5'000);
+  QCOMPARE(fake->calls.constLast().request.kind,
+           OperationKind::ConnectVisibleNetwork);
+  QCOMPARE(fake->calls.constLast().request.identifier, accessPointId);
+  fake->finish(fake->calls.constLast().operationId, success);
+  QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 2, 5'000);
+  QCOMPARE(finished.constLast().at(0).value<OperationResult>().kind,
+           OperationKind::ConnectVisibleNetwork);
   client.stop();
   resident.stop();
   QDBusConnection::disconnectFromBus(serviceConnectionName);
@@ -283,6 +296,7 @@ void NetworkResidencyTests::introspectionAndNameTheftAreExact() {
   const QString xml = reply.value();
   QVERIFY(xml.contains(QStringLiteral("name=\"RequestScan\"")));
   QVERIFY(xml.contains(QStringLiteral("name=\"ConnectKnownNetwork\"")));
+  QVERIFY(xml.contains(QStringLiteral("name=\"ConnectVisibleNetwork\"")));
   QVERIFY(xml.contains(QStringLiteral("name=\"DisconnectActive\"")));
   QVERIFY(xml.contains(QStringLiteral("name=\"SetRadio\"")));
   QVERIFY(xml.contains(QStringLiteral("type=\"ay\"")));

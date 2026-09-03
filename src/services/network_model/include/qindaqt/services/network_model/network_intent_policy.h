@@ -32,6 +32,9 @@ validateRequestScan(const std::optional<Snapshot> &snapshot,
 [[nodiscard]] IntentVerdict validateConnect(const std::optional<Snapshot> &snapshot,
                                             const ConnectIntent &intent);
 [[nodiscard]] IntentVerdict
+validateConnectVisible(const std::optional<Snapshot> &snapshot,
+                       const ConnectVisibleIntent &intent);
+[[nodiscard]] IntentVerdict
 validateDisconnect(const std::optional<Snapshot> &snapshot,
                    const DisconnectIntent &intent);
 [[nodiscard]] IntentVerdict validateSetRadio(const std::optional<Snapshot> &snapshot,

@@ -206,6 +206,10 @@ implemented; do not use placeholder modules to bypass a boundary.
   service](network-service.md), [Network secret agent](network-secret-agent.md),
   [ADR-0045](../adr/0045-fence-network1-pure-boundary.md), and
   [ADR-0069](../adr/0069-confine-network-credential-entry.md).
+  The adapter may also submit one bounded visible-Wi-Fi profile through
+  `AddAndActivateConnection`: Open, `wpa-psk`, or `sae` only, with every secret
+  absent and secured PSKs marked agent-owned. Network1 exposes only the opaque
+  access-point selector; NetworkManager retains profile persistence authority.
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,

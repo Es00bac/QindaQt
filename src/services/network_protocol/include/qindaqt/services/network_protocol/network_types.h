@@ -23,6 +23,7 @@ enum class Capability : quint32 {
   KnownNetworkControl = 1U << 2U,
   RadioControl = 1U << 3U,
   ActiveConnectionControl = 1U << 4U,
+  VisibleNetworkControl = 1U << 5U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -75,6 +76,7 @@ enum class OperationKind : quint32 {
   ConnectKnownNetwork = 1,
   DisconnectActive = 2,
   SetRadio = 3,
+  ConnectVisibleNetwork = 4,
 };
 
 enum class OperationStatus : quint32 {

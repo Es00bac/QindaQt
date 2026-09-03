@@ -118,14 +118,23 @@ void NetworkPageTest::rendersTruthAndSecretBoundaryAccessibly() {
       page, QStringLiteral("networkConnect_") + QString(64, u'b'));
   auto *disconnect =
       findItem(page, QStringLiteral("networkDisconnect_wlan0"));
+  auto *visibleConnect = findItem(
+      page, QStringLiteral("networkConnectVisible_") + QString(64, u'c'));
+  auto *visiblePrompt = findItem(
+      page, QStringLiteral("networkVisiblePrompt_") + QString(64, u'c'));
   QVERIFY(state != nullptr);
   QVERIFY(credential != nullptr);
   QVERIFY(scan != nullptr);
   QVERIFY(connect != nullptr);
   QVERIFY(disconnect != nullptr);
+  QVERIFY(visibleConnect != nullptr);
+  QVERIFY(visiblePrompt != nullptr);
   QVERIFY(scan->isEnabled());
   QVERIFY(connect->isEnabled());
   QVERIFY(disconnect->isEnabled());
+  QVERIFY(visibleConnect->isEnabled());
+  QVERIFY(visiblePrompt->property("text").toString().contains(
+      QStringLiteral("password prompt"), Qt::CaseInsensitive));
 
   auto *credentialAccessible =
       QAccessible::queryAccessibleInterface(credential);
@@ -148,19 +157,24 @@ void NetworkPageTest::routesScanConnectDisconnectAndReloadIntents() {
       page, QStringLiteral("networkConnect_") + QString(64, u'b'));
   auto *disconnect =
       findItem(page, QStringLiteral("networkDisconnect_wlan0"));
+  auto *visibleConnect = findItem(
+      page, QStringLiteral("networkConnectVisible_") + QString(64, u'c'));
   QVERIFY(reload != nullptr);
   QVERIFY(scan != nullptr);
   QVERIFY(connect != nullptr);
   QVERIFY(disconnect != nullptr);
+  QVERIFY(visibleConnect != nullptr);
 
   QVERIFY(QMetaObject::invokeMethod(reload, "clicked"));
   QVERIFY(QMetaObject::invokeMethod(scan, "clicked"));
   QVERIFY(QMetaObject::invokeMethod(connect, "clicked"));
   QVERIFY(QMetaObject::invokeMethod(disconnect, "clicked"));
+  QVERIFY(QMetaObject::invokeMethod(visibleConnect, "clicked"));
   QCOMPARE(m_model->reloadCount, 1);
   QCOMPARE(m_model->scanCount, 1);
   QCOMPARE(m_model->connectedNetwork, QString(64, u'b'));
   QCOMPARE(m_model->disconnectedDevice, QStringLiteral("wlan0"));
+  QCOMPARE(m_model->connectedAccessPoint, QString(64, u'c'));
 }
 
 void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {

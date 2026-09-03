@@ -5,6 +5,7 @@
 #include <qindaqt/services/network_client/network_client.h>
 #include <qindaqt/services/network_client/network_transport.h>
 #include <qindaqt/services/network_protocol/network_codec.h>
+#include <qindaqt/services/network_protocol/network_identity.h>
 
 #include <QtCore/QList>
 #include <QtCore/QPair>
@@ -16,6 +17,21 @@ namespace QindaQt::Apps::SettingsNetwork::TestSupport {
 using namespace QindaQt::Network;
 
 inline QString networkId(const QChar fill) { return QString(64, fill); }
+
+inline QList<AccessPoint> readyAccessPoints() {
+  return {
+      {QStringLiteral("wlan0"), QStringLiteral("Home"), false,
+       QStringLiteral("00:11:22:33:44:55"), SecuritySuite::Wpa3Personal,
+       5180, 88},
+      {QStringLiteral("wlan0"), QStringLiteral("Cafe"), false,
+       QStringLiteral("66:77:88:99:aa:bb"), SecuritySuite::Open, 2412, 52},
+      {QStringLiteral("wlan0"), QStringLiteral("Guest"), false,
+       QStringLiteral("66:77:88:99:aa:cc"), SecuritySuite::Open, 2437, 61},
+      {QStringLiteral("wlan0"), QStringLiteral("Secure Guest"), false,
+       QStringLiteral("66:77:88:99:aa:dd"), SecuritySuite::Wpa2Personal,
+       2462, 48},
+  };
+}
 
 inline Snapshot readySnapshot(const QString &owner = QStringLiteral(":1.20"),
                               const quint64 epoch = 20,
@@ -29,7 +45,8 @@ inline Snapshot readySnapshot(const QString &owner = QStringLiteral(":1.20"),
   snapshot.availability = Availability::Ready;
   snapshot.capabilities = Capability::Connectivity | Capability::Scan |
                           Capability::KnownNetworkControl |
-                          Capability::ActiveConnectionControl;
+                          Capability::ActiveConnectionControl |
+                          Capability::VisibleNetworkControl;
   snapshot.connectivity = ConnectivityKind::Full;
   snapshot.radios = {
       {RadioKind::Wifi, true, true, true},
@@ -40,13 +57,7 @@ inline Snapshot readySnapshot(const QString &owner = QStringLiteral(":1.20"),
       {QStringLiteral("enp3s0"), DeviceKind::Ethernet,
        DeviceState::Disconnected},
   };
-  snapshot.accessPoints = {
-      {QStringLiteral("wlan0"), QStringLiteral("Home"), false,
-       QStringLiteral("00:11:22:33:44:55"), SecuritySuite::Wpa3Personal,
-       5'180, 88},
-      {QStringLiteral("wlan0"), QStringLiteral("Cafe"), false,
-       QStringLiteral("66:77:88:99:aa:bb"), SecuritySuite::Open, 2'412, 52},
-  };
+  snapshot.accessPoints = readyAccessPoints();
   snapshot.knownNetworks = {
       {homeId, QStringLiteral("Home"), false, SecuritySuite::Wpa3Personal,
        true},

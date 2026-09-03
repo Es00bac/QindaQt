@@ -20,6 +20,7 @@ private Q_SLOTS:
   void validatesScanIntents();
   void rejectsScanWhileBusyOrLeased();
   void validatesConnectIntents();
+  void validatesVisibleConnectIntents();
   void validatesDisconnectIntents();
   void validatesSetRadioIntents();
 
@@ -70,11 +71,77 @@ void NetworkIntentPolicyTests::rejectsUnsupportedCapabilities() {
       withoutActive, DisconnectIntent{QStringLiteral("wlan0")});
   QVERIFY(!disconnect.allowed);
 
+  Snapshot withoutVisible = validSnapshot();
+  withoutVisible.capabilities &=
+      ~Capabilities(Capability::VisibleNetworkControl);
+  const IntentVerdict visible = validateConnectVisible(
+      withoutVisible, ConnectVisibleIntent{QString(64, u'a')});
+  QCOMPARE(visible.reasonCode,
+           QStringLiteral("visible-network-control-unsupported"));
+
   Snapshot withoutRadio = validSnapshot();
   withoutRadio.capabilities &= ~Capabilities(Capability::RadioControl);
   QVERIFY(!validateSetRadio(withoutRadio,
                             SetRadioIntent{RadioKind::Wifi, false})
                .allowed);
+}
+
+void NetworkIntentPolicyTests::validatesVisibleConnectIntents() {
+  const auto point = [](const SecuritySuite security, const bool hidden = false) {
+    return AccessPoint{QStringLiteral("wlan0"),
+                       hidden ? QString{} : QStringLiteral("New network"),
+                       hidden, QStringLiteral("02:11:22:33:44:55"), security,
+                       5'180, 72};
+  };
+  for (const SecuritySuite security : {SecuritySuite::Open,
+                                       SecuritySuite::Wpa2Personal,
+                                       SecuritySuite::Wpa3Personal}) {
+    Snapshot snapshot = validSnapshot();
+    snapshot.accessPoints = {point(security)};
+    const QString id = visibleAccessPointId(
+        snapshot.accessPoints.first().deviceInterface,
+        snapshot.accessPoints.first().bssid);
+    QVERIFY2(validateConnectVisible(snapshot, ConnectVisibleIntent{id}).allowed,
+             qPrintable(QString::number(static_cast<quint32>(security))));
+  }
+
+  for (const SecuritySuite security : {SecuritySuite::Wep,
+                                       SecuritySuite::Wpa2Enterprise,
+                                       SecuritySuite::Wpa3Enterprise}) {
+    Snapshot snapshot = validSnapshot();
+    snapshot.accessPoints = {point(security)};
+    const QString id = visibleAccessPointId(
+        snapshot.accessPoints.first().deviceInterface,
+        snapshot.accessPoints.first().bssid);
+    const IntentVerdict verdict =
+        validateConnectVisible(snapshot, ConnectVisibleIntent{id});
+    QVERIFY(!verdict.allowed);
+    QVERIFY(verdict.reasonCode.endsWith(QStringLiteral("unsupported")));
+  }
+
+  Snapshot hidden = validSnapshot();
+  hidden.accessPoints = {point(SecuritySuite::Open, true)};
+  const QString hiddenId = visibleAccessPointId(
+      hidden.accessPoints.first().deviceInterface,
+      hidden.accessPoints.first().bssid);
+  QCOMPARE(validateConnectVisible(hidden, ConnectVisibleIntent{hiddenId})
+               .reasonCode,
+           QStringLiteral("hidden-network-unsupported"));
+
+  Snapshot known = validSnapshot();
+  known.accessPoints = {{QStringLiteral("wlan0"), cafeNetwork().ssid, false,
+                         QStringLiteral("02:11:22:33:44:55"),
+                         cafeNetwork().security, 5'180, 72}};
+  const QString knownId = visibleAccessPointId(
+      known.accessPoints.first().deviceInterface,
+      known.accessPoints.first().bssid);
+  QCOMPARE(validateConnectVisible(known, ConnectVisibleIntent{knownId})
+               .reasonCode,
+           QStringLiteral("network-already-known"));
+  QCOMPARE(validateConnectVisible(validSnapshot(),
+                                  ConnectVisibleIntent{QString(64, u'a')})
+               .reasonCode,
+           QStringLiteral("unknown-access-point"));
 }
 
 void NetworkIntentPolicyTests::validatesScanIntents() {

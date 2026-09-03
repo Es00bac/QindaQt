@@ -69,6 +69,11 @@ IntentVerdict NetworkModel::connectKnown(const ConnectIntent &intent) const {
   return validateConnect(m_current, intent);
 }
 
+IntentVerdict
+NetworkModel::connectVisible(const ConnectVisibleIntent &intent) const {
+  return validateConnectVisible(m_current, intent);
+}
+
 IntentVerdict NetworkModel::disconnectDevice(
     const DisconnectIntent &intent) const {
   return validateDisconnect(m_current, intent);
