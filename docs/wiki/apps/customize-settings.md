@@ -105,13 +105,16 @@ overlay. The window-lifecycle row proves a dirty title-bar close opens that
 dialog, Cancel keeps the window and draft, and pending navigation plus
 application-close decisions survive wide-to-compact and compact-to-wide host
 reconstruction. The positive boundary row scans every owned C++ header/source
-and QML file and rejects shell, LayerShellQt, compositor, private repository,
-and D-Bus imports. Its hostile control plants the exact private
-`src/shell_customization/src/layout_editing_repository_p.h` include and requires
-rejection. The sole direct `QDBusConnection` exception is the named
-route-composition source that constructs the public Settings1 transport. The
-installed row reuses the sanitized Settings package harness and proves the
-relocated module and catalogs.
+and QML file. C++ includes are closed to Qt/system headers, route-local headers,
+and the public `include/` trees of the dependencies named by this route; every
+other repository-relative path is rejected. Independent hostile controls
+require rejection of the exact sibling Settings Center include
+`src/apps/settings_center/settings_route_registry.h` and a `../` escape. The
+same row also rejects shell, LayerShellQt, compositor, and D-Bus imports. The
+sole direct `QDBusConnection` exception is the named route-composition source
+that constructs the public Settings1 transport. The installed row reuses the
+sanitized Settings package harness and proves the relocated module and
+catalogs.
 
 These tests use injected transports, temporary stores, and offscreen rendering.
 They do not contact a host session bus, compositor, hardware, or input device.

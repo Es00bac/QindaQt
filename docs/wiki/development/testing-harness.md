@@ -802,12 +802,15 @@ identity plus keyboard activation, and verifies centered discard-dialog
 geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
 or Discard resolves it and preserves both navigation and application-close
 prompts across wide-to-compact and compact-to-wide host reconstruction. The
-boundary row scans every C++ and QML file owned by the route and rejects shell,
-LayerShellQt, compositor, private-repository, or D-Bus dependencies. Its
-negative control plants the exact private
-`src/shell_customization/src/layout_editing_repository_p.h` include and requires
-rejection. Only the named composition source may construct the public Settings1
-Qt transport with `QDBusConnection`; adding that dependency anywhere else fails.
+boundary row scans every C++ and QML file owned by the route. It accepts C++
+includes only from Qt/system headers, the route's own directory, or the public
+`include/` trees of its named dependencies; all other repository-relative
+includes fail. Independent negative controls plant the exact sibling
+`src/apps/settings_center/settings_route_registry.h` include and a `../` escape
+and require both to be rejected. The same row rejects shell, LayerShellQt,
+compositor, and D-Bus dependencies. Only the named composition source may
+construct the public Settings1 Qt transport with `QDBusConnection`; adding that
+dependency anywhere else fails.
 
 `qindaqt.settings-customize-installed-route` stages the complete explicit
 Settings runtime component and runs the common hostile Settings package script.
