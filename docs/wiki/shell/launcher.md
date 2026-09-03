@@ -1,9 +1,10 @@
 # Launcher
 
 The launcher presents installed applications for browsing and activation.
-This page records the pure L0 model plus the L1 production adapters:
-installed-application scanning, pinned/recent persistence, bounded execution,
-and the compiled `QindaQt.Shell.Launcher` applet module.
+This page records the pure L0 model, the L1 production adapters, and the L2
+shell composition: installed-application scanning, pinned/recent persistence,
+bounded execution, the compiled `QindaQt.Shell.Launcher` applet module, and its
+production panel host.
 
 The implementation lives in `src/shell/launcher`. The L0 model (namespace
 `QindaQt::ShellLauncher`, target `qindaqt_shell_launcher`) remains a pure Qt
@@ -152,8 +153,8 @@ follow ADR-0012: a mutation applies to the live model and commits
 immediately; a confirmed rejection (including `UnknownKey`) reverts the model
 to the last confirmed value and keeps the reason visible until the next
 explicit write; an uncertain commit is never replayed and converges through
-the resync snapshot; transport loss keeps last confirmed values visible and
-refuses new writes. The client serializes writes, so a mutation during an
+the resync snapshot; Settings1 owner or transport loss clears pinned/recent
+truth and refuses new writes. The client serializes writes, so a mutation during an
 in-flight write is refused as `Busy` rather than queued.
 
 Registering the launcher key set in the Settings1 schema is a
@@ -217,10 +218,38 @@ The manifest (`data/applets/launcher.json`) requests `applications.launch`;
 the grant gates activation in the controller, and the entry point
 `qindaqt.applets.launcher` is registered in the audited first-party
 registry. The preview injects no controller and shows a disabled,
-deterministic fallback. Hosting the applet in the production panel QML
-composition is a later lane's slice: the registry entry asserts the compiled
-implementation exists in this build, not that the panel dispatcher renders
-it.
+deterministic fallback. The production dispatcher receives only the
+shell-owned controller and renders the same compiled module for a resolved
+launcher instance.
+
+## Production shell composition
+
+`LauncherAppletComposition` is the shell-private production boundary. The
+shell composition root resolves XDG data roots from an explicitly supplied
+environment snapshot and home directory, then constructs the scanner without
+giving that adapter implicit environment access. The composition borrows the
+shell's one public Settings1 client, owns the production process spawner and
+session-bus activator, and admits activation only when the audited manifest,
+built-in registry, and capability policy grant `applications.launch`.
+Settings1 owner loss clears pinned/recent identity truth; an unavailable or
+unregistered schema never becomes cached authority.
+
+The runtime panel factory injects the resulting controller into each panel.
+`BuiltinAppletContent` renders `QindaQt.Shell.Launcher` for a resolved launcher
+and uses a bounded ancestor lookup solely to cross the generic applet-chip
+presentation boundary. The summary button opens the popup with search focus;
+Escape closes it, pointer and keyboard activation share the controller path,
+and accessible button, field, list, state, and alert semantics come from the
+compiled applet. Preview recognizes the launcher profile id without performing
+runtime resolution and deliberately supplies a null controller, producing the
+same disabled deterministic fallback as before.
+
+Each stock profile places exactly one launcher instance in its launcher slot.
+The production terminal-command prefix remains deliberately unwired, so
+`Terminal=true` entries refuse rather than inventing a terminal policy.
+`LauncherAppletRuntime` ships the shell, launcher manifest/profile/policy/theme,
+the compiled Launcher module, and its Controls/Tokens loader closure as one
+relocatable install component.
 
 ## Focused tests
 
@@ -241,15 +270,17 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, entry-policy inheritance by actions, hostile action-key inverse control, terminal policy routing/refusal, failure truth, inert fixture spawns, environment sanitization. |
 | `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
 | `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, denied-ancestor degraded truth with bounded diagnostics, null-collaborator fail-closed. |
+| `qindaqt.launcher-composition` | Explicit XDG-root derivation, private-bus production policy composition, recording spawner/activator seams, denied-grant negative control, and no real application launch. |
 | `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
+| `qindaqt.launcher-panel-dispatcher` | Fatal-warning-clean production-row controller injection plus preview null-controller dispatch. |
 | `qindaqt.launcher-runtime-boundary` | Source policy: pure model platform-free; platform reach confined to adapter files; poison negative control. |
 | `qindaqt.launcher-contract-text` | Mutation-sensitive launcher/applet-runtime/ADR and safety-comment truth for registry readiness, inert process fixtures, wholesale stored-list rejection, and ENOENT-only normal root absence. |
-| `qindaqt.launcher-installed-package` | Manifest/policy and complete compiled Launcher/Controls/Tokens import closure move to a new prefix, the original prefix disappears, and the warning-clean null-controller module loads only from the relocated stage under source/build poison. |
+| `qindaqt.launcher-installed-package` | `LauncherAppletRuntime` relocates the shell, manifest/profile/policy/theme, compiled Launcher/Controls/Tokens closure, and warning-clean null-controller probe under source/build poison. |
+| `qindaqt.shell-runtime-component-closure` | Independently installs the Launcher component and proves the staged shell resolves its Launcher/Controls/Tokens libraries without ambient loader state. |
 
 ## Non-claims
 
-This slice proves no production panel hosting (a later lane wires the
-dispatcher), no startup-notification activation tokens, no Settings1 schema
+This slice proves no startup-notification activation tokens, no Settings1 schema
 registration of the launcher keys (persistence against the production service
 reports `UnknownKey` until then), no real session-bus activation, and no
 physical or nested-session behavior. Headless rows use `QCoreApplication`; all

@@ -51,7 +51,7 @@ allowing their static profile label to masquerade as live behavior.
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, and status tray packages. The
 compiled first-party registry contains six audited entry points; the
-production QML dispatcher currently renders five of them:
+production QML dispatcher renders all six:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -87,15 +87,14 @@ production QML dispatcher currently renders five of them:
   discovery on close/teardown, and exposes no address, pairing, trust, Agent1,
   BlueZ, or audio authority. Bluetooth B0 currently reports the deterministic
   empty backend, so production truth remains unavailable until the platform
-  adapter lands.
-
-The sixth registry entry, `qindaqt.applets.launcher`, is the compiled
-`QindaQt.Shell.Launcher` module over its shell-private controller (scanning,
-Settings1 persistence, and seam-based bounded execution; `applications.launch`
-gates activation). It passes resolution as `ready`, but hosting it in the
-production panel dispatcher is a later lane's slice, so production panels do
-not render launcher content yet. See [Launcher](launcher.md) and
-[ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
+  adapter lands; and
+- `qindaqt.applets.launcher` renders the compiled
+  `QindaQt.Shell.Launcher` module over its shell-private composition of
+  injected-root scanning, public Settings1 persistence, and seam-based bounded
+  execution. The audited `applications.launch` grant gates activation, owner
+  loss clears persistence truth, and a null controller leaves the preview
+  visibly disabled. See [Launcher](launcher.md) and
+  [ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
@@ -110,8 +109,9 @@ to live clock, notification, audio, Bluetooth, or power state.
 Every install component that carries `qindaqt-shell` is independently
 runnable through the shell's relative loader layout. The current inventory is
 the default `QindaQt` component plus `AudioAppletRuntime`,
-`BluetoothAppletRuntime`, and `PowerAppletRuntime`. Each carries the directly
-linked `qindaqt_controls_qml` library in the install library directory and
+`BluetoothAppletRuntime`, `LauncherAppletRuntime`, and `PowerAppletRuntime`.
+Each carries every directly linked applet backing library plus
+`qindaqt_controls_qml` in the install library directory and
 `qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
 baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
 on another component to supply either library.
@@ -123,9 +123,8 @@ Wayland, and session-bus variables cleared. A new shell-carrying component is
 incomplete until it is added to this inventory and passes the same proof.
 
 Task-list, global-menu, and status-tray manifests remain accepted contracts but
-resolve as `implementation-unavailable`. Launcher instead resolves `ready` at
-the registry gate described above, while remaining absent from the production
-panel dispatcher. Profile plug-in IDs with
+resolve as `implementation-unavailable`. Launcher resolves `ready` and is
+rendered by the production panel dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
 status-tray value and ownership foundation is documented in

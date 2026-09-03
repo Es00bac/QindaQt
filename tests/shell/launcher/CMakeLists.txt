@@ -94,6 +94,7 @@ qindaqt_add_shell_launcher_test(
 
 # L1 adapter and applet tests; they exist only where the runtime target does.
 if(TARGET qindaqt_shell_launcher_runtime)
+    find_package(Qt6 6.11 REQUIRED COMPONENTS QuickTest)
     get_target_property(launcher_runtime_links
                         qindaqt_shell_launcher_runtime INTERFACE_LINK_LIBRARIES)
     foreach(gui_library IN ITEMS Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
@@ -125,6 +126,68 @@ if(TARGET qindaqt_shell_launcher_runtime)
         qindaqt_launcher_scanner_tests
         tst_application_scanner.cpp
         qindaqt.launcher-application-scanner
+    )
+
+    if(TARGET qindaqt-shell)
+        find_program(DBUS_RUN_SESSION_EXECUTABLE dbus-run-session REQUIRED)
+        file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/composition-scratch")
+        qt_add_executable(
+            qindaqt_launcher_composition_tests
+            tst_launcher_composition.cpp
+            "${launcher_source_root}/src/shell/runtime/launcherappletcomposition.cpp"
+            "${launcher_source_root}/src/shell/runtime/launcherappletcomposition.h"
+        )
+        target_include_directories(
+            qindaqt_launcher_composition_tests
+            PRIVATE
+                "${CMAKE_CURRENT_SOURCE_DIR}"
+                "${launcher_source_root}/src/shell/runtime"
+        )
+        target_link_libraries(
+            qindaqt_launcher_composition_tests
+            PRIVATE
+                QindaQt::AppletHost
+                QindaQt::AppletRuntime
+                QindaQt::SettingsClient
+                QindaQt::ShellLauncherRuntime
+                Qt6::DBus
+                Qt6::Test
+        )
+        target_compile_definitions(
+            qindaqt_launcher_composition_tests
+            PRIVATE
+                QINDAQT_SOURCE_DIR="${launcher_source_root}"
+                QINDAQT_TEST_SCRATCH="${CMAKE_CURRENT_BINARY_DIR}/composition-scratch"
+        )
+        qindaqt_enable_warnings(qindaqt_launcher_composition_tests)
+        add_test(
+            NAME qindaqt.launcher-composition
+            COMMAND "${DBUS_RUN_SESSION_EXECUTABLE}" --
+                    $<TARGET_FILE:qindaqt_launcher_composition_tests>
+        )
+        set_tests_properties(
+            qindaqt.launcher-composition
+            PROPERTIES
+                LABELS "shell;launcher;runtime;private-bus;hostile"
+                ENVIRONMENT_MODIFICATION
+                    "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime;TMPDIR=set:${CMAKE_CURRENT_BINARY_DIR}/composition-scratch"
+        )
+    endif()
+
+    add_test(
+        NAME qindaqt.launcher-panel-dispatcher
+        COMMAND
+            $<TARGET_FILE:Qt6::qmltestrunner>
+            -import "${launcher_source_root}/tests/shell/qml/imports"
+            -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_launcher_dispatcher.qml"
+    )
+    set_tests_properties(
+        qindaqt.launcher-panel-dispatcher
+        PROPERTIES
+            LABELS "shell;launcher;runtime;offscreen;accessibility"
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
     )
     set_tests_properties(qindaqt.launcher-application-scanner PROPERTIES TIMEOUT 10)
     qindaqt_add_launcher_runtime_test(
@@ -219,7 +282,8 @@ if(TARGET qindaqt_shell_launcher_runtime)
                 "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
     )
 
-    if(TARGET qindaqt_applet_runtime)
+    if(TARGET qindaqt_applet_runtime AND TARGET qindaqt-shell)
+        find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
         qt_add_executable(qindaqt_launcher_installed_probe
                           tst_launcher_installed_probe.cpp)
         target_link_libraries(
@@ -236,8 +300,14 @@ if(TARGET qindaqt_shell_launcher_runtime)
                 "-DQINDAQT_BUILD_ROOT=${CMAKE_BINARY_DIR}"
                 "-DQINDAQT_STAGE=${CMAKE_CURRENT_BINARY_DIR}/installed-launcher"
                 "-DQINDAQT_PROBE=$<TARGET_FILE:qindaqt_launcher_installed_probe>"
+                "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
                 "-DQINDAQT_INSTALL_QMLDIR=${QT6_INSTALL_QML}"
                 "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+                "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+                "-DQINDAQT_KF6_GLOBALACCEL_LIBRARY=$<TARGET_FILE:KF6::GlobalAccel>"
+                "-DQINDAQT_KF6_GLOBALACCEL_SONAME=$<TARGET_SONAME_FILE_NAME:KF6::GlobalAccel>"
+                "-DQINDAQT_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_tokens_qml>"
+                "-DQINDAQT_TOKENS_SONAME=$<TARGET_SONAME_FILE_NAME:qindaqt_tokens_qml>"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_launcher.cmake"
         )
         set_tests_properties(

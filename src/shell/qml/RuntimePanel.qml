@@ -11,6 +11,7 @@ Window {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
+    property var launcherAppletAccess: null
 
     visible: false
     color: "transparent"
@@ -26,5 +27,6 @@ Window {
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
+        launcherAppletAccess: root.launcherAppletAccess
     }
 }

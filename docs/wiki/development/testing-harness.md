@@ -193,8 +193,9 @@ ctest --test-dir build/dev \
 ```
 
 That row independently installs default `QindaQt`, `AudioAppletRuntime`,
-`BluetoothAppletRuntime`, and `PowerAppletRuntime` into build-local stages. It
-requires the staged shell to resolve Controls from its own install library
+`BluetoothAppletRuntime`, `LauncherAppletRuntime`, and `PowerAppletRuntime`
+into build-local stages. It requires the staged shell to resolve each directly
+linked applet backing library and Controls from its own install library
 directory and Tokens from Controls' baked sibling RUNPATH, then launches
 `--help` with ambient loader, display, Wayland, and session-bus variables
 cleared. It contacts no compositor, host bus, service, or hardware.
@@ -264,20 +265,26 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its adapter rows cover injected-root fixture trees with canonical containment,
+Its adapter and composition rows cover injected-root fixture trees with
+canonical containment,
 escaping-link and FIFO/non-regular negative controls, capped reads, debounced
 watcher refresh with generation fencing, explicit inaccessible-root,
 non-traversable-ancestor, and dangling-top-level-link degradation (with only
 syscall-confirmed absence remaining normal), Settings1 persistence round trips
 and unchanged-authority post-uncertainty convergence against a scripted fake
 transport, and seam-based execution with entry-policy action inheritance and
-a recording spawner/activator. The only real children are the inert `/bin/true`
-and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
+a recording spawner/activator. The production composition row uses a private
+bus, derives roots from an explicit environment snapshot, evaluates the audited
+launch grant, and injects recording execution seams, so it starts no real
+application. The only real children elsewhere in the slice are the inert
+`/bin/true` and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
 QST provisioning, pinned/recent/category/search rendering, persistence failure,
 Tab and cross-section traversal, Return/Space activation, Escape, and accessible
-enabled/denied/unavailable states. A runtime source-boundary poison gate, a
-mutation-sensitive documentation/comment contract row, and a relocated
-complete-import-closure installed-package proof finish the slice. No row
+enabled/denied/unavailable states. A second fatal-warning-clean row traverses
+the production panel dispatcher and preview fallback. A runtime source-boundary
+poison gate, a mutation-sensitive documentation/comment contract row, a
+relocated `LauncherAppletRuntime` shell/module/import-closure installed-package
+proof, and the shared component-closure row finish the slice. No row
 contacts the host session bus, display server, real user applications, or
 hardware: headless rows construct `QCoreApplication`, inherited display/bus
 endpoints are removed from every launcher row, and GUI rows force the offscreen

@@ -24,6 +24,7 @@ set(shell_components
     QindaQt
     AudioAppletRuntime
     BluetoothAppletRuntime
+    LauncherAppletRuntime
     PowerAppletRuntime)
 
 # Keep the executable inventory closed as well as testing the known stages.
@@ -70,7 +71,10 @@ foreach(component IN LISTS shell_components)
     set(controls
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_controls_qml.so")
     set(tokens "${stage}/Tokens/libqindaqt_tokens_qml.so")
-    foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}")
+    set(launcher
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_shell_launcher_qml.so")
+    foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
+                                   "${launcher}")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")
@@ -99,6 +103,24 @@ foreach(component IN LISTS shell_components)
         message(FATAL_ERROR
             "${component} shell did not resolve staged Controls: expected "
             "${expected_controls}, resolved ${resolved_controls}")
+    endif()
+
+    set(resolved_launcher "")
+    foreach(dependency IN LISTS shell_dependencies)
+        cmake_path(GET dependency FILENAME dependency_name)
+        if(dependency_name STREQUAL "libqindaqt_shell_launcher_qml.so")
+            if(NOT resolved_launcher STREQUAL "")
+                message(FATAL_ERROR
+                    "${component} shell resolved duplicate Launcher libraries")
+            endif()
+            file(REAL_PATH "${dependency}" resolved_launcher)
+        endif()
+    endforeach()
+    file(REAL_PATH "${launcher}" expected_launcher)
+    if(NOT resolved_launcher STREQUAL expected_launcher)
+        message(FATAL_ERROR
+            "${component} shell did not resolve staged Launcher: expected "
+            "${expected_launcher}, resolved ${resolved_launcher}")
     endif()
 
     file(GET_RUNTIME_DEPENDENCIES
@@ -142,4 +164,4 @@ foreach(component IN LISTS shell_components)
 endforeach()
 
 message(STATUS
-    "Every shell-carrying install component has runnable Controls/Tokens closure")
+    "Every shell-carrying install component has runnable Launcher/Controls/Tokens closure")

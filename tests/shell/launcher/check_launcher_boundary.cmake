@@ -10,6 +10,7 @@ endif()
 
 set(module_root "${SOURCE_ROOT}/src/shell/launcher")
 set(test_root "${SOURCE_ROOT}/tests/shell/launcher")
+set(composition_root "${SOURCE_ROOT}/src/shell/runtime")
 file(GLOB pure_sources
     "${module_root}/src/application_catalog.cpp"
     "${module_root}/src/desktop_entry_parser.cpp"
@@ -28,6 +29,9 @@ file(GLOB planning_sources
     "${module_root}/src/launch_execution.*"
     "${module_root}/src/launch_executor.*")
 file(GLOB applet_qml "${module_root}/qml/*.qml")
+file(GLOB composition_sources
+    "${composition_root}/launcherappletcomposition.h"
+    "${composition_root}/launcherappletcomposition.cpp")
 
 list(LENGTH pure_sources pure_count)
 if(pure_count EQUAL 0 AND NOT LAUNCHER_POLICY_SKIP_POISON)
@@ -104,6 +108,9 @@ launcher_forbid(planning_sources "execution planning"
     "qgetenv" "std::getenv")
 launcher_forbid(applet_qml "compiled QML"
     "QProcess" "QDBus" "SettingsClient" "settings_client")
+launcher_forbid(composition_sources "production composition"
+    "settings_service" "SettingsService" "services/settings_service"
+    "QQml" "QQuick" "std::getenv" "qgetenv")
 
 if(violations)
     foreach(violation IN LISTS violations)
@@ -133,6 +140,30 @@ if(DEFINED POISON_ROOT AND NOT LAUNCHER_POLICY_SKIP_POISON)
         message(FATAL_ERROR
             "Launcher boundary accepted controller D-Bus poison:\n"
             "${poison_output}${poison_error}")
+    endif()
+endif()
+
+if(DEFINED POISON_ROOT AND NOT LAUNCHER_POLICY_SKIP_POISON)
+    cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
+    set(composition_poison "${poison_root}-composition")
+    file(REMOVE_RECURSE "${composition_poison}")
+    file(MAKE_DIRECTORY "${composition_poison}/src/shell/runtime")
+    file(WRITE
+         "${composition_poison}/src/shell/runtime/launcherappletcomposition.cpp"
+         "#include <qindaqt/services/settings_service/settings_service.h>\n")
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}"
+                "-DSOURCE_ROOT=${composition_poison}"
+                -DLAUNCHER_POLICY_SKIP_POISON=ON
+                -P "${CMAKE_CURRENT_LIST_FILE}"
+        RESULT_VARIABLE composition_poison_status
+        OUTPUT_VARIABLE composition_poison_output
+        ERROR_VARIABLE composition_poison_error)
+    file(REMOVE_RECURSE "${composition_poison}")
+    if(composition_poison_status EQUAL 0)
+        message(FATAL_ERROR
+            "Launcher boundary accepted service-internal composition poison:\n"
+            "${composition_poison_output}${composition_poison_error}")
     endif()
 endif()
 
