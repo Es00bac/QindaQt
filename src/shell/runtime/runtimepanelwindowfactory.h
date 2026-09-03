@@ -21,6 +21,10 @@ namespace QindaQt::AppletHost {
 class CapabilityPolicy;
 }
 
+namespace QindaQt::ShellClipboardApplet {
+class ClipboardAppletController;
+}
+
 namespace QindaQt::Shell {
 
 class NotificationCenterAppletAccess;
@@ -39,7 +43,6 @@ class LauncherAppletController;
 namespace GlobalMenu {
 class GlobalMenuAppletAccess;
 }
-
 class RuntimePanelWindowFactory final : public ShellSurface::PanelWindowFactory {
 public:
     RuntimePanelWindowFactory(QQmlEngine &engine,
@@ -52,7 +55,8 @@ public:
                               BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
                               PowerApplet::PowerAppletController *powerAppletAccess,
                               Launcher::LauncherAppletController *launcherAppletAccess,
-                              GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess);
+                              GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess,
+                              ShellClipboardApplet::ClipboardAppletController *clipboardAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -71,6 +75,7 @@ private:
     PowerApplet::PowerAppletController *m_powerAppletAccess = nullptr;
     Launcher::LauncherAppletController *m_launcherAppletAccess = nullptr;
     GlobalMenu::GlobalMenuAppletAccess *m_globalMenuAppletAccess = nullptr;
+    ShellClipboardApplet::ClipboardAppletController *m_clipboardAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

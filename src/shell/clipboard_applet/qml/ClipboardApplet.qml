@@ -30,6 +30,10 @@ Item {
     readonly property bool actionsEnabled:
         controller?.phaseText === "ready" && (controller?.clipboardWriteGranted ?? false)
 
+    function focusInitial() {
+        searchField.forceActiveFocus(Qt.PopupFocusReason)
+    }
+
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Clipboard")
     Accessible.description: {
@@ -92,11 +96,15 @@ Item {
                         controller.setSearchQuery(text)
                     }
                 }
-                Keys.onEscapePressed: {
-                    searchField.text = ""
-                    if (controller) {
-                        controller.clearSearch()
+                Keys.onEscapePressed: event => {
+                    if (searchField.text.length === 0) {
+                        event.accepted = false
+                        return
                     }
+                    searchField.text = ""
+                    if (controller)
+                        controller.clearSearch()
+                    event.accepted = true
                 }
             }
 

@@ -306,12 +306,24 @@ Its pure projection, hostile-snapshot and whole-C0-invariant admission
 valid generation-ceiling purge/restart boundary), complete snapshot-lineage
 search fencing, controller fencing, seam, compiled
 offscreen keyboard/accessibility/real-pointer, boundary-poison, and staged
-installed-package rows run entirely offscreen against the in-process C0 model;
-the installed-package row rewrites and inspects every staged Controls/Tokens
+installed-package rows run entirely offscreen against the in-process C0 model.
+The production additions include
+`qindaqt.clipboard-applet-composition-private-bus`, which joins the real public
+Clipboard1 client to a fake service on an ephemeral private bus and injects a
+fake Settings1 transport with exact user-consent provenance; the two
+`production-panel-*-offscreen` rows instantiate the source dispatcher and
+compiled `Popup.Window` host with fatal warnings, host bus/display variables
+unset, Tab/Return/Space parity, accessibility state, and Escape closure. The
+installed-package row rewrites and inspects every staged Controls/Tokens
 backing and optional plugin library plus the consumer for `$ORIGIN`-relative
 RUNPATHs, moves the whole staged prefix, and reruns the consumer with
-`LD_LIBRARY_PATH` unset. No row contacts the host clipboard,
-session bus, display server, or hardware. The exact matrix and non-claims are
+`LD_LIBRARY_PATH` unset. The separate
+`qindaqt.clipboard-applet-runtime-installed-package` row source-poisons and
+stages the shell-bearing component; `qindaqt.shell-runtime-component-closure`
+requires the Clipboard module from every shell component, and
+`desktop.virtual.package-contract` validates its DesktopVirtual stage. No row
+contacts the host clipboard, ambient session bus, display server, or hardware.
+The exact matrix and non-claims are
 detailed in [Clipboard applet](../shell/clipboard-applet.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and

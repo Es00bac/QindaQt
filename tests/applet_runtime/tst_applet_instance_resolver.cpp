@@ -54,6 +54,7 @@ private slots:
     void exposesCapabilitiesOnlyForRegisteredImplementations();
     void carriesDeniedCapabilitiesWithoutInventingAuthority();
     void stockProfilesPlaceOneResolvedLauncher();
+    void stockProfilesPlaceOneResolvedClipboardInUtilitySlot();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
@@ -277,6 +278,54 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
             }
         }
         QCOMPARE(launcherCount, 1);
+    }
+}
+
+void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedClipboardInUtilitySlot()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    for (const auto &profile : profiles.profiles()) {
+        int clipboardCount = 0;
+        for (const auto &panel : profile.panels) {
+            QString notificationZone;
+            QString clipboardZone;
+            for (const auto &applet : panel.applets) {
+                const QString zone = applet.settings
+                    .value(QStringLiteral("zone"), QStringLiteral("start"))
+                    .toString();
+                if (applet.plugin == QLatin1String("notification-center")) {
+                    notificationZone = zone;
+                }
+                if (applet.plugin != QLatin1String("clipboard")) {
+                    continue;
+                }
+                ++clipboardCount;
+                clipboardZone = zone;
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(), qPrintable(profile.id + QStringLiteral(": ")
+                                                       + resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.clipboard"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList({QStringLiteral("clipboard.read"),
+                                      QStringLiteral("clipboard.write")}));
+            }
+            if (!clipboardZone.isEmpty()) {
+                QVERIFY2(!notificationZone.isEmpty(), qPrintable(profile.id));
+                QCOMPARE(clipboardZone, notificationZone);
+            }
+        }
+        QCOMPARE(clipboardCount, 1);
     }
 }
 

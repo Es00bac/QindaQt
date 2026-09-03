@@ -12,13 +12,14 @@ C0 model's fail-closed gates. The authority split is recorded in
 [ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md) and the applet
 resolution rules in [Applet runtime](applet-runtime.md).
 
-Current maturity: **registered built-in presentation slice (compiled and
-verified)**. The manifest (`data/applets/clipboard.json`), audited registry
+Current maturity: **production-shell hosted built-in (compiled and verified)**.
+The manifest (`data/applets/clipboard.json`), audited registry
 entry (`qindaqt.applets.clipboard`), and explicit `clipboard.read` /
 `clipboard.write` policy grants are integrated, so the applet host resolves a
-profile instance to `ready`. Composition into the production shell dispatcher
-(`src/shell/runtime`, `src/shell/qml`) is a separate lane after integration;
-the stock profile does not place the applet yet.
+profile instance to `ready`. The shell composes the public Clipboard1 and
+Settings1 clients, injects the controller into the eight-entry built-in
+dispatcher, and every stock profile family now places exactly one Clipboard
+slot beside its notification-center utility slot.
 
 ## Module shape
 
@@ -41,6 +42,17 @@ interface header. The controller borrows it; shell composition owns the model
 and adapter lifecycle. QML receives no model pointers, raw payloads, or IPC
 endpoints.
 
+`src/shell/runtime/clipboardappletcomposition.{h,cpp}` is the shell-private
+production composition root. It owns the public `QtClipboardTransport` and
+`ClipboardClient`, borrows the shell's scoped Settings1 client, evaluates the
+audited manifest grants, and adapts only public Clipboard1 snapshot and
+operation values into `ClipboardClientInterface`. Clipboard owner loss,
+Settings owner loss, or malformed wire truth clears the composite owner and
+all presented state. The composition observes the validated public transport
+snapshot alongside the generic client solely to preserve C0's valid
+same-lineage generation-ceiling purge; it never imports the resident service,
+Wayland adapter, or history implementation.
+
 ## Capability gating
 
 The manifest requests `clipboard.read` and `clipboard.write` independently;
@@ -54,6 +66,13 @@ controller at construction (fail-closed, immutable):
 - `clipboard.write` denied: browsing and search stay live, but every mutating
   intent (select/promote, pin, delete, clear) is refused with feedback before
   any dispatch.
+
+History presentation additionally requires Settings1
+`services.clipboardHistory` to be exact boolean `true` from the
+`user-overrides` layer. Missing, malformed, inherited-default, or ownerless
+consent is denied. The shell withholds existing Clipboard1 content immediately
+and waits for the service's generation-fenced empty snapshot instead of
+forging authority flags at an old generation.
 
 ## Presentation contract
 
@@ -76,6 +95,14 @@ source label, format summary, byte total, pin/pending state, and a complete
 accessible name/description; pending mutations announce "operation pending".
 Metadata only: payload bytes never leave the C0 model except through an
 explicit promote, and the projection never holds them.
+
+`ClipboardPanelApplet.qml` is the panel host. Its accessible Button summary
+opens a non-modal `Popup.Window`, because the layer-shell panel itself does not
+accept keyboard focus. The popup transfers focus to search, keeps an
+always-present Close button in the Tab chain, accepts Space/Return activation,
+restores summary focus on close, and closes on Escape or outside press. The
+same compiled host renders in `qindaqt-shell` and the deterministic preview;
+only the injected controller differs.
 
 ## Snapshot admission gate
 
@@ -223,6 +250,13 @@ The row
 also runs the lock/purge contract plus an offscreen instantiation of the
 staged compiled module against the real controller at both locations.
 
+`ClipboardAppletRuntime` is the independently installable shell-hosting
+component. It carries `qindaqt-shell`, its manifest/profile/theme/policy data,
+the Clipboard QML module including `ClipboardPanelApplet.qml`, and the full
+Controls/Tokens/Launcher/Global Menu/sibling-applet runtime closure. Every
+other shell-carrying component receives that same Clipboard QML import closure,
+and `DesktopVirtual` stages it for the private desktop package contract.
+
 ## Focused tests
 
 ```sh
@@ -237,27 +271,32 @@ ctest --test-dir build/dev -R '^qindaqt\.clipboard-applet-' --output-on-failure
 | `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, independent generation/lifetime-revision high-waters, impossible post-purge content, owner-lineage fencing with owner-A content, ceiling-exhaustion owner recovery, fail-closed rejection and recovery, missing/mismatched completion-lineage rejection, promote-tick exhaustion. |
 | `qindaqt.clipboard-applet-snapshot-invariants` | Whole C0 snapshot truth: nonzero generation, denied/disabled emptiness, exact aggregate sum, unique identities, pin ceiling, and denied-content lineage poisoning. |
 | `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, valid real-C0 purge at the generation ceiling with typed restart-required truth, independent and overlapping host denials surviving unlock, error mapping, owner fencing over the real C0 model. |
+| `qindaqt.clipboard-applet-composition-private-bus` | Real public Clipboard1 transport/client plus Settings1 consent over an ephemeral private bus: audited grants, copy result mapping, valid ceiling purge/restart truth, recovery, and owner-loss clearing. |
 | `qindaqt.clipboard-applet-qml-offscreen` | Compiled module states: ready/degraded/locked/disabled/unavailable/empty/search presentation. |
 | `qindaqt.clipboard-applet-qml-accessibility-offscreen` | Accessible roles, names, descriptions, and enabled/busy state for every interactive element: search field and clear, Pin, Delete, both Clear buttons, feedback dismissal (alert role). |
 | `qindaqt.clipboard-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal across every interactive element and Space/Return/Delete keyboard activation with exact intent arguments. |
 | `qindaqt.clipboard-applet-qml-interactive-offscreen` | Real pointer events reach Pin/Delete/row body with exact `(generation, serial)` arguments (P1 regressions), read-only search stays enabled under write denial, degraded-state honesty, busy pending controls. |
+| `qindaqt.clipboard-applet-production-panel-keyboard-offscreen` | The source production dispatcher hosts the compiled panel wrapper; Tab enters search and reaches Close, Escape closes the independent popup window, and accessible expanded state follows it under fatal warnings. |
+| `qindaqt.clipboard-applet-production-panel-return-offscreen` | Isolated Return activation of the panel summary and Escape closure; separated because the offscreen backend cannot reactivate a parent after destroying a transient native popup in the same process. |
 | `qindaqt.clipboard-applet-boundary-policy` | Static source gate with eight per-case poison probes (D-Bus, host clipboard, external helpers, private model headers, compositor reach-through). |
 | `qindaqt.clipboard-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset and `$ORIGIN`-relative RPATH, lock/purge contract and staged-module instantiation at the installed boundary. |
+| `qindaqt.clipboard-applet-runtime-installed-package` | Source-poisoned `ClipboardAppletRuntime` stage containing the shell, manifest/profile/theme/policy, and complete generated Clipboard QML module. |
 
 The boundary gate also runs without configure:
 
 ```sh
 cmake -DQINDAQT_CLIPBOARD_APPLET_SOURCE_DIR=<repository>/src/shell/clipboard_applet \
+  -DQINDAQT_CLIPBOARD_COMPOSITION_SOURCE_DIR=<repository>/src/shell/runtime \
   -DQINDAQT_CLIPBOARD_APPLET_POISON_DIRECTORY=<scratch> \
   -P tests/shell/clipboard_applet/check_clipboard_applet_boundary.cmake
 ```
 
 ## Non-claims
 
-This slice proves no Wayland `ext-data-control-v1` transport, no
-`org.qindaqt.Clipboard1` bus surface, no live host-clipboard integration, no
-Settings1 opt-in wiring, and no production-shell composition; the adapter is
-an in-process seam over the C0 model for presentation and tests. The C1 host
-process, authenticated lock-state provisioning, and live transport remain the
-platform lane's milestones, per
-[Clipboard service](../architecture/clipboard-service.md).
+This slice proves the shell's public Clipboard1/Settings1 composition and
+offscreen production dispatcher, not live host-clipboard behavior, nested
+capture resistance, a real Wayland selection, or an ambient desktop/session
+bus. Clipboard1 version 1 has no pin operation, so Pin fails closed with a
+specific unavailable-through-v1 message; no private service call fills that
+gap. Live transport and authenticated lock-state claims remain owned by the
+[Clipboard service](../architecture/clipboard-service.md) qualification.

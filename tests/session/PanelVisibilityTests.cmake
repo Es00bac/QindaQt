@@ -53,6 +53,7 @@ if(
         qindaqt-desktop-session-probe
         qindaqt_shell_launcher_qmlplugin
         qindaqt_global_menu_qmlplugin
+        qindaqt_shell_clipboard_applet_runtimeplugin
     )
     install(
         FILES
@@ -153,6 +154,11 @@ if(
             COMPONENT DesktopVirtual
         )
     endforeach()
+
+    # BuiltinAppletContent now imports the compiled Clipboard applet module.
+    # Every private desktop row installs only DesktopVirtual, so stage that
+    # shell-linked module through its owning install helper as well.
+    qindaqt_install_clipboard_applet_runtime(DesktopVirtual)
 
     foreach(_panel_visibility_row IN ITEMS single-1080p single-wuxga)
         add_test(
