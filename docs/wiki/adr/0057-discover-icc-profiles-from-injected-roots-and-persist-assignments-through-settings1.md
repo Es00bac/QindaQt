@@ -39,16 +39,21 @@ Discovery reads only the 128-byte ICC header plus a bounded description tag
 profile's identity is its sanitized file stem, its origin is exactly the
 origin of the injected root it was found under, and its color semantics are
 unproven placeholders that can never satisfy the C0 truthful-sRGB-default
-rule until a consumer classifies them.
+rule until a consumer classifies them. A root is rejected before enumeration
+when it or any ancestor is a symlink or when its injected origin is unknown.
+Ordinary discovery reads no profile body beyond bounded metadata; candidates
+whose IDs and inspected metadata collide are compared byte-for-byte in bounded
+chunks solely to distinguish exact duplicates from conflicting content.
 
 User import validates the complete source before any mutation, computes the
 SHA-256 content digest as the profile lineage fingerprint, and stores the copy
 in the injected user root through the ADR-0051 durability pattern: an existing,
-non-symlink, effective-user-owned, non-group/other-writable root; an exclusive
+no-symlink-component, effective-user-owned, non-group/other-writable root; an exclusive
 mode-0600 temporary name; fsync; an atomic rename commit point; and a
 directory barrier where supported. A dot-prefixed destination name is refused,
 because discovery ignores dot names and such a file would otherwise be stored
-yet never re-enter the catalog. Rejection is atomic, and an interrupted
+yet never re-enter the catalog. The same round-trip rule refuses any suffix
+other than case-insensitive `.icc` or `.icm`. Rejection is atomic, and an interrupted
 write leaves only a dot-prefixed temporary that the next import removes and
 discovery ignores.
 
@@ -60,7 +65,9 @@ application is optimistic and fenced: conflict and epoch truth come from the
 service, an uncertain write is reported and never replayed, and a persisted
 document that does not decode fails closed instead of being overwritten. The
 C0 revisioned snapshot remains the only applied-assignment authority —
-persistence records intent only.
+persistence records intent only. A record whose output is currently disconnected
+is retained until an explicit removal draft; transient connectivity is not
+persistence authority.
 
 ## Consequences
 

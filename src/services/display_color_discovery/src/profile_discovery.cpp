@@ -3,6 +3,7 @@
 #include <qindaqt/services/display_color_discovery/profile_discovery.h>
 
 #include "icc_text_metadata_p.h"
+#include "path_safety_p.h"
 #include "profile_import_p.h"
 
 #include <QtCore/QDir>
@@ -11,7 +12,14 @@
 #include <QtCore/QHash>
 #include <QtCore/QSet>
 #include <QtCore/QtEndian>
+
 #include <algorithm>
+#include <array>
+#include <cerrno>
+#include <cstddef>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace QindaQt::DisplayColor
 {
@@ -33,6 +41,85 @@ DiscoveryDiagnostic diagnostic(DiscoverySeverity severity, QString code, QString
 {
     return DiscoveryDiagnostic{severity, std::move(code), bounded(std::move(path)),
                                bounded(std::move(detail))};
+}
+
+bool validOrigin(DiscoveryOrigin origin)
+{
+    switch (origin) {
+    case DiscoveryOrigin::BuiltIn:
+    case DiscoveryOrigin::System:
+    case DiscoveryOrigin::UserImported:
+        return true;
+    }
+    return false;
+}
+
+enum class ContentComparison
+{
+    Identical,
+    DifferentOrUnverifiable,
+};
+
+ssize_t readRetry(int fd, char *buffer, size_t size)
+{
+    ssize_t count = 0;
+    do {
+        count = ::read(fd, buffer, size);
+    } while (count < 0 && errno == EINTR);
+    return count;
+}
+
+ContentComparison compareProfileContent(const QString &leftPath, const QString &rightPath)
+{
+    const QByteArray leftName = QFile::encodeName(leftPath);
+    const QByteArray rightName = QFile::encodeName(rightPath);
+    const int leftFd = ::open(leftName.constData(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (leftFd < 0) {
+        return ContentComparison::DifferentOrUnverifiable;
+    }
+    const int rightFd = ::open(rightName.constData(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (rightFd < 0) {
+        static_cast<void>(::close(leftFd));
+        return ContentComparison::DifferentOrUnverifiable;
+    }
+
+    struct stat leftStat {};
+    struct stat rightStat {};
+    const bool safe = ::fstat(leftFd, &leftStat) == 0 && ::fstat(rightFd, &rightStat) == 0 &&
+                      S_ISREG(leftStat.st_mode) && S_ISREG(rightStat.st_mode) &&
+                      leftStat.st_size >= 0 && leftStat.st_size == rightStat.st_size &&
+                      static_cast<quint64>(leftStat.st_size) <= MaxIccProfileSizeBytes;
+    bool identical = safe;
+    std::array<char, 64 * 1024> leftChunk {};
+    std::array<char, 64 * 1024> rightChunk {};
+    quint64 remaining = safe ? static_cast<quint64>(leftStat.st_size) : 0;
+    while (identical && remaining > 0) {
+        const size_t requested = static_cast<size_t>(
+            std::min<quint64>(remaining, static_cast<quint64>(leftChunk.size())));
+        const ssize_t leftRead = readRetry(leftFd, leftChunk.data(), requested);
+        const ssize_t rightRead = readRetry(rightFd, rightChunk.data(), requested);
+        if (leftRead != static_cast<ssize_t>(requested) ||
+            rightRead != static_cast<ssize_t>(requested)) {
+            identical = false;
+            break;
+        }
+        if (!std::equal(leftChunk.begin(),
+                        leftChunk.begin() + static_cast<std::ptrdiff_t>(leftRead),
+                        rightChunk.begin())) {
+            identical = false;
+        }
+        remaining -= static_cast<quint64>(requested);
+    }
+    if (identical) {
+        char leftExtra = 0;
+        char rightExtra = 0;
+        identical = readRetry(leftFd, &leftExtra, 1) == 0 &&
+                    readRetry(rightFd, &rightExtra, 1) == 0;
+    }
+    static_cast<void>(::close(rightFd));
+    static_cast<void>(::close(leftFd));
+    return identical ? ContentComparison::Identical
+                     : ContentComparison::DifferentOrUnverifiable;
 }
 
 // File-backed bounded region reader. The parser caps what it requests; this
@@ -168,13 +255,6 @@ ExaminedFile examineCandidateFile(const QString &fullPath, DiscoveryOrigin origi
     return profileResult;
 }
 
-bool isIccExtension(const QString &fileName)
-{
-    const QString suffix = fileName.section(QLatin1Char('.'), -1, -1);
-    return suffix.compare(QLatin1String("icc"), Qt::CaseInsensitive) == 0 ||
-           suffix.compare(QLatin1String("icm"), Qt::CaseInsensitive) == 0;
-}
-
 } // namespace
 
 ProfileDiscovery::ProfileDiscovery(QList<DiscoveryRoot> roots, DiscoveryLimits limits)
@@ -202,6 +282,12 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
 
     QList<DiscoveredProfile> examinedProfiles;
     for (const DiscoveryRoot &root : m_roots) {
+        if (!validOrigin(root.origin)) {
+            result.complete = false;
+            result.diagnostics.append(diagnostic(DiscoverySeverity::Warning,
+                                                 QStringLiteral("invalid-origin"), root.path));
+            continue;
+        }
         const QFileInfo rootInfo(root.path);
         if (root.path.isEmpty()) {
             result.diagnostics.append(
@@ -211,6 +297,15 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
         if (rootInfo.isSymLink()) {
             result.diagnostics.append(diagnostic(DiscoverySeverity::Warning,
                                                  QStringLiteral("root-is-symlink"), root.path));
+            continue;
+        }
+        // AGENT-GUARD: QFileInfo::isSymLink() checks only the final root
+        // component. Walking parents prevents a path such as
+        // injected/redirect/icc from escaping through a symlinked redirect
+        // ancestor (P1.1) before QDir performs any enumeration.
+        if (injectedRootHasSymlinkedAncestor(root.path)) {
+            result.diagnostics.append(diagnostic(
+                DiscoverySeverity::Warning, QStringLiteral("root-ancestor-is-symlink"), root.path));
             continue;
         }
         if (!rootInfo.isDir() || !rootInfo.isReadable()) {
@@ -224,7 +319,7 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
         std::sort(entries.begin(), entries.end());
         quint32 candidates = 0;
         for (const QString &entry : entries) {
-            if (!isIccExtension(entry)) {
+            if (!hasDiscoverableIccExtension(entry)) {
                 continue;
             }
             if (candidates >= m_limits.maxFilesPerRoot) {
@@ -248,7 +343,7 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
     // diagnostic records which deterministic identifier collided; the
     // normalization below performs the same order-independent rejection.
     QSet<QString> conflictedIds;
-    QHash<QString, IccProfileDescriptor> seenById;
+    QHash<QString, DiscoveredProfile> seenById;
     QList<IccProfileDescriptor> descriptors;
     descriptors.reserve(examinedProfiles.size());
     for (const DiscoveredProfile &profile : examinedProfiles) {
@@ -258,7 +353,12 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
         }
         const auto seenIt = seenById.find(id);
         if (seenIt != seenById.end()) {
-            if (*seenIt == profile.descriptor) {
+            // AGENT-GUARD: Equal inspected metadata is not proof of equal ICC
+            // bytes. Compare colliding files in bounded chunks so a body-only
+            // mutation cannot be collapsed as an exact duplicate (P1.3).
+            if (seenIt->descriptor == profile.descriptor &&
+                compareProfileContent(seenIt->sourcePath, profile.sourcePath) ==
+                    ContentComparison::Identical) {
                 result.diagnostics.append(
                     diagnostic(DiscoverySeverity::Info, QStringLiteral("duplicate-collapsed"),
                                profile.sourcePath));
@@ -272,7 +372,7 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
                            profile.sourcePath, id));
             continue;
         }
-        seenById.insert(id, profile.descriptor);
+        seenById.insert(id, profile);
         descriptors.append(profile.descriptor);
     }
 

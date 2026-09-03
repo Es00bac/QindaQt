@@ -8,6 +8,8 @@
 #include <QObject>
 #include <QVariantMap>
 
+#include <optional>
+
 namespace QindaQt::DisplayColor
 {
 
@@ -117,6 +119,7 @@ private:
 
     QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AssignmentDocumentView m_view;
+    std::optional<AssignmentDocument> m_expectedDocument;
     bool m_applyInFlight = false;
 };
 

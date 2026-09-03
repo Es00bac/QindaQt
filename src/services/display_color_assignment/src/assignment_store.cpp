@@ -36,12 +36,16 @@ SettingsAssignmentStore::SettingsAssignmentStore(
     connect(&m_client, &Scn::SettingsClient::commitFinished, this,
             &SettingsAssignmentStore::handleCommitFinished);
     connect(&m_client, &Scn::SettingsClient::commitUncertain, this, [this](const QString &) {
+        if (!m_applyInFlight) {
+            return;
+        }
         // AGENT-GUARD: An uncertain write is terminal for this apply attempt.
         // The transport may or may not have committed; replaying here could
         // double-apply a document the service already accepted, so the
         // outcome is reported and the caller must resync and re-apply
         // explicitly (Settings1 no-replay truth).
         m_applyInFlight = false;
+        m_expectedDocument.reset();
         AssignmentApplyOutcome outcome;
         outcome.status = ApplyStatus::Uncertain;
         outcome.reasonCode = QStringLiteral("uncertain-write");
@@ -139,13 +143,19 @@ bool SettingsAssignmentStore::applyDraft(const ColorAssignmentDraft &draft, QStr
         return reject(QStringLiteral("draft-apply/encode-failed"));
     }
 
+    // AGENT-GUARD: Arm store state before crossing the injected client seam.
+    // A legal fake transport can complete synchronously inside setUserValue;
+    // arming afterward strands the store forever (P2.2).
+    m_expectedDocument = applied.next;
+    m_applyInFlight = true;
     if (!m_client.setUserValue(QLatin1String(ColorAssignmentsSettingsKey), *encoded, error)) {
+        m_applyInFlight = false;
+        m_expectedDocument.reset();
         if (error != nullptr && error->isEmpty()) {
             *error = QStringLiteral("transport-rejected");
         }
         return false;
     }
-    m_applyInFlight = true;
     return true;
 }
 
@@ -158,6 +168,8 @@ void SettingsAssignmentStore::handleCommitFinished(const CommitOutcome &outcome)
         return;
     }
     m_applyInFlight = false;
+    const std::optional<AssignmentDocument> expected = std::move(m_expectedDocument);
+    m_expectedDocument.reset();
 
     AssignmentApplyOutcome result;
     result.revisionAfter = outcome.revisionAfter;
@@ -168,6 +180,12 @@ void SettingsAssignmentStore::handleCommitFinished(const CommitOutcome &outcome)
         if (!decoded.ok) {
             result.status = ApplyStatus::Uncertain;
             result.reasonCode = QStringLiteral("applied-truth-unreadable");
+        } else if (!expected.has_value() || decoded.document != *expected) {
+            // AGENT-GUARD: A wire-level Applied status is insufficient. The
+            // authoritative document must equal the exact merged value this
+            // store submitted, or persistence truth is unproven (P1.4).
+            result.status = ApplyStatus::Uncertain;
+            result.reasonCode = QStringLiteral("applied-truth-mismatch");
         } else {
             result.persistedDocument = decoded.document;
             if (outcome.revisionAfter == outcome.revisionBefore &&

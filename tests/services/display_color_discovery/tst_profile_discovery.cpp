@@ -52,10 +52,13 @@ class ProfileDiscoveryTests final : public QObject
 
 private slots:
     void discoversOnlyFromInjectedRoots();
+    void rejectsSymlinkedRootAncestors();
+    void rejectsInvalidInjectedOrigins();
     void classifiesOriginFromTheInjectedRoot();
     void skipsHostileFilesWithDiagnostics();
     void rejectsConflictingDuplicateIdsOrderIndependently();
     void collapsesExactDuplicatesDeterministically();
+    void rejectsBodyOnlyDuplicateConflicts();
     void boundsEnumerationTruthfully();
     void parsesDescAndMlucDescriptions();
     void acceptsExtensionsCaseInsensitively();
@@ -88,6 +91,45 @@ void ProfileDiscoveryTests::discoversOnlyFromInjectedRoots()
     // A directory that was never injected must stay invisible even though it
     // exists on the same machine.
     QVERIFY(!result.profiles.first().sourcePath.contains(QStringLiteral("secret")));
+}
+
+void ProfileDiscoveryTests::rejectsSymlinkedRootAncestors()
+{
+    QVERIFY(m_tree.isValid());
+    const QString injected = m_tree.filePath(QStringLiteral("ancestor-injected"));
+    const QString outside = m_tree.filePath(QStringLiteral("ancestor-outside"));
+    const QString outsideIcc = outside + QStringLiteral("/icc");
+    QVERIFY(QDir().mkpath(injected) && QDir().mkpath(outsideIcc));
+    QVERIFY(writeFileBytes(outsideIcc + QStringLiteral("/outside.icc"),
+                           buildIccFileBytes(512, QStringLiteral("Outside"))));
+    QVERIFY(QFile::link(QFileInfo(outside).absoluteFilePath(),
+                        injected + QStringLiteral("/redirect")));
+
+    // AGENT-NOTE: P1.1 rejected a scan that checked only the final root and
+    // followed an ancestor symlink outside the injected directory boundary.
+    const QString redirectedRoot = injected + QStringLiteral("/redirect/icc");
+    const DiscoveryResult result =
+        ProfileDiscovery({systemRoot(redirectedRoot)}).discoverCatalog();
+    QVERIFY(result.profiles.isEmpty());
+    QVERIFY(codesFor(result, redirectedRoot)
+                .contains(QStringLiteral("root-ancestor-is-symlink")));
+}
+
+void ProfileDiscoveryTests::rejectsInvalidInjectedOrigins()
+{
+    QVERIFY(m_tree.isValid());
+    const QString root = m_tree.filePath(QStringLiteral("invalid-origin"));
+    QVERIFY(QDir().mkpath(root));
+    QVERIFY(writeFileBytes(root + QStringLiteral("/profile.icc"),
+                           buildIccFileBytes(512, QStringLiteral("Profile"))));
+
+    // AGENT-NOTE: P2.1 showed an out-of-range public origin silently acquiring
+    // BuiltIn provenance through the descriptor's default initializer.
+    const DiscoveryRoot invalid{root, static_cast<DiscoveryOrigin>(99)};
+    const DiscoveryResult result = ProfileDiscovery({invalid}).discoverCatalog();
+    QVERIFY(result.profiles.isEmpty());
+    QVERIFY(!result.complete);
+    QVERIFY(codesFor(result, root).contains(QStringLiteral("invalid-origin")));
 }
 
 void ProfileDiscoveryTests::classifiesOriginFromTheInjectedRoot()
@@ -211,6 +253,30 @@ void ProfileDiscoveryTests::collapsesExactDuplicatesDeterministically()
         ProfileDiscovery({systemRoot(left), systemRoot(right)}).discoverCatalog();
     QCOMPARE(result.profiles.size(), 1);
     QVERIFY(result.complete);
+}
+
+void ProfileDiscoveryTests::rejectsBodyOnlyDuplicateConflicts()
+{
+    QVERIFY(m_tree.isValid());
+    const QString left = m_tree.filePath(QStringLiteral("body-dup-left"));
+    const QString right = m_tree.filePath(QStringLiteral("body-dup-right"));
+    QVERIFY(QDir().mkpath(left) && QDir().mkpath(right));
+    QByteArray original = buildIccFileBytes(512, QStringLiteral("Same metadata"));
+    QByteArray changed = original;
+    changed[500] = '\x5a';
+    QVERIFY(writeFileBytes(left + QStringLiteral("/same.icc"), original));
+    QVERIFY(writeFileBytes(right + QStringLiteral("/same.icc"), changed));
+
+    // AGENT-NOTE: P1.3 rejected descriptor-only duplicate comparison because
+    // bytes outside the inspected metadata could differ under the same ID.
+    const DiscoveryResult result =
+        ProfileDiscovery({systemRoot(left), systemRoot(right)}).discoverCatalog();
+    QVERIFY(result.profiles.isEmpty());
+    bool sawConflict = false;
+    for (const DiscoveryDiagnostic &diagnostic : result.diagnostics) {
+        sawConflict = sawConflict || diagnostic.code == QStringLiteral("conflicting-profile-id");
+    }
+    QVERIFY(sawConflict);
 }
 
 void ProfileDiscoveryTests::boundsEnumerationTruthfully()

@@ -24,8 +24,12 @@ set_target_properties(qindaqt_display_color_assignment PROPERTIES CXX_EXTENSIONS
 qindaqt_enable_warnings(qindaqt_display_color_assignment)
 
 install(
-    TARGETS qindaqt_display_color_assignment
+    TARGETS qindaqt_display_color_assignment qindaqt_display_color_model
+            qindaqt_settings_client qindaqt_settings_protocol
     EXPORT QindaQtTargets
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT DisplayColorAssignmentDevelopment
     FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        COMPONENT DisplayColorAssignmentDevelopment
 )

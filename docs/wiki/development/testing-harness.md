@@ -1743,7 +1743,10 @@ assignment rows extend the same selector with:
   classification, hostile-file diagnostics (empty, truncated, garbage,
   mislabeled declared/actual size, declared oversize, planted symlinks,
   unsafe file names), order-independent conflicting-duplicate rejection,
-  exact-duplicate collapse, bounded enumeration truth, case-insensitive
+  including body-only byte differences under otherwise equal inspected
+  metadata, exact-duplicate collapse by bounded byte comparison, rejection of
+  symlinked root ancestors and invalid injected origins before enumeration,
+  bounded enumeration truth, case-insensitive
   `*.icc`/`*.icm` acceptance, silent dot-prefixed-name exclusion, bounded
   tag-table/description degradation diagnostics, 'desc'/'mluc' description
   parsing, and the unproven-semantics guarantee that a scanned profile can
@@ -1751,7 +1754,7 @@ assignment rows extend the same selector with:
 - `qindaqt.display-color-discovery-import` — atomic import truth: validated
   copies with SHA-256 lineage fingerprints, idempotent re-import, rejection
   atomicity for hostile sources (including dot-prefixed destination names,
-  which discovery could never re-list), destination conflicts,
+  and non-ICC suffixes, which discovery could never re-list), destination conflicts,
   interrupted-write recovery (stale temporary removal, directory collision
   fail-closed), missing/unusable injected user roots, and the discovery
   round trip of an imported profile.
@@ -1763,17 +1766,23 @@ assignment rows extend the same selector with:
   trips, deterministic record ordering, empty/absent document truth, hostile
   document rejection (shapes, grammars, lineage hex, output cap), fail-closed
   encoding, draft validation including duplicate targets, and pure draft
-  application with cap enforcement.
+  application with cap enforcement. Untargeted records are retained explicitly,
+  including assignments for currently disconnected outputs, until a removal
+  draft targets them.
 - `qindaqt.display-color-assignment-store` — optimistic apply over the public
   Settings1 client seam with a fake transport: applied and applied-no-op
   truth with authoritative-value verification, conflict and uncertain-timeout
   terminal outcomes without replay, unusable-document fail-closed refusal,
-  and unavailable truth on transport loss.
+  authoritative-value mismatch uncertainty, legal synchronous completion, and
+  unavailable truth on transport loss.
 - `qindaqt.display-color-assignment-boundary`,
   `qindaqt.display-color-assignment-boundary-poison`, and
   `qindaqt.display-color-assignment-installed-cpp-consumer` — the assignment
   module's dependency policy, its poison proof, and an installed staged
   consumer composing the pure codec and the store without any D-Bus daemon.
+  Each installed consumer stages only its explicit development component and
+  transitive public artifacts, so the selector remains runnable after the
+  documented focused build without unrelated repository libraries.
 
 All rows are deterministic in-process evidence. None claims compositor
 application, HDR/WCG runtime behavior, colord interaction, or physical
