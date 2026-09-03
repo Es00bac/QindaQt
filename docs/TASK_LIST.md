@@ -58,6 +58,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `f44919a` — The production BlueZ adapter reaches `org.bluez` through an injected direct-QtDBus
+  connection behind the accepted AdapterBackend port, driving only adapter power, the reference-counted
+  discovery lease, and paired-device connect/disconnect while BlueZ keeps pairing and trust authority;
+  owner loss retires truth, hostile properties are bounded, and the composition root defaults to production
+  with an explicit deterministic mode. Betty Holberton's independent Kimi K3 exact review accepted it at
+  P0/P1/P2/P3 `0/0/0/2` with 14/14 rows in Debug and Release under an unreachable host system bus. The fresh
+  merged tree passes 15/15 Bluetooth rows including the whole-repository staged-install row in both profiles,
+  the broad safe Debug suite 379/379, and all static gates; the candidate's ADR is renumbered to 0057 to
+  follow the already integrated ADR-0056. QQ-005.05 stays EXECUTABLE with a production backend; physical
+  radios, pairing UX, Settings UI, and hardware qualification remain.
+
 - `882cc0c` — The production Bluetooth applet B1 composes only the public Bluetooth client
   through a shell-private controller with separate read and control grants, audited
   manifest/registry/host/profile routing, compiled keyboard-accessible QML, and exact-owner

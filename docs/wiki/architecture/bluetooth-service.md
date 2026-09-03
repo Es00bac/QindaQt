@@ -78,8 +78,7 @@ dropped by the owner token and backend run generation.
 
 The adapter consumes `org.freedesktop.DBus.ObjectManager`, Adapter1,
 Device1, and standard `PropertiesChanged`. It observes Address, Alias/Name,
-Powered, Discovering, Adapter, Class, Icon, RSSI, Paired, Connected, and
-Trusted, but publishes only fields representable in Bluetooth1 v1. It calls
+Powered, Discovering, Adapter, Class, Icon, RSSI, Paired, and Connected, but publishes only fields representable in Bluetooth1 v1. It calls
 only Properties.Set(Powered), StartDiscovery, StopDiscovery, Connect, and
 Disconnect. It never calls Pair, changes Trusted, removes a device, registers
 an agent, or duplicates a BlueZ record. Names are bounded without splitting
