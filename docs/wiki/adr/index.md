@@ -67,6 +67,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0064](0064-confine-file-mutation-to-identity-checked-local-authority.md) | Accepted | Confine File Manager mutation to identity-checked local authority |
 | [ADR-0065](0065-persist-text-editor-path-inventory.md) | Accepted | Persist only Text Editor's bounded path inventory |
 | [ADR-0066](0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md) | Accepted | Discover ICC profiles from injected roots and persist assignments through Settings1 |
+| [ADR-0067](0067-confine-fontconfig-behind-font-discovery.md) | Accepted | Confine fontconfig behind the Font F1 discovery provider |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

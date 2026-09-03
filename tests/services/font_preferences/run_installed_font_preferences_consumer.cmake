@@ -5,6 +5,8 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY QINDAQT_INSTALL_
                           QINDAQT_FONT_PREFERENCES_SOURCE_DIRECTORY
                           QINDAQT_INSTALL_INCLUDEDIR
                           QINDAQT_FONT_PREFERENCES_LIBRARY
+                          QINDAQT_SETTINGS_CLIENT_LIBRARY
+                          QINDAQT_SETTINGS_PROTOCOL_LIBRARY
                           QINDAQT_QT6_DIR)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing installed FontPreferences consumer input: ${required}")
@@ -33,7 +35,9 @@ foreach(relative IN ITEMS
         "qindaqt/services/font_preferences/font_preferences.h"
         "qindaqt/services/font_preferences/font_preferences_codec.h"
         "qindaqt/services/font_preferences/font_bootstrap.h"
-        "qindaqt/services/font_preferences/font_preferences_coordinator.h")
+        "qindaqt/services/font_preferences/font_preferences_coordinator.h"
+        "qindaqt/services/font_preferences/font_settings_bridge.h"
+        "qindaqt/services/font_preferences/font_settings_bootstrap.h")
     if(NOT EXISTS "${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}/${relative}")
         message(FATAL_ERROR "Installed FontPreferences public header is missing ${relative}")
     endif()
@@ -49,6 +53,8 @@ execute_process(
         "-DQt6_DIR=${QINDAQT_QT6_DIR}"
         "-DQINDAQT_STAGE_INCLUDE_DIR=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
         "-DQINDAQT_FONT_PREFERENCES_LIBRARY=${QINDAQT_FONT_PREFERENCES_LIBRARY}"
+        "-DQINDAQT_SETTINGS_CLIENT_LIBRARY=${QINDAQT_SETTINGS_CLIENT_LIBRARY}"
+        "-DQINDAQT_SETTINGS_PROTOCOL_LIBRARY=${QINDAQT_SETTINGS_PROTOCOL_LIBRARY}"
         "-DQINDAQT_CONSUMER_SOURCE=${QINDAQT_CONSUMER_SOURCE}"
     RESULT_VARIABLE configure_status
     OUTPUT_VARIABLE configure_output
