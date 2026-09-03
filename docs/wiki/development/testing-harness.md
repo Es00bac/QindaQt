@@ -191,14 +191,18 @@ an ordered post-moc controller-surface contract, mutation-sensitive
 pure/runtime dependency boundaries, and an installed production-package/source-
 poison row. `qindaqt.bluetooth-applet-surface` walks the controller-owned
 property, method, and enumerator slices of `staticMetaObject`, compares the
-complete attribute/signature lists in order, rejects a deliberately expanded
-test surface, and constructs the production applet through an offscreen
-`QQmlEngine` to compare controller-specific QML-visible property and method
-names with the same literal contract. Token-pasted macros, public slots, and
+property name/type/readable/writable/resettable/notify/constant/final fields
+and method signature/return/type/access/revision fields, plus each enumerator's
+name, enum name, scope, flag/scoped state, and key/value list, in order. It
+rejects a deliberately expanded test surface and constructs the production
+applet through an offscreen `QQmlEngine` to compare controller-specific
+QML-visible property and method names with the same literal contract.
+Token-pasted macros, public slots, and
 cross-header macro aliases therefore cannot evade the compiled gate. The
-textual boundary rows remain limited to exact file/header allowlists and
-forbidden dependencies or symbols, with independent client/service, address,
-persistence, filesystem, and adjacent-module poisons. No row contacts the host
+textual boundary rows retain exact file/header allowlists, forbidden
+dependencies or symbols, and manifest/registry/profile/QML/composition presence
+contracts, with independent client/service, address, persistence, filesystem,
+adjacent-module, and composition-removal poisons. No row contacts the host
 session bus, display server, BlueZ, a radio, or pairing authority. The exact
 matrix and nonclaims are
 detailed in [Bluetooth applet](../shell/bluetooth-applet.md). The installed row
@@ -207,7 +211,8 @@ resolver to locate KF6 GlobalAccel at the exact copied path inside the stage.
 The B1 qualification used fresh strict GCC 15.3 Debug and Release roots. Each
 profile built the production shell plus the focused targets, passed all eight
 registered Bluetooth-applet rows, and passed six adjacent public-client,
-manifest, catalog, resolver, dispatcher, and shell-runtime-catalog rows. This
+manifest, catalog, resolver, notification-center applet offscreen, and
+shell-runtime-catalog rows. This
 is deterministic public-client/offscreen/package evidence only; it adds no
 private-bus, compositor, BlueZ, host-radio, or hardware claim.
 
