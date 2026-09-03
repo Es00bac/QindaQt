@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Power PB-2 descendant `6cef8b582aeb33522829d6ae838269f31aad7611`
+  at manager merge `4ae7f89`. The resident Power1 service now composes production UPower, logind,
+  power-profiles, and backlight adapters over injected buses and roots, defaulting to production with an
+  explicit deterministic mode; UPower line-power/PowerSupply semantics, dispatch-time logind
+  re-authorization, and generation-fenced pending maps were each forced by an exact rejection. Ida Holz
+  (OpenAI Codex) accepted the final descendant at `0/0/0/0`. The candidate's ADR is renumbered to ADR-0060.
+  Fresh merged-tree Debug and Release each pass the power selector 26/26 with the host system bus
+  unreachable; the broad safe Debug suite passes 403/403; 123-document validation, strict MkDocs, source shape, diff, JSON, and Team Board
+  16/16 pass.
+
 - This integration merges exact accepted Audio applet descendant `14f3e670d66988ec87648f195b91e26c56a45fbf`
   at manager merge `780981c`. The applet composes only the public AudioClient with separate read/control
   grants and audited routing; the merge also carries the staging-closure repairs that ship the shell's

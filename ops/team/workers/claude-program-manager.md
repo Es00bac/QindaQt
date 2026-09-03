@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-03T00:04:19-06:00
+updated_at: 2026-09-03T00:14:37-06:00
 ---
 
 # Claude Program Manager
@@ -41,3 +41,4 @@ updated_at: 2026-09-03T00:04:19-06:00
 - 2026-09-02T23:28:17-06:00 — Integrated the Clipboard C1 service `63e884c` at merge `f34f81a` (ADR renumbered 0058); merged tree passes clipboard 14/14, Settings-related 29/29 in Debug and Release, broad safe Debug 389/389 after a verified reconfigure, and static gates. QQ-005.06 WIRED → EXECUTABLE. The audio applet merge was reset off main after it broke two installed-package rows; its staging repair `b623b00` is under recheck.
 - 2026-09-02T23:31:54-06:00 — Integrated Portal P1 `c33b490` at merge `2c514ac` (ADR renumbered 0059); merged tree passes portal 9/9 Debug/Release, broad safe Debug 391/391, and static gates.
 - 2026-09-03T00:04:19-06:00 — Integrated the Audio applet composition `14f3e67` at merge `780981c` after the staging-closure repairs; merged tree passes applet 22/22, integrity/runtime/closure 7/7 Debug/Release, broad safe Debug 396/396, and static gates. QQ-004.12 WIRED → EXECUTABLE. Six integrations since the handover.
+- 2026-09-03T00:14:37-06:00 — Integrated Power PB-2 `6cef8b5` at merge `4ae7f89` (ADR renumbered 0060); merged tree passes power 26/26 Debug/Release under an unreachable system bus, broad safe Debug 403/403, and static gates. Global Menu G2 composition blocked on missing compositor identity facts; a compositor identity lane is queued behind the accepted window-actions candidate.

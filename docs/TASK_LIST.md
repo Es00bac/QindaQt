@@ -58,6 +58,15 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `6cef8b5` — Power PB-2 adds the production upstream adapters behind PB-1's collaborator seams: UPower with
+  correct line-power/PowerSupply/battery semantics, logind actions re-authorized at dispatch time with
+  generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight
+  adapter, all selected by the composition root in production with an explicit deterministic mode
+  (ADR-0060). Ida Holz (OpenAI Codex, a different worker) rejected the first two candidates at `0/2/1/1`
+  and `0/1/0/0` and accepted the second repair at `0/0/0/0`. The fresh merged tree passes the power selector
+  26/26 in Debug and Release under an unreachable host system bus, the broad safe Debug suite passes 403/403, and all static gates. QQ-005.03
+  stays EXECUTABLE with production adapters; physical hardware, suspend/resume, and the Settings page remain.
+
 - `14f3e67` — The production Audio applet composes only the public AudioClient through a shell-private
   controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled
   keyboard-accessible QML, and exact-owner replacement fences. Integration exposed that the shell's new
