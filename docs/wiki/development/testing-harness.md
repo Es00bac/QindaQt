@@ -256,6 +256,35 @@ shell-runtime-catalog rows. This
 is deterministic public-client/offscreen/package evidence only; it adds no
 private-bus, compositor, BlueZ, host-radio, or hardware claim.
 
+The Launcher L1 production-adapter slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.launcher-' \
+  --output-on-failure --no-tests=error
+```
+
+Its adapter rows cover injected-root fixture trees with canonical containment,
+escaping-link and FIFO/non-regular negative controls, capped reads, debounced
+watcher refresh with generation fencing, explicit inaccessible-root,
+non-traversable-ancestor, and dangling-top-level-link degradation (with only
+syscall-confirmed absence remaining normal), Settings1 persistence round trips
+and unchanged-authority post-uncertainty convergence against a scripted fake
+transport, and seam-based execution with entry-policy action inheritance and
+a recording spawner/activator. The only real children are the inert `/bin/true`
+and `/bin/false` fixtures. Fatal-warning-clean compiled offscreen QML covers
+QST provisioning, pinned/recent/category/search rendering, persistence failure,
+Tab and cross-section traversal, Return/Space activation, Escape, and accessible
+enabled/denied/unavailable states. A runtime source-boundary poison gate, a
+mutation-sensitive documentation/comment contract row, and a relocated
+complete-import-closure installed-package proof finish the slice. No row
+contacts the host session bus, display server, real user applications, or
+hardware: headless rows construct `QCoreApplication`, inherited display/bus
+endpoints are removed from every launcher row, and GUI rows force the offscreen
+software backend. The exact
+matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
+[ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
