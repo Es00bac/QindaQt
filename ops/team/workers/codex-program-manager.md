@@ -8,7 +8,7 @@ status: working
 feature: Route the handoff's named lanes, integrate accepted desktop blockers, verify main, and maintain product truth
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-03T12:58:04-06:00
-updated_at: 2026-09-03T13:03:46-06:00
+updated_at: 2026-09-03T13:07:09-06:00
 ---
 
 # Codex Program Manager
@@ -32,3 +32,7 @@ updated_at: 2026-09-03T13:03:46-06:00
   586/586, and all 8 serialized DesktopVirtual package/boot/validator/loader
   and 1080p/WUXGA panel rows. Routed Task List T2 and Color Settings repairs to
   their same independent Codex reviewers for the last funded recheck.
+- 2026-09-03T13:07:09-06:00 — Observed Bluetooth pairing repair `7025a1c` and
+  Tray S2 `b10692c` handoffs. Routed Bluetooth to Kathrin Bringmann's final
+  recheck and Tray to the newly assigned Rózsa Péter exact review; all four
+  candidate reviews are live in isolated detached worktrees.
