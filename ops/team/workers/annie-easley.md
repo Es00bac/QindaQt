@@ -2,22 +2,34 @@
 name: Annie Easley
 role: Bluetooth applet B1 implementer
 provider: OpenAI Codex
-model: inherited exact serving model; unexposed
-reasoning: inherited exact reasoning level; unexposed
+model: gpt-5.6-sol
+reasoning: high
 status: handoff
-feature: QQ-004.14 production Bluetooth applet B1
+feature: QQ-004.14 Bluetooth applet
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1
 started_at: 2026-08-31T06:00:28-06:00
-updated_at: 2026-08-31T17:52:03-06:00
+updated_at: 2026-09-02T20:58:39-06:00
 ---
 
 # Annie Easley
 
 Implements the production Bluetooth applet over the public Bluetooth1/BluetoothClient B0 boundary.
 
-- Status: handoff — exact lexical-surface repair `af78bce23c4f57d8085d9cd6b27f8b4eeecb26bb` is green and awaits independent exact-candidate rereview; compiler/CTest/private lanes remain released.
+- Role: Bluetooth applet B1 implementer.
+- Provider/model: OpenAI Codex / `gpt-5.6-sol` (high reasoning).
+- Status: handoff — exact candidate `7061dd3bf0db9c2048bfe4ec919147e12ef9563c` replaces the lexical controller-surface gate and is green for exact rereview.
+- Exact base: `35f2fa20881437fc3ef9d85ce399dc68e12ed1d3`.
+- Branch: `worker/bluetooth-applet-b1`.
+- Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/bluetooth-applet-b1`.
+- Product authority: `tests/shell/bluetooth_applet/**`, Bluetooth sections of `docs/wiki/shell/bluetooth-applet.md` and `docs/wiki/development/testing-harness.md`, and `src/shell/bluetooth_applet/**` only if registration requires it.
 
 ## Updates
+
+- 2026-09-02T20:58:39-06:00 — Handoff: froze exact product candidate `7061dd3bf0db9c2048bfe4ec919147e12ef9563c` (tree `4ff0f7984cb1fc2bf4083fdb6e77a8b85028a0a8`, sole parent/base `35f2fa20881437fc3ef9d85ce399dc68e12ed1d3`) across exactly five owned test/doc paths. Strict Debug/Release configured and built the focused graph (319/319 and 383/383 reported actions); final Bluetooth selectors pass 8/8 per profile and adjacent selectors pass 6/6 per profile. Direct runtime modes pass 7+0, 7+0, and 7+5; pure boundary 5+4; 117-document validation, strict MkDocs, 1,780-file source shape, and whitespace/provenance checks pass. No JSON changed. Requested independent exact rereview by Kimi K2.7 and Kimi K3-256k, then manager integration.
+
+- 2026-09-02T20:50:57-06:00 — Material checkpoint: the runtime textual policy now passes with seven audited files and five independent include/forbidden-symbol poisons; all lexical surface extraction, normalization, macro counts, and six surface poisons are removed. Strict GCC 15.3 Debug configured from the assigned cache, the exact focused graph built 319/319 actions after the new target's isolated compile/reflection fixes, the complete Bluetooth selector passed 8/8, and the exact adjacent selector passed 6/6. The new row validates ordered post-moc property/method/enumerator attributes, a same-comparator derived-surface negative control, and controller-specific QML-visible names through the production applet. No host or private runtime was contacted.
+
+- 2026-09-02T20:40:36-06:00 — Claimed the bounded lexical-gate replacement from exact clean base `35f2fa20881437fc3ef9d85ce399dc68e12ed1d3`. Read the required architecture/testing pages and exact review records `3517ad3`, `921f638`, `30d77ae`, and `b149ec2`. The positive controller surface will move to a compiled `staticMetaObject` plus offscreen QQmlEngine contract test with a non-vacuous subclass negative control; the textual runtime boundary retains only exact file/include, forbidden-symbol, and include-poison policy. No host desktop, host bus, hardware, uinput, or network path will be used.
 
 - 2026-08-31T17:52:03-06:00 — Froze exact repaired descendant `af78bce23c4f57d8085d9cd6b27f8b4eeecb26bb` (tree `fab856ad90a756f6b8ab2fd7e56580766e300a8b`, sole parent `c32777294da0550fb106724d18d45a8a5bcb7774`), with rejected product `5bc0cb09616e77cc0bd20bfd4365494c20811347` and earlier repaired product `0eb14565ecbd2e96cfbef70482e1c8542276c35a` preserved as ancestors through coordination-only commits. Its product delta changes exactly the runtime boundary script and two owning wiki pages. Line splices are removed before whitespace normalization; property macro spacing is canonicalized; exact declaration lists are backed by literal macro-name occurrence counts; comment-glued invokable, line-spliced property, and paren-gap property controls bring the mutation lane to 11. No-root and explicit-skip runs truthfully pass 7+0; full runtime passes 7+11; pure 5+4, JSON 3/3, 117-document validation, strict MkDocs, 1,779-file shape, diff/provenance/prohibited-path/process checks pass. No compiler, CTest, or private runtime lane was used. Requested exact-candidate Kimi K3-256k and Claude Opus rechecks, followed by completion of the user-required four-model rereview.
 
