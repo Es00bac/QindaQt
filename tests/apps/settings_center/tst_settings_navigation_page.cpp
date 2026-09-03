@@ -6,6 +6,9 @@
 #include "tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h"
 #include "tests/apps/settings/power/power_navigation_assertions.h"
 #include "tests/apps/settings/power/stub_power_settings_model.h"
+#include "tests/apps/settings/clipboard/stub_clipboard_settings_model.h"
+#include "tests/apps/settings/clipboard/clipboard_settings_center_assertions.h"
+#include "tests/apps/settings_center/settings_navigation_page_test_support.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/design_tokens.h"
@@ -32,6 +35,9 @@ using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
 using QindaQt::Apps::SettingsNetwork::TestSupport::StubNetworkSettingsModel;
 using QindaQt::Apps::SettingsBluetooth::TestSupport::StubBluetoothSettingsModel;
 using QindaQt::Apps::SettingsPower::TestSupport::StubPowerSettingsModel;
+using QindaQt::Apps::SettingsClipboard::TestSupport::StubClipboardSettingsModel;
+using QindaQt::Apps::SettingsCenter::TestSupport::sceneItem;
+using QindaQt::Apps::SettingsCenter::TestSupport::sceneObject;
 
 namespace {
 
@@ -168,30 +174,8 @@ private:
   std::unique_ptr<StubAudioSettingsModel> m_audio;
   std::unique_ptr<StubBluetoothSettingsModel> m_bluetooth;
   std::unique_ptr<StubPowerSettingsModel> m_power;
+  std::unique_ptr<StubClipboardSettingsModel> m_clipboard;
 };
-
-namespace {
-
-QQuickItem *sceneItem(QQuickItem *root, const QString &objectName) {
-  if (root == nullptr) {
-    return nullptr;
-  }
-  if (root->objectName() == objectName) {
-    return root;
-  }
-  for (QQuickItem *child : root->childItems()) {
-    if (auto *match = sceneItem(child, objectName); match != nullptr) {
-      return match;
-    }
-  }
-  return nullptr;
-}
-
-QObject *sceneObject(QQuickItem *root, const QString &objectName) {
-  return sceneItem(root, objectName);
-}
-
-} // namespace
 
 void SettingsNavigationPageTest::initTestCase() {
   m_engine = std::make_unique<QQmlApplicationEngine>();
@@ -215,6 +199,7 @@ void SettingsNavigationPageTest::initTestCase() {
   m_audio = std::make_unique<StubAudioSettingsModel>();
   m_bluetooth = std::make_unique<StubBluetoothSettingsModel>();
   m_power = std::make_unique<StubPowerSettingsModel>();
+  m_clipboard = std::make_unique<StubClipboardSettingsModel>();
 }
 
 void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
@@ -241,6 +226,8 @@ void SettingsNavigationPageTest::testWideTwoColumnLayoutAndRouteSwitching() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -339,6 +326,8 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -423,6 +412,8 @@ void SettingsNavigationPageTest::testCompactLayoutAdaptation() {
 
   QindaQt::Apps::SettingsPower::TestSupport::verifyCompactPowerNavigation(
       *window, navigation);
+  QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
+      *window, navigation, true);
 }
 
 void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
@@ -449,6 +440,8 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
@@ -574,6 +567,8 @@ void SettingsNavigationPageTest::testKeyboardNavigationAndShortcuts() {
   // and Tab entry without growing this shared host matrix past its boundary.
   QindaQt::Apps::SettingsPower::TestSupport::verifyWidePowerNavigation(
       *window, navigation);
+  QindaQt::Apps::SettingsClipboard::TestSupport::verifyClipboardRouteInHost(
+      *window, navigation, false);
 }
 
 void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
@@ -611,6 +606,8 @@ void SettingsNavigationPageTest::testUnavailableRouteFailClosed() {
       {QStringLiteral("bluetoothSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_bluetooth.get()))},
       {QStringLiteral("powerSettings"), QVariant::fromValue(m_power.get())},
+      {QStringLiteral("clipboardSettings"),
+       QVariant::fromValue(static_cast<QObject *>(m_clipboard.get()))},
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);

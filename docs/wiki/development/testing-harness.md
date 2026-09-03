@@ -1206,7 +1206,7 @@ stages the real runtime, requires failure while the installed Bluetooth module
 is withheld despite the developer tree, then launches the relocated route after
 restoration.
 
-The Settings Center selector adds deterministic seven-route order, canonical
+The Settings Center selector adds deterministic nine-route order, canonical
 startup, Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader
 exclusivity, route-departure lifetime signaling, and the common relocated
 package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
@@ -1241,12 +1241,60 @@ outside the named composition, and session actions. The installed row withholds
 the staged Power module while the developer module remains present, then proves
 the restored relocated route with both host buses unavailable.
 
-The Settings Center selector adds deterministic eight-route order, Ctrl+8,
+The Settings Center selector adds deterministic nine-route order, Ctrl+8,
 Power PageTab accessibility, Escape/Tab entry, exclusive wide/compact Loaders,
 canonical construction, and the common relocated package. No selector contacts
 UPower, power-profiles-daemon, logind, sysfs, Wayland, a host bus, or hardware.
 Session actions, internal-display mutation, live AT-SPI, and nested desktop
 screenshots remain outside this proof.
+
+## Current Clipboard Settings route proof
+
+The public-client-only preference/state page, exact-lineage clear action,
+hostile content boundary, and relocated package are selected with:
+
+```sh
+env -u DBUS_SESSION_BUS_ADDRESS -u DISPLAY -u WAYLAND_DISPLAY \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev --output-on-failure --no-tests=error \
+  -R '^qindaqt\.settings-clipboard-'
+```
+
+The six rows use injected fake Settings1 and Clipboard1 transports or absent
+private buses only. Preference coverage proves the schema-default-off baseline,
+rejects inherited `true` as consent while retaining a direct explicit-opt-in
+commit, revokes mutation after a later non-Boolean value, and covers
+draft/apply convergence, explicit conflict resolution, authority replacement,
+and uncertain-write no replay. Service coverage decodes only enough public
+descriptor metadata to count entries, presents capacity/privacy truth, and
+proves confirmation plus dispatch are fenced to exact owner, epoch, generation,
+and revision. Success waits for authoritative snapshot convergence; failure or
+uncertainty cannot replay the clear, and a transport-uncertain result must
+notify the Pending → Uncertain QML property transition. That assertion drains
+only the client's queued operation completion and requires exactly one model
+notification before any fetch timeout, preventing a later state-change signal
+from becoming a false positive.
+
+The page row runs with `QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320
+compact software scenes. It checks metadata-only disclosure, accessible
+roles/state, admitted Close focus, preference wiring, and explicit clear
+confirmation. Positive and negative allow-list scans reject sibling/private
+imports, path escapes, payload decoding, `QClipboard`/`QMimeData`, per-entry
+copy/select/remove/read authority, and D-Bus outside the route composition.
+The installed row stages the real runtime and launches `--page clipboard` from
+the relocated prefix with host display and bus authority unavailable while the
+developer QML tree remains present.
+
+The Settings Center selector additionally proves nine-route order, canonical
+startup, `Ctrl+9`, PageTab accessibility, Escape/Tab entry in both layouts,
+Loader exclusivity, construction under authority loss, and the common relocated
+package. The pre-existing Customize and Bluetooth lifecycle rows construct the
+same root in-process and link the static Clipboard module/plugin, preventing an
+unresolved unconditional route import from bypassing their behavioral checks.
+These rows do not contact a host clipboard, data-control server,
+session/system bus, or compositor. They do not claim content presentation,
+individual-entry mutation, configurable retention, live Wayland capture, live
+AT-SPI, or nested-session screenshots.
 
 ## Current Settings Center navigation S1 proof
 
@@ -1265,17 +1313,18 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all eight route roots under private-bus loss,
+forms, desktop identity, all nine route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,
-reinstalls the runtime component, and only then proves all eight complete
+reinstalls the runtime component, and only then proves all nine complete
 routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. Settings1 route models use independent transports, while Network,
-Audio, Bluetooth, and Power use their distinct public service clients. Focused construction
+Audio, Bluetooth, Power, and Clipboard use their distinct public service
+clients. Focused construction
 rows prove unavailable startup surfaces; public client suites remain
 authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
