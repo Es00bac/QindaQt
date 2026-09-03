@@ -131,12 +131,15 @@ reason codes are the programmatic error surface.
 
 ## Consumer boundary
 
-This slice exports typed C++ protocol and client libraries only. A later
-Settings view model owns the stable route ID `audio` and may project the full
-typed device/stream model. A future shell applet receives only a narrow
-default-output facade plus `openAudioSettings()`; it receives no raw snapshot,
-handle, graph, D-Bus object, service client, or provider authority. Neither UI
-is implemented or qualified here.
+This slice exports typed C++ protocol and client libraries only. The
+[Audio settings route](../apps/audio-settings.md) owns the stable route ID
+`audio` and projects the full typed device/stream model through the public
+client into a closed Settings Center route; it is implemented and covered by
+offscreen model, page, boundary, and Settings Center tests. Physical audio
+hardware and nested session interaction remain unqualified. A future shell
+applet receives only a narrow default-output facade plus `openAudioSettings()`;
+it receives no raw snapshot, handle, graph, D-Bus object, service client, or
+provider authority. The shell applet UI is not implemented here.
 
 ## Qualification boundary
 

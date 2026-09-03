@@ -11,10 +11,12 @@ Item {
     property var displaySettings: null
     property var networkSettings: null
     required property var customizeSettings
+    property var audioSettings: null
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
     property Component networkComponent: null
+    property Component audioComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -38,6 +40,8 @@ Item {
               ? networkLoader
             : navigation.activeRouteComponent === "customize"
               ? customizeLoader
+            : navigation.activeRouteComponent === "audio"
+              ? audioLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -55,7 +59,12 @@ Item {
             return false
         }
         target.forceActiveFocus(Qt.TabFocusReason)
-        return true
+        // AGENT-NOTE: callers (route tab KeyNavigation, Escape-return focus)
+        // and tests rely on this reporting whether focus actually moved.
+        // forceActiveFocus() returns void; confirm the item holds active
+        // focus so a disabled or not-yet-focusable target is reported as a
+        // failure instead of a silent success.
+        return target.activeFocus
     }
 
     // AGENT-GUARD: Main.qml owns applicationClosePending because responsive
@@ -146,6 +155,18 @@ Item {
     }
 
     Loader {
+        id: audioLoader
+        objectName: host.objectNamePrefix + "AudioLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && host.navigation.activeRouteAvailable
+                && host.navigation.activeRouteComponent === "audio"
+                && host.audioComponent !== null
+        sourceComponent: host.audioComponent
+    }
+
+    Loader {
         id: unavailableLoader
         objectName: host.objectNamePrefix + "UnavailableLoader"
         anchors.fill: parent
@@ -158,7 +179,8 @@ Item {
                         && host.navigation.activeRouteComponent !== "appearance"
                         && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
                         && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
-                        && host.navigation.activeRouteComponent !== "customize"))
+                        && host.navigation.activeRouteComponent !== "customize"
+                        && (host.navigation.activeRouteComponent !== "audio" || host.audioComponent === null)))
         sourceComponent: host.unavailableComponent
     }
 }
