@@ -125,4 +125,21 @@ QString knownNetworkId(const QByteArrayView rawSsid, const SecuritySuite securit
   return digestToHex(hash.result());
 }
 
+QString visibleAccessPointId(const QString &deviceInterface,
+                             const QString &bssid) {
+  QString normalizedInterface;
+  QString normalizedBssid;
+  if (!normalizeInterfaceName(deviceInterface, &normalizedInterface)
+      || !normalizeBssid(bssid, &normalizedBssid)
+      || normalizedInterface != deviceInterface || normalizedBssid != bssid) {
+    return {};
+  }
+  QCryptographicHash hash(QCryptographicHash::Sha256);
+  hash.addData(normalizedInterface.toUtf8());
+  static constexpr char separator = '\0';
+  hash.addData(QByteArrayView(&separator, 1));
+  hash.addData(normalizedBssid.toUtf8());
+  return digestToHex(hash.result());
+}
+
 } // namespace QindaQt::Network

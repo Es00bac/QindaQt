@@ -90,7 +90,8 @@ inline Service::BackendObservation readyNetworkObservation() {
   observation.capabilities = Capability::Connectivity | Capability::Scan |
                              Capability::KnownNetworkControl |
                              Capability::RadioControl |
-                             Capability::ActiveConnectionControl;
+                             Capability::ActiveConnectionControl |
+                             Capability::VisibleNetworkControl;
   observation.connectivity = ConnectivityKind::Full;
   observation.radios = {{RadioKind::Wifi, true, true, true}};
   observation.devices = {
@@ -98,7 +99,11 @@ inline Service::BackendObservation readyNetworkObservation() {
       {QStringLiteral("wlan0"), DeviceKind::Wifi, DeviceState::Connected}};
   observation.accessPoints = {{QStringLiteral("wlan0"), QStringLiteral("Cafe"),
                                false, QStringLiteral("02:11:22:33:44:55"),
-                               SecuritySuite::Wpa2Personal, 5'180, 72}};
+                               SecuritySuite::Wpa2Personal, 5'180, 72},
+                              {QStringLiteral("wlan0"),
+                               QStringLiteral("New network"), false,
+                               QStringLiteral("02:11:22:33:44:66"),
+                               SecuritySuite::Wpa3Personal, 5'220, 64}};
   observation.knownNetworks = {
       {id, QStringLiteral("Cafe"), false, SecuritySuite::Wpa2Personal, true}};
   observation.activeConnections = {{QStringLiteral("wlan0"), id}};

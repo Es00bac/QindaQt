@@ -45,6 +45,7 @@ struct Facts final {
   QList<ActiveConnectionFact> activeConnections;
   bool scanSupported = false;
   bool knownNetworkControlSupported = false;
+  bool visibleNetworkControlSupported = false;
   bool radioControlSupported = false;
   bool disconnectSupported = false;
   ScanPhase scanPhase = ScanPhase::Idle;

@@ -4,6 +4,18 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(NetworkManagerTest REQUIRED IMPORTED_TARGET libnm>=1.44)
 
 qt_add_executable(
+    qindaqt_fake_network_manager
+    fake_network_manager.cpp
+    fake_network_manager_types.h
+)
+target_link_libraries(
+    qindaqt_fake_network_manager
+    PRIVATE Qt6::Core Qt6::DBus PkgConfig::NetworkManagerTest
+)
+target_compile_definitions(qindaqt_fake_network_manager PRIVATE QT_NO_KEYWORDS)
+qindaqt_enable_warnings(qindaqt_fake_network_manager)
+
+qt_add_executable(
     qindaqt_network_manager_adapter_tests
     tst_network_manager_adapter.cpp
 )
@@ -30,6 +42,39 @@ add_test(
 set_tests_properties(
     qindaqt.network-networkmanager-adapter
     PROPERTIES LABELS "service;network;networkmanager" TIMEOUT 20
+)
+
+qt_add_executable(
+    qindaqt_network_manager_visible_profile_tests
+    tst_network_visible_profile.cpp
+)
+target_link_libraries(
+    qindaqt_network_manager_visible_profile_tests
+    PRIVATE QindaQt::NetworkManagerAdapter Qt6::Test
+            PkgConfig::NetworkManagerTest
+)
+target_include_directories(
+    qindaqt_network_manager_visible_profile_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/network_manager_adapter/src"
+)
+target_compile_definitions(
+    qindaqt_network_manager_visible_profile_tests PRIVATE
+        QT_NO_KEYWORDS
+        QINDAQT_FAKE_NETWORK_MANAGER_PATH="$<TARGET_FILE:qindaqt_fake_network_manager>"
+)
+add_dependencies(
+    qindaqt_network_manager_visible_profile_tests qindaqt_fake_network_manager
+)
+qindaqt_enable_warnings(qindaqt_network_manager_visible_profile_tests)
+add_test(
+    NAME qindaqt.network-networkmanager-visible-profile
+    COMMAND qindaqt_network_manager_visible_profile_tests
+)
+set_tests_properties(
+    qindaqt.network-networkmanager-visible-profile
+    PROPERTIES
+        LABELS "service;network;networkmanager;secret-free;private-bus"
+        TIMEOUT 20
 )
 
 add_test(

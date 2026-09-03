@@ -65,11 +65,16 @@ int main(int argc, char **argv) {
   snapshot.availability = Availability::Ready;
   snapshot.capabilities = Capability::Connectivity | Capability::Scan
                           | Capability::KnownNetworkControl
-                          | Capability::RadioControl;
+                          | Capability::RadioControl
+                          | Capability::VisibleNetworkControl;
   snapshot.connectivity = ConnectivityKind::Portal;
   snapshot.radios = {Radio{RadioKind::Wifi, true, true, true}};
   snapshot.devices = {
       Device{QStringLiteral("wlan0"), DeviceKind::Wifi, DeviceState::Disconnected}};
+  snapshot.accessPoints = {
+      AccessPoint{QStringLiteral("wlan0"), QStringLiteral("Guest"), false,
+                  QStringLiteral("02:11:22:33:44:55"), SecuritySuite::Open,
+                  2'437, 64}};
   snapshot.knownNetworks = {KnownNetwork{networkId, QStringLiteral("Cafe"),
                                          false, SecuritySuite::Wpa2Personal,
                                          true}};
@@ -97,6 +102,12 @@ int main(int argc, char **argv) {
   }
   if (!model.requestScan(RequestScanIntent{30'000}).allowed) {
     return fail("scan intent admission");
+  }
+  const QString accessPointId = visibleAccessPointId(
+      snapshot.accessPoints.first().deviceInterface,
+      snapshot.accessPoints.first().bssid);
+  if (!model.connectVisible(ConnectVisibleIntent{accessPointId}).allowed) {
+    return fail("visible-network intent admission");
   }
   const Model::ModelState busy = model.projection(true);
   if (!busy.scanBusy) {

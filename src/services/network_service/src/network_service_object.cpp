@@ -41,6 +41,15 @@ void NetworkServiceObject::ConnectKnownNetwork(const quint64 epoch,
                   .identifier = knownNetworkId});
 }
 
+void NetworkServiceObject::ConnectVisibleNetwork(
+    const quint64 epoch, const quint64 revision,
+    const QString &accessPointId) {
+  beginOperation({.kind = OperationKind::ConnectVisibleNetwork,
+                  .initiatingEpoch = epoch,
+                  .initiatingRevision = revision,
+                  .identifier = accessPointId});
+}
+
 void NetworkServiceObject::DisconnectActive(const quint64 epoch,
                                             const quint64 revision,
                                             const QString &deviceInterface) {

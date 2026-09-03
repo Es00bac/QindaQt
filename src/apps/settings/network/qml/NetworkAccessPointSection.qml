@@ -16,7 +16,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Visible Wi-Fi networks")
-        description: qsTr("Observed access points are read-only; unsaved networks cannot be configured here")
+        description: qsTr("Connect creates a profile without sending credentials through Settings or Network1")
     }
 
     Repeater {
@@ -33,6 +33,7 @@ ColumnLayout {
                 .arg(accessPointRow.modelData.securityText)
                 .arg(accessPointRow.modelData.signalStrength)
                 .arg(accessPointRow.modelData.deviceInterface)
+            Accessible.description: accessPointRow.modelData.promptStatusText
 
             contentItem: RowLayout {
                 spacing: Tokens.space["3"]
@@ -67,6 +68,31 @@ ColumnLayout {
                     visible: accessPointRow.modelData.saved
                     text: qsTr("Saved")
                     muted: true
+                }
+
+                ColumnLayout {
+                    visible: !accessPointRow.modelData.saved
+                    spacing: Tokens.space["1"]
+
+                    Label {
+                        objectName: "networkVisiblePrompt_" + accessPointRow.modelData.id
+                        Layout.maximumWidth: 260
+                        text: accessPointRow.modelData.promptStatusText
+                        wrapMode: Text.Wrap
+                        muted: true
+                        Accessible.name: text
+                    }
+
+                    Button {
+                        objectName: "networkConnectVisible_" + accessPointRow.modelData.id
+                        Layout.alignment: Qt.AlignRight
+                        available: accessPointRow.modelData.connectAvailable
+                        busy: root.networkSettings.busy
+                        text: qsTr("Connect")
+                        accessibleDescription: accessPointRow.modelData.promptStatusText
+                        onClicked: root.networkSettings.connectVisibleNetwork(
+                                       accessPointRow.modelData.id)
+                    }
                 }
             }
         }

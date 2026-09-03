@@ -13,6 +13,7 @@ target_sources(
         src/libnm_network_manager_facts.cpp
         src/libnm_network_manager_port.cpp
         src/libnm_network_manager_port_p.h
+        src/libnm_visible_network.cpp
         src/network_manager_backend.cpp
         src/network_manager_mapping.cpp
     PUBLIC

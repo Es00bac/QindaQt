@@ -5,6 +5,7 @@
 
 #include <qindaqt/services/network_model/network_intent_policy.h>
 #include <qindaqt/services/network_model/network_model_state.h>
+#include <qindaqt/services/network_protocol/network_identity.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QVariantMap>
@@ -21,8 +22,6 @@ using QindaQt::Network::DeviceKind;
 using QindaQt::Network::DeviceState;
 using QindaQt::Network::KnownNetwork;
 using QindaQt::Network::Model::ModelState;
-using QindaQt::Network::OperationKind;
-using QindaQt::Network::OperationStatus;
 using QindaQt::Network::RadioKind;
 using QindaQt::Network::ScanPhase;
 using QindaQt::Network::SecuritySuite;
@@ -218,10 +217,11 @@ bool NetworkSettingsModel::secretAgentRegistered() const noexcept {
 QString NetworkSettingsModel::secretAgentStatusText() const {
   return secretAgentRegistered()
              ? tr("The QindaQt credential prompt is registered with "
-                  "NetworkManager. Credentials still bypass this page and "
-                  "Network1.")
-             : tr("No QindaQt credential prompt is registered. Secured saved "
-                  "networks that need a credential may fail to connect.");
+                  "NetworkManager. A password prompt will appear for a "
+                  "supported secured network; credentials still bypass this "
+                  "page and Network1.")
+             : tr("No secret agent running — secured networks cannot prompt. "
+                  "Open networks remain available.");
 }
 
 QString NetworkSettingsModel::statusText() const {
@@ -345,7 +345,22 @@ QVariantList NetworkSettingsModel::accessPoints() const {
           return !network.hidden && network.ssid == point.ssid
                  && network.security == point.security;
         });
+    const QString accessPointId = QindaQt::Network::visibleAccessPointId(
+        point.deviceInterface, point.bssid);
+    const auto verdict = m_client.model().connectVisible(
+        QindaQt::Network::ConnectVisibleIntent{accessPointId});
+    const bool secured = point.security != SecuritySuite::Open;
+    const bool supportedKind = !point.hidden
+        && (point.security == SecuritySuite::Open
+            || point.security == SecuritySuite::Wpa2Personal
+            || point.security == SecuritySuite::Wpa3Personal);
+    const bool promptAvailable = !secured || secretAgentRegistered();
+    QString blockedReason = verdict.reasonCode;
+    if (blockedReason.isEmpty() && secured && !secretAgentRegistered()) {
+      blockedReason = QStringLiteral("secret-agent-unavailable");
+    }
     rows.append(QVariantMap{
+        {QStringLiteral("id"), accessPointId},
         {QStringLiteral("deviceInterface"), point.deviceInterface},
         {QStringLiteral("displayName"),
          QindaQt::Network::Model::accessPointDisplayName(point)},
@@ -355,6 +370,22 @@ QVariantList NetworkSettingsModel::accessPoints() const {
         {QStringLiteral("frequencyMHz"), point.frequencyMHz},
         {QStringLiteral("signalStrength"), point.signalStrength},
         {QStringLiteral("saved"), saved},
+        {QStringLiteral("secured"), secured},
+        {QStringLiteral("connectSupported"), supportedKind},
+        {QStringLiteral("connectAvailable"),
+         !saved && promptAvailable && m_client.operationAdmissionReady()
+             && verdict.allowed},
+        {QStringLiteral("connectBlockedReason"), blockedReason},
+        {QStringLiteral("promptStatusText"),
+         !supportedKind
+             ? tr("This network type is not supported for first-time "
+                  "connection.")
+             : (!secured
+                    ? tr("No password is required.")
+                    : (secretAgentRegistered()
+                           ? tr("A password prompt will appear.")
+                           : tr("No secret agent running — secured networks "
+                                "cannot prompt.")))},
     });
   }
   return rows;
@@ -386,152 +417,6 @@ QVariantList NetworkSettingsModel::knownNetworks() const {
     });
   }
   return rows;
-}
-
-bool NetworkSettingsModel::reload() {
-  if (busy()) {
-    rejectAction(QStringLiteral("operation-in-flight"));
-    return false;
-  }
-  QString error;
-  if (!m_client.start(&error)) {
-    rejectAction(error.isEmpty() ? QStringLiteral("client-start-failed")
-                                 : error);
-    return false;
-  }
-  m_localError.clear();
-  m_operationStatusText = tr("Refreshing authoritative network information…");
-  m_client.refresh();
-  Q_EMIT viewChanged();
-  return true;
-}
-
-bool NetworkSettingsModel::requestScan() {
-  QString error;
-  if (!m_client.requestScan(kScanDeadlineMilliseconds, &error)) {
-    rejectAction(error);
-    return false;
-  }
-  beginOperationMessage(OperationKind::RequestScan);
-  return true;
-}
-
-bool NetworkSettingsModel::connectKnownNetwork(
-    const QString &knownNetworkId) {
-  QString error;
-  if (!m_client.connectKnownNetwork(knownNetworkId, &error)) {
-    rejectAction(error);
-    return false;
-  }
-  beginOperationMessage(OperationKind::ConnectKnownNetwork);
-  return true;
-}
-
-bool NetworkSettingsModel::disconnectDevice(const QString &deviceInterface) {
-  QString error;
-  if (!m_client.disconnectDevice(deviceInterface, &error)) {
-    rejectAction(error);
-    return false;
-  }
-  beginOperationMessage(OperationKind::DisconnectActive);
-  return true;
-}
-
-void NetworkSettingsModel::handleOperationFinished(
-    const QindaQt::Network::OperationResult &result) {
-  if (result.status == OperationStatus::Succeeded) {
-    m_localError.clear();
-    switch (result.kind) {
-    case OperationKind::RequestScan:
-      m_operationStatusText = tr("Scan requested; awaiting fresh results.");
-      break;
-    case OperationKind::ConnectKnownNetwork:
-      m_operationStatusText =
-          tr("Connection requested; awaiting authoritative state.");
-      break;
-    case OperationKind::DisconnectActive:
-      m_operationStatusText =
-          tr("Disconnection requested; awaiting authoritative state.");
-      break;
-    case OperationKind::SetRadio:
-      m_operationStatusText = tr("Network operation completed.");
-      break;
-    }
-  } else {
-    m_operationStatusText.clear();
-    m_localError = actionFailureText(result.reasonCode);
-    if (result.kind == OperationKind::ConnectKnownNetwork) {
-      m_localError += tr(" This page cannot request credentials; a registered "
-                         "external NetworkManager secret agent must provide "
-                         "them when required.");
-    }
-  }
-  Q_EMIT viewChanged();
-}
-
-void NetworkSettingsModel::handleOperationUncertain(const QString &message) {
-  Q_UNUSED(message);
-  m_operationStatusText.clear();
-  m_localError = tr("The network operation outcome is uncertain. It was not "
-                    "replayed; reload authoritative state before trying again.");
-  Q_EMIT viewChanged();
-}
-
-void NetworkSettingsModel::beginOperationMessage(const OperationKind kind) {
-  m_localError.clear();
-  switch (kind) {
-  case OperationKind::RequestScan:
-    m_operationStatusText = tr("Requesting a network scan…");
-    break;
-  case OperationKind::ConnectKnownNetwork:
-    m_operationStatusText = tr("Requesting connection to the saved network…");
-    break;
-  case OperationKind::DisconnectActive:
-    m_operationStatusText = tr("Requesting disconnection…");
-    break;
-  case OperationKind::SetRadio:
-    m_operationStatusText = tr("Requesting network operation…");
-    break;
-  }
-  Q_EMIT viewChanged();
-}
-
-void NetworkSettingsModel::rejectAction(const QString &reason) {
-  m_operationStatusText.clear();
-  m_localError = actionFailureText(reason);
-  Q_EMIT actionRejected(reason);
-  Q_EMIT viewChanged();
-}
-
-QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
-  if (reason == QStringLiteral("scan-unsupported")) {
-    return tr("Scanning is not permitted by the network service.");
-  }
-  if (reason == QStringLiteral("scan-busy")
-      || reason == QStringLiteral("scan-lease-held")
-      || reason == QStringLiteral("operation-in-flight")) {
-    return tr("Another network operation or current scan lease is active.");
-  }
-  if (reason == QStringLiteral("known-network-control-unsupported")) {
-    return tr("Connecting saved networks is not permitted by the network service.");
-  }
-  if (reason == QStringLiteral("active-connection-control-unsupported")) {
-    return tr("Disconnecting is not permitted by the network service.");
-  }
-  if (reason == QStringLiteral("client-not-ready")
-      || reason == QStringLiteral("service-not-ready")) {
-    return tr("The network service is not ready.");
-  }
-  if (reason == QStringLiteral("network-already-active")) {
-    return tr("That saved network is already active.");
-  }
-  if (reason == QStringLiteral("device-not-connected")) {
-    return tr("That network device is no longer connected.");
-  }
-  if (reason.isEmpty()) {
-    return tr("The network request was rejected.");
-  }
-  return tr("The network request failed (%1).").arg(reason);
 }
 
 } // namespace QindaQt::Apps::SettingsNetwork

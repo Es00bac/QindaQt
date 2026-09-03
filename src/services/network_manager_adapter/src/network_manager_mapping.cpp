@@ -153,6 +153,9 @@ Service::BackendObservation mapNetworkManagerFacts(const Facts &facts) {
   if (facts.knownNetworkControlSupported) {
     result.capabilities |= Capability::KnownNetworkControl;
   }
+  if (facts.visibleNetworkControlSupported) {
+    result.capabilities |= Capability::VisibleNetworkControl;
+  }
   if (facts.radioControlSupported) {
     result.capabilities |= Capability::RadioControl;
   }

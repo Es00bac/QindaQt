@@ -22,6 +22,7 @@ private Q_SLOTS:
   void normalizesInterfaceName();
   void derivesStablePseudonymousNetworkId();
   void differentSecurityYieldsDifferentNetworkId();
+  void derivesOpaqueVisibleAccessPointId();
 };
 
 void NetworkIdentityTests::normalizesPrintableUtf8Ssid() {
@@ -134,6 +135,26 @@ void NetworkIdentityTests::differentSecurityYieldsDifferentNetworkId() {
   QVERIFY(knownNetworkId(ssid, SecuritySuite::Wpa2Personal)
           != knownNetworkId(QByteArray("Other"), SecuritySuite::Wpa2Personal));
   QVERIFY(knownNetworkId(QByteArray(33, 'x'), SecuritySuite::Open).isEmpty());
+}
+
+void NetworkIdentityTests::derivesOpaqueVisibleAccessPointId() {
+  const QString id = visibleAccessPointId(
+      QStringLiteral("wlan0"), QStringLiteral("00:11:22:33:44:55"));
+  QCOMPARE(id.size(), 64);
+  QVERIFY(std::all_of(id.cbegin(), id.cend(), [](const QChar character) {
+    const char16_t code = character.unicode();
+    return (code >= u'0' && code <= u'9') || (code >= u'a' && code <= u'f');
+  }));
+  QCOMPARE(id, visibleAccessPointId(
+                   QStringLiteral("wlan0"),
+                   QStringLiteral("00:11:22:33:44:55")));
+  QVERIFY(id != visibleAccessPointId(
+                    QStringLiteral("wlan1"),
+                    QStringLiteral("00:11:22:33:44:55")));
+  QVERIFY(visibleAccessPointId(
+              QStringLiteral("wlan0"),
+              QStringLiteral("00:11:22:33:44:ZZ"))
+              .isEmpty());
 }
 
 QTEST_MAIN(NetworkIdentityTests)

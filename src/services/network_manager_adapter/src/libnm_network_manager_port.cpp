@@ -55,13 +55,6 @@ qint64 monotonicMilliseconds() { return g_get_monotonic_time() / 1000; }
 
 } // namespace
 
-struct LibnmNetworkManagerPort::CallbackState final {
-  QPointer<LibnmNetworkManagerPort> port;
-  quint64 operationId = 0;
-  RadioKind radioKind = RadioKind::Wifi;
-  bool enable = false;
-};
-
 struct LibnmNetworkManagerPort::OwnerWatchState final {
   QPointer<LibnmNetworkManagerPort> port;
   quint64 generation = 0;
@@ -237,6 +230,9 @@ void LibnmNetworkManagerPort::submit(
     break;
   case OperationKind::SetRadio:
     submitRadio(operationId, request);
+    break;
+  case OperationKind::ConnectVisibleNetwork:
+    submitVisibleConnect(operationId, request);
     break;
   }
 }

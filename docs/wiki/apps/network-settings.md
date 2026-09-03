@@ -16,7 +16,7 @@ The route presents the current public snapshot in four groups:
 | Radio state | Wi-Fi and WWAN software/hardware state | Read-only |
 | Devices | Bounded interface, type, state, active known-network id, and capabilities | Disconnect when that active device is currently admitted |
 | Saved networks | Derived known-network id, presentation name, security, and capabilities | Connect the existing stored profile when currently admitted |
-| Wi-Fi access points | Presentation-safe SSID, signal, security, saved-network relation, and scan freshness | Read-only |
+| Wi-Fi access points | Presentation-safe SSID, signal, security, saved-network relation, scan freshness, and secret-agent presence truth | Connect a supported visible unsaved network when currently admitted |
 
 Connectivity and scan state remain visible alongside the inventory. The route
 model retains the exact owner, epoch, and revision for lineage gating and
@@ -40,27 +40,37 @@ One process-lifetime route model projects one public `NetworkClient`:
 - A duplicate snapshot does not disturb current truth. Retired epochs remain
   fenced across A→B→A owner sequences.
 
-Reload asks the public client for authoritative truth. Scan, connect, and
-disconnect carry only public typed identifiers and the initiating lineage.
+Reload asks the public client for authoritative truth. Scan, saved-network
+connect, visible-network connect, and disconnect carry only public typed
+identifiers and the initiating lineage. The first-use action carries an opaque
+access-point id derived from public device/BSSID truth; it carries no SSID or
+credential.
 The route relies on public intent admission and disables an action when the
 snapshot lacks the corresponding capability, the target is not eligible,
 truth is stale, another operation is pending, or an authoritative snapshot
 refresh is scheduled or in flight. Both displayed availability and dispatch
-consume the client's same public operation-admission predicate. A successful
-reply triggers a refresh and does not optimistically edit any list. Timeout,
-owner replacement, or another uncertain result stays visible and is never
-automatically replayed.
+consume the same projected row predicate. The visible-network invokable
+revalidates that row and returns a typed rejection without calling Network1
+when route-owned secret-agent presence or any public admission fact disables
+Connect. A successful reply triggers a refresh and does not optimistically
+edit any list. Timeout, owner replacement, or another uncertain result stays
+visible and is never automatically replayed.
 
 ## Credential and authority boundary
 
 The route has no password, passphrase, certificate, private-key, secret-agent,
-profile-editor, or radio-mutation API. Connecting means activating an existing
-stored known-network profile. NetworkManager may separately consult an
-`qindaqt-network-secret-agent`; Network1 and this route never receive that
-exchange. The route observes only ownership of the agent's presence-only
-session-bus name. It shows whether the first-party agent is registered and
-explains that secured activation cannot request new credentials while it is
-absent.
+profile-editor, or radio-mutation API. Connecting a saved network activates its
+existing profile. Connecting a visible unsaved Open, WPA2 Personal, or WPA3
+Personal network asks Network1 to create and activate a minimal profile. Hidden,
+WEP, and enterprise first-use connections remain unsupported.
+
+NetworkManager may separately consult `qindaqt-network-secret-agent`; Network1
+and this route never receive that exchange. The route observes only ownership
+of the agent's presence-only session-bus name. Beside each unsaved network it
+states either “No password is required”, “A password prompt will appear”, or
+“No secret agent running — secured networks cannot prompt”. A secured Connect
+action is disabled when the agent is absent; Open connection remains available
+when all public Network1 admission checks pass.
 
 Neither QML nor the route model imports private Network service headers, libnm,
 or NetworkManager. One private presence observer uses Qt D-Bus name-owner
@@ -103,16 +113,21 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
-- the model row proves bounded projection, exact lineage, public capability
-  admission, one-shot scan/connect/disconnect dispatch, and secret-free errors;
+- the model row proves bounded projection, exact lineage, public capability and
+  secret-agent-presence admission, one-shot scan/saved-connect/visible-connect/
+  disconnect dispatch, and secret-free errors;
+- the agent-gate row proves a secured unsaved network with absent-agent
+  `connectAvailable=false` cannot dispatch through the invokable and returns
+  the typed `secret-agent-unavailable` rejection;
 - the adversarial row proves malformed/stale handling, owner loss and A→B→A
   replacement, ignored late replies, mismatched operation lineage, redaction,
   and absence of credential/radio mutation APIs;
-- the page row proves accessible controls, action wiring, stale/owner-loss
-  fail-closed behavior, compact focus reveal, and keyboard cycling; and
+- the page row runs under fatal QML warnings and proves accessible controls,
+  visible-network prompt truth/action wiring, stale/owner-loss fail-closed
+  behavior, compact focus reveal, and keyboard cycling; and
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a
   radio invokable, credential text input, or a private service dependency.
@@ -123,7 +138,8 @@ complete relocated construction, withheld-module failure, and hostile route
 rejection. Tests use fake public transports or absent private buses and never
 touch host networking.
 
-This route still does not claim credential payload handling, profile
-creation/editing, software-radio mutation, persistence, a shell applet,
-physical network/radio qualification, or session-runtime integration. The
+This route still does not claim credential payload handling, arbitrary profile
+creation/editing, software-radio mutation, persistence control, a shell applet,
+physical network/radio qualification, or session-runtime integration. Its only
+profile-creation request is the fixed supported visible-network intent. The
 separate process owns the bounded credential-entry claim.
