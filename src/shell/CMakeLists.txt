@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Launcher declares its runtime after early source dependencies exist. At this
+# point the complete source graph is available, so materialize it before the
+# preview and production QML modules name it.
+qindaqt_add_launcher_runtime()
+
 qt_add_executable(
     qindaqt-shell-preview
     app/captureenvironment.cpp
@@ -36,6 +41,7 @@ qt_add_qml_module(
         qml/PreviewControls.qml
         qml/WindowGroupPreview.qml
     DEPENDENCIES
+        TARGET qindaqt_shell_launcher_qml
         TARGET qindaqt_shell_audio_applet_runtime
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
@@ -48,6 +54,7 @@ target_link_libraries(
         qindaqt_themes
         QindaQt::ShellAudioAppletRuntime
         QindaQt::ShellBluetoothAppletRuntime
+        QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         Qt6::Core
         Qt6::Gui
@@ -87,6 +94,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/compositoroutputauthority.h
         runtime/kglobalaccelshortcutregistrar.cpp
         runtime/kglobalaccelshortcutregistrar.h
+        runtime/launcherappletcomposition.cpp
+        runtime/launcherappletcomposition.h
         runtime/notificationcenterappletaccess.cpp
         runtime/notificationcenterappletaccess.h
         runtime/notificationcentershortcut.cpp
@@ -134,6 +143,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/PanelContent.qml
             qml/RuntimePanel.qml
         DEPENDENCIES
+            TARGET qindaqt_shell_launcher_qml
             TARGET qindaqt_shell_audio_applet_runtime
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
@@ -155,6 +165,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellVisibilityClient
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellLauncherQml
+            QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
             qindaqt_themes
             KF6::GlobalAccel
@@ -195,6 +207,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     install(
         TARGETS qindaqt_tokens_qml
         LIBRARY DESTINATION "Tokens"
+        COMPONENT QindaQt
+    )
+    install(
+        TARGETS qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT QindaQt
     )
     # A narrow stage proves that the Bluetooth applet's production binary,
@@ -243,6 +260,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "Tokens"
         COMPONENT BluetoothAppletRuntime
     )
+    install(
+        TARGETS qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT BluetoothAppletRuntime
+    )
     # A narrow stage lets the Audio applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -289,6 +311,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "Tokens"
         COMPONENT AudioAppletRuntime
     )
+    install(
+        TARGETS qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT AudioAppletRuntime
+    )
     # A narrow stage lets the Power applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -330,5 +357,49 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         TARGETS qindaqt_tokens_qml
         LIBRARY DESTINATION "Tokens"
         COMPONENT PowerAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT PowerAppletRuntime
+    )
+
+    # The launcher component proves the whole production boundary rather than
+    # only a standalone QML import: shell, manifest/profile/policy/theme,
+    # compiled launcher module, and the executable's loader closure.
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applets/launcher.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT LauncherAppletRuntime
     )
 endif()

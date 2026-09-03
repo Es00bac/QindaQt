@@ -62,6 +62,7 @@ class RuntimePanelWindowFactory;
 class AudioAppletComposition;
 class BluetoothAppletComposition;
 class KGlobalAccelShortcutRegistrar;
+class LauncherAppletComposition;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
@@ -87,6 +88,8 @@ private:
     void printCatalog() const;
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
+    [[nodiscard]] bool initializeLauncherRuntime(QString *error);
+    void initializeServiceAppletCompositions();
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
                                                 QString *error);
     [[nodiscard]] bool reconcileSurfaces(QString *error);
@@ -150,6 +153,7 @@ private:
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
+    std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;

@@ -21,7 +21,8 @@
         {"id": "places", "plugin": "places-menu"},
         {"id": "system", "plugin": "system-menu"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "clock", "plugin": "clock"},
+        {"id": "applications", "plugin": "launcher"}
       ]
     },
     {

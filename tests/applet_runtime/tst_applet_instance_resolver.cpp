@@ -3,6 +3,7 @@
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
+#include "qindaqt/profiles/profile_catalog.h"
 
 #include <QtTest>
 
@@ -52,6 +53,7 @@ private slots:
     void requiresTheCompiledImplementationRegistry();
     void exposesCapabilitiesOnlyForRegisteredImplementations();
     void carriesDeniedCapabilitiesWithoutInventingAuthority();
+    void stockProfilesPlaceOneResolvedLauncher();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -228,6 +230,42 @@ void AppletInstanceResolverTests::carriesDeniedCapabilitiesWithoutInventingAutho
 
     QVERIFY2(launcher.ready(), qPrintable(launcher.diagnostic));
     QVERIFY(launcher.grantedCapabilities.isEmpty());
+}
+
+void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+    QCOMPARE(profiles.profiles().size(), 10);
+
+    for (const auto &profile : profiles.profiles()) {
+        int launcherCount = 0;
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1String("launcher")) {
+                    continue;
+                }
+                ++launcherCount;
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(),
+                         qPrintable(profile.id + QStringLiteral(": ")
+                                    + resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.launcher"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList{QStringLiteral("applications.launch")});
+            }
+        }
+        QCOMPARE(launcherCount, 1);
+    }
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)
