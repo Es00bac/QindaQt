@@ -73,6 +73,7 @@ target_link_libraries(
     PRIVATE
         qindaqt_file_manager_support
         QindaQt::DesignTokens
+        QindaQt::FontPreferences
         QindaQt::TokensQml
         qindaqt_themes
         Qt6::Core

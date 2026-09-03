@@ -38,6 +38,7 @@ target_link_libraries(
     qindaqt-settings PRIVATE
     QindaQt::SettingsClient
     QindaQt::DisplayClient
+    QindaQt::FontPreferences
     QindaQt::NetworkQtTransport
     QindaQt::SettingsNavigation
     qindaqt_settings_appearance

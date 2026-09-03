@@ -12,13 +12,21 @@ file(
 )
 list(APPEND font_sources "${SOURCE_ROOT}/src/services/font_preferences/CMakeLists.txt")
 
+# AGENT-CONTRACT: The F1 Settings1 composition confines Qt D-Bus to exactly
+# this translation unit; every other font_preferences source stays
+# transport-free (ADR-0047).
+set(dbus_allowed_source "${SOURCE_ROOT}/src/services/font_preferences/src/font_settings_bootstrap.cpp")
+
 foreach(source IN LISTS font_sources)
     file(READ "${source}" content)
     if(content MATCHES "qindaqt/services/display_" OR content MATCHES "QindaQt::Display"
-       OR content MATCHES "<QtDBus/" OR content MATCHES "<QtQml/"
-       OR content MATCHES "<QtQuick/" OR content MATCHES "fontconfig/"
+       OR content MATCHES "<QtQml/" OR content MATCHES "<QtQuick/"
+       OR content MATCHES "fontconfig/"
        OR content MATCHES "<QtCore/QProcess" OR content MATCHES "<QtCore/QThread")
         message(FATAL_ERROR "Forbidden font-preferences dependency in ${source}")
+    endif()
+    if(content MATCHES "<QtDBus/" AND NOT source STREQUAL dbus_allowed_source)
+        message(FATAL_ERROR "Qt D-Bus import outside the bootstrap composition in ${source}")
     endif()
 endforeach()
 
