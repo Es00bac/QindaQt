@@ -10,9 +10,14 @@
 //      staged Tokens/Controls modules, and the packaged ClipboardApplet
 //      surface instantiates offscreen against the real controller.
 //
-// Stage locations arrive as compile definitions from the harness script; the
-// probe itself contains no build-tree or source-tree path.
+// Stage locations arrive as STAGE-RELATIVE compile definitions from the
+// harness script; the probe resolves them against its own executable location
+// (<stage>/consumer-build) at runtime, so the whole stage can be relocated
+// and rerun without LD_LIBRARY_PATH. The probe itself contains no build-tree
+// or source-tree path.
 
+#include <QCoreApplication>
+#include <QDir>
 #include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQmlEngine>
@@ -33,6 +38,13 @@ using namespace QindaQt::ShellClipboardApplet;
 using namespace QindaQt::Services::ClipboardModel;
 
 namespace {
+
+QString stagedPath(const char *relative)
+{
+    static const QString stageRoot = QDir::cleanPath(
+        QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
+    return stageRoot + QLatin1Char('/') + QString::fromUtf8(relative);
+}
 
 bool publishStagedTheme(QQmlEngine &engine)
 {
@@ -59,7 +71,7 @@ bool publishStagedTheme(QQmlEngine &engine)
     }
 
     const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-        QStringLiteral(QINDAQT_STAGED_THEME_PATH));
+        stagedPath(QINDAQT_STAGED_THEME_RELATIVE));
     if (!loaded.ok) {
         qCritical("installed consumer: staged theme refused: %s", qPrintable(loaded.error));
         return false;
@@ -129,14 +141,14 @@ int main(int argc, char **argv)
     // ClipboardApplet surface from the staged QML file against the real
     // controller.
     QQmlEngine engine;
-    engine.addImportPath(QStringLiteral(QINDAQT_STAGED_QML_ROOT));
+    engine.addImportPath(stagedPath(QINDAQT_STAGED_QML_RELATIVE));
     if (!publishStagedTheme(engine)) {
         return 7;
     }
 
     QQmlComponent surface(
         &engine,
-        QUrl::fromLocalFile(QStringLiteral(QINDAQT_STAGED_SURFACE_PATH)));
+        QUrl::fromLocalFile(stagedPath(QINDAQT_STAGED_SURFACE_RELATIVE)));
     if (surface.isError()) {
         qCritical("installed consumer: staged ClipboardApplet.qml did not load: %s",
                   qPrintable(surface.errorString()));

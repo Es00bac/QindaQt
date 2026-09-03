@@ -54,11 +54,8 @@ void TstClipboardAppletFencing::testSearchReplyFreshnessWithUnorderedIds()
 
     auto matchWith = [](const char *preview) {
         SearchOutcome outcome;
-        ClipboardEntryDescriptor desc;
-        desc.id = { 7, 3 };
-        desc.preview = QString::fromLatin1(preview);
-        desc.formats = { { QStringLiteral("text/plain"), 4 } };
-        outcome.matches.append(desc);
+        outcome.matches.append(
+            floorValidDescriptor(7, 3, QString::fromLatin1(preview)));
         return outcome;
     };
 
@@ -101,11 +98,8 @@ void TstClipboardAppletFencing::testHostileSynchronousFlushCannotDisplaySupersed
 
     auto outcomeWithPreview = [](const char *preview) {
         SearchOutcome outcome;
-        ClipboardEntryDescriptor desc;
-        desc.id = { 3, 7 };
-        desc.preview = QString::fromLatin1(preview);
-        desc.formats = { { QStringLiteral("text/plain"), 4 } };
-        outcome.matches.append(desc);
+        outcome.matches.append(
+            floorValidDescriptor(3, 7, QString::fromLatin1(preview)));
         return outcome;
     };
 
@@ -148,11 +142,8 @@ void TstClipboardAppletFencing::testSynchronousCompletionLeavesNoPendingRecord()
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    ClipboardEntryDescriptor desc;
-    desc.id = { 3, 7 };
-    desc.preview = QStringLiteral("entry");
-    desc.formats = { { QStringLiteral("text/plain"), 5 } };
-    client.m_snapshot.entries.append(desc);
+    client.m_snapshot.entries.append(
+        floorValidDescriptor(3, 7, QStringLiteral("entry")));
 
     client.m_completeOperationsSynchronously = true;
     client.m_scriptedCompletion.code = OperationErrorCode::None;
@@ -183,11 +174,8 @@ void TstClipboardAppletFencing::testUnknownAndDuplicateCompletionsAreIgnored()
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    ClipboardEntryDescriptor desc;
-    desc.id = { 3, 7 };
-    desc.preview = QStringLiteral("entry");
-    desc.formats = { { QStringLiteral("text/plain"), 5 } };
-    client.m_snapshot.entries.append(desc);
+    client.m_snapshot.entries.append(
+        floorValidDescriptor(3, 7, QStringLiteral("entry")));
 
     ClipboardAppletController controller(&client, true, true);
 
@@ -226,12 +214,9 @@ void TstClipboardAppletFencing::testPromoteTicksAreStrictlyMonotonic()
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    ClipboardEntryDescriptor desc;
-    desc.id = { 3, 7 };
-    desc.preview = QStringLiteral("entry");
+    auto desc = floorValidDescriptor(3, 7, QStringLiteral("entry"));
     desc.admittedTick = 999998;
     desc.lastUsedTick = 1000000;
-    desc.formats = { { QStringLiteral("text/plain"), 5 } };
     client.m_snapshot.entries.append(desc);
 
     client.m_completeOperationsSynchronously = true;
@@ -266,16 +251,10 @@ void TstClipboardAppletFencing::testDeferredCompletionForEarlierRequestAttribute
     client.m_snapshot.generation = 3;
     client.m_snapshot.historyEnabled = true;
     client.m_snapshot.privacyAllowed = true;
-    ClipboardEntryDescriptor first;
-    first.id = { 3, 7 };
-    first.preview = QStringLiteral("first");
-    first.formats = { { QStringLiteral("text/plain"), 5 } };
-    ClipboardEntryDescriptor second;
-    second.id = { 3, 8 };
-    second.preview = QStringLiteral("second");
-    second.formats = { { QStringLiteral("text/plain"), 6 } };
-    client.m_snapshot.entries.append(first);
-    client.m_snapshot.entries.append(second);
+    client.m_snapshot.entries.append(
+        floorValidDescriptor(3, 7, QStringLiteral("first")));
+    client.m_snapshot.entries.append(
+        floorValidDescriptor(3, 8, QStringLiteral("second")));
 
     ClipboardAppletController controller(&client, true, true);
 

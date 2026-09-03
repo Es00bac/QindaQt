@@ -2,9 +2,30 @@
 
 #include <QtTest/QtTest>
 #include <qindaqt/shell/clipboard_applet/clipboard_applet_model.h>
+#include <qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h>
 
 using namespace QindaQt::ShellClipboardApplet;
 using namespace QindaQt::Services::ClipboardModel;
+
+namespace {
+
+// Floor-valid descriptor baseline (valid identity, canonical storable media,
+// exact 32-byte fingerprint, sanitized bounded metadata). Hostile rows below
+// corrupt exactly one field from this baseline so a rejection proves the
+// specific floor rule, never an accidental second violation.
+ClipboardEntryDescriptor floorValid(quint32 generation, quint32 serial,
+                                    const QString &preview)
+{
+    ClipboardEntryDescriptor desc;
+    desc.id = { generation, serial };
+    desc.preview = preview;
+    desc.sourceLabel = QStringLiteral("source");
+    desc.formats = { { QStringLiteral("text/plain"), qint64(qMax(1, preview.size())) } };
+    desc.fingerprint = QByteArray(32, 'a');
+    return desc;
+}
+
+} // namespace
 
 class TstClipboardAppletModel : public QObject {
     Q_OBJECT
@@ -19,9 +40,10 @@ private Q_SLOTS:
     void testPinnedFirstPartitionOrdering();
     void testSearchProjection();
     void testEmptyStates();
-    void testHostileAndCorruptedDescriptors();
+    void testHostileDescriptorFloorRejectsWholeSnapshot();
+    void testHostileCollectionAndAggregateBoundsRejectWholeSnapshot();
+    void testHostileSearchMatchesRejectProjection();
     void testHostileLineageAndExhaustion();
-    void testHostileUnicodeAndControlChars();
     void testHostileFormatCombinations();
 };
 
@@ -211,11 +233,8 @@ void TstClipboardAppletModel::testPresentationBounds()
 
     // Populate with 50 entries (exceeding kMaxPresentedEntries = 32)
     for (quint32 i = 1; i <= 50; ++i) {
-        ClipboardEntryDescriptor desc;
-        desc.id = { 1, i };
-        desc.preview = QString::asprintf("Item %u", i);
+        auto desc = floorValid(1, i, QString::asprintf("Item %u", i));
         desc.pinned = (i <= 3);
-        desc.formats = { { QStringLiteral("text/plain"), 10 } };
         snapshot.entries.append(desc);
     }
     snapshot.totalPayloadBytes = 50 * 10;
@@ -240,11 +259,8 @@ void TstClipboardAppletModel::testPinnedFirstPartitionOrdering()
     // MRU order as stored: index 0 is most recent. Pinned entries sit at
     // unsorted positions so raw MRU and the documented partition disagree.
     auto addEntry = [&snapshot](quint32 serial, bool pinned, const QString &preview) {
-        ClipboardEntryDescriptor desc;
-        desc.id = { 4, serial };
-        desc.preview = preview;
+        auto desc = floorValid(4, serial, preview);
         desc.pinned = pinned;
-        desc.formats = { { QStringLiteral("text/plain"), 8 } };
         snapshot.entries.append(desc);
     };
     addEntry(1, false, QStringLiteral("most recent unpinned"));
@@ -290,11 +306,7 @@ void TstClipboardAppletModel::testSearchProjection()
     snapshot.privacyAllowed = true;
 
     QList<ClipboardEntryDescriptor> searchResults;
-    ClipboardEntryDescriptor match;
-    match.id = { 1, 42 };
-    match.preview = QStringLiteral("Match result");
-    match.formats = { { QStringLiteral("text/plain"), 12 } };
-    searchResults.append(match);
+    searchResults.append(floorValid(1, 42, QStringLiteral("Match result")));
 
     const auto proj = ClipboardAppletModel::project(
         snapshot, ClientState::Ready, {}, true, false, true, QStringLiteral("Match"), searchResults, false, {});
@@ -331,16 +343,173 @@ void TstClipboardAppletModel::testEmptyStates()
     }
 }
 
-void TstClipboardAppletModel::testHostileAndCorruptedDescriptors()
+void TstClipboardAppletModel::testHostileDescriptorFloorRejectsWholeSnapshot()
 {
-    ClipboardEntryDescriptor corrupted;
-    corrupted.id = { 0, 0 }; // Invalid id
-    corrupted.formats = { { QStringLiteral("corrupted/format"), -500 } }; // Negative bytes
+    // Baseline: a floor-valid snapshot projects ready.
+    HistorySnapshot snapshot;
+    snapshot.generation = 9;
+    snapshot.revision = 1;
+    snapshot.historyEnabled = true;
+    snapshot.privacyAllowed = true;
+    snapshot.totalPayloadBytes = 5;
+    snapshot.entries.append(floorValid(9, 1, QStringLiteral("clean")));
+    const auto baseline = ClipboardAppletModel::project(
+        snapshot, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+    QCOMPARE(baseline.phase, Phase::Ready);
+    QCOMPARE(baseline.entryRows.size(), 1);
 
-    const ClipboardEntryRow row = ClipboardAppletModel::projectRow(0, corrupted, false);
-    QCOMPARE(row.totalBytes, 0); // Negative bytes clamped to 0
-    QCOMPARE(row.idString, QStringLiteral("0:0"));
-    QCOMPARE(row.formatsSummary, QStringLiteral("corrupted/format (0 B)"));
+    // Every hostile variant must fail closed with the exact refusal: the gate
+    // names the violated rule and the projection withholds EVERYTHING — no
+    // sanitized copy, no row count, no metadata fragment.
+    const auto expectRejection = [](ClipboardEntryDescriptor hostile,
+                                    SnapshotGateDecision decision) {
+        QCOMPARE(assessDescriptorList({ hostile }, 9), decision);
+        HistorySnapshot poisoned;
+        poisoned.generation = 9;
+        poisoned.revision = 2;
+        poisoned.historyEnabled = true;
+        poisoned.privacyAllowed = true;
+        poisoned.totalPayloadBytes = 5;
+        poisoned.entries.append(hostile);
+        const auto proj = ClipboardAppletModel::project(
+            poisoned, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+        QCOMPARE(proj.phase, Phase::Unavailable);
+        QVERIFY(proj.entryRows.isEmpty());
+        QCOMPARE(proj.pinnedCount, 0);
+        QCOMPARE(proj.unpinnedCount, 0);
+        QCOMPARE(proj.phaseReasonText,
+                 QStringLiteral("Clipboard history data was refused."));
+    };
+
+    // Invalid identity: serial zero is not a real entry.
+    expectRejection(floorValid(9, 0, QStringLiteral("no serial")),
+                    SnapshotGateDecision::RejectDescriptorFloor);
+
+    // Negative claimed byte count.
+    {
+        auto hostile = floorValid(9, 2, QStringLiteral("negative bytes"));
+        hostile.formats.first().payloadBytes = -500;
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Control characters, escape sequences, and bidi format characters in
+    // the preview: never reprojected, not even "cleaned up".
+    {
+        auto hostile = floorValid(9, 3, QStringLiteral("Line 1\nLine 2\t\x1b[31mRed\x1b[0m\u202eREVERSED"));
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Embedded NUL and unpaired surrogate in the source label.
+    {
+        auto hostile = floorValid(9, 4, QStringLiteral("label"));
+        hostile.sourceLabel = QStringLiteral("App\0Hidden") + QChar(0xd800);
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Overlong label/preview fields.
+    {
+        auto hostile = floorValid(9, 5, QStringLiteral("bounds"));
+        hostile.sourceLabel = QString(kMaxSourceLabelCodeUnits + 1, QLatin1Char('L'));
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Forged truncation flag on an empty preview.
+    {
+        auto hostile = floorValid(9, 6, QString());
+        hostile.preview.clear();
+        hostile.previewTruncated = true;
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Wrong fingerprint width.
+    {
+        auto hostile = floorValid(9, 7, QStringLiteral("fingerprint"));
+        hostile.fingerprint = QByteArray(31, 'a');
+        expectRejection(hostile, SnapshotGateDecision::RejectDescriptorFloor);
+    }
+
+    // Forged sensitive and one-time media classes.
+    {
+        auto hostile = floorValid(9, 8, QStringLiteral("secret"));
+        hostile.formats.first().mediaType = QStringLiteral("application/x-qindaqt-secret");
+        expectRejection(hostile, SnapshotGateDecision::RejectSensitiveMedia);
+    }
+    {
+        auto hostile = floorValid(9, 9, QStringLiteral("one shot"));
+        hostile.formats.first().mediaType = QStringLiteral("x-qindaqt-one-time");
+        expectRejection(hostile, SnapshotGateDecision::RejectOneTimeMedia);
+    }
+
+    // Entry lineage from another generation inside this snapshot.
+    expectRejection(floorValid(8, 1, QStringLiteral("foreign lineage")),
+                    SnapshotGateDecision::RejectEntryLineage);
+}
+
+void TstClipboardAppletModel::testHostileCollectionAndAggregateBoundsRejectWholeSnapshot()
+{
+    HistorySnapshot snapshot;
+    snapshot.generation = 9;
+    snapshot.revision = 1;
+    snapshot.historyEnabled = true;
+    snapshot.privacyAllowed = true;
+    snapshot.totalPayloadBytes = 1;
+    snapshot.entries.append(floorValid(9, 1, QStringLiteral("clean")));
+
+    // Above the C0 kMaxEntries protocol ceiling: the collection is refused
+    // whole; no count may leak the claimed size.
+    HistorySnapshot oversized = snapshot;
+    for (quint32 serial = 2; oversized.entries.size() <= kMaxEntries; ++serial) {
+        oversized.entries.append(floorValid(9, serial, QStringLiteral("bulk")));
+    }
+    QCOMPARE(oversized.entries.size(), kMaxEntries + 1);
+    QCOMPARE(assessSnapshot(oversized), SnapshotGateDecision::RejectCollectionBound);
+    const auto proj = ClipboardAppletModel::project(
+        oversized, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+    QCOMPARE(proj.phase, Phase::Unavailable);
+    QVERIFY(proj.entryRows.isEmpty());
+    QCOMPARE(proj.unpinnedCount, 0);
+
+    // Aggregate byte claim above the C0 total ceiling.
+    HistorySnapshot inflated = snapshot;
+    inflated.totalPayloadBytes = kMaxTotalPayloadBytes + 1;
+    QCOMPARE(assessSnapshot(inflated), SnapshotGateDecision::RejectAggregateBytes);
+    const auto inflatedProj = ClipboardAppletModel::project(
+        inflated, ClientState::Ready, {}, true, false, false, {}, {}, false, {});
+    QCOMPARE(inflatedProj.phase, Phase::Unavailable);
+    QVERIFY(inflatedProj.entryRows.isEmpty());
+}
+
+void TstClipboardAppletModel::testHostileSearchMatchesRejectProjection()
+{
+    HistorySnapshot snapshot;
+    snapshot.generation = 9;
+    snapshot.revision = 1;
+    snapshot.historyEnabled = true;
+    snapshot.privacyAllowed = true;
+    snapshot.totalPayloadBytes = 5;
+    snapshot.entries.append(floorValid(9, 1, QStringLiteral("clean")));
+
+    // A hostile descriptor smuggled through a search reply is refused by the
+    // same floor: the projection fails closed rather than displaying it.
+    auto hostileMatch = floorValid(9, 2, QStringLiteral("evil\u202e"));
+    QCOMPARE(assessDescriptorList({ hostileMatch }, 9),
+             SnapshotGateDecision::RejectDescriptorFloor);
+    const auto proj = ClipboardAppletModel::project(
+        snapshot, ClientState::Ready, {}, true, false, true, QStringLiteral("evil"),
+        { hostileMatch }, false, {});
+    QCOMPARE(proj.phase, Phase::Unavailable);
+    QVERIFY(proj.entryRows.isEmpty());
+    QCOMPARE(proj.searchResultCount, 0);
+
+    // A match carrying another generation's lineage is equally refused.
+    const auto foreignMatch = floorValid(3, 1, QStringLiteral("foreign"));
+    QCOMPARE(assessDescriptorList({ foreignMatch }, 9),
+             SnapshotGateDecision::RejectEntryLineage);
+    const auto foreignProj = ClipboardAppletModel::project(
+        snapshot, ClientState::Ready, {}, true, false, true, QStringLiteral("foreign"),
+        { foreignMatch }, false, {});
+    QCOMPARE(foreignProj.phase, Phase::Unavailable);
+    QVERIFY(foreignProj.entryRows.isEmpty());
 }
 
 void TstClipboardAppletModel::testHostileLineageAndExhaustion()
@@ -367,21 +536,6 @@ void TstClipboardAppletModel::testHostileLineageAndExhaustion()
     QCOMPARE(zeroRow.generation, 0u);
     QCOMPARE(zeroRow.serial, 0u);
     QCOMPARE(zeroRow.primaryMediaType, QStringLiteral("application/octet-stream"));
-}
-
-void TstClipboardAppletModel::testHostileUnicodeAndControlChars()
-{
-    ClipboardEntryDescriptor hostile;
-    hostile.id = { 1, 1 };
-    // Previews with control characters, tabs, newlines, and unicode bidirectionals
-    hostile.preview = QStringLiteral("Line 1\nLine 2\t\x1b[31mRed\x1b[0m\u202Ereversed");
-    hostile.sourceLabel = QStringLiteral("App\u0000Hidden");
-    hostile.formats = { { QStringLiteral("text/plain"), 64 } };
-
-    const ClipboardEntryRow row = ClipboardAppletModel::projectRow(0, hostile, false);
-    QVERIFY(!row.preview.isEmpty());
-    QVERIFY(!row.accessibleName.isEmpty());
-    QVERIFY(!row.accessibleDescription.isEmpty());
 }
 
 void TstClipboardAppletModel::testHostileFormatCombinations()

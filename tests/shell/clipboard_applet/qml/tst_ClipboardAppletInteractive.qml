@@ -42,19 +42,27 @@ Item {
         property int togglePinCalls: 0
         property int clearCalls: 0
         property bool lastClearUnpinnedOnly: false
+        // Exact-argument capture: intent identity assertions compare the
+        // forwarded (generation, serial) pair, never just a call count.
+        property var lastSelectArgs: null
+        property var lastDeleteArgs: null
+        property var lastTogglePinArgs: null
 
         function selectEntry(gen, ser) {
             ++selectCalls
+            lastSelectArgs = [gen, ser]
             return true
         }
 
         function deleteEntry(gen, ser) {
             ++deleteCalls
+            lastDeleteArgs = [gen, ser]
             return true
         }
 
         function togglePin(gen, ser) {
             ++togglePinCalls
+            lastTogglePinArgs = [gen, ser]
             return true
         }
 
@@ -62,6 +70,15 @@ Item {
             ++clearCalls
             lastClearUnpinnedOnly = unpinnedOnly
             return true
+        }
+
+        function setSearchQuery(query) {
+            searchQuery = query
+        }
+
+        function clearSearch() {
+            searchQuery = ""
+            isSearchActive = false
         }
     }
 
@@ -105,11 +122,16 @@ Item {
             fakeController.phaseText = "ready"
             fakeController.entryRows = []
             fakeController.entryCount = 0
+            fakeController.searchQuery = ""
+            fakeController.isSearchActive = false
             fakeController.selectCalls = 0
             fakeController.deleteCalls = 0
             fakeController.togglePinCalls = 0
             fakeController.clearCalls = 0
             fakeController.clipboardWriteGranted = true
+            fakeController.lastSelectArgs = null
+            fakeController.lastDeleteArgs = null
+            fakeController.lastTogglePinArgs = null
         }
 
         // Capability honesty: with clipboard.write denied in the ready phase,
@@ -145,9 +167,11 @@ Item {
         // AGENT-GUARD (P1 regression): real pointer events must reach the
         // Pin and Delete buttons through the full scene stack — the row's
         // full-body selection MouseArea must never cover them. mouseClick
-        // posts genuine Qt mouse events at the item centers.
+        // posts genuine Qt mouse events at the item centers. Each intent must
+        // forward the displayed entry's exact (generation, serial) identity:
+        // the pre-repair row forwarded `undefined` as the Pin serial.
         function test_realPointerClicksReachActionButtons() {
-            fakeController.entryRows = [makeEntry(9, { preview: "pointer target" })]
+            fakeController.entryRows = [makeEntry(9, { generation: 4, preview: "pointer target" })]
             fakeController.entryCount = 1
 
             var applet = createTemporaryObject(appletComponent, testRoot)
@@ -161,6 +185,7 @@ Item {
             verify(pin.width > 0 && pin.height > 0)
             mouseClick(pin)
             compare(fakeController.togglePinCalls, 1)
+            compare(fakeController.lastTogglePinArgs, [4, 9])
             compare(fakeController.selectCalls, 0)
             compare(fakeController.deleteCalls, 0)
 
@@ -169,6 +194,7 @@ Item {
             verify(del.width > 0 && del.height > 0)
             mouseClick(del)
             compare(fakeController.deleteCalls, 1)
+            compare(fakeController.lastDeleteArgs, [4, 9])
             compare(fakeController.togglePinCalls, 1)
             compare(fakeController.selectCalls, 0)
         }
@@ -189,8 +215,34 @@ Item {
             // action buttons, so the selection MouseArea must receive it.
             mouseClick(row, 8, row.height / 2)
             compare(fakeController.selectCalls, 1)
+            compare(fakeController.lastSelectArgs, [1, 10])
             compare(fakeController.togglePinCalls, 0)
             compare(fakeController.deleteCalls, 0)
+        }
+
+        // P1 regression: clipboard.write denial keeps metadata SEARCH enabled
+        // (search is a read path) while mutating controls stay disabled.
+        function test_readOnlyGrantKeepsSearchEnabled() {
+            fakeController.clipboardWriteGranted = false
+            fakeController.entryRows = [makeEntry(15, { preview: "read only searchable" })]
+            fakeController.entryCount = 1
+
+            var applet = createTemporaryObject(appletComponent, testRoot)
+            verify(applet !== null)
+
+            var searchField = findChild(applet, "clipboardSearchField")
+            verify(searchField !== null)
+            compare(searchField.enabled, true)
+
+            // Typing reaches the controller: read-only search is live.
+            searchField.forceActiveFocus()
+            searchField.text = "read only"
+            compare(fakeController.searchQuery, "read only")
+
+            // Mutation controls remain honestly disabled under write denial.
+            var pin = findChild(applet, "pinButton")
+            verify(pin !== null)
+            compare(pin.enabled, false)
         }
 
         // P2 regression: degraded keeps read-only browsing; every mutating

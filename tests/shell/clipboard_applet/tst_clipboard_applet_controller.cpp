@@ -162,23 +162,45 @@ void TstClipboardAppletController::testOwnerFencing()
     model.setHistoryEnabled(true);
     model.setPrivacyAllowed(true);
 
+    // Owner A presents real content first: the fence must be proven against
+    // presented content, not against an empty history.
+    ClipboardValue val;
+    val.formats = { { QStringLiteral("text/plain"), "owner-A-secret" } };
+    const auto admitted = model.admit(val, 1, QStringLiteral("PassMgr"), 100);
+    QVERIFY(admitted.accepted());
+
     ClipboardModelClientAdapter adapter(&model);
     ClipboardAppletController controller(&adapter, true, true);
 
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 1);
 
-    // Owner lost
+    // Owner lost: the accepted baseline is voided immediately.
     adapter.setOwner(QStringLiteral("org.qindaqt.ClipboardService"), false);
     QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
     QCOMPARE(controller.entryCount(), 0);
+    QVERIFY(controller.entryRows().isEmpty());
 
     // Actions rejected
     QVERIFY(!controller.deleteEntry(1, 1));
 
-    // Owner recovered
-    adapter.setOwner(QStringLiteral("org.qindaqt.ClipboardService"), true);
+    // A replacement owner must never re-present owner-A content: the old
+    // history replayed through owner B is foreign content (volatile history
+    // starts empty per owner) and is refused whole, fail-closed.
+    adapter.setOwner(QStringLiteral("org.qindaqt.ClipboardServiceB"), true);
     adapter.setClientState(ClientState::Ready);
+    QCOMPARE(controller.entryCount(), 0);
+    QVERIFY(controller.phaseText() != QStringLiteral("ready"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: invalid-snapshot"));
+
+    // Owner B establishes a fresh baseline only once the volatile history is
+    // genuinely empty for it (the C0 purge raises the generation).
+    model.setPrivacyAllowed(false);
+    model.setPrivacyAllowed(true);
+    adapter.notifyModelChanged();
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 0);
 }
 
 void TstClipboardAppletController::testGenerationFencing()

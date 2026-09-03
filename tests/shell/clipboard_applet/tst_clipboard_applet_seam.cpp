@@ -15,6 +15,7 @@ private Q_SLOTS:
     void testFailClosedLocking();
     void testLockPurgesContentAndFencesGeneration();
     void testIndependentHostDenialSurvivesUnlock();
+    void testOverlappingHostDenialDuringLockSurvivesUnlock();
     void testSearchThroughSeam();
 };
 
@@ -142,6 +143,44 @@ void TstClipboardAppletSeam::testIndependentHostDenialSurvivesUnlock()
     adapter.setLocked(false);
     QCOMPARE(model.privacyState(), PrivacyState::Denied); // host denial survives
     QCOMPARE(adapter.isLocked(), false);
+}
+
+void TstClipboardAppletSeam::testOverlappingHostDenialDuringLockSurvivesUnlock()
+{
+    // AGENT-GUARD (P1 regression): the adapter used to record only a Boolean
+    // "denied by lock", so a host denial arriving WHILE the lock denial was
+    // active was indistinguishable and unlock silently re-granted privacy.
+    ClipboardHistoryModel model;
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardModelClientAdapter adapter(&model);
+
+    // Lock first: the adapter itself denies privacy for the lock.
+    adapter.setLocked(true);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+
+    // An independent host denial arrives WHILE the lock denial is active...
+    adapter.setHostPrivacyDenied(true);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+
+    // ...so unlock must not restore authority: the host denial still stands.
+    adapter.setLocked(false);
+    QCOMPARE(adapter.isLocked(), false);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+
+    // Only when the host re-allows does the adapter restore exactly the
+    // authority it removed.
+    adapter.setHostPrivacyDenied(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Allowed);
+
+    // A host re-allow while locked never bypasses the lock either.
+    adapter.setHostPrivacyDenied(true);
+    adapter.setLocked(true);
+    adapter.setHostPrivacyDenied(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Denied);
+    adapter.setLocked(false);
+    QCOMPARE(model.privacyState(), PrivacyState::Allowed);
 }
 
 void TstClipboardAppletSeam::testSearchThroughSeam()
