@@ -102,6 +102,7 @@ if(TARGET qindaqt_shell_launcher_runtime)
         tst_application_scanner.cpp
         qindaqt.launcher-application-scanner
     )
+    set_tests_properties(qindaqt.launcher-application-scanner PROPERTIES TIMEOUT 10)
     qindaqt_add_launcher_runtime_test(
         qindaqt_launcher_execution_tests
         tst_launch_execution.cpp
@@ -130,6 +131,8 @@ if(TARGET qindaqt_shell_launcher_runtime)
         qindaqt_launcher_qml_tests
         PRIVATE
             QindaQt::ShellLauncherRuntime
+            QindaQt::TokensQml
+            qindaqt_themes
             Qt6::Gui
             Qt6::Qml
             Qt6::Quick
@@ -137,7 +140,9 @@ if(TARGET qindaqt_shell_launcher_runtime)
     )
     target_compile_definitions(
         qindaqt_launcher_qml_tests
-        PRIVATE QINDAQT_LAUNCHER_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        PRIVATE
+            QINDAQT_LAUNCHER_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+            QINDAQT_SOURCE_DIR="${launcher_source_root}"
     )
     qindaqt_enable_warnings(qindaqt_launcher_qml_tests)
     # AGENT-CONTRACT: The applet imports QindaQt.Tokens/Controls/Shell.Launcher
@@ -154,7 +159,7 @@ if(TARGET qindaqt_shell_launcher_runtime)
         qindaqt.launcher-offscreen
         PROPERTIES
             LABELS "shell;launcher;runtime;offscreen;accessibility"
-            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
     )
 
     add_test(
@@ -189,7 +194,6 @@ if(TARGET qindaqt_shell_launcher_runtime)
                 "-DQINDAQT_PROBE=$<TARGET_FILE:qindaqt_launcher_installed_probe>"
                 "-DQINDAQT_INSTALL_QMLDIR=${QT6_INSTALL_QML}"
                 "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
-                "-DQINDAQT_BUILD_QMLDIR=${CMAKE_BINARY_DIR}/qml"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_launcher.cmake"
         )
         set_tests_properties(

@@ -18,7 +18,8 @@ ColumnLayout {
     required property var controller
     property bool vertical: false
     property int flatBase: 0
-    readonly property int rowCount: section.items ? section.items.length : 0
+    readonly property int rowCount: section && section.items
+                                    ? section.items.length : 0
 
     // Translated from the stable identity the controller publishes; the L0
     // model owns no user-facing strings.
@@ -57,16 +58,18 @@ ColumnLayout {
     spacing: Tokens.space["1"]
 
     SectionHeader {
-        objectName: "launcherSectionHeader"
+        objectName: "launcherSectionHeader-"
+                    + (root.section ? root.section.identity : "")
         Layout.fillWidth: true
         visible: root.rowCount > 0
-        title: root.sectionTitle(root.section.identity)
+        title: root.section
+               ? root.sectionTitle(root.section.identity) : ""
     }
 
     Repeater {
         id: rows
 
-        model: root.section.items ?? []
+        model: root.section && root.section.items ? root.section.items : []
 
         T.ItemDelegate {
             id: row
@@ -75,16 +78,19 @@ ColumnLayout {
             required property int index
             readonly property int flatIndex: root.flatBase + index
 
-            objectName: "launcherResultRow"
+            objectName: "launcherResultRow-" + modelData.entryId
+                        + "-" + flatIndex
             Layout.fillWidth: true
             text: modelData.displayText
+            enabled: root.controller !== null && root.controller.launchGranted
             focusPolicy: Qt.StrongFocus
             Accessible.role: Accessible.ListItem
             Accessible.name: modelData.displayText
             Accessible.description: modelData.accessibleDescription
 
             function launch() {
-                root.controller.activate(modelData.entryId, "")
+                if (root.controller !== null)
+                    root.controller.activate(modelData.entryId, "")
             }
 
             onClicked: launch()

@@ -76,8 +76,9 @@ model.
 `PinnedApplications` is an ordered identity list (ceiling 16) with explicit
 pin/unpin/move outcomes. `RecentApplications` is a bounded (ceiling 8)
 most-recently-used list where recording an existing id moves it to the front
-and the oldest id is evicted. Neither model persists anything; a durable list
-is a future Settings1-backed boundary that will consume these models.
+and the oldest id is evicted. Neither pure model persists anything; the L1
+`LauncherPersistenceController` composes them with Settings1 without moving
+transport or storage authority into L0.
 
 `LauncherPresentationModel::build` projects a catalog, pinned, and recent
 state into ordered sections and items:
@@ -110,9 +111,14 @@ is [ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
 root — the composition root resolves the XDG data-home/data-dirs list; the
 scanner never reads the environment implicitly. Subdirectories map to
 desktop-entry ids with `/` → `-`; earlier roots win identity precedence,
-matching the catalog's first-claim rule. Per-file byte and document ceilings
-are enforced before decoding, and the total scanned file count is bounded by
-`maxSourceDocuments`. A debounced (200 ms) `QFileSystemWatcher` over the
+matching the catalog's first-claim rule. Every traversed directory and desktop
+entry is canonicalized and must remain beneath its injected data root;
+escaping links, dangling links, FIFOs, devices, sockets, and every other
+non-regular file are diagnosed without being opened. Per-file byte and
+document ceilings are enforced before decoding, and reads request at most the
+byte ceiling plus one sentinel byte so concurrent growth stays bounded. The
+total scanned file count is bounded by `maxSourceDocuments`. A debounced
+(200 ms) `QFileSystemWatcher` over the
 watched directories and desktop files triggers a synchronous rebuild; every
 completed rebuild publishes a monotonically increasing generation with the
 `catalogChanged` signal so consumers fence stale reactions. Unreadable roots
@@ -156,8 +162,10 @@ interpolation. Every launch first resolves through the catalog's single
 `makeLaunchIntent` resolver — an entry the catalog does not publish (unknown,
 hidden, or shadowed) is refused before any execution planning. The execution
 keys (`Exec`, `Terminal`, `Path`, `DBusActivatable`) are re-extracted under
-fixed ceilings from the scanner-retained raw document; locale variants and
-extension keys stay opaque. `Exec` expansion follows the desktop-entry field
+fixed ceilings from the scanner-retained raw document. A desktop action
+contributes only its own `Exec`; it inherits entry-level `Terminal`, `Path`,
+and `DBusActivatable`, while action-local lookalike keys stay opaque together
+with locale variants and extension keys. `Exec` expansion follows the desktop-entry field
 codes: `%c`/`%k` expand in place, `%i` becomes the two-argument `--icon` form
 only as a standalone token, file/URL and deprecated codes drop as whole
 tokens, and embedded or unknown codes are a typed refusal. Output argv is
@@ -179,7 +187,7 @@ selection (`QT_QPA_PLATFORM`, `QT_SCALE_FACTOR`) — nothing else, including
 QindaQt's own development overrides. Activation (startup-notification)
 tokens are a later slice; the D-Bus platform-data map is empty today. Tests
 never start real applications: the seams are interfaces, and the only real
-child any test starts is the `/bin/true` fixture executable.
+children any test starts are the inert `/bin/true` and `/bin/false` fixtures.
 
 ### Compiled QML applet
 
@@ -193,7 +201,11 @@ stable section identities, keyboard traversal (Tab into the field, Down into
 the results, flat Up/Down across sections in focus order, Return/Space to
 activate, Escape to close), and complete accessible names/roles/states.
 Every item's accessible description comes from the L0 model, so state meaning
-never depends on color or position.
+never depends on color or position. Scanner, execution, and persistence
+diagnostics render as bounded three-line accessible alerts. Before QST tokens
+or a controller exist, the applet constructs only its disabled summary; it
+does not evaluate controller properties or construct token-dependent browser
+content.
 
 The manifest (`data/applets/launcher.json`) requests `applications.launch`;
 the grant gates activation in the controller, and the entry point
@@ -218,14 +230,14 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-search-ranker` | Ranking, normalization, ties. |
 | `qindaqt.launcher-pinned-recent` | L0 pinned/recent model bounds and outcomes. |
 | `qindaqt.launcher-presentation` | L0 presentation states and focus order. |
-| `qindaqt.launcher-application-scanner` | Fixture trees, precedence, subdirectory ids, hostile/unreadable/oversized entries, hidden shadowing, watcher refresh, generation fencing, document retention, deterministic order. |
-| `qindaqt.launcher-execution` | Execution-key extraction, quoting, field-code expansion/refusal, no-shell-interpolation, output ceilings. |
-| `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, terminal policy routing/refusal, failure truth, `/bin/true` fixture spawn, environment sanitization. |
-| `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, no-replay uncertainty, transport loss, write serialization, bounds. |
+| `qindaqt.launcher-application-scanner` | Fixture trees, precedence, subdirectory ids, escaping application-tree links, FIFO/non-regular refusal, hostile/unreadable/oversized entries, hidden shadowing, watcher refresh, generation fencing, document retention, deterministic order. |
+| `qindaqt.launcher-execution` | Entry/action key scope, quoting, field-code expansion/refusal, no-shell-interpolation, output ceilings. |
+| `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, entry-policy inheritance by actions, hostile action-key inverse control, terminal policy routing/refusal, failure truth, inert fixture spawns, environment sanitization. |
+| `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
 | `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, degraded truth, null-collaborator fail-closed. |
-| `qindaqt.launcher-offscreen` | Compiled QML loading, keyboard traversal and activation, accessible roles/names/descriptions, disabled fallback. |
+| `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
 | `qindaqt.launcher-runtime-boundary` | Source policy: pure model platform-free; platform reach confined to adapter files; poison negative control. |
-| `qindaqt.launcher-installed-package` | Staged manifest/policy/compiled module resolve under a poisoned environment; the module loads from the staged prefix. |
+| `qindaqt.launcher-installed-package` | Manifest/policy and complete compiled Launcher/Controls/Tokens import closure move to a new prefix, the original prefix disappears, and the warning-clean null-controller module loads only from the relocated stage under source/build poison. |
 
 ## Non-claims
 
@@ -233,5 +245,5 @@ This slice proves no production panel hosting (a later lane wires the
 dispatcher), no startup-notification activation tokens, no Settings1 schema
 registration of the launcher keys (persistence against the production service
 reports `UnknownKey` until then), no real session-bus activation, and no
-physical or nested-session behavior. Tests use injected roots, fakes, and the
-`/bin/true` fixture only.
+physical or nested-session behavior. Tests use injected roots and fakes;
+`/bin/true` and `/bin/false` are inert process-start fixtures only.

@@ -19,6 +19,8 @@ private Q_SLOTS:
     void refusesEntriesOutsideTheCatalog();
     void routesDBusActivatableEntries();
     void terminalEntriesNeedAWiredPolicy();
+    void desktopActionsInheritEntryPolicy();
+    void desktopActionsIgnoreActionPolicyLookalikes();
     void hostileExecNeverReachesTheSpawner();
     void spawnerFailureIsTruthful();
     void productionSpawnerRunsOnlyTheFixtureExecutable();
@@ -147,6 +149,71 @@ void LaunchExecutorTests::terminalEntriesNeedAWiredPolicy()
                            QStringLiteral("-b") }));
 }
 
+void LaunchExecutorTests::desktopActionsInheritEntryPolicy()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    QVERIFY(writeDesktopFile(
+        root.path(), QStringLiteral("main-terminal.desktop"),
+        minimalEntry(QStringLiteral("Main Terminal"), QStringLiteral("fixture"),
+                     QStringLiteral("Terminal=true\nPath=/expected-main-path\n"
+                                    "Actions=run;\n\n[Desktop Action run]\n"
+                                    "Name=Run\nExec=fixture --action\n"))));
+
+    ApplicationScanner scanner({ root.path() });
+    QVERIFY(scanner.start());
+    RecordingSpawner spawner;
+    RecordingActivator activator;
+    LaunchExecutor executor(scanner, spawner, activator,
+                            { QStringLiteral("terminal-fixture"),
+                              QStringLiteral("--execute") });
+
+    QCOMPARE(executor.launch(QStringLiteral("main-terminal"),
+                             QStringLiteral("run")).status,
+             LaunchStatus::Spawned);
+    QCOMPARE(spawner.requests.size(), 1);
+    QCOMPARE(spawner.requests.constFirst().program,
+             QStringLiteral("terminal-fixture"));
+    QCOMPARE(spawner.requests.constFirst().arguments,
+             QStringList({ QStringLiteral("--execute"), QStringLiteral("fixture"),
+                           QStringLiteral("--action") }));
+    QCOMPARE(spawner.requests.constFirst().workingDirectory,
+             QStringLiteral("/expected-main-path"));
+}
+
+void LaunchExecutorTests::desktopActionsIgnoreActionPolicyLookalikes()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    QVERIFY(writeDesktopFile(
+        root.path(), QStringLiteral("hostile.desktop"),
+        minimalEntry(QStringLiteral("Hostile Action"), QStringLiteral("fixture"),
+                     QStringLiteral("Path=/entry-only\nActions=hostile;\n\n"
+                                    "[Desktop Action hostile]\nName=Hostile\n"
+                                    "Exec=fixture --action\nTerminal=true\n"
+                                    "Path=../../action-outside\n"
+                                    "DBusActivatable=true\n"))));
+
+    ApplicationScanner scanner({ root.path() });
+    QVERIFY(scanner.start());
+    RecordingSpawner spawner;
+    RecordingActivator activator;
+    LaunchExecutor executor(scanner, spawner, activator,
+                            { QStringLiteral("terminal-fixture"),
+                              QStringLiteral("--execute") });
+
+    QCOMPARE(executor.launch(QStringLiteral("hostile"),
+                             QStringLiteral("hostile")).status,
+             LaunchStatus::Spawned);
+    QCOMPARE(spawner.requests.size(), 1);
+    QCOMPARE(activator.activations.size(), 0);
+    QCOMPARE(spawner.requests.constFirst().program, QStringLiteral("fixture"));
+    QCOMPARE(spawner.requests.constFirst().arguments,
+             QStringList({ QStringLiteral("--action") }));
+    QCOMPARE(spawner.requests.constFirst().workingDirectory,
+             QStringLiteral("/entry-only"));
+}
+
 void LaunchExecutorTests::hostileExecNeverReachesTheSpawner()
 {
     QTemporaryDir root;
@@ -193,8 +260,8 @@ void LaunchExecutorTests::spawnerFailureIsTruthful()
 
 void LaunchExecutorTests::productionSpawnerRunsOnlyTheFixtureExecutable()
 {
-    // AGENT-CONTRACT: The only real process any launcher test starts is the
-    // fixture executable /bin/true; everything else uses the spawner seam.
+    // AGENT-CONTRACT: The only real processes any launcher test starts are the
+    // inert fixtures /bin/true and /bin/false; everything else uses the seam.
     QProcessLaunchSpawner spawner;
     const SpawnResult ok = spawner.spawn({ QStringLiteral("/bin/true"), {}, {} });
     QVERIFY2(ok.ok, qPrintable(ok.diagnostic));

@@ -160,6 +160,44 @@ function(qindaqt_add_launcher_runtime)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
         COMPONENT LauncherAppletRuntime
     )
+
+    # The launcher QML imports these compiled public modules. Its narrow
+    # runtime component must carry that exact closure so relocation tests never
+    # borrow a build-tree import or a broader application component.
+    install(
+        TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+            COMPONENT LauncherAppletRuntime
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+            COMPONENT LauncherAppletRuntime
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+            COMPONENT LauncherAppletRuntime
+    )
+    install(
+        FILES
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens/qmldir"
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens/qindaqt_tokens.qmltypes"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
+        COMPONENT LauncherAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml qindaqt_controls_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+            COMPONENT LauncherAppletRuntime
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+            COMPONENT LauncherAppletRuntime
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+            COMPONENT LauncherAppletRuntime
+    )
+    install(
+        DIRECTORY "${CMAKE_BINARY_DIR}/qml/QindaQt/Controls/"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Controls"
+        COMPONENT LauncherAppletRuntime
+        FILES_MATCHING
+            PATTERN "*.qml"
+            PATTERN "qmldir"
+            PATTERN "*.qmltypes"
+    )
 endfunction()
 
 # Runtime registration: in the repository build this directory is processed

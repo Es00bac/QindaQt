@@ -29,7 +29,10 @@ own seam, leaving the L0 model untouched:
 - **Scanning** (`ApplicationScanner`) reads only the `applications/` trees of
   caller-injected roots; the composition root resolves the XDG
   data-home/data-dirs list and nothing reads the environment implicitly.
-  File count and byte ceilings apply before decoding; rebuilds publish a
+  Canonical containment rejects links that escape an injected root, only
+  regular files are opened, and capped reads enforce the byte ceiling even if
+  a file grows after metadata inspection. File count and decode ceilings apply;
+  rebuilds publish a
   monotonically increasing generation so consumers fence stale reactions;
   a debounced `QFileSystemWatcher` drives refresh. Unreadable roots, files,
   and oversized documents are degraded truth with diagnostics, never fatal.
@@ -49,6 +52,9 @@ own seam, leaving the L0 model untouched:
   (the composition root wires the QindaQt Terminal launch policy) or are
   refused truthfully when no policy is wired. There is never a silent shell
   fallback.
+- **Desktop actions** contribute only action-group `Exec`; entry-level
+  `Terminal`, `Path`, and `DBusActivatable` govern every action. Lookalike
+  policy keys inside action groups are ignored without decoding.
 - **DBusActivatable=true** entries are activated through
   `org.freedesktop.Application.Activate` / `ActivateAction` on the session bus
   behind an injected `LaunchActivator` seam. Dispatch and completion are
@@ -72,8 +78,8 @@ own seam, leaving the L0 model untouched:
   syntax, exceed execution bounds, or reach a process without catalog
   membership.
 - Tests never start real applications: the spawner and activator are
-  interfaces, and the only real child any test starts is the `/bin/true`
-  fixture executable.
+  interfaces, and the only real children any test starts are the inert
+  `/bin/true` and `/bin/false` fixture executables.
 - The launcher's environment allowlist (session identity, locale, display,
   runtime discovery, `LC_*`) is a single documented authority; anything
   unlisted, including QindaQt's own development overrides, does not

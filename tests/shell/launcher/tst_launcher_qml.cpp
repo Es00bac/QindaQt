@@ -6,13 +6,17 @@
 #include "launcher_persistence.h"
 #include "launcher_runtime_test_support.h"
 
+#include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/services/settings_client/settings_client.h>
+#include <qindaqt/themes/theme_loader.h>
 
 #include <QAccessible>
+#include <QEventLoop>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QTimer>
 #include <QtTest>
 
 #include <memory>
@@ -34,14 +38,76 @@ QString importPath()
     return QStringLiteral(QINDAQT_LAUNCHER_QML_IMPORT_PATH);
 }
 
-QList<QQuickItem *> visualItemsNamed(QQuickItem *root, const QString &name)
+QQuickItem *activeResultRow(QQuickItem *root)
 {
-    QList<QQuickItem *> matches;
-    if (root->objectName() == name)
-        matches.append(root);
+    if (root->objectName().startsWith(QStringLiteral("launcherResultRow-"))
+        && root->hasActiveFocus())
+        return root;
     for (QQuickItem *child : root->childItems())
-        matches.append(visualItemsNamed(child, name));
-    return matches;
+        if (auto *match = activeResultRow(child))
+            return match;
+    return nullptr;
+}
+
+QQuickItem *visualItemNamed(QQuickItem *root, const QString &name)
+{
+    if (root->objectName() == name)
+        return root;
+    for (QQuickItem *child : root->childItems())
+        if (auto *match = visualItemNamed(child, name))
+            return match;
+    return nullptr;
+}
+
+bool publishTokens(QQmlEngine &engine)
+{
+    engine.addImportPath(importPath());
+    QQmlComponent registration(&engine);
+    registration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml", QUrl(QStringLiteral("inline:launcher-token-registration.qml")));
+    if (registration.status() == QQmlComponent::Loading) {
+        QEventLoop loop;
+        QTimer deadline;
+        deadline.setSingleShot(true);
+        QObject::connect(&registration, &QQmlComponent::statusChanged, &loop,
+                         [&loop](QQmlComponent::Status status) {
+                             if (status != QQmlComponent::Loading)
+                                 loop.quit();
+                         });
+        QObject::connect(&deadline, &QTimer::timeout, &loop, &QEventLoop::quit);
+        deadline.start(5000);
+        loop.exec();
+    }
+    if (!registration.isReady()) {
+        qInfo() << "token registration failed" << registration.errorString();
+        return false;
+    }
+    std::unique_ptr<QObject> registrationObject(registration.create());
+    if (!registrationObject) {
+        qInfo() << "token registration object failed" << registration.errorString();
+        return false;
+    }
+    auto *facade = engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    if (facade == nullptr) {
+        qInfo() << "token singleton lookup failed";
+        return false;
+    }
+    const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dusk.json"));
+    if (!loaded.ok) {
+        qInfo() << "theme load failed" << loaded.error;
+        return false;
+    }
+    QString error;
+    const bool published = facade->publish(
+        loaded.theme, QindaQt::DesignTokens::AccessibilityInputs {}, &error);
+    if (!published)
+        qInfo() << "token publication failed" << error;
+    return published;
 }
 
 struct Stack {
@@ -98,15 +164,28 @@ class LauncherQmlTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
-    void compiledAppletSupportsKeyboardAndAccessibility();
+    void rendersSectionsPersistenceAndAccessibleStates();
+    void deniedRowsExposeAccessibleDisabledState();
+    void supportsCompleteKeyboardTraversalAndActivation();
     void nullAccessShowsDisabledFallback();
 };
 
-void LauncherQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
+void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
 {
     Stack stack;
+    QVERIFY(stack.client.start());
+    stack.transport.announceOwner();
+    QTRY_VERIFY(!stack.transport.snapshots.isEmpty());
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("qml-epoch"), 0,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
 
     QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
     auto owned = createApplet(engine, &stack.controller);
     QVERIFY(owned != nullptr);
     auto *root = qobject_cast<QQuickItem *>(owned.get());
@@ -128,11 +207,133 @@ void LauncherQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QVERIFY(!summaryInterface->text(QAccessible::Name).isEmpty());
 
     summary->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Space);
+    auto *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->property("opened").toBool());
+
+    for (const QString &identity : { QStringLiteral("pinned"),
+                                     QStringLiteral("recent"),
+                                     QStringLiteral("development"),
+                                     QStringLiteral("utilities") }) {
+        auto *header = visualItemNamed(window.contentItem(),
+            QStringLiteral("launcherSectionHeader-") + identity);
+        QVERIFY2(header != nullptr, qPrintable(identity));
+        QAccessibleInterface *headerInterface =
+            QAccessible::queryAccessibleInterface(header);
+        QVERIFY(headerInterface != nullptr);
+        QVERIFY(!headerInterface->text(QAccessible::Name).isEmpty());
+    }
+
+    auto *enabledRow = visualItemNamed(window.contentItem(),
+        QStringLiteral("launcherResultRow-editor-0"));
+    QVERIFY(enabledRow != nullptr);
+    QAccessibleInterface *enabledInterface =
+        QAccessible::queryAccessibleInterface(enabledRow);
+    QVERIFY(enabledInterface != nullptr);
+    QCOMPARE(enabledInterface->role(), QAccessible::ListItem);
+    QVERIFY(!enabledInterface->text(QAccessible::Name).isEmpty());
+    QVERIFY(!enabledInterface->text(QAccessible::Description).isEmpty());
+    QVERIFY(!enabledInterface->state().disabled);
+
+    // A malformed authoritative value produces bounded, alert-role persistence
+    // truth in the applet instead of disappearing inside the controller.
+    const qsizetype snapshotsBefore = stack.transport.snapshots.size();
+    Q_EMIT stack.transport.settingsChanged(
+        QStringLiteral(":1.99"), QStringLiteral("qml-epoch"), 1,
+        { LauncherPersistenceController::pinnedKey() });
+    QTRY_COMPARE(stack.transport.snapshots.size(), snapshotsBefore + 1);
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("qml-epoch"), 1,
+        {{ LauncherPersistenceController::pinnedKey(), QVariantList { 42 } }}));
+    QTRY_VERIFY(!stack.controller.persistenceStatus().isEmpty());
+    auto *status = visualItemNamed(window.contentItem(),
+        QStringLiteral("launcherAppletPersistenceStatus"));
+    QVERIFY(status != nullptr);
+    QTRY_VERIFY(status->isVisible());
+    QCOMPARE(status->property("maximumLineCount").toInt(), 3);
+    QAccessibleInterface *statusInterface =
+        QAccessible::queryAccessibleInterface(status);
+    QVERIFY(statusInterface != nullptr);
+    QCOMPARE(statusInterface->role(), QAccessible::AlertMessage);
+    QVERIFY(!statusInterface->text(QAccessible::Name).isEmpty());
+
+}
+
+void LauncherQmlTests::deniedRowsExposeAccessibleDisabledState()
+{
+    Stack stack;
+    QVERIFY(stack.client.start());
+    stack.transport.announceOwner();
+    QTRY_VERIFY(!stack.transport.snapshots.isEmpty());
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("denied-epoch"), 0,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+
+    LauncherAppletController denied(&stack.scanner, &stack.persistence,
+                                    &stack.executor, false);
+    QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
+    auto owned = createApplet(engine, &denied);
+    QVERIFY(owned != nullptr);
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+    QVERIFY(QMetaObject::invokeMethod(root, "openBrowser"));
+    QTRY_VERIFY(visualItemNamed(window.contentItem(),
+        QStringLiteral("launcherResultRow-editor-0")) != nullptr);
+    auto *deniedRow = visualItemNamed(window.contentItem(),
+        QStringLiteral("launcherResultRow-editor-0"));
+    QVERIFY(!deniedRow->isEnabled());
+    QAccessibleInterface *deniedInterface =
+        QAccessible::queryAccessibleInterface(deniedRow);
+    QVERIFY(deniedInterface != nullptr);
+    QVERIFY(deniedInterface->state().disabled);
+}
+
+void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
+{
+    Stack stack;
+    QVERIFY(stack.client.start());
+    stack.transport.announceOwner();
+    QTRY_VERIFY(!stack.transport.snapshots.isEmpty());
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("keyboard-epoch"), 0,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+
+    QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
+    auto owned = createApplet(engine, &stack.controller);
+    QVERIFY(owned != nullptr);
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("launcherAppletSummary"));
+    QVERIFY(summary != nullptr);
+
+    summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
     QTest::keyClick(&window, Qt::Key_Space);
 
-    QObject *popup = root->findChild<QObject *>(
-        QStringLiteral("launcherAppletPopup"));
+    QObject *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
 
@@ -141,36 +342,55 @@ void LauncherQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QVERIFY(field != nullptr);
     QTRY_VERIFY(field->hasActiveFocus());
 
-    // Typing filters through the controller; the surface collapses to one
-    // search-results section.
+    // Tab reaches the first row. Up/Down then traverse the flat model across
+    // the Pinned and Recent section boundary and back to the search field.
+    QTest::keyClick(&window, Qt::Key_Tab);
+    QTRY_VERIFY(activeResultRow(window.contentItem()) != nullptr);
+    QCOMPARE(QAccessible::queryAccessibleInterface(
+                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+             QStringLiteral("Fixture Editor"));
+    QTest::keyClick(&window, Qt::Key_Down);
+    QTRY_VERIFY(activeResultRow(window.contentItem()) != nullptr);
+    QCOMPARE(QAccessible::queryAccessibleInterface(
+                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+             QStringLiteral("Fixture Files"));
+    QTest::keyClick(&window, Qt::Key_Up);
+    QCOMPARE(QAccessible::queryAccessibleInterface(
+                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+             QStringLiteral("Fixture Editor"));
+    QTest::keyClick(&window, Qt::Key_Up);
+    QTRY_VERIFY(field->hasActiveFocus());
+
+    // Space and Return are pointer-equivalent activation paths.
+    QTest::keyClick(&window, Qt::Key_Down);
+    QTest::keyClick(&window, Qt::Key_Space);
+    QTRY_COMPARE(stack.spawner.requests.size(), 1);
+    QCOMPARE(stack.spawner.requests.constFirst().program,
+             QStringLiteral("qindaqt-editor"));
+    field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
+    QTest::keyClick(&window, Qt::Key_Down);
+    QTest::keyClick(&window, Qt::Key_Down);
+    QTest::keyClick(&window, Qt::Key_Return);
+    QTRY_COMPARE(stack.spawner.requests.size(), 2);
+    QCOMPARE(stack.spawner.requests.constLast().program,
+             QStringLiteral("qindaqt-editor"));
+
+    QTest::keyClick(&window, Qt::Key_Escape);
+    QTRY_VERIFY(!popup->property("opened").toBool());
+
+    // Reopen and type to prove the search section replaces browse sections.
+    summary->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Return);
+    QTRY_VERIFY(popup->property("opened").toBool());
+    QTRY_VERIFY(field->hasActiveFocus());
     for (const QChar key : QStringLiteral("editor"))
         QTest::keyClick(&window, key.toLatin1());
     QTRY_COMPARE(stack.controller.query(), QStringLiteral("editor"));
     QTRY_COMPARE(stack.controller.sections().size(), 1);
-
-    // Down moves into the results; Return activates through the controller
-    // and the executor reaches the injected spawner.
-    QTest::keyClick(&window, Qt::Key_Down);
-    const auto rows = visualItemsNamed(window.contentItem(),
-                                       QStringLiteral("launcherResultRow"));
-    QVERIFY(!rows.isEmpty());
-    QQuickItem *focusedRow = nullptr;
-    for (QQuickItem *row : rows) {
-        if (row->hasActiveFocus())
-            focusedRow = row;
-    }
-    QVERIFY(focusedRow != nullptr);
-    QAccessibleInterface *rowInterface =
-        QAccessible::queryAccessibleInterface(focusedRow);
-    QVERIFY(rowInterface != nullptr);
-    QCOMPARE(rowInterface->role(), QAccessible::ListItem);
-    QVERIFY(!rowInterface->text(QAccessible::Name).isEmpty());
-    QVERIFY(!rowInterface->text(QAccessible::Description).isEmpty());
-
-    QTest::keyClick(&window, Qt::Key_Return);
-    QTRY_COMPARE(stack.spawner.requests.size(), 1);
-    QCOMPARE(stack.spawner.requests.constFirst().program,
-             QStringLiteral("qindaqt-editor"));
+    QVERIFY(visualItemNamed(window.contentItem(),
+                            QStringLiteral("launcherSectionHeader-searchResults"))
+            != nullptr);
 }
 
 void LauncherQmlTests::nullAccessShowsDisabledFallback()
@@ -187,6 +407,7 @@ void LauncherQmlTests::nullAccessShowsDisabledFallback()
     QVERIFY(!summary->isEnabled());
     QAccessibleInterface *interface = QAccessible::queryAccessibleInterface(summary);
     QVERIFY(interface != nullptr);
+    QVERIFY(interface->state().disabled);
     QVERIFY(interface->text(QAccessible::Name).contains(
         QStringLiteral("unavailable")));
 }
