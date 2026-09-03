@@ -43,6 +43,12 @@ set(
     qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qml
     qindaqt_settings_network_qmlplugin
+    qindaqt_settings_audio_qml
+    qindaqt_settings_audio_qmlplugin
+    qindaqt_settings_bluetooth_qml
+    qindaqt_settings_bluetooth_qmlplugin
+    qindaqt_settings_power_qml
+    qindaqt_settings_power_qmlplugin
     qindaqt_compositor
     qindaqt_decoration
 )
@@ -158,27 +164,6 @@ if(
         QML_FILES _qindaqt_desktop_controls_qml_files
         QML_FILES_DEPLOY_PATHS _qindaqt_desktop_controls_deploy_paths
     )
-    qt_query_qml_module(
-        qindaqt_settings_appearance_qml
-        QMLDIR _qindaqt_desktop_appearance_qmldir
-        TYPEINFO _qindaqt_desktop_appearance_typeinfo
-        QML_FILES _qindaqt_desktop_appearance_qml_files
-        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_appearance_deploy_paths
-    )
-    qt_query_qml_module(
-        qindaqt_settings_display_qml
-        QMLDIR _qindaqt_desktop_display_qmldir
-        TYPEINFO _qindaqt_desktop_display_typeinfo
-        QML_FILES _qindaqt_desktop_display_qml_files
-        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_display_deploy_paths
-    )
-    qt_query_qml_module(
-        qindaqt_settings_network_qml
-        QMLDIR _qindaqt_desktop_network_qmldir
-        TYPEINFO _qindaqt_desktop_network_typeinfo
-        QML_FILES _qindaqt_desktop_network_qml_files
-        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_network_deploy_paths
-    )
     install(
         TARGETS qindaqt_tokens_qml qindaqt_tokens_qmlplugin
         RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens" COMPONENT DesktopVirtual
@@ -217,96 +202,7 @@ if(
             COMPONENT DesktopVirtual
         )
     endforeach()
-    install(
-        TARGETS
-            qindaqt_settings_appearance_qml
-            qindaqt_settings_appearance_qmlplugin
-        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
-            COMPONENT DesktopVirtual
-        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
-            COMPONENT DesktopVirtual
-        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
-            COMPONENT DesktopVirtual
-    )
-    install(
-        FILES
-            "${_qindaqt_desktop_appearance_qmldir}"
-            "${_qindaqt_desktop_appearance_typeinfo}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
-        COMPONENT DesktopVirtual
-    )
-    foreach(qml_file deploy_path IN ZIP_LISTS
-            _qindaqt_desktop_appearance_qml_files
-            _qindaqt_desktop_appearance_deploy_paths)
-        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-        cmake_path(GET deploy_path FILENAME deploy_name)
-        install(
-            FILES "${qml_file}"
-            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance/${deploy_directory}"
-            RENAME "${deploy_name}"
-            COMPONENT DesktopVirtual
-        )
-    endforeach()
-    install(
-        TARGETS
-            qindaqt_settings_display_qml
-            qindaqt_settings_display_qmlplugin
-        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
-            COMPONENT DesktopVirtual
-        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
-            COMPONENT DesktopVirtual
-        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
-            COMPONENT DesktopVirtual
-    )
-    install(
-        FILES
-            "${_qindaqt_desktop_display_qmldir}"
-            "${_qindaqt_desktop_display_typeinfo}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display"
-        COMPONENT DesktopVirtual
-    )
-    foreach(qml_file deploy_path IN ZIP_LISTS
-            _qindaqt_desktop_display_qml_files
-            _qindaqt_desktop_display_deploy_paths)
-        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-        cmake_path(GET deploy_path FILENAME deploy_name)
-        install(
-            FILES "${qml_file}"
-            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Display/${deploy_directory}"
-            RENAME "${deploy_name}"
-            COMPONENT DesktopVirtual
-        )
-    endforeach()
-    install(
-        TARGETS
-            qindaqt_settings_network_qml
-            qindaqt_settings_network_qmlplugin
-        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
-            COMPONENT DesktopVirtual
-        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
-            COMPONENT DesktopVirtual
-        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
-            COMPONENT DesktopVirtual
-    )
-    install(
-        FILES
-            "${_qindaqt_desktop_network_qmldir}"
-            "${_qindaqt_desktop_network_typeinfo}"
-        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
-        COMPONENT DesktopVirtual
-    )
-    foreach(qml_file deploy_path IN ZIP_LISTS
-            _qindaqt_desktop_network_qml_files
-            _qindaqt_desktop_network_deploy_paths)
-        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
-        cmake_path(GET deploy_path FILENAME deploy_name)
-        install(
-            FILES "${qml_file}"
-            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network/${deploy_directory}"
-            RENAME "${deploy_name}"
-            COMPONENT DesktopVirtual
-        )
-    endforeach()
+    include("${CMAKE_CURRENT_LIST_DIR}/DesktopSessionRouteStaging.cmake")
     install(
         TARGETS qindaqt_compositor
         LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/kwin/plugins"

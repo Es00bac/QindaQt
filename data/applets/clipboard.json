@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "clipboard",
+  "name": "Clipboard",
+  "description": "Volatile bounded clipboard history and search presentation.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.clipboard"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end", "panel-fill"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 32, "preferred": 40, "maximum": 72, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": [
+    "clipboard.read",
+    "clipboard.write"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

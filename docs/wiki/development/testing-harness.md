@@ -293,6 +293,27 @@ software backend. The exact
 matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
 [ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
 
+The registered Clipboard applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.clipboard-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection, hostile-snapshot and whole-C0-invariant admission
+(including the lifetime revision high-water across generation changes and the
+valid generation-ceiling purge/restart boundary), complete snapshot-lineage
+search fencing, controller fencing, seam, compiled
+offscreen keyboard/accessibility/real-pointer, boundary-poison, and staged
+installed-package rows run entirely offscreen against the in-process C0 model;
+the installed-package row rewrites and inspects every staged Controls/Tokens
+backing and optional plugin library plus the consumer for `$ORIGIN`-relative
+RUNPATHs, moves the whole staged prefix, and reruns the consumer with
+`LD_LIBRARY_PATH` unset. No row contacts the host clipboard,
+session bus, display server, or hardware. The exact matrix and non-claims are
+detailed in [Clipboard applet](../shell/clipboard-applet.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
@@ -1224,6 +1245,77 @@ surface, text entry, a stream-move surface, or a private dependency; the
 Settings Center installed-package row additionally withholds the installed
 Audio module and requires relocated-root failure before restoring it. No row
 contacts the host session bus, PipeWire, or WirePlumber.
+
+## Current Font F0 and F1 proof
+
+The pure F0 boundary, the fontconfig discovery provider, the Settings1
+persistence composition, and the pre-`QGuiApplication` session bootstrap are
+selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.font-' --output-on-failure
+```
+
+The F0 rows (`qindaqt.font-catalog`, `qindaqt.font-preferences`,
+`qindaqt.font-preferences-codec`, `qindaqt.font-bootstrap`,
+`qindaqt.font-preferences-coordinator`) cover the pure catalog, preference
+validation, codecs (including exact-typed wholesale rejection of wrong-typed
+Settings1 values), derivation, and LKG coordination.
+`qindaqt.font-discovery`, `qindaqt.font-discovery-hostile`, and
+`qindaqt.font-discovery-bounds` run the real fontconfig provider against
+vendored OFL fixtures (`tests/services/font_discovery/fixtures`, provenance in
+its README) staged into private temporary directories with an injected
+configuration file and cachedir: deterministic family/style/weight/spacing
+mapping and ordering under normal and reversed fixture filenames, catalog
+integration, malformed/missing configuration, missing injected directories,
+injected directories without a configuration file (ill-formed, never ambient
+host fontconfig), hostile non-font content, symlink loops and unreadable
+files, control-character style rejection, string-length pattern rejection,
+deterministic bounded truncation over thousands of directory entries, and the
+`productionDefault()` default-configuration contract under a staged
+`FONTCONFIG_FILE`. The `/dev/null` poison belongs only to the separate
+injected-directory-without-configuration rejection row; it is not evidence for
+the production-default request shape. The host default fontconfig configuration
+and host font directories are never consulted by any injected row.
+`qindaqt.font-settings-bridge` drives the public Settings1 client through a
+fake transport: confirmed-snapshot synchronization, hostile-value and
+wrong-typed-value LKG retention, write refusal without a baseline,
+invalid-draft refusal, the six-key fixed-order commit round trip with fresh
+baselines between keys, confirmed-conflict stop without replay,
+uncertain-write fencing, malformed post-commit snapshot fencing (the
+just-written key becomes `Uncertain`, the sequence ends, and remaining keys
+stay `NotAttempted`), and fail-closed transport loss.
+`qindaqt.font-settings-bootstrap` covers the pure bootstrap half: guarded
+application of valid/invalid preferences to the default font and the
+case-insensitive live-catalog family gate.
+`qindaqt.font-session-bootstrap` proves the production composition root in
+child processes on private `dbus-daemon` buses: the pre-`QGuiApplication`
+guarded call applying confirmed preferences served by a fake Settings1
+service and by the real `qindaqt-settings-service` (seeded through the real
+`CommitUserTransaction` wire), plus fail-closed rows for an unset bus address
+(no autolaunch), an absent bus, an absent service, a wrong-typed snapshot, a
+malformed envelope, a confirmed family absent from the staged catalog, and a
+valid reply whose resolved owner relinquishes Settings1 before reply
+acceptance.
+`qindaqt.font-application-bootstrap-wiring` is the source-level P1-6 regression
+gate: all four first-party composition roots must contain exactly one guarded
+helper call before `QGuiApplication`/`QApplication` construction; policy stays
+inside the helper. Their installed-metadata rows additionally prove the calls
+remain inert when the preference source is absent.
+`qindaqt.font-preferences-boundary` and `qindaqt.font-discovery-boundary` are
+the poison gates: `font_preferences` is fully transport-free, Qt D-Bus/Gui is
+confined to the session bootstrap composition source, and fontconfig to the
+discovery provider. The
+`qindaqt.font-preferences-installed-consumer` and
+`qindaqt.font-discovery-installed-consumer` rows rebuild external CMake
+consumers from a staged prefix and execute them offscreen.
+The four first-party application selectors (`^qindaqt\.(editor|terminal|file-manager)-`
+and the Settings Center rows) exercise the guarded bootstrap call on every
+existing CLI/offscreen startup path under an absent settings authority.
+
+This evidence uses private temporary directories, fake transports, private
+D-Bus daemons, and offscreen rendering. It does not claim a host session bus,
+host font installation changes, or rendered typography baselines.
 
 ## Current compositor proof
 
@@ -2428,6 +2520,74 @@ silently regressing.
 These rows do not start a compositor, use a host chooser, contact an ambient
 bus, synthesize input, qualify a real portal/global menu, capture screenshots,
 or claim whole-application assistive-technology coverage.
+
+## Display Color C0 model and C1 discovery/assignment proof
+
+The focused Display Color selector is:
+
+```sh
+ctest --test-dir build/<debug|release> \
+  -R '^qindaqt\.display-color-' \
+  --output-on-failure --no-tests=error
+```
+
+The C0 pure-model rows (header validation, catalog, model, boundary,
+boundary-poison, installed C++ consumer) are unchanged. The C1 discovery and
+assignment rows extend the same selector with:
+
+- `qindaqt.display-color-discovery` — injected-root enumeration and
+  classification, hostile-file diagnostics (empty, truncated, garbage,
+  mislabeled declared/actual size, declared oversize, planted symlinks,
+  unsafe file names), order-independent conflicting-duplicate rejection,
+  including body-only byte differences under otherwise equal inspected
+  metadata, exact-duplicate collapse by bounded byte comparison, canonical
+  containment rejection for symlinked roots, lexical `..` components, and
+  candidates outside the one resolved root, plus invalid injected origins
+  before enumeration and invalid-origin descriptor-assembly defense,
+  bounded enumeration truth, case-insensitive
+  `*.icc`/`*.icm` acceptance, silent dot-prefixed-name exclusion, bounded
+  tag-table/description degradation diagnostics, 'desc'/'mluc' description
+  parsing, and the unproven-semantics guarantee that a scanned profile can
+  never become the truthful sRGB default.
+- `qindaqt.display-color-discovery-import` — atomic import truth: validated
+  copies with SHA-256 lineage fingerprints, idempotent re-import, rejection
+  atomicity for hostile sources (including dot-prefixed destination names,
+  and non-ICC suffixes, which discovery could never re-list), destination conflicts,
+  interrupted-write recovery (stale temporary removal, directory collision
+  fail-closed), missing/unusable injected user roots, `..`-hidden root
+  redirection, and rejection before destination inspection proven through a
+  recording filesystem seam and outside-root canary, plus the discovery round
+  trip of an imported profile.
+- `qindaqt.display-color-discovery-boundary` and
+  `qindaqt.display-color-discovery-boundary-poison` — the discovery module's
+  no-transport/no-GUI/no-Display1/no-Settings dependency policy and its
+  poison-negative proof.
+- `qindaqt.display-color-assignment-document` — strict canonical codec round
+  trips, deterministic record ordering, empty/absent document truth, hostile
+  document rejection (shapes, grammars, lineage hex, output cap), fail-closed
+  encoding, draft validation including duplicate targets, and pure draft
+  application with cap enforcement. Untargeted records are retained explicitly,
+  including assignments for currently disconnected outputs, until a removal
+  draft targets them.
+- `qindaqt.display-color-assignment-store` — optimistic apply over the public
+  Settings1 client seam with a fake transport: applied and applied-no-op
+  truth with authoritative-value verification, conflict and uncertain-timeout
+  terminal outcomes without replay, unusable-document fail-closed refusal,
+  authoritative-value mismatch uncertainty, legal synchronous completion, and
+  unavailable truth on transport loss.
+- `qindaqt.display-color-assignment-boundary`,
+  `qindaqt.display-color-assignment-boundary-poison`, and
+  `qindaqt.display-color-assignment-installed-cpp-consumer` — the assignment
+  module's dependency policy, its poison proof, and an installed staged
+  consumer composing the pure codec and the store without any D-Bus daemon.
+  Each installed consumer stages only its explicit development component and
+  transitive public artifacts, so the selector remains runnable after the
+  documented focused build without unrelated repository libraries.
+
+All rows are deterministic in-process evidence. None claims compositor
+application, HDR/WCG runtime behavior, colord interaction, or physical
+hardware qualification; discovery tests read only injected temporary roots,
+and no test touches the host's real profile directories.
 
 ## Required display matrix
 

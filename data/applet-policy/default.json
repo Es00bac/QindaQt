@@ -39,6 +39,20 @@
       "capability": "windows.activate",
       "decision": "deny",
       "reason": "Menu Event delivery does not grant general compositor window activation authority."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "clipboard",
+      "capability": "clipboard.read",
+      "decision": "grant",
+      "reason": "The audited Clipboard applet may observe the bounded metadata-only history projection through its injected client seam."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "clipboard",
+      "capability": "clipboard.write",
+      "decision": "grant",
+      "reason": "The audited Clipboard applet may dispatch generation-fenced select, pin, delete, and clear intents; execution stays with the clipboard authority."
     }
   ]
 }
