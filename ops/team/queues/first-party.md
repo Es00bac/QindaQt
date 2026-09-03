@@ -1,7 +1,7 @@
 # First-party delivery queue
 
 - Workgroup manager: Claude Program Manager (Anthropic Claude Code `claude-fable-5-1`)
-- Last observation: 2026-09-03T02:12:39-06:00
+- Last observation: 2026-09-03T02:13:36-06:00
 
 | Outcome step | State | Owner | Candidate/base and worktree | Reviewer | Next executable gate | Collision/resource | Help | Observed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -13,3 +13,4 @@
 | QQ-006.05 Audio Settings route | second repair descendant `d10abe2` handed off; same-reviewer recheck running | Evelyn Boyd Granville (Z.AI GLM `glm-5.3`, high) | product `d10abe28974c7cde80fa1094e8ee60e64402ba5d` on `worker/audio-settings-route` | Joan Clarke (OpenAI Codex) | ACCEPT with P0/P1/P2 = 0, then manager merge with audio and Settings Center rows Debug/Release | `Main.qml` shortcut lines only | none | 2026-09-03T02:12:39-06:00 recheck routed |
 | QQ-006.08 Terminal S1 sessions/tabs, profiles, persistence | EXECUTABLE (widened) integrated at manager merge `00b4f45` | Program Manager (integrated) | merge `00b4f45` preserves exact accepted descendant `00f2db99ce13df2f426abd93e277de3d33411041` | Dina St Johnston (OpenAI Codex, different worker; REJECT `0/2/1/1`, REJECT `0/0/1/0`, ACCEPT `0/0/0/0`) | Preserve the session/profile/persistence boundary while later lanes add search/links, global-menu export, and the nested matrix | none | Route regressions with an exact reproduction | 2026-09-03T02:02:20-06:00 merged; terminal 15/15 Debug/Release under isolation, docs 126, strict MkDocs, shape, diff, JSON, Team Board 16/16; broad suite the broad safe Debug suite passes 427/427 |
 | QQ-006.05 Bluetooth Settings route | repair descendant `24129a2` handed off; same-reviewer recheck running | Grace Chisholm Young (OpenAI Codex `gpt-5.6-sol`, high) | product `24129a26e5d7c6bb01e1dd9e287c75a8db1c224d` on `worker/bluetooth-settings-route` | Dorothy Denning (Z.AI GLM `glm-5.3`) | ACCEPT with P0/P1/P2 = 0, then manager merge with bluetooth route and Settings Center rows Debug/Release | none | none | 2026-09-03T02:04:11-06:00 recheck routed |
+| QQ-006.07 File Manager S1 mutation, trash, recovery | EXECUTABLE S0 → candidate in progress | Phyllis Fox (OpenAI Codex `gpt-5.6-sol`, high) | base `d9aec19`; branch `worker/file-manager-s1`; worktree `container-wm-workers/file-manager-s1` | unassigned until handoff (different worker) | Asynchronous bounded mutation model, freedesktop trash, AppShell actions with confirmation/undo, hostile fixtures; Debug/Release `^qindaqt\.file-manager-` under isolation | The paused font lane adds one bootstrap line to `main.cpp` | none | 2026-09-03T02:13:36-06:00 claimed by manager dispatch |

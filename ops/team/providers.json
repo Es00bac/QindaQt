@@ -36,9 +36,9 @@
       "id": "kimi",
       "name": "Moonshot Kimi",
       "status": "unavailable",
-      "updatedAt": "2026-09-03T01:47:08-06:00",
-      "estimatedReturnAt": "2026-09-03T02:20:00-06:00",
-      "evidence": "Direct probe at 01:46 MDT still returned `provider.auth_error: 403 5-hour usage limit`; next probe 02:20 MDT. Paused Kimi lanes (task-list, tray, clipboard-applet repair, font-discovery) keep their preserved WIP."
+      "updatedAt": "2026-09-03T02:13:36-06:00",
+      "estimatedReturnAt": "2026-09-03T02:45:00-06:00",
+      "evidence": "Direct probes at 01:46, 02:02, and 02:12 MDT still returned the 403 5-hour usage limit; next probe on the 02:20 reminder and again at 02:45. Paused Kimi lanes keep their preserved WIP."
     }
   ]
 }
