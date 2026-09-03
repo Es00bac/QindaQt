@@ -48,4 +48,12 @@ struct SsidIdentity {
 [[nodiscard]] QString knownNetworkId(QByteArrayView rawSsid,
                                      SecuritySuite security);
 
+// AGENT-CONTRACT: Snapshot consumers, intent admission, and the libnm adapter
+// must use this one opaque derivation. Joining the normalized device interface
+// and BSSID prevents one radio identity seen by two devices from making a
+// connect request ambiguous. It is correlation, not confidentiality, and
+// never includes an SSID or credential.
+[[nodiscard]] QString visibleAccessPointId(const QString &deviceInterface,
+                                           const QString &bssid);
+
 } // namespace QindaQt::Network

@@ -44,6 +44,7 @@ function(expect_permitted_surface)
         "  Q_INVOKABLE bool reload();\n"
         "  Q_INVOKABLE bool requestScan();\n"
         "  Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);\n"
+        "  Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId);\n"
         "  Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);\n"
         "};\n")
     file(WRITE "${poison_root}/src/apps/settings/network/qml/Allowed.qml"

@@ -69,7 +69,7 @@ set_tests_properties(
     qindaqt.network-page PROPERTIES
     LABELS "offscreen;settings;network;accessibility"
     ENVIRONMENT
-        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
 )
 
 add_test(

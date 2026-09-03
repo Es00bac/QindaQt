@@ -282,6 +282,8 @@ Facts LibnmNetworkManagerPort::collectFacts() {
       permitted(m_client, NM_CLIENT_PERMISSION_NETWORK_CONTROL);
   facts.knownNetworkControlSupported =
       canControl && !facts.knownNetworks.isEmpty();
+  facts.visibleNetworkControlSupported =
+      canControl && wifiPresent && !facts.accessPoints.isEmpty();
   facts.disconnectSupported = canControl;
   facts.radioControlSupported =
       (wifiPresent &&

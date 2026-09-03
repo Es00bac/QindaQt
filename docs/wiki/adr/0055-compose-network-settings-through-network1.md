@@ -73,3 +73,31 @@ profile editing or credential-agent interaction, including its authentication,
 privacy, lifetime, cancellation, and accessibility behavior. Live physical
 hardware qualification may strengthen evidence but does not by itself broaden
 this route's authority.
+
+## Amendment: bounded visible-network enrollment (2026-09-03)
+
+[ADR-0069](0069-confine-network-credential-entry.md) now supplies the separate
+standard SecretAgent process anticipated above. Network1 and Settings may
+therefore support first-use connection without expanding their credential
+boundary: add the fixed `ConnectVisibleNetwork` intent, carrying only initiating
+lineage and an opaque id for an access point already present in that snapshot.
+The original prohibition on arbitrary profile parameters and credential input
+remains in force.
+
+The NetworkManager adapter alone converts an admitted visible Open, WPA2
+Personal, or WPA3 Personal access point into a minimal profile and invokes
+`AddAndActivateConnection`. Open profiles have no wireless-security setting.
+Secured profiles omit the PSK and use `wpa-psk` or `sae` with the PSK marked
+agent-owned. Hidden, WEP, enterprise, absent, stale, already-known, and
+capability-denied targets fail closed before platform dispatch. This is the
+only profile-creation exception to the original decision and to the broader
+profile-authority wording in
+[ADR-0052](0052-confine-networkmanager-behind-network1.md); NetworkManager
+remains the persistence and credential authority.
+
+The route shows this action only for unsaved access points and gates it on the
+new public capability. Open networks need no agent. A supported secured action
+also requires the presence-only name from ADR-0069 and states whether a
+password prompt can appear. Success means only that profile creation and
+activation were dispatched; the route waits for authoritative refreshed truth
+and never manufactures connection state.

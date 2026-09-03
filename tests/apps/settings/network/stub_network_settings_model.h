@@ -66,6 +66,7 @@ public:
   int reloadCount = 0;
   int scanCount = 0;
   QString connectedNetwork;
+  QString connectedAccessPoint;
   QString disconnectedDevice;
 
   explicit StubNetworkSettingsModel(QObject *parent = nullptr)
@@ -96,14 +97,35 @@ public:
             {QStringLiteral("mayRequireExternalCredentials"), true},
         },
     };
+    const QString accessPointId(64, u'c');
     accessPoints = {
         QVariantMap{
+            {QStringLiteral("id"), QString(64, u'd')},
             {QStringLiteral("displayName"), QStringLiteral("Cafe")},
             {QStringLiteral("securityText"), QStringLiteral("WPA2 Personal")},
             {QStringLiteral("deviceInterface"), QStringLiteral("wlan0")},
             {QStringLiteral("frequencyMHz"), 5'180},
             {QStringLiteral("signalStrength"), 72},
             {QStringLiteral("saved"), true},
+            {QStringLiteral("secured"), true},
+            {QStringLiteral("connectSupported"), true},
+            {QStringLiteral("connectAvailable"), false},
+            {QStringLiteral("promptStatusText"),
+             QStringLiteral("A password prompt will appear.")},
+        },
+        QVariantMap{
+            {QStringLiteral("id"), accessPointId},
+            {QStringLiteral("displayName"), QStringLiteral("Guest")},
+            {QStringLiteral("securityText"), QStringLiteral("WPA2 Personal")},
+            {QStringLiteral("deviceInterface"), QStringLiteral("wlan0")},
+            {QStringLiteral("frequencyMHz"), 2'437},
+            {QStringLiteral("signalStrength"), 61},
+            {QStringLiteral("saved"), false},
+            {QStringLiteral("secured"), true},
+            {QStringLiteral("connectSupported"), true},
+            {QStringLiteral("connectAvailable"), true},
+            {QStringLiteral("promptStatusText"),
+             QStringLiteral("A password prompt will appear.")},
         },
     };
   }
@@ -118,6 +140,10 @@ public:
   }
   Q_INVOKABLE bool connectKnownNetwork(const QString &id) {
     connectedNetwork = id;
+    return true;
+  }
+  Q_INVOKABLE bool connectVisibleNetwork(const QString &id) {
+    connectedAccessPoint = id;
     return true;
   }
   Q_INVOKABLE bool disconnectDevice(const QString &interfaceName) {

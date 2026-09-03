@@ -172,6 +172,11 @@ NetworkServiceCoordinator::submit(const NetworkServiceRequest &request) {
     backendRequest.radioKind = request.radioKind;
     backendRequest.enable = request.enable;
     break;
+  case OperationKind::ConnectVisibleNetwork:
+    verdict =
+        m_model.connectVisible(ConnectVisibleIntent{request.identifier});
+    backendRequest.identifier = request.identifier;
+    break;
   }
   if (!verdict.allowed) {
     return {false, 0,
