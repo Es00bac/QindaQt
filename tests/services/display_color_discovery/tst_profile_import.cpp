@@ -2,6 +2,7 @@
 
 #include <qindaqt/services/display_color_discovery/profile_discovery.h>
 
+#include "profile_import_p.h"
 #include "support/icc_file_builder.h"
 
 #include <QtCore/QCryptographicHash>
@@ -53,6 +54,8 @@ private slots:
     void rejectsDestinationConflicts();
     void recoversFromInterruptedWrite();
     void failsClosedWithoutAUsableUserRoot();
+    void rejectsParentReferencesBeforeWriting();
+    void rejectsUnsafeRootBeforeDestinationInspection();
     void importedProfileReappearsInDiscovery();
     void rejectsNamesDiscoveryCannotEnumerate();
 
@@ -256,6 +259,68 @@ void ProfileImportTests::failsClosedWithoutAUsableUserRoot()
     QCOMPARE(redirectedResult.status, ImportStatus::WriteFailed);
     QCOMPARE(redirectedResult.reasonCode, QStringLiteral("invalid-user-root"));
     QVERIFY(!QFile::exists(outside + QStringLiteral("/user/x.icc")));
+}
+
+void ProfileImportTests::rejectsParentReferencesBeforeWriting()
+{
+    QVERIFY(m_tree.isValid());
+    const QString injected = m_tree.filePath(QStringLiteral("dotdot-import-injected"));
+    const QString outside = m_tree.filePath(QStringLiteral("dotdot-import-outside"));
+    const QString sources = m_tree.filePath(QStringLiteral("dotdot-import-source"));
+    QVERIFY(QDir().mkpath(injected));
+    QVERIFY(QDir().mkpath(outside + QStringLiteral("/bridge")));
+    QVERIFY(QDir().mkpath(outside + QStringLiteral("/user")));
+    QVERIFY(QDir().mkpath(sources));
+    QVERIFY(QFile::link(QFileInfo(outside + QStringLiteral("/bridge")).absoluteFilePath(),
+                        injected + QStringLiteral("/redirect")));
+    const QString source = sources + QStringLiteral("/x.icc");
+    QVERIFY(writeFileBytes(source, buildIccFileBytes(512, QStringLiteral("Source"))));
+
+    // P1.1: redirect/.. must be rejected as written, before Qt or the kernel
+    // can normalize it into the external user directory.
+    const QString root = injected + QStringLiteral("/redirect/../user");
+    const ImportResult result = ProfileDiscovery(rootsWithImport(root)).importUserProfile(source);
+    QCOMPARE(result.status, ImportStatus::WriteFailed);
+    QCOMPARE(result.reasonCode, QStringLiteral("invalid-user-root"));
+    QVERIFY(!QFile::exists(outside + QStringLiteral("/user/x.icc")));
+}
+
+void ProfileImportTests::rejectsUnsafeRootBeforeDestinationInspection()
+{
+    QVERIFY(m_tree.isValid());
+    const QString injected = m_tree.filePath(QStringLiteral("preinspect-injected"));
+    const QString outside = m_tree.filePath(QStringLiteral("preinspect-outside"));
+    const QString sources = m_tree.filePath(QStringLiteral("preinspect-source"));
+    QVERIFY(QDir().mkpath(injected));
+    QVERIFY(QDir().mkpath(outside + QStringLiteral("/user")));
+    QVERIFY(QDir().mkpath(sources));
+    QVERIFY(QFile::link(QFileInfo(outside).absoluteFilePath(),
+                        injected + QStringLiteral("/redirect")));
+    const QString source = sources + QStringLiteral("/x.icc");
+    const QString canary = outside + QStringLiteral("/user/x.icc");
+    QVERIFY(writeFileBytes(source, buildIccFileBytes(512, QStringLiteral("Source"))));
+    QVERIFY(writeFileBytes(canary, buildIccFileBytes(640, QStringLiteral("Canary"))));
+
+    int destinationInspections = 0;
+    const auto recordingInspector =
+        [&destinationInspections](ImportRootAccess &, const QString &,
+                                  const QByteArray &) -> ExistingDestinationOutcome {
+        ++destinationInspections;
+        return {ExistingDestinationOutcome::Status::Conflict, {}};
+    };
+    const QString redirectedRoot = injected + QStringLiteral("/redirect/user");
+    const ImportResult result =
+        importProfileFromSource(rootsWithImport(redirectedRoot), DiscoveryLimits{}, source,
+                                recordingInspector);
+
+    // P1.2: the fake filesystem seam represents every destination stat/read.
+    // A rejected canonical root must return before that seam sees the canary.
+    QCOMPARE(result.status, ImportStatus::WriteFailed);
+    QCOMPARE(result.reasonCode, QStringLiteral("invalid-user-root"));
+    QCOMPARE(destinationInspections, 0);
+    QFile canaryFile(canary);
+    QVERIFY(canaryFile.open(QIODevice::ReadOnly));
+    QCOMPARE(canaryFile.readAll(), buildIccFileBytes(640, QStringLiteral("Canary")));
 }
 
 void ProfileImportTests::importedProfileReappearsInDiscovery()

@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include "import_writer_p.h"
+
 #include <qindaqt/services/display_color_discovery/profile_discovery.h>
+
+#include <functional>
 
 namespace QindaQt::DisplayColor
 {
@@ -11,8 +15,13 @@ namespace QindaQt::DisplayColor
 // copies the profile into the first injected UserImported root. Split from
 // profile_discovery.cpp so enumeration and import stay independently
 // reviewable; ProfileDiscovery::importUserProfile delegates here.
+using DestinationInspector =
+    std::function<ExistingDestinationOutcome(ImportRootAccess &, const QString &,
+                                             const QByteArray &)>;
+
 ImportResult importProfileFromSource(const QList<DiscoveryRoot> &roots,
                                      const DiscoveryLimits &limits,
-                                     const QString &sourcePath);
+                                     const QString &sourcePath,
+                                     DestinationInspector destinationInspector = {});
 
 } // namespace QindaQt::DisplayColor

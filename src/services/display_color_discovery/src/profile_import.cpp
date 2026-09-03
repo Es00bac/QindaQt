@@ -3,10 +3,7 @@
 #include "profile_import_p.h"
 
 #include "icc_text_metadata_p.h"
-#include "import_writer_p.h"
-
 #include <QtCore/QCryptographicHash>
-#include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QtEndian>
@@ -77,7 +74,8 @@ SourceCapture captureSource(const QString &sourcePath)
 
 ImportResult importProfileFromSource(const QList<DiscoveryRoot> &roots,
                                      const DiscoveryLimits &limits,
-                                     const QString &sourcePath)
+                                     const QString &sourcePath,
+                                     DestinationInspector destinationInspector)
 {
     ImportResult result;
     if (!ProfileDiscovery::limitsAreValid(limits)) {
@@ -161,22 +159,36 @@ ImportResult importProfileFromSource(const QList<DiscoveryRoot> &roots,
         return result;
     }
 
-    const std::optional<QByteArray> existingDigest =
-        existingFileDigestIfIdentical(userRoot->path, baseName, capture.content);
-    if (existingDigest.has_value()) {
+    std::optional<ImportRootAccess> rootAccess = ImportRootAccess::open(userRoot->path);
+    if (!rootAccess.has_value()) {
+        result.status = ImportStatus::WriteFailed;
+        result.reasonCode = QString(ImportRootUnsafeCode);
+        return result;
+    }
+    // AGENT-GUARD: Root validation and canonical destination containment
+    // precede the injected inspector. This ordering is the P1.2 security
+    // boundary: no destination stat/read/digest may run after root rejection.
+    if (!rootAccess->destinationIsContained(baseName)) {
+        result.status = ImportStatus::DestinationConflict;
+        result.reasonCode = QStringLiteral("destination-conflict");
+        return result;
+    }
+    const ExistingDestinationOutcome existing =
+        destinationInspector
+            ? destinationInspector(*rootAccess, baseName, capture.content)
+            : rootAccess->inspectExisting(baseName, capture.content);
+    if (existing.status == ExistingDestinationOutcome::Status::Identical) {
         result.status = ImportStatus::AlreadyPresent;
         result.profile = imported;
         return result;
     }
-    const QFileInfo destinationInfo(QDir(userRoot->path).filePath(baseName));
-    if (destinationInfo.exists() || destinationInfo.isSymLink()) {
+    if (existing.status == ExistingDestinationOutcome::Status::Conflict) {
         result.status = ImportStatus::DestinationConflict;
         result.reasonCode = QStringLiteral("destination-conflict");
         return result;
     }
 
-    const ImportWriteOutcome written =
-        atomicWriteProfileCopy(userRoot->path, baseName, capture.content);
+    const ImportWriteOutcome written = rootAccess->write(baseName, capture.content);
     if (written.status != ImportWriteOutcome::Status::Written) {
         result.status = written.reasonCode == QStringLiteral("durability-uncertain")
                             ? ImportStatus::DurabilityUncertain

@@ -3,6 +3,7 @@
 #include <qindaqt/services/display_color_discovery/profile_discovery.h>
 #include <qindaqt/services/display_color_model/color_model.h>
 
+#include "icc_text_metadata_p.h"
 #include "support/icc_file_builder.h"
 
 #include <QtCore/QTemporaryDir>
@@ -53,7 +54,9 @@ class ProfileDiscoveryTests final : public QObject
 private slots:
     void discoversOnlyFromInjectedRoots();
     void rejectsSymlinkedRootAncestors();
+    void rejectsParentReferencesBeforeCanonicalization();
     void rejectsInvalidInjectedOrigins();
+    void invalidOriginsStayInvalidDuringDescriptorAssembly();
     void classifiesOriginFromTheInjectedRoot();
     void skipsHostileFilesWithDiagnostics();
     void rejectsConflictingDuplicateIdsOrderIndependently();
@@ -115,6 +118,27 @@ void ProfileDiscoveryTests::rejectsSymlinkedRootAncestors()
                 .contains(QStringLiteral("root-ancestor-is-symlink")));
 }
 
+void ProfileDiscoveryTests::rejectsParentReferencesBeforeCanonicalization()
+{
+    QVERIFY(m_tree.isValid());
+    const QString injected = m_tree.filePath(QStringLiteral("dotdot-injected"));
+    const QString outside = m_tree.filePath(QStringLiteral("dotdot-outside"));
+    QVERIFY(QDir().mkpath(injected));
+    QVERIFY(QDir().mkpath(outside + QStringLiteral("/bridge")));
+    QVERIFY(QDir().mkpath(outside + QStringLiteral("/icc")));
+    QVERIFY(writeFileBytes(outside + QStringLiteral("/icc/outside.icc"),
+                           buildIccFileBytes(512, QStringLiteral("Outside"))));
+    QVERIFY(QFile::link(QFileInfo(outside + QStringLiteral("/bridge")).absoluteFilePath(),
+                        injected + QStringLiteral("/redirect")));
+
+    // P1.1: lexical cleaning used to erase redirect/.., then POSIX path
+    // resolution followed redirect and enumerated outside/icc.
+    const QString root = injected + QStringLiteral("/redirect/../icc");
+    const DiscoveryResult result = ProfileDiscovery({systemRoot(root)}).discoverCatalog();
+    QVERIFY(result.profiles.isEmpty());
+    QVERIFY(codesFor(result, root).contains(QStringLiteral("root-ancestor-is-symlink")));
+}
+
 void ProfileDiscoveryTests::rejectsInvalidInjectedOrigins()
 {
     QVERIFY(m_tree.isValid());
@@ -130,6 +154,20 @@ void ProfileDiscoveryTests::rejectsInvalidInjectedOrigins()
     QVERIFY(result.profiles.isEmpty());
     QVERIFY(!result.complete);
     QVERIFY(codesFor(result, root).contains(QStringLiteral("invalid-origin")));
+}
+
+void ProfileDiscoveryTests::invalidOriginsStayInvalidDuringDescriptorAssembly()
+{
+    const QByteArray bytes = buildIccFileBytes(512, QStringLiteral("Invalid origin"));
+    const IccProfileDescriptor descriptor = assembleDescriptor(
+        static_cast<DiscoveryOrigin>(99), QStringLiteral("invalid.icc"),
+        bytes.left(static_cast<qsizetype>(IccHeaderSizeBytes)), quint32{512}, {}, {});
+
+    // P3.1: descriptor assembly is a private defense-in-depth boundary. Its
+    // invalid marker must survive all common-field initialization below the
+    // origin switch.
+    QVERIFY(!descriptor.wireValid);
+    QCOMPARE(validateProfileDescriptor(descriptor), ProfileValidationStatus::MalformedMetadata);
 }
 
 void ProfileDiscoveryTests::classifiesOriginFromTheInjectedRoot()

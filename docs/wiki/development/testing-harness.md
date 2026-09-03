@@ -1744,8 +1744,10 @@ assignment rows extend the same selector with:
   mislabeled declared/actual size, declared oversize, planted symlinks,
   unsafe file names), order-independent conflicting-duplicate rejection,
   including body-only byte differences under otherwise equal inspected
-  metadata, exact-duplicate collapse by bounded byte comparison, rejection of
-  symlinked root ancestors and invalid injected origins before enumeration,
+  metadata, exact-duplicate collapse by bounded byte comparison, canonical
+  containment rejection for symlinked roots, lexical `..` components, and
+  candidates outside the one resolved root, plus invalid injected origins
+  before enumeration and invalid-origin descriptor-assembly defense,
   bounded enumeration truth, case-insensitive
   `*.icc`/`*.icm` acceptance, silent dot-prefixed-name exclusion, bounded
   tag-table/description degradation diagnostics, 'desc'/'mluc' description
@@ -1756,8 +1758,10 @@ assignment rows extend the same selector with:
   atomicity for hostile sources (including dot-prefixed destination names,
   and non-ICC suffixes, which discovery could never re-list), destination conflicts,
   interrupted-write recovery (stale temporary removal, directory collision
-  fail-closed), missing/unusable injected user roots, and the discovery
-  round trip of an imported profile.
+  fail-closed), missing/unusable injected user roots, `..`-hidden root
+  redirection, and rejection before destination inspection proven through a
+  recording filesystem seam and outside-root canary, plus the discovery round
+  trip of an imported profile.
 - `qindaqt.display-color-discovery-boundary` and
   `qindaqt.display-color-discovery-boundary-poison` — the discovery module's
   no-transport/no-GUI/no-Display1/no-Settings dependency policy and its

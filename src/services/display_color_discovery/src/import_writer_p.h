@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "path_safety_p.h"
+
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
 
@@ -10,11 +12,8 @@
 namespace QindaQt::DisplayColor
 {
 
-// Reason codes reported by the atomic import writer. They are stable
-// diagnostics, not localizable text.
 inline constexpr auto ImportWriteFailureCode = "write-failed";
 inline constexpr auto ImportRootUnsafeCode = "invalid-user-root";
-inline constexpr auto ImportDestinationConflictCode = "destination-conflict";
 
 struct ImportWriteOutcome
 {
@@ -27,22 +26,47 @@ struct ImportWriteOutcome
     QString reasonCode;
 };
 
-// AGENT-CONTRACT: The user root receives profiles through same-directory
-// atomic replacement only, mirroring ADR-0051's durability pattern: the root
-// must already exist as a non-symlink, effective-user-owned directory that is
-// not group- or other-writable; the temporary name is created exclusively
-// with mode 0600; the payload is fsynced; the rename is the commit point;
-// and the directory barrier is applied where the filesystem supports it.
-// Callers must serialize imports into one root (single-threaded ownership).
-// The destination name is a caller-validated C0-safe file base name; no
-// path separator or ".." can reach this layer.
-ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString &fileName,
-                                          const QByteArray &content);
+struct ExistingDestinationOutcome
+{
+    enum class Status
+    {
+        Missing,
+        Identical,
+        Conflict,
+    };
+    Status status = Status::Conflict;
+    QByteArray digest;
+};
 
-// Returns the stored file's SHA-256 content digest when the destination is a
-// regular, non-symlink file that is byte-identical to the supplied content;
-// nullopt when it is absent, unreadable, or different.
-std::optional<QByteArray> existingFileDigestIfIdentical(const QString &root, const QString &fileName,
-                                                        const QByteArray &content);
+// AGENT-CONTRACT: One instance owns the canonicalized and descriptor-open
+// import root for one import operation. Creation rejects parent references,
+// canonicalization failures, symlinked components, foreign ownership, and
+// group/other writability before any destination is inspected. Callers must
+// then pass every destination through destinationIsContained before stat/read.
+class ImportRootAccess final
+{
+public:
+    static std::optional<ImportRootAccess> open(const QString &injectedRoot);
+
+    ~ImportRootAccess();
+    ImportRootAccess(const ImportRootAccess &) = delete;
+    ImportRootAccess &operator=(const ImportRootAccess &) = delete;
+    ImportRootAccess(ImportRootAccess &&other) noexcept;
+    ImportRootAccess &operator=(ImportRootAccess &&other) noexcept;
+
+    [[nodiscard]] bool destinationIsContained(const QString &fileName) const;
+    [[nodiscard]] ExistingDestinationOutcome inspectExisting(
+        const QString &fileName, const QByteArray &content) const;
+    [[nodiscard]] ImportWriteOutcome write(const QString &fileName,
+                                            const QByteArray &content) const;
+
+private:
+    ImportRootAccess(CanonicalRootContainment containment, int fd);
+
+    [[nodiscard]] QString destinationPath(const QString &fileName) const;
+
+    CanonicalRootContainment m_containment;
+    int m_fd = -1;
+};
 
 } // namespace QindaQt::DisplayColor

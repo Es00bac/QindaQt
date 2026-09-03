@@ -7,6 +7,10 @@ qt_add_executable(
     tst_profile_discovery.cpp
     support/icc_file_builder.h
 )
+target_include_directories(
+    qindaqt_color_discovery_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/display_color_discovery/src"
+)
 target_link_libraries(
     qindaqt_color_discovery_tests
     PRIVATE QindaQt::DisplayColorDiscovery QindaQt::DisplayColorModel Qt6::Core Qt6::Test
@@ -25,6 +29,10 @@ qt_add_executable(
     qindaqt_color_import_tests
     tst_profile_import.cpp
     support/icc_file_builder.h
+)
+target_include_directories(
+    qindaqt_color_import_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/display_color_discovery/src"
 )
 target_link_libraries(
     qindaqt_color_import_tests
