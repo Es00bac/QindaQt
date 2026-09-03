@@ -44,8 +44,10 @@ void ColorRouteCompositionTest::initTestCase() {
       QCoreApplication::applicationDirPath() +
       QStringLiteral("/color-composition-home-XXXXXX"));
   QVERIFY(m_home->isValid());
-  qSetEnv("XDG_DATA_HOME", m_home->path() + QStringLiteral("/data"));
-  qSetEnv("XDG_DATA_DIRS", m_home->path() + QStringLiteral("/system-data"));
+  qputenv("XDG_DATA_HOME",
+          (m_home->path() + QStringLiteral("/data")).toLocal8Bit());
+  qputenv("XDG_DATA_DIRS",
+          (m_home->path() + QStringLiteral("/system-data")).toLocal8Bit());
 }
 
 void ColorRouteCompositionTest::compositionProvisionsTheUserImportRoot() {
