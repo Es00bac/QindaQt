@@ -45,6 +45,27 @@ qindaqt_enable_warnings(qindaqt_font_preferences_coordinator_tests)
 add_test(NAME qindaqt.font-preferences-coordinator COMMAND qindaqt_font_preferences_coordinator_tests)
 set_tests_properties(qindaqt.font-preferences-coordinator PROPERTIES LABELS "service;fonts;pure")
 
+qt_add_executable(qindaqt_font_settings_bridge_tests tst_font_settings_bridge.cpp)
+target_link_libraries(
+    qindaqt_font_settings_bridge_tests
+    PRIVATE QindaQt::FontPreferences QindaQt::SettingsClient Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_font_settings_bridge_tests)
+add_test(NAME qindaqt.font-settings-bridge COMMAND qindaqt_font_settings_bridge_tests)
+set_tests_properties(qindaqt.font-settings-bridge PROPERTIES LABELS "service;fonts;settings1")
+
+qt_add_executable(qindaqt_font_settings_bootstrap_tests tst_font_settings_bootstrap.cpp)
+target_link_libraries(
+    qindaqt_font_settings_bootstrap_tests
+    PRIVATE QindaQt::FontPreferences QindaQt::SettingsClient Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_font_settings_bootstrap_tests)
+add_test(NAME qindaqt.font-settings-bootstrap COMMAND qindaqt_font_settings_bootstrap_tests)
+set_tests_properties(
+    qindaqt.font-settings-bootstrap
+    PROPERTIES LABELS "service;fonts;settings1" ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 add_test(
     NAME qindaqt.font-preferences-boundary
     COMMAND
@@ -64,6 +85,8 @@ add_test(
         "-DQINDAQT_FONT_PREFERENCES_SOURCE_DIRECTORY=${CMAKE_SOURCE_DIR}/src/services/font_preferences"
         "-DQINDAQT_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
         "-DQINDAQT_FONT_PREFERENCES_LIBRARY=$<TARGET_FILE:qindaqt_font_preferences>"
+        "-DQINDAQT_SETTINGS_CLIENT_LIBRARY=$<TARGET_FILE:qindaqt_settings_client>"
+        "-DQINDAQT_SETTINGS_PROTOCOL_LIBRARY=$<TARGET_FILE:qindaqt_settings_protocol>"
         "-DQINDAQT_QT6_DIR=${Qt6_DIR}"
         "-DQINDAQT_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DQINDAQT_CONSUMER_SOURCE_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer"

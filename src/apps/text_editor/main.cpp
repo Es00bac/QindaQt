@@ -4,6 +4,7 @@
 #include "ui/editor_window.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
+#include "qindaqt/services/font_preferences/font_settings_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
@@ -109,6 +110,15 @@ int main(int argc, char **argv) {
   }
   application.setPalette(appearance.appearance->palette);
   application.setFont(appearance.appearance->interfaceFont);
+  // AGENT-CONTRACT: F1 font bootstrap — apply confirmed Settings1 fonts.*
+  // typography after the theme baseline and before any window exists, so a
+  // confirmed preference wins over the theme interface font. A missing or
+  // unavailable preference source leaves the theme defaults untouched
+  // (fail-closed). See docs/wiki/architecture/font-preferences.md.
+  const bool fontBootstrapApplied =
+      QindaQt::Services::FontPreferences::FontSettingsBootstrap::applyFromSessionSettings(
+          application);
+  Q_UNUSED(fontBootstrapApplied);
   if (parser.isSet(QStringLiteral("check-theme"))) {
     std::printf("%s qst-%d\n", qPrintable(appearance.appearance->sourceThemeId),
                 QindaQt::DesignTokens::DesignTokens::qstRevision);

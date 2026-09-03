@@ -844,6 +844,52 @@ Settings1 client suites remain authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
 compositor focus, screen-reader traversal, or the later platform-route matrix.
 
+## Current Font F0 and F1 proof
+
+The pure F0 boundary, the fontconfig discovery provider, the Settings1
+persistence composition, and the pre-window bootstrap are selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.font-' --output-on-failure
+```
+
+The F0 rows (`qindaqt.font-catalog`, `qindaqt.font-preferences`,
+`qindaqt.font-preferences-codec`, `qindaqt.font-bootstrap`,
+`qindaqt.font-preferences-coordinator`) cover the pure catalog, preference
+validation, codecs, derivation, and LKG coordination.
+`qindaqt.font-discovery`, `qindaqt.font-discovery-hostile`, and
+`qindaqt.font-discovery-bounds` run the real fontconfig provider against
+vendored OFL fixtures (`tests/services/font_discovery/fixtures`, provenance in
+its README) staged into private temporary directories with an injected
+configuration file and cachedir: deterministic family/style/weight/spacing
+mapping and ordering, catalog integration, malformed/missing configuration,
+missing injected directories, hostile non-font content, empty directories,
+string-length pattern rejection, and deterministic bounded truncation. The
+host default fontconfig configuration and host font directories are never
+consulted by any discovery row.
+`qindaqt.font-settings-bridge` drives the public Settings1 client through a
+fake transport: confirmed-snapshot synchronization, hostile-value LKG
+retention, write refusal without a baseline, invalid-draft refusal, the
+six-key fixed-order commit round trip with fresh baselines between keys,
+confirmed-conflict stop without replay, uncertain-write fencing, and
+fail-closed transport loss. `qindaqt.font-settings-bootstrap` covers guarded
+application of valid/invalid preferences to the default font, bounded reads
+through an injected client, start failure, owner-less timeout, and the
+production session-bus composition against a deliberately absent bus address.
+`qindaqt.font-preferences-boundary` and `qindaqt.font-discovery-boundary` are
+the poison gates: Qt D-Bus is confined to the bootstrap composition source and
+fontconfig to the discovery provider. The
+`qindaqt.font-preferences-installed-consumer` and
+`qindaqt.font-discovery-installed-consumer` rows rebuild external CMake
+consumers from a staged prefix and execute them offscreen.
+The four first-party application selectors (`^qindaqt\.(editor|terminal|file-manager)-`
+and the Settings Center rows) exercise the guarded bootstrap call on every
+existing CLI/offscreen startup path under an absent settings authority.
+
+This evidence uses private temporary directories, fake transports, and
+offscreen rendering. It does not claim a live session bus, a real Settings1
+service, host font installation changes, or rendered typography baselines.
+
 ## Current compositor proof
 
 The focused live checks are:

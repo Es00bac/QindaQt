@@ -75,7 +75,7 @@ qindaqt_enable_warnings(qindaqt_terminal_adapter)
 
 qt_add_executable(qindaqt-terminal main.cpp)
 target_link_libraries(
-    qindaqt-terminal PRIVATE qindaqt_terminal_adapter
+    qindaqt-terminal PRIVATE qindaqt_terminal_adapter QindaQt::FontPreferences
 )
 target_compile_features(qindaqt-terminal PRIVATE cxx_std_20)
 set_target_properties(qindaqt-terminal PROPERTIES CXX_EXTENSIONS OFF)

@@ -15,6 +15,7 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/network_qt_transport/qt_network_transport.h"
+#include "qindaqt/services/font_preferences/font_settings_bootstrap.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -74,6 +75,15 @@ int main(int argc, char **argv) {
   // derive from this binding; regressing it mislabels every settings
   // window. Set before any window exists, matching the text editor.
   application.setDesktopFileName(QStringLiteral("org.qindaqt.Settings"));
+
+  // AGENT-CONTRACT: F1 font bootstrap — apply confirmed Settings1 fonts.*
+  // typography before any window or QML engine exists. A missing or
+  // unavailable preference source leaves platform defaults untouched
+  // (fail-closed). See docs/wiki/architecture/font-preferences.md.
+  const bool fontBootstrapApplied =
+      QindaQt::Services::FontPreferences::FontSettingsBootstrap::applyFromSessionSettings(
+          application);
+  Q_UNUSED(fontBootstrapApplied);
 
   QCommandLineParser parser;
   parser.setApplicationDescription(QStringLiteral("QindaQt Settings"));

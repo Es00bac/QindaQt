@@ -80,7 +80,8 @@ tests, and the wiki page describing its contract.
 | `src/services/notifications` | Bounded notification policy/model plus a separate freedesktop QtDBus adapter | Qt Core for the domain; QtDBus only in the protocol adapter; never QML or Plasma runtime |
 | `src/services/notification_host` | Resident D-Bus ownership, one-shot notification-expiry scheduling, and optional authenticated presentation adapter | Public notification model/adapter and presentation protocol plus Qt Core/DBus; never popup UI, history persistence, sound, token provisioning, or session supervision |
 | `src/services/clipboard_model` | Volatile bounded clipboard history: canonical media classification, privacy/opt-in gating, generation-fenced deterministic admission/eviction/dedup/pinning/clear, bounded metadata search, lineage-exhaustion fencing, and value/descriptor codecs | Qt Core only; never transport, Wayland, host clipboard, D-Bus, persistence, clocks, QObject providers, or QML |
-| `src/services/font_preferences` | Pure deterministic font family discovery from injected facts, validated typography preferences, lossless codecs, pre-application bootstrap derivation, and atomic LKG publication | Qt Core and Qt Gui value types; never host filesystem scanning, fontconfig daemon mutation, D-Bus, KWin, or QML |
+| `src/services/font_preferences` | Pure deterministic font family discovery from injected facts, validated typography preferences, lossless codecs, pre-application bootstrap derivation, atomic LKG publication, and the F1 Settings1 composition (confirmed-snapshot bridge and guarded pre-window bootstrap) | Qt Core/Gui and the public Settings1 client; Qt D-Bus only in the bootstrap composition source; never host filesystem scanning, fontconfig, KWin, or QML |
+| `src/services/font_discovery` | Sole fontconfig-backed producer of F0 `FontFact` values from an internally built `FcConfig` over injected directories and an injected configuration file, with bounded counts/strings, deterministic ordering, and fail-closed unavailable truth | Public `font_preferences` values, Qt Core, and privately linked fontconfig ([ADR-0057](../adr/0057-confine-fontconfig-behind-font-discovery.md)); never D-Bus, QML, Qt Gui/Widgets, host config mutation, or shell/applications |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
 | `src/apps/text_editor` | Single-document text policy, bounded local UTF-8 persistence, standard Qt action/menu presentation, and QST-1 adaptation | Public themes/QST-1 plus Qt Core/Gui/Widgets; never shell internals, services, or another app's private code |
@@ -204,6 +205,14 @@ implemented; do not use placeholder modules to bypass a boundary.
   privacy denial purges content behind a generation fence. See
   [Clipboard service](clipboard-service.md) and
   [ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md).
+- Font discovery and typography preferences follow the F0 pure boundary plus
+  the F1 composition seam: only `src/services/font_discovery` links
+  fontconfig, tests inject their configuration and directories so host font
+  state is never consulted, and confirmed Settings1 `fonts.*` values reach
+  first-party applications only through the coordinator bridge and the guarded
+  pre-window bootstrap. See [Font preferences](font-preferences.md),
+  [ADR-0047](../adr/0047-pure-font-catalog-and-preference-boundary.md), and
+  [ADR-0057](../adr/0057-confine-fontconfig-behind-font-discovery.md).
 - Built-in applet QML receives a purpose-specific shell facade, never a general
   shell controller or service model. The notification-center entry can request
   a center toggle and observe open plus read-only Do Not Disturb state, but it
