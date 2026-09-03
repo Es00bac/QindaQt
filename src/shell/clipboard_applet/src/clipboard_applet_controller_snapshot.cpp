@@ -40,6 +40,21 @@ void ClipboardAppletController::acceptSnapshot(
         return;
     }
 
+    if (m_client->clientState() == ClientState::Unavailable) {
+        // AGENT-GUARD: while the client reports the service unreachable,
+        // retain authority flags only and never establish a fresh-owner
+        // baseline from such a snapshot. The in-process adapter serves a
+        // content-empty fallback in this state; accepting it as the new
+        // owner's baseline would arm the NEXT real snapshot (which can still
+        // carry the previous owner's history) as legitimate fresh content.
+        m_snapshot = {};
+        m_snapshot.generation = snapshot.generation;
+        m_snapshot.revision = snapshot.revision;
+        m_snapshot.historyEnabled = snapshot.historyEnabled;
+        m_snapshot.privacyAllowed = snapshot.privacyAllowed;
+        return;
+    }
+
     if (m_hasBaseline) {
         // AGENT-GUARD: the C0 lineage is lexicographically monotonic —
         // generation rises by exactly one per purge and revision never moves

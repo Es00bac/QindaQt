@@ -36,7 +36,13 @@ cmake_path(IS_PREFIX build_directory "${install_prefix}" NORMALIZE prefix_is_in_
 if(NOT prefix_is_in_build OR install_prefix STREQUAL build_directory)
     message(FATAL_ERROR "Refusing to replace a Clipboard applet stage outside the test build tree")
 endif()
+set(relocated_prefix "${install_prefix}-relocated")
+cmake_path(IS_PREFIX build_directory "${relocated_prefix}" NORMALIZE relocated_is_in_build)
+if(NOT relocated_is_in_build)
+    message(FATAL_ERROR "Refusing to relocate a Clipboard applet stage outside the test build tree")
+endif()
 file(REMOVE_RECURSE "${install_prefix}")
+file(REMOVE_RECURSE "${relocated_prefix}")
 
 set(install_command "${QINDAQT_CMAKE}" --install "${build_directory}"
                     --prefix "${install_prefix}"
@@ -128,6 +134,40 @@ foreach(stage_module IN ITEMS Controls Tokens)
          ONLY_IF_DIFFERENT)
 endforeach()
 
+# The copied build-tree shared libraries carry build-tree RUNPATHs; a staged
+# package must be self-contained and relocatable. Rewrite each staged copy to
+# an $ORIGIN-relative RUNPATH so a moved stage resolves its own siblings —
+# Controls needs the staged Tokens library next to it.
+find_program(patchelf_program patchelf)
+if(NOT patchelf_program)
+    message(FATAL_ERROR "patchelf is required for the ClipboardApplet relocation check")
+endif()
+set(staged_controls_library "${qml_stage_root}/QindaQt/Controls")
+set(staged_tokens_library "${qml_stage_root}/QindaQt/Tokens")
+file(GLOB staged_controls_so "${staged_controls_library}/libqindaqt_controls_qml${QINDAQT_SHARED_LIBRARY_SUFFIX}")
+file(GLOB staged_tokens_so "${staged_tokens_library}/libqindaqt_tokens_qml${QINDAQT_SHARED_LIBRARY_SUFFIX}")
+foreach(patch_spec IN ITEMS
+        "${staged_controls_so}|$ORIGIN/../Tokens"
+        "${staged_tokens_so}|$ORIGIN")
+    string(FIND "${patch_spec}" "|" separator)
+    string(SUBSTRING "${patch_spec}" 0 ${separator} patch_target)
+    math(EXPR rest_start "${separator} + 1")
+    string(SUBSTRING "${patch_spec}" ${rest_start} -1 patch_rpath)
+    if(NOT EXISTS "${patch_target}")
+        message(FATAL_ERROR "Staged module library missing for RPATH rewrite: ${patch_target}")
+    endif()
+    execute_process(
+        COMMAND "${patchelf_program}" --set-rpath "${patch_rpath}" "${patch_target}"
+        RESULT_VARIABLE patchelf_status
+        OUTPUT_VARIABLE patchelf_output
+        ERROR_VARIABLE patchelf_error
+    )
+    if(NOT patchelf_status EQUAL 0)
+        message(FATAL_ERROR
+                "patchelf failed on ${patch_target}:\n${patchelf_output}${patchelf_error}")
+    endif()
+endforeach()
+
 # Stage the C0 model archive/headers, the themes/design-tokens archives and
 # headers, and the theme file: public dependencies whose packaging belongs to
 # their own module owners.
@@ -189,8 +229,30 @@ if(NOT build_status EQUAL 0)
             "Installed Clipboard applet consumer build failed:\n${build_output}${build_error}")
 endif()
 
-# RPATH truth: the relocated consumer must resolve its shared dependencies
-# (staged Controls/Tokens) through stage paths only — never the build tree.
+# CMake auto-adds the directories of full-path-linked shared libraries to the
+# build RPATH; a relocatable package must not carry them. Enforce the exact
+# $ORIGIN-relative RUNPATH on the staged consumer — the readelf assertions
+# below then verify the final artifact, not the build intent.
+cmake_path(RELATIVE_PATH qml_stage_root
+           BASE_DIRECTORY "${install_prefix}"
+           OUTPUT_VARIABLE qml_root_relative_for_rpath)
+execute_process(
+    COMMAND "${patchelf_program}" --set-rpath
+            "$ORIGIN/../${qml_root_relative_for_rpath}/QindaQt/Controls:$ORIGIN/../${qml_root_relative_for_rpath}/QindaQt/Tokens"
+            "${consumer_build}/qindaqt_installed_clipboard_applet_consumer"
+    RESULT_VARIABLE consumer_patchelf_status
+    OUTPUT_VARIABLE consumer_patchelf_output
+    ERROR_VARIABLE consumer_patchelf_error
+)
+if(NOT consumer_patchelf_status EQUAL 0)
+    message(FATAL_ERROR
+            "patchelf failed on the installed Clipboard applet consumer:\n"
+            "${consumer_patchelf_output}${consumer_patchelf_error}")
+endif()
+
+# RPATH truth: the consumer resolves its staged shared dependencies
+# (Controls/Tokens) through $ORIGIN-relative entries only — never an absolute
+# stage path, so the whole stage can be relocated.
 find_program(readelf_program readelf)
 if(NOT readelf_program)
     message(FATAL_ERROR "readelf is required for the ClipboardApplet RPATH check")
@@ -204,28 +266,33 @@ execute_process(
 if(NOT readelf_status EQUAL 0)
     message(FATAL_ERROR "readelf failed on the installed Clipboard applet consumer")
 endif()
-if(NOT readelf_output MATCHES "${qml_stage_root}/QindaQt/Controls")
+if(NOT readelf_output MATCHES "[$]ORIGIN/[.][.]/.*QindaQt/Controls")
     message(FATAL_ERROR
-            "Installed consumer RPATH does not reach the staged Controls module:\n${readelf_output}")
+            "Installed consumer RPATH is not $ORIGIN-relative for the staged Controls module:\n${readelf_output}")
 endif()
-# Poison: outside the stage itself, no RPATH entry may point into the build
-# or source tree. (The stage deliberately lives inside the test build tree;
-# the script refuses any other location above.)
-string(REPLACE "${install_prefix}" "" readelf_outside_stage "${readelf_output}")
-if(readelf_outside_stage MATCHES "${build_directory}"
-   OR readelf_outside_stage MATCHES "${QINDAQT_SOURCE_DIRECTORY}")
+if(NOT readelf_output MATCHES "[$]ORIGIN/[.][.]/.*QindaQt/Tokens")
     message(FATAL_ERROR
-            "Installed consumer RPATH leaks a build/source-tree path outside the stage:\n${readelf_output}")
+            "Installed consumer RPATH is not $ORIGIN-relative for the staged Tokens module:\n${readelf_output}")
+endif()
+# Poison: no RPATH entry may be an absolute path into the stage, the build
+# tree, or the source tree.
+if(readelf_output MATCHES "${install_prefix}"
+   OR readelf_output MATCHES "${build_directory}"
+   OR readelf_output MATCHES "${QINDAQT_SOURCE_DIRECTORY}")
+    message(FATAL_ERROR
+            "Installed consumer RPATH leaks an absolute stage/build/source-tree path:\n${readelf_output}")
 endif()
 
+# AGENT-GUARD: the consumer must run from staged files only — no
+# LD_LIBRARY_PATH, no ambient import paths — first at the original prefix...
 execute_process(
     COMMAND
         "${QINDAQT_CMAKE}" -E env
+        "--unset=LD_LIBRARY_PATH"
         "QT_QPA_PLATFORM=offscreen"
         "QT_QUICK_BACKEND=software"
         "QML2_IMPORT_PATH="
         "QML_IMPORT_PATH="
-        "LD_LIBRARY_PATH=${qml_stage_root}/QindaQt/Controls;${qml_stage_root}/QindaQt/Tokens"
         "${consumer_build}/qindaqt_installed_clipboard_applet_consumer"
     RESULT_VARIABLE consumer_status
     OUTPUT_VARIABLE consumer_output
@@ -236,4 +303,30 @@ if(NOT consumer_status EQUAL 0)
             "Installed Clipboard applet consumer exited ${consumer_status}:\n"
             "${consumer_output}${consumer_error}")
 endif()
-message(STATUS "Installed Clipboard applet package, RPATH, and boundary probe passed")
+
+# ...and then from a RELOCATED prefix: the whole stage moves, so any absolute
+# RPATH or compile-time stage path breaks this run.
+get_filename_component(consumer_executable_name
+                       "${consumer_build}/qindaqt_installed_clipboard_applet_consumer" NAME)
+file(RENAME "${install_prefix}" "${relocated_prefix}")
+execute_process(
+    COMMAND
+        "${QINDAQT_CMAKE}" -E env
+        "--unset=LD_LIBRARY_PATH"
+        "QT_QPA_PLATFORM=offscreen"
+        "QT_QUICK_BACKEND=software"
+        "QML2_IMPORT_PATH="
+        "QML_IMPORT_PATH="
+        "${relocated_prefix}/consumer-build/${consumer_executable_name}"
+    RESULT_VARIABLE relocated_status
+    OUTPUT_VARIABLE relocated_output
+    ERROR_VARIABLE relocated_error
+)
+file(RENAME "${relocated_prefix}" "${install_prefix}")
+if(NOT relocated_status EQUAL 0)
+    message(FATAL_ERROR
+            "Relocated Clipboard applet consumer exited ${relocated_status} "
+            "(stage moved to ${relocated_prefix}):\n"
+            "${relocated_output}${relocated_error}")
+endif()
+message(STATUS "Installed Clipboard applet package, relocation, RPATH, and boundary probe passed")

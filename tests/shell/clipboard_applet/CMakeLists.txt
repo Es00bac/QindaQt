@@ -50,6 +50,23 @@ add_test(
     COMMAND qindaqt_clipboard_applet_fencing_tests
 )
 
+# 3b. Snapshot admission tests (hostile-input floor, lineage monotonicity,
+# owner fencing, completion-id rejection, promote-tick exhaustion)
+qt_add_executable(qindaqt_clipboard_applet_admission_tests tst_clipboard_applet_admission.cpp)
+target_link_libraries(
+    qindaqt_clipboard_applet_admission_tests
+    PRIVATE
+        QindaQt::ShellClipboardAppletRuntime
+        QindaQt::ClipboardModel
+        Qt6::Core
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_clipboard_applet_admission_tests)
+add_test(
+    NAME qindaqt.clipboard-applet-admission
+    COMMAND qindaqt_clipboard_applet_admission_tests
+)
+
 # 4. Client seam tests
 qt_add_executable(qindaqt_clipboard_applet_seam_tests tst_clipboard_applet_seam.cpp)
 target_link_libraries(

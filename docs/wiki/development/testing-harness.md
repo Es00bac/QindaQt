@@ -185,12 +185,15 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its pure projection, controller fencing, seam, compiled offscreen
-keyboard/accessibility/real-pointer, boundary-poison, and staged
-installed-package/RPATH rows run entirely offscreen against the in-process C0
-model; no row contacts the host clipboard, session bus, display server, or
-hardware. The exact matrix and non-claims are detailed in
-[Clipboard applet](../shell/clipboard-applet.md).
+Its pure projection, hostile-snapshot admission, controller fencing, seam,
+compiled offscreen keyboard/accessibility/real-pointer, boundary-poison, and
+staged installed-package rows run entirely offscreen against the in-process C0
+model; the installed-package row rewrites the staged module libraries'
+RUNPATHs to `$ORIGIN`-relative entries with `patchelf`, moves the whole
+staged prefix, and reruns the consumer with `LD_LIBRARY_PATH` unset, proving
+the `$ORIGIN`-relative resolution. No row contacts the host clipboard,
+session bus, display server, or hardware. The exact matrix and non-claims are
+detailed in [Clipboard applet](../shell/clipboard-applet.md).
 
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories

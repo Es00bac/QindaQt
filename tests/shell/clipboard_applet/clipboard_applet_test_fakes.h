@@ -19,6 +19,25 @@ using QindaQt::Services::ClipboardModel::EntryId;
 using QindaQt::Services::ClipboardModel::HistorySnapshot;
 using QindaQt::Services::ClipboardModel::SearchOutcome;
 
+// A descriptor that passes the C0 hostile-input admission floor: valid
+// generation-tagged identity, canonical storable media, exact 32-byte
+// fingerprint, sanitized bounded label/preview. AGENT-GUARD: every fixture a
+// test serves to the controller starts floor-valid so a rejection always
+// proves the specific fence under test, never the floor itself; hostile rows
+// corrupt one field at a time from this baseline.
+inline QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor floorValidDescriptor(
+    quint32 generation, quint32 serial, const QString &preview)
+{
+    QindaQt::Services::ClipboardModel::ClipboardEntryDescriptor descriptor;
+    descriptor.id = { generation, serial };
+    descriptor.preview = preview;
+    descriptor.sourceLabel = QStringLiteral("source");
+    descriptor.formats = { { QStringLiteral("text/plain"),
+                             qint64(qMax(1, preview.size())) } };
+    descriptor.fingerprint = QByteArray(32, 'a');
+    return descriptor;
+}
+
 // Scripted client seam issuing deliberately unique-but-unordered request ids
 // and delivering replies in caller-chosen order. AGENT-GUARD: the public seam
 // promises id uniqueness only — these ids reproduce the exact disorder a real

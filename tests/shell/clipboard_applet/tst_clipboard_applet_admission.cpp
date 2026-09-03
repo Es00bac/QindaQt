@@ -344,10 +344,13 @@ void TstClipboardAppletAdmission::testOwnerReplacementNeverRedisclosesOwnerACont
     QCOMPARE(controller.entryCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("owner-B-own"));
 
-    // A stale owner-A replay below B's established lineage stays fenced.
+    // A stale owner-A replay below B's established lineage is refused whole:
+    // the surface fails closed and presents nothing rather than the replayed
+    // foreign content or a stale fragment of B's history.
     client.publishSnapshot(floorValidSnapshot(1, 1, QStringLiteral("owner-A-secret"), 0));
-    QCOMPARE(controller.entryCount(), 1);
-    QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("owner-B-own"));
+    QCOMPARE(controller.entryCount(), 0);
+    QVERIFY(controller.projection().entryRows.isEmpty());
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
 }
 
 void TstClipboardAppletAdmission::testFreshOwnerBaselineMustBeContentEmpty()
@@ -364,7 +367,7 @@ void TstClipboardAppletAdmission::testFreshOwnerBaselineMustBeContentEmpty()
     client.publishSnapshot(floorValidSnapshot(3, 1, QStringLiteral("owner-A-secret")));
     QCOMPARE(controller.entryCount(), 0);
     QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
-    QVERIFY(!controller.projection().entryRows.first().preview.contains(QLatin1String("owner-A")));
+    QVERIFY(controller.projection().entryRows.isEmpty());
 }
 
 void TstClipboardAppletAdmission::testMismatchedCompletionIsRejectedAndMarkerStays()

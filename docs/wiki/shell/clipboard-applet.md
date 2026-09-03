@@ -27,13 +27,19 @@ ships as a non-PIC static archive, so no shared applet library can embed it):
 
 | Target | Responsibility |
 | --- | --- |
-| `QindaQt::ShellClipboardApplet` (pure) | `ClipboardAppletModel`: deterministic, reentrant projection of one history snapshot plus client state into phase, bounded rows, format summaries, and complete accessible names/descriptions. Public ClipboardModel values plus Qt Core only. |
+| `QindaQt::ShellClipboardApplet` (pure) | `ClipboardAppletModel` (deterministic, reentrant projection of one history snapshot plus client state into phase, bounded rows, format summaries, and complete accessible names/descriptions) and the snapshot admission gate (`clipboard_snapshot_gate.h`): the hostile-input floor every incoming descriptor collection must pass. Public ClipboardModel values plus Qt Core only. |
 | `QindaQt::ShellClipboardAppletRuntime` | `ClipboardAppletController` (QML-facing facade), `ClipboardModelClientAdapter` (the injected seam over `ClipboardHistoryModel`), and the compiled QML module. Never service internals, transport, files, or persistence. |
 
 `ClipboardClientInterface` is the injected least-authority seam: snapshots and
-typed signals in, unique-id intent requests out. The controller borrows it;
-shell composition owns the model and adapter lifecycle. QML receives no model
-pointers, raw payloads, or IPC endpoints.
+typed signals in, unique-id intent requests out. The seam is GUI-thread
+confined (cross-thread backends marshal through queued connections), the
+controller borrows it and never deletes it, request ids are unique but
+unordered with zero a valid id, and completions must carry the entry lineage
+they resolve — a completion whose id disagrees with the recorded request is
+rejected whole. The full threading/lifetime/error contract is stated in the
+interface header. The controller borrows it; shell composition owns the model
+and adapter lifecycle. QML receives no model pointers, raw payloads, or IPC
+endpoints.
 
 ## Capability gating
 
@@ -60,7 +66,7 @@ Phases, exposed as `phaseText` with a fixed `phaseReasonText`:
 | `degraded` | Owner available but limited: read-only browsing; every mutating control is visibly disabled, and the controller refuses mutations anyway. |
 | `locked` | Session locked **or** privacy denied (distinct registered reason texts; no seventh phase). Content withheld. |
 | `disabled` | History disabled by user setting. |
-| `unavailable` | Owner lost, client unavailable, or read capability denied. |
+| `unavailable` | Owner lost, client unavailable, read capability denied, or a refused incoming snapshot (`invalid-snapshot`). |
 
 Rows are bounded to `kMaxPresentedEntries` (32). Projection order is a stable
 partition — every pinned entry first, then every unpinned entry, each class in
@@ -71,14 +77,59 @@ accessible name/description; pending mutations announce "operation pending".
 Metadata only: payload bytes never leave the C0 model except through an
 explicit promote, and the projection never holds them.
 
+## Snapshot admission gate
+
+Everything arriving through the seam — every history snapshot and every
+search-reply match list — passes a hostile-input admission gate
+(`clipboard_snapshot_gate.h`, reused by both the controller and the pure
+projector as defense in depth) **before** any descriptor reaches the
+projection or retained controller state:
+
+- **Descriptor floor.** Each entry must satisfy the public C0 descriptor
+  floor, reused through the canonical descriptor codec (never restated): valid
+  generation-tagged identity, nonempty bounded canonical format list with
+  unique names, non-negative bounded claimed bytes, sanitized label/preview
+  (no control or bidi format characters, no unpaired surrogates, bounded
+  length), consistent truncation flag, exact fingerprint width.
+- **Media allowlist.** Entries carrying sensitive, one-time, or non-storable
+  media classes are forged, not unusual — the C0 model never stores them.
+- **Collection and aggregate bounds.** A snapshot above the C0 `kMaxEntries`
+  ceiling or with a negative/oversized aggregate byte claim is refused whole;
+  the 32-row presentation cap is never the thing that saves us.
+- **Lineage monotonicity.** Accepted (generation, revision) is a high-water
+  mark: anything below it is stale or replayed and refused; re-stating the
+  exact accepted lineage is an idempotent re-delivery. Entries whose id
+  generation disagrees with the snapshot's own generation are refused (the C0
+  model purges on generation change, so mixed lineage cannot be legitimate).
+- **Owner lineage.** Content is accepted only under the owner recorded with
+  the baseline. Owner loss or replacement voids the whole baseline — content,
+  high-water fences, pending intents, search state — and the next snapshot
+  under a replacement owner must be content-empty, because volatile history
+  starts empty per owner; non-empty content there is the previous owner's
+  history replayed through the new owner. No baseline is established from a
+  snapshot delivered while the client reports the service unavailable (the
+  adapter's content-empty fallback in that state would otherwise arm the next
+  real snapshot).
+
+Any violation fails closed: the presented copy, pending intents, and search
+state are destroyed and the surface reports unavailable (`invalid-snapshot`)
+until a fresh valid snapshot arrives; the accepted high-water fence survives
+the rejection so the violating lineage cannot return below it. Rejection is
+per-snapshot, not a permanent latch.
+
 ## Privacy, lock purge, and generation fencing
 
 A lock is an authenticated authority denial, not a presentation hint:
 
 - `ClipboardModelClientAdapter::setLocked(true)` denies model privacy *before*
   the lock becomes observable, so the model purges every entry and raises its
-  generation by exactly one. Unlock restores only the authority the lock
-  itself removed; an independent host denial survives unlock.
+  generation by exactly one. The adapter tracks the lock-derived denial
+  separately from an independent host denial delivered through
+  `setHostPrivacyDenied()`: privacy stays denied while *either* cause is
+  active, so unlock never overrides a host denial — including one that arrived
+  while the lock denial was active — and a host re-allow while locked never
+  bypasses the lock. A denial already present at lock time that neither cause
+  explains is recorded as foreign and likewise survives unlock.
 - The controller destroys its own presentation copy on the same signal:
   entries, byte totals, pending intents, feedback, and the entire search
   state.
@@ -93,8 +144,14 @@ dropped regardless of numeric id. Seam signals emitted synchronously inside a
 dispatch call are buffered and drained through one exact-id attribution path:
 the current request and already-registered pending requests resolve, anything
 else is discarded, so a hostile flush can neither impersonate the live request
-nor strand an earlier one. Promote ticks are controller-issued monotonic
-metadata, never wall clock.
+nor strand an earlier one. Operation completions clear the pending marker
+through the **stored request's** entry id, never the completion's id field: a
+completion whose valid entry id disagrees with the lineage recorded at
+dispatch is rejected whole, so it can neither unpin another entry's marker nor
+forge feedback. Promote ticks are controller-issued monotonic metadata, never
+wall clock, raised above every tick observed in a snapshot; the fixed-width
+counter fails closed at exhaustion — the promote is refused with feedback
+rather than issuing a wrapped (non-monotonic) tick.
 
 ## Intents
 
@@ -114,10 +171,15 @@ static backing archives and generated plugin archive beside `qmldir`,
 QML tree; the applet's public headers under the include directory; and the
 manifest under `qindaqt/applets`.
 `qindaqt.clipboard-applet-installed-package` installs the component into a
-fresh stage, builds a C++ consumer against only staged files, asserts the
-relocated consumer's RPATH reaches the staged sibling modules without leaking
-build/source-tree paths, and runs the lock/purge contract plus an offscreen
-instantiation of the staged compiled module against the real controller.
+fresh stage, builds a C++ consumer against only staged files, then proves
+genuine relocation: the staged sibling modules' build-tree RUNPATHs are
+rewritten to `$ORIGIN`-relative entries (`patchelf`), the consumer resolves
+its stage root from its own executable location, and after a passing run at
+the original prefix the whole stage is **moved** and the consumer rerun with
+`LD_LIBRARY_PATH` unset. The readelf assertions require `$ORIGIN`-relative
+RPATH entries and reject any absolute stage/build/source-tree path. The row
+also runs the lock/purge contract plus an offscreen instantiation of the
+staged compiled module against the real controller at both locations.
 
 ## Focused tests
 
@@ -127,16 +189,17 @@ ctest --test-dir build/dev -R '^qindaqt\.clipboard-applet-' --output-on-failure
 
 | Test | Scope |
 | --- | --- |
-| `qindaqt.clipboard-applet-model` | Pure projection: phases, fail-closed ordering, pinned-first partition, bounds, accessibility phrases, determinism. |
-| `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion. |
+| `qindaqt.clipboard-applet-model` | Pure projection: phases, fail-closed ordering, pinned-first partition, bounds, accessibility phrases, determinism, and exact whole-projection rejection of floor/bound/hostile-match violations. |
+| `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing with presented owner-A content, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion. |
 | `qindaqt.clipboard-applet-fencing` | Hostile-seam attribution: unique-but-unordered ids, superseded-reply flushes inside dispatch calls, injected/duplicated completions, cross-request synchronous drain, monotonic promote ticks. |
-| `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, error mapping, owner fencing over the real C0 model. |
+| `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, (generation, revision) high-water, owner-lineage fencing with owner-A content, fail-closed rejection and recovery, mismatched-completion rejection, promote-tick exhaustion. |
+| `qindaqt.clipboard-applet-seam` | Adapter lock-as-privacy-denial ordering, independent and overlapping host denials surviving unlock, error mapping, owner fencing over the real C0 model. |
 | `qindaqt.clipboard-applet-qml-offscreen` | Compiled module states: ready/degraded/locked/disabled/unavailable/empty/search presentation. |
-| `qindaqt.clipboard-applet-qml-accessibility-offscreen` | Accessible roles, names, descriptions, and state. |
-| `qindaqt.clipboard-applet-qml-keyboard-offscreen` | Keyboard traversal and activation paths. |
-| `qindaqt.clipboard-applet-qml-interactive-offscreen` | Real pointer events reach Pin/Delete/row body (P1 regression), degraded-state honesty, busy pending controls. |
+| `qindaqt.clipboard-applet-qml-accessibility-offscreen` | Accessible roles, names, descriptions, and enabled/busy state for every interactive element: search field and clear, Pin, Delete, both Clear buttons, feedback dismissal (alert role). |
+| `qindaqt.clipboard-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal across every interactive element and Space/Return/Delete keyboard activation with exact intent arguments. |
+| `qindaqt.clipboard-applet-qml-interactive-offscreen` | Real pointer events reach Pin/Delete/row body with exact `(generation, serial)` arguments (P1 regressions), read-only search stays enabled under write denial, degraded-state honesty, busy pending controls. |
 | `qindaqt.clipboard-applet-boundary-policy` | Static source gate with eight per-case poison probes (D-Bus, host clipboard, external helpers, private model headers, compositor reach-through). |
-| `qindaqt.clipboard-applet-installed-package` | Staged component artifacts, relocated-consumer RPATH poison check, lock/purge contract and staged-module instantiation at the installed boundary. |
+| `qindaqt.clipboard-applet-installed-package` | Staged component artifacts, genuine stage relocation with `LD_LIBRARY_PATH` unset and `$ORIGIN`-relative RPATH, lock/purge contract and staged-module instantiation at the installed boundary. |
 
 The boundary gate also runs without configure:
 
