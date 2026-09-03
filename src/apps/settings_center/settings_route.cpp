@@ -28,6 +28,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Network:
   case SettingsRouteComponent::Customize:
   case SettingsRouteComponent::Audio:
+  case SettingsRouteComponent::Bluetooth:
     return true;
   }
   return false;
@@ -47,6 +48,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("customize");
   case SettingsRouteComponent::Audio:
     return QStringLiteral("audio");
+  case SettingsRouteComponent::Bluetooth:
+    return QStringLiteral("bluetooth");
   }
   return {};
 }

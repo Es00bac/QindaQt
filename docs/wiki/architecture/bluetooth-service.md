@@ -153,9 +153,10 @@ shell-private facade over the public client: it projects bounded inventory and
 exposes adapter power, one caller-scoped discovery lease, and paired-device
 connect/disconnect under exact lineage and manifest grants. It receives no
 address, pairing, trust, key, Agent1, BlueZ, or service-implementation surface.
-A later Settings view model owns the stable route ID `bluetooth`. Consumers
-link only public boundaries and never see backend objects or the service
-implementation.
+The [Bluetooth Settings route](../apps/bluetooth-settings.md) owns the stable
+route ID `bluetooth`, exact-lineage action projection, and its own bounded
+discovery lease. Consumers link only public boundaries and never see backend
+objects or the service implementation.
 
 ## Qualification boundary
 
