@@ -72,6 +72,22 @@ set_tests_properties(
 )
 
 add_test(
+    NAME qindaqt.bluetooth-bluez-installed-boundary
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DBINARY_ROOT=${CMAKE_BINARY_DIR}"
+        "-DSTAGE_ROOT=${CMAKE_CURRENT_BINARY_DIR}/installed-boundary"
+        "-DADAPTER_LIBRARY_NAME=$<TARGET_FILE_NAME:qindaqt_bluez_adapter>"
+        "-DINSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+        "-DINSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_boundary.cmake"
+)
+set_tests_properties(
+    qindaqt.bluetooth-bluez-installed-boundary
+    PROPERTIES LABELS "service;bluetooth;bluez;package" TIMEOUT 30
+)
+
+add_test(
     NAME qindaqt.bluetooth-bluez-boundary
     COMMAND
         "${CMAKE_COMMAND}"

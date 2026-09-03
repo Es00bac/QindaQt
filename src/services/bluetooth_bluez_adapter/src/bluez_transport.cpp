@@ -3,6 +3,7 @@
 #include "bluez_transport.h"
 
 #include <QtCore/QVariant>
+#include <QtCore/QMetaObject>
 #include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
@@ -83,14 +84,18 @@ BluezManagedObjects parseManagedObjects(const QVariant &value)
     const QDBusArgument argument = value.value<QDBusArgument>();
     argument.beginMap();
     while (!argument.atEnd() && objects.size() < kMaxParsedObjects) {
-        QString path;
+        QDBusObjectPath path;
         BluezInterfaces interfaces;
         argument.beginMapEntry();
         argument >> path >> interfaces;
         argument.endMapEntry();
-        objects.insert(path, interfaces);
+        objects.insert(path.path(), interfaces);
     }
+    const bool oversized = !argument.atEnd();
     argument.endMap();
+    if (oversized) {
+        objects.clear();
+    }
     return objects;
 }
 
@@ -164,18 +169,10 @@ void BluezTransport::requestManagedObjects()
                 // AGENT-GUARD: A failed enumeration fails closed to "no
                 // objects observed"; stale or partial truth is never kept.
                 const QVariantList arguments = response.arguments();
-                qWarning() << "PROBE reply type" << response.type() << "signature"
-                           << response.signature() << "error" << response.errorName()
-                           << "args" << arguments.size();
-                if (!arguments.isEmpty()) {
-                    qWarning() << "PROBE arg0 metatype"
-                               << arguments.value(0).metaType().name();
-                }
                 const BluezManagedObjects objects =
                     response.type() == QDBusMessage::ReplyMessage
                         ? parseManagedObjects(arguments.value(0))
                         : BluezManagedObjects{};
-                qWarning() << "PROBE parsed objects" << objects.size();
                 Q_EMIT managedObjectsReady(objects);
             });
 }
@@ -187,8 +184,17 @@ void BluezTransport::queryInitialOwner()
     }
     if (!m_connection.isConnected()) {
         // A bus-less transport must still publish its initial empty state so
-        // the model can leave Starting behind.
-        adoptOwner({});
+        // the model can leave Starting behind. Queue it because AdapterBackend
+        // start() must return its generation before the first publication.
+        const quint64 token = m_ownerToken;
+        QMetaObject::invokeMethod(
+            this,
+            [this, token] {
+                if (m_running && token == m_ownerToken) {
+                    adoptOwner({});
+                }
+            },
+            Qt::QueuedConnection);
         return;
     }
     const quint64 token = m_ownerToken;
