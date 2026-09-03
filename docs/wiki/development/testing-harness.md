@@ -916,6 +916,48 @@ item property decoding, DBusMenu revisions, a rendered panel tray, and
 assistive-technology behavior remain separate later milestones with their own
 gates.
 
+## Current task-list proof
+
+The task list's complete source, producer, and operation boundary is selected
+with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
+```
+
+The thirteen rows cover the pure T0 model (values, batch validation, grouping,
+intents, scope filtering, presentation), the T1 wire decoders (hostile payload
+shapes, duplicate/oversized/malformed inventories, exact 4,096/4,097-window
+bounds, UUID/schema/revision validation, and container lineage bounds), the
+facts producer's exact-owner lineage (signal-raced refresh fencing, explicit
+refusal to combine the panel visibility or container inventories with
+`Windows`, malformed-reply degradation with retained generation,
+degradation/stop `stateChanged` notification, stop availability withdrawal,
+non-replying-authority timeout and bounded retry, owner loss/replacement,
+late-reply fencing, foreign epochs, revision regression/equal-revision
+collisions, and the 4,096-window stress scene), and the operation adapter
+(window-level `Unavailable` outcomes with stable adapter codes,
+stale-generation and
+degraded-source admission rejection, stopped-producer admission fencing,
+serialized Busy fencing, Submit/Release/Dock reply mapping, canonical Submit
+reply lineage (`protocol`, `transactionId`, `containerId`, `status`, and
+`revision`) with forged/recycled/cross-lifetime rejection, exactly-once
+Uncertain on timeout/owner change, protocol-fixed Dock revision rejection, and
+unsupported-authority pre-rejection).
+The Qt transport row runs a fake `org.qindaqt.Compositor1`
+service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
+for reads, signals, and mutations, including cold-start known absence, owner
+loss, and replacement; it also poisons the forbidden independent inventories
+and proves the producer never calls them.
+
+Every transport process is the QtTest executable itself on a private bus; the
+rows contact no host session bus, compositor, display, input, hardware, or
+network. They do not qualify production-shell instantiation, QML presentation,
+or a live desktop task list; those remain later shell-composition and
+contained-session gates. See [Task list source model](../shell/task-list.md)
+and [ADR-0044](../adr/0044-inject-task-list-facts-into-the-shell.md).
+
 ## Current Settings1 and persistent quieting proof
 
 Settings persistence and its consumers are selected with:
