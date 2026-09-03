@@ -329,8 +329,8 @@
           "id": "QQ-004.08",
           "title": "Direct WYSIWYG customization and reveal affordances",
           "weight": 11,
-          "state": "WIRED",
-          "summary": "The integrated customization-editor domain connects pointer/keyboard intents, preview/commit/cancel, repository leases, deterministic acceptance, undo/redo dirty truth, atomic user-profile persistence, and accessibility identities to the production customization/profile boundaries.",
+          "state": "EXECUTABLE",
+          "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.",
           "evidence": [
             {
               "kind": "commit",
@@ -346,9 +346,14 @@
               "kind": "test",
               "reference": "docs/wiki/shell/customization-editor.md",
               "summary": "Six focused suites cover intent, gesture, session, dirty state, persistence, keyboard, and accessibility behavior."
+            },
+            {
+              "kind": "commit",
+              "reference": "2500a3d71343f238ce30fd0d98f5cc2aa9a95809",
+              "summary": "The customize canvas is integrated after Klara Dan von Neumann (Kimi K3) rejected a6ea864 at 0/0/2/3 and Adele Goldstine (OpenAI Codex) rejected two descendants before accepting the third repair at 0/0/0/0; the merged tree passes customize 17/17 (route plus domain rows), and Settings Center 9/9 in Debug and Release."
             }
           ],
-          "caveat": "The Settings drag/drop canvas, provisional live-shell binding, reveal affordance, rendered matrix, and installed session behavior remain."
+          "caveat": "The running shell adopts a saved profile only at its next start: provisional live-shell binding, reveal affordances, the rendered nested matrix, and installed-session behavior remain later outcomes."
         },
         {
           "id": "QQ-004.09",

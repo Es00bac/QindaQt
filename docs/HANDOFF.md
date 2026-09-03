@@ -4,6 +4,15 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Customize canvas descendant `2500a3d71343f238ce30fd0d98f5cc2aa9a95809`
+  at manager merge `ce5541e`. The `customize` route composes only the public customization-editor,
+  shell-customization, profiles, and Settings1 boundaries into a WYSIWYG panel/applet canvas with
+  pointer/keyboard parity, atomic persistence, and discard confirmation on every departure path,
+  including window close across the wide/compact host switch; its boundary scan is allow-list-only. Adele
+  Goldstine (OpenAI Codex) accepted the third repair at `0/0/0/0`. Fresh merged-tree Debug and Release each
+  pass customize 17/17 (route plus domain rows) and Settings Center 9/9; the broad safe Debug suite passes 412/412; 125-document validation, strict
+  MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. QQ-004.08 advances WIRED → EXECUTABLE.
+
 - This integration merges exact accepted compositor window-actions descendant
   `3690a056e667135d486da4fa60d7996882a4560a` at manager merge `135fe65`. A new authenticated
   `org.qindaqt.CompositorShell1` boundary admits activate/minimize/unminimize/close/raise only for the
