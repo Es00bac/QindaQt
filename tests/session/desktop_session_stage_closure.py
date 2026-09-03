@@ -156,9 +156,23 @@ def qml_imports(sources: Iterable[Path]) -> tuple[str, ...]:
     return tuple(sorted(modules))
 
 
-def _authenticate_qmldirs(qml_root: Path, modules: Sequence[str]) -> None:
+def _authenticate_qmldirs(
+    qml_root: Path,
+    modules: Sequence[str],
+    embedded_modules: Sequence[str] = (),
+) -> None:
     root = qml_root.resolve(strict=True)
+    imported = set(modules)
+    embedded = set(embedded_modules)
+    unexpected = embedded - imported
+    if unexpected:
+        raise StageClosureError(
+            "embedded QML module exemptions are not imported: "
+            + ", ".join(sorted(unexpected))
+        )
     for module in modules:
+        if module in embedded:
+            continue
         qmldir = root.joinpath(*module.split("."), "qmldir")
         try:
             info = qmldir.lstat()
@@ -179,6 +193,7 @@ def verify_stage_closure(
     forbidden_roots: Sequence[Path],
     shell_relative: Path,
     required_shell_libraries: Sequence[str],
+    embedded_qml_modules: Sequence[str] = (),
 ) -> ClosureReport:
     stage = stage_root.resolve(strict=True)
     tool = readelf.resolve(strict=True)
@@ -210,5 +225,5 @@ def verify_stage_closure(
             raise StageClosureError(f"qindaqt-shell resolves {library} outside DesktopVirtual")
 
     imports = qml_imports(qml_sources)
-    _authenticate_qmldirs(stage / qml_directory, imports)
+    _authenticate_qmldirs(stage / qml_directory, imports, embedded_qml_modules)
     return ClosureReport(len(elf_files), needed_count, imports)

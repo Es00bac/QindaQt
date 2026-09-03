@@ -53,6 +53,22 @@ class StageClosureUnitTests(unittest.TestCase):
             with self.assertRaisesRegex(StageClosureError, "has no qmldir"):
                 _authenticate_qmldirs(root, ("QindaQt.Shell.AudioApplet",))
 
+    def test_embedded_qml_exemptions_must_name_an_import(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "qml"
+            root.mkdir()
+            _authenticate_qmldirs(
+                root,
+                ("QindaQt.SettingsApp.PowerBackend",),
+                ("QindaQt.SettingsApp.PowerBackend",),
+            )
+            with self.assertRaisesRegex(StageClosureError, "not imported"):
+                _authenticate_qmldirs(
+                    root,
+                    ("QindaQt.SettingsApp.PowerBackend",),
+                    ("QindaQt.SettingsApp.Customize",),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
