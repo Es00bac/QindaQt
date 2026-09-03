@@ -165,6 +165,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool audioRegistered = registerRoute(audioRoute);
   Q_ASSERT(audioRegistered);
   Q_UNUSED(audioRegistered);
+
+  const SettingsRoute bluetoothRoute{
+      .id = QStringLiteral("bluetooth"),
+      .component = SettingsRouteComponent::Bluetooth,
+      .title = QCoreApplication::translate("SettingsCenter", "Bluetooth"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Adapters, discovery, and paired devices"),
+      .iconName = QStringLiteral("preferences-system-bluetooth"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool bluetoothRegistered = registerRoute(bluetoothRoute);
+  Q_ASSERT(bluetoothRegistered);
+  Q_UNUSED(bluetoothRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

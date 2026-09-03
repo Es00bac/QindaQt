@@ -986,6 +986,45 @@ The selector never starts a session bus, nested compositor, host service, or
 input backend. Live shell binding, reveal behavior, live AT-SPI, and rendered
 session matrices remain downstream evidence.
 
+## Current Bluetooth Settings route proof
+
+The public-client model, warning-fatal page, hostile boundary, and relocated
+package are selected with:
+
+```sh
+DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev -R '^qindaqt\.settings-bluetooth-' \
+  --output-on-failure --no-tests=error
+```
+
+The seven rows use an injected fake Bluetooth transport or absent private buses
+only. The model row proves bounded address-free adapter/device projection,
+class/icon/RSSI truth, exact owner/epoch/revision admission, paired-only
+connection actions, serialized pending/convergence fences, one discovery
+lease, and release on route departure. The adversarial model row proves that
+rejected, failed, uncertain, inexact, owner-lost, and owner-replaced acquisition
+cannot leave a wait-for-nothing close fence, and rejects duplicate identifiers,
+overlong names, and invalid class/RSSI values. The page row runs with
+`QT_FATAL_WARNINGS=1` in 900×700 wide and 420×320 compact software scenes and
+checks accessible role/state/name truth, disabled controls, action wiring, and
+the always-enabled host-entry Close target. The allow-list boundary scan and
+independent negative controls reject sibling application internals, parent
+escapes, private Bluetooth service headers, and pairing authority. The
+window-close row uses a stub to isolate successful-release waiting, then uses
+the real client/model to prove rejected, uncertain, owner-lost, and owner-
+replaced pending acquires release the QML close fence; it also exercises
+Bluetooth Escape/Tab entry through the compact Settings host. The installed row
+stages the real runtime, requires failure while the installed Bluetooth module
+is withheld despite the developer tree, then launches the relocated route after
+restoration.
+
+The Settings Center selector adds deterministic seven-route order, canonical
+startup, Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader
+exclusivity, route-departure lifetime signaling, and the common relocated
+package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
+remove behavior, physical Bluetooth qualification, live AT-SPI, and nested
+desktop screenshots remain outside this proof.
+
 ## Current Settings Center navigation S1 proof
 
 The typed registry/controller, responsive route host, existing route
@@ -1003,17 +1042,19 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, both complete startup roots under private-bus loss,
+forms, desktop identity, all seven route roots under private-bus loss,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
-requires root-construction failure, reinstalls the runtime component, and only
-then proves both complete routes from the sanitized stage.
+requires root-construction failure, repeats the poison for Network and Audio,
+reinstalls the runtime component, and only then proves all seven complete
+routes from the sanitized stage.
 
 Every route now requires one complete QST-1 generation because navigation is
-token-styled. The two route models use independent Settings1 transports; the
-focused construction rows prove their unavailable startup surface, while the
-Settings1 client suites remain authoritative for exact-owner and reply fencing.
+token-styled. Settings1 route models use independent transports, while Network,
+Audio, and Bluetooth use their distinct public service clients. Focused construction
+rows prove unavailable startup surfaces; public client suites remain
+authoritative for exact-owner and reply fencing.
 This proof is offscreen and package-isolated; it does not claim live AT-SPI,
 compositor focus, screen-reader traversal, or the later platform-route matrix.
 

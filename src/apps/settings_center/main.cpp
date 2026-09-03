@@ -9,6 +9,9 @@
 #include "qindaqt/apps/settings_display/display_settings_model.h"
 #include "qindaqt/apps/settings_network/network_settings_model.h"
 #include "qindaqt/apps/settings_audio/audio_settings_model.h"
+#include "qindaqt/apps/settings_bluetooth/bluetooth_settings_model.h"
+#include "qindaqt/services/bluetooth_client/bluetooth_client.h"
+#include "qindaqt/services/bluetooth_client/qt_bluetooth_transport.h"
 #include "qindaqt/services/display_client/client.h"
 #include "qindaqt/services/display_client/display_coordinator.h"
 #include "qindaqt/services/display_client/qt_display_transport.h"
@@ -191,6 +194,16 @@ int main(int argc, char **argv) {
   QindaQt::Apps::SettingsAudio::AudioSettingsModel audioSettings(audioClient);
   audioClient.start();
 
+  // AGENT-CONTRACT: Bluetooth Settings receives only the public Bluetooth1
+  // client. Pairing, trust, remove, Agent1, and BlueZ objects remain outside
+  // this process boundary; the route model owns its caller-scoped lease.
+  QindaQt::Bluetooth::QtBluetoothTransport bluetoothTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::Bluetooth::BluetoothClient bluetoothClient(&bluetoothTransport);
+  QindaQt::Apps::SettingsBluetooth::BluetoothSettingsModel bluetoothSettings(
+      bluetoothClient);
+  bluetoothClient.start();
+
   // AGENT-CONTRACT: Initialize the Settings navigation controller with the
   // requested route.
   QindaQt::Apps::SettingsCenter::SettingsNavigationController navigation(
@@ -209,6 +222,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&networkSettings))},
       {QStringLiteral("audioSettings"),
        QVariant::fromValue(static_cast<QObject *>(&audioSettings))},
+      {QStringLiteral("bluetoothSettings"),
+       QVariant::fromValue(static_cast<QObject *>(&bluetoothSettings))},
   });
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),

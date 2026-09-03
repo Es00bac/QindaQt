@@ -156,6 +156,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   Audio1 client surface: bounded device and stream inventory, default-device
   selection, shared availability/admission truth, bounded volume/mute
   intents, and installed-route proof.
+- [Settings Bluetooth route](apps/bluetooth-settings.md) documents the public-
+  client-only adapter/device inventory, exact-lineage admission, route-scoped
+  discovery lease, paired-device controls, and explicit BlueZ authority limit.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering
