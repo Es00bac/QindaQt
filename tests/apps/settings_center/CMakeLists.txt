@@ -54,6 +54,8 @@ target_link_libraries(
     qindaqt_settings_appearance
     qindaqt_settings_display
     qindaqt_settings_network
+    qindaqt_settings_customize_qml
+    qindaqt_settings_customize_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -75,6 +77,7 @@ add_dependencies(
     qindaqt_settings_appearance_qml qindaqt_settings_appearance_qmlplugin
     qindaqt_settings_display_qml qindaqt_settings_display_qmlplugin
     qindaqt_settings_network_qml qindaqt_settings_network_qmlplugin
+    qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
@@ -144,7 +147,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance" RUN_SERIAL TRUE TIMEOUT 15
+    LABELS "offscreen;settings;appearance;customize" RUN_SERIAL TRUE TIMEOUT 25
 )
 
 # 8. Installed staged package test

@@ -68,6 +68,24 @@ if(NOT network_in_stage OR NOT IS_DIRECTORY "${network_module}")
         "${network_module}")
 endif()
 
+set(customize_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Customize")
+cmake_path(NORMAL_PATH customize_module OUTPUT_VARIABLE customize_module)
+cmake_path(IS_PREFIX install_prefix "${customize_module}" NORMALIZE customize_in_stage)
+if(NOT customize_in_stage OR NOT IS_DIRECTORY "${customize_module}")
+    message(FATAL_ERROR
+        "installed Settings Customize module is missing or outside stage: "
+        "${customize_module}")
+endif()
+foreach(catalog IN ITEMS profiles applets)
+    set(catalog_path
+        "${install_prefix}/${INSTALL_DATADIR}/qindaqt/${catalog}")
+    if(NOT IS_DIRECTORY "${catalog_path}")
+        message(FATAL_ERROR
+            "installed Customize ${catalog} catalog is missing: ${catalog_path}")
+    endif()
+endforeach()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -160,7 +178,7 @@ if(NOT network_poison_status EQUAL 3)
         "build QML remained present:\n"
         "${network_poison_output}${network_poison_error}")
 endif()
-# Reinstall rather than trusting the rename restoration, then prove all four
+# Reinstall rather than trusting the rename restoration, then prove all five
 # complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}

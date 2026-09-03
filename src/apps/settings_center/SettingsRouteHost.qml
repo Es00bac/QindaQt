@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QindaQt.SettingsApp.Customize
 
 Item {
     id: host
@@ -9,6 +10,7 @@ Item {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    required property var customizeSettings
     required property Component notificationsComponent
     required property Component appearanceComponent
     property Component displayComponent: null
@@ -16,8 +18,15 @@ Item {
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
+    required property bool applicationClosePending
+    signal applicationCloseResolved()
+    readonly property bool customizeDeparturePending:
+        host.presentationActive && host.customizeSettings.dirty
+        && host.navigation.activeRouteComponent !== "customize"
 
-    readonly property Loader currentLoader: !navigation.activeRouteAvailable
+    readonly property Loader currentLoader: customizeDeparturePending
+        ? customizeLoader
+        : !navigation.activeRouteAvailable
         ? unavailableLoader
         : navigation.activeRouteComponent === "notifications"
           ? notificationsLoader
@@ -27,6 +36,8 @@ Item {
               ? displayLoader
             : navigation.activeRouteComponent === "network"
               ? networkLoader
+            : navigation.activeRouteComponent === "customize"
+              ? customizeLoader
               : unavailableLoader
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
@@ -47,11 +58,25 @@ Item {
         return true
     }
 
+    // AGENT-GUARD: Main.qml owns applicationClosePending because responsive
+    // reconstruction destroys this host. The active host must keep loading the
+    // dialog until Cancel or Discard resolves that shared close decision.
+    function requestApplicationClose() {
+        if (!host.presentationActive || !host.customizeSettings.dirty) {
+            return false
+        }
+        if (customizeLoader.item !== null) {
+            customizeLoader.item.requestClose()
+        }
+        return true
+    }
+
     Loader {
         id: notificationsLoader
         objectName: host.objectNamePrefix + "NotificationsLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "notifications"
         sourceComponent: host.notificationsComponent
@@ -62,6 +87,7 @@ Item {
         objectName: host.objectNamePrefix + "AppearanceLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "appearance"
         sourceComponent: host.appearanceComponent
@@ -72,6 +98,7 @@ Item {
         objectName: host.objectNamePrefix + "DisplayLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "display"
                 && host.displayComponent !== null
@@ -83,10 +110,39 @@ Item {
         objectName: host.objectNamePrefix + "NetworkLoader"
         anchors.fill: parent
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && host.navigation.activeRouteAvailable
                 && host.navigation.activeRouteComponent === "network"
                 && host.networkComponent !== null
         sourceComponent: host.networkComponent
+    }
+
+    Loader {
+        id: customizeLoader
+        objectName: host.objectNamePrefix + "CustomizeLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && ((host.navigation.activeRouteAvailable
+                     && host.navigation.activeRouteComponent === "customize")
+                    || host.customizeDeparturePending
+                    || host.applicationClosePending)
+        sourceComponent: customizeRouteComponent
+        onLoaded: {
+            if (host.customizeDeparturePending
+                    || host.applicationClosePending) {
+                item.requestClose()
+            }
+        }
+    }
+
+    Component {
+        id: customizeRouteComponent
+        CustomizeRoute {
+            customizeSettings: host.customizeSettings
+            navigation: host.navigation
+            onCloseRequested: host.applicationCloseResolved()
+            onCloseCancelled: host.applicationCloseResolved()
+        }
     }
 
     Loader {
@@ -96,11 +152,13 @@ Item {
         // An unrecognized component key is presentation-hostile even if a
         // malformed producer claimed the route was otherwise available.
         active: host.presentationActive
+                && !host.customizeDeparturePending
                 && (!host.navigation.activeRouteAvailable
                     || (host.navigation.activeRouteComponent !== "notifications"
                         && host.navigation.activeRouteComponent !== "appearance"
                         && (host.navigation.activeRouteComponent !== "display" || host.displayComponent === null)
-                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)))
+                        && (host.navigation.activeRouteComponent !== "network" || host.networkComponent === null)
+                        && host.navigation.activeRouteComponent !== "customize"))
         sourceComponent: host.unavailableComponent
     }
 }
