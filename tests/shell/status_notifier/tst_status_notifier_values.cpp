@@ -481,6 +481,31 @@ private slots:
         QVERIFY(!text.contains("future adapter use only"));
         QVERIFY(!text.contains("later adapter milestones"));
         QVERIFY(text.contains("production watcher/item-client adapters"));
+
+        QFile decoder(QStringLiteral(QINDAQT_SOURCE_DIR
+                                     "/src/shell/status_notifier/item_client/src/"
+                                     "status_notifier_item_client.cpp"));
+        QVERIFY(decoder.open(QIODevice::ReadOnly));
+        const QByteArray decoderText = decoder.readAll();
+        QVERIFY(!decoderText.contains("top-level type does not match the wire"));
+        QVERIFY(decoderText.contains("Presentation-bearing recognized properties"));
+        QVERIFY(decoderText.contains("recorded-only details are safe-dropped"));
+
+        QFile header(QStringLiteral(QINDAQT_SOURCE_DIR
+                                    "/src/shell/status_notifier/item_client/include/qindaqt/"
+                                    "shell/status_notifier/item_client/"
+                                    "status_notifier_item_client.h"));
+        QVERIFY(header.open(QIODevice::ReadOnly));
+        const QByteArray headerText = header.readAll();
+        QVERIFY(headerText.contains("Presentation-bearing recognized"));
+        QVERIFY(headerText.contains("facts are safe-dropped"));
+
+        QFile wiki(QStringLiteral(QINDAQT_SOURCE_DIR
+                                  "/docs/wiki/shell/status-tray.md"));
+        QVERIFY(wiki.open(QIODevice::ReadOnly));
+        const QByteArray wikiText = wiki.readAll();
+        QVERIFY(wikiText.contains("Presentation-bearing recognized properties"));
+        QVERIFY(wikiText.contains("recorded-only optional facts"));
     }
 };
 

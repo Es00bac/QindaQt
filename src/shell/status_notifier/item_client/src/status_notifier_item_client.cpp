@@ -19,10 +19,11 @@ namespace QindaQt::StatusNotifier
 namespace
 {
 
-// Property decoders. A property whose top-level type does not match the wire
-// shape is ignored (treated as absent); an entry with a hostile inner shape
-// fails the whole descriptor closed so the registry can degrade truthfully
-// while keeping the last-known-good item presented.
+// Property decoders. Presentation-bearing recognized properties with a wrong
+// top-level or inner wire type fail the descriptor closed so the registry can
+// degrade truthfully while keeping the last-known-good item presented. The
+// explicitly recorded-only details are safe-dropped on wrong types because
+// this module neither admits them to the registry nor renders them.
 //
 // AGENT-NOTE: QtDBus marshals a QVariantList of equal-length inner lists as a
 // D-Bus struct array, so after a wire round trip every pixmap entry (and the

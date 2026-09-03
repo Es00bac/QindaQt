@@ -670,8 +670,9 @@ gates.
 The S1 rejection-repair controls additionally require the host-unregistered
 wire signal and idempotent degraded startup; signed `(int, int)` item actions;
 strict known-property wire types; distinct live-owner timeout and immediate
-transport-error outcomes; one generation shared by multiple paths from the
-same owner; root-path population; canonical theme-root confinement; and the
+transport-error outcomes; one generation shared by simultaneous and sequential
+paths from the same live owner within one watcher epoch; root-path population;
+canonical theme-root confinement; and the
 512-pixel bound for theme-decoded and fallback images.
 
 ## Current Settings1 and persistent quieting proof

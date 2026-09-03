@@ -151,9 +151,13 @@ AttentionIconName, AttentionPixmap, AttentionMovieName, ToolTip, ItemIsMenu,
 Menu), decodes hostile input defensively, and validates through the foundation
 admission gate. Pixmap structs are decoded by manual wire iteration rather
 than registered-type demarshalling, so a hostile payload can never crash the
-decoder inside libdbus. Unknown properties are ignored, recognized properties
-with unexpected types fail the descriptor closed, and missing optional
-properties decode to defaults. Every emitted result is tagged with the owner
+decoder inside libdbus. Unknown properties are ignored.
+Presentation-bearing recognized properties with unexpected types fail the
+descriptor closed. The recorded-only optional facts `WindowId`,
+`OverlayIconName`, `ItemIsMenu`, and
+`Menu` are safe-dropped on a wrong type because they cannot reach the registry
+or renderer. Missing optional properties decode to defaults. Every emitted
+result is tagged with the owner
 generation captured at construction and fenced through an injected predicate,
 so a reply racing owner loss or a watcher rebaseline is dropped instead of
 resurrecting a removed item. The typed fetch status distinguishes a bounded
@@ -246,8 +250,10 @@ fixture, never the host bus):
   outcome, late-reply generation fencing, and signed activation intents
   recorded by a strict fake item.
 - `qindaqt.status-notifier-monitor`: end-to-end registry population from a
-  live watcher, two paths sharing one owner generation, root-path population,
-  item retirement and bounded owner-slot release on owner disconnect,
+  live watcher, simultaneous paths sharing one owner generation, last-path
+  retirement followed by a new path retaining that still-live owner's
+  generation, root-path population, item retirement and bounded owner-slot
+  release on owner disconnect,
   watcher-restart rebaseline into a fresh epoch (the fake item re-registers
   with the replacement watcher, as real items do), truthful Degraded
   presentation with last-known-good retention, and validated intent dispatch

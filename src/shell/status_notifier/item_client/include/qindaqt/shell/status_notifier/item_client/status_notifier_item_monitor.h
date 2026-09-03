@@ -125,6 +125,10 @@ private:
     // generation: an owner rebaseline or re-registration must replace the
     // slot deterministically instead of accumulating stale clients.
     QHash<QString, ItemSlot> m_slots;
+    // AGENT-GUARD: An item path can retire while its unique owner stays live.
+    // Keep that owner's one epoch generation independently from m_slots or a
+    // later path can incorrectly rebase every remaining registry fact.
+    QHash<QString, quint64> m_ownerGenerations;
 };
 
 } // namespace QindaQt::StatusNotifier
