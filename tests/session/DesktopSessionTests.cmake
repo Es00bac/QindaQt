@@ -16,9 +16,11 @@ add_test(
 set_tests_properties(
     desktop.virtual.sandbox-unit
     PROPERTIES
-        ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+        ENVIRONMENT
+            "PYTHONDONTWRITEBYTECODE=1;TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/desktop-session-unit-tmp"
         LABELS "unit;session;security;display"
 )
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/desktop-session-unit-tmp")
 
 set(
     _qindaqt_desktop_targets
@@ -246,6 +248,8 @@ if(
         COMPONENT DesktopVirtual
     )
 
+    include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopVirtualAppletModules.cmake")
+
     set(
         _qindaqt_desktop_stage
         "${CMAKE_CURRENT_BINARY_DIR}/desktop-session-stage"
@@ -267,29 +271,7 @@ if(
         --audio-service-directory "${KDE_INSTALL_DBUSSERVICEDIR}"
     )
 
-    add_test(
-        NAME desktop.virtual.package-contract
-        COMMAND
-            "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_package.py"
-            --cmake "${CMAKE_COMMAND}"
-            --build-root "${CMAKE_BINARY_DIR}"
-            ${_qindaqt_desktop_common_arguments}
-            --qml-directory "${QT6_INSTALL_QML}"
-            --network-qml-library
-            "$<TARGET_FILE_NAME:qindaqt_settings_network_qml>"
-            --network-qml-plugin
-            "$<TARGET_FILE_NAME:qindaqt_settings_network_qmlplugin>"
-            --configuration "$<CONFIG>"
-    )
-    set_tests_properties(
-        desktop.virtual.package-contract
-        PROPERTIES
-            TIMEOUT 150
-            RUN_SERIAL TRUE
-            FIXTURES_SETUP desktop_virtual_stage
-            LABELS "integration;install;session;display"
-    )
+    include("${CMAKE_CURRENT_SOURCE_DIR}/DesktopPackageTests.cmake")
 
     add_test(
         NAME desktop.virtual.boot.1080p
