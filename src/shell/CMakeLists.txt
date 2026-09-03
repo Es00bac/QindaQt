@@ -82,6 +82,40 @@ install(TARGETS qindaqt-shell-preview RUNTIME DESTINATION "${CMAKE_INSTALL_BINDI
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
 
+    add_library(
+        qindaqt_shell_panel_visibility_producers STATIC
+        runtime/panelvisibilityanimation.cpp
+        runtime/panelvisibilityanimation.h
+        runtime/panelvisibilitypointer.cpp
+        runtime/panelvisibilitypointer.h
+        runtime/panelvisibilitypopup.cpp
+        runtime/panelvisibilitypopup.h
+        runtime/panelvisibilityruntime.cpp
+        runtime/panelvisibilityruntime.h
+        runtime/panelvisibilityshortcut.cpp
+        runtime/panelvisibilityshortcut.h
+        runtime/panelvisibilitytimer.cpp
+        runtime/panelvisibilitytimer.h
+    )
+    target_include_directories(
+        qindaqt_shell_panel_visibility_producers PUBLIC runtime
+    )
+    target_link_libraries(
+        qindaqt_shell_panel_visibility_producers
+        PUBLIC
+            QindaQt::SettingsClient
+            QindaQt::ShellOrchestration
+            QindaQt::ShellSurface
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Quick
+    )
+    set_target_properties(
+        qindaqt_shell_panel_visibility_producers
+        PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+    )
+    qindaqt_enable_warnings(qindaqt_shell_panel_visibility_producers)
+
     qt_add_executable(
         qindaqt-shell
         common/catalogpaths.cpp
@@ -178,6 +212,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
+            qindaqt_shell_panel_visibility_producers
             qindaqt_themes
             KF6::GlobalAccel
             Qt6::Core
