@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-#include "qindaqt/shell/task_list/producer/task_list_fact_joiner.h"
+#include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
+#include "qindaqt/shell/task_list/producer/task_list_wire.h"
 #include "qindaqt/shell/task_list/task_list_source.h"
 
 #include <QByteArray>
-#include <QObject>
 #include <QTimer>
 
 #include <optional>
@@ -22,23 +22,21 @@ struct TaskListFactsProducerTiming {
   [[nodiscard]] bool isValid() const noexcept;
 };
 
-// Owner-lineage client that turns the public Compositor1 reads into T0 fact
-// generations. It owns refresh coalescing, read timeouts, bounded retry, and
-// generation fencing; it never knows QDBus types, so it qualifies against a
-// deterministic fake transport.
+// Exact-owner reader for the only documented task-window inventory on
+// Compositor1. It validates and fences Windows() but deliberately cannot
+// publish T0 facts: that method lacks output/workspace scope and atomic
+// container lineage, while the separate panel-visibility inventory expressly
+// cannot be combined with it.
 //
-// AGENT-CONTRACT: The injected TaskListSource is the only publication target.
-// A refresh is accepted only when all three reads returned under the current
-// owner with the in-flight token, no invalidation signal raced the join, and
-// the ShellVisibilitySnapshot exactly matches the schema-2 Windows()
-// (epoch, revision) fence of the same refresh; a torn fence is re-read once
-// and a persistent mismatch degrades fail-closed. The accepted scope
-// (epoch, revision, payload) lineage rejects regressions and changed bytes at
-// an equal revision. Every failure and stop publishes Degraded availability
-// through stateChanged with the last accepted generation retained
-// (docs/wiki/shell/task-list.md). Late replies are fenced by (token, owner);
-// there is no polling beyond the debounce/retry timers.
-class TaskListFactsProducer final : public QObject {
+// AGENT-CONTRACT: A valid read is retained only as (owner, epoch, revision,
+// bytes) lineage. Same-owner epoch changes, revision regressions, and changed
+// bytes at an equal revision fail closed. Until one public coherent task-list
+// inventory exists, every read leaves the TaskListSource Degraded and exposes
+// no container lineage. Every failure and stop changes observable error or
+// availability truth and emits stateChanged. Late replies are fenced by
+// (token, owner); transient transport failures use only the bounded retry
+// schedule.
+class TaskListFactsProducer final : public TaskListOperationAuthority {
   Q_OBJECT
 
 public:
@@ -50,70 +48,43 @@ public:
   [[nodiscard]] bool start(QString *error = nullptr);
   void stop();
 
-  [[nodiscard]] QString uniqueOwner() const { return m_owner; }
-  // The source's current generation revision; 0 while Loading. The operation
-  // adapter fences intents against this exact value.
-  [[nodiscard]] quint64 publishedRevision() const;
-  [[nodiscard]] TaskListSourceStatus status() const;
-  // Lineage of one container in the last accepted generation.
+  [[nodiscard]] QString uniqueOwner() const override { return m_owner; }
+  [[nodiscard]] quint64 publishedRevision() const override;
+  [[nodiscard]] TaskListSourceStatus status() const override;
   [[nodiscard]] std::optional<TaskListContainerLineage>
-  containerLineage(const QString &containerId) const;
+  containerLineage(const QString &containerId) const override;
   [[nodiscard]] bool refreshInFlight() const noexcept {
     return m_inFlight.has_value();
   }
   [[nodiscard]] QString lastError() const { return m_lastError; }
-
-Q_SIGNALS:
-  // Emitted when the owner, source status, generation revision, or container
-  // lineage changed. Consumers re-read the accessors; nothing is replayed.
-  void stateChanged();
 
 private Q_SLOTS:
   void handleServiceOwnerChanged(const QString &uniqueOwner);
   void handleInvalidation(const QString &uniqueOwner);
   void handleWindowsRead(quint64 token, const QString &uniqueOwner,
                          const QByteArray &payload);
-  void handleContainersRead(quint64 token, const QString &uniqueOwner,
-                            const QByteArray &payload);
-  void handleScopeRead(quint64 token, const QString &uniqueOwner,
-                       const QByteArray &payload);
   void handleRefreshFailed(quint64 token, const QString &uniqueOwner,
                            const QString &message);
   void handleRefreshTimer();
   void handleRequestTimeout();
 
 private:
-  enum class TimerPurpose {
-    None,
-    Debounce,
-    Retry,
-  };
+  enum class TimerPurpose { None, Debounce, Retry };
 
   struct InFlightRefresh {
     quint64 token = 0;
     QString owner;
-    std::optional<TaskListWindowsResult> windows;
-    std::optional<TaskListContainersResult> containers;
-    std::optional<TaskListScopeResult> scope;
-    QByteArray scopePayload;
-
-    [[nodiscard]] bool complete() const noexcept {
-      return windows.has_value() && containers.has_value() &&
-             scope.has_value();
-    }
   };
 
   void scheduleDebounce(int milliseconds);
   void scheduleRetry();
   void requestNow();
-  void maybeFinishRefresh();
   void failRefresh(const QString &message, bool permitRetry);
   void degrade(const QString &message);
-  void publishJoined(TaskListJoinResult joined);
-  [[nodiscard]] bool scopeLineageAdmits(const TaskListScopeResult &scope,
-                                        const QByteArray &payload) const;
+  [[nodiscard]] bool windowLineageAdmits(
+      const TaskListWindowsResult &windows, const QByteArray &payload) const;
   [[nodiscard]] bool currentOwnerIs(const QString &uniqueOwner) const;
-  void emitStateIfChanged();
+  void emitStateIfChanged(bool force = false);
 
   TaskListProducerTransport &m_transport;
   TaskListSource &m_source;
@@ -125,21 +96,15 @@ private:
   qsizetype m_retryIndex = 0;
   quint64 m_nextToken = 1;
   QString m_owner;
-  QVector<TaskListContainerLineage> m_lineage;
   QString m_lastError;
-  // Accepted scope lineage for the current owner: regression or changed bytes
-  // at an equal (epoch, revision) is foreign truth and rejects the refresh.
-  QString m_scopeEpoch;
-  QByteArray m_scopePayload;
-  quint64 m_scopeRevision = 0;
-  bool m_hasScopeLineage = false;
-  // One torn window/scope fence mismatch triggers a single re-read; a
-  // persistent mismatch on that re-read degrades instead of looping.
-  bool m_tornFenceRetry = false;
+  QString m_windowEpoch;
+  QByteArray m_windowPayload;
+  quint64 m_windowRevision = 0;
+  bool m_hasWindowLineage = false;
   bool m_dirty = false;
   bool m_started = false;
-  // Last-signalled observable state for change-only notification.
   QString m_signalledOwner;
+  QString m_signalledError;
   quint64 m_signalledRevision = 0;
   TaskListSourceStatus m_signalledStatus = TaskListSourceStatus::Loading;
 };

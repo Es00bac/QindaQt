@@ -24,6 +24,11 @@ public:
   using QObject::QObject;
   ~TaskListOperationTransport() override = default;
 
+  // Allocates lineage across every adapter sharing this transport. Pending
+  // calls are transport-owned, so the transport is the smallest lifetime that
+  // can guarantee a destroyed adapter's token is never recycled.
+  [[nodiscard]] virtual quint64 allocateToken() = 0;
+
   virtual bool submitTransaction(quint64 token, const QString &uniqueOwner,
                                  const QByteArray &requestJson) = 0;
   virtual bool releaseContainer(quint64 token, const QString &uniqueOwner,

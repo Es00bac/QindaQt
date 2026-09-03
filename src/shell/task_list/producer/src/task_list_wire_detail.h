@@ -2,9 +2,8 @@
 #pragma once
 
 // Private implementation detail of the task-list wire decoders: shared
-// hostile-input primitives used by task_list_wire.cpp (Windows/Containers
-// inventories) and task_list_scope_wire.cpp (ShellVisibilitySnapshot). Not
-// installed; never include this from outside the producer module.
+// hostile-input primitives used by task_list_wire.cpp. Not installed; never
+// include this from outside the producer module.
 
 #include "qindaqt/shell/task_list/producer/task_list_wire.h"
 #include "qindaqt/shell/task_list/task_list_types.h"

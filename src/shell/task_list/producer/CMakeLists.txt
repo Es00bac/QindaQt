@@ -12,19 +12,17 @@ add_library(QindaQt::ShellTaskListProducer ALIAS qindaqt_shell_task_list_produce
 target_sources(
     qindaqt_shell_task_list_producer
     PRIVATE
-        src/task_list_fact_joiner.cpp
         src/task_list_facts_producer.cpp
         src/task_list_wire.cpp
         src/task_list_wire_detail.h
-        src/task_list_scope_wire.cpp
         src/qt_task_list_producer_transport.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/shell/task_list/producer/qt_task_list_producer_transport.h
-            include/qindaqt/shell/task_list/producer/task_list_fact_joiner.h
             include/qindaqt/shell/task_list/producer/task_list_facts_producer.h
+            include/qindaqt/shell/task_list/producer/task_list_operation_authority.h
             include/qindaqt/shell/task_list/producer/task_list_producer_transport.h
             include/qindaqt/shell/task_list/producer/task_list_wire.h
 )

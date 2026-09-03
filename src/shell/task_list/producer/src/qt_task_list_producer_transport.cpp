@@ -17,11 +17,7 @@ constexpr auto kServiceName = "org.qindaqt.Compositor";
 constexpr auto kObjectPath = "/org/qindaqt/Compositor";
 constexpr auto kInterfaceName = "org.qindaqt.Compositor1";
 constexpr auto kWindowsMethod = "Windows";
-constexpr auto kContainersMethod = "Containers";
-constexpr auto kScopeMethod = "ShellVisibilitySnapshot";
 constexpr auto kWindowsSignal = "WindowsChanged";
-constexpr auto kContainerSignal = "ContainerCommitted";
-constexpr auto kVisibilitySignal = "ShellVisibilityChanged";
 constexpr auto kDBusService = "org.freedesktop.DBus";
 constexpr auto kDBusPath = "/org/freedesktop/DBus";
 constexpr auto kDBusInterface = "org.freedesktop.DBus";
@@ -76,17 +72,10 @@ void QtTaskListProducerTransport::stop() {
   m_started = false;
   ++m_resolutionGeneration;
   if (!m_uniqueOwner.isEmpty()) {
-    const char *slotNames[] = {SLOT(handleWindowsChanged()),
-                           SLOT(handleContainerCommitted()),
-                           SLOT(handleVisibilityChanged())};
-    const char *signalNames[] = {kWindowsSignal, kContainerSignal,
-                             kVisibilitySignal};
-    for (int index = 0; index < 3; ++index) {
-      m_connection.disconnect(m_uniqueOwner, QString::fromLatin1(kObjectPath),
-                              QString::fromLatin1(kInterfaceName),
-                              QString::fromLatin1(signalNames[index]), this,
-                              slotNames[index]);
-    }
+    m_connection.disconnect(m_uniqueOwner, QString::fromLatin1(kObjectPath),
+                            QString::fromLatin1(kInterfaceName),
+                            QString::fromLatin1(kWindowsSignal), this,
+                            SLOT(handleWindowsChanged()));
   }
   m_uniqueOwner.clear();
   for (auto *pending : std::as_const(m_pendingCalls)) {
@@ -107,9 +96,7 @@ void QtTaskListProducerTransport::requestRefresh(quint64 token,
                 QStringLiteral("refresh request owner is no longer current"));
     return;
   }
-  issueRead(token, uniqueOwner, kWindowsMethod);
-  issueRead(token, uniqueOwner, kContainersMethod);
-  issueRead(token, uniqueOwner, kScopeMethod);
+  issueRead(token, uniqueOwner);
 }
 
 void QtTaskListProducerTransport::handleWindowsChanged() {
@@ -118,29 +105,16 @@ void QtTaskListProducerTransport::handleWindowsChanged() {
   }
 }
 
-void QtTaskListProducerTransport::handleContainerCommitted() {
-  if (m_started && !m_uniqueOwner.isEmpty()) {
-    Q_EMIT refreshInvalidated(m_uniqueOwner);
-  }
-}
-
-void QtTaskListProducerTransport::handleVisibilityChanged() {
-  if (m_started && !m_uniqueOwner.isEmpty()) {
-    Q_EMIT refreshInvalidated(m_uniqueOwner);
-  }
-}
-
 void QtTaskListProducerTransport::issueRead(quint64 token,
-                                            const QString &uniqueOwner,
-                                            const char *method) {
+                                            const QString &uniqueOwner) {
   const QDBusMessage message = QDBusMessage::createMethodCall(
       uniqueOwner, QString::fromLatin1(kObjectPath),
-      QString::fromLatin1(kInterfaceName), QString::fromLatin1(method));
+      QString::fromLatin1(kInterfaceName), QString::fromLatin1(kWindowsMethod));
   auto *watcher = new QDBusPendingCallWatcher(
       m_connection.asyncCall(message, kDBusTimeoutMilliseconds), this);
   m_pendingCalls.append(watcher);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
-          [this, watcher, token, uniqueOwner, method] {
+          [this, watcher, token, uniqueOwner] {
             m_pendingCalls.removeAll(watcher);
             QDBusPendingReply<QByteArray> reply = *watcher;
             watcher->deleteLater();
@@ -151,14 +125,7 @@ void QtTaskListProducerTransport::issueRead(quint64 token,
               failRequest(token, uniqueOwner, reply.error().message());
               return;
             }
-            const QByteArray payload = reply.value();
-            if (qstrcmp(method, kWindowsMethod) == 0) {
-              Q_EMIT windowsRead(token, uniqueOwner, payload);
-            } else if (qstrcmp(method, kContainersMethod) == 0) {
-              Q_EMIT containersRead(token, uniqueOwner, payload);
-            } else {
-              Q_EMIT scopeRead(token, uniqueOwner, payload);
-            }
+            Q_EMIT windowsRead(token, uniqueOwner, reply.value());
           });
 }
 
@@ -197,12 +164,10 @@ void QtTaskListProducerTransport::bindOwner(const QString &uniqueOwner) {
   }
   const QString previous = m_uniqueOwner;
   if (!previous.isEmpty()) {
-    for (const auto signal :
-         {kWindowsSignal, kContainerSignal, kVisibilitySignal}) {
-      m_connection.disconnect(previous, QString::fromLatin1(kObjectPath),
-                              QString::fromLatin1(kInterfaceName),
-                              QString::fromLatin1(signal), this, nullptr);
-    }
+    m_connection.disconnect(previous, QString::fromLatin1(kObjectPath),
+                            QString::fromLatin1(kInterfaceName),
+                            QString::fromLatin1(kWindowsSignal), this,
+                            SLOT(handleWindowsChanged()));
   }
   m_uniqueOwner.clear();
 
@@ -216,28 +181,16 @@ void QtTaskListProducerTransport::bindOwner(const QString &uniqueOwner) {
   // AGENT-GUARD: Subscribe to the unique owner before exposing it to the
   // client, so the client's immediate refresh can never miss an invalidation
   // between owner resolution and its first read.
-  const char *slotNames[] = {SLOT(handleWindowsChanged()),
-                         SLOT(handleContainerCommitted()),
-                         SLOT(handleVisibilityChanged())};
-  const char *signalNames[] = {kWindowsSignal, kContainerSignal, kVisibilitySignal};
-  for (int index = 0; index < 3; ++index) {
-    const bool connected = m_connection.connect(
-        uniqueOwner, QString::fromLatin1(kObjectPath),
-        QString::fromLatin1(kInterfaceName), QString::fromLatin1(signalNames[index]),
-        this, slotNames[index]);
-    if (!connected) {
-      for (int rollback = 0; rollback < index; ++rollback) {
-        m_connection.disconnect(uniqueOwner, QString::fromLatin1(kObjectPath),
-                                QString::fromLatin1(kInterfaceName),
-                                QString::fromLatin1(signalNames[rollback]), this,
-                                slotNames[rollback]);
-      }
-      if (!previous.isEmpty()) {
-        Q_EMIT serviceOwnerChanged({});
-      }
-      QTimer::singleShot(250, this, [this] { resolveInitialOwner(); });
-      return;
+  const bool connected = m_connection.connect(
+      uniqueOwner, QString::fromLatin1(kObjectPath),
+      QString::fromLatin1(kInterfaceName), QString::fromLatin1(kWindowsSignal),
+      this, SLOT(handleWindowsChanged()));
+  if (!connected) {
+    if (!previous.isEmpty()) {
+      Q_EMIT serviceOwnerChanged({});
     }
+    QTimer::singleShot(250, this, [this] { resolveInitialOwner(); });
+    return;
   }
   m_uniqueOwner = uniqueOwner;
   Q_EMIT serviceOwnerChanged(m_uniqueOwner);

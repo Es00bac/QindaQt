@@ -78,9 +78,8 @@ TaskListWindowsResult TaskListWireDecoder::decodeWindows(
                        &result.message)) {
     return result;
   }
-  // AGENT-GUARD: Only schema 2 carries the shell-action fence naming the
-  // retained ShellVisibilitySnapshot generation. Without it the producer
-  // cannot prove a coherent join, so older or absent schemas are rejected.
+  // AGENT-GUARD: Only schema 2 carries the window inventory's epoch/revision
+  // fence. Older schemas cannot participate in exact lineage and are rejected.
   quint64 schemaVersion = 0;
   const QJsonValue version = root.value(QLatin1StringView("schemaVersion"));
   if (!version.isDouble() ||

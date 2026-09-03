@@ -185,19 +185,19 @@ private slots:
         QCOMPARE(source.requestIntent(request).ok(), true);
     }
 
-    void degradeBeforeFirstPublishKeepsLoadingSemantics()
+    void degradeBeforeFirstPublishIsKnownUnavailable()
     {
         TaskListSource source;
         source.markDegraded();
-        // AGENT-GUARD: markDegraded() may only demote an accepted generation;
-        // demoting the initial state would fake a history the shell never had.
-        QCOMPARE(source.status(), TaskListSourceStatus::Loading);
+        // A completed failed refresh is no longer "loading" merely because it
+        // has no retained generation. Availability must fail closed.
+        QCOMPARE(source.status(), TaskListSourceStatus::Degraded);
 
         TaskIntentRequest request;
         request.taskId = QStringLiteral("w-1");
         request.expectedRevision = 0;
         QCOMPARE(source.requestIntent(request).code,
-                 TaskIntentErrorCode::NoGeneration);
+                 TaskIntentErrorCode::SourceDegraded);
     }
 };
 

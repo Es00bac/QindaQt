@@ -69,14 +69,16 @@ and all-workspaces entries participate in every workspace scope.
 `TaskListPresentationModel::project()` maps source status plus generation plus
 scope to one of four states: `Loading` (no accepted generation),
 `Ready`, `Empty` (an accepted generation with nothing visible in scope), and
-`Degraded` (the facts producer is unavailable; the last generation stays
-visible, but every intent is refused until a fresh publish succeeds). An empty
+`Degraded` (the facts producer is unavailable; any last generation stays
+visible, but every intent is refused until a fresh publish succeeds). A failed
+first refresh is also `Degraded`, distinguishing known unavailability from a
+read that is still loading. An empty
 selection presents `Empty` even while degraded. Every presented row carries a
 1-based keyboard index in canonical order and a deterministic accessible name
 composed as application, title, window count for grouped containers, then the
 state suffixes `active`, `minimized`, and `urgent` in that order.
 
-## Production facts producer
+## Public facts producer boundary
 
 `src/shell/task_list/producer/` is the shell-side facts producer over the
 public [Compositor1](../reference/compositor-control-v1.md) authority. It binds
@@ -85,80 +87,59 @@ connection (the same owner-binding pattern as the integrated compositor output
 authority), never the replaceable well-known name and never the host
 compositor outside a real session.
 
-One refresh reads three inventories under that owner: `Windows()` (schema 2:
-identity, activation, minimized, taskbar policy, container membership, plus
-the shell-action fence), `Containers()` (container revisions and authority),
-and `ShellVisibilitySnapshot()` (the sole public output/workspace scope
-authority — `Windows()` carries neither). The two window inventories are never
-merged freely: window facts come only from `Windows()`, scope facts only from
-the snapshot, and a refresh is published only when the snapshot's
-`(epoch, revision)` exactly matches the fence `Windows()` schema 2 names for
-the retained snapshot generation of the same owner. A mismatched fence means
-the two reads raced a compositor update; the complete set is discarded and
-re-read once after the fixed-leading debounce, and a persistent mismatch
-degrades the source instead of publishing torn truth. All three
-`WindowsChanged`, `ContainerCommitted`, and `ShellVisibilityChanged` signals
-are invalidation hints only, and an invalidation racing the reads likewise
-fences the whole refresh. There is no polling beyond that debounce and a
-bounded retry backoff after failures.
+The adapter reads only schema-2 `Windows()` and observes only
+`WindowsChanged`. It never reads or combines `ShellVisibilitySnapshot`: that
+method is an independent panel-visibility inventory, and its canonical
+contract explicitly says clients must not combine it with `Windows()`. An
+equal epoch/revision fence does not override that rule. `Containers()` is also
+not joined, because its per-container revisions do not form one atomic
+generation with `Windows()`.
 
-The producer retains the accepted scope lineage `(owner, epoch, revision,
-payload)`. Under one owner and epoch, a revision regression — or changed bytes
-at an equal revision — is foreign lineage and rejects the refresh fail-closed;
-a changed epoch is a compositor instance restart and adopts a fresh lineage,
-and an owner change resets it. The wire decoder validates the complete
-snapshot schema before any of this: UUID-shaped epoch, canonical
-`outputGeneration`, the `scope` selector, the declared `outputs` (bounded,
-unique, with geometry and scale), and output membership for every window — an
-incomplete or unknown-output payload rejects the whole snapshot.
+Each `Windows()` reply is bounded and fully decoded under the exact owner. The
+producer retains `(owner, epoch, revision, payload)` solely as window-inventory
+lineage. Under one owner, an epoch change, revision regression, or changed
+bytes at an equal revision is foreign truth and rejects fail-closed. Owner
+replacement starts a new lineage; late owner/token replies and reads raced by
+`WindowsChanged` are discarded. Transient transport failures use a bounded
+retry schedule, while the known protocol gap does not poll.
 
-Classification deliberately reuses the compositor's collapsed native identity
-instead of fanning out per-container `Snapshot` reads (which could never be
-coherent with the `Windows()` read they would supplement): exactly one member
-of each container carries `skipTaskbar == false`, and that member becomes the
-`ContainerPrimary`. A container with zero or two such members, a window naming
-an unknown container, a container with no published member, or a published
-window missing from the scope snapshot each reject the whole batch: the source
-is marked `Degraded` and the last accepted generation stays visible. A
-standalone window with `skipTaskbar == true` opted out of task lists and
-produces no fact. Suppressed members copy the primary's output/workspace
-scope, because the primary's placement describes the whole container.
-
-Every observable availability change — owner loss or replacement, malformed or
-torn reads, lineage rejection, join failure, timeout, and `stop()` — is
-published through `stateChanged`, and `stop()` additionally withdraws the
-bound owner and container lineage so the operation adapter admits nothing
-against a dead producer.
-
-Two honest substitutions hold until the protocol grows (see below):
-`applicationName` falls back to the application id, and every fact's `urgent`
-flag is `false`. Neither is fabricated state: both are the absence of a wire
-field.
+Compositor1 1.1 has no single payload carrying every T0 fact. `Windows()` lacks
+output/workspace scope, application display name, urgency, and an atomic
+container-revision/authority join. Consequently this adapter deliberately
+does not publish a generation and exposes no container lineage: it marks the
+source `Degraded`, retaining any previously injected generation, until a
+coherent public task-list inventory exists. Inventing placeholders or joining
+the panel snapshot would turn absence into false UI truth. Every failed read,
+owner loss/replacement, and `stop()` emits `stateChanged`; stop also clears the
+owner so mutation admission fails before bus traffic.
 
 ## Operation adapter
 
 `src/shell/task_list/operations/` executes intent through the public mutation
 surface. Every admission is fenced atomically — before any bus traffic —
-against the producer's exact unique owner, the accepted generation revision
+against an injected read-only authority's exact unique owner, accepted
+generation revision
 (`StaleGeneration` on mismatch, `SourceNotReady` while Loading/Degraded), and
 the container lineage of the accepted generation (`UnknownContainer`).
 Requests are serialized: one in flight, a second request is rejected `Busy`
 rather than queued, because a queued intent would act on a generation the user
-no longer sees. Each admitted request gets one token embedding a
-process-unique adapter-lifetime ordinal, so a late reply from a destroyed
-adapter instance — whose pending calls the transport may still retain — can
-never settle a reconstructed adapter's request. A transaction is submitted
+no longer sees. Each admitted request gets one monotonic token from the
+transport that owns pending calls, so a late reply from a destroyed adapter
+instance can never settle a reconstructed adapter sharing that transport. No
+global allocator or process singleton is involved. A transaction is submitted
 exactly once, and timeouts, malformed replies, or owner loss in flight finish
 as `Uncertain` and are never resubmitted.
 
 Replies settle only on the canonical reply lineage: a `Submit` reply must echo
 the protocol (major 1, minor at most 1), the exact `transactionId` and
-`containerId` of the submitted transaction, a known `status`, and — for
-`committed` — the fenced container revision advanced by exactly one. A reply
+`containerId` of the submitted transaction, a known `status`, and a canonical
+`revision`; `committed` additionally requires the fenced container revision
+advanced by exactly one. A reply
 missing or contradicting any echo finishes `Uncertain`
 (`reply-lineage-mismatch`), because the transaction may have committed.
-`DockWindows` replies carry compositor-generated ids, so they are validated
-for protocol, id presence, and revision shape; `ReleaseContainer` replies
+Successful `DockWindows` replies carry compositor-generated ids, so they are
+validated for protocol, id presence, and revision shape; `ReleaseContainer`
+replies
 carry only `status` and `failure` on the wire and are matched by the
 exact-owner pending-call binding alone.
 
@@ -194,13 +175,18 @@ action reader — the authenticated active-window identity
 ([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md)) is a
 separate single-client concern.
 
-Compositor1 1.1 still does not expose the following; each is a candidate
+The existing authenticated client closes the ordinary window-action gap, but
+Compositor1 1.1 still lacks the following task-list facts; each is a candidate
 compositor lane, not a shell workaround:
 
-1. Per-window `urgent`/demands-attention state in `Windows()` (the producer
-   currently publishes `urgent: false` for every fact).
-2. An application display name in `Windows()` (the producer currently
-   publishes `applicationName == applicationId`).
+1. One atomic task-list inventory containing window identity/title/app ID,
+   output/workspace scope, collapsed container role plus revision/authority,
+   activation/minimized/urgent state, and its own owner/epoch/revision lineage.
+   Extending `Windows()` with those fields or adding a dedicated method are
+   both compositor-owned choices; the shell must not assemble the generation
+   from independent inventories.
+2. An application display name and `urgent`/demands-attention fact in that
+   coherent inventory.
 3. Mutation authority for `hybrid-process` containers, if task-list page
    activation/detach should cover production groups.
 
@@ -211,12 +197,15 @@ shell composition lane; its Ungroup arm maps to `releaseContainer`.
 
 The source/static slice at `src/shell/task_list` implements the values,
 validation, grouping, filtering, presentation projection, and intent
-arbitration described above. The T1 slice adds the production facts producer
-and the operation adapter, both covered by hostile unit rows and a private-bus
+arbitration described above. The T1 slice adds the exact-owner, fail-closed
+public facts reader and the operation adapter, both covered by hostile unit
+rows and a private-bus
 transport row in `tests/shell/task_list` (see the
-[testing harness](../development/testing-harness.md)). Both slices are
+[testing harness](../development/testing-harness.md)). These slices are
 registered in the combined source/test build but are deliberately not
-instantiated by the production shell; shell composition (including composition
-of the published exact-owner `src/shell_window_actions_client` behind accepted
-window intents), QST-1 presentation, and installed keyboard/accessibility
-qualification remain later slices and are not claimed here.
+instantiated by the production shell. The current reader intentionally cannot
+publish Ready from Compositor1 1.1; the coherent inventory is a compositor
+prerequisite. Composing the published exact-owner
+`src/shell_window_actions_client` behind accepted window intents, QST-1
+presentation, and installed keyboard/accessibility qualification remain later
+shell slices and are not claimed here.

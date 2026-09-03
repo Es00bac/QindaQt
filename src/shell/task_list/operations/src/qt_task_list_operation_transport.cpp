@@ -6,6 +6,8 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 
+#include <limits>
+
 namespace QindaQt::ShellTaskList::Operations {
 namespace {
 
@@ -27,6 +29,15 @@ QtTaskListOperationTransport::~QtTaskListOperationTransport() {
     }
   }
   m_pendingCalls.clear();
+}
+
+quint64 QtTaskListOperationTransport::allocateToken() {
+  if (m_nextToken == 0) {
+    return 0;
+  }
+  const quint64 token = m_nextToken;
+  m_nextToken = token == std::numeric_limits<quint64>::max() ? 0 : token + 1;
+  return token;
 }
 
 bool QtTaskListOperationTransport::submitTransaction(

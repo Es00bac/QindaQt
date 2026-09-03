@@ -1,23 +1,50 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/operations/task_list_operation_adapter.h"
+#include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
+#include "qindaqt/shell/task_list/producer/task_list_producer_transport.h"
 
 #include <QSignalSpy>
 #include <QtTest>
 
 #include "task_list_operation_test_support.h"
+#include "task_list_test_support.h"
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
+using namespace QindaQt::ShellTaskList::Producer;
 using namespace TaskListOperationTest;
 
-// Admission fencing and the Unavailable intent surface: every case here must
-// finish without a single byte reaching the transport.
+namespace {
+
+TaskIntentOutcome acceptedOutcome(TaskEntryKind kind, const QString &windowId) {
+  TaskIntentOutcome outcome;
+  outcome.entryKind = kind;
+  outcome.primaryWindowId = windowId;
+  outcome.memberWindowIds = {windowId};
+  return outcome;
+}
+
+class IdleProducerTransport final : public TaskListProducerTransport {
+public:
+  using TaskListProducerTransport::TaskListProducerTransport;
+  bool start(QString *error = nullptr) override {
+    if (error) {
+      error->clear();
+    }
+    return true;
+  }
+  void stop() override {}
+  void requestRefresh(quint64, const QString &) override {}
+};
+
+} // namespace
+
 class TaskListOperationAdapterTests final : public QObject {
   Q_OBJECT
 
 private slots:
-  void windowIntentsAreUnavailableWithExtensionCodes();
-  void containerIntentsAreUnavailableWithExtensionCodes();
+  void windowIntentsAreUnavailableWithCompositionCodes();
+  void containerIntentsAreUnavailableWithCompositionCodes();
   void staleGenerationRejectsBeforeBusTraffic();
   void degradedSourceRejectsBeforeBusTraffic();
   void hybridAuthorityRejectsSubmitAndRelease();
@@ -26,128 +53,89 @@ private slots:
   void stoppedProducerAdmitsNoOperation();
 };
 
-void TaskListOperationAdapterTests::windowIntentsAreUnavailableWithExtensionCodes() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+void TaskListOperationAdapterTests::windowIntentsAreUnavailableWithCompositionCodes() {
+  FakeOperationAuthority authority;
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
+  const TaskIntentOutcome outcome =
+      acceptedOutcome(TaskEntryKind::Window, QStringLiteral("w1"));
 
-  const auto activate = acceptIntent(source, QStringLiteral("w1"),
-                                     TaskIntentKind::Activate);
-  const quint64 token = adapter.executeTaskIntent(
-      {QStringLiteral("w1"), TaskIntentKind::Activate, source.revision()},
-      activate);
-  QCOMPARE(finishedSpy.size(), 1);
-  const auto result =
-      finishedSpy.constFirst().constFirst().value<TaskListOperationResult>();
-  QCOMPARE(result.token, token);
-  QCOMPARE(result.status, TaskListOperationStatus::Unavailable);
-  QCOMPARE(result.code,
-           QStringLiteral("compositor-window-activate-unavailable"));
-  QCOMPARE(operations.calls.size(), 0);
-
-  const auto minimize = acceptIntent(source, QStringLiteral("w1"),
-                                     TaskIntentKind::Minimize);
   adapter.executeTaskIntent(
-      {QStringLiteral("w1"), TaskIntentKind::Minimize, source.revision()},
-      minimize);
-  QCOMPARE(finishedSpy.size(), 2);
+      {QStringLiteral("w1"), TaskIntentKind::Activate, authority.revision},
+      outcome);
+  QCOMPARE(firstResult(finishedSpy).status,
+           TaskListOperationStatus::Unavailable);
+  QCOMPARE(firstResult(finishedSpy).code,
+           QStringLiteral("compositor-window-activate-unavailable"));
+
+  adapter.executeTaskIntent(
+      {QStringLiteral("w1"), TaskIntentKind::Minimize, authority.revision},
+      outcome);
   QCOMPARE(finishedSpy.at(1).constFirst().value<TaskListOperationResult>().code,
            QStringLiteral("compositor-window-minimize-unavailable"));
 
-  const auto close = acceptIntent(source, QStringLiteral("w1"),
-                                  TaskIntentKind::Close);
   adapter.executeTaskIntent(
-      {QStringLiteral("w1"), TaskIntentKind::Close, source.revision()}, close);
-  QCOMPARE(finishedSpy.size(), 3);
+      {QStringLiteral("w1"), TaskIntentKind::Close, authority.revision},
+      outcome);
   QCOMPARE(finishedSpy.at(2).constFirst().value<TaskListOperationResult>().code,
            QStringLiteral("compositor-window-close-unavailable"));
+  QCOMPARE(operations.calls.size(), 0);
 }
 
-void TaskListOperationAdapterTests::containerIntentsAreUnavailableWithExtensionCodes() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+void TaskListOperationAdapterTests::containerIntentsAreUnavailableWithCompositionCodes() {
+  FakeOperationAuthority authority;
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-
-  const auto outcome = acceptIntent(source, QStringLiteral("c1"),
-                                    TaskIntentKind::Activate);
-  QCOMPARE(outcome.entryKind, TaskEntryKind::Container);
   adapter.executeTaskIntent(
-      {QStringLiteral("c1"), TaskIntentKind::Activate, source.revision()},
-      outcome);
-  QCOMPARE(finishedSpy.size(), 1);
-  QCOMPARE(finishedSpy.constFirst().constFirst()
-               .value<TaskListOperationResult>()
-               .code,
+      {QStringLiteral("c1"), TaskIntentKind::Activate, authority.revision},
+      acceptedOutcome(TaskEntryKind::Container, QStringLiteral("w2")));
+  QCOMPARE(firstResult(finishedSpy).code,
            QStringLiteral("compositor-container-activate-unavailable"));
   QCOMPARE(operations.calls.size(), 0);
 }
 
 void TaskListOperationAdapterTests::staleGenerationRejectsBeforeBusTraffic() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+  FakeOperationAuthority authority;
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-
-  const quint64 token = adapter.releaseContainer(QStringLiteral("c1"),
-                                                 quint64(999));
-  QCOMPARE(finishedSpy.size(), 1);
-  const auto result =
-      finishedSpy.constFirst().constFirst().value<TaskListOperationResult>();
-  QCOMPARE(result.token, token);
-  QCOMPARE(result.status, TaskListOperationStatus::StaleGeneration);
+  adapter.releaseContainer(QStringLiteral("c1"), quint64(999));
+  QCOMPARE(firstResult(finishedSpy).status,
+           TaskListOperationStatus::StaleGeneration);
   QCOMPARE(operations.calls.size(), 0);
 }
 
 void TaskListOperationAdapterTests::degradedSourceRejectsBeforeBusTraffic() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
-  Q_EMIT producerTransport.serviceOwnerChanged({});
-  QCOMPARE(producer.status(), TaskListSourceStatus::Degraded);
-
+  FakeOperationAuthority authority;
+  authority.setUnavailable();
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-  adapter.releaseContainer(QStringLiteral("c1"), source.revision());
-  QCOMPARE(finishedSpy.size(), 1);
-  QCOMPARE(finishedSpy.constFirst().constFirst()
-               .value<TaskListOperationResult>()
-               .status,
+  adapter.releaseContainer(QStringLiteral("c1"), authority.revision);
+  QCOMPARE(firstResult(finishedSpy).status,
            TaskListOperationStatus::SourceNotReady);
   QCOMPARE(operations.calls.size(), 0);
 }
 
 void TaskListOperationAdapterTests::hybridAuthorityRejectsSubmitAndRelease() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+  FakeOperationAuthority authority;
+  authority.containers[0].authority = TaskListContainerAuthority::HybridProcess;
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
 
   adapter.activateContainerPage(QStringLiteral("c1"), QStringLiteral("page-2"),
-                                source.revision());
-  adapter.releaseContainer(QStringLiteral("c1"), source.revision());
+                                authority.revision);
+  adapter.releaseContainer(QStringLiteral("c1"), authority.revision);
   adapter.detachWindow(QStringLiteral("c1"), QStringLiteral("w3"),
-                       source.revision());
+                       authority.revision);
   QCOMPARE(finishedSpy.size(), 3);
   for (int index = 0; index < 3; ++index) {
     QCOMPARE(finishedSpy.at(index).constFirst()
@@ -159,78 +147,58 @@ void TaskListOperationAdapterTests::hybridAuthorityRejectsSubmitAndRelease() {
 }
 
 void TaskListOperationAdapterTests::unknownContainerIsRejected() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+  FakeOperationAuthority authority;
+  authority.containers.clear();
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-
-  adapter.releaseContainer(QStringLiteral("c-unknown"), source.revision());
-  QCOMPARE(finishedSpy.size(), 1);
-  QCOMPARE(finishedSpy.constFirst().constFirst()
-               .value<TaskListOperationResult>()
-               .status,
+  adapter.releaseContainer(QStringLiteral("c-unknown"), authority.revision);
+  QCOMPARE(firstResult(finishedSpy).status,
            TaskListOperationStatus::UnknownContainer);
   QCOMPARE(operations.calls.size(), 0);
 }
 
 void TaskListOperationAdapterTests::busyAdapterRejectsSecondOperation() {
-  TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
+  FakeOperationAuthority authority;
   FakeOperationTransport operations;
-  TaskListOperationAdapter adapter(producer, operations, 100);
+  TaskListOperationAdapter adapter(authority, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-
   adapter.dockWindows(QStringLiteral("w1"), QStringLiteral("w9"),
                       QStringLiteral("horizontal"), QStringLiteral("second"),
-                      0.5, source.revision());
+                      0.5, authority.revision);
   QVERIFY(adapter.operationInFlight());
-  QCOMPARE(operations.calls.size(), 1);
-
-  const quint64 second = adapter.dockWindows(QStringLiteral("w1"),
-                                             QStringLiteral("w8"),
-                                             QStringLiteral("vertical"),
-                                             QStringLiteral("first"), 0.5,
-                                             source.revision());
-  QCOMPARE(finishedSpy.size(), 1);
-  const auto result =
-      finishedSpy.constFirst().constFirst().value<TaskListOperationResult>();
-  QCOMPARE(result.token, second);
-  QCOMPARE(result.status, TaskListOperationStatus::Busy);
+  adapter.dockWindows(QStringLiteral("w1"), QStringLiteral("w8"),
+                      QStringLiteral("vertical"), QStringLiteral("first"),
+                      0.5, authority.revision);
+  QCOMPARE(firstResult(finishedSpy).status, TaskListOperationStatus::Busy);
   QCOMPARE(operations.calls.size(), 1);
 }
 
-// AGENT-NOTE: Review finding P1-2 (rejected candidate 3a5ae17): a stopped
-// producer kept its Ready status and owner, so releaseContainer() still
-// reached the transport. Stop withdraws availability; admission is fenced
-// before any bus traffic.
+// AGENT-NOTE: Review finding P1-2 on rejected candidate 3a5ae17: stop retained
+// a Ready producer and owner, allowing ReleaseContainer onto the wire. This
+// exercises the real producer authority after stop, not a test-only status.
 void TaskListOperationAdapterTests::stoppedProducerAdmitsNoOperation() {
   TaskListSource source;
-  FakeProducerTransport producerTransport;
-  TaskListFactsProducer producer(producerTransport, source, fastTiming());
-  makeReady(producer, producerTransport);
-  QCOMPARE(producer.status(), TaskListSourceStatus::Ready);
+  QVERIFY(source.publishGeneration(
+                    {TaskListTest::standalone(QStringLiteral("w1"),
+                                              QStringLiteral("app.one"))})
+              .ok());
+  IdleProducerTransport producerTransport;
+  TaskListFactsProducer producer(producerTransport, source);
+  QVERIFY(producer.start());
+  Q_EMIT producerTransport.serviceOwnerChanged(QStringLiteral(":1.1"));
+  producer.stop();
 
   FakeOperationTransport operations;
   TaskListOperationAdapter adapter(producer, operations, 100);
   QSignalSpy finishedSpy(&adapter,
                          &TaskListOperationAdapter::operationFinished);
-
-  producer.stop();
-  QCOMPARE(producer.status(), TaskListSourceStatus::Degraded);
   adapter.releaseContainer(QStringLiteral("c1"), source.revision());
-  QCOMPARE(finishedSpy.size(), 1);
-  QCOMPARE(finishedSpy.constFirst()
-               .constFirst()
-               .value<TaskListOperationResult>()
-               .status,
+  QCOMPARE(firstResult(finishedSpy).status,
            TaskListOperationStatus::SourceNotReady);
+  QCOMPARE(producer.uniqueOwner(), QString());
   QCOMPARE(operations.calls.size(), 0);
 }
 

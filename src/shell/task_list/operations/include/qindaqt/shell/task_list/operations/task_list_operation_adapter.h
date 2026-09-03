@@ -10,7 +10,7 @@
 #include <optional>
 
 namespace QindaQt::ShellTaskList::Producer {
-class TaskListFactsProducer;
+class TaskListOperationAuthority;
 }
 
 namespace QindaQt::ShellTaskList::Operations {
@@ -18,7 +18,7 @@ namespace QindaQt::ShellTaskList::Operations {
 class TaskListOperationTransport;
 
 // Executes task-list intent through the public Compositor1 mutation surface.
-// The producer supplies the exact unique owner, the accepted generation
+// The injected authority supplies the exact unique owner, accepted generation
 // revision, and the per-container lineage; every admission is fenced against
 // all three atomically (single-threaded, before any bus traffic).
 //
@@ -26,25 +26,28 @@ class TaskListOperationTransport;
 // queued intent can never act on a generation the user no longer sees. A
 // transaction is submitted exactly once; timeouts, malformed replies, and
 // owner loss in flight report Uncertain and are never retried by the adapter.
-// Tokens embed a per-process adapter-lifetime ordinal, so a late reply from a
-// destroyed adapter instance can never match a reconstructed adapter sharing
-// the transport. Submit replies settle only when the full canonical lineage
+// Tokens come from the transport that owns pending calls, so a late reply from
+// a destroyed adapter instance can never match a reconstructed adapter sharing
+// that transport. Submit replies settle only when the full canonical lineage
 // (protocol, transactionId, containerId, status, revision) echoes the
-// submitted transaction; anything else is Uncertain.
-// Window-level activate/minimize/close have no Compositor1 1.1 operation and
-// finish as Unavailable with the exact extension code; do not add a private
-// path around that (docs/wiki/shell/task-list.md).
+// submitted transaction; anything else is Uncertain. Both injected references
+// are single-thread-affine and must outlive the adapter.
+// Window-level activate/minimize/close finish as Unavailable in this adapter;
+// later shell composition routes them through the existing authenticated
+// shell_window_actions_client rather than adding another Compositor1 path
+// (ADR-0061; docs/wiki/shell/task-list.md).
 class TaskListOperationAdapter final : public QObject {
   Q_OBJECT
 
 public:
   explicit TaskListOperationAdapter(
-      Producer::TaskListFactsProducer &producer,
+      Producer::TaskListOperationAuthority &authority,
       TaskListOperationTransport &transport, int replyTimeoutMilliseconds = 5000,
       QObject *parent = nullptr);
 
-  // Maps an accepted T0 intent to the protocol surface. Window-level
-  // operations finish as Unavailable; container close/minimize policy
+  // Maps an accepted T0 intent to the protocol surface. Until the later shell
+  // composition uses shell_window_actions_client, window-level operations
+  // finish as Unavailable; container close/minimize policy
   // (Close All / Ungroup / Cancel) stays with the later shell composition
   // lane, which may call releaseContainer for the Ungroup arm. The request
   // supplies the kind and the generation revision the caller displayed.
@@ -109,14 +112,11 @@ private:
   void finishInFlight(TaskListOperationResult result);
   quint64 nextToken();
 
-  Producer::TaskListFactsProducer &m_producer;
+  Producer::TaskListOperationAuthority &m_authority;
   TaskListOperationTransport &m_transport;
   int m_replyTimeoutMilliseconds;
   QTimer m_replyTimeout;
   std::optional<InFlightOperation> m_inFlight;
-  // Token lineage: (adapter-lifetime ordinal << 32) | per-instance sequence.
-  const quint64 m_instanceOrdinal;
-  quint64 m_sequence = 1;
 };
 
 } // namespace QindaQt::ShellTaskList::Operations
