@@ -4,19 +4,20 @@ role: QindaQt Program Manager and final integrator
 provider: OpenAI Codex
 model: gpt-5.6-sol
 reasoning: high
-status: working
-feature: Route the handoff's named lanes, integrate accepted desktop blockers, verify main, and maintain product truth
+status: handoff
+feature: Named lanes routed and accepted main verified; awaiting user-authorized install and SDDM smoke
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-03T12:58:04-06:00
-updated_at: 2026-09-03T13:49:46-06:00
+updated_at: 2026-09-03T13:55:54-06:00
 ---
 
 # Codex Program Manager
 
 - Role: Program Manager and sole final integrator of `main`.
 - Provider/model: OpenAI Codex `gpt-5.6-sol`, reasoning high.
-- Status: working — routing the handoff's final funded reviews while preserving
-  the verified system-KWin integration boundary.
+- Status: handoff — every named lane is finished and routed; exact main is
+  Release-install ready, with only the user-authorized sudo install and SDDM
+  login smoke remaining.
 - Exact takeover base: `0770b572c1ed7880eb4a399e741ea050a8d81f6b`.
 - Branch: `main`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm`.
@@ -49,3 +50,8 @@ updated_at: 2026-09-03T13:49:46-06:00
   three fatal-warning host rows abort on the eager Color client's availability
   warning. No integration-assistant lane was opened. Beginning final
   Release/install verification of the accepted main tree.
+- 2026-09-03T13:55:54-06:00 — Exact main `0998b1f4` passes the final Release
+  build, installed-label 13/13, `session.installpaths` 1/1, broad-safe 592/592,
+  and strict documentation/source/JSON/Team Board gates with `/usr/local`
+  configuration confirmed. All named lanes are closed; handed off the remaining
+  sudo install and SDDM selection to the user.
