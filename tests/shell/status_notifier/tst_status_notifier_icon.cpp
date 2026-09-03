@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <qindaqt/shell/status_notifier/icon/status_notifier_icon_locator.h>
 #include <qindaqt/shell/status_notifier/icon/status_notifier_icon_renderer.h>
 #include <qindaqt/shell/status_notifier/status_notifier_limits.h>
 
@@ -93,6 +94,8 @@ private slots:
     void renderUsesDirectRootHitAsLastResort();
     void renderFallbackIsDeterministicAndRefusesTraversal();
     void renderIgnoresUndecodableThemeFiles();
+    void locatorRejectsEscapingThemeDirectories();
+    void rendererBoundsThemeAndFallbackImages();
     void locatorIgnoresOversizedIndexFiles();
 };
 
@@ -262,6 +265,50 @@ void StatusNotifierIconTests::renderIgnoresUndecodableThemeFiles()
     icon.iconName = QStringLiteral("garbage-icon");
     const QImage rendered = renderer.render(icon, 32);
     QCOMPARE(rendered, StatusNotifierIconRenderer::fallbackIcon(32));
+}
+
+void StatusNotifierIconTests::locatorRejectsEscapingThemeDirectories()
+{
+    // AGENT-NOTE: P1-7 regression: an index directory may not escape the
+    // injected root through parent traversal, even when the target exists.
+    QString error;
+    const QString parent = fixtureRoot(QStringLiteral("escape-parent"));
+    const QString root = parent + QStringLiteral("/injected");
+    const QString outside = parent + QStringLiteral("/outside");
+    QVERIFY2(writeFile(root + QStringLiteral("/index.theme"),
+                       "[Icon Theme]\nName=Hostile\nDirectories=../outside\n\n"
+                       "[../outside]\nSize=32\n",
+                       &error)
+                 && writeImage(outside, QStringLiteral("escaped"), QSize(32, 32),
+                               QColor(1, 2, 3), &error),
+             qPrintable(error));
+
+    StatusNotifierIconLocator locator({root});
+    QVERIFY(locator.locate(QStringLiteral("escaped"), 32).isEmpty());
+}
+
+void StatusNotifierIconTests::rendererBoundsThemeAndFallbackImages()
+{
+    // AGENT-NOTE: P1-8 regression: both compressed theme images and caller-
+    // sized placeholders stay within the shared 512-pixel image bound.
+    QString error;
+    const QString root = fixtureRoot(QStringLiteral("large-image"));
+    QVERIFY2(writeImage(root, QStringLiteral("too-large"),
+                        QSize(int(kMaxIconPixmapDimension) + 1, 1),
+                        QColor(9, 8, 7), &error),
+             qPrintable(error));
+    StatusNotifierIconRenderer renderer({root});
+    IconPayload icon;
+    icon.iconName = QStringLiteral("too-large");
+    const QImage rendered = renderer.render(icon, 32);
+    QCOMPARE(rendered, StatusNotifierIconRenderer::fallbackIcon(32));
+    QVERIFY(rendered.width() <= int(kMaxIconPixmapDimension));
+    QVERIFY(rendered.height() <= int(kMaxIconPixmapDimension));
+
+    const QImage hostileFallback = StatusNotifierIconRenderer::fallbackIcon(
+        int(kMaxIconPixmapDimension) + 1);
+    QCOMPARE(hostileFallback.size(),
+             QSize(int(kMaxIconPixmapDimension), int(kMaxIconPixmapDimension)));
 }
 
 void StatusNotifierIconTests::locatorIgnoresOversizedIndexFiles()

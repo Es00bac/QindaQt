@@ -29,6 +29,28 @@ namespace
     return ok && size > 0 ? size : -1;
 }
 
+// Returns a canonical regular file only when it is contained by the canonical
+// injected root. This closes both parent-directory and symlink escapes for
+// index files and icon candidates.
+[[nodiscard]] QString confinedFile(const QString &rootDirectory,
+                                   const QString &candidate)
+{
+    const QString canonicalRoot = QDir(rootDirectory).canonicalPath();
+    const QFileInfo candidateInfo(candidate);
+    const QString canonicalCandidate = candidateInfo.canonicalFilePath();
+    if (canonicalRoot.isEmpty() || canonicalCandidate.isEmpty()
+        || !candidateInfo.isFile()) {
+        return {};
+    }
+    const QString relative = QDir(canonicalRoot).relativeFilePath(canonicalCandidate);
+    if (relative == QLatin1String("..")
+        || relative.startsWith(QLatin1String("../"))
+        || QDir::isAbsolutePath(relative)) {
+        return {};
+    }
+    return canonicalCandidate;
+}
+
 } // namespace
 
 StatusNotifierIconLocator::StatusNotifierIconLocator(QStringList themeRoots)
@@ -87,8 +109,9 @@ QString StatusNotifierIconLocator::locate(const QString &iconName, int preferred
         for (const QString &extension : extensions()) {
             const QString candidate =
                 root + QLatin1Char('/') + iconName + QLatin1Char('.') + extension;
-            if (QFileInfo::exists(candidate)) {
-                return candidate;
+            const QString confined = confinedFile(root, candidate);
+            if (!confined.isEmpty()) {
+                return confined;
             }
         }
     }
@@ -111,7 +134,12 @@ StatusNotifierIconLocator::loadIndex(const QString &rootDirectory,
     const QString indexPath = rootDirectory + QLatin1Char('/')
         + (themeSubDirectory.isEmpty() ? cacheKey
                                        : themeSubDirectory + QStringLiteral("/index.theme"));
-    QFile file(indexPath);
+    const QString confinedIndex = confinedFile(rootDirectory, indexPath);
+    if (confinedIndex.isEmpty()) {
+        m_indexCache.insert(cacheHashKey, index);
+        return index;
+    }
+    QFile file(confinedIndex);
     if (file.open(QIODevice::ReadOnly)) {
         const QByteArray raw = file.read(kMaxIconThemeIndexBytes + 1);
         if (raw.size() <= kMaxIconThemeIndexBytes) {
@@ -169,13 +197,17 @@ QString StatusNotifierIconLocator::probeDirectories(const QString &rootDirectory
         for (const QString &extension : extensions()) {
             const QString candidate = rootDirectory + QLatin1Char('/') + directory
                 + QLatin1Char('/') + iconName + QLatin1Char('.') + extension;
-            if (!QFileInfo::exists(candidate)) {
+            // AGENT-GUARD: P1-7 regression: index.theme directory values are
+            // hostile. Canonical containment is required after resolution so
+            // both "../" and symlink escapes fail closed.
+            const QString confined = confinedFile(rootDirectory, candidate);
+            if (confined.isEmpty()) {
                 continue;
             }
             const qint64 distance = qAbs(qint64(size) - qint64(preferredSize));
             if (best < 0 || distance < best) {
                 best = distance;
-                bestPath = candidate;
+                bestPath = confined;
             }
             break; // First existing extension for this directory wins.
         }
