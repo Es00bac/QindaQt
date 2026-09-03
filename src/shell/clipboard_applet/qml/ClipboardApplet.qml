@@ -77,10 +77,13 @@ Item {
                 id: searchField
                 objectName: "clipboardSearchField"
                 Layout.fillWidth: true
-                // Search is refused outside the ready phase; keep the field
-                // visible for context but disabled instead of accepting text
-                // that can never run.
-                enabled: root.actionsEnabled
+                // AGENT-GUARD: search is a READ path — it stays live whenever
+                // the history is presentable in the ready phase, including a
+                // denied clipboard.write grant (browsing plus search). Only a
+                // non-ready phase (degraded service, lock, denial, read
+                // withholding) disables it; binding it to actionsEnabled here
+                // wrongly disabled read-only search under a write denial.
+                enabled: controller?.phaseText === "ready"
                 placeholderText: qsTr("Search clipboard history…")
                 text: controller?.searchQuery ?? ""
                 accessibleName: qsTr("Search clipboard history")

@@ -7,6 +7,7 @@
 // invariants aligned when editing either side.
 
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
+#include "qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h"
 
 namespace QindaQt::ShellClipboardApplet {
 
@@ -44,7 +45,14 @@ void ClipboardAppletController::onSearchCompleted(
 void ClipboardAppletController::applySearchOutcome(
     const QindaQt::Services::ClipboardModel::SearchOutcome &outcome)
 {
-    if (outcome.accepted()) {
+    // AGENT-GUARD: a reply that already passed the id and query-generation
+    // fences can still carry hostile match content. Matches are admitted
+    // through the same descriptor floor as snapshots (against the generation
+    // the query ran under); a refusal or a hostile list clears the displayed
+    // results instead of copying hostile metadata into rows.
+    if (outcome.accepted()
+        && assessDescriptorList(outcome.matches, m_snapshot.generation)
+            == SnapshotGateDecision::Accept) {
         m_searchResults = outcome.matches;
         m_searchTruncated = outcome.truncated;
     } else {

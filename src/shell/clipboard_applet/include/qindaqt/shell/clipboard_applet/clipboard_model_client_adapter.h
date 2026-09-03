@@ -28,6 +28,12 @@ public:
     void setClientState(ClientState state, const QString &reasonCode = QString());
     void setOwner(const QString &owner, bool available = true);
     void setLocked(bool locked);
+    // Independent host privacy authority (authenticated lock state, user
+    // privacy policy, or a future host-side denial). Composed with the lock
+    // below: privacy stays denied while EITHER the session is locked or the
+    // host denies, so unlock never overrides an active host denial and a host
+    // re-allow while locked never bypasses the lock.
+    void setHostPrivacyDenied(bool denied);
     void notifyModelChanged();
 
     quint64 requestPromote(QindaQt::Services::ClipboardModel::EntryId id,
@@ -47,6 +53,7 @@ public:
 private:
     [[nodiscard]] OperationOutcome mapClipboardError(QindaQt::Services::ClipboardModel::ClipboardError err,
                                                      QindaQt::Services::ClipboardModel::EntryId id) const;
+    void applyPrivacyAuthority();
 
     QindaQt::Services::ClipboardModel::ClipboardHistoryModel *m_model = nullptr;
     ClientState m_state = ClientState::Ready;
@@ -54,10 +61,15 @@ private:
     QString m_owner = QStringLiteral("org.qindaqt.ClipboardService");
     bool m_ownerAvailable = true;
     bool m_locked = false;
-    // True only while this adapter itself flipped model privacy Allowed→Denied
-    // on lock, so unlock restores exactly that authority and never an
-    // independent host denial.
-    bool m_privacyDeniedByLock = false;
+    // AGENT-GUARD: the model exposes one privacy bit, but the adapter composes
+    // three denial causes over it. m_hostPrivacyDenied tracks the independent
+    // host authority delivered through setHostPrivacyDenied(); m_foreignDenialAtLock
+    // records a denial that was already active when the session locked (and
+    // that neither the lock nor the tracked host flag caused) — the adapter
+    // must never grant authority it did not deny itself, and unlock restores
+    // exactly the denial the lock issued.
+    bool m_hostPrivacyDenied = false;
+    bool m_foreignDenialAtLock = false;
     quint64 m_nextRequestId = 1;
 };
 
