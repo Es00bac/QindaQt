@@ -15,8 +15,10 @@ endif()
 
 # AGENT-GUARD: The poison copy is deleted first so a stale stage cannot make a
 # broken policy look caught; the copy is also never the real module directory.
+# The copy keeps the repository-relative shape the boundary script expects: it globs
+# ${SOURCE_ROOT}/src/services/<module>/..., so the stage must mirror that layout.
 file(REMOVE_RECURSE "${stage}")
-file(COPY "${module_root}/" DESTINATION "${stage}")
+file(COPY "${module_root}/" DESTINATION "${stage}/src/services/display_color_assignment")
 
 # The unstaged copy must be clean first: otherwise a later rejection could
 # come from a pre-existing violation instead of the planted probe.
@@ -31,7 +33,7 @@ if(NOT clean_status EQUAL 0)
                         "${clean_output}${clean_error}")
 endif()
 
-file(GLOB staged_sources LIST_DIRECTORIES false "${stage}/src/*.cpp")
+file(GLOB staged_sources LIST_DIRECTORIES false "${stage}/src/services/display_color_assignment/src/*.cpp")
 list(LENGTH staged_sources staged_source_count)
 if(staged_source_count EQUAL 0)
     message(FATAL_ERROR "Poison staging found no source files to plant the probe in")

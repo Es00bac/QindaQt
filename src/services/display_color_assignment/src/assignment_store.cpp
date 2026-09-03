@@ -47,6 +47,11 @@ SettingsAssignmentStore::SettingsAssignmentStore(
         outcome.reasonCode = QStringLiteral("uncertain-write");
         Q_EMIT applyFinished(outcome);
     });
+
+    // Adopt authority that already exists at construction: a client that is
+    // Ready before this store is composed must be reflected without waiting
+    // for the next state/snapshot signal.
+    refreshDocumentView();
 }
 
 SettingsAssignmentStore::~SettingsAssignmentStore() = default;

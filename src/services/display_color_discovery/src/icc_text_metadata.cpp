@@ -112,6 +112,7 @@ IccTextMetadata extractIccDescription(const IccRegionReader &readRegion,
     if (!readRegion || tagTableEntries == 0) {
         return metadata;
     }
+    metadata.tagTableTruncated = tagTableEntries > tagTableEntriesCap;
     const quint32 boundedEntries = qMin(tagTableEntries, tagTableEntriesCap);
 
     // The tag count occupies the four bytes after the header; entries begin
@@ -130,7 +131,11 @@ IccTextMetadata extractIccDescription(const IccRegionReader &readRegion,
         }
         const quint32 tagOffset = qFromBigEndian<quint32>(entry + 4);
         const quint32 tagLength = qFromBigEndian<quint32>(entry + 8);
-        if (tagLength == 0 || tagLength > descriptionTagBytesCap) {
+        if (tagLength > descriptionTagBytesCap) {
+            metadata.descriptionTagOversized = true;
+            continue;
+        }
+        if (tagLength == 0) {
             continue;
         }
         const QByteArray payload = readRegion(tagOffset, tagLength);
@@ -277,6 +282,13 @@ IccProfileDescriptor assembleDescriptor(DiscoveryOrigin origin, const QString &f
 bool destinationNameIsSafe(const QString &fileName)
 {
     if (fileName.isEmpty() || fileName.size() > MaxFilenameLength) {
+        return false;
+    }
+    // AGENT-GUARD: Discovery lists with QDir::Files and never sees dot
+    // names, so a dot-prefixed import would store a profile that can never
+    // re-enter the catalog and would break the import/discovery round trip;
+    // reject it here instead.
+    if (fileName.startsWith(QLatin1Char('.'))) {
         return false;
     }
     if (fileName.contains(u'/') || fileName.contains(u'\\') ||

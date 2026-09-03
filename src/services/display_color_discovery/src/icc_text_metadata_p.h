@@ -22,6 +22,12 @@ struct IccTextMetadata
 {
     QString description;
     bool descriptionValid = false;
+    // True when the file's tag table had more entries than the scan bound;
+    // the description search ran over the truncated prefix only.
+    bool tagTableTruncated = false;
+    // True when a description tag ('desc'/'mluc') exceeded the bounded tag
+    // byte budget and was skipped rather than read.
+    bool descriptionTagOversized = false;
 };
 
 // Extracts the human-readable description from the ICC tag table using only

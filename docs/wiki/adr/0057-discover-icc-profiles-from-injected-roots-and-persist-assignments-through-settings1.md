@@ -46,7 +46,9 @@ SHA-256 content digest as the profile lineage fingerprint, and stores the copy
 in the injected user root through the ADR-0051 durability pattern: an existing,
 non-symlink, effective-user-owned, non-group/other-writable root; an exclusive
 mode-0600 temporary name; fsync; an atomic rename commit point; and a
-directory barrier where supported. Rejection is atomic, and an interrupted
+directory barrier where supported. A dot-prefixed destination name is refused,
+because discovery ignores dot names and such a file would otherwise be stored
+yet never re-enter the catalog. Rejection is atomic, and an interrupted
 write leaves only a dot-prefixed temporary that the next import removes and
 discovery ignores.
 

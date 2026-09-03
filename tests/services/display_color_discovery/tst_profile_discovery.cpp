@@ -58,6 +58,9 @@ private slots:
     void collapsesExactDuplicatesDeterministically();
     void boundsEnumerationTruthfully();
     void parsesDescAndMlucDescriptions();
+    void acceptsExtensionsCaseInsensitively();
+    void ignoresDotPrefixedNames();
+    void degradesBoundedTagsWithDiagnostics();
     void unprovenSemanticsCanNeverBecomeSrgbDefault();
 
 private:
@@ -273,6 +276,81 @@ void ProfileDiscoveryTests::parsesDescAndMlucDescriptions()
         }
     }
     QVERIFY(sawDesc && sawMluc && sawTagless);
+}
+
+void ProfileDiscoveryTests::acceptsExtensionsCaseInsensitively()
+{
+    QVERIFY(m_tree.isValid());
+    const QString root = m_tree.filePath(QStringLiteral("case"));
+    QVERIFY(QDir().mkpath(root));
+    QVERIFY(writeFileBytes(root + QStringLiteral("/UPPER.ICC"),
+                           buildIccFileBytes(512, QStringLiteral("Upper"))));
+    QVERIFY(writeFileBytes(root + QStringLiteral("/Mixed.Icm"),
+                           buildIccFileBytes(512, QStringLiteral("Mixed"))));
+
+    const DiscoveryResult result = ProfileDiscovery({systemRoot(root)}).discoverCatalog();
+    QCOMPARE(result.profiles.size(), 2);
+    QVERIFY(result.complete);
+}
+
+void ProfileDiscoveryTests::ignoresDotPrefixedNames()
+{
+    QVERIFY(m_tree.isValid());
+    const QString root = m_tree.filePath(QStringLiteral("dot"));
+    QVERIFY(QDir().mkpath(root));
+    QVERIFY(writeFileBytes(root + QStringLiteral("/.hidden.icc"),
+                           buildIccFileBytes(512, QStringLiteral("Hidden"))));
+    QVERIFY(writeFileBytes(root + QStringLiteral("/visible.icc"),
+                           buildIccFileBytes(512, QStringLiteral("Visible"))));
+
+    const DiscoveryResult result = ProfileDiscovery({systemRoot(root)}).discoverCatalog();
+    QCOMPARE(result.profiles.size(), 1);
+    QCOMPARE(result.profiles.first().descriptor.profileId, QStringLiteral("visible"));
+    QVERIFY(result.complete);
+    // Dot-prefixed names are ignored silently: no profile and no diagnostic,
+    // which is also what makes a stale import temporary invisible.
+    QVERIFY(codesFor(result, root + QStringLiteral("/.hidden.icc")).isEmpty());
+}
+
+void ProfileDiscoveryTests::degradesBoundedTagsWithDiagnostics()
+{
+    QVERIFY(m_tree.isValid());
+    const QString root = m_tree.filePath(QStringLiteral("tags"));
+    QVERIFY(QDir().mkpath(root));
+    // A declared tag-table count beyond the scan bound: the profile is still
+    // cataloged over the truncated prefix, with a diagnostic (ADR-0057).
+    QByteArray manyTags = buildIccFileBytes(1024, QStringLiteral("Many tags profile"));
+    {
+        uchar *base = reinterpret_cast<uchar *>(manyTags.data());
+        const quint32 tagCountBe = qToBigEndian(quint32{5000});
+        std::memcpy(base + IccHeaderSizeBytes, &tagCountBe, 4);
+    }
+    QVERIFY(writeFileBytes(root + QStringLiteral("/many-tags.icc"), manyTags));
+    // A description tag larger than the byte bound: skipped, stem fallback.
+    QVERIFY(writeFileBytes(root + QStringLiteral("/oversized-desc.icc"),
+                           buildIccFileBytes(
+                               1024, QStringLiteral("A description far beyond the byte budget"))));
+
+    DiscoveryLimits limits;
+    limits.maxTagTableEntries = 4;
+    limits.maxDescriptionTagBytes = 32;
+    const DiscoveryResult result = ProfileDiscovery({systemRoot(root)}, limits).discoverCatalog();
+    QCOMPARE(result.profiles.size(), 2);
+    QVERIFY(result.complete);
+    bool sawTruncatedTable = false;
+    bool sawOversizedTag = false;
+    for (const DiscoveredProfile &profile : result.profiles) {
+        const QStringList codes = codesFor(result, profile.sourcePath);
+        if (profile.descriptor.profileId == QStringLiteral("many-tags")) {
+            QCOMPARE(profile.descriptor.displayName, QStringLiteral("Many tags profile"));
+            sawTruncatedTable = codes.contains(QStringLiteral("tag-table-truncated"));
+        }
+        if (profile.descriptor.profileId == QStringLiteral("oversized-desc")) {
+            QCOMPARE(profile.descriptor.displayName, QStringLiteral("oversized-desc"));
+            sawOversizedTag = codes.contains(QStringLiteral("description-tag-oversized"));
+        }
+    }
+    QVERIFY(sawTruncatedTable && sawOversizedTag);
 }
 
 void ProfileDiscoveryTests::unprovenSemanticsCanNeverBecomeSrgbDefault()

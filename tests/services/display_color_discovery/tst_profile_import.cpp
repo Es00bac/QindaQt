@@ -131,6 +131,9 @@ void ProfileImportTests::rejectsHostileSourcesWithoutMutatingUserRoot()
                         sources + QStringLiteral("/linked.icc")));
     // A space breaks the destination name grammar.
     QVERIFY(writeFileBytes(sources + QStringLiteral("/bad name.icc"), valid));
+    // A dot-prefixed name would be stored but could never re-enter the
+    // catalog (discovery ignores dot names), so import refuses it too.
+    QVERIFY(writeFileBytes(sources + QStringLiteral("/.hidden.icc"), valid));
     // Missing file.
     const QString missing = sources + QStringLiteral("/absent.icc");
 
@@ -153,6 +156,8 @@ void ProfileImportTests::rejectsHostileSourcesWithoutMutatingUserRoot()
         discovery.importUserProfile(sources + QStringLiteral("/linked.icc"));
     QCOMPARE(linked.status, ImportStatus::SourceIsSymlink);
     QCOMPARE(discovery.importUserProfile(sources + QStringLiteral("/bad name.icc")).status,
+             ImportStatus::SourceNameUnsafe);
+    QCOMPARE(discovery.importUserProfile(sources + QStringLiteral("/.hidden.icc")).status,
              ImportStatus::SourceNameUnsafe);
     QCOMPARE(discovery.importUserProfile(missing).status, ImportStatus::SourceUnreadable);
 
