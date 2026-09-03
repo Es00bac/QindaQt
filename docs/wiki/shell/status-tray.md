@@ -2,10 +2,12 @@
 
 The status tray presents StatusNotifier items contributed by third-party
 session services. Its `src/shell/status_notifier` module is a pure, Qt
-Core-only source foundation: validated values, an exact-owner keyed registry,
-validated request intents, and a deterministic presentation projection. It
-contains no D-Bus code, owns no bus name, and never performs an item action;
-the architectural decision is in
+Core-only source foundation — validated values, an exact-owner keyed registry,
+validated request intents, and a deterministic presentation projection — plus
+three production D-Bus transports that feed it: a
+`org.kde.StatusNotifierWatcher` service, an asynchronous item reader with its
+registry-feeding monitor, and an icon-theme/pixmap renderer. The architectural
+decision is in
 [ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md). The tray
 applet itself still resolves as `implementation-unavailable` in the applet
 runtime until its presentation slice lands.
@@ -95,8 +97,9 @@ the target owner key (including its current generation), the item identity
 snapshot at acceptance time, and the request kind. The intent has an explicit
 lifetime: it is valid only while that generation remains current and the key's
 identity is unchanged, so an executor must call `revalidateIntent` immediately
-before performing anything. The registry never executes an intent; mapping one
-onto the owner's own D-Bus object belongs to a later presenter milestone.
+before performing anything. The registry never executes an intent; the item-client monitor maps a
+validated, revalidated intent onto the owner's own D-Bus object, and anything
+that fails validation or revalidation is refused before any call is sent.
 
 ## Transport seam
 
@@ -108,8 +111,96 @@ Both `StatusNotifierRegistry` and `StatusNotifierEventSink` delete copy and move
 authority to preserve singular ownership. The sink contract is explicit: the
 sink is not owned and must outlive the attachment, attachment requires a
 non-null sink and refuses re-attachment, detach is idempotent, and all sink
-calls stay on the attaching thread. This module contains no D-Bus code; the
-only allowed implementations today are test fakes.
+calls stay on the attaching thread.
+
+The production transports implement that seam on an injected session-bus
+connection (private buses in tests; the host session bus in the shell). They
+own no global state and never touch hardware, the network, or the filesystem
+for writes.
+
+### Watcher service (`src/shell/status_notifier/watcher`)
+
+`StatusNotifierWatcherService` serves `org.kde.StatusNotifierWatcher` at
+`/StatusNotifierWatcher` on the injected connection:
+`RegisterStatusNotifierItem`, `RegisterStatusNotifierHost`, the
+`RegisteredStatusNotifierItems` / `IsStatusNotifierHostRegistered` /
+`ProtocolVersion` properties, and the four protocol signals
+(`StatusNotifierItemRegistered`, `StatusNotifierItemUnregistered`,
+`StatusNotifierHostRegistered`, `StatusNotifierHostUnregistered`). Ownership
+rules follow ADR-0032 exactly:
+
+- Every item is keyed to the caller's bus **unique name**. A bare object-path
+  argument registers against the caller; a service-name argument is resolved
+  through the bus daemon and lands on the resolved owner's
+  `/StatusNotifierItem` path. A well-known name can never hold an item.
+- Registered items and hosts are retired only on a bus-daemon-authenticated
+  `NameOwnerChanged` unique-name loss tuple. A peer-emitted signal with the
+  same path, interface, member, and payload cannot retire a live owner. A
+  genuine disconnect emits the matching protocol signal first, including
+  `StatusNotifierHostUnregistered` for host retirement.
+- `start()` never claims a name another connection owns. A foreign owner is
+  not an error: the service fails closed into `NameOwnedElsewhere`, stays
+  introspectable, refuses registrations, and reports a truthful degraded
+  reason so the shell can present Degraded state instead of a silently broken
+  watcher. `start()`/`stop()` are idempotent.
+
+### Item client and monitor (`src/shell/status_notifier/item_client`)
+
+`StatusNotifierItemClient` is an asynchronous reader for one
+`org.kde.StatusNotifierItem` object. It fetches the full property set
+(Category, Id, Title, Status, WindowId, IconName, IconPixmap, OverlayIconName,
+AttentionIconName, AttentionPixmap, AttentionMovieName, ToolTip, ItemIsMenu,
+Menu), decodes hostile input defensively, and validates through the foundation
+admission gate. Pixmap structs are decoded by manual wire iteration rather
+than registered-type demarshalling, so a hostile payload can never crash the
+decoder inside libdbus. Unknown properties are ignored.
+Presentation-bearing recognized properties with unexpected types fail the
+descriptor closed. The recorded-only optional facts `WindowId`,
+`OverlayIconName`, `ItemIsMenu`, and
+`Menu` are safe-dropped on a wrong type because they cannot reach the registry
+or renderer. Missing optional properties decode to defaults. Every emitted
+result is tagged with the owner
+generation captured at construction and fenced through an injected predicate,
+so a reply racing owner loss or a watcher rebaseline is dropped instead of
+resurrecting a removed item. The typed fetch status distinguishes a bounded
+live-owner timeout from an immediate D-Bus transport error. New* signals
+coalesce into at most one in-flight refetch. The intent calls (`activate`,
+`secondaryActivate`, `contextMenu`, `scroll`) are fire-and-forget; coordinate
+methods use the protocol's signed `(int, int)` signature. Callers must evaluate
+and revalidate a `RequestIntent` through the registry before dispatching, and
+a non-horizontal/non-vertical scroll orientation is refused without sending.
+Wire-side details the value model has no slot for — `windowId`,
+`overlayIconName`, `itemIsMenu`, and the DBusMenu exporter path — are recorded
+in `ItemWireDetails` for later composition: the `Menu` path is **recorded but
+not rendered** here; the Global Menu G1 lane delivers the shared dbusmenu
+adapter and a later lane composes it into the tray.
+
+`StatusNotifierItemMonitor` drives the registry through the event sink. It
+watches the watcher name, opens a fresh epoch and re-populates whenever a
+(replacement) watcher acquires it, issues one generation per owner per epoch
+and shares it across that owner's object paths (including the valid root path
+`/`), retires owners only on a bus-daemon-authenticated `NameOwnerChanged`
+unique-name loss tuple, and subscribes to the
+watcher's item registered/unregistered signals as a second retire path (the
+registry refuses the duplicate as stale, so ordering is not a contract).
+Population completion is fenced by the current epoch: a late reply from a dead
+epoch can never mark the replacement population complete. Fetch timeouts
+degrade to an empty admission while still counting the key as observed, so
+completion cannot wedge on a single silent item.
+
+### Icon renderer (`src/shell/status_notifier/icon`)
+
+`StatusNotifierIconLocator` performs deterministic icon-theme lookup over
+caller-injected theme roots (index parsing, exact-size probing, fixed
+extension order) and `StatusNotifierIconRenderer` turns the result — or the
+wire IconPixmap ARGB32 payload — into a bounded `QImage`. Pixmap decoding is
+dimension- and byte-budget checked before any image is allocated. Every index
+and icon candidate is canonicalized and must remain beneath its injected root,
+so declared `../` paths and symlink escapes cannot cause outside reads. Theme
+metadata is dimension-checked before decode, decoded dimensions are checked
+again, and fallback requests are clamped to the shared 512-pixel ceiling. A
+missing or undecodable icon falls back to that deterministic placeholder. The
+module performs no network access and no filesystem writes.
 
 ## Presentation and accessibility
 
@@ -135,19 +226,53 @@ pointer-only until a designed keyboard route exists.
 
 ## Verification
 
-The module's hostile coverage is selected with:
+The module's full hostile coverage is selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.status-notifier-(values|registry|presentation)$' \
+  -R '^qindaqt\.status-notifier-' \
   --output-on-failure
 ```
+
+Seven CTest rows run in Debug and Release. The `values`, `registry`, and
+`presentation` rows cover the foundation (see below). The transport rows run
+against a **private session bus** (`dbus-daemon --session` spawned by the test
+fixture, never the host bus):
+
+- `qindaqt.status-notifier-watcher`: fake items and hosts registering by bare
+  object path and by service name, unique-name keying, owner-loss retirement
+  of items and hosts (including the host-unregistered wire signal), protocol
+  properties and signals, idempotent degraded startup, and refusal to claim a
+  name another watcher owns (`NameOwnedElsewhere` with a truthful degraded
+  reason).
+- `qindaqt.status-notifier-item-client`: descriptor fetches over the private
+  bus, New*-signal refetch coalescing, hostile payloads (oversized pixmaps,
+  malformed wire shapes, wrong-typed string facts, bad tooltips, and
+  unknown/missing properties), bounded strings, a live owner that withholds its
+  reply through the configured typed timeout, the distinct immediate-error
+  outcome, late-reply generation fencing, and signed activation intents
+  recorded by a strict fake item.
+- `qindaqt.status-notifier-monitor`: end-to-end registry population from a
+  live watcher, simultaneous paths sharing one owner generation, last-path
+  retirement followed by a new path retaining that still-live owner's
+  generation, root-path population, item retirement and bounded owner-slot
+  release on owner disconnect,
+  rejection of a peer-forged owner-loss signal while the real owner remains
+  connected, watcher-restart rebaseline into a fresh epoch (the fake item
+  re-registers with the replacement watcher, as real items do), truthful Degraded
+  presentation with last-known-good retention, and validated intent dispatch
+  (stale generations and invalid orientations refused).
+- `qindaqt.status-notifier-icon`: theme lookup over injected theme roots,
+  canonical containment against hostile index directories, ARGB32 and theme
+  image decode bounds, and a bounded deterministic fallback for missing or
+  undecodable icons.
 
 The values tests cover canonical unique owner-name/path/generation syntax, root
 object path, in-place pixmap dimension, byte-count and aggregate budget rules,
 icon/tooltip bounds, control-character rejection including C1, blank-text
 rejection, flat-menu depth/parent-kind/budget rules, and the composed
-descriptor gate catching hostile menus. The registry tests cover type traits
+descriptor gate catching hostile menus, plus source-policy precision for the
+production adapter constants. The registry tests cover type traits
 (non-copyable, non-movable), exact-owner keying through the narrow sink
 interface, replacement and removal, well-known-name spoofing, duplicate
 identity across live owners, stale replies after owner loss, generation-fenced
@@ -167,11 +292,10 @@ presentation tests cover every state transition including watcher loss and
 reconnect rebaseline, stable ordering, accessibility identities with injected
 localized texts, and a scripted lifecycle driven through the injected fake
 transport. The fake cases separately prove null-first refusal, different-sink
-reattach refusal, state-clearing detach, and destructor-triggered detach. The
-only allowed transport implementations are test fakes until the exact-owner
-D-Bus adapter milestone.
+reattach refusal, state-clearing detach, and destructor-triggered detach.
 
-This evidence is source and unit level with a fake transport. It does not
-claim live session bus behavior, watcher activation, a rendered panel tray, or
-assistive-technology bridge behavior; those belong to later milestones and
+This evidence is source, unit, and private-bus level with fake items and hosts.
+It does not claim host session bus behavior, dbusmenu rendering (deferred to
+the Global Menu G1 lane and a later composition lane), a rendered panel tray,
+or assistive-technology bridge behavior; those belong to later milestones and
 their own gates.

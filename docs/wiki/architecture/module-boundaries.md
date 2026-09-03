@@ -25,6 +25,9 @@ tests, and the wiki page describing its contract.
 | `src/shell_visibility_client` | Owner-bound asynchronous D-Bus snapshot transport, coalescing, timeout/backoff, and safe-fallback publication | Public `shell_visibility` values plus Qt Core/DBus; never panel geometry, QML, or KWin objects |
 | `src/shell_window_actions_client` | Exact-owner authenticated compositor transport: one-in-flight no-replay window actions plus revisioned active-window identity refresh on the same owner binding | Public compositor action/identity values plus Qt Core/DBus; never KWin objects, task-list/launcher/global-menu policy, QML, or automatic mutation retries |
 | `src/shell/status_notifier` | Pure StatusNotifier item values, bounded payload validation, exact-owner keyed registry with generation fencing, validated request intents, and deterministic accessible presentation | Qt Core value types only; never D-Bus connections or name ownership, action execution, QML, or platform objects |
+| `src/shell/status_notifier/watcher` | `org.kde.StatusNotifierWatcher` service on an injected session-bus connection: registration keyed to caller unique names, owner-loss retirement, and truthful NameOwnedElsewhere degradation | Foundation `status_notifier` values plus Qt Core/DBus; never the registry, item property decoding, QML, or the host bus by construction |
+| `src/shell/status_notifier/item_client` | Asynchronous `org.kde.StatusNotifierItem` property reader with hostile-input decoding, generation-fenced late-reply dropping, and the monitor that feeds the registry through `StatusNotifierEventSink` | Foundation `status_notifier` values plus Qt Core/DBus; never registry internals beyond the sink, dbusmenu rendering, QML, or intent policy (the registry evaluates and revalidates) |
+| `src/shell/status_notifier/icon` | Deterministic icon-theme lookup over injected theme roots and bounded ARGB32 pixmap decoding into `QImage` with deterministic fallback | Foundation `status_notifier` values plus Qt Core/Gui; never the network, filesystem writes, D-Bus, or QML |
 | `src/shell_surface` | Backend-neutral panel and notification logical-surface planning, persistent panel live-set reconciliation, Qt output inventory, and private LayerShellQt adapters | Public `profiles` and `shell_layout` values, Qt Gui/Quick, and LayerShellQt only in adapters; never catalogs, applets, settings, or QML policy |
 | `src/shell_orchestration` | Exact output matching, pure cross-module inventory assembly, tokenized reveal/hold interaction state, and runtime panel-plan coordination | Public profile/layout/visibility/surface values and Qt Core; never D-Bus, KWin, LayerShellQt, or QML |
 | `src/themes` | Theme schema, validation, token resolution, and built-in theme data | Foundation utilities; never shell objects |
@@ -175,7 +178,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md).
 - StatusNotifier items are owned by their bus unique name, never a well-known
   name, and reach the tray only through bounded validation and an injected
-  transport seam; the tray records request intents instead of executing them.
+  transport seam; the registry records request intents instead of executing
+  them, and the item-client monitor dispatches only registry-validated,
+  revalidated intents over the injected bus connection. The watcher service,
+  item client, and icon renderer live in dedicated submodules that depend on
+  the pure foundation, never the reverse.
   See [Status notifier tray](../shell/status-tray.md) and
   [ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md).
 - Bluetooth consumers depend on the typed Bluetooth1 client. BlueZ owns

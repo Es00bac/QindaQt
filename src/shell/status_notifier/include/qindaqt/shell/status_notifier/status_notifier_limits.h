@@ -34,10 +34,17 @@ inline constexpr qsizetype kMaxIconPixmapBytes = qsizetype(1024) * 1024;
 inline constexpr qsizetype kMaxToolTipPixmaps = 2;
 inline constexpr qsizetype kMaxMenuNodes = 128;
 inline constexpr int kMaxMenuDepth = 4;
+// AGENT-CONTRACT: Icon-rendering budgets shared by the theme locator and any
+// future producer. Theme index files and decoded icon files are hostile input
+// too; reads beyond these budgets fail closed instead of exhausting memory.
+inline constexpr qsizetype kMaxIconThemeIndexBytes = qsizetype(64) * 1024;
+inline constexpr qsizetype kMaxIconThemeDirectories = 64;
+inline constexpr qsizetype kMaxIconFileBytes = qsizetype(8) * 1024 * 1024;
 
-// StatusNotifier protocol names are recorded as constants for documentation
-// and future adapter use only. This module never opens a connection, owns a
-// name, or contacts a service; those are later adapter milestones.
+// StatusNotifier protocol names are shared by the pure foundation and the
+// production watcher/item-client adapters. Defining the constants here does
+// not reverse the boundary: this module never opens a connection, owns a
+// name, or contacts a service.
 inline constexpr char kWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
 inline constexpr char kWatcherObjectPath[] = "/StatusNotifierWatcher";
 inline constexpr char kWatcherInterfaceName[] = "org.kde.StatusNotifierWatcher";

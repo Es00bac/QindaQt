@@ -887,15 +887,18 @@ desktop. Those remain contained-session gates. See
 
 ## Current status-notifier foundation proof
 
-The tray's source/unit boundary is selected with:
+## Current status-notifier proof
+
+The tray foundation and its production D-Bus transports are selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.status-notifier-(values|registry|presentation)$' \
+  -R '^qindaqt\.status-notifier-' \
   --output-on-failure
 ```
 
-The three tests discover exactly three CTest rows and cover validated
+Seven CTest rows run in Debug and Release. The `values`, `registry`, and
+`presentation` rows are strictly source and unit level: they cover validated
 item/icon/menu/status values with hostile bounds (including canonical unique
 bus names, root object path, in-place aggregate pixmap checks), the exact-owner
 keyed registry with generation fencing (spoofed owner, stale reply, duplicate
@@ -906,13 +909,28 @@ and cross-owner identity handover, conflicting-target rollback in both event
 orders, 64-for-64 post-prune replacement in both event orders, generation and
 epoch exhaustion, interrupted-first-population identity/capacity replacement,
 invalid-completion next-epoch recovery, intent revalidation), watcher loss and
-reconnect rebaseline presentation, typed accepted request intents, and a scripted lifecycle driven
-through the injected fake transport. Attachment cases distinguish null-first
-refusal, different-sink reattach refusal, explicit detach state clearing, and
-destructor-triggered detach. The transport is a fake by construction: this
-boundary is strictly source and unit level and must not open a session bus, own
-a name, contact a watcher or item, or render a surface. Live watcher binding,
-item property decoding, DBusMenu revisions, a rendered panel tray, and
+reconnect rebaseline presentation, typed accepted request intents, and a
+scripted lifecycle driven through the injected fake transport. Attachment
+cases distinguish null-first refusal, different-sink reattach refusal, explicit
+detach state clearing, and destructor-triggered detach.
+
+The four transport rows (`watcher`, `item-client`, `monitor`, `icon`) run
+against a private session bus: the fixture spawns `dbus-daemon --session` and
+every connection targets that address, so no test touches the host bus or
+desktop. The watcher row covers registration by bare path and by service name,
+unique-name keying, bus-daemon-authenticated owner-loss retirement, protocol
+properties/signals, and `NameOwnedElsewhere` truthful degradation. The
+item-client row covers live
+descriptor fetches, New*-signal refetch coalescing, hostile wire payloads
+(oversized pixmaps, malformed structs, bad tooltips, unknown or missing
+properties), bounded strings, late-reply generation fencing, and recorded
+activation intents. The monitor row covers registry population from a live
+watcher, owner-disconnect retirement with bounded owner-slot release,
+watcher-restart rebaseline (the fake item re-registers with the replacement
+watcher, matching real item behavior), Degraded last-known-good presentation,
+and validated intent dispatch with stale-generation and invalid-orientation
+refusals. The icon row covers injected-theme-root lookup, ARGB32 decode bounds,
+and deterministic fallback. DBusMenu rendering, a rendered panel tray, and
 assistive-technology behavior remain separate later milestones with their own
 gates.
 
@@ -957,6 +975,16 @@ network. They do not qualify production-shell instantiation, QML presentation,
 or a live desktop task list; those remain later shell-composition and
 contained-session gates. See [Task list source model](../shell/task-list.md)
 and [ADR-0044](../adr/0044-inject-task-list-facts-into-the-shell.md).
+
+The S1 rejection-repair controls additionally require rejection of a
+peer-forged `NameOwnerChanged` loss while its target owner remains connected;
+the host-unregistered wire signal and idempotent degraded startup; signed
+`(int, int)` item actions;
+strict known-property wire types; distinct live-owner timeout and immediate
+transport-error outcomes; one generation shared by simultaneous and sequential
+paths from the same live owner within one watcher epoch; root-path population;
+canonical theme-root confinement; and the
+512-pixel bound for theme-decoded and fallback images.
 
 ## Current Settings1 and persistent quieting proof
 

@@ -274,6 +274,7 @@ StatusNotifierRegistry::RequestEvaluation StatusNotifierRegistry::evaluateReques
     case RequestKind::Activate:
     case RequestKind::ContextMenu:
     case RequestKind::SecondaryActivate:
+    case RequestKind::Scroll:
         break;
     default:
         evaluation.outcome = reject(RegistryStatus::InvalidRequest,
@@ -311,6 +312,7 @@ RegistryOutcome StatusNotifierRegistry::revalidateIntent(const RequestIntent &in
     case RequestKind::Activate:
     case RequestKind::ContextMenu:
     case RequestKind::SecondaryActivate:
+    case RequestKind::Scroll:
         break;
     default:
         return reject(RegistryStatus::InvalidRequest, QStringLiteral("unknown-request-kind"));

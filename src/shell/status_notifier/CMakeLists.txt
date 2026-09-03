@@ -34,3 +34,7 @@ install(
     FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
+
+add_subdirectory(icon)
+add_subdirectory(item_client)
+add_subdirectory(watcher)
