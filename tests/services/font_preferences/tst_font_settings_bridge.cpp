@@ -201,11 +201,30 @@ void FontSettingsBridgeTests::wrongTypedSnapshotValuesAreRejectedWholesale()
     wrongTyped.insert(QStringLiteral("fonts.pointSize"), QStringLiteral("12.5"));
     driveBaseline(transport, client, wrongTyped);
 
-    QTRY_VERIFY(bridge.hasBaseline());
+    QTRY_VERIFY(!bridge.hasBaseline());
     QTRY_VERIFY(!bridge.lastSyncError().isEmpty());
     QCOMPARE(coordinator.preferences(), FontPreferences::systemDefaults());
     QCOMPARE(coordinator.revision(), 1);
     QCOMPARE(coordinator.lastKnownGoodPreferences(), FontPreferences::systemDefaults());
+
+    FontPreferences draft;
+    draft.setFamily(QStringLiteral("Liberation Mono"));
+    QString error;
+    QVERIFY(!bridge.applyPreferences(draft, &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(transport.commits.isEmpty());
+
+    Q_EMIT transport.settingsChanged(QStringLiteral(":1.60"), QStringLiteral("epoch-1"),
+                                     2, FontSettingsBridge::scopedKeys());
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    const auto request = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(
+        request.token, request.owner,
+        snapshotWire(QStringLiteral("epoch-1"), 2,
+                     fontsValues(QStringLiteral("Liberation Mono"))));
+    QTRY_VERIFY(bridge.hasBaseline());
+    QVERIFY(bridge.lastSyncError().isEmpty());
+    QCOMPARE(coordinator.preferences().family(), QStringLiteral("Liberation Mono"));
 }
 
 void FontSettingsBridgeTests::writesAreRefusedWithoutBaseline()
@@ -446,7 +465,9 @@ void FontSettingsBridgeTests::malformedPostCommitSnapshotStopsTheSequence()
     QCOMPARE(transport.commits.size(), 0);
     QCOMPARE(bridge.lastApplyResults().size(), 6);
     QCOMPARE(bridge.lastApplyResults().first().key, firstKey);
-    QCOMPARE(bridge.lastApplyResults().first().outcome, FontSettingsBridge::KeyOutcome::Applied);
+    QCOMPARE(bridge.lastApplyResults().first().outcome,
+             FontSettingsBridge::KeyOutcome::Uncertain);
+    QVERIFY(!bridge.lastApplyResults().first().message.isEmpty());
     for (int i = 1; i < 6; ++i) {
         QCOMPARE(bridge.lastApplyResults().at(i).outcome,
                  FontSettingsBridge::KeyOutcome::NotAttempted);

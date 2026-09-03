@@ -879,8 +879,9 @@ fake transport: confirmed-snapshot synchronization, hostile-value and
 wrong-typed-value LKG retention, write refusal without a baseline,
 invalid-draft refusal, the six-key fixed-order commit round trip with fresh
 baselines between keys, confirmed-conflict stop without replay,
-uncertain-write fencing, malformed post-commit snapshot fencing (the sequence
-ends; remaining keys stay `NotAttempted`), and fail-closed transport loss.
+uncertain-write fencing, malformed post-commit snapshot fencing (the
+just-written key becomes `Uncertain`, the sequence ends, and remaining keys
+stay `NotAttempted`), and fail-closed transport loss.
 `qindaqt.font-settings-bootstrap` covers the pure bootstrap half: guarded
 application of valid/invalid preferences to the default font and the
 case-insensitive live-catalog family gate.
@@ -891,6 +892,11 @@ service and by the real `qindaqt-settings-service` (seeded through the real
 `CommitUserTransaction` wire), plus fail-closed rows for an unset bus address
 (no autolaunch), an absent bus, an absent service, a wrong-typed snapshot, a
 malformed envelope, and a confirmed family absent from the staged catalog.
+`qindaqt.font-application-bootstrap-wiring` is the source-level P1-6 regression
+gate: all four first-party composition roots must contain exactly one guarded
+helper call before `QGuiApplication`/`QApplication` construction; policy stays
+inside the helper. Their installed-metadata rows additionally prove the calls
+remain inert when the preference source is absent.
 `qindaqt.font-preferences-boundary` and `qindaqt.font-discovery-boundary` are
 the poison gates: `font_preferences` is fully transport-free, Qt D-Bus/Gui is
 confined to the session bootstrap composition source, and fontconfig to the

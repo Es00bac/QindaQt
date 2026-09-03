@@ -11,6 +11,7 @@ class tst_FontCatalog : public QObject {
 private Q_SLOTS:
     void testEmptyFactsRejection();
     void testInvalidFactRejection();
+    void testControlCharactersRejectEveryFactString();
     void testConflictingMonospaceRejection();
     void testNormalizationAndDeduplication();
     void testDeterministicSorting();
@@ -43,6 +44,36 @@ void tst_FontCatalog::testInvalidFactRejection()
     emptyFact.family = QStringLiteral("   ");
     catalog = FontCatalog::create({emptyFact}, &error);
     QVERIFY(catalog.isEmpty());
+}
+
+void tst_FontCatalog::testControlCharactersRejectEveryFactString()
+{
+    // AGENT-NOTE: Review finding P1-3 of rejected candidate abc76f3 validated
+    // only family. Every string published by discovery is a hostile-input
+    // boundary, including style and PostScript identity.
+    FontFact valid;
+    valid.family = QStringLiteral("Noto Sans Lycian");
+    valid.style = QStringLiteral("Regular");
+    valid.postscriptName = QStringLiteral("NotoSansLycian-Regular");
+    QVERIFY(valid.isValid());
+
+    QList<FontFact> hostile;
+    FontFact familyControl = valid;
+    familyControl.family = QStringLiteral("Noto\nSans");
+    hostile.append(familyControl);
+    FontFact styleControl = valid;
+    styleControl.style = QStringLiteral("Bad\rStyle");
+    hostile.append(styleControl);
+    FontFact identityControl = valid;
+    identityControl.postscriptName = QStringLiteral("Noto\tSans");
+    hostile.append(identityControl);
+
+    for (const FontFact &fact : hostile) {
+        QVERIFY(!fact.isValid());
+        QString error;
+        QVERIFY(FontCatalog::create({fact}, &error).isEmpty());
+        QVERIFY(!error.isEmpty());
+    }
 }
 
 void tst_FontCatalog::testConflictingMonospaceRejection()
