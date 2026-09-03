@@ -20,7 +20,15 @@ namespace QindaQt::Controls::TestSupport {
     const QString &fileName,
     const QindaQt::DesignTokens::AccessibilityInputs &inputs = {},
     QString *error = nullptr);
-void pinDeterministicFonts();
+// Registers the byte-pinned visual fonts from fontDir (empty: the
+// QINDAQT_CONTROLS_FONT_DIR build definition) into the process font database
+// and substitutes the theme schema families onto them. Process-wide state:
+// call once per process, on the GUI thread, before rendering any fixture
+// text. Aborts the process (qFatal) when a fixture file is missing,
+// unreadable, or does not declare exactly the expected family names, so a
+// broken fixture can never degrade into silent host-font rendering. The
+// fontDir overload exists for the fail-closed negative-control tests.
+void pinDeterministicFonts(const QString &fontDir = {});
 [[nodiscard]] QColor objectColor(QObject *object);
 [[nodiscard]] QObject *controlBackground(QObject *control);
 [[nodiscard]] QAccessibleInterface *accessible(QObject *object);

@@ -7,12 +7,14 @@
 #include <QAccessible>
 #include <QAccessibleInterface>
 #include <QEventLoop>
+#include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
 #include <QLocale>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
+#include <QStringList>
 #include <QTimer>
 
 #include <memory>
@@ -104,14 +106,64 @@ bool publishTheme(QQmlEngine &engine,
     return facade->publish(loaded.theme, inputs, error);
 }
 
-void pinDeterministicFonts()
+namespace {
+
+struct PinnedFontFile {
+    const char *fileName;
+    const char *family;
+};
+
+// AGENT-CONTRACT: The 25 Controls visual rows compare reviewed baselines that
+// must render only from these repository-owned font bytes. The vendored files
+// carry the repository-owned family names "QindaQt Sans"/"QindaQt Sans Mono"
+// (name records rewritten by tests/controls/fonts/rename_family_names.py; the
+// glyph data is byte-identical to the upstream Noto builds recorded in the
+// fonts README). Because no host font can declare those families, registering
+// through QFontDatabase::addApplicationFont makes them the only providers and
+// the fixture cannot collide with or be shadowed by host-installed Noto,
+// however Qt or fontconfig evolve their match order. Every registration must
+// expose exactly the listed family; a missing, unreadable, or renamed fixture
+// aborts the test binary (qFatal) with the path, because a host font package
+// update would otherwise silently re-render every reviewed glyph (ADR-0021
+// "Amended"). The row environment deliberately keeps the documented host
+// fontconfig configuration: it supplies the rasterization parameters and the
+// DejaVu fallback glyph the reviewed baselines contain, and an empty
+// fontconfig configuration changes text advances (re-wrapping) and removes
+// that fallback instead of pinning bytes.
+constexpr PinnedFontFile kPinnedFontFiles[] = {
+    {"NotoSans-Regular.ttf", "QindaQt Sans"},
+    {"NotoSans-SemiBold.ttf", "QindaQt Sans"},
+    {"NotoSans-Bold.ttf", "QindaQt Sans"},
+    {"NotoSansMono-Regular.ttf", "QindaQt Sans Mono"},
+};
+
+} // namespace
+
+void pinDeterministicFonts(const QString &fontDir)
 {
-    // AGENT-CONTRACT: Visual fixtures resolve the schema's Inter/JetBrains
-    // names to two required host-image Noto families. This is deterministic
-    // environment substitution, not byte-pinned font artifact evidence.
-    QFont::insertSubstitution(QStringLiteral("Inter"), QStringLiteral("Noto Sans"));
+    const QString dir = fontDir.isEmpty() ? QStringLiteral(QINDAQT_CONTROLS_FONT_DIR)
+                                          : fontDir;
+    for (const PinnedFontFile &pinned : kPinnedFontFiles) {
+        const QString path = dir + QLatin1Char('/') + QString::fromLatin1(pinned.fileName);
+        if (!QFileInfo::exists(path)) {
+            qFatal("byte-pinned visual font fixture is missing: %s", qPrintable(path));
+        }
+        const int fontId = QFontDatabase::addApplicationFont(path);
+        if (fontId < 0) {
+            qFatal("could not register byte-pinned visual font: %s", qPrintable(path));
+        }
+        const QStringList families = QFontDatabase::applicationFontFamilies(fontId);
+        const QString family = QString::fromLatin1(pinned.family);
+        if (families.size() != 1 || families.constFirst() != family) {
+            qFatal("byte-pinned visual font %s declares families [%s], expected exactly [%s]",
+                   qPrintable(path),
+                   qPrintable(families.join(QLatin1String(", "))),
+                   qPrintable(family));
+        }
+    }
+    QFont::insertSubstitution(QStringLiteral("Inter"), QStringLiteral("QindaQt Sans"));
     QFont::insertSubstitution(QStringLiteral("JetBrains Mono"),
-                              QStringLiteral("Noto Sans Mono"));
+                              QStringLiteral("QindaQt Sans Mono"));
     QLocale::setDefault(QLocale::c());
 }
 

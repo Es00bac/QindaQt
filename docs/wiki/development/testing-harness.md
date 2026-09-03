@@ -257,11 +257,45 @@ scale-incompatible rows and requires exactly the requested tagged pass; this
 prevents Qt Quick software-render state from crossing window lifetimes as
 specified by [ADR-0021](../adr/0021-isolate-controls-visual-rows.md). Each row
 waits through a named control's published QST transition duration, then checks
-the applied DPR and pixel dimensions before comparing reviewed PNG fixtures
-under two required named host-font substitutions, C locale, offscreen platform,
-and software rendering. This is environment determinism rather than a pin of
-repository-owned font bytes. The
-behavior gate separately proves reduced-motion duration projection. The gallery
+the applied DPR and pixel dimensions before comparing reviewed PNG fixtures.
+Glyphs render only from repository-owned font bytes: the fixture registers the
+Noto Sans Regular/SemiBold/Bold and Noto Sans Mono Regular files vendored
+under `tests/controls/fonts/` (SIL Open Font License 1.1) with
+`QFontDatabase::addApplicationFont`, verifies each registration exposes
+exactly the expected family, substitutes the theme schema's `Inter` and
+`JetBrains Mono` names to those registered families, fixes the C locale, and
+fails closed when a vendored file is missing, unreadable, or renamed.
+Registered application fonts take precedence over same-named host-installed
+fonts, so a host Noto package update cannot change the rendered bytes; the
+row environment otherwise keeps the documented host fontconfig configuration,
+because an empty configuration re-wraps text and removes the fallback glyph
+the baselines contain instead of pinning bytes.
+
+Four focused rows guard the pin. `qindaqt.controls-font-pinning` registers a
+marker-patched copy of the vendored Noto Sans Regular — one flipped byte in
+its name table, family strings untouched — and requires the engine resolving
+the schema's `Inter` family to serve the registered bytes, which fails if a
+same-named host font ever regains precedence. The three
+`qindaqt.controls-font-fixture-missing`, `-corrupt`, and `-wrongfamily` rows
+drive the missing-file, unreadable-file, and wrong-family failure branches of
+the fixture loader and require the process to abort with the matching
+diagnostic.
+
+Determinism against the ambient font environment is checked by running a row
+with a deliberately unusable fontconfig configuration:
+
+```sh
+FONTCONFIG_FILE=/dev/null ctest --test-dir build/dev \
+  -R '^qindaqt\.controls-visual-100-qinda-light-compact$' --output-on-failure
+```
+
+Fontconfig cannot parse `/dev/null` and falls back to the standard
+configuration, so the row still passes; this witnesses that the gate has no
+configuration-file dependency. Regenerating baselines with
+`QINDAQT_UPDATE_CONTROLS_BASELINES=1` re-renders pixels when the vendored
+bytes, themes, QML, or rendering change, and the resulting baseline diff must
+be reviewed.
+The behavior gate separately proves reduced-motion duration projection. The gallery
 includes explicit error, busy, disabled, degraded, checked, and ordinary states
 so those appearances are reviewable in every row.
 The staged consumer removes its previous build-confined prefix, installs the
@@ -272,9 +306,10 @@ Ambient source/build QML paths are absent. A separate no-threshold benchmark rep
 PSS delta of a token-plus-controls gallery versus a matched bare Qt Quick
 process from exact `smaps_rollup` PIDs.
 
-The complete `^qindaqt\.controls-` prefix currently discovers 29 tests: one
-behavior test, the 25 visual rows, source policy, staged installed import, and
-the PSS measurement.
+The complete `^qindaqt\.controls-` prefix currently discovers 33 tests: one
+behavior test, the 25 visual rows, font pinning, three font-fixture
+fail-closed controls, source policy, staged installed import, and the PSS
+measurement.
 
 This boundary is software-renderer, package, and process-memory evidence. Live
 AT-SPI, compositor focus, physical DPI/GPU output, Settings/AppShell/service
