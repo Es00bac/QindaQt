@@ -21,12 +21,14 @@ namespace QindaQt::Services::FontPreferences {
 // snapshots update the coordinator atomically through
 // FontPreferencesCodec::fromSettingsMap (exact-typed, wholesale rejection); a
 // decode failure or any transport loss leaves the last-known-good snapshot
-// untouched. applyPreferences() writes the
+// untouched and removes write-baseline authority until a later valid snapshot.
+// applyPreferences() writes the
 // six fonts.* keys as a fixed-order sequence of single-key optimistic commits,
 // waits for a fresh authoritative snapshot between keys so no write carries a
 // stale base revision, and never replays an uncertain write. A malformed
-// post-commit snapshot ends the sequence instead of advancing it (review
-// finding P1-5).
+// post-commit snapshot ends the sequence instead of advancing it and marks
+// the just-written key Uncertain because the resulting domain snapshot cannot
+// be verified (review finding P1-5).
 class FontSettingsBridge final : public QObject {
     Q_OBJECT
 public:
@@ -65,8 +67,9 @@ public:
     [[nodiscard]] const QList<KeyResult> &lastApplyResults() const noexcept { return m_results; }
 
     // Starts the per-key commit sequence for the draft. Returns false without
-    // changing anything when the draft is invalid, the client is not Ready, or
-    // a sequence is already running.
+    // changing anything when the draft is invalid, the client is not Ready,
+    // its current snapshot has not passed domain decoding, or a sequence is
+    // already running.
     bool applyPreferences(const FontPreferences &draft, QString *error = nullptr);
 
 Q_SIGNALS:

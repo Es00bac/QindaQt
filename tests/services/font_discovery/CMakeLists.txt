@@ -64,6 +64,18 @@ set_tests_properties(
 )
 
 add_test(
+    NAME qindaqt.font-application-bootstrap-wiring
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_application_bootstrap.cmake"
+)
+set_tests_properties(
+    qindaqt.font-application-bootstrap-wiring
+    PROPERTIES LABELS "service;fonts;policy"
+)
+
+add_test(
     NAME qindaqt.font-discovery-boundary
     COMMAND
         "${CMAKE_COMMAND}"

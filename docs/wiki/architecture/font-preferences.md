@@ -119,9 +119,11 @@ with the public Settings1 client, following the ADR-0028 recovery contract:
   `Conflict`, `Failed`, `Uncertain`, `NotAttempted`); a conflict or failure
   stops the sequence, later keys stay `NotAttempted`, and an uncertain write
   is never replayed automatically. A post-commit snapshot that fails
-  validation also ends the sequence instead of advancing it: the applied key
-  keeps its confirmed truth and every later key stays `NotAttempted`. The
-  sequence never claims to be one atomic transaction.
+  validation also ends the sequence instead of advancing it: the just-written
+  key is `Uncertain` because its resulting domain snapshot cannot be verified,
+  every later key stays `NotAttempted`, and no write is replayed. A malformed
+  current snapshot cannot serve as a later write baseline. The sequence never
+  claims to be one atomic transaction.
 - The bridge fails closed on transport loss: writes are refused unless the
   client is Ready, owner loss ends an in-flight sequence, and the coordinator
   keeps its last-known-good preferences throughout.
@@ -198,6 +200,11 @@ consumers through the coordinator snapshot.
 - **AGENT-CONTRACT:** The bootstrap call is guarded: a missing or unavailable
   preference source leaves platform/theme defaults untouched and is not an
   application error.
+
+`qindaqt.font-application-bootstrap-wiring` is the source-level guard for the
+four first-party composition roots: each must keep exactly one helper call
+before application construction. Their installed-metadata rows separately
+prove the call is inert when the preference source is absent.
 
 ## Verification
 

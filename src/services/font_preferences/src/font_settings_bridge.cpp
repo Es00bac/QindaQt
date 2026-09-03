@@ -53,7 +53,8 @@ bool FontSettingsBridge::applyPreferences(const FontPreferences &draft, QString 
         setError(error, QStringLiteral("a font preferences commit sequence is already running"));
         return false;
     }
-    if (m_client.state() != SettingsClient::ClientState::Ready || !m_client.snapshot()) {
+    if (m_client.state() != SettingsClient::ClientState::Ready || !m_client.snapshot()
+        || !m_hasBaseline) {
         // AGENT-GUARD: Writes are forbidden without a confirmed authoritative
         // baseline; an optimistic commit without one would carry no revision.
         setError(error, QStringLiteral("settings authority is not ready for font preferences"));
@@ -84,16 +85,18 @@ void FontSettingsBridge::handleSnapshot()
     if (m_client.state() != SettingsClient::ClientState::Ready || !m_client.snapshot()) {
         return;
     }
-    m_hasBaseline = true;
-
     QString syncError;
     const bool synced = m_coordinator.updateFromSettings(m_client.snapshot()->values, &syncError);
     if (synced) {
+        m_hasBaseline = true;
         m_syncError.clear();
         Q_EMIT snapshotSynced();
     } else {
         // AGENT-GUARD: A snapshot that fails validation never touches the
-        // coordinator; the last-known-good preferences stay authoritative.
+        // coordinator and cannot serve as a write baseline. The last-known-
+        // good preferences stay authoritative, but writes remain closed until
+        // a later complete valid snapshot arrives.
+        m_hasBaseline = false;
         m_syncError = syncError;
     }
 
@@ -102,10 +105,16 @@ void FontSettingsBridge::handleSnapshot()
         if (!synced) {
             // AGENT-GUARD (review finding P1-5): A malformed post-commit
             // snapshot must not advance the write sequence -- the next write
-            // would carry an unverifiable authority state. The already Applied
-            // key keeps its confirmed truth, every later key stays
-            // NotAttempted, and the sequence ends unreplayed per the
-            // Appearance no-replay rules (ADR-0028).
+            // would carry an unverifiable authority state. The just-written
+            // key becomes Uncertain, every later key stays NotAttempted, and
+            // the sequence ends unreplayed per the
+            // Appearance no-replay rules (ADR-0028). Although the Settings1
+            // reply said Applied, malformed fresh authority means this bridge
+            // cannot verify the resulting domain snapshot; expose that key as
+            // Uncertain rather than claiming a usable confirmed result.
+            KeyResult &current = m_results[m_sequenceIndex];
+            current.outcome = KeyOutcome::Uncertain;
+            current.message = syncError.left(512);
             abortRemainingNotAttempted();
             finishSequence();
             return;
@@ -124,6 +133,7 @@ void FontSettingsBridge::handleStateChanged()
         // keys never written stay NotAttempted so a partial sequence can never
         // masquerade as fully applied. An in-flight key is owned by
         // commitUncertain instead.
+        m_hasBaseline = false;
         abortRemainingNotAttempted();
         finishSequence();
     }
