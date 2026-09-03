@@ -30,6 +30,10 @@ public:
     // "fonts.family", "fonts.monospaceFamily", "fonts.pointSize",
     // "fonts.antialiasing", "fonts.hinting", "fonts.subpixelOrder".
     [[nodiscard]] static QVariantMap toSettingsMap(const FontPreferences &prefs);
+    // AGENT-CONTRACT: Decoding is exact-typed and wholesale: a single
+    // wrong-typed or out-of-bounds value rejects the entire snapshot; no
+    // QVariant coercion is applied (review finding P1-4). Numbers follow the
+    // canonical JSON wire domain: LongLong (integral) or Double (fractional).
     [[nodiscard]] static std::optional<FontPreferences> fromSettingsMap(
         const QVariantMap &settings,
         QString *error = nullptr);

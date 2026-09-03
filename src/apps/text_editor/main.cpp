@@ -8,6 +8,7 @@
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
@@ -76,6 +77,14 @@ int main(int argc, char **argv) {
 
   QElapsedTimer startupTimer;
   startupTimer.start();
+  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
+  // call runs before QApplication construction (pre-construction
+  // QGuiApplication::setFont persists as the application default font). A
+  // missing, unavailable, or unresolvable preference source leaves platform
+  // defaults untouched (fail-closed). The theme baseline setFont below
+  // remains the deliberate widgets baseline. See
+  // docs/wiki/architecture/font-preferences.md.
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-editor"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Text Editor"));

@@ -92,7 +92,8 @@ tests, and the wiki page describing its contract.
 | `src/services/clipboard_client` | Exact-owner asynchronous Clipboard1 discovery, atomic snapshots, invalidation coalescing, serialized intents, lineage fencing, and timeout uncertainty | Public clipboard protocol plus Qt Core/DBus and an injected transport; never host implementation, Wayland, payload storage, or QML |
 | `src/services/clipboard_wayland_adapter` | Pinned `ext-data-control-v1` selection/primary observation, MIME preflight, bounded asynchronous reads, compositor-peer identity, and explicit selection publication | Public clipboard model values plus Qt Core and public Wayland client protocols; never history policy, D-Bus, Settings1, lock policy, persistence, or QML |
 | `src/services/clipboard_service` | Resident volatile history ownership, Settings1 opt-in and authenticated-lock composition, Clipboard1 object/name ownership, caller-scoped request lineage, and activation artifacts | Public clipboard model/protocol/adapter plus Settings1 and lock-state clients; never persistence, shell/UI, compositor-private APIs, or payload logging |
-| `src/services/font_preferences` | Pure deterministic font family discovery from injected facts, validated typography preferences, lossless codecs, pre-application bootstrap derivation, and atomic LKG publication | Qt Core and Qt Gui value types; never host filesystem scanning, fontconfig daemon mutation, D-Bus, KWin, or QML |
+| `src/services/font_preferences` | Pure deterministic font family discovery from injected facts, validated typography preferences, exact-typed lossless codecs, pre-application bootstrap derivation (pure apply/gate helpers), atomic LKG publication, and the F1 Settings1 confirmed-snapshot bridge | Qt Core/Gui and the public Settings1 client; fully transport-free (no Qt D-Bus); never host filesystem scanning, fontconfig, KWin, or QML |
+| `src/services/font_discovery` | Sole fontconfig-backed producer of F0 `FontFact` values from an internally built `FcConfig` over injected directories and an injected configuration file, with bounded counts/strings, deterministic ordering, and fail-closed unavailable truth; hosts the F1 production composition root (`FontSessionBootstrap`) that reads confirmed Settings1 `fonts.*` preferences pre-`QGuiApplication` and applies them when the live catalog resolves the family | Public `font_preferences` values, Qt Core, and privately linked fontconfig ([ADR-0067](../adr/0067-confine-fontconfig-behind-font-discovery.md)); Qt Gui/D-Bus and the public Settings1 protocol confined to the session bootstrap composition source; never QML, Qt Widgets, host config mutation, or shell/applications |
 | `src/sdk` | Versioned client libraries, schemas, manifests, and generated IPC bindings | Foundation libraries only |
 | `src/apps` | First-party applications behaving as normal desktop clients | Public SDK and application-focused libraries |
 | `src/apps/text_editor` | Bounded multi-document text policy, independent optimistic local UTF-8 persistence, bounded find/replace, paths-only restore state, AppShell action/menu presentation, and QST-1 adaptation | Public AppShell, Settings1 client, themes/QST-1, and Qt Core/Gui/Widgets; never settings service/persistence implementation, shell/compositor internals, or another app's private code |
@@ -277,6 +278,15 @@ implemented; do not use placeholder modules to bypass a boundary.
   admitted query to the pinned renderer search surface or extracts its bounded
   live-screen tail; only the application-owned opener may confirm and dispatch
   one absolute-program argv request. Neither extension changes PTY ownership.
+- Font discovery and typography preferences follow the F0 pure boundary plus
+  the F1 composition seam: only `src/services/font_discovery` links
+  fontconfig, tests inject their configuration and directories so host font
+  state is never consulted, and confirmed Settings1 `fonts.*` values reach
+  first-party applications only through the coordinator bridge and the guarded
+  pre-`QGuiApplication` session bootstrap composition. See
+  [Font preferences](font-preferences.md),
+  [ADR-0047](../adr/0047-pure-font-catalog-and-preference-boundary.md), and
+  [ADR-0067](../adr/0067-confine-fontconfig-behind-font-discovery.md).
 - Tests use public APIs first. Input-injection providers/devices, fake-device
   creation, output forcing, and similar backdoor authority must be absent from
   normal production sessions and clearly named as test interfaces. A versioned
