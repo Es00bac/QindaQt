@@ -51,6 +51,12 @@ public:
     [[nodiscard]] quint64 stopDiscovery(const QString &adapterPath);
     [[nodiscard]] quint64 connectDevice(const QString &devicePath);
     [[nodiscard]] quint64 disconnectDevice(const QString &devicePath);
+    [[nodiscard]] quint64 pairDevice(const QString &devicePath);
+    [[nodiscard]] quint64 cancelPairing(const QString &devicePath);
+    [[nodiscard]] quint64 removeDevice(const QString &adapterPath,
+                                       const QString &devicePath);
+    [[nodiscard]] quint64 setDeviceTrusted(const QString &devicePath,
+                                           bool trusted);
 
 Q_SIGNALS:
     // Emitted on every owner transition (appearance, loss, replacement).

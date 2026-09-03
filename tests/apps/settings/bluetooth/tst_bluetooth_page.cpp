@@ -30,8 +30,9 @@ class BluetoothPageTest final : public QObject {
 
 private Q_SLOTS:
   void initTestCase();
-  void rendersWideInventoryAndAuthorityBoundary();
+  void rendersWideInventoryAndPairingActions();
   void routesPowerDiscoveryAndConnectionActions();
+  void rendersAccessibleInlinePairingPrompt();
   void keepsCompactFallbackFocusEnabled();
   void presentsUnavailableAndBusyTruth();
 
@@ -83,10 +84,9 @@ BluetoothPageTest::createPage(const QSize size) {
   return {std::move(guard), page};
 }
 
-void BluetoothPageTest::rendersWideInventoryAndAuthorityBoundary() {
+void BluetoothPageTest::rendersWideInventoryAndPairingActions() {
   auto [guard, page] = createPage(QSize(900, 700));
   QVERIFY(page != nullptr);
-  auto *boundary = findItem(page, QStringLiteral("bluetoothAuthorityBoundary"));
   auto *power = findItem(page, QStringLiteral("bluetoothPower_adapter-61-400"));
   auto *discover = findItem(
       page, QStringLiteral("bluetoothDiscovery_adapter-61-400"));
@@ -96,26 +96,28 @@ void BluetoothPageTest::rendersWideInventoryAndAuthorityBoundary() {
       page, QStringLiteral("bluetoothConnect_device-61-701"));
   auto *classIcon = findItem(
       page, QStringLiteral("bluetoothClassIcon_device-61-700"));
+  auto *pair = findItem(page, QStringLiteral("bluetoothPair_device-61-702"));
+  auto *trust = findItem(page, QStringLiteral("bluetoothTrust_device-61-701"));
+  auto *forget = findItem(page, QStringLiteral("bluetoothForget_device-61-701"));
   auto *adapterLayout = findItem(
       page, QStringLiteral("bluetoothAdapterLayout_adapter-61-400"));
-  QVERIFY(boundary != nullptr);
   QVERIFY(power != nullptr);
   QVERIFY(discover != nullptr);
   QVERIFY(disconnect != nullptr);
   QVERIFY(connect != nullptr);
   QVERIFY(classIcon != nullptr);
+  QVERIFY(pair != nullptr);
+  QVERIFY(trust != nullptr);
+  QVERIFY(forget != nullptr);
   QCOMPARE(classIcon->property("text").toString(), QStringLiteral("HP"));
   QVERIFY(adapterLayout != nullptr);
   QCOMPARE(adapterLayout->property("columns").toInt(), 3);
   QVERIFY(power->isEnabled());
   QVERIFY(discover->isEnabled());
   QVERIFY(connect->isEnabled());
-
-  auto *accessible = QAccessible::queryAccessibleInterface(boundary);
-  QVERIFY(accessible != nullptr);
-  QCOMPARE(accessible->role(), QAccessible::StaticText);
-  QVERIFY(accessible->text(QAccessible::Description)
-              .contains(QStringLiteral("cannot pair")));
+  QVERIFY(pair->isEnabled());
+  QVERIFY(trust->isEnabled());
+  QVERIFY(forget->isEnabled());
   auto *powerAccessible = QAccessible::queryAccessibleInterface(power);
   QVERIFY(powerAccessible != nullptr);
   QCOMPARE(powerAccessible->role(), QAccessible::CheckBox);
@@ -130,16 +132,56 @@ void BluetoothPageTest::routesPowerDiscoveryAndConnectionActions() {
       page, QStringLiteral("bluetoothDiscovery_adapter-61-400"));
   auto *connect = findItem(
       page, QStringLiteral("bluetoothConnect_device-61-701"));
+  auto *pair = findItem(page, QStringLiteral("bluetoothPair_device-61-702"));
   QVERIFY(power != nullptr);
   QVERIFY(discover != nullptr);
   QVERIFY(connect != nullptr);
+  QVERIFY(pair != nullptr);
   QVERIFY(QMetaObject::invokeMethod(power, "clicked"));
   QVERIFY(QMetaObject::invokeMethod(discover, "clicked"));
   QVERIFY(QMetaObject::invokeMethod(connect, "clicked"));
+  QVERIFY(QMetaObject::invokeMethod(pair, "clicked"));
   QCOMPARE(m_model->powerRequests, 1);
   QCOMPARE(m_model->discoveryRequests, 1);
   QCOMPARE(m_model->connectionRequests, 1);
-  QCOMPARE(m_model->lastDevice, QStringLiteral("device-61-701"));
+  QCOMPARE(m_model->pairingRequests, 1);
+  QCOMPARE(m_model->lastDevice, QStringLiteral("device-61-702"));
+}
+
+void BluetoothPageTest::rendersAccessibleInlinePairingPrompt() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  m_model->pairingPrompt = {
+      {QStringLiteral("active"), true},
+      {QStringLiteral("kind"), QStringLiteral("confirm-passkey")},
+      {QStringLiteral("deviceLabel"), QStringLiteral("New phone")},
+      {QStringLiteral("detail"), QStringLiteral("123456")},
+      {QStringLiteral("serviceUuid"), QString{}},
+      {QStringLiteral("entered"), 0},
+      {QStringLiteral("confirmationAvailable"), true},
+      {QStringLiteral("passkeyInput"), false},
+      {QStringLiteral("pinInput"), false},
+  };
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  auto *message = findItem(page, QStringLiteral("bluetoothPairingMessage"));
+  auto *confirm = findItem(page, QStringLiteral("bluetoothPairingConfirm"));
+  auto *cancel = findItem(page, QStringLiteral("bluetoothPairingCancel"));
+  QVERIFY(message != nullptr);
+  QVERIFY(confirm != nullptr);
+  QVERIFY(cancel != nullptr);
+  QVERIFY(message->property("text").toString().contains(QStringLiteral("123456")));
+  auto *confirmAccessible = QAccessible::queryAccessibleInterface(confirm);
+  auto *cancelAccessible = QAccessible::queryAccessibleInterface(cancel);
+  QVERIFY(confirmAccessible != nullptr);
+  QVERIFY(cancelAccessible != nullptr);
+  QCOMPARE(confirmAccessible->role(), QAccessible::Button);
+  QCOMPARE(cancelAccessible->role(), QAccessible::Button);
+  QVERIFY(!confirmAccessible->text(QAccessible::Description).isEmpty());
+  QVERIFY(!cancelAccessible->text(QAccessible::Description).isEmpty());
+  QVERIFY(QMetaObject::invokeMethod(confirm, "clicked"));
+  QCOMPARE(m_model->promptReplies, 1);
+  QVERIFY(m_model->lastBoolean);
 }
 
 void BluetoothPageTest::keepsCompactFallbackFocusEnabled() {

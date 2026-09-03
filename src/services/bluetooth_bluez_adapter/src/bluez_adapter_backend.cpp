@@ -16,44 +16,26 @@ using Bluez::BluezDeviceState;
 using Bluez::BluezInterfaces;
 using Bluez::BluezManagedObjects;
 
-struct MappedReply
-{
-    BackendOperationStatus status = BackendOperationStatus::Failed;
-    QString reasonCode;
-};
-
-MappedReply mapErrorReply(const QString &errorName)
-{
-    if (!errorName.startsWith(QLatin1String("org.bluez.Error."))) {
-        return {BackendOperationStatus::Uncertain,
-                QStringLiteral("bluez-transport")};
-    }
-    if (errorName == QLatin1String("org.bluez.Error.NotReady")) {
-        return {BackendOperationStatus::Rejected, QStringLiteral("adapter-off")};
-    }
-    if (errorName == QLatin1String("org.bluez.Error.DoesNotExist")
-        || errorName == QLatin1String("org.bluez.Error.UnknownObject")) {
-        return {BackendOperationStatus::Rejected, QStringLiteral("stale-handle")};
-    }
-    if (errorName == QLatin1String("org.bluez.Error.AlreadyConnected")) {
-        return {BackendOperationStatus::Rejected,
-                QStringLiteral("already-connected")};
-    }
-    if (errorName == QLatin1String("org.bluez.Error.NotConnected")) {
-        return {BackendOperationStatus::Rejected,
-                QStringLiteral("not-connected")};
-    }
-    return {BackendOperationStatus::Failed, QStringLiteral("bluez-error")};
-}
 } // namespace
 
 BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
-                                         QObject *parent)
+                                         const int promptTimeoutMs, QObject *parent)
     : AdapterBackend(parent)
-    , d(std::make_unique<State>(connection, this))
+    , d(std::make_unique<State>(connection, this, promptTimeoutMs))
 {
     connect(&d->transport, &Bluez::BluezTransport::ownerChanged, this,
-            [this](const QString &) { handleOwnerReplaced(); });
+            [this](const QString &owner) {
+                d->pairingAgent.adoptOwner(owner);
+                handleOwnerReplaced();
+            });
+    connect(&d->pairingAgent, &Bluez::BluezPairingAgent::promptChanged, this,
+            [this](const BackendPairingPrompt &prompt) {
+                if (!d->running) {
+                    return;
+                }
+                d->pairingPrompt = prompt;
+                publish();
+            });
     connect(&d->transport, &Bluez::BluezTransport::managedObjectsReady, this,
             [this](const BluezManagedObjects &objects) {
                 if (!d->running) {
@@ -128,6 +110,7 @@ void BluezAdapterBackend::stop()
     d->running = false;
     ++d->generation;
     d->transport.stop();
+    d->pairingAgent.stop();
     // AGENT-GUARD: Lease holds are state of one backend run bound to one
     // BlueZ owner. They must never cross a stop/start boundary or a BlueZ
     // owner transition, or discovery sessions no live caller requested would
@@ -137,6 +120,7 @@ void BluezAdapterBackend::stop()
     d->inflightAcquires.clear();
     d->outstanding.clear();
     d->queuedAcquires.clear();
+    d->pairingPrompt = {};
 }
 
 void BluezAdapterBackend::submit(const quint64 operationId,
@@ -201,6 +185,24 @@ void BluezAdapterBackend::applySubmit(const quint64 operationId,
         return;
     case OperationKind::Disconnect:
         submitDisconnect(operationId, request);
+        return;
+    case OperationKind::Pair:
+        submitPair(operationId, request);
+        return;
+    case OperationKind::CancelPairing:
+        submitCancelPairing(operationId, request);
+        return;
+    case OperationKind::RemoveDevice:
+        submitRemove(operationId, request);
+        return;
+    case OperationKind::SetTrusted:
+        submitSetTrusted(operationId, request);
+        return;
+    case OperationKind::ReplyConfirmation:
+    case OperationKind::ReplyPasskey:
+    case OperationKind::ReplyPin:
+    case OperationKind::CancelPrompt:
+        submitPromptReply(operationId, request);
         return;
     default:
         finishOperation(operationId, BackendOperationStatus::Failed,
@@ -410,113 +412,6 @@ void BluezAdapterBackend::insertDeviceCall(const quint64 callId,
                            .adapterAddress = request.adapterAddress,
                            .deviceAddress = request.deviceAddress,
                            .powered = false});
-}
-
-void BluezAdapterBackend::handleCallFinished(const quint64 callId,
-                                             const bool succeeded,
-                                             const QString &errorName)
-{
-    const auto it = d->outstanding.find(callId);
-    if (it == d->outstanding.end()) {
-        return;
-    }
-    const State::Outstanding call = it.value();
-    d->outstanding.erase(it);
-
-    switch (call.kind) {
-    case OperationKind::SetAdapterPower: {
-        if (!succeeded) {
-            const MappedReply mapped = mapErrorReply(errorName);
-            finishOperation(call.operationId, mapped.status, mapped.reasonCode);
-            return;
-        }
-        if (const BluezAdapterState *adapter =
-                d->store.adapterByAddress(call.adapterAddress);
-            adapter != nullptr) {
-            d->store.applyPowered(adapter->path, call.powered);
-            if (!call.powered) {
-                d->dropAdapterLeases(call.adapterAddress);
-            }
-        }
-        publish();
-        finishOperation(call.operationId, BackendOperationStatus::Succeeded,
-                        QStringLiteral("adapter-power-set"));
-        return;
-    }
-    case OperationKind::AcquireDiscovery: {
-        const QList<State::Outstanding> queued =
-            d->queuedAcquires.take(call.adapterAddress);
-        d->inflightAcquires.remove(call.adapterAddress);
-        const bool sessionActive =
-            succeeded || errorName == QLatin1String("org.bluez.Error.AlreadyExists")
-            || errorName == QLatin1String("org.bluez.Error.InProgress");
-        if (sessionActive) {
-            ++d->leases[{call.callerId, call.adapterAddress}];
-            for (const State::Outstanding &waiter : queued) {
-                ++d->leases[{waiter.callerId, waiter.adapterAddress}];
-            }
-            publish();
-            finishOperation(call.operationId, BackendOperationStatus::Succeeded,
-                            QStringLiteral("lease-acquired"));
-            for (const State::Outstanding &waiter : queued) {
-                finishOperation(waiter.operationId,
-                                BackendOperationStatus::Succeeded,
-                                QStringLiteral("lease-acquired"));
-            }
-            return;
-        }
-        const MappedReply mapped = mapErrorReply(errorName);
-        finishOperation(call.operationId, mapped.status, mapped.reasonCode);
-        for (const State::Outstanding &waiter : queued) {
-            finishOperation(waiter.operationId, mapped.status,
-                            mapped.reasonCode);
-        }
-        return;
-    }
-    case OperationKind::Connect: {
-        if (succeeded
-            || errorName == QLatin1String("org.bluez.Error.AlreadyConnected")) {
-            if (const BluezDeviceState *device =
-                    d->store.deviceByAddress(call.deviceAddress);
-                device != nullptr) {
-                d->store.applyConnected(device->path, true);
-            }
-            publish();
-            finishOperation(call.operationId,
-                            succeeded ? BackendOperationStatus::Succeeded
-                                      : BackendOperationStatus::Rejected,
-                            succeeded ? QStringLiteral("connected")
-                                      : QStringLiteral("already-connected"));
-            return;
-        }
-        const MappedReply mapped = mapErrorReply(errorName);
-        finishOperation(call.operationId, mapped.status, mapped.reasonCode);
-        return;
-    }
-    case OperationKind::Disconnect: {
-        if (succeeded
-            || errorName == QLatin1String("org.bluez.Error.NotConnected")) {
-            if (const BluezDeviceState *device =
-                    d->store.deviceByAddress(call.deviceAddress);
-                device != nullptr) {
-                d->store.applyConnected(device->path, false);
-            }
-            publish();
-            finishOperation(call.operationId,
-                            succeeded ? BackendOperationStatus::Succeeded
-                                      : BackendOperationStatus::Rejected,
-                            succeeded ? QStringLiteral("disconnected")
-                                      : QStringLiteral("not-connected"));
-            return;
-        }
-        const MappedReply mapped = mapErrorReply(errorName);
-        finishOperation(call.operationId, mapped.status, mapped.reasonCode);
-        return;
-    }
-    default:
-        finishOperation(call.operationId, BackendOperationStatus::Failed,
-                        QStringLiteral("backend-malformed"));
-    }
 }
 
 } // namespace QindaQt::Bluetooth

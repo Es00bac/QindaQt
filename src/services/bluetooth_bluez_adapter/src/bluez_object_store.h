@@ -36,6 +36,7 @@ struct BluezDeviceState {
     quint32 classOfDevice = 0;
     QString icon;
     bool paired = false;
+    bool trusted = false;
     bool connected = false;
     bool rssiKnown = false;
     qint16 rssi = 0;
@@ -75,6 +76,8 @@ public:
     // cannot leave the cache behind the accepted truth.
     void applyPowered(const QString &adapterPath, bool powered);
     void applyConnected(const QString &devicePath, bool connected);
+    void applyPaired(const QString &devicePath, bool paired);
+    void applyTrusted(const QString &devicePath, bool trusted);
 
     // Sanitized, bounded, deduplicated projection of adapters and of the
     // devices belonging to the projected adapter addresses.

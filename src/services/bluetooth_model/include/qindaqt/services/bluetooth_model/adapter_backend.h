@@ -41,6 +41,15 @@ struct BackendDevice {
     qint16 rssi = 0;
     bool batteryKnown = false;
     quint8 batteryPercent = 0;
+    bool trusted = false;
+};
+
+struct BackendPairingPrompt {
+    PairingPromptKind kind = PairingPromptKind::None;
+    QString deviceAddress;
+    QString detail;
+    QString serviceUuid;
+    quint16 entered = 0;
 };
 
 // AGENT-CONTRACT: A discovery lease is one caller-scoped reference-counted
@@ -68,6 +77,7 @@ struct BackendInventory {
     QList<BackendAdapter> adapters;
     QList<BackendDevice> devices;
     QList<BackendLease> leases;
+    BackendPairingPrompt pairingPrompt;
 };
 
 // AGENT-CONTRACT: The model resolves public handles to canonical addresses
@@ -79,6 +89,10 @@ struct BackendRequest {
     QString adapterAddress;
     QString deviceAddress;
     bool powered = false;
+    bool accepted = false;
+    bool trusted = false;
+    PairingInput input{};
+    quint8 inputSize = 0;
     QString callerId;
 };
 

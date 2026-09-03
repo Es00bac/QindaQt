@@ -7,6 +7,8 @@
 #include <QtCore/QMetaType>
 #include <QtCore/QString>
 
+#include <array>
+
 namespace QindaQt::Bluetooth
 {
 
@@ -42,16 +44,19 @@ enum class DeviceRole : quint32 {
     CentralPeripheral = 3,
 };
 
-// AGENT-CONTRACT: These are service-level capability bits only. Bluetooth1 v1
-// deliberately has no per-adapter or per-device capability flags; adapters
-// expose powered/discovering truth and devices expose paired/connected truth.
-// Adding an entity-level flag requires a wire-schema revision.
+// AGENT-CONTRACT: These are service-level capability bits only. Entity truth
+// remains in the fixed adapter/device values; callers must check both the
+// service bit and the current entity state before dispatch.
 enum class Capability : quint32 {
     None = 0,
     SetAdapterPower = 1U << 0U,
     DiscoveryLease = 1U << 1U,
     ConnectPaired = 1U << 2U,
     DisconnectPaired = 1U << 3U,
+    Pair = 1U << 4U,
+    RemoveDevice = 1U << 5U,
+    SetTrusted = 1U << 6U,
+    PairingPrompt = 1U << 7U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -61,6 +66,24 @@ enum class OperationKind : quint32 {
     ReleaseDiscovery = 2,
     Connect = 3,
     Disconnect = 4,
+    Pair = 5,
+    CancelPairing = 6,
+    RemoveDevice = 7,
+    SetTrusted = 8,
+    ReplyConfirmation = 9,
+    ReplyPasskey = 10,
+    ReplyPin = 11,
+    CancelPrompt = 12,
+};
+
+enum class PairingPromptKind : quint32 {
+    None = 0,
+    ConfirmPasskey = 1,
+    EnterPasskey = 2,
+    EnterPin = 3,
+    DisplayPasskey = 4,
+    DisplayPin = 5,
+    AuthorizeService = 6,
 };
 
 enum class OperationStatus : quint32 {
@@ -109,8 +132,28 @@ struct Device {
     // batteryKnown == false must carry batteryPercent == 0.
     bool batteryKnown = false;
     quint8 batteryPercent = 0;
+    bool trusted = false;
 
     friend bool operator==(const Device &, const Device &) = default;
+};
+
+// One bounded prompt is part of the same epoch/revision snapshot as device
+// truth. `detail` carries a zero-padded passkey/PIN when displayed;
+// `serviceUuid` is populated only for AuthorizeService. An inactive prompt is
+// exactly the default value and carries no stale device handle or text.
+struct PairingPrompt {
+    PairingPromptKind kind = PairingPromptKind::None;
+    Handle device;
+    QString detail;
+    QString serviceUuid;
+    quint16 entered = 0;
+
+    [[nodiscard]] bool active() const noexcept
+    {
+        return kind != PairingPromptKind::None;
+    }
+
+    friend bool operator==(const PairingPrompt &, const PairingPrompt &) = default;
 };
 
 struct Snapshot {
@@ -123,6 +166,7 @@ struct Snapshot {
     QString diagnostic;
     QList<Adapter> adapters;
     QList<Device> devices;
+    PairingPrompt pairingPrompt;
 
     // AGENT-GUARD: D-Bus decoding sets this false when an array exceeded its
     // bound while still consuming the complete argument. Clients must validate
@@ -132,6 +176,34 @@ struct Snapshot {
     friend bool operator==(const Snapshot &, const Snapshot &) = default;
 };
 
+using PairingInput = std::array<char, 17>;
+
+[[nodiscard]] inline QString pairingInputString(const PairingInput &input,
+                                                const quint8 size)
+{
+    return QString::fromLatin1(input.data(), static_cast<qsizetype>(size));
+}
+
+inline bool setPairingInput(PairingInput &input, quint8 &size,
+                            const QString &value)
+{
+    input.fill('\0');
+    size = 0;
+    if (value.size() > 16) {
+        return false;
+    }
+    for (const QChar character : value) {
+        const char byte = character.toLatin1();
+        if (byte == '\0') {
+            input.fill('\0');
+            size = 0;
+            return false;
+        }
+        input.at(static_cast<std::size_t>(size++)) = byte;
+    }
+    return true;
+}
+
 // AGENT-NOTE: OperationRequest is an in-process value. Bluetooth1 v1 method
 // calls carry their typed arguments directly on the wire; this struct is never
 // D-Bus-marshalled and exists so the model, client preflight, and backends
@@ -140,6 +212,10 @@ struct OperationRequest {
     OperationKind kind = OperationKind::Connect;
     Handle target;
     bool powered = false;
+    bool accepted = false;
+    bool trusted = false;
+    PairingInput input{};
+    quint8 inputSize = 0;
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };
@@ -164,10 +240,12 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Bluetooth::Capabilities)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Capabilities)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationKind)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationStatus)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::PairingPromptKind)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Handle)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Adapter)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Device)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::DeviceRole)
+Q_DECLARE_METATYPE(QindaQt::Bluetooth::PairingPrompt)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::Snapshot)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationRequest)
 Q_DECLARE_METATYPE(QindaQt::Bluetooth::OperationResult)

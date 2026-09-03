@@ -78,11 +78,6 @@ foreach(source IN LISTS route_files)
                 "Bluetooth Settings imported a non-public repository header '${include_path}' in ${source}")
         endif()
     endforeach()
-    if(contents MATCHES "Q_INVOKABLE[^\n]*(pair|trust|remove)" OR
-       contents MATCHES "Q_INVOKABLE[^\n]*(Pair|Trust|Remove)")
-        message(FATAL_ERROR
-            "Bluetooth Settings gained forbidden pairing/trust/remove authority in ${source}")
-    endif()
 endforeach()
 
 if(DEFINED SOURCE_ROOT)

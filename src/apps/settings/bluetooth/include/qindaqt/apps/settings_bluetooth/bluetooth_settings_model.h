@@ -6,7 +6,9 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QVariantList>
+#include <QtCore/QVariantMap>
 
+#include <functional>
 #include <optional>
 
 namespace QindaQt::Apps::SettingsBluetooth {
@@ -33,7 +35,9 @@ class BluetoothSettingsModel final : public QObject {
   Q_PROPERTY(bool routeActive READ routeActive NOTIFY viewChanged)
   Q_PROPERTY(bool discoveryLeaseHeld READ discoveryLeaseHeld NOTIFY viewChanged)
   Q_PROPERTY(bool departureReleasePending READ departureReleasePending NOTIFY viewChanged)
-  Q_PROPERTY(bool pairingSupported READ pairingSupported CONSTANT)
+  Q_PROPERTY(bool pairingSupported READ pairingSupported NOTIFY viewChanged)
+  Q_PROPERTY(bool pairingReplyPending READ pairingReplyPending NOTIFY viewChanged)
+  Q_PROPERTY(QVariantMap pairingPrompt READ pairingPrompt NOTIFY viewChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText READ operationStatusText NOTIFY viewChanged)
@@ -59,8 +63,9 @@ public:
   [[nodiscard]] bool discoveryLeaseHeld() const noexcept {
     return m_discoveryLease.has_value();
   }
-  [[nodiscard]] constexpr bool pairingSupported() const noexcept {
-    return false;
+  [[nodiscard]] bool pairingSupported() const noexcept;
+  [[nodiscard]] bool pairingReplyPending() const noexcept {
+    return m_promptPending.has_value();
   }
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] const QString &errorText() const noexcept { return m_errorText; }
@@ -72,12 +77,20 @@ public:
   [[nodiscard]] qulonglong serviceRevision() const;
   [[nodiscard]] QVariantList adapters() const;
   [[nodiscard]] QVariantList devices() const;
+  [[nodiscard]] QVariantMap pairingPrompt() const;
 
   Q_INVOKABLE void setRouteActive(bool active);
   Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);
   Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);
   Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId,
                                            bool connected);
+  Q_INVOKABLE bool requestPairing(const QString &deviceId);
+  Q_INVOKABLE bool requestForget(const QString &deviceId);
+  Q_INVOKABLE bool requestTrust(const QString &deviceId, bool trusted);
+  Q_INVOKABLE bool replyConfirmation(bool accepted);
+  Q_INVOKABLE bool replyPasskey(const QString &passkey);
+  Q_INVOKABLE bool replyPin(const QString &pin);
+  Q_INVOKABLE bool cancelPrompt();
 
 Q_SIGNALS:
   void viewChanged();
@@ -102,6 +115,9 @@ private:
       const QindaQt::Bluetooth::OperationRequest &request) const;
   [[nodiscard]] bool dispatch(
       const QindaQt::Bluetooth::OperationRequest &request);
+  [[nodiscard]] bool dispatchPrompt(
+      const QindaQt::Bluetooth::OperationRequest &request,
+      const std::function<quint64()> &sender);
   [[nodiscard]] std::optional<QindaQt::Bluetooth::Adapter>
   findAdapter(const QString &rowId) const;
   [[nodiscard]] std::optional<QindaQt::Bluetooth::Device>
@@ -121,6 +137,7 @@ private:
   bool m_releaseRequested = false;
   bool m_automaticReleaseBlocked = false;
   std::optional<PendingOperation> m_pending;
+  std::optional<PendingOperation> m_promptPending;
   std::optional<SuccessConvergence> m_convergence;
   std::optional<QindaQt::Bluetooth::Handle> m_discoveryLease;
   QString m_discoveryLeaseOwner;

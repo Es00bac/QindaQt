@@ -133,6 +133,16 @@ RequestState beginBluetoothRequest(
         }
         break;
     }
+    case Bluetooth::OperationKind::Pair:
+    case Bluetooth::OperationKind::CancelPairing:
+    case Bluetooth::OperationKind::RemoveDevice:
+    case Bluetooth::OperationKind::SetTrusted:
+    case Bluetooth::OperationKind::ReplyConfirmation:
+    case Bluetooth::OperationKind::ReplyPasskey:
+    case Bluetooth::OperationKind::ReplyPin:
+    case Bluetooth::OperationKind::CancelPrompt:
+        return rejected(operation,
+                        QStringLiteral("That operation is outside this applet request path."));
     }
 
     return {.phase = RequestPhase::Pending,

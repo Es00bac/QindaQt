@@ -56,9 +56,7 @@ Snapshot BluetoothModel::snapshot() const
 
 void BluetoothModel::start()
 {
-    if (m_running) {
-        return;
-    }
+    if (m_running) return;
     if (m_startedOnce) {
         // AGENT-GUARD: Reuse always advances the epoch, even when no
         // inventory was ever accepted. Otherwise a stop/start before the
@@ -232,37 +230,28 @@ const Device *BluetoothModel::findDevice(const quint64 serial) const
 QString BluetoothModel::validateRequest(const OperationRequest &request,
                                         const QString &callerId) const
 {
-    if (!safeCallerId(callerId)) {
-        return QStringLiteral("malformed-caller");
-    }
-    if (!request.target.isValid() || request.target.epoch != m_snapshot.epoch) {
+    if (!safeCallerId(callerId)) return QStringLiteral("malformed-caller");
+    if (!request.target.isValid() || request.target.epoch != m_snapshot.epoch)
         return QStringLiteral("stale-handle");
-    }
-    if (!m_running || m_snapshot.availability != Availability::Ready) {
+    if (!m_running || m_snapshot.availability != Availability::Ready)
         return QStringLiteral("unavailable");
-    }
+    if (!validateOperationRequest(request).accepted)
+        return QStringLiteral("malformed-request");
 
     switch (request.kind) {
     case OperationKind::SetAdapterPower: {
-        if (!m_snapshot.capabilities.testFlag(Capability::SetAdapterPower)) {
+        if (!m_snapshot.capabilities.testFlag(Capability::SetAdapterPower))
             return QStringLiteral("unsupported");
-        }
-        if (findAdapter(request.target.serial) == nullptr) {
+        if (findAdapter(request.target.serial) == nullptr)
             return QStringLiteral("stale-handle");
-        }
         return {};
     }
     case OperationKind::AcquireDiscovery: {
-        if (!m_snapshot.capabilities.testFlag(Capability::DiscoveryLease)) {
+        if (!m_snapshot.capabilities.testFlag(Capability::DiscoveryLease))
             return QStringLiteral("unsupported");
-        }
         const Adapter *adapter = findAdapter(request.target.serial);
-        if (adapter == nullptr) {
-            return QStringLiteral("stale-handle");
-        }
-        if (!adapter->powered) {
-            return QStringLiteral("adapter-off");
-        }
+        if (adapter == nullptr) return QStringLiteral("stale-handle");
+        if (!adapter->powered) return QStringLiteral("adapter-off");
         // AGENT-GUARD: Bounds must include lease operations dispatched but
         // not yet completed; otherwise concurrently dispatched acquisitions
         // overrun the advertised lease caps before the backend publishes.
@@ -319,6 +308,73 @@ QString BluetoothModel::validateRequest(const OperationRequest &request,
         }
         return {};
     }
+    case OperationKind::Pair: {
+        if (!m_snapshot.capabilities.testFlag(Capability::Pair)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(request.target.serial);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (device->paired) {
+            return QStringLiteral("already-paired");
+        }
+        const Adapter *adapter = findAdapter(device->adapterHandle.serial);
+        return adapter != nullptr && adapter->powered ? QString{}
+                                                      : QStringLiteral("adapter-off");
+    }
+    case OperationKind::CancelPairing: {
+        const Device *device = findDevice(request.target.serial);
+        return device == nullptr ? QStringLiteral("stale-handle") : QString{};
+    }
+    case OperationKind::RemoveDevice: {
+        if (!m_snapshot.capabilities.testFlag(Capability::RemoveDevice)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(request.target.serial);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        return device->paired ? QString{} : QStringLiteral("not-paired");
+    }
+    case OperationKind::SetTrusted: {
+        if (!m_snapshot.capabilities.testFlag(Capability::SetTrusted)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(request.target.serial);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (!device->paired) {
+            return QStringLiteral("not-paired");
+        }
+        return device->trusted == request.trusted
+            ? QStringLiteral("already-set") : QString{};
+    }
+    case OperationKind::ReplyConfirmation:
+        if (!m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+            || m_snapshot.pairingPrompt.device != request.target
+            || (m_snapshot.pairingPrompt.kind != PairingPromptKind::ConfirmPasskey
+                && m_snapshot.pairingPrompt.kind
+                    != PairingPromptKind::AuthorizeService)) {
+            return QStringLiteral("no-prompt");
+        }
+        return {};
+    case OperationKind::ReplyPasskey:
+        return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+                && m_snapshot.pairingPrompt.device == request.target
+                && m_snapshot.pairingPrompt.kind == PairingPromptKind::EnterPasskey
+            ? QString{} : QStringLiteral("no-prompt");
+    case OperationKind::ReplyPin:
+        return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+                && m_snapshot.pairingPrompt.device == request.target
+                && m_snapshot.pairingPrompt.kind == PairingPromptKind::EnterPin
+            ? QString{} : QStringLiteral("no-prompt");
+    case OperationKind::CancelPrompt:
+        return m_snapshot.capabilities.testFlag(Capability::PairingPrompt)
+                && m_snapshot.pairingPrompt.active()
+                && m_snapshot.pairingPrompt.device == request.target
+            ? QString{} : QStringLiteral("no-prompt");
     default:
         return QStringLiteral("malformed-request");
     }
@@ -364,6 +420,10 @@ OperationSubmission BluetoothModel::submit(const OperationRequest &request,
     BackendRequest backendRequest;
     backendRequest.kind = request.kind;
     backendRequest.powered = request.powered;
+    backendRequest.accepted = request.accepted;
+    backendRequest.trusted = request.trusted;
+    backendRequest.input = request.input;
+    backendRequest.inputSize = request.inputSize;
     backendRequest.callerId = callerId;
     if (const Adapter *adapter = findAdapter(request.target.serial); adapter != nullptr) {
         backendRequest.adapterAddress = adapter->address;

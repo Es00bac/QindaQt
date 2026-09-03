@@ -28,8 +28,9 @@ rather than truncating silently.
 | --- | --- | --- |
 | `Handle` | `(tt)` | `epoch`, `serial` |
 | `Adapter` | `((tt)ssbb)` | `handle`, `address`, `name`, `powered`, `discovering` |
-| `Device` | `((tt)(tt)ssuubbbnby)` | `handle`, `adapter` handle, `address`, `name`, `deviceClass` (`u`), `role` (`u`), `paired`, `connected`, `rssiKnown`, `rssi` (`n`), `batteryKnown`, `batteryPercent` (`y`) |
-| `Snapshot` | `(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))` | `schemaVersion`, `epoch`, `revision`, `availability`, `capabilities`, `reasonCode`, `diagnostic`, `adapters`, `devices` |
+| `Device` | `((tt)(tt)ssuubbbnbyb)` | `handle`, `adapter` handle, `address`, `name`, `deviceClass` (`u`), `role` (`u`), `paired`, `connected`, `rssiKnown`, `rssi` (`n`), `batteryKnown`, `batteryPercent` (`y`), `trusted` |
+| `PairingPrompt` | `(u(tt)ssq)` | `kind`, device `handle`, bounded `detail`, bounded `serviceUuid`, entered digit count (`q`) |
+| `Snapshot` | `(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))` | `schemaVersion`, `epoch`, `revision`, `availability`, `capabilities`, `reasonCode`, `diagnostic`, `adapters`, `devices`, `pairingPrompt` |
 | `OperationResult` | `(uuttttss)` | `kind`, `status`, `initiatingEpoch`, `initiatingRevision`, `observedEpoch`, `observedRevision`, `reasonCode`, `diagnostic` |
 
 ### Enumerations
@@ -37,10 +38,11 @@ rather than truncating silently.
 | Enum | Values |
 | --- | --- |
 | `Availability` (`u`) | `Starting=0`, `Ready=1`, `Unavailable=2`, `Degraded=3` |
-| `Capability` (`u`, flags) | `SetAdapterPower=1<<0`, `DiscoveryLease=1<<1`, `ConnectPaired=1<<2`, `DisconnectPaired=1<<3` |
+| `Capability` (`u`, flags) | `SetAdapterPower=1<<0`, `DiscoveryLease=1<<1`, `ConnectPaired=1<<2`, `DisconnectPaired=1<<3`, `Pair=1<<4`, `RemoveDevice=1<<5`, `SetTrusted=1<<6`, `PairingPrompt=1<<7` |
 | `DeviceClass` (`u`) | `Unknown=0`, `Computer=1`, `Phone=2`, `AudioVideo=3`, `Headset=4`, `Headphones=5`, `Keyboard=6`, `Mouse=7`, `Tablet=8`, `Printer=9`, `GameInput=10`, `Wearable=11`, `Tag=12` |
 | `DeviceRole` (`u`) | `Unknown=0`, `Central=1`, `Peripheral=2`, `CentralPeripheral=3` |
-| `OperationKind` (`u`) | `SetAdapterPower=0`, `AcquireDiscovery=1`, `ReleaseDiscovery=2`, `Connect=3`, `Disconnect=4` |
+| `OperationKind` (`u`) | `SetAdapterPower=0`, `AcquireDiscovery=1`, `ReleaseDiscovery=2`, `Connect=3`, `Disconnect=4`, `Pair=5`, `CancelPairing=6`, `RemoveDevice=7`, `SetTrusted=8`, `ReplyConfirmation=9`, `ReplyPasskey=10`, `ReplyPin=11`, `CancelPrompt=12` |
+| `PairingPromptKind` (`u`) | `None=0`, `ConfirmPasskey=1`, `EnterPasskey=2`, `EnterPin=3`, `DisplayPasskey=4`, `DisplayPin=5`, `AuthorizeService=6` |
 | `OperationStatus` (`u`) | `Succeeded=0`, `Rejected=1`, `Unsupported=2`, `Failed=3`, `Uncertain=4`, `Busy=5` |
 
 ### Limits
@@ -56,6 +58,9 @@ rather than truncating silently.
 | Discovery leases per adapter | 16 |
 | Total discovery leases | 64 |
 | Caller identity | 64 UTF-8 bytes |
+| Pairing prompt text or service UUID | 64 UTF-8 bytes |
+| PIN code | 1–16 ASCII alphanumeric characters |
+| Agent prompt deadline | 60 seconds |
 
 ## Methods and signal
 
@@ -66,6 +71,14 @@ AcquireDiscovery(adapter (tt)) -> result
 ReleaseDiscovery(adapter (tt)) -> result
 Connect(device (tt)) -> result
 Disconnect(device (tt)) -> result
+Pair(device (tt)) -> result
+CancelPairing(device (tt)) -> result
+Remove(device (tt)) -> result
+SetTrusted(device (tt), trusted b) -> result
+ReplyConfirmation(accept b) -> result
+ReplyPasskey(passkey u) -> result
+ReplyPin(pin s) -> result
+CancelPrompt() -> result
 Changed(epoch t, revision t)          (signal)
 ```
 
@@ -77,13 +90,21 @@ Powering an adapter off releases that adapter's leases and terminates its
 connections and discovery sessions; a later power-on never resurrects
 discovery.
 
+The public client serializes ordinary device/adapter mutations in one lane and
+prompt replies in a second lane. This is required because BlueZ holds
+`Device1.Pair` while its Agent1 method waits for user input. Exactly one prompt
+may be active. Confirmation and authorization use `ReplyConfirmation`; entry
+prompts accept only their corresponding passkey or PIN method; display prompts
+offer cancellation only. A mismatched reply, missing prompt, timeout, owner
+loss, or cancellation fails closed and never authorizes BlueZ.
+
 ## Validation (fail-closed)
 
 A snapshot or operation result is **invalid**, and never published or
 accepted, when any of the following holds:
 
 - the schema version is not 1, an enum is outside its known values, or a
-  capability flag outside the four known bits is set;
+  capability flag outside the eight known bits is set;
 - `epoch` or `revision` is zero, a handle's epoch differs from the snapshot
   epoch, or any serial is zero, repeated anywhere in the snapshot, or not
   strictly ascending within the adapter and device arrays;
@@ -97,6 +118,9 @@ accepted, when any of the following holds:
 - a device is `connected` while `paired == false` or while its adapter has
   `powered == false`, or references a missing adapter; an adapter is
   `discovering` while `powered == false`;
+- a prompt names a missing/stale device, has a kind-specific field populated
+  incorrectly, displays a passkey other than exactly six decimal digits, has
+  an entered count above six, or carries invalid bounded text;
 - text exceeds its bound, contains an embedded null, or a diagnostic contains
   control characters other than newline and tab;
 - a reason code is not structured (`[a-z0-9-]`, nonempty);
@@ -133,7 +157,9 @@ Stable reason tokens include `starting`, `ready`, `no-adapter`,
 `no-lease`, `too-many-leases`,
 `too-many-operations`, `malformed-request`, `malformed-caller`,
 `unsupported`, `adapter-power-set`, `lease-acquired`, `lease-released`,
-`connected`, `disconnected`, `authority-replaced`, `model-stopped`,
+`connected`, `disconnected`, `paired`, `pairing-cancelled`, `device-removed`,
+`trusted-set`, `prompt-replied`, `prompt-cancelled`, `no-prompt`,
+`wrong-prompt-kind`, `authority-replaced`, `model-stopped`,
 `snapshot-unavailable`, `snapshot-timeout`, and the client-side
 `owner-replaced`, `operation-timeout`, `client-stopped`,
 `malformed-result`, `malformed-snapshot`, and `transport-*` family.

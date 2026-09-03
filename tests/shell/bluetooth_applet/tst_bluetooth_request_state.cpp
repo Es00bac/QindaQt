@@ -22,7 +22,9 @@ Bluetooth::Snapshot readySnapshot()
     snapshot.capabilities = Bluetooth::Capability::SetAdapterPower
         | Bluetooth::Capability::DiscoveryLease
         | Bluetooth::Capability::ConnectPaired
-        | Bluetooth::Capability::DisconnectPaired;
+        | Bluetooth::Capability::DisconnectPaired | Bluetooth::Capability::Pair
+        | Bluetooth::Capability::RemoveDevice | Bluetooth::Capability::SetTrusted
+        | Bluetooth::Capability::PairingPrompt;
     snapshot.reasonCode = QStringLiteral("ready");
     snapshot.adapters = {{.handle = {.epoch = 71, .serial = 4},
                           .address = QStringLiteral("AA:BB:CC:00:11:22"),

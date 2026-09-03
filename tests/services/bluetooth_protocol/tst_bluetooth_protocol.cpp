@@ -34,7 +34,9 @@ Snapshot validSnapshot()
     snapshot.revision = 6;
     snapshot.availability = Availability::Ready;
     snapshot.capabilities = Capability::SetAdapterPower | Capability::DiscoveryLease
-        | Capability::ConnectPaired | Capability::DisconnectPaired;
+        | Capability::ConnectPaired | Capability::DisconnectPaired
+        | Capability::Pair | Capability::RemoveDevice | Capability::SetTrusted
+        | Capability::PairingPrompt;
     snapshot.reasonCode = QStringLiteral("ready");
     snapshot.adapters = {{.handle = {.epoch = 31, .serial = 400},
                          .address = QStringLiteral("AA:BB:CC:00:11:22"),
@@ -90,6 +92,7 @@ private Q_SLOTS:
     void rejectsUnstructuredReasonCodes();
     void operationResultLineage();
     void rejectsMalformedOperationRequests();
+    void validatesPairingPromptsAndReplies();
 };
 
 void BluetoothProtocolTests::fixedSignatures()
@@ -101,9 +104,11 @@ void BluetoothProtocolTests::fixedSignatures()
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Adapter>()), "((tt)ssbb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
-             "((tt)(tt)ssuubbbnby)");
+             "((tt)(tt)ssuubbbnbyb)");
+    QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<PairingPrompt>()),
+             "(u(tt)ssq)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
@@ -118,9 +123,10 @@ void BluetoothProtocolTests::realWireMarshallingMatchesCanonicalSignatures()
     QCOMPARE(marshalledArgument(validSnapshot().adapters.constFirst()).currentSignature(),
              "((tt)ssbb)");
     QCOMPARE(marshalledArgument(validSnapshot().devices.constFirst()).currentSignature(),
-             "((tt)(tt)ssuubbbnby)");
+             "((tt)(tt)ssuubbbnbyb)");
+    QCOMPARE(marshalledArgument(PairingPrompt{}).currentSignature(), "(u(tt)ssq)");
     QCOMPARE(marshalledArgument(validSnapshot()).currentSignature(),
-             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))");
+             "(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))");
     QCOMPARE(marshalledArgument(validResult()).currentSignature(), "(uuttttss)");
 }
 
@@ -398,6 +404,56 @@ void BluetoothProtocolTests::rejectsMalformedOperationRequests()
     request.target = {};
     QCOMPARE(validateOperationRequest(request).reasonCode,
              QStringLiteral("stale-handle"));
+}
+
+void BluetoothProtocolTests::validatesPairingPromptsAndReplies()
+{
+    Snapshot snapshot = validSnapshot();
+    snapshot.pairingPrompt = {.kind = PairingPromptKind::ConfirmPasskey,
+                              .device = snapshot.devices.constFirst().handle,
+                              .detail = QStringLiteral("004321"),
+                              .serviceUuid = {},
+                              .entered = 0};
+    QVERIFY(validateSnapshot(snapshot).accepted);
+
+    snapshot.pairingPrompt.detail = QStringLiteral("4321");
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-pairing-prompt"));
+    snapshot.pairingPrompt = {.kind = PairingPromptKind::DisplayPasskey,
+                              .device = snapshot.devices.constFirst().handle,
+                              .detail = QStringLiteral("004321"),
+                              .serviceUuid = {},
+                              .entered = 7};
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-pairing-prompt"));
+    snapshot.pairingPrompt = {.kind = PairingPromptKind::DisplayPin,
+                              .device = snapshot.devices.constFirst().handle,
+                              .detail = QStringLiteral("12-34"),
+                              .serviceUuid = {},
+                              .entered = 0};
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-pairing-prompt"));
+    snapshot.pairingPrompt = {.kind = PairingPromptKind::EnterPin,
+                              .device = {.epoch = snapshot.epoch, .serial = 999},
+                              .detail = {},
+                              .serviceUuid = {},
+                              .entered = 0};
+    QCOMPARE(validateSnapshot(snapshot).reasonCode,
+             QStringLiteral("invalid-pairing-prompt"));
+
+    OperationRequest reply{.kind = OperationKind::ReplyPasskey,
+                           .target = snapshot.devices.constFirst().handle};
+    QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("4321")));
+    QVERIFY(validateOperationRequest(reply).accepted);
+    QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("1000000")));
+    QCOMPARE(validateOperationRequest(reply).reasonCode,
+             QStringLiteral("malformed-request"));
+    reply.kind = OperationKind::ReplyPin;
+    QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("A12b")));
+    QVERIFY(validateOperationRequest(reply).accepted);
+    QVERIFY(setPairingInput(reply.input, reply.inputSize, QStringLiteral("12-34")));
+    QCOMPARE(validateOperationRequest(reply).reasonCode,
+             QStringLiteral("malformed-request"));
 }
 
 QTEST_GUILESS_MAIN(BluetoothProtocolTests)

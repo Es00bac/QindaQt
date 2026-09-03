@@ -15,6 +15,8 @@ namespace
 constexpr int kMinRetryIntervalMs = 200;
 constexpr int kMaxRetryIntervalMs = 2000;
 
+} // namespace
+
 const Adapter *findAdapter(const Snapshot &snapshot, const Handle &handle)
 {
     for (const Adapter &adapter : snapshot.adapters) {
@@ -37,17 +39,14 @@ const Device *findDevice(const Snapshot &snapshot, const Handle &handle)
 
 QString preflightOperation(const Snapshot &snapshot, const OperationRequest &request)
 {
-    if (snapshot.availability != Availability::Ready) {
+    if (snapshot.availability != Availability::Ready)
         return QStringLiteral("unavailable");
-    }
-    if (!request.target.isValid() || request.target.epoch != snapshot.epoch) {
+    if (!request.target.isValid() || request.target.epoch != snapshot.epoch)
         return QStringLiteral("stale-handle");
-    }
     switch (request.kind) {
     case OperationKind::SetAdapterPower: {
-        if (!snapshot.capabilities.testFlag(Capability::SetAdapterPower)) {
+        if (!snapshot.capabilities.testFlag(Capability::SetAdapterPower))
             return QStringLiteral("unsupported");
-        }
         return findAdapter(snapshot, request.target) == nullptr
             ? QStringLiteral("stale-handle")
             : QString{};
@@ -95,11 +94,68 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
         }
         return device->connected ? QString{} : QStringLiteral("not-connected");
     }
+    case OperationKind::Pair: {
+        if (!snapshot.capabilities.testFlag(Capability::Pair)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(snapshot, request.target);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (device->paired) {
+            return QStringLiteral("already-paired");
+        }
+        const Adapter *adapter = findAdapter(snapshot, device->adapterHandle);
+        return adapter != nullptr && adapter->powered ? QString{}
+                                                      : QStringLiteral("adapter-off");
+    }
+    case OperationKind::CancelPairing:
+        return findDevice(snapshot, request.target) == nullptr
+            ? QStringLiteral("stale-handle") : QString{};
+    case OperationKind::RemoveDevice: {
+        if (!snapshot.capabilities.testFlag(Capability::RemoveDevice)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(snapshot, request.target);
+        return device != nullptr && device->paired ? QString{}
+            : (device == nullptr ? QStringLiteral("stale-handle")
+                                 : QStringLiteral("not-paired"));
+    }
+    case OperationKind::SetTrusted: {
+        if (!snapshot.capabilities.testFlag(Capability::SetTrusted)) {
+            return QStringLiteral("unsupported");
+        }
+        const Device *device = findDevice(snapshot, request.target);
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (!device->paired) {
+            return QStringLiteral("not-paired");
+        }
+        return device->trusted == request.trusted ? QStringLiteral("already-set")
+                                                   : QString{};
+    }
+    case OperationKind::ReplyConfirmation:
+        return snapshot.pairingPrompt.device == request.target
+                && (snapshot.pairingPrompt.kind == PairingPromptKind::ConfirmPasskey
+                    || snapshot.pairingPrompt.kind
+                        == PairingPromptKind::AuthorizeService)
+            ? QString{} : QStringLiteral("no-prompt");
+    case OperationKind::ReplyPasskey:
+        return snapshot.pairingPrompt.device == request.target
+                && snapshot.pairingPrompt.kind == PairingPromptKind::EnterPasskey
+            ? QString{} : QStringLiteral("no-prompt");
+    case OperationKind::ReplyPin:
+        return snapshot.pairingPrompt.device == request.target
+                && snapshot.pairingPrompt.kind == PairingPromptKind::EnterPin
+            ? QString{} : QStringLiteral("no-prompt");
+    case OperationKind::CancelPrompt:
+        return snapshot.pairingPrompt.active()
+                && snapshot.pairingPrompt.device == request.target
+            ? QString{} : QStringLiteral("no-prompt");
     }
     return QStringLiteral("malformed-request");
 }
-
-} // namespace
 
 BluetoothClient::BluetoothClient(BluetoothTransport *transport, QObject *parent)
     : QObject(parent)
@@ -108,10 +164,13 @@ BluetoothClient::BluetoothClient(BluetoothTransport *transport, QObject *parent)
     Q_ASSERT(m_transport != nullptr);
     m_fetchTimer.setSingleShot(true);
     m_operationTimer.setSingleShot(true);
+    m_promptOperationTimer.setSingleShot(true);
     m_retryTimer.setSingleShot(true);
     m_retryTimer.setInterval(200);
     connect(&m_fetchTimer, &QTimer::timeout, this, &BluetoothClient::onFetchTimeout);
     connect(&m_operationTimer, &QTimer::timeout, this, &BluetoothClient::onOperationTimeout);
+    connect(&m_promptOperationTimer, &QTimer::timeout, this,
+            &BluetoothClient::onPromptOperationTimeout);
     connect(&m_retryTimer, &QTimer::timeout, this, &BluetoothClient::requestSnapshot);
     connect(m_transport, &BluetoothTransport::ownerChanged, this,
             &BluetoothClient::acceptOwner);
@@ -125,18 +184,14 @@ BluetoothClient::BluetoothClient(BluetoothTransport *transport, QObject *parent)
 
 void BluetoothClient::start()
 {
-    if (m_state != ClientState::Stopped) {
-        return;
-    }
+    if (m_state != ClientState::Stopped) return;
     publishState(ClientState::Starting, QStringLiteral("discovering-owner"));
     m_transport->start();
 }
 
 void BluetoothClient::stop()
 {
-    if (m_state == ClientState::Stopped) {
-        return;
-    }
+    if (m_state == ClientState::Stopped) return;
     // AGENT-GUARD: Results accepted before stop but not yet published belong to
     // the cancelled client lifetime. Drop those first, but retain the distinct
     // asynchronous Uncertain result created here for a mutation that is still
@@ -145,6 +200,7 @@ void BluetoothClient::stop()
     completeUncertain(QStringLiteral("client-stopped"));
     m_fetchTimer.stop();
     m_operationTimer.stop();
+    m_promptOperationTimer.stop();
     m_retryTimer.stop();
     m_fetchInFlight = false;
     m_refetchNeeded = false;
@@ -183,7 +239,7 @@ Snapshot BluetoothClient::snapshot() const
 
 bool BluetoothClient::operationPending() const noexcept
 {
-    return m_operation.has_value();
+    return m_operation.has_value() || m_promptOperation.has_value();
 }
 
 void BluetoothClient::setRequestTimeout(const int milliseconds)
@@ -369,110 +425,20 @@ OperationResult BluetoothClient::localResult(const OperationRequest &request,
             .wireValid = true};
 }
 
-quint64 BluetoothClient::beginOperation(const OperationRequest &request)
-{
-    if (m_nextRequestId == 0 || m_nextRequestId == std::numeric_limits<quint64>::max()) {
-        return 0;
-    }
-    const quint64 requestId = m_nextRequestId++;
-    if (m_operation.has_value()) {
-        queueOperationCompletion(
-            requestId,
-            localResult(request, OperationStatus::Busy, QStringLiteral("operation-busy")));
-        return requestId;
-    }
-    if (m_owner.isEmpty() || !m_snapshot.has_value()) {
-        queueOperationCompletion(
-            requestId,
-            localResult(request, OperationStatus::Rejected, QStringLiteral("unavailable")));
-        return requestId;
-    }
-    const QString rejection = preflightOperation(*m_snapshot, request);
-    if (!rejection.isEmpty()) {
-        queueOperationCompletion(
-            requestId,
-            localResult(request,
-                        rejection == QStringLiteral("unsupported")
-                            ? OperationStatus::Unsupported
-                            : OperationStatus::Rejected,
-                        rejection));
-        return requestId;
-    }
-    m_operation = PendingOperation{.requestId = requestId,
-                                   .request = request,
-                                   .epoch = m_snapshot->epoch,
-                                   .revision = m_snapshot->revision};
-    m_operationTimer.start(m_requestTimeoutMs);
-    m_transport->submitOperation(m_owner, requestId, request);
-    return requestId;
-}
-
-quint64 BluetoothClient::setAdapterPower(const Handle &adapter, const bool powered)
-{
-    return beginOperation(
-        {.kind = OperationKind::SetAdapterPower, .target = adapter, .powered = powered});
-}
-
-quint64 BluetoothClient::acquireDiscovery(const Handle &adapter)
-{
-    return beginOperation(
-        {.kind = OperationKind::AcquireDiscovery, .target = adapter, .powered = false});
-}
-
-quint64 BluetoothClient::releaseDiscovery(const Handle &adapter)
-{
-    return beginOperation(
-        {.kind = OperationKind::ReleaseDiscovery, .target = adapter, .powered = false});
-}
-
-quint64 BluetoothClient::connectDevice(const Handle &device)
-{
-    return beginOperation(
-        {.kind = OperationKind::Connect, .target = device, .powered = false});
-}
-
-quint64 BluetoothClient::disconnectDevice(const Handle &device)
-{
-    return beginOperation(
-        {.kind = OperationKind::Disconnect, .target = device, .powered = false});
-}
-
-void BluetoothClient::completeUncertain(const QString &reasonCode)
-{
-    if (!m_operation.has_value()) {
-        return;
-    }
-    const PendingOperation pending = *m_operation;
-    m_operation.reset();
-    m_operationTimer.stop();
-    const quint64 observedEpoch = m_snapshot.has_value() ? m_snapshot->epoch : pending.epoch;
-    const quint64 observedRevision = m_snapshot.has_value() ? m_snapshot->revision
-                                                            : pending.revision;
-    queueOperationCompletion(
-        pending.requestId,
-        {.kind = pending.request.kind,
-         .status = OperationStatus::Uncertain,
-         .initiatingEpoch = pending.epoch,
-         .initiatingRevision = pending.revision,
-         .observedEpoch = observedEpoch,
-         .observedRevision = observedRevision,
-         .reasonCode = reasonCode,
-         .diagnostic = {},
-         .wireValid = true});
-}
-
 void BluetoothClient::acceptOperationReply(const QString &owner, const quint64 requestId,
                                            const bool transportSuccess,
                                            const OperationResult &result,
                                            const QString &reasonCode)
 {
-    if (!m_operation.has_value() || owner != m_owner
-        || requestId != m_operation->requestId) {
+    const bool promptLane = m_promptOperation.has_value()
+        && requestId == m_promptOperation->requestId;
+    std::optional<PendingOperation> &lane = promptLane ? m_promptOperation : m_operation;
+    if (!lane.has_value() || owner != m_owner || requestId != lane->requestId) {
         return;
     }
-    const PendingOperation pending = *m_operation;
-    m_operation.reset();
-    m_operationTimer.stop();
+    const PendingOperation pending = *lane;
+    lane.reset();
+    (promptLane ? m_promptOperationTimer : m_operationTimer).stop();
 
     const ValidationResult validation = validateOperationResult(result);
     const bool exactInitiator = result.kind == pending.request.kind
@@ -520,7 +486,45 @@ void BluetoothClient::onFetchTimeout()
 
 void BluetoothClient::onOperationTimeout()
 {
-    completeUncertain(QStringLiteral("operation-timeout"));
+    if (!m_operation.has_value()) {
+        return;
+    }
+    const PendingOperation pending = *m_operation;
+    m_operation.reset();
+    queueOperationCompletion(
+        pending.requestId,
+        {.kind = pending.request.kind,
+         .status = OperationStatus::Uncertain,
+         .initiatingEpoch = pending.epoch,
+         .initiatingRevision = pending.revision,
+         .observedEpoch = m_snapshot.has_value() ? m_snapshot->epoch : pending.epoch,
+         .observedRevision = m_snapshot.has_value() ? m_snapshot->revision
+                                                    : pending.revision,
+         .reasonCode = QStringLiteral("operation-timeout"),
+         .diagnostic = {},
+         .wireValid = true});
+    requestSnapshot();
+}
+
+void BluetoothClient::onPromptOperationTimeout()
+{
+    if (!m_promptOperation.has_value()) {
+        return;
+    }
+    const PendingOperation pending = *m_promptOperation;
+    m_promptOperation.reset();
+    queueOperationCompletion(
+        pending.requestId,
+        {.kind = pending.request.kind,
+         .status = OperationStatus::Uncertain,
+         .initiatingEpoch = pending.epoch,
+         .initiatingRevision = pending.revision,
+         .observedEpoch = m_snapshot.has_value() ? m_snapshot->epoch : pending.epoch,
+         .observedRevision = m_snapshot.has_value() ? m_snapshot->revision
+                                                    : pending.revision,
+         .reasonCode = QStringLiteral("operation-timeout"),
+         .diagnostic = {},
+         .wireValid = true});
     requestSnapshot();
 }
 

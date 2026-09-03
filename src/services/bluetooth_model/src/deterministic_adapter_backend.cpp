@@ -136,7 +136,7 @@ void DeterministicAdapterBackend::submit(const quint64 operationId,
                                          const BackendRequest &request)
 {
     ++m_submitCalls;
-    // AGENT-GUARD: Real BluezQt operations complete asynchronously. Applying
+    // AGENT-GUARD: Real BlueZ operations complete asynchronously. Applying
     // on a queued invocation preserves that contract: the model returns a
     // pending submission before any completion signal can overtake it, which
     // the resident service object relies on to register its delayed reply.
@@ -159,8 +159,7 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
 {
     if (!m_running) {
         finish(operationId, BackendOperationStatus::Uncertain,
-               QStringLiteral("backend-stopped"));
-        return;
+               QStringLiteral("backend-stopped")); return;
     }
 
     switch (request.kind) {
@@ -168,8 +167,7 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         BackendAdapter *adapter = findBackendAdapter(m_state, request.adapterAddress);
         if (adapter == nullptr) {
             finish(operationId, BackendOperationStatus::Rejected,
-                   QStringLiteral("stale-handle"));
-            return;
+                   QStringLiteral("stale-handle")); return;
         }
         adapter->powered = request.powered;
         if (!adapter->powered) {
@@ -201,13 +199,11 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         const BackendAdapter *adapter = findBackendAdapter(m_state, request.adapterAddress);
         if (adapter == nullptr) {
             finish(operationId, BackendOperationStatus::Rejected,
-                   QStringLiteral("stale-handle"));
-            return;
+                   QStringLiteral("stale-handle")); return;
         }
         if (!adapter->powered) {
             finish(operationId, BackendOperationStatus::Rejected,
-                   QStringLiteral("adapter-off"));
-            return;
+                   QStringLiteral("adapter-off")); return;
         }
         if (leaseTotal(request.adapterAddress) >= kMaxDiscoveryLeasesPerAdapter
             || leaseTotal() >= kMaxDiscoveryLeasesTotal) {
@@ -243,8 +239,7 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         BackendDevice *device = findBackendDevice(m_state, request.deviceAddress);
         if (device == nullptr) {
             finish(operationId, BackendOperationStatus::Rejected,
-                   QStringLiteral("stale-handle"));
-            return;
+                   QStringLiteral("stale-handle")); return;
         }
         if (!device->paired) {
             finish(operationId, BackendOperationStatus::Rejected,
@@ -272,8 +267,7 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
         BackendDevice *device = findBackendDevice(m_state, request.deviceAddress);
         if (device == nullptr) {
             finish(operationId, BackendOperationStatus::Rejected,
-                   QStringLiteral("stale-handle"));
-            return;
+                   QStringLiteral("stale-handle")); return;
         }
         if (!device->connected) {
             finish(operationId, BackendOperationStatus::Rejected,
@@ -286,6 +280,56 @@ void DeterministicAdapterBackend::applySubmit(const quint64 operationId,
                QStringLiteral("disconnected"));
         return;
     }
+    case OperationKind::Pair: {
+        BackendDevice *device = findBackendDevice(m_state, request.deviceAddress);
+        if (device == nullptr) {
+            finish(operationId, BackendOperationStatus::Rejected,
+                   QStringLiteral("stale-handle")); return;
+        }
+        device->paired = true;
+        publish();
+        finish(operationId, BackendOperationStatus::Succeeded,
+               QStringLiteral("paired"));
+        return;
+    }
+    case OperationKind::CancelPairing:
+        finish(operationId, BackendOperationStatus::Succeeded,
+               QStringLiteral("pairing-canceled"));
+        return;
+    case OperationKind::RemoveDevice: {
+        const auto before = m_state.devices.size();
+        m_state.devices.removeIf([&](const BackendDevice &device) {
+            return device.address == request.deviceAddress;
+        });
+        if (m_state.devices.size() == before) {
+            finish(operationId, BackendOperationStatus::Rejected,
+                   QStringLiteral("stale-handle"));
+            return;
+        }
+        publish();
+        finish(operationId, BackendOperationStatus::Succeeded,
+               QStringLiteral("device-removed"));
+        return;
+    }
+    case OperationKind::SetTrusted: {
+        BackendDevice *device = findBackendDevice(m_state, request.deviceAddress);
+        if (device == nullptr) {
+            finish(operationId, BackendOperationStatus::Rejected,
+                   QStringLiteral("stale-handle")); return;
+        }
+        device->trusted = request.trusted;
+        publish();
+        finish(operationId, BackendOperationStatus::Succeeded,
+               QStringLiteral("trusted-set"));
+        return;
+    }
+    case OperationKind::ReplyConfirmation:
+    case OperationKind::ReplyPasskey:
+    case OperationKind::ReplyPin:
+    case OperationKind::CancelPrompt:
+        finish(operationId, BackendOperationStatus::Rejected,
+               QStringLiteral("no-prompt"));
+        return;
     default:
         finish(operationId, BackendOperationStatus::Failed,
                QStringLiteral("malformed-request"));

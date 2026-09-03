@@ -47,11 +47,13 @@ void registerDBusTypes()
     qRegisterMetaType<Adapter>();
     qRegisterMetaType<Device>();
     qRegisterMetaType<Snapshot>();
+    qRegisterMetaType<PairingPrompt>();
     qRegisterMetaType<OperationResult>();
     qDBusRegisterMetaType<Handle>();
     qDBusRegisterMetaType<Adapter>();
     qDBusRegisterMetaType<Device>();
     qDBusRegisterMetaType<Snapshot>();
+    qDBusRegisterMetaType<PairingPrompt>();
     qDBusRegisterMetaType<OperationResult>();
 }
 
@@ -96,7 +98,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
              << static_cast<quint32>(value.deviceClass)
              << static_cast<quint32>(value.role) << value.paired << value.connected
              << value.rssiKnown << value.rssi << value.batteryKnown
-             << value.batteryPercent;
+             << value.batteryPercent << value.trusted;
     argument.endStructure();
     return argument;
 }
@@ -109,9 +111,30 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
     argument >> value.handle >> value.adapterHandle >> value.address >> value.name
         >> deviceClass >> role >> value.paired >> value.connected >> value.rssiKnown
         >> value.rssi >> value.batteryKnown >> value.batteryPercent;
+    argument >> value.trusted;
     argument.endStructure();
     value.deviceClass = static_cast<DeviceClass>(deviceClass);
     value.role = static_cast<DeviceRole>(role);
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const PairingPrompt &value)
+{
+    argument.beginStructure();
+    argument << static_cast<quint32>(value.kind) << value.device << value.detail
+             << value.serviceUuid << value.entered;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, PairingPrompt &value)
+{
+    quint32 kind = 0;
+    argument.beginStructure();
+    argument >> kind >> value.device >> value.detail >> value.serviceUuid
+        >> value.entered;
+    argument.endStructure();
+    value.kind = static_cast<PairingPromptKind>(kind);
     return argument;
 }
 
@@ -124,6 +147,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value)
              << value.diagnostic;
     writeArray(argument, value.adapters);
     writeArray(argument, value.devices);
+    argument << value.pairingPrompt;
     argument.endStructure();
     return argument;
 }
@@ -138,6 +162,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value)
         >> capabilities >> value.reasonCode >> value.diagnostic;
     readBoundedArray(argument, value.adapters, kMaxAdapters, value.wireValid);
     readBoundedArray(argument, value.devices, kMaxDevices, value.wireValid);
+    argument >> value.pairingPrompt;
     argument.endStructure();
     value.availability = static_cast<Availability>(availability);
     value.capabilities = Capabilities::fromInt(capabilities);

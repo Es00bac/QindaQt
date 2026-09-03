@@ -48,6 +48,15 @@ class FakeBluez : public QObject
     Q_OBJECT
 
 public:
+    enum class PairingMode {
+        ConfirmPasskey,
+        RequestPasskey,
+        RequestPin,
+        DisplayPasskey,
+        DisplayPin,
+        AuthorizeService,
+    };
+
     struct AdapterEntity
     {
         QString address;
@@ -70,6 +79,7 @@ public:
         quint32 deviceClass = 0;
         QString icon;
         bool paired = false;
+        bool trusted = false;
         bool connected = false;
         bool rssiKnown = false;
         qint16 rssi = 0;
@@ -77,6 +87,12 @@ public:
         QString disconnectError;
         bool deferConnect = false;
         QList<QDBusMessage> deferredConnectRequests;
+        PairingMode pairingMode = PairingMode::ConfirmPasskey;
+        quint32 pairingPasskey = 123456;
+        quint16 entered = 0;
+        QString pairingPin = QStringLiteral("123456");
+        QString serviceUuid = QStringLiteral("00001124-0000-1000-8000-00805f9b34fb");
+        QList<QDBusMessage> deferredPairRequests;
     };
 
     explicit FakeBluez(const QString &busAddress, QObject *parent = nullptr);
@@ -117,6 +133,13 @@ public:
     int stopDiscoveryCalls = 0;
     int connectCalls = 0;
     int disconnectCalls = 0;
+    int registerAgentCalls = 0;
+    int pairCalls = 0;
+    int cancelPairingCalls = 0;
+    int removeDeviceCalls = 0;
+    QString registeredCapability;
+    QString lastPinReply;
+    quint32 lastPasskeyReply = 0;
 
 private:
     friend class FakeBluezServiceObject;
@@ -127,6 +150,11 @@ private:
     void adapterStopDiscovery(const QString &path, const QDBusMessage &request);
     void deviceConnect(const QString &path, const QDBusMessage &request);
     void deviceDisconnect(const QString &path, const QDBusMessage &request);
+    void registerAgent(const QDBusMessage &request);
+    void devicePair(const QString &path, const QDBusMessage &request);
+    void deviceCancelPairing(const QString &path, const QDBusMessage &request);
+    void adapterRemoveDevice(const QString &path, const QDBusMessage &request);
+    void dispatchAgentRequest(const QString &devicePath);
     void propertySet(const QString &path, const QString &interfaceName,
                      const QString &name, const QVariant &value,
                      const QDBusMessage &request);
@@ -143,6 +171,8 @@ private:
     QHash<QString, DeviceEntity> m_devices;
     QObject *m_nodes = nullptr;
     bool m_ownsService = false;
+    QString m_agentOwner;
+    QString m_agentPath;
 };
 
 } // namespace QindaQt::Tests

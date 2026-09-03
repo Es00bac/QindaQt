@@ -4,7 +4,7 @@
 <node name="/org/qindaqt/Bluetooth1">
   <interface name="org.qindaqt.Bluetooth1">
     <method name="GetSnapshot">
-      <arg name="snapshot" type="(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))" direction="out"/>
+      <arg name="snapshot" type="(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))" direction="out"/>
     </method>
     <method name="SetPowered">
       <arg name="adapter" type="(tt)" direction="in"/>
@@ -25,6 +25,38 @@
     </method>
     <method name="Disconnect">
       <arg name="device" type="(tt)" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="Pair">
+      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="CancelPairing">
+      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="Remove">
+      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="SetTrusted">
+      <arg name="device" type="(tt)" direction="in"/>
+      <arg name="trusted" type="b" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="ReplyConfirmation">
+      <arg name="accept" type="b" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="ReplyPasskey">
+      <arg name="passkey" type="u" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="ReplyPin">
+      <arg name="pin" type="s" direction="in"/>
+      <arg name="result" type="(uuttttss)" direction="out"/>
+    </method>
+    <method name="CancelPrompt">
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>
     <signal name="Changed">

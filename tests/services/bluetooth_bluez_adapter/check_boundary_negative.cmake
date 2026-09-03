@@ -49,8 +49,8 @@ expect_rejection(
 )
 expect_rejection(
     "src/services/bluetooth_bluez_adapter/src/poison.cpp"
-    "void pair() { call(QStringLiteral(\"Pair\")); }"
-    "pairing/trust/record authority"
+    "auto bus = QDBusConnection::systemBus();"
+    "constructs an ambient bus"
 )
 expect_rejection(
     "src/services/bluetooth_bluez_adapter/include/poison.h"

@@ -18,6 +18,7 @@ private Q_SLOTS:
   void serializesDiscoveryAndReleasesOnDeparture();
   void rejectsUnpairedAndFencesPendingOperations();
   void ownerReplacementClearsTruthAndRetiresLease();
+  void pairingPromptRepliesWhilePairIsPending();
 
 private:
   struct Fixture {
@@ -40,7 +41,7 @@ private:
 void BluetoothSettingsModelTest::projectsBoundedAddressFreeInventoryAndAdmission() {
   Fixture fixture;
   QVERIFY(fixture.model.ready());
-  QVERIFY(!fixture.model.pairingSupported());
+  QVERIFY(fixture.model.pairingSupported());
   QCOMPARE(fixture.model.serviceOwner(), QStringLiteral(":1.42"));
   QCOMPARE(fixture.model.serviceEpoch(), qulonglong(61));
   QCOMPARE(fixture.model.serviceRevision(), qulonglong(5));
@@ -67,6 +68,10 @@ void BluetoothSettingsModelTest::projectsBoundedAddressFreeInventoryAndAdmission
               .value(QStringLiteral("connectAvailable")).toBool());
   QVERIFY(!devices.at(2).toMap()
                .value(QStringLiteral("connectAvailable")).toBool());
+  QVERIFY(devices.at(2).toMap()
+              .value(QStringLiteral("pairAvailable")).toBool());
+  QVERIFY(devices.at(0).toMap()
+              .value(QStringLiteral("forgetAvailable")).toBool());
   for (const QVariant &row : devices)
     QVERIFY(!row.toMap().contains(QStringLiteral("address")));
 }
@@ -141,6 +146,51 @@ void BluetoothSettingsModelTest::ownerReplacementClearsTruthAndRetiresLease() {
   QVERIFY(fixture.model.errorText().contains(QStringLiteral("authority"),
                                              Qt::CaseInsensitive));
   QCOMPARE(fixture.transport.submissions.size(), 1);
+}
+
+void BluetoothSettingsModelTest::pairingPromptRepliesWhilePairIsPending() {
+  Fixture fixture;
+  QVERIFY(fixture.model.requestPairing(QStringLiteral("device-61-702")));
+  QCOMPARE(fixture.transport.submissions.size(), 1);
+  const auto pairing = fixture.transport.submissions.constFirst();
+  QCOMPARE(pairing.request.kind, OperationKind::Pair);
+
+  fixture.transport.announceOwner(QStringLiteral(":1.42"));
+  Q_EMIT fixture.transport.invalidated(QStringLiteral(":1.42"), 61, 6);
+  QTRY_COMPARE(fixture.transport.fetches.size(), 2);
+  Snapshot prompted = readySnapshot(61, 6);
+  prompted.pairingPrompt = {
+      .kind = PairingPromptKind::EnterPasskey,
+      .device = prompted.devices.at(2).handle,
+      .detail = {},
+      .serviceUuid = {},
+      .entered = 0,
+  };
+  fixture.transport.finishSnapshot(QStringLiteral(":1.42"),
+                                   fixture.transport.fetches.constLast().second,
+                                   prompted);
+  QTRY_VERIFY(fixture.model.pairingPrompt().value(QStringLiteral("active")).toBool());
+  QVERIFY(fixture.model.replyPasskey(QStringLiteral("654321")));
+  QCOMPARE(fixture.transport.submissions.size(), 2);
+  const auto reply = fixture.transport.submissions.constLast();
+  QCOMPARE(reply.request.kind, OperationKind::ReplyPasskey);
+  QCOMPARE(pairingInputString(reply.request.input, reply.request.inputSize),
+           QStringLiteral("654321"));
+  fixture.transport.finishOperation(reply, successResult(reply, 7, 6));
+  QTRY_VERIFY(!fixture.model.pairingReplyPending());
+
+  fixture.transport.finishOperation(pairing, successResult(pairing, 7));
+  Snapshot paired = readySnapshot(61, 7);
+  paired.devices[2].paired = true;
+  fixture.transport.finishSnapshot(QStringLiteral(":1.42"),
+                                   fixture.transport.fetches.constLast().second,
+                                   paired);
+  QTRY_VERIFY(!fixture.model.busy());
+  if (fixture.transport.fetches.size() == 3) {
+    fixture.transport.finishSnapshot(QStringLiteral(":1.42"),
+                                     fixture.transport.fetches.constLast().second,
+                                     paired);
+  }
 }
 
 QTEST_MAIN(BluetoothSettingsModelTest)

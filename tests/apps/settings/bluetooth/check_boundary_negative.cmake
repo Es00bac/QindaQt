@@ -45,8 +45,8 @@ require_rejected(escape "poison.cpp"
 require_rejected(private_service "poison.cpp"
     "#include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>"
     "public-client-only boundary")
-require_rejected(pairing "poison.h"
-    "class Poison { Q_INVOKABLE bool pairDevice(); };"
-    "forbidden pairing/trust/remove authority")
+require_rejected(platform_bus "poison.h"
+    "#include <QtDBus/QDBusConnection>"
+    "public-client-only boundary")
 file(REMOVE_RECURSE "${POISON_ROOT}")
 message(STATUS "Bluetooth Settings rejected all independent boundary poisons")

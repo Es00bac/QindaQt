@@ -83,7 +83,6 @@ Item {
                 id: contentColumn
                 width: details.availableWidth
                 spacing: 8
-
                 Label {
                     objectName: "bluetoothAppletHeading"
                     Layout.fillWidth: true
@@ -92,7 +91,6 @@ Item {
                     font.bold: true
                     Accessible.role: Accessible.Heading
                 }
-
                 Label {
                     objectName: "bluetoothAppletLoading"
                     Layout.fillWidth: true
@@ -102,7 +100,6 @@ Item {
                     color: root.colors.textMuted ?? "#a9afa9"
                     wrapMode: Text.Wrap
                 }
-
                 Label {
                     objectName: "bluetoothAppletDiagnostic"
                     Layout.fillWidth: true
@@ -112,7 +109,12 @@ Item {
                     color: root.colors.textMuted ?? "#a9afa9"
                     wrapMode: Text.Wrap
                 }
-
+                BluetoothPairingPrompt {
+                    objectName: "bluetoothAppletPairingPrompt"
+                    access: root.access
+                    colors: root.colors
+                    theme: root.theme
+                }
                 Label {
                     Layout.fillWidth: true
                     visible: root.access !== null
@@ -121,7 +123,6 @@ Item {
                     color: root.colors.text ?? "white"
                     font.bold: true
                 }
-
                 Repeater {
                     model: root.access !== null ? root.access.adapterRows : []
 

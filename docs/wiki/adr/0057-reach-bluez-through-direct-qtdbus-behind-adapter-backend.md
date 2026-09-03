@@ -13,8 +13,9 @@
 BluezQt as the reuse library for the future runtime adapter. The B1 lane now
 supersedes that library choice and implements the production
 `AdapterBackend` over BlueZ. The authority decision — BlueZ owns pairing,
-trust, keys, device records, profiles, and authorization, and Bluetooth1 never
-calls `Pair`/`Trust` — is untouched by this choice.
+trust, keys, device records, profiles, and authorization — is untouched by
+this choice. Bluetooth1 now forwards those operations to BlueZ as described by
+ADR-0037's 2026-09-03 amendment; it still owns none of their state.
 
 Two facts forced an explicit decision rather than a default:
 
@@ -54,8 +55,10 @@ not through BluezQt. The module:
   discovery that no QindaQt caller holds as one synthetic external-session
   lease row so the model's lease/discovering consistency check stays truthful
   under concurrent external BlueZ clients;
-- performs no `Pair`, `Trust`, `Untrust`, `RemoveDevice`, `SetDiscoveryFilter`,
-  or agent registration call, and never writes BlueZ records.
+- performs `Pair`, `CancelPairing`, `RemoveDevice`, and `Properties.Set(Trusted)`
+  only against the exact BlueZ owner, registers one bounded `KeyboardDisplay`
+  Agent1 through AgentManager1, and never duplicates or persists BlueZ records,
+  prompt input, link keys, or authorization decisions.
 
 The composition root selects the adapter through the explicit
 `QINDAQT_BLUETOOTH_BACKEND` environment mode (`production` default,
@@ -75,9 +78,9 @@ The composition root selects the adapter through the explicit
   not approximated: connections on unpowered or unpaired devices publish as
   not connected, and device battery percentage (`org.bluez.Battery1`) and GAP
   role stay unreported until a schema revision carries them.
-- Tests qualify the adapter only against a fake `org.bluez` on a private bus;
-  real-adapter behavior, pairing UX (Agent1), and hardware gates remain
-  outside this decision, as in ADR-0037.
+- Tests qualify the adapter and Agent1 only against a fake `org.bluez` on a
+  private bus; real-adapter interoperability and hardware gates remain outside
+  this decision, as in ADR-0037.
 
 ## Revisit when
 
@@ -86,5 +89,5 @@ The composition root selects the adapter through the explicit
 - BluezQt enters the pinned dependency set for another accepted reason, or
   BlueZ ships a stabilized high-level API that would delete the exact-owner and
   fencing code wholesale.
-- A future Agent1 outcome needs richer adapter capability observation than
-  Adapter1 properties provide.
+- A future Agent1 extension needs richer capability or policy observation than
+  the bounded `KeyboardDisplay` prompt contract provides.

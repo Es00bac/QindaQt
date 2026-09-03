@@ -3,12 +3,13 @@
 Bluetooth1 is QindaQt's typed, restart-aware control and observation boundary
 for Bluetooth. The D-Bus-activated `qindaqt-bluetooth-service` owns
 `org.qindaqt.Bluetooth1`; BlueZ remains the owner of pairing, trust, keys,
-device records, profiles, and authorization. Bluetooth1 does not pair, does
-not store trust, does not duplicate BlueZ records, does not touch rfkill, and
-does not own Bluetooth audio nodes (PipeWire does).
+device records, profiles, and authorization. Bluetooth1 forwards pairing,
+trust, and record-removal intents to that authority and publishes one bounded
+Agent1 prompt; it does not store trust, duplicate BlueZ records, touch rfkill,
+or own Bluetooth audio nodes (PipeWire does).
 
 The exact wire contract is in the [Bluetooth1 reference](../reference/bluetooth1-v1.md).
-The authority split and Agent1 pairing deferral are recorded in
+The authority split and Agent1 pairing projection are recorded in
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
 The production transport boundary is recorded in
 [ADR-0057](../adr/0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md).
@@ -19,8 +20,8 @@ The production transport boundary is recorded in
 | --- | --- | --- |
 | `bluetooth_protocol` | Typed values, fixed D-Bus marshalling, limits, and fail-closed validation | Qt Core/DBus only; no transport or platform handles |
 | `bluetooth_model` | Backend port, authoritative lineage/lease coordination, operation validation, and the deterministic platform adapter | Public Bluetooth protocol plus Qt Core/DBus; no QML, no shell, no D-Bus service registration |
-| `bluetooth_bluez_adapter` | Exact-owner BlueZ ObjectManager transport, bounded property mapping, discovery leases, and paired-device operations | Public `AdapterBackend` plus Qt Core/DBus; no service residency, QML, pairing/trust mutation, rfkill, or platform handles in public headers |
-| `bluetooth_client` | Exact-owner discovery, snapshot fetching, invalidation coalescing, timeout recovery, and serialized public operations | Depends only on the protocol and Qt Core/DBus |
+| `bluetooth_bluez_adapter` | Exact-owner BlueZ ObjectManager transport, bounded property mapping, discovery leases, device operations, and one registered Agent1 prompt | Public `AdapterBackend` plus Qt Core/DBus; no service residency, QML, local pairing/trust store, rfkill, or platform handles in public headers |
+| `bluetooth_client` | Exact-owner discovery, snapshot fetching, invalidation coalescing, timeout recovery, one ordinary operation lane, and one prompt-reply lane | Depends only on the protocol and Qt Core/DBus |
 | `bluetooth_service` | Resident D-Bus object/name ownership, caller-scoped lease watching, process entry point, backend selection, and activation artifacts | Qt main thread publishes D-Bus; composes either production BlueZ or the deterministic backend through the same port |
 
 ## Authority and handle lineage
@@ -76,16 +77,30 @@ retire the object store, discovery leases, and pending operations before a new
 ObjectManager snapshot may publish; late enumeration and mutation replies are
 dropped by the owner token and backend run generation.
 
-The adapter consumes `org.freedesktop.DBus.ObjectManager`, Adapter1,
-Device1, and standard `PropertiesChanged`. It observes Address, Alias/Name,
-Powered, Discovering, Adapter, Class, Icon, RSSI, Paired, and Connected, but publishes only fields representable in Bluetooth1 v1. It calls
-only Properties.Set(Powered), StartDiscovery, StopDiscovery, Connect, and
-Disconnect. It never calls Pair, changes Trusted, removes a device, registers
-an agent, or duplicates a BlueZ record. Names are bounded without splitting
-UTF-8, malformed addresses and parent references drop the affected record,
-class and RSSI values map fail-closed, unknown interfaces are ignored, and
-duplicate adapter or device addresses deterministically retain the
-lexicographically first BlueZ object path.
+The adapter consumes `org.freedesktop.DBus.ObjectManager`, AgentManager1,
+Adapter1, Device1, and standard `PropertiesChanged`. It observes Address,
+Alias/Name, Powered, Discovering, Adapter, Class, Icon, RSSI, Paired,
+Connected, and Trusted, publishing only bounded Bluetooth1 values. It calls
+Properties.Set(Powered/Trusted), StartDiscovery, StopDiscovery, Connect,
+Disconnect, Pair, CancelPairing, and RemoveDevice. Every call is addressed to
+the current exact BlueZ owner. Names are bounded without splitting UTF-8,
+malformed addresses and parent references drop the affected record, class and
+RSSI values map fail-closed, unknown interfaces are ignored, and duplicate
+adapter or device addresses deterministically retain the lexicographically
+first BlueZ object path.
+
+On each exact owner, the adapter registers one `org.bluez.Agent1` with
+`KeyboardDisplay` capability through AgentManager1. RequestConfirmation,
+RequestPasskey, RequestPinCode, DisplayPasskey, DisplayPinCode,
+AuthorizeService, and Cancel map to one snapshot prompt. Prompt text is
+bounded, passkeys stay six-digit display values, PIN replies are 1–16 ASCII
+alphanumeric characters, and at most one prompt is pending. A second request
+is rejected busy. The pending BlueZ method reply is accepted only through the
+typed Bluetooth1 reply matching its prompt kind; after 60 seconds, prompt
+cancellation, adapter stop, or exact-owner loss it is rejected and cleared.
+Display-only prompts have no held method reply, but CancelPrompt still asks
+BlueZ to cancel the associated Device1 pairing. No PIN, key, or authorization
+decision is persisted by QindaQt.
 
 BlueZ discovery is sender-scoped while Bluetooth1 leases are caller-scoped.
 The adapter therefore shares one BlueZ StartDiscovery call for concurrent
@@ -104,12 +119,15 @@ the accepted BlueZ authority split is unchanged (ADR-0057).
 
 ## Operations and discovery leases
 
-`SetPowered`, `AcquireDiscovery`, `ReleaseDiscovery`, `Connect`, and
-`Disconnect` return a typed result carrying the initiating epoch/revision. The
+`SetPowered`, `AcquireDiscovery`, `ReleaseDiscovery`, `Connect`, `Disconnect`,
+`Pair`, `CancelPairing`, `Remove`, `SetTrusted`, and the four prompt reply
+methods return a typed result carrying the initiating epoch/revision. The
 service rejects unavailable state, stale handles, malformed callers, unknown
 kinds, out-of-bound lease counts, discovery or connect on an unpowered
 adapter, connect of an unpaired or already-connected device, and disconnect
-of an unconnected one. A timeout, owner replacement, backend replacement,
+of an unconnected one. Pairing and removal are admitted only against current
+device truth; prompt replies use a separate client lane so the BlueZ `Pair`
+call may remain pending while the user answers. A timeout, owner replacement, backend replacement,
 model stop, or a failed refetch makes a dispatched operation `Uncertain`;
 callers resnapshot and must not retry automatically.
 
@@ -150,9 +168,10 @@ This slice exports typed C++ protocol, model, client, and service libraries
 plus the activation artifacts. The production
 [Bluetooth applet](../shell/bluetooth-applet.md) receives only a narrow
 shell-private facade over the public client: it projects bounded inventory and
-exposes adapter power, one caller-scoped discovery lease, and paired-device
-connect/disconnect under exact lineage and manifest grants. It receives no
-address, pairing, trust, key, Agent1, BlueZ, or service-implementation surface.
+exposes adapter power, one caller-scoped discovery lease, paired-device
+connect/disconnect, and bounded prompt confirmation/cancellation under exact
+lineage and manifest grants. It receives no address, PIN/passkey entry, key,
+BlueZ object, or service-implementation surface.
 The [Bluetooth Settings route](../apps/bluetooth-settings.md) owns the stable
 route ID `bluetooth`, exact-lineage action projection, and its own bounded
 discovery lease. Consumers link only public boundaries and never see backend
@@ -178,17 +197,20 @@ bus connection, private-bus service composition, client-driven executable
 activation with fresh epochs across independent buses, and a staged-install
 gate with a linked installed consumer.
 
-The B1 private-bus rows additionally cover production-mode selection, initial
+The private-bus rows additionally cover production-mode selection, initial
 BlueZ absence, ObjectManager inventory, property and interface churn, power,
 shared/refcounted discovery, paired-device connect/disconnect success and
 failure, hostile values, deterministic duplicate suppression, owner loss and
 return, deferred-reply fencing, an exact staged B1 component surface, and
-source-boundary poison controls.
+source-boundary poison controls. The Agent1 row covers registration and each
+supported prompt kind, typed replies, display cancellation, timeout, explicit
+BlueZ cancellation, malformed values, trust/removal, and owner-loss rejection.
 
 That evidence qualifies the production adapter only against the injected fake.
-It does not qualify physical radios, a host BlueZ build, pairing UX (Agent1),
-Bluetooth audio correlation, suspend/resume, hardware hotplug, memory/CPU
-budgets, or the future UI. Those remain hardware and integrated-session gates.
+It does not qualify physical radios, a host BlueZ build, interoperability with
+real device pairing implementations, Bluetooth audio correlation,
+suspend/resume, hardware hotplug, or memory/CPU budgets. Those remain hardware
+and integrated-session gates.
 
 The applet's separate focused offscreen/package evidence does not change those
 platform nonclaims; hardware and integrated-session gates remain.

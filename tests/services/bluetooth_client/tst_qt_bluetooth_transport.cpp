@@ -108,7 +108,9 @@ public Q_SLOTS:
         snapshot.revision = 1;
         snapshot.availability = Availability::Ready;
         snapshot.capabilities = Capability::SetAdapterPower | Capability::DiscoveryLease
-            | Capability::ConnectPaired | Capability::DisconnectPaired;
+            | Capability::ConnectPaired | Capability::DisconnectPaired
+            | Capability::Pair | Capability::RemoveDevice | Capability::SetTrusted
+            | Capability::PairingPrompt;
         snapshot.reasonCode = QStringLiteral("ready");
         snapshot.adapters = {{.handle = {.epoch = 77, .serial = 400},
                               .address = QStringLiteral("AA:BB:CC:00:11:22"),
@@ -180,9 +182,24 @@ void QtBluetoothTransportTests::successiveOwnersLeasesAndOperations()
              qPrintable(introspectionReply.error().message()));
     const QString introspection = introspectionReply.value();
     QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnby))\"")));
+        QStringLiteral("type=\"(uttuussa((tt)ssbb)a((tt)(tt)ssuubbbnbyb)(u(tt)ssq))\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"AcquireDiscovery\"")));
+    const QStringList pairingMethods = {
+        QStringLiteral("Pair"),
+        QStringLiteral("CancelPairing"),
+        QStringLiteral("Remove"),
+        QStringLiteral("SetTrusted"),
+        QStringLiteral("ReplyConfirmation"),
+        QStringLiteral("ReplyPasskey"),
+        QStringLiteral("ReplyPin"),
+        QStringLiteral("CancelPrompt"),
+    };
+    for (const QString &method : pairingMethods) {
+        QVERIFY2(introspection.contains(
+                     QStringLiteral("name=\"%1\"").arg(method)),
+                 qPrintable(method));
+    }
 
     QtBluetoothTransport transport(bus.connection, serviceName);
     BluetoothClient client(&transport);

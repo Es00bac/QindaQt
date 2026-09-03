@@ -27,6 +27,8 @@ qindaqt_enable_warnings(qindaqt_bluetooth_protocol)
 install(
     TARGETS qindaqt_bluetooth_protocol
     EXPORT QindaQtTargets
+    ARCHIVE COMPONENT QindaQtBluetoothB1
     FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT QindaQtBluetoothB1
 )

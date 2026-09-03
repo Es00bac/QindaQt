@@ -51,7 +51,66 @@ void BluetoothServiceObject::Connect(const Handle &device)
 
 void BluetoothServiceObject::Disconnect(const Handle &device)
 {
-    beginOperation({.kind = OperationKind::Disconnect, .target = device, .powered = false});
+    beginOperation({.kind = OperationKind::Disconnect, .target = device,
+                    .powered = false});
+}
+
+void BluetoothServiceObject::Pair(const Handle &device)
+{
+    beginOperation({.kind = OperationKind::Pair, .target = device});
+}
+
+void BluetoothServiceObject::CancelPairing(const Handle &device)
+{
+    beginOperation(
+        {.kind = OperationKind::CancelPairing, .target = device});
+}
+
+void BluetoothServiceObject::Remove(const Handle &device)
+{
+    beginOperation(
+        {.kind = OperationKind::RemoveDevice, .target = device});
+}
+
+void BluetoothServiceObject::SetTrusted(const Handle &device, const bool trusted)
+{
+    beginOperation({.kind = OperationKind::SetTrusted,
+                    .target = device,
+                    .trusted = trusted});
+}
+
+Handle BluetoothServiceObject::promptDevice() const
+{
+    return m_model->snapshot().pairingPrompt.device;
+}
+
+void BluetoothServiceObject::ReplyConfirmation(const bool accept)
+{
+    beginOperation({.kind = OperationKind::ReplyConfirmation,
+                    .target = promptDevice(),
+                    .accepted = accept});
+}
+
+void BluetoothServiceObject::ReplyPasskey(const quint32 passkey)
+{
+    OperationRequest request{.kind = OperationKind::ReplyPasskey,
+                             .target = promptDevice()};
+    (void)setPairingInput(request.input, request.inputSize, QString::number(passkey));
+    beginOperation(request);
+}
+
+void BluetoothServiceObject::ReplyPin(const QString &pin)
+{
+    OperationRequest request{.kind = OperationKind::ReplyPin,
+                             .target = promptDevice()};
+    (void)setPairingInput(request.input, request.inputSize, pin);
+    beginOperation(request);
+}
+
+void BluetoothServiceObject::CancelPrompt()
+{
+    beginOperation({.kind = OperationKind::CancelPrompt,
+                    .target = promptDevice()});
 }
 
 void BluetoothServiceObject::beginOperation(const OperationRequest &request)

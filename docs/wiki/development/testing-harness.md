@@ -2610,10 +2610,21 @@ leaks. The boundary and boundary-poison rows enforce module direction, the
 permitted BlueZ method set, injected-bus test isolation, composition linkage,
 install component registration, and hostile-checker rejection.
 
+`qindaqt.bluetooth-bluez-pairing` uses the same private-bus fixture and proves
+AgentManager1 registration of the injected `KeyboardDisplay` Agent1, all seven
+supported Agent1 methods (confirmation, passkey/PIN entry and display,
+authorization, and cancellation), typed replies while Device1.Pair remains
+pending, one-prompt admission, the 60-second timeout seam, explicit cancel,
+BlueZ owner loss, malformed passkey/PIN/display values, Trusted mutation, and
+RemoveDevice. Bluetooth1 protocol and Qt transport rows separately pin the new
+fixed struct signatures and every public pairing method name.
+
 These rows never use the ambient session/system bus, a host BlueZ, rfkill,
 Bluetooth hardware, uinput, or a nested compositor. They do not qualify a
-physical adapter, a distribution BlueZ build, pairing Agent1, suspend/resume,
-or Bluetooth audio routing.
+physical adapter, a distribution BlueZ build, real-device pairing
+interoperability, suspend/resume, or Bluetooth audio routing. Settings and
+applet offscreen rows run under `QT_FATAL_WARNINGS=1` and prove accessible
+keyboard prompt paths without a display server.
 
 ## Clipboard C0/C1 service proof
 
