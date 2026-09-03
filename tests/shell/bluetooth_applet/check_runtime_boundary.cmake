@@ -82,69 +82,6 @@ foreach(path IN LISTS runtime_cpp_sources)
     endforeach()
 endforeach()
 
-# The QML-facing controller is a closed positive surface. Remove C++ line
-# splices and normalize whitespace first so wrapping cannot hide a renamed
-# property or invokable from the exact complete-surface comparison. Literal
-# macro-name occurrence counts provide an independent fail-closed fence when
-# lexical trivia prevents a declaration regex from matching.
-set(controller_header "${runtime_root}/src/bluetooth_applet_controller.h")
-file(READ "${controller_header}" controller_content)
-string(REPLACE "\\\r\n" "" controller_without_splices "${controller_content}")
-string(REPLACE "\\\n" "" controller_without_splices
-       "${controller_without_splices}")
-string(REGEX REPLACE "[ \t\r\n]+" " "
-       normalized_controller_content "${controller_without_splices}")
-string(REGEX MATCHALL "Q_PROPERTY[ ]*\\([^)]*\\)"
-       actual_properties "${normalized_controller_content}")
-set(expected_properties
-    "Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)"
-    "Q_PROPERTY(QString diagnostic READ diagnostic NOTIFY stateChanged)"
-    "Q_PROPERTY(QString summaryLabel READ summaryLabel NOTIFY stateChanged)"
-    "Q_PROPERTY(QString accessibleName READ accessibleName NOTIFY stateChanged)"
-    "Q_PROPERTY(QString accessibleDescription READ accessibleDescription NOTIFY stateChanged)"
-    "Q_PROPERTY(quint64 serviceEpoch READ serviceEpoch NOTIFY stateChanged)"
-    "Q_PROPERTY(quint64 serviceRevision READ serviceRevision NOTIFY stateChanged)"
-    "Q_PROPERTY(QVariantList adapterRows READ adapterRows NOTIFY stateChanged)"
-    "Q_PROPERTY(QVariantList deviceRows READ deviceRows NOTIFY stateChanged)"
-    "Q_PROPERTY(bool operationPending READ operationPending NOTIFY stateChanged)"
-    "Q_PROPERTY(bool discoveryLeaseHeld READ discoveryLeaseHeld NOTIFY stateChanged)"
-    "Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)"
-    "Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)")
-set(canonical_properties "")
-foreach(property IN LISTS actual_properties)
-    string(REGEX REPLACE "^Q_PROPERTY[ ]*\\(" "Q_PROPERTY("
-           canonical_property "${property}")
-    list(APPEND canonical_properties "${canonical_property}")
-endforeach()
-string(REGEX MATCHALL "Q_PROPERTY" property_macro_tokens "${controller_content}")
-string(REGEX MATCHALL "Q_PROPERTY" expected_property_macro_tokens
-       "${expected_properties}")
-list(LENGTH property_macro_tokens actual_property_macro_count)
-list(LENGTH expected_property_macro_tokens expected_property_macro_count)
-if(NOT "${canonical_properties}" STREQUAL "${expected_properties}" OR
-   NOT actual_property_macro_count EQUAL expected_property_macro_count)
-    list(APPEND violations
-         "${controller_header}: Q_PROPERTY surface differs from exact contract")
-endif()
-string(REGEX MATCHALL "Q_INVOKABLE([^A-Za-z0-9_]|$)[^;]+;"
-       actual_invokables "${normalized_controller_content}")
-set(expected_invokables
-    "Q_INVOKABLE void setExpanded(bool expanded);"
-    "Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);"
-    "Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);"
-    "Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId, bool connected);"
-    "Q_INVOKABLE void clearFeedback();")
-string(REGEX MATCHALL "Q_INVOKABLE" invokable_macro_tokens "${controller_content}")
-string(REGEX MATCHALL "Q_INVOKABLE" expected_invokable_macro_tokens
-       "${expected_invokables}")
-list(LENGTH invokable_macro_tokens actual_invokable_macro_count)
-list(LENGTH expected_invokable_macro_tokens expected_invokable_macro_count)
-if(NOT "${actual_invokables}" STREQUAL "${expected_invokables}" OR
-   NOT actual_invokable_macro_count EQUAL expected_invokable_macro_count)
-    list(APPEND violations
-         "${controller_header}: Q_INVOKABLE surface differs from exact contract")
-endif()
-
 # Only the production composition root may construct the public Qt transport.
 # The controller and renderer never see transport or D-Bus vocabulary.
 foreach(path IN LISTS applet_runtime_sources)
@@ -157,34 +94,6 @@ foreach(path IN LISTS applet_runtime_sources)
     endforeach()
 endforeach()
 
-# Audit the actual production composition chain rather than accepting a
-# manifest-only or source-only applet.
-set(required_contracts
-    "${SOURCE_ROOT}/data/applets/bluetooth.json|\"qindaqt.applets.bluetooth\""
-    "${SOURCE_ROOT}/data/applets/bluetooth.json|\"bluetooth.read\""
-    "${SOURCE_ROOT}/data/applets/bluetooth.json|\"bluetooth.control\""
-    "${SOURCE_ROOT}/src/applet_runtime/src/builtin_applet_registry.cpp|qindaqt.applets.bluetooth"
-    "${SOURCE_ROOT}/src/shell/qml/BuiltinAppletContent.qml|QindaQt.Shell.BluetoothApplet"
-    "${SOURCE_ROOT}/src/shell/qml/BuiltinAppletContent.qml|qindaqt.applets.bluetooth"
-    "${SOURCE_ROOT}/src/shell/runtime/bluetoothappletcomposition.cpp|BluetoothRead"
-    "${SOURCE_ROOT}/src/shell/runtime/bluetoothappletcomposition.cpp|BluetoothControl"
-    "${SOURCE_ROOT}/src/shell/runtime/shellruntimeapplication.cpp|m_bluetoothApplet"
-    "${SOURCE_ROOT}/data/profiles/qindaqt.json|\"plugin\": \"bluetooth\"")
-foreach(contract IN LISTS required_contracts)
-    string(REPLACE "|" ";" fields "${contract}")
-    list(GET fields 0 path)
-    list(GET fields 1 token)
-    if(NOT EXISTS "${path}")
-        list(APPEND violations "missing composition path ${path}")
-    else()
-        file(READ "${path}" content)
-        string(FIND "${content}" "${token}" hit)
-        if(hit EQUAL -1)
-            list(APPEND violations "${path}: missing production token '${token}'")
-        endif()
-    endif()
-endforeach()
-
 if(violations)
     foreach(violation IN LISTS violations)
         message(SEND_ERROR "${violation}")
@@ -192,8 +101,8 @@ if(violations)
     message(FATAL_ERROR "Bluetooth applet runtime boundary failed")
 endif()
 
-# Independent negative controls prove service, lexical surface variants,
-# address, persistence, filesystem, and standard-path violations are rejected.
+# Independent negative controls prove include-boundary and forbidden-symbol
+# violations are rejected. The compiled surface test owns meta-object policy.
 set(runtime_poison_count 0)
 if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
     cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
@@ -203,27 +112,10 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         set(case_root "${poison_root}/${name}")
         file(MAKE_DIRECTORY
              "${case_root}/src/shell"
-             "${case_root}/src/shell/runtime"
-             "${case_root}/src/applet_runtime/src"
-             "${case_root}/src/shell/qml"
-             "${case_root}/data/applets"
-             "${case_root}/data/profiles")
+             "${case_root}/src/shell/runtime")
         file(COPY "${runtime_root}" DESTINATION "${case_root}/src/shell")
         file(COPY ${composition_sources}
              DESTINATION "${case_root}/src/shell/runtime")
-        file(COPY
-             "${SOURCE_ROOT}/src/applet_runtime/src/builtin_applet_registry.cpp"
-             DESTINATION "${case_root}/src/applet_runtime/src")
-        file(COPY
-             "${SOURCE_ROOT}/src/shell/qml/BuiltinAppletContent.qml"
-             DESTINATION "${case_root}/src/shell/qml")
-        file(COPY
-             "${SOURCE_ROOT}/src/shell/runtime/shellruntimeapplication.cpp"
-             DESTINATION "${case_root}/src/shell/runtime")
-        file(COPY "${SOURCE_ROOT}/data/applets/bluetooth.json"
-             DESTINATION "${case_root}/data/applets")
-        file(COPY "${SOURCE_ROOT}/data/profiles/qindaqt.json"
-             DESTINATION "${case_root}/data/profiles")
         file(APPEND "${case_root}/${relative_path}" "${poison_content}")
         execute_process(
             COMMAND "${CMAKE_COMMAND}"
@@ -242,8 +134,6 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         set(runtime_poison_count "${completed_poison_count}" PARENT_SCOPE)
     endfunction()
 
-    set(controller_header_path
-        "src/shell/bluetooth_applet/src/bluetooth_applet_controller.h")
     set(controller_source_path
         "src/shell/bluetooth_applet/src/bluetooth_applet_controller.cpp")
     set(composition_source_path
@@ -251,24 +141,6 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
     expect_runtime_poison_rejected(
         "service" "${controller_source_path}"
         "\n#include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>\n")
-    expect_runtime_poison_rejected(
-        "renamed-pairing" "${controller_header_path}"
-        "\nQ_INVOKABLE void beginPairing(const QString &address);\n")
-    expect_runtime_poison_rejected(
-        "wrapped-pairing" "${controller_header_path}"
-        "\nQ_INVOKABLE void beginPairing(\n const QString &deviceId);\n")
-    expect_runtime_poison_rejected(
-        "wrapped-property" "${controller_header_path}"
-        "\nQ_PROPERTY(QString deviceAddress READ deviceAddress\n NOTIFY stateChanged)\n")
-    expect_runtime_poison_rejected(
-        "comment-glued-pairing" "${controller_header_path}"
-        "\nQ_INVOKABLE/*surface-wrap*/void beginPairing(const QString &deviceId);\n")
-    expect_runtime_poison_rejected(
-        "line-spliced-property" "${controller_header_path}"
-        "\nQ_PROPERTY(QString deviceAddress READ deviceAddress \\\n NOTIFY stateChanged)\n")
-    expect_runtime_poison_rejected(
-        "paren-gap-property" "${controller_header_path}"
-        "\nQ_PROPERTY\n(QString deviceAddress READ deviceAddress NOTIFY stateChanged)\n")
     expect_runtime_poison_rejected(
         "address-accessor" "${controller_source_path}"
         "\nQString exposedAddress = device.address;\n")

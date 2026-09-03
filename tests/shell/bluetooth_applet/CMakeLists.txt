@@ -108,6 +108,40 @@ set_tests_properties(
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
+qt_add_executable(qindaqt_bluetooth_applet_surface_tests
+                  tst_bluetooth_applet_surface.cpp)
+target_include_directories(
+    qindaqt_bluetooth_applet_surface_tests
+    PRIVATE "${bluetooth_applet_source_root}/tests/services/bluetooth_client"
+)
+target_link_libraries(
+    qindaqt_bluetooth_applet_surface_tests
+    PRIVATE
+        QindaQt::ShellBluetoothAppletRuntime
+        qindaqt_shell_bluetooth_applet_runtimeplugin
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_bluetooth_applet_surface_tests
+    PRIVATE
+        QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+)
+qindaqt_enable_warnings(qindaqt_bluetooth_applet_surface_tests)
+qt_import_qml_plugins(qindaqt_bluetooth_applet_surface_tests)
+add_test(
+    NAME qindaqt.bluetooth-applet-surface
+    COMMAND qindaqt_bluetooth_applet_surface_tests
+)
+set_tests_properties(
+    qindaqt.bluetooth-applet-surface
+    PROPERTIES
+        LABELS "shell;bluetooth;runtime;offscreen;surface;hostile"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
 add_test(
     NAME qindaqt.bluetooth-applet-boundary
     COMMAND
