@@ -32,6 +32,17 @@ bool hasCapability(const Snapshot &snapshot, const Capability capability) {
   return snapshot.capabilities.testFlag(capability);
 }
 
+const AccessPoint *findVisibleAccessPoint(const Snapshot &snapshot,
+                                          const QString &accessPointId) {
+  const auto point = std::find_if(
+      snapshot.accessPoints.cbegin(), snapshot.accessPoints.cend(),
+      [&accessPointId](const AccessPoint &candidate) {
+        return visibleAccessPointId(candidate.deviceInterface,
+                                    candidate.bssid) == accessPointId;
+      });
+  return point == snapshot.accessPoints.cend() ? nullptr : &*point;
+}
+
 } // namespace
 
 IntentVerdict validateRequestScan(const std::optional<Snapshot> &snapshot,
@@ -93,6 +104,50 @@ IntentVerdict validateConnect(const std::optional<Snapshot> &snapshot,
                   QStringLiteral("network-already-active"));
   }
   return allow(OperationKind::ConnectKnownNetwork);
+}
+
+IntentVerdict
+validateConnectVisible(const std::optional<Snapshot> &snapshot,
+                       const ConnectVisibleIntent &intent) {
+  constexpr OperationKind kind = OperationKind::ConnectVisibleNetwork;
+  if (!isReady(snapshot)) {
+    return refuse(kind, QStringLiteral("service-not-ready"));
+  }
+  if (!hasCapability(*snapshot, Capability::VisibleNetworkControl)) {
+    return refuse(kind, QStringLiteral("visible-network-control-unsupported"));
+  }
+  if (!isValidKnownNetworkId(intent.accessPointId)) {
+    return refuse(kind, QStringLiteral("access-point-id-invalid"));
+  }
+  const AccessPoint *point = findVisibleAccessPoint(*snapshot,
+                                                    intent.accessPointId);
+  if (point == nullptr) {
+    return refuse(kind, QStringLiteral("unknown-access-point"));
+  }
+  if (point->hidden || point->ssid.isEmpty()) {
+    return refuse(kind, QStringLiteral("hidden-network-unsupported"));
+  }
+  switch (point->security) {
+  case SecuritySuite::Open:
+  case SecuritySuite::Wpa2Personal:
+  case SecuritySuite::Wpa3Personal:
+    break;
+  case SecuritySuite::Wep:
+    return refuse(kind, QStringLiteral("wep-network-unsupported"));
+  case SecuritySuite::Wpa2Enterprise:
+  case SecuritySuite::Wpa3Enterprise:
+    return refuse(kind, QStringLiteral("enterprise-network-unsupported"));
+  }
+  const bool known = std::any_of(
+      snapshot->knownNetworks.cbegin(), snapshot->knownNetworks.cend(),
+      [point](const KnownNetwork &candidate) {
+        return !candidate.hidden && candidate.ssid == point->ssid
+               && candidate.security == point->security;
+      });
+  if (known) {
+    return refuse(kind, QStringLiteral("network-already-known"));
+  }
+  return allow(kind);
 }
 
 IntentVerdict validateDisconnect(const std::optional<Snapshot> &snapshot,

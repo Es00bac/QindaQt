@@ -131,6 +131,8 @@ void NetworkSettingsModelAdversarialTest::exposesNoRadioOrCredentialMutationSurf
   QVERIFY(meta->indexOfMethod("reload()") >= 0);
   QVERIFY(meta->indexOfMethod("requestScan()") >= 0);
   QVERIFY(meta->indexOfMethod("connectKnownNetwork(QString)") >= 0);
+  QVERIFY(meta->indexOfMethod("connectVisibleNetwork(QString)") >= 0);
+  QVERIFY(meta->indexOfMethod("connectVisibleNetwork(QString,QString)") < 0);
   QVERIFY(meta->indexOfMethod("disconnectDevice(QString)") >= 0);
   QVERIFY(meta->indexOfMethod("setRadio(uint,bool)") < 0);
   QVERIFY(meta->indexOfMethod("setPassword(QString)") < 0);

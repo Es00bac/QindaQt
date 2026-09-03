@@ -32,6 +32,32 @@ set_tests_properties(
     PROPERTIES LABELS "service;network;networkmanager" TIMEOUT 20
 )
 
+qt_add_executable(
+    qindaqt_network_manager_visible_profile_tests
+    tst_network_visible_profile.cpp
+)
+target_link_libraries(
+    qindaqt_network_manager_visible_profile_tests
+    PRIVATE QindaQt::NetworkManagerAdapter Qt6::Test
+            PkgConfig::NetworkManagerTest
+)
+target_include_directories(
+    qindaqt_network_manager_visible_profile_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/network_manager_adapter/src"
+)
+target_compile_definitions(
+    qindaqt_network_manager_visible_profile_tests PRIVATE QT_NO_KEYWORDS
+)
+qindaqt_enable_warnings(qindaqt_network_manager_visible_profile_tests)
+add_test(
+    NAME qindaqt.network-networkmanager-visible-profile
+    COMMAND qindaqt_network_manager_visible_profile_tests
+)
+set_tests_properties(
+    qindaqt.network-networkmanager-visible-profile
+    PROPERTIES LABELS "service;network;networkmanager;secret-free"
+)
+
 add_test(
     NAME qindaqt.network-n1-boundary
     COMMAND

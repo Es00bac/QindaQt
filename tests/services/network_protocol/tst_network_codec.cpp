@@ -46,7 +46,7 @@ void NetworkCodecTests::roundTripsValidSnapshot() {
 
 void NetworkCodecTests::roundTripsValidOperationResult() {
   const OperationResult value = validOperationResult(
-      OperationKind::ConnectKnownNetwork, OperationStatus::Rejected);
+      OperationKind::ConnectVisibleNetwork, OperationStatus::Rejected);
   const EncodeResult encoded = encodeOperationResult(value);
   QVERIFY2(encoded.succeeded(), qPrintable(encoded.reasonCode));
 

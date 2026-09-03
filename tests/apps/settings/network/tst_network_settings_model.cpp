@@ -91,13 +91,27 @@ void NetworkSettingsModelTest::projectsBoundedAuthoritativeInventory() {
               .toBool());
 
   const QVariantList points = fixture.model.accessPoints();
-  QCOMPARE(points.size(), 2);
+  QCOMPARE(points.size(), 4);
   for (const QVariant &point : points) {
     QVERIFY(!point.toMap().contains(QStringLiteral("bssid")));
   }
   QCOMPARE(points.at(0).toMap().value(QStringLiteral("signalStrength")).toUInt(),
            quint32(88));
   QVERIFY(points.at(0).toMap().value(QStringLiteral("saved")).toBool());
+  QVERIFY(points.at(2)
+              .toMap()
+              .value(QStringLiteral("connectAvailable"))
+              .toBool());
+  QVERIFY(!points.at(3)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
+               .toBool());
+  QVERIFY(points.at(3)
+              .toMap()
+              .value(QStringLiteral("promptStatusText"))
+              .toString()
+              .contains(QStringLiteral("no secret agent"),
+                        Qt::CaseInsensitive));
 }
 
 void NetworkSettingsModelTest::blocksActionsDuringAuthoritativeRefreshes() {
@@ -123,6 +137,11 @@ void NetworkSettingsModelTest::blocksActionsDuringAuthoritativeRefreshes() {
                .at(0)
                .toMap()
                .value(QStringLiteral("disconnectAvailable"))
+               .toBool());
+  QVERIFY(!fixture.model.accessPoints()
+               .at(2)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
                .toBool());
 
   const qsizetype operationsBefore = fixture.transport.operations.size();
@@ -153,6 +172,11 @@ void NetworkSettingsModelTest::blocksActionsDuringAuthoritativeRefreshes() {
                .at(0)
                .toMap()
                .value(QStringLiteral("disconnectAvailable"))
+               .toBool());
+  QVERIFY(!fixture.model.accessPoints()
+               .at(2)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
                .toBool());
 
   refreshed.revision = 3;
@@ -211,8 +235,22 @@ void NetworkSettingsModelTest::dispatchesOnlyAdmittedSecretFreeIntents() {
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
   QTRY_VERIFY_WITH_TIMEOUT(fixture.client.operationAdmissionReady(), 1'000);
 
-  QVERIFY(fixture.model.disconnectDevice(QStringLiteral("wlan0")));
+  const QVariantMap guest = fixture.model.accessPoints().at(2).toMap();
+  const QString accessPointId = guest.value(QStringLiteral("id")).toString();
+  QVERIFY(fixture.model.connectVisibleNetwork(accessPointId));
   QCOMPARE(fixture.transport.operations.size(), 3);
+  const auto visible = fixture.transport.operations.constLast();
+  QCOMPARE(visible.kind, OperationKind::ConnectVisibleNetwork);
+  const QVariantMap expectedVisible{
+      {QStringLiteral("accessPointId"), accessPointId}};
+  QCOMPARE(visible.parameters, expectedVisible);
+  fixture.transport.finishLast(operationResult(
+      OperationKind::ConnectVisibleNetwork, OperationStatus::Succeeded));
+  QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.client.operationAdmissionReady(), 1'000);
+
+  QVERIFY(fixture.model.disconnectDevice(QStringLiteral("wlan0")));
+  QCOMPARE(fixture.transport.operations.size(), 4);
   QCOMPARE(fixture.transport.operations.constLast().kind,
            OperationKind::DisconnectActive);
   QCOMPARE(fixture.transport.operations.constLast()
@@ -265,9 +303,20 @@ void NetworkSettingsModelTest::disablesActionsWhenCapabilitiesDisappear() {
                .toMap()
                .value(QStringLiteral("disconnectAvailable"))
                .toBool());
+  const QString accessPointId = fixture.model.accessPoints()
+                                    .at(2)
+                                    .toMap()
+                                    .value(QStringLiteral("id"))
+                                    .toString();
+  QVERIFY(!fixture.model.accessPoints()
+               .at(2)
+               .toMap()
+               .value(QStringLiteral("connectAvailable"))
+               .toBool());
   const qsizetype before = fixture.transport.operations.size();
   QVERIFY(!fixture.model.requestScan());
   QVERIFY(!fixture.model.connectKnownNetwork(networkId(u'b')));
+  QVERIFY(!fixture.model.connectVisibleNetwork(accessPointId));
   QVERIFY(!fixture.model.disconnectDevice(QStringLiteral("wlan0")));
   QCOMPARE(fixture.transport.operations.size(), before);
 }

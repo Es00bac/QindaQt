@@ -340,6 +340,16 @@ void QtNetworkTransport::requestOperation(const quint64 token,
         parameters.value(QStringLiteral("radioKind")).toInt()));
     arguments.append(parameters.value(QStringLiteral("enable")));
     break;
+  case OperationKind::ConnectVisibleNetwork:
+    if (!hasOnlyKeys(parameters, {u"accessPointId"}) ||
+        parameters.value(QStringLiteral("accessPointId")).metaType().id() !=
+            QMetaType::QString) {
+      fail(token, owner, QStringLiteral("operation-parameters-invalid"));
+      return;
+    }
+    method = QStringLiteral("ConnectVisibleNetwork");
+    arguments.append(parameters.value(QStringLiteral("accessPointId")));
+    break;
   }
 
   QDBusMessage call = QDBusMessage::createMethodCall(

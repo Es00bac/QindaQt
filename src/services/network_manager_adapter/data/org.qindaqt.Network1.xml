@@ -18,6 +18,12 @@
       <arg name="knownNetworkId" type="s" direction="in"/>
       <arg name="payload" type="ay" direction="out"/>
     </method>
+    <method name="ConnectVisibleNetwork">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="accessPointId" type="s" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
     <method name="DisconnectActive">
       <arg name="epoch" type="t" direction="in"/>
       <arg name="revision" type="t" direction="in"/>

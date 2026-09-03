@@ -119,6 +119,7 @@ private Q_SLOTS:
   void rejectsRetiredEpochAcrossRealOwnerCycle();
   void timesOutAndNeverReplaysSnapshot();
   void completesOperationAndRefreshes();
+  void transportsOpaqueVisibleNetworkIntent();
   void reportsUncertainOperationOnTimeout();
   void reportsUncertainOperationOnTransportFailure();
   void rejectsLocalIntents();
@@ -386,6 +387,32 @@ void NetworkClientTests::completesOperationAndRefreshes() {
   m_transport->setAutoSnapshot(updated);
   QTRY_VERIFY_WITH_TIMEOUT(client->model().lineage()->revision == quint64(8),
                            2'000);
+}
+
+void NetworkClientTests::transportsOpaqueVisibleNetworkIntent() {
+  std::unique_ptr<NetworkClient> client = makeClient();
+  Snapshot visible = validSnapshot();
+  visible.revision = 8;
+  visible.accessPoints = {{QStringLiteral("wlan0"),
+                           QStringLiteral("New network"), false,
+                           QStringLiteral("02:11:22:33:44:55"),
+                           SecuritySuite::Wpa2Personal, 5'180, 72}};
+  m_transport->setAutoSnapshot(visible);
+  client->refresh();
+  QTRY_COMPARE_WITH_TIMEOUT(client->projection().revision, quint64(8), 2'000);
+  const QString id = visibleAccessPointId(
+      visible.accessPoints.first().deviceInterface,
+      visible.accessPoints.first().bssid);
+  QVERIFY(client->connectVisibleNetwork(id));
+  QCOMPARE(m_transport->operations.constLast().kind,
+           OperationKind::ConnectVisibleNetwork);
+  const QVariantMap expected{
+      {QStringLiteral("accessPointId"), id}};
+  QCOMPARE(m_transport->operations.constLast().parameters, expected);
+  QVERIFY(!m_transport->operations.constLast().parameters.contains(
+      QStringLiteral("ssid")));
+  QVERIFY(!m_transport->operations.constLast().parameters.contains(
+      QStringLiteral("psk")));
 }
 
 void NetworkClientTests::reportsUncertainOperationOnTimeout() {

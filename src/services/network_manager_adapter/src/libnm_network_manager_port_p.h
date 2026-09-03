@@ -5,12 +5,20 @@
 #include <qindaqt/services/network_manager_adapter/network_manager_port.h>
 
 #include <QtCore/QHash>
+#include <QtCore/QByteArrayView>
 #include <QtCore/QPointer>
 #include <QtCore/QTimer>
 
 #include <NetworkManager.h>
 
+#include <utility>
+
 namespace QindaQt::Network::NetworkManager {
+
+// Tests inspect the exact libnm settings map returned here. The caller owns
+// the returned GObject reference. Unsupported/hidden inputs return null.
+[[nodiscard]] NMConnection *buildVisibleWifiProfile(QByteArrayView rawSsid,
+                                                    SecuritySuite security);
 
 struct ScanLeaseState final {
   void begin(qint64 deadline) noexcept {
@@ -55,6 +63,8 @@ private:
                            gpointer userData);
   static void activationFinished(GObject *source, GAsyncResult *result,
                                  gpointer userData);
+  static void visibleActivationFinished(GObject *source, GAsyncResult *result,
+                                        gpointer userData);
   static void deactivationFinished(GObject *source, GAsyncResult *result,
                                    gpointer userData);
   static void radioFinished(GObject *source, GAsyncResult *result,
@@ -76,12 +86,16 @@ private:
                   const Service::BackendOperationRequest &request);
   void submitConnect(quint64 operationId,
                      const Service::BackendOperationRequest &request);
+  void submitVisibleConnect(quint64 operationId,
+                            const Service::BackendOperationRequest &request);
   void submitDisconnect(quint64 operationId,
                         const Service::BackendOperationRequest &request);
   void submitRadio(quint64 operationId,
                    const Service::BackendOperationRequest &request);
   [[nodiscard]] NMRemoteConnection *
   connectionForKnownId(const QString &knownNetworkId) const;
+  [[nodiscard]] std::pair<NMDevice *, NMAccessPoint *>
+  accessPointForId(const QString &accessPointId) const;
   [[nodiscard]] NMDevice *firstWifiDevice() const;
   [[nodiscard]] NMActiveConnection *
   activeForInterface(const QString &interfaceName) const;
@@ -96,6 +110,13 @@ private:
   quint64 m_runGeneration = 0;
   bool m_running = false;
   bool m_authorityRetired = false;
+};
+
+struct LibnmNetworkManagerPort::CallbackState final {
+  QPointer<LibnmNetworkManagerPort> port;
+  quint64 operationId = 0;
+  RadioKind radioKind = RadioKind::Wifi;
+  bool enable = false;
 };
 
 } // namespace QindaQt::Network::NetworkManager

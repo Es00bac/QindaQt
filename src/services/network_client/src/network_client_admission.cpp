@@ -53,6 +53,20 @@ bool NetworkClient::beginOperation(const OperationKind kind,
     return true;
 }
 
+bool NetworkClient::connectVisibleNetwork(const QString &accessPointId,
+                                          QString *error) {
+    const Model::IntentVerdict verdict =
+        m_model.connectVisible(ConnectVisibleIntent{accessPointId});
+    if (!verdict.allowed) {
+        setError(error, verdict.reasonCode);
+        return false;
+    }
+    QVariantMap parameters;
+    parameters.insert(QStringLiteral("accessPointId"), accessPointId);
+    return beginOperation(OperationKind::ConnectVisibleNetwork, parameters,
+                          error);
+}
+
 void NetworkClient::notifyOperationAdmissionChanged() {
     const bool ready = operationAdmissionReady();
     if (ready == m_lastOperationAdmissionReady) {

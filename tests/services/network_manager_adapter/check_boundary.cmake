@@ -35,7 +35,7 @@ foreach(source IN LISTS adapter_sources)
     file(READ "${source}" content)
     if(content MATCHES "nm_remote_connection_get_secrets|nm_remote_connection_get_secrets_async"
        OR content MATCHES "nm_setting_[a-z0-9_]+_get_(psk|password|password_raw|private_key|private_key_password|client_cert)"
-       OR content MATCHES "NM_SETTING_WIRELESS_SECURITY_PSK|NM_SETTING_802_1X_(PASSWORD|PRIVATE_KEY)"
+       OR content MATCHES "NM_SETTING_WIRELESS_SECURITY_PSK([^_A-Za-z0-9]|$)|NM_SETTING_802_1X_(PASSWORD|PRIVATE_KEY)"
        OR content MATCHES "QProcess|nmcli|system\\(")
         message(FATAL_ERROR "Forbidden secret/process escape in NetworkManager adapter ${source}")
     endif()
