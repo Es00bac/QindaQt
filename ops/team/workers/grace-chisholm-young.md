@@ -8,14 +8,14 @@ status: handoff
 feature: QQ-006.05 Settings pages and live platform-service routes (Bluetooth page)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/bluetooth-settings-route
 started_at: 2026-09-03T00:42:32-06:00
-updated_at: 2026-09-03T01:24:22-06:00
+updated_at: 2026-09-03T02:02:30-06:00
 ---
 
 # Grace Chisholm Young
 
 - Role: Bluetooth Settings route implementer.
 - Provider/model: OpenAI `gpt-5.6-sol` (reasoning high).
-- Status: handoff — exact candidate `bf7b00fec5a80f3d37795568d4dde6c35a72ea19` is green and ready for independent exact review.
+- Status: handoff — exact repaired candidate `24129a26e5d7c6bb01e1dd9e287c75a8db1c224d` is green and ready for Dorothy Denning's exact recheck.
 - Exact base: `ee187e97221ee7f13d6e4e00e6ee3356b6faf3d8`.
 - Branch: `worker/bluetooth-settings-route`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/bluetooth-settings-route`.
@@ -26,3 +26,6 @@ updated_at: 2026-09-03T01:24:22-06:00
 - 2026-09-03T00:42:32-06:00 — Claimed QQ-006.05 Bluetooth Settings route at exact base `ee187e97221ee7f13d6e4e00e6ee3356b6faf3d8`; completed the mandated architecture and route reading before product edits.
 - 2026-09-03T01:03:18-06:00 — Midpoint: the public-client-only model, responsive QML, Settings Center registration, hostile boundary scan, relocated-package row, and five-row Bluetooth selector are implemented; Debug Bluetooth proof is green while Settings Center expectation repair, documentation, and Release proof remain.
 - 2026-09-03T01:24:22-06:00 — Handoff: immutable candidate `bf7b00fec5a80f3d37795568d4dde6c35a72ea19` passed strict Debug/Release focused builds, 6/6 Bluetooth and 9/9 Settings Center rows in each profile, documentation validation, strict MkDocs, source shape, and whitespace checks.
+- 2026-09-03T01:48:59-06:00 — Repair claim: read Dorothy Denning's exact `bf7b00f` rejection and scratch probes; repairing the failed/uncertain/inexact acquire and owner-replacement departure fence, registering model and real-window regressions, and addressing the three bounded coverage/documentation notes where ownership permits.
+- 2026-09-03T02:00:44-06:00 — Repair midpoint: terminal unsuccessful acquires and authority replacement now clear orphaned departure intent, the close property requires an admitted lease operation or held lease, and real `Main.qml` coverage includes rejected, uncertain, owner-lost, and owner-replaced acquisition plus compact-host focus. Final strict Debug/Release builds passed; Bluetooth passed 7/7 and Settings Center passed 9/9 in both profiles, with documentation, strict MkDocs, source shape, and whitespace gates green.
+- 2026-09-03T02:02:30-06:00 — Repair handoff: immutable product candidate `24129a26e5d7c6bb01e1dd9e287c75a8db1c224d` (tree `4e66338ba028793132bff93e3781e5cd430035ee`) closes P1-1 and all three P3 notes; requested Dorothy Denning's independent exact recheck, then manager integration.
