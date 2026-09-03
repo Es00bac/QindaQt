@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-03T01:05:16-06:00
+updated_at: 2026-09-03T02:05:06-06:00
 ---
 
 # Claude Program Manager
@@ -45,3 +45,4 @@ updated_at: 2026-09-03T01:05:16-06:00
 - 2026-09-03T00:20:01-06:00 — Integrated the authenticated compositor window-action boundary `3690a05` at merge `135fe65` (ADR renumbered 0061); merged tree passes compositor 35/35 non-nested, window-actions 4/4 with the nested row, the sixteen kwin rows 16/16 serially, broad safe Debug 406/406, and static gates. Eight integrations since the handover. Compositor identity lane opened; Terminal S1 under review.
 - 2026-09-03T00:40:31-06:00 — Integrated the Customize Settings canvas `2500a3d` at merge `ce5541e`; merged tree passes customize and domain rows 17/17, Settings Center 9/9 Debug/Release, broad safe Debug 412/412, and static gates. QQ-004.08 WIRED → EXECUTABLE. Nine integrations since the handover.
 - 2026-09-03T01:05:16-06:00 — Integrated Launcher L1 `26f366a` at merge `71900bd` (ADR renumbered 0062); merged tree passes launcher 15/15 and integrity 5/5 Debug/Release under host-unset isolation, broad safe Debug 421/421, and static gates. QQ-004.07 widened (stays WIRED until production hosting). Ten integrations since the handover.
+- 2026-09-03T02:05:06-06:00 — Integrated Terminal S1 `00f2db9` at merge `00b4f45`; merged tree passes terminal 15/15 Debug/Release under isolation, broad safe Debug 427/427, and static gates. QQ-006.08 widened. Eleven integrations since the handover. Kimi still limited at 02:02; GLM back and carrying four lanes.

@@ -58,6 +58,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `00f2db9` — Terminal S1 adds a bounded multi-session tab strip in which every session owns its PTY/child with
+  process-group-complete teardown, validated profiles within the existing launch policy, Settings1
+  persistence with presented asynchronous apply outcomes, AppShell action-catalog exposure, exact argv
+  preservation, and keyboard/accessibility parity. Dina St Johnston (OpenAI Codex, a different worker)
+  rejected the first candidate at `0/2/1/1` for a shutdown that reported clean while an HUP-immune descendant
+  survived and for apply failures never presented, rejected the next at `0/0/1/0` for a vacuous dialog
+  proof, and accepted the second repair at `0/0/0/0`. The fresh merged tree passes terminal 15/15 in Debug and
+  Release under host-unset isolation, the broad safe Debug suite passes 427/427, and all static gates. QQ-006.08 stays EXECUTABLE with a wider
+  stopping point; search, links, global-menu export, and the nested matrix remain.
+
 - `26f366a` — Launcher L1 adds the production adapters around the pure L0 model: an injected-root desktop-entry
   scanner with canonical containment, non-regular-file refusal, capped reads, debounced generation-fenced
   refresh, and errno-aware degraded truth; Settings1 pinned/recent persistence with uncertainty convergence; a
