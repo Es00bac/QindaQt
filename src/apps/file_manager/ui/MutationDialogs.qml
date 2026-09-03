@@ -114,6 +114,7 @@ Item {
         id: trashConfirmationDialog
         objectName: "trashConfirmationDialog"
         anchors.centerIn: parent
+        width: Math.min(560, root.width - Tokens.space["4"] * 2)
         modal: true
         title: qsTr("Move selected item to Trash?")
         standardButtons: T.Dialog.Yes | T.Dialog.Cancel
@@ -135,6 +136,7 @@ Item {
         id: emptyTrashConfirmationDialog
         objectName: "emptyTrashConfirmationDialog"
         anchors.centerIn: parent
+        width: Math.min(560, root.width - Tokens.space["4"] * 2)
         modal: true
         title: qsTr("Permanently empty Trash?")
         standardButtons: T.Dialog.Yes | T.Dialog.Cancel

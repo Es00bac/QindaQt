@@ -73,6 +73,7 @@ private slots:
   void cancellationCompletesWithTypedFailure();
   void restoreAndEmptyTrashClearRecoveryState();
   void hostileAndOverlongNamesFailBeforeBackendDispatch();
+  void unchangedRenameIsNoOp();
 };
 
 void TestMutationController::executesOffGuiThreadAndPublishesProgressAndUndo() {
@@ -112,11 +113,12 @@ void TestMutationController::restoreAndEmptyTrashClearRecoveryState() {
   auto backend = std::make_unique<RecordingBackend>(QThread::currentThread());
   RecordingBackend *recording = backend.get();
   MutationController controller(std::move(backend));
-  const QVariantMap identity = {{QStringLiteral("device"), 1},
-                                {QStringLiteral("inode"), 2},
-                                {QStringLiteral("identitySize"), 3},
-                                {QStringLiteral("modifiedNanoseconds"), 4},
-                                {QStringLiteral("mode"), 5}};
+  const QVariantMap identity = {{QStringLiteral("device"), QStringLiteral("1")},
+                                {QStringLiteral("inode"), QStringLiteral("2")},
+                                {QStringLiteral("identitySize"), QStringLiteral("3")},
+                                {QStringLiteral("modifiedNanoseconds"),
+                                 QStringLiteral("4")},
+                                {QStringLiteral("mode"), QStringLiteral("5")}};
   QVERIFY(controller.trashItem(QStringLiteral("/fixture/item"), identity));
   QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 2000);
   QVERIFY(controller.canRestore());
@@ -150,6 +152,21 @@ void TestMutationController::hostileAndOverlongNamesFailBeforeBackendDispatch() 
                                QStringLiteral("relative-destination"), {}));
   QCOMPARE(controller.failureCode(), QStringLiteral("invalid-request"));
   QVERIFY(!recording->called.load());
+}
+
+void TestMutationController::unchangedRenameIsNoOp() {
+  // AGENT-NOTE: Regression for review P3-1. The rename dialog is initialized
+  // to the current name, and accepting it must not dispatch a guaranteed
+  // destination collision or publish a misleading failure card.
+  auto backend = std::make_unique<RecordingBackend>(QThread::currentThread());
+  RecordingBackend *recording = backend.get();
+  MutationController controller(std::move(backend));
+
+  QVERIFY(controller.renameItem(QStringLiteral("/fixture/same"),
+                                QStringLiteral("same"), {}));
+  QVERIFY(!controller.busy());
+  QVERIFY(!recording->called.load());
+  QCOMPARE(controller.failureCode(), QStringLiteral("none"));
 }
 
 QTEST_GUILESS_MAIN(TestMutationController)
