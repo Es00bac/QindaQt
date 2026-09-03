@@ -16,8 +16,9 @@ namespace QindaQt::Shell::GlobalMenu::DbusMenu
 // Complete standard dbusmenu v4 server boundary. It owns a copied wire
 // snapshot and remote revision only; application action authority stays with
 // the injected signal consumer. publish() validates atomically and fails
-// closed at revision/id exhaustion. All calls and publication must occur on
-// this object's thread.
+// closed at revision/id exhaustion. GetGroupProperties follows the v4 empty-ID
+// all-published-items contract. All calls and publication must occur on this
+// object's thread.
 class DbusMenuServer final : public QObject
 {
     Q_OBJECT

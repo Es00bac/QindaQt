@@ -71,9 +71,10 @@ they do not import File Manager or shell runtime implementation.
   affecting local menus or application use.
 - One transport-owned dbusmenu v4 server implements `GetLayout`,
   `GetGroupProperties`, `GetProperty`, `Event`, `EventGroup`, `AboutToShow`,
-  and `AboutToShowGroup`, including depth/property filters and atomic malformed
-  snapshot rejection. AppShell supplies content and consumes admitted action
-  IDs; it owns no second protocol object.
+  and `AboutToShowGroup`, including depth/property filters, the standard
+  empty-ID request for all published non-root item properties, and atomic
+  malformed snapshot rejection. AppShell supplies content and consumes
+  admitted action IDs; it owns no second protocol object.
 - Tests require real dbusmenu traffic on a private bus, the complete v4
   surface, owner transition, accepted/rejected close cases, exactly-once and
   disabled activation controls, lineage/source-boundary poison, and an actual
