@@ -56,6 +56,12 @@ public:
     void setInhibitors(const QList<InhibitorSpec> &inhibitors);
     void setCanAnswers(const QString &powerOff, const QString &reboot,
                        const QString &suspend, const QString &hibernate);
+    void setDeferNextCanPowerOffReply(bool defer);
+    void completeOldestDeferredCanPowerOffReply();
+    [[nodiscard]] qsizetype deferredCanPowerOffReplyCount() const
+    {
+        return m_deferredCanPowerOffReplies.size();
+    }
     void setFailHibernate(bool fail);
     void setDeferNextActionReply(bool defer);
     void completeDeferredActionReply();
@@ -79,10 +85,12 @@ private:
     QString m_canReboot = QStringLiteral("yes");
     QString m_canSuspend = QStringLiteral("yes");
     QString m_canHibernate = QStringLiteral("yes");
+    QList<QDBusMessage> m_deferredCanPowerOffReplies;
     QDBusMessage m_deferredReply;
     bool m_lidClosed = false;
     bool m_docked = false;
     bool m_preparingForSleep = false;
+    bool m_deferNextCanPowerOffReply = false;
     bool m_failHibernate = false;
     bool m_deferNextActionReply = false;
     int listInhibitorsCallsCount = 0;

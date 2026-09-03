@@ -1712,7 +1712,8 @@ property changes, line-power `Online` transitions, exclusion of peripheral
 `PowerSupply=false` batteries from mixed inventories, hostile property types
 and ordinals, estimate bounds, modern/legacy profile roots and cookie holds,
 sanitized inhibitors, `PrepareForSleep`, dispatch-time `Can*` reauthorization,
-no-prompt actions, duplicate operation lineage, sysfs
+no-prompt actions, duplicate operation lineage, restart with a reused operation
+ID while the stopped generation's authorization reply is delayed, sysfs
 disappearance/read-only/write/re-observation, the explicit composition modes,
 and installed activation descriptors. The production activation row also
 proves exact name ownership, constructing-bus-loss exit, and fresh

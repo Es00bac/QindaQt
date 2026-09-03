@@ -229,13 +229,15 @@ void LogindActionAuthority::callCanAtDispatch(const quint64 operationId,
             [this, watcher, generation, operationId, action,
              ownerAtSubmission]() {
                 watcher->deleteLater();
-                if (!m_pendingAuthorizations.contains(operationId)) {
+                // AGENT-GUARD: A later run may legitimately reuse an operation
+                // ID. Reject this callback's generation before consulting or
+                // mutating the ID-keyed current-run map, or a stale Can* reply
+                // can erase the restarted operation and strand it forever.
+                if (!runningGeneration(generation)
+                    || !m_pendingAuthorizations.contains(operationId)) {
                     return;
                 }
                 m_pendingAuthorizations.remove(operationId);
-                if (!runningGeneration(generation)) {
-                    return;
-                }
                 const QDBusReply<QString> currentOwner =
                     m_connection.interface()->serviceOwner(
                         QString::fromLatin1(kLogindServiceName));
