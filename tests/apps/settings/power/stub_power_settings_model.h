@@ -8,6 +8,38 @@
 
 namespace QindaQt::Apps::SettingsPower::TestSupport {
 
+class StubSessionActions final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool canLock MEMBER canLock NOTIFY availabilityChanged)
+  Q_PROPERTY(bool canLogout MEMBER canLogout NOTIFY availabilityChanged)
+  Q_PROPERTY(bool canSuspend MEMBER canSuspend NOTIFY availabilityChanged)
+  Q_PROPERTY(bool canReboot MEMBER canReboot NOTIFY availabilityChanged)
+  Q_PROPERTY(bool canPowerOff MEMBER canPowerOff NOTIFY availabilityChanged)
+  Q_PROPERTY(bool pending MEMBER pending NOTIFY pendingChanged)
+  Q_PROPERTY(QString feedback MEMBER feedback NOTIFY feedbackChanged)
+
+public:
+  bool canLock = true;
+  bool canLogout = true;
+  bool canSuspend = true;
+  bool canReboot = true;
+  bool canPowerOff = true;
+  bool pending = false;
+  QString feedback;
+  QStringList requests;
+
+  Q_INVOKABLE bool requestLock() { requests.append(QStringLiteral("lock")); return true; }
+  Q_INVOKABLE bool requestLogout() { requests.append(QStringLiteral("logout")); return true; }
+  Q_INVOKABLE bool requestSuspend() { requests.append(QStringLiteral("suspend")); return true; }
+  Q_INVOKABLE bool requestReboot() { requests.append(QStringLiteral("reboot")); return true; }
+  Q_INVOKABLE bool requestPowerOff() { requests.append(QStringLiteral("poweroff")); return true; }
+
+Q_SIGNALS:
+  void availabilityChanged();
+  void pendingChanged();
+  void feedbackChanged();
+};
+
 class StubPowerSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)
@@ -18,6 +50,7 @@ class StubPowerSettingsModel final : public QObject {
   Q_PROPERTY(bool busy MEMBER busy NOTIFY viewChanged)
   Q_PROPERTY(bool retryAvailable MEMBER retryAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool sessionActionsSupported MEMBER sessionActionsSupported CONSTANT)
+  Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText MEMBER operationStatusText NOTIFY viewChanged)
@@ -37,7 +70,7 @@ public:
   bool stale = false;
   bool busy = false;
   bool retryAvailable = true;
-  bool sessionActionsSupported = false;
+  bool sessionActionsSupported = true;
   QString statusText = QStringLiteral("Authoritative power state is shown.");
   QString errorText;
   QString operationStatusText;
@@ -53,6 +86,7 @@ public:
   int brightnessCount = 0;
   QString lastTarget;
   int lastNormalized = -1;
+  StubSessionActions sessionActionState;
 
   explicit StubPowerSettingsModel(QObject *parent = nullptr) : QObject(parent) {
     supplyRows = {QVariantMap{{QStringLiteral("id"), QStringLiteral("ac-adapter")},
@@ -89,6 +123,8 @@ public:
       {QStringLiteral("reason"), QStringLiteral("Read-only in Power1 version 1")},
       {QStringLiteral("accessibleDescription"), QStringLiteral("%1 brightness").arg(name)}};
   }
+
+  [[nodiscard]] QObject *sessionActions() noexcept { return &sessionActionState; }
 
   Q_INVOKABLE bool retry() { ++retryCount; return true; }
   Q_INVOKABLE bool requestProfile(const QString &id) {

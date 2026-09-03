@@ -2,10 +2,17 @@
 #include "qindaqt/services/notification_presentation/presentation_access_token.h"
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
+#include "qindaqt/session_supervisor/session_service.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 
 #include <QFile>
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QDBusReply>
 #include <QProcess>
+#include <QScopeGuard>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QThread>
@@ -98,6 +105,9 @@ private slots:
     void supervisorEndsSessionAfterReplacementShellExits();
     void supervisorEndsSessionWhenShellRestartCannotStart();
     void supervisorRollsBackWhenTheSecondChildCannotStart();
+    void session1AuthenticatesShellAndStopsChildrenInOrder();
+    void optionalSecretAgentRestartsOnceWithoutBlockingSession();
+    void session1DescriptorMatchesTheFixedSurface();
 };
 
 void SessionProcessSupervisorTests::launcherPassesASecretOnlyThroughTheDescriptor()
@@ -351,6 +361,99 @@ void SessionProcessSupervisorTests::supervisorRollsBackWhenTheSecondChildCannotS
     QVERIFY(!supervisor.start(&error));
     QVERIFY(!error.isEmpty());
     QVERIFY(!supervisor.isRunning());
+}
+
+void SessionProcessSupervisorTests::session1AuthenticatesShellAndStopsChildrenInOrder()
+{
+    qputenv("QINDAQT_TEST_SESSION1_LOGOUT", QByteArrayLiteral("1"));
+    qputenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS", QByteArrayLiteral("30000"));
+    const auto environmentGuard = qScopeGuard([] {
+        qunsetenv("QINDAQT_TEST_SESSION1_LOGOUT");
+        qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
+    });
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable =
+        QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy finished(&supervisor,
+                        &SessionSupervisor::SessionProcessSupervisor::finished);
+    QSignalSpy stopping(
+        &supervisor,
+        &SessionSupervisor::SessionProcessSupervisor::childStopRequested);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    SessionSupervisor::SessionService service(
+        supervisor, QDBusConnection::sessionBus());
+    QVERIFY2(service.start(&error), qPrintable(error));
+
+    QDBusInterface unauthorized(
+        QStringLiteral("org.qindaqt.Session1"),
+        QStringLiteral("/org/qindaqt/Session1"),
+        QStringLiteral("org.qindaqt.Session1"),
+        QDBusConnection::sessionBus());
+    QDBusPendingCallWatcher deniedWatcher(
+        unauthorized.asyncCall(QStringLiteral("CanLogout")));
+    QSignalSpy deniedFinished(&deniedWatcher, &QDBusPendingCallWatcher::finished);
+    QTRY_COMPARE_WITH_TIMEOUT(deniedFinished.size(), 1, 2'000);
+    const QDBusPendingReply<bool> denied = deniedWatcher;
+    QVERIFY(!denied.isValid());
+    QCOMPARE(denied.error().name(),
+             QStringLiteral("org.qindaqt.Session1.Error.Unauthorized"));
+
+    QTRY_COMPARE_WITH_TIMEOUT(finished.size(), 1, 5'000);
+    QCOMPARE(finished.first().at(0).toInt(), 0);
+    QCOMPARE(finished.first().at(1).toString(), QStringLiteral("logout requested"));
+    QCOMPARE(stopping.size(), 3);
+    QCOMPARE(stopping.at(0).at(0).toString(), QStringLiteral("shell"));
+    QCOMPARE(stopping.at(1).at(0).toString(), QStringLiteral("notification-host"));
+    QCOMPARE(stopping.at(2).at(0).toString(), QStringLiteral("network-secret-agent"));
+    QVERIFY(!supervisor.isRunning());
+    QVERIFY(!supervisor.canLogout());
+}
+
+void SessionProcessSupervisorTests::optionalSecretAgentRestartsOnceWithoutBlockingSession()
+{
+    qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
+    SessionSupervisor::SessionProcessOptions options;
+    options.notificationHostExecutable =
+        QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
+    options.networkSecretAgentExecutable =
+        QStringLiteral(QINDAQT_SESSION_PLAIN_CHILD_HELPER);
+    options.profileId = QStringLiteral("test-hold-shell");
+    options.compositorProcessId = 42'424;
+    SessionSupervisor::SessionProcessSupervisor supervisor(std::move(options));
+    QSignalSpy restarted(
+        &supervisor,
+        &SessionSupervisor::SessionProcessSupervisor::networkSecretAgentRestarted);
+    QSignalSpy finished(&supervisor,
+                        &SessionSupervisor::SessionProcessSupervisor::finished);
+    QString error;
+    QVERIFY2(supervisor.start(&error), qPrintable(error));
+    QVERIFY(supervisor.isRunning());
+    QTRY_COMPARE_WITH_TIMEOUT(restarted.size(), 1, 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(supervisor.networkSecretAgentProcessId(), qint64(0),
+                              5'000);
+    QCOMPARE(supervisor.networkSecretAgentRestartCount(), 1);
+    QCOMPARE(finished.size(), 0);
+    QVERIFY(supervisor.isRunning());
+    supervisor.stop();
+}
+
+void SessionProcessSupervisorTests::session1DescriptorMatchesTheFixedSurface()
+{
+    QFile descriptor(QStringLiteral(QINDAQT_SESSION1_XML));
+    QVERIFY(descriptor.open(QIODevice::ReadOnly));
+    const QByteArray xml = descriptor.readAll();
+    QVERIFY(xml.contains("interface name=\"org.qindaqt.Session1\""));
+    QCOMPARE(xml.count("method name=\"CanLogout\""), 1);
+    QCOMPARE(xml.count("method name=\"Logout\""), 1);
+    QCOMPARE(xml.count("direction=\"out\""), 1);
 }
 
 QTEST_GUILESS_MAIN(SessionProcessSupervisorTests)

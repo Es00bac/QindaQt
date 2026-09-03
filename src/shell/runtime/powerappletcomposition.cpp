@@ -2,6 +2,7 @@
 
 #include "powerappletcomposition.h"
 
+#include "kglobalaccelshortcutregistrar.h"
 #include "power_applet_controller.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
@@ -10,8 +11,11 @@
 #include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/services/power_client/power_client.h"
 #include "qindaqt/services/power_client/qt_power_transport.h"
+#include "qindaqt/services/session_actions/session_actions_client.h"
 
+#include <QAction>
 #include <QDBusConnection>
+#include <QKeySequence>
 
 namespace QindaQt::Shell {
 namespace {
@@ -65,8 +69,24 @@ PowerAppletComposition::PowerAppletComposition(
     m_transport = std::make_unique<Power::QtPowerTransport>(
         QDBusConnection::sessionBus());
     m_client = std::make_unique<Power::PowerClient>(m_transport.get());
+    m_sessionActions = std::make_unique<
+        Services::SessionActions::SessionActionsClient>(
+            QDBusConnection::sessionBus(), QDBusConnection::systemBus());
     m_access = std::make_unique<PowerApplet::PowerAppletController>(
-        m_client.get(), grants.read, grants.control);
+        m_client.get(), grants.read, grants.control, m_sessionActions.get());
+    m_lockAction = std::make_unique<QAction>();
+    m_lockAction->setObjectName(QStringLiteral("qindaqt_lock_session"));
+    m_lockAction->setText(QStringLiteral("Lock QindaQt session"));
+    QObject::connect(m_lockAction.get(), &QAction::triggered,
+                     m_sessionActions.get(), [this] {
+                         m_sessionActions->requestLock();
+                     });
+    KGlobalAccelShortcutRegistrar registrar;
+    const auto registration = registrar.registerShortcut(
+        *m_lockAction, QKeySequence(Qt::META | Qt::Key_L), *m_lockAction,
+        [](bool) {});
+    Q_UNUSED(registration)
+    m_sessionActions->start();
     if (grants.read) {
         m_client->start();
     }
@@ -74,6 +94,7 @@ PowerAppletComposition::PowerAppletComposition(
 
 PowerAppletComposition::~PowerAppletComposition()
 {
+    m_sessionActions->stop();
     m_client->stop();
 }
 

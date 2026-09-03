@@ -63,6 +63,23 @@ if(violations)
     message(FATAL_ERROR "Power applet runtime boundary failed")
 endif()
 
+set(composition_path
+    "${SOURCE_ROOT}/src/shell/runtime/powerappletcomposition.cpp")
+if(EXISTS "${composition_path}")
+    file(READ "${composition_path}" composition_content)
+    foreach(required IN ITEMS
+            "KGlobalAccelShortcutRegistrar"
+            "qindaqt_lock_session"
+            "Qt::Key_L"
+            "requestLock")
+        string(FIND "${composition_content}" "${required}" required_hit)
+        if(required_hit EQUAL -1)
+            message(FATAL_ERROR
+                "Power applet composition is missing Meta+L contract token '${required}'")
+        endif()
+    endforeach()
+endif()
+
 # Mutation-sensitive negative control: the same checker must reject a planted
 # service-internal dependency. The fixture stays under the build tree.
 if(DEFINED POISON_ROOT AND NOT RUNTIME_POLICY_SKIP_POISON)

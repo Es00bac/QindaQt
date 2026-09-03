@@ -29,8 +29,9 @@ bool usableAvailability(const Availability availability) {
 } // namespace
 
 PowerSettingsModel::PowerSettingsModel(Power::PowerClient &client,
+                                       QObject *sessionActions,
                                        QObject *parent)
-    : QObject(parent), m_client(client) {
+    : QObject(parent), m_client(client), m_sessionActions(sessionActions) {
   m_debounceTimer.setSingleShot(true);
   m_debounceTimer.setInterval(120);
   m_convergenceTimer.setSingleShot(true);
@@ -50,6 +51,14 @@ PowerSettingsModel::PowerSettingsModel(Power::PowerClient &client,
           [this] { synchronizeAuthority(); });
   connect(&m_client, &Power::PowerClient::operationCompleted, this,
           &PowerSettingsModel::handleOperationCompleted);
+}
+
+bool PowerSettingsModel::sessionActionsSupported() const noexcept {
+  return m_sessionActions != nullptr;
+}
+
+QObject *PowerSettingsModel::sessionActions() const noexcept {
+  return m_sessionActions;
 }
 
 bool PowerSettingsModel::hasDisplaySnapshot() const noexcept {

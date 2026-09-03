@@ -34,11 +34,13 @@ QString phaseToken(const ServicePhase phase)
 PowerAppletController::PowerAppletController(Power::PowerClient *client,
                                              const bool powerReadGranted,
                                              const bool powerControlGranted,
+                                             QObject *sessionActions,
                                              QObject *parent)
     : QObject(parent)
     , m_client(client)
     , m_powerReadGranted(powerReadGranted)
     , m_powerControlGranted(powerReadGranted && powerControlGranted)
+    , m_sessionActions(sessionActions)
 {
     Q_ASSERT(m_client != nullptr);
     Q_ASSERT(m_client->thread() == thread());
@@ -49,6 +51,11 @@ PowerAppletController::PowerAppletController(Power::PowerClient *client,
     connect(m_client, &Power::PowerClient::operationCompleted, this,
             &PowerAppletController::handleOperationCompleted);
     reproject();
+}
+
+QObject *PowerAppletController::sessionActions() const noexcept
+{
+    return m_sessionActions;
 }
 
 QString PowerAppletController::phase() const

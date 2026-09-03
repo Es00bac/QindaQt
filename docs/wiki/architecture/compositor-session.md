@@ -63,8 +63,11 @@ Rootless XWayland is on by default and can be disabled with `--no-xwayland`.
 A `--session` process controls compositor lifetime. Production-shell builds
 default it to `qindaqt-session`, which starts the notification host and shell,
 provisions their private presentation token through separate one-shot inherited
-descriptors, and keeps the token only in supervisor memory. The notification
-host is session-resident. One unexpected shell exit consumes a fixed
+descriptors, and keeps the token only in supervisor memory. When the installed
+sibling `qindaqt-network-secret-agent` exists, the supervisor also starts it as
+a readiness-independent child; one unexpected exit consumes its sole restart
+without affecting either essential child. The notification host is
+session-resident. One unexpected shell exit consumes a fixed
 one-restart budget: the host stays running while a replacement shell receives
 a fresh descriptor containing the same token, the same direct KWin PID, and
 the same profile/theme arguments. Host exit, replacement-start failure, a
@@ -80,6 +83,17 @@ compositor and KScreenLocker state; a replacement must authenticate that path
 again and receives no inherited privacy state. An
 explicit `--session` still overrides the default for isolated test probes and
 alternate session compositions; bridge-only builds retain an empty default.
+
+The supervisor owns `org.qindaqt.Session1` at `/org/qindaqt/Session1` on the
+session bus. `CanLogout()` and `Logout()` resolve the caller's bus credential
+PID on every invocation and admit only the currently supervised shell PID; a
+retired or unrelated process receives the fixed Unauthorized error. Accepted
+logout replies before shutdown, then stops shell, notification host, and the
+optional secret agent in that order and exits successfully. KWin's
+`--exit-with-session` coupling then ends the compositor. The exact wire and
+error contract is [Session1 version 1](../reference/session1-v1.md), and the
+client/platform split is recorded in
+[ADR-0070](../adr/0070-confine-session-actions-behind-authenticated-boundaries.md).
 
 `--test-scenario` is an explicit development marker, not implicit trust from
 the environment. The launcher clears inherited test/development markers and

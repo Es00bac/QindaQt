@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<node name="/org/qindaqt/Session1">
+  <interface name="org.qindaqt.Session1">
+    <method name="CanLogout">
+      <arg name="available" type="b" direction="out"/>
+    </method>
+    <method name="Logout"/>
+  </interface>
+</node>

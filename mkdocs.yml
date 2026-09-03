@@ -66,6 +66,7 @@ nav:
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 1: reference/audio1-v1.md
       - Power1 version 1: reference/power1-v1.md
+      - Session1 version 1: reference/session1-v1.md
       - Bluetooth1 protocol 1: reference/bluetooth1-v1.md
       - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
@@ -160,3 +161,4 @@ nav:
       - "ADR-0067: Confined fontconfig discovery": adr/0067-confine-fontconfig-behind-font-discovery.md
       - "ADR-0068: First-party AppShell menu export": adr/0068-compose-first-party-menu-export-through-appshell.md
       - "ADR-0069: Confined network credential entry": adr/0069-confine-network-credential-entry.md
+      - "ADR-0070: Authenticated session actions": adr/0070-confine-session-actions-behind-authenticated-boundaries.md

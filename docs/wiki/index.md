@@ -134,6 +134,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   identity/registry rules, topology projection, codecs, and transaction states.
 - [Power1 version 1](reference/power1-v1.md) documents bounded Power values,
   privacy-preserving handles, canonical codecs, and fail-closed validation.
+- [Session1 version 1](reference/session1-v1.md) documents the
+  shell-PID-authenticated logout surface and fixed teardown order.
 - [Network1 version 1](reference/network1-v1.md) documents the fixed resident
   D-Bus methods plus secret-free values, identity, lineage, scan leases,
   canonical codecs, intent admission, and error behavior.

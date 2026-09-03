@@ -13,6 +13,9 @@ Item {
     property bool vertical: false
     readonly property var colors: theme.colors ?? ({})
     readonly property bool available: access !== null
+    readonly property var sessionActions: root.available
+                                          ? root.access.sessionActions : null
+    property string confirmationAction: ""
 
     objectName: "powerApplet"
     implicitWidth: vertical ? 40 : Math.max(46, summary.implicitWidth + 12)
@@ -176,6 +179,108 @@ Item {
             }
 
             Label {
+                Layout.fillWidth: true
+                text: qsTr("Session")
+                color: root.colors.text ?? "white"
+                font.bold: true
+                Accessible.role: Accessible.Heading
+                Accessible.name: text
+            }
+
+            GridLayout {
+                Layout.fillWidth: true
+                columns: 2
+
+                Button {
+                    objectName: "powerAppletLockButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Lock")
+                    enabled: root.sessionActions !== null
+                             && root.sessionActions.canLock
+                             && !root.sessionActions.pending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Lock session")
+                    Accessible.description: qsTr("Lock the current QindaQt session")
+                    onClicked: root.sessionActions.requestLock()
+                }
+                Button {
+                    objectName: "powerAppletLogoutButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Log out")
+                    enabled: root.sessionActions !== null
+                             && root.sessionActions.canLogout
+                             && !root.sessionActions.pending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: text
+                    Accessible.description: qsTr("Confirm and end the current QindaQt session")
+                    onClicked: {
+                        root.confirmationAction = "logout"
+                        confirmation.open()
+                    }
+                }
+                Button {
+                    objectName: "powerAppletSuspendButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Suspend")
+                    enabled: root.sessionActions !== null
+                             && root.sessionActions.canSuspend
+                             && !root.sessionActions.pending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: text
+                    Accessible.description: qsTr("Suspend the computer now")
+                    onClicked: root.sessionActions.requestSuspend()
+                }
+                Button {
+                    objectName: "powerAppletRestartButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Restart")
+                    enabled: root.sessionActions !== null
+                             && root.sessionActions.canReboot
+                             && !root.sessionActions.pending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: text
+                    Accessible.description: qsTr("Confirm and restart the computer")
+                    onClicked: {
+                        root.confirmationAction = "reboot"
+                        confirmation.open()
+                    }
+                }
+                Button {
+                    objectName: "powerAppletPowerOffButton"
+                    Layout.columnSpan: 2
+                    Layout.fillWidth: true
+                    text: qsTr("Shut down")
+                    enabled: root.sessionActions !== null
+                             && root.sessionActions.canPowerOff
+                             && !root.sessionActions.pending
+                    focusPolicy: Qt.TabFocus
+                    Accessible.role: Accessible.Button
+                    Accessible.name: text
+                    Accessible.description: qsTr("Confirm and shut down the computer")
+                    onClicked: {
+                        root.confirmationAction = "poweroff"
+                        confirmation.open()
+                    }
+                }
+            }
+
+            Label {
+                objectName: "powerAppletSessionFeedback"
+                Layout.fillWidth: true
+                visible: root.sessionActions !== null
+                         && root.sessionActions.feedback !== ""
+                text: visible ? root.sessionActions.feedback : ""
+                color: root.colors.warning ?? "#e5a84b"
+                wrapMode: Text.Wrap
+                Accessible.role: Accessible.AlertMessage
+                Accessible.name: text
+            }
+
+            Label {
                 objectName: "powerAppletFeedback"
                 Layout.fillWidth: true
                 visible: root.access !== null && root.access.feedbackPresent
@@ -184,6 +289,39 @@ Item {
                 wrapMode: Text.Wrap
                 Accessible.role: Accessible.AlertMessage
             }
+        }
+    }
+
+    Dialog {
+        id: confirmation
+        objectName: "powerAppletSessionConfirmation"
+        width: 320
+        modal: true
+        focus: true
+        title: root.confirmationAction === "logout" ? qsTr("Log out?")
+               : root.confirmationAction === "reboot" ? qsTr("Restart?")
+               : qsTr("Shut down?")
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        onAccepted: {
+            if (root.sessionActions === null)
+                return
+            if (root.confirmationAction === "logout")
+                root.sessionActions.requestLogout()
+            else if (root.confirmationAction === "reboot")
+                root.sessionActions.requestReboot()
+            else if (root.confirmationAction === "poweroff")
+                root.sessionActions.requestPowerOff()
+        }
+        contentItem: Label {
+            text: root.confirmationAction === "logout"
+                  ? qsTr("Open applications will be asked to close before this session ends.")
+                  : root.confirmationAction === "reboot"
+                    ? qsTr("The computer will restart now.")
+                    : qsTr("The computer will shut down now.")
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.Dialog
+            Accessible.name: confirmation.title
+            Accessible.description: text
         }
     }
 }

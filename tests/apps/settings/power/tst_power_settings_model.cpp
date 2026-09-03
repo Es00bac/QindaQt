@@ -14,14 +14,14 @@ class PowerSettingsModelTest final : public QObject {
   Q_OBJECT
 
 private Q_SLOTS:
-  void projectsTruthAndPoisonsSessionActions();
+  void projectsTruthAndKeepsSessionActionsInTheirInjectedBoundary();
   void sharesProfileAdmissionAndConvergenceFence();
   void ownerReplacementClearsActionableTruth();
   void staleSnapshotClosesPresentationAndAdmission();
   void successfulRetryClearsReconnectStatus();
 };
 
-void PowerSettingsModelTest::projectsTruthAndPoisonsSessionActions() {
+void PowerSettingsModelTest::projectsTruthAndKeepsSessionActionsInTheirInjectedBoundary() {
   FakePowerTransport transport;
   Power::PowerClient client(&transport);
   PowerSettingsModel model(client);
@@ -48,11 +48,12 @@ void PowerSettingsModelTest::projectsTruthAndPoisonsSessionActions() {
   QVERIFY(!model.internalBrightnessRows().first().toMap()
                .value(QStringLiteral("available")).toBool());
   QVERIFY(!model.sessionActionsSupported());
+  QVERIFY(model.sessionActions() == nullptr);
 
   const QMetaObject *meta = model.metaObject();
-  QCOMPARE(meta->indexOfMethod("suspend()"), -1);
-  QCOMPARE(meta->indexOfMethod("shutdown()"), -1);
-  QCOMPARE(meta->indexOfMethod("lock()"), -1);
+  QCOMPARE(meta->indexOfMethod("requestSuspend()"), -1);
+  QCOMPARE(meta->indexOfMethod("requestPowerOff()"), -1);
+  QCOMPARE(meta->indexOfMethod("requestLock()"), -1);
 }
 
 void PowerSettingsModelTest::sharesProfileAdmissionAndConvergenceFence() {
