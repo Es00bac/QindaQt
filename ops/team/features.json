@@ -858,7 +858,7 @@
           "title": "Settings pages and live platform-service routes",
           "weight": 15,
           "state": "WIRED",
-          "summary": "Notifications, Appearance, Display, Network, Customize, and Audio are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing.",
+          "summary": "Notifications, Appearance, Display, Network, Customize, Audio, and Bluetooth are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing. Bluetooth composes the public Bluetooth client into adapter power, a reference-counted discovery lease, and paired-device connect/disconnect with exact owner/epoch/revision fencing and no pairing authority.",
           "evidence": [
             {
               "kind": "commit",
@@ -899,9 +899,19 @@
               "kind": "test",
               "reference": "docs/wiki/apps/audio-settings.md",
               "summary": "The owning page records the public-client-only Audio route, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "500a33e1719429b9fb0573f880fe42c8c57cb736",
+              "summary": "The exact Bluetooth Settings route candidate 24129a2 (Dorothy Denning, Z.AI GLM, ACCEPT 0/0/0/0 after one rejected round) is integrated through the delegated registry-reconciliation merge 111dedb (appended after Audio at Ctrl+7); the merged tree passes all Settings and Bluetooth rows 64/64 in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite 472/472."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/apps/bluetooth-settings.md",
+              "summary": "The owning page records the public-client-only Bluetooth route, the discovery lease released on route departure and window close, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
             }
           ],
-          "caveat": "Power, brightness, Bluetooth (accepted, merge in progress), clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence and physical audio devices remain separate too."
+          "caveat": "Power, brightness, clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence, physical audio devices, and physical Bluetooth adapters/pairing remain separate too."
         },
         {
           "id": "QQ-006.06",
