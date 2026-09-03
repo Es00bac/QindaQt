@@ -12,6 +12,8 @@ endif()
 find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Test)
 
 qt_add_executable(qindaqt_status_notifier_values_tests tst_status_notifier_values.cpp)
+target_compile_definitions(qindaqt_status_notifier_values_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_link_libraries(qindaqt_status_notifier_values_tests
     PRIVATE QindaQt::StatusNotifier Qt6::Core Qt6::Test)
 qindaqt_enable_warnings(qindaqt_status_notifier_values_tests)

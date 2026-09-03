@@ -25,10 +25,10 @@ class HostSignalRecorder final : public QObject
     Q_OBJECT
 
 public:
-    QStringList owners;
+    int count = 0;
 
 public slots:
-    void record(const QString &owner) { owners.append(owner); }
+    void record() { ++count; }
 };
 
 // Blocking D-Bus calls from this thread would starve the watcher object,
@@ -280,7 +280,7 @@ void StatusNotifierWatcherTests::emitsHostUnregisteredWhenOwnerDisconnects()
         QString::fromLatin1(kWatcherInterfaceName),
         QStringLiteral("StatusNotifierHostUnregistered"),
         &recorder,
-        SLOT(record(QString))));
+        SLOT(record())));
     QSignalSpy localSpy(&watcher, &StatusNotifierWatcherService::hostUnregistered);
     QCOMPARE(watcherCall(hostConnection, QStringLiteral("RegisterStatusNotifierHost"),
                          QVariant(QStringLiteral("org.qindaqt.LossHost")))
@@ -290,9 +290,9 @@ void StatusNotifierWatcherTests::emitsHostUnregisteredWhenOwnerDisconnects()
     hostConnection = QDBusConnection(QString());
     QDBusConnection::disconnectFromBus(QStringLiteral("host-loss"));
 
-    QTRY_COMPARE_WITH_TIMEOUT(recorder.owners.size(), 1, 5'000);
-    QCOMPARE(recorder.owners.constFirst(), owner);
+    QTRY_COMPARE_WITH_TIMEOUT(recorder.count, 1, 5'000);
     QCOMPARE(localSpy.size(), 1);
+    QCOMPARE(localSpy.constFirst().constFirst().toString(), owner);
     QCOMPARE(watcher.registeredHosts(), QStringList());
 
     QDBusConnection::disconnectFromBus(QStringLiteral("watcher-host-loss"));

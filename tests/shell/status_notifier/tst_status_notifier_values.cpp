@@ -4,6 +4,7 @@
 #include <qindaqt/shell/status_notifier/status_notifier_types.h>
 #include <qindaqt/shell/status_notifier/status_notifier_validation.h>
 
+#include <QFile>
 #include <QtTest>
 
 using namespace QindaQt::StatusNotifier;
@@ -464,6 +465,22 @@ private slots:
         QVERIFY(!isValidObjectPath(QStringLiteral("/trailing/")));
         QVERIFY(!isValidObjectPath(QStringLiteral("/non#ascii")));
         QVERIFY(!isValidObjectPath(QString::fromUtf8("/nonascii/é")));
+    }
+
+    void productionProtocolCommentsStayCurrent()
+    {
+        // AGENT-NOTE: P3-1 regression: the shared protocol constants are
+        // consumed by production adapters and must not be labelled future-
+        // only again. This source-policy assertion makes that precision
+        // reviewable in the registered values row.
+        QFile source(QStringLiteral(QINDAQT_SOURCE_DIR
+                                    "/src/shell/status_notifier/include/qindaqt/"
+                                    "shell/status_notifier/status_notifier_limits.h"));
+        QVERIFY(source.open(QIODevice::ReadOnly));
+        const QByteArray text = source.readAll();
+        QVERIFY(!text.contains("future adapter use only"));
+        QVERIFY(!text.contains("later adapter milestones"));
+        QVERIFY(text.contains("production watcher/item-client adapters"));
     }
 };
 
