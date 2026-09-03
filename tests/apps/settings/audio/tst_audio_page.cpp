@@ -53,7 +53,7 @@ private Q_SLOTS:
   void rendersInventoryAccessibly();
   void routesDefaultVolumeMuteAndRetryIntents();
   void showsStaleTruthLabeledAndOwnerLossEmpty();
-    void keepsCompactFocusVisibleAndClosesTheCycle();
+  void keepsCompactFocusVisibleAndClosesTheCycle();
   void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
   void stubMatchesRealModelSurface();
