@@ -199,6 +199,93 @@ compositor lane, not a shell workaround:
 Container close policy (Close All / Ungroup / Cancel) stays with the later
 shell composition lane; its Ungroup arm maps to `releaseContainer`.
 
+## Applet presentation
+
+`src/shell/task_list/applet/` owns the registered panel presentation slice: the
+pure bounded strip projection, the shell-private `TaskListAppletController`,
+its injected operation seam, and the compiled `QindaQt.Shell.TaskList` 1.0
+module. The slice is a **registered built-in, deliberately not hosted**: the
+manifest (`data/applets/task-list.json`), the audited registry entry
+(`qindaqt.applets.task-list`), and the policy decisions resolve a profile
+instance to `ready`, but production-shell dispatcher composition
+(`src/shell/runtime`, `src/shell/qml`) remains the later hosting lane.
+
+The controller composes the accepted T0/T1 boundaries over injected seams and
+owns no bus connection of its own:
+
+- it borrows the composition-owned `TaskListSource` for the accepted
+  generation and stale-id intent arbitration;
+- it observes the producer through the read-only `TaskListOperationAuthority`
+  (the production authority is the T1 facts producer), so owner loss or
+  replacement reprojects immediately; and
+- it dispatches through the injected `TaskListAppletOperationPort`, whose
+  production implementation (`TaskListAppletOperationBridge`) forwards to the
+  T1 operation adapter unchanged. The port may finish a fenced rejection
+  synchronously inside the dispatch call; the controller buffers results
+  emitted mid-dispatch and attributes them strictly by token, drops results
+  for unknown tokens, and keeps one pending marker per task until the exactly
+  one terminal result arrives — state changes never clear a pending marker.
+  A dock dispatch names two tasks, so its single token marks **both**
+  participants pending and its terminal result releases both; neither side
+  may attract a second mutation while the dock is in flight.
+
+The manifest requests `windows.read`, `windows.activate`, and
+`windows.manage`; the installed policy grants them to the audited package
+through the audited-builtin trust default and explicitly denies `windows.read`
+and `windows.activate` to third-party packages (the wildcard already denies
+`windows.manage`). The composing shell passes the evaluated grants to the
+controller at construction, immutable afterwards. `windows.read` denial
+withholds all observation (phase `unavailable`, no rows, no dispatch);
+`windows.activate` and `windows.manage` gate their intents independently with
+pre-dispatch refusals and user feedback.
+
+Presentation phases are the T0 projection plus the read-denial state:
+`loading` (no accepted generation — cold start is Loading and the T1 producer
+degrades explicitly once owner discovery resolves, so Loading cannot persist
+silently), `ready`, `empty` (nothing visible in scope, even while degraded),
+`degraded` (producer unavailable; the retained generation stays visible but
+every intent is refused — a failed first refresh with no accepted generation
+is also `degraded`, never `empty`), and `unavailable` (read capability
+denied). The
+strip presents at most 64 rows in canonical order — also the Tab and arrow
+traversal order — and reports the exact hidden count as overflow truth. Every
+row carries its generation revision and echoes it into each intent, so the T0
+arbitration refuses actions against a generation the user no longer sees.
+Context actions per row are Activate, Minimize, Close, and — for container
+rows — Ungroup, which maps to the T1 `releaseContainer`; container close
+policy (Close All / Ungroup / Cancel) itself stays with the later shell
+composition lane. Rows show a typed one-letter icon placeholder derived from
+the application identity: no freedesktop/QIcon seam exists in the tree yet,
+and inventing one here would duplicate launcher's future authority.
+
+The compiled module follows the first-party presentation rule from
+[Module boundaries](../architecture/module-boundaries.md): both QML files
+import `QindaQt.Controls 1.0` explicitly (labels, the dismiss button, and the
+row focus ring are Controls primitives) and resolve every remaining color,
+spacing, radius, and type metric from the read-only QST-1 `QindaQt.Tokens`
+singleton. The applet owns no palette, theme map, or fallback colors — a
+boundary probe rejects hex literals and missing imports — and the row's
+context menu uses the QQC2 style palette because Controls ships no menu
+primitive yet. The composing shell publishes the theme through the same
+Tokens facade seam the offscreen rows exercise.
+
+Window-level activate/minimize/close still finish `Unavailable` through the T1
+adapter until the composition lane routes them through the published exact-owner
+`src/shell_window_actions_client` ([ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md));
+the applet presents that outcome truthfully as feedback instead of hiding it.
+The authenticated active-window identity
+([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md))
+remains a separate single-client concern the applet never touches.
+
+Focused rows are selected with `ctest -R '^qindaqt\.task-list-applet-'`:
+pure projection bounds/overflow, controller fencing over fake seams (cold
+start, capability gates, stale/foreign lineage, synchronous-completion
+attribution, owner loss), bridge dispatch over the real adapter with a fake
+transport, fatal-warning-clean offscreen QML state/keyboard rows, a static
+boundary poison probe, and a relocated installed-package proof of the
+`TaskListAppletRuntime` component. No row contacts a host bus, display, or
+compositor, and no nested session is claimed.
+
 ## Current implementation
 
 The source/static slice at `src/shell/task_list` implements the values,
@@ -207,11 +294,15 @@ arbitration described above. The T1 slice adds the exact-owner, fail-closed
 public facts reader and the operation adapter, both covered by hostile unit
 rows and a private-bus
 transport row in `tests/shell/task_list` (see the
-[testing harness](../development/testing-harness.md)). These slices are
+[testing harness](../development/testing-harness.md)). The T2 slice adds the
+registered applet controller, compiled `QindaQt.Shell.TaskList` presentation,
+manifest/policy/registry entry, and `TaskListAppletRuntime` install component
+described in the previous section. These slices are
 registered in the combined source/test build but are deliberately not
 instantiated by the production shell. The current reader intentionally cannot
 publish Ready from Compositor1 1.1; the coherent inventory is a compositor
 prerequisite. Composing the published exact-owner
-`src/shell_window_actions_client` behind accepted window intents, QST-1
-presentation, and installed keyboard/accessibility qualification remain later
+`src/shell_window_actions_client` behind accepted window intents, production
+dispatcher hosting of the registered applet, and installed nested
+keyboard/accessibility qualification remain later
 shell slices and are not claimed here.
