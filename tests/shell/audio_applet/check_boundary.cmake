@@ -109,4 +109,61 @@ if(violations)
     message(FATAL_ERROR "Audio applet boundary gate failed")
 endif()
 
-message(STATUS "Audio applet boundary gate passed (${source_count} files)")
+# Mutation-sensitive negative controls independently prove that the exact
+# include allowlist rejects transport, QML, and service-internal reach. The
+# fixture stays under the caller-supplied build-tree root (POISON_ROOT).
+set(poison_cases "")
+if(DEFINED POISON_ROOT AND NOT AUDIO_APPLET_PURE_POLICY_SKIP_POISON)
+    cmake_path(NORMAL_PATH POISON_ROOT OUTPUT_VARIABLE poison_root)
+    file(REMOVE_RECURSE "${poison_root}")
+
+    function(expect_pure_poison_rejected name relative_path poison_content)
+        set(case_root "${poison_root}/${name}")
+        file(MAKE_DIRECTORY "${case_root}")
+        foreach(source IN LISTS sources)
+            file(RELATIVE_PATH relative_source "${SOURCE_ROOT}" "${source}")
+            get_filename_component(source_dir "${case_root}/${relative_source}" DIRECTORY)
+            file(MAKE_DIRECTORY "${source_dir}")
+            file(COPY "${source}" DESTINATION "${source_dir}")
+        endforeach()
+        file(APPEND "${case_root}/${relative_path}" "${poison_content}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DSOURCE_ROOT=${case_root}"
+                    -DAUDIO_APPLET_PURE_POLICY_SKIP_POISON=ON
+                    -P "${CMAKE_CURRENT_LIST_FILE}"
+            RESULT_VARIABLE poison_status
+            OUTPUT_VARIABLE poison_output
+            ERROR_VARIABLE poison_error)
+        if(poison_status EQUAL 0)
+            message(FATAL_ERROR
+                "Audio applet boundary accepted ${name} poison:\n"
+                "${poison_output}${poison_error}")
+        endif()
+        set(poison_cases ${poison_cases} "${name}" PARENT_SCOPE)
+    endfunction()
+
+    expect_pure_poison_rejected(
+        "transport" "src/shell/audio_applet/audio_applet_model.h"
+        "#include <QtDBus/QDBusConnection>\n")
+    expect_pure_poison_rejected(
+        "service-internal" "src/shell/audio_applet/audio_applet_model.cpp"
+        "#include <qindaqt/services/audio_service/resident_audio_service.h>\n")
+    expect_pure_poison_rejected(
+        "qml" "src/shell/audio_applet/audio_applet_model.h"
+        "#include <QtQml/QQmlEngine>\n")
+    expect_pure_poison_rejected(
+        "qobject" "src/shell/audio_applet/audio_applet_model.h"
+        "class QObject;\n")
+    list(LENGTH poison_cases poison_rejections)
+    if(NOT poison_rejections EQUAL 4)
+        message(FATAL_ERROR
+            "Audio applet boundary expected 4 poison rejections, got ${poison_rejections}")
+    endif()
+    file(REMOVE_RECURSE "${poison_root}")
+else()
+    set(poison_rejections 0)
+endif()
+
+message(STATUS
+    "Audio applet boundary gate passed (${source_count} files and ${poison_rejections} poison rejections)")

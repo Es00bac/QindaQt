@@ -613,6 +613,7 @@ void AudioAppletControllerTests::
     // An exact-owner replacement invalidates the old lineage: rows must
     // clear immediately, the in-flight request resolves as uncertain, and
     // nothing replays against the next owner.
+    const quint64 staleRequestId = m_transport->fetches.constLast().requestId;
     m_transport->changeOwner(QStringLiteral(":1.99"));
     QVERIFY(m_controller->deviceRows().isEmpty());
     QVERIFY(m_controller->streamRows().isEmpty());
@@ -624,8 +625,14 @@ void AudioAppletControllerTests::
                                            "service.")
                      .arg(AudioAppletController::tr("mute")));
 
-    // The new owner must be answered before truth returns; a stale reply
-    // addressed to the old owner changes nothing.
+    // A stale reply addressed to the old owner changes nothing: AudioClient
+    // drops it, truth stays cleared, and the phase does not revive.
+    m_transport->deliverSnapshotAs(kOwner, staleRequestId, true,
+                                   withEpoch(makeReadySnapshot(), kEpoch));
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("loading"));
+    QVERIFY(m_controller->deviceRows().isEmpty());
+
+    // The new owner must be answered before truth returns.
     m_transport->deliverSnapshotAs(QStringLiteral(":1.99"),
                                    m_transport->fetches.constLast().requestId,
                                    true, withEpoch(makeReadySnapshot(), kEpoch + 1));
