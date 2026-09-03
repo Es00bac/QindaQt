@@ -639,7 +639,7 @@ cross-caller replacement/unregister refusal, capacity, stale owner-generation
 rejection, name collision rollback, and automatic unique-owner retirement.
 The dbusmenu rows cover recursive wire marshalling, all standard calls,
 properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
-property tolerance, lower and changed-equal revision rejection, owner loss, and
+property tolerance, changed-equal (replayed) revision rejection, owner loss, and
 one Event for one accepted activation. Composition proves the applet snapshot
 comes from the focused registrar entry only after PID/name authentication and
 that loss or focus withdrawal clears authority.

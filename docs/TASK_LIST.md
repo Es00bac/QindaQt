@@ -58,6 +58,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `7c27ee5` — Global Menu G1 adds the production transports behind the G0 foundation: an exact-owner
+  `com.canonical.AppMenu.Registrar` service on an injected bus keyed to caller unique names with owner-loss
+  retirement, an asynchronous `com.canonical.dbusmenu` client whose decoder bounds depth, counts, and lengths and
+  rejects hostile or stale layouts atomically, and a transport coordinator bound to the proof-bound G0 lineage.
+  Elizabeth Feinler's independent Kimi K3 exact review accepted it at P0/P1/P2/P3 `0/0/0/1` after reproducing
+  Debug and Release 16/16 and staging hostile second-owner, decoder, and stale-revision reproductions. The
+  fresh merged tree repeats 16/16 in both profiles; docs, strict MkDocs, shape, diff, and Team Board gates pass.
+  Shell runtime instantiation, applet wiring, submenu popups, and installed-session proof remain later work, so
+  QQ-004.06 stays EXECUTABLE with a wider stopping point.
+
 - `4d4b3dc` — The private S3 desktop executes the production compositor,
   shell, resident services, Settings, and Text Editor across WUXGA, 1440p at
   125%, 1080p at 150%, light/dusk/dark themes, and a dual-output arrangement.
