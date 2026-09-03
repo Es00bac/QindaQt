@@ -64,6 +64,7 @@ tests, and the wiki page describing its contract.
 | `src/shell/global_menu/registrar` | Bounded standard AppMenu registrar residency, exact caller-unique-name ownership, owner/registration generation fencing, owner-loss retirement, and the bus-daemon credential seam | Public global-menu ownership values plus Qt Core/DBus; name ownership occurs only in its explicit composition root; never focus authority, menu decoding, QML, shell runtime, or KWin |
 | `src/shell/global_menu/dbusmenu` | Exact-owner asynchronous standard dbusmenu calls/signals/properties, hostile recursive-layout conversion, remote-revision high water, and uncertain activation no-replay | Public global-menu protocol/exporter values plus Qt Core/DBus; never registrar name ownership, focus authority, Qt Gui/Widgets, QML, shell runtime, or action execution outside the standard Event request |
 | `src/shell/global_menu/composition` | Injected focused-window-to-registrar join, proof reauthentication, selector/exporter publication, applet snapshot handoff, and guarded exactly-once activation intent routing | Public global-menu applet/dbusmenu/exporter/ownership/registrar boundaries plus Qt Core/DBus; never owns a bus name, discovers focus, imports shell runtime/QML/KWin, or changes toolkit exporters |
+| `src/shell/clipboard_applet` | Pure Clipboard applet projection values and the hostile-input snapshot admission gate, plus a separately linked runtime target holding the injected client seam, its in-process C0 model adapter, the shell-private controller, and the compiled QML renderer | Pure target: public clipboard model values plus Qt Core. Runtime target: pure target, public clipboard model, and Qt QML/Quick; never clipboard-service/transport internals, Wayland/X11 selection access, host clipboard engines, D-Bus, files, or persistence |
 | `src/compositor` | Persistence-neutral transaction bridges plus the release-matched KWin window registry, generation-retaining output inventory, authenticated panel-owner shell actions and active-window identity projection, development-only virtual-output adapter, topology scene adapter, ordinary chrome pointer router, member/transient policy, lifecycle synchronization, and D-Bus plugin | Public `core`/Hybrid/shell-visibility limits, Qt Core/DBus, and explicit KWin 6.6.5 extension points; never registrar-derived identity |
 | `src/session` | `qindaqt-wm` option validation, backend command construction, session environment, and KWin process handoff | Qt Core; it discovers plugins but does not import compositor internals |
 | `src/session_supervisor` | Essential host/shell child startup, descriptor-only token handoff, parent-death-witnessed compositor-PID provisioning, coupled lifetime, and failure rollback | Public presentation-token protocol, Linux process identity/lifetime syscalls, and Qt Core; never compositor internals, QML, or service implementation libraries |
@@ -253,6 +254,11 @@ implemented; do not use placeholder modules to bypass a boundary.
   exact dbusmenu owner. Manifest/policy `global-menu.read` gates observation;
   `windows.activate` remains denied. The QML module sees neither bus nor
   compositor transport. See [Global application menu](../shell/global-menu.md).
+- The Clipboard applet receives only its shell-private controller over the
+  injected `ClipboardClientInterface` seam. Manifest/policy `clipboard.read`
+  and `clipboard.write` decisions gate observation and mutation separately;
+  the renderer never sees the C0 model, a transport, or a reusable
+  general-clipboard object. See [Clipboard applet](../shell/clipboard-applet.md).
 - Shell-wide presentation shortcuts are shell-owned actions registered through
   a private KF6 GlobalAccel adapter. KGlobalAccel/KWin owns conflict resolution
   and user remapping; neither profile data nor applet QML may register or

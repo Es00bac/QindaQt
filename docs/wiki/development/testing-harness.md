@@ -293,6 +293,27 @@ software backend. The exact
 matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
 [ADR-0062](../adr/0062-bound-launcher-execution-behind-injected-seams.md).
 
+The registered Clipboard applet slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.clipboard-applet-' \
+  --output-on-failure --no-tests=error
+```
+
+Its pure projection, hostile-snapshot and whole-C0-invariant admission
+(including the lifetime revision high-water across generation changes and the
+valid generation-ceiling purge/restart boundary), complete snapshot-lineage
+search fencing, controller fencing, seam, compiled
+offscreen keyboard/accessibility/real-pointer, boundary-poison, and staged
+installed-package rows run entirely offscreen against the in-process C0 model;
+the installed-package row rewrites and inspects every staged Controls/Tokens
+backing and optional plugin library plus the consumer for `$ORIGIN`-relative
+RUNPATHs, moves the whole staged prefix, and reruns the consumer with
+`LD_LIBRARY_PATH` unset. No row contacts the host clipboard,
+session bus, display server, or hardware. The exact matrix and non-claims are
+detailed in [Clipboard applet](../shell/clipboard-applet.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the
