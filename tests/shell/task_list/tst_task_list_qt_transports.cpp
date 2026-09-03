@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/operations/qt_task_list_operation_transport.h"
+#include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/producer/qt_task_list_producer_transport.h"
 
 #include <QDBusConnection>
@@ -10,6 +11,7 @@
 
 #include "task_list_producer_test_support.h"
 
+using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
 using namespace QindaQt::ShellTaskList::Producer;
 using namespace TaskListProducerTest;
@@ -132,9 +134,40 @@ class TaskListQtTransportsTests final : public QObject {
   Q_OBJECT
 
 private slots:
+  void initialUnownedCompositorDegradesProducer();
   void producerTransportBindsReadsAndSignalsToTheExactOwner();
   void operationTransportDeliversMutationsToTheExactOwner();
 };
+
+// AGENT-NOTE: Review finding P2-1 on rejected candidate 7b6bd8a: resolving an
+// initially unowned compositor is a completed unavailable observation, not an
+// owner transition that may be suppressed as an empty-to-empty no-op.
+void TaskListQtTransportsTests::initialUnownedCompositorDegradesProducer() {
+  PrivateSessionBus bus;
+  QString busError;
+  QVERIFY2(bus.start(&busError), qPrintable(busError));
+
+  const QString clientName = connectionName(QStringLiteral("unowned-client"));
+  auto client = QDBusConnection::connectToBus(bus.address(), clientName);
+  QVERIFY(client.isConnected());
+
+  {
+    TaskListSource source;
+    QtTaskListProducerTransport transport(client);
+    TaskListFactsProducer producer(transport, source);
+    QSignalSpy stateSpy(&producer, &TaskListFactsProducer::stateChanged);
+    QString startError;
+    QVERIFY2(producer.start(&startError), qPrintable(startError));
+
+    QTRY_COMPARE_WITH_TIMEOUT(source.status(), TaskListSourceStatus::Degraded,
+                              5'000);
+    QCOMPARE(producer.uniqueOwner(), QString());
+    QVERIFY(producer.lastError().contains(QStringLiteral("unavailable")));
+    QCOMPARE(stateSpy.size(), 1);
+  }
+
+  QDBusConnection::disconnectFromBus(clientName);
+}
 
 void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactOwner() {
   PrivateSessionBus bus;

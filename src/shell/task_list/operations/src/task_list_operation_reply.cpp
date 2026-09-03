@@ -154,6 +154,12 @@ TaskListReplyClassification classifyDock(const QJsonObject &root) {
   const QString outcome =
       root.value(QLatin1StringView("status")).toString();
   if (outcome == QLatin1StringView("docked")) {
+    // AGENT-GUARD: Compositor1 creates DockWindows staging at revision zero
+    // and publishes exactly one split commit. A different success revision
+    // cannot be the canonical outcome of this pending call.
+    if (revision != 1) {
+      return lineageMismatch();
+    }
     return verdict(TaskListReplyVerdict::Committed, {}, {});
   }
   if (outcome == QLatin1StringView("rejected")) {

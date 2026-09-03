@@ -87,6 +87,11 @@ connection (the same owner-binding pattern as the integrated compositor output
 authority), never the replaceable well-known name and never the host
 compositor outside a real session.
 
+Initial owner discovery has three distinct states: unresolved remains Loading,
+a resolved empty owner publishes one unavailable observation and becomes
+Degraded, and a resolved unique owner starts the first read. Thus a compositor
+that is absent at cold start cannot leave the task list silently Loading.
+
 The adapter reads only schema-2 `Windows()` and observes only
 `WindowsChanged`. It never reads or combines `ShellVisibilitySnapshot`: that
 method is an independent panel-visibility inventory, and its canonical
@@ -138,7 +143,8 @@ advanced by exactly one. A reply
 missing or contradicting any echo finishes `Uncertain`
 (`reply-lineage-mismatch`), because the transaction may have committed.
 Successful `DockWindows` replies carry compositor-generated ids, so they are
-validated for protocol, id presence, and revision shape; `ReleaseContainer`
+validated for protocol, id presence, and the protocol-fixed revision `"1"`;
+any other parseable revision is uncertain lineage. `ReleaseContainer`
 replies
 carry only `status` and `failure` on the wire and are matched by the
 exact-owner pending-call binding alone.
