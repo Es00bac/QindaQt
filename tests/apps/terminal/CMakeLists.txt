@@ -86,6 +86,34 @@ qindaqt_add_terminal_test(
     qindaqt.terminal-app-shell
 )
 qindaqt_add_terminal_test(
+    qindaqt_terminal_search_tests
+    tst_terminal_search.cpp
+    qindaqt.terminal-search-policy
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_links_tests
+    tst_terminal_links.cpp
+    qindaqt.terminal-links
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_search_links_ui_tests
+    tst_terminal_search_links_ui.cpp
+    qindaqt.terminal-search-links-offscreen
+)
+target_compile_definitions(
+    qindaqt_terminal_search_links_ui_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+    qindaqt.terminal-search-links-offscreen
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+)
+qindaqt_add_terminal_test(
+    qindaqt_terminal_adapter_boundary_tests
+    tst_terminal_adapter_boundary.cpp
+    qindaqt.terminal-adapter-boundary
+)
+qindaqt_add_terminal_test(
     qindaqt_terminal_tabs_tests
     tst_terminal_tabs.cpp
     qindaqt.terminal-tabs-offscreen

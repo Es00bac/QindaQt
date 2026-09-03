@@ -6,6 +6,7 @@
 
 #include <qtermwidget.h>
 
+#include <QContextMenuEvent>
 #include <QEvent>
 #include <QFile>
 #include <QSocketNotifier>
@@ -165,6 +166,10 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
   m_widget->setAttribute(Qt::WA_StyledBackground, false);
   m_widget->startTerminalTeletype();
   m_widget->installEventFilter(this);
+  if (m_widget->focusProxy() != nullptr) {
+    m_widget->focusProxy()->installEventFilter(this);
+  }
+  initializeSearchSurface();
 
   // Private output channel into the widget's teletype slave: slave write ->
   // widget master read -> emulator. O_NONBLOCK here is safe because this
@@ -275,6 +280,16 @@ bool TerminalWidgetAdapter::eventFilter(QObject *watched, QEvent *event) {
                                      m_widget->screenLinesCount());
       }
     });
+  }
+  const bool watchedTerminalSurface =
+      watched == m_widget ||
+      (m_widget != nullptr && watched == m_widget->focusProxy());
+  if (watchedTerminalSurface && event->type() == QEvent::ContextMenu) {
+    const auto *contextEvent = static_cast<QContextMenuEvent *>(event);
+    if (!refreshVisibleLinks().isEmpty()) {
+      emit linkContextRequested(contextEvent->globalPos());
+      return true;
+    }
   }
   return TerminalSessionBackend::eventFilter(watched, event);
 }

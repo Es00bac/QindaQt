@@ -1640,6 +1640,39 @@ They open no PTY child, session bus, display, network, or host desktop. They do
 not qualify global-menu export, restored tab inventory, whole-application AT,
 nested screenshots, GPU rendering, or physical display/input behavior.
 
+## Terminal S2 search and link proof
+
+The same `^qindaqt\.terminal-` selector adds pure search and link policy rows,
+an adapter-boundary poison row, a `QT_FATAL_WARNINGS=1` offscreen UI row, and
+production-adapter coverage. Search policy exercises literal/case/regex modes,
+no-match truth, pattern/result limits, and rejects a 4 MiB hostile
+nested-quantifier fixture before regex execution under a 100 ms local bound.
+The fake-adapter UI row covers the non-modal bar, `Ctrl+Shift+F`, F3 in both
+directions, complete per-session query/visibility/current-result restoration,
+accessible match status without cross-tab announcements, Escape focus routing,
+and link traversal/copy/open/context actions, including stale-viewport
+activation refusal. The production adapter row starts one deterministic
+`/bin/sh` child on the real application-owned PTY bridge, waits for fixed
+output, then proves current-match selection, next/previous wrap, backward
+position resumption after highlight clearing, case/no-match truth,
+hostile-regex refusal, and visible URL/path enumeration before explicitly
+reaping that fixture.
+
+Link policy covers trailing punctuation, quotes, balanced/unbalanced
+parentheses, overlength, control and Unicode-format characters, punycode, a
+Unicode homoglyph hostname, absolute root detection, and registered local and
+host `file://` rejection rows.
+Recording confirmation and spawner seams require the exact displayed target as
+one argv element and prove cancellation and spawn failure without executing a
+real `xdg-open`. The boundary poison compiles the public support API while
+requiring `<qtermwidget.h>` to remain unavailable. All Widgets rows use the
+offscreen platform and the S2 verification invocation removes inherited
+`DISPLAY`, `WAYLAND_DISPLAY`, and session-bus variables while pointing the
+system-bus address at a nonexistent path. These rows open no host bus, display,
+desktop handler, network connection, or input device. They do not qualify
+OSC-8 semantics, click activation, GPU rendering, global-menu export,
+whole-application AT, nested screenshots, or physical display/input.
+
 ## D1 deterministic display model
 
 The focused `qindaqt.display-*` unit rows cover bounded protocol/codecs,

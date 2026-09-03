@@ -20,7 +20,7 @@ private slots:
 
 void TerminalAppShellTest::catalogIsCompleteStableAndShiftModified() {
   const auto catalog = terminalActionCatalog();
-  QCOMPARE(catalog.size(), 14);
+  QCOMPARE(catalog.size(), 21);
   QSet<QString> ids;
   for (const auto &spec : catalog) {
     QVERIFY(!spec.id.isEmpty());
@@ -30,13 +30,18 @@ void TerminalAppShellTest::catalogIsCompleteStableAndShiftModified() {
     QVERIFY(!spec.accessibleDescription.isEmpty());
     QVERIFY(!spec.menuId.isEmpty());
     if (!spec.shortcut.isEmpty()) {
-      QVERIFY(spec.shortcut.toString().contains(QStringLiteral("Shift")));
+      const QString shortcut = spec.shortcut.toString();
+      QVERIFY(shortcut.contains(QStringLiteral("Shift")) ||
+              shortcut == QStringLiteral("F3"));
     }
   }
   QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::SessionNewTab)));
   QVERIFY(
       ids.contains(QString::fromLatin1(AppShellActionIds::SessionCloseTab)));
   QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::FileQuit)));
+  QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::ViewFind)));
+  QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::LinkCopy)));
+  QVERIFY(ids.contains(QString::fromLatin1(AppShellActionIds::LinkOpen)));
 }
 
 void TerminalAppShellTest::bridgeRoutesEnabledActionsToTheirLocalCommand() {

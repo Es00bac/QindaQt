@@ -18,7 +18,8 @@ namespace QindaQt::Apps::Terminal {
 namespace {
 
 // AGENT-GUARD: Plain Ctrl+letter sequences belong to readline and terminal
-// flow control. Every window shortcut stays Shift-modified.
+// flow control. Character-based window shortcuts stay Shift-modified; F3 is
+// the non-character find-navigation convention.
 constexpr auto kNewTabShortcut = "Ctrl+Shift+T";
 constexpr auto kCloseTabShortcut = "Ctrl+Shift+W";
 constexpr auto kNextTabShortcut = "Ctrl+Shift+Right";
@@ -32,6 +33,13 @@ constexpr auto kPasteShortcut = "Ctrl+Shift+V";
 constexpr auto kPasteSelectionShortcut = "Ctrl+Shift+Insert";
 constexpr auto kSelectAllShortcut = "Ctrl+Shift+A";
 constexpr auto kClearShortcut = "Ctrl+Shift+K";
+constexpr auto kFindShortcut = "Ctrl+Shift+F";
+constexpr auto kFindNextShortcut = "F3";
+constexpr auto kFindPreviousShortcut = "Shift+F3";
+constexpr auto kLinkNextShortcut = "Ctrl+Shift+L";
+constexpr auto kLinkPreviousShortcut = "Ctrl+Shift+Alt+L";
+constexpr auto kLinkCopyShortcut = "Ctrl+Shift+Y";
+constexpr auto kLinkOpenShortcut = "Ctrl+Shift+O";
 constexpr auto kQuitShortcut = "Ctrl+Shift+Q";
 
 } // namespace
@@ -96,6 +104,30 @@ void TerminalWindow::buildActions() {
                     QStringLiteral("Clear Display"), kClearShortcut,
                     QStringLiteral("Clear the terminal display and "
                                    "scrollback"));
+  addTerminalAction(&m_findAction, QStringLiteral("viewFindAction"),
+                    QStringLiteral("Find…"), kFindShortcut,
+                    QStringLiteral("Find text in this session's scrollback"));
+  addTerminalAction(&m_findNextAction, QStringLiteral("viewFindNextAction"),
+                    QStringLiteral("Find Next"), kFindNextShortcut,
+                    QStringLiteral("Select the next scrollback match"));
+  addTerminalAction(&m_findPreviousAction,
+                    QStringLiteral("viewFindPreviousAction"),
+                    QStringLiteral("Find Previous"), kFindPreviousShortcut,
+                    QStringLiteral("Select the previous scrollback match"));
+  addTerminalAction(&m_linkNextAction, QStringLiteral("linkNextAction"),
+                    QStringLiteral("Select Next Link"), kLinkNextShortcut,
+                    QStringLiteral("Select the next link in visible output"));
+  addTerminalAction(&m_linkPreviousAction,
+                    QStringLiteral("linkPreviousAction"),
+                    QStringLiteral("Select Previous Link"),
+                    kLinkPreviousShortcut,
+                    QStringLiteral("Select the previous link in visible output"));
+  addTerminalAction(&m_linkCopyAction, QStringLiteral("linkCopyAction"),
+                    QStringLiteral("Copy Link"), kLinkCopyShortcut,
+                    QStringLiteral("Copy the selected link exactly"));
+  addTerminalAction(&m_linkOpenAction, QStringLiteral("linkOpenAction"),
+                    QStringLiteral("Open Link…"), kLinkOpenShortcut,
+                    QStringLiteral("Confirm and open the selected link"));
   addTerminalAction(&m_quitAction, QStringLiteral("fileQuitAction"),
                     QStringLiteral("Quit"), kQuitShortcut,
                     QStringLiteral("Close every session and quit"));
@@ -144,6 +176,19 @@ void TerminalWindow::buildActions() {
       m_activeSession->clearView();
     }
   });
+  connect(m_findAction, &QAction::triggered, this, &TerminalWindow::showFindBar);
+  connect(m_findNextAction, &QAction::triggered, this,
+          [this] { runSearch(TerminalSearchDirection::Next); });
+  connect(m_findPreviousAction, &QAction::triggered, this,
+          [this] { runSearch(TerminalSearchDirection::Previous); });
+  connect(m_linkNextAction, &QAction::triggered, this,
+          [this] { selectRelativeLink(1); });
+  connect(m_linkPreviousAction, &QAction::triggered, this,
+          [this] { selectRelativeLink(-1); });
+  connect(m_linkCopyAction, &QAction::triggered, this,
+          &TerminalWindow::copyCurrentLink);
+  connect(m_linkOpenAction, &QAction::triggered, this,
+          &TerminalWindow::openCurrentLink);
   connect(m_quitAction, &QAction::triggered, this, &TerminalWindow::close);
 }
 
@@ -175,10 +220,20 @@ void TerminalWindow::buildMenus() {
   editMenu->addAction(m_pasteAction);
   editMenu->addAction(m_pasteSelectionAction);
   editMenu->addAction(m_selectAllAction);
+  editMenu->addSeparator();
+  editMenu->addAction(m_linkCopyAction);
+  editMenu->addAction(m_linkOpenAction);
 
   auto *viewMenu = menuBar()->addMenu(QStringLiteral("&View"));
   viewMenu->setObjectName(QStringLiteral("viewMenu"));
   viewMenu->addAction(m_clearAction);
+  viewMenu->addSeparator();
+  viewMenu->addAction(m_findAction);
+  viewMenu->addAction(m_findNextAction);
+  viewMenu->addAction(m_findPreviousAction);
+  viewMenu->addSeparator();
+  viewMenu->addAction(m_linkPreviousAction);
+  viewMenu->addAction(m_linkNextAction);
 }
 
 void TerminalWindow::publishAppShellProjection() {
@@ -210,6 +265,15 @@ void TerminalWindow::publishAppShellProjection() {
       {QString::fromLatin1(AppShellActionIds::EditSelectAll),
        m_selectAllAction},
       {QString::fromLatin1(AppShellActionIds::ViewClear), m_clearAction},
+      {QString::fromLatin1(AppShellActionIds::ViewFind), m_findAction},
+      {QString::fromLatin1(AppShellActionIds::ViewFindNext), m_findNextAction},
+      {QString::fromLatin1(AppShellActionIds::ViewFindPrevious),
+       m_findPreviousAction},
+      {QString::fromLatin1(AppShellActionIds::LinkNext), m_linkNextAction},
+      {QString::fromLatin1(AppShellActionIds::LinkPrevious),
+       m_linkPreviousAction},
+      {QString::fromLatin1(AppShellActionIds::LinkCopy), m_linkCopyAction},
+      {QString::fromLatin1(AppShellActionIds::LinkOpen), m_linkOpenAction},
       {QString::fromLatin1(AppShellActionIds::FileQuit), m_quitAction},
   };
   m_appShellBridge->bindActivationTargets(targets);
@@ -303,6 +367,17 @@ void TerminalWindow::updateViewActionStates() {
   m_pasteSelectionAction->setEnabled(generationLive);
   m_selectAllAction->setEnabled(viewLive);
   m_clearAction->setEnabled(viewLive);
+  m_findAction->setEnabled(viewLive);
+  const bool hasSearch = active != nullptr &&
+                         !m_searchBySession.value(active).pattern.isEmpty();
+  m_findNextAction->setEnabled(viewLive && hasSearch);
+  m_findPreviousAction->setEnabled(viewLive && hasSearch);
+  m_linkNextAction->setEnabled(viewLive);
+  m_linkPreviousAction->setEnabled(viewLive);
+  const bool hasLink = active != nullptr &&
+                       m_linkBySession.value(active).found;
+  m_linkCopyAction->setEnabled(viewLive && hasLink);
+  m_linkOpenAction->setEnabled(viewLive && hasLink && m_linkOpener != nullptr);
   m_restartAction->setEnabled(active != nullptr &&
                               state != TerminalSession::State::ShuttingDown &&
                               state != TerminalSession::State::ShutdownFailed);
