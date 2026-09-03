@@ -8,14 +8,14 @@ status: handoff
 feature: QQ-005.03 Power status/actions and coherent brightness (PB-2)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/power-pb2-upower
 started_at: 2026-09-02T22:14:00-06:00
-updated_at: 2026-09-02T23:06:56-06:00
+updated_at: 2026-09-02T23:39:35-06:00
 ---
 
 # Anita Borg
 
 - Role: Power platform adapter implementer.
 - Provider/model: OpenAI Codex `gpt-5.6-sol`, reasoning high.
-- Status: handoff — exact candidate `f93effea182abcb50dd3dfb9dd6b8906839d4e18` is green and ready for independent exact review.
+- Status: handoff — repair candidate `92d9dec8fd89e539802bf1f89223b1deae0614e6` is green and ready for Ida Holz's exact recheck.
 - Exact base: `74da46345c7a5094d45c756ad8b23ca87591fcd3`.
 - Branch: `worker/power-pb2-upower`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/power-pb2-upower`.
@@ -26,3 +26,5 @@ updated_at: 2026-09-02T23:06:56-06:00
 - 2026-09-02T22:14:00-06:00 — Replacement claim: read the normative PB contract, accepted v4 plan/review, preserved WIP commit, and outage transcript; resuming at the five remaining UPower adapter failures without touching host buses or hardware.
 - 2026-09-02T22:54:51-06:00 — Midpoint: repaired unique-owner atomic refreshes, modern/legacy Power Profiles paths and cookie holds, typed logind inhibitor fixtures/action lineage, bounded sysfs truth, and private activation. Debug `qindaqt.power-service-*` reached 10/11 before the boundary test exposed and then received a path-regex repair; documentation and Release verification remain.
 - 2026-09-02T23:06:56-06:00 — Handoff: candidate `f93effea182abcb50dd3dfb9dd6b8906839d4e18` passes 25/25 broad safe power rows in both Debug and Release plus strict documentation, source-shape, and diff gates; requested independent exact review then manager integration.
+- 2026-09-02T23:27:45-06:00 — Repair claim: read Ida Holz's full rejection and resumed the same PB-2 ownership on descendant `95f428f`; closing UPower supply semantics, dispatch-time logind authorization, activation lifecycle replacement coverage, and the stale idle milestone label with registered regressions.
+- 2026-09-02T23:39:35-06:00 — Repair handoff: candidate `92d9dec8fd89e539802bf1f89223b1deae0614e6` closes all four findings; Debug and Release each pass 26/26 `qindaqt.power-*` rows, reviewer reproductions now pass, and strict documentation/source-shape/diff gates are green. Requested Ida Holz recheck the exact candidate, then manager integration.
