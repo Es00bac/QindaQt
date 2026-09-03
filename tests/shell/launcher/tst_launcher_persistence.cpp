@@ -317,5 +317,5 @@ void LauncherPersistenceTests::recentListStaysBounded()
     QVERIFY(wired.controller.recent().ids().isEmpty());
 }
 
-QTEST_MAIN(LauncherPersistenceTests)
+QTEST_GUILESS_MAIN(LauncherPersistenceTests)
 #include "tst_launcher_persistence.moc"

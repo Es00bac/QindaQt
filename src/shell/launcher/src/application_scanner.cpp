@@ -220,14 +220,32 @@ void ApplicationScanner::scanRoot(const QString &root, int *remainingFiles,
                                   bool *ceilingHit)
 {
   const QFileInfo rootInfo(root);
+  // An absent injected data directory is normal on XDG systems. Existing but
+  // unreadable/non-directory roots are different: suppressing them would make
+  // a broken installation indistinguishable from an empty catalog.
+  if (!rootInfo.exists() && !rootInfo.isSymLink())
+    return;
   const QString canonicalRoot = rootInfo.canonicalFilePath();
-  const QString applicationsDir = QDir(root).filePath(QStringLiteral("applications"));
-  if (!QFileInfo::exists(applicationsDir))
-    return; // A root without an applications tree is normal, not degradation.
-  if (canonicalRoot.isEmpty()) {
+  if (!rootInfo.isDir() || canonicalRoot.isEmpty()) {
     addScanDiagnostic(root, QStringLiteral("data root cannot be canonicalized"));
     return;
   }
+  if (!rootInfo.isReadable()) {
+    addScanDiagnostic(root, QStringLiteral("data root is not readable"));
+    return;
+  }
+
+  const QString applicationsDir =
+      QDir(canonicalRoot).filePath(QStringLiteral("applications"));
+  const QFileInfo applicationsInfo(applicationsDir);
+  if (applicationsInfo.isSymLink()
+      && applicationsInfo.canonicalFilePath().isEmpty()) {
+    addScanDiagnostic(applicationsDir,
+                      QStringLiteral("applications directory link is dangling"));
+    return;
+  }
+  if (!applicationsInfo.exists())
+    return; // A readable root without an applications tree is normal.
   QStringList watched;
   QSet<QString> visitedDirectories;
   scanDirectory(applicationsDir, canonicalRoot, QString(), remainingFiles,

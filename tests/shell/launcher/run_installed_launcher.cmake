@@ -70,6 +70,9 @@ file(WRITE "${poison}/applets/broken.json" "{ not-json")
 
 execute_process(
     COMMAND "${QINDAQT_CMAKE}" -E env
+            --unset=DBUS_SESSION_BUS_ADDRESS
+            --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
             QT_QPA_PLATFORM=offscreen
             QT_QUICK_BACKEND=software
             QT_FATAL_WARNINGS=1
