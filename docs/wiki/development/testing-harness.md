@@ -177,6 +177,24 @@ installed production-package/source-poison rows. No row contacts the host
 session bus, display server, power daemon, or hardware. The exact matrix and
 non-claims are detailed in [Power applet](../shell/power-applet.md).
 
+The Launcher L1 production-adapter slice is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.launcher-' \
+  --output-on-failure --no-tests=error
+```
+
+Its adapter rows cover injected-root fixture trees with hostile entries,
+debounced watcher refresh with generation fencing, Settings1 persistence round
+trips against a scripted fake transport, seam-based execution with a recording
+spawner/activator (the only real child is the `/bin/true` fixture executable),
+compiled offscreen QML keyboard/accessibility, a runtime source-boundary
+poison gate, and a staged installed-package proof. No row contacts the host
+session bus, display server, real user applications, or hardware. The exact
+matrix and non-claims are detailed in [Launcher](../shell/launcher.md) and
+[ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
+
 It is not evidence for QindaQt's native KWin plugin ABI. QindaQt pins KWin and
 Plasma Activities to 6.6.5 exactly, while the Arch/Manjaro rolling repositories
 had advanced to KWin 6.7.4 on 2026-08-26. The workflow therefore disables the

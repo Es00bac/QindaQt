@@ -17,7 +17,7 @@ tests, and the wiki page describing its contract.
 | `src/decorations` | Loadable KDecoration3 member-window presentation and standard window actions | KDecoration3 and Qt Gui; it does not infer container topology |
 | `src/profiles` | Layout-profile schema, validation, migration, built-in data, and the sole strict atomic user-profile file writer | `core` only when shared value types are unavoidable |
 | `src/shell_layout` | Pure expansion, collision-free logical geometry planning, and per-output work areas | Public `profiles` values and Qt Core; never shell surfaces, compositor objects, or physical-pixel conversion |
-| `src/shell/launcher` | Bounded desktop-entry validation, deterministic category/search/ranking, pinned/recent identities, and launch-intent presentation values | Qt Core only; never the filesystem, environment, session bus, process execution, persistence, or QML |
+| `src/shell/launcher` | Separate targets: the pure bounded desktop-entry model (validation, deterministic category/search/ranking, pinned/recent identities, launch-intent presentation values) and the L1 runtime adapters (injected-root installed-application scanning with debounced watch and generation fencing, Settings1 pinned/recent persistence, seam-based bounded execution and D-Bus activation, and the shell-private applet controller plus compiled `QindaQt.Shell.Launcher` module) | Pure target: Qt Core only. Runtime target: pure target, public Settings1 client, and Qt Core/DBus/Qml/Quick with filesystem, process, and bus reach confined to the scanner, spawner, and activator adapter files; never settings service internals, the production shell composition, or third-party process authority |
 | `src/shell_customization` | Exclusive editor leases, retained immutable snapshots, manifest-aware mutations, preview/history policy, and atomic candidate validation | Public `profiles`, `applets`, and `shell_layout` values plus Qt Core; never applet execution, shell surfaces, persistence, or settings UI |
 | `src/shell_customization_editor` | Presentation-independent customization intents, gesture/revision orchestration, keyboard/accessibility identity, and a narrow profiles-store adapter | Public `shell_customization`, `profiles`, `applets`, and Qt Core; never filesystem policy, QML, shell surfaces, D-Bus, or Settings schema authority |
 | `src/shell_visibility_protocol` | Shared size, collection, identifier, and scale limits for the compositor-to-shell visibility wire contract | Qt Core value types only; producer and consumer must never duplicate these limits |
@@ -108,11 +108,13 @@ implemented; do not use placeholder modules to bypass a boundary.
   identity or adding fallback palette/timing authority; domain state and
   availability remain caller inputs.
 - Launcher presentation consumes the pure launcher model's values and resolves
-  every activation through the catalog's single intent builder. Entry
-  scanning, process execution, and pinned/recent persistence stay in future
-  adapters outside `src/shell/launcher`; they must not move into the model.
-  See [Launcher](../shell/launcher.md) and
-  [ADR-0042](../adr/0042-launcher-model-without-execution.md).
+  every activation through the catalog's single intent builder. The L1
+  adapters in the same module own scanning, seam-based execution, and
+  Settings1 pinned/recent persistence behind their own boundaries; none of
+  that platform reach moves into the pure model. See
+  [Launcher](../shell/launcher.md),
+  [ADR-0042](../adr/0042-launcher-model-without-execution.md), and
+  [ADR-0056](../adr/0056-bound-launcher-execution-behind-injected-seams.md).
 - First-party QML applications may compose
   [QindaQt.AppShell 1.0](../apps/application-shell.md) around app-owned content.
   The application injects action truth, lifecycle decisions, integration state,
