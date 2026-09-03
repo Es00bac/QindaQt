@@ -7,6 +7,7 @@
 #include <QtCore/QPair>
 #include <QtCore/QSet>
 #include <QtCore/QVariantList>
+#include <functional>
 #include <qindaqt/services/clipboard_model/clipboard_types.h>
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_types.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_client_interface.h"
@@ -18,6 +19,13 @@ namespace QindaQt::ShellClipboardApplet {
 // and privacy fencing, tracks pending in-flight requests, and reprojects the
 // presentation model. It never performs live Wayland operations or direct memory
 // access on Clipboard service internals.
+//
+// Least authority: the composing shell passes the audited manifest/policy
+// capability grants at construction. `clipboardReadGranted == false` withholds
+// all observation (phase reports unavailable, no entries are retained);
+// `clipboardWriteGranted == false` keeps browsing but refuses every mutating
+// intent before dispatch. Both gates fail closed and cannot change after
+// construction, mirroring the Power applet's read/control split.
 class ClipboardAppletController : public QObject {
     Q_OBJECT
 
@@ -25,6 +33,8 @@ class ClipboardAppletController : public QObject {
     Q_PROPERTY(QString phaseReasonText READ phaseReasonText NOTIFY stateReprojected)
     Q_PROPERTY(bool isLocked READ isLocked NOTIFY stateReprojected)
     Q_PROPERTY(bool isHistoryEnabled READ isHistoryEnabled NOTIFY stateReprojected)
+    Q_PROPERTY(bool clipboardReadGranted READ clipboardReadGranted CONSTANT)
+    Q_PROPERTY(bool clipboardWriteGranted READ clipboardWriteGranted CONSTANT)
     Q_PROPERTY(QVariantList entryRows READ entryRows NOTIFY stateReprojected)
     Q_PROPERTY(int entryCount READ entryCount NOTIFY stateReprojected)
     Q_PROPERTY(int pinnedCount READ pinnedCount NOTIFY stateReprojected)
@@ -42,13 +52,18 @@ class ClipboardAppletController : public QObject {
     Q_PROPERTY(QString feedbackStatus READ feedbackStatus NOTIFY feedbackChanged)
 
 public:
-    explicit ClipboardAppletController(ClipboardClientInterface *client, QObject *parent = nullptr);
+    explicit ClipboardAppletController(ClipboardClientInterface *client,
+                                       bool clipboardReadGranted,
+                                       bool clipboardWriteGranted,
+                                       QObject *parent = nullptr);
     ~ClipboardAppletController() override = default;
 
     [[nodiscard]] QString phaseText() const noexcept;
     [[nodiscard]] QString phaseReasonText() const noexcept;
     [[nodiscard]] bool isLocked() const noexcept;
     [[nodiscard]] bool isHistoryEnabled() const noexcept;
+    [[nodiscard]] bool clipboardReadGranted() const noexcept { return m_clipboardReadGranted; }
+    [[nodiscard]] bool clipboardWriteGranted() const noexcept { return m_clipboardWriteGranted; }
     [[nodiscard]] QVariantList entryRows() const;
     [[nodiscard]] int entryCount() const noexcept;
     [[nodiscard]] int pinnedCount() const noexcept;
@@ -101,8 +116,17 @@ private:
     void applySearchOutcome(const QindaQt::Services::ClipboardModel::SearchOutcome &outcome);
     void applyOperationOutcome(const OperationOutcome &outcome);
     void noteObservedTicks(const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot);
+    void drainDeferredSignals();
+    quint64 dispatchOperation(
+        OperationKind kind,
+        QindaQt::Services::ClipboardModel::EntryId id,
+        quint32 generation,
+        const std::function<quint64(ClipboardClientInterface *)> &invoke);
+    [[nodiscard]] bool refuseMutation();
 
     ClipboardClientInterface *m_client = nullptr;
+    bool m_clipboardReadGranted = false;
+    bool m_clipboardWriteGranted = false;
     QindaQt::Services::ClipboardModel::HistorySnapshot m_snapshot;
     ClipboardAppletProjection m_projection;
 

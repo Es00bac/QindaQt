@@ -23,7 +23,7 @@ qt_add_executable(qindaqt_clipboard_applet_controller_tests tst_clipboard_applet
 target_link_libraries(
     qindaqt_clipboard_applet_controller_tests
     PRIVATE
-        QindaQt::ShellClipboardApplet
+        QindaQt::ShellClipboardAppletRuntime
         QindaQt::ClipboardModel
         Qt6::Core
         Qt6::Test
@@ -39,7 +39,7 @@ qt_add_executable(qindaqt_clipboard_applet_seam_tests tst_clipboard_applet_seam.
 target_link_libraries(
     qindaqt_clipboard_applet_seam_tests
     PRIVATE
-        QindaQt::ShellClipboardApplet
+        QindaQt::ShellClipboardAppletRuntime
         QindaQt::ClipboardModel
         Qt6::Core
         Qt6::Test
@@ -57,7 +57,7 @@ add_test(
 add_custom_target(
     qindaqt_clipboard_applet_qml_test_prerequisites
     DEPENDS
-        qindaqt_shell_clipboard_appletplugin
+        qindaqt_shell_clipboard_applet_runtimeplugin
         qindaqt_controls_qmlplugin
         qindaqt_tokens_qmlplugin
         qindaqt_applet_manifest_tests
@@ -73,7 +73,8 @@ target_link_libraries(
     qindaqt_clipboard_applet_qml_tests
     PRIVATE
         qindaqt_controls_test_support
-        QindaQt::ShellClipboardApplet
+        QindaQt::ShellClipboardAppletRuntime
+        qindaqt_shell_clipboard_applet_runtimeplugin
         Qt6::Core
         Qt6::Quick
         Qt6::QuickTest
@@ -82,6 +83,7 @@ target_link_libraries(
 target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
 set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
+qt_import_qml_plugins(qindaqt_clipboard_applet_qml_tests)
 add_dependencies(
     qindaqt_clipboard_applet_qml_tests
     qindaqt_clipboard_applet_qml_test_prerequisites
@@ -130,16 +132,18 @@ add_test(
 )
 
 # 6. Installed component consumer/probe: validates the ClipboardApplet install
-# rules end-to-end (public boundary, library, QML module, plugin, manifest)
-# from a fresh staged prefix.
+# rules end-to-end (public boundary, archives, QML module, plugin, manifest)
+# from a fresh staged prefix, including the relocated-consumer RPATH truth.
 add_test(
-    NAME qindaqt.clipboard-applet-installed-consumer
+    NAME qindaqt.clipboard-applet-installed-package
     COMMAND
         "${CMAKE_COMMAND}"
         "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
         "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
+        "-DQINDAQT_SOURCE_DIRECTORY=${CMAKE_SOURCE_DIR}"
         "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-clipboard-applet-stage"
         "-DQINDAQT_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
+        "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
         "-DQINDAQT_QML_INSTALL_DIR=${QT6_INSTALL_QML}"
         "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
@@ -147,17 +151,23 @@ add_test(
         "-DQINDAQT_TOKENS_MODULE_DIRECTORY=${CMAKE_BINARY_DIR}/qml/QindaQt/Tokens"
         "-DQINDAQT_CONTROLS_LIBRARY=$<TARGET_FILE:qindaqt_controls_qml>"
         "-DQINDAQT_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_tokens_qml>"
+        "-DQINDAQT_CLIPBOARD_MODEL_LIBRARY=$<TARGET_FILE:qindaqt_clipboard_model>"
+        "-DQINDAQT_THEMES_LIBRARY=$<TARGET_FILE:qindaqt_themes>"
+        "-DQINDAQT_DESIGN_TOKENS_LIBRARY=$<TARGET_FILE:qindaqt_design_tokens>"
+        "-DQINDAQT_CLIPBOARD_MODEL_INCLUDE_DIR=${CMAKE_SOURCE_DIR}/src/services/clipboard_model/include"
+        "-DQINDAQT_THEMES_INCLUDE_DIR=${CMAKE_SOURCE_DIR}/src/themes/include"
+        "-DQINDAQT_DESIGN_TOKENS_INCLUDE_DIR=${CMAKE_SOURCE_DIR}/src/design_tokens/include"
+        "-DQINDAQT_THEME_FILE=${CMAKE_SOURCE_DIR}/data/themes/qinda-light.json"
         "-DQINDAQT_CONSUMER_SOURCE_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer"
         "-DQINDAQT_CONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_cpp_consumer.cpp"
-        "-DQINDAQT_QMLTESTRUNNER=$<TARGET_FILE:Qt6::qmltestrunner>"
-        "-DQINDAQT_QML_TEST=${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_InstalledClipboardApplet.qml"
         "-DQINDAQT_QT6_DIR=${Qt6_DIR}"
         "-DQINDAQT_GENERATOR=${CMAKE_GENERATOR}"
         "-DQINDAQT_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DQINDAQT_STATIC_LIBRARY_SUFFIX=${CMAKE_STATIC_LIBRARY_SUFFIX}"
         "-DQINDAQT_SHARED_LIBRARY_SUFFIX=${CMAKE_SHARED_LIBRARY_SUFFIX}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_clipboard_applet.cmake"
 )
 set_tests_properties(
-    qindaqt.clipboard-applet-installed-consumer
+    qindaqt.clipboard-applet-installed-package
     PROPERTIES LABELS "package" RUN_SERIAL TRUE TIMEOUT 300
 )

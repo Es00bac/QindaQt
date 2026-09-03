@@ -4,42 +4,61 @@
 //
 // AGENT-GUARD: the applet's QML consumes QST-1 token values (spacing, radii,
 // type scale) that exist only after a theme is published to the Tokens
-// singleton. A bare qmltestrunner run evaluates those bindings against an
-// empty singleton: geometry collapses to zero, real pointer events hit
-// nothing, and undefined-to-double warnings flood the output. This harness
-// publishes a real theme before any test executes, so layout, real-event
-// delivery, and warning-free runs are all genuine evidence.
+// singleton of the SAME engine that runs the test. Qt 6.11 QuickTest invokes
+// no engine-created setup hook (only applicationAvailable, before any engine
+// exists), so publication happens in the factory of the registered Harness
+// singleton: its factory receives the live test engine, publishes the real
+// qinda-light theme through the public Controls test-support path, and every
+// test file forces instantiation by reading `Harness.ready` in init() before
+// any applet component is created. A bare qmltestrunner run cannot provide
+// this; do not convert these rows back to it.
 
 #include <QtQuickTest/quicktest.h>
 
 #include <QQmlEngine>
-#include <QString>
 #include <QtGlobal>
 
 #include "../../controls/control_test_support.h"
+
+class ClipboardAppletHarness final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool ready READ ready CONSTANT)
+
+public:
+    explicit ClipboardAppletHarness(QQmlEngine *engine)
+    {
+        if (engine == nullptr) {
+            qFatal("clipboard applet harness singleton received no engine");
+        }
+        QString error;
+        m_ready = QindaQt::Controls::TestSupport::publishTheme(
+            *engine,
+            QStringLiteral("qinda-light.json"),
+            QindaQt::DesignTokens::AccessibilityInputs {},
+            &error);
+        if (!m_ready) {
+            qFatal("clipboard applet QML harness could not publish tokens: %s",
+                   qPrintable(error));
+        }
+    }
+
+    [[nodiscard]] bool ready() const noexcept { return m_ready; }
+
+private:
+    bool m_ready = false;
+};
 
 class ClipboardAppletQmlSetup final : public QObject {
     Q_OBJECT
 
 public:
-    ClipboardAppletQmlSetup() = default;
-
-public Q_SLOTS:
-    void qmlEngineCreated(QQmlEngine *engine)
+    ClipboardAppletQmlSetup()
     {
-        if (engine == nullptr) {
-            qFatal("clipboard applet QML harness received no engine");
-        }
-        QString error;
-        const bool published = QindaQt::Controls::TestSupport::publishTheme(
-            *engine,
-            QStringLiteral("qinda-light.json"),
-            QindaQt::DesignTokens::AccessibilityInputs {},
-            &error);
-        if (!published) {
-            qFatal("clipboard applet QML harness could not publish tokens: %s",
-                   qPrintable(error));
-        }
+        qmlRegisterSingletonType<ClipboardAppletHarness>(
+            "QindaQt.Shell.ClipboardApplet.Tests", 1, 0, "Harness",
+            [](QQmlEngine *engine, QJSEngine *) {
+                return new ClipboardAppletHarness(engine);
+            });
     }
 };
 

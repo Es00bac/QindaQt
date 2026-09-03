@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
-import "../../../../src/shell/clipboard_applet/qml" as ClipboardComponents
+import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardComponents
+import QindaQt.Shell.ClipboardApplet.Tests 1.0 as Harness
 
 // Real-event interactive proof for the Clipboard applet surface. This file
 // runs under the compiled harness (qml_interactive_main.cpp) so the QST-1
@@ -94,6 +95,9 @@ Item {
 
     TestCase {
         name: "ClipboardAppletInteractiveTests"
+        // Force the harness singleton onto this engine (publishes the
+        // QST-1 theme) before any applet component is created.
+        readonly property bool harnessReady: Harness.Harness.ready
         when: windowShown
 
         function init() {
@@ -206,7 +210,13 @@ Item {
         // cannot be double-triggered by real clicks, and the row announces
         // the pending operation to assistive technology.
         function test_pendingRowsShowBusyControls() {
-            fakeController.entryRows = [makeEntry(12, { pending: true })]
+            // The accessible-name pending phrase mirrors the C++ projection
+            // contract (covered by qindaqt.clipboard-applet-model); the fake
+            // carries it explicitly because the fake bypasses the projector.
+            fakeController.entryRows = [makeEntry(12, {
+                pending: true,
+                accessibleName: "Entry 1: text/plain, operation pending, preview: entry 12"
+            })]
             fakeController.entryCount = 1
 
             var applet = createTemporaryObject(appletComponent, testRoot)

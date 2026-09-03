@@ -3,13 +3,19 @@
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_model.h"
 
+#include <utility>
+
 namespace QindaQt::ShellClipboardApplet {
 
 ClipboardAppletController::ClipboardAppletController(
     ClipboardClientInterface *client,
+    bool clipboardReadGranted,
+    bool clipboardWriteGranted,
     QObject *parent)
     : QObject(parent)
     , m_client(client)
+    , m_clipboardReadGranted(clipboardReadGranted)
+    , m_clipboardWriteGranted(clipboardWriteGranted)
 {
     if (m_client) {
         connect(m_client, &ClipboardClientInterface::stateChanged,
@@ -23,8 +29,10 @@ ClipboardAppletController::ClipboardAppletController(
         connect(m_client, &ClipboardClientInterface::searchCompleted,
                 this, &ClipboardAppletController::onSearchCompleted);
 
-        m_snapshot = m_client->snapshot();
-        noteObservedTicks(m_snapshot);
+        if (m_clipboardReadGranted) {
+            m_snapshot = m_client->snapshot();
+            noteObservedTicks(m_snapshot);
+        }
     }
     reproject();
 }
@@ -146,6 +154,18 @@ void ClipboardAppletController::clearFeedback()
     }
 }
 
+bool ClipboardAppletController::refuseMutation()
+{
+    // AGENT-GUARD: a missing clipboard.write grant refuses every mutating
+    // intent before any dispatch or pending bookkeeping, so a denied applet
+    // instance can browse but never changes model or live-selection state.
+    if (!m_clipboardWriteGranted) {
+        setFeedback(QStringLiteral("Clipboard control is not granted by applet policy."));
+        return true;
+    }
+    return false;
+}
+
 void ClipboardAppletController::cancelPendingForGeneration(quint32 oldGeneration)
 {
     for (auto it = m_pendingRequests.begin(); it != m_pendingRequests.end();) {
@@ -160,6 +180,25 @@ void ClipboardAppletController::cancelPendingForGeneration(quint32 oldGeneration
 
 void ClipboardAppletController::reproject()
 {
+    if (!m_clipboardReadGranted) {
+        // AGENT-GUARD: read denial withholds observation entirely. The
+        // projection must be built from an empty snapshot so no retained
+        // entry metadata can reach QML while the grant is absent.
+        m_projection = ClipboardAppletModel::project(
+            {},
+            ClientState::Unavailable,
+            QStringLiteral("clipboard-read-not-granted"),
+            false,
+            false,
+            false,
+            QString(),
+            {},
+            false,
+            {});
+        Q_EMIT stateReprojected();
+        return;
+    }
+
     const auto state = m_client ? m_client->clientState() : ClientState::Unavailable;
     const auto reason = m_client ? m_client->reasonCode() : QStringLiteral("no-client");
     const auto ownerAvailable = m_client ? m_client->isOwnerAvailable() : false;
@@ -192,8 +231,16 @@ void ClipboardAppletController::onSnapshotChanged(const QindaQt::Services::Clipb
     if (generationChanged) {
         cancelPendingForGeneration(oldGeneration);
     }
-    m_snapshot = snapshot;
-    noteObservedTicks(m_snapshot);
+    if (m_clipboardReadGranted) {
+        m_snapshot = snapshot;
+        noteObservedTicks(m_snapshot);
+    } else {
+        // Read denial retains only the authority flags, never content.
+        m_snapshot = {};
+        m_snapshot.generation = snapshot.generation;
+        m_snapshot.historyEnabled = snapshot.historyEnabled;
+        m_snapshot.privacyAllowed = snapshot.privacyAllowed;
+    }
     if (generationChanged && m_isSearchActive) {
         // Re-run the live query against the new generation; any reply to the
         // pre-transition request is fenced out by the query-generation bump.
@@ -232,9 +279,9 @@ void ClipboardAppletController::onOperationCompleted(
     const OperationOutcome &outcome)
 {
     // AGENT-GUARD: a completion is attributed only to an id this controller
-    // registered as pending. Unknown, duplicated, or replayed ids are hostile
-    // or duplicate noise: they must not clear pending markers, alter
-    // feedback, or otherwise touch state.
+    // registered as pending (or the id of the in-flight dispatch). Unknown,
+    // duplicated, or replayed ids are hostile or duplicate noise: they must
+    // not clear pending markers, alter feedback, or otherwise touch state.
     if (m_insideClientCall) {
         // The issuing dispatch has not returned its request id yet; buffer
         // and attribute afterwards by exact id.
@@ -312,8 +359,65 @@ void ClipboardAppletController::noteObservedTicks(
     }
 }
 
+void ClipboardAppletController::drainDeferredSignals()
+{
+    // AGENT-GUARD: attribute every buffered synchronous signal by exact id —
+    // the id of the dispatch in progress OR an id already registered as
+    // pending. Draining only the current id would strand a legitimate
+    // completion for an earlier request that a seam flushed inside this call
+    // (permanently pending record); accepting unregistered ids would let a
+    // replayed or hostile reply impersonate live state. Both failure modes
+    // were exact-review findings; keep this the single attribution point.
+    const auto completions = std::exchange(m_deferredCompletions, {});
+    for (const auto &[requestId, outcome] : completions) {
+        const auto it = m_pendingRequests.constFind(requestId);
+        if (it == m_pendingRequests.constEnd()) {
+            continue;
+        }
+        m_pendingRequests.erase(it);
+        applyOperationOutcome(outcome);
+    }
+    const auto searchReplies = std::exchange(m_deferredSearchReplies, {});
+    for (const auto &[requestId, outcome] : searchReplies) {
+        const auto it = m_pendingSearchRequests.constFind(requestId);
+        if (it == m_pendingSearchRequests.constEnd()) {
+            continue;
+        }
+        const quint64 replyQueryGeneration = it.value();
+        m_pendingSearchRequests.erase(it);
+        if (replyQueryGeneration != m_searchQueryGeneration) {
+            continue;
+        }
+        applySearchOutcome(outcome);
+    }
+}
+
+quint64 ClipboardAppletController::dispatchOperation(
+    OperationKind kind,
+    QindaQt::Services::ClipboardModel::EntryId id,
+    quint32 generation,
+    const std::function<quint64(ClipboardClientInterface *)> &invoke)
+{
+    m_insideClientCall = true;
+    const quint64 requestId = invoke(m_client);
+    m_insideClientCall = false;
+
+    // Register BEFORE draining so the seam's synchronous completion for this
+    // very request attributes correctly through the single drain path.
+    PendingRequest request;
+    request.kind = kind;
+    request.id = id;
+    request.generation = generation;
+    m_pendingRequests.insert(requestId, request);
+    drainDeferredSignals();
+    return requestId;
+}
+
 bool ClipboardAppletController::selectEntry(quint32 generation, quint32 serial)
 {
+    if (refuseMutation()) {
+        return false;
+    }
     if (!m_client || m_projection.phase != Phase::Ready) {
         setFeedback(QStringLiteral("Clipboard is not currently accessible."));
         return false;
@@ -333,34 +437,19 @@ bool ClipboardAppletController::selectEntry(quint32 generation, quint32 serial)
     // recency ordering; wall-clock time can step backwards (NTP, suspend), so
     // ticks come from the controller's own strictly increasing counter.
     const quint64 tick = ++m_nextPromoteTick;
-    m_insideClientCall = true;
-    const quint64 reqId = m_client->requestPromote(id, generation, tick);
-    m_insideClientCall = false;
-
-    // Attribute any completion the seam emitted inside the call by exact id.
-    bool completed = false;
-    for (const auto &deferred : std::as_const(m_deferredCompletions)) {
-        if (!completed && deferred.first == reqId) {
-            completed = true;
-            applyOperationOutcome(deferred.second);
-        }
-    }
-    m_deferredCompletions.clear();
-
-    if (!completed) {
-        PendingRequest req;
-        req.kind = OperationKind::Promote;
-        req.id = id;
-        req.generation = generation;
-        m_pendingRequests.insert(reqId, req);
-    }
-
+    dispatchOperation(OperationKind::Promote, id, generation,
+                      [id, generation, tick](ClipboardClientInterface *client) {
+                          return client->requestPromote(id, generation, tick);
+                      });
     reproject();
     return true;
 }
 
 bool ClipboardAppletController::deleteEntry(quint32 generation, quint32 serial)
 {
+    if (refuseMutation()) {
+        return false;
+    }
     if (!m_client || m_projection.phase != Phase::Ready) {
         setFeedback(QStringLiteral("Clipboard is not currently accessible."));
         return false;
@@ -376,33 +465,19 @@ bool ClipboardAppletController::deleteEntry(quint32 generation, quint32 serial)
     }
 
     m_pendingEntries.insert({generation, serial});
-    m_insideClientCall = true;
-    const quint64 reqId = m_client->requestRemove(id, generation);
-    m_insideClientCall = false;
-
-    bool completed = false;
-    for (const auto &deferred : std::as_const(m_deferredCompletions)) {
-        if (!completed && deferred.first == reqId) {
-            completed = true;
-            applyOperationOutcome(deferred.second);
-        }
-    }
-    m_deferredCompletions.clear();
-
-    if (!completed) {
-        PendingRequest req;
-        req.kind = OperationKind::Remove;
-        req.id = id;
-        req.generation = generation;
-        m_pendingRequests.insert(reqId, req);
-    }
-
+    dispatchOperation(OperationKind::Remove, id, generation,
+                      [id, generation](ClipboardClientInterface *client) {
+                          return client->requestRemove(id, generation);
+                      });
     reproject();
     return true;
 }
 
 bool ClipboardAppletController::togglePin(quint32 generation, quint32 serial)
 {
+    if (refuseMutation()) {
+        return false;
+    }
     if (!m_client || m_projection.phase != Phase::Ready) {
         setFeedback(QStringLiteral("Clipboard is not currently accessible."));
         return false;
@@ -427,33 +502,19 @@ bool ClipboardAppletController::togglePin(quint32 generation, quint32 serial)
     }
 
     m_pendingEntries.insert({generation, serial});
-    m_insideClientCall = true;
-    const quint64 reqId = m_client->requestSetPinned(id, !currentPinned, generation);
-    m_insideClientCall = false;
-
-    bool completed = false;
-    for (const auto &deferred : std::as_const(m_deferredCompletions)) {
-        if (!completed && deferred.first == reqId) {
-            completed = true;
-            applyOperationOutcome(deferred.second);
-        }
-    }
-    m_deferredCompletions.clear();
-
-    if (!completed) {
-        PendingRequest req;
-        req.kind = OperationKind::SetPinned;
-        req.id = id;
-        req.generation = generation;
-        m_pendingRequests.insert(reqId, req);
-    }
-
+    dispatchOperation(OperationKind::SetPinned, id, generation,
+                      [id, currentPinned, generation](ClipboardClientInterface *client) {
+                          return client->requestSetPinned(id, !currentPinned, generation);
+                      });
     reproject();
     return true;
 }
 
 bool ClipboardAppletController::clearHistory(bool unpinnedOnly)
 {
+    if (refuseMutation()) {
+        return false;
+    }
     if (!m_client || m_projection.phase != Phase::Ready) {
         setFeedback(QStringLiteral("Clipboard is not currently accessible."));
         return false;
@@ -462,31 +523,15 @@ bool ClipboardAppletController::clearHistory(bool unpinnedOnly)
     const auto scope = unpinnedOnly
         ? QindaQt::Services::ClipboardModel::ClearScope::UnpinnedOnly
         : QindaQt::Services::ClipboardModel::ClearScope::All;
+    const quint32 generation = m_snapshot.generation;
 
     // AGENT-GUARD: a seam that completes the clear synchronously inside
     // requestClear() must not leave a permanently pending record behind —
-    // the completion is attributed by exact id and the record is registered
-    // only when the answer has not already arrived.
-    m_insideClientCall = true;
-    const quint64 reqId = m_client->requestClear(scope, m_snapshot.generation);
-    m_insideClientCall = false;
-
-    bool completed = false;
-    for (const auto &deferred : std::as_const(m_deferredCompletions)) {
-        if (!completed && deferred.first == reqId) {
-            completed = true;
-            applyOperationOutcome(deferred.second);
-        }
-    }
-    m_deferredCompletions.clear();
-
-    if (!completed) {
-        PendingRequest req;
-        req.kind = OperationKind::Clear;
-        req.generation = m_snapshot.generation;
-        m_pendingRequests.insert(reqId, req);
-    }
-
+    // the completion is attributed by exact id through the drain path.
+    dispatchOperation(OperationKind::Clear, {}, generation,
+                      [scope, generation](ClipboardClientInterface *client) {
+                          return client->requestClear(scope, generation);
+                      });
     reproject();
     return true;
 }
@@ -501,25 +546,16 @@ void ClipboardAppletController::dispatchSearch()
         return;
     }
     // The seam may answer synchronously inside requestSearch(). Replies
-    // emitted during the call are buffered and attributed afterwards ONLY by
-    // exact request id, so a hostile adapter flushing a superseded reply
-    // inside this call can never impersonate the live one.
+    // emitted during the call are buffered; the request is registered before
+    // the drain so its own synchronous reply attributes by exact id, while a
+    // hostile adapter flushing a superseded reply inside this call matches no
+    // registered id and is dropped.
     m_insideClientCall = true;
     const quint64 requestId = m_client->requestSearch(
         m_searchQuery, m_snapshot.generation, kMaxPresentedEntries);
     m_insideClientCall = false;
-
-    bool consumed = false;
-    for (const auto &deferred : std::as_const(m_deferredSearchReplies)) {
-        if (!consumed && deferred.first == requestId) {
-            consumed = true;
-            applySearchOutcome(deferred.second);
-        }
-    }
-    m_deferredSearchReplies.clear();
-    if (!consumed) {
-        m_pendingSearchRequests.insert(requestId, m_searchQueryGeneration);
-    }
+    m_pendingSearchRequests.insert(requestId, m_searchQueryGeneration);
+    drainDeferredSignals();
 }
 
 void ClipboardAppletController::abandonSearch()
@@ -534,6 +570,9 @@ void ClipboardAppletController::abandonSearch()
 
 void ClipboardAppletController::setSearchQuery(const QString &query)
 {
+    if (!m_clipboardReadGranted) {
+        return;
+    }
     const QString trimmed = query.trimmed().left(kMaxSearchQueryLength);
     if (trimmed == m_searchQuery && m_isSearchActive) {
         return;

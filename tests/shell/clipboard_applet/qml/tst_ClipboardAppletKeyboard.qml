@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
-import "../../../../src/shell/clipboard_applet/qml" as ClipboardComponents
+import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardComponents
+import QindaQt.Shell.ClipboardApplet.Tests 1.0 as Harness
 
 Item {
     id: testRoot
@@ -81,6 +82,9 @@ Item {
 
     TestCase {
         name: "ClipboardAppletKeyboardTests"
+        // Force the harness singleton onto this engine (publishes the
+        // QST-1 theme) before any applet component is created.
+        readonly property bool harnessReady: Harness.Harness.ready
         when: windowShown
 
         function init() {
