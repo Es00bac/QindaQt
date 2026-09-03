@@ -13,9 +13,9 @@ namespace QindaQt::Shell::GlobalMenu::Ownership
 // monotonic counter that changes every time compositor focus moves; two
 // observations with the same generation describe the same unbroken focus
 // interval. AGENT-CONTRACT: implementations must derive both fields from an
-// authenticated compositor-owned inventory (a later milestone supplies the
-// resident adapter, analogous to SessionLockState's owner/PID-authenticated
-// observation); client-supplied metadata is never acceptable. Generation
+// authenticated compositor-owned inventory. G2 adapts the shell's existing
+// exact-owner window-actions identity snapshot; client-supplied metadata is
+// never acceptable. Generation
 // values are only comparable within one process and one source instance.
 struct ActiveWindowObservation final {
     WindowIdentity window;
@@ -24,8 +24,8 @@ struct ActiveWindowObservation final {
     bool operator==(const ActiveWindowObservation &) const = default;
 };
 
-// Seam for an authenticated compositor-owned active-window observer. G0
-// tests exercise only fakes; a later milestone supplies the real adapter.
+// Seam for an authenticated compositor-owned active-window observer. G0 tests
+// exercise fakes; G2 supplies the shell-runtime adapter without importing it.
 class ActiveWindowSource
 {
 public:

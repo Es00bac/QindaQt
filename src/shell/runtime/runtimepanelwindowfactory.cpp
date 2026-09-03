@@ -6,6 +6,7 @@
 #include "launcher_applet_controller.h"
 #include "notificationcenterappletaccess.h"
 #include "power_applet_controller.h"
+#include "qindaqt/shell/global_menu/applet/globalmenuappletaccess.h"
 
 #include "qindaqt/applet_runtime/applet_instance_resolver.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
@@ -43,7 +44,8 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      AudioApplet::AudioAppletController *audioAppletAccess,
                                                      BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
                                                      PowerApplet::PowerAppletController *powerAppletAccess,
-                                                     Launcher::LauncherAppletController *launcherAppletAccess)
+                                                     Launcher::LauncherAppletController *launcherAppletAccess,
+                                                     GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
     , m_notificationCenterAccess(notificationCenterAccess)
@@ -51,6 +53,7 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
     , m_bluetoothAppletAccess(bluetoothAppletAccess)
     , m_powerAppletAccess(powerAppletAccess)
     , m_launcherAppletAccess(launcherAppletAccess)
+    , m_globalMenuAppletAccess(globalMenuAppletAccess)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
@@ -122,6 +125,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
          QVariant::fromValue(m_powerAppletAccess)},
         {QStringLiteral("launcherAppletAccess"),
          QVariant::fromValue(m_launcherAppletAccess)},
+        {QStringLiteral("globalMenuAppletAccess"),
+         QVariant::fromValue(m_globalMenuAppletAccess)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);

@@ -42,6 +42,7 @@ qt_add_qml_module(
         qml/WindowGroupPreview.qml
     DEPENDENCIES
         TARGET qindaqt_shell_launcher_qml
+        TARGET qindaqt_global_menu_qml
         TARGET qindaqt_shell_audio_applet_runtime
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
@@ -56,6 +57,7 @@ target_link_libraries(
         QindaQt::ShellBluetoothAppletRuntime
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
+        QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
         Qt6::Qml
@@ -92,6 +94,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/globalshortcutregistrar.h
         runtime/compositoroutputauthority.cpp
         runtime/compositoroutputauthority.h
+        runtime/globalmenuappletcomposition.cpp
+        runtime/globalmenuappletcomposition.h
         runtime/kglobalaccelshortcutregistrar.cpp
         runtime/kglobalaccelshortcutregistrar.h
         runtime/launcherappletcomposition.cpp
@@ -144,6 +148,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             qml/RuntimePanel.qml
         DEPENDENCIES
             TARGET qindaqt_shell_launcher_qml
+            TARGET qindaqt_global_menu_qml
             TARGET qindaqt_shell_audio_applet_runtime
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
@@ -163,6 +168,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellOrchestration
             QindaQt::ShellSurface
             QindaQt::ShellVisibilityClient
+            QindaQt::ShellWindowActionsClient
+            QindaQt::GlobalMenuApplet
+            QindaQt::GlobalMenuQml
+            QindaQt::GlobalMenuRegistrar
+            QindaQt::GlobalMenuTransportComposition
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellLauncherQml
@@ -211,6 +221,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     )
     install(
         TARGETS qindaqt_shell_launcher_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT QindaQt
+    )
+    install(
+        TARGETS qindaqt_global_menu_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT QindaQt
     )
@@ -265,6 +280,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT BluetoothAppletRuntime
     )
+    install(
+        TARGETS qindaqt_global_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT BluetoothAppletRuntime
+    )
     # A narrow stage lets the Audio applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -316,6 +336,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT AudioAppletRuntime
     )
+    install(
+        TARGETS qindaqt_global_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT AudioAppletRuntime
+    )
     # A narrow stage lets the Power applet prove that the production binary,
     # compiled QML, manifest, selected profile, policy, and theme relocate
     # together without requiring unrelated first-party applications.
@@ -363,6 +388,11 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT PowerAppletRuntime
     )
+    install(
+        TARGETS qindaqt_global_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT PowerAppletRuntime
+    )
 
     # The launcher component proves the whole production boundary rather than
     # only a standalone QML import: shell, manifest/profile/policy/theme,
@@ -394,6 +424,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     )
     install(
         TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
+                qindaqt_global_menu_qml
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT LauncherAppletRuntime
     )
@@ -401,5 +432,44 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         TARGETS qindaqt_tokens_qml
         LIBRARY DESTINATION "Tokens"
         COMPONENT LauncherAppletRuntime
+    )
+
+    # Global Menu's narrow component carries the live shell, compiled module,
+    # registrar policy inputs, and the complete direct loader closure.
+    install(
+        TARGETS qindaqt-shell
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applets/global-menu.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
+                qindaqt_global_menu_qml
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT GlobalMenuAppletRuntime
+    )
+    install(
+        TARGETS qindaqt_tokens_qml
+        LIBRARY DESTINATION "Tokens"
+        COMPONENT GlobalMenuAppletRuntime
     )
 endif()
