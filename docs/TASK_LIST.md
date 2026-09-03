@@ -58,6 +58,17 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `8505bdb` and `7ecdb36` — The compositor's authenticated `CompositorShell1` boundary now projects a revisioned
+  active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced
+  app-menu service/path) with an exported change signal validated by the public generation rule on both sides
+  (ADR-0063), and the compiled launcher applet is hosted in the production shell panels through a composition
+  with production seams and a closed install component. Margaret Rock (OpenAI Codex) rejected the identity
+  candidate once at `0/2/1/0` and accepted the repair at `0/0/0/0`; Annie Cannon (Z.AI GLM) accepted the hosting
+  at `0/0/0/2`. The fresh merged tree passes compositor 36/36 non-nested rows, the window-actions/identity and
+  client rows, the nested KWin rows serially, launcher 17/17, and the integrity/runtime/closure/installed rows in
+  Debug and Release, the broad safe Debug suite passes 430/430, and all static gates. QQ-004.07 advances WIRED → EXECUTABLE; the Global Menu G2
+  composition is unblocked.
+
 - `00f2db9` — Terminal S1 adds a bounded multi-session tab strip in which every session owns its PTY/child with
   process-group-complete teardown, validated profiles within the existing launch policy, Settings1
   persistence with presented asynchronous apply outcomes, AppShell action-catalog exposure, exact argv

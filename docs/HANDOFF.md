@@ -4,6 +4,16 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted compositor identity descendant
+  `8505bdbd09961863538616efd3dd8e7ef834a126` at `58496e8` (ADR renumbered to 0063) and exact accepted
+  launcher hosting candidate `7ecdb36f53c60ea03bea40197f17c9cc6bf9b9e1` at `6f5e213`. The authenticated
+  boundary now publishes active-window identity facts to the bound shell owner with an exported, validated
+  change signal; the launcher applet renders in the production panels with a closed `LauncherAppletRuntime`
+  component. Fresh merged-tree Debug and Release each pass compositor 36/36, window-actions/identity and
+  client rows, launcher 17/17, and the integrity/runtime/closure/installed rows under host-unset isolation;
+  the sixteen nested KWin rows pass serially; the broad safe Debug suite passes 430/430; 127-document validation, strict MkDocs, source shape,
+  diff, JSON, and Team Board 16/16 pass. QQ-004.07 advances WIRED → EXECUTABLE.
+
 - This integration merges exact accepted Terminal S1 descendant `00f2db99ce13df2f426abd93e277de3d33411041`
   at manager merge `00b4f45`. Sessions are bounded, each owns its PTY/child, and shutdown completes only
   when the captured process group is verifiably empty; profiles stay within the existing launch policy;
