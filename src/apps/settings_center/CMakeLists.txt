@@ -38,6 +38,7 @@ target_link_libraries(
     qindaqt-settings PRIVATE
     QindaQt::SettingsClient
     QindaQt::DisplayClient
+    QindaQt::FontDiscovery
     QindaQt::NetworkQtTransport
     QindaQt::AudioClient
     QindaQt::BluetoothClient

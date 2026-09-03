@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/services/font_preferences/font_preferences_codec.h"
 
+#include <QPair>
 #include <QTest>
 
 using namespace QindaQt::Services::FontPreferences;
@@ -14,7 +15,7 @@ private Q_SLOTS:
     void testSettingsMapRoundTrip();
     void testMalformedJsonRejection();
     void testMalformedSettingsMapRejection();
-    void testAntialiasingTypeFlexibility();
+    void testWrongTypedSettingsValuesAreRejectedWholesale();
 };
 
 void tst_FontPreferencesCodec::testJsonRoundTrip()
@@ -149,19 +150,50 @@ void tst_FontPreferencesCodec::testMalformedSettingsMapRejection()
     }
 }
 
-void tst_FontPreferencesCodec::testAntialiasingTypeFlexibility()
+void tst_FontPreferencesCodec::testWrongTypedSettingsValuesAreRejectedWholesale()
 {
+    // AGENT-NOTE: review finding P1-4 (rejected candidate abc76f3) — Settings1
+    // values are exact-typed. On the unrepaired tree every row below was
+    // coerced through QVariant::toString()/toDouble() and accepted as
+    // authoritative confirmed settings.
+    QString error;
+
     QVariantMap boolMap;
     boolMap.insert(QStringLiteral("fonts.antialiasing"), false);
     auto decoded = FontPreferencesCodec::fromSettingsMap(boolMap);
     QVERIFY(decoded.has_value());
     QCOMPARE(decoded->antialiasing(), FontAntialiasing::None);
 
-    QVariantMap strMap;
-    strMap.insert(QStringLiteral("fonts.antialiasing"), QStringLiteral("grayscale"));
-    decoded = FontPreferencesCodec::fromSettingsMap(strMap);
-    QVERIFY(decoded.has_value());
-    QCOMPARE(decoded->antialiasing(), FontAntialiasing::Grayscale);
+    const QList<QPair<QString, QVariant>> wrongTyped = {
+        {QStringLiteral("fonts.family"), 123},
+        {QStringLiteral("fonts.family"), true},
+        {QStringLiteral("fonts.monospaceFamily"), 12.5},
+        {QStringLiteral("fonts.pointSize"), QStringLiteral("12.5")},
+        {QStringLiteral("fonts.pointSize"), 12},
+        {QStringLiteral("fonts.pointSize"), true},
+        {QStringLiteral("fonts.antialiasing"), QStringLiteral("grayscale")},
+        {QStringLiteral("fonts.antialiasing"), 1},
+        {QStringLiteral("fonts.hinting"), 2},
+        {QStringLiteral("fonts.hinting"), true},
+        {QStringLiteral("fonts.subpixelOrder"), 0},
+    };
+    for (const auto &[key, value] : wrongTyped) {
+        QVariantMap badSettings;
+        badSettings.insert(key, value);
+        decoded = FontPreferencesCodec::fromSettingsMap(badSettings, &error);
+        QVERIFY2(!decoded.has_value(), qPrintable(key));
+        QVERIFY2(!error.isEmpty(), qPrintable(key));
+    }
+
+    // The canonical JSON wire domain (settings_wire_decode) delivers integral
+    // numbers as LongLong and fractional numbers as Double; both are the
+    // schema "number" type and must decode without coercion. A raw Int is not
+    // canonical and was rejected above.
+    QVariantMap integral;
+    integral.insert(QStringLiteral("fonts.pointSize"), qint64(12));
+    decoded = FontPreferencesCodec::fromSettingsMap(integral, &error);
+    QVERIFY2(decoded.has_value(), qPrintable(error));
+    QCOMPARE(decoded->pointSize(), 12.0);
 }
 
 QTEST_MAIN(tst_FontPreferencesCodec)

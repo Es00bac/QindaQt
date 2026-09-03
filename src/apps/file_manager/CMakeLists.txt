@@ -97,6 +97,7 @@ target_link_libraries(
         qindaqt_file_manager_support
         QindaQt::DesignTokens
         QindaQt::AppShell
+        QindaQt::FontDiscovery
         QindaQt::TokensQml
         qindaqt_themes
         Qt6::Core
