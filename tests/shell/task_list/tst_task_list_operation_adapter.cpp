@@ -23,6 +23,7 @@ private slots:
   void hybridAuthorityRejectsSubmitAndRelease();
   void unknownContainerIsRejected();
   void busyAdapterRejectsSecondOperation();
+  void stoppedProducerAdmitsNoOperation();
 };
 
 void TaskListOperationAdapterTests::windowIntentsAreUnavailableWithExtensionCodes() {
@@ -203,6 +204,34 @@ void TaskListOperationAdapterTests::busyAdapterRejectsSecondOperation() {
   QCOMPARE(result.token, second);
   QCOMPARE(result.status, TaskListOperationStatus::Busy);
   QCOMPARE(operations.calls.size(), 1);
+}
+
+// AGENT-NOTE: Review finding P1-2 (rejected candidate 3a5ae17): a stopped
+// producer kept its Ready status and owner, so releaseContainer() still
+// reached the transport. Stop withdraws availability; admission is fenced
+// before any bus traffic.
+void TaskListOperationAdapterTests::stoppedProducerAdmitsNoOperation() {
+  TaskListSource source;
+  FakeProducerTransport producerTransport;
+  TaskListFactsProducer producer(producerTransport, source, fastTiming());
+  makeReady(producer, producerTransport);
+  QCOMPARE(producer.status(), TaskListSourceStatus::Ready);
+
+  FakeOperationTransport operations;
+  TaskListOperationAdapter adapter(producer, operations, 100);
+  QSignalSpy finishedSpy(&adapter,
+                         &TaskListOperationAdapter::operationFinished);
+
+  producer.stop();
+  QCOMPARE(producer.status(), TaskListSourceStatus::Degraded);
+  adapter.releaseContainer(QStringLiteral("c1"), source.revision());
+  QCOMPARE(finishedSpy.size(), 1);
+  QCOMPARE(finishedSpy.constFirst()
+               .constFirst()
+               .value<TaskListOperationResult>()
+               .status,
+           TaskListOperationStatus::SourceNotReady);
+  QCOMPARE(operations.calls.size(), 0);
 }
 
 QTEST_GUILESS_MAIN(TaskListOperationAdapterTests)
