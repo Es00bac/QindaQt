@@ -70,6 +70,12 @@ collisions, and output-generation races immediately select the safe-visible
 policy. Forward revision gaps are valid because invalidations are coalesced and
 every payload is a complete snapshot.
 
+That same accepted `(owner, epoch, revision)` lineage fences the separately
+authenticated production window-action client, but does not turn this pure
+visibility module into a mutation owner. See
+[CompositorShell1 actions](../reference/compositor-control-v1.md#authenticated-production-shell-actions)
+and [ADR-0057](../adr/0057-authenticate-shell-window-actions-by-panel-owner.md).
+
 For an accepted generation, `shell_orchestration` requires an exact bijection
 between compositor outputs, the solved layout, Qt screens, profile panel
 expansion, and interaction identities. It then evaluates once and publishes

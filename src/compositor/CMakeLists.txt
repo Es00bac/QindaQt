@@ -3,6 +3,28 @@
 add_library(qindaqt_compositor_bridge STATIC)
 add_library(QindaQt::CompositorBridge ALIAS qindaqt_compositor_bridge)
 
+add_library(qindaqt_compositor_shell_actions STATIC
+    src/shellwindowactions.cpp
+)
+add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
+target_sources(
+    qindaqt_compositor_shell_actions
+    PUBLIC
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS include
+        FILES include/qindaqt/compositor/shellwindowactions.h
+)
+target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
+target_link_libraries(qindaqt_compositor_shell_actions PUBLIC Qt6::Core)
+set_target_properties(
+    qindaqt_compositor_shell_actions
+    PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON
+)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_compositor_shell_actions)
+endif()
+
 target_sources(
     qindaqt_compositor_bridge
     PRIVATE
@@ -208,6 +230,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwincontrolendpoint.h
             kwin/kwinshellvisibilitypublisher.cpp
             kwin/kwinshellvisibilitypublisher.h
+            kwin/kwinshellwindowactions.cpp
+            kwin/kwinshellwindowactions.h
             kwin/kwininteractiontargetresolver.cpp
             kwin/kwininteractiontargetresolver.h
             kwin/hybriddocktargetrouting.cpp
@@ -308,6 +332,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_compositor
         PRIVATE
             QindaQt::CompositorBridge
+            QindaQt::CompositorShellActions
             QindaQt::Hybrid
             QindaQt::HybridChrome
             QindaQt::HybridConstraints
@@ -339,3 +364,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     )
     qindaqt_enable_warnings(qindaqt_compositor)
 endif()
+
+install(
+    TARGETS qindaqt_compositor_shell_actions
+    EXPORT QindaQtTargets
+    FILE_SET public_headers
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)

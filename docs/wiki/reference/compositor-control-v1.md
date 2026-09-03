@@ -37,7 +37,7 @@ keyboard docking.
 | Method | Input | Current result |
 | --- | --- | --- |
 | `Capabilities` | None | Protocol, KWin ABI, methods, events, operations, limits, control mode, and optional Hybrid diagnostics |
-| `Windows` | None | Normal windows with UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
+| `Windows` | None | Schema-2 normal-window inventory plus the current shell-action epoch/revision fence, UUID, title, application ID, current/requested frames, minimized/active/task/switcher state, absolute stack index, container owner, server-decoration flag, and live decoration class |
 | `Outputs` | None | One generation of ordered outputs with stable identity, logical geometry, mode, priority, and display metadata |
 | `InputCapabilities` | None | Schema-1 sanitized device inventory and observer properties |
 | `ShellVisibilitySnapshot` | None | One revisioned, atomic output/window/scope generation for shell panel visibility policy |
@@ -91,6 +91,13 @@ KWin signal. Malformed, ambiguous, empty, or over-limit candidates are rejected
 atomically and retain the previous response and generation. The inventory uses
 the shell visibility wire bounds of 64 outputs and scale `(0, 16]` so its
 projection cannot exceed what `ShellVisibilitySnapshot` represents.
+
+`Windows` schema 2 adds `epoch`, decimal-string `revision`, and
+`generationAvailable`. These name the currently retained
+`ShellVisibilitySnapshot` generation and are the fence supplied with a shell
+action targeting a UUID from that read. The two inventories are not one atomic
+payload: a caller rereads after invalidation, and the action endpoint both
+compares the generation and resolves the live UUID again before dispatch.
 
 For each window, `geometry` is KWin's current acknowledged frame.
 `targetGeometry` is QindaQt's committed planned frame for a container member,
@@ -190,6 +197,52 @@ loss, unavailable/malformed data, timeout, revision regression/collision, or
 exact Qt-output mismatch. Forward gaps are accepted because every payload is a
 complete generation and invalidations may coalesce. Recovery requires a later
 complete valid generation; no partial inventory is retained as policy input.
+
+## Authenticated production shell actions
+
+Production window mutation is a separate interface, not a `Compositor1`
+capability:
+
+| Property | Value |
+| --- | --- |
+| Bus name | `org.qindaqt.Compositor` |
+| Object path | `/org/qindaqt/CompositorShell` |
+| Interface | `org.qindaqt.CompositorShell1` |
+| Descriptor | `compositor/dbus/org.qindaqt.CompositorShell1.xml` |
+
+`ActivateWindow`, `MinimizeWindow`, `UnminimizeWindow`, `CloseWindow`, and
+`RaiseWindow` each take `(windowId, epoch, revision)` as D-Bus strings and
+return compact UTF-8 JSON in `ay`. The UUID must come from `Windows`; the epoch
+and canonical nonzero decimal revision must be the displayed
+`ShellVisibilitySnapshot` generation (also exposed by `Windows` schema 2).
+Replies echo that request and use exactly `admitted`, `stale`,
+`unknown-window`, `unauthorized`, or `control-disabled`.
+
+Every call is authenticated from its D-Bus message, before generation or UUID
+lookup. The bus daemon's `GetConnectionCredentials` PID for the caller's unique
+name must equal the sole positive Wayland-client PID owning all currently
+committed layer-shell surfaces with exact scope `dock`. Missing panels,
+conflicting panel owners, invalid credentials, or dispatch-policy failure deny
+the request. Any local process can reach the session bus, but bus access or a
+matching UID alone grants nothing. This does not protect a compromised shell or
+a process that can successfully impersonate the shell's committed dock client;
+the complete threat model is [ADR-0057](../adr/0057-authenticate-shell-window-actions-by-panel-owner.md).
+
+Independent targets use KWin's normal activate/minimize/restore/raise/request-
+close paths. A UUID currently owned by Hybrid instead enters its existing
+active-page, whole-group minimize, close-confirmation, and verified stacking
+policy; no method mutates one member around that policy. Admission is bounded
+to 32 calls per unique caller per one-second rate window. The server does not
+queue or replay calls.
+
+The public `shell_window_actions_client` binds the well-known name to its exact
+unique owner, serializes to one request in flight, and matches action, UUID,
+owner, epoch, and revision on reply. Timeout, owner change, transport failure,
+or malformed/mismatched reply is an uncertain outcome and is never retried.
+Task-list and launcher composition must retain the generation displayed with
+each intent and may update UI only from a later reconciled compositor snapshot.
+None of this changes `Compositor1`: its unauthenticated production mutators
+remain `control-disabled`.
 
 ## Development qualification-surface evidence
 
