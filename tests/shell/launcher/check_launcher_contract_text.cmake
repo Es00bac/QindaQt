@@ -29,10 +29,20 @@ endfunction()
 
 require_text(
     "docs/wiki/shell/applet-runtime.md"
-    "Launcher instead resolves `ready` at")
+    "production QML dispatcher renders all six")
 forbid_text(
     "docs/wiki/shell/applet-runtime.md"
-    "Launcher, task-list, global-menu, and status-tray manifests remain accepted")
+    "hosting it in the production panel dispatcher is a later lane")
+
+require_text(
+    "src/shell/qml/BuiltinAppletContent.qml"
+    "entryPoint === \"qindaqt.applets.launcher\"")
+require_text(
+    "src/shell/runtime/launcherappletcomposition.cpp"
+    "Launcher::QProcessLaunchSpawner")
+require_text(
+    "src/shell/runtime/launcherappletcomposition.cpp"
+    "Launcher::SessionBusActivator")
 
 require_text(
     "docs/wiki/shell/launcher.md"

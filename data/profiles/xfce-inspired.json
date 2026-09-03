@@ -23,7 +23,8 @@
         {"id": "workspaces", "plugin": "workspace-switcher"},
         {"id": "tray", "plugin": "system-tray"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"}
+        {"id": "clock", "plugin": "clock"},
+        {"id": "applications", "plugin": "launcher"}
       ]
     },
     {

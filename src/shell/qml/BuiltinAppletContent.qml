@@ -2,6 +2,7 @@
 import QtQuick
 import QindaQt.Shell.AudioApplet 1.0 as AudioAppletModule
 import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
+import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 
 Item {
@@ -15,6 +16,7 @@ Item {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
+    property var launcherAppletAccess: null
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -28,12 +30,34 @@ Item {
         ready && entryPoint === "qindaqt.applets.bluetooth"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
+    readonly property bool launcherPreview:
+        !liveApplets && String(applet.plugin ?? "") === "launcher"
+    readonly property bool launcherReady:
+        (ready && entryPoint === "qindaqt.applets.launcher") || launcherPreview
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady
+        || powerReady || launcherReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
+
+    function inheritedLauncherAccess() {
+        let candidate = root.parent
+        // AGENT-CONTRACT: AppletChip is outside the launcher lane's ownership.
+        // The permitted panel rows carry this one purpose-specific facade;
+        // bounded ancestor lookup bridges that existing component without
+        // exposing a general shell object or transport to applet QML.
+        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
+            if (typeof candidate.launcherAppletAccess !== "undefined")
+                return candidate.launcherAppletAccess
+            candidate = candidate.parent
+        }
+        return null
+    }
+
+    readonly property var effectiveLauncherAppletAccess:
+        launcherAppletAccess !== null ? launcherAppletAccess
+                                      : inheritedLauncherAccess()
 
     // AGENT-CONTRACT: BuiltinAppletRegistry is the compiled trust root; this
     // dispatcher is only its presentation inventory. Focused tests must fail
@@ -42,12 +66,14 @@ Item {
                    : notificationCenterReady ? notifications.implicitWidth
                    : audioReady ? audio.implicitWidth
                    : bluetoothReady ? bluetooth.implicitWidth
-                   : powerReady ? power.implicitWidth : 0
+                   : powerReady ? power.implicitWidth
+                   : launcherReady ? launcher.implicitWidth : 0
     implicitHeight: clockReady ? clock.implicitHeight
                     : notificationCenterReady ? notifications.implicitHeight
                     : audioReady ? audio.implicitHeight
                     : bluetoothReady ? bluetooth.implicitHeight
-                    : powerReady ? power.implicitHeight : 0
+                    : powerReady ? power.implicitHeight
+                    : launcherReady ? launcher.implicitHeight : 0
 
     ClockApplet {
         id: clock
@@ -89,6 +115,14 @@ Item {
         visible: root.bluetoothReady
         access: root.bluetoothAppletAccess
         theme: root.theme
+        vertical: root.vertical
+    }
+
+    LauncherModule.LauncherApplet {
+        id: launcher
+        anchors.fill: parent
+        visible: root.launcherReady
+        access: root.effectiveLauncherAppletAccess
         vertical: root.vertical
     }
 }

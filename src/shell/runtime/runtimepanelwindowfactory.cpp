@@ -3,6 +3,7 @@
 
 #include "audio_applet_controller.h"
 #include "bluetooth_applet_controller.h"
+#include "launcher_applet_controller.h"
 #include "notificationcenterappletaccess.h"
 #include "power_applet_controller.h"
 
@@ -41,13 +42,15 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
                                                      NotificationCenterAppletAccess *notificationCenterAccess,
                                                      AudioApplet::AudioAppletController *audioAppletAccess,
                                                      BluetoothApplet::BluetoothAppletController *bluetoothAppletAccess,
-                                                     PowerApplet::PowerAppletController *powerAppletAccess)
+                                                     PowerApplet::PowerAppletController *powerAppletAccess,
+                                                     Launcher::LauncherAppletController *launcherAppletAccess)
     : m_engine(engine)
     , m_theme(std::move(theme))
     , m_notificationCenterAccess(notificationCenterAccess)
     , m_audioAppletAccess(audioAppletAccess)
     , m_bluetoothAppletAccess(bluetoothAppletAccess)
     , m_powerAppletAccess(powerAppletAccess)
+    , m_launcherAppletAccess(launcherAppletAccess)
 {
     const auto registry = AppletRuntime::BuiltinAppletRegistry::firstParty();
     for (const auto &panel : profile.panels) {
@@ -117,6 +120,8 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
          QVariant::fromValue(m_bluetoothAppletAccess)},
         {QStringLiteral("powerAppletAccess"),
          QVariant::fromValue(m_powerAppletAccess)},
+        {QStringLiteral("launcherAppletAccess"),
+         QVariant::fromValue(m_launcherAppletAccess)},
     };
     QObject *created = m_component->createWithInitialProperties(initialProperties);
     auto *window = qobject_cast<QQuickWindow *>(created);

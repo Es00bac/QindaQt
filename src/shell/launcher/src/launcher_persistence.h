@@ -35,7 +35,7 @@ enum class PersistenceMutation {
 // commits immediately; a confirmed rejection reverts the model to the last
 // confirmed value and stays visible until the next explicit write; an
 // uncertain commit is never replayed and resolves through the resync snapshot;
-// transport loss keeps the last confirmed values and refuses new writes.
+// owner or transport loss clears prior identity truth and refuses new writes.
 class LauncherPersistenceController final : public QObject
 {
   Q_OBJECT
@@ -76,6 +76,7 @@ private:
       const QindaQt::Services::SettingsClient::CommitOutcome &outcome);
   void handleUncertain(const QString &message);
   void handleClientState();
+  void clearAuthoritativeTruth();
   PersistenceMutation mutatePinned(const QString &key,
                                    QindaQt::ShellLauncher::PinError (PinnedApplications::*op)(const QString &),
                                    const QString &entryId);
