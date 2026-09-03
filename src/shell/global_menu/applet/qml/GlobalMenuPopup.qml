@@ -14,6 +14,8 @@ Popup {
     readonly property var currentMenu:
         menuStack.length > 0 ? menuStack[menuStack.length - 1] : ({})
     readonly property var currentItems: currentMenu.children ?? []
+    readonly property var popupWindow:
+        contentItem !== null ? contentItem.Window.window : null
     readonly property string accessibleName:
         qsTr("%1 menu").arg(String(currentMenu.text ?? "Application"))
 
@@ -82,7 +84,22 @@ Popup {
         Qt.callLater(focusFirstItem)
     }
 
+    function closeAfterFocusLoss() {
+        Qt.callLater(function() {
+            if (popup.opened
+                    && (!popup.activeFocus
+                        || (popup.popupWindow !== null
+                            && !popup.popupWindow.active)))
+                popup.close()
+        })
+    }
+
     objectName: "globalMenuPopup"
+    // AGENT-GUARD: The production layer-shell panel deliberately rejects
+    // keyboard focus. Keep this as an independent popup window so opening a
+    // menu creates the keyboard-capable surface needed by the navigation
+    // handlers below; an item popup silently strands focus in RuntimePanel.
+    popupType: Popup.Window
     modal: false
     focus: true
     padding: 4
@@ -98,11 +115,17 @@ Popup {
         anchorItem = null
     }
     onActiveFocusChanged: {
-        if (opened && !activeFocus) {
-            Qt.callLater(function() {
-                if (popup.opened && !popup.activeFocus)
-                    popup.close()
-            })
+        if (opened && !activeFocus)
+            closeAfterFocusLoss()
+    }
+
+    Connections {
+        target: popup.popupWindow
+
+        function onActiveChanged() {
+            if (popup.opened && popup.popupWindow !== null
+                    && !popup.popupWindow.active)
+                popup.closeAfterFocusLoss()
         }
     }
 

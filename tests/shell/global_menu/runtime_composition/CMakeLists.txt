@@ -3,6 +3,25 @@
 find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
 
 qt_add_executable(
+    qindaqt_global_menu_hostile_provider
+    ../dbusmenu/fake_dbusmenu_exporter.h
+    hostile_menu_provider.cpp
+)
+target_include_directories(
+    qindaqt_global_menu_hostile_provider
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../dbusmenu"
+)
+target_link_libraries(
+    qindaqt_global_menu_hostile_provider
+    PRIVATE
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        Qt6::Core
+        Qt6::DBus
+)
+qindaqt_enable_warnings(qindaqt_global_menu_hostile_provider)
+
+qt_add_executable(
     qindaqt_global_menu_runtime_composition_tests
     ../dbusmenu/fake_dbusmenu_exporter.h
     tst_global_menu_runtime_composition.cpp
@@ -17,7 +36,13 @@ target_include_directories(
 )
 target_compile_definitions(
     qindaqt_global_menu_runtime_composition_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_HOSTILE_PROVIDER="$<TARGET_FILE:qindaqt_global_menu_hostile_provider>"
+)
+add_dependencies(
+    qindaqt_global_menu_runtime_composition_tests
+    qindaqt_global_menu_hostile_provider
 )
 target_link_libraries(
     qindaqt_global_menu_runtime_composition_tests

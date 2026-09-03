@@ -16,6 +16,8 @@
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
+#include <QElapsedTimer>
+#include <QProcess>
 #include <QSignalSpy>
 #include <QtTest>
 
@@ -66,16 +68,17 @@ public:
     {
         Q_EMIT serviceOwnerChanged(owner);
     }
-    void publishIdentity(quint32 registrarWindowId)
+    void publishIdentity(qint64 processId, quint32 registrarWindowId,
+                         quint64 revision = 1)
     {
         QVERIFY(m_request.has_value());
         const Compositor::ShellWindowIdentitySnapshot snapshot{
             Compositor::ShellWindowIdentityStatus::Ok,
-            QStringLiteral("test-identity-epoch"), 1,
+            QStringLiteral("test-identity-epoch"), revision,
             {QStringLiteral("action-epoch"), 3},
             Compositor::ShellWindowIdentityFacts{
                 QStringLiteral("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"),
-                static_cast<qint64>(QCoreApplication::applicationPid()),
+                processId,
                 registrarWindowId, std::nullopt, std::nullopt},
             {}, {}};
         Q_EMIT identityReplyReceived(
@@ -83,8 +86,66 @@ public:
             Compositor::encodeShellWindowIdentitySnapshot(snapshot));
     }
 
+    void invalidateIdentity()
+    {
+        Q_EMIT identityInvalidated(QStringLiteral(":1.900"));
+    }
+
 private:
     std::optional<QPair<quint64, QString>> m_request;
+};
+
+class ScopedHostileProvider final
+{
+public:
+    ~ScopedHostileProvider()
+    {
+        if (m_process.state() == QProcess::NotRunning) {
+            return;
+        }
+        m_process.terminate();
+        if (!m_process.waitForFinished(2'000)) {
+            m_process.kill();
+            (void)m_process.waitForFinished(2'000);
+        }
+    }
+
+    bool start(QString *error)
+    {
+        m_process.setProgram(QStringLiteral(QINDAQT_HOSTILE_PROVIDER));
+        m_process.setProcessChannelMode(QProcess::SeparateChannels);
+        m_process.start();
+        if (!m_process.waitForStarted(5'000)) {
+            *error = m_process.errorString();
+            return false;
+        }
+        QElapsedTimer deadline;
+        deadline.start();
+        while (!m_process.canReadLine() && deadline.elapsed() < 5'000
+               && m_process.state() != QProcess::NotRunning) {
+            // The child registers through this process's registrar object.
+            // Keep the private-bus dispatcher moving while awaiting its
+            // readiness line or the blocking registration would deadlock.
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+            (void)m_process.waitForReadyRead(20);
+        }
+        const QByteArray line = m_process.readLine().trimmed();
+        if (line != QByteArrayLiteral("READY")) {
+            *error = QStringLiteral("provider did not become ready: %1 %2")
+                         .arg(QString::fromUtf8(line),
+                              QString::fromUtf8(m_process.readAllStandardError()));
+            return false;
+        }
+        return true;
+    }
+
+    [[nodiscard]] qint64 processId() const noexcept
+    {
+        return static_cast<qint64>(m_process.processId());
+    }
+
+private:
+    QProcess m_process;
 };
 
 QDBusMessage registrarCall(const QDBusConnection &connection,
@@ -105,6 +166,20 @@ QDBusMessage registrarCall(const QDBusConnection &connection,
     return watcher.reply();
 }
 
+int providerEventCount(const QDBusConnection &connection)
+{
+    QDBusMessage message = QDBusMessage::createMethodCall(
+        QStringLiteral("org.qindaqt.TestHostileGlobalMenu"),
+        QStringLiteral("/Probe"),
+        QStringLiteral("org.qindaqt.TestHostileGlobalMenuProbe1"),
+        QStringLiteral("EventCount"));
+    const QDBusMessage reply = connection.call(message, QDBus::Block, 5'000);
+    return reply.type() == QDBusMessage::ReplyMessage
+            && reply.arguments().size() == 1
+        ? reply.arguments().constFirst().toInt()
+        : -1;
+}
+
 } // namespace
 
 class GlobalMenuRuntimeCompositionTest final : public QObject
@@ -113,6 +188,8 @@ class GlobalMenuRuntimeCompositionTest final : public QObject
 
 private Q_SLOTS:
     void composesAuthenticatedIdentityAndClearsOnOwnerLoss();
+    void hostileProviderPidMismatchNeverPublishesOrActivates();
+    void hostileProviderStaleIdentityNeverPublishesOrActivates();
     void registrarCollisionPublishesDegraded();
 };
 
@@ -143,7 +220,8 @@ composesAuthenticatedIdentityAndClearsOnOwnerLoss()
     ShellWindowActionsClient::ShellWindowActionsClient client(transport, 500);
     QVERIFY(client.start());
     transport.publishOwner(QStringLiteral(":1.900"));
-    transport.publishIdentity(77);
+    transport.publishIdentity(
+        static_cast<qint64>(QCoreApplication::applicationPid()), 77);
     QTRY_VERIFY(client.identityAvailable());
 
     Shell::GlobalMenuAppletComposition composition(
@@ -172,6 +250,88 @@ composesAuthenticatedIdentityAndClearsOnOwnerLoss()
     composition.stop();
     client.stop();
     QDBusConnection::disconnectFromBus(QStringLiteral("global-menu-runtime-shell"));
+}
+
+void GlobalMenuRuntimeCompositionTest::
+hostileProviderPidMismatchNeverPublishesOrActivates()
+{
+    // AGENT-NOTE: P2-01 requires a real second process so the private bus
+    // daemon, rather than a fake credential seam, proves the PID mismatch.
+    auto shellBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, QStringLiteral("global-menu-hostile-pid-shell"));
+    QVERIFY(shellBus.isConnected());
+    CatalogFixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    FakeIdentityTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 500);
+    QVERIFY(client.start());
+    transport.publishOwner(QStringLiteral(":1.900"));
+    Shell::GlobalMenuAppletComposition composition(
+        fixture.catalog, fixture.policy, shellBus, client);
+    composition.start();
+
+    ScopedHostileProvider provider;
+    QVERIFY2(provider.start(&error), qPrintable(error));
+    QVERIFY(provider.processId() > 0);
+    QVERIFY(provider.processId()
+            != static_cast<qint64>(QCoreApplication::applicationPid()));
+    transport.publishIdentity(
+        static_cast<qint64>(QCoreApplication::applicationPid()), 77);
+    QTRY_VERIFY(client.identityAvailable());
+    QTest::qWait(150);
+    QVERIFY(!composition.access()->available());
+    QVERIFY(composition.access()->items().isEmpty());
+    composition.access()->activate(QStringLiteral("1"));
+    QTest::qWait(100);
+    QCOMPARE(providerEventCount(shellBus), 0);
+
+    composition.stop();
+    client.stop();
+    QDBusConnection::disconnectFromBus(QStringLiteral("global-menu-hostile-pid-shell"));
+}
+
+void GlobalMenuRuntimeCompositionTest::
+hostileProviderStaleIdentityNeverPublishesOrActivates()
+{
+    // AGENT-NOTE: P2-01 also requires stale compositor lineage to stay closed
+    // when a foreign provider's later claim would otherwise match its PID.
+    auto shellBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, QStringLiteral("global-menu-hostile-stale-shell"));
+    QVERIFY(shellBus.isConnected());
+    CatalogFixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    FakeIdentityTransport transport;
+    ShellWindowActionsClient::ShellWindowActionsClient client(transport, 500);
+    QVERIFY(client.start());
+    transport.publishOwner(QStringLiteral(":1.900"));
+    Shell::GlobalMenuAppletComposition composition(
+        fixture.catalog, fixture.policy, shellBus, client);
+    composition.start();
+
+    ScopedHostileProvider provider;
+    QVERIFY2(provider.start(&error), qPrintable(error));
+    QVERIFY(provider.processId() > 0);
+    QVERIFY(provider.processId()
+            != static_cast<qint64>(QCoreApplication::applicationPid()));
+    transport.publishIdentity(
+        static_cast<qint64>(QCoreApplication::applicationPid()), 77, 2);
+    QTRY_VERIFY(client.identityAvailable());
+    QVERIFY(!composition.access()->available());
+    transport.invalidateIdentity();
+    QVERIFY(!client.identityAvailable());
+    transport.publishIdentity(provider.processId(), 77, 1);
+    QVERIFY(!client.identityAvailable());
+    QVERIFY(!composition.access()->available());
+    QVERIFY(composition.access()->items().isEmpty());
+    composition.access()->activate(QStringLiteral("1"));
+    QTest::qWait(100);
+    QCOMPARE(providerEventCount(shellBus), 0);
+
+    composition.stop();
+    client.stop();
+    QDBusConnection::disconnectFromBus(QStringLiteral("global-menu-hostile-stale-shell"));
 }
 
 void GlobalMenuRuntimeCompositionTest::registrarCollisionPublishesDegraded()

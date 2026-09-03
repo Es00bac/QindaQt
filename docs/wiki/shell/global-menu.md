@@ -305,6 +305,17 @@ provider-owned checked state. Reaching the depth cap fails closed. Popup
 activation calls the facade exactly once; the existing invocation guard and
 no-replay dbusmenu client remain the sole execution lineage.
 
+`GlobalMenuPopup` is a `Popup.Window`, not the default item-backed popup. The
+production layer-shell panel deliberately retains
+`Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the opened
+transient is an independently focusable keyboard surface. The registered
+offscreen production-composition path hosts the real `PanelAppletRow` →
+`AppletChip` → `BuiltinAppletContent` chain: **Tab** reaches the first menu-bar
+entry, **Down** opens its popup, **Down** selects the nested submenu,
+**Right** enters it, and **Space** activates exactly once and closes; **Escape**
+closes without activation. That row runs with `QT_FATAL_WARNINGS=1` and also
+requires the popup's effective type to remain `Popup.Window`.
+
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows
 never receive a bus object or transport.
@@ -362,7 +373,9 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-runtime-composition-private-bus`,
 `qindaqt.global-menu-runtime-boundary-poison`,
 `qindaqt.global-menu-applet-submenu-qml-offscreen` under
-`QT_FATAL_WARNINGS=1`, `qindaqt.global-menu-installed-package`, and the shared
+`QT_FATAL_WARNINGS=1`,
+`qindaqt.global-menu-production-panel-keyboard-qml-offscreen` through the real
+panel dispatcher, `qindaqt.global-menu-installed-package`, and the shared
 `qindaqt.shell-runtime-component-closure`. Live installed-session
 qualification remains unbuilt and unclaimed; see the
 [testing harness](../development/testing-harness.md).

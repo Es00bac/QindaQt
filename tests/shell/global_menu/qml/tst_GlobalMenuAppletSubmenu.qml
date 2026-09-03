@@ -125,6 +125,8 @@ Item {
             keyClick(Qt.Key_Down)
             const popup = findChild(applet, "globalMenuPopup")
             tryCompare(popup, "opened", true)
+            focusSink.Window.window.requestActivate()
+            tryCompare(focusSink.Window.window, "active", true)
             focusSink.forceActiveFocus(Qt.OtherFocusReason)
             tryCompare(popup, "opened", false)
             compare(fakeAccess.activateCalls, 0)
