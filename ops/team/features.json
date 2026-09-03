@@ -356,15 +356,20 @@
           "title": "Clipboard applet",
           "weight": 2,
           "state": "EXECUTABLE",
-          "summary": "The Clipboard applet C1 composes the public Clipboard client into a privacy-gated, lineage-fenced history presentation with write-grant-gated mutations, a fail-closed snapshot gate, and truthful privacy-denied and ceiling-purge phases.",
+          "summary": "The Clipboard applet C1 composes the public Clipboard client into a privacy-gated, lineage-fenced history presentation with write-grant-gated mutations, a fail-closed snapshot gate, and truthful privacy-denied and ceiling-purge phases. C2 hosts the compiled clipboard applet in the production panel dispatcher (eight built-in applets) with a keyboard-capable popup, its own install component, DesktopVirtual staging, and consent-denial negative controls.",
           "evidence": [
             {
               "kind": "commit",
               "reference": "2abc4487",
               "summary": "The exact Clipboard applet C1 candidate 72a79fd (Jean Bartik, OpenAI Codex, ACCEPT 0/0/0/0 after four rejected rounds covering QML grant gating, query fencing, an impossible-snapshot gate, revision high-water and ceiling-purge semantics, and the privacy-denied phase) is integrated through the delegated registry-reconciliation merge 35a548f; the merged tree passes clipboard-applet, applet, and shell-runtime rows within a 153/153 focused batch in Debug and Release, the static gates, the broad safe Debug suite 543/543, and the nested desktop boot and panel rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "82e256d0cc74581b79a98ff37ce07ce156cd0d90",
+              "summary": "The exact clipboard hosting candidate fef9222 (Melanie Wood, Moonshot Kimi, ACCEPT 0/0/0/0 after one rejected round) is integrated; a manager reconciliation (dfe08e4) guards its QML rows behind the production shell target so the compositor plugin dependency contract configures again; the merged tree on the system KWin 6.6.6 passes 66/66 focused rows in Debug and Release, the static gates, the broad safe Debug suite 579/579, and the nested desktop boot row."
             }
           ],
-          "caveat": "The applet is registered but not yet hosted in the production panel dispatcher (composition lane next); live nested capture proof and installed-session qualification remain."
+          "caveat": "Live nested capture proof and installed-session qualification remain."
         },
         {
           "id": "QQ-004.08",
@@ -575,7 +580,7 @@
           "title": "Network connectivity",
           "weight": 11,
           "state": "EXECUTABLE",
-          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed. A confined NetworkManager secret agent (ADR-0069) now prompts for WPA-PSK, WEP, and 802.1X identity/password outside Network1, which stays secret-free.",
+          "summary": "Network N1 composes the bounded N0 protocol/model/client with resident service ownership, public Qt transport, and a libnm-confined NetworkManager adapter whose exact upstream-owner generations, delayed replies, scan leases, and external-secret-agent-only boundary fail closed. A confined NetworkManager secret agent (ADR-0069) now prompts for WPA-PSK, WEP, and 802.1X identity/password outside Network1, which stays secret-free. N3 adds ConnectVisibleNetwork: Network1 creates and activates a profile for a visible open/WPA-PSK/SAE access point with agent-owned secrets, and the Network Settings page offers Connect for unknown networks with truthful agent-presence facts.",
           "evidence": [
             {
               "kind": "commit",
@@ -591,9 +596,14 @@
               "kind": "commit",
               "reference": "287ba6de7eda8a3b0560f467f602c130db252ac7",
               "summary": "The exact secret-agent candidate dbeab3f (Raman Parimala, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds covering secret wiping, request budgets, the diagnostic canary, and proof-table coverage) is integrated with its ADR renumbered to 0069; the merged tree, built against the host's system KWin 6.6.6, passes the focused batch 118/118 in Debug and Release, the static gates, the broad safe Debug suite 569/569, and 88 Release Settings/network/app-shell rows."
+            },
+            {
+              "kind": "commit",
+              "reference": "c269830fbd0a9cbcd9a0f7e22916cc3c8a35efc8",
+              "summary": "The exact N3 candidate beef29e (Lisa Piccirillo, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting an admission bypass and a missing AddAndActivateConnection negative control) is integrated; the merged tree on the system KWin 6.6.6 passes 66/66 focused rows in Debug and Release, the static gates, the broad safe Debug suite 579/579, and the nested desktop boot row."
             }
           ],
-          "caveat": "Joining a visible network (N3, in review), session autostart of the agent (session-actions lane), certificates/VPN, physical radios, and installed-session qualification remain."
+          "caveat": "Enterprise (802.1X) and hidden networks, VPN, certificates, secret-agent session autostart (in review), physical radios, and installed-session qualification remain."
         },
         {
           "id": "QQ-005.05",
