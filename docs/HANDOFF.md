@@ -4,6 +4,19 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact independently accepted Bluetooth applet B1 repair descendant
+  `882cc0cdbb31ee9d619c625a2856aee90c7a49b0` at manager merge `34a79c2`. The regex-based positive
+  controller-surface gate that four reviewers had split over is replaced by a compiled QMetaObject
+  surface test comparing the complete ordered property, method, and enumerator surface and the
+  QML-visible names, with token-paste, public-slot, and enum negative controls; the textual
+  composition-chain contracts (stock-profile placement, QML delegate wiring, shell composition
+  tokens) and dependency-policy poisons are retained. Cecilia Payne (Kimi K2.7) and Chien-Shiung Wu
+  (Kimi K3-256k) each accepted the descendant at `0/0/0/0`. Fresh merged-tree Debug and Release each
+  pass Bluetooth 8/8 and adjacent 6/6; direct boundary gates pass 7+6 and 5+4; 118-document validation,
+  strict MkDocs, source shape, diff, JSON, and Team Board 16/16 pass. The broad safe Debug suite on the merged tree passes 373/373 after a clean incremental build (nested-compositor rows and the 25 host-font-drifted controls visual rows excluded as recorded).
+  QQ-004.14 advances from ABSENT to EXECUTABLE; the BlueZ adapter, pairing UX, nested interaction,
+  and hardware remain later outcomes.
+
 - This integration merges exact independently accepted Global Menu G1 candidate
   `7c27ee5b1b50746e59f70360d89b0e959328dd47` at manager merge `729bebd`. The registrar owns
   `com.canonical.AppMenu.Registrar` on an injected session-bus connection, keys registrations to the

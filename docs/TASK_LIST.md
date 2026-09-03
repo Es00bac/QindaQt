@@ -58,6 +58,19 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `882cc0c` — The production Bluetooth applet B1 composes only the public Bluetooth client
+  through a shell-private controller with separate read and control grants, audited
+  manifest/registry/host/profile routing, compiled keyboard-accessible QML, and exact-owner
+  replacement fences. Its controller surface is now proven by a compiled QMetaObject contract
+  with token-paste, public-slot, and enum negative controls instead of the former regex gate,
+  while textual composition-chain and dependency-policy contracts keep their independent
+  poisons. After a 2/2 split on the regex ancestor, the same reviewers Cecilia Payne (Kimi K2.7)
+  and Chien-Shiung Wu (Kimi K3-256k) accepted the repair descendant at P0/P1/P2/P3 `0/0/0/0`.
+  The fresh merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release, direct
+  boundary gates 7+6 and 5+4, the broad safe Debug suite 373/373 (nested-compositor and host-font visual rows excluded), and all static gates. This advances
+  QQ-004.14 from ABSENT to EXECUTABLE; the B0 service still runs the deterministic unavailable
+  backend, so BlueZ, pairing UX, nested interaction, and hardware remain later outcomes.
+
 - `7c27ee5` — Global Menu G1 adds the production transports behind the G0 foundation: an exact-owner
   `com.canonical.AppMenu.Registrar` service on an injected bus keyed to caller unique names with owner-loss
   retirement, an asynchronous `com.canonical.dbusmenu` client whose decoder bounds depth, counts, and lengths and

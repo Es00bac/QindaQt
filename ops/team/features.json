@@ -295,10 +295,21 @@
           "id": "QQ-004.14",
           "title": "Bluetooth applet",
           "weight": 2,
-          "state": "ABSENT",
-          "summary": "No integrated Bluetooth applet can inspect, pair, connect, or disconnect devices.",
-          "evidence": [],
-          "caveat": "The platform provider and least-authority presentation path remain."
+          "state": "EXECUTABLE",
+          "summary": "The production Bluetooth applet composes only the public Bluetooth client through a shell-private controller with separate read and control grants, audited manifest/registry/host/profile routing, compiled keyboard-accessible QML, exact-owner replacement fences, a compiled QMetaObject controller-surface contract, and textual composition-chain and dependency-policy gates with independent poisons.",
+          "evidence": [
+            {
+              "kind": "commit",
+              "reference": "882cc0cdbb31ee9d619c625a2856aee90c7a49b0",
+              "summary": "The exact repair descendant is integrated after Cecilia Payne (Kimi K2.7) and Chien-Shiung Wu (Kimi K3-256k) each accepted it at 0/0/0/0; the merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release plus direct boundary gates 7+6 and 5+4."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/shell/bluetooth-applet.md",
+              "summary": "The owning page records the eight focused rows, the meta-object surface gate, the composition-chain presence contracts, and explicit production boundaries."
+            }
+          ],
+          "caveat": "B1 composes the B0 client whose resident service still runs the deterministic unavailable backend: the production BlueZ adapter, pairing/agent UX, nested panel interaction, physical adapters, and hardware qualification remain separate outcomes."
         },
         {
           "id": "QQ-004.15",
