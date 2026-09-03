@@ -143,3 +143,4 @@ nav:
       - "ADR-0057: Injected direct BlueZ transport": adr/0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md
       - "ADR-0058: Volatile clipboard capture host": adr/0058-isolate-clipboard-capture-in-a-volatile-host.md
       - "ADR-0059: Explicit portal fallback routing": adr/0059-route-unimplemented-portal-families-explicitly.md
+      - "ADR-0060: Confined production power upstreams": adr/0060-confine-production-power-upstreams.md

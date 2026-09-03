@@ -29,7 +29,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0021](0021-isolate-controls-visual-rows.md) | Accepted | Isolate every Controls visual row in its own process |
 | [ADR-0022](0022-keep-text-documents-local-and-atomic.md) | Accepted | Keep Text Editor documents local, optimistic, and atomically persisted |
 | [ADR-0023](0023-split-power-authority-across-service-and-shell.md) | Accepted | Split platform power observation from shell-owned session-action authority |
-| [ADR-0024](0024-route-brightness-through-power1.md) | Accepted | Route fail-closed internal brightness through a Power1 provider |
+| [ADR-0024](0024-route-brightness-through-power1.md) | Accepted; write route superseded by ADR-0056 | Route fail-closed internal brightness through a Power1 provider |
 | [ADR-0025](0025-arbitrate-session-bound-power1-activation.md) | Accepted | Arbitrate session-bound Power1 activation without reciprocal takeover |
 | [ADR-0026](0026-contain-virtual-desktop-qualification.md) | Accepted | Contain integrated virtual desktop qualification in a private namespace and exact stage |
 | [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md) | Accepted | Extract a narrow first-party application shell without domain or platform authority |
@@ -60,6 +60,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0057](0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md) | Accepted | Reach BlueZ through injected direct QtDBus while preserving BlueZ authority |
 | [ADR-0058](0058-isolate-clipboard-capture-in-a-volatile-host.md) | Accepted | Isolate clipboard capture and payloads in a volatile resident host |
 | [ADR-0059](0059-route-unimplemented-portal-families-explicitly.md) | Accepted | Route unimplemented portal families through an explicit fail-closed table |
+| [ADR-0060](0060-confine-production-power-upstreams.md) | Accepted | Confine production power upstreams behind injected adapters |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

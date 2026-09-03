@@ -1864,6 +1864,37 @@ to the host clipboard, Wayland display, session bus, compositor, hardware, or
 network. They prove generated protocol behavior and private-bus semantics, not
 interoperability with a packaged KWin session or physical input.
 
+## Power PB-2 production-upstream proof
+
+The focused production-adapter selector is:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.power-service-(sysfs-backlight|upstream-composition|upower-adapter|profiles-adapter|logind-adapter|logind-actions|production-activation|boundary)$'
+```
+
+UPower, Power Profiles, and logind rows create one private `dbus-daemon` per
+fixture and connect only by its printed address. Production activation exports
+that same address as both bus environments to the activated executable and
+injects a backlight root below the configured build scratch directory. The
+rows cover daemon absence/loss/replacement, device removal, service and device
+property changes, line-power `Online` transitions, exclusion of peripheral
+`PowerSupply=false` batteries from mixed inventories, hostile property types
+and ordinals, estimate bounds, modern/legacy profile roots and cookie holds,
+sanitized inhibitors, `PrepareForSleep`, dispatch-time `Can*` reauthorization,
+no-prompt actions, duplicate operation lineage, restart with a reused operation
+ID while the stopped generation's authorization reply is delayed, sysfs
+disappearance/read-only/write/re-observation, the explicit composition modes,
+and installed activation descriptors. The production activation row also
+proves exact name ownership, constructing-bus-loss exit, and fresh
+owner/epoch/process truth on an independent replacement bus, preserving the
+legacy activation contract without using its `/tmp` fixture.
+
+The selector does not contact an ambient system/session bus, the host
+`/sys/class/backlight`, hardware, polkit, uinput, a compositor, or a desktop
+session. It proves only the injected adapter and package contracts; physical
+battery/backlight behavior and suspend/resume remain hardware evidence.
+
 ## Required display matrix
 
 Single-output scenarios cover:
