@@ -44,6 +44,8 @@ class StatusNotifierMonitorTests final : public QObject
 
 private slots:
     void populatesRegistryFromLiveWatcher();
+    void populatesTwoPathsFromOneOwner();
+    void populatesRootObjectPath();
     void removesItemAndFreesOwnerOnDisconnect();
     void rebaselinesPopulationWhenWatcherRestarts();
     void degradesTruthfullyWhileKeepingLastKnownGood();
@@ -98,6 +100,75 @@ void StatusNotifierMonitorTests::populatesRegistryFromLiveWatcher()
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-a"));
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-a"));
     QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-a"));
+}
+
+void StatusNotifierMonitorTests::populatesTwoPathsFromOneOwner()
+{
+    // AGENT-NOTE: P1-3 regression: two valid paths from one unique owner
+    // share one generation and both drain initial-population accounting.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-watcher-multi"));
+    auto monitorConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-client-multi"));
+    auto itemConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-item-multi"));
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+
+    auto first = std::make_unique<FakeStatusNotifierItem>();
+    auto second = std::make_unique<FakeStatusNotifierItem>();
+    first->id = QStringLiteral("org.qindaqt.first");
+    second->id = QStringLiteral("org.qindaqt.second");
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/One"), first.get()));
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/Two"), second.get()));
+    registerItem(itemConnection, QStringLiteral("/One"));
+    registerItem(itemConnection, QStringLiteral("/Two"));
+
+    StatusNotifierRegistry registry;
+    StatusNotifierItemMonitor monitor(monitorConnection, registry, 100);
+    monitor.attach(&registry);
+    QTRY_VERIFY_WITH_TIMEOUT(registry.initialPopulationComplete(), 2'000);
+    QCOMPARE(registry.count(), 2);
+    const QList<OwnerKey> keys = registry.itemKeys();
+    QCOMPARE(keys.at(0).generation, keys.at(1).generation);
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-multi"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-multi"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-multi"));
+}
+
+void StatusNotifierMonitorTests::populatesRootObjectPath()
+{
+    // AGENT-NOTE: P1-4 regression: ":1.N/" contains the complete valid root
+    // path and must survive service-ID parsing.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-watcher-root"));
+    auto monitorConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-client-root"));
+    auto itemConnection = connectToPrivateBus(bus.address(), QStringLiteral("mon-item-root"));
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+    auto item = std::make_unique<FakeStatusNotifierItem>();
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/"), item.get()));
+    registerItem(itemConnection, QStringLiteral("/"));
+
+    StatusNotifierRegistry registry;
+    StatusNotifierItemMonitor monitor(monitorConnection, registry, 500);
+    monitor.attach(&registry);
+    QTRY_VERIFY_WITH_TIMEOUT(registry.initialPopulationComplete(), 2'000);
+    QCOMPARE(registry.count(), 1);
+    QCOMPARE(registry.itemKeys().constFirst().objectPath, QStringLiteral("/"));
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-watcher-root"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-client-root"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("mon-item-root"));
 }
 
 void StatusNotifierMonitorTests::removesItemAndFreesOwnerOnDisconnect()

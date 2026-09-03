@@ -186,9 +186,8 @@ void StatusNotifierItemMonitor::handleItemRegistered(const QString &serviceId)
         || !isValidUniqueBusName(uniqueName) || !isValidObjectPath(objectPath)) {
         return;
     }
-    // A live owner re-registering is a watcher rebaseline of that name: the
-    // registry drops its previous-generation items and issues a fresh
-    // generation when the slot is (re)created.
+    // The first key observed for an owner in this epoch rebaselines it. Later
+    // paths from that same owner share the issued generation.
     watchItemOwner(uniqueName, objectPath);
     const QString slotKey = uniqueName + QLatin1Char('/') + objectPath;
     const auto iterator = m_slots.constFind(slotKey);
@@ -393,7 +392,19 @@ void StatusNotifierItemMonitor::watchItemOwner(const QString &uniqueName,
     if (m_slots.contains(slotKey)) {
         return;
     }
-    const quint64 generation = m_sink->beginOwnerGeneration(m_epoch, uniqueName);
+    // AGENT-GUARD: P1-3 showed that beginOwnerGeneration per path invalidates
+    // the first client and wedges population. An owner gets exactly one
+    // generation per monitor epoch; all of its object paths share it.
+    quint64 generation = 0;
+    for (auto iterator = m_slots.cbegin(); iterator != m_slots.cend(); ++iterator) {
+        if (iterator->key.uniqueName == uniqueName) {
+            generation = iterator->key.generation;
+            break;
+        }
+    }
+    if (generation == 0) {
+        generation = m_sink->beginOwnerGeneration(m_epoch, uniqueName);
+    }
     if (generation == 0) {
         // Capacity or counter exhaustion refuses the begin; the key cannot be
         // observed and last-known-good truth is left untouched.
@@ -465,7 +476,9 @@ bool StatusNotifierItemMonitor::parseServiceId(const QString &serviceId,
                                                QString *objectPath)
 {
     const qsizetype separator = serviceId.indexOf(QLatin1Char('/'));
-    if (separator <= 0 || separator >= serviceId.size() - 1) {
+    // AGENT-GUARD: P1-4 regression: when the separator is the final byte, the
+    // suffix is the valid root object path "/", not a missing path.
+    if (separator <= 0) {
         return false;
     }
     *uniqueName = serviceId.left(separator);

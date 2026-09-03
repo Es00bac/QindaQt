@@ -100,7 +100,6 @@ private:
     void handleDescriptorFetched(const ItemDescriptorFetch &result);
     void completePopulationIfDrained();
     void watchItemOwner(const QString &uniqueName, const QString &objectPath);
-    [[nodiscard]] ItemSlot *findSlot(const QString &uniqueName, const QString &objectPath);
     // Validates the intent through the registry and resolves the live watched
     // client for `target`; returns failure without touching the client when
     // the intent is not currently valid.
