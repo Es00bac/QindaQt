@@ -20,6 +20,7 @@ Item {
         property string phaseText: "ready"
         property string phaseReasonText: ""
         property bool isLocked: false
+        property bool clipboardWriteGranted: true
         property bool isHistoryEnabled: true
         property var entryRows: []
         property int entryCount: 0
@@ -108,6 +109,37 @@ Item {
             fakeController.deleteCalls = 0
             fakeController.togglePinCalls = 0
             fakeController.clearCalls = 0
+            fakeController.clipboardWriteGranted = true
+        }
+
+        // Capability honesty: with clipboard.write denied in the ready phase,
+        // mutating controls are disabled and real clicks dispatch nothing,
+        // while the list stays browsable.
+        function test_writeDenialDisablesMutationsHonestly() {
+            fakeController.clipboardWriteGranted = false
+            fakeController.entryRows = [makeEntry(14, { preview: "read only" })]
+            fakeController.entryCount = 1
+
+            var applet = createTemporaryObject(appletComponent, testRoot)
+            verify(applet !== null)
+            var list = findChild(applet, "clipboardEntriesList")
+            tryVerify(() => list.count === 1)
+            compare(list.visible, true)
+
+            var pin = findChild(applet, "pinButton")
+            verify(pin !== null)
+            compare(pin.enabled, false)
+            mouseClick(pin)
+            compare(fakeController.togglePinCalls, 0)
+
+            var del = findChild(applet, "deleteButton")
+            compare(del.enabled, false)
+            mouseClick(del)
+            compare(fakeController.deleteCalls, 0)
+
+            var clearAll = findChild(applet, "clearAllButton")
+            verify(clearAll !== null)
+            compare(clearAll.enabled, false)
         }
 
         // AGENT-GUARD (P1 regression): real pointer events must reach the

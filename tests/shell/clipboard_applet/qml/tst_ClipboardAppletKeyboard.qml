@@ -15,6 +15,7 @@ Item {
         property string phaseText: "ready"
         property string phaseReasonText: ""
         property bool isLocked: false
+        property bool clipboardWriteGranted: true
         property bool isHistoryEnabled: true
         property var entryRows: []
         property int entryCount: 0
