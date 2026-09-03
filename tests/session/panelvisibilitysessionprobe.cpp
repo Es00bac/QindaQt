@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "panelvisibilitysessionwindowproof.h"
+#include "panelvisibilityphasewaiter.h"
 
 #include <QBackingStore>
 #include <QCoreApplication>
@@ -30,6 +31,8 @@
 #include <optional>
 
 namespace {
+
+using namespace QindaQt::Test::PanelVisibilityPhase;
 
 constexpr auto Service = "org.qindaqt.Compositor";
 constexpr auto Path = "/org/qindaqt/Compositor";
@@ -91,53 +94,53 @@ QJsonObject call(QDBusInterface &endpoint, const QString &method,
     return document.isObject() ? document.object() : QJsonObject{};
 }
 
-QJsonArray surfaces(QDBusInterface &endpoint)
-{
-    const QJsonObject result = call(endpoint, QStringLiteral("DevelopmentShellSurfaces"));
-    return result.value(QStringLiteral("status")) == QStringLiteral("ok")
-        ? result.value(QStringLiteral("surfaces")).toArray() : QJsonArray{};
-}
-
-bool mappedPanel(const QJsonArray &items, const QString &edge, int thickness,
-                 int outputWidth, int outputHeight, int zone = -2)
-{
-    for (const QJsonValue &value : items) {
-        const QJsonObject item = value.toObject();
-        const QJsonObject geometry = item.value(QStringLiteral("geometry")).toObject();
-        const int x = geometry.value(QStringLiteral("x")).toInt();
-        const int y = geometry.value(QStringLiteral("y")).toInt();
-        const int width = geometry.value(QStringLiteral("width")).toInt();
-        const int height = geometry.value(QStringLiteral("height")).toInt();
-        const bool position =
-            (edge == QStringLiteral("top") && y == 0 && height == thickness)
-            || (edge == QStringLiteral("left") && x == 0 && width == thickness)
-            || (edge == QStringLiteral("bottom") && height == thickness
-                && y + height == outputHeight && x >= 0
-                && x + width <= outputWidth);
-        if (position && item.value(QStringLiteral("mapped")).toBool()
-            && item.value(QStringLiteral("committed")).toBool()
-            && (zone == -2
-                || item.value(QStringLiteral("exclusiveZone")).toInt(-999) == zone)) {
-            return true;
-        }
+class CompositorSurfaceAuthority final : public SurfaceAuthority {
+public:
+    explicit CompositorSurfaceAuthority(QDBusInterface &endpoint)
+        : m_endpoint(endpoint)
+    {
     }
-    return false;
-}
+
+    QJsonArray snapshot() override
+    {
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+        const QJsonObject result = call(
+            m_endpoint, QStringLiteral("DevelopmentShellSurfaces"));
+        return result.value(QStringLiteral("status")) == QStringLiteral("ok")
+            ? result.value(QStringLiteral("surfaces")).toArray() : QJsonArray{};
+    }
+
+private:
+    QDBusInterface &m_endpoint;
+};
+
+class DeadlinePollTimer final : public PollTimer {
+public:
+    explicit DeadlinePollTimer(int timeoutMilliseconds)
+        : m_timeoutMilliseconds(timeoutMilliseconds)
+    {
+        m_elapsed.start();
+    }
+
+    bool expired() const override
+    {
+        return m_elapsed.elapsed() >= m_timeoutMilliseconds;
+    }
+
+    void waitForNextPoll() override { QThread::msleep(20); }
+
+private:
+    QElapsedTimer m_elapsed;
+    int m_timeoutMilliseconds;
+};
 
 bool waitFor(QDBusInterface &endpoint, const std::function<bool(const QJsonArray &)> &ready,
-             QJsonArray *observed, int timeoutMilliseconds = 5'000)
+             const QSize &output, QJsonArray *observed,
+             int timeoutMilliseconds = 5'000)
 {
-    QElapsedTimer timer;
-    timer.start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents);
-        *observed = surfaces(endpoint);
-        if (ready(*observed)) {
-            return true;
-        }
-        QThread::msleep(20);
-    } while (timer.elapsed() < timeoutMilliseconds);
-    return false;
+    CompositorSurfaceAuthority authority(endpoint);
+    DeadlinePollTimer timer(timeoutMilliseconds);
+    return waitForSettledPhase(authority, timer, output, ready, observed);
 }
 
 bool inject(QDBusInterface &endpoint, QJsonArray events)
@@ -199,10 +202,11 @@ bool capture(const QString &tool, const QString &phase)
 
 bool requirePhase(QDBusInterface &endpoint, QJsonArray *items,
                   const std::function<bool(const QJsonArray &)> &ready,
+                  const QSize &output,
                   const QString &captureTool, const QString &phase,
                   QJsonArray *evidence)
 {
-    if (!waitFor(endpoint, ready, items) || !capture(captureTool, phase)) {
+    if (!waitFor(endpoint, ready, output, items) || !capture(captureTool, phase)) {
         QTextStream(stderr) << "panel phase failed: " << phase << '\n';
         return false;
     }
@@ -235,13 +239,13 @@ int main(int argc, char **argv)
     QDBusInterface endpoint(QString::fromLatin1(Service), QString::fromLatin1(Path),
                             QString::fromLatin1(Interface));
     const QRect output = application.primaryScreen()->geometry();
+    const QSize outputSize = output.size();
     QJsonArray observed;
     QJsonArray phases;
     const auto topVisible = [&](const QJsonArray &items) {
-        return mappedPanel(items, QStringLiteral("top"), 30,
-                           output.width(), output.height(), 30);
+        return mappedPanel(items, QStringLiteral("top"), 30, outputSize, 30);
     };
-    if (!waitFor(endpoint, topVisible, &observed, 15'000)) {
+    if (!waitFor(endpoint, topVisible, outputSize, &observed, 15'000)) {
         return 4;
     }
     PaintedWindow client;
@@ -249,11 +253,10 @@ int main(int argc, char **argv)
     client.requestActivate();
     const auto overlapHidden = [&](const QJsonArray &items) {
         return topVisible(items)
-            && !mappedPanel(items, QStringLiteral("left"), 40,
-                            output.width(), output.height());
+            && !mappedPanel(items, QStringLiteral("left"), 40, outputSize);
     };
     const QString captureTool = application.arguments().at(1);
-    if (!requirePhase(endpoint, &observed, overlapHidden, captureTool,
+    if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
                       QStringLiteral("window-overlap-hidden"), &phases)) {
         return 5;
     }
@@ -272,7 +275,7 @@ int main(int argc, char **argv)
     // in for the required hidden-immediately-before-input proof.
     client.showNormal();
     client.requestActivate();
-    if (!waitFor(endpoint, overlapHidden, &observed)) {
+    if (!waitFor(endpoint, overlapHidden, outputSize, &observed)) {
         return 6;
     }
     const auto movedAway = moveProofWindowFromPanel(endpoint, output);
@@ -281,16 +284,15 @@ int main(int argc, char **argv)
     }
     const auto leftVisible = [&](const QJsonArray &items) {
         return topVisible(items)
-            && mappedPanel(items, QStringLiteral("left"), 40,
-                           output.width(), output.height(), 40);
+            && mappedPanel(items, QStringLiteral("left"), 40, outputSize, 40);
     };
-    if (!requirePhase(endpoint, &observed, leftVisible, captureTool,
+    if (!requirePhase(endpoint, &observed, leftVisible, outputSize, captureTool,
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
     }
     client.showFullScreen();
     client.requestActivate();
-    if (!requirePhase(endpoint, &observed, overlapHidden, captureTool,
+    if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
                       QStringLiteral("window-close-hidden"), &phases)) {
         return 7;
     }
@@ -299,7 +301,7 @@ int main(int argc, char **argv)
         return 7;
     }
     client.close();
-    if (!requirePhase(endpoint, &observed, leftVisible, captureTool,
+    if (!requirePhase(endpoint, &observed, leftVisible, outputSize, captureTool,
                       QStringLiteral("window-closed-restored"), &phases)) {
         return 7;
     }
@@ -310,10 +312,9 @@ int main(int argc, char **argv)
     }
     const auto bottomVisible = [&](const QJsonArray &items) {
         return topVisible(items)
-            && mappedPanel(items, QStringLiteral("bottom"), 48,
-                           output.width(), output.height());
+            && mappedPanel(items, QStringLiteral("bottom"), 48, outputSize);
     };
-    if (!requirePhase(endpoint, &observed, bottomVisible, captureTool,
+    if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
                       QStringLiteral("edge-revealed"), &phases)) {
         return 9;
     }
@@ -322,17 +323,16 @@ int main(int argc, char **argv)
     }
     const auto bottomHidden = [&](const QJsonArray &items) {
         return topVisible(items)
-            && !mappedPanel(items, QStringLiteral("bottom"), 48,
-                            output.width(), output.height());
+            && !mappedPanel(items, QStringLiteral("bottom"), 48, outputSize);
     };
-    if (!waitFor(endpoint, bottomHidden, &observed)) {
+    if (!waitFor(endpoint, bottomHidden, outputSize, &observed)) {
         return 11;
     }
     if (!inject(endpoint, {key("left-meta", true), key("space", true),
                            key("space", false), key("left-meta", false)})) {
         return 12;
     }
-    if (!requirePhase(endpoint, &observed, bottomVisible, captureTool,
+    if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
                       QStringLiteral("shortcut-revealed"), &phases)) {
         return 13;
     }
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
         return 14;
     }
     QThread::msleep(1'700);
-    if (!requirePhase(endpoint, &observed, bottomVisible, captureTool,
+    if (!requirePhase(endpoint, &observed, bottomVisible, outputSize, captureTool,
                       QStringLiteral("popup-held"), &phases)) {
         return 15;
     }
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
                            key("n", false), key("left-meta", false)})) {
         return 16;
     }
-    if (!requirePhase(endpoint, &observed, bottomHidden, captureTool,
+    if (!requirePhase(endpoint, &observed, bottomHidden, outputSize, captureTool,
                       QStringLiteral("popup-closed"), &phases)) {
         return 17;
     }
