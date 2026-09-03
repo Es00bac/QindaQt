@@ -1,9 +1,9 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains eight real routes: **Notifications**,
+modular settings routes. It contains nine real routes: **Notifications**,
 **Appearance**, **Display**, **Network**, **Customize**, **Audio**, and
-**Bluetooth**, followed by **Power**. The shell owns route identity, selection, responsive
+**Bluetooth**, followed by **Power** and **Color**. The shell owns route identity, selection, responsive
 presentation, and navigation accessibility. Each route continues to own its
 domain model, service scope, page state, and mutations.
 
@@ -15,7 +15,8 @@ the [Network route](network-settings.md); Customize behavior is documented on
 the [Customize route](customize-settings.md); Audio behavior is documented on
 the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
 [Bluetooth route](bluetooth-settings.md); Power behavior is documented on the
-[Power route](power-settings.md); notification quieting and its live
+[Power route](power-settings.md); Color behavior is documented on the
+[Color route](color-settings.md); notification quieting and its live
 settings transaction remain documented under
 [notification presentation](../shell/notification-presentation.md).
 
@@ -35,12 +36,13 @@ characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
 must not hide one. The closed component kind is mapped to the compiled
-Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, or Power
+Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, Power,
+or Color
 component. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page notifications`, `--page appearance`,
 `--page display`, `--page network`, `--page customize`, `--page audio`, and
-`--page bluetooth`, and `--page power`.
+`--page bluetooth`, and `--page power`, and `--page color`.
 Unknown, noncanonical, path-like, or otherwise hostile values exit 2 before any
 settings transport, route model, or QML root is constructed. Registry lookup
 also rejects unknown runtime selection without changing the active or previous
@@ -97,9 +99,18 @@ profile/hold, and brightness truth, admits profile and debounced keyboard-
 brightness mutations from exact lineage, and contains no session action. The
 [Power route](power-settings.md) defines its fencing and authority boundary.
 
+Color owns one engine-singleton composition of the public Qt Display
+transport, a Display1 client, a Settings1 client scoped to
+`displays.colorAssignments` with its own transport, the C1 assignment store,
+the C1 discovery/import provider over XDG-derived roots, and the route model.
+It projects the live output inventory, the persisted assignment document, and
+the discovered profile catalog; assignment intents apply through the store's
+conflict/no-replay truth and no compositor application exists. The
+[Color route](color-settings.md) defines its fencing and authority boundary.
+
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
 hosts coexist so the window can cross the responsive threshold, but the
-inactive host's eight route Loaders are all inactive. Switching layouts or routes
+inactive host's nine route Loaders are all inactive. Switching layouts or routes
 cannot duplicate a page, its focus side effects, or its settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
@@ -120,7 +131,8 @@ The interaction contract is:
 - Ctrl+1, Ctrl+2, Ctrl+3, and Ctrl+4 select Notifications, Appearance,
   Display, and Network respectively; Ctrl+6 selects Audio in its appended
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
-  position; Ctrl+8 selects Power in its appended eighth position;
+  position; Ctrl+8 selects Power in its appended eighth position; Ctrl+0
+  selects Color in its appended ninth position;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
   Bluetooth must first release a discovery lease or Customize owns a dirty
@@ -159,18 +171,19 @@ ctest --test-dir build/dev --output-on-failure \
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
-- construction starts all eight route intents against an absent private bus and
+- construction starts all nine route intents against an absent private bus and
   requires each complete root to remain resident;
 - the installed row stages only `SettingsAppearanceRuntime`, removes host
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
   repeats that poison for the Network module and the Audio module, then
-  reinstalls and proves all eight routes, including the Customize catalogs and
-  Bluetooth and Power modules, from only the complete relocated prefix; and
+  reinstalls and proves all nine routes, including the Customize catalogs and
+  the Bluetooth, Power, and Color modules, from only the complete relocated
+  prefix; and
 - the same installed row repeats hostile-intent rejection.
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-
-service pages beyond the eight compiled routes, search, arbitrary deep links,
+service pages beyond the nine compiled routes, search, arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.

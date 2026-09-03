@@ -1,7 +1,7 @@
 # Settings route module staging for the private desktop component (DesktopVirtual).
 # Included by DesktopSessionTests.cmake inside its guarded block so the parent file stays
 # within the source-shape budget. Every shared Settings route module the Settings Center
-# links must be staged here (Appearance, Display, Network, Audio, Bluetooth, Power).
+# links must be staged here (Appearance, Display, Network, Audio, Bluetooth, Power, Color).
 
     qt_query_qml_module(
         qindaqt_settings_appearance_qml
@@ -226,6 +226,43 @@
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Power/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+    qt_query_qml_module(
+        qindaqt_settings_color_qml
+        QMLDIR _qindaqt_desktop_color_qmldir
+        TYPEINFO _qindaqt_desktop_color_typeinfo
+        QML_FILES _qindaqt_desktop_color_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_desktop_color_deploy_paths
+    )
+    install(
+        TARGETS
+            qindaqt_settings_color_qml
+            qindaqt_settings_color_qmlplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_desktop_color_qmldir}"
+            "${_qindaqt_desktop_color_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_desktop_color_qml_files
+            _qindaqt_desktop_color_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Color/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )

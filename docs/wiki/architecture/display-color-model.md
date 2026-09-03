@@ -271,9 +271,10 @@ typed truth:
 
 The composition root gives the store its own client scoped to the assignment
 key and serializes calls; the store never starts, stops, or refreshes the
-client and never talks D-Bus itself. Compositor application, the Settings
-surface that would edit drafts, and lineage verification of applied profile
-bytes remain later lanes.
+client and never talks D-Bus itself. The Settings surface that edits drafts
+is delivered by the [Color Settings route](../apps/color-settings.md);
+compositor application and lineage verification of applied profile bytes
+remain later lanes.
 
 ### Focused proof
 
