@@ -372,24 +372,89 @@ scale-incompatible rows and requires exactly the requested tagged pass; this
 prevents Qt Quick software-render state from crossing window lifetimes as
 specified by [ADR-0021](../adr/0021-isolate-controls-visual-rows.md). Each row
 waits through a named control's published QST transition duration, then checks
-the applied DPR and pixel dimensions before comparing reviewed PNG fixtures
-under two required named host-font substitutions, C locale, offscreen platform,
-and software rendering. This is environment determinism rather than a pin of
-repository-owned font bytes. The
-behavior gate separately proves reduced-motion duration projection. The gallery
+the applied DPR and pixel dimensions before comparing reviewed PNG fixtures.
+Glyphs render only from repository-owned font bytes: the fixture registers the
+Noto Sans Regular/SemiBold/Bold and Noto Sans Mono Regular files vendored
+under `tests/controls/fonts/` (SIL Open Font License 1.1) with
+`QFontDatabase::addApplicationFont`, verifies each registration exposes
+exactly the expected family, rewrites every theme in the product catalog
+(`data/themes/*.json`) with its `fontFamily`/`monoFontFamily` replaced by the
+registered families into a runtime pinned-theme directory (all other fields
+unchanged), and installs `QFont` substitutions for the original catalog names.
+The rewrite is required because `QFont::insertSubstitution` is only consulted
+when the requested family is absent from the host: with host Noto installed,
+requesting `Noto Sans` resolves the host face regardless of any substitution,
+which is exactly how the high-contrast theme bypassed the pin (measured
+against Qt 6.11). The vendored name records declare the repository-owned
+families `QindaQt Sans` and `QindaQt Sans Mono`, which no host-installed font
+can declare, so the fixture cannot collide with or be shadowed by host Noto
+however Qt or fontconfig order their matches; a host Noto package update
+cannot change the rendered bytes. The loader fixes the C locale and fails
+closed when a vendored file is missing, unreadable, renamed, carries invalid
+OpenType checksums, or a theme catalog file cannot be read, parsed, or
+rewritten. The row environment otherwise keeps the documented host fontconfig
+configuration, because an empty configuration re-wraps text and removes the
+fallback glyph the baselines contain instead of pinning bytes.
+
+Four focused rows guard the pin. `qindaqt.controls-font-pinning` requires the
+engine resolving the schema's `Inter` family to resolve to the
+repository-owned `QindaQt Sans` family and to serve a name table
+byte-identical to the vendored Regular file, requires direct requests for the
+registered families to serve the vendored bytes, verifies every pinned theme
+copy names only the registered families with every other field unchanged,
+and validates every vendored file's sfnt table directory checksums and
+`head.checkSumAdjustment` whole-font sum, so a renewal tool that rebuilds a
+font without restoring its checksums fails this row instead of shipping a
+malformed fixture. The three
+`qindaqt.controls-font-fixture-missing`, `-corrupt`, and `-wrongfamily` rows
+drive the missing-file, unreadable-file, and wrong-family failure branches of
+the fixture loader and require the process to abort with the matching
+diagnostic.
+
+Host-font independence is proven by a dedicated canary row,
+`qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact`, which reruns
+the theme row that previously bypassed the registered families under the
+checked-in
+`tests/controls/fontconfig/no-noto/fonts.conf` applied through
+`FONTCONFIG_FILE`. That configuration keeps the documented host fonts and
+rendering rules but rejects exactly the host families the theme catalog can
+name (`Noto Sans`, `Noto Sans Mono`), so a fixture that renders any host Noto
+byte drifts against the reviewed baseline and fails. Setting
+`FONTCONFIG_FILE=/dev/null` is not a proof of anything: fontconfig cannot
+parse it and silently falls back to the standard host configuration, so such
+a run passes regardless of a host-font bypass. The canary row also points
+`XDG_CACHE_HOME` into the test build tree so fontconfig never writes to the
+user's cache. Regenerating baselines with
+`QINDAQT_UPDATE_CONTROLS_BASELINES=1` re-renders pixels when the vendored
+bytes, themes, QML, or rendering change, and the resulting baseline diff must
+be reviewed.
+The behavior gate separately proves reduced-motion duration projection. The gallery
 includes explicit error, busy, disabled, degraded, checked, and ordinary states
 so those appearances are reviewable in every row.
-The staged consumer removes its previous build-confined prefix, installs the
-current tree, requires the exact 14 Qt-generated QML deploy paths with no extra
-QML source, and resolves representative Controls properties through strict
-tooling analysis and compiled runtime loading only from that installed QML root.
+The staged consumer removes its previous build-confined prefix, installs only
+the `ControlsQmlModules` component (declared in `tests/controls/CMakeLists`
+because the product rules for those two QML modules live in the broader
+`SettingsAppearanceRuntime` component), requires the exact 14 Qt-generated QML
+deploy paths with no extra QML source, and resolves representative Controls
+properties through strict tooling analysis and compiled runtime loading only
+from that installed QML root.
 Ambient source/build QML paths are absent. A separate no-threshold benchmark reports the median
 PSS delta of a token-plus-controls gallery versus a matched bare Qt Quick
 process from exact `smaps_rollup` PIDs.
 
-The complete `^qindaqt\.controls-` prefix currently discovers 29 tests: one
-behavior test, the 25 visual rows, source policy, staged installed import, and
-the PSS measurement.
+The complete `^qindaqt\.controls-` prefix currently discovers 34 tests: one
+behavior test, the 25 visual rows, the no-Noto canary row, font pinning,
+three font-fixture fail-closed controls, source policy, staged installed
+import, and the PSS measurement. The selector is runnable after a focused
+build of exactly these targets:
+
+```sh
+cmake --build build/dev --parallel 3 --target \
+  qindaqt_controls_visual_tests qindaqt_controls_behavior_tests \
+  qindaqt_controls_font_pinning_tests qindaqt_controls_font_fixture_negative_tests \
+  qindaqt_controls_memory_probe qindaqt_controls_bare_memory_probe \
+  qindaqt_controls_qml qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+```
 
 This boundary is software-renderer, package, and process-memory evidence. Live
 AT-SPI, compositor focus, physical DPI/GPU output, Settings/AppShell/service
