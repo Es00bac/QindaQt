@@ -21,7 +21,6 @@ struct ImportWriteOutcome
     enum class Status
     {
         Written,
-        AlreadyPresent,
         Failed,
     };
     Status status = Status::Failed;
@@ -39,11 +38,6 @@ struct ImportWriteOutcome
 // path separator or ".." can reach this layer.
 ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString &fileName,
                                           const QByteArray &content);
-
-// Removes a stale dot-prefixed temporary file left by an interrupted import.
-// A non-directory collision at the temporary name is removed by name without
-// following it; a directory collision fails closed.
-bool removeStaleImportTemporary(const QString &userRoot, const QString &fileName);
 
 // Returns the stored file's SHA-256 content digest when the destination is a
 // regular, non-symlink file that is byte-identical to the supplied content;

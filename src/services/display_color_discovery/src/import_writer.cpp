@@ -203,21 +203,6 @@ ImportWriteOutcome atomicWriteProfileCopy(const QString &userRoot, const QString
     return {ImportWriteOutcome::Status::Written, {}};
 }
 
-bool removeStaleImportTemporary(const QString &userRoot, const QString &fileName)
-{
-    const ScopedFd root = openValidatedRoot(userRoot);
-    if (root.get() < 0) {
-        return false;
-    }
-    const QByteArray encodedTemporary = QFile::encodeName(temporaryNameFor(fileName));
-    struct stat metadata {};
-    if (::fstatat(root.get(), encodedTemporary.constData(), &metadata, AT_SYMLINK_NOFOLLOW) != 0) {
-        return errno == ENOENT;
-    }
-    return !S_ISDIR(metadata.st_mode) &&
-           ::unlinkat(root.get(), encodedTemporary.constData(), 0) == 0;
-}
-
 std::optional<QByteArray> existingFileDigestIfIdentical(const QString &root, const QString &fileName,
                                                         const QByteArray &content)
 {

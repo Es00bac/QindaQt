@@ -175,10 +175,12 @@ Its authority contract:
   root; exceeding a bound sets `complete = false` with a diagnostic instead of
   scanning forever.
 - Per file it stats, then reads only the 128-byte ICC header plus a bounded
-  tag table and description tag. Hostile or damaged files — empty,
-  truncated, garbage, mislabeled (declared size disagreeing with actual),
-  declared oversize, symlinked, or C0-invalid metadata — produce bounded
-  diagnostics and are skipped; they never abort the scan.
+  tag table and description tag. A tag table or description tag that exceeds
+  its scan bound is truncated or skipped with an Info diagnostic while the
+  profile stays catalogable under its file-derived name. Hostile or damaged
+  files — empty, truncated, garbage, mislabeled (declared size disagreeing
+  with actual), declared oversize, symlinked, or C0-invalid metadata —
+  produce bounded diagnostics and are skipped; they never abort the scan.
 - The declared profile size must equal the actual file size exactly;
   discovered descriptors keep `checksumSha256` empty because the module never
   interprets or digests the profile body. Profile identity is the sanitized
@@ -196,7 +198,9 @@ Its authority contract:
 
 `importUserProfile` validates the complete source (regular, non-symlink,
 readable, within [128 bytes, 4 MiB], valid header, declared equal to actual,
-C0-safe destination name) before touching the user root, computes the
+C0-safe destination name — dot-prefixed names are refused, because discovery
+ignores dot names and a stored file would otherwise never re-enter the
+catalog) before touching the user root, computes the
 SHA-256 content digest as the lineage fingerprint (stored in the descriptor's
 `checksumSha256`), and copies the exact bytes into the injected user root
 through the ADR-0051 pattern: an existing non-symlink, effective-user-owned,

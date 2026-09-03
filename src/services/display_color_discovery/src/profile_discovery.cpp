@@ -64,7 +64,7 @@ struct ExaminedFile
     };
     Outcome outcome = Outcome::Skipped;
     DiscoveredProfile profile;
-    DiscoveryDiagnostic diagnostic;
+    QList<DiscoveryDiagnostic> diagnostics;
 };
 
 ExaminedFile examineCandidateFile(const QString &fullPath, DiscoveryOrigin origin,
@@ -73,44 +73,45 @@ ExaminedFile examineCandidateFile(const QString &fullPath, DiscoveryOrigin origi
     ExaminedFile examined;
     const QFileInfo info(fullPath);
     if (info.isSymLink()) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-is-symlink"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-is-symlink"), fullPath));
         return examined;
     }
     if (!info.isFile()) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("not-regular-file"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("not-regular-file"), fullPath));
         return examined;
     }
     const quint64 fileSize = static_cast<quint64>(info.size());
     if (fileSize < IccHeaderSizeBytes) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-too-small"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-too-small"), fullPath));
         return examined;
     }
     if (fileSize > MaxIccProfileSizeBytes) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-oversized"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-oversized"), fullPath));
         return examined;
     }
 
     QFile file(fullPath);
     if (!file.open(QIODevice::ReadOnly)) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-unreadable"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-unreadable"), fullPath));
         return examined;
     }
     const QByteArray headerBytes = file.read(IccHeaderSizeBytes);
     if (headerBytes.size() != static_cast<qsizetype>(IccHeaderSizeBytes)) {
-        examined.diagnostic =
-            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-truncated"), fullPath);
+        examined.diagnostics.append(
+            diagnostic(DiscoverySeverity::Warning, QStringLiteral("file-truncated"), fullPath));
         return examined;
     }
 
     const auto [status, summary] = validateIccHeader(headerBytes, static_cast<quint32>(fileSize));
     if (status != ProfileValidationStatus::Valid) {
-        examined.diagnostic = diagnostic(DiscoverySeverity::Warning, QStringLiteral("invalid-header"),
-                                         fullPath, iccStatusDetail(status));
+        examined.diagnostics.append(diagnostic(DiscoverySeverity::Warning,
+                                               QStringLiteral("invalid-header"), fullPath,
+                                               iccStatusDetail(status)));
         return examined;
     }
     // AGENT-GUARD: Exact declared-versus-actual size equality is the C0
@@ -118,11 +119,11 @@ ExaminedFile examineCandidateFile(const QString &fullPath, DiscoveryOrigin origi
     // its real size is truncated or mislabeled provenance and must never be
     // published as import metadata.
     if (summary.profileSize != static_cast<quint32>(fileSize)) {
-        examined.diagnostic =
+        examined.diagnostics.append(
             diagnostic(DiscoverySeverity::Warning, QStringLiteral("size-mismatch"), fullPath,
                        QStringLiteral("declared %1, actual %2")
                            .arg(summary.profileSize)
-                           .arg(fileSize));
+                           .arg(fileSize)));
         return examined;
     }
 
@@ -149,10 +150,20 @@ ExaminedFile examineCandidateFile(const QString &fullPath, DiscoveryOrigin origi
     const ProfileValidationStatus descriptorStatus =
         validateProfileDescriptor(profileResult.profile.descriptor);
     if (descriptorStatus != ProfileValidationStatus::Valid) {
-        examined.diagnostic = diagnostic(DiscoverySeverity::Warning,
-                                         QStringLiteral("descriptor-invalid"), fullPath,
-                                         iccStatusDetail(descriptorStatus));
+        examined.diagnostics.append(diagnostic(DiscoverySeverity::Warning,
+                                               QStringLiteral("descriptor-invalid"), fullPath,
+                                               iccStatusDetail(descriptorStatus)));
         return examined;
+    }
+    // Scan bounds degrade a still-catalogable profile with diagnostics rather
+    // than growing reads without limit (ADR-0057).
+    if (metadata.tagTableTruncated) {
+        profileResult.diagnostics.append(
+            diagnostic(DiscoverySeverity::Info, QStringLiteral("tag-table-truncated"), fullPath));
+    }
+    if (metadata.descriptionTagOversized) {
+        profileResult.diagnostics.append(diagnostic(
+            DiscoverySeverity::Info, QStringLiteral("description-tag-oversized"), fullPath));
     }
     return profileResult;
 }
@@ -228,9 +239,8 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
                                                          m_limits);
             if (examined.outcome == ExaminedFile::Outcome::Profile) {
                 examinedProfiles.append(examined.profile);
-            } else {
-                result.diagnostics.append(examined.diagnostic);
             }
+            result.diagnostics.append(examined.diagnostics);
         }
     }
 
@@ -277,7 +287,9 @@ DiscoveryResult ProfileDiscovery::discoverCatalog() const
     for (const DiscoveredProfile &profile : examinedProfiles) {
         // First occurrence in deterministic scan order wins; exact-equal
         // duplicates are interchangeable for lookup purposes.
-        profileById.insert(profile.descriptor.profileId, profile);
+        if (!profileById.contains(profile.descriptor.profileId)) {
+            profileById.insert(profile.descriptor.profileId, profile);
+        }
     }
     for (const IccProfileDescriptor &descriptor : normalized) {
         const auto it = profileById.find(descriptor.profileId);

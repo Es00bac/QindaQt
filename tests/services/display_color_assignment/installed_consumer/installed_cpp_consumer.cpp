@@ -16,12 +16,13 @@ class NullTransport final : public QindaQt::Services::SettingsClient::SettingsTr
 {
     Q_OBJECT
 public:
-    bool start(QString *error) override
+    // A null transport starts successfully but never supplies a snapshot, so
+    // the client stays without confirmed authority and the store must refuse
+    // writes fail-closed — proving the store works over the client seam with
+    // no D-Bus daemon.
+    bool start(QString *) override
     {
-        if (error != nullptr) {
-            *error = QStringLiteral("no bus in consumer proof");
-        }
-        return false;
+        return true;
     }
     void stop() override {}
     void requestSnapshot(quint64, const QString &, const QStringList &) override {}

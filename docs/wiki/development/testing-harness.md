@@ -1743,15 +1743,18 @@ assignment rows extend the same selector with:
   classification, hostile-file diagnostics (empty, truncated, garbage,
   mislabeled declared/actual size, declared oversize, planted symlinks,
   unsafe file names), order-independent conflicting-duplicate rejection,
-  exact-duplicate collapse, bounded enumeration truth, 'desc'/'mluc'
-  description parsing, and the unproven-semantics guarantee that a scanned
-  profile can never become the truthful sRGB default.
+  exact-duplicate collapse, bounded enumeration truth, case-insensitive
+  `*.icc`/`*.icm` acceptance, silent dot-prefixed-name exclusion, bounded
+  tag-table/description degradation diagnostics, 'desc'/'mluc' description
+  parsing, and the unproven-semantics guarantee that a scanned profile can
+  never become the truthful sRGB default.
 - `qindaqt.display-color-discovery-import` — atomic import truth: validated
   copies with SHA-256 lineage fingerprints, idempotent re-import, rejection
-  atomicity for hostile sources, destination conflicts, interrupted-write
-  recovery (stale temporary removal, directory collision fail-closed),
-  missing/unusable injected user roots, and the discovery round trip of an
-  imported profile.
+  atomicity for hostile sources (including dot-prefixed destination names,
+  which discovery could never re-list), destination conflicts,
+  interrupted-write recovery (stale temporary removal, directory collision
+  fail-closed), missing/unusable injected user roots, and the discovery
+  round trip of an imported profile.
 - `qindaqt.display-color-discovery-boundary` and
   `qindaqt.display-color-discovery-boundary-poison` — the discovery module's
   no-transport/no-GUI/no-Display1/no-Settings dependency policy and its
