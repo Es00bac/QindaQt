@@ -43,6 +43,8 @@ from desktop_session_sandbox import (
 SKIP_CODE = 77
 LANE_ENVIRONMENT = "QINDAQT_PRIVATE_RUNTIME_LANE"
 LANE_VALUE = "interactive-virtual-desktop"
+DEFAULT_ATTEMPT_TIMEOUT_SECONDS = 70
+MAXIMUM_ATTEMPT_TIMEOUT_SECONDS = 100
 
 
 @dataclass(frozen=True)
@@ -291,6 +293,16 @@ def archive_attempt(
 def run_outer(arguments: argparse.Namespace) -> int:
     if not arguments.build_root or not arguments.source_root or not arguments.bwrap:
         raise SandboxContractError("outer mode requires build/source roots and bubblewrap")
+    attempt_timeout = getattr(
+        arguments, "attempt_timeout_seconds", DEFAULT_ATTEMPT_TIMEOUT_SECONDS
+    )
+    if (
+        isinstance(attempt_timeout, bool)
+        or not isinstance(attempt_timeout, int)
+        or attempt_timeout < 1
+        or attempt_timeout > MAXIMUM_ATTEMPT_TIMEOUT_SECONDS
+    ):
+        raise SandboxContractError("sandbox attempt timeout is outside 1..100 seconds")
     run_id = arguments.run_id or secrets.token_hex(16)
     paths = create_run_root(arguments.build_root, run_id)
     result_root: Path | None = None
@@ -322,11 +334,11 @@ def run_outer(arguments: argparse.Namespace) -> int:
             )
             identity = capture_process_identity("sandbox", process.pid, [arguments.bwrap])
             try:
-                output, _ = process.communicate(timeout=70)
+                output, _ = process.communicate(timeout=attempt_timeout)
             except subprocess.TimeoutExpired:
                 terminate_processes([identity])
                 output, _ = process.communicate(timeout=2)
-                output += "\nsandbox exceeded its 70 second deadline\n"
+                output += f"\nsandbox exceeded its {attempt_timeout} second deadline\n"
                 return_code = 1
                 timed_out = True
             else:
@@ -334,7 +346,7 @@ def run_outer(arguments: argparse.Namespace) -> int:
                 timed_out = False
             outcome = "success" if return_code == 0 else ("timeout" if timed_out else "failure")
             failure = None if return_code == 0 else (
-                "sandbox exceeded its 70 second deadline"
+                f"sandbox exceeded its {attempt_timeout} second deadline"
                 if timed_out else f"sandbox exited with status {return_code}"
             )
             result = AttemptResult(
@@ -384,6 +396,10 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--kscreen-doctor", type=Path)
     parser.add_argument("--kscreen-wayland-backend", type=Path)
     parser.add_argument("--run-id", default="")
+    parser.add_argument(
+        "--attempt-timeout-seconds", type=int,
+        default=DEFAULT_ATTEMPT_TIMEOUT_SECONDS,
+    )
     parser.add_argument("--print-command-json", action="store_true")
     return parser.parse_args()
 

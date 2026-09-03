@@ -28,6 +28,39 @@ set_tests_properties(
     desktop.virtual.panel-visibility.validator-unit
     PROPERTIES LABELS "unit;session;screenshot;wayland;layer-shell;visibility"
 )
+add_test(
+    NAME desktop.virtual.panel-visibility.capture-loader-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "PYTHONDONTWRITEBYTECODE=1"
+        "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_panel_visibility_capture_loader_unit.py"
+)
+set_tests_properties(
+    desktop.virtual.panel-visibility.capture-loader-unit
+    PROPERTIES LABELS "unit;session;screenshot;wayland;visibility"
+)
+qt_add_executable(
+    qindaqt-panel-visibility-capture-loader-tests
+    "${CMAKE_CURRENT_SOURCE_DIR}/tst_panelvisibilitycaptureprocess.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycaptureprocess.cpp"
+)
+target_link_libraries(
+    qindaqt-panel-visibility-capture-loader-tests PRIVATE Qt6::Core Qt6::Test
+)
+set_target_properties(
+    qindaqt-panel-visibility-capture-loader-tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt-panel-visibility-capture-loader-tests)
+add_test(
+    NAME desktop.virtual.panel-visibility.capture-loader-cpp-unit
+    COMMAND qindaqt-panel-visibility-capture-loader-tests
+)
+set_tests_properties(
+    desktop.virtual.panel-visibility.capture-loader-cpp-unit
+    PROPERTIES LABELS "unit;session;screenshot;wayland;visibility"
+)
 
 if(
     TARGET qindaqt-desktop-session-probe
@@ -37,6 +70,7 @@ if(
     qt_add_executable(
         qindaqt-panel-visibility-session-probe
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionprobe.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycaptureprocess.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionwindowproof.cpp"
     )
@@ -79,6 +113,7 @@ if(
                 --outer
                 --interactive
                 --scenario-id "${_panel_visibility_row}"
+                --attempt-timeout-seconds 100
                 --build-root "${CMAKE_BINARY_DIR}"
                 --source-root "${PROJECT_SOURCE_DIR}"
                 ${_qindaqt_desktop_common_arguments}

@@ -189,6 +189,16 @@ class SandboxTests(unittest.TestCase):
         self.assertFalse(FORBIDDEN_ENVIRONMENT.intersection(environment))
         self.assertEqual(environment["DBUS_SESSION_BUS_ADDRESS"], "unix:path=/run/user/1000/bus")
         self.assertEqual(environment["PATH"], "/opt/qindaqt/bin:/usr/bin")
+        self.assertEqual(environment["QT_NO_XDG_DESKTOP_PORTAL"], "1")
+        self.assertEqual(environment["GTK_USE_PORTAL"], "0")
+
+    def test_attempt_timeout_rejects_unbounded_value(self) -> None:
+        arguments = Namespace(
+            build_root=Path("/unused"), source_root=Path("/unused"),
+            bwrap=Path("/unused"), attempt_timeout_seconds=101,
+        )
+        with self.assertRaisesRegex(SandboxContractError, "outside 1..100"):
+            run_outer(arguments)
 
     def test_run_root_cleanup_requires_exact_sentinel(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
