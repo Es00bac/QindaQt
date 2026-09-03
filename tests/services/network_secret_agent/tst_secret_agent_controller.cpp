@@ -103,6 +103,41 @@ request(QString setting = QStringLiteral("802-11-wireless-security")) {
           0x1U};
 }
 
+QVariantList variantList(const qsizetype size) {
+  QVariantList values;
+  values.reserve(size);
+  for (qsizetype index = 0; index < size; ++index) {
+    values.append(true);
+  }
+  return values;
+}
+
+QVariantMap variantMap(const qsizetype size) {
+  QVariantMap values;
+  for (qsizetype index = 0; index < size; ++index) {
+    values.insert(QStringLiteral("k%1").arg(index, 3, 10, QLatin1Char('0')),
+                  true);
+  }
+  return values;
+}
+
+QVariantHash variantHash(const qsizetype size) {
+  QVariantHash values;
+  values.reserve(size);
+  for (qsizetype index = 0; index < size; ++index) {
+    values.insert(QStringLiteral("k%1").arg(index, 3, 10, QLatin1Char('0')),
+                  true);
+  }
+  return values;
+}
+
+QVariant nestedLists(QVariant leaf, const int count) {
+  for (int index = 0; index < count; ++index) {
+    leaf = QVariantList{std::move(leaf)};
+  }
+  return leaf;
+}
+
 } // namespace
 
 class SecretAgentControllerTest final : public QObject {
@@ -112,6 +147,10 @@ private Q_SLOTS:
   void refusesNonInteractiveUnknownAndForeignRequests();
   void acceptsAccountedNestedConnectionValues();
   void refusesNestedOverBudgetConnectionBeforePrompt();
+  void enforcesNestedContainerCountBounds_data();
+  void enforcesNestedContainerCountBounds();
+  void enforcesVariantDepthBounds_data();
+  void enforcesVariantDepthBounds();
   void returnsOnlyRequestedFieldsAndStorageChoice();
   void refusesDuplicateAndMalformedPromptValues();
   void cancelsByKeyAndTimeout();
@@ -197,6 +236,94 @@ void SecretAgentControllerTest::
       }));
   QCOMPARE(results, {SecretAgentResult::NoSecrets});
   QVERIFY(prompt.requests.isEmpty());
+}
+
+void SecretAgentControllerTest::enforcesNestedContainerCountBounds_data() {
+  QTest::addColumn<QVariant>("payload");
+  QTest::addColumn<bool>("accepted");
+
+  QTest::newRow("variant-list-256") << QVariant(variantList(256)) << true;
+  QTest::newRow("variant-list-257") << QVariant(variantList(257)) << false;
+  QTest::newRow("variant-map-256") << QVariant(variantMap(256)) << true;
+  QTest::newRow("variant-map-257") << QVariant(variantMap(257)) << false;
+  QTest::newRow("variant-hash-256") << QVariant(variantHash(256)) << true;
+  QTest::newRow("variant-hash-257") << QVariant(variantHash(257)) << false;
+  QTest::newRow("string-list-256")
+      << QVariant(QStringList(256, QString())) << true;
+  QTest::newRow("string-list-257")
+      << QVariant(QStringList(257, QString())) << false;
+}
+
+void SecretAgentControllerTest::enforcesNestedContainerCountBounds() {
+  QFETCH(QVariant, payload);
+  QFETCH(bool, accepted);
+  FakePrompt prompt;
+  FakeAuthority authority;
+  QList<SecretAgentResult> results;
+  SecretAgentController controller(prompt, authority);
+  auto candidate = request();
+  candidate.connection[QStringLiteral("802-11-wireless-security")]
+                      [QStringLiteral("vendor-payload")] = std::move(payload);
+
+  const bool admitted = controller.requestSecrets(
+      candidate, [&results](const SecretAgentResult result, SecretReply reply) {
+        reply.wipe();
+        results.append(result);
+      });
+  QCOMPARE(admitted, accepted);
+  if (accepted) {
+    QCOMPARE(prompt.requests.size(), 1);
+    controller.cancel(candidate.connectionPath, candidate.settingName);
+  } else {
+    QVERIFY(prompt.requests.isEmpty());
+  }
+  QCOMPARE(results.size(), 1);
+  QCOMPARE(results.first(), accepted ? SecretAgentResult::UserCanceled
+                                     : SecretAgentResult::NoSecrets);
+}
+
+void SecretAgentControllerTest::enforcesVariantDepthBounds_data() {
+  QTest::addColumn<QVariant>("payload");
+  QTest::addColumn<bool>("accepted");
+
+  // AGENT-GUARD: Retain both sides of each policy comparison. The proof table
+  // promises exact maximum-depth behavior, not merely rejection of deep input.
+  QTest::newRow("variant-depth-8")
+      << nestedLists(QByteArray("leaf"), 8) << true;
+  QTest::newRow("variant-depth-9")
+      << nestedLists(QByteArray("leaf"), 9) << false;
+  QTest::newRow("string-list-depth-7")
+      << nestedLists(QStringList{QStringLiteral("leaf")}, 7) << true;
+  QTest::newRow("string-list-depth-8")
+      << nestedLists(QStringList{QStringLiteral("leaf")}, 8) << false;
+}
+
+void SecretAgentControllerTest::enforcesVariantDepthBounds() {
+  QFETCH(QVariant, payload);
+  QFETCH(bool, accepted);
+  FakePrompt prompt;
+  FakeAuthority authority;
+  QList<SecretAgentResult> results;
+  SecretAgentController controller(prompt, authority);
+  auto candidate = request();
+  candidate.connection[QStringLiteral("802-11-wireless-security")]
+                      [QStringLiteral("vendor-payload")] = std::move(payload);
+
+  const bool admitted = controller.requestSecrets(
+      candidate, [&results](const SecretAgentResult result, SecretReply reply) {
+        reply.wipe();
+        results.append(result);
+      });
+  QCOMPARE(admitted, accepted);
+  if (accepted) {
+    QCOMPARE(prompt.requests.size(), 1);
+    controller.cancel(candidate.connectionPath, candidate.settingName);
+  } else {
+    QVERIFY(prompt.requests.isEmpty());
+  }
+  QCOMPARE(results.size(), 1);
+  QCOMPARE(results.first(), accepted ? SecretAgentResult::UserCanceled
+                                     : SecretAgentResult::NoSecrets);
 }
 
 void SecretAgentControllerTest::returnsOnlyRequestedFieldsAndStorageChoice() {
