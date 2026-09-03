@@ -162,9 +162,11 @@ authority queries `CanPowerOff`, `CanReboot`, `CanSuspend`, and
 submitted action re-queries its matching `Can*` from the exact current owner
 immediately before dispatch. Only that per-operation `yes` is authoritative.
 Action calls always use `interactive=false`, duplicate operation IDs never
-redispatch, and owner loss during authorization or execution completes the
-operation as uncertain. Power1 v1 has no session-action wire fields, so PB-3
-must compose this boundary in the shell.
+redispatch within one run, and owner loss during authorization or execution
+completes the operation as uncertain. Restart advances the generation before
+operation IDs may be reused; replies from the stopped generation are ignored
+before inspecting or mutating current-generation pending state. Power1 v1 has
+no session-action wire fields, so PB-3 must compose this boundary in the shell.
 
 The sysfs adapter enumerates only below its injected root. It publishes exact
 raw maximum and observed values, preferring `actual_brightness`, and reports

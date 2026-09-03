@@ -113,6 +113,18 @@ void FakeLogindService::setCanAnswers(const QString &powerOff, const QString &re
     m_canHibernate = hibernate;
 }
 
+void FakeLogindService::setDeferNextCanPowerOffReply(const bool defer)
+{
+    m_deferNextCanPowerOffReply = defer;
+}
+
+void FakeLogindService::completeOldestDeferredCanPowerOffReply()
+{
+    if (!m_deferredCanPowerOffReplies.isEmpty()) {
+        m_connection.send(m_deferredCanPowerOffReplies.takeFirst());
+    }
+}
+
 void FakeLogindService::setFailHibernate(const bool fail)
 {
     m_failHibernate = fail;
@@ -210,6 +222,12 @@ bool FakeLogindService::handleMessage(const QDBusMessage &message,
                                                                      : m_canHibernate;
         QDBusMessage reply = message.createReply();
         reply.setArguments({QVariant(answer)});
+        if (member == QStringLiteral("CanPowerOff")
+            && m_deferNextCanPowerOffReply) {
+            m_deferNextCanPowerOffReply = false;
+            m_deferredCanPowerOffReplies.push_back(reply);
+            return true;
+        }
         m_connection.send(reply);
         return true;
     }

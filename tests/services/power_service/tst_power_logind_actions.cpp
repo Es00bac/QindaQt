@@ -20,6 +20,7 @@ struct ActionRow
     QDBusConnection fakeConnection{QStringLiteral("invalid-fake")};
     std::unique_ptr<Upstream::LogindActionAuthority> authority;
     QDBusConnection clientConnection{QStringLiteral("invalid-client")};
+    quint64 generation = 0;
 
     bool start(const QString &canPowerOff = QStringLiteral("yes"),
                const QString &canReboot = QStringLiteral("no"),
@@ -38,7 +39,7 @@ struct ActionRow
         fake->setCanAnswers(canPowerOff, canReboot, canSuspend, canHibernate);
         clientConnection = bus->connection;
         authority = std::make_unique<Upstream::LogindActionAuthority>(clientConnection);
-        authority->start();
+        generation = authority->start();
         return true;
     }
 };
@@ -59,6 +60,7 @@ private Q_SLOTS:
     void errorReplyCompletesFailed();
     void ownerReplacementMidFlightCompletesUncertain();
     void duplicateOperationIdDoesNotRedispatchOrDoubleComplete();
+    void staleAuthorizationReplyCannotEraseRestartedOperation();
     void stoppedAuthorityRefusesActions();
     void absentAuthorityAdmitsNothing();
 };
@@ -221,6 +223,49 @@ void PowerLogindActionTests::duplicateOperationIdDoesNotRedispatchOrDoubleComple
     row.fake->completeDeferredActionReply();
     QTRY_COMPARE(finished.size(), 1);
     QCOMPARE(finished.constFirst().at(1).toULongLong(), quint64(18));
+}
+
+void PowerLogindActionTests::staleAuthorizationReplyCannotEraseRestartedOperation()
+{
+    ActionRow row;
+    QVERIFY(row.start());
+    QTRY_VERIFY(row.authority->admittedActions().powerOff);
+    const quint64 firstGeneration = row.generation;
+    QSignalSpy finished(row.authority.get(),
+                        &Upstream::LogindActionAuthority::actionFinished);
+
+    row.fake->setDeferNextCanPowerOffReply(true);
+    row.authority->submitAction(77, Upstream::SessionAction::PowerOff);
+    QTRY_COMPARE(row.fake->deferredCanPowerOffReplyCount(), qsizetype(1));
+
+    row.authority->stop();
+    QCOMPARE(finished.size(), 1);
+    QCOMPARE(finished.constFirst().at(0).toULongLong(), firstGeneration);
+    QCOMPARE(finished.constFirst().at(1).toULongLong(), quint64(77));
+    QCOMPARE(finished.constFirst().at(2).value<CollaboratorOutcome>().status,
+             CollaboratorStatus::Uncertain);
+
+    const quint64 secondGeneration = row.authority->start();
+    QVERIFY(secondGeneration != firstGeneration);
+    row.fake->setDeferNextCanPowerOffReply(true);
+    row.authority->submitAction(77, Upstream::SessionAction::PowerOff);
+    QTRY_COMPARE(row.fake->deferredCanPowerOffReplyCount(), qsizetype(2));
+    QTRY_VERIFY(row.authority->admittedActions().powerOff);
+
+    // The old generation must be observationally inert: it cannot consume the
+    // current run's pending entry even though both operations use ID 77.
+    row.fake->completeOldestDeferredCanPowerOffReply();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    QCOMPARE(finished.size(), 1);
+    QCOMPARE(row.fake->actionCalls.size(), 0);
+
+    row.fake->completeOldestDeferredCanPowerOffReply();
+    QTRY_COMPARE(finished.size(), 2);
+    QCOMPARE(finished.constLast().at(0).toULongLong(), secondGeneration);
+    QCOMPARE(finished.constLast().at(1).toULongLong(), quint64(77));
+    QCOMPARE(finished.constLast().at(2).value<CollaboratorOutcome>().status,
+             CollaboratorStatus::Succeeded);
+    QCOMPARE(row.fake->actionCalls.size(), 1);
 }
 
 void PowerLogindActionTests::stoppedAuthorityRefusesActions()
