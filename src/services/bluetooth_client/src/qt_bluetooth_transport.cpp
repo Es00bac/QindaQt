@@ -247,6 +247,37 @@ void QtBluetoothTransport::submitOperation(const QString &owner, const quint64 r
         method = QStringLiteral("Disconnect");
         arguments = {QVariant::fromValue(request.target)};
         break;
+    case OperationKind::Pair:
+        method = QStringLiteral("Pair");
+        arguments = {QVariant::fromValue(request.target)};
+        break;
+    case OperationKind::CancelPairing:
+        method = QStringLiteral("CancelPairing");
+        arguments = {QVariant::fromValue(request.target)};
+        break;
+    case OperationKind::RemoveDevice:
+        method = QStringLiteral("Remove");
+        arguments = {QVariant::fromValue(request.target)};
+        break;
+    case OperationKind::SetTrusted:
+        method = QStringLiteral("SetTrusted");
+        arguments = {QVariant::fromValue(request.target), request.trusted};
+        break;
+    case OperationKind::ReplyConfirmation:
+        method = QStringLiteral("ReplyConfirmation");
+        arguments = {request.accepted};
+        break;
+    case OperationKind::ReplyPasskey:
+        method = QStringLiteral("ReplyPasskey");
+        arguments = {pairingInputString(request.input, request.inputSize).toUInt()};
+        break;
+    case OperationKind::ReplyPin:
+        method = QStringLiteral("ReplyPin");
+        arguments = {pairingInputString(request.input, request.inputSize)};
+        break;
+    case OperationKind::CancelPrompt:
+        method = QStringLiteral("CancelPrompt");
+        break;
     default:
     {
         const QString reason = QStringLiteral("malformed-request");

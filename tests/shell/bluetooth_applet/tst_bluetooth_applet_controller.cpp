@@ -61,6 +61,8 @@ private Q_SLOTS:
     void malformedReleaseNoLeaseRetainsLease();
     void successWaitsForSnapshotConvergence();
     void ownerReplacementClearsTruthLeaseAndRequestWithoutReplay();
+    void pairingConfirmationRoundTrip_data();
+    void pairingConfirmationRoundTrip();
 };
 
 void BluetoothAppletControllerTests::projectsOnlyOpaqueBoundedRows()
@@ -413,6 +415,49 @@ void BluetoothAppletControllerTests::ownerReplacementClearsTruthLeaseAndRequestW
     QCOMPARE(controller.phase(), QStringLiteral("ready"));
     QCoreApplication::processEvents();
     QCOMPARE(transport.submissions.size(), 2);
+}
+
+void BluetoothAppletControllerTests::pairingConfirmationRoundTrip_data()
+{
+    QTest::addColumn<bool>("accepted");
+    QTest::newRow("confirm") << true;
+    QTest::newRow("cancel") << false;
+}
+
+void BluetoothAppletControllerTests::pairingConfirmationRoundTrip()
+{
+    QFETCH(bool, accepted);
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    Bluetooth::Snapshot prompt = bluetoothClientSnapshot();
+    prompt.pairingPrompt = {
+        .kind = Bluetooth::PairingPromptKind::ConfirmPasskey,
+        .device = prompt.devices.constFirst().handle,
+        .detail = QStringLiteral("123456"),
+        .serviceUuid = {},
+        .entered = 0,
+    };
+    publishReady(client, transport, prompt);
+
+    QVERIFY(controller.pairingPromptVisible());
+    QVERIFY(controller.pairingConfirmationAvailable());
+    QVERIFY(controller.pairingPromptText().contains(QStringLiteral("123456")));
+    QVERIFY(accepted ? controller.confirmPrompt() : controller.cancelPrompt());
+    QVERIFY(controller.pairingReplyPending());
+    QCOMPARE(transport.submissions.size(), 1);
+    const auto response = transport.submissions.constFirst();
+    QCOMPARE(response.request.kind, Bluetooth::OperationKind::ReplyConfirmation);
+    QCOMPARE(response.request.accepted, accepted);
+    transport.emitOperationReply(
+        kOwner, response.requestId, true,
+        resultFor(response, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("prompt-replied")));
+    QTRY_VERIFY(!controller.pairingReplyPending());
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, bluetoothClientSnapshot(61, 6));
+    QTRY_VERIFY(!controller.pairingPromptVisible());
 }
 
 QTEST_GUILESS_MAIN(BluetoothAppletControllerTests)

@@ -5,6 +5,7 @@
 #include <qindaqt/services/bluetooth_bluez_adapter/bluez_adapter_backend.h>
 
 #include "bluez_object_store.h"
+#include "bluez_pairing_agent.h"
 #include "bluez_transport.h"
 
 #include <QtCore/QHash>
@@ -31,8 +32,15 @@ inline size_t qHash(const BluezLeaseKey &key, const size_t seed) noexcept
 // each source retain one cohesive responsibility below the source-shape limit.
 struct BluezAdapterBackend::State
 {
-    explicit State(const QDBusConnection &connection, QObject *transportParent)
+    explicit State(const QDBusConnection &connection, QObject *transportParent,
+                   const int promptTimeoutMs)
         : transport(connection, transportParent)
+        , pairingAgent(connection,
+                       [this](const QString &path) {
+                           const auto *device = store.device(path);
+                           return device == nullptr ? QString{} : device->address;
+                       },
+                       promptTimeoutMs, transportParent)
     {
     }
 
@@ -48,12 +56,14 @@ struct BluezAdapterBackend::State
 
     Bluez::BluezTransport transport;
     Bluez::BluezObjectStore store;
+    Bluez::BluezPairingAgent pairingAgent;
     QHash<BluezLeaseKey, quint32> leases;
     QHash<QString, quint32> inflightAcquires;
     QHash<quint64, Outstanding> outstanding;
     QHash<QString, QList<Outstanding>> queuedAcquires;
     quint64 generation = 0;
     bool running = false;
+    BackendPairingPrompt pairingPrompt;
 
     [[nodiscard]] quint32 localLeaseTotal(const QString &adapterAddress) const
     {

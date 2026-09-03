@@ -36,6 +36,7 @@ target_sources(
     PRIVATE
         src/bluetooth_applet_controller.cpp
         src/bluetooth_applet_controller.h
+        src/bluetooth_applet_pairing.cpp
 )
 qt_add_qml_module(
     qindaqt_shell_bluetooth_applet_runtime
@@ -46,6 +47,7 @@ qt_add_qml_module(
         qml/BluetoothAdapterRow.qml
         qml/BluetoothApplet.qml
         qml/BluetoothDeviceRow.qml
+        qml/BluetoothPairingPrompt.qml
 )
 target_include_directories(
     qindaqt_shell_bluetooth_applet_runtime PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"

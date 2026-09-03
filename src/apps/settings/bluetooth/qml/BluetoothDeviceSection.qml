@@ -16,7 +16,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Devices")
-        description: qsTr("Connect and disconnect devices already paired by BlueZ")
+        description: qsTr("Pair discovered devices and manage paired devices")
     }
 
     Repeater {
@@ -75,12 +75,17 @@ ColumnLayout {
                     }
                 }
 
-                Label {
-                    Layout.fillWidth: deviceRow.width < 520
+                Button {
+                    objectName: "bluetoothPair_" + deviceRow.modelData.id
                     visible: !deviceRow.modelData.paired
-                    text: qsTr("Pairing unavailable here")
-                    muted: true
-                    Accessible.name: text
+                    available: deviceRow.modelData.pairAvailable
+                    busy: root.bluetoothSettings.busy
+                    Layout.fillWidth: deviceRow.width < 520
+                    text: qsTr("Pair")
+                    accessibleDescription: qsTr("Pair with Bluetooth device %1")
+                        .arg(deviceRow.modelData.label)
+                    onClicked: root.bluetoothSettings.requestPairing(
+                                   deviceRow.modelData.id)
                 }
 
                 Button {
@@ -95,6 +100,40 @@ ColumnLayout {
                         .arg(deviceRow.modelData.label)
                     onClicked: root.bluetoothSettings.requestDeviceConnection(
                                    deviceRow.modelData.id, true)
+                }
+
+                Button {
+                    objectName: "bluetoothTrust_" + deviceRow.modelData.id
+                    visible: deviceRow.modelData.paired
+                    available: deviceRow.modelData.trustAvailable
+                    busy: root.bluetoothSettings.busy
+                    Layout.fillWidth: deviceRow.width < 520
+                    emphasized: false
+                    text: deviceRow.modelData.trusted
+                          ? qsTr("Untrust") : qsTr("Trust")
+                    accessibleDescription: deviceRow.modelData.trusted
+                        ? qsTr("Stop trusting Bluetooth device %1")
+                              .arg(deviceRow.modelData.label)
+                        : qsTr("Trust Bluetooth device %1")
+                              .arg(deviceRow.modelData.label)
+                    onClicked: root.bluetoothSettings.requestTrust(
+                                   deviceRow.modelData.id,
+                                   !deviceRow.modelData.trusted)
+                }
+
+                Button {
+                    objectName: "bluetoothForget_" + deviceRow.modelData.id
+                    visible: deviceRow.modelData.paired
+                    available: deviceRow.modelData.forgetAvailable
+                    busy: root.bluetoothSettings.busy
+                    Layout.fillWidth: deviceRow.width < 520
+                    emphasized: false
+                    destructive: true
+                    text: qsTr("Forget")
+                    accessibleDescription: qsTr("Forget Bluetooth device %1")
+                        .arg(deviceRow.modelData.label)
+                    onClicked: root.bluetoothSettings.requestForget(
+                                   deviceRow.modelData.id)
                 }
 
                 Button {

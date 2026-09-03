@@ -388,4 +388,35 @@ quint64 BluezTransport::disconnectDevice(const QString &devicePath)
                                QStringLiteral("Disconnect")));
 }
 
+quint64 BluezTransport::pairDevice(const QString &devicePath)
+{
+    return beginCall(bluezCall(m_owner, devicePath, QString(kDeviceInterface),
+                               QStringLiteral("Pair")));
+}
+
+quint64 BluezTransport::cancelPairing(const QString &devicePath)
+{
+    return beginCall(bluezCall(m_owner, devicePath, QString(kDeviceInterface),
+                               QStringLiteral("CancelPairing")));
+}
+
+quint64 BluezTransport::removeDevice(const QString &adapterPath,
+                                     const QString &devicePath)
+{
+    QDBusMessage message = bluezCall(m_owner, adapterPath, QString(kAdapterInterface),
+                                     QStringLiteral("RemoveDevice"));
+    message.setArguments({QVariant::fromValue(QDBusObjectPath(devicePath))});
+    return beginCall(message);
+}
+
+quint64 BluezTransport::setDeviceTrusted(const QString &devicePath,
+                                         const bool trusted)
+{
+    QDBusMessage message = bluezCall(m_owner, devicePath, QString(kPropertiesInterface),
+                                     QStringLiteral("Set"));
+    message.setArguments({QString(kDeviceInterface), QStringLiteral("Trusted"),
+                          QVariant::fromValue(QDBusVariant(trusted))});
+    return beginCall(message);
+}
+
 } // namespace QindaQt::Bluetooth::Bluez

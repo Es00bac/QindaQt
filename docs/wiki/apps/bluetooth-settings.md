@@ -3,8 +3,9 @@
 `qindaqt-settings --page bluetooth` is the first-party Bluetooth inventory and
 connection surface. It composes only the public Bluetooth1 client and keeps
 BlueZ, the resident service implementation, D-Bus transport, and hardware out
-of the route boundary. The route offers power, discovery, and connection
-intents only when its current exact public snapshot admits them.
+of the route boundary. The route offers power, discovery, connection, pairing,
+forget, and trust intents only when its current exact public snapshot admits
+them.
 
 ## Truth shown by the route
 
@@ -14,7 +15,8 @@ states. Authoritative ready truth is presented in two inventories:
 | Group | Public truth | Interaction |
 | --- | --- | --- |
 | Adapters | Bounded presentation name, powered state, discovery state, and whether this route owns the discovery request | Power on/off and acquire/release this route's discovery lease when admitted |
-| Devices | Bounded presentation name, device class and semantic icon, paired/connected state, and RSSI when known | Connect or disconnect only an already-paired device when admitted |
+| Devices | Bounded presentation name, device class and semantic icon, paired/connected/trusted state, and RSSI when known | Pair an unpaired device; connect/disconnect, trust/untrust, or forget a paired device when admitted |
+| Pairing prompt | Prompt kind, device name, bounded passkey/PIN/service detail, and entered digit count | Confirm/reject, enter the requested passkey/PIN, or cancel according to the exact prompt kind |
 
 Rows use route-local opaque identifiers derived from public handles. Bluetooth
 hardware addresses do not cross the QML boundary; an address-shaped platform
@@ -33,7 +35,9 @@ snapshot clears actionable rows and closes admission.
 Every displayed action availability and the final dispatch use the same route
 admission predicate. Admission checks route activity, exact ready truth,
 current handle epoch, public capabilities, adapter power, paired/connected
-state, discovery ownership, and the absence of another pending operation. A
+state, discovery ownership, and the absence of another ordinary pending
+operation. Prompt replies have a separately fenced pending lane so BlueZ may
+hold `Pair` while awaiting input. A
 submitted request pins its owner, epoch, and initiating revision. Its success
 does not optimistically edit rows: controls remain fenced until a matching
 authoritative snapshot reaches the result's minimum revision. Late or
@@ -61,13 +65,22 @@ This is reference-counted discovery intent, not ownership of the adapter's
 aggregate `discovering` value. Another caller may keep discovery active after
 this page releases its own reference.
 
-## Pairing and trust boundary
+## Pairing and trust
 
 Pairing, trust, untrust, and removal stay in BlueZ as established by
-[ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The page states
-that limit visibly and has no corresponding model invokable. Unpaired devices
-remain inventory-only. Neither QML nor the model imports private Bluetooth
-service headers, Qt D-Bus, BlueZ APIs, or another application's internals. See
+[ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The page
+does not create a second authority: its public-client invokables forward Pair,
+CancelPairing, Remove, and SetTrusted to BlueZ through Bluetooth1 and wait for
+the next authoritative snapshot. Unpaired discovered devices have a Pair
+button; paired rows expose Forget and a checked Trust control.
+
+One inline prompt renders confirmation, passkey entry, PIN entry, display-only
+progress, or service authorization from the snapshot. Enter submits editable
+fields and Escape/cancel rejects the pending request. Inputs have accessible
+names, PIN and passkey grammar is validated before dispatch, and no credential
+is stored by the route. Owner or epoch loss clears the prompt and all reply
+authority. Neither QML nor the model imports private Bluetooth service headers,
+Qt D-Bus, BlueZ APIs, or another application's internals. See
 [Bluetooth service architecture](../architecture/bluetooth-service.md) and the
 [Bluetooth1 reference](../reference/bluetooth1-v1.md) for the public contract.
 
@@ -113,20 +126,22 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
 ```
 
 - the model rows use the injected fake Bluetooth transport to prove bounded,
-  address-free projection, class/icon/RSSI truth, shared admission, paired-only
-  connections, pending convergence, exact-owner replacement, and departure
-  release; adversarial coverage additionally rejects duplicate identifiers,
+  address-free projection, class/icon/RSSI/trust truth, pairing and prompt
+  projection, separate prompt-reply admission, paired-only connections,
+  pending convergence, exact-owner replacement, and departure release;
+  adversarial coverage additionally rejects duplicate identifiers,
   overlong names, invalid class/RSSI values, and proves close-fence liveness
   after rejected, failed, uncertain, inexact, owner-lost, or owner-replaced
   discovery acquisition;
 - the warning-fatal page rows render wide and compact offscreen/software scenes
   and prove accessible controls, disabled truth, shortcut-independent route
-  focus entry, action wiring, authority disclosure, compact-host Escape/Tab
+  focus entry, Pair/Forget/Trust and prompt action wiring, accessible entry and
+  confirmation keyboard parity, authority disclosure, compact-host Escape/Tab
   entry, successful-release waiting, and real-model window close after rejected,
   uncertain, owner-lost, or owner-replaced acquisition;
 - boundary and negative-control rows enforce an allow-list-only include scan
   and reject sibling app internals, parent escapes, private service headers,
-  and pairing authority; and
+  and direct transport/platform authority; and
 - the installed row proves real relocation, deliberate missing-module failure,
   and bounded construction with neither host D-Bus nor radios.
 
@@ -135,6 +150,6 @@ Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader exclusivity,
 and the common relocated package. Both selectors run in strict Debug and
 Release profiles.
 
-This slice does not claim pairing, trust changes, device removal, persistent
+This slice does not claim physical-device interoperability, persistent
 preferences, live BlueZ or radio behavior, host-bus integration, live AT-SPI,
 screen-reader traversal, or nested-session screenshots.

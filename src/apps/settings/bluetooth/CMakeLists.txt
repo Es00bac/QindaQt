@@ -3,7 +3,8 @@
 qt_add_library(qindaqt_settings_bluetooth STATIC)
 target_sources(
     qindaqt_settings_bluetooth
-    PRIVATE bluetooth_settings_model.cpp bluetooth_settings_projection.cpp
+    PRIVATE bluetooth_settings_model.cpp bluetooth_settings_pairing.cpp
+            bluetooth_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -34,6 +35,7 @@ qt_add_qml_module(
     QML_FILES
         qml/BluetoothAdapterSection.qml
         qml/BluetoothDeviceSection.qml
+        qml/BluetoothPairingSection.qml
         qml/BluetoothPage.qml
 )
 target_link_libraries(
@@ -69,6 +71,7 @@ install(
     FILES
         qml/BluetoothAdapterSection.qml
         qml/BluetoothDeviceSection.qml
+        qml/BluetoothPairingSection.qml
         qml/BluetoothPage.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Bluetooth"
     COMPONENT SettingsAppearanceRuntime

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Stages a clean install of the whole build into a test-owned prefix,
+# Stages a clean Bluetooth component install into a test-owned prefix,
 # verifies the Bluetooth1 deployment payload (executable, D-Bus activation
 # descriptor, systemd user unit, introspection XML, protocol archive), and
 # builds plus runs a linked installed consumer against the staged public
@@ -32,6 +32,7 @@ file(REMOVE_RECURSE "${install_prefix}")
 
 set(install_command
     "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}"
+    --component QindaQtBluetoothB1
 )
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")

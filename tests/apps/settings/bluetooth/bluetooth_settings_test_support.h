@@ -57,7 +57,9 @@ inline QindaQt::Bluetooth::Snapshot readySnapshot(
   snapshot.availability = Availability::Ready;
   snapshot.capabilities = Capability::SetAdapterPower
       | Capability::DiscoveryLease | Capability::ConnectPaired
-      | Capability::DisconnectPaired;
+      | Capability::DisconnectPaired | Capability::Pair
+      | Capability::RemoveDevice | Capability::SetTrusted
+      | Capability::PairingPrompt;
   snapshot.reasonCode = QStringLiteral("ready");
   snapshot.adapters = {{.handle = {epoch, 400},
                         .address = QStringLiteral("AA:BB:CC:00:11:22"),

@@ -60,16 +60,23 @@ configure_file(
     @ONLY
 )
 
-install(TARGETS qindaqt-bluetooth-service RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(
+    TARGETS qindaqt-bluetooth-service
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT QindaQtBluetoothB1
+)
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Bluetooth1.service"
     DESTINATION "${KDE_INSTALL_DBUSSERVICEDIR}"
+    COMPONENT QindaQtBluetoothB1
 )
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-bluetooth-service.service"
     DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
+    COMPONENT QindaQtBluetoothB1
 )
 install(
     FILES data/org.qindaqt.Bluetooth1.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
+    COMPONENT QindaQtBluetoothB1
 )

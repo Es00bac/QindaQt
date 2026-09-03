@@ -9,11 +9,15 @@ target_sources(
     qindaqt_bluez_adapter
     PRIVATE
         src/bluez_adapter_backend.cpp
+        src/bluez_operation_completion.cpp
         src/bluez_adapter_backend_p.h
         src/bluez_adapter_publication.cpp
         src/bluez_backend_mode.cpp
         src/bluez_object_store.cpp
         src/bluez_object_store.h
+        src/bluez_pairing_agent.cpp
+        src/bluez_pairing_agent.h
+        src/bluez_pairing_operations.cpp
         src/bluez_transport.cpp
         src/bluez_transport.h
     PUBLIC

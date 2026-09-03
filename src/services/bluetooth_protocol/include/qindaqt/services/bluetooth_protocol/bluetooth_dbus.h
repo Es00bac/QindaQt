@@ -25,6 +25,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Adapter &value);
 QDBusArgument &operator<<(QDBusArgument &argument, const Device &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value);
 
+QDBusArgument &operator<<(QDBusArgument &argument, const PairingPrompt &value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, PairingPrompt &value);
+
 QDBusArgument &operator<<(QDBusArgument &argument, const Snapshot &value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Snapshot &value);
 

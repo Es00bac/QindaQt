@@ -22,6 +22,8 @@ inline constexpr qsizetype kMaxDiscoveryLeasesPerAdapter = 16;
 inline constexpr qsizetype kMaxDiscoveryLeasesTotal = 64;
 inline constexpr qsizetype kMaxCallerIdUtf8Bytes = 64;
 inline constexpr qsizetype kAddressUtf8Bytes = 17;
+inline constexpr qsizetype kMaxPairingTextUtf8Bytes = 64;
+inline constexpr int kPairingPromptTimeoutMs = 60'000;
 
 inline constexpr char kServiceName[] = "org.qindaqt.Bluetooth1";
 inline constexpr char kObjectPath[] = "/org/qindaqt/Bluetooth1";

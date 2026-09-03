@@ -10,6 +10,8 @@ target_sources(
     PRIVATE
         src/bluetooth_client.cpp
         src/bluetooth_client_completion.cpp
+        src/bluetooth_client_operations.cpp
+        src/bluetooth_client_pairing.cpp
         src/qt_bluetooth_transport.cpp
     PUBLIC
         FILE_SET HEADERS
