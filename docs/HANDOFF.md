@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T10:23:54-06:00 — The KWin plugin ABI pin is now the host's system KWin 6.6.6 (`a5c1c20`, manifest v6.6.6); build with `/home/cabewse/work_SPaC3/builds/qindaqt-deps/qindaqt-system-kwin-initial-cache.cmake` (system Qt 6.11.1, KF6 6.27, KWin/KDecoration3/PlasmaActivities/KWayland/LayerShellQt 6.6.6; Weston still from the private prefix, confined to the parent compositor's environment). Verified on 6.6.6: compositor 33/33, nested compositor rows 16/16, desktop boot, package contract. Open: both panel-visibility nested rows fail on 6.6.6 (window-overlap-hidden phase) — repair lane open. A `wayland-sessions/qindaqt.desktop` entry is now installed for display managers.
 - 2026-09-03T09:48:12-06:00 — Tray S1 transports integrated at `e3eacdd`; new-lane intake paused, in-flight candidates get one funded recheck each.
 - 2026-09-03T09:40:00-06:00 — Task list T1 integrated at `90fe400`.
 - 2026-09-03T09:33:11-06:00 — Main is nested-qualified again: boot.1080p and both panel-visibility rows green on `ff08ea2` after the staging and capture reconciliations; Clipboard applet C1 and Font F1 integrated.
