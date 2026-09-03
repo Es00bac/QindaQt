@@ -77,6 +77,7 @@ tests, and the wiki page describing its contract.
 | `src/services/network_protocol` | Network1 bounded values, identity normalization, fail-closed validation/redaction, and canonical byte codecs | Qt Core only; never transport state, D-Bus, NetworkManager, platform objects, credentials, or QML |
 | `src/services/network_model` | Pure lineage high-water, scan-lease reconciliation, intent admission, and atomic projection | Public Network1 protocol plus Qt Core; never clocks/timers, transport, platform state, persistence, credentials, or QML |
 | `src/services/network_client` | Exact-owner asynchronous snapshots and operations, bounded timeout/retry, uncertain outcomes, and injected transport composition | Public Network1 protocol/model plus Qt Core; never a concrete transport, D-Bus, NetworkManager, radios, credentials, or QML |
+| `src/services/network_secret_agent` | Standard NetworkManager SecretAgent residency, exact-owner request admission, bounded interactive prompt, ephemeral reply dispatch, and presence-name publication | Qt Core/DBus/Quick plus QindaQt Controls and Tokens; never Network1, Settings, libnm, persistence, agent-owned storage, or a QindaQt credential interface |
 | `src/services/notification_presentation_protocol` | Versioned presentation values, bounded D-Bus decoding, wire limits, restart lineage, 256-bit presenter-token values, and exact one-shot descriptor records | Qt Core/DBus and Linux descriptor syscalls; never notification policy, child lifecycle, host objects, or shell QML |
 | `src/services/notification_presentation_client` | Unique-owner binding, asynchronous authentication/snapshots, serialized operations, initiating-revision result validation, bounded error normalization, uncertain-result recovery, timeout/backoff, invalidation coalescing, and stale-reply rejection | Public presentation protocol plus Qt Core/DBus; never host/service implementation or QML |
 | `src/services/session_lock_state` | Fail-closed owner/PID-authenticated KWin/KScreenLocker state, asynchronous query/signal fencing, and bounded object-startup retry | Qt Core/DBus and a supervisor-provisioned PID value; never shell, notification, compositor-private, PAM, or QML objects |
@@ -182,10 +183,12 @@ implemented; do not use placeholder modules to bypass a boundary.
   `network_service` owns fixed-wire D-Bus residency and an injected backend;
   only `network_manager_adapter` links libnm. Its public boundary exports
   secret-free copies and no NM/GObject handle. NetworkManager profile and
-  credential authority remains external, with credentials supplied only by an
-  external secret agent. See [Network service](network-service.md),
+  credential authority remains outside Network1. The separately deployed
+  first-party process implements the standard SecretAgent contract without
+  linking Network1 or exporting secrets on a QindaQt interface. See [Network
+  service](network-service.md), [Network secret agent](network-secret-agent.md),
   [ADR-0045](../adr/0045-fence-network1-pure-boundary.md), and
-  [ADR-0052](../adr/0052-confine-networkmanager-behind-network1.md).
+  [ADR-0066](../adr/0066-confine-network-credential-entry.md).
 - Display consumers will depend on a typed Display1 client, not these service
   implementation modules. D1's dependency direction is protocol → topology →
   transaction. Identity depends only on Qt Core and is independent of protocol,

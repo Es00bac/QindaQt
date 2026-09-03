@@ -37,6 +37,7 @@ nav:
       - Power and brightness: architecture/power-service.md
       - Pure brightness model: architecture/brightness-model.md
       - Network service: architecture/network-service.md
+      - Network secret agent: architecture/network-secret-agent.md
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
       - Font preferences: architecture/font-preferences.md
@@ -152,3 +153,4 @@ nav:
       - "ADR-0063: Authenticated active-window identity": adr/0063-project-authenticated-active-window-identity.md
       - "ADR-0064: Identity-checked local file mutation": adr/0064-confine-file-mutation-to-identity-checked-local-authority.md
       - "ADR-0065: Text Editor path inventory": adr/0065-persist-text-editor-path-inventory.md
+      - "ADR-0066: Confined network credential entry": adr/0066-confine-network-credential-entry.md

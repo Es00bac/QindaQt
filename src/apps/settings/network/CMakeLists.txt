@@ -4,17 +4,20 @@
 qt_add_library(qindaqt_settings_network STATIC)
 target_sources(
     qindaqt_settings_network
-    PRIVATE network_settings_model.cpp
+    PRIVATE
+        network_secret_agent_presence.cpp
+        network_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/apps/settings_network/network_settings_model.h
+            include/qindaqt/apps/settings_network/network_secret_agent_presence.h
 )
 target_link_libraries(
     qindaqt_settings_network
     PUBLIC QindaQt::NetworkClient QindaQt::NetworkModel
-           QindaQt::NetworkProtocol Qt6::Core
+           QindaQt::NetworkProtocol Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_settings_network PUBLIC cxx_std_20)
 set_target_properties(

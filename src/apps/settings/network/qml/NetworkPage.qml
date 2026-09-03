@@ -95,9 +95,12 @@ T.Page {
         StateCard {
             objectName: "networkCredentialBoundary"
             Layout.fillWidth: true
-            status: StateCard.Information
-            title: qsTr("Saved networks only")
-            message: qsTr("This page never asks for or stores credentials. If a saved network requires them, a registered external NetworkManager secret agent must provide them.")
+            status: root.networkSettings.secretAgentRegistered
+                    ? StateCard.Success : StateCard.Warning
+            title: root.networkSettings.secretAgentRegistered
+                   ? qsTr("Credential prompt available")
+                   : qsTr("Credential prompt unavailable")
+            message: root.networkSettings.secretAgentStatusText
         }
 
         Flickable {
