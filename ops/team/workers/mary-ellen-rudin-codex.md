@@ -4,20 +4,20 @@ role: Font platform implementer
 provider: OpenAI Codex
 model: gpt-5.6-sol
 reasoning: high
-status: handoff
+status: working
 feature: QQ-005.08 Font discovery and confirmed first-party application (WIRED F0 → F1)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/font-discovery-f1
 started_at: 2026-09-03T06:22:51-06:00
-updated_at: 2026-09-03T06:36:57-06:00
+updated_at: 2026-09-03T06:59:19-06:00
 ---
 
 # Mary Ellen Rudin-Codex
 
 - Role: Font platform implementer.
 - Provider/model: OpenAI Codex `gpt-5.6-sol`, reasoning high.
-- Status: handoff — exact repaired product candidate
-  `84367aafe16a410fc51e39fda430abaafdcc39d6` is green and ready for exact
-  review.
+- Status: working — repairing the exact-owner bootstrap fence, stale bridge
+  baseline truth, and overstated production-default documentation rejected on
+  descendant `84367aafe16a410fc51e39fda430abaafdcc39d6`.
 - Exact base: `f350028c1cfea0bf0e92f4c2fb0d5949ee6b65a9`.
 - Branch: `worker/font-discovery-f1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/font-discovery-f1`.
@@ -42,3 +42,7 @@ updated_at: 2026-09-03T06:36:57-06:00
   `84367aafe16a410fc51e39fda430abaafdcc39d6` (tree
   `0f15aab9bd1825e8d8148c6ee7f63a52b949193b`); requested independent exact
   review then manager integration.
+- 2026-09-03T06:59:19-06:00 — second-repair claim: read Cecilia
+  Berdichevsky's complete rejection and the governing font, Settings1, and
+  testing contracts; began reproducing P1-1/P2-1/P3-1 from handoff-record HEAD
+  `b7d31453c140a4b5e8bc373776a3ceba10713267`.
