@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T04:32:48-06:00 — Audio Settings route integrated at `fac8d6a` (merge `f6d47db`); Bluetooth Settings route accepted and merging; Global Menu G2 `f7a49c5`, panel-visibility proof `a52561f`, File Manager S1 `61283bf`, and the controls-fonts repair `b7b5208` are in exact review; Text Editor S2 and Terminal S2 lanes started; GLM is limited until 20:25 and Kimi has recovered.
 - This integration merges exact accepted compositor identity descendant
   `8505bdbd09961863538616efd3dd8e7ef834a126` at `58496e8` (ADR renumbered to 0063) and exact accepted
   launcher hosting candidate `7ecdb36f53c60ea03bea40197f17c9cc6bf9b9e1` at `6f5e213`. The authenticated

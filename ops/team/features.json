@@ -853,7 +853,7 @@
           "title": "Settings pages and live platform-service routes",
           "weight": 15,
           "state": "WIRED",
-          "summary": "Notifications, Appearance, Display, and Network are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions.",
+          "summary": "Notifications, Appearance, Display, Network, Customize, and Audio are integrated live Settings routes. Display composes the public Display1 client/coordinator into bounded reversible output transactions; Network composes the public Network1 client into secret-free, lineage-fenced inventory and admitted stored-profile actions; Audio composes the public Audio1 client into device/default/stream control with exact admission fencing.",
           "evidence": [
             {
               "kind": "commit",
@@ -884,9 +884,19 @@
               "kind": "test",
               "reference": "docs/wiki/apps/network-settings.md",
               "summary": "Strict Debug and Release each pass 14/14 focused route rows, 5/5 public-client/package/policy rows, 5/5 mutation proof, and broader Network 25/25 plus Settings 9/9 review sweeps."
+            },
+            {
+              "kind": "commit",
+              "reference": "fac8d6a185e21f611cc7d1ff27b34d1c7c61ca44",
+              "summary": "The exact Audio Settings route candidate d10abe2 (Joan Clarke, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds) is integrated through the delegated registry-reconciliation merge f6d47db; the merged tree passes all Settings rows in Debug and Release under host-bus isolation, the static gates, and the broad safe Debug suite with zero failures."
+            },
+            {
+              "kind": "test",
+              "reference": "docs/wiki/apps/audio-settings.md",
+              "summary": "The owning page records the public-client-only Audio route, admission fencing, wide/compact keyboard traversal under fatal warnings, boundary poison, and the installed route/package rows."
             }
           ],
-          "caveat": "Audio, power, brightness, Bluetooth, clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence remains separate too."
+          "caveat": "Power, brightness, Bluetooth (accepted, merge in progress), clipboard, color, font, and portal pages remain. Network credential entry, secret-agent ownership, profile editing, radio mutation, persistence, physical hardware, and session-runtime proof remain separate Platform or qualification outcomes; Display nested convergence and physical audio devices remain separate too."
         },
         {
           "id": "QQ-006.06",
