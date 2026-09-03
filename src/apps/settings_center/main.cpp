@@ -21,6 +21,7 @@
 #include "qindaqt/services/network_qt_transport/qt_network_transport.h"
 #include "qindaqt/services/audio_client/audio_client.h"
 #include "qindaqt/services/audio_client/qt_audio_transport.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -71,6 +72,13 @@ void addSettingsQmlImportPaths(QQmlApplicationEngine &engine) {
 } // namespace
 
 int main(int argc, char **argv) {
+  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
+  // call runs before QGuiApplication construction (pre-construction
+  // QGuiApplication::setFont persists as the application default font). A
+  // missing, unavailable, or unresolvable preference source leaves platform
+  // defaults untouched (fail-closed). See
+  // docs/wiki/architecture/font-preferences.md.
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QGuiApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-settings"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
