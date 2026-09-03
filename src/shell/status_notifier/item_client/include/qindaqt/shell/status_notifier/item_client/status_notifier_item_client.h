@@ -29,13 +29,21 @@ struct ItemWireDetails {
     friend bool operator==(const ItemWireDetails &, const ItemWireDetails &) = default;
 };
 
-// Result of one asynchronous descriptor fetch. `replyReceived` is false when
-// no usable reply ever arrived (D-Bus error, timeout, or the generation fence
-// discarded a late reply); consumers must still treat the key as observed
-// during population by registering the invalid descriptor, because the
-// registry counts an admitted-or-rejected current-epoch registration as
-// observing its exact live key.
+enum class ItemDescriptorFetchStatus : quint32 {
+    ReplyReceived = 0,
+    TransportError = 1,
+    TimedOut = 2,
+};
+
+// Result of one asynchronous descriptor fetch. `status` distinguishes a
+// bounded timeout from an immediate transport error. A generation-fenced
+// reply is still dropped without emitting any result. Consumers must treat an
+// emitted key as observed during population because the registry counts an
+// admitted-or-rejected current-epoch registration as observing that live key.
 struct ItemDescriptorFetch {
+    ItemDescriptorFetchStatus status = ItemDescriptorFetchStatus::TransportError;
+    // Compatibility mirror for existing consumers; true exactly when status
+    // is ReplyReceived.
     bool replyReceived = false;
     // The exact key the fetch was issued for, generation included, so
     // consumers can route and fence without keeping their own bookkeeping.
@@ -129,4 +137,5 @@ private:
 } // namespace QindaQt::StatusNotifier
 
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemWireDetails)
+Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemDescriptorFetchStatus)
 Q_DECLARE_METATYPE(QindaQt::StatusNotifier::ItemDescriptorFetch)

@@ -107,12 +107,14 @@ public:
     }
 
 public slots:
-    void Activate(int x, quint32 y) { record(QStringLiteral("Activate"), {x, y}); }
-    void SecondaryActivate(int x, quint32 y)
+    // AGENT-NOTE: P1-2 regression control: the protocol signature is (ii).
+    // Keep this strict fake signed so an accidental (iu) call cannot match.
+    void Activate(int x, int y) { record(QStringLiteral("Activate"), {x, y}); }
+    void SecondaryActivate(int x, int y)
     {
         record(QStringLiteral("SecondaryActivate"), {x, y});
     }
-    void ContextMenu(int x, quint32 y) { record(QStringLiteral("ContextMenu"), {x, y}); }
+    void ContextMenu(int x, int y) { record(QStringLiteral("ContextMenu"), {x, y}); }
     void Scroll(int delta, const QString &orientation)
     {
         record(QStringLiteral("Scroll"), {delta, orientation});

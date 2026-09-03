@@ -8,6 +8,7 @@
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
+#include <QMetaType>
 #include <QPointer>
 #include <QTimer>
 
@@ -61,14 +62,15 @@ namespace
         return decodePixmapFields(&argument, out);
     }
     const QVariantList fields = entry.toList();
-    if (fields.size() != 3) {
+    if (fields.size() != 3
+        || fields.at(0).metaType() != QMetaType::fromType<int>()
+        || fields.at(1).metaType() != QMetaType::fromType<int>()
+        || fields.at(2).metaType() != QMetaType::fromType<QByteArray>()) {
         return false;
     }
-    bool widthOk = false;
-    bool heightOk = false;
-    const int width = fields.at(0).toInt(&widthOk);
-    const int height = fields.at(1).toInt(&heightOk);
-    if (!widthOk || !heightOk || width <= 0 || height <= 0) {
+    const int width = fields.at(0).toInt();
+    const int height = fields.at(1).toInt();
+    if (width <= 0 || height <= 0) {
         return false;
     }
     out->width = quint32(width);
@@ -79,6 +81,9 @@ namespace
 
 [[nodiscard]] bool decodePixmapList(const QVariant &value, QList<Pixmap> *out)
 {
+    if (!value.isValid()) {
+        return true; // Missing optional property decodes to an empty list.
+    }
     if (value.canConvert<QDBusArgument>()) {
         // Wire form a(iiay): demarshal the array element by element. A
         // hostile non-array argument must fail closed, not reach libdbus.
@@ -148,6 +153,9 @@ namespace
 [[nodiscard]] ValidationOutcome decodeToolTip(const QVariant &value,
                                               ToolTipPayload *toolTip)
 {
+    if (!value.isValid()) {
+        return ValidationOutcome::success();
+    }
     if (value.canConvert<QDBusArgument>()) {
         // Wire form (sa(iiay)ss): demarshal the struct field by field.
         const QDBusArgument argument = value.value<QDBusArgument>();
@@ -183,13 +191,20 @@ namespace
         toolTip->description = description;
         return ValidationOutcome::success();
     }
-    if (!value.canConvert<QVariantList>()) {
-        return ValidationOutcome::success(); // Wrong type: tooltip ignored.
+    if (value.metaType() != QMetaType::fromType<QVariantList>()) {
+        return ValidationOutcome::failure(ValidationError::InvalidToolTip,
+                                          QStringLiteral("tooltip-type-invalid"));
     }
     const QVariantList fields = value.toList();
     if (fields.size() != 4) {
         return ValidationOutcome::failure(ValidationError::InvalidToolTip,
                                           QStringLiteral("tooltip-decode-failed"));
+    }
+    if (fields.at(0).metaType() != QMetaType::fromType<QString>()
+        || fields.at(2).metaType() != QMetaType::fromType<QString>()
+        || fields.at(3).metaType() != QMetaType::fromType<QString>()) {
+        return ValidationOutcome::failure(ValidationError::InvalidToolTip,
+                                          QStringLiteral("tooltip-field-type-invalid"));
     }
     toolTip->iconName = fields.at(0).toString();
     if (!decodePixmapList(fields.at(1), &toolTip->pixmaps)) {
@@ -214,35 +229,63 @@ namespace
         }
     };
 
-    const auto category =
-        decodeCategory(properties.value(QStringLiteral("Category")).toString());
+    const auto readString = [&properties, &fail](const QString &name,
+                                                  QString *destination,
+                                                  ValidationError error,
+                                                  bool required) {
+        const auto value = properties.constFind(name);
+        if (value == properties.cend()) {
+            if (required) {
+                fail(error, name.toLower() + QStringLiteral("-missing"));
+            }
+            return;
+        }
+        if (value->metaType() != QMetaType::fromType<QString>()) {
+            fail(error, name.toLower() + QStringLiteral("-type-invalid"));
+            return;
+        }
+        *destination = value->toString();
+    };
+
+    QString categoryText;
+    readString(QStringLiteral("Category"), &categoryText,
+               ValidationError::InvalidCategory, true);
+    const auto category = decodeCategory(categoryText);
     if (category.has_value()) {
         descriptor->category = *category;
     } else {
         fail(ValidationError::InvalidCategory, QStringLiteral("category-decode-failed"));
     }
-    const auto status = decodeStatus(properties.value(QStringLiteral("Status")).toString());
+    QString statusText;
+    readString(QStringLiteral("Status"), &statusText,
+               ValidationError::InvalidStatus, true);
+    const auto status = decodeStatus(statusText);
     if (status.has_value()) {
         descriptor->status = *status;
     } else {
         fail(ValidationError::InvalidStatus, QStringLiteral("status-decode-failed"));
     }
 
-    descriptor->identity = properties.value(QStringLiteral("Id")).toString();
-    descriptor->title = properties.value(QStringLiteral("Title")).toString();
-    descriptor->icon.iconName = properties.value(QStringLiteral("IconName")).toString();
+    readString(QStringLiteral("Id"), &descriptor->identity,
+               ValidationError::InvalidIdentity, true);
+    readString(QStringLiteral("Title"), &descriptor->title,
+               ValidationError::InvalidTitle, false);
+    readString(QStringLiteral("IconName"), &descriptor->icon.iconName,
+               ValidationError::InvalidIcon, false);
     if (!decodePixmapList(properties.value(QStringLiteral("IconPixmap")),
                           &descriptor->icon.pixmaps)) {
         fail(ValidationError::InvalidIcon, QStringLiteral("iconpixmap-decode-failed"));
     }
-    descriptor->icon.attentionIconName =
-        properties.value(QStringLiteral("AttentionIconName")).toString();
+    readString(QStringLiteral("AttentionIconName"),
+               &descriptor->icon.attentionIconName,
+               ValidationError::InvalidIcon, false);
     if (!decodePixmapList(properties.value(QStringLiteral("AttentionPixmap")),
                           &descriptor->icon.attentionPixmaps)) {
         fail(ValidationError::InvalidIcon, QStringLiteral("attentionpixmap-decode-failed"));
     }
-    descriptor->icon.attentionMovieName =
-        properties.value(QStringLiteral("AttentionMovieName")).toString();
+    readString(QStringLiteral("AttentionMovieName"),
+               &descriptor->icon.attentionMovieName,
+               ValidationError::InvalidIcon, false);
 
     const ValidationOutcome toolTip =
         decodeToolTip(properties.value(QStringLiteral("ToolTip")), &descriptor->toolTip);
@@ -252,16 +295,25 @@ namespace
 
     // Recorded-not-rendered wire details stay lenient: a hostile overlay name
     // or menu path cannot reach presentation, so it is dropped, not fatal.
-    const QString overlay = properties.value(QStringLiteral("OverlayIconName")).toString();
+    QString overlay;
+    const QVariant overlayValue = properties.value(QStringLiteral("OverlayIconName"));
+    if (overlayValue.metaType() == QMetaType::fromType<QString>()) {
+        overlay = overlayValue.toString();
+    }
     wire->overlayIconName =
         isAcceptableOptionalText(overlay, kMaxIconNameUtf8Bytes) ? overlay : QString();
-    wire->itemIsMenu = properties.value(QStringLiteral("ItemIsMenu")).toBool();
+    const QVariant itemIsMenu = properties.value(QStringLiteral("ItemIsMenu"));
+    wire->itemIsMenu = itemIsMenu.metaType() == QMetaType::fromType<bool>()
+        && itemIsMenu.toBool();
     const QVariant menuVariant = properties.value(QStringLiteral("Menu"));
-    const QString menu = menuVariant.canConvert<QDBusObjectPath>()
+    const QString menu = menuVariant.metaType() == QMetaType::fromType<QDBusObjectPath>()
         ? menuVariant.value<QDBusObjectPath>().path()
-        : menuVariant.toString();
+        : QString();
     wire->menuObjectPath = isValidObjectPath(menu) ? menu : QString();
-    wire->windowId = properties.value(QStringLiteral("WindowId")).toUInt();
+    const QVariant windowId = properties.value(QStringLiteral("WindowId"));
+    if (windowId.metaType() == QMetaType::fromType<quint32>()) {
+        wire->windowId = windowId.toUInt();
+    }
 
     if (outcome.accepted) {
         outcome = validateItemDescriptor(*descriptor);
@@ -330,8 +382,8 @@ void StatusNotifierItemClient::fetchDescriptor()
         QString(),
         QStringLiteral("GetAll"));
     request << QVariant(QString::fromLatin1(kItemInterfaceName));
-    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(request),
-                                                this);
+    QPointer<QDBusPendingCallWatcher> watcher =
+        new QDBusPendingCallWatcher(m_connection.asyncCall(request), this);
     QTimer::singleShot(m_fetchTimeoutMs, this, [this, watcher]() {
         if (!m_fetchInFlight) {
             return; // The reply path already reported.
@@ -341,9 +393,11 @@ void StatusNotifierItemClient::fetchDescriptor()
         if (watcher) {
             watcher->deleteLater();
         }
-        finishFetch(ItemDescriptorFetch{});
+        ItemDescriptorFetch result;
+        result.status = ItemDescriptorFetchStatus::TimedOut;
+        finishFetch(std::move(result));
     });
-    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+    connect(watcher.data(), &QDBusPendingCallWatcher::finished, this,
             [this](QDBusPendingCallWatcher *call) {
                 call->deleteLater();
                 if (!m_fetchInFlight) {
@@ -351,10 +405,13 @@ void StatusNotifierItemClient::fetchDescriptor()
                 }
                 const QDBusMessage reply = call->reply();
                 if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
-                    finishFetch(ItemDescriptorFetch{});
+                    ItemDescriptorFetch result;
+                    result.status = ItemDescriptorFetchStatus::TransportError;
+                    finishFetch(std::move(result));
                     return;
                 }
                 ItemDescriptorFetch result;
+                result.status = ItemDescriptorFetchStatus::ReplyReceived;
                 result.replyReceived = true;
                 result.key = m_key;
                 result.generation = m_key.generation;
@@ -375,20 +432,17 @@ void StatusNotifierItemClient::fetchDescriptor()
 
 void StatusNotifierItemClient::activate(int x, int y)
 {
-    sendIntent(QStringLiteral("Activate"),
-               {QVariant(x), QVariant(quint32(y))});
+    sendIntent(QStringLiteral("Activate"), {QVariant(x), QVariant(y)});
 }
 
 void StatusNotifierItemClient::secondaryActivate(int x, int y)
 {
-    sendIntent(QStringLiteral("SecondaryActivate"),
-               {QVariant(x), QVariant(quint32(y))});
+    sendIntent(QStringLiteral("SecondaryActivate"), {QVariant(x), QVariant(y)});
 }
 
 void StatusNotifierItemClient::contextMenu(int x, int y)
 {
-    sendIntent(QStringLiteral("ContextMenu"),
-               {QVariant(x), QVariant(quint32(y))});
+    sendIntent(QStringLiteral("ContextMenu"), {QVariant(x), QVariant(y)});
 }
 
 bool StatusNotifierItemClient::scroll(int delta, const QString &orientation)

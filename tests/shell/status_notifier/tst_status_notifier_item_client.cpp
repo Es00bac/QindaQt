@@ -6,7 +6,10 @@
 #include "status_notifier_fake_item_test_support.h"
 #include "status_notifier_private_bus_test_support.h"
 
+#include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
+#include <QDBusMessage>
+#include <QElapsedTimer>
 #include <QStandardPaths>
 #include <QtTest>
 
@@ -37,6 +40,41 @@ public:
     }
 };
 
+class WithholdingPropertiesObject final : public QObject
+{
+    Q_OBJECT
+
+public:
+    WithholdingPropertiesObject();
+    int calls = 0;
+};
+
+class WithholdingPropertiesAdaptor final
+    : public QDBusAbstractAdaptor
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.D-Bus.Properties")
+
+public:
+    explicit WithholdingPropertiesAdaptor(WithholdingPropertiesObject *parent)
+        : QDBusAbstractAdaptor(parent)
+    {
+    }
+
+public slots:
+    QVariantMap GetAll(const QString &, const QDBusMessage &message)
+    {
+        ++static_cast<WithholdingPropertiesObject *>(parent())->calls;
+        message.setDelayedReply(true);
+        return {};
+    }
+};
+
+WithholdingPropertiesObject::WithholdingPropertiesObject()
+{
+    new WithholdingPropertiesAdaptor(this);
+}
+
 } // namespace
 
 class StatusNotifierItemClientTests final : public QObject
@@ -50,8 +88,10 @@ private slots:
     void rejectsOversizedPixmaps();
     void rejectsAbsurdPixmapCounts();
     void rejectsControlCharactersAndBadEnums();
+    void rejectsWrongTypedRequiredStrings();
     void dropsLateRepliesBehindTheFence();
-    void reportsUnansweredFetchesAsNotReceived();
+    void reportsImmediateTransportErrors();
+    void reportsLiveOwnerTimeouts();
     void dispatchesRecordedIntents();
     void recordsMenuPathWithoutDescriptorMenu();
 };
@@ -305,6 +345,40 @@ void StatusNotifierItemClientTests::rejectsControlCharactersAndBadEnums()
     QDBusConnection::disconnectFromBus(QStringLiteral("client-reader-f"));
 }
 
+void StatusNotifierItemClientTests::rejectsWrongTypedRequiredStrings()
+{
+    // AGENT-NOTE: P1-5 regression: QVariant conversion must not turn hostile
+    // integer Id/Title properties into accepted presentation strings.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto itemConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-item-types"));
+    auto readerConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-reader-types"));
+    auto item = std::make_unique<FakeStatusNotifierItem>();
+    item->setProperty("wireOverrides",
+                      QVariantMap{{QStringLiteral("Id"), 123},
+                                  {QStringLiteral("Title"), 456}});
+    QVERIFY(registerFakeItem(itemConnection, QStringLiteral("/StatusNotifierItem"),
+                             item.get()));
+
+    StatusNotifierItemClient client(readerConnection, fakeKey(itemConnection),
+                                    [](quint64 generation) { return generation == 7; },
+                                    2'000);
+    FetchRecorder recorder;
+    recorder.attach(&client);
+    client.fetchDescriptor();
+    QTRY_COMPARE_WITH_TIMEOUT(recorder.results.size(), 1, 5'000);
+    QVERIFY(!recorder.results.constFirst().validation.accepted);
+    QVERIFY(recorder.results.constFirst().descriptor.identity.isEmpty());
+    QVERIFY(recorder.results.constFirst().descriptor.title.isEmpty());
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("client-item-types"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("client-reader-types"));
+}
+
 void StatusNotifierItemClientTests::dropsLateRepliesBehindTheFence()
 {
     if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
@@ -343,7 +417,7 @@ void StatusNotifierItemClientTests::dropsLateRepliesBehindTheFence()
     QDBusConnection::disconnectFromBus(QStringLiteral("client-reader-g"));
 }
 
-void StatusNotifierItemClientTests::reportsUnansweredFetchesAsNotReceived()
+void StatusNotifierItemClientTests::reportsImmediateTransportErrors()
 {
     if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
         QSKIP("dbus-daemon is unavailable");
@@ -353,8 +427,8 @@ void StatusNotifierItemClientTests::reportsUnansweredFetchesAsNotReceived()
     QVERIFY2(bus.start(&error), qPrintable(error));
     auto readerConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-reader-h"));
 
-    // No item object exists at this path; the fetch must time out and report
-    // replyReceived == false so the caller can still observe the key.
+    // AGENT-NOTE: P1-6 negative control: a nonexistent owner produces an
+    // immediate transport error and must never be labelled a timeout.
     OwnerKey key;
     key.uniqueName = QStringLiteral(":1.424242");
     key.objectPath = QStringLiteral("/StatusNotifierItem");
@@ -367,10 +441,48 @@ void StatusNotifierItemClientTests::reportsUnansweredFetchesAsNotReceived()
     client.fetchDescriptor();
     QTRY_COMPARE_WITH_TIMEOUT(recorder.results.size(), 1, 5'000);
     QVERIFY(!recorder.results.constFirst().replyReceived);
+    QCOMPARE(recorder.results.constFirst().status,
+             ItemDescriptorFetchStatus::TransportError);
     QCOMPARE(recorder.results.constFirst().key.uniqueName,
              QStringLiteral(":1.424242"));
 
     QDBusConnection::disconnectFromBus(QStringLiteral("client-reader-h"));
+}
+
+void StatusNotifierItemClientTests::reportsLiveOwnerTimeouts()
+{
+    // AGENT-NOTE: P1-6 regression: a live owner/object deliberately withholds
+    // its reply until the configured deadline, proving the typed timeout path.
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto itemConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-item-timeout"));
+    auto readerConnection = connectToPrivateBus(bus.address(), QStringLiteral("client-reader-timeout"));
+    WithholdingPropertiesObject item;
+    QVERIFY(itemConnection.registerObject(QStringLiteral("/StatusNotifierItem"), &item,
+                                          QDBusConnection::ExportAdaptors));
+    OwnerKey key = fakeKey(itemConnection);
+    StatusNotifierItemClient client(readerConnection, key,
+                                    [](quint64 generation) { return generation == 7; },
+                                    150);
+    FetchRecorder recorder;
+    recorder.attach(&client);
+    QElapsedTimer elapsed;
+    elapsed.start();
+    client.fetchDescriptor();
+    QTRY_COMPARE_WITH_TIMEOUT(recorder.results.size(), 1, 2'000);
+
+    QCOMPARE(item.calls, 1);
+    QVERIFY(elapsed.elapsed() >= 120);
+    QVERIFY(!recorder.results.constFirst().replyReceived);
+    QCOMPARE(recorder.results.constFirst().status,
+             ItemDescriptorFetchStatus::TimedOut);
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("client-item-timeout"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("client-reader-timeout"));
 }
 
 void StatusNotifierItemClientTests::dispatchesRecordedIntents()
@@ -398,7 +510,9 @@ void StatusNotifierItemClientTests::dispatchesRecordedIntents()
     QVERIFY(!client.scroll(1, QStringLiteral("diagonal")));
 
     QTRY_COMPARE_WITH_TIMEOUT(item->recordedIntents.size(), 4, 5'000);
-    const QList<QVariant> activateArgs{3, QVariant(7u)};
+    // AGENT-NOTE: P1-2 regression: both coordinates are signed D-Bus ints;
+    // the strict fake refuses the rejected candidate's (iu) signature.
+    const QList<QVariant> activateArgs{3, QVariant(7)};
     const QList<QVariant> scrollArgs{-4, QVariant(QStringLiteral("vertical"))};
     QCOMPARE(item->recordedIntents.at(0).member, QStringLiteral("Activate"));
     QCOMPARE(item->recordedIntents.at(0).arguments, activateArgs);
