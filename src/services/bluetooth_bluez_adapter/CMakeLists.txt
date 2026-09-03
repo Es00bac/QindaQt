@@ -9,6 +9,8 @@ target_sources(
     qindaqt_bluez_adapter
     PRIVATE
         src/bluez_adapter_backend.cpp
+        src/bluez_adapter_backend_p.h
+        src/bluez_adapter_publication.cpp
         src/bluez_backend_mode.cpp
         src/bluez_object_store.cpp
         src/bluez_object_store.h

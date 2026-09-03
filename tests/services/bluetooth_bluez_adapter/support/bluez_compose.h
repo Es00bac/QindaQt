@@ -3,7 +3,6 @@
 #pragma once
 
 #include <QtCore/QHash>
-#include <QtCore/QMetaType>
 #include <QtCore/QVariant>
 #include <QtCore/QVariantMap>
 #include <QtDBus/QDBusObjectPath>
@@ -17,11 +16,4 @@ namespace QindaQt::Tests
 using FakeBluezInterfaces = QHash<QString, QVariantMap>;
 using FakeBluezObjectTree = QHash<QDBusObjectPath, FakeBluezInterfaces>;
 
-inline const QMetaType fakeBluezObjectTreeMetaType()
-{
-    return QMetaType::fromType<FakeBluezObjectTree>();
-}
-
 } // namespace QindaQt::Tests
-
-Q_DECLARE_METATYPE(QindaQt::Tests::FakeBluezObjectTree)

@@ -69,10 +69,10 @@ DeviceClass deviceClassFromCod(const quint32 cod)
         }
         return DeviceClass::AudioVideo;
     case 5:
-        if ((minor & 0x40U) != 0) {
+        if ((minor & 0x10U) != 0) {
             return DeviceClass::Keyboard;
         }
-        if ((minor & 0x80U) != 0) {
+        if ((minor & 0x20U) != 0) {
             return DeviceClass::Mouse;
         }
         if (minor == 0x01U || minor == 0x02U) {
@@ -147,8 +147,17 @@ QString propertyString(const QVariant &value)
 
 QString canonicalAddressOrEmpty(const QVariantMap &properties)
 {
-    const QString address = propertyString(properties.value(QStringLiteral("Address"))).toUpper();
+    const QVariant value = properties.value(QStringLiteral("Address"));
+    if (value.metaType() != QMetaType::fromType<QString>()) {
+        return {};
+    }
+    const QString address = value.toString().toUpper();
     return isCanonicalAddress(address) ? address : QString{};
+}
+
+bool isExactType(const QVariant &value, const QMetaType type)
+{
+    return value.metaType() == type;
 }
 
 } // namespace
@@ -222,23 +231,27 @@ const BluezDeviceState *BluezObjectStore::device(const QString &path) const
 const BluezAdapterState *BluezObjectStore::adapterByAddress(
     const QString &address) const
 {
+    auto selected = m_adapters.cend();
     for (auto it = m_adapters.cbegin(); it != m_adapters.cend(); ++it) {
-        if (it.value().address == address) {
-            return &it.value();
+        if (it.value().address == address
+            && (selected == m_adapters.cend() || it.key() < selected.key())) {
+            selected = it;
         }
     }
-    return nullptr;
+    return selected == m_adapters.cend() ? nullptr : &selected.value();
 }
 
 const BluezDeviceState *BluezObjectStore::deviceByAddress(
     const QString &address) const
 {
+    auto selected = m_devices.cend();
     for (auto it = m_devices.cbegin(); it != m_devices.cend(); ++it) {
-        if (it.value().address == address) {
-            return &it.value();
+        if (it.value().address == address
+            && (selected == m_devices.cend() || it.key() < selected.key())) {
+            selected = it;
         }
     }
-    return nullptr;
+    return selected == m_devices.cend() ? nullptr : &selected.value();
 }
 
 void BluezObjectStore::applyPowered(const QString &adapterPath, const bool powered)
@@ -266,17 +279,25 @@ void BluezObjectStore::upsertAdapter(const QString &path,
         record.address = canonicalAddressOrEmpty(properties);
     }
     if (properties.contains(QStringLiteral("Alias"))) {
-        record.name = boundedName(properties.value(QStringLiteral("Alias")).toString(),
-                                  kMaxAdapterNameUtf8Bytes);
+        const QVariant value = properties.value(QStringLiteral("Alias"));
+        record.name = isExactType(value, QMetaType::fromType<QString>())
+            ? boundedName(value.toString(), kMaxAdapterNameUtf8Bytes)
+            : QString{};
     } else if (properties.contains(QStringLiteral("Name")) && record.name.isEmpty()) {
-        record.name = boundedName(properties.value(QStringLiteral("Name")).toString(),
-                                  kMaxAdapterNameUtf8Bytes);
+        const QVariant value = properties.value(QStringLiteral("Name"));
+        record.name = isExactType(value, QMetaType::fromType<QString>())
+            ? boundedName(value.toString(), kMaxAdapterNameUtf8Bytes)
+            : QString{};
     }
     if (properties.contains(QStringLiteral("Powered"))) {
-        record.powered = properties.value(QStringLiteral("Powered")).toBool();
+        const QVariant value = properties.value(QStringLiteral("Powered"));
+        record.powered = isExactType(value, QMetaType::fromType<bool>())
+            && value.toBool();
     }
     if (properties.contains(QStringLiteral("Discovering"))) {
-        record.discovering = properties.value(QStringLiteral("Discovering")).toBool();
+        const QVariant value = properties.value(QStringLiteral("Discovering"));
+        record.discovering = isExactType(value, QMetaType::fromType<bool>())
+            && value.toBool();
     }
     m_adapters.insert(path, record);
 }
@@ -290,38 +311,60 @@ void BluezObjectStore::upsertDevice(const QString &path,
         record.address = canonicalAddressOrEmpty(properties);
     }
     if (properties.contains(QStringLiteral("Alias"))) {
-        record.name = boundedName(properties.value(QStringLiteral("Alias")).toString(),
-                                  kMaxDeviceNameUtf8Bytes);
+        const QVariant value = properties.value(QStringLiteral("Alias"));
+        record.name = isExactType(value, QMetaType::fromType<QString>())
+            ? boundedName(value.toString(), kMaxDeviceNameUtf8Bytes)
+            : QString{};
     } else if (properties.contains(QStringLiteral("Name")) && record.name.isEmpty()) {
-        record.name = boundedName(properties.value(QStringLiteral("Name")).toString(),
-                                  kMaxDeviceNameUtf8Bytes);
+        const QVariant value = properties.value(QStringLiteral("Name"));
+        record.name = isExactType(value, QMetaType::fromType<QString>())
+            ? boundedName(value.toString(), kMaxDeviceNameUtf8Bytes)
+            : QString{};
     }
     if (properties.contains(QStringLiteral("Class"))) {
-        record.classOfDevice = properties.value(QStringLiteral("Class")).toUInt();
+        const QVariant value = properties.value(QStringLiteral("Class"));
+        record.classOfDevice = isExactType(value, QMetaType::fromType<quint32>())
+            ? value.toUInt()
+            : 0;
     }
     if (properties.contains(QStringLiteral("Icon"))) {
-        const QString icon =
-            properties.value(QStringLiteral("Icon")).toString();
+        const QVariant value = properties.value(QStringLiteral("Icon"));
+        const QString icon = isExactType(value, QMetaType::fromType<QString>())
+            ? value.toString()
+            : QString{};
         record.icon = icon.size() <= kMaxIconCharacters ? icon : QString{};
     }
     if (properties.contains(QStringLiteral("Paired"))) {
-        record.paired = properties.value(QStringLiteral("Paired")).toBool();
+        const QVariant value = properties.value(QStringLiteral("Paired"));
+        record.paired = isExactType(value, QMetaType::fromType<bool>())
+            && value.toBool();
     }
     if (properties.contains(QStringLiteral("Connected"))) {
-        record.connected = properties.value(QStringLiteral("Connected")).toBool();
+        const QVariant value = properties.value(QStringLiteral("Connected"));
+        record.connected = isExactType(value, QMetaType::fromType<bool>())
+            && value.toBool();
     }
     if (properties.contains(QStringLiteral("RSSI"))) {
         // AGENT-GUARD: The Bluetooth1 contract accepts RSSI only in
         // [-128, 0] dBm; BlueZ also reports 127 for "invalid". Anything else
         // is an unknown value, never a clamped or fabricated one.
-        const qint16 rssi =
-            static_cast<qint16>(properties.value(QStringLiteral("RSSI")).toInt());
-        record.rssiKnown = rssi >= -128 && rssi <= 0;
-        record.rssi = record.rssiKnown ? rssi : 0;
+        const QVariant value = properties.value(QStringLiteral("RSSI"));
+        // QVariantMap's QtDBus decoder represents the D-Bus `n` payload as
+        // int even though the wire is signed 16-bit; strings and every other
+        // coercible type remain rejected.
+        const int rawRssi = isExactType(value, QMetaType::fromType<int>())
+            ? value.toInt()
+            : 1;
+        record.rssiKnown = isExactType(value, QMetaType::fromType<int>())
+            && rawRssi >= -128 && rawRssi <= 0;
+        record.rssi = record.rssiKnown ? static_cast<qint16>(rawRssi) : 0;
     }
     if (properties.contains(QStringLiteral("Adapter"))) {
-        record.adapterPath = propertyString(
-            properties.value(QStringLiteral("Adapter")));
+        const QVariant value = properties.value(QStringLiteral("Adapter"));
+        record.adapterPath =
+            isExactType(value, QMetaType::fromType<QDBusObjectPath>())
+            ? propertyString(value)
+            : QString{};
     }
     m_devices.insert(path, record);
 }
@@ -329,8 +372,10 @@ void BluezObjectStore::upsertDevice(const QString &path,
 QList<BackendAdapter> BluezObjectStore::projectAdapters() const
 {
     QList<BackendAdapter> projected;
-    for (auto it = m_adapters.cbegin(); it != m_adapters.cend(); ++it) {
-        const BluezAdapterState &record = it.value();
+    QStringList paths = m_adapters.keys();
+    std::sort(paths.begin(), paths.end());
+    for (const QString &path : paths) {
+        const BluezAdapterState &record = m_adapters.value(path);
         if (record.address.isEmpty()) {
             continue;
         }
@@ -341,10 +386,16 @@ QList<BackendAdapter> BluezObjectStore::projectAdapters() const
         adapter.discovering = record.powered && record.discovering;
         projected.push_back(adapter);
     }
-    std::sort(projected.begin(), projected.end(),
-              [](const BackendAdapter &left, const BackendAdapter &right) {
-                  return left.address < right.address;
-              });
+    std::stable_sort(projected.begin(), projected.end(),
+                     [](const BackendAdapter &left, const BackendAdapter &right) {
+                         return left.address < right.address;
+                     });
+    const auto uniqueEnd =
+        std::unique(projected.begin(), projected.end(),
+                    [](const BackendAdapter &left, const BackendAdapter &right) {
+                        return left.address == right.address;
+                    });
+    projected.erase(uniqueEnd, projected.end());
     if (projected.size() > kMaxAdapters) {
         projected.erase(projected.begin() + kMaxAdapters, projected.end());
     }
@@ -355,8 +406,10 @@ QList<BackendDevice> BluezObjectStore::projectDevices(
     const QSet<QString> &adapterAddresses) const
 {
     QList<BackendDevice> projected;
-    for (auto it = m_devices.cbegin(); it != m_devices.cend(); ++it) {
-        const BluezDeviceState &record = it.value();
+    QStringList paths = m_devices.keys();
+    std::sort(paths.begin(), paths.end());
+    for (const QString &path : paths) {
+        const BluezDeviceState &record = m_devices.value(path);
         if (record.address.isEmpty()) {
             continue;
         }
@@ -387,10 +440,10 @@ QList<BackendDevice> BluezObjectStore::projectDevices(
         device.rssi = record.rssiKnown ? record.rssi : 0;
         projected.push_back(device);
     }
-    std::sort(projected.begin(), projected.end(),
-              [](const BackendDevice &left, const BackendDevice &right) {
-                  return left.address < right.address;
-              });
+    std::stable_sort(projected.begin(), projected.end(),
+                     [](const BackendDevice &left, const BackendDevice &right) {
+                         return left.address < right.address;
+                     });
     // Duplicate addresses (the same remote seen under two objects) keep the
     // first entry; Bluetooth1 identity is the address, never the object path.
     auto uniqueEnd =

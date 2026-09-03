@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <qindaqt/services/bluetooth_bluez_adapter/bluez_adapter_backend.h>
-
-#include "bluez_object_store.h"
-#include "bluez_transport.h"
+#include "bluez_adapter_backend_p.h"
 
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 
-#include <QtCore/QHash>
 #include <QtCore/QMetaObject>
-#include <QtCore/QSet>
-
-#include <utility>
 
 namespace QindaQt::Bluetooth
 {
@@ -22,36 +15,6 @@ using Bluez::BluezAdapterState;
 using Bluez::BluezDeviceState;
 using Bluez::BluezInterfaces;
 using Bluez::BluezManagedObjects;
-using Bluez::BluezObjectStore;
-using Bluez::BluezTransport;
-
-constexpr QLatin1StringView kAdapterInterface{"org.bluez.Adapter1"};
-constexpr QLatin1StringView kDeviceInterface{"org.bluez.Device1"};
-// AGENT-NOTE: BlueZ discovery sessions are reference-counted per client, so
-// another client can keep an adapter discovering while Bluetooth1 holds no
-// lease. The model requires the lease table to agree with each adapter's
-// discovering flag, so that platform truth is represented as one synthetic
-// external-session row. It never reaches the public wire: the Bluetooth1
-// snapshot carries no lease list.
-constexpr QLatin1StringView kExternalLeaseCaller{":bluez-external-session"};
-
-struct LeaseKey
-{
-    QString callerId;
-    QString adapterAddress;
-
-    friend bool operator==(const LeaseKey &, const LeaseKey &) = default;
-};
-
-size_t qHash(const LeaseKey &key, const size_t seed) noexcept
-{
-    return qHashMulti(seed, key.callerId, key.adapterAddress);
-}
-
-bool isBluezBusinessError(const QString &errorName)
-{
-    return errorName.startsWith(QLatin1String("org.bluez.Error."));
-}
 
 struct MappedReply
 {
@@ -59,14 +22,11 @@ struct MappedReply
     QString reasonCode;
 };
 
-// BlueZ error names are platform truth; Bluetooth1 reason codes are the
-// stable programmatic surface. Unmapped transport failures (timeouts, bus
-// loss, owner replacement) are uncertain, never failures: the platform
-// outcome is genuinely unknown.
 MappedReply mapErrorReply(const QString &errorName)
 {
-    if (!isBluezBusinessError(errorName)) {
-        return {BackendOperationStatus::Uncertain, QStringLiteral("bluez-transport")};
+    if (!errorName.startsWith(QLatin1String("org.bluez.Error."))) {
+        return {BackendOperationStatus::Uncertain,
+                QStringLiteral("bluez-transport")};
     }
     if (errorName == QLatin1String("org.bluez.Error.NotReady")) {
         return {BackendOperationStatus::Rejected, QStringLiteral("adapter-off")};
@@ -80,94 +40,12 @@ MappedReply mapErrorReply(const QString &errorName)
                 QStringLiteral("already-connected")};
     }
     if (errorName == QLatin1String("org.bluez.Error.NotConnected")) {
-        return {BackendOperationStatus::Rejected, QStringLiteral("not-connected")};
+        return {BackendOperationStatus::Rejected,
+                QStringLiteral("not-connected")};
     }
     return {BackendOperationStatus::Failed, QStringLiteral("bluez-error")};
 }
-
 } // namespace
-
-struct BluezAdapterBackend::State
-{
-    explicit State(const QDBusConnection &connection, QObject *transportParent)
-        : transport(connection, transportParent)
-    {
-    }
-
-    BluezTransport transport;
-    BluezObjectStore store;
-    QHash<LeaseKey, quint32> leases;
-    QHash<QString, quint32> inflightAcquires;
-    struct Outstanding
-    {
-        quint64 operationId = 0;
-        OperationKind kind = OperationKind::Connect;
-        QString callerId;
-        QString adapterAddress;
-        QString deviceAddress;
-        bool powered = false;
-    };
-    QHash<quint64, Outstanding> outstanding;
-    quint64 generation = 0;
-    bool running = false;
-
-    [[nodiscard]] quint32 localLeaseTotal(const QString &adapterAddress) const
-    {
-        quint32 total = 0;
-        for (auto it = leases.cbegin(); it != leases.cend(); ++it) {
-            if (it.key().adapterAddress == adapterAddress) {
-                total += it.value();
-            }
-        }
-        return total;
-    }
-
-    [[nodiscard]] quint32 localLeaseTotal() const
-    {
-        quint32 total = 0;
-        for (auto it = leases.cbegin(); it != leases.cend(); ++it) {
-            total += it.value();
-        }
-        return total;
-    }
-
-    [[nodiscard]] quint32 externalLeaseTotal() const
-    {
-        quint32 total = 0;
-        const auto &adapters = store.adapters();
-        for (auto it = adapters.cbegin(); it != adapters.cend(); ++it) {
-            if (it.value().powered && it.value().discovering
-                && localLeaseTotal(it.value().address) == 0) {
-                ++total;
-            }
-        }
-        return total;
-    }
-
-    [[nodiscard]] bool externallyDiscovering(const QString &adapterAddress) const
-    {
-        const BluezAdapterState *adapter = store.adapterByAddress(adapterAddress);
-        return adapter != nullptr && adapter->powered && adapter->discovering;
-    }
-
-    void dropAdapterLeases(const QString &adapterAddress)
-    {
-        for (auto it = leases.begin(); it != leases.end();) {
-            if (it.key().adapterAddress == adapterAddress) {
-                it = leases.erase(it);
-            } else {
-                ++it;
-            }
-        }
-        inflightAcquires.remove(adapterAddress);
-    }
-
-    void dropAllLeases()
-    {
-        leases.clear();
-        inflightAcquires.clear();
-    }
-};
 
 BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
                                          QObject *parent)
@@ -258,6 +136,7 @@ void BluezAdapterBackend::stop()
     d->leases.clear();
     d->inflightAcquires.clear();
     d->outstanding.clear();
+    d->queuedAcquires.clear();
 }
 
 void BluezAdapterBackend::submit(const quint64 operationId,
@@ -398,6 +277,17 @@ void BluezAdapterBackend::submitAcquire(const quint64 operationId,
                         QStringLiteral("lease-acquired"));
         return;
     }
+    if (d->inflightAcquires.value(request.adapterAddress, 0) > 0) {
+        ++d->inflightAcquires[request.adapterAddress];
+        d->queuedAcquires[request.adapterAddress].append(
+            {.operationId = operationId,
+             .kind = request.kind,
+             .callerId = request.callerId,
+             .adapterAddress = request.adapterAddress,
+             .deviceAddress = {},
+             .powered = false});
+        return;
+    }
     d->inflightAcquires[request.adapterAddress] =
         d->inflightAcquires.value(request.adapterAddress, 0) + 1;
     const quint64 callId = d->transport.startDiscovery(adapter->path);
@@ -425,7 +315,7 @@ void BluezAdapterBackend::submitAcquire(const quint64 operationId,
 void BluezAdapterBackend::submitRelease(const quint64 operationId,
                                         const BackendRequest &request)
 {
-    const LeaseKey key{request.callerId, request.adapterAddress};
+    const BluezLeaseKey key{request.callerId, request.adapterAddress};
     const auto it = d->leases.find(key);
     if (it == d->leases.end() || it.value() == 0) {
         finishOperation(operationId, BackendOperationStatus::Rejected,
@@ -554,24 +444,33 @@ void BluezAdapterBackend::handleCallFinished(const quint64 callId,
         return;
     }
     case OperationKind::AcquireDiscovery: {
-        const quint32 inflight = d->inflightAcquires.value(call.adapterAddress, 0);
-        if (inflight <= 1) {
-            d->inflightAcquires.remove(call.adapterAddress);
-        } else {
-            d->inflightAcquires[call.adapterAddress] = inflight - 1;
-        }
+        const QList<State::Outstanding> queued =
+            d->queuedAcquires.take(call.adapterAddress);
+        d->inflightAcquires.remove(call.adapterAddress);
         const bool sessionActive =
             succeeded || errorName == QLatin1String("org.bluez.Error.AlreadyExists")
             || errorName == QLatin1String("org.bluez.Error.InProgress");
         if (sessionActive) {
             ++d->leases[{call.callerId, call.adapterAddress}];
+            for (const State::Outstanding &waiter : queued) {
+                ++d->leases[{waiter.callerId, waiter.adapterAddress}];
+            }
             publish();
             finishOperation(call.operationId, BackendOperationStatus::Succeeded,
                             QStringLiteral("lease-acquired"));
+            for (const State::Outstanding &waiter : queued) {
+                finishOperation(waiter.operationId,
+                                BackendOperationStatus::Succeeded,
+                                QStringLiteral("lease-acquired"));
+            }
             return;
         }
         const MappedReply mapped = mapErrorReply(errorName);
         finishOperation(call.operationId, mapped.status, mapped.reasonCode);
+        for (const State::Outstanding &waiter : queued) {
+            finishOperation(waiter.operationId, mapped.status,
+                            mapped.reasonCode);
+        }
         return;
     }
     case OperationKind::Connect: {
@@ -618,134 +517,6 @@ void BluezAdapterBackend::handleCallFinished(const quint64 callId,
         finishOperation(call.operationId, BackendOperationStatus::Failed,
                         QStringLiteral("backend-malformed"));
     }
-}
-
-void BluezAdapterBackend::handleOwnerReplaced()
-{
-    if (!d->running) {
-        return;
-    }
-    // AGENT-GUARD: Any org.bluez owner transition (loss, replacement, or
-    // return) retires every piece of truth bound to the previous owner:
-    // outstanding operations complete uncertain, leases and inflight
-    // acquisitions die with the daemon's sessions, and the store empties so
-    // the model republishes the truthful Unavailable/no-adapter snapshot
-    // until the fresh owner's inventory arrives.
-    const auto outstanding = std::exchange(d->outstanding, {});
-    for (auto it = outstanding.cbegin(); it != outstanding.cend(); ++it) {
-        finishOperation(it.value().operationId, BackendOperationStatus::Uncertain,
-                        QStringLiteral("authority-replaced"));
-    }
-    d->dropAllLeases();
-    d->store.clear();
-    publish();
-}
-
-void BluezAdapterBackend::applyProperties(const QString &path,
-                                          const QString &interfaceName,
-                                          const QVariantMap &changed,
-                                          const QStringList &invalidated)
-{
-    if (interfaceName == QString(kAdapterInterface)) {
-        const BluezAdapterState *before = d->store.adapter(path);
-        if (before == nullptr) {
-            return;
-        }
-        const bool discoveringReported = changed.contains(QStringLiteral("Discovering"));
-        BluezInterfaces patch;
-        patch.insert(interfaceName, changed);
-        d->store.upsertInterfaces(path, patch);
-        const BluezAdapterState *after = d->store.adapter(path);
-        if (after == nullptr) {
-            return;
-        }
-        // AGENT-GUARD: A powered-off adapter has no sessions and a
-        // Discovering=false transition means the platform killed the session;
-        // local lease references die with it so the table never claims a
-        // session the platform no longer runs.
-        if (!after->powered || (discoveringReported && !after->discovering)) {
-            d->dropAdapterLeases(after->address);
-        }
-    } else if (interfaceName == QString(kDeviceInterface)) {
-        if (d->store.device(path) == nullptr) {
-            return;
-        }
-        BluezInterfaces patch;
-        patch.insert(interfaceName, changed);
-        d->store.upsertInterfaces(path, patch);
-    }
-    if (!invalidated.isEmpty()) {
-        // Invalidated properties are unknown, not defaulted: re-read the
-        // authoritative managed-object snapshot instead of guessing.
-        d->transport.requestManagedObjects();
-    }
-    publish();
-}
-
-void BluezAdapterBackend::retireObjects(const QString &path,
-                                        const QStringList &interfaces)
-{
-    QString adapterAddress;
-    if (interfaces.contains(QString(kAdapterInterface))) {
-        if (const BluezAdapterState *adapter = d->store.adapter(path);
-            adapter != nullptr) {
-            adapterAddress = adapter->address;
-        }
-    }
-    d->store.removeInterfaces(path, interfaces);
-    if (!adapterAddress.isEmpty()) {
-        d->dropAdapterLeases(adapterAddress);
-    }
-}
-
-void BluezAdapterBackend::publish()
-{
-    // Leases can only reference live, powered adapters; reconciling first
-    // keeps the table the model validates consistent even when a snapshot
-    // replace dropped adapters without InterfacesRemoved.
-    for (auto it = d->leases.begin(); it != d->leases.end();) {
-        const BluezAdapterState *adapter =
-            d->store.adapterByAddress(it.key().adapterAddress);
-        if (adapter == nullptr || !adapter->powered) {
-            it = d->leases.erase(it);
-        } else {
-            ++it;
-        }
-    }
-    BackendInventory inventory;
-    inventory.adapters = d->store.projectAdapters();
-    QSet<QString> adapterAddresses;
-    for (const BackendAdapter &adapter : inventory.adapters) {
-        adapterAddresses.insert(adapter.address);
-    }
-    inventory.devices = d->store.projectDevices(adapterAddresses);
-    for (BackendAdapter &adapter : inventory.adapters) {
-        const quint32 local = d->localLeaseTotal(adapter.address);
-        const bool external =
-            adapter.powered && local == 0 && d->externallyDiscovering(adapter.address);
-        // AGENT-GUARD: The model requires discovering == (powered && leases).
-        // Discovery authority is the lease table plus BlueZ's own sessions.
-        adapter.discovering = adapter.powered && (local > 0 || external);
-        if (external) {
-            inventory.leases.push_back(
-                {QString(kExternalLeaseCaller), adapter.address, 1});
-        }
-    }
-    for (auto it = d->leases.cbegin(); it != d->leases.cend(); ++it) {
-        if (it.value() > 0) {
-            inventory.leases.push_back(
-                {it.key().callerId, it.key().adapterAddress, it.value()});
-        }
-    }
-    Q_EMIT inventoryChanged(d->generation, inventory);
-}
-
-void BluezAdapterBackend::finishOperation(const quint64 operationId,
-                                          const BackendOperationStatus status,
-                                          const QString &reasonCode)
-{
-    Q_EMIT operationFinished(d->generation, operationId,
-                             {.status = status, .reasonCode = reasonCode, .diagnostic = {}});
 }
 
 } // namespace QindaQt::Bluetooth

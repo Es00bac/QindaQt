@@ -18,8 +18,6 @@ namespace QindaQt::Tests
 
 class FakeBluez;
 
-class FakeBluez;
-
 // One virtual object serves the whole fake org.bluez tree. Manual dispatch by
 // path/interface/member gives the fixture exact BlueZ reply control: success,
 // exact org.bluez error names, and deliberately deferred replies, with no
@@ -133,7 +131,7 @@ private:
                      const QString &name, const QVariant &value,
                      const QDBusMessage &request);
     void publishConsequencesOfPowerOff(const QString &path);
-    [[nodiscard]] QHash<QString, FakeBluezInterfaces> managedObjects() const;
+    [[nodiscard]] FakeBluezObjectTree objectTree() const;
     void sendReply(const QDBusMessage &request);
     void sendError(const QDBusMessage &request, const QString &name,
                    const QString &text);

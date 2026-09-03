@@ -4,6 +4,8 @@
 
 #include <QtTest>
 
+#include <algorithm>
+
 using namespace QindaQt::Bluetooth;
 using BluezHarness = QindaQt::Tests::BluezHarness;
 using FakeBluez = QindaQt::Tests::FakeBluez;
@@ -21,6 +23,7 @@ private Q_SLOTS:
     void powerToggleRoundTrip();
     void hostilePropertiesAreBounded();
     void interfaceChurnUpdatesInventory();
+    void duplicateAdapterAddressDeduplicated();
     void duplicateDeviceAddressDeduplicated();
     void ownerLossAndReturnRetiresTruth();
     void eventsAfterStopDoNotPublish();
@@ -53,7 +56,7 @@ void BluezAdapterBackendTests::initialInventoryMapsTruth()
     FakeBluez::DeviceEntity *keyboard = harness.fake->device(keyboardPath);
     keyboard->paired = true;
     keyboard->connected = true;
-    keyboard->deviceClass = 0x600;
+    keyboard->deviceClass = 0x540;
     keyboard->rssiKnown = true;
     keyboard->rssi = -52;
     const QString mousePath = harness.fake->addDevice(
@@ -176,6 +179,26 @@ void BluezAdapterBackendTests::hostilePropertiesAreBounded()
     // Class above the 24-bit CoD space and an unknown icon never invent a
     // category.
     QCOMPARE(mapped.deviceClass, DeviceClass::Unknown);
+
+    harness.fake->emitDeviceProperties(
+        devicePath,
+        {{QStringLiteral("Alias"), quint32(7)},
+         {QStringLiteral("Class"), QStringLiteral("1344")},
+         {QStringLiteral("Paired"), QStringLiteral("true")},
+         {QStringLiteral("RSSI"), QStringLiteral("-5")}});
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.model->snapshot().devices.constFirst().name.isEmpty();
+    }));
+    const Device strictTypes = harness.model->snapshot().devices.constFirst();
+    QCOMPARE(strictTypes.deviceClass, DeviceClass::Unknown);
+    QVERIFY(!strictTypes.paired);
+    QVERIFY(!strictTypes.rssiKnown);
+
+    harness.fake->emitAdapterProperties(
+        adapterPath, {{QStringLiteral("Powered"), QStringLiteral("true")}});
+    QVERIFY(harness.waitUntil([&harness] {
+        return !harness.model->snapshot().adapters.constFirst().powered;
+    }));
 }
 
 void BluezAdapterBackendTests::interfaceChurnUpdatesInventory()
@@ -241,9 +264,49 @@ void BluezAdapterBackendTests::duplicateDeviceAddressDeduplicated()
     QVERIFY(harness.fake->takeOwnership());
     harness.model->start();
     QVERIFY(harness.waitReady());
-    QCOMPARE(harness.model->snapshot().devices.size(), 1);
-    QCOMPARE(harness.model->snapshot().devices.constFirst().adapterHandle,
-             harness.model->snapshot().adapters.constFirst().handle);
+    const Snapshot snapshot = harness.model->snapshot();
+    QCOMPARE(snapshot.devices.size(), 1);
+    const Device &device = snapshot.devices.constFirst();
+    QCOMPARE(device.name, QStringLiteral("One"));
+    const auto adapterIt = std::find_if(
+        snapshot.adapters.cbegin(), snapshot.adapters.cend(),
+        [&device](const Adapter &adapter) {
+            return adapter.handle == device.adapterHandle;
+        });
+    QVERIFY(adapterIt != snapshot.adapters.cend());
+    QCOMPARE(adapterIt->address, QStringLiteral("AA:BB:CC:00:11:22"));
+}
+
+void BluezAdapterBackendTests::duplicateAdapterAddressDeduplicated()
+{
+    BluezHarness harness(7010);
+    QVERIFY(harness.ready());
+    const QString firstPath = harness.fake->addAdapter(
+        QStringLiteral("hci0"), QStringLiteral("AA:BB:CC:00:11:22"),
+        QStringLiteral("First"), true);
+    const QString secondPath = harness.fake->addAdapter(
+        QStringLiteral("hci1"), QStringLiteral("AA:BB:CC:00:11:22"),
+        QStringLiteral("Second"), true);
+    QVERIFY(harness.fake->takeOwnership());
+    harness.model->start();
+    QVERIFY(harness.waitReady());
+    QCOMPARE(harness.model->snapshot().adapters.size(), 1);
+    QCOMPARE(harness.model->snapshot().adapters.constFirst().name,
+             QStringLiteral("First"));
+
+    QSignalSpy completed(harness.model.get(), &BluetoothModel::operationCompleted);
+    const OperationSubmission off = harness.model->submit(
+        {.kind = OperationKind::SetAdapterPower,
+         .target = harness.snapshotAdapter().handle,
+         .powered = false},
+        QStringLiteral(":1.10"));
+    QVERIFY(off.pending);
+    const std::optional<OperationResult> result =
+        harness.awaitResult(completed, off.operationId);
+    QVERIFY(result.has_value());
+    QCOMPARE(result->status, OperationStatus::Succeeded);
+    QVERIFY(!harness.fake->adapter(firstPath)->powered);
+    QVERIFY(harness.fake->adapter(secondPath)->powered);
 }
 
 void BluezAdapterBackendTests::ownerLossAndReturnRetiresTruth()
@@ -288,9 +351,12 @@ void BluezAdapterBackendTests::ownerLossAndReturnRetiresTruth()
         {.kind = OperationKind::ReleaseDiscovery,
          .target = harness.snapshotAdapter().handle},
         QStringLiteral(":1.10"));
-    QVERIFY(!release.pending);
-    QCOMPARE(release.immediateResult.status, OperationStatus::Rejected);
-    QCOMPARE(release.immediateResult.reasonCode, QStringLiteral("no-lease"));
+    QVERIFY(release.pending);
+    const std::optional<OperationResult> released =
+        harness.awaitResult(completed, release.operationId);
+    QVERIFY(released.has_value());
+    QCOMPARE(released->status, OperationStatus::Rejected);
+    QCOMPARE(released->reasonCode, QStringLiteral("no-lease"));
 }
 
 void BluezAdapterBackendTests::eventsAfterStopDoNotPublish()

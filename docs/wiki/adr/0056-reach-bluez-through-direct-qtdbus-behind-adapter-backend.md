@@ -3,14 +3,15 @@
 - **Status:** Accepted
 - **Date:** 2026-09-02
 - **Owners:** Bluetooth platform (QQ-005.05)
-- **Supersedes:** None
+- **Supersedes:** ADR-0037's BluezQt transport-library choice only; its BlueZ
+  authority and Agent1 decisions remain accepted
 - **Superseded by:** None
 
 ## Context
 
-[ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) accepted KF6
-BluezQt as the reuse library for the future runtime adapter and deferred the
-transport choice to that lane. The B1 lane now implements the production
+[ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) named KF6
+BluezQt as the reuse library for the future runtime adapter. The B1 lane now
+supersedes that library choice and implements the production
 `AdapterBackend` over BlueZ. The authority decision — BlueZ owns pairing,
 trust, keys, device records, profiles, and authorization, and Bluetooth1 never
 calls `Pair`/`Trust` — is untouched by this choice.

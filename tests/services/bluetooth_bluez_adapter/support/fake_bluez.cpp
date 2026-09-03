@@ -5,6 +5,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusMetaType>
 #include <QtDBus/QDBusObjectPath>
 
 #include <utility>
@@ -91,6 +92,8 @@ bool FakeBluezServiceObject::handleMessage(const QDBusMessage &message,
 FakeBluez::FakeBluez(const QString &busAddress, QObject *parent)
     : QObject(parent), m_busAddress(busAddress)
 {
+    qDBusRegisterMetaType<FakeBluezInterfaces>();
+    qDBusRegisterMetaType<FakeBluezObjectTree>();
     m_nodes = new QObject(this);
 }
 
@@ -157,12 +160,14 @@ bool FakeBluez::returnAsNewOwner()
 void FakeBluez::registerObjects()
 {
     auto *service = new FakeBluezServiceObject(this, m_nodes);
-    m_connection.registerVirtualObject(QStringLiteral("/"), service);
+    m_connection.registerVirtualObject(QStringLiteral("/"), service,
+                                       QDBusConnection::SubPath);
 }
 
 void FakeBluez::unregisterObjects()
 {
-    m_connection.unregisterObject(QStringLiteral("/"));
+    m_connection.unregisterObject(QStringLiteral("/"),
+                                  QDBusConnection::UnregisterTree);
 }
 
 QString FakeBluez::addAdapter(const QString &id, const QString &address,
@@ -466,9 +471,9 @@ void FakeBluez::propertySet(const QString &path, const QString &interfaceName,
               QStringLiteral("Unknown property"));
 }
 
-QHash<QString, FakeBluezInterfaces> FakeBluez::managedObjects() const
+FakeBluezObjectTree FakeBluez::objectTree() const
 {
-    QHash<QString, FakeBluezInterfaces> objects;
+    FakeBluezObjectTree objects;
     for (auto it = m_adapters.cbegin(); it != m_adapters.cend(); ++it) {
         QVariantMap properties;
         properties.insert(QStringLiteral("Address"),
@@ -479,7 +484,7 @@ QHash<QString, FakeBluezInterfaces> FakeBluez::managedObjects() const
         properties.insert(QStringLiteral("Discovering"), it.value().discovering);
         FakeBluezInterfaces interfaces;
         interfaces.insert(QString(kAdapterInterface), properties);
-        objects.insert(it.key(), interfaces);
+        objects.insert(QDBusObjectPath(it.key()), interfaces);
     }
     for (auto it = m_devices.cbegin(); it != m_devices.cend(); ++it) {
         QVariantMap properties;
@@ -498,7 +503,7 @@ QHash<QString, FakeBluezInterfaces> FakeBluez::managedObjects() const
                           QVariant::fromValue(QDBusObjectPath(it.value().adapterPath)));
         FakeBluezInterfaces interfaces;
         interfaces.insert(QString(kDeviceInterface), properties);
-        objects.insert(it.key(), interfaces);
+        objects.insert(QDBusObjectPath(it.key()), interfaces);
     }
     return objects;
 }

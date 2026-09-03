@@ -84,8 +84,12 @@ void BluezAdapterOperationsTests::discoveryLeaseAcquireReleaseRefcount()
     const OperationSubmission releaseAgain = harness.model->submit(
         {.kind = OperationKind::ReleaseDiscovery, .target = handle},
         QStringLiteral(":1.10"));
-    QVERIFY(!releaseAgain.pending);
-    QCOMPARE(releaseAgain.immediateResult.reasonCode, QStringLiteral("no-lease"));
+    QVERIFY(releaseAgain.pending);
+    const std::optional<OperationResult> missingLease =
+        harness.awaitResult(completed, releaseAgain.operationId);
+    QVERIFY(missingLease.has_value());
+    QCOMPARE(missingLease->status, OperationStatus::Rejected);
+    QCOMPARE(missingLease->reasonCode, QStringLiteral("no-lease"));
 }
 
 void BluezAdapterOperationsTests::externalDiscoverySessionReconciled()
@@ -238,6 +242,9 @@ void BluezAdapterOperationsTests::connectSuccessAndFailureReplies()
     failing->connected = false;
     failing->connectError = QStringLiteral("org.bluez.Error.Failed");
     harness.fake->emitDeviceProperties(devicePath, {{QStringLiteral("Connected"), false}});
+    QVERIFY(harness.waitUntil([&harness] {
+        return !harness.model->snapshot().devices.constFirst().connected;
+    }));
     const OperationSubmission failedConnect = harness.model->submit(
         {.kind = OperationKind::Connect, .target = deviceHandle},
         QStringLiteral(":1.10"));
@@ -370,8 +377,12 @@ void BluezAdapterOperationsTests::leaseDiesWithAdapterPowerOff()
         {.kind = OperationKind::ReleaseDiscovery,
          .target = harness.snapshotAdapter().handle},
         QStringLiteral(":1.10"));
-    QVERIFY(!release.pending);
-    QCOMPARE(release.immediateResult.reasonCode, QStringLiteral("no-lease"));
+    QVERIFY(release.pending);
+    const std::optional<OperationResult> missingLease =
+        harness.awaitResult(completed, release.operationId);
+    QVERIFY(missingLease.has_value());
+    QCOMPARE(missingLease->status, OperationStatus::Rejected);
+    QCOMPARE(missingLease->reasonCode, QStringLiteral("no-lease"));
 
     // Powering back on never resurrects discovery.
     harness.fake->setAdapterPowered(adapterPath, true);
@@ -433,7 +444,9 @@ void BluezAdapterOperationsTests::ownerLossDuringDeferredConnectIsUncertain()
          .target = harness.model->snapshot().devices.constFirst().handle},
         QStringLiteral(":1.10"));
     QVERIFY(connect.pending);
-    QVERIFY(harness.fake->connectCalls >= 1);
+    QVERIFY(harness.waitUntil([&harness] {
+        return harness.fake->connectCalls >= 1;
+    }));
 
     // The reply never arrives because the authority that owed it is gone.
     harness.fake->dropOwnership();
