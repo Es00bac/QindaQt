@@ -65,10 +65,10 @@ if(NOT EXISTS "${selection_file}")
 endif()
 file(READ "${selection_file}" selection_content)
 set(expected_selection_content
-    "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\n")
+    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=kde;gtk;lxqt\norg.freedesktop.impl.portal.AppChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.FileChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.Email=kde;gtk;lxqt\norg.freedesktop.impl.portal.Inhibit=kde;gtk;lxqt\norg.freedesktop.impl.portal.Notification=kde;gtk;lxqt\norg.freedesktop.impl.portal.Print=kde;gtk;lxqt\norg.freedesktop.impl.portal.Screenshot=kde;gtk;lxqt\norg.freedesktop.impl.portal.ScreenCast=kde;gtk;lxqt\norg.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt\norg.freedesktop.impl.portal.Background=none\n")
 if(NOT selection_content STREQUAL expected_selection_content)
     message(FATAL_ERROR
-        "Portal selector differs from exact Settings singleton")
+        "Portal selector differs from exact Settings/fallback routing policy")
 endif()
 
 if(DEFINED STAGE_ROOT)

@@ -27,10 +27,10 @@ layers:
 | Portal adapter/process | Standard D-Bus marshalling, filtering, change signals, service-name ownership, activation, and shutdown on bus loss | Appearance persistence or any non-Settings portal |
 
 The backend does **not** implement a chooser, OpenURI, notifications, inhibit,
-screencast, remote desktop, a consent dialog, or portal-frontend policy. Its
-`.portal` file advertises only `org.freedesktop.impl.portal.Settings`. It does
-not replace, embed, or supervise `xdg-desktop-portal`, and the repository test
-boundary does not qualify a host portal installation.
+screencast, remote desktop, or a consent dialog. Its `.portal` file advertises
+only `org.freedesktop.impl.portal.Settings`. The module owns QindaQt's frontend
+selection file, but it does not replace, embed, or supervise
+`xdg-desktop-portal`; non-Settings calls remain another backend's authority.
 
 ## Standard endpoint
 
@@ -101,10 +101,14 @@ crossing to a new daemon.
 The `QindaQtPortalP0` install component contains the resident executable,
 public policy/source headers and libraries, five built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
-and `qindaqt-portals.conf`. The selector binds only
-`org.freedesktop.impl.portal.Settings` to the `qindaqt` backend; its `default=*`
-entry leaves every other portal interface to another installed provider, as
-defined by upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
+and `qindaqt-portals.conf`. The selector binds
+`org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders
+`kde;gtk;lxqt` for the supported non-Settings fallback families, disables
+Background, and uses `default=none` so an unreviewed family cannot silently
+escape the table. OpenURI is implemented by the frontend itself and therefore
+has no backend selector. The exact table is part of the
+[Settings backend v1 reference](../reference/portal-settings-backend-v1.md),
+following upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
 
 The executable and its injected Settings1 source are thread-confined to the
 constructing Qt event loop. Startup registers the object, acquires the exact
@@ -125,18 +129,30 @@ ctest --test-dir build/dev \
 It covers pure mapping and hostile theme/snapshot input, exact-owner
 replacement and stale replies, standard D-Bus signatures and filters, service
 name rollback, bounded change signals, private-daemon activation/restart,
-staged runtime execution, exact installed metadata, source/package poison, and
-read-only startup. The metadata gate compares the complete `.portal` and
-selector contracts, so duplicate Settings entries or any extra standard family
-(including installed 1.20.4 Background) fail both source and staged-installed
-controls. All bus tests create disposable daemons after removing host
-session-bus variables; no test calls or modifies the host portal.
+staged runtime execution, exact installed metadata/singletons, source/package
+poison, and read-only startup. Two P1 rows run the real installed
+`xdg-desktop-portal` on a private `dbus-run-session` bus with only staged portal
+metadata. They prove QindaQt selection for the `qindaqt` desktop, exact
+frontend `ReadAll`/`Read` values and live forwarding, rejection under another
+desktop, injected KDE FileChooser fallback routing, and the closed Background
+escape. The Qt row runs an offscreen Qt 6 process with
+`QT_QPA_PLATFORMTHEME=xdgdesktopportal`, observes Dark then a live Light
+`QStyleHints::colorScheme()` change, and applies a palette derived from that
+hint. It does not claim that Qt replaces an application's explicit palette.
 
-This proves the backend boundary and direct standard D-Bus behavior. It does
-not prove that a distribution installed or selected the package, that the host
-portal frontend consumed it, or that a particular third-party toolkit reacts
-to changes. Those are downstream integration checks, not authority to modify
-the developer's active portal state.
+The metadata gate compares the complete `.portal` and selector contracts, so
+duplicate entries, QindaQt ownership of a non-Settings family, or a reopened
+Background/default route fail both source and staged-installed controls. The
+staged-package row repeats both frontend rows against the installed artifacts.
+All rows remove host session-bus variables, reserve the auxiliary portal names
+with injected test fakes, and use build-local runtime/config/data directories;
+they neither contact nor modify the host portal or host D-Bus services.
+
+This proves package selection and Qt reaction on the private bus. It does not
+qualify an installed desktop, a host session bus, GTK/GSettings or Flatpak
+sandbox reaction, a real chooser UI, or any non-Settings portal implementation.
 
 The durable process/protocol choice is recorded in
 [ADR-0054](../adr/0054-export-appearance-through-the-standard-settings-portal.md).
+The fail-closed fallback routing policy is recorded in
+[ADR-0057](../adr/0057-route-unimplemented-portal-families-explicitly.md).
