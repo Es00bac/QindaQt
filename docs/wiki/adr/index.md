@@ -56,6 +56,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0053](0053-compose-display1-from-authenticated-runtime-authorities.md) | Accepted | Compose Display1 from explicit journal, Wayland-peer, lock, writer, and logind authorities |
 | [ADR-0054](0054-export-appearance-through-the-standard-settings-portal.md) | Accepted | Export confirmed Settings1/QST appearance through the standard Settings portal backend |
 | [ADR-0055](0055-compose-network-settings-through-network1.md) | Accepted | Compose Network settings through public Network1 without credential authority |
+| [ADR-0056](0056-adopt-standard-appmenu-dbusmenu-transports.md) | Accepted | Adopt standard AppMenu/dbusmenu transports behind proof-bound ownership |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
