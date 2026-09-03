@@ -4,6 +4,7 @@
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "runtime/qml_component_ready.h"
+#include "runtime/mutation_ui_action_probe.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 
@@ -15,11 +16,13 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QFileInfo>
+#include <QFile>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QVariant>
 
 #include <cstdio>
@@ -188,6 +191,9 @@ int main(int argc, char **argv) {
   parser.addOption(
       {QStringLiteral("check-ui-contract"),
        QStringLiteral("Verify the mutation action and accessible object contract and exit")});
+  parser.addOption(
+      {QStringLiteral("check-ui-actions"),
+       QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
   parser.addPositionalArgument(QStringLiteral("folder"),
                                QStringLiteral("Local folder to open"), QStringLiteral("[folder]"));
   parser.process(application);
@@ -208,6 +214,25 @@ int main(int argc, char **argv) {
       std::fprintf(stderr, "qindaqt-file-manager: %s is not a folder\n",
                    qPrintable(parser.positionalArguments().first()));
       return 4;
+    }
+  }
+
+  std::unique_ptr<QTemporaryDir> uiActionFixture;
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    uiActionFixture = std::make_unique<QTemporaryDir>(
+        QDir(startPath).filePath(QStringLiteral("qindaqt-file-manager-ui-XXXXXX")));
+    if (!uiActionFixture->isValid()) {
+      std::fprintf(stderr,
+                   "qindaqt-file-manager: could not create the UI action fixture\n");
+      return 5;
+    }
+    startPath = uiActionFixture->path();
+    QFile seed(QDir(startPath).filePath(QStringLiteral("qml-source.txt")));
+    if (!seed.open(QIODevice::WriteOnly) ||
+        seed.write("fixture-data") != QByteArray("fixture-data").size()) {
+      std::fprintf(stderr,
+                   "qindaqt-file-manager: could not seed the UI action fixture\n");
+      return 5;
     }
   }
 
@@ -300,6 +325,21 @@ int main(int argc, char **argv) {
       }
     }
     std::printf("mutation-ui-contract-ok\n");
+    destroyRoots();
+    return 0;
+  }
+  if (parser.isSet(QStringLiteral("check-ui-actions"))) {
+    QString actionError;
+    if (!QindaQt::Apps::FileManager::verifyMutationUiActions(
+            engine.rootObjects().constFirst(), appCoordinator.get(),
+            controller.get(), mutationController.get(), startPath,
+            &actionError)) {
+      std::fprintf(stderr, "qindaqt-file-manager: %s\n",
+                   qPrintable(actionError));
+      destroyRoots();
+      return 5;
+    }
+    std::printf("mutation-ui-actions-ok\n");
     destroyRoots();
     return 0;
   }

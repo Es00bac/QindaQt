@@ -7,6 +7,8 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <linux/fs.h>
+#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -75,6 +77,11 @@ private:
     return MutationError::InvalidRequest;
   case ELOOP:
     return MutationError::SymlinkEscape;
+#if defined(ENOTSUP)
+  case ENOTSUP:
+#endif
+  case ENOSYS:
+    return MutationError::Unsupported;
   default:
     return MutationError::IoError;
   }
@@ -141,6 +148,26 @@ private:
     offset += count;
   }
   return true;
+}
+
+[[nodiscard]] int renameNoReplace(int sourceParent, const char *sourceName,
+                                  int destinationParent,
+                                  const char *destinationName) {
+#if defined(Q_OS_LINUX) && defined(SYS_renameat2)
+  // AGENT-GUARD: P2-2 showed that an existence check followed by renameat()
+  // can erase a destination created by a racing writer. RENAME_NOREPLACE is
+  // the commit-time authority; the earlier fstatat remains diagnostic only.
+  return static_cast<int>(::syscall(SYS_renameat2, sourceParent, sourceName,
+                                    destinationParent, destinationName,
+                                    RENAME_NOREPLACE));
+#else
+  Q_UNUSED(sourceParent);
+  Q_UNUSED(sourceName);
+  Q_UNUSED(destinationParent);
+  Q_UNUSED(destinationName);
+  errno = ENOSYS;
+  return -1;
+#endif
 }
 
 } // namespace
@@ -350,8 +377,9 @@ MutationResult relocateLocalNoFollow(const QString &source,
     return failure(errorForErrno(errno),
                    QStringLiteral("The destination could not be checked"));
   }
-  if (::renameat(sourceParent.get(), sourceBytes.constData(),
-                 destinationParent.get(), destinationBytes.constData()) != 0) {
+  if (renameNoReplace(sourceParent.get(), sourceBytes.constData(),
+                      destinationParent.get(),
+                      destinationBytes.constData()) != 0) {
     return failure(errorForErrno(errno),
                    QStringLiteral("The item could not be moved"));
   }
@@ -359,7 +387,7 @@ MutationResult relocateLocalNoFollow(const QString &source,
   if (::fstatat(destinationParent.get(), destinationBytes.constData(),
                 &movedStatus, AT_SYMLINK_NOFOLLOW) != 0 ||
       identity(movedStatus) != expectedSource) {
-    const int ignoredRollback = ::renameat(
+    const int ignoredRollback = renameNoReplace(
         destinationParent.get(), destinationBytes.constData(),
         sourceParent.get(), sourceBytes.constData());
     Q_UNUSED(ignoredRollback);

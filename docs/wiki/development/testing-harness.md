@@ -1407,12 +1407,18 @@ names, overlong rejection, permission denial, existing destinations, stale and
 vanished identities (including vanishing during copy), cancellation cleanup,
 nested/root symbolic-link escapes, an in-flight nested-directory swap,
 mode/data preservation, Trash metadata and restore round trips, unique payloads,
-restore collision, empty Trash, and a cross-device refusal through an injected device resolver. Controller fakes
+orphan-payload suffix allocation, restore collision, vanished restore-parent
+typing, empty Trash, a deterministic preflight-to-commit racing writer, and a
+cross-device refusal through an injected device resolver. Controller fakes
 prove execution occurs off the GUI thread and cancellation returns typed state.
 
 `qindaqt.file-manager-mutation-ui-offscreen` constructs the production QML
 root, action menus, dialogs, and accessible progress/failure/result surfaces
-with fatal Qt warnings and no host display or session-bus address. The boundary
+with fatal Qt warnings and no host display or session-bus address.
+`qindaqt.file-manager-mutation-ui-actions-offscreen` additionally activates
+rename, copy, move, Trash, and restore through the real AppShell/QML dialog seam
+against a disposable build-root fixture, preserving 64-bit listing identities
+across JavaScript. The boundary
 row rejects shell, service, KWin, LayerShell, D-Bus, desktop-launch, and QML
 dependencies from `mutation/**` and must also reject its planted poison input.
 The installed-runtime row still stages only the FileManager component; its

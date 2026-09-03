@@ -161,11 +161,16 @@ QVariantList NavigationController::entries() const {
         {QStringLiteral("isReadable"), entry.isReadable},
         {QStringLiteral("size"), entry.size},
         {QStringLiteral("modified"), entry.lastModified},
-        {QStringLiteral("device"), QVariant::fromValue(entry.device)},
-        {QStringLiteral("inode"), QVariant::fromValue(entry.inode)},
-        {QStringLiteral("identitySize"), entry.identitySize},
-        {QStringLiteral("modifiedNanoseconds"), entry.modifiedNanoseconds},
-        {QStringLiteral("mode"), entry.mode},
+        // AGENT-GUARD: These identity fields cross QVariant -> JavaScript ->
+        // QVariant before mutation dispatch. Decimal strings preserve all 64
+        // bits; JS Number would round current-epoch nanoseconds and make every
+        // UI mutation fail its optimistic identity check (review P1-1).
+        {QStringLiteral("device"), QString::number(entry.device)},
+        {QStringLiteral("inode"), QString::number(entry.inode)},
+        {QStringLiteral("identitySize"), QString::number(entry.identitySize)},
+        {QStringLiteral("modifiedNanoseconds"),
+         QString::number(entry.modifiedNanoseconds)},
+        {QStringLiteral("mode"), QString::number(entry.mode)},
     });
   }
   return list;

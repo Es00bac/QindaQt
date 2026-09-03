@@ -24,6 +24,23 @@ private:
   QString m_trashRoot;
 };
 
+class MissingRestoreParentResolver final : public DeviceResolver {
+public:
+  explicit MissingRestoreParentResolver(QString missingParent)
+      : m_missingParent(QDir::cleanPath(std::move(missingParent))) {}
+
+  [[nodiscard]] std::optional<quint64>
+  deviceForPath(const QString &path) const override {
+    if (QDir::cleanPath(path) == m_missingParent) {
+      return std::nullopt;
+    }
+    return LocalDeviceResolver().deviceForPath(path);
+  }
+
+private:
+  QString m_missingParent;
+};
+
 [[nodiscard]] bool writeFile(const QString &path, const QByteArray &data = "payload") {
   QFile file(path);
   return file.open(QIODevice::WriteOnly) && file.write(data) == data.size();
@@ -58,8 +75,10 @@ class TestHomeTrash final : public QObject {
 private slots:
   void trashInfoRoundTripHandlesHostileNames();
   void repeatedNameGetsUniquePayload();
+  void orphanPayloadGetsSkippedByUniqueAllocator();
   void crossDeviceTrashRefusesWithoutDeleting();
   void restoreCollisionPreservesBothItems();
+  void vanishedRestoreParentIsTypedAsVanished();
   void emptyTrashRemovesPayloadsWithoutFollowingSymlinks();
   void symlinkedTrashRootIsRefusedWithoutTouchingTarget();
 };
@@ -112,6 +131,34 @@ void TestHomeTrash::repeatedNameGetsUniquePayload() {
   QVERIFY(QFileInfo::exists(second.outputPath));
 }
 
+void TestHomeTrash::orphanPayloadGetsSkippedByUniqueAllocator() {
+  // AGENT-NOTE: Regression for review P2-1. An external client or interrupted
+  // run can leave files/<name> without info/<name>.trashinfo; uniqueness must
+  // be allocated across both Trash namespaces instead of becoming wedged.
+  QTemporaryDir fixture;
+  QVERIFY(fixture.isValid());
+  const QString trashRoot = fixture.filePath(QStringLiteral("Trash"));
+  LocalMutationBackend backend(trashRoot);
+  const auto cancellation = std::make_shared<std::atomic_bool>(false);
+  const QString original = fixture.filePath(QStringLiteral("item"));
+  QVERIFY(writeFile(original, "first"));
+  const MutationResult first =
+      backend.execute(trashRequest(original), cancellation, {});
+  QVERIFY2(first.ok(), qPrintable(first.diagnostic));
+  QVERIFY(QFile::remove(QDir(trashRoot).filePath(
+      QStringLiteral("info/%1.trashinfo").arg(first.trashToken))));
+  QVERIFY(QFileInfo::exists(first.outputPath));
+
+  QVERIFY(writeFile(original, "second"));
+  const MutationResult second =
+      backend.execute(trashRequest(original), cancellation, {});
+  QVERIFY2(second.ok(), qPrintable(second.diagnostic));
+  QCOMPARE(second.trashToken, QStringLiteral("item.1"));
+  QVERIFY(!QFileInfo::exists(original));
+  QVERIFY(QFileInfo::exists(first.outputPath));
+  QVERIFY(QFileInfo::exists(second.outputPath));
+}
+
 void TestHomeTrash::crossDeviceTrashRefusesWithoutDeleting() {
   QTemporaryDir fixture;
   QVERIFY(fixture.isValid());
@@ -146,6 +193,30 @@ void TestHomeTrash::restoreCollisionPreservesBothItems() {
   QFile replacement(original);
   QVERIFY(replacement.open(QIODevice::ReadOnly));
   QCOMPARE(replacement.readAll(), QByteArray("replacement"));
+}
+
+void TestHomeTrash::vanishedRestoreParentIsTypedAsVanished() {
+  // AGENT-NOTE: Regression for review P3-2. Failure to resolve the vanished
+  // destination parent is absence, not evidence of a different filesystem.
+  QTemporaryDir fixture;
+  QVERIFY(fixture.isValid());
+  const QString parent = fixture.filePath(QStringLiteral("restore-parent"));
+  QVERIFY(QDir().mkdir(parent));
+  const QString original = QDir(parent).filePath(QStringLiteral("item"));
+  QVERIFY(writeFile(original));
+  const QString trashRoot = fixture.filePath(QStringLiteral("Trash"));
+  auto resolver = std::make_shared<MissingRestoreParentResolver>(parent);
+  LocalMutationBackend backend(trashRoot, resolver);
+  const auto cancellation = std::make_shared<std::atomic_bool>(false);
+  const MutationResult trashed =
+      backend.execute(trashRequest(original), cancellation, {});
+  QVERIFY2(trashed.ok(), qPrintable(trashed.diagnostic));
+  MutationRequest restore = restoreRequest(trashed);
+  QVERIFY(QDir().rmdir(parent));
+
+  const MutationResult result = backend.execute(restore, cancellation, {});
+  QCOMPARE(result.error, MutationError::Vanished);
+  QVERIFY(QFileInfo::exists(trashed.outputPath));
 }
 
 void TestHomeTrash::emptyTrashRemovesPayloadsWithoutFollowingSymlinks() {

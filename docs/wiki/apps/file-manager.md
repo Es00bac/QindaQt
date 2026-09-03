@@ -90,10 +90,14 @@ restore token; restore and empty Trash clear it.
 
 Every request declares absolute local roots and carries the selected item's
 listing-time identity: device, inode, size, nanosecond modification time, and
-mode. Create carries the parent identity. Before mutation, the backend checks
-lexical containment, rejects every observed symbolic-link component, and
-compares the current identity. Missing state returns `vanished`; changed state
-returns `changed`; an existing destination returns `already-exists`. Other
+mode. These five fields cross the QML boundary as canonical decimal strings,
+not JavaScript numbers, so 64-bit inode and nanosecond values remain exact when
+an action returns the selected entry to C++. Create carries the parent identity.
+Accepting Rename with the unchanged current name is a no-op. Before mutation,
+the backend checks lexical containment, rejects every observed symbolic-link
+component, and compares the current identity. Missing state returns `vanished`;
+changed state returns `changed`; an existing destination returns
+`already-exists`. Other
 typed failures are `permission-denied`, `cross-device`, `disk-full`,
 `symlink-escape`, `cancelled`, `unsupported`, `io-error`, and `busy`. User text
 in diagnostics is sanitized and capped.
@@ -103,9 +107,11 @@ directories with descriptor-relative `openat`/`fstatat` calls, applies
 `O_NOFOLLOW` at each kernel boundary, rechecks every visited identity, and
 rejects symbolic links anywhere in the tree. It preserves permissions and
 modification time where the platform permits and removes a partial destination
-after cancellation, hostile content, change, or vanishing. Rename and move use
-atomic local rename semantics and preserve the filesystem's existing metadata;
-cross-device move is refused rather than silently degrading to copy-and-delete.
+after cancellation, hostile content, change, or vanishing. Rename and move
+commit with Linux `renameat2(RENAME_NOREPLACE)`, so a destination created by
+another writer after preflight is preserved and returns `already-exists`
+atomically. They preserve the filesystem's existing metadata; cross-device move
+is refused rather than silently degrading to copy-and-delete.
 
 ### Home Trash contract
 
@@ -115,8 +121,12 @@ only at `$XDG_DATA_HOME/Trash`. `info/` holds mode-0600 `.trashinfo` records;
 `files/` holds the same-named payload. Metadata contains the percent-encoded
 absolute source path and local `DeletionDate`, is created exclusively and
 flushed before the payload rename, and is removed after successful restore.
-Name collisions receive a bounded numeric suffix. The Trash root and both
-children are owner-only and checked for symbolic-link substitution before use.
+Name collisions in either `info/` or `files/` receive a bounded numeric suffix;
+an orphan payload left by another implementation therefore cannot wedge future
+trashing of the same base name. The Trash root and both children are owner-only
+and checked for symbolic-link substitution before use. A restore whose
+destination parent vanished returns `vanished`, while `cross-device` is
+reserved for two successfully resolved, unequal device identities.
 
 The backend compares source and home-Trash device identities before rename.
 If they differ, `cross-device` is returned and the source remains untouched.
@@ -248,13 +258,17 @@ resolution may complete asynchronously even for a local installed module; the
 startup boundary waits at most five seconds and reports either the QML error or
 an explicit timeout before it attempts singleton publication.
 
-S1 adds mutation, Trash, controller, action-catalog, UI-contract, and
+S1 adds mutation, Trash, controller, action-catalog, UI-contract, UI-action, and
 boundary-policy rows. Fixture trees exercise Unicode/control-character names,
 overlong rejection, permissions, collision, before/during-operation vanishing,
 identity change, nested and root symlink poison, cancellation cleanup, Trash
 round trips, an in-flight nested-directory swap, unique names, restore
-collision, empty Trash, and an injected cross-device refusal. The offscreen row runs the production QML root under
-`QT_FATAL_WARNINGS=1` with host display and session-bus variables removed. The
+collision, orphan-payload allocation, vanished restore parents, empty Trash,
+an injected cross-device refusal, and a racing destination writer. One
+offscreen row constructs the production QML root; a second drives the real
+AppShell actions through production dialogs for rename, copy, move, Trash, and
+restore against a disposable tree. Both run under `QT_FATAL_WARNINGS=1` with
+host display and session-bus variables removed. The
 boundary checker rejects dependencies on shell/services, D-Bus, KWin,
 LayerShell, desktop launch, or QML from the mutation module and proves itself
 against planted poison. All Trash roots live below disposable fixture/build
@@ -273,6 +287,7 @@ directories; no row reads or mutates the user's home Trash.
 - One-level undo/restore is process-local and deliberately not a durable
   recovery journal. Copy has no undo; users can trash its destination in a
   separate confirmed action.
-- The offscreen UI contract proves construction, stable action/object identity,
-  and fatal-warning cleanliness. Nested screenshots and whole-application
+- The offscreen UI rows prove construction, stable action/object identity,
+  fatal-warning cleanliness, and the fixture-local identity-carrying mutation
+  path. Nested screenshots and whole-application
   assistive-technology qualification remain later release evidence.

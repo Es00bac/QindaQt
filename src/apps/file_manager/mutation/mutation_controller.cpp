@@ -8,6 +8,9 @@
 #include <QFileInfo>
 #include <QPointer>
 
+#include <limits>
+#include <type_traits>
+
 namespace QindaQt::Apps::FileManager {
 namespace {
 
@@ -29,6 +32,31 @@ namespace {
   }
   roots.removeDuplicates();
   return roots;
+}
+
+template <typename Integer>
+[[nodiscard]] bool parseDecimalIdentityField(const QVariantMap &identity,
+                                             const QString &key,
+                                             Integer *output) {
+  const QVariant field = identity.value(key);
+  if (!field.isValid() || field.metaType().id() != QMetaType::QString) {
+    return false;
+  }
+  bool ok = false;
+  if constexpr (std::is_signed_v<Integer>) {
+    const qlonglong parsed = field.toString().toLongLong(&ok, 10);
+    if (ok) {
+      *output = static_cast<Integer>(parsed);
+    }
+  } else {
+    const qulonglong parsed = field.toString().toULongLong(&ok, 10);
+    if (ok && parsed <= std::numeric_limits<Integer>::max()) {
+      *output = static_cast<Integer>(parsed);
+    } else {
+      ok = false;
+    }
+  }
+  return ok;
 }
 
 } // namespace
@@ -87,6 +115,12 @@ bool MutationController::renameItem(const QString &sourcePath,
   if (!validName(newName)) {
     fail(MutationError::InvalidRequest, QStringLiteral("Choose a valid item name"));
     return false;
+  }
+  // AGENT-NOTE: P3-1 requires accepting the dialog's unchanged default name as
+  // a true no-op. Do not dispatch it to the no-replace backend, where source
+  // and destination necessarily describe the same existing item.
+  if (newName == QFileInfo(sourcePath).fileName()) {
+    return true;
   }
   MutationRequest request;
   request.kind = MutationKind::Rename;
@@ -200,13 +234,19 @@ void MutationController::clearFailure() {
 std::optional<FileIdentity>
 MutationController::identityFromMap(const QVariantMap &identity) {
   FileIdentity value;
-  value.device = identity.value(QStringLiteral("device")).toULongLong();
-  value.inode = identity.value(QStringLiteral("inode")).toULongLong();
-  value.size = identity.value(QStringLiteral("identitySize")).toLongLong();
-  value.modifiedNanoseconds =
-      identity.value(QStringLiteral("modifiedNanoseconds")).toLongLong();
-  value.mode = identity.value(QStringLiteral("mode")).toUInt();
-  return value.valid() ? std::optional<FileIdentity>{value} : std::nullopt;
+  const bool parsed =
+      parseDecimalIdentityField(identity, QStringLiteral("device"),
+                                &value.device) &&
+      parseDecimalIdentityField(identity, QStringLiteral("inode"),
+                                &value.inode) &&
+      parseDecimalIdentityField(identity, QStringLiteral("identitySize"),
+                                &value.size) &&
+      parseDecimalIdentityField(identity,
+                                QStringLiteral("modifiedNanoseconds"),
+                                &value.modifiedNanoseconds) &&
+      parseDecimalIdentityField(identity, QStringLiteral("mode"), &value.mode);
+  return parsed && value.valid() ? std::optional<FileIdentity>{value}
+                                 : std::nullopt;
 }
 
 bool MutationController::submit(MutationRequest request, bool isUndo) {

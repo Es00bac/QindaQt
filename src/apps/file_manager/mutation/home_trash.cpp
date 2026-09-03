@@ -223,6 +223,12 @@ MutationResult HomeTrash::trash(const MutationRequest &request) {
     if (!moved.ok()) {
       const bool removedMetadata = removeLocalTreeNoFollow(infoPath);
       Q_UNUSED(removedMetadata);
+      // AGENT-NOTE: P2-1 reproduced an orphan files/<token> without matching
+      // metadata. The Trash spec requires uniqueness in both namespaces, so a
+      // payload collision must advance the same bounded suffix allocator.
+      if (moved.error == MutationError::AlreadyExists) {
+        continue;
+      }
       return moved;
     }
     MutationResult result;
@@ -284,7 +290,13 @@ MutationResult HomeTrash::restore(const MutationRequest &request) {
   const auto payloadDevice = m_deviceResolver->deviceForPath(payload);
   const auto destinationDevice =
       m_deviceResolver->deviceForPath(QFileInfo(originalPath).absolutePath());
-  if (!payloadDevice || !destinationDevice || *payloadDevice != *destinationDevice) {
+  // AGENT-NOTE: P3-2 requires absence to stay distinct from a confirmed
+  // cross-device mismatch; otherwise a vanished restore parent is mislabeled.
+  if (!payloadDevice || !destinationDevice) {
+    return failure(MutationError::Vanished,
+                   QStringLiteral("The Trash item or restore parent vanished"));
+  }
+  if (*payloadDevice != *destinationDevice) {
     return failure(MutationError::CrossDevice,
                    QStringLiteral("Restore across filesystems is not supported"));
   }

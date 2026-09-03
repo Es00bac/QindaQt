@@ -31,6 +31,27 @@ qindaqt_add_file_manager_test(
     tst_mutation_controller.cpp
     qindaqt.file-manager-mutation-controller
 )
+
+add_library(qindaqt_file_manager_race_writer SHARED race_writer_shim.cpp)
+target_link_libraries(qindaqt_file_manager_race_writer PRIVATE ${CMAKE_DL_LIBS})
+target_compile_features(qindaqt_file_manager_race_writer PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_file_manager_race_writer
+    PROPERTIES CXX_EXTENSIONS OFF PREFIX ""
+)
+qindaqt_enable_warnings(qindaqt_file_manager_race_writer)
+
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_no_replace_race_tests
+    tst_no_replace_race.cpp
+    qindaqt.file-manager-no-replace-race
+)
+set_tests_properties(
+    qindaqt.file-manager-no-replace-race
+    PROPERTIES
+        ENVIRONMENT
+            "QINDAQT_RACE_DESTINATION=dest;LD_PRELOAD=$<TARGET_FILE:qindaqt_file_manager_race_writer>"
+)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_action_catalog_tests
     tst_file_manager_action_catalog.cpp
@@ -83,6 +104,25 @@ set_tests_properties(
         LABELS "file-manager"
         ENVIRONMENT
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-data"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+# AGENT-NOTE: Review P1-1 was invisible to the construction-only row above.
+# Keep this separate row driving real AppShell actions through production QML
+# and back into the local backend against a build-root fixture.
+add_test(
+    NAME qindaqt.file-manager-mutation-ui-actions-offscreen
+    COMMAND $<TARGET_FILE:qindaqt-file-manager>
+            --theme-directory "${PROJECT_SOURCE_DIR}/data/themes"
+            --check-ui-actions "${CMAKE_BINARY_DIR}"
+)
+set_tests_properties(
+    qindaqt.file-manager-mutation-ui-actions-offscreen
+    PROPERTIES
+        LABELS "file-manager"
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;XDG_DATA_HOME=${CMAKE_CURRENT_BINARY_DIR}/ui-action-data"
         ENVIRONMENT_MODIFICATION
             "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
