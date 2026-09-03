@@ -184,6 +184,21 @@ or a relocated package stage; no row contacts the host session bus, PipeWire,
 WirePlumber, display server, or hardware. The exact matrix and non-claims are
 detailed in [Audio applet](../shell/audio-applet.md).
 
+The shared production-shell install closure is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.shell-runtime-component-closure$' \
+  --output-on-failure --no-tests=error
+```
+
+That row independently installs default `QindaQt`, `AudioAppletRuntime`,
+`BluetoothAppletRuntime`, and `PowerAppletRuntime` into build-local stages. It
+requires the staged shell to resolve Controls from its own install library
+directory and Tokens from Controls' baked sibling RUNPATH, then launches
+`--help` with ambient loader, display, Wayland, and session-bus variables
+cleared. It contacts no compositor, host bus, service, or hardware.
+
 The production Power applet slice is selected with:
 
 ```sh

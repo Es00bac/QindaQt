@@ -97,6 +97,23 @@ notification token and fail closed on their own capability/client state.
 The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, audio, Bluetooth, or power state.
 
+## Installed shell component closure
+
+Every install component that carries `qindaqt-shell` is independently
+runnable through the shell's relative loader layout. The current inventory is
+the default `QindaQt` component plus `AudioAppletRuntime`,
+`BluetoothAppletRuntime`, and `PowerAppletRuntime`. Each carries the directly
+linked `qindaqt_controls_qml` library in the install library directory and
+`qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
+baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
+on another component to supply either library.
+
+`qindaqt.shell-runtime-component-closure` installs each member of that
+inventory alone beneath the active build root, authenticates both resolved
+library paths, and launches the staged shell with ambient loader, display,
+Wayland, and session-bus variables cleared. A new shell-carrying component is
+incomplete until it is added to this inventory and passes the same proof.
+
 Launcher, task-list, global-menu, and status-tray manifests remain accepted
 contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for

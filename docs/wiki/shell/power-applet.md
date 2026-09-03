@@ -134,7 +134,9 @@ The module is registered through these additive seams:
 4. The `PowerAppletRuntime` install component stages the production shell,
    its directly linked Controls library, the Tokens library at Controls'
    baked sibling RUNPATH, compiled QML resources, manifest, selected profile,
-   policy, and theme for a relocation/poison test.
+   policy, and theme for a relocation/poison test. The shared shell-component
+   closure row also proves the default `QindaQt` component and every narrow
+   applet component can launch with their own Controls/Tokens payload.
 
 ## Focused tests
 

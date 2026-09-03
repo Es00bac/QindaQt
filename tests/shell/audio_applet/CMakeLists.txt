@@ -130,4 +130,21 @@ if(TARGET qindaqt-shell)
         qindaqt.audio-applet-installed-package
         PROPERTIES LABELS "shell;audio;runtime;installed;poison" TIMEOUT 60
     )
+
+    add_test(
+        NAME qindaqt.shell-runtime-component-closure
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+            "-DQINDAQT_SHELL_BUILD_ROOT=${CMAKE_BINARY_DIR}/src/shell"
+            "-DQINDAQT_SHELL_CMAKE=${PROJECT_SOURCE_DIR}/src/shell/CMakeLists.txt"
+            "-DQINDAQT_STAGE_ROOT=${CMAKE_CURRENT_BINARY_DIR}/installed-shell-components"
+            "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
+            "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_shell_component_closure.cmake"
+    )
+    set_tests_properties(
+        qindaqt.shell-runtime-component-closure
+        PROPERTIES LABELS "shell;runtime;installed;hostile" TIMEOUT 60
+    )
 endif()
