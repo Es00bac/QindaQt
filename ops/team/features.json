@@ -95,8 +95,8 @@
           "id": "QQ-004.02",
           "title": "Window-aware hiding, reveal/hold, and dynamic reservation",
           "weight": 10,
-          "state": "WIRED",
-          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries but lack complete installed nested interaction proof.",
+          "state": "EXECUTABLE",
+          "summary": "Window-aware visibility and dynamic reservation policies are integrated behind stable module boundaries but lack complete installed nested interaction proof. The remaining producers (pointer containment/edge reveal, bounded owner-fenced popup hold leases, hide/reveal animation with reduced motion, shortcut reveal/hold) are integrated behind the visibility policy with signed 64-bit Settings1 decoding, and the installed private nested desktop proves hide-under-window, edge reveal, shortcut reveal, popup hold, restore on move/close, and the always-panel reservation by framebuffer capture joined to panel geometry at 1080p and WUXGA.",
           "evidence": [
             {
               "kind": "source",
@@ -107,9 +107,14 @@
               "kind": "source",
               "reference": "docs/wiki/shell/panel-visibility.md",
               "summary": "The owning page records the implemented window-aware visibility contract."
+            },
+            {
+              "kind": "commit",
+              "reference": "5232a88c",
+              "summary": "The exact panel-visibility candidate e644187 (Dana Ulery, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting Settings1 integer decoding, unbounded popup holds, a capture validator not joined to geometry, and an unproven move/close row) is integrated; the nested rows first failed on main because the Global Menu merge had not staged its QML library in the private desktop component (e51372a) and the Settings Center lacked three route modules (197f104), then because phase capture sampled KWin's transient teardown surface (interaction repair cae66fc, ff08ea2, Dana Ulery ACCEPT 0/0/0/0); on the reconciled tree desktop.virtual.boot.1080p and both panel-visibility rows pass serially with no survivors."
             }
           ],
-          "caveat": "The direct WYSIWYG Settings surface is a separate step."
+          "caveat": "The direct WYSIWYG Settings surface is a separate step; multi-output and hotplug panel behaviour and physical-input qualification remain."
         },
         {
           "id": "QQ-004.03",
@@ -340,10 +345,16 @@
           "id": "QQ-004.15",
           "title": "Clipboard applet",
           "weight": 2,
-          "state": "ABSENT",
-          "summary": "No integrated clipboard applet presents or mutates the bounded history model.",
-          "evidence": [],
-          "caveat": "The resident capture/privacy service and production presentation remain."
+          "state": "EXECUTABLE",
+          "summary": "The Clipboard applet C1 composes the public Clipboard client into a privacy-gated, lineage-fenced history presentation with write-grant-gated mutations, a fail-closed snapshot gate, and truthful privacy-denied and ceiling-purge phases.",
+          "evidence": [
+            {
+              "kind": "commit",
+              "reference": "2abc4487",
+              "summary": "The exact Clipboard applet C1 candidate 72a79fd (Jean Bartik, OpenAI Codex, ACCEPT 0/0/0/0 after four rejected rounds covering QML grant gating, query fencing, an impossible-snapshot gate, revision high-water and ceiling-purge semantics, and the privacy-denied phase) is integrated through the delegated registry-reconciliation merge 35a548f; the merged tree passes clipboard-applet, applet, and shell-runtime rows within a 153/153 focused batch in Debug and Release, the static gates, the broad safe Debug suite 543/543, and the nested desktop boot and panel rows."
+            }
+          ],
+          "caveat": "The applet is registered but not yet hosted in the production panel dispatcher (composition lane next); live nested capture proof and installed-session qualification remain."
         },
         {
           "id": "QQ-004.08",
@@ -639,7 +650,7 @@
           "title": "Font discovery and confirmed first-party application",
           "weight": 6,
           "state": "WIRED",
-          "summary": "Font F0 integrates deterministic catalog construction from injected discovery facts, Settings1-aligned typography preferences, lossless codecs, atomic LKG coordination, and a pre-window Qt bootstrap derivation boundary.",
+          "summary": "Font F0 integrates deterministic catalog construction from injected discovery facts, Settings1-aligned typography preferences, lossless codecs, atomic LKG coordination, and a pre-window Qt bootstrap derivation boundary. F1 adds a fontconfig-backed discovery provider over injected roots, Settings1 persistence with the Appearance route's no-replay truth, and one guarded pre-application bootstrap call in each first-party application.",
           "evidence": [
             {
               "kind": "commit",
@@ -650,9 +661,14 @@
               "kind": "test",
               "reference": "docs/wiki/architecture/font-preferences.md",
               "summary": "Fresh manager verification passes 7/7 focused Font rows and 2/2 Settings1/QST adjacent rows, including the installed consumer and pure-boundary gate."
+            },
+            {
+              "kind": "commit",
+              "reference": "045f1a19",
+              "summary": "The exact Font F1 candidate 4f5452f (Cecilia Berdichevsky, OpenAI Codex, ACCEPT 0/0/0/0 after two rejected rounds covering the missing production composition, ambient fontconfig reachability, unsanitized strings, coerced Settings1 values, sequence advance on malformed snapshots, bootstrap placement, and owner-loss baselines; lineage Kimi -> Codex after provider limits) is integrated through the delegated merge 8d4c880 with its ADR renumbered at integration; the merged tree passes font rows and the four applications' installed-metadata rows within the 153/153 batch, the static gates, and the broad suite 543/543."
             }
           ],
-          "caveat": "F0 is a pure injected-facts boundary. A live discovery provider, Settings route, persistence composition, first-party app bootstrap wiring, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
+          "caveat": "The Settings route, rendered typography matrix, assistive-technology proof, and physical DPI/font qualification remain."
         },
         {
           "id": "QQ-005.09",
