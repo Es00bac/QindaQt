@@ -10,6 +10,13 @@ updates. This tool renames the families inside the vendored TTFs to
 repository-owned names so the fixture cannot collide with any host font. Only
 name-table records change; glyph data stays byte-identical to upstream.
 
+Because the name table (and the rebuilt container layout) change, the tool
+recomputes every table directory checksum and the head.checkSumAdjustment per
+the OpenType specification, so the rewritten files remain valid sfnt
+artifacts. tst_controls_font_pinning.cpp validates those checksums in the
+qindaqt.controls-font-pinning row; regenerating the files with a tool that
+skips this step makes that row fail closed.
+
 Usage: python3 rename_family_names.py [FILE ...]
 With no arguments, rewrites every *.ttf beside this script in place. The
 records rewritten per font: nameID 1/16 (family), 2/17 are untouched (style),
@@ -26,6 +33,8 @@ import struct
 import sys
 from pathlib import Path
 
+WHOLE_FONT_CHECKSUM = 0xB1B0AFBA
+
 RENAMES = {
     "Noto Sans Mono": "QindaQt Sans Mono",
     "Noto Sans SemiBold": "QindaQt Sans",
@@ -37,6 +46,20 @@ RENAMES = {
 }
 
 FAMILY_IDS = {1, 4, 6, 16}
+
+
+def checksum(data: bytes) -> int:
+    padded = data + bytes((-len(data)) % 4)
+    return sum(struct.unpack(f">{len(padded) // 4}I", padded)) & 0xFFFFFFFF
+
+
+def table_checksum(tag: bytes, payload: bytes) -> int:
+    data = bytearray(payload)
+    if tag == b"head":
+        # OpenType: checkSumAdjustment counts as zero when the head table
+        # checksum itself is computed.
+        data[8:12] = bytes(4)
+    return checksum(bytes(data))
 
 
 def rewrite_name_table(table: bytes) -> bytes:
@@ -112,7 +135,9 @@ def rename_font(path: Path) -> None:
 
     # Rebuild the sfnt container with the renamed name table so the file can
     # grow or shrink; every other table is copied byte-identically and the
-    # directory entries are re-derived with 4-byte alignment.
+    # directory entries are re-derived with 4-byte alignment. Every directory
+    # checksum and head.checkSumAdjustment are recomputed per the OpenType
+    # specification so the rewritten file stays a valid sfnt artifact.
     tables = []
     for index in range(num_tables):
         offset = 12 + 16 * index
@@ -124,14 +149,26 @@ def rename_font(path: Path) -> None:
     header_size = 12 + 16 * len(tables)
     blob = bytearray()
     directory = bytearray(data[:header_size])
-    for index, (_, payload) in enumerate(tables):
+    head_offset = None
+    for index, (tag, payload) in enumerate(tables):
         entry = 12 + 16 * index
+        directory[entry + 4 : entry + 8] = struct.pack(">I", table_checksum(tag, payload))
         directory[entry + 8 : entry + 12] = struct.pack(">I", header_size + len(blob))
         directory[entry + 12 : entry + 16] = struct.pack(">I", len(payload))
+        if tag == b"head":
+            head_offset = header_size + len(blob)
         blob += payload
         if len(payload) % 4:
             blob += bytes(4 - len(payload) % 4)
-    path.write_bytes(bytes(directory) + bytes(blob))
+    if head_offset is None:
+        raise SystemExit(f"{path}: no head table found")
+    font = bytearray(directory) + blob
+    # The adjustment is computed with the field zeroed so the entire font
+    # (zero-padded to 4 bytes) sums to the spec's magic value.
+    font[head_offset + 8 : head_offset + 12] = bytes(4)
+    adjustment = (WHOLE_FONT_CHECKSUM - checksum(bytes(font))) & 0xFFFFFFFF
+    font[head_offset + 8 : head_offset + 12] = struct.pack(">I", adjustment)
+    path.write_bytes(bytes(font))
     print(f"rewrote family names in {path}")
 
 

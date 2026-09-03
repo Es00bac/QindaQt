@@ -1,6 +1,6 @@
 # ADR-0021: Isolate every Controls visual row in its own process
 
-- **Status:** Accepted, amended 2026-09-02
+- **Status:** Accepted, amended 2026-09-02, amended 2026-09-03
 - **Date:** 2026-08-27
 - **Owners:** Controls and testing working groups
 - **Supersedes:** None
@@ -107,3 +107,62 @@ where glyph bytes come from.
   fontconfig configuration change or a removed DejaVu package therefore still
   requires baseline review, and is visible as baseline drift rather than as a
   silent pass.
+
+## Amended (2026-09-03): complete catalog substitution, valid checksums, and a host-Noto-hidden canary
+
+**Context.** Independent review of the 2026-09-02 amendment (candidate
+`bf1c83a`) rejected its host-independence claim. `data/themes/qinda-high-contrast.json`
+names `Noto Sans`/`Noto Sans Mono` directly, and the fixture substituted only
+`Inter`/`JetBrains Mono`, so the five high-contrast rows still rendered the
+host Noto family: under a host-Noto-hidden fontconfig they drifted by 145,270
+pixels while the four Inter-based themes passed. The review also found that
+the checked-in renamed fonts carried invalid sfnt checksums (the renewal tool
+never recomputed the `name` table directory checksum or
+`head.checkSumAdjustment`) and that the staged installed-consumer row ran an
+unscoped whole-tree install that a focused Controls build could not satisfy.
+
+**Amendment.** Three repairs, all inside the test fixture:
+
+1. `pinDeterministicFonts()` now rewrites every theme in the product catalog
+   with its `fontFamily`/`monoFontFamily` replaced by the registered
+   repository-owned families, into pinned runtime theme copies that
+   `publishTheme()` loads (the product theme files are untouched), and keeps
+   `QFont` substitutions for the original catalog names. The rewrite is
+   necessary, not stylistic: `QFont::insertSubstitution` is consulted only
+   when the requested family is absent from the host, so with host Noto
+   installed a substitution for `Noto Sans` is ignored (verified against
+   Qt 6.11). Deriving the rewrite from the catalog at runtime means a future
+   theme that names another host family is covered automatically.
+2. The renewal tool (`tests/controls/fonts/rename_family_names.py`) recomputes
+   every table directory checksum and `head.checkSumAdjustment` per the
+   OpenType specification, and the four vendored files were regenerated from
+   the upstream host builds with valid checksums (all non-`name` tables,
+   including glyph data, remain byte-identical; `head` differs only in the
+   adjustment field). The `qindaqt.controls-font-pinning` row now validates
+   those checksums and fails on a malformed fixture.
+3. A dedicated canary row,
+   `qindaqt.controls-visual-no-noto-100-qinda-high-contrast-compact`, reruns
+   the previously bypassing row under the checked-in
+   `tests/controls/fontconfig/no-noto/fonts.conf` (documented host
+   configuration minus exactly the families the catalog can name), applied
+   through `FONTCONFIG_FILE`. A `FONTCONFIG_FILE=/dev/null` run is explicitly
+   not evidence: fontconfig cannot parse it and silently falls back to the
+   standard host configuration. The staged installed-consumer row installs
+   only the `ControlsQmlModules` component declared in
+   `tests/controls/CMakeLists.txt`, so the complete selector is runnable
+   after the focused Controls target build.
+
+**Consequences.**
+
+- Every theme row, including Qinda High Contrast, renders only vendored
+  bytes; the regenerated baselines were byte-identical to the reviewed set
+  because the vendored glyph tables match the current host Noto build.
+- A fixture regression in either direction fails a named row: rendering host
+  Noto fails the canary, malformed vendored files fail the pinning row, and
+  missing/corrupt/renamed fixtures abort fail-closed as before.
+- Renewing the vendored fonts now requires checksum-valid output; the
+  renewal tool and the pinning row keep each other honest.
+- The host fontconfig dependency (rasterization parameters and the DejaVu
+  fallback glyph) is unchanged from the 2026-09-02 amendment; the canary
+  proves independence from the Noto families specifically, not from the
+  whole font stack.
