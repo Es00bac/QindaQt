@@ -65,6 +65,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0062](0062-bound-launcher-execution-behind-injected-seams.md) | Accepted | Bound launcher execution behind injected seams |
 | [ADR-0063](0063-project-authenticated-active-window-identity.md) | Accepted | Project authenticated active-window identity to the exact shell owner |
 | [ADR-0064](0064-confine-file-mutation-to-identity-checked-local-authority.md) | Accepted | Confine File Manager mutation to identity-checked local authority |
+| [ADR-0065](0065-compose-first-party-menu-export-through-appshell.md) | Accepted | Compose first-party menu export through an opt-in AppShell transport boundary |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

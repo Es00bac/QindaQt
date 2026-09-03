@@ -246,6 +246,37 @@ a second compositor connection. `identityChanged` drives focus refresh, so the
 client's owner-loss and monotonic reread rules are also the menu's stale-truth
 withdrawal boundary.
 
+## First-party AppShell export
+
+`QindaQt::AppShell::MenuExport` composes the deterministic AppShell action
+snapshot into the accepted exporter and a real standard dbusmenu server. It
+borrows the application's session-bus connection and primary `QWindow`; no
+global lookup exists inside the module. The application provides a fresh local
+epoch/revision source, so the accepted exporter receives lineage but continues
+to mint none. A shell `clicked` request crosses once into
+`ApplicationCoordinator::activateAction()`, where current enabled/action
+consent is checked identically to the local menu.
+
+Registration is exact and platform-specific. On `xcb`, the real
+`QWindow::winId()` is registered asynchronously with the current exact owner
+of `com.canonical.AppMenu.Registrar`. On native Wayland, no numeric id is
+fabricated: one confined Qt 6.11 platform adapter uses the KDE appmenu hook to
+associate that surface with the application's unique bus name and
+`/org/qindaqt/AppShell/Menu`. The production G2 shell then performs the actual
+PID/window or PID/announced-address authentication described above. Registrar
+owner loss/replacement withdraws the prior association and retries against the
+new owner; window close and composition destruction withdraw it. None of these
+states proves that the shell currently renders the menu, so first-party local
+menu bars remain present.
+
+File Manager is the first consumer. Its executable retains one composition
+object beside its coordinator and window. Text Editor and Terminal may repeat
+that line without importing File Manager or shell runtime code. The private-bus
+integration row runs the real File Manager process and production
+`GlobalMenuAppletComposition`, injects the exact child PID/window id as the
+compositor snapshot, activates `file.new-folder` once through dbusmenu, and
+requires provider exit to clear the applet.
+
 ## Qt Widgets adapter
 
 `QMenuBarMenuSource` (module `QindaQt::GlobalMenuQtWidgetsAdapter`) walks a
@@ -371,6 +402,7 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-transport-composition-private-bus`, and
 `qindaqt.global-menu-transport-boundary-poison`. G2 adds
 `qindaqt.global-menu-runtime-composition-private-bus`,
+`qindaqt.file-manager-global-menu-shell-private-bus`,
 `qindaqt.global-menu-runtime-boundary-poison`,
 `qindaqt.global-menu-applet-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,

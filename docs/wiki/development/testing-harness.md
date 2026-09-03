@@ -1561,6 +1561,36 @@ hotplug, realtime latency, hardware gain mappings, resource budgets, or Audio
 Settings/shell UI. Those are later isolated hardware and integrated-session
 gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
+## AppShell global-menu export proof
+
+The AppShell and first-consumer transport rows are selected with:
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
+  DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
+  ctest --test-dir build/dev \
+  -R '^qindaqt\.(app-shell-|file-manager-global-menu-shell-)' \
+  --output-on-failure --no-tests=error
+```
+
+`qindaqt.app-shell-menu-export-private-bus` serves the production dbusmenu
+object to the real client on `dbus-run-session`. An injected identity publisher
+proves exact numeric registration, native-Wayland no-numeric-id announcement,
+registrar owner loss/replacement, close teardown, disabled-action refusal, and
+exactly-once activation through `ApplicationCoordinator`. It runs offscreen
+with fatal Qt warnings and host display/bus variables removed. The AppShell
+source-policy row keeps D-Bus out of the core, confines Qt's private Wayland
+hook to its adapter, rejects ambient session-bus lookup inside the module, and
+executes a planted lookup poison control.
+
+`qindaqt.file-manager-global-menu-shell-private-bus` launches the actual File
+Manager process against production `GlobalMenuAppletComposition` on the same
+private bus. Its test-only identity adapter supplies the child process's exact
+PID and window id as the compositor snapshot; the row requires the real menu,
+one shell-to-AppShell activation, and unavailable/empty shell state after the
+provider exits. This is deterministic private-bus evidence, not a host session,
+nested compositor, or native Wayland protocol qualification.
+
 ## File Manager S1 focused proof
 
 The display-less File Manager selector is:
@@ -1598,8 +1628,9 @@ The installed-runtime row still stages only the FileManager component; its
 exact payload now includes AppShell in addition to Tokens and Controls.
 
 Every Trash root and `XDG_DATA_HOME` used by these rows is below the test build
-directory or a `QTemporaryDir`. No row touches the user's home/Trash, connects
-to a bus/display, launches a handler, mounts a filesystem, or uses the network.
+directory or a `QTemporaryDir`. No row touches the user's home/Trash or host
+bus/display, launches a handler, mounts a filesystem, or uses the network. The
+global-menu row described above connects only to its private bus.
 These rows do not qualify per-volume Trash, mounts, search, previews, portals,
 nested screenshots, or complete
 assistive-technology behavior.

@@ -36,8 +36,14 @@ target_sources(
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
     qindaqt_file_manager_support
-    PUBLIC QindaQt::AppShell Qt6::Core Qt6::Gui
+    PUBLIC QindaQt::AppShell QindaQt::AppShellMenuExport Qt6::Core Qt6::Gui
 )
+if(BUILD_TESTING)
+    target_compile_definitions(
+        qindaqt_file_manager_support
+        PRIVATE QINDAQT_ENABLE_FILE_MANAGER_MENU_EXPORT_TEST_SEAM=1
+    )
+endif()
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_file_manager_support)
