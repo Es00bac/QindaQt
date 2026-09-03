@@ -2,15 +2,14 @@
 
 The clipboard architecture separates ordinary Wayland selection transfer —
 which stays entirely with the compositor and toolkits — from an optional,
-bounded, privacy-aware clipboard *history* that QindaQt owns. This page is
-the contract for both. Clipboard C0, the first slice, delivers only the pure
-model library and its codecs; it deliberately performs no host-clipboard,
-Wayland, D-Bus, or UI integration, and nothing in it should be read as a
-claim of live clipboard functionality.
+bounded, privacy-aware clipboard *history* that QindaQt owns. Clipboard C0
+provides the pure volatile model and C1 composes it in a resident process with
+a bounded Wayland capture adapter and private Clipboard1 bus. No slice persists
+clipboard bytes or grants UI code direct payload authority.
 
 ## Outcome and slices
 
-- **C0 (this slice, model):** bounded entry/value types, canonical MIME
+- **C0 (model, current):** bounded entry/value types, canonical MIME
   metadata and size limits, volatile opt-in history with deterministic
   eviction/dedup/pinning/clear, sensitive/one-time/non-storable refusal,
   stale-generation rejection, deterministic bounded metadata search, explicit
@@ -18,18 +17,12 @@ claim of live clipboard functionality.
   codecs plus fixtures as the seam a future adapter composes. Static unit
   evidence only; C0 alone is not the integrated searchable-history user
   outcome — that remains gated on the C1 slices below.
-- **C1 (later slices, reviewed separately):** `qindaqt-clipboard-host`
-  resident process, `org.qindaqt.Clipboard1` private authenticated bus
-  surface, `ext-data-control-v1` adapter, Settings1 `services.clipboardHistory`
-  opt-in wiring, lock-state provisioning, and presentation. C1 owns the
-  *user-facing* search semantics on top of the model's metadata search:
-  it gates queries behind authenticated lock state, exposes them over the
-  private bus, and decides whether payload-derived search beyond the
-  preview/label fields is offered at all. C1 must not begin until the
-  integrated Settings1, authenticated lock state, and verified KWin protocol
-  support exist, per the platform-services lane plan. Installed-header/link
-  consumer evidence and packaged qualification are likewise C1 integration
-  gates, not C0 claims.
+- **C1 (service, current):** `qindaqt-clipboard-host`, the
+  `org.qindaqt.Clipboard1` private-bus surface and exact-owner client,
+  `ext-data-control-v1` capture, Settings1 opt-in, and authenticated lock
+  gating. C1 exposes only C0 descriptor bytes in snapshots; complete payloads
+  move back to Wayland only after a fenced `Copy` intent. Presentation and
+  metadata search UI remain outside this slice.
 
 ## Volatile, bounded history
 
@@ -200,20 +193,86 @@ width is instance-relative and unknowable to a peer. Descriptor-list decode
 also stages entries until the entire list succeeds, so a late framing or nested
 entry failure exposes no accepted prefix.
 
+## C1 capture and resident authority
+
+`clipboard_wayland_adapter` is a client of the pinned staging
+`ext-data-control-v1` version 1 XML. It binds one seat and one manager, observes
+both regular and primary selections, and reads an offer only after all
+advertised MIME names have been classified. Sensitive or one-time markers
+refuse the entire offer without opening a payload pipe. Unknown formats are
+ignored; the remaining canonical storable formats are deduplicated and capped
+at the C0 format and one-MiB aggregate item bounds. A transfer exceeding the
+bound is discarded. Each offer may advertise at most 64 names and each retained
+name is limited to the C0 127-code-unit media-name bound; exceeding either limit
+refuses the offer before opening a payload pipe. At most 16 introduced but
+unselected offers are retained, with the oldest destroyed before admitting a
+new one. The adapter has no `wlr-data-control` fallback: compositor disconnect,
+or absence/removal/replacement of either required global, withdraws availability
+truth and cancels capture instead of silently selecting another protocol
+contract.
+
+The production adapter uses a private Wayland connection and authenticates its
+peer with `SO_PEERCRED`. The resulting compositor PID is the only PID accepted
+by the injected `SessionLockState` monitor. Capture is enabled only while all
+three facts are simultaneously true:
+
+1. Settings1 has confirmed `services.clipboardHistory` as Boolean `true` whose
+   `sourceLayers` entry is exactly `user-overrides`;
+2. authenticated lock state is conclusively `Unlocked`; and
+3. the data-control device is available.
+
+Startup, Settings1 uncertainty, owner loss, lock transition, and protocol loss
+all fail closed. Turning the opt-in off or losing unlocked truth purges the C0
+model before readable metadata can be published. Both shipped settings schemas
+default the key to `false`. Defense in depth keeps schema and profile defaults
+outside the consent boundary even if either later resolves to Boolean `true`:
+only an explicit user override can enable capture.
+
+`clipboard_service` owns the model, all payload bytes, the adapter, and the
+private D-Bus name in one Qt event-loop thread. It installs a D-Bus activation
+file and a hardened systemd user unit. There is no state directory, recovery
+journal, payload logging, or disk codec. The bus object keeps a bounded
+per-unique-caller request cache: repeating the same request identity returns
+the original result while it is retained, while reusing a retained identity for
+different arguments is rejected. Each caller retains the newest 64 results;
+admitting a fresh identity evicts the oldest retained result. Losing a caller's
+unique name drops only that caller's cache, and a 65th simultaneous caller is
+refused without allocating another cache.
+
+## Clipboard1 and client fencing
+
+Clipboard1 snapshots carry `(epoch, generation, revision)` plus C0's canonical
+`QCDL` descriptor list. Epoch changes when the resident host restarts;
+generation changes on an authority purge; revision changes for content within
+one generation. Every Select, Delete, Clear, and Copy intent includes all three
+expected values and a nonzero request id. Select promotes an item, Delete
+removes it, Clear removes unpinned or all entries, and Copy promotes then
+publishes the selected bounded value through Wayland. No method returns payload
+bytes.
+
+The public client is asynchronous and binds replies and `Changed` signals to
+the exact unique owner. It atomically validates descriptor framing and entry
+generation before publishing a snapshot, coalesces invalidations, serializes
+mutations, and treats timeout, transport loss, owner replacement, malformed
+wire data, and contradictory lineage as uncertain or unavailable. It never
+replays a mutation. See the normative wire details in
+[Clipboard1 version 1](../reference/clipboard1-v1.md).
+
 ## Boundaries
 
-`clipboard_model` depends on Qt Core only. It contains no QObject, no IPC,
-no Wayland, no persistence, and no clock. The model is not thread-safe: the
-owning thread (the future host's Wayland/Qt main thread) must confine all
-calls or provide external synchronization; returned values are safe to cross
-threads after the call returns. The C1 host will compose it with transport
-and lock-state authority; C0 consumers (tests today, the C1 host later) link
-`QindaQt::ClipboardModel`. Raw clipboard content must not appear in logs,
-diagnostics, board messages, or repository tests beyond obviously synthetic
-fixtures.
+`clipboard_model` remains Qt-Core-only. `clipboard_protocol` owns only bounded
+values, validation and D-Bus marshalling. `clipboard_client` depends on that
+public protocol and an injected transport, never on the host. The Wayland
+adapter depends on the model's canonical MIME/value vocabulary but not history
+policy or D-Bus. `clipboard_service` alone composes these pieces with Settings1
+and authenticated lock state. All model and service calls are confined to the
+owning Qt thread; returned owning values may cross threads after a call returns.
+Raw clipboard content must not appear in logs, diagnostics, board messages, or
+repository tests beyond obviously synthetic fixtures.
 
 Module-boundary and dependency-direction rules are in
 [Module boundaries](module-boundaries.md). The durable decisions — volatile
 history, allowlist storage, purge-on-privacy-loss with generation fencing,
 and the pure-model seam ahead of the Wayland adapter — are recorded in
-[ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md).
+[ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md) and the C1 process
+boundary in [ADR-0058](../adr/0058-isolate-clipboard-capture-in-a-volatile-host.md).
