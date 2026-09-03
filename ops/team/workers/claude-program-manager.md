@@ -8,7 +8,7 @@ status: working
 feature: Wave-1 lane dispatch, exact review routing, and manager integration of accepted candidates
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-02T20:42:51-06:00
+updated_at: 2026-09-02T22:07:00-06:00
 ---
 
 # Claude Program Manager
@@ -34,3 +34,6 @@ updated_at: 2026-09-02T20:42:51-06:00
   persistent docs venv, reconfigured a fresh manager Debug root with 404
   registered rows, and opened six non-overlapping lanes (see
   `messages/team-operations/1788403371-claude-program-manager-wave-1.md`).
+- 2026-09-02T21:10:34-06:00 — Baseline truth on `74da463`: full Debug build 2,675/2,675; 385 non-nested rows, 357 pass; all 28 failures environmental (three Kerberos-transitive rows fixed by RUNPATH-patching the private prefix; 25 controls visual rows drift only by glyph rendering after today's host Noto update). Bluetooth B1 candidate `7061dd3` handed off and routed to the two rejecting reviewers. Opened wave-2 lanes: launcher-l1, tray-s1, bluetooth-bluez-b1, clipboard-service-c1, plus controls-visual-fonts.
+- 2026-09-02T21:45:39-06:00 — Integrated Global Menu G1 `7c27ee5` at merge `729bebd` after Elizabeth Feinler's Kimi K3 ACCEPT `0/0/0/1`; merged tree passes global-menu 16/16 in Debug and Release, broad safe Debug suite 365/365, docs 117, strict MkDocs, shape, diff, JSON, and Team Board 16/16. Bluetooth B1 repair descendant `882cc0c` accepted by K3-256k `0/0/0/0`; K2.7 recheck pending.
+- 2026-09-02T22:07:00-06:00 — Integrated Bluetooth applet B1 `882cc0c` at merge `34a79c2` after both same-reviewer rechecks accepted `0/0/0/0`; merged tree passes Bluetooth 8/8 and adjacent 6/6 in Debug and Release, boundary 7+6 and 5+4, broad safe Debug suite 373/373, docs 118, strict MkDocs, shape, diff, JSON, Team Board 16/16. QQ-004.14 ABSENT → EXECUTABLE. Reviews in flight: clipboard service (K3-256k), audio settings (Codex), audio applet (GLM-5.3).

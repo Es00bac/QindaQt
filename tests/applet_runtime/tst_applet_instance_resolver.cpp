@@ -71,6 +71,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringLiteral("ready"));
 
     const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clock"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
@@ -84,6 +85,15 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(power.grantedCapabilities,
              QStringList({QStringLiteral("power.control"),
                           QStringLiteral("power.read")}));
+
+    const auto bluetooth = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("bluetooth")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(bluetooth.ready(), qPrintable(bluetooth.diagnostic));
+    QCOMPARE(bluetooth.entryPoint, QStringLiteral("qindaqt.applets.bluetooth"));
+    QCOMPARE(bluetooth.grantedCapabilities,
+             QStringList({QStringLiteral("bluetooth.control"),
+                          QStringLiteral("bluetooth.read")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()

@@ -48,9 +48,9 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
-The manifest catalog describes clock, notification center, power, launcher,
-task list, global menu, and status tray packages. The compiled first-party
-registry and production QML dispatcher currently contain three audited entry
+The manifest catalog describes clock, notification center, Bluetooth, power,
+launcher, task list, global menu, and status tray packages. The compiled
+first-party registry and production QML dispatcher currently contain four audited entry
 points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
@@ -71,15 +71,23 @@ points:
   or replacement clears prior truth and ends a pending request without replay.
   PB-1 currently supplies honest unavailable truth until its platform
   collaborators land, so the production applet remains visibly unavailable
-  rather than inventing host state.
+  rather than inventing host state; and
+- `qindaqt.applets.bluetooth` renders bounded adapter/device truth and only
+  capability-admitted adapter power, one caller-scoped discovery lease, and
+  paired-device connect/disconnect. Its shell-private controller consumes the
+  public `BluetoothClient`, fails closed on owner/epoch/revision loss, releases
+  discovery on close/teardown, and exposes no address, pairing, trust, Agent1,
+  BlueZ, or audio authority. Bluetooth B0 currently reports the deterministic
+  empty backend, so production truth remains unavailable until the platform
+  adapter lands.
 
-The notification-center and power entries remain valid compiled applets when
+The notification-center, Bluetooth, and power entries remain valid compiled applets when
 the shell starts without presentation-token provisioning, but the notification
-facade is absent and its control is visibly disabled. Power access is
-independent of the notification token and fails closed on its own
+facade is absent and its control is visibly disabled. Power and Bluetooth
+access are independent of the notification token and fail closed on their own
 capability/client state.
 The preview keeps deterministic static applet fixtures rather than connecting
-to live clock, notification, or power state.
+to live clock, notification, Bluetooth, or power state.
 
 Launcher, task-list, global-menu, and status-tray manifests remain accepted
 contracts but resolve as `implementation-unavailable`. Profile plug-in IDs with

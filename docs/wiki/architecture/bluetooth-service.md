@@ -119,10 +119,14 @@ reason codes are the programmatic error surface.
 ## Consumer boundary
 
 This slice exports typed C++ protocol, model, client, and service libraries
-plus the activation artifacts. A later Settings view model owns the stable
-route ID `bluetooth` and a shell applet receives only a narrow facade; neither
-UI is implemented or qualified here. Consumers link only the public client and
-model libraries and never see QDBus types, backend objects, or the service
+plus the activation artifacts. The production
+[Bluetooth applet](../shell/bluetooth-applet.md) receives only a narrow
+shell-private facade over the public client: it projects bounded inventory and
+exposes adapter power, one caller-scoped discovery lease, and paired-device
+connect/disconnect under exact lineage and manifest grants. It receives no
+address, pairing, trust, key, Agent1, BlueZ, or service-implementation surface.
+A later Settings view model owns the stable route ID `bluetooth`. Consumers
+link only public boundaries and never see backend objects or the service
 implementation.
 
 ## Qualification boundary
@@ -147,4 +151,6 @@ gate with a linked installed consumer.
 
 That evidence does not qualify real-adapter behavior, pairing UX (Agent1),
 Bluetooth audio correlation, suspend/resume, hotplug churn, memory/CPU
-budgets, or the future UI. Those remain hardware and integrated-session gates.
+budgets, or the production UI. The applet's separate focused offscreen/package
+evidence does not change those platform nonclaims; hardware and
+integrated-session gates remain.

@@ -2,23 +2,24 @@
 
 The global menu applet presents the focused window's application menu in the
 panel. QindaQt builds it on a bounded, toolkit-neutral canonical menu/action
-model with a proof-bound authenticated ownership policy, not on the
-desktop-agnostic `com.canonical.AppMenu.Registrar` trust model. The durable
-choices are in
-[ADR-0033](../adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md).
+model with proof-bound authenticated ownership. G1 provides compatibility with
+the standard AppMenu registrar and dbusmenu transports without inheriting the
+registrar protocol's unauthenticated authority model. The durable choices are
+in [ADR-0033](../adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md)
+and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
 
 ## Milestone boundary
 
-The G0 slice delivers the source/static foundation only: pure model, policy,
-exporter, Qt Widgets adapter, and applet facade, each with focused hostile
-tests. There is no D-Bus transport, no registrar, no shell-runtime
-instantiation, and no applet-registry wiring yet; the `global-menu` manifest
-still resolves as `implementation-unavailable` (see
+G0 delivered the pure model, policy, exporter, Qt Widgets adapter, and applet
+facade. G1 adds production AppMenu registrar and asynchronous dbusmenu
+transport libraries plus their shell-neutral composition coordinator. There
+is still no production-shell instantiation or applet-registry wiring; the
+`global-menu` manifest still resolves as `implementation-unavailable` (see
 [Applet runtime](applet-runtime.md)), and the QML component is not yet part
 of an installed QML module — the test imports the source tree directly. No
-one should read this page as a live feature claim. Wiring the transport,
-registry entry, installed packaging, and panel instance is the next
-milestone and requires compiler- and session-verified evidence.
+one should read this page as a live-shell feature claim. The later composition
+lane owns the runtime focus adapter, applet registration, installed QML, panel
+instance, and submenu popups.
 
 ## Canonical model
 
@@ -94,10 +95,11 @@ decides which provider may become authoritative:
 - `applyFocusGeneration` is the fail-closed invalidation seam: a generation
   other than the adopted proof's drops the adoption. Shell composition
   calls it on every observed focus change before any export or invocation.
-- Only the currently active window can register in G0. Unlike
-  `com.canonical.AppMenu.Registrar`, a provider cannot name an arbitrary
-  window id; a per-window registration cache is a later, separately
-  reviewed milestone.
+- Only the currently active window can become authoritative. G1 accepts
+  arbitrary bounded registrar entries for protocol compatibility, but an entry
+  is only a cache claim: the composition coordinator joins the numeric id to
+  an independently authenticated focused-window identity and re-runs the G0
+  PID/unique-name proof before adopting it.
 - `InvocationGuard` requires the request's (windowId, epoch, revision), the
   presented tree's lineage, and the selector's current lineage to agree
   exactly; any mismatch is `stale-owner` before any action lookup. It then
@@ -120,6 +122,79 @@ last accepted tree, so a transiently malformed source can never regress a
 previously good menu. Content that is identical under a re-advanced lineage
 reports `Unchanged` but is re-stamped, so the published tree never drifts
 stale against the selector.
+
+## AppMenu registrar transport
+
+`QindaQt::GlobalMenuRegistrar` owns the standard
+`com.canonical.AppMenu.Registrar` object at
+`/com/canonical/AppMenu/Registrar`. Its explicit `AppMenuRegistrar::start()`
+composition root registers the object and requests the well-known name on an
+injected session-bus connection; construction alone has no global side effect,
+and partial startup rolls back.
+
+- `RegisterWindow`, `UnregisterWindow`, `GetMenuForWindow`, `GetMenus`,
+  `WindowRegistered`, and `WindowUnregistered` retain their standard wire
+  signatures.
+- The registrar stores at most 1,024 windows and caps object paths at 4,096
+  UTF-8 bytes. Window zero, malformed or oversized paths, malformed caller
+  identities, cross-owner replacement, and capacity or generation exhaustion
+  fail closed.
+- The D-Bus message's caller unique name is the owner. Only that exact peer may
+  update or unregister its window; a well-known name is never stored as owner.
+- Owner generations and registration generations are monotonic. A delayed
+  owner-loss callback must carry the current owner generation or it cannot
+  retire anything. When a unique connection disappears, all and only its
+  registrations are removed and standard unregistration signals are emitted.
+- The registry is not an authentication authority. Numeric window ids become
+  meaningful only through the injected `RegistrarWindowIdSource`, which maps a
+  compositor-authenticated opaque identity or returns no match.
+
+## dbusmenu client transport
+
+`QindaQt::GlobalMenuDbusMenu` binds one injected connection to one exact
+provider unique name and object path. All method calls are asynchronous and
+bounded to a two-second default timeout. `LayoutUpdated` and
+`ItemsPropertiesUpdated` are invalidation hints: publication always waits for
+a complete `GetLayout` reply, while `GetGroupProperties` and `AboutToShow`
+can request a revisioned reread. `Version`, `Status`, and `TextDirection` are
+read through the standard properties interface and published only as one
+validated metadata value.
+
+The decoder accepts the recursive `(ia{sv}av)` layout and converts it to the
+canonical tree as one atomic operation. It enforces the canonical depth,
+children, total-item, label, id, shortcut, and per-item property-count limits,
+plus a 256-byte icon-name and 256-KiB icon-data ceiling. Known properties have
+exact types and closed values; unknown properties are ignored within the bounded
+map. Underscore mnemonics become the
+canonical UTF-16 mnemonic index, and the first bounded shortcut sequence is
+normalized (`Control` to `Ctrl`, `Super` to `Meta`) without importing Qt Gui.
+An invalid child, duplicate/nonpositive id, oversized icon, invalid Unicode,
+or malformed known property rejects the whole layout and retains the prior
+accepted snapshot.
+
+Remote revisions form a per-owner high-water mark. A lower reply is stale; an
+equal revision carrying different content is contradictory; neither can
+replace accepted truth. Owner loss retires pending replies and the snapshot.
+`Event` is sent at most once per admitted intent. Timeout or error is uncertain
+and reported without retry, preventing duplicate application activation.
+
+## Transport composition
+
+`QindaQt::GlobalMenuTransportComposition` is buildable but not instantiated by
+the production shell yet. On an injected focus refresh it resolves the legacy
+window id, selects the exact registrar entry, asks the bus daemon for that
+unique peer's PID, and runs `ProviderAuthenticator`. Each newly accepted
+dbusmenu layout is authenticated again, adopted into
+`ActiveProviderSelector`, pulled through the unchanged `MenuExporter`, and
+published to `GlobalMenuAppletAccess`. Thus remote dbusmenu revisions never
+become invocation authority; the existing selector epoch/revision remains the
+only accepted lineage.
+
+An applet activation synchronously captures the published tree, runs the
+existing `InvocationGuard`, converts the canonical numeric action id back to
+the dbusmenu item id, and submits one `clicked` event. Missing focus mappings,
+registration replacement, PID/name mismatch, focus movement, owner loss, or
+stale lineage publishes unavailable and admits no event.
 
 ## Qt Widgets adapter
 
@@ -171,19 +246,22 @@ Hosts below the documented minimum extent degrade to indicator-only (and
 the indicator hides itself when even it cannot fit) rather than painting
 partial content inside the clipped root. A clamped
 `maximumVisibleEntries` acts as the count cap on top of the measured fit.
-G0 wires no live publisher anywhere in the shell, so `available`
-stays false in production.
+G1 still wires no publisher into the production shell, so `available` stays
+false there until the later composition lane instantiates the transport.
 
-## Non-goals
+## Remaining boundaries
 
 - No general application framework, foreign-application injection, or
   arbitrary command execution: the model carries menu values, never launch
   payloads, and invocation authorization never executes anything itself.
 - No private KWin/KDE ABI: compositor integration arrives later through an
   authenticated public seam, mirroring the session-lock observer pattern.
-- No per-window registration, D-Bus transport, legacy-protocol
-  compatibility, submenu popups, or payload-bearing menu deltas in this
-  milestone.
+- No production-shell instantiation, live compositor focus adapter, applet
+  registry/manifest change, installed QML, submenu popup, or payload-bearing
+  canonical delta contract is part of G1.
+- The registrar/dbusmenu tests use private `dbus-run-session` connections only;
+  they do not qualify a real login session, foreign toolkit, or installed
+  desktop.
 
 ## Verification
 
@@ -199,7 +277,11 @@ over the public seams), `qindaqt.global-menu-applet-qml-offscreen`
 `qindaqt.global-menu-applet-qml-accessibility-offscreen` (real accessible
 press and provider-owned checked state), and
 `qindaqt.global-menu-applet-qml-overflow-offscreen` (measured-geometry
-overflow, vertical layout, and below-minimum host cases). Live export,
-focus handoff, and installed-session qualification remain unbuilt and
-unclaimed until the transport milestone passes the nested-session matrix in
-the [testing harness](../development/testing-harness.md).
+overflow, vertical layout, and below-minimum host cases). G1 adds
+`qindaqt.global-menu-registrar-private-bus`,
+`qindaqt.global-menu-dbusmenu-decoder`,
+`qindaqt.global-menu-dbusmenu-private-bus`,
+`qindaqt.global-menu-transport-composition-private-bus`, and
+`qindaqt.global-menu-transport-boundary-poison`. Live focus handoff,
+installed packaging, and session qualification remain unbuilt and unclaimed;
+see the [testing harness](../development/testing-harness.md).

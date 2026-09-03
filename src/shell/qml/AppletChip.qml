@@ -9,6 +9,7 @@ Rectangle {
     property bool vertical: false
     property bool liveApplets: false
     property var notificationCenterAppletAccess: null
+    property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
@@ -38,6 +39,7 @@ Rectangle {
             "system-status": "◉   Wi‑Fi   87%",
             "clock": "Tue 10:42",
             "notification-center": "Notifications",
+            "bluetooth": "Bluetooth",
             "power": "Power",
             "launcher": "QindaQt"
         };
@@ -67,6 +69,7 @@ Rectangle {
         vertical: root.vertical
         liveApplets: root.liveApplets
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
+        bluetoothAppletAccess: root.bluetoothAppletAccess
         powerAppletAccess: root.powerAppletAccess
     }
 
