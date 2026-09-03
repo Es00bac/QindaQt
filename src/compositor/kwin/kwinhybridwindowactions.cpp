@@ -7,6 +7,7 @@
 #include "hybridinteractionruntime.h"
 #include "kwinchromemanager.h"
 #include "kwinhybridscene.h"
+#include "kwinhybridgroupstacking.h"
 #include "kwininteractionfilter.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
@@ -306,6 +307,72 @@ void KWinHybridSession::minimizeContainer(const QString &containerId)
     }
     m_applyingWindowAction = false;
     synchronizeChrome();
+}
+
+bool KWinHybridSession::unminimizeContainer(const QString &containerId,
+                                            QString *error)
+{
+    const auto *container = m_runtime->topology().container(containerId);
+    const auto *activePage = container
+        ? container->page(container->activePageId()) : nullptr;
+    if (!activePage) {
+        if (error) {
+            *error = QStringLiteral("group restore references a stale active page");
+        }
+        return false;
+    }
+    QStringList activePageWindowIds;
+    collectPageWindowIds(activePage->root(), &activePageWindowIds);
+    m_applyingWindowAction = true;
+    m_minimizedContainers.remove(containerId);
+    for (const auto &activeWindowId : activePageWindowIds) {
+        if (auto *window = m_registry.window(activeWindowId)) {
+            window->setMinimized(false);
+        }
+    }
+    m_applyingWindowAction = false;
+    synchronizeChrome();
+    return true;
+}
+
+bool KWinHybridSession::executeShellWindowAction(
+    const QString &windowId,
+    ShellWindowAction action,
+    QString *error)
+{
+    if (!ready()) {
+        if (error) {
+            *error = QStringLiteral("Hybrid session is not ready");
+        }
+        return false;
+    }
+    const auto owner = m_runtime->topology().ownerOf(windowId);
+    if (!owner || m_registry.owner(windowId) != *owner) {
+        if (error) {
+            *error = QStringLiteral("Hybrid member ownership changed before dispatch");
+        }
+        return false;
+    }
+    if (!restoreMemberFocusForInteraction(error)) {
+        return false;
+    }
+    switch (action) {
+    case ShellWindowAction::Activate:
+        if (!unminimizeContainer(*owner, error)) {
+            return false;
+        }
+        [[fallthrough]];
+    case ShellWindowAction::Raise:
+        return m_groupStacking && m_groupStacking->raiseContainer(*owner, error);
+    case ShellWindowAction::Minimize:
+        minimizeContainer(*owner);
+        return true;
+    case ShellWindowAction::Unminimize:
+        return unminimizeContainer(*owner, error);
+    case ShellWindowAction::Close:
+        return requestCloseContainer(*owner, error);
+    }
+    return false;
 }
 
 bool KWinHybridSession::requestCloseContainer(const QString &containerId,

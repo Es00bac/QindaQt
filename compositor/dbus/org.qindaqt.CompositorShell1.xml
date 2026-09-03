@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: LGPL-3.0-or-later -->
+<node name="/org/qindaqt/CompositorShell">
+  <interface name="org.qindaqt.CompositorShell1">
+    <method name="ActivateWindow">
+      <arg name="windowId" type="s" direction="in"/>
+      <arg name="epoch" type="s" direction="in"/>
+      <arg name="revision" type="s" direction="in"/>
+      <arg name="resultJson" type="ay" direction="out"/>
+    </method>
+    <method name="MinimizeWindow">
+      <arg name="windowId" type="s" direction="in"/>
+      <arg name="epoch" type="s" direction="in"/>
+      <arg name="revision" type="s" direction="in"/>
+      <arg name="resultJson" type="ay" direction="out"/>
+    </method>
+    <method name="UnminimizeWindow">
+      <arg name="windowId" type="s" direction="in"/>
+      <arg name="epoch" type="s" direction="in"/>
+      <arg name="revision" type="s" direction="in"/>
+      <arg name="resultJson" type="ay" direction="out"/>
+    </method>
+    <method name="CloseWindow">
+      <arg name="windowId" type="s" direction="in"/>
+      <arg name="epoch" type="s" direction="in"/>
+      <arg name="revision" type="s" direction="in"/>
+      <arg name="resultJson" type="ay" direction="out"/>
+    </method>
+    <method name="RaiseWindow">
+      <arg name="windowId" type="s" direction="in"/>
+      <arg name="epoch" type="s" direction="in"/>
+      <arg name="revision" type="s" direction="in"/>
+      <arg name="resultJson" type="ay" direction="out"/>
+    </method>
+  </interface>
+</node>

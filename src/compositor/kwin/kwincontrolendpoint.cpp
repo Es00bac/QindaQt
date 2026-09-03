@@ -201,8 +201,17 @@ QByteArray KWinControlEndpoint::Windows() const
     // AGENT-GUARD: Default plugins and --exit-with-session clients can start in
     // either order. A public inventory read is also a safe reconciliation point.
     m_registry.synchronize();
+    // AGENT-CONTRACT: The UUID inventory and its action fence must be sampled
+    // after the same reconciliation point. The action endpoint refreshes once
+    // more before comparison to close changes between read and dispatch.
+    (void)m_shellVisibility.refreshForActionFence();
     return ControlCodec::compactJson(
         {{QStringLiteral("status"), QStringLiteral("ok")},
+         {QStringLiteral("schemaVersion"), 2},
+         {QStringLiteral("epoch"), m_shellVisibility.epoch()},
+         {QStringLiteral("revision"),
+          QString::number(m_shellVisibility.revision())},
+         {QStringLiteral("generationAvailable"), m_shellVisibility.available()},
          {QStringLiteral("windows"), m_registry.windowsJson()}});
 }
 

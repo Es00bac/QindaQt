@@ -118,6 +118,9 @@ The KWin plugin provides:
   snapshots exact logical outputs, normal/dialog/utility user windows, current
   workspace/activity, Hybrid whole-group maximize state, and a per-service
   epoch behind one coalesced Compositor1 invalidation;
+- a separately authenticated shell-only action object whose bus credential PID
+  must equal the sole committed `dock` layer-surface owner, with exact
+  visibility-generation fencing and Hybrid-policy routing;
 - sanitized input-device capabilities and a non-consuming lifecycle-safe
   `InputEventSpy` with no key text/native scan codes/serials or public event
   stream;
@@ -258,6 +261,25 @@ state; it is not one of the production-readable snapshots. Only the isolated
 explicit scenario path enables the
 `development-test` mutation mode. Production Hybrid gestures call typed
 process-local policy instead of enabling D-Bus mutation.
+
+The production task list and launcher use the distinct
+`org.qindaqt.CompositorShell1` object described by
+[ADR-0057](../adr/0057-authenticate-shell-window-actions-by-panel-owner.md).
+Its controller receives credential, panel-owner, registry, rate/clock, and
+executor collaborators explicitly. A request is admitted only while all
+committed `dock` layer roles have one Wayland-client PID and the session-bus
+daemon reports that exact PID for the caller's unique name. Authority vanishes
+when the panels unbind or conflicting owners overlap. The controller then
+requires the retained visibility epoch/revision, resolves the live UUID, and
+routes Hybrid members back through process-local group policy. It never enables
+or shares admission state with the unauthenticated `Compositor1` mutators.
+
+The corresponding shell client is exact-owner and one-in-flight. It never
+retries an uncertain mutation, so compositor-owner replacement, timeout, and
+transport loss require inventory reconciliation before another user intent.
+This PID join blocks an unrelated local bus process, but deliberately does not
+claim protection from a compromised production shell or a same-user process
+able to impersonate its committed layer-surface role.
 
 Development test sessions construct one combined keyboard/pointer
 `KWin::InputDevice` and register it with KWin input redirection. The versioned,

@@ -138,6 +138,27 @@ const QByteArray &KWinShellVisibilityPublisher::snapshotJson() const noexcept
     return m_store.snapshotJson();
 }
 
+const QString &KWinShellVisibilityPublisher::epoch() const noexcept
+{
+    return m_store.epoch();
+}
+
+quint64 KWinShellVisibilityPublisher::revision() const noexcept
+{
+    return m_store.revision();
+}
+
+bool KWinShellVisibilityPublisher::available() const noexcept
+{
+    return m_store.available();
+}
+
+bool KWinShellVisibilityPublisher::refreshForActionFence()
+{
+    refresh();
+    return available();
+}
+
 void KWinShellVisibilityPublisher::setHybridMaximizedProvider(
     HybridMaximizedProvider provider)
 {

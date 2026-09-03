@@ -37,6 +37,12 @@ public:
     ~KWinShellVisibilityPublisher() override;
 
     [[nodiscard]] const QByteArray &snapshotJson() const noexcept;
+    [[nodiscard]] const QString &epoch() const noexcept;
+    [[nodiscard]] quint64 revision() const noexcept;
+    [[nodiscard]] bool available() const noexcept;
+    // Synchronously closes the invalidation window before a Windows/action
+    // generation fence is published or compared.
+    [[nodiscard]] bool refreshForActionFence();
     void setHybridMaximizedProvider(HybridMaximizedProvider provider);
     void invalidate();
 
