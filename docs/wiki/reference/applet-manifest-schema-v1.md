@@ -93,6 +93,16 @@ The audited renderer receives a shell-private controller over the injected
 denial keeps bounded browsing visible but refuses every mutating intent
 (select/promote, pin, delete, clear) before dispatch.
 
+The Task List manifest requests `windows.read`, `windows.activate`, and
+`windows.manage`. The audited policy grants all three to the audited package
+through the trust default and explicitly denies `windows.read` and
+`windows.activate` to third-party packages (the wildcard already denies
+`windows.manage`). The audited renderer receives a shell-private controller
+over the injected T0 source and T1 authority/operation seams. Read denial
+withholds all observation; activation and manage denials refuse the matching
+generation-fenced intents before dispatch. See
+[Task list source model](../shell/task-list.md).
+
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
 API rule or a new manifest schema version.
