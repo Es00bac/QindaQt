@@ -134,7 +134,8 @@ void NetworkPageTest::rendersTruthAndSecretBoundaryAccessibly() {
   QVERIFY(scanAccessible != nullptr);
   QCOMPARE(credentialAccessible->role(), QAccessible::StaticText);
   QVERIFY(credentialAccessible->text(QAccessible::Description)
-              .contains(QStringLiteral("external NetworkManager secret agent")));
+              .contains(QStringLiteral("credential prompt"),
+                        Qt::CaseInsensitive));
   QCOMPARE(scanAccessible->role(), QAccessible::Button);
 }
 

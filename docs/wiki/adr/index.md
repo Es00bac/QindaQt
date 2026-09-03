@@ -69,6 +69,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0066](0066-discover-icc-profiles-from-injected-roots-and-persist-assignments-through-settings1.md) | Accepted | Discover ICC profiles from injected roots and persist assignments through Settings1 |
 | [ADR-0067](0067-confine-fontconfig-behind-font-discovery.md) | Accepted | Confine fontconfig behind the Font F1 discovery provider |
 | [ADR-0068](0068-compose-first-party-menu-export-through-appshell.md) | Accepted | Compose first-party menu export through an opt-in AppShell transport boundary |
+| [ADR-0069](0069-confine-network-credential-entry.md) | Accepted | Confine network credential entry to a separate secret agent |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

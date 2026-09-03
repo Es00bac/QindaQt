@@ -8,8 +8,13 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QVariantList>
+#include <QtDBus/QDBusConnection>
+
+#include <memory>
 
 namespace QindaQt::Apps::SettingsNetwork {
+
+class NetworkSecretAgentPresence;
 
 // QML-safe, read-only projection and intent facade for one public Network1
 // client. The caller owns the client and must keep it alive on this object's
@@ -27,6 +32,10 @@ class NetworkSettingsModel final : public QObject {
   Q_PROPERTY(bool scanAvailable READ scanAvailable NOTIFY viewChanged)
   Q_PROPERTY(bool credentialEntrySupported READ credentialEntrySupported
                  CONSTANT)
+  Q_PROPERTY(bool secretAgentRegistered READ secretAgentRegistered NOTIFY
+                 viewChanged)
+  Q_PROPERTY(QString secretAgentStatusText READ secretAgentStatusText NOTIFY
+                 viewChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
   Q_PROPERTY(QString operationStatusText READ operationStatusText NOTIFY
@@ -45,6 +54,10 @@ public:
   explicit NetworkSettingsModel(
       QindaQt::Network::Client::NetworkClient &client,
       QObject *parent = nullptr);
+  NetworkSettingsModel(QindaQt::Network::Client::NetworkClient &client,
+                       const QDBusConnection &presenceConnection,
+                       QObject *parent = nullptr);
+  ~NetworkSettingsModel() override;
 
   [[nodiscard]] bool loading() const noexcept;
   [[nodiscard]] bool ready() const noexcept;
@@ -57,6 +70,8 @@ public:
   [[nodiscard]] constexpr bool credentialEntrySupported() const noexcept {
     return false;
   }
+  [[nodiscard]] bool secretAgentRegistered() const noexcept;
+  [[nodiscard]] QString secretAgentStatusText() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -91,6 +106,7 @@ private:
   [[nodiscard]] QString actionFailureText(const QString &reason) const;
 
   QindaQt::Network::Client::NetworkClient &m_client;
+  std::unique_ptr<NetworkSecretAgentPresence> m_secretAgentPresence;
   QString m_localError;
   QString m_operationStatusText;
 };

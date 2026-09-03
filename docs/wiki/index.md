@@ -50,8 +50,11 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Network service](architecture/network-service.md) records the resident
   Network1 N1 boundary: the unchanged pure N0 values/model/client, exact-owner
   activating Qt transport, fixed-wire service, confined libnm adapter, and
-  external secret-agent boundary. A separate Settings route consumes the public
-  client; physical hardware qualification remains.
+  credential-free boundary. The separate [Network secret
+  agent](architecture/network-secret-agent.md) owns authenticated interactive
+  credential entry and presence truth without linking Network1. A separate
+  Settings route consumes the public client; physical hardware qualification
+  remains.
 - [XDG Settings portal appearance backend](architecture/portal-service.md)
   records the standard appearance-only backend, Settings1/QST source truth,
   fail-closed lineage, activation package, and private-bus qualification.
