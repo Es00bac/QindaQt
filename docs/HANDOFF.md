@@ -4,6 +4,7 @@
 
 Manager integration delta after the public baseline below:
 
+- 2026-09-03T12:57:47-06:00 — Program management handed from Claude to Codex; the full state, live lanes, recipes, and the install plan are in `ops/team/messages/manager-results-first/1788461867-claude-program-manager-handoff-to-codex.md`.
 - 2026-09-03T12:47:31-06:00 — Session actions integrated at `70763c7`: a user can now lock, log out, suspend, restart, and shut down from the shell; the Wi-Fi secret agent starts with the session.
 - 2026-09-03T12:30:19-06:00 — Clipboard applet hosted in the panel (`82e256d`); Wi-Fi join of visible networks (`c269830`). Panel dispatcher count is now eight.
 - 2026-09-03T11:21:44-06:00 — Menu export (`a8c171c`), stage closure guard (`0a59236`), secret agent (`287ba6d`), and Clipboard Settings (`22d9f23`) integrated; whole suite green on the system KWin 6.6.6 roots (`sys-dev`/`sys-release`).
