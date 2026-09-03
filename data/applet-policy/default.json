@@ -25,6 +25,20 @@
       "capability": "windows.manage",
       "decision": "deny",
       "reason": "General third-party applets may not mutate compositor-owned window state."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "global-menu",
+      "capability": "global-menu.read",
+      "decision": "grant",
+      "reason": "The audited shell composition may own the standard registrar and read the authenticated active provider's dbusmenu endpoint."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "global-menu",
+      "capability": "windows.activate",
+      "decision": "deny",
+      "reason": "Menu Event delivery does not grant general compositor window activation authority."
     }
   ]
 }

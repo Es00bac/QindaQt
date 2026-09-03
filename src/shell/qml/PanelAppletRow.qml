@@ -14,6 +14,7 @@ Row {
     property var bluetoothAppletAccess: null
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
+    property var globalMenuAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {
@@ -36,6 +37,8 @@ Row {
             audioAppletAccess: root.audioAppletAccess
             bluetoothAppletAccess: root.bluetoothAppletAccess
             powerAppletAccess: root.powerAppletAccess
+            // AppletChip intentionally has no global-menu authority property;
+            // BuiltinAppletContent discovers this narrow facade from the row.
         }
     }
 }

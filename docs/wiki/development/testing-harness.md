@@ -193,7 +193,8 @@ ctest --test-dir build/dev \
 ```
 
 That row independently installs default `QindaQt`, `AudioAppletRuntime`,
-`BluetoothAppletRuntime`, `LauncherAppletRuntime`, and `PowerAppletRuntime`
+`BluetoothAppletRuntime`, `GlobalMenuAppletRuntime`, `LauncherAppletRuntime`,
+and `PowerAppletRuntime`
 into build-local stages. It requires the staged shell to resolve each directly
 linked applet backing library and Controls from its own install library
 directory and Tokens from Controls' baked sibling RUNPATH, then launches
@@ -801,9 +802,10 @@ user lock screen, a screen-reader bridge, multi-seat/session switching,
 alternative lockers, suspend/resume, physical mixed-output behavior, or visual
 screenshot baselines.
 
-## Current global-menu transport proof
+## Current Global Menu production-shell proof
 
-The complete G0 model/presentation and G1 transport boundary is selected with:
+The complete G0 model/presentation, G1 transport, and G2 production-shell
+composition boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
@@ -822,15 +824,45 @@ properties, invalidation signals, depth/item/text/icon/shortcut bounds, unknown
 property tolerance, changed-equal (replayed) revision rejection, owner loss, and
 one Event for one accepted activation. Composition proves the applet snapshot
 comes from the focused registrar entry only after PID/name authentication and
-that loss or focus withdrawal clears authority.
+that loss or focus withdrawal clears authority. The transport-composition row
+also proves a native announced service/path is resolved to its exact owner and
+withdrawn on loss.
 
-Every transport process is the QtTest executable itself, and every bus is the
-fresh broker created by `dbus-run-session`; the rows contact no inherited
-session bus, display, input, compositor, hardware, or network. They do not
-qualify production-shell instantiation, installed QML/manifest wiring,
-submenus, a foreign toolkit, or a live desktop. Those remain later shell and
-contained-session gates. See [Global application menu](../shell/global-menu.md)
-and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
+G2 adds `qindaqt.global-menu-runtime-composition-private-bus`, which feeds a
+revisioned authenticated identity through the public shell window-actions
+client, verifies registrar residency and one activation against a fake
+exporter, clears truth on provider loss, and reports `degraded` when another
+peer owns the registrar name. The same private-bus row starts a second real
+provider process and proves both a compositor-PID mismatch and a regressed
+identity revision leave the facade unavailable and empty; an attempted action
+produces zero provider `Event` calls in both variants.
+`qindaqt.global-menu-runtime-boundary-poison`
+requires that composition to borrow the shared client and reject planted
+private-compositor/second-transport dependencies.
+
+All six Global Menu QML rows import the compiled
+`QindaQt.Shell.GlobalMenu` module under `QT_FATAL_WARNINGS=1`. The submenu row
+proves Up/Down/Right/Left traversal, Enter/Space activation exactly once,
+Escape and focus-loss closure, the six-level cap, and accessible popup/menu
+item state. The production-panel keyboard row hosts the real
+`PanelAppletRow`/`BuiltinAppletContent` dispatcher and proves the key-only
+Tab → Down → Down → Right → Space route through a required `Popup.Window`.
+`qindaqt.global-menu-installed-package` stages only
+`GlobalMenuAppletRuntime`, authenticates the shell's relocated module library,
+and resolves the installed manifest under source poison. The shared
+`qindaqt.shell-runtime-component-closure` row independently includes this
+component and the Global Menu library in every shell-carrying component.
+
+Every bus is the fresh broker created by `dbus-run-session`; the hostile
+ownership variant's only additional process is the inert test exporter whose
+distinct bus-daemon PID is the negative-control input. Offscreen/package rows
+contact no inherited display, input, compositor, hardware, or network. These rows qualify
+production-shell instantiation, installed QML/manifest wiring, and submenu
+behavior, but not a foreign toolkit, real login session, or nested installed
+desktop. Those remain contained-session gates. See
+[Global application menu](../shell/global-menu.md),
+[ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md), and
+[ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
 
 ## Current status-notifier foundation proof
 

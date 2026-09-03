@@ -4,6 +4,7 @@
 #include "../common/catalogpaths.h"
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
 #include "launcher_persistence.h"
@@ -33,6 +34,8 @@
 #include "qindaqt/shell_surface/panel_surface_controller.h"
 #include "qindaqt/shell_visibility_client/compositor_visibility_client.h"
 #include "qindaqt/shell_visibility_client/qt_compositor_visibility_transport.h"
+#include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
+#include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -57,6 +60,10 @@ ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
             qWarning().noquote() << "QindaQt shell kept its prior surface set:" << error;
         }
     });
+    m_windowActionsRetry.setSingleShot(true);
+    m_windowActionsRetry.setInterval(2'500);
+    connect(&m_windowActionsRetry, &QTimer::timeout, this,
+            &ShellRuntimeApplication::restartWindowActionsIdentity);
 }
 
 ShellRuntimeApplication::~ShellRuntimeApplication()
@@ -201,6 +208,46 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
         std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
     m_powerApplet =
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
+    const QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    m_windowActionsTransport = std::make_unique<
+        ShellWindowActionsClient::QtShellWindowActionsTransport>(sessionBus);
+    m_windowActionsClient = std::make_unique<
+        ShellWindowActionsClient::ShellWindowActionsClient>(
+            *m_windowActionsTransport);
+    m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
+        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    m_globalMenuApplet->start();
+    connect(m_windowActionsClient.get(),
+            &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
+            this, [this] {
+                if (m_windowActionsClient->identitySnapshot()) {
+                    m_windowActionsRetry.stop();
+                } else {
+                    m_windowActionsRetry.start();
+                }
+            });
+}
+
+void ShellRuntimeApplication::restartWindowActionsIdentity()
+{
+    if (!m_windowActionsClient) {
+        return;
+    }
+    m_windowActionsClient->stop();
+    QString error;
+    if (!m_windowActionsClient->start(&error)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start authenticated window identity:"
+            << error;
+        m_windowActionsRetry.start();
+        return;
+    }
+    // The compositor may not yet have observed the just-mapped dock surface.
+    // Retry the same client after its request deadline; never create a second
+    // binding or retain a failed snapshot.
+    if (!m_windowActionsClient->identitySnapshot()) {
+        m_windowActionsRetry.start();
+    }
 }
 
 bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
@@ -298,7 +345,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
-            m_launcherApplet->access());
+            m_launcherApplet->access(), m_globalMenuApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -364,6 +411,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         resetRuntime();
         return false;
     }
+    restartWindowActionsIdentity();
 
     for (QScreen *screen : m_application.screens()) {
         attachOutputSignals(screen);
@@ -386,6 +434,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
+    m_windowActionsRetry.stop();
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();
     m_shellDevelopmentEvidence.reset();
@@ -399,6 +448,12 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_globalMenuApplet.reset();
+    if (m_windowActionsClient) {
+        m_windowActionsClient->stop();
+    }
+    m_windowActionsClient.reset();
+    m_windowActionsTransport.reset();
     m_launcherApplet.reset();
     m_audioApplet.reset();
     m_bluetoothApplet.reset();

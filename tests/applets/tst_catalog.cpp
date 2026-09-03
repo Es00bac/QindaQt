@@ -78,6 +78,8 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     const AppletManifest *power = catalog.findById(QStringLiteral("power"));
     const AppletManifest *audio = catalog.findById(QStringLiteral("audio"));
     const AppletManifest *launcher = catalog.findById(QStringLiteral("launcher"));
+    const AppletManifest *globalMenu =
+        catalog.findById(QStringLiteral("global-menu"));
     QVERIFY(clock != nullptr);
     QVERIFY(taskList != nullptr);
     QVERIFY(tray != nullptr);
@@ -86,6 +88,7 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(power != nullptr);
     QVERIFY(audio != nullptr);
     QVERIFY(launcher != nullptr);
+    QVERIFY(globalMenu != nullptr);
     QVERIFY(clock->capabilities.isEmpty());
     QVERIFY(taskList->capabilities.contains(Capability::WindowManage));
     QVERIFY(tray->capabilities.contains(Capability::StatusItemActivate));
@@ -101,6 +104,9 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
                                     Capability::AudioControl}));
     QVERIFY(launcher->capabilities
             == QVector<Capability>({Capability::ApplicationLaunch}));
+    QVERIFY(globalMenu->capabilities
+            == QVector<Capability>({Capability::GlobalMenuRead,
+                                    Capability::WindowActivate}));
     QVERIFY(notificationCenter->placementZones
             == QVector<PlacementZone>({PlacementZone::PanelStart,
                                        PlacementZone::PanelCenter,

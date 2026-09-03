@@ -79,6 +79,14 @@ shell-private controller whose scanner roots are explicit composition inputs
 and whose process/session-bus execution routes remain behind bounded seams.
 The manifest cannot choose roots, executable authority, or persistence keys.
 
+The Global Menu manifest requests `global-menu.read` and `windows.activate`,
+but the audited production policy grants only `global-menu.read` and
+explicitly denies `windows.activate`. The applet receives a shell-private
+facade over authenticated active-window identity and guarded dbusmenu events;
+it never receives the compositor client, a general window action surface, or
+registrar ownership authority. The shell, not manifest data, owns the standard
+registrar name on its injected session bus.
+
 Serialization emits a normalized document suitable for round-trip and migration
 tests. Field additions require either an explicitly backward-compatible minor
 API rule or a new manifest schema version.

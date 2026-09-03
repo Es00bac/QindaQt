@@ -42,6 +42,20 @@ public:
     }
 };
 
+class FakeAnnouncedMenuSource final
+    : public Composition::AnnouncedMenuAddressSource
+{
+public:
+    QUuid expectedWindow;
+    std::optional<Composition::AnnouncedMenuAddress> address;
+
+    [[nodiscard]] std::optional<Composition::AnnouncedMenuAddress>
+    announcedMenuFor(const Ownership::WindowIdentity &window) const override
+    {
+        return window.windowId == expectedWindow ? address : std::nullopt;
+    }
+};
+
 QDBusMessage registrarCall(const QDBusConnection &connection, const QString &method,
                            const QVariantList &arguments)
 {
@@ -66,6 +80,7 @@ class GlobalMenuTransportCompositionTest final : public QObject
 
 private Q_SLOTS:
     void focusedRegistrationPublishesAndActivatesExactlyOnce();
+    void announcedNativeAddressUsesExactOwnerAndClearsOnLoss();
 };
 
 void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivatesExactlyOnce()
@@ -180,6 +195,64 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
     registrar.stop();
     QDBusConnection::disconnectFromBus(shellName);
     QDBusConnection::disconnectFromBus(registrarName);
+}
+
+void GlobalMenuTransportCompositionTest::
+announcedNativeAddressUsesExactOwnerAndClearsOnLoss()
+{
+    DbusMenu::registerDbusMenuWireTypes();
+    const QString providerName = QStringLiteral("qindaqt-native-menu-provider");
+    const QString shellName = QStringLiteral("qindaqt-native-menu-shell");
+    const QString announcedService = QStringLiteral("org.qindaqt.TestNativeMenu");
+    auto providerBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, providerName);
+    auto shellBus = QDBusConnection::connectToBus(
+        QDBusConnection::SessionBus, shellName);
+    QVERIFY(providerBus.isConnected());
+    QVERIFY(shellBus.isConnected());
+    QVERIFY(providerBus.registerService(announcedService));
+
+    Test::FakeDbusMenuExporter exporter;
+    exporter.setLayout(1, Test::menuLayout(QStringLiteral("_Native")));
+    QVERIFY(providerBus.registerObject(
+        QStringLiteral("/NativeMenu"), &exporter,
+        QDBusConnection::ExportScriptableSlots
+            | QDBusConnection::ExportScriptableSignals
+            | QDBusConnection::ExportScriptableProperties));
+
+    const QUuid windowId = QUuid::createUuid();
+    FakeActiveWindowSource active;
+    active.observation = Ownership::ActiveWindowObservation{
+        .window = Ownership::WindowIdentity{
+            .windowId = windowId,
+            .processId = static_cast<qint64>(QCoreApplication::applicationPid())},
+        .focusGeneration = 9};
+    FakeRegistrarWindowIdSource registrarIds;
+    FakeAnnouncedMenuSource announced;
+    announced.expectedWindow = windowId;
+    announced.address = Composition::AnnouncedMenuAddress{
+        .serviceName = announcedService,
+        .objectPath = QStringLiteral("/NativeMenu")};
+    Registrar::RegistrarRegistry unusedRegistry;
+    GlobalMenuAppletAccess applet;
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        shellBus, active, registrarIds, announced, unusedRegistry, applet);
+    coordinator.refreshFocus();
+
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QCOMPARE(applet.items().constFirst().toMap().value(QStringLiteral("text")),
+             QStringLiteral("Native"));
+    QSignalSpy observed(&exporter, &Test::FakeDbusMenuExporter::eventObserved);
+    applet.activate(QStringLiteral("1"));
+    QTRY_COMPARE_WITH_TIMEOUT(observed.size(), 1, 5'000);
+
+    QDBusConnection::disconnectFromBus(providerName);
+    providerBus = QDBusConnection(QStringLiteral("qindaqt-retired-native-provider"));
+    QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
+    QVERIFY(applet.items().isEmpty());
+
+    coordinator.stop();
+    QDBusConnection::disconnectFromBus(shellName);
 }
 
 QTEST_GUILESS_MAIN(GlobalMenuTransportCompositionTest)

@@ -54,6 +54,7 @@ private slots:
     void exposesCapabilitiesOnlyForRegisteredImplementations();
     void carriesDeniedCapabilitiesWithoutInventingAuthority();
     void stockProfilesPlaceOneResolvedLauncher();
+    void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -76,6 +77,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.audio"),
         QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power")};
@@ -266,6 +268,46 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
         }
         QCOMPARE(launcherCount, 1);
     }
+}
+
+void AppletInstanceResolverTests::globalMenuUsesLeastAuthorityAndStockTopPanels()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    int enabledFamilies = 0;
+    for (const auto &profile : profiles.profiles()) {
+        int menuCount = 0;
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1String("global-menu")) {
+                    continue;
+                }
+                ++menuCount;
+                QCOMPARE(static_cast<int>(panel.edge),
+                         static_cast<int>(Profiles::Edge::Top));
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(), qPrintable(resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.global-menu"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList{QStringLiteral("global-menu.read")});
+            }
+        }
+        QCOMPARE(menuCount, profile.workflow.globalMenu ? 1 : 0);
+        if (profile.workflow.globalMenu) {
+            ++enabledFamilies;
+        }
+    }
+    QCOMPARE(enabledFamilies, 3);
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)

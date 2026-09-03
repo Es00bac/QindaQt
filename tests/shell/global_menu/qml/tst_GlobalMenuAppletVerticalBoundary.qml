@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
-import "../../../../src/shell/global_menu/applet/qml" as GlobalMenuComponents
+import QindaQt.Shell.GlobalMenu as GlobalMenuComponents
 
 // AGENT-NOTE: This equality-boundary case is isolated from the broader
 // overflow matrix so both suites remain below the source-shape decomposition
