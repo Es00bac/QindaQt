@@ -7,7 +7,7 @@
 #include "ui/terminal_window.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
-#include "qindaqt/services/font_preferences/font_settings_bootstrap.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
@@ -72,6 +72,14 @@ loadTheme(const QString &themeId, const QStringList &directories) {
 int main(int argc, char **argv) {
   using namespace QindaQt::Apps::Terminal;
 
+  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
+  // call runs before QApplication construction (pre-construction
+  // QGuiApplication::setFont persists as the application default font). A
+  // missing, unavailable, or unresolvable preference source leaves platform
+  // defaults untouched (fail-closed). The theme baseline setFont below
+  // remains the deliberate widgets baseline. See
+  // docs/wiki/architecture/font-preferences.md.
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-terminal"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
@@ -133,15 +141,6 @@ int main(int argc, char **argv) {
   }
   application.setPalette(appearance.appearance->windowPalette);
   application.setFont(appearance.appearance->interfaceFont);
-  // AGENT-CONTRACT: F1 font bootstrap — apply confirmed Settings1 fonts.*
-  // typography after the theme baseline and before any window exists, so a
-  // confirmed preference wins over the theme interface font. A missing or
-  // unavailable preference source leaves the theme defaults untouched
-  // (fail-closed). See docs/wiki/architecture/font-preferences.md.
-  const bool fontBootstrapApplied =
-      QindaQt::Services::FontPreferences::FontSettingsBootstrap::applyFromSessionSettings(
-          application);
-  Q_UNUSED(fontBootstrapApplied);
   if (parser.isSet(QStringLiteral("check-theme"))) {
     std::printf("%s qst-%d\n",
                 qPrintable(appearance.appearance->sourceThemeId),

@@ -22,6 +22,14 @@ bool FontDiscoveryRequest::isWellFormed() const noexcept
             return false;
         }
     }
+    // AGENT-GUARD (review finding P1-2): Only the exact productionDefault()
+    // shape -- no injected directories AND no configuration file -- may reach
+    // FcInitLoadConfig(). An injected directory with an empty configuration
+    // file would silently enumerate the host's ambient fontconfig state, so
+    // the request is ill-formed and discovery fails closed instead.
+    if (configurationFile.trimmed().isEmpty() && !fontDirectories.isEmpty()) {
+        return false;
+    }
     return true;
 }
 

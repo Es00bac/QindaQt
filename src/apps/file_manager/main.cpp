@@ -6,7 +6,7 @@
 
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_facade.h"
-#include "qindaqt/services/font_preferences/font_settings_bootstrap.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QCommandLineParser>
@@ -101,20 +101,18 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
 } // namespace
 
 int main(int argc, char **argv) {
+  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
+  // call runs before QGuiApplication construction (pre-construction
+  // QGuiApplication::setFont persists as the application default font). A
+  // missing, unavailable, or unresolvable preference source leaves platform
+  // defaults untouched (fail-closed). See
+  // docs/wiki/architecture/font-preferences.md.
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QGuiApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-file-manager"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt File Manager"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
   application.setDesktopFileName(QStringLiteral("org.qindaqt.FileManager"));
-
-  // AGENT-CONTRACT: F1 font bootstrap — apply confirmed Settings1 fonts.*
-  // typography before any window or QML engine exists. A missing or
-  // unavailable preference source leaves platform defaults untouched
-  // (fail-closed). See docs/wiki/architecture/font-preferences.md.
-  const bool fontBootstrapApplied =
-      QindaQt::Services::FontPreferences::FontSettingsBootstrap::applyFromSessionSettings(
-          application);
-  Q_UNUSED(fontBootstrapApplied);
 
   QCommandLineParser parser;
   parser.setApplicationDescription(QStringLiteral("QindaQt local file manager"));

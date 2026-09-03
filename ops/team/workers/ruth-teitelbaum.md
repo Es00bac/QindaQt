@@ -4,21 +4,20 @@ role: Font platform implementer
 provider: Moonshot Kimi
 model: kimi-code/k3
 reasoning: high
-status: handoff
+status: working
 feature: QQ-005.08 Font discovery and confirmed first-party application (WIRED F0 → F1)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/font-discovery-f1
 started_at: 2026-09-02T22:00:00-06:00
-updated_at: 2026-09-03T04:34:14-06:00
+updated_at: 2026-09-03T05:24:03-06:00
 ---
 
 # Ruth Teitelbaum
 
 - Role: Font platform implementer.
 - Provider/model: Moonshot Kimi `kimi-code/k3`, reasoning high.
-- Status: handoff — exact candidate `abc76f32b5d499b26c6d843bce45cb6dc33ab9b9`
-  (tree `4a6b392ce2390482e71782a1171ae4317cb235df`), Debug and Release green,
-  static gates green; awaiting independent exact review then manager
-  integration.
+- Status: working — repairing rejected candidate `abc76f3` (Cecilia
+  Berdichevsky verdict REJECT 0/6/1/0); claim posted to
+  `ops/team/messages/platform-fonts/1788434643-ruth-teitelbaum-repair-claim.md`.
 - Exact base: `f350028c1cfea0bf0e92f4c2fb0d5949ee6b65a9`.
 - Branch: `worker/font-discovery-f1`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/font-discovery-f1`.
@@ -45,3 +44,10 @@ updated_at: 2026-09-03T04:34:14-06:00
   mkdocs, check-source-shape, and `git diff --check` all exit 0. Handoff posted
   to `ops/team/messages/platform-fonts/`. Requested next action: independent
   exact review then manager integration.
+- 2026-09-03T05:24:03-06:00 — repair claim: Cecilia Berdichevsky rejected
+  `abc76f3` at P0/P1/P2/P3 = 0/6/1/0. Repairing all six P1 findings and P2-1
+  in the same worktree/branch on top of `18f4019`; claim message records the
+  planned repair shape (composition root moves to `font_discovery` as a single
+  pre-`QGuiApplication` guarded call, strict Settings1 typing, write-sequence
+  fencing, fail-closed request shapes, control-free facts, and the missing
+  hostile/determinism regression rows).

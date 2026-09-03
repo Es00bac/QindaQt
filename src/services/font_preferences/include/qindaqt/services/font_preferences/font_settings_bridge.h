@@ -19,11 +19,14 @@ namespace QindaQt::Services::FontPreferences {
 // AGENT-CONTRACT: FontSettingsBridge composes the pure FontPreferencesCoordinator
 // with the public Settings1 client (ADR-0028 recovery contract). Confirmed
 // snapshots update the coordinator atomically through
-// FontPreferencesCodec::fromSettingsMap; a decode failure or any transport loss
-// leaves the last-known-good snapshot untouched. applyPreferences() writes the
+// FontPreferencesCodec::fromSettingsMap (exact-typed, wholesale rejection); a
+// decode failure or any transport loss leaves the last-known-good snapshot
+// untouched. applyPreferences() writes the
 // six fonts.* keys as a fixed-order sequence of single-key optimistic commits,
 // waits for a fresh authoritative snapshot between keys so no write carries a
-// stale base revision, and never replays an uncertain write.
+// stale base revision, and never replays an uncertain write. A malformed
+// post-commit snapshot ends the sequence instead of advancing it (review
+// finding P1-5).
 class FontSettingsBridge final : public QObject {
     Q_OBJECT
 public:

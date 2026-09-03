@@ -11,10 +11,13 @@ composition, and the first-party bootstrap wiring on top of that pure base.
 
 ```mermaid
 graph TD
-    subgraph F1 discovery
+    subgraph F1 discovery and composition
         FC5[fontconfig 2.x] -->|private link| FDP[FontDiscoveryProvider]
         REQ[Injected directories and config file] --> FDP
         FDP -->|bounded sorted facts| FF[FontFact List]
+        S1[Settings1 service] -->|bounded blocking pre-app read| FSB[FontSessionBootstrap]
+        FDP -->|productionDefault discovery| FSB
+        FSB -->|gate + QGuiApplication::setFont| APPS[First-party applications]
     end
     FF[FontFact List] -->|create / validate| FC[FontCatalog]
     Settings[Settings1 Layer] -->|fromSettingsMap| FP[FontPreferences]
@@ -22,21 +25,21 @@ graph TD
     FC --> FPC[FontPreferencesCoordinator]
     FP --> FPC
     FPC -->|atomic publication| Snapshot[Catalog & Preferences Snapshot]
-    SC[Settings1 Client] -->|confirmed snapshots| FSB[FontSettingsBridge]
-    FSB -->|updateFromSettings| FPC
-    FSB -->|fixed-order per-key commits| SC
+    SC[Settings1 Client] -->|confirmed snapshots| FSB2[FontSettingsBridge]
+    FSB2 -->|updateFromSettings| FPC
+    FSB2 -->|fixed-order per-key commits| SC
     FP -->|bootstrap| FB[FontBootstrap]
     FB -->|derive| QF[QFont / Rendering Attributes]
-    SC -.->|bounded pre-window read| FBOOT[FontSettingsBootstrap]
-    FBOOT -->|QGuiApplication::setFont| Apps[First-party applications]
 ```
 
 ### Components
 
 1. **`FontFact` (`font_fact.h`)**: Pure value struct representing an injected
    font file or pattern discovery fact (family name, style, monospace flag,
-   scalability, weight, italic slant, postscript name). Facts containing control
-   characters or empty names are rejected.
+   scalability, weight, italic slant, postscript name). Every published string
+   field (family, style, PostScript name) must be free of NUL/control
+   characters, and the family must be non-blank; a fact violating this is
+   rejected, which rejects the whole discovery pattern or catalog creation.
 2. **`FontCatalog` (`font_catalog.h`)**: Immutable snapshot of discovered font
    families. Normalizes family names (whitespace collapse, case-insensitive
    deduplication), verifies that monospace flags do not conflict, aggregates
@@ -52,6 +55,9 @@ graph TD
    codecs between `FontPreferences` and JSON objects, `QVariantMap`, and
    Settings1 schema-v2 keys (`fonts.family`, `fonts.monospaceFamily`,
    `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder`).
+   `fromSettingsMap` is exact-typed: any wrong-typed value (an integer family,
+   a string point size, a non-boolean antialiasing flag) rejects the whole
+   snapshot with no `QVariant` coercion.
 5. **`FontBootstrap` (`font_bootstrap.h`)**: Pure pre-application helper creating
    configured `QFont` instances and toolkit rendering attributes prior to QML
    engine or window construction.
@@ -64,7 +70,9 @@ graph TD
 
 `src/services/font_discovery` (`qindaqt_font_discovery`, aliased
 `QindaQt::FontDiscovery`) is the only module that includes fontconfig headers
-or links fontconfig (ADR-0057). `FontDiscoveryProvider` turns a
+or links fontconfig (ADR-0057). It also hosts the F1 production composition
+root (`FontSessionBootstrap`, see below), which is the module's only Qt
+D-Bus/Gui consumer. `FontDiscoveryProvider` turns a
 `FontDiscoveryRequest` into a bounded, deterministically sorted list of F0
 `FontFact` values:
 
@@ -72,9 +80,11 @@ or links fontconfig (ADR-0057). `FontDiscoveryProvider` turns a
   configuration file and injected font directories; the `FcConfig` never
   escapes the module. Tests always inject both, so the host's default
   fontconfig configuration and host font directories are never consulted.
-  Only `FontDiscoveryRequest::productionDefault()` (empty configuration file,
-  no injected directories) resolves the default fontconfig configuration, and
-  that shape is reserved for the production composition.
+  Only the exact `FontDiscoveryRequest::productionDefault()` shape (empty
+  configuration file AND no injected directories) may resolve the default
+  fontconfig configuration; a request carrying injected directories but no
+  configuration file is ill-formed and rejected fail-closed, so a
+  non-production request can never enumerate ambient host font state.
 - Discovery is fail-closed: a malformed request, an unparsable or missing
   configuration file, a missing injected directory, or a fontconfig
   initialization/build failure yields `available == false` with a bounded
@@ -108,54 +118,83 @@ with the public Settings1 client, following the ADR-0028 recovery contract:
   revision. Per-key truth is kept in `lastApplyResults()` (`Applied`,
   `Conflict`, `Failed`, `Uncertain`, `NotAttempted`); a conflict or failure
   stops the sequence, later keys stay `NotAttempted`, and an uncertain write
-  is never replayed automatically. The sequence never claims to be one atomic
-  transaction.
+  is never replayed automatically. A post-commit snapshot that fails
+  validation also ends the sequence instead of advancing it: the applied key
+  keeps its confirmed truth and every later key stays `NotAttempted`. The
+  sequence never claims to be one atomic transaction.
 - The bridge fails closed on transport loss: writes are refused unless the
   client is Ready, owner loss ends an in-flight sequence, and the coordinator
   keeps its last-known-good preferences throughout.
 
 ## Font F1 first-party bootstrap wiring
 
-`FontSettingsBootstrap` (`font_settings_bootstrap.h`) is the pre-window helper
-each first-party application calls exactly once. Because Qt D-Bus and
-`QGuiApplication::setFont` both require the application object, the call site
-is immediately after `QGuiApplication` construction and before any window or
-QML engine is created — a strictly pre-`QGuiApplication` call is impossible,
-so "pre-window" is the enforced contract.
+`FontSessionBootstrap` (`font_session_bootstrap.h`, module
+`src/services/font_discovery`) is the F1 production composition root. Each
+first-party application (Settings Center, Text Editor, File Manager,
+Terminal) calls `FontSessionBootstrap::applyFromSessionSettings()` exactly
+once as a single guarded line **before `QGuiApplication` construction**.
+This placement is possible and safe on Qt 6.11 because
+`QGuiApplication::setFont()` invoked pre-construction persists as the
+application default font, and blocking D-Bus calls work without an
+application object (an event loop does not, so the read never uses one).
+The composition:
 
-- `applyFromSessionSettings(application)` constructs a session-bus Settings1
-  transport and scoped client internally, performs one bounded synchronous
-  read (`DefaultBootstrapTimeoutMilliseconds`, 750 ms), and applies the
-  confirmed preferences to the application default font via
-  `FontBootstrap` (family, point size, hinting preference, and antialiasing
-  style strategy). A missing, unavailable, slow, or invalid preference source
-  changes nothing and returns `false` with a bounded diagnostic.
-- `readConfirmedPreferences(client, timeout)` and
-  `applyPreferences(application, preferences)` are the injected seams used by
-  tests with fake transports and offscreen applications.
-- The monospace family and logical DPI are persisted and validated but not
-  applied globally: Qt has no application-wide monospace default, and logical
-  DPI is fixed before platform integration reads it. Both remain available to
-  consumers through the coordinator snapshot.
-- In the Text Editor and Terminal the call runs after the theme baseline
-  `QApplication::setFont`, so a confirmed preference wins over the theme
-  interface font; in the QML applications (Settings Center, File Manager) it
-  runs before the QML engine is created. The shell is deliberately untouched.
+1. Refuses to run when `DBUS_SESSION_BUS_ADDRESS` is unset — a missing
+   address means no preference source, never an autolaunched bus.
+2. Reads the confirmed `fonts.*` snapshot through a **private**
+   `connectToBus()` session-bus connection with bounded blocking calls
+   (`DefaultBootstrapTimeoutMilliseconds`, 750 ms total across activation,
+   owner lookup, and the snapshot read). The shared `sessionBus()` is never
+   created pre-application, so later in-process consumers of it keep their
+   event-dispatcher integration. The snapshot envelope is validated
+   fail-closed (exact field set, exact-typed status/schema/epoch/revision,
+   exact key scope) and decoded through the exact-typed
+   `FontPreferencesCodec::fromSettingsMap`.
+3. Runs the discovery provider with
+   `FontDiscoveryRequest::productionDefault()` — the only request shape
+   allowed to resolve the default fontconfig configuration — and applies the
+   confirmed family only when it resolves (case-insensitively) in the live
+   catalog. Discovery unavailability or an unresolvable family changes
+   nothing.
+4. Applies family, point size, hinting, and antialiasing through
+   `FontSettingsBootstrap::applyPreferences()` (the pure half of the
+   bootstrap, in `font_preferences`).
+
+Every failure path returns `false` with a bounded diagnostic and leaves
+platform/theme defaults untouched; the call sites deliberately ignore the
+result. In the QML applications (Settings Center, File Manager) the applied
+font becomes the application font before the QML engine exists. In the
+widget applications (Text Editor, Terminal) the theme baseline
+`application.setFont(...)` runs after construction and remains the
+deliberate widgets baseline; the confirmed preference is then the
+pre-window platform default underneath it. The shell is deliberately
+untouched.
+
+The monospace family and logical DPI are persisted and validated but not
+applied globally: Qt has no application-wide monospace default, and logical
+DPI is fixed before platform integration reads it. Both remain available to
+consumers through the coordinator snapshot.
 
 ## Invariants
 
 - **AGENT-GUARD:** Font preferences and catalog instances are pure and
   thread-confined. Discovery does not scan the host filesystem or mutate
   system font configuration; only the discovery provider links fontconfig, and
-  it never mutates the host configuration either.
-- **AGENT-GUARD:** Mismatched monospace flags or unprintable characters in font
-  facts cause catalog creation to fail, preserving the prior LKG catalog.
-- **AGENT-GUARD:** Qt D-Bus is imported only by the F1 Settings1 composition
-  sources in `font_preferences` (`font_settings_bootstrap.cpp`); the catalog,
-  preference, codec, and coordinator sources remain transport-free. The
-  boundary gate is `qindaqt.font-preferences-boundary`.
+  it never mutates the host configuration either. Only the exact
+  `productionDefault()` request shape may resolve the default fontconfig
+  configuration.
+- **AGENT-GUARD:** Mismatched monospace flags or unprintable/control
+  characters in any string field of a font fact (family, style, PostScript
+  name) reject the fact, which fails catalog creation or drops the discovery
+  pattern, preserving the prior LKG catalog.
+- **AGENT-GUARD:** Qt D-Bus appears only in the F1 session bootstrap
+  composition (`src/services/font_discovery/src/font_session_bootstrap.cpp`);
+  the `font_preferences` module and the discovery provider are transport-free.
+  The boundary gates are `qindaqt.font-preferences-boundary` and
+  `qindaqt.font-discovery-boundary`.
 - **AGENT-CONTRACT:** Codecs map cleanly to Settings1 `fonts.*` schema properties
-  and QST-1 type scaling requirements.
+  and QST-1 type scaling requirements; Settings1 decoding is exact-typed and
+  rejects a wrong-typed snapshot wholesale.
 - **AGENT-CONTRACT:** The bootstrap call is guarded: a missing or unavailable
   preference source leaves platform/theme defaults untouched and is not an
   application error.

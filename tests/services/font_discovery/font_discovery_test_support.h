@@ -18,6 +18,29 @@ using QindaQt::Services::FontDiscovery::FontDiscoveryProvider;
 using QindaQt::Services::FontDiscovery::FontDiscoveryRequest;
 using QindaQt::Services::FontDiscovery::FontDiscoveryResult;
 
+// Restores one environment variable on destruction so rows that poison the
+// fontconfig/HOME environment cannot leak into later rows.
+struct EnvGuard final {
+    QByteArray name;
+    QByteArray previous;
+    bool wasSet = false;
+
+    EnvGuard(const char *variable, const QByteArray &value) : name(variable)
+    {
+        wasSet = qEnvironmentVariableIsSet(variable);
+        previous = qgetenv(variable);
+        qputenv(name, value);
+    }
+    ~EnvGuard()
+    {
+        if (wasSet) {
+            qputenv(name, previous);
+        } else {
+            qunsetenv(name);
+        }
+    }
+};
+
 struct Stage {
     QTemporaryDir root;
 
@@ -37,6 +60,25 @@ struct Stage {
     return file.write(xml) == xml.size();
 }
 
+// Configuration that names its font directories itself; used for the
+// productionDefault() shape, where no injected directories exist.
+[[nodiscard]] inline bool writeConfigurationWithDirectories(const QString &path,
+                                                            const QString &cacheDirectory,
+                                                            const QStringList &fontDirectories)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return false;
+    }
+    QByteArray xml = QByteArrayLiteral("<?xml version=\"1.0\"?>\n<fontconfig><cachedir>")
+                     + cacheDirectory.toUtf8() + QByteArrayLiteral("</cachedir>");
+    for (const QString &directory : fontDirectories) {
+        xml += QByteArrayLiteral("<dir>") + directory.toUtf8() + QByteArrayLiteral("</dir>");
+    }
+    xml += QByteArrayLiteral("</fontconfig>\n");
+    return file.write(xml) == xml.size();
+}
+
 [[nodiscard]] inline bool copyFixtures(const QStringList &names, const QString &destinationDirectory)
 {
     QDir().mkpath(destinationDirectory);
@@ -47,6 +89,16 @@ struct Stage {
         }
     }
     return true;
+}
+
+// Copies one fixture under an explicit destination name so directory-order
+// rows can rename fixtures freely.
+[[nodiscard]] inline bool copyFixtureAs(const QString &fixtureName, const QString &destinationName,
+                                        const QString &destinationDirectory)
+{
+    QDir().mkpath(destinationDirectory);
+    return QFile::copy(QStringLiteral(QINDAQT_FONT_FIXTURES) + QLatin1Char('/') + fixtureName,
+                       destinationDirectory + QLatin1Char('/') + destinationName);
 }
 
 // Stages a config-only stage (no fonts) with a valid injected configuration.

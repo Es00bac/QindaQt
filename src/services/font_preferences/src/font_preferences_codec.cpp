@@ -266,50 +266,72 @@ std::optional<FontPreferences> FontPreferencesCodec::fromSettingsMap(
 {
     FontPreferences prefs = FontPreferences::systemDefaults();
 
+    // AGENT-GUARD (review finding P1-4): Settings1 values are exact-typed.
+    // Any wrong-typed value rejects the whole snapshot -- QVariant coercion
+    // (toString/toDouble on a mismatched type) would let an integer family or
+    // a string point size masquerade as authoritative confirmed settings.
+    // Numbers follow the canonical JSON wire domain (settings_wire_decode):
+    // integral values arrive as LongLong, fractional as Double; both are the
+    // same schema "number" type, and no other metatype is a number.
+    const auto exactString = [&settings](const char *key) -> std::optional<QString> {
+        const QVariant value = settings.value(QLatin1String(key));
+        if (value.metaType().id() != QMetaType::QString) {
+            return std::nullopt;
+        }
+        return value.toString();
+    };
+    const auto exactNumber = [&settings](const char *key) -> std::optional<double> {
+        const QVariant value = settings.value(QLatin1String(key));
+        const int type = value.metaType().id();
+        if (type != QMetaType::Double && type != QMetaType::LongLong) {
+            return std::nullopt;
+        }
+        return value.toDouble();
+    };
+
     if (settings.contains(QLatin1String(SettingKeyFamily))) {
-        const QString str = settings.value(QLatin1String(SettingKeyFamily)).toString();
-        if (!isValidFamilyName(str)) {
+        const auto str = exactString(SettingKeyFamily);
+        if (!str || !isValidFamilyName(*str)) {
             if (error) *error = QStringLiteral("fonts.family is invalid");
             return std::nullopt;
         }
-        prefs.setFamily(str);
+        prefs.setFamily(*str);
     }
 
     if (settings.contains(QLatin1String(SettingKeyMonospaceFamily))) {
-        const QString str = settings.value(QLatin1String(SettingKeyMonospaceFamily)).toString();
-        if (!isValidFamilyName(str)) {
+        const auto str = exactString(SettingKeyMonospaceFamily);
+        if (!str || !isValidFamilyName(*str)) {
             if (error) *error = QStringLiteral("fonts.monospaceFamily is invalid");
             return std::nullopt;
         }
-        prefs.setMonospaceFamily(str);
+        prefs.setMonospaceFamily(*str);
     }
 
     if (settings.contains(QLatin1String(SettingKeyPointSize))) {
-        bool ok = false;
-        const double pt = settings.value(QLatin1String(SettingKeyPointSize)).toDouble(&ok);
-        if (!ok || !isValidPointSize(pt)) {
+        const auto pt = exactNumber(SettingKeyPointSize);
+        if (!pt) {
+            if (error) *error = QStringLiteral("fonts.pointSize is not a number");
+            return std::nullopt;
+        }
+        if (!isValidPointSize(*pt)) {
             if (error) *error = QStringLiteral("fonts.pointSize is out of valid bounds");
             return std::nullopt;
         }
-        prefs.setPointSize(pt);
+        prefs.setPointSize(*pt);
     }
 
     if (settings.contains(QLatin1String(SettingKeyAntialiasing))) {
         const QVariant aa = settings.value(QLatin1String(SettingKeyAntialiasing));
-        if (aa.typeId() == QMetaType::Bool) {
-            prefs.setAntialiasing(fontAntialiasingFromBool(aa.toBool()));
-        } else {
-            const auto mode = fontAntialiasingFromString(aa.toString());
-            if (!mode) {
-                if (error) *error = QStringLiteral("fonts.antialiasing is invalid");
-                return std::nullopt;
-            }
-            prefs.setAntialiasing(*mode);
+        if (aa.metaType().id() != QMetaType::Bool) {
+            if (error) *error = QStringLiteral("fonts.antialiasing is not a boolean");
+            return std::nullopt;
         }
+        prefs.setAntialiasing(fontAntialiasingFromBool(aa.toBool()));
     }
 
     if (settings.contains(QLatin1String(SettingKeyHinting))) {
-        const auto hint = fontHintingFromString(settings.value(QLatin1String(SettingKeyHinting)).toString());
+        const auto str = exactString(SettingKeyHinting);
+        const auto hint = str ? fontHintingFromString(*str) : std::nullopt;
         if (!hint) {
             if (error) *error = QStringLiteral("fonts.hinting is invalid");
             return std::nullopt;
@@ -318,7 +340,8 @@ std::optional<FontPreferences> FontPreferencesCodec::fromSettingsMap(
     }
 
     if (settings.contains(QLatin1String(SettingKeySubpixelOrder))) {
-        const auto order = fontSubpixelOrderFromString(settings.value(QLatin1String(SettingKeySubpixelOrder)).toString());
+        const auto str = exactString(SettingKeySubpixelOrder);
+        const auto order = str ? fontSubpixelOrderFromString(*str) : std::nullopt;
         if (!order) {
             if (error) *error = QStringLiteral("fonts.subpixelOrder is invalid");
             return std::nullopt;

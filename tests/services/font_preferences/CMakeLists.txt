@@ -57,7 +57,7 @@ set_tests_properties(qindaqt.font-settings-bridge PROPERTIES LABELS "service;fon
 qt_add_executable(qindaqt_font_settings_bootstrap_tests tst_font_settings_bootstrap.cpp)
 target_link_libraries(
     qindaqt_font_settings_bootstrap_tests
-    PRIVATE QindaQt::FontPreferences QindaQt::SettingsClient Qt6::Test
+    PRIVATE QindaQt::FontPreferences Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_font_settings_bootstrap_tests)
 add_test(NAME qindaqt.font-settings-bootstrap COMMAND qindaqt_font_settings_bootstrap_tests)

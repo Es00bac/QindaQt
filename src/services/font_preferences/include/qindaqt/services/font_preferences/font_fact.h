@@ -17,17 +17,26 @@ struct FontFact final {
     bool italic = false;
     QString postscriptName;
 
+    // AGENT-GUARD (review finding P1-3): Every published string field -- not
+    // only family -- must be free of NUL and control characters before a fact
+    // reaches a consumer. A hostile fontconfig scan rule can inject arbitrary
+    // bytes into FC_STYLE/FC_POSTSCRIPT_NAME; validating only family would
+    // publish them.
     [[nodiscard]] bool isValid() const noexcept
     {
         if (family.trimmed().isEmpty()) {
             return false;
         }
-        for (const auto &ch : family) {
-            if (ch.isNull() || ((ch.isLowSurrogate() == ch.isHighSurrogate()) && ch.category() == QChar::Other_Control)) {
-                return false;
+        const auto freeOfControlCharacters = [](const QString &value) noexcept {
+            for (const auto &ch : value) {
+                if (ch.isNull() || ((ch.isLowSurrogate() == ch.isHighSurrogate()) && ch.category() == QChar::Other_Control)) {
+                    return false;
+                }
             }
-        }
-        return true;
+            return true;
+        };
+        return freeOfControlCharacters(family) && freeOfControlCharacters(style)
+               && freeOfControlCharacters(postscriptName);
     }
 
     [[nodiscard]] bool operator==(const FontFact &other) const noexcept
