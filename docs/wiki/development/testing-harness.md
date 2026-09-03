@@ -912,6 +912,44 @@ does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.
 
+## Current Customize Settings canvas proof
+
+The direct canvas, editor-session composition, hostile boundary, and relocated
+package are selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
+  --output-on-failure --no-tests=error
+```
+
+The model row uses an injected Settings transport, real editing repository and
+coordinator adapter, and temporary profile store. It proves converging preview,
+one durable gesture history boundary, cancel and rejection rollback,
+pointer/keyboard insertion parity, persistence, conflict truth, and explicit
+lease-loss recovery. The page row runs warning-fatal, renders 720×720 compact
+and 1080×720 wide software scenes, checks accessible palette, panel, and zone
+identity plus keyboard activation, and verifies centered discard-dialog
+geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
+or Discard resolves it and preserves both navigation and application-close
+prompts across wide-to-compact and compact-to-wide host reconstruction. The
+boundary row scans every C++ and QML file owned by the route. It accepts C++
+includes only from Qt/system headers, the route's own directory, or the public
+`include/` trees of its named dependencies; all other repository-relative
+includes fail. Independent negative controls plant the exact sibling
+`src/apps/settings_center/settings_route_registry.h` include and a `../` escape
+and require both to be rejected. The same row rejects shell, LayerShellQt,
+compositor, and D-Bus dependencies. Only the named composition source may
+construct the public Settings1 Qt transport with `QDBusConnection`; adding that
+dependency anywhere else fails.
+
+`qindaqt.settings-customize-installed-route` stages the complete explicit
+Settings runtime component and runs the common hostile Settings package script.
+It additionally requires the relocated Customize QML module, profile catalog,
+and applet manifest catalog before exercising all registered route intents.
+The selector never starts a session bus, nested compositor, host service, or
+input backend. Live shell binding, reveal behavior, live AT-SPI, and rendered
+session matrices remain downstream evidence.
+
 ## Current Settings Center navigation S1 proof
 
 The typed registry/controller, responsive route host, existing route

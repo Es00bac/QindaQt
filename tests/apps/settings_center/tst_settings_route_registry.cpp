@@ -215,18 +215,20 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 4);
+  QCOMPARE(registry.count(), 5);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
   QVERIFY(registry.hasRoute(QStringLiteral("display")));
   QVERIFY(registry.hasRoute(QStringLiteral("network")));
+  QVERIFY(registry.hasRoute(QStringLiteral("customize")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
   QCOMPARE(registry.indexOf(QStringLiteral("appearance")), 1);
   QCOMPARE(registry.indexOf(QStringLiteral("display")), 2);
   QCOMPARE(registry.indexOf(QStringLiteral("network")), 3);
+  QCOMPARE(registry.indexOf(QStringLiteral("customize")), 4);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -259,6 +261,13 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!network->title.isEmpty());
   QVERIFY(!network->description.isEmpty());
   QVERIFY(network->available);
+
+  const auto customize = registry.route(QStringLiteral("customize"));
+  QVERIFY(customize.has_value());
+  QCOMPARE(customize->component, SettingsRouteComponent::Customize);
+  QVERIFY(!customize->title.isEmpty());
+  QVERIFY(!customize->description.isEmpty());
+  QVERIFY(customize->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

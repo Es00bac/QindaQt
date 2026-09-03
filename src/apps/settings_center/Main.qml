@@ -7,6 +7,7 @@ import QindaQt.Controls 1.0 as Controls
 import QindaQt.SettingsApp.Appearance
 import QindaQt.SettingsApp.Display
 import QindaQt.SettingsApp.Network
+import QindaQt.SettingsApp.Customize
 
 T.ApplicationWindow {
     id: root
@@ -16,6 +17,8 @@ T.ApplicationWindow {
     required property var appearanceSettings
     property var displaySettings: null
     property var networkSettings: null
+    property var customizeSettings: CustomizeRouteComposition.model
+    property bool applicationClosePending: false
 
     readonly property bool isCompact: width < 540
     readonly property string currentRouteTitle: navigation.activeRouteTitle.length > 0
@@ -28,6 +31,14 @@ T.ApplicationWindow {
     minimumHeight: 320
     color: Tokens.bg.base
     title: qsTr("QindaQt Settings — %1").arg(currentRouteTitle)
+
+    onClosing: function(close) {
+        const activeHost = root.isCompact ? compactRouteHost : wideRouteHost
+        if (activeHost.requestApplicationClose()) {
+            root.applicationClosePending = true
+            close.accepted = false
+        }
+    }
 
     Shortcut {
         sequence: "Ctrl+1"
@@ -65,7 +76,7 @@ T.ApplicationWindow {
     }
 
     Shortcut {
-        sequence: StandardKey.Quit
+        sequences: [StandardKey.Quit]
         onActivated: root.close()
     }
 
@@ -95,11 +106,14 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 
@@ -128,11 +142,14 @@ T.ApplicationWindow {
             appearanceSettings: root.appearanceSettings
             displaySettings: root.displaySettings
             networkSettings: root.networkSettings
+            customizeSettings: root.customizeSettings
+            applicationClosePending: root.applicationClosePending
             notificationsComponent: notificationsRouteComponent
             appearanceComponent: appearanceRouteComponent
             displayComponent: displayRouteComponent
             networkComponent: networkRouteComponent
             unavailableComponent: unavailableRouteComponent
+            onApplicationCloseResolved: root.applicationClosePending = false
         }
     }
 
