@@ -1,7 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Gui Test Widgets)
 find_program(QINDAQT_PORTAL_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
+find_program(QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE
+             NAMES dbus-run-session REQUIRED)
+find_program(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE
+             NAMES xdg-desktop-portal
+             PATHS /usr/libexec /usr/lib/xdg-desktop-portal)
+find_file(QINDAQT_KDE_PORTAL_METADATA
+          NAMES kde.portal
+          PATHS /usr/share/xdg-desktop-portal/portals)
 
 qt_add_executable(qindaqt_portal_appearance_policy_tests
                   tst_appearance_policy.cpp)
@@ -74,6 +82,68 @@ add_test(
     COMMAND qindaqt_portal_process_lifecycle_tests
 )
 
+if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
+    qt_add_executable(qindaqt_portal_toolkit_probe portal_toolkit_probe.cpp)
+    target_link_libraries(qindaqt_portal_toolkit_probe
+                          PRIVATE Qt6::Gui Qt6::Widgets)
+    qindaqt_enable_warnings(qindaqt_portal_toolkit_probe)
+
+    qt_add_executable(qindaqt_portal_frontend_integration_tests
+                      portal_frontend_test_support.cpp
+                      portal_frontend_test_support.h
+                      tst_portal_frontend_integration.cpp)
+    target_compile_definitions(
+        qindaqt_portal_frontend_integration_tests
+        PRIVATE
+            QINDAQT_FALLBACK_PORTAL="${QINDAQT_KDE_PORTAL_METADATA}"
+            QINDAQT_PORTAL_EXECUTABLE="$<TARGET_FILE:xdg-desktop-portal-qindaqt>"
+            QINDAQT_PORTAL_METADATA="${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt.portal"
+            QINDAQT_PORTAL_SELECTION="${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf"
+            QINDAQT_PORTAL_TEST_RUNTIME_ROOT="${CMAKE_CURRENT_BINARY_DIR}/portal-p1-runtime"
+            QINDAQT_PORTAL_THEME_DIR="${PROJECT_SOURCE_DIR}/data/themes"
+            QINDAQT_SETTINGS_EXECUTABLE="$<TARGET_FILE:qindaqt-settings-service>"
+            QINDAQT_SETTINGS_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/data/settings"
+            QINDAQT_TOOLKIT_PROBE="$<TARGET_FILE:qindaqt_portal_toolkit_probe>"
+            QINDAQT_XDG_DESKTOP_PORTAL="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
+    )
+    target_link_libraries(
+        qindaqt_portal_frontend_integration_tests
+        PRIVATE QindaQt::PortalAppearance QindaQt::SettingsProtocol
+                Qt6::Core Qt6::DBus
+    )
+    add_dependencies(
+        qindaqt_portal_frontend_integration_tests
+        qindaqt-settings-service qindaqt_portal_toolkit_probe
+        xdg-desktop-portal-qindaqt
+    )
+    qindaqt_enable_warnings(qindaqt_portal_frontend_integration_tests)
+
+    foreach(mode IN ITEMS selection toolkit)
+        add_test(
+            NAME qindaqt.portal-frontend-${mode}
+            COMMAND
+                "${CMAKE_COMMAND}" -E env
+                --unset=DBUS_SESSION_BUS_ADDRESS
+                --unset=DBUS_STARTER_ADDRESS
+                --unset=DBUS_STARTER_BUS_TYPE
+                "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
+                "$<TARGET_FILE:qindaqt_portal_frontend_integration_tests>"
+                "${mode}"
+        )
+    endforeach()
+    set(portal_p1_package_arguments
+        "-DQINDAQT_FRONTEND_TEST=$<TARGET_FILE:qindaqt_portal_frontend_integration_tests>"
+        "-DQINDAQT_TOOLKIT_PROBE=$<TARGET_FILE:qindaqt_portal_toolkit_probe>"
+        "-DQINDAQT_XDG_DESKTOP_PORTAL=${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
+        "-DQINDAQT_FALLBACK_PORTAL=${QINDAQT_KDE_PORTAL_METADATA}"
+        "-DQINDAQT_DBUS_RUN_SESSION=${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}"
+    )
+else()
+    message(STATUS
+        "xdg-desktop-portal or kde.portal not found; Portal P1 frontend rows are not registered")
+    set(portal_p1_package_arguments)
+endif()
+
 add_test(
     NAME qindaqt.portal-source-boundary
     COMMAND
@@ -108,6 +178,7 @@ add_test(
         "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
         "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
         "-DQINDAQT_PROCESS_TEST=$<TARGET_FILE:qindaqt_portal_process_lifecycle_tests>"
+        ${portal_p1_package_arguments}
         "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
         "-DSOURCE_PORTAL_ROOT=${PROJECT_SOURCE_DIR}/src/services/portal"
         "-DQINDAQT_CONFIGURATION=$<CONFIG>"
@@ -122,6 +193,13 @@ set_tests_properties(
     qindaqt.portal-service qindaqt.portal-process-lifecycle
     PROPERTIES LABELS "service;portal;appearance;dbus" TIMEOUT 20 RUN_SERIAL TRUE
 )
+if(TEST qindaqt.portal-frontend-selection)
+    set_tests_properties(
+        qindaqt.portal-frontend-selection qindaqt.portal-frontend-toolkit
+        PROPERTIES LABELS "service;portal;frontend;dbus;hostile"
+                   TIMEOUT 35 RUN_SERIAL TRUE
+    )
+endif()
 set_tests_properties(
     qindaqt.portal-source-boundary qindaqt.portal-source-boundary-negative
     PROPERTIES LABELS "service;portal;appearance;boundary;hostile" TIMEOUT 20
@@ -134,3 +212,7 @@ set_tests_properties(
         RUN_SERIAL TRUE
         DEPENDS "qindaqt.portal-process-lifecycle"
 )
+if(TEST qindaqt.portal-frontend-selection)
+    set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
+                 DEPENDS "qindaqt.portal-frontend-selection;qindaqt.portal-frontend-toolkit")
+endif()

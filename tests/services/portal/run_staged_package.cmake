@@ -65,6 +65,23 @@ foreach(required_artifact IN ITEMS portal_executable dbus_descriptor systemd_uni
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
     endif()
 endforeach()
+
+# AGENT-GUARD: These names are integration entry points discovered by external
+# daemons. A duplicate anywhere in the staged component makes package selection
+# order-dependent even if the canonical path itself is correct.
+foreach(singleton IN ITEMS
+        "org.freedesktop.impl.portal.desktop.qindaqt.service"
+        "xdg-desktop-portal-qindaqt.service"
+        "qindaqt.portal"
+        "qindaqt-portals.conf")
+    file(GLOB_RECURSE matches LIST_DIRECTORIES false
+         "${install_prefix}/*/${singleton}" "${install_prefix}/${singleton}")
+    list(LENGTH matches match_count)
+    if(NOT match_count EQUAL 1)
+        message(FATAL_ERROR
+            "Staged portal package has ${match_count} copies of ${singleton}")
+    endif()
+endforeach()
 if(NOT EXISTS "${theme_directory}/qinda-dark.json")
     message(FATAL_ERROR "Staged portal runtime misses its QST theme catalog")
 endif()
@@ -106,6 +123,39 @@ if(NOT boundary_status EQUAL 0)
         "Staged portal boundary failed:\n${boundary_output}${boundary_error}")
 endif()
 
+if(DEFINED QINDAQT_FRONTEND_TEST)
+    foreach(required IN ITEMS QINDAQT_TOOLKIT_PROBE QINDAQT_XDG_DESKTOP_PORTAL
+            QINDAQT_FALLBACK_PORTAL QINDAQT_DBUS_RUN_SESSION)
+        if(NOT DEFINED ${required})
+            message(FATAL_ERROR "Missing staged Portal P1 input: ${required}")
+        endif()
+    endforeach()
+    foreach(mode IN ITEMS selection toolkit)
+        execute_process(
+            COMMAND "${QINDAQT_CMAKE}" -E env
+                --unset=DBUS_SESSION_BUS_ADDRESS
+                --unset=DBUS_STARTER_ADDRESS
+                --unset=DBUS_STARTER_BUS_TYPE
+                "QINDAQT_TEST_PORTAL_EXECUTABLE=${portal_executable}"
+                "QINDAQT_TEST_PORTAL_METADATA=${portal_metadata}"
+                "QINDAQT_TEST_PORTAL_SELECTION=${portal_selection}"
+                "QINDAQT_TEST_PORTAL_THEME_DIR=${theme_directory}"
+                "QINDAQT_TEST_SETTINGS_EXECUTABLE=${QINDAQT_EXPECTED_SETTINGS_EXECUTABLE}"
+                "QINDAQT_TEST_SETTINGS_SCHEMA_DIR=${QINDAQT_EXPECTED_SCHEMA_DIR}"
+                "QINDAQT_TEST_TOOLKIT_PROBE=${QINDAQT_TOOLKIT_PROBE}"
+                "${QINDAQT_DBUS_RUN_SESSION}" --
+                "${QINDAQT_FRONTEND_TEST}" "${mode}"
+            RESULT_VARIABLE frontend_status
+            OUTPUT_VARIABLE frontend_output
+            ERROR_VARIABLE frontend_error
+        )
+        if(NOT frontend_status EQUAL 0)
+            message(FATAL_ERROR
+                "Staged Portal P1 ${mode} proof failed:\n${frontend_output}${frontend_error}")
+        endif()
+    endforeach()
+endif()
+
 execute_process(
     COMMAND "${QINDAQT_CMAKE}" -E env
         "QINDAQT_TEST_PORTAL_EXECUTABLE=${portal_executable}"
@@ -136,7 +186,7 @@ function(expect_installed_metadata_rejection label expected)
     )
     if(status EQUAL 0)
         message(FATAL_ERROR
-            "Installed portal checker accepted ${label} Background poison")
+            "Installed portal checker accepted ${label} metadata poison")
     endif()
     string(CONCAT combined "${output}" "${error}")
     if(NOT combined MATCHES "${expected}")
@@ -156,7 +206,7 @@ file(WRITE "${portal_metadata}" "${portal_content}")
 file(WRITE "${portal_selection}"
     "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Background=qindaqt\n")
 expect_installed_metadata_rejection(
-    "selector" "exact Settings singleton")
+    "selector" "exact Settings/fallback routing policy")
 file(WRITE "${portal_selection}" "${selection_content}")
 
 # Self-guard: a private header planted in the disposable installed namespace

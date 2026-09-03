@@ -58,7 +58,7 @@ expect_rejection(
 expect_rejection(
     "data/qindaqt-portals.conf"
     "[preferred]\norg.freedesktop.impl.portal.OpenURI=qindaqt"
-    "exact Settings singleton"
+    "exact Settings/fallback routing policy"
 )
 expect_rejection(
     "data/qindaqt.portal"
@@ -68,7 +68,7 @@ expect_rejection(
 expect_rejection(
     "data/qindaqt-portals.conf"
     "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Background=qindaqt"
-    "exact Settings singleton"
+    "exact Settings/fallback routing policy"
 )
 expect_rejection(
     "data/qindaqt.portal"
@@ -78,7 +78,7 @@ expect_rejection(
 expect_rejection(
     "data/qindaqt-portals.conf"
     "[preferred]\ndefault=*\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Settings=qindaqt"
-    "exact Settings singleton"
+    "exact Settings/fallback routing policy"
 )
 
 file(REMOVE_RECURSE "${poison_root}")
