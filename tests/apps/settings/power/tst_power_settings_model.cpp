@@ -17,6 +17,8 @@ private Q_SLOTS:
   void projectsTruthAndPoisonsSessionActions();
   void sharesProfileAdmissionAndConvergenceFence();
   void ownerReplacementClearsActionableTruth();
+  void staleSnapshotClosesPresentationAndAdmission();
+  void successfulRetryClearsReconnectStatus();
 };
 
 void PowerSettingsModelTest::projectsTruthAndPoisonsSessionActions() {
@@ -98,6 +100,55 @@ void PowerSettingsModelTest::ownerReplacementClearsActionableTruth() {
   QVERIFY(model.profileRows().isEmpty());
   QVERIFY(model.errorText().contains(QStringLiteral("not replayed")));
   QCOMPARE(transport.submissions.size(), 1);
+}
+
+void PowerSettingsModelTest::staleSnapshotClosesPresentationAndAdmission() {
+  // AGENT-NOTE: P2-1 regression — a retained snapshot after a failed newer
+  // revision fetch must not outlive the page's "controls unavailable" truth.
+  FakePowerTransport transport;
+  Power::PowerClient client(&transport);
+  PowerSettingsModel model(client);
+  publish(client, transport);
+  const QString keyboardId = model.keyboardBrightnessRows().first().toMap()
+                                 .value(QStringLiteral("id")).toString();
+
+  Q_EMIT transport.invalidated(QStringLiteral(":1.80"), 41, 8);
+  const quint64 fetchId = transport.fetches.constLast().second;
+  Q_EMIT transport.snapshotReply(QStringLiteral(":1.80"), fetchId, false,
+                                 Power::Snapshot{}, QStringLiteral("boom"));
+
+  QVERIFY(model.stale());
+  QVERIFY(model.statusText().contains(QStringLiteral("Controls are unavailable")));
+  for (const QVariant &row : model.profileRows())
+    QVERIFY(!row.toMap().value(QStringLiteral("available")).toBool());
+  for (const QVariant &row : model.internalBrightnessRows())
+    QVERIFY(!row.toMap().value(QStringLiteral("available")).toBool());
+  for (const QVariant &row : model.keyboardBrightnessRows())
+    QVERIFY(!row.toMap().value(QStringLiteral("available")).toBool());
+
+  QVERIFY(!model.requestProfile(QStringLiteral("power-saver")));
+  QVERIFY(!model.requestKeyboardBrightness(keyboardId, 4'000));
+  QCOMPARE(transport.submissions.size(), 0);
+}
+
+void PowerSettingsModelTest::successfulRetryClearsReconnectStatus() {
+  // AGENT-NOTE: P3-1 regression — reconnect feedback is transient and must
+  // clear when retry publishes a fresh authoritative snapshot.
+  FakePowerTransport transport;
+  Power::PowerClient client(&transport);
+  PowerSettingsModel model(client);
+  publish(client, transport);
+
+  QVERIFY(model.retry());
+  QVERIFY(model.operationStatusText().contains(QStringLiteral("Reconnecting")));
+  transport.announceOwner(QStringLiteral(":1.80"));
+  transport.finishSnapshot(QStringLiteral(":1.80"),
+                           transport.fetches.constLast().second,
+                           readySnapshot());
+
+  QVERIFY(model.ready());
+  QVERIFY(model.operationStatusText().isEmpty());
+  QVERIFY(model.errorText().isEmpty());
 }
 
 QTEST_GUILESS_MAIN(PowerSettingsModelTest)

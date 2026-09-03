@@ -32,18 +32,22 @@ pending, convergence-wait, failed, and uncertain states separately.
 
 One predicate supplies both each displayed availability flag and final
 dispatch admission. It requires a retained validated snapshot, a nonempty exact
-client owner, nonzero epoch/revision, `Ready` or `Degraded` snapshot
-availability, the relevant capability, a current supported profile or
-keyboard handle, target `canSet` truth, and no conflicting debounce, operation,
-or convergence fence.
+client owner, a client state of `Ready` or `Degraded`, nonzero epoch/revision,
+`Ready` or `Degraded` snapshot availability, the relevant capability, a
+current supported profile or keyboard handle, target `canSet` truth, and no
+conflicting debounce, operation, or convergence fence. A failed refresh may
+retain bounded display rows, but stale client state disables every domain
+control and refuses requests until authoritative truth returns.
 
 Profile selection dispatches once. Keyboard slider gestures enter a 120 ms
 single-shot debounce; further changes for that same exact row replace the
 queued normalized value. A burst therefore sends at most one raw request.
 Dispatch re-resolves the row against the unchanged owner, epoch, and revision,
 converts the final normalized value with the public integer brightness math,
-and submits the exact raw value. A different target or profile remains fenced
-while a debounce is queued.
+and submits the exact raw value. Returning a gesture to the admitted normalized
+value cancels its queued predecessor; a distinct normalized position that
+rounds to the current raw value is also a no-op. A different target or profile
+remains fenced while a debounce is queued.
 
 Every submitted operation pins request ID, kind, owner, epoch, revision, target,
 and expected result. Success never edits presented truth optimistically. The
@@ -106,9 +110,11 @@ env -u DBUS_SESSION_BUS_ADDRESS \
 ```
 
 The model row covers bounded inventory, labels, raw values, holds, shared
-profile admission, exact lineage, convergence, owner replacement, and absent
+profile admission, exact lineage, retained-stale presentation/admission
+closure, convergence, retry-status recovery, owner replacement, and absent
 session invokables. The slider row proves burst coalescing, normalized-to-raw
-conversion, invalid/stale rejection, and no dispatch after authority change.
+conversion, normalized and raw-equivalent no-ops, invalid/stale rejection, and
+no dispatch after authority change.
 The warning-fatal page row renders wide and compact software scenes, verifies
 action wiring, accessible roles/descriptions, disabled internal truth, and an
 always-admitted focus target. Boundary/poison and installed-route rows prove
