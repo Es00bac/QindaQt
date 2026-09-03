@@ -2,7 +2,10 @@
 
 #include <QtTest/QtTest>
 #include <qindaqt/services/clipboard_model/clipboard_history.h>
+#include <qindaqt/shell/clipboard_applet/clipboard_applet_controller.h>
 #include <qindaqt/shell/clipboard_applet/clipboard_model_client_adapter.h>
+
+#include <limits>
 
 using namespace QindaQt::ShellClipboardApplet;
 using namespace QindaQt::Services::ClipboardModel;
@@ -14,6 +17,7 @@ private Q_SLOTS:
     void testClientSeamContracts();
     void testFailClosedLocking();
     void testLockPurgesContentAndFencesGeneration();
+    void testLockPurgeAtGenerationCeilingIsValidButRequiresRestart();
     void testIndependentHostDenialSurvivesUnlock();
     void testOverlappingHostDenialDuringLockSurvivesUnlock();
     void testSearchThroughSeam();
@@ -121,6 +125,50 @@ void TstClipboardAppletSeam::testLockPurgesContentAndFencesGeneration()
     // Pre-lock ids never resolve again, even against the new generation.
     const auto promoteRes = model.promote(admitted.entry.id, model.generation(), 200);
     QCOMPARE(promoteRes.error, ClipboardError::UnknownEntry);
+}
+
+void TstClipboardAppletSeam::testLockPurgeAtGenerationCeilingIsValidButRequiresRestart()
+{
+    // AGENT-NOTE (P2-1 fourth-round regression): 3823b7c classified C0's
+    // valid ceiling purge as invalid-snapshot and permanently poisoned the
+    // controller. The purge must project locked while authority is denied,
+    // then a distinct restart-required unavailable state for this exhausted
+    // owner after unlock.
+    const HistoryCounters counters {
+        std::numeric_limits<quint32>::max(), 1, 9
+    };
+    ClipboardHistoryModel model(HistoryLimits {}, counters);
+    model.setHistoryEnabled(true);
+    model.setPrivacyAllowed(true);
+
+    ClipboardValue value;
+    value.formats = { { QStringLiteral("text/plain"), "ceiling-secret" } };
+    const auto admitted = model.admit(
+        value, counters.generation, QStringLiteral("App"), 100);
+    QVERIFY(admitted.accepted());
+    QCOMPARE(model.revision(), quint64(10));
+
+    ClipboardModelClientAdapter adapter(&model);
+    ClipboardAppletController controller(&adapter, true, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 1);
+
+    adapter.setLocked(true);
+    QCOMPARE(model.generation(), std::numeric_limits<quint32>::max());
+    QCOMPARE(model.revision(), quint64(10));
+    QVERIFY(model.snapshot().entries.isEmpty());
+    QCOMPARE(controller.phaseText(), QStringLiteral("locked"));
+    QCOMPARE(controller.entryCount(), 0);
+
+    adapter.setLocked(false);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: lineage-exhausted-restart-required"));
+    QVERIFY(!controller.phaseReasonText().contains(QLatin1String("invalid-snapshot")));
+
+    const auto afterPurge = model.admit(
+        value, counters.generation, QStringLiteral("App"), 101);
+    QCOMPARE(afterPurge.error, ClipboardError::LineageExhausted);
 }
 
 void TstClipboardAppletSeam::testIndependentHostDenialSurvivesUnlock()

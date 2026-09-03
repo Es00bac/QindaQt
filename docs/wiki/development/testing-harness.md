@@ -185,8 +185,10 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its pure projection, hostile-snapshot and whole-C0-invariant admission,
-complete snapshot-lineage search fencing, controller fencing, seam, compiled
+Its pure projection, hostile-snapshot and whole-C0-invariant admission
+(including the lifetime revision high-water across generation changes and the
+valid generation-ceiling purge/restart boundary), complete snapshot-lineage
+search fencing, controller fencing, seam, compiled
 offscreen keyboard/accessibility/real-pointer, boundary-poison, and staged
 installed-package rows run entirely offscreen against the in-process C0 model;
 the installed-package row rewrites and inspects every staged Controls/Tokens

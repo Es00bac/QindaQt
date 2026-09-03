@@ -106,12 +106,14 @@ class TstClipboardAppletAdmission : public QObject {
 private Q_SLOTS:
     void testStaleGenerationSnapshotIsRejectedWhole();
     void testStaleRevisionWithinGenerationIsRejected();
+    void testRevisionHighWaterSurvivesGenerationAdvance();
     void testHostileMetadataIsRejectedWhole();
     void testForgedMediaClassesAreRejected();
     void testOversizedCollectionIsRejectedWhole();
     void testAggregateByteClaimIsRejected();
     void testEntryLineageMismatchIsRejected();
     void testRejectedStateRecoversOnFreshValidSnapshot();
+    void testGenerationCeilingExhaustionRecoversOnFreshOwner();
     void testOwnerReplacementNeverRedisclosesOwnerAContent();
     void testFreshOwnerBaselineMustBeContentEmpty();
     void testMismatchedCompletionIsRejectedAndMarkerStays();
@@ -163,6 +165,35 @@ void TstClipboardAppletAdmission::testStaleRevisionWithinGenerationIsRejected()
     client.publishSnapshot(floorValidSnapshot(6, 1, QStringLiteral("current"), 4));
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
     QCOMPARE(controller.entryCount(), 1);
+}
+
+void TstClipboardAppletAdmission::testRevisionHighWaterSurvivesGenerationAdvance()
+{
+    // AGENT-NOTE (P1-1 fourth-round regression): 3823b7c compared revision
+    // only inside one generation. C0 owns one non-resetting revision counter
+    // for the entire model lifetime, so a purge may advance generation but
+    // can never make revision 3 follow an accepted revision 10.
+    AdmissionFakeClient client;
+    client.current = floorValidSnapshot(7, 1, QStringLiteral("current"), 10);
+    ClipboardAppletController controller(&client, true, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 1);
+
+    client.publishSnapshot(
+        floorValidSnapshot(8, 1, QStringLiteral("revision-regression-secret"), 3));
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: invalid-snapshot"));
+    QCOMPARE(controller.entryCount(), 0);
+    QVERIFY(controller.entryRows().isEmpty());
+
+    // Advancing generation at the high-water revision cannot carry content
+    // either: the purge itself leaves the new generation empty, and any later
+    // admission would have advanced the lifetime revision above ten.
+    client.publishSnapshot(
+        floorValidSnapshot(8, 1, QStringLiteral("impossible-post-purge-content"), 10));
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.entryCount(), 0);
 }
 
 void TstClipboardAppletAdmission::testHostileMetadataIsRejectedWhole()
@@ -294,10 +325,47 @@ void TstClipboardAppletAdmission::testRejectedStateRecoversOnFreshValidSnapshot(
 
     // ...but a fresh valid snapshot above the surviving high-water fence is
     // accepted again: rejection is per-snapshot, not a permanent latch.
-    client.publishSnapshot(floorValidSnapshot(6, 1, QStringLiteral("recovered")));
+    client.publishSnapshot(floorValidSnapshot(6, 1, QStringLiteral("recovered"), 2));
     QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
     QCOMPARE(controller.entryCount(), 1);
     QCOMPARE(controller.projection().entryRows.first().preview, QStringLiteral("recovered"));
+}
+
+void TstClipboardAppletAdmission::testGenerationCeilingExhaustionRecoversOnFreshOwner()
+{
+    // A purge at UINT32_MAX cannot advance generation. It is valid C0 truth,
+    // but it also proves that this owner's model refuses all later content
+    // operations. The applet reports that typed condition until a fresh owner
+    // supplies its mandatory empty baseline; it must not latch invalid-snapshot
+    // forever across the owner re-bind.
+    AdmissionFakeClient client;
+    client.current = floorValidSnapshot(
+        std::numeric_limits<quint32>::max(), 1, QStringLiteral("before-ceiling-purge"), 10);
+    ClipboardAppletController controller(&client, true, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+
+    HistorySnapshot purged;
+    purged.generation = std::numeric_limits<quint32>::max();
+    purged.revision = 10;
+    purged.historyEnabled = true;
+    purged.privacyAllowed = false;
+    client.publishSnapshot(purged);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(controller.phaseReasonText(),
+             QStringLiteral("Clipboard service unavailable: lineage-exhausted-restart-required"));
+    QCOMPARE(controller.entryCount(), 0);
+
+    client.publishState(ClientState::Unavailable, false, QStringLiteral("owner-A"));
+    client.publishState(ClientState::Ready, true, QStringLiteral("owner-B"));
+    QCOMPARE(controller.phaseText(), QStringLiteral("loading"));
+
+    HistorySnapshot replacementBaseline;
+    replacementBaseline.generation = 1;
+    replacementBaseline.historyEnabled = true;
+    replacementBaseline.privacyAllowed = true;
+    client.publishSnapshot(replacementBaseline);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.entryCount(), 0);
 }
 
 void TstClipboardAppletAdmission::testOwnerReplacementNeverRedisclosesOwnerAContent()

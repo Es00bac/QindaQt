@@ -143,7 +143,9 @@ void TstClipboardAppletSnapshotInvariants::testPrivacyDeniedContentCannotArmSame
 
     HistorySnapshot purged;
     purged.generation = 8;
-    purged.revision = 0;
+    // C0's revision is one lifetime counter: the purge advances generation
+    // but deliberately leaves the accepted revision unchanged.
+    purged.revision = 1;
     purged.historyEnabled = true;
     purged.privacyAllowed = false;
     client.publish(purged);

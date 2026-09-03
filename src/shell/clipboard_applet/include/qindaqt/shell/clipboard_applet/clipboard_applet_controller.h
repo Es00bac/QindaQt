@@ -146,9 +146,10 @@ private:
 
     // AGENT-GUARD: snapshot admission baseline. Every accepted snapshot must
     // be delivered under the recorded owner and must not regress the recorded
-    // (generation, revision) high-water — the C0 lineage is lexicographically
-    // monotonic (generation rises by exactly one per purge, revision never
-    // resets), so anything older is stale or replayed. On owner loss or
+    // generation high-water OR the lifetime revision high-water. C0 never
+    // resets revision when a purge advances generation, so comparing the pair
+    // lexicographically would admit forged content after a revision regression.
+    // On owner loss or
     // replacement the baseline is dropped and the next snapshot under the new
     // owner must be content-empty: volatile history starts empty per owner,
     // so non-empty content under a fresh owner is foreign content.
@@ -157,6 +158,11 @@ private:
     QString m_baselineOwner;
     quint32 m_baselineGeneration = 0;
     quint64 m_baselineRevision = 0;
+    // A same-generation authority purge is valid only at UINT32_MAX. It proves
+    // C0 pinned the generation and latched content-operation exhaustion. Keep
+    // that state distinct from hostile-snapshot rejection: the current owner
+    // is unavailable-until-restart, while a fresh owner baseline recovers.
+    bool m_lineageExhausted = false;
     // A structurally impossible snapshot poisons its exact lineage. Merely
     // flipping privacy/capability flags at the same generation/revision may
     // not turn rejected content into presentable content; recovery requires a

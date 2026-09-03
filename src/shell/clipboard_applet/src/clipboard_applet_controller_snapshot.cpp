@@ -10,11 +10,14 @@
 #include "qindaqt/shell/clipboard_applet/clipboard_applet_controller.h"
 #include "qindaqt/shell/clipboard_applet/clipboard_snapshot_gate.h"
 
+#include <limits>
+
 namespace QindaQt::ShellClipboardApplet {
 
 void ClipboardAppletController::acceptSnapshot(
     const QindaQt::Services::ClipboardModel::HistorySnapshot &snapshot)
 {
+    bool ceilingAuthorityPurge = false;
     if (!m_clipboardReadGranted) {
         // Read denial retains only the authority flags, never content.
         m_snapshot = {};
@@ -56,29 +59,56 @@ void ClipboardAppletController::acceptSnapshot(
     }
 
     if (m_hasBaseline) {
-        // AGENT-GUARD: the C0 lineage is lexicographically monotonic —
-        // generation rises by exactly one per purge and revision never moves
-        // backwards within or across generations — so anything below the
-        // accepted high-water is a stale or replayed snapshot and is refused
-        // whole. Re-stating the accepted (generation, revision) is an
-        // idempotent re-delivery and stays acceptable.
+        // AGENT-GUARD: generation and revision are independent high-waters.
+        // C0 owns one non-resetting revision counter for the model lifetime;
+        // lexicographic pair comparison would let a larger generation hide a
+        // revision regression and present impossible post-purge content.
         if (snapshot.generation < m_baselineGeneration
-            || (snapshot.generation == m_baselineGeneration
-                && snapshot.revision < m_baselineRevision)) {
+            || snapshot.revision < m_baselineRevision) {
             rejectSnapshot();
             return;
         }
+        const bool authorityWithdrawn =
+            (m_snapshot.historyEnabled && !snapshot.historyEnabled)
+            || (m_snapshot.privacyAllowed && !snapshot.privacyAllowed);
+        ceilingAuthorityPurge = authorityWithdrawn
+            && snapshot.generation == m_baselineGeneration
+            && m_baselineGeneration == std::numeric_limits<quint32>::max();
         if (snapshot.generation == m_baselineGeneration
-            && ((m_snapshot.historyEnabled && !snapshot.historyEnabled)
-                || (m_snapshot.privacyAllowed && !snapshot.privacyAllowed))) {
+            && authorityWithdrawn && !ceilingAuthorityPurge) {
             // C0 purges and advances generation whenever either authority is
-            // withdrawn. Even an empty denial at the old generation is
-            // impossible and may not become a bridge back to content.
+            // withdrawn, except when the generation is already pinned at its
+            // fixed-width ceiling. An old-generation denial anywhere below
+            // that ceiling is impossible and may not bridge back to content.
+            rememberRejectedLineage(snapshot, true);
+            rejectSnapshot();
+            return;
+        }
+        if (snapshot.generation > m_baselineGeneration
+            && snapshot.revision == m_baselineRevision
+            && !snapshot.entries.isEmpty()) {
+            // A purge advances generation without advancing revision and
+            // leaves the new generation empty. Non-empty content at that same
+            // lifetime revision would require a content mutation, which in C0
+            // must advance revision first.
+            rememberRejectedLineage(snapshot);
+            rejectSnapshot();
+            return;
+        }
+        if (m_lineageExhausted
+            && (snapshot.generation != m_baselineGeneration
+                || snapshot.revision != m_baselineRevision
+                || !snapshot.entries.isEmpty()
+                || snapshot.totalPayloadBytes != 0)) {
+            // Once the ceiling purge latches C0 exhaustion, only flag changes
+            // over its empty terminal lineage are possible for this owner.
+            // Recovery is an owner restart with a fresh empty baseline.
             rememberRejectedLineage(snapshot, true);
             rejectSnapshot();
             return;
         }
         if (!m_snapshotRejected
+            && !ceilingAuthorityPurge
             && snapshot.generation == m_baselineGeneration
             && snapshot.revision == m_baselineRevision
             && (snapshot.entries != m_snapshot.entries
@@ -126,6 +156,7 @@ void ClipboardAppletController::acceptSnapshot(
     m_baselineOwner = currentOwner;
     m_baselineGeneration = snapshot.generation;
     m_baselineRevision = snapshot.revision;
+    m_lineageExhausted = m_lineageExhausted || ceilingAuthorityPurge;
     m_hasRejectedLineage = false;
     m_rejectedGeneration = 0;
     m_rejectedRevision = 0;
@@ -171,6 +202,7 @@ void ClipboardAppletController::dropAcceptedBaseline()
     m_baselineOwner.clear();
     m_baselineGeneration = 0;
     m_baselineRevision = 0;
+    m_lineageExhausted = false;
     m_hasRejectedLineage = false;
     m_rejectedGeneration = 0;
     m_rejectedRevision = 0;
