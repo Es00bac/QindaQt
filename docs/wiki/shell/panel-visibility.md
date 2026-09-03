@@ -85,8 +85,55 @@ applet state; a static role/layout change still uses complete-set replacement.
 
 Reveal and visibility-hold state uses independent move-only leases so one menu,
 pointer region, shortcut, or animation cannot clear another producer's intent.
-The store and runtime path are active, but production edge sensors, pointer
-containment, menu leases, hide animation, and shortcut producers remain to be
-wired. Consequently the compositor-driven `dodge-*`, `maximized`, and
-`intelligent` decisions are implemented, while the user-reveal path required
-for a usable `always` panel is not yet qualified.
+The production shell now owns the following producers behind that store:
+
+- panel-window containment and one-pixel layer-shell edge sensors acquire a
+  reveal lease; pointer departure releases it after the bounded
+  `panels.autoHideDelayMs` setting;
+- shell popup windows, including the notification center, and applet `Popup`
+  objects, including launcher and power popups, acquire output-scoped
+  visibility-hold leases for their complete visible lifetime;
+- the stable `qindaqt_reveal_panels` KGlobalAccel action requests a reveal for
+  every hideable panel with default `Meta+Space`; and
+- an opacity transition holds a panel mapped until a hide animation completes,
+  then requests the authoritative plan again before unmapping. Reveal animates
+  the already-authorized mapped surface back to full opacity.
+
+The runtime reads only exact typed settings. Missing or malformed settings keep
+the safe defaults: reduced motion is enabled and the leave delay is 250 ms.
+Reduced motion caps the selected theme duration at 80 ms; normal motion uses the
+theme duration, bounded to one second. Loss or rejection of compositor
+authority cancels transitions, restores full opacity, and leaves policy in its
+existing safe-visible state. Producers never set mapping, reservation, or
+window inventory directly.
+
+## Installed interaction qualification
+
+The private contained desktop harness qualifies the installed production shell
+and compositor in two serial rows:
+
+| Selector | Output | Required interaction evidence |
+| --- | --- | --- |
+| `desktop.virtual.panel-visibility.single-1080p` | 1920x1080 at 100% | all six phases below |
+| `desktop.virtual.panel-visibility.single-wuxga` | 1920x1200 at 100% | the same phases on the S3 WUXGA geometry |
+
+Each row maps a painted client and requires a real `intelligent` left panel to
+hide under fullscreen overlap, restore after a private-seat Meta-drag moves the
+client clear, and remain restored after the client closes. It then requires the
+real `always` bottom panel to reveal through its private edge sensor and through
+the exact `Meta+Space` action. Opening the production notification center with
+private-seat `Meta+N` must keep that panel visible beyond the shortcut lease;
+closing the center must release the popup hold and hide it again. At every
+phase, the `never` top panel must remain mapped and committed with exclusive
+zone 30, proving that its reservation is retained.
+
+The driver archives six checksum-validated, nonuniform private-parent
+framebuffer captures together with exact compositor surface inventories,
+authenticated process evidence, bounded cleanup phases, and a final observed
+empty survivor set. `desktop.virtual.sandbox-unit` remains a prerequisite and
+no host display, bus, input node, uinput device, or hardware is used.
+
+These rows qualify 100% 1080p and WUXGA on the private Weston/KWin path. They do
+not claim fractional scaling, multi-output behavior, GPU/OpenGL rendering,
+physical input, visual-baseline matching, popup placement aesthetics, or other
+profiles and themes; those remain separate matrix and release concerns.
