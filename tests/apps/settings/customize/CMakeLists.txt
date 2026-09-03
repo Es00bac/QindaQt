@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+qt_add_executable(
+    qindaqt_settings_customize_model_tests
+    tst_customize_settings_model.cpp
+    customize_test_support.h
+)
+target_include_directories(
+    qindaqt_settings_customize_model_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_model_tests
+    PRIVATE qindaqt_settings_customize Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_model_tests)
+add_test(
+    NAME qindaqt.settings-customize-model
+    COMMAND qindaqt_settings_customize_model_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-model PROPERTIES
+    LABELS "settings;customize;domain"
+)
+
+qt_add_executable(
+    qindaqt_settings_customize_page_tests
+    tst_customize_page.cpp
+    stub_customize_settings_model.h
+)
+target_include_directories(
+    qindaqt_settings_customize_page_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_compile_definitions(
+    qindaqt_settings_customize_page_tests PRIVATE
+    QINDAQT_CUSTOMIZE_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/customize/qml/CustomizePage.qml"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_page_tests
+    PRIVATE qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+            qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
+            Qt6::Quick Qt6::QuickControls2 Qt6::Test
+)
+add_dependencies(
+    qindaqt_settings_customize_page_tests
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_page_tests)
+add_test(
+    NAME qindaqt.settings-customize-page
+    COMMAND qindaqt_settings_customize_page_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-page PROPERTIES
+    LABELS "offscreen;settings;customize;accessibility"
+    ENVIRONMENT
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
+)
+
+add_test(
+    NAME qindaqt.settings-customize-boundary
+    COMMAND "${CMAKE_COMMAND}" -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-customize-boundary PROPERTIES
+    LABELS "settings;customize;boundary"
+)
+
+add_test(
+    NAME qindaqt.settings-customize-boundary-poison
+    COMMAND "${CMAKE_COMMAND}"
+            -DPOISON_ROOT=${CMAKE_CURRENT_BINARY_DIR}/boundary-poison
+            -DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary_negative.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-customize-boundary-poison PROPERTIES
+    LABELS "settings;customize;boundary;poison"
+)
+
+# The route-specific row deliberately reuses the Settings package harness. It
+# gives the Customize selector an installed-prefix proof while keeping route
+# construction authority in one hostile, sanitized script.
+add_test(
+    NAME qindaqt.settings-customize-installed-route
+    COMMAND "${CMAKE_COMMAND}"
+            -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+            -DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-customize-stage
+            -DINSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
+            -DINSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}
+            -DINSTALL_QMLDIR=${QT6_INSTALL_QML}
+            -DSETTINGS_EXECUTABLE_NAME=qindaqt-settings${CMAKE_EXECUTABLE_SUFFIX}
+            -DCONFIGURATION=$<CONFIG>
+            -DROUTE_CHECK=${PROJECT_SOURCE_DIR}/tests/apps/settings_center/check_route_construction.cmake
+            -P ${PROJECT_SOURCE_DIR}/tests/apps/settings_center/check_installed_routes.cmake
+)
+set_tests_properties(
+    qindaqt.settings-customize-installed-route PROPERTIES
+    LABELS "offscreen;settings;customize;package" RUN_SERIAL TRUE TIMEOUT 120
+)

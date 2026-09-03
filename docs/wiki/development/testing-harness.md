@@ -782,6 +782,34 @@ does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.
 
+## Current Customize Settings canvas proof
+
+The direct canvas, editor-session composition, hostile boundary, and relocated
+package are selected with:
+
+```sh
+ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
+  --output-on-failure --no-tests=error
+```
+
+The model row uses an injected Settings transport, real editing repository and
+coordinator adapter, and temporary profile store. It proves converging preview,
+one durable gesture history boundary, cancel and rejection rollback,
+pointer/keyboard insertion parity, persistence, conflict truth, and explicit
+lease-loss recovery. The page row renders 720×720 compact and 1080×720 wide
+software scenes and checks accessible palette, panel, and zone identity plus
+keyboard activation. Boundary and negative-control rows scan only the route's
+owned source: a synthesized forbidden shell, LayerShellQt, compositor, private
+repository, or D-Bus dependency must make the checker fail.
+
+`qindaqt.settings-customize-installed-route` stages the complete explicit
+Settings runtime component and runs the common hostile Settings package script.
+It additionally requires the relocated Customize QML module, profile catalog,
+and applet manifest catalog before exercising all registered route intents.
+The selector never starts a session bus, nested compositor, host service, or
+input backend. Live shell binding, reveal behavior, live AT-SPI, and rendered
+session matrices remain downstream evidence.
+
 ## Current Settings Center navigation S1 proof
 
 The typed registry/controller, responsive route host, existing route

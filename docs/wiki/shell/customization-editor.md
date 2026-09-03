@@ -138,6 +138,11 @@ retaining one durable undo boundary; Apply under a foreign lease returns
 foreign preview followed by cancel/release, edit, and Undo adopts the retained
 committed baseline and returns exact/clean.
 
-Presentation, canvas rendering, an offscreen UI matrix, and live session
-behavior are not provided by this module and remain future slices of the
-customization architecture.
+The installed [Settings Customize route](../apps/customize-settings.md) now
+composes this public boundary into a direct canvas, audited palette, property
+panes, keyboard outline, Settings1 profile draft/apply flow, and offscreen plus
+package proof. It preserves this module's gesture, rollback, lease, persistence,
+and dirty-state authority rather than duplicating engine policy in QML. Live
+shell preview/application, reveal affordances for always-hidden panels,
+installed-session behavior, and the nested rendered matrix remain later slices
+of the customization architecture.
