@@ -196,7 +196,7 @@
           "title": "Launcher",
           "weight": 2,
           "state": "WIRED",
-          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, presentation projection, and execution-free launch intents are registered in the combined source and test graph.",
+          "summary": "The bounded Launcher L0 catalog, parsing, categories, search, pinned/recent state, and execution-free intents are joined by L1 production adapters: an injected-root desktop-entry scanner with canonical containment, non-regular-file refusal, capped reads, debounced generation-fenced refresh, and errno-aware degraded truth; Settings1 pinned/recent persistence with uncertainty convergence; a seam-based bounded execution adapter with entry-level policy inheritance and no shell interpolation; and a compiled, registered, fatal-warning-clean QindaQt.Shell.Launcher applet with persistence status, keyboard traversal, and accessibility, proven under host-unset isolation.",
           "evidence": [
             {
               "kind": "commit",
@@ -207,9 +207,14 @@
               "kind": "source",
               "reference": "docs/wiki/shell/launcher.md",
               "summary": "The owning page records the bounded model and later production-adapter boundary."
+            },
+            {
+              "kind": "commit",
+              "reference": "26f366a4a2ab14fc341407f015d21685b8c8415f",
+              "summary": "Launcher L1 (ADR-0062) is integrated after Kay McNulty (OpenAI Codex, different worker) rejected three candidates (0/5/3/2, 1/0/2/0, 0/0/1/0) and accepted the third repair at 0/0/0/0; the merged tree passes launcher 15/15 and applet integrity rows in Debug and Release under host-unset isolation."
             }
           ],
-          "caveat": "Installed-application scanning, Settings1 persistence, QML presentation, safe process execution, and production shell hosting remain."
+          "caveat": "The applet resolves `ready` but the production panel dispatcher does not host it yet; activation tokens, live shell hosting, and installed interaction proof remain, so the step stays WIRED with a wider stopping point."
         },
         {
           "id": "QQ-004.10",

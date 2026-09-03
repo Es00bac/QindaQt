@@ -58,6 +58,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- `26f366a` — Launcher L1 adds the production adapters around the pure L0 model: an injected-root desktop-entry
+  scanner with canonical containment, non-regular-file refusal, capped reads, debounced generation-fenced
+  refresh, and errno-aware degraded truth; Settings1 pinned/recent persistence with uncertainty convergence; a
+  seam-based bounded execution adapter with entry-level policy inheritance and no shell interpolation; and a
+  compiled, registered, fatal-warning-clean launcher applet with persistence status, keyboard traversal, and
+  accessibility (ADR-0062). Kay McNulty (OpenAI Codex, a different worker) rejected three candidates,
+  including a host-isolation P0, before accepting the third repair at `0/0/0/0`. The fresh merged tree passes
+  launcher 15/15 and applet integrity rows in Debug and Release under host-unset isolation, the broad safe Debug suite passes 421/421, and all
+  static gates. QQ-004.07 stays WIRED with a wider stopping point until the production dispatcher hosts the applet.
+
 - `2500a3d` — The direct Customize Settings canvas composes the integrated customization-editor domain into an
   installed `qindaqt-settings --page customize` route: a scaled WYSIWYG canvas with a manifest-sourced applet
   palette and properties pane, pointer drag through the domain's preview bracket with exactly one undo step

@@ -4,6 +4,15 @@
 
 Manager integration delta after the public baseline below:
 
+- This integration merges exact accepted Launcher L1 descendant `26f366a4a2ab14fc341407f015d21685b8c8415f`
+  at manager merge `71900bd`. The scanner, persistence, execution, and compiled applet adapters compose the
+  pure L0 model behind injected seams; every adapter test now runs Core-only or offscreen with host display
+  and bus variables unset after a reviewer proved the earlier rows attached to the host desktop. Kay
+  McNulty (OpenAI Codex) accepted the third repair at `0/0/0/0`. The candidate's ADR is renumbered to
+  ADR-0062. Fresh merged-tree Debug and Release each pass launcher 15/15 and applet integrity rows under
+  isolation; the broad safe Debug suite passes 421/421; 126-document validation, strict MkDocs, source shape, diff, JSON, and Team Board
+  16/16 pass. Production panel hosting of the launcher applet remains a composition lane.
+
 - This integration merges exact accepted Customize canvas descendant `2500a3d71343f238ce30fd0d98f5cc2aa9a95809`
   at manager merge `ce5541e`. The `customize` route composes only the public customization-editor,
   shell-customization, profiles, and Settings1 boundaries into a WYSIWYG panel/applet canvas with
