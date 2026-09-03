@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "profiles/terminal_profile_settings.h"
 #include "session/process_liveness.h"
 #include "session/terminal_launch_policy.h"
 #include "session/terminal_session.h"
+#include "session/terminal_session_collection.h"
 #include "ui/terminal_appearance.h"
 #include "ui/terminal_widget_adapter.h"
 #include "ui/terminal_window.h"
 
 #include "qindaqt/design_tokens/design_tokens.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
 #include <QProcessEnvironment>
@@ -63,6 +68,30 @@ loadTheme(const QString &themeId, const QStringList &directories) {
   return {.ok = false,
           .theme = {},
           .error = QStringLiteral("Theme '%1' was not found").arg(themeId)};
+}
+
+// Every installed, schema-valid theme id, for the profile dialog's color
+// scheme selection. Load failures are skipped: a theme that cannot be
+// validated is never offered to a profile.
+[[nodiscard]] QStringList availableThemeIds(const QStringList &directories) {
+  QStringList ids;
+  for (const QString &directory : directories) {
+    const QFileInfoList entries =
+        QDir(directory).entryInfoList({QStringLiteral("*.json")},
+                                      QDir::Files, QDir::Name);
+    for (const QFileInfo &entry : entries) {
+      const QString id = entry.completeBaseName();
+      if (ids.contains(id)) {
+        continue;
+      }
+      if (QindaQt::Themes::ThemeLoader::fromFile(entry.absoluteFilePath())
+              .ok) {
+        ids.append(id);
+      }
+    }
+  }
+  ids.sort();
+  return ids;
 }
 
 } // namespace
@@ -156,24 +185,68 @@ int main(int argc, char **argv) {
                  qPrintable(resolution.outcome.diagnostic));
     return 4;
   }
-  auto request = resolution.request;
-  request.environment = environment.environment;
+
+  const QStringList themeDirectories =
+      themeSearchDirectories(parser.value(QStringLiteral("theme-directory")));
+
+  // Settings1 persistence (profiles, default profile, restore flag). The
+  // client is constructed after the --check-theme exit above so this row
+  // never touches a bus. A start failure is fail-closed: the profile
+  // controller serves built-in defaults until a baseline arrives.
+  QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(
+      QDBusConnection::sessionBus());
+  QindaQt::Services::SettingsClient::SettingsClient settingsClient(
+      settingsTransport, TerminalKeys::scopedKeys());
+  QString settingsError;
+  if (!settingsClient.start(&settingsError)) {
+    std::fprintf(stderr, "qindaqt-terminal: settings unavailable (%s); "
+                         "built-in profile defaults apply\n",
+                 qPrintable(settingsError));
+  }
+  TerminalProfileSettings profileSettings(settingsClient);
 
   PosixProcessMonitor monitor;
-  TerminalSession::BackendFactory factory = [&appearance] {
-    return std::unique_ptr<TerminalSessionBackend>(
-        new TerminalWidgetAdapter(*appearance.appearance));
-  };
-  auto session = std::make_unique<TerminalSession>(
-      std::move(factory), &monitor, TeardownBounds{}, nullptr);
+  // The factory resolves the profile's color scheme to its own QST
+  // generation per session; an unresolvable theme yields a null backend,
+  // which the session reports as a typed StartFailed exit (fail-closed).
+  TerminalSession::BackendFactory factory =
+      [&themeDirectories](const TerminalProfile &profile) {
+        const auto profileTheme =
+            loadTheme(profile.colorSchemeId, themeDirectories);
+        if (!profileTheme.ok) {
+          return std::unique_ptr<TerminalSessionBackend>(nullptr);
+        }
+        const auto profileAppearance =
+            TerminalAppearanceAdapter::fromTheme(profileTheme.theme);
+        if (!profileAppearance.ok()) {
+          return std::unique_ptr<TerminalSessionBackend>(nullptr);
+        }
+        return std::unique_ptr<TerminalSessionBackend>(
+            new TerminalWidgetAdapter(*profileAppearance.appearance,
+                                      profile));
+      };
 
-  TerminalWindow window(std::move(session), *appearance.appearance);
+  TerminalSessionContext context;
+  context.baseEnvironment = baseEnvironment;
+  context.fallbackProgram = resolution.request.program;
+  context.fallbackArguments = resolution.request.arguments;
+  context.workingDirectory = resolution.request.workingDirectory;
+  auto collection = std::make_unique<TerminalSessionCollection>(
+      std::move(context), std::move(factory), &monitor, TeardownBounds{},
+      nullptr);
+
+  TerminalWindow window(std::move(collection), *appearance.appearance,
+                        availableThemeIds(themeDirectories),
+                        &profileSettings);
   window.resize(800, 500);
-  if (!window.session()->start(request)) {
-    // The window stays available so the typed failure and Restart action are
-    // user-visible; a start failure is not a launcher failure.
+  window.newSessionWithDefaultProfile();
+  if (auto *active = window.session();
+      active != nullptr &&
+      active->lastExit().kind == TerminalExitStatus::Kind::StartFailed) {
+    // The window stays available so the typed failure and Restart action
+    // are user-visible; a start failure is not a launcher failure.
     std::fprintf(stderr, "qindaqt-terminal: %s\n",
-                 qPrintable(window.session()->lastExit().diagnostic));
+                 qPrintable(active->lastExit().diagnostic));
   }
   window.connectQuitAfterCloseShutdown(application);
   window.show();

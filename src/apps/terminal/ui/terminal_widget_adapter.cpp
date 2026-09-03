@@ -157,8 +157,10 @@ void closeChildDescriptors() {
 } // namespace
 
 TerminalWidgetAdapter::TerminalWidgetAdapter(
-    const TerminalViewAppearance &appearance, QObject *parent)
-    : TerminalSessionBackend(parent), m_appearance(appearance) {
+    const TerminalViewAppearance &appearance, const TerminalProfile &profile,
+    QObject *parent)
+    : TerminalSessionBackend(parent), m_appearance(appearance),
+      m_profile(profile) {
   // AGENT-NOTE: startnow is deliberately 0 and setShellProgram/setArgs are
   // never used: the widget must not spawn its own child (ADR-0040). The
   // child runs on the adapter's own bridge PTY; the widget's teletype slave
@@ -314,8 +316,21 @@ void TerminalWidgetAdapter::applyAppearance() {
   }
   // Font and window palette come from the same QST generation even when the
   // scheme file failed; the widget then keeps its built-in scheme, which is
-  // a visible but non-fatal degradation recorded in the wiki.
-  m_widget->setTerminalFont(m_appearance.terminalFont);
+  // a visible but non-fatal degradation recorded in the wiki. The profile
+  // may override the family/size on top of the QST projection; unknown
+  // families fall back through QFont matching (documented degradation, not
+  // a launch failure).
+  QFont terminalFont = m_appearance.terminalFont;
+  if (!m_profile.fontFamily.isEmpty()) {
+    terminalFont.setFamily(m_profile.fontFamily);
+  }
+  if (m_profile.fontSize > 0) {
+    terminalFont.setPointSize(m_profile.fontSize);
+  }
+  m_widget->setTerminalFont(terminalFont);
+  // The scrollback bound is a profile-owned presentation limit; the widget
+  // owns the buffer itself.
+  m_widget->setHistorySize(m_profile.scrollbackLines);
 }
 
 bool TerminalWidgetAdapter::eventFilter(QObject *watched, QEvent *event) {
@@ -442,6 +457,24 @@ void TerminalWidgetAdapter::forwardChildOutput(const char *data,
   }
   if (m_widgetOutputBuffer.size() >= kMaxWidgetOutputBufferBytes) {
     return;
+  }
+  // Bell policy (S1 profiles): qtermwidget 2.4 exposes no bell-mode API, so
+  // a Silent profile drops BEL bytes from the child/echo stream before it
+  // reaches the emulator. Output bytes are otherwise forwarded verbatim
+  // (the double line-discipline guard above owns every other mutation).
+  QByteArray payload;
+  if (m_profile.bellPolicy == TerminalProfile::BellPolicy::Silent) {
+    payload.reserve(length);
+    for (int index = 0; index < length; ++index) {
+      if (data[index] != '\a') {
+        payload.append(data[index]);
+      }
+    }
+    if (payload.isEmpty()) {
+      return;
+    }
+    data = payload.constData();
+    length = static_cast<int>(payload.size());
   }
   const qsizetype room =
       kMaxWidgetOutputBufferBytes - m_widgetOutputBuffer.size();

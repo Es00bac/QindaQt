@@ -44,7 +44,8 @@ void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
                                  QStringLiteral("panels"),
                                  QStringLiteral("window-management"),
                                  QStringLiteral("accessibility"),
-                                 QStringLiteral("services")};
+                                 QStringLiteral("services"),
+                                 QStringLiteral("terminal")};
     QCOMPARE(domains, expected);
 }
 
