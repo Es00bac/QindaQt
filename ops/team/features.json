@@ -489,7 +489,7 @@
           "title": "Power status/actions and coherent brightness",
           "weight": 13,
           "state": "EXECUTABLE",
-          "summary": "PB-1 adds the resident Power1 service, exact-owner asynchronous client/transport, package and private activation/residency boundary over PB-0, with fail-closed sibling-domain publication across identity collisions, replacement, battery disappearance, and intrinsic malformed updates.",
+          "summary": "PB-0 values/aggregation, the resident PB-1 Power1 service/client boundary, and PB-2 production upstream adapters: UPower (line-power Online, PowerSupply, battery IsPresent semantics), logind actions re-authorized at dispatch time with generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight adapter, selected by the composition root in production with an explicit deterministic mode and proven against fake services on private buses.",
           "evidence": [
             {
               "kind": "commit",
@@ -505,9 +505,14 @@
               "kind": "source",
               "reference": "docs/wiki/architecture/power-service.md",
               "summary": "The owning page records resident publication authority, identity precedence and recovery, operation admission, and remaining upstream/UI boundaries."
+            },
+            {
+              "kind": "commit",
+              "reference": "6cef8b582aeb33522829d6ae838269f31aad7611",
+              "summary": "PB-2 (ADR-0060) is integrated after Ida Holz (OpenAI Codex, different worker) rejected f93effe at 0/2/1/1 and 92d9dec at 0/1/0/0 and accepted the second repair at 0/0/0/0 with 26/26 power rows in Debug and Release."
             }
           ],
-          "caveat": "PB-1 uses bounded injected/unavailable collaborators. Production UPower/logind/profile/brightness adapters, policy persistence, Settings UI, physical hardware, and suspend/hotplug qualification remain later slices; its production shell consumer is recorded under QQ-004.13."
+          "caveat": "PB-2 is qualified only against fake UPower/logind/profiles services and a temporary sysfs tree: physical batteries, backlights, suspend/resume, hotplug, Settings UI, and hardware qualification remain; its shell consumer is recorded under QQ-004.13."
         },
         {
           "id": "QQ-005.04",
