@@ -116,6 +116,7 @@ private:
   TerminalProfile m_profile = builtinDefaultProfile();
   TerminalExitStatus m_lastExit;
   ProcessId m_childPid = 0;
+  ProcessId m_processGroupId = 0;
   bool m_exitPublished = false;
   bool m_restartAfterShutdown = false;
 

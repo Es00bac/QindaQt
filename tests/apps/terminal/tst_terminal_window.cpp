@@ -74,6 +74,9 @@ public:
             .code = 0,
             .statusKnown = true};
   }
+  [[nodiscard]] ProcessGroupState processGroupState(ProcessId) override {
+    return ProcessGroupState::Empty;
+  }
   [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
     return false;
   }
@@ -86,6 +89,9 @@ public:
             .signaled = false,
             .code = 0,
             .statusKnown = true};
+  }
+  [[nodiscard]] ProcessGroupState processGroupState(ProcessId) override {
+    return ProcessGroupState::NonEmpty;
   }
   [[nodiscard]] bool signalProcessGroup(ProcessId, int) override {
     return true;

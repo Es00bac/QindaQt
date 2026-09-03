@@ -4,6 +4,7 @@
 #include "app_shell/terminal_app_shell_bridge.h"
 #include "profiles/terminal_profile_settings.h"
 #include "session/terminal_launch_policy.h"
+#include "ui/terminal_profile_apply_status.h"
 #include "ui/terminal_tab_bar.h"
 
 #include <QAction>
@@ -91,6 +92,8 @@ TerminalWindow::TerminalWindow(
   if (m_profileSettings != nullptr) {
     connect(m_profileSettings, &TerminalProfileSettings::profilesChanged, this,
             &TerminalWindow::rebuildProfileMenu);
+    connect(m_profileSettings, &TerminalProfileSettings::applyFinished, this,
+            &TerminalWindow::presentProfileApplyResult);
   }
 
   connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) {
@@ -416,6 +419,18 @@ void TerminalWindow::showExitStatus(const TerminalExitStatus &status) {
     return;
   }
   showStatusMessage(text, false, palette);
+}
+
+void TerminalWindow::presentProfileApplyResult(const QVariantList &ledger) {
+  const TerminalProfileApplyStatus status = terminalProfileApplyStatus(ledger);
+  QPalette palette = m_appearance.windowPalette;
+  if (status.severity == TerminalProfileApplySeverity::Warning) {
+    palette.setColor(QPalette::WindowText,
+                     m_appearance.statusWarningForeground);
+  } else if (status.severity == TerminalProfileApplySeverity::Error) {
+    palette.setColor(QPalette::WindowText, m_appearance.statusDangerForeground);
+  }
+  showStatusMessage(status.text, false, palette);
 }
 
 void TerminalWindow::showStatusMessage(const QString &text, bool danger) {

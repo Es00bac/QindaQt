@@ -8,6 +8,8 @@
 
 class QCheckBox;
 class QComboBox;
+class QDialogButtonBox;
+class QLabel;
 class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
@@ -43,6 +45,15 @@ public:
   }
   [[nodiscard]] bool restoreTabs() const { return m_restoreTabs; }
 
+  // Completes the pending caller-owned Settings1 operation. Success closes
+  // the dialog only after the asynchronous result is known; every other
+  // outcome remains visible and re-enables the unchanged draft for explicit
+  // correction or re-apply.
+  void finishApply(bool allApplied, const QString &accessibleStatus);
+
+signals:
+  void applyRequested();
+
 protected:
   void accept() override;
 
@@ -68,7 +79,11 @@ private:
   QSpinBox *m_scrollback = nullptr;
   QComboBox *m_bellPolicy = nullptr;
   QCheckBox *m_restoreTabsCheck = nullptr;
+  QWidget *m_editingSurface = nullptr;
+  QLabel *m_applyStatus = nullptr;
+  QDialogButtonBox *m_buttons = nullptr;
   bool m_loadingFields = false;
+  bool m_applyInFlight = false;
 };
 
 } // namespace QindaQt::Apps::Terminal

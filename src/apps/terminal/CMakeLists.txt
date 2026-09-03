@@ -22,6 +22,7 @@ set(QINDAQT_TERMINAL_SUPPORT_SOURCES
     session/terminal_session_backend.cpp
     session/terminal_session_collection.cpp
     ui/terminal_appearance.cpp
+    ui/terminal_profile_apply_status.cpp
     ui/terminal_profile_dialog.cpp
     ui/terminal_tab_bar.cpp
     ui/terminal_window.cpp
@@ -40,6 +41,7 @@ set(QINDAQT_TERMINAL_SUPPORT_HEADERS
     session/terminal_session_collection.h
     session/terminal_session_types.h
     ui/terminal_appearance.h
+    ui/terminal_profile_apply_status.h
     ui/terminal_profile_dialog.h
     ui/terminal_tab_bar.h
     ui/terminal_window.h

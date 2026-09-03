@@ -38,6 +38,11 @@ qindaqt_add_terminal_test(
     qindaqt.terminal-session
 )
 qindaqt_add_terminal_test(
+    qindaqt_terminal_process_group_tests
+    tst_terminal_process_group.cpp
+    qindaqt.terminal-process-group
+)
+qindaqt_add_terminal_test(
     qindaqt_terminal_appearance_tests
     tst_terminal_appearance.cpp
     qindaqt.terminal-appearance

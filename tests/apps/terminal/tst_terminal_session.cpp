@@ -5,6 +5,7 @@
 
 #include <QHash>
 #include <QPair>
+#include <QSet>
 #include <QSharedPointer>
 #include <QSignalSpy>
 #include <QTest>
@@ -15,6 +16,7 @@
 #include <vector>
 
 using QindaQt::Apps::Terminal::ProcessExitInfo;
+using QindaQt::Apps::Terminal::ProcessGroupState;
 using QindaQt::Apps::Terminal::ProcessId;
 using QindaQt::Apps::Terminal::ProcessMonitor;
 using QindaQt::Apps::Terminal::ProcessState;
@@ -130,12 +132,22 @@ public:
         --scripted.value();
         return {.state = ProcessState::Running, .signaled = false, .code = 0};
       }
+      m_emptyGroups.insert(pid);
       return m_exitDisposition;
     }
     if (m_defaultRunning) {
       return {.state = ProcessState::Running, .signaled = false, .code = 0};
     }
+    if (m_exitDisposition.state == ProcessState::Exited) {
+      m_emptyGroups.insert(pid);
+    }
     return m_exitDisposition;
+  }
+
+  [[nodiscard]] ProcessGroupState
+  processGroupState(ProcessId processGroupId) override {
+    return m_emptyGroups.contains(processGroupId) ? ProcessGroupState::Empty
+                                                  : ProcessGroupState::NonEmpty;
   }
 
   [[nodiscard]] bool signalProcessGroup(ProcessId groupLeader,
@@ -160,6 +172,7 @@ private:
   QHash<ProcessId, int> m_runningReaps;
   ProcessExitInfo m_exitDisposition{ProcessState::Exited, false, 0};
   QVector<QPair<ProcessId, int>> m_signals;
+  QSet<ProcessId> m_emptyGroups;
   bool m_defaultRunning = false;
   bool m_refuseSignals = false;
 };
