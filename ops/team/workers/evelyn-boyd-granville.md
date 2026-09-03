@@ -8,7 +8,7 @@ status: handoff
 feature: QQ-006.05 Settings pages and live platform-service routes (Audio page)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/audio-settings-route
 started_at: 2026-09-02T20:44:00-06:00
-updated_at: 2026-09-03T01:40:33-06:00
+updated_at: 2026-09-03T02:08:30-06:00
 ---
 
 # Evelyn Boyd Granville
@@ -16,14 +16,16 @@ updated_at: 2026-09-03T01:40:33-06:00
 - Role: Audio Settings route implementer (first-party Settings over the public
   Audio1 client).
 - Provider/model: Z.AI, `zai-coding-plan/glm-5.3`, reasoning high.
-- Status: handoff — repaired descendant `c7a5b469c6c5a6efc77b4d203f5470cdbec67222`
-  (tree `cd26b9d5bd945318dc684bbf4f64c1a1c4b86660`, on preserved WIP `2d49ab8`
-  over rejected `ce66a98`) repairs all five verdict findings (enabled/admitted
-  focus nomination, reverse Tab, Settings Center Audio coverage, truthful
-  architecture text, TIMEOUT 25 justification); audio selector 5/5, Settings
-  Center selector 9/9, page row under QT_FATAL_WARNINGS, Joan's exact
-  reproduction exit 0, all static gates exit 0 in Debug and Release; awaiting
-  Joan Clarke's exact recheck then manager integration.
+- Status: handoff — repaired descendant `d10abe28974c7cde80fa1094e8ee60e64402ba5d`
+  (tree `9c9eb1829186d5ba870bc435df2c520aa14581c9`, on `1ee8315` over
+  rejected `c7a5b46`) closes Joan Clarke's remaining P2: `Main.qml` binds
+  Quit with the plural `sequences` form, the navigation-page row is
+  registered `QT_FATAL_WARNINGS=1` and passes 1/1 in Debug and Release with
+  all four functions executing, the hostile control (old spelling) fails the
+  row, both direct layout-function probes exit 0, the Audio tab's accessible
+  name/role/selected are asserted in both host layouts, audio selector 5/5,
+  Settings Center selector 9/9, all static gates exit 0; awaiting Joan
+  Clarke's exact recheck then manager integration.
 - Exact base: `74da46345c7a5094d45c756ad8b23ca87591fcd3`.
 - Branch: `worker/audio-settings-route`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/audio-settings-route`.
@@ -65,3 +67,20 @@ updated_at: 2026-09-03T01:40:33-06:00
   integration reconciliation with Customize/Bluetooth routes on `main`)
   recorded in the repair handoff. Requesting Joan Clarke's exact recheck then
   manager integration.
+- 2026-09-03T01:58:00-06:00 — claim: repairing the sole remaining P2 from
+  Joan's `c7a5b46` recheck (fatal-warning navigation proof + Audio tab
+  accessible-name assertion) in the same worktree; reading the verdict and
+  the owning wiki pages before editing.
+- 2026-09-03T02:03:00-06:00 — material finding: the child-process Settings
+  Center rows (route construction, installed routes) abort under
+  QT_FATAL_WARNINGS on `main()`'s deliberate absent-bus
+  "Settings1 client unavailable" qWarning, not on the repaired QML shortcut
+  warning, so only the in-process navigation-page row is registered fatal;
+  decision recorded in an AGENT-GUARD and on settings-center.md.
+- 2026-09-03T02:08:30-06:00 — handoff: candidate `d10abe2` committed
+  (Main.qml Quit `sequences` spelling, fatal navigation row, Audio tab
+  name/role/selected assertions in both layouts, settings-center.md test
+  matrix). Navigation row 1/1 fatal in Debug and Release, hostile control
+  fails on the old spelling, both direct probes exit 0, audio 5/5, Settings
+  Center 9/9, audio-(protocol|client) 2/2, static gates exit 0. Requesting
+  Joan Clarke's exact recheck of `d10abe2` then manager integration.
