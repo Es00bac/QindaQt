@@ -27,9 +27,10 @@ public:
   [[nodiscard]] TaskListEvaluation
   publishGeneration(const QVector<TaskWindowFact> &facts);
 
-  // Marks the facts producer unavailable after an accepted generation. The
-  // last generation stays visible (degraded retention), and every intent is
-  // refused until a fresh publish succeeds.
+  // Marks the facts producer unavailable. Any accepted generation stays
+  // visible (degraded retention), and every intent is refused until a fresh
+  // publish succeeds. Before the first generation this distinguishes a known
+  // unavailable authority from a refresh that is merely still loading.
   void markDegraded();
 
   // Returns to the initial Loading state and drops the retained generation.

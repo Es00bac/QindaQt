@@ -27,9 +27,7 @@ TaskListSource::publishGeneration(const QVector<TaskWindowFact> &facts) {
 }
 
 void TaskListSource::markDegraded() {
-  if (m_status == TaskListSourceStatus::Ready) {
-    m_status = TaskListSourceStatus::Degraded;
-  }
+  m_status = TaskListSourceStatus::Degraded;
 }
 
 void TaskListSource::reset() {
