@@ -89,6 +89,7 @@ public:
   Q_INVOKABLE bool activateTask(const QString &taskId, quint64 revision);
   Q_INVOKABLE bool minimizeTask(const QString &taskId, quint64 revision);
   Q_INVOKABLE bool closeTask(const QString &taskId, quint64 revision);
+  Q_INVOKABLE bool raiseTask(const QString &taskId, quint64 revision);
 
   // Container/dock operations admitted by T1. taskId names a container entry
   // (its taskId is the container id); pageId/windowId must be members of that

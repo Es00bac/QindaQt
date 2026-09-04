@@ -127,6 +127,7 @@ void TaskListAppletControllerTests::readDenialWithholdsObservationAndDispatch() 
   QVERIFY(controller.feedback().contains(QStringLiteral("windows.read")));
   QCOMPARE(controller.minimizeTask(QStringLiteral("w1"), revision), false);
   QCOMPARE(controller.closeTask(QStringLiteral("w1"), revision), false);
+  QCOMPARE(controller.raiseTask(QStringLiteral("w1"), revision), false);
   QCOMPARE(controller.ungroupContainer(QStringLiteral("c1"), revision), false);
   QCOMPARE(controller.activateContainerPage(QStringLiteral("c1"),
                                             QStringLiteral("w3"), revision),
@@ -170,6 +171,7 @@ void TaskListAppletControllerTests::manageGrantRefusesManagementOnly() {
   QCOMPARE(controller.minimizeTask(QStringLiteral("w1"), revision), false);
   QVERIFY(controller.feedback().contains(QStringLiteral("windows.manage")));
   QCOMPARE(controller.closeTask(QStringLiteral("w1"), revision), false);
+  QCOMPARE(controller.raiseTask(QStringLiteral("w1"), revision), false);
   QCOMPARE(controller.ungroupContainer(QStringLiteral("c1"), revision), false);
   QCOMPARE(controller.activateContainerPage(QStringLiteral("c1"),
                                             QStringLiteral("w3"), revision),

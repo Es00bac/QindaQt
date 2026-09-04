@@ -370,4 +370,64 @@ if(NOT relocated_status EQUAL 0)
             "(stage moved to ${relocated_prefix}):\n"
             "${relocated_output}${relocated_error}")
 endif()
-message(STATUS "Installed task-list applet package, relocation, RPATH, and boundary probe passed")
+
+# The production shell must resolve only explicitly selected installed data,
+# even when every ambient/source-style path points at hostile input.
+set(shell "${install_prefix}/${QINDAQT_INSTALL_BINDIR}/qindaqt-shell")
+set(installed_data "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt")
+foreach(required_path IN ITEMS
+        "${installed_data}/profiles/qindaqt.json"
+        "${installed_data}/themes/qinda-dark.json"
+        "${installed_data}/applet-policy/default.json")
+    if(NOT EXISTS "${required_path}")
+        message(FATAL_ERROR
+                "TaskListAppletRuntime component stage is missing ${required_path}")
+    endif()
+endforeach()
+file(STRINGS "${shell}" compiled_boundary
+     REGEX "(QindaQt\\.Shell\\.TaskList|TaskListApplet)")
+if(NOT compiled_boundary)
+    message(FATAL_ERROR
+            "Staged shell contains no compiled Task List composition evidence")
+endif()
+
+set(poison "${install_prefix}/source-poison")
+file(MAKE_DIRECTORY "${poison}/profiles" "${poison}/themes"
+                    "${poison}/applets" "${poison}/runtime")
+file(WRITE "${poison}/applets/broken.json" "{ not-json")
+file(WRITE "${poison}/profiles/broken.json" "{ not-json")
+file(WRITE "${poison}/themes/broken.json" "{ not-json")
+file(WRITE "${poison}/policy.json" "{ not-json")
+execute_process(
+    COMMAND "${QINDAQT_CMAKE}" -E env
+            --unset=LD_LIBRARY_PATH --unset=DYLD_LIBRARY_PATH
+            --unset=DBUS_SESSION_BUS_ADDRESS --unset=DISPLAY
+            --unset=WAYLAND_DISPLAY
+            QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
+            "XDG_RUNTIME_DIR=${poison}/runtime"
+            "XDG_DATA_DIRS=${poison}" "XDG_DATA_HOME=${poison}"
+            "QINDAQT_PROFILE_DIR=${poison}/profiles"
+            "QINDAQT_THEME_DIR=${poison}/themes"
+            "QINDAQT_APPLET_DIR=${poison}/applets"
+            "QINDAQT_APPLET_POLICY=${poison}/policy.json"
+            "${shell}" --list
+            "--profile-dir=${installed_data}/profiles"
+            "--theme-dir=${installed_data}/themes"
+            "--applet-dir=${installed_data}/applets"
+            "--applet-policy=${installed_data}/applet-policy/default.json"
+    RESULT_VARIABLE list_status
+    OUTPUT_VARIABLE list_output
+    ERROR_VARIABLE list_error)
+if(NOT list_status EQUAL 0)
+    message(FATAL_ERROR
+            "Staged Task List shell failed under source poison:\n"
+            "${list_output}${list_error}")
+endif()
+string(FIND "${list_output}" "task-list - Task List" task_list_entry)
+if(task_list_entry EQUAL -1)
+    message(FATAL_ERROR
+            "Staged shell did not resolve Task List:\n${list_output}")
+endif()
+
+message(STATUS
+        "Installed task-list applet package, relocation, RPATH, boundary, and source-poison probes passed")

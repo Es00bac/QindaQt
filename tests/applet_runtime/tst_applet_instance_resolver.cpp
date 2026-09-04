@@ -55,6 +55,7 @@ private slots:
     void carriesDeniedCapabilitiesWithoutInventingAuthority();
     void stockProfilesPlaceOneResolvedLauncher();
     void stockProfilesPlaceOneResolvedClipboardInUtilitySlot();
+    void stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
@@ -337,6 +338,46 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedClipboardInUtilit
             }
         }
         QCOMPARE(clipboardCount, 1);
+    }
+}
+
+void AppletInstanceResolverTests::stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    for (const auto &profile : profiles.profiles()) {
+        int taskListCount = 0;
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1String("task-list")) {
+                    continue;
+                }
+                ++taskListCount;
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(), qPrintable(profile.id
+                                                       + QStringLiteral(": ")
+                                                       + resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.task-list"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList({QStringLiteral("windows.activate"),
+                                      QStringLiteral("windows.manage"),
+                                      QStringLiteral("windows.read")}));
+            }
+        }
+        const bool panelTasksExpected = profile.workflow.taskList
+                != QLatin1String("hidden")
+            && profile.workflow.taskList != QLatin1String("overview-only");
+        QCOMPARE(taskListCount, panelTasksExpected ? 1 : 0);
     }
 }
 

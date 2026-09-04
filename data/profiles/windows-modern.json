@@ -18,6 +18,7 @@
       "alignment": "fill", "rows": 1, "thickness": 46, "length": 1.0,
       "applets": [
         {"id": "widgets", "plugin": "dashboard", "settings": {"zone": "start"}},
+        {"id": "task-list", "plugin": "task-list", "settings": {"zone": "center"}},
         {"id": "center-tasks", "plugin": "centered-task-list", "settings": {"zone": "center"}},
         {"id": "applications", "plugin": "launcher", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
