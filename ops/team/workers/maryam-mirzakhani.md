@@ -8,19 +8,21 @@ status: handoff
 feature: QQ-006.05 Settings pages (Color page); QQ-005.07 Settings UI
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/color-settings-route
 started_at: 2026-09-03T10:30:23-06:00
-updated_at: 2026-09-03T12:59:34-06:00
+updated_at: 2026-09-04T09:44:57-06:00
 ---
 
 # Maryam Mirzakhani
 
 - Role: Color Settings route implementer
 - Provider/model: Moonshot `kimi-code/k3`
-- Status: handoff — exact candidate `252b2fd7d6d590178b33135af9d64123b1acf6cf`
-  (tree `fd7b8ecddc8f7f06c4f19e3aee19fcc77518429f`) repairs both Maryna
-  Viazovska findings on `944673b` (0/1/1/0): the composition provisions the
-  user ICC root, and the accepted stage-closure guard is cherry-picked from
-  main with the ColorBackend embedded exemption; independent exact review
-  (recheck) then manager integration requested.
+- Status: handoff — exact candidate `85c8e8c9e54db9c820f8f1934996292219a43dd5`
+  (tree `eed3fd919ffc15ce87860d10c332cf8769639988`) repairs Maryna
+  Viazovska's P1 on `252b2fd` (0/1/0/0): the composition logs an unreachable
+  session bus as categorized info instead of `qWarning` (the model presents
+  unavailable truth), and the affected warning-fatal host rows plus all Color
+  rows pin both D-Bus addresses to nonexistent sockets in their CTest
+  environment; independent exact review (recheck) then manager integration
+  requested.
 - Exact base: `b971b43881fcef18980acec03c4e43e56ef9db2a`.
 - Branch: `worker/color-settings-route`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/color-settings-route`.
@@ -59,3 +61,16 @@ updated_at: 2026-09-03T12:59:34-06:00
   both profiles; explicit `^desktop\.virtual\.stage-closure$` 1/1 in both
   profiles; validate-docs, mkdocs --strict, check-source-shape,
   git diff --check all exit 0.
+- 2026-09-04T09:44:57-06:00 — handoff: candidate
+  `85c8e8c9e54db9c820f8f1934996292219a43dd5`, bounded repair of `252b2fd`
+  after Maryna Viazovska's REJECT (0/1/0/0). Negative control: the exact
+  verdict reproduction aborted the navigation-page test with SIGABRT (exit
+  134) on the unrepaired tree; after the repair the same command exits 0
+  (6/6, no QWARN). Final evidence: `^qindaqt\.settings-` 55/55 in Debug and
+  Release and
+  `desktop\.virtual\.(sandbox-unit|package-contract|stage-closure)` 3/3 in
+  both profiles under `env -u DISPLAY -u WAYLAND_DISPLAY` with both bus
+  addresses pinned to `unix:path=/nonexistent` and HOME/XDG redirected
+  under the build root; validate-docs, mkdocs --strict, check-source-shape,
+  and git diff --check all exit 0. Handoff:
+  `ops/team/messages/first-party-settings/1788536697-maryam-mirzakhani-color-r2-repair-handoff.md`.
