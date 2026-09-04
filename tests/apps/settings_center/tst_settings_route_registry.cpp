@@ -215,7 +215,7 @@ void SettingsRouteRegistryTest::testRegistryCapacityEnforcement() {
 
 void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 9);
+  QCOMPARE(registry.count(), 10);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -226,6 +226,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(registry.hasRoute(QStringLiteral("bluetooth")));
   QVERIFY(registry.hasRoute(QStringLiteral("power")));
   QVERIFY(registry.hasRoute(QStringLiteral("clipboard")));
+  QVERIFY(registry.hasRoute(QStringLiteral("color")));
 
   // Built-in order is stable for shortcut and traversal semantics.
   QCOMPARE(registry.indexOf(QStringLiteral("notifications")), 0);
@@ -237,6 +238,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QCOMPARE(registry.indexOf(QStringLiteral("bluetooth")), 6);
   QCOMPARE(registry.indexOf(QStringLiteral("power")), 7);
   QCOMPARE(registry.indexOf(QStringLiteral("clipboard")), 8);
+  QCOMPARE(registry.indexOf(QStringLiteral("color")), 9);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());
@@ -308,6 +310,14 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   QVERIFY(!clipboard->title.isEmpty());
   QVERIFY(!clipboard->description.isEmpty());
   QVERIFY(clipboard->available);
+
+  const auto color = registry.route(QStringLiteral("color"));
+  QVERIFY(color.has_value());
+  QCOMPARE(color->id, QStringLiteral("color"));
+  QCOMPARE(color->component, SettingsRouteComponent::Color);
+  QVERIFY(!color->title.isEmpty());
+  QVERIFY(!color->description.isEmpty());
+  QVERIFY(color->available);
 }
 
 void SettingsRouteRegistryTest::testRouteVariantMapConversion() {

@@ -82,13 +82,15 @@ target_link_libraries(
         qindaqt_settings_network
         qindaqt_settings_customize_qml
         qindaqt_settings_customize_qmlplugin
-        # AGENT-NOTE: Main.qml imports every route module; the Power backend and
-        # Clipboard modules are static, so any in-process Main.qml host must link them.
+        # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
+        # and Color modules are static, so any in-process Main.qml host must link them.
         qindaqt_settings_power
         qindaqt_settings_power_backend_qml
         qindaqt_settings_power_backend_qmlplugin
         qindaqt_settings_clipboard_qml
         qindaqt_settings_clipboard_qmlplugin
+        qindaqt_settings_color_backend_qml
+        qindaqt_settings_color_backend_qmlplugin
         qindaqt_themes QindaQt::TokensQml
         Qt6::Quick Qt6::QuickControls2 Qt6::Test
 )
@@ -102,6 +104,7 @@ add_dependencies(
     qindaqt_settings_bluetooth_qmlplugin
     qindaqt_settings_power_qmlplugin
     qindaqt_settings_clipboard_qmlplugin
+    qindaqt_settings_color_qmlplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_window_lifecycle_tests)
@@ -112,8 +115,11 @@ add_test(
 set_tests_properties(
     qindaqt.settings-customize-window-lifecycle PROPERTIES
     LABELS "offscreen;settings;customize;lifecycle"
+    # AGENT-GUARD: This warning-fatal row constructs Main.qml in-process; both
+    # D-Bus addresses are pinned to nonexistent sockets so the host-bus-free
+    # claim is exercised on any host, matching the navigation-page row.
     ENVIRONMENT
-        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
 add_test(
