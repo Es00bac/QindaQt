@@ -583,7 +583,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     foreach(shell_component IN ITEMS
             QindaQt AudioAppletRuntime BluetoothAppletRuntime
             ClipboardAppletRuntime GlobalMenuAppletRuntime
-            LauncherAppletRuntime PowerAppletRuntime TaskListAppletRuntime)
+            LauncherAppletRuntime PowerAppletRuntime StatusNotifierAppletRuntime
+            TaskListAppletRuntime)
         qindaqt_install_task_list_applet_runtime("${shell_component}")
     endforeach()
 endif()
