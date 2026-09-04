@@ -37,8 +37,9 @@ class TerminalWidgetAdapter final : public TerminalSessionBackend {
   Q_OBJECT
 
 public:
-  // Builds the widget, enters teletype mode, and opens the bridge PTY.
-  // Never forks here: start() owns child creation so failures stay typed.
+  // Builds only the presentation widget. start() enters teletype mode and
+  // opens the bridge after the caller has attached the widget to its final
+  // visible layout, then owns child creation so failures stay typed.
   // The profile bounds scrollback, applies font family/size overrides on
   // top of the QST-derived appearance, selects the bell policy, and names
   // the theme whose projection produced the appearance.
@@ -79,10 +80,12 @@ protected:
 
 private:
   void applyAppearance();
+  [[nodiscard]] bool initializeChannels();
   void makeWidgetTransportByteTransparent();
   void closeChildChannel();
   void forwardChildOutput(const char *data, int length);
   void flushChildOutputToWidget();
+  void primeWidgetTransport();
   void initializeSearchSurface();
   [[nodiscard]] QString captureHistory(qsizetype byteLimit, bool retainTail,
                                        bool *overflow) const;

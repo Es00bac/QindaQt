@@ -23,6 +23,7 @@
 #include <QProcessEnvironment>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTimer>
 
 #include <cstdio>
 #include <memory>
@@ -126,12 +127,9 @@ void configureCommandLine(QCommandLineParser &parser) {
 int main(int argc, char **argv) {
   using namespace QindaQt::Apps::Terminal;
 
-  // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
-  // call runs before QApplication construction (pre-construction
-  // QGuiApplication::setFont persists as the application default font). A
-  // missing, unavailable, or unresolvable preference source leaves platform
-  // defaults untouched (fail-closed). The theme baseline setFont below
-  // remains the deliberate widgets baseline. See
+  // AGENT-CONTRACT: F1 font bootstrap runs before QApplication construction.
+  // Missing or unresolvable preference truth leaves platform defaults intact;
+  // the later theme setFont remains the deliberate widgets baseline. See
   // docs/wiki/architecture/font-preferences.md.
   QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
   QApplication application(argc, argv);
@@ -288,14 +286,21 @@ int main(int argc, char **argv) {
                    qPrintable(active->lastExit().diagnostic));
     }
   };
+  const auto scheduleFirstSession = [&window, &startFirstSession] {
+    QTimer::singleShot(0, &window, startFirstSession);
+  };
   QObject::connect(&profileSettings, &TerminalProfileSettings::profilesChanged,
-                   &window, startFirstSession);
+                   &window, scheduleFirstSession);
   QObject::connect(
       &settingsClient,
       &QindaQt::Services::SettingsClient::SettingsClient::stateChanged, &window,
-      startFirstSession);
-  startFirstSession();
+      scheduleFirstSession);
   window.connectQuitAfterCloseShutdown(application);
+  // AGENT-GUARD: realize the window layout before the first PTY can publish
+  // its prompt. TerminalSession attaches the backend before child start, but
+  // a still-hidden top-level leaves qtermwidget at its constructor-sized grid
+  // and that first screen can be discarded by the later real resize.
   window.show();
+  scheduleFirstSession();
   return application.exec();
 }

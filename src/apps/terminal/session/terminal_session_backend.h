@@ -14,8 +14,8 @@ namespace QindaQt::Apps::Terminal {
 // AGENT-CONTRACT: TerminalSessionBackend is the boundary between the session
 // lifecycle (policy, state machine, teardown) and the rendering adapter that
 // wraps qtermwidget6 (ADR-0040, superseding ADR-0030). Implementations live
-// only in the view
-// adapter and in test fakes; no implementation may leak widget-library types
+// only in the view adapter and in test fakes; no implementation may leak
+// widget-library types
 // through this interface. A backend instance is single-use: one start, one
 // child. start() must be called at most once; requestShutdown() may be called
 // from any session state and must not throw. The GUI-thread affinity of the
@@ -49,8 +49,10 @@ public:
   // is reaped. Never returns a recycled PID: the value is captured at fork.
   [[nodiscard]] virtual ProcessId shellProcessId() const = 0;
 
-  // The embedded rendering surface, or nullptr before start / after
-  // requestShutdown. Ownership stays with the backend.
+  // The embedded rendering surface, which may be available before start so a
+  // caller can attach and size it before the teletype begins consuming child
+  // output. Returns nullptr after requestShutdown. Ownership stays with the
+  // backend.
   [[nodiscard]] virtual QWidget *terminalWidget() = 0;
 
   virtual void copySelectionToClipboard() = 0;

@@ -323,3 +323,12 @@ until that fact contract lands. Private-bus composition, offscreen keyboard and
 accessibility, install/source-poison, non-nested stage closure, and contained
 panel-session rows qualify the hosting boundary without claiming fabricated
 live window facts.
+
+The production reproduction is not an exact-owner credential failure:
+`DevelopmentShellSurfaces` reports every committed `dock` surface under one
+canonical shell PID, and the compositor publishes a schema-2 `Windows()`
+generation. **Limited** is therefore the intentional T1 result above, not a
+backend exception or a retry-timing fix. Removing it requires one new
+atomic compositor task-fact contract carrying output, workspace, role, and
+container lineage together; combining the current independent inventories or
+substituting single-output placeholders remains prohibited.

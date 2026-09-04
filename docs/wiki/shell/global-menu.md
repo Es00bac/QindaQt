@@ -296,6 +296,19 @@ requires provider exit to clear the applet. The same real-process row supplies
 a wrong PID and a wrong registrar window ID separately; both keep the facade
 unavailable/empty and produce zero application activations.
 
+Terminal has not yet repeated that opt-in composition. Its local `QMenuBar`
+alone is not a QindaQt AppShell export. A platform theme may independently
+announce a native Wayland appmenu address, but a production launch using a
+non-KDE platform theme (for example `QT_QPA_PLATFORMTHEME=lxqt`) has no such
+contract: the registrar can remain empty and the panel must say **Menu
+unavailable**. Qualification that claims a Terminal menu must either add the
+explicit `ApplicationMenuExport` composition in the Terminal lane or launch a
+proven KDE appmenu platform adapter and observe non-empty authenticated
+`applicationMenuServiceName`/`applicationMenuObjectPath` facts. The presence
+of `com.canonical.AppMenu.Registrar`, a Terminal window, or a local menu bar is
+not that evidence. The result is independent of whether the compositor backend
+is virtual, DRM, or nested/windowed.
+
 ## Qt Widgets adapter
 
 `QMenuBarMenuSource` (module `QindaQt::GlobalMenuQtWidgetsAdapter`) walks a

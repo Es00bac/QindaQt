@@ -348,6 +348,11 @@ must remain inactive so an incoming notification cannot steal focus.
 
 The production shell's complementary `org.qindaqt.ShellDevelopment1` snapshot
 is described in [Notification presentation](../shell/notification-presentation.md).
+Its schema-1 document also carries a required `tokens` object: `ready: true`,
+QST revision `1`, a canonical positive generation string, the non-empty source
+theme ID, and the concrete lowercase `backgroundBase` color. Desktop boot
+readiness rejects a missing, malformed, zero-generation, or unready value, so
+visual capture cannot conceal an unpublished shell token facade.
 Both halves are admitted only on a private bus after the shell authenticates
 the exact compositor PID and verifies `controlMode: "development-test"` plus
 enabled mutations. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)

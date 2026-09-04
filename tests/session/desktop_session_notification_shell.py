@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 
@@ -108,7 +109,7 @@ def _validate_evidence(
     output_names: set[str], pending_code: str | None,
 ) -> None:
     if not isinstance(evidence, Mapping) or set(evidence) != {
-        "owner", "servicePid", "shellPid", "presentation",
+        "owner", "servicePid", "shellPid", "tokens", "presentation",
         "centerOpenedCount", "centerWindow",
     }:
         raise RuntimeError("notification-shell evidence has an unexpected field set")
@@ -123,6 +124,24 @@ def _validate_evidence(
     )
     if service_pid != shell_pid or snapshot_pid != shell_pid:
         raise RuntimeError("notification-shell PID does not own every dock")
+    tokens = evidence.get("tokens")
+    if (
+        not isinstance(tokens, Mapping)
+        or set(tokens) != {
+            "ready", "qstRevision", "generation", "sourceThemeId",
+            "backgroundBase",
+        }
+        or tokens.get("ready") is not True
+        or tokens.get("qstRevision") != 1
+        or _canonical_counter(
+            tokens.get("generation"), "notification-shell token generation"
+        ) <= 0
+        or not isinstance(tokens.get("sourceThemeId"), str)
+        or not tokens.get("sourceThemeId")
+        or not isinstance(tokens.get("backgroundBase"), str)
+        or re.fullmatch(r"#[0-9a-f]{6}", tokens["backgroundBase"]) is None
+    ):
+        raise RuntimeError("notification-shell tokens are not ready")
     _canonical_counter(
         evidence.get("centerOpenedCount"), "notification-shell opened count"
     )
