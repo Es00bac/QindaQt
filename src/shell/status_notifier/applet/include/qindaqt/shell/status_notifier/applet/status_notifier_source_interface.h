@@ -35,7 +35,10 @@ namespace QindaQt::StatusNotifierApplet {
 // deterministic placeholder so presentation can never be wedged by a hostile
 // icon. The intent members evaluate AND revalidate the target against live
 // registry state internally; a non-accepted RegistryOutcome means nothing was
-// dispatched, and `reasonCode` names the refusal.
+// dispatched, and `reasonCode` names the refusal. acknowledgeDegraded() is the
+// sole seam mutation that is not a generation-fenced item intent: it clears a
+// pending registry degradation marker (the status-tray contract's
+// acknowledgement transition) and nothing else.
 class StatusNotifierSourceInterface : public QObject {
     Q_OBJECT
 
@@ -61,10 +64,22 @@ public:
     [[nodiscard]] virtual QindaQt::StatusNotifier::RegistryOutcome contextMenu(
         const QindaQt::StatusNotifier::OwnerKey &target, int x, int y) = 0;
 
+    // AGENT-CONTRACT: the only degradation-recovery transition at this
+    // boundary (docs/wiki/shell/status-tray.md). Implementations clear the
+    // registry's degradation marker when one is pending and emit changed()
+    // when presentation could have moved; with no degradation pending this
+    // is a no-op and must NOT notify. It performs no D-Bus work and never
+    // touches item membership, so a retained last-known-good row survives it.
+    virtual void acknowledgeDegraded() = 0;
+
 Q_SIGNALS:
-    // Emitted after every registry-affecting event, on the GUI thread. The S1
-    // monitor deliberately exposes no registry-change signal of its own; the
-    // seam owns change notification for its consumers.
+    // Emitted after every registry-affecting event, on the GUI thread —
+    // including REJECTED outcomes that still moved registry presentation
+    // (e.g. a malformed live replacement or a capacity rejection that set
+    // the registry's degradation marker). A refused event that left
+    // presentation untouched never notifies. The S1 monitor deliberately
+    // exposes no registry-change signal of its own; the seam owns change
+    // notification for its consumers.
     void changed();
 };
 

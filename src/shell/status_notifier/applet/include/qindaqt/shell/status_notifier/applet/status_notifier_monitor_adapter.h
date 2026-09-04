@@ -61,13 +61,21 @@ public:
     [[nodiscard]] QindaQt::StatusNotifier::RegistryOutcome contextMenu(
         const QindaQt::StatusNotifier::OwnerKey &target, int x, int y) override;
 
+    // The contract-prescribed acknowledgement transition: clears a pending
+    // registry degradation marker and emits changed(); a no-op (with no
+    // notification) when the registry is not degraded.
+    void acknowledgeDegraded() override;
+
 private:
     // AGENT-CONTRACT: forwarding sink interposed between the monitor and the
     // registry. The S1 monitor emits only watcherLiveChanged and has no
     // registry-change signal, so this shim forwards every StatusNotifierEventSink
     // call verbatim — including the beginWatcherEpoch/beginOwnerGeneration
     // return values — to the owned registry and emits the adapter's changed()
-    // after each accepted mutation. It adds no policy of its own.
+    // after each accepted mutation AND after any event, accepted or rejected,
+    // that moved the registry's degradation marker (the registry sets it
+    // before returning a rejected outcome for a malformed live replacement or
+    // a capacity overflow). It adds no policy of its own.
     class ForwardingSink;
 
     QindaQt::StatusNotifier::StatusNotifierRegistry m_registry;

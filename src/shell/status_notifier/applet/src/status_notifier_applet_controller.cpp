@@ -117,6 +117,19 @@ void StatusNotifierAppletController::clearFeedback()
     Q_EMIT feedbackChanged();
 }
 
+void StatusNotifierAppletController::acknowledgeDegraded()
+{
+    // Fail-closed: with observation withheld there is no degradation truth to
+    // acknowledge, and the seam must not be touched at all (same rule as the
+    // read path); with no source composed there is nothing to acknowledge.
+    if (!m_readGranted || m_source == nullptr) {
+        return;
+    }
+    // The seam emits changed() when it cleared a pending degradation; the
+    // direct connection reprojects synchronously, so no extra reproject here.
+    m_source->acknowledgeDegraded();
+}
+
 void StatusNotifierAppletController::reproject()
 {
     // AGENT-GUARD: read-denied withholding. With the read grant denied the

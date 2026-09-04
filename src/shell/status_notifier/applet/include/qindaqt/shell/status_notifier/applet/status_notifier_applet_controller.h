@@ -90,6 +90,14 @@ public:
     Q_INVOKABLE QVariantList menuRowsFor(const QString &uniqueName,
                                          const QString &objectPath,
                                          quint64 generation);
+    // AGENT-CONTRACT: the status-tray contract's degradation acknowledgement
+    // (docs/wiki/shell/status-tray.md), exposed as the admitted controller
+    // action. Fail-closed: with the read grant denied or no source composed
+    // it does nothing. Otherwise the seam clears a pending registry
+    // degradation marker and its changed() reprojects the phase from live
+    // state — a later valid update is never the event that first reveals or
+    // clears a degradation.
+    Q_INVOKABLE void acknowledgeDegraded();
     Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:

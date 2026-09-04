@@ -44,6 +44,7 @@ public:
     mutable int m_descriptorCalls = 0;
     mutable int m_renderCalls = 0;
     QList<RecordedCall> m_calls;
+    int m_acknowledgeCalls = 0;
 
     [[nodiscard]] TrayPresentation presentation() const override
     {
@@ -91,6 +92,22 @@ public:
                                                          int y) override
     {
         return record(QStringLiteral("contextMenu"), target, x, y);
+    }
+
+    // Mirrors the production registry→seam recovery: acknowledging a scripted
+    // Degraded presentation clears the diagnostic, restores the non-degraded
+    // phase matching the scripted rows, and notifies — so controller tests
+    // observe the same synchronous reprojection the real adapter produces.
+    void acknowledgeDegraded() override
+    {
+        ++m_acknowledgeCalls;
+        if (m_presentation.state == PresentationState::Degraded) {
+            m_presentation.state = m_presentation.items.isEmpty()
+                ? PresentationState::Empty
+                : PresentationState::Ready;
+            m_presentation.diagnostic.clear();
+            Q_EMIT changed();
+        }
     }
 
     void emitChanged()
