@@ -50,6 +50,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
+        TARGET qindaqt_shell_task_list_applet
 )
 
 target_link_libraries(
@@ -62,6 +63,7 @@ target_link_libraries(
         QindaQt::ShellClipboardAppletRuntime
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
+        QindaQt::ShellTaskListApplet
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -167,6 +169,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
+        runtime/tasklistappletcomposition.cpp
+        runtime/tasklistappletcomposition.h
     )
 
     qt_add_qml_module(
@@ -194,6 +198,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
+            TARGET qindaqt_shell_task_list_applet
     )
 
     target_link_libraries(
@@ -222,6 +227,9 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
+            QindaQt::ShellTaskListApplet
+            QindaQt::ShellTaskListProducer
+            QindaQt::ShellTaskListOperations
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
             qindaqt_themes
@@ -569,6 +577,14 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             LauncherAppletRuntime PowerAppletRuntime StatusNotifierAppletRuntime
             TaskListAppletRuntime)
         qindaqt_install_clipboard_applet_runtime("${shell_component}")
+    endforeach()
+    # BuiltinAppletContent also imports TaskList directly. The owning module's
+    # helper keeps every shell-carrying component independently loadable.
+    foreach(shell_component IN ITEMS
+            QindaQt AudioAppletRuntime BluetoothAppletRuntime
+            ClipboardAppletRuntime GlobalMenuAppletRuntime
+            LauncherAppletRuntime PowerAppletRuntime TaskListAppletRuntime)
+        qindaqt_install_task_list_applet_runtime("${shell_component}")
     endforeach()
 endif()
 

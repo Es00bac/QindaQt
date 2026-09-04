@@ -141,12 +141,20 @@ void TaskListFactsProducer::handleServiceOwnerChanged(
   m_inFlight.reset();
   m_dirty = false;
   m_retryIndex = 0;
+  const bool clearSource = uniqueOwner.isEmpty()
+      || (!m_owner.isEmpty() && m_owner != uniqueOwner);
   m_owner = uniqueOwner;
   m_windowEpoch.clear();
   m_windowPayload.clear();
   m_windowRevision = 0;
   m_hasWindowLineage = false;
 
+  // AGENT-GUARD: owner replacement invalidates every task id and action
+  // fence. Clear the retained generation before degrading; showing the old
+  // owner's rows after the action authority moved would be stale UI truth.
+  if (clearSource) {
+    m_source.reset();
+  }
   if (uniqueOwner.isEmpty()) {
     degrade(QStringLiteral("compositor owner is unavailable"));
   } else {

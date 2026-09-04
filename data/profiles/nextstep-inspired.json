@@ -18,6 +18,7 @@
       "alignment": "start", "rows": 1, "thickness": 72, "length": 0.72,
       "applets": [
         {"id": "apps", "plugin": "application-tiles"},
+        {"id": "hosted-task-list", "plugin": "task-list"},
         {"id": "workspaces", "plugin": "workspace-tiles"},
         {"id": "clipboard", "plugin": "clipboard"},
         {"id": "notifications", "plugin": "notification-center"},

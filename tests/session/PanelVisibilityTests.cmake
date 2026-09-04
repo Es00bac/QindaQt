@@ -106,11 +106,10 @@ if(
     # shell-linked module through its owning install helper as well.
     qindaqt_install_clipboard_applet_runtime(DesktopVirtual)
 
-    # AGENT-NOTE: The production shell does not link the task-list applet
-    # library yet (dispatcher wiring/hosting is a later lane). This staging
-    # exists so that lane cannot break the nested DesktopVirtual stage when it
-    # wires the dispatcher: the module already relocates here exactly like the
-    # launcher and Global Menu above.
+    # AGENT-NOTE: The production shell links the task-list applet library and
+    # BuiltinAppletContent hosts it (Task List T3); this staging is load-bearing
+    # for the nested DesktopVirtual stage exactly like the launcher and Global
+    # Menu above.
     qt_query_qml_module(
         qindaqt_shell_task_list_applet
         QMLDIR _qindaqt_panel_visibility_task_list_qmldir

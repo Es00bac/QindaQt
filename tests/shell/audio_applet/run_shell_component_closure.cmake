@@ -90,12 +90,17 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_global_menu_qml.so")
     set(clipboard_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/ClipboardApplet")
+    set(task_list_module
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/TaskList")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
                                    "${clipboard_module}/qmldir"
                                    "${clipboard_module}/qml/ClipboardApplet.qml"
                                    "${clipboard_module}/qml/ClipboardEntryRow.qml"
-                                   "${clipboard_module}/qml/ClipboardPanelApplet.qml")
+                                   "${clipboard_module}/qml/ClipboardPanelApplet.qml"
+                                   "${task_list_module}/qmldir"
+                                   "${task_list_module}/qml/TaskListApplet.qml"
+                                   "${task_list_module}/qml/TaskListEntryButton.qml")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")

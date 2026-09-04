@@ -81,6 +81,12 @@ void TaskListOperationAdapterTests::windowIntentsAreUnavailableWithCompositionCo
       outcome);
   QCOMPARE(finishedSpy.at(2).constFirst().value<TaskListOperationResult>().code,
            QStringLiteral("compositor-window-close-unavailable"));
+
+  adapter.executeTaskIntent(
+      {QStringLiteral("w1"), TaskIntentKind::Raise, authority.revision},
+      outcome);
+  QCOMPARE(finishedSpy.at(3).constFirst().value<TaskListOperationResult>().code,
+           QStringLiteral("compositor-window-raise-unavailable"));
   QCOMPARE(operations.calls.size(), 0);
 }
 

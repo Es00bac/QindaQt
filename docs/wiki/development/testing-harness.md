@@ -1008,7 +1008,7 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.task-list-' --output-on-failure --no-tests=error
 ```
 
-The thirteen rows cover the pure T0 model (values, batch validation, grouping,
+The rows cover the pure T0 model (values, batch validation, grouping,
 intents, scope filtering, presentation), the T1 wire decoders (hostile payload
 shapes, duplicate/oversized/malformed inventories, exact 4,096/4,097-window
 bounds, UUID/schema/revision validation, and container lineage bounds), the
@@ -1035,9 +1035,9 @@ and proves the producer never calls them.
 
 Every transport process is the QtTest executable itself on a private bus; the
 rows contact no host session bus, compositor, display, input, hardware, or
-network. They do not qualify production-shell instantiation, QML presentation,
-or a live desktop task list; those remain later shell-composition and
-contained-session gates. See [Task list source model](../shell/task-list.md)
+network. Production composition and QML presentation are qualified separately
+below; no focused row claims a live desktop window inventory. See
+[Task list source model](../shell/task-list.md)
 and [ADR-0044](../adr/0044-inject-task-list-facts-into-the-shell.md).
 
 The S1 rejection-repair controls additionally require rejection of a
@@ -1068,15 +1068,19 @@ the real T1 adapter with a fake transport (truthful window-level
 rejection), fatal-warning-clean offscreen compiled-QML state rows plus
 keyboard traversal over the theme-published Tokens/Controls plugin path
 (Tab/Backtab, horizontal Left/Right and vertical Up/Down with endpoint stops,
-Return/Space/Menu, context-menu dispatch), a static boundary poison probe with
+Return/Space/Menu, context-menu dispatch), the production composition on a
+private session bus (shared exact-owner client routing for all five actions,
+grouped sequencing, generation fences, one terminal outcome, and owner-loss
+stale-truth clearing), a horizontal/vertical production dispatcher plus
+disabled preview row, a static boundary poison probe with
 injected-violation self-tests that also requires the explicit
 `QindaQt.Controls`/`QindaQt.Tokens` imports and rejects any applet-owned
 palette literal, and a relocated `TaskListAppletRuntime` installed-package
 proof whose consumer builds against only staged files (with the staged
-Controls/Tokens modules and theme) and reruns after the whole stage moves
-with `LD_LIBRARY_PATH` unset. All rows run offscreen or on private fakes; none
-contacts a host bus, display, compositor, or hardware, and no nested session
-is claimed.
+Controls/Tokens modules and theme), reruns after the whole stage moves with
+`LD_LIBRARY_PATH` unset, and starts the staged shell catalog under hostile
+ambient source paths. All focused rows run offscreen or on private fakes; none
+contacts a host bus, display, compositor, or hardware.
 
 ## Current Settings1 and persistent quieting proof
 
@@ -2686,11 +2690,11 @@ package-only pass is
 insufficient if a required application does not map: topology readiness must observe the installed
 `org.qindaqt.Settings` window before interaction or capture can qualify a row.
 
-The component also carries one data-driven inventory for every applet module
-imported by the production panel dispatcher: Audio, Bluetooth, Global Menu,
-Launcher, and Power. The non-nested `desktop.virtual.stage-closure` row guards
-their `qmldir` payloads and the shell's direct shared-library closure before any
-private runtime is allocated.
+The component also carries an install inventory for every applet module
+imported by the production panel dispatcher: Audio, Bluetooth, Clipboard,
+Global Menu, Launcher, Power, and Task List. The non-nested
+`desktop.virtual.stage-closure` row guards their `qmldir` payloads and the
+shell's direct shared-library closure before any private runtime is allocated.
 
 Every run retains distinct private parent/child Wayland sockets, the fake-seat
 pointer/keyboard pair plus the development input device, exact Meta+N surface
