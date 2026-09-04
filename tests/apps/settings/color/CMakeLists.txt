@@ -11,7 +11,7 @@ qindaqt_enable_warnings(qindaqt_color_settings_model_tests)
 add_test(NAME qindaqt.settings-color-model
     COMMAND qindaqt_color_settings_model_tests)
 set_tests_properties(qindaqt.settings-color-model PROPERTIES
-    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;color;model")
 
 qt_add_executable(qindaqt_color_settings_apply_tests
@@ -25,7 +25,7 @@ qindaqt_enable_warnings(qindaqt_color_settings_apply_tests)
 add_test(NAME qindaqt.settings-color-apply
     COMMAND qindaqt_color_settings_apply_tests)
 set_tests_properties(qindaqt.settings-color-apply PROPERTIES
-    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;color;model;apply")
 
 qt_add_executable(qindaqt_color_route_composition_tests
@@ -57,7 +57,7 @@ add_dependencies(qindaqt_color_page_tests qindaqt_tokens_qmlplugin
 qindaqt_enable_warnings(qindaqt_color_page_tests)
 add_test(NAME qindaqt.settings-color-page COMMAND qindaqt_color_page_tests)
 set_tests_properties(qindaqt.settings-color-page PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "offscreen;settings;color;accessibility")
 
 qt_add_executable(qindaqt_color_navigation_page_tests
@@ -94,7 +94,7 @@ qindaqt_enable_warnings(qindaqt_color_navigation_page_tests)
 add_test(NAME qindaqt.settings-color-navigation-page
     COMMAND qindaqt_color_navigation_page_tests)
 set_tests_properties(qindaqt.settings-color-navigation-page PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "offscreen;settings;color;navigation")
 
 add_test(NAME qindaqt.settings-color-boundary
