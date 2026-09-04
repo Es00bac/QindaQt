@@ -20,14 +20,16 @@ namespace QindaQt::Bluetooth
 // bluetooth_model exactly: start() returns the run generation before that run
 // publishes, every publication and operation completion is fenced by
 // generation, the backend owns the caller-scoped reference-counted discovery
-// lease table, and pairing/trust authority stays in BlueZ (no Pair, Trust,
-// Untrust, RemoveDevice, or agent calls; Paired/Trusted are read-only
-// observations). The transport boundary and its exact-owner fencing are
+// lease table, and pairing/trust authority stays in BlueZ: every Pair,
+// CancelPairing, RemoveDevice, Trusted, and Agent1 call targets the current
+// exact owner, while QindaQt stores no device record, key, or decision. The
+// transport boundary and its exact-owner fencing are
 // recorded in ADR-0057 and the Bluetooth service architecture page.
 class BluezAdapterBackend final : public AdapterBackend
 {
 public:
     explicit BluezAdapterBackend(const QDBusConnection &connection,
+                                 int promptTimeoutMs = 60'000,
                                  QObject *parent = nullptr);
     ~BluezAdapterBackend() override;
 
@@ -49,6 +51,13 @@ private:
     void submitRelease(quint64 operationId, const BackendRequest &request);
     void submitConnect(quint64 operationId, const BackendRequest &request);
     void submitDisconnect(quint64 operationId, const BackendRequest &request);
+    void submitPair(quint64 operationId, const BackendRequest &request);
+    void submitCancelPairing(quint64 operationId, const BackendRequest &request);
+    void submitRemove(quint64 operationId, const BackendRequest &request);
+    void submitSetTrusted(quint64 operationId, const BackendRequest &request);
+    void submitPromptReply(quint64 operationId, const BackendRequest &request);
+    void finishPairingCallSuccess(quint64 operationId, OperationKind kind,
+                                  const QString &deviceAddress, bool trusted);
     void insertDeviceCall(quint64 callId, quint64 operationId,
                           const BackendRequest &request, OperationKind kind);
     void handleCallFinished(quint64 callId, bool succeeded, const QString &errorName);

@@ -14,7 +14,8 @@ set(adapter_cmake "${adapter_root}/CMakeLists.txt")
 set(adapter_tests "${SOURCE_ROOT}/tests/services/bluetooth_bluez_adapter")
 
 # Production adapter sources: no BluezQt, no residency/service internals, no
-# QML/shell, and no BlueZ mutation outside the accepted v1 operation set.
+# QML/shell, and no ambient-bus construction. Pairing/trust/removal remain
+# BlueZ-owned operations reached only through this injected adapter boundary.
 file(GLOB_RECURSE sources LIST_DIRECTORIES false
      "${adapter_root}/*.h" "${adapter_root}/*.cpp")
 foreach(source IN LISTS sources)
@@ -28,8 +29,8 @@ foreach(source IN LISTS sources)
     if(content MATCHES "#include <QtQuick|#include <QtQml|services/settings|src/shell/")
         message(FATAL_ERROR "BlueZ adapter crosses into shell/QML/settings in ${source}")
     endif()
-    if(content MATCHES "QStringLiteral\\(\"(Pair|Trust|Untrust|RemoveDevice|CancelPairing|SetPairable|SetDiscoveryFilter)\"\\)")
-        message(FATAL_ERROR "BlueZ adapter claims BlueZ pairing/trust/record authority in ${source}")
+    if(content MATCHES "QDBusConnection::(systemBus|sessionBus)")
+        message(FATAL_ERROR "BlueZ adapter constructs an ambient bus in ${source}")
     endif()
     if(content MATCHES "/dev/rfkill|QProcess")
         message(FATAL_ERROR "BlueZ adapter touches radios or spawns processes in ${source}")

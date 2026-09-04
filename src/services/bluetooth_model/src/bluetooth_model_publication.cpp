@@ -79,7 +79,11 @@ Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) con
         static_cast<quint32>(Capability::SetAdapterPower)
         | static_cast<quint32>(Capability::DiscoveryLease)
         | static_cast<quint32>(Capability::ConnectPaired)
-        | static_cast<quint32>(Capability::DisconnectPaired));
+        | static_cast<quint32>(Capability::DisconnectPaired)
+        | static_cast<quint32>(Capability::Pair)
+        | static_cast<quint32>(Capability::RemoveDevice)
+        | static_cast<quint32>(Capability::SetTrusted)
+        | static_cast<quint32>(Capability::PairingPrompt));
     snapshot.reasonCode = QStringLiteral("ready");
     for (const BackendAdapter &backendAdapter : inventory.adapters) {
         Adapter adapter;
@@ -107,6 +111,7 @@ Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) con
         device.rssi = backendDevice.rssi;
         device.batteryKnown = backendDevice.batteryKnown;
         device.batteryPercent = backendDevice.batteryPercent;
+        device.trusted = backendDevice.trusted;
         snapshot.devices.push_back(device);
     }
     std::sort(snapshot.adapters.begin(), snapshot.adapters.end(),
@@ -117,6 +122,23 @@ Snapshot BluetoothModel::projectInventory(const BackendInventory &inventory) con
               [](const Device &left, const Device &right) {
                   return left.handle.serial < right.handle.serial;
               });
+    if (inventory.pairingPrompt.kind != PairingPromptKind::None) {
+        const auto promptDevice = std::find_if(
+            snapshot.devices.cbegin(), snapshot.devices.cend(),
+            [&](const Device &device) {
+                return device.address == inventory.pairingPrompt.deviceAddress;
+            });
+        if (promptDevice != snapshot.devices.cend()) {
+            snapshot.pairingPrompt = {
+                .promptId = inventory.pairingPrompt.promptId,
+                .kind = inventory.pairingPrompt.kind,
+                .device = promptDevice->handle,
+                .detail = inventory.pairingPrompt.detail,
+                .serviceUuid = inventory.pairingPrompt.serviceUuid,
+                .entered = inventory.pairingPrompt.entered,
+            };
+        }
+    }
     return snapshot;
 }
 
@@ -173,8 +195,23 @@ void BluetoothModel::acceptInventory(const quint64 generation,
         return;
     }
 
+    const bool promptIdentityValid = inventory.pairingPrompt.kind
+            == PairingPromptKind::None
+        ? inventory.pairingPrompt.promptId == 0
+        : inventory.pairingPrompt.promptId != 0;
+    const bool promptDeviceKnown = inventory.pairingPrompt.kind == PairingPromptKind::None
+        || std::any_of(inventory.devices.cbegin(), inventory.devices.cend(),
+                       [&](const BackendDevice &device) {
+                           return device.address
+                               == inventory.pairingPrompt.deviceAddress;
+                       });
     const bool inventorySane = inventory.adapters.size() <= kMaxAdapters
         && inventory.devices.size() <= kMaxDevices && leaseBoundsRespected(inventory)
+        && promptIdentityValid && promptDeviceKnown
+        && isBoundedText(inventory.pairingPrompt.detail,
+                         kMaxPairingTextUtf8Bytes)
+        && isBoundedText(inventory.pairingPrompt.serviceUuid,
+                         kMaxPairingTextUtf8Bytes)
         && std::all_of(inventory.adapters.cbegin(), inventory.adapters.cend(),
                        [](const BackendAdapter &adapter) {
                            return isCanonicalAddress(adapter.address)

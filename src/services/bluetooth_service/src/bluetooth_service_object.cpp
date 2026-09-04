@@ -51,7 +51,76 @@ void BluetoothServiceObject::Connect(const Handle &device)
 
 void BluetoothServiceObject::Disconnect(const Handle &device)
 {
-    beginOperation({.kind = OperationKind::Disconnect, .target = device, .powered = false});
+    beginOperation({.kind = OperationKind::Disconnect, .target = device,
+                    .powered = false});
+}
+
+void BluetoothServiceObject::Pair(const Handle &device)
+{
+    beginOperation({.kind = OperationKind::Pair, .target = device});
+}
+
+void BluetoothServiceObject::CancelPairing(const Handle &device)
+{
+    beginOperation(
+        {.kind = OperationKind::CancelPairing, .target = device});
+}
+
+void BluetoothServiceObject::Remove(const Handle &device)
+{
+    beginOperation(
+        {.kind = OperationKind::RemoveDevice, .target = device});
+}
+
+void BluetoothServiceObject::SetTrusted(const Handle &device, const bool trusted)
+{
+    beginOperation({.kind = OperationKind::SetTrusted,
+                    .target = device,
+                    .trusted = trusted});
+}
+
+Handle BluetoothServiceObject::promptDevice(const quint64 promptId) const
+{
+    Q_UNUSED(promptId)
+    // The caller-supplied ID remains in OperationRequest. The current device
+    // handle lets the model distinguish a stale prompt from a stale device;
+    // it authorizes only when both current values match.
+    return m_model->snapshot().pairingPrompt.device;
+}
+
+void BluetoothServiceObject::ReplyConfirmation(const quint64 promptId,
+                                                const bool accept)
+{
+    beginOperation({.kind = OperationKind::ReplyConfirmation,
+                    .target = promptDevice(promptId),
+                    .accepted = accept,
+                    .promptId = promptId});
+}
+
+void BluetoothServiceObject::ReplyPasskey(const quint64 promptId,
+                                          const quint32 passkey)
+{
+    OperationRequest request{.kind = OperationKind::ReplyPasskey,
+                             .target = promptDevice(promptId),
+                             .promptId = promptId};
+    (void)setPairingInput(request.input, request.inputSize, QString::number(passkey));
+    beginOperation(request);
+}
+
+void BluetoothServiceObject::ReplyPin(const quint64 promptId, const QString &pin)
+{
+    OperationRequest request{.kind = OperationKind::ReplyPin,
+                             .target = promptDevice(promptId),
+                             .promptId = promptId};
+    (void)setPairingInput(request.input, request.inputSize, pin);
+    beginOperation(request);
+}
+
+void BluetoothServiceObject::CancelPrompt(const quint64 promptId)
+{
+    beginOperation({.kind = OperationKind::CancelPrompt,
+                    .target = promptDevice(promptId),
+                    .promptId = promptId});
 }
 
 void BluetoothServiceObject::beginOperation(const OperationRequest &request)

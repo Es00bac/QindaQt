@@ -50,6 +50,7 @@ void BluezAdapterBackend::handleOwnerReplaced()
         }
     }
     d->dropAllLeases();
+    d->pairingPrompt = {};
     d->store.clear();
     publish();
 }
@@ -120,11 +121,13 @@ void BluezAdapterBackend::publish()
     }
     BackendInventory inventory;
     inventory.adapters = d->store.projectAdapters();
+    d->pairingAgent.setAdapterAvailable(!inventory.adapters.isEmpty());
     QSet<QString> adapterAddresses;
     for (const BackendAdapter &adapter : inventory.adapters) {
         adapterAddresses.insert(adapter.address);
     }
     inventory.devices = d->store.projectDevices(adapterAddresses);
+    inventory.pairingPrompt = d->pairingPrompt;
     for (BackendAdapter &adapter : inventory.adapters) {
         const quint32 local = d->localLeaseTotal(adapter.address);
         const bool external = adapter.powered && local == 0

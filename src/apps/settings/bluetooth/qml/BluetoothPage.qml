@@ -89,14 +89,6 @@ T.Page {
             Accessible.name: text
         }
 
-        StateCard {
-            objectName: "bluetoothAuthorityBoundary"
-            Layout.fillWidth: true
-            status: StateCard.Information
-            title: qsTr("Pairing stays with BlueZ")
-            message: qsTr("This page cannot pair, trust, untrust, or remove devices. It can only connect devices that BlueZ already reports as paired.")
-        }
-
         Flickable {
             id: viewport
             objectName: "bluetoothFormViewport"
@@ -143,6 +135,10 @@ T.Page {
                 ColumnLayout {
                     width: parent.width
                     spacing: Tokens.space["4"]
+
+                    BluetoothPairingSection {
+                        bluetoothSettings: root.bluetoothSettings
+                    }
 
                     BluetoothAdapterSection {
                         bluetoothSettings: root.bluetoothSettings

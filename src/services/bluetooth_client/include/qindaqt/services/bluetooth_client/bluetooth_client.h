@@ -22,8 +22,10 @@ enum class ClientState {
 };
 
 // AGENT-CONTRACT: This QObject is owned and used on one Qt thread. It binds to
-// an exact D-Bus owner, publishes only validated snapshots, serializes
-// mutations, and never replays a timed-out or owner-interrupted mutation. A
+// an exact D-Bus owner, publishes only validated snapshots, serializes ordinary
+// mutations separately from one prompt reply, and never replays a timed-out or
+// owner-interrupted mutation. The second lane is required while BlueZ holds a
+// Pair reply pending on Agent1 input. A
 // fetch failure or timeout revokes mutation authority: the retained snapshot
 // is dropped and any dispatched operation completes as Uncertain rather than
 // remaining authorized by stale state. The borrowed transport must share this
@@ -53,6 +55,14 @@ public:
     [[nodiscard]] quint64 releaseDiscovery(const Handle &adapter);
     [[nodiscard]] quint64 connectDevice(const Handle &device);
     [[nodiscard]] quint64 disconnectDevice(const Handle &device);
+    [[nodiscard]] quint64 pairDevice(const Handle &device);
+    [[nodiscard]] quint64 cancelPairing(const Handle &device);
+    [[nodiscard]] quint64 removeDevice(const Handle &device);
+    [[nodiscard]] quint64 setTrusted(const Handle &device, bool trusted);
+    [[nodiscard]] quint64 replyConfirmation(bool accepted);
+    [[nodiscard]] quint64 replyPasskey(const QString &passkey);
+    [[nodiscard]] quint64 replyPin(const QString &pin);
+    [[nodiscard]] quint64 cancelPrompt();
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Bluetooth::ClientState state, const QString &reasonCode);
@@ -71,6 +81,7 @@ private Q_SLOTS:
                               const QString &reasonCode);
     void onFetchTimeout();
     void onOperationTimeout();
+    void onPromptOperationTimeout();
 
 private:
     struct PendingOperation {
@@ -98,9 +109,11 @@ private:
     QString m_owner;
     std::optional<Snapshot> m_snapshot;
     std::optional<PendingOperation> m_operation;
+    std::optional<PendingOperation> m_promptOperation;
     QHash<quint64, OperationResult> m_queuedOperationCompletions;
     QTimer m_fetchTimer;
     QTimer m_operationTimer;
+    QTimer m_promptOperationTimer;
     QTimer m_retryTimer;
     quint64 m_nextRequestId = 1;
     quint64 m_fetchRequestId = 0;

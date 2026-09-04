@@ -125,7 +125,11 @@ The interaction contract is:
 - click or Enter/Return activates a route tab;
 - Up/Down move within the wide route list; Left/Right move within compact tabs;
 - Tab from a route tab enters the active page's declared first focus target;
-- Escape returns focus to the active visible route tab;
+- Escape returns focus to the active visible route tab. The one route-level
+  exception: while the Bluetooth route shows an active pairing prompt with a
+  free reply lane, the host Escape shortcut yields to the route's own Escape
+  shortcut so the prompt receives its cancel reply — two enabled identical
+  window-context shortcuts would be ambiguous and neither would activate;
 - Ctrl+1, Ctrl+2, Ctrl+3, and Ctrl+4 select Notifications, Appearance,
   Display, and Network respectively; Ctrl+6 selects Audio in its appended
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh

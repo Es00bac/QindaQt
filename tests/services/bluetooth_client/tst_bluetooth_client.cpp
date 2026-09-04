@@ -35,6 +35,7 @@ private Q_SLOTS:
     void queuesExactlyOnceCompletion();
     void fetchFailureRevokesMutationAuthority();
     void stopCancelsAndMarksTransportBackedUncertain();
+    void pairingReplyUsesIndependentLane();
 
 private:
     static void deliverReady(FakeBluetoothTransport &transport, const quint64 requestId,
@@ -416,6 +417,59 @@ void BluetoothClientTests::stopCancelsAndMarksTransportBackedUncertain()
                                   {},
                                   true});
     QCOMPARE(completions.count(), 0);
+}
+
+void BluetoothClientTests::pairingReplyUsesIndependentLane()
+{
+    FakeBluetoothTransport transport;
+    BluetoothClient client(&transport);
+    QSignalSpy completions(&client, &BluetoothClient::operationCompleted);
+    client.start();
+    transport.setOwner(kOwner());
+    Snapshot prompt = bluetoothClientSnapshot();
+    prompt.pairingPrompt = {
+        .promptId = 101,
+        .kind = PairingPromptKind::ConfirmPasskey,
+        .device = prompt.devices.constFirst().handle,
+        .detail = QStringLiteral("123456"),
+        .serviceUuid = {},
+        .entered = 0,
+    };
+    deliverReady(transport, transport.fetches.constFirst().requestId, prompt);
+
+    const quint64 connectId = client.disconnectDevice(prompt.devices[0].handle);
+    const quint64 replyId = client.replyConfirmation(true);
+    QVERIFY(connectId != 0);
+    QVERIFY(replyId != 0);
+    QCOMPARE(transport.submissions.size(), 2);
+    QCOMPARE(transport.submissions[0].request.kind, OperationKind::Disconnect);
+    QCOMPARE(transport.submissions[1].request.kind,
+             OperationKind::ReplyConfirmation);
+    QCOMPARE(transport.submissions[1].request.promptId, quint64(101));
+    transport.emitOperationReply(
+        kOwner(), replyId, true,
+        {.kind = OperationKind::ReplyConfirmation,
+         .status = OperationStatus::Succeeded,
+         .initiatingEpoch = 61,
+         .initiatingRevision = 5,
+         .observedEpoch = 61,
+         .observedRevision = 6,
+         .reasonCode = QStringLiteral("prompt-replied"),
+         .diagnostic = {},
+         .wireValid = true});
+    transport.emitOperationReply(
+        kOwner(), connectId, true,
+        {.kind = OperationKind::Disconnect,
+         .status = OperationStatus::Succeeded,
+         .initiatingEpoch = 61,
+         .initiatingRevision = 5,
+         .observedEpoch = 61,
+         .observedRevision = 6,
+         .reasonCode = QStringLiteral("disconnected"),
+         .diagnostic = {},
+         .wireValid = true});
+    QTRY_COMPARE(completions.size(), 2);
+    QVERIFY(!client.operationPending());
 }
 
 QTEST_GUILESS_MAIN(BluetoothClientTests)

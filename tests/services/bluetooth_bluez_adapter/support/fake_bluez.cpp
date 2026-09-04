@@ -7,6 +7,7 @@
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusMetaType>
 #include <QtDBus/QDBusObjectPath>
+#include <QtDBus/QDBusPendingCallWatcher>
 
 #include <utility>
 
@@ -55,6 +56,17 @@ bool FakeBluezServiceObject::handleMessage(const QDBusMessage &message,
             message.createReply({QVariant::fromValue(m_bluez->objectTree())}));
         return true;
     }
+    if (path == QLatin1String("/org/bluez")
+        && interfaceName == QLatin1String("org.bluez.AgentManager1")
+        && member == QLatin1String("RegisterAgent")) {
+        m_bluez->registerAgent(message);
+        return true;
+    }
+    if (path == QLatin1String("/org/bluez") && interfaceName == QLatin1String("org.bluez.AgentManager1")
+        && member == QLatin1String("UnregisterAgent")) {
+        m_bluez->unregisterAgent(message);
+        return true;
+    }
     if (interfaceName == QLatin1String("org.freedesktop.DBus.Properties")
         && member == QLatin1String("Set") && message.arguments().size() == 3) {
         m_bluez->propertySet(path, message.arguments().value(0).toString(),
@@ -72,6 +84,10 @@ bool FakeBluezServiceObject::handleMessage(const QDBusMessage &message,
             m_bluez->adapterStopDiscovery(path, message);
             return true;
         }
+        if (member == QLatin1String("RemoveDevice")) {
+            m_bluez->adapterRemoveDevice(path, message);
+            return true;
+        }
     }
     if (interfaceName == QLatin1String("org.bluez.Device1")) {
         if (member == QLatin1String("Connect")) {
@@ -80,6 +96,14 @@ bool FakeBluezServiceObject::handleMessage(const QDBusMessage &message,
         }
         if (member == QLatin1String("Disconnect")) {
             m_bluez->deviceDisconnect(path, message);
+            return true;
+        }
+        if (member == QLatin1String("Pair")) {
+            m_bluez->devicePair(path, message);
+            return true;
+        }
+        if (member == QLatin1String("CancelPairing")) {
+            m_bluez->deviceCancelPairing(path, message);
             return true;
         }
     }
@@ -150,10 +174,14 @@ bool FakeBluez::returnAsNewOwner()
         it.value().deferConnect = false;
         it.value().deferredConnectRequests.clear();
     }
-    startDiscoveryCalls = 0;
-    stopDiscoveryCalls = 0;
-    connectCalls = 0;
-    disconnectCalls = 0;
+    startDiscoveryCalls = stopDiscoveryCalls = 0;
+    connectCalls = disconnectCalls = 0;
+    registerAgentCalls = unregisterAgentCalls = 0;
+    pairCalls = cancelPairingCalls = 0;
+    removeDeviceCalls = 0;
+    m_agentOwner.clear();
+    m_agentPath.clear();
+    registeredCapability.clear();
     return takeOwnership();
 }
 
@@ -211,6 +239,7 @@ QString FakeBluez::addDevice(const QString &adapterPath, const QString &address,
     properties.insert(QStringLiteral("Alias"), alias);
     properties.insert(QStringLiteral("Name"), alias);
     properties.insert(QStringLiteral("Paired"), false);
+    properties.insert(QStringLiteral("Trusted"), false);
     properties.insert(QStringLiteral("Connected"), false);
     properties.insert(QStringLiteral("Adapter"),
                       QVariant::fromValue(QDBusObjectPath(adapterPath)));
@@ -457,20 +486,6 @@ void FakeBluez::deviceDisconnect(const QString &path, const QDBusMessage &reques
     sendReply(request);
 }
 
-void FakeBluez::propertySet(const QString &path, const QString &interfaceName,
-                            const QString &name, const QVariant &value,
-                            const QDBusMessage &request)
-{
-    if (interfaceName == QString(kAdapterInterface)
-        && name == QLatin1String("Powered") && value.canConvert<bool>()) {
-        setAdapterPowered(path, value.toBool());
-        sendReply(request);
-        return;
-    }
-    sendError(request, QStringLiteral("org.bluez.Error.Failed"),
-              QStringLiteral("Unknown property"));
-}
-
 FakeBluezObjectTree FakeBluez::objectTree() const
 {
     FakeBluezObjectTree objects;
@@ -495,6 +510,7 @@ FakeBluezObjectTree FakeBluez::objectTree() const
         properties.insert(QStringLiteral("Class"), it.value().deviceClass);
         properties.insert(QStringLiteral("Icon"), it.value().icon);
         properties.insert(QStringLiteral("Paired"), it.value().paired);
+        properties.insert(QStringLiteral("Trusted"), it.value().trusted);
         properties.insert(QStringLiteral("Connected"), it.value().connected);
         if (it.value().rssiKnown) {
             properties.insert(QStringLiteral("RSSI"), it.value().rssi);
