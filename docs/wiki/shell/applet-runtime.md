@@ -49,8 +49,9 @@ allowing their static profile label to masquerade as live behavior.
 ## Current built-ins
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
-power, launcher, task list, global menu, status tray, and clipboard packages.
-The compiled first-party registry contains nine audited entry points. The
+power, launcher, task list, global menu, status tray, clipboard, and status
+notifier packages.
+The compiled first-party registry contains ten audited entry points. The
 production QML dispatcher renders all eight hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
@@ -120,6 +121,15 @@ production QML dispatcher renders all eight hosted entry points:
   later hosting lane, so the production dispatcher does not render it yet;
   resolution to `ready` is covered by the applet-runtime resolver tests. See
   [Task list source model](task-list.md).
+- `qindaqt.applets.status-notifier` is a registered built-in with a manifest,
+  policy grants (`status-items.read`, `status-items.activate`), a compiled
+  `QindaQt.Shell.StatusNotifier` module, and a shell-private controller over
+  the injected `StatusNotifierSourceInterface` seam presenting the bounded,
+  exact-owner StatusNotifier registry. Production-shell dispatcher composition
+  lands in a follow-on lane, so the stock profile does not place the applet
+  yet and the production dispatcher does not render it; resolution to `ready`
+  is covered by the applet-runtime resolver tests. See
+  [Status notifier tray](status-tray.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token
@@ -140,7 +150,8 @@ Every install component that carries `qindaqt-shell` is independently
 runnable through the shell's relative loader layout. The current inventory is
 the default `QindaQt` component plus `AudioAppletRuntime`,
 `BluetoothAppletRuntime`, `ClipboardAppletRuntime`, `GlobalMenuAppletRuntime`,
-`LauncherAppletRuntime`, `PowerAppletRuntime`, and `TaskListAppletRuntime`.
+`LauncherAppletRuntime`, `PowerAppletRuntime`, `StatusNotifierAppletRuntime`, and
+`TaskListAppletRuntime`.
 Each carries every directly linked applet backing library plus
 `qindaqt_controls_qml` in the install library directory and
 `qindaqt_tokens_qml` in the sibling `Tokens` directory required by Controls'
@@ -160,15 +171,16 @@ be added to the data-driven `DesktopVirtual` applet-module inventory in
 evidence; it rejects a missing linked library and a missing imported-module
 `qmldir` without waiting for shell readiness to time out.
 
-Task-list and status-tray manifests remain accepted contracts. Task list now
-resolves `ready` as a registered built-in (the hosting lane that renders it in
-the production dispatcher is still separate); status tray resolves as
+Task-list and the older `system-tray` (status-tray.json) manifests remain
+accepted contracts. Task list and the newer `status-notifier` manifest resolve
+`ready` as registered built-ins (the hosting lanes that render them in the
+production dispatcher are still separate); the older `system-tray` resolves as
 `implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
 rendered by the production panel dispatcher; Clipboard joins them when its
 public clients expose consented ready truth. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
-status-tray value and ownership foundation is documented in
+status-notifier value, ownership foundation, and applet slice are documented in
 [Status notifier tray](status-tray.md).
 
 ## Startup and failure behavior

@@ -88,3 +88,5 @@ target_link_libraries(qindaqt_status_notifier_icon_tests
 qindaqt_enable_warnings(qindaqt_status_notifier_icon_tests)
 add_test(NAME qindaqt.status-notifier-icon COMMAND qindaqt_status_notifier_icon_tests)
 set_tests_properties(qindaqt.status-notifier-icon PROPERTIES LABELS "shell;status-notifier")
+
+add_subdirectory(applet)

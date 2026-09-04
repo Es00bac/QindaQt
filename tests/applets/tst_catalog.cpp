@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 10);
+    QCOMPARE(catalog.manifests().size(), 11);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -53,6 +53,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("power"),
         QStringLiteral("audio"),
         QStringLiteral("clipboard"),
+        QStringLiteral("status-notifier"),
     };
     QSet<QString> actual;
     for (const AppletManifest &manifest : catalog.manifests()) {
