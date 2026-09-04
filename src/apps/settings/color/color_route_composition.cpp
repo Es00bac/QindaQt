@@ -10,6 +10,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QLoggingCategory>
 #include <QtCore/QStandardPaths>
 
 namespace QindaQt::Apps::SettingsColor {
@@ -17,6 +18,9 @@ namespace {
 
 using QindaQt::DisplayColor::DiscoveryOrigin;
 using QindaQt::DisplayColor::DiscoveryRoot;
+
+Q_LOGGING_CATEGORY(lcColorComposition, "qindaqt.settings.color.composition",
+                   QtInfoMsg)
 
 // AGENT-CONTRACT: Production discovery roots (see the class contract). The
 // per-user ICC directory is the import destination and the only UserImported
@@ -85,8 +89,17 @@ public:
     displayClient.start();
     QString error;
     if (!settingsClient.start(&error)) {
-      qWarning("qindaqt-settings: color Settings1 client unavailable: %s",
-               qPrintable(error));
+      // AGENT-GUARD: An unreachable session bus is an expected degraded
+      // state, not a fault: the model already presents the Settings1
+      // document as unavailable through its normal availability truth, and
+      // every in-process Main.qml host row runs QT_FATAL_WARNINGS=1. Keep
+      // this at categorized info level; a qWarning/qCritical here aborts
+      // unrelated warning-fatal Settings page rows whenever no host bus is
+      // reachable (see docs/wiki/apps/color-settings.md).
+      qCInfo(lcColorComposition,
+             "color Settings1 client unavailable; the route presents "
+             "unavailable truth: %s",
+             qPrintable(error));
     }
   }
 

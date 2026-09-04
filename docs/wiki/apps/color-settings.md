@@ -125,6 +125,15 @@ store, or the discovery provider; the Settings1 client is scoped to
 `displays.colorAssignments` and has its own transport, so no request-token
 domain is shared with another route.
 
+An unreachable session bus at composition startup is an expected degraded
+state, not a fault. The composition never raises `qWarning`/`qCritical` on
+that path: the Settings1 start failure is logged at info level on the
+`qindaqt.settings.color.composition` category, and the route presents the
+assignment document as unavailable through the model's normal availability
+truth. This keeps every warning-fatal in-process `Main.qml` host row green
+with no bus reachable; eager singleton evaluation in the Settings Center
+host is therefore harmless to unrelated pages.
+
 The `SettingsAppearanceRuntime` component installs the shared Color page
 module and the executable's relative Color import path. The small
 public-client composition backend is linked once into the process and into
@@ -140,11 +149,15 @@ poisoned.
 Focused selection:
 
 ```sh
-env -u DBUS_SESSION_BUS_ADDRESS \
+DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent \
   DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   ctest --test-dir build/dev --output-on-failure --no-tests=error \
   -R '^qindaqt\.settings-color-'
 ```
+
+Every Color row pins both D-Bus addresses to nonexistent sockets in its
+CTest environment, so the selector is host-bus-free on any host regardless
+of the caller's environment.
 
 The model row covers inventory/assignment/catalog projection, state truth,
 unusable-document and stale closure, selection fencing across hotplug,
@@ -166,6 +179,9 @@ prove the source and relocated package boundaries. Settings Center
 registry/controller tests additionally cover ninth-route order.
 
 No row contacts a host session/system bus, a host display, a real ICC
-directory, Wayland, or hardware. This slice does not claim compositor or
-display profile application, colord integration, HDR/WCG runtime behavior,
-profile-body interpretation, live AT-SPI, or nested-session visuals.
+directory, Wayland, or hardware; the composition and the warning-fatal
+Settings Center host rows pin both bus addresses to nonexistent sockets in
+their CTest environment, so this claim is executable on any host. This
+slice does not claim compositor or display profile application, colord
+integration, HDR/WCG runtime behavior, profile-body interpretation, live
+AT-SPI, or nested-session visuals.

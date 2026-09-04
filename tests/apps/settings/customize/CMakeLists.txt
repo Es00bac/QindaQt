@@ -113,8 +113,11 @@ add_test(
 set_tests_properties(
     qindaqt.settings-customize-window-lifecycle PROPERTIES
     LABELS "offscreen;settings;customize;lifecycle"
+    # AGENT-GUARD: This warning-fatal row constructs Main.qml in-process; both
+    # D-Bus addresses are pinned to nonexistent sockets so the host-bus-free
+    # claim is exercised on any host, matching the navigation-page row.
     ENVIRONMENT
-        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
 add_test(

@@ -1184,11 +1184,22 @@ The public-boundary model, apply fencing, warning-fatal page, hostile
 boundary, and relocated package are selected with:
 
 ```sh
-env -u DBUS_SESSION_BUS_ADDRESS \
+DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent \
   DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   ctest --test-dir build/dev -R '^qindaqt\.settings-color-' \
   --output-on-failure --no-tests=error
 ```
+
+Every Color row pins both D-Bus addresses to nonexistent sockets in its
+CTest environment, so the selector cannot silently inherit a live host bus.
+The composition treats an unreachable session bus as an expected degraded
+state: it logs the Settings1 start failure at info level on the
+`qindaqt.settings.color.composition` category and presents unavailable
+truth through the model, so the warning-fatal in-process `Main.qml` host
+rows (`qindaqt.settings-navigation-page`,
+`qindaqt.settings-customize-window-lifecycle`, and
+`qindaqt.settings-bluetooth-window-close`) also pin both bus addresses and
+stay green with no bus reachable.
 
 The eight rows use injected fake Display1/Settings1 transports and temporary
 discovery roots only. The model row proves output/assignment/catalog

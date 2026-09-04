@@ -106,10 +106,12 @@ add_test(
 # route page aborts the row instead of passing silently. Child-process rows
 # (route construction, installed routes) deliberately tolerate absent-bus
 # qWarning diagnostics in main() and must not be registered as fatal.
+# Both D-Bus addresses are pinned to nonexistent sockets so the row proves
+# host-bus-free behavior on any host instead of inheriting a live session bus.
 set_tests_properties(
     qindaqt.settings-navigation-page PROPERTIES
     LABELS "offscreen;settings;navigation"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
 # 4. QML QuickTest runner
