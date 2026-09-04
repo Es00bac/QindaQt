@@ -45,9 +45,44 @@ bool validBattery(const Device &device)
     return device.batteryPercent <= 100;
 }
 
+bool sixDigits(const QString &value)
+{
+    if (value.size() != 6) {
+        return false;
+    }
+    return std::all_of(value.cbegin(), value.cend(), [](const QChar character) {
+        return character >= QLatin1Char('0') && character <= QLatin1Char('9');
+    });
+}
+
+bool validPin(const QString &value)
+{
+    if (value.isEmpty() || value.size() > 16
+        || !isBoundedText(value, kMaxPairingTextUtf8Bytes)) {
+        return false;
+    }
+    return std::all_of(value.cbegin(), value.cend(), [](const QChar character) {
+        return (character >= QLatin1Char('0') && character <= QLatin1Char('9'))
+            || (character >= QLatin1Char('a') && character <= QLatin1Char('z'))
+            || (character >= QLatin1Char('A') && character <= QLatin1Char('Z'));
+    });
+}
+
+bool validPromptKind(const PairingPromptKind value)
+{
+    return value >= PairingPromptKind::None
+        && value <= PairingPromptKind::AuthorizeService;
+}
+
 bool validOperationKind(const OperationKind value)
 {
-    return value >= OperationKind::SetAdapterPower && value <= OperationKind::Disconnect;
+    return value >= OperationKind::SetAdapterPower && value <= OperationKind::CancelPrompt;
+}
+
+bool isPromptOperation(const OperationKind value)
+{
+    return value >= OperationKind::ReplyConfirmation
+        && value <= OperationKind::CancelPrompt;
 }
 
 bool validOperationStatus(const OperationStatus value)
@@ -71,14 +106,18 @@ bool validHandleForEpoch(const Handle &handle, const quint64 epoch)
     return handle.epoch == epoch && handle.serial != 0;
 }
 
-// Known capability bits for the v1 schema. Any other bit in a decoded or
+// Known capability bits for the v2 schema. Any other bit in a decoded or
 // backend-provided snapshot is rejected rather than ignored.
 constexpr quint32 knownCapabilityBits()
 {
     return static_cast<quint32>(Capability::SetAdapterPower)
         | static_cast<quint32>(Capability::DiscoveryLease)
         | static_cast<quint32>(Capability::ConnectPaired)
-        | static_cast<quint32>(Capability::DisconnectPaired);
+        | static_cast<quint32>(Capability::DisconnectPaired)
+        | static_cast<quint32>(Capability::Pair)
+        | static_cast<quint32>(Capability::RemoveDevice)
+        | static_cast<quint32>(Capability::SetTrusted)
+        | static_cast<quint32>(Capability::PairingPrompt);
 }
 
 constexpr quint32 readyCapabilityBits()
@@ -94,6 +133,58 @@ bool validRssi(const Device &device)
         return device.rssi == 0;
     }
     return device.rssi >= -128 && device.rssi <= 0;
+}
+
+ValidationResult validatePrompt(const PairingPrompt &prompt, const Snapshot &snapshot,
+                                const QSet<quint64> &deviceSerials)
+{
+    if (!validPromptKind(prompt.kind)) {
+        return rejected(QStringLiteral("invalid-pairing-prompt"));
+    }
+    if (!prompt.active()) {
+        return prompt.promptId == 0 && !prompt.device.isValid() && prompt.detail.isEmpty()
+                && prompt.serviceUuid.isEmpty() && prompt.entered == 0
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    }
+    if (prompt.promptId == 0 || snapshot.availability != Availability::Ready
+        || !validHandleForEpoch(prompt.device, snapshot.epoch)
+        || !deviceSerials.contains(prompt.device.serial)
+        || !isBoundedText(prompt.detail, kMaxPairingTextUtf8Bytes)
+        || !isBoundedText(prompt.serviceUuid, kMaxPairingTextUtf8Bytes)) {
+        return rejected(QStringLiteral("invalid-pairing-prompt"));
+    }
+    switch (prompt.kind) {
+    case PairingPromptKind::ConfirmPasskey:
+        return sixDigits(prompt.detail) && prompt.serviceUuid.isEmpty()
+                && prompt.entered == 0
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    case PairingPromptKind::EnterPasskey:
+    case PairingPromptKind::EnterPin:
+        return prompt.detail.isEmpty() && prompt.serviceUuid.isEmpty()
+                && prompt.entered == 0
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    case PairingPromptKind::DisplayPasskey:
+        return sixDigits(prompt.detail) && prompt.serviceUuid.isEmpty()
+                && prompt.entered <= 6
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    case PairingPromptKind::DisplayPin:
+        return validPin(prompt.detail) && prompt.serviceUuid.isEmpty()
+                && prompt.entered == 0
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    case PairingPromptKind::AuthorizeService:
+        return prompt.detail.isEmpty() && !prompt.serviceUuid.isEmpty()
+                && prompt.entered == 0
+            ? ValidationResult{.accepted = true, .reasonCode = {}}
+            : rejected(QStringLiteral("invalid-pairing-prompt"));
+    case PairingPromptKind::None:
+        break;
+    }
+    return rejected(QStringLiteral("invalid-pairing-prompt"));
 }
 
 } // namespace
@@ -216,6 +307,7 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
 
     QSet<quint64> adapterSerials = serials;
     QSet<QString> deviceAddresses;
+    QSet<quint64> deviceSerials;
     quint64 previousDeviceSerial = 0;
     for (const Device &device : snapshot.devices) {
         if (!validHandleForEpoch(device.handle, snapshot.epoch)
@@ -252,7 +344,14 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
         }
         previousDeviceSerial = device.handle.serial;
         serials.insert(previousDeviceSerial);
+        deviceSerials.insert(previousDeviceSerial);
         deviceAddresses.insert(device.address);
+    }
+
+    const ValidationResult promptValidation =
+        validatePrompt(snapshot.pairingPrompt, snapshot, deviceSerials);
+    if (!promptValidation.accepted) {
+        return promptValidation;
     }
 
     if (snapshot.availability == Availability::Ready
@@ -293,6 +392,28 @@ ValidationResult validateOperationRequest(const OperationRequest &request)
     }
     if (!request.target.isValid()) {
         return rejected(QStringLiteral("stale-handle"));
+    }
+    if ((isPromptOperation(request.kind) && request.promptId == 0)
+        || (!isPromptOperation(request.kind) && request.promptId != 0)) {
+        return rejected(QStringLiteral("malformed-request"));
+    }
+    if (request.inputSize > 16) {
+        return rejected(QStringLiteral("malformed-request"));
+    }
+    const QString input = pairingInputString(request.input, request.inputSize);
+    if (request.kind == OperationKind::ReplyPasskey) {
+        bool ok = false;
+        const quint32 passkey = input.toUInt(&ok);
+        if (!ok || input.isEmpty() || input.size() > 6
+            || passkey > 999999 || !sixDigits(input.rightJustified(6, QLatin1Char('0')))) {
+            return rejected(QStringLiteral("malformed-request"));
+        }
+    } else if (request.kind == OperationKind::ReplyPin && !validPin(input)) {
+        return rejected(QStringLiteral("malformed-request"));
+    } else if (request.kind != OperationKind::ReplyPin
+               && request.kind != OperationKind::ReplyPasskey
+               && !input.isEmpty()) {
+        return rejected(QStringLiteral("malformed-request"));
     }
     return {.accepted = true, .reasonCode = {}};
 }

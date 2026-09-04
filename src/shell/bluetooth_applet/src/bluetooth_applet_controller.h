@@ -37,6 +37,10 @@ class BluetoothAppletController final : public QObject
     Q_PROPERTY(bool discoveryLeaseHeld READ discoveryLeaseHeld NOTIFY stateChanged)
     Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
+    Q_PROPERTY(bool pairingPromptVisible READ pairingPromptVisible NOTIFY stateChanged)
+    Q_PROPERTY(QString pairingPromptText READ pairingPromptText NOTIFY stateChanged)
+    Q_PROPERTY(bool pairingConfirmationAvailable READ pairingConfirmationAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool pairingReplyPending READ pairingReplyPending NOTIFY stateChanged)
 
 public:
     explicit BluetoothAppletController(Bluetooth::BluetoothClient *client,
@@ -59,7 +63,8 @@ public:
     [[nodiscard]] QVariantList deviceRows() const;
     [[nodiscard]] bool operationPending() const noexcept
     {
-        return requestInFlight() || m_successConvergence.has_value();
+        return requestInFlight() || pairingReplyPending()
+            || m_successConvergence.has_value();
     }
     [[nodiscard]] bool discoveryLeaseHeld() const noexcept
     {
@@ -67,11 +72,19 @@ public:
     }
     [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
     [[nodiscard]] QString feedback() const { return m_feedback; }
+    [[nodiscard]] bool pairingPromptVisible() const noexcept;
+    [[nodiscard]] QString pairingPromptText() const;
+    [[nodiscard]] bool pairingConfirmationAvailable() const noexcept;
+    [[nodiscard]] bool pairingReplyPending() const noexcept {
+        return m_promptRequestId != 0;
+    }
 
     Q_INVOKABLE void setExpanded(bool expanded);
     Q_INVOKABLE bool requestAdapterPower(const QString &adapterId, bool powered);
     Q_INVOKABLE bool requestDiscovery(const QString &adapterId, bool enabled);
     Q_INVOKABLE bool requestDeviceConnection(const QString &deviceId, bool connected);
+    Q_INVOKABLE bool confirmPrompt();
+    Q_INVOKABLE bool cancelPrompt();
     Q_INVOKABLE void clearFeedback();
 
     // Shell composition calls this before stopping the client. The release is
@@ -97,6 +110,7 @@ private:
     void reproject();
     void handleOperationCompleted(quint64 requestId,
                                   const Bluetooth::OperationResult &result);
+    void handlePromptCompleted(const Bluetooth::OperationResult &result);
     void publishFeedback(const QString &message);
     [[nodiscard]] bool presentationOwnerAvailable() const noexcept;
     [[nodiscard]] std::optional<Bluetooth::Adapter> findAdapter(
@@ -121,6 +135,9 @@ private:
     BluetoothAppletModel m_model;
     RequestState m_request;
     quint64 m_requestId = 0;
+    quint64 m_promptRequestId = 0;
+    QString m_promptOwner;
+    quint64 m_promptEpoch = 0;
     QString m_pendingOwner;
     std::optional<SuccessConvergence> m_successConvergence;
     std::optional<Bluetooth::Handle> m_discoveryLease;

@@ -60,3 +60,23 @@ desynchronize trust decisions.
   untrusted-boundary sanitization already enforced by the model.
 - Bluetooth audio nodes remain PipeWire's domain; Bluetooth1 performs no audio
   correlation.
+
+## 2026-09-03 amendment: Agent1 pairing projection
+
+The accepted authority rule is unchanged, but the deferred Agent1 outcome is
+now implemented through an additive Bluetooth2 boundary. The frozen Bluetooth1
+v1 object, structures, and five operations remain wire-compatible for existing
+clients. Bluetooth2 exposes typed Pair, CancelPairing, Remove, and SetTrusted
+intents and one bounded pairing-prompt fact with exact-ID typed replies. The
+BlueZ adapter sends every mutation
+to the current exact `org.bluez` owner, registers a `KeyboardDisplay` Agent1,
+and keeps at most one prompt until an exact-ID typed reply, cancellation,
+60-second deadline, owner loss, or loss of the final adapter. The adapter is
+unregistered on every terminal AgentManager1 path. BlueZ remains the only store for device records,
+paired/trusted state, link keys, profiles, and authorization; QindaQt publishes
+the resulting BlueZ facts and never persists prompt input or decisions.
+
+This amendment preserves the earlier Bluetooth1 v1 statement and adds the new
+surface under a new object path and interface name. It does not supersede the
+decision against QindaQt-local pairing/trust authority. Direct QtDBus remains the
+transport choice established by [ADR-0057](0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md).

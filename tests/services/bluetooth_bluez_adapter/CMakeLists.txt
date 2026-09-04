@@ -8,6 +8,7 @@ qt_add_executable(
     support/bluez_harness.h
     support/bluez_compose.h
     support/fake_bluez.cpp
+    support/fake_bluez_pairing.cpp
     support/fake_bluez.h
     support/private_bus.h
 )
@@ -32,6 +33,7 @@ qt_add_executable(
     support/bluez_harness.h
     support/bluez_compose.h
     support/fake_bluez.cpp
+    support/fake_bluez_pairing.cpp
     support/fake_bluez.h
     support/private_bus.h
 )
@@ -51,6 +53,31 @@ add_test(
 set_tests_properties(
     qindaqt.bluetooth-bluez-operations
     PROPERTIES LABELS "service;bluetooth;bluez;dbus" TIMEOUT 60 RUN_SERIAL TRUE
+)
+
+qt_add_executable(
+    qindaqt_bluez_pairing_tests
+    tst_bluez_pairing.cpp
+    support/bluez_harness.h
+    support/bluez_compose.h
+    support/fake_bluez.cpp
+    support/fake_bluez_pairing.cpp
+    support/fake_bluez.h
+    support/private_bus.h
+)
+target_compile_definitions(
+    qindaqt_bluez_pairing_tests
+    PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}"
+)
+target_link_libraries(
+    qindaqt_bluez_pairing_tests
+    PRIVATE QindaQt::BluezAdapter QindaQt::BluetoothModel Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_bluez_pairing_tests)
+add_test(NAME qindaqt.bluetooth-bluez-pairing COMMAND qindaqt_bluez_pairing_tests)
+set_tests_properties(
+    qindaqt.bluetooth-bluez-pairing
+    PROPERTIES LABELS "service;bluetooth;bluez;dbus;pairing" TIMEOUT 60 RUN_SERIAL TRUE
 )
 
 qt_add_executable(

@@ -18,6 +18,22 @@ Item {
     implicitWidth: vertical ? 40 : Math.max(52, summary.implicitWidth + 12)
     implicitHeight: vertical ? 40 : 28
 
+    function closeDetailsFromEscape() {
+        if (root.access !== null && root.access.pairingPromptVisible
+                && !root.access.pairingReplyPending)
+            root.access.cancelPrompt()
+        details.close()
+    }
+
+    Shortcut {
+        // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
+        // an integer key code and silently fails in the offscreen Quick path.
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: details.opened
+        onActivated: root.closeDetailsFromEscape()
+    }
+
     ToolButton {
         id: summary
         objectName: "bluetoothAppletSummary"
@@ -58,7 +74,7 @@ Item {
         padding: 12
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnPressOutside
 
         onOpened: {
             if (root.access !== null)
@@ -83,7 +99,6 @@ Item {
                 id: contentColumn
                 width: details.availableWidth
                 spacing: 8
-
                 Label {
                     objectName: "bluetoothAppletHeading"
                     Layout.fillWidth: true
@@ -92,7 +107,6 @@ Item {
                     font.bold: true
                     Accessible.role: Accessible.Heading
                 }
-
                 Label {
                     objectName: "bluetoothAppletLoading"
                     Layout.fillWidth: true
@@ -102,7 +116,6 @@ Item {
                     color: root.colors.textMuted ?? "#a9afa9"
                     wrapMode: Text.Wrap
                 }
-
                 Label {
                     objectName: "bluetoothAppletDiagnostic"
                     Layout.fillWidth: true
@@ -112,7 +125,12 @@ Item {
                     color: root.colors.textMuted ?? "#a9afa9"
                     wrapMode: Text.Wrap
                 }
-
+                BluetoothPairingPrompt {
+                    objectName: "bluetoothAppletPairingPrompt"
+                    access: root.access
+                    colors: root.colors
+                    theme: root.theme
+                }
                 Label {
                     Layout.fillWidth: true
                     visible: root.access !== null
@@ -121,7 +139,6 @@ Item {
                     color: root.colors.text ?? "white"
                     font.bold: true
                 }
-
                 Repeater {
                     model: root.access !== null ? root.access.adapterRows : []
 

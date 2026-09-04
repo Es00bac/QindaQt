@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Stages a clean install of the whole build into a test-owned prefix,
+# Stages a clean Bluetooth component install into a test-owned prefix,
 # verifies the Bluetooth1 deployment payload (executable, D-Bus activation
 # descriptor, systemd user unit, introspection XML, protocol archive), and
 # builds plus runs a linked installed consumer against the staged public
@@ -32,6 +32,7 @@ file(REMOVE_RECURSE "${install_prefix}")
 
 set(install_command
     "${QINDAQT_CMAKE}" --install "${build_directory}" --prefix "${install_prefix}"
+    --component QindaQtBluetoothB1
 )
 if(DEFINED QINDAQT_CONFIGURATION AND NOT QINDAQT_CONFIGURATION STREQUAL "")
     list(APPEND install_command --config "${QINDAQT_CONFIGURATION}")
@@ -54,11 +55,13 @@ set(staged_unit
     "${install_prefix}/${QINDAQT_INSTALL_SYSTEMDUSERUNITDIR}/qindaqt-bluetooth-service.service")
 set(staged_xml
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/dbus-1/interfaces/org.qindaqt.Bluetooth1.xml")
+set(staged_current_xml
+    "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/dbus-1/interfaces/org.qindaqt.Bluetooth2.xml")
 set(staged_protocol
     "${install_prefix}/${QINDAQT_INSTALL_LIBDIR}/${QINDAQT_BLUETOOTH_PROTOCOL_LIBRARY_NAME}")
 
 foreach(staged IN ITEMS staged_executable staged_activation staged_unit staged_xml
-                        staged_protocol)
+                        staged_current_xml staged_protocol)
     if(NOT EXISTS "${${staged}}")
         message(FATAL_ERROR "Staged Bluetooth1 artifact missing: ${${staged}}")
     endif()

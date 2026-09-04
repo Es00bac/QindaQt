@@ -139,6 +139,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Network1 version 1](reference/network1-v1.md) documents the fixed resident
   D-Bus methods plus secret-free values, identity, lineage, scan leases,
   canonical codecs, intent admission, and error behavior.
+- [Bluetooth1 protocol version 1](reference/bluetooth1-v1.md) fixes the
+  backward-compatible inventory/control ABI; the additive [Bluetooth2
+  protocol version 2](reference/bluetooth2-v2.md) adds BlueZ-owned
+  pairing/trust and exact prompt-ID replies without changing v1 clients.
 - [QindaQt Text Editor](apps/text-editor.md) documents the first-party local
   UTF-8 document, atomic-save, external-change, menu, theme, and accessibility
   boundaries.

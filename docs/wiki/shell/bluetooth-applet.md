@@ -1,28 +1,29 @@
 # Bluetooth applet
 
 `src/shell/bluetooth_applet` owns the production panel Bluetooth applet. A pure
-target projects bounded Bluetooth1 values and evaluates operation admission; a
+target projects bounded current Bluetooth2 values and evaluates operation admission; a
 separately linked shell-private controller borrows the public
 `BluetoothClient` and exposes only owned presentation values to compiled QML.
-Neither target imports the Bluetooth service/model, BlueZ, BluezQt, Agent1, or
-host-radio APIs.
+Neither target imports the Bluetooth service/model, BlueZ, BluezQt, or
+host-radio APIs; prompt truth and replies cross only the Bluetooth2 client.
 
 Current maturity: **qualified production built-in composition (focused
-Debug/Release executable and package evidence)**. The B1 slice includes the audited
+Debug/Release executable, private-bus, and package evidence)**. The B1 slice includes the audited
 manifest/registry/policy path, stock-profile placement, production shell
 composition, keyboard-accessible compiled QML, static mutation gates, and a
 relocated installed-package test. Fresh strict GCC 15.3 Debug and Release roots
 each built the production shell and focused targets, passed the eight-row B1
 selector, and passed six adjacent public-client, manifest, catalog, resolver,
-notification-center applet offscreen, and shell-catalog rows. Bluetooth B0 still composes its
-deterministic empty backend, so a normal activated service truthfully makes the
-applet unavailable until the separately reviewed BluezQt runtime adapter
-lands. This consumer does not advance platform hardware maturity by itself.
+notification-center applet offscreen, and shell-catalog rows. The activated
+service now composes the direct-QtDBus production BlueZ adapter by default;
+tests qualify it only against an injected fake BlueZ on a private bus. This
+consumer does not advance platform hardware maturity by itself.
 
-The service authority and pairing exclusion remain those of
-[Bluetooth1](../architecture/bluetooth-service.md) and
-[ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). B1 adds no
-new cross-cutting decision.
+The service authority and pairing ownership remain those of
+[Bluetooth service](../architecture/bluetooth-service.md) and
+[ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md). The applet
+does not initiate pairing or accept PIN/passkey entry, but presents the one
+current prompt and may confirm or cancel it.
 
 ## Exact-owner projection
 
@@ -39,7 +40,7 @@ epoch/revision to zero. Old rows never survive as actionable last-known-good
 state. The pure projector validates direct test inputs again, even though the
 public client already validates snapshots before publication.
 
-Bluetooth1's bounds remain the applet bounds: at most eight adapters and 256
+The protocol's bounds remain the applet bounds: at most eight adapters and 256
 devices. Rows sort deterministically by opaque handle serial. QML receives
 opaque `adapter-<epoch>-<serial>` and `device-<epoch>-<serial>` row IDs, not
 Bluetooth addresses, object paths, D-Bus owners, or platform handles. A
@@ -68,15 +69,21 @@ QML.
 | Stop discovery | `DiscoveryLease` and the exact applet-owned adapter lease |
 | Connect | `ConnectPaired`, current paired/disconnected device, and powered current adapter |
 | Disconnect | `DisconnectPaired` and current connected device |
+| Confirm prompt | `PairingPrompt`, current confirmation/authorization prompt, and no prompt reply pending |
+| Cancel prompt | `PairingPrompt`, any current prompt, and no prompt reply pending |
 
-The applet exposes no pair, trust, untrust, key, credential, authorization, or
-audio-routing action. An unpaired device may be listed with the explicit status
-that pairing is unavailable here, but it has no mutation control.
+The applet exposes no pair initiation, trust, untrust, removal, key, PIN or
+passkey entry, or audio-routing action. An unpaired device remains
+inventory-only. A confirmation or authorization prompt has Confirm and Cancel;
+entry and display prompts truthfully direct the user to Settings and retain a
+Cancel action.
 
-Only one operation is live at a time. Each request pins the unique owner,
-operation kind, target handle, initiating epoch, and initiating revision before
-one public-client dispatch. The matching request ID and an exact initiating
-lineage are required for completion; success additionally requires the same
+Only one ordinary operation and one prompt reply may be live at a time. Each request pins the unique owner,
+operation kind, target handle, initiating epoch, initiating revision, and, for
+a prompt reply, the exact nonzero prompt ID before one public-client dispatch.
+The matching request ID and an exact initiating lineage are required for
+completion; a stale prompt reply is rejected rather than applied to a later
+prompt. Success additionally requires the same
 epoch and an observed revision at least as new as the initiating revision.
 Malformed, stale, timed-out, or owner-interrupted results become typed user
 uncertainty. Rejection, unsupported, busy, and failed results remain distinct
@@ -135,11 +142,14 @@ and enum is the negative control for the shared comparison path.
 
 ## Compiled interaction
 
-`BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal,
-Escape-closeable details popup. Adapter power/discovery and paired-device
+`BluetoothApplet.qml` renders a tab-focusable summary button and a non-modal
+details popup. Adapter power/discovery and paired-device
 connect/disconnect are ordinary keyboard-operable buttons with complete
-accessible names and descriptions. Failure/uncertainty feedback is exposed as
-an accessible alert. Horizontal and vertical panels use the same controller;
+accessible names and descriptions. An inline prompt has complete accessible
+text and keyboard-operable Confirm/Cancel actions; an application-window Escape
+shortcut cancels the exact active prompt, when its reply lane is free, before
+closing the popup. Failure/uncertainty feedback is exposed as an
+accessible alert. Horizontal and vertical panels use the same controller;
 the vertical summary uses a compact text label without changing behavior.
 
 The preview injects no live Bluetooth facade and therefore renders a disabled
@@ -180,8 +190,8 @@ ctest --test-dir build/dev \
 | --- | --- |
 | `qindaqt.bluetooth-applet-presentation` | Owner/read failure, bounded deterministic non-address rows, fallbacks, complete accessibility, and action projection |
 | `qindaqt.bluetooth-applet-request-state` | All five B0 operations, capability/state admission, exact kind/lineage completion, terminal failure/uncertainty, and no replay |
-| `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, serialization, exact-owner replacement, typed feedback, and discovery close teardown |
-| `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons, real controller dispatch, and deferred close release |
+| `qindaqt.bluetooth-applet-controller` | Public-client projection, grant separation, ordinary/prompt lane fencing, exact-owner replacement, typed feedback, prompt confirmation/cancellation, and discovery close teardown |
+| `qindaqt.bluetooth-applet-offscreen` | Compiled module loading, Space/Escape keyboard paths, accessible buttons and prompt, real controller dispatch, and deferred close release |
 | `qindaqt.bluetooth-applet-surface` | Ordered post-moc property/method/enumerator contract, non-vacuous expanded-surface rejection, and offscreen QML-visible name equality |
 | `qindaqt.bluetooth-applet-boundary` | Exact five-file/header allowlist plus independent public-client, persistence, filesystem, and adjacent-network poisons |
 | `qindaqt.bluetooth-applet-runtime-boundary` | Exact seven-file/header and forbidden-symbol policy; eleven manifest/registry/profile/QML/composition presence tokens; five dependency poisons plus a profile-and-QML composition-removal poison |
@@ -200,9 +210,9 @@ cmake -DSOURCE_ROOT="$PWD" \
 
 ## Non-claims
 
-This slice proves no BluezQt adapter, host-radio discovery, hotplug,
-suspend/resume, physical device connection, Agent1 pairing/prompt UX, trust or
-key management, Bluetooth audio correlation/routing, multi-user policy,
+This slice proves no host-radio discovery, hotplug, suspend/resume, physical
+device pairing interoperability, PIN/passkey entry, trust or key management,
+Bluetooth audio correlation/routing, multi-user policy,
 AT-SPI bridge behavior, memory/CPU budget, or nested-compositor interaction.
 The installed test proves a relocatable composition boundary, not live radio
 behavior. Those remain platform, Agent1, audio, accessibility, hardware, and

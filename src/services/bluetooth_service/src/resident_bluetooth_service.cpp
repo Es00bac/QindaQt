@@ -3,6 +3,7 @@
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
 
 #include "bluetooth_service_object_p.h"
+#include "bluetooth1_service_object_p.h"
 
 #include <qindaqt/services/bluetooth_protocol/bluetooth_limits.h>
 #include <qindaqt/services/bluetooth_protocol/bluetooth_dbus.h>
@@ -27,6 +28,8 @@ ResidentBluetoothService::ResidentBluetoothService(std::unique_ptr<AdapterBacken
     Q_ASSERT(m_backend != nullptr);
     registerDBusTypes();
     m_model = std::make_unique<BluetoothModel>(m_backend.get(), epochSeed);
+    m_bluetooth1Object =
+        std::make_unique<Bluetooth1ServiceObject>(m_model.get(), m_connection);
     m_serviceObject =
         std::make_unique<BluetoothServiceObject>(m_model.get(), m_connection);
 }
@@ -63,9 +66,17 @@ ServiceStartStatus ResidentBluetoothService::start()
     }
 
     const QString objectPath = QString::fromLatin1(kObjectPath);
-    if (!m_connection.registerObject(objectPath, m_serviceObject.get(),
+    if (!m_connection.registerObject(objectPath, m_bluetooth1Object.get(),
                                      QDBusConnection::ExportScriptableSlots
                                          | QDBusConnection::ExportScriptableSignals)) {
+        return ServiceStartStatus::ObjectRegistrationFailed;
+    }
+    m_bluetooth1ObjectRegistered = true;
+    if (!m_connection.registerObject(QString::fromLatin1(kCurrentObjectPath),
+                                     m_serviceObject.get(),
+                                     QDBusConnection::ExportScriptableSlots
+                                         | QDBusConnection::ExportScriptableSignals)) {
+        stop();
         return ServiceStartStatus::ObjectRegistrationFailed;
     }
     m_objectRegistered = true;
@@ -94,8 +105,12 @@ void ResidentBluetoothService::stop()
         m_nameRegistered = false;
     }
     if (m_objectRegistered) {
-        m_connection.unregisterObject(QString::fromLatin1(kObjectPath));
+        m_connection.unregisterObject(QString::fromLatin1(kCurrentObjectPath));
         m_objectRegistered = false;
+    }
+    if (m_bluetooth1ObjectRegistered) {
+        m_connection.unregisterObject(QString::fromLatin1(kObjectPath));
+        m_bluetooth1ObjectRegistered = false;
     }
     if (m_ownerWatchInstalled) {
         m_connection.disconnect(
@@ -108,7 +123,7 @@ void ResidentBluetoothService::stop()
 
 bool ResidentBluetoothService::isRunning() const noexcept
 {
-    return m_nameRegistered && m_objectRegistered;
+    return m_nameRegistered && m_objectRegistered && m_bluetooth1ObjectRegistered;
 }
 
 BluetoothModel *ResidentBluetoothService::model() noexcept

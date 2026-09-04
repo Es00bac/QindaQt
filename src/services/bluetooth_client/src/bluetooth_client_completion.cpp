@@ -45,4 +45,30 @@ void BluetoothClient::cancelQueuedOperationCompletions()
     m_queuedOperationCompletions.clear();
 }
 
+void BluetoothClient::completeUncertain(const QString &reasonCode)
+{
+    const auto complete = [this, &reasonCode](std::optional<PendingOperation> &lane,
+                                              QTimer &timer) {
+        if (!lane.has_value()) return;
+        const PendingOperation pending = *lane;
+        lane.reset();
+        timer.stop();
+        queueOperationCompletion(
+            pending.requestId,
+            {.kind = pending.request.kind,
+             .status = OperationStatus::Uncertain,
+             .initiatingEpoch = pending.epoch,
+             .initiatingRevision = pending.revision,
+             .observedEpoch = m_snapshot.has_value() ? m_snapshot->epoch
+                                                      : pending.epoch,
+             .observedRevision = m_snapshot.has_value() ? m_snapshot->revision
+                                                         : pending.revision,
+             .reasonCode = reasonCode,
+             .diagnostic = {},
+             .wireValid = true});
+    };
+    complete(m_operation, m_operationTimer);
+    complete(m_promptOperation, m_promptOperationTimer);
+}
+
 } // namespace QindaQt::Bluetooth

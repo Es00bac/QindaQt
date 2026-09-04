@@ -270,6 +270,22 @@ void BluezObjectStore::applyConnected(const QString &devicePath, const bool conn
     }
 }
 
+void BluezObjectStore::applyTrusted(const QString &devicePath, const bool trusted)
+{
+    const auto it = m_devices.find(devicePath);
+    if (it != m_devices.end()) {
+        it.value().trusted = trusted;
+    }
+}
+
+void BluezObjectStore::applyPaired(const QString &devicePath, const bool paired)
+{
+    const auto it = m_devices.find(devicePath);
+    if (it != m_devices.end()) {
+        it.value().paired = paired;
+    }
+}
+
 void BluezObjectStore::upsertAdapter(const QString &path,
                                      const QVariantMap &properties)
 {
@@ -337,6 +353,11 @@ void BluezObjectStore::upsertDevice(const QString &path,
     if (properties.contains(QStringLiteral("Paired"))) {
         const QVariant value = properties.value(QStringLiteral("Paired"));
         record.paired = isExactType(value, QMetaType::fromType<bool>())
+            && value.toBool();
+    }
+    if (properties.contains(QStringLiteral("Trusted"))) {
+        const QVariant value = properties.value(QStringLiteral("Trusted"));
+        record.trusted = isExactType(value, QMetaType::fromType<bool>())
             && value.toBool();
     }
     if (properties.contains(QStringLiteral("Connected"))) {
@@ -438,6 +459,7 @@ QList<BackendDevice> BluezObjectStore::projectDevices(
             record.connected && record.paired && adapter->powered;
         device.rssiKnown = record.rssiKnown;
         device.rssi = record.rssiKnown ? record.rssi : 0;
+        device.trusted = record.trusted;
         projected.push_back(device);
     }
     std::stable_sort(projected.begin(), projected.end(),

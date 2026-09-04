@@ -38,8 +38,7 @@ BluetoothAppletController::BluetoothAppletController(
     , m_bluetoothReadGranted(bluetoothReadGranted)
     , m_bluetoothControlGranted(bluetoothReadGranted && bluetoothControlGranted)
 {
-    Q_ASSERT(m_client != nullptr);
-    Q_ASSERT(m_client->thread() == thread());
+    Q_ASSERT(m_client != nullptr); Q_ASSERT(m_client->thread() == thread());
     connect(m_client, &Bluetooth::BluetoothClient::stateChanged,
             this, &BluetoothAppletController::reproject);
     connect(m_client, &Bluetooth::BluetoothClient::snapshotChanged,
@@ -152,9 +151,7 @@ std::optional<Bluetooth::Device> BluetoothAppletController::findDevice(
 
 void BluetoothAppletController::publishFeedback(const QString &message)
 {
-    if (message == m_feedback) {
-        return;
-    }
+    if (message == m_feedback) return;
     m_feedback = message;
     Q_EMIT feedbackChanged();
 }
@@ -189,6 +186,8 @@ bool BluetoothAppletController::dispatch(const RequestState &request)
         break;
     case Bluetooth::OperationKind::Disconnect:
         requestId = m_client->disconnectDevice(request.operation.target);
+        break;
+    default:
         break;
     }
     if (requestId == 0) {
@@ -329,6 +328,10 @@ void BluetoothAppletController::handleOperationCompleted(
     const quint64 requestId,
     const Bluetooth::OperationResult &result)
 {
+    if (requestId == m_promptRequestId && m_promptRequestId != 0) {
+        handlePromptCompleted(result);
+        return;
+    }
     if (requestId != m_requestId || !requestInFlight()) {
         return;
     }
@@ -458,6 +461,15 @@ void BluetoothAppletController::retireLeaseIfAuthorityEnded()
 
 void BluetoothAppletController::reproject()
 {
+    if (pairingReplyPending()
+        && (!presentationOwnerAvailable()
+            || m_client->owner() != m_promptOwner
+            || m_client->snapshot().epoch != m_promptEpoch)) {
+        m_promptRequestId = 0;
+        m_promptOwner.clear();
+        m_promptEpoch = 0;
+        publishFeedback(tr("Bluetooth authority changed. The pairing response was not replayed."));
+    }
     observeSuccessConvergence();
     retireLeaseIfAuthorityEnded();
     if (requestInFlight()) {

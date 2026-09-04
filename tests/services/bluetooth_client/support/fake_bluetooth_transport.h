@@ -92,7 +92,9 @@ inline Bluetooth::Snapshot bluetoothClientSnapshot(const quint64 epoch = 61,
     snapshot.revision = revision;
     snapshot.availability = Availability::Ready;
     snapshot.capabilities = Capability::SetAdapterPower | Capability::DiscoveryLease
-        | Capability::ConnectPaired | Capability::DisconnectPaired;
+        | Capability::ConnectPaired | Capability::DisconnectPaired
+        | Capability::Pair | Capability::RemoveDevice | Capability::SetTrusted
+        | Capability::PairingPrompt;
     snapshot.reasonCode = QStringLiteral("ready");
     snapshot.adapters = {{.handle = {.epoch = epoch, .serial = 400},
                           .address = QStringLiteral("AA:BB:CC:00:11:22"),

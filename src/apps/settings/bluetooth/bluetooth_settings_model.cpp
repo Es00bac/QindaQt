@@ -68,8 +68,15 @@ bool BluetoothSettingsModel::unavailable() const noexcept {
 }
 
 bool BluetoothSettingsModel::busy() const noexcept {
-  return m_pending.has_value() || m_convergence.has_value()
+  return m_pending.has_value() || m_promptPending.has_value()
+      || m_convergence.has_value()
       || m_client.operationPending();
+}
+
+bool BluetoothSettingsModel::pairingSupported() const noexcept {
+  return exactSnapshotReady()
+      && m_client.snapshot().capabilities.testFlag(Capability::Pair)
+      && m_client.snapshot().capabilities.testFlag(Capability::PairingPrompt);
 }
 
 bool BluetoothSettingsModel::departureReleasePending() const noexcept {
@@ -195,6 +202,39 @@ QString BluetoothSettingsModel::admissionReason(
     if (device == nullptr) return QStringLiteral("stale-handle");
     return device->connected ? QString{} : QStringLiteral("not-connected");
   }
+  case OperationKind::Pair: {
+    const Device *device = findSnapshotDevice(snapshot, request.target);
+    const Adapter *adapter = device == nullptr
+        ? nullptr : findSnapshotAdapter(snapshot, device->adapterHandle);
+    if (!snapshot.capabilities.testFlag(Capability::Pair))
+      return QStringLiteral("unsupported");
+    if (device == nullptr || adapter == nullptr)
+      return QStringLiteral("stale-handle");
+    if (device->paired) return QStringLiteral("already-paired");
+    return adapter->powered ? QString{} : QStringLiteral("adapter-off");
+  }
+  case OperationKind::RemoveDevice: {
+    const Device *device = findSnapshotDevice(snapshot, request.target);
+    if (!snapshot.capabilities.testFlag(Capability::RemoveDevice))
+      return QStringLiteral("unsupported");
+    if (device == nullptr) return QStringLiteral("stale-handle");
+    return device->paired ? QString{} : QStringLiteral("not-paired");
+  }
+  case OperationKind::SetTrusted: {
+    const Device *device = findSnapshotDevice(snapshot, request.target);
+    if (!snapshot.capabilities.testFlag(Capability::SetTrusted))
+      return QStringLiteral("unsupported");
+    if (device == nullptr) return QStringLiteral("stale-handle");
+    if (!device->paired) return QStringLiteral("not-paired");
+    return device->trusted == request.trusted
+        ? QStringLiteral("already-set") : QString{};
+  }
+  case OperationKind::CancelPairing:
+  case OperationKind::ReplyConfirmation:
+  case OperationKind::ReplyPasskey:
+  case OperationKind::ReplyPin:
+  case OperationKind::CancelPrompt:
+    return QStringLiteral("malformed-request");
   }
   return QStringLiteral("malformed-request");
 }
@@ -238,43 +278,6 @@ QVariantList BluetoothSettingsModel::adapters() const {
   return rows;
 }
 
-QVariantList BluetoothSettingsModel::devices() const {
-  QVariantList rows;
-  if (!exactSnapshotReady()) return rows;
-  const Snapshot snapshot = m_client.snapshot();
-  rows.reserve(snapshot.devices.size());
-  for (const Device &device : snapshot.devices) {
-    const QString kind = Projection::deviceClassLabel(device.deviceClass);
-    const QString label = Projection::boundedNonAddressName(device.name, kind);
-    const OperationRequest connect{OperationKind::Connect, device.handle, false};
-    const OperationRequest disconnect{OperationKind::Disconnect,
-                                      device.handle, false};
-    QString state = device.paired ? tr("paired") : tr("not paired");
-    state += device.connected ? tr(", connected") : tr(", disconnected");
-    if (device.rssiKnown) state += tr(", signal %1 dBm").arg(device.rssi);
-    rows.append(QVariantMap{
-        {QStringLiteral("id"), Projection::deviceRowId(device.handle)},
-        {QStringLiteral("adapterId"),
-         Projection::adapterRowId(device.adapterHandle)},
-        {QStringLiteral("label"), label},
-        {QStringLiteral("classLabel"), kind},
-        {QStringLiteral("iconName"),
-         Projection::deviceIconName(device.deviceClass)},
-        {QStringLiteral("iconText"),
-         Projection::deviceIconText(device.deviceClass)},
-        {QStringLiteral("paired"), device.paired},
-        {QStringLiteral("connected"), device.connected},
-        {QStringLiteral("rssiKnown"), device.rssiKnown},
-        {QStringLiteral("rssi"), device.rssi},
-        {QStringLiteral("connectAvailable"), admissionReason(connect).isEmpty()},
-        {QStringLiteral("disconnectAvailable"),
-         admissionReason(disconnect).isEmpty()},
-        {QStringLiteral("accessibleDescription"), state},
-    });
-  }
-  return rows;
-}
-
 bool BluetoothSettingsModel::dispatch(const OperationRequest &request) {
   const QString reason = admissionReason(request);
   if (!reason.isEmpty()) {
@@ -294,6 +297,18 @@ bool BluetoothSettingsModel::dispatch(const OperationRequest &request) {
     requestId = m_client.connectDevice(request.target); break;
   case OperationKind::Disconnect:
     requestId = m_client.disconnectDevice(request.target); break;
+  case OperationKind::Pair:
+    requestId = m_client.pairDevice(request.target); break;
+  case OperationKind::RemoveDevice:
+    requestId = m_client.removeDevice(request.target); break;
+  case OperationKind::SetTrusted:
+    requestId = m_client.setTrusted(request.target, request.trusted); break;
+  case OperationKind::CancelPairing:
+  case OperationKind::ReplyConfirmation:
+  case OperationKind::ReplyPasskey:
+  case OperationKind::ReplyPin:
+  case OperationKind::CancelPrompt:
+    break;
   }
   if (requestId == 0) {
     reject(QStringLiteral("request-id-exhausted"));
@@ -350,6 +365,25 @@ void BluetoothSettingsModel::setRouteActive(const bool active) {
 
 void BluetoothSettingsModel::handleOperationCompleted(
     const quint64 requestId, const OperationResult &result) {
+  if (m_promptPending && m_promptPending->requestId == requestId) {
+    const PendingOperation pending = *m_promptPending;
+    m_promptPending.reset();
+    const bool exact = m_client.owner() == pending.owner && result.wireValid
+        && validateOperationResult(result).accepted
+        && result.kind == pending.request.kind
+        && result.initiatingEpoch == pending.epoch
+        && result.initiatingRevision == pending.revision;
+    if (!exact || result.status == OperationStatus::Uncertain) {
+      m_errorText = tr("The pairing response is uncertain. Check the current prompt before trying again.");
+    } else if (result.status != OperationStatus::Succeeded) {
+      m_errorText = failureText(result);
+    } else {
+      m_errorText.clear();
+      m_operationStatusText = tr("Pairing response sent.");
+    }
+    synchronizeAuthority();
+    return;
+  }
   if (!m_pending || m_pending->requestId != requestId) return;
   const PendingOperation pending = *m_pending;
   m_pending.reset();
@@ -422,6 +456,14 @@ void BluetoothSettingsModel::retireLeaseFromCurrentTruth() {
 }
 
 void BluetoothSettingsModel::synchronizeAuthority() {
+  if (m_promptPending
+      && (m_client.owner() != m_promptPending->owner
+          || (m_client.hasSnapshot()
+              && m_client.snapshot().epoch != m_promptPending->epoch))) {
+    m_promptPending.reset();
+    m_operationStatusText.clear();
+    m_errorText = tr("Bluetooth authority changed. The pairing response was not replayed.");
+  }
   if (m_pending && (m_client.owner() != m_pending->owner
                     || (m_client.hasSnapshot()
                         && m_client.snapshot().epoch != m_pending->epoch))) {

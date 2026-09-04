@@ -41,6 +41,16 @@ struct BackendDevice {
     qint16 rssi = 0;
     bool batteryKnown = false;
     quint8 batteryPercent = 0;
+    bool trusted = false;
+};
+
+struct BackendPairingPrompt {
+    quint64 promptId = 0;
+    PairingPromptKind kind = PairingPromptKind::None;
+    QString deviceAddress;
+    QString detail;
+    QString serviceUuid;
+    quint16 entered = 0;
 };
 
 // AGENT-CONTRACT: A discovery lease is one caller-scoped reference-counted
@@ -68,6 +78,7 @@ struct BackendInventory {
     QList<BackendAdapter> adapters;
     QList<BackendDevice> devices;
     QList<BackendLease> leases;
+    BackendPairingPrompt pairingPrompt;
 };
 
 // AGENT-CONTRACT: The model resolves public handles to canonical addresses
@@ -79,6 +90,11 @@ struct BackendRequest {
     QString adapterAddress;
     QString deviceAddress;
     bool powered = false;
+    bool accepted = false;
+    bool trusted = false;
+    quint64 promptId = 0;
+    PairingInput input{};
+    quint8 inputSize = 0;
     QString callerId;
 };
 
@@ -89,9 +105,8 @@ struct BackendRequest {
 // than ordered values. The backend is an untrusted platform boundary: it must
 // never fabricate inventory that the platform does not report, and BlueZ (not
 // Bluetooth1) owns pairing, trust, keys, device records, profiles, and
-// authorization. A future BluezQt adapter implements this port; the
-// deterministic adapter stands in until that runtime lane opens. See
-// ADR-0037.
+// authorization. The production direct-QtDBus adapter and deterministic test
+// adapter both implement this same port. See ADR-0037 and ADR-0057.
 class AdapterBackend : public QObject
 {
     Q_OBJECT

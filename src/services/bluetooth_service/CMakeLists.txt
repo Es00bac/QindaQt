@@ -10,6 +10,8 @@ target_sources(
     PRIVATE
         src/bluetooth_service_object.cpp
         src/bluetooth_service_object_p.h
+        src/bluetooth1_service_object.cpp
+        src/bluetooth1_service_object_p.h
         src/resident_bluetooth_service.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -60,16 +62,23 @@ configure_file(
     @ONLY
 )
 
-install(TARGETS qindaqt-bluetooth-service RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(
+    TARGETS qindaqt-bluetooth-service
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT QindaQtBluetoothB1
+)
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Bluetooth1.service"
     DESTINATION "${KDE_INSTALL_DBUSSERVICEDIR}"
+    COMPONENT QindaQtBluetoothB1
 )
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-bluetooth-service.service"
     DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
+    COMPONENT QindaQtBluetoothB1
 )
 install(
-    FILES data/org.qindaqt.Bluetooth1.xml
+    FILES data/org.qindaqt.Bluetooth1.xml data/org.qindaqt.Bluetooth2.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
+    COMPONENT QindaQtBluetoothB1
 )

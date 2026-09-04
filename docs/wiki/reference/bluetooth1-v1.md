@@ -10,6 +10,9 @@ test in `tests/services/bluetooth_protocol/` must all agree byte-for-byte.
 The authority boundary — BlueZ owns pairing, trust, keys, device records,
 profiles, and authorization — is recorded in
 [ADR-0037](../adr/0037-keep-pairing-and-trust-authority-in-bluez.md).
+Pairing and trust were added without changing this ABI through the separate
+[Bluetooth2 protocol](bluetooth2-v2.md). Bluetooth1 remains available at its
+original path and interface for existing clients.
 
 ## Service identity
 

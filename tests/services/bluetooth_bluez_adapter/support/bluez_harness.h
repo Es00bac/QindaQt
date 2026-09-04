@@ -24,7 +24,8 @@ namespace QindaQt::Tests
 class BluezHarness final
 {
 public:
-    explicit BluezHarness(const quint64 epochSeed)
+    explicit BluezHarness(const quint64 epochSeed,
+                          const int pairingPromptTimeoutMs = 60'000)
     {
         m_ready = bus.start();
         if (!m_ready) {
@@ -38,7 +39,8 @@ public:
         if (!m_ready) {
             return;
         }
-        backend = std::make_unique<Bluetooth::BluezAdapterBackend>(client);
+        backend = std::make_unique<Bluetooth::BluezAdapterBackend>(
+            client, pairingPromptTimeoutMs);
         model = std::make_unique<Bluetooth::BluetoothModel>(backend.get(), epochSeed);
     }
 

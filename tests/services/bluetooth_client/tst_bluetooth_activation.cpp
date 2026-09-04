@@ -149,7 +149,8 @@ public:
         return servicePid;
     }
 
-    QTemporaryDir root{QStringLiteral("/tmp/qindaqt-bluetooth-activation-XXXXXX")};
+    QTemporaryDir root{QDir(QCoreApplication::applicationDirPath())
+                           .filePath(QStringLiteral("activation-runtime-XXXXXX"))};
     QProcess daemon;
     QString address;
     QString connectionName;
