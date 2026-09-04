@@ -8,7 +8,7 @@ status: handoff
 feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-04T10:44:07-06:00
+updated_at: 2026-09-04T13:57:49-06:00
 ---
 
 # Claude Program Manager
@@ -61,3 +61,4 @@ updated_at: 2026-09-04T10:44:07-06:00
 - 2026-09-03T12:30:19-06:00 — Integrated clipboard hosting `fef9222` (`82e256d`, reconciliation `dfe08e4`) and Wi-Fi join `beef29e` (`c269830`); verified on the system-KWin roots: 66/66 focused Debug/Release, static gates, broad 579/579, nested boot.
 - 2026-09-03T12:47:31-06:00 — Integrated session actions `23d99f5` at `70763c7`; verified 61/61 focused rows Debug/Release, static gates, broad 582/582 on the system-KWin roots.
 - 2026-09-04T10:44:07-06:00 — Resumed as Program Manager (fresh windows). Funded one repair + one recheck for each shelved candidate and the task-list hosting lane. Integrated Bluetooth pairing `e473bbf` (`4b3f07d9`) and Tray S2 `544d1c3` (`f3abd4ab`, reconciliations `5157a1e0`/`cbaab4e0`); verified 105/105 focused Debug/Release, static gates, broad 601/601. Color route `85c8e8c` accepted; assistant merge `0f2bf167` landing next.
+- 2026-09-04T13:57:49-06:00 — Integrated the Color route (`32b1ef71`), Task List T3 hosting (`fdd07126`, `bdfef7da`), and Tray S3 hosting (`4cafc37c`); on the system KWin 6.6.6 roots the merged tree `4cafc37c` passes 178/178 focused rows in Debug and Release, the static gates, the broad safe Debug suite 614/614, the serialized nested boot and panel-visibility rows 4/4, and the Release install boundary (installed rows 14/14, session.installpaths 1/1, broad safe Release 614/614, /usr/local prefix confirmed). Exact main `4cafc37c` is the install boundary; the user runs the sudo install and SDDM smoke.
