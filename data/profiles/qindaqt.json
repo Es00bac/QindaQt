@@ -25,6 +25,7 @@
         {"id": "power", "plugin": "power", "settings": {"zone": "end"}},
         {"id": "audio", "plugin": "audio", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]

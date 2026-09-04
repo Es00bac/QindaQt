@@ -45,3 +45,34 @@ function(qindaqt_install_status_notifier_shell_runtime)
         COMPONENT StatusNotifierAppletRuntime
     )
 endfunction()
+
+# Shell-bearing install components need the compiled module even though the
+# applet's own component rules already carry it. This additive helper mirrors
+# qindaqt_install_clipboard_applet_runtime so each shell component stages the
+# same QML runtime closure without hand-maintained copies.
+function(qindaqt_install_status_notifier_applet_runtime component_name)
+    foreach(qml_name IN ITEMS StatusNotifierApplet.qml StatusNotifierItemDelegate.qml)
+        install(
+            FILES "${PROJECT_SOURCE_DIR}/src/shell/status_notifier/applet/qml/${qml_name}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier/qml"
+            COMPONENT "${component_name}"
+        )
+    endforeach()
+    install(
+        TARGETS qindaqt_shell_status_notifier_applet_runtime
+                qindaqt_shell_status_notifier_applet_runtimeplugin
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT "${component_name}"
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT "${component_name}"
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT "${component_name}"
+    )
+    install(
+        FILES
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/StatusNotifier/qmldir"
+            "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/StatusNotifier/qindaqt_shell_status_notifier_applet.qmltypes"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+        COMPONENT "${component_name}"
+    )
+endfunction()

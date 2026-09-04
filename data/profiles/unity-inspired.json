@@ -21,6 +21,7 @@
         {"id": "hud", "plugin": "command-hud"},
         {"id": "status", "plugin": "system-status"},
         {"id": "clipboard", "plugin": "clipboard"},
+        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"}
       ]

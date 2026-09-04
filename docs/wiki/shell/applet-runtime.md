@@ -52,7 +52,7 @@ The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, clipboard, and status
 notifier packages.
 The compiled first-party registry contains ten audited entry points. The
-production QML dispatcher renders all eight hosted entry points:
+production QML dispatcher renders all nine hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -125,10 +125,12 @@ production QML dispatcher renders all eight hosted entry points:
   policy grants (`status-items.read`, `status-items.activate`), a compiled
   `QindaQt.Shell.StatusNotifier` module, and a shell-private controller over
   the injected `StatusNotifierSourceInterface` seam presenting the bounded,
-  exact-owner StatusNotifier registry. Production-shell dispatcher composition
-  lands in a follow-on lane, so the stock profile does not place the applet
-  yet and the production dispatcher does not render it; resolution to `ready`
-  is covered by the applet-runtime resolver tests. See
+  exact-owner StatusNotifier registry. The shell composition owns the S1
+  watcher service and monitor adapter on its session bus and routes the
+  degradation acknowledgement through the seam; the production dispatcher
+  hosts the strip on both orientations with keyboard-capable `Popup.Window`
+  context menus, and every stock family places one tray slot beside its
+  notification-center utility slot. See
   [Status notifier tray](status-tray.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
@@ -141,8 +143,8 @@ its Session buttons never enter the reusable applet API. Meta+L uses the
 existing audited global-shortcut registrar and dispatches the same typed Lock
 request as the popup.
 The preview keeps deterministic static applet fixtures rather than connecting
-to live clock, notification, global-menu, clipboard, audio, Bluetooth, or power
-state.
+to live clock, notification, global-menu, clipboard, status-notifier, audio,
+Bluetooth, or power state.
 
 ## Installed shell component closure
 
@@ -172,15 +174,16 @@ evidence; it rejects a missing linked library and a missing imported-module
 `qmldir` without waiting for shell readiness to time out.
 
 Task-list and the older `system-tray` (status-tray.json) manifests remain
-accepted contracts. Task list and the newer `status-notifier` manifest resolve
-`ready` as registered built-ins (the hosting lanes that render them in the
-production dispatcher are still separate); the older `system-tray` resolves as
-`implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
-rendered by the production panel dispatcher; Clipboard joins them when its
-public clients expose consented ready truth. Profile plug-in IDs with
+accepted contracts. Task list resolves
+`ready` as a registered built-in (the hosting lane that renders it in the
+production dispatcher is still separate); the older `system-tray` resolves as
+`implementation-unavailable`. Launcher, Global Menu, Clipboard, and Status
+Notifier resolve `ready` and are rendered by the production panel dispatcher.
+Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for
 layout fidelity, but they are not counted as delivered features. The
-status-notifier value, ownership foundation, and applet slice are documented in
+status-notifier value, ownership foundation, applet slice, and production
+hosting are documented in
 [Status notifier tray](status-tray.md).
 
 ## Startup and failure behavior

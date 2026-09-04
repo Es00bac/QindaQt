@@ -10,6 +10,7 @@ set(
     "qindaqt_global_menu_qml|QindaQt/Shell/GlobalMenu"
     "qindaqt_shell_launcher_qml|QindaQt/Shell/Launcher"
     "qindaqt_shell_power_applet_runtime|QindaQt/Shell/PowerApplet"
+    "qindaqt_shell_status_notifier_applet_runtime|QindaQt/Shell/StatusNotifier"
 )
 
 function(_qindaqt_install_desktop_applet_module descriptor)

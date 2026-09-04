@@ -164,6 +164,7 @@ add_custom_target(
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_shell_bluetooth_applet_runtimeplugin
         qindaqt_shell_power_applet_runtimeplugin
+        qindaqt_shell_status_notifier_applet_runtimeplugin
         qindaqt_shell_launcher_qmlplugin
         qindaqt_global_menu_qmlplugin
         qindaqt_controls_qmlplugin
@@ -191,10 +192,12 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::GlobalMenuQml
+            QindaQt::ShellStatusNotifierAppletRuntime
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
+            qindaqt_shell_status_notifier_applet_runtimeplugin
             Qt6::Core
             Qt6::Quick
             Qt6::QuickTest

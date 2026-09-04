@@ -968,9 +968,10 @@ watcher-restart rebaseline (the fake item re-registers with the replacement
 watcher, matching real item behavior), Degraded last-known-good presentation,
 and validated intent dispatch with stale-generation and invalid-orientation
 refusals. The icon row covers injected-theme-root lookup, ARGB32 decode bounds,
-and deterministic fallback. DBusMenu rendering, a rendered panel tray, and
-assistive-technology behavior remain separate later milestones with their own
-gates.
+and deterministic fallback. DBusMenu rendering and assistive-technology
+behavior remain separate later milestones with their own gates; the rendered
+panel tray is proven by the applet's offscreen production-dispatcher row
+below.
 
 The registered Status Notifier tray applet slice is selected with:
 
@@ -980,7 +981,7 @@ ctest --test-dir build/dev \
   --output-on-failure --no-tests=error
 ```
 
-Its eight rows cover the pure applet projection (phases including read-denied
+Its eleven rows cover the pure applet projection (phases including read-denied
 unavailable, the 24-row presentation cap with truthful overflow, descriptor
 matching, and depth-capped menu flattening), the controller over a scripted
 source seam (capability gates, exactly-once generation-fenced dispatch against
@@ -992,9 +993,17 @@ malformed replacement or capacity overflow — degrades the registry, and
 acknowledgement recovery with last-known-good retention), the
 compiled QML offscreen/keyboard/accessibility rows under fatal warnings, an
 eight-case boundary-poison gate (direct D-Bus wire authority, QProcess,
-Wayland/KWin/LayerShell, private headers), and a staged installed-package row
+Wayland/KWin/LayerShell, private headers) extended with the shell-composition
+pair and its item-client bypass poison, a staged installed-package row
 with the same `$ORIGIN`-relative RUNPATH rewrite, relocation, and reruns as
-the clipboard lane. No row contacts the host bus, display server, or hardware.
+the clipboard lane, the production-composition private-bus row (real watcher
+service plus monitor adapter behind the controller, exactly-one activation,
+acknowledgement, owner-loss clearing, and the explicit read-denial negative
+control), the production-panel keyboard row through the real source dispatcher
+under fatal warnings with host display/bus variables unset (Tab traversal,
+Return activation, `Popup.Window` context menu, Escape closure), and the
+source-poisoned shell-component runtime-installed row. No row contacts the
+host bus, display server, or hardware.
 The exact matrix and non-claims are detailed in
 [Status notifier tray](../shell/status-tray.md).
 

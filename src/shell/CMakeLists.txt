@@ -50,6 +50,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
+        TARGET qindaqt_shell_status_notifier_applet_runtime
 )
 
 target_link_libraries(
@@ -62,6 +63,7 @@ target_link_libraries(
         QindaQt::ShellClipboardAppletRuntime
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
+        QindaQt::ShellStatusNotifierAppletRuntime
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -167,6 +169,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
+        runtime/statusnotifierappletcomposition.cpp
+        runtime/statusnotifierappletcomposition.h
     )
 
     qt_add_qml_module(
@@ -194,6 +198,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
+            TARGET qindaqt_shell_status_notifier_applet_runtime
     )
 
     target_link_libraries(
@@ -222,6 +227,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime
             QindaQt::ShellPowerAppletRuntime
+            QindaQt::ShellStatusNotifierAppletRuntime
+            QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
             qindaqt_themes
@@ -561,14 +568,16 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     qindaqt_install_task_list_shell_runtime()
     qindaqt_install_status_notifier_shell_runtime()
 
-    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet directly,
-    # so every component that stages qindaqt-shell must stage that module too.
+    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet and
+    # StatusNotifier directly, so every component that stages qindaqt-shell
+    # must stage those modules too.
     foreach(shell_component IN ITEMS
             QindaQt AudioAppletRuntime BluetoothAppletRuntime
             ClipboardAppletRuntime GlobalMenuAppletRuntime
             LauncherAppletRuntime PowerAppletRuntime StatusNotifierAppletRuntime
             TaskListAppletRuntime)
         qindaqt_install_clipboard_applet_runtime("${shell_component}")
+        qindaqt_install_status_notifier_applet_runtime("${shell_component}")
     endforeach()
 endif()
 
