@@ -83,7 +83,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power"),
-        QStringLiteral("qindaqt.applets.task-list")};
+        QStringLiteral("qindaqt.applets.task-list"),
+        QStringLiteral("qindaqt.applets.status-notifier")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
 
     const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
@@ -131,6 +132,14 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringList({QStringLiteral("windows.activate"),
                           QStringLiteral("windows.manage"),
                           QStringLiteral("windows.read")}));
+    const auto statusNotifier = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("status-notifier")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(statusNotifier.ready(), qPrintable(statusNotifier.diagnostic));
+    QCOMPARE(statusNotifier.entryPoint, QStringLiteral("qindaqt.applets.status-notifier"));
+    QCOMPARE(statusNotifier.grantedCapabilities,
+             QStringList({QStringLiteral("status-items.activate"),
+                          QStringLiteral("status-items.read")}));
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()

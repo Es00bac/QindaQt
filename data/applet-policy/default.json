@@ -67,6 +67,20 @@
       "capability": "windows.activate",
       "decision": "deny",
       "reason": "Window activation stays with the audited Task List applet's generation-fenced intents; third-party packages may not activate windows."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "status-notifier",
+      "capability": "status-items.read",
+      "decision": "grant",
+      "reason": "The audited Status Notifier applet may observe the bounded, validated status-item registry through its injected source seam."
+    },
+    {
+      "trust": "audited-builtin",
+      "packageId": "status-notifier",
+      "capability": "status-items.activate",
+      "decision": "grant",
+      "reason": "The audited Status Notifier applet may dispatch generation-fenced activate, secondary-activate, and context-menu intents; execution stays with the item owners."
     }
   ]
 }

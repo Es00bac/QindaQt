@@ -1,0 +1,2 @@
+module QindaQt.Shell.StatusNotifier
+StatusNotifierApplet 1.0 StatusNotifierApplet.qml

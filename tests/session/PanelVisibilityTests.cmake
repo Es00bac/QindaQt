@@ -89,6 +89,7 @@ if(
         qindaqt_global_menu_qmlplugin
         qindaqt_shell_clipboard_applet_runtimeplugin
         qindaqt_shell_task_list_appletplugin
+        qindaqt_shell_status_notifier_applet_runtimeplugin
     )
     install(
         FILES
@@ -142,6 +143,53 @@ if(
         install(
             FILES "${qml_file}"
             DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT DesktopVirtual
+        )
+    endforeach()
+
+    # AGENT-NOTE: the Status Notifier applet module is staged ahead of
+    # hosting: the production dispatcher does not import
+    # QindaQt.Shell.StatusNotifier yet, so the shared
+    # DesktopVirtualAppletModules.cmake inventory (contractually limited to
+    # modules imported by BuiltinAppletContent.qml) cannot carry it. The
+    # hosting lane must move this staging into that shared inventory when
+    # BuiltinAppletContent.qml gains the import; until then the module and its
+    # plugin archive are staged here exactly like the launcher/global-menu
+    # staging this file carried before commit 99b06199.
+    qt_query_qml_module(
+        qindaqt_shell_status_notifier_applet_runtime
+        QMLDIR _qindaqt_panel_visibility_status_notifier_qmldir
+        TYPEINFO _qindaqt_panel_visibility_status_notifier_typeinfo
+        QML_FILES _qindaqt_panel_visibility_status_notifier_qml_files
+        QML_FILES_DEPLOY_PATHS _qindaqt_panel_visibility_status_notifier_deploy_paths
+    )
+    install(
+        TARGETS
+            qindaqt_shell_status_notifier_applet_runtime
+            qindaqt_shell_status_notifier_applet_runtimeplugin
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT DesktopVirtual
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT DesktopVirtual
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+            COMPONENT DesktopVirtual
+    )
+    install(
+        FILES
+            "${_qindaqt_panel_visibility_status_notifier_qmldir}"
+            "${_qindaqt_panel_visibility_status_notifier_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
+        COMPONENT DesktopVirtual
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            _qindaqt_panel_visibility_status_notifier_qml_files
+            _qindaqt_panel_visibility_status_notifier_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier/${deploy_directory}"
             RENAME "${deploy_name}"
             COMPONENT DesktopVirtual
         )
