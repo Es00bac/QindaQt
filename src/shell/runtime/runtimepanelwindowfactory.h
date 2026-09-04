@@ -29,6 +29,10 @@ namespace QindaQt::ShellTaskListApplet {
 class TaskListAppletController;
 }
 
+namespace QindaQt::StatusNotifierApplet {
+class StatusNotifierAppletController;
+}
+
 namespace QindaQt::Shell {
 
 class NotificationCenterAppletAccess;
@@ -61,7 +65,8 @@ public:
                               Launcher::LauncherAppletController *launcherAppletAccess,
                               GlobalMenu::GlobalMenuAppletAccess *globalMenuAppletAccess,
                               ShellClipboardApplet::ClipboardAppletController *clipboardAppletAccess,
-                              ShellTaskListApplet::TaskListAppletController *taskListAppletAccess);
+                              ShellTaskListApplet::TaskListAppletController *taskListAppletAccess,
+                              StatusNotifierApplet::StatusNotifierAppletController *statusNotifierAppletAccess);
     ~RuntimePanelWindowFactory() override;
 
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
@@ -82,6 +87,7 @@ private:
     GlobalMenu::GlobalMenuAppletAccess *m_globalMenuAppletAccess = nullptr;
     ShellClipboardApplet::ClipboardAppletController *m_clipboardAppletAccess = nullptr;
     ShellTaskListApplet::TaskListAppletController *m_taskListAppletAccess = nullptr;
+    StatusNotifierApplet::StatusNotifierAppletController *m_statusNotifierAppletAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

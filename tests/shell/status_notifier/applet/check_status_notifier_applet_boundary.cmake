@@ -1,8 +1,40 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-foreach(required_variable IN ITEMS QINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR)
+foreach(required_variable IN ITEMS QINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR
+                                   QINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR)
     if(NOT DEFINED ${required_variable})
         message(FATAL_ERROR "${required_variable} is required")
+    endif()
+endforeach()
+
+file(GLOB composition_files
+     "${QINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR}/statusnotifierappletcomposition.cpp"
+     "${QINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR}/statusnotifierappletcomposition.h")
+list(LENGTH composition_files composition_file_count)
+if(NOT composition_file_count EQUAL 2)
+    message(FATAL_ERROR "Status Notifier composition boundary must contain its exact source pair")
+endif()
+foreach(path IN LISTS composition_files)
+    file(READ "${path}" content)
+    # AGENT-GUARD: The shell composition may hold the injected
+    # QDBusConnection, own the public watcher service, and compose the
+    # adapter/controller seam. It must not bypass the adapter into the
+    # registry, item-client, icon, or event-sink internals; open its own bus
+    # connection or proxies; spawn processes; or reach compositor/platform/
+    # services internals. All wire traffic stays inside the S1 transports and
+    # the S2 adapter.
+    if(content MATCHES "QDBusInterface|QDBusAbstractInterface|QDBusPendingCall|QDBusServiceWatcher"
+       OR content MATCHES "sessionBus\\(|systemBus\\("
+       OR content MATCHES "QProcess"
+       OR content MATCHES "LayerShell|KWin::|wayland-client|wayland-server"
+       OR content MATCHES "_p\\.h"
+       OR content MATCHES "status_notifier/status_notifier_registry\\.h"
+       OR content MATCHES "status_notifier_event_sink"
+       OR content MATCHES "status_notifier/(item_client|icon)/"
+       OR content MATCHES "qindaqt/(compositor|platform|services)/"
+       OR content MATCHES "src/(compositor|platform|services)/")
+        message(FATAL_ERROR
+            "${path}: Status Notifier composition bypassed its adapter/watcher boundary")
     endif()
 endforeach()
 
@@ -88,6 +120,7 @@ if(NOT QINDAQT_STATUS_NOTIFIER_APPLET_POISON_PROBE)
             COMMAND
                 "${CMAKE_COMMAND}"
                 "-DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=${poison_root}"
+                "-DQINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR=${QINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR}"
                 "-DQINDAQT_STATUS_NOTIFIER_APPLET_POISON_PROBE=ON"
                 -P "${CMAKE_CURRENT_LIST_FILE}"
             RESULT_VARIABLE poison_result
@@ -100,8 +133,29 @@ if(NOT QINDAQT_STATUS_NOTIFIER_APPLET_POISON_PROBE)
                     "Status Notifier Applet boundary policy accepted the ${poison_name} poison case")
         endif()
     endforeach()
+
+    set(composition_poison "${poison_root}/composition")
+    file(MAKE_DIRECTORY "${composition_poison}")
+    file(WRITE "${composition_poison}/statusnotifierappletcomposition.cpp"
+         "#include <qindaqt/shell/status_notifier/item_client/status_notifier_item_monitor.h>\n")
+    file(WRITE "${composition_poison}/statusnotifierappletcomposition.h" "#pragma once\n")
+    execute_process(
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=${QINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR}"
+            "-DQINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR=${composition_poison}"
+            "-DQINDAQT_STATUS_NOTIFIER_APPLET_POISON_PROBE=ON"
+            -P "${CMAKE_CURRENT_LIST_FILE}"
+        RESULT_VARIABLE composition_poison_result
+        OUTPUT_QUIET
+        ERROR_QUIET)
+    if(composition_poison_result EQUAL 0)
+        file(REMOVE_RECURSE "${poison_root}")
+        message(FATAL_ERROR
+            "Status Notifier composition boundary accepted an item-client bypass poison")
+    endif()
     file(REMOVE_RECURSE "${poison_root}")
 endif()
 
 message(STATUS
-        "Validated ${applet_file_count} Status Notifier Applet source/QML files and poison probe rejection")
+        "Validated ${applet_file_count} Status Notifier Applet source/QML files, the composition pair, and poison probe rejection")

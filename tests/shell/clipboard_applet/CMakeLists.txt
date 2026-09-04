@@ -164,6 +164,7 @@ add_custom_target(
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_shell_bluetooth_applet_runtimeplugin
         qindaqt_shell_power_applet_runtimeplugin
+        qindaqt_shell_status_notifier_applet_runtimeplugin
         qindaqt_shell_launcher_qmlplugin
         qindaqt_global_menu_qmlplugin
         qindaqt_controls_qmlplugin
@@ -190,11 +191,15 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellLauncherQml
+            QindaQt::ShellTaskListApplet
             QindaQt::GlobalMenuQml
+            QindaQt::ShellStatusNotifierAppletRuntime
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
+            qindaqt_shell_status_notifier_applet_runtimeplugin
+            qindaqt_shell_task_list_appletplugin
             Qt6::Core
             Qt6::Quick
             Qt6::QuickTest
@@ -207,6 +212,7 @@ if(TARGET qindaqt-shell)
     add_dependencies(
         qindaqt_clipboard_applet_qml_tests
         qindaqt_clipboard_applet_qml_test_prerequisites
+        qindaqt_shell_task_list_appletplugin
     )
 
     function(qindaqt_add_clipboard_applet_qml_test test_name test_input)

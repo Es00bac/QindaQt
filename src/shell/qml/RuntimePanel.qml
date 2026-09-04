@@ -15,6 +15,7 @@ Window {
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
+    property var statusNotifierAppletAccess: null
 
     visible: false
     color: "transparent"
@@ -34,5 +35,6 @@ Window {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 }
