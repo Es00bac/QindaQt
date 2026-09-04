@@ -174,6 +174,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Clipboard route](apps/clipboard-settings.md) documents the default-
   off Settings1 history preference, content-free Clipboard1 state/count truth,
   exact-lineage confirmed clearing, and explicit no-read/no-replay boundary.
+- [Settings Color route](apps/color-settings.md) documents the per-display
+  ICC assignment surface: Display1 inventory, C1 discovery/import catalog,
+  Settings1 draft/apply truth with conflict/no-replay fencing, and the
+  explicit compositor-application boundary.
 - [QindaQt Terminal](apps/terminal.md) documents the first-party multi-session
   terminal with up to eight tabs: launch policy, PTY/session lifecycle and
   teardown, profiles and Settings1 persistence, the qtermwidget rendering
