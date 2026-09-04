@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_SHELL_BUILD_ROOT
-                          QINDAQT_SHELL_CMAKE QINDAQT_SHELL_INSTALL_CMAKE
+                          QINDAQT_SHELL_CMAKE QINDAQT_SHELL_INSTALL_DIR
                           QINDAQT_STAGE_ROOT
                           QINDAQT_INSTALL_BINDIR QINDAQT_INSTALL_LIBDIR)
     if(NOT DEFINED ${required})
@@ -37,7 +37,10 @@ set(shell_components
 # An added shell install rule must extend the executable cases below instead
 # of silently escaping component-isolation coverage.
 file(READ "${QINDAQT_SHELL_CMAKE}" shell_cmake)
-foreach(shell_install_module IN LISTS QINDAQT_SHELL_INSTALL_CMAKE)
+# Every shell-carrying component that lives in its own install module must be
+# visible to the inventory guard: read all of them.
+file(GLOB shell_install_modules "${QINDAQT_SHELL_INSTALL_DIR}/*RuntimeInstall.cmake")
+foreach(shell_install_module IN LISTS shell_install_modules)
     file(READ "${shell_install_module}" shell_install_cmake)
     string(APPEND shell_cmake "\n${shell_install_cmake}")
 endforeach()

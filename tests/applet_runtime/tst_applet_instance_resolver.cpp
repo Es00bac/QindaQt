@@ -83,8 +83,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
         QStringLiteral("qindaqt.applets.power"),
-        QStringLiteral("qindaqt.applets.task-list"),
-        QStringLiteral("qindaqt.applets.status-notifier")};
+        QStringLiteral("qindaqt.applets.status-notifier"),
+        QStringLiteral("qindaqt.applets.task-list")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
 
     const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
