@@ -26,6 +26,11 @@ ColumnLayout {
     Shortcut {
         // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
         // an integer key code and silently fails in the offscreen Quick path.
+        // AGENT-CONTRACT: Settings Center's Main.qml Escape shortcut yields
+        // (is disabled) exactly while this shortcut is enabled; both read the
+        // same prompt truth from the route model. Two enabled identical
+        // window-context Escape shortcuts are ambiguous and neither
+        // activates, stranding the prompt without its cancel reply.
         sequence: "Escape"
         context: Qt.WindowShortcut
         enabled: root.promptActive

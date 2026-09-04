@@ -139,6 +139,17 @@ T.ApplicationWindow {
     }
 
     Shortcut {
+        // AGENT-GUARD: two enabled window-context shortcuts with the same
+        // sequence are ambiguous and Qt activates neither. While the
+        // Bluetooth route shows an active prompt with a free reply lane, the
+        // route's own Escape shortcut (BluetoothPairingSection.qml) must be
+        // the only enabled match so the prompt receives its cancel reply.
+        // This host shortcut yields then and stays enabled for every other
+        // route or prompt state.
+        enabled: !(root.navigation.activeRouteComponent === "bluetooth"
+                   && root.bluetoothSettings !== null
+                   && root.bluetoothSettings.pairingPrompt.active === true
+                   && root.bluetoothSettings.pairingReplyPending !== true)
         sequence: "Escape"
         onActivated: root.isCompact ? compactHeader.focusActiveButton()
                                     : sidebar.focusActiveButton()
