@@ -127,6 +127,16 @@ if(NOT clipboard_in_stage OR NOT IS_DIRECTORY "${clipboard_module}")
         "${clipboard_module}")
 endif()
 
+set(color_module
+    "${install_prefix}/${INSTALL_QMLDIR}/QindaQt/SettingsApp/Color")
+cmake_path(NORMAL_PATH color_module OUTPUT_VARIABLE color_module)
+cmake_path(IS_PREFIX install_prefix "${color_module}" NORMALIZE color_in_stage)
+if(NOT color_in_stage OR NOT IS_DIRECTORY "${color_module}")
+    message(FATAL_ERROR
+        "installed Settings Color module is missing or outside stage: "
+        "${color_module}")
+endif()
+
 set(build_appearance_module
     "${build_directory}/qml/QindaQt/SettingsApp/Appearance")
 if(NOT IS_DIRECTORY "${build_appearance_module}")
@@ -236,7 +246,7 @@ if(NOT network_poison_status EQUAL 3)
 endif()
 # Reinstall rather than trusting the rename restoration, then repeat the
 # developer-tree poison for the Audio route the same way, and finally prove
-# all nine complete routes below using only the staged prefix.
+# all ten complete routes below using only the staged prefix.
 execute_process(
     COMMAND ${install_command}
     RESULT_VARIABLE reinstall_status

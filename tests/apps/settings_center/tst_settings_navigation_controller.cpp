@@ -131,11 +131,19 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
 
-  // selectNext from 8 ("clipboard") wraps to 0 ("notifications")
+  // selectNext from 8 ("clipboard") -> 9 ("color")
+  QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
+
+  // selectNext from 9 ("color") wraps to 0 ("notifications")
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
-  // selectPrevious from 0 wraps to 8 ("clipboard")
+  // selectPrevious from 0 wraps to 9 ("color")
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
+
+  // selectPrevious from 9 -> 8 ("clipboard")
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
 
@@ -201,12 +209,15 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QVERIFY(controller.selectIndex(8));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("clipboard"));
 
+  QVERIFY(controller.selectIndex(9));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("color"));
+
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  QVERIFY(!controller.selectIndex(9));
+  QVERIFY(!controller.selectIndex(10));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -264,7 +275,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 9);
+  QCOMPARE(list.size(), 10);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -301,6 +312,10 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   const QVariantMap clipboardMap = list.at(8).toMap();
   QCOMPARE(clipboardMap.value(QStringLiteral("id")).toString(),
            QStringLiteral("clipboard"));
+
+  const QVariantMap colorMap = list.at(9).toMap();
+  QCOMPARE(colorMap.value(QStringLiteral("id")).toString(),
+           QStringLiteral("color"));
 
   const QVariantMap itemAt0 = controller.routeAt(0);
   QCOMPARE(itemAt0.value(QStringLiteral("id")).toString(),
@@ -346,7 +361,13 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   QCOMPARE(itemAt8.value(QStringLiteral("component")).toString(),
            QStringLiteral("clipboard"));
 
-  const QVariantMap itemOutOfBounds = controller.routeAt(9);
+  const QVariantMap itemAt9 = controller.routeAt(9);
+  QCOMPARE(itemAt9.value(QStringLiteral("id")).toString(),
+           QStringLiteral("color"));
+  QCOMPARE(itemAt9.value(QStringLiteral("component")).toString(),
+           QStringLiteral("color"));
+
+  const QVariantMap itemOutOfBounds = controller.routeAt(10);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

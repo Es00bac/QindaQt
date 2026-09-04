@@ -210,6 +210,21 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
   const bool clipboardRegistered = registerRoute(clipboardRoute);
   Q_ASSERT(clipboardRegistered);
   Q_UNUSED(clipboardRegistered);
+
+  const SettingsRoute colorRoute{
+      .id = QStringLiteral("color"),
+      .component = SettingsRouteComponent::Color,
+      .title = QCoreApplication::translate("SettingsCenter", "Color"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "ICC color profiles for each display"),
+      .iconName = QStringLiteral("preferences-desktop-color"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool colorRegistered = registerRoute(colorRoute);
+  Q_ASSERT(colorRegistered);
+  Q_UNUSED(colorRegistered);
 }
 
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {

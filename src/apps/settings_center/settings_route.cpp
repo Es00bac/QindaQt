@@ -31,6 +31,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Bluetooth:
   case SettingsRouteComponent::Power:
   case SettingsRouteComponent::Clipboard:
+  case SettingsRouteComponent::Color:
     return true;
   }
   return false;
@@ -56,6 +57,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("power");
   case SettingsRouteComponent::Clipboard:
     return QStringLiteral("clipboard");
+  case SettingsRouteComponent::Color:
+    return QStringLiteral("color");
   }
   return {};
 }

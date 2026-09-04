@@ -67,6 +67,8 @@ target_link_libraries(
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml
     qindaqt_settings_clipboard_qmlplugin
+    qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin
     qindaqt_design_tokens
     qindaqt_tokens_qml
     qindaqt_controls_qml
@@ -94,6 +96,8 @@ add_dependencies(
     qindaqt_settings_power_backend_qml qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_power_qml qindaqt_settings_power_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
+    qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_color_qml qindaqt_settings_color_qmlplugin
     qindaqt_controls_qml qindaqt_controls_qmlplugin
     qindaqt_tokens_qml qindaqt_tokens_qmlplugin
 )
@@ -107,10 +111,12 @@ add_test(
 # route page aborts the row instead of passing silently. Child-process rows
 # (route construction, installed routes) deliberately tolerate absent-bus
 # qWarning diagnostics in main() and must not be registered as fatal.
+# Both D-Bus addresses are pinned to nonexistent sockets so the row proves
+# host-bus-free behavior on any host instead of inheriting a live session bus.
 set_tests_properties(
     qindaqt.settings-navigation-page PROPERTIES
     LABELS "offscreen;settings;navigation"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
 # 4. QML QuickTest runner
@@ -168,7 +174,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance;customize;audio;power;clipboard" RUN_SERIAL TRUE TIMEOUT 30
+    LABELS "offscreen;settings;appearance;customize;audio;power;clipboard;color" RUN_SERIAL TRUE TIMEOUT 40
 )
 
 # 8. Installed staged package test
@@ -187,5 +193,5 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
-    LABELS "offscreen;settings;appearance;clipboard;package" RUN_SERIAL TRUE TIMEOUT 90
+    LABELS "offscreen;settings;appearance;clipboard;color;package" RUN_SERIAL TRUE TIMEOUT 90
 )
