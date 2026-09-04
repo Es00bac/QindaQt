@@ -9,6 +9,10 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ### Shell and customization delivery queue
 
+**User-stated acceptance (2026-09-04):** the deliverable is a full desktop environment that a person can use — styled panels, working applet
+popups, window icons and application icons rather than text labels, a working terminal — verified by looking at a headless capture of the real
+session, not only by the test suite. The production-shell runtime repair and the iconography outcome (QQ-004.16) are the active steps toward it.
+
 Finish QQ-004 through the durable [Shell queue](../ops/team/queues/shell.md):
 global menu; launcher, task list, tray, and remaining system applets; direct
 WYSIWYG customization; and whole-shell output, DPI, theme, keyboard, and
