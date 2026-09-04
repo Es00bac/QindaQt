@@ -22,6 +22,7 @@
         {"id": "applications", "plugin": "launcher", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
       ]

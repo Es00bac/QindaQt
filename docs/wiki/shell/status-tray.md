@@ -10,8 +10,39 @@ registry-feeding monitor, and an icon-theme/pixmap renderer. The architectural
 decision is in
 [ADR-0032](../adr/0032-status-notifier-exact-owner-foundation.md). The S2 tray
 applet slice below composes these modules into the registered built-in
-`status-notifier` applet; panel hosting (dispatcher composition) is a later
-lane, so the applet resolves `ready` but is not placed by the stock profile.
+`status-notifier` applet; the production shell now hosts it: the dispatcher
+composition below owns the watcher service and monitor adapter on the shell's
+session bus, the panel dispatcher renders the compiled module in both panel
+orientations, and every stock profile family places one tray slot.
+
+## Production shell hosting
+
+`src/shell/runtime/statusnotifierappletcomposition.{h,cpp}` is the
+shell-private production composition root, mirroring the Clipboard
+composition. It evaluates the audited manifest/policy grants fail-closed,
+owns the `StatusNotifierWatcherService` and the `StatusNotifierMonitorAdapter`
+(registry + item monitor + icon renderer) on the shell's injected session bus,
+and exposes only the `StatusNotifierAppletController` facade to the panel
+factory; nothing else gains StatusNotifier bus authority. The controller's
+degradation acknowledgement routes through the composed adapter seam to the
+registry. A watcher name owned elsewhere fails closed into the watcher's
+truthful degraded state instead of a shell startup failure. With
+`status-items.read` denied, neither the watcher nor the adapter is started and
+observation is withheld entirely. Production icon-theme roots are the
+`icons` directories beneath every freedesktop generic data location; the icon
+renderer canonicalizes and confines every lookup beneath them.
+
+`BuiltinAppletContent.qml` hosts the compiled `QindaQt.Shell.StatusNotifier`
+module like the other built-ins, in horizontal rows and vertical columns, and
+the deterministic preview renders the same compiled surface with a null
+controller (visibly disconnected). Context menus open as keyboard-capable
+`Popup.Window` surfaces with Escape closing, because the layer-shell panel
+itself rejects keyboard focus; item delegates keep Tab/Backtab traversal,
+Space/Return activation, Shift+F10/Menu context opening, and full accessible
+names/roles/states. Every stock profile family places exactly one
+`status-notifier` entry beside its notification-center utility slot; the older
+`system-tray` manifest remains an accepted catalog contract resolving
+`implementation-unavailable` in place.
 
 ## Tray applet (`src/shell/status_notifier/applet`)
 
@@ -100,15 +131,18 @@ later composition lane.
 
 The `StatusNotifierAppletRuntime` install component packages the public
 boundary (static archives, generated plugin archive, `qmldir`, `.qmltypes`,
-QML files under `QindaQt/Shell/StatusNotifier`, public headers, manifest). It
+QML files under `QindaQt/Shell/StatusNotifier`, public headers, manifest) plus
+the live shell and its registrar inputs. It
 is a member of the shell component-closure inventory proven by
 `qindaqt.shell-runtime-component-closure`, and
 `qindaqt.status-notifier-applet-installed-package` validates the staged
-component with a relocation/RPATH proof mirroring the clipboard row. The
-module is staged into the `DesktopVirtual` component ahead of hosting (from
-`tests/session/PanelVisibilityTests.cmake`); the hosting lane moves it into
-the shared `DesktopVirtualAppletModules.cmake` inventory when
-`BuiltinAppletContent.qml` gains the import. A dispatcher-only test-import
+component with a relocation/RPATH proof mirroring the clipboard row. Because
+`BuiltinAppletContent.qml` imports the module, every shell-carrying component
+stages it through `qindaqt_install_status_notifier_applet_runtime`, the
+`DesktopVirtual` component stages it through the shared
+`DesktopVirtualAppletModules.cmake` inventory, and the
+`qindaqt.status-notifier-applet-runtime-installed-package` row proves the
+shell-bearing component under source poison. A dispatcher-only test-import
 double lives at `tests/shell/qml/imports/QindaQt/Shell/StatusNotifier/`.
 
 ## Focused tests
@@ -127,26 +161,31 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-qml-offscreen` | Compiled module surfaces: ready/empty/loading/degraded/unavailable, row and badge rendering, overflow chip, null-access disabled truth, feedback dismissal. |
 | `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
-| `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through. |
+| `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |
+| `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, and the explicit `status-items.read` denial withholding all observation. |
+| `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: Tab reaches the item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without dispatch. |
 | `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
+| `qindaqt.status-notifier-applet-runtime-installed-package` | Source-poisoned `StatusNotifierAppletRuntime` stage containing the shell, manifest/profile/theme/policy, and the complete generated StatusNotifier QML module. |
 
 The boundary gate also runs without configure:
 
 ```sh
 cmake -DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=<repository>/src/shell/status_notifier/applet \
+  -DQINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR=<repository>/src/shell/runtime \
   -DQINDAQT_STATUS_NOTIFIER_APPLET_POISON_DIRECTORY=<scratch> \
   -P tests/shell/status_notifier/applet/check_status_notifier_applet_boundary.cmake
 ```
 
 ## Applet non-claims
 
-The S2 slice proves no panel hosting or production-shell dispatcher
-composition (the stock profile does not place the applet), no dbusmenu entry
-activation (the menu preview is read-only), no assistive-technology bridge
-behavior, and no host session bus evidence; those belong to later lanes and
-their own gates. The older `system-tray` manifest (`data/applets/
-status-tray.json`) remains an accepted catalog contract resolving
-`implementation-unavailable` until the hosting lane reconciles the two.
+This slice proves the shell's production StatusNotifier composition and the
+offscreen production dispatcher, not live host session items, a real
+watch-registered third-party item on the host bus, dbusmenu entry activation
+(the menu preview is read-only), or assistive-technology bridge behavior; those
+belong to later lanes and their own gates. The older `system-tray` manifest
+(`data/applets/status-tray.json`) remains an accepted catalog contract
+resolving `implementation-unavailable` beside the hosted `status-notifier`
+applet.
 
 ## Ownership identity
 
@@ -432,8 +471,9 @@ localized texts, and a scripted lifecycle driven through the injected fake
 transport. The fake cases separately prove null-first refusal, different-sink
 reattach refusal, state-clearing detach, and destructor-triggered detach.
 
-This evidence is source, unit, and private-bus level with fake items and hosts.
-It does not claim host session bus behavior, dbusmenu rendering (deferred to
-the Global Menu G1 lane and a later composition lane), a rendered panel tray,
-or assistive-technology bridge behavior; those belong to later milestones and
-their own gates.
+This evidence is source, unit, private-bus, and offscreen-dispatcher level
+with fake items and hosts.
+It does not claim host session bus behavior, live third-party items on a real
+session, dbusmenu rendering (deferred to the Global Menu G1 lane and a later
+composition lane), nested-session evidence, or assistive-technology bridge
+behavior; those belong to later milestones and their own gates.

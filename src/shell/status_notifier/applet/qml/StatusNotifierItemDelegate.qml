@@ -173,6 +173,12 @@ T.Control {
         id: contextPopup
         objectName: "statusNotifierContextPopup"
         padding: Tokens.space["2"]
+        // AGENT-GUARD: RuntimePanel rejects focus by design
+        // (Qt.WindowDoesNotAcceptFocus), so an item-backed popup strands
+        // Escape on the layer-shell dock. This independent popup window is
+        // the keyboard-capable surface; do not downgrade it to an item popup.
+        popupType: T.Popup.Window
+        modal: false
         // Focus lets the popup receive Escape for CloseOnEscape and keeps
         // keyboard dismissal real instead of pointer-only.
         focus: true

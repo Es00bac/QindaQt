@@ -3,6 +3,7 @@
 
 #include "runtimeoptions.h"
 #include "clipboardappletcomposition.h"
+#include "statusnotifierappletcomposition.h"
 
 #include "qindaqt/applet_host/capability_policy.h"
 #include "qindaqt/applets/manifest_catalog.h"
@@ -171,6 +172,7 @@ private:
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
     std::unique_ptr<ClipboardAppletComposition> m_clipboardApplet;
+    std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;

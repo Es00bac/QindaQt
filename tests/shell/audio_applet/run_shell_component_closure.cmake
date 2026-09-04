@@ -9,6 +9,13 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_SHELL_BUILD_ROOT
     endif()
 endforeach()
 
+# AGENT-NOTE: the add_test registration escapes the module list as `\;`, which
+# reaches this script as a literal backslash-semicolon inside ONE list element.
+# Normalize it back to a real list separator here so every listed install
+# module is actually read; fixing the registration escaping would strand the
+# same defect on any future caller that copies it.
+string(REPLACE "\\;" ";" QINDAQT_SHELL_INSTALL_CMAKE "${QINDAQT_SHELL_INSTALL_CMAKE}")
+
 cmake_path(NORMAL_PATH QINDAQT_SHELL_BUILD_ROOT OUTPUT_VARIABLE shell_build_root)
 cmake_path(NORMAL_PATH QINDAQT_STAGE_ROOT OUTPUT_VARIABLE stage_root)
 cmake_path(GET shell_build_root PARENT_PATH build_src_root)
@@ -87,12 +94,17 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/libqindaqt_global_menu_qml.so")
     set(clipboard_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/ClipboardApplet")
+    set(status_notifier_module
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/StatusNotifier")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
                                    "${clipboard_module}/qmldir"
                                    "${clipboard_module}/qml/ClipboardApplet.qml"
                                    "${clipboard_module}/qml/ClipboardEntryRow.qml"
-                                   "${clipboard_module}/qml/ClipboardPanelApplet.qml")
+                                   "${clipboard_module}/qml/ClipboardPanelApplet.qml"
+                                   "${status_notifier_module}/qmldir"
+                                   "${status_notifier_module}/qml/StatusNotifierApplet.qml"
+                                   "${status_notifier_module}/qml/StatusNotifierItemDelegate.qml")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")
@@ -200,4 +212,4 @@ foreach(component IN LISTS shell_components)
 endforeach()
 
 message(STATUS
-    "Every shell-carrying install component has runnable Clipboard/GlobalMenu/Launcher/Controls/Tokens closure")
+    "Every shell-carrying install component has runnable Clipboard/StatusNotifier/GlobalMenu/Launcher/Controls/Tokens closure")

@@ -14,6 +14,7 @@ Item {
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
+    property var statusNotifierAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -45,6 +46,7 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletRow {
@@ -64,6 +66,7 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletRow {
@@ -84,6 +87,7 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -103,6 +107,7 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -122,6 +127,7 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -141,5 +147,6 @@ Item {
         powerAppletAccess: root.powerAppletAccess
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 }

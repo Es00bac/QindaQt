@@ -16,6 +16,7 @@ Row {
     property var powerAppletAccess: null
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
+    property var statusNotifierAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {

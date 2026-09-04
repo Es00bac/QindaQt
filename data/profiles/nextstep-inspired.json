@@ -20,6 +20,7 @@
         {"id": "apps", "plugin": "application-tiles"},
         {"id": "workspaces", "plugin": "workspace-tiles"},
         {"id": "clipboard", "plugin": "clipboard"},
+        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock-tile"},
         {"id": "applications", "plugin": "launcher"}

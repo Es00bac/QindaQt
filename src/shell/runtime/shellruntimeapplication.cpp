@@ -44,6 +44,7 @@
 #include <QGuiApplication>
 #include <QProcessEnvironment>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QTextStream>
 
 #include <utility>
@@ -213,6 +214,18 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();
     m_clipboardApplet = std::make_unique<ClipboardAppletComposition>(m_applets, m_appletPolicy, *m_settingsClient, sessionBus);
+    // The tray's icon-theme lookup roots are the freedesktop icon locations
+    // beneath every generic data root; the renderer canonicalizes and
+    // confines every candidate beneath these injected roots.
+    QStringList statusNotifierIconRoots;
+    const auto dataRoots =
+        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+    statusNotifierIconRoots.reserve(dataRoots.size());
+    for (const QString &base : dataRoots) {
+        statusNotifierIconRoots.append(base + QStringLiteral("/icons"));
+    }
+    m_statusNotifierApplet = std::make_unique<StatusNotifierAppletComposition>(
+        m_applets, m_appletPolicy, sessionBus, statusNotifierIconRoots);
     m_windowActionsTransport = std::make_unique<
         ShellWindowActionsClient::QtShellWindowActionsTransport>(sessionBus);
     m_windowActionsClient = std::make_unique<
@@ -364,7 +377,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
-            m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access());
+            m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
+            m_statusNotifierApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -474,6 +488,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_windowActionsTransport.reset();
     m_launcherApplet.reset();
     m_clipboardApplet.reset();
+    m_statusNotifierApplet.reset();
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
     m_powerApplet.reset();

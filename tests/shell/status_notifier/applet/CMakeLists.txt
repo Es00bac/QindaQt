@@ -82,6 +82,56 @@ set_tests_properties(
     PROPERTIES LABELS "shell;status-notifier"
 )
 
+# 3b. Production composition tests: the real StatusNotifierAppletComposition
+# (watcher service + monitor adapter + controller) over a private session bus
+# with the scripted fake item, plus the explicit read-denial negative control.
+qt_add_executable(
+    qindaqt_status_notifier_applet_composition_private_bus_tests
+    tst_status_notifier_applet_composition_private_bus.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/statusnotifierappletcomposition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/statusnotifierappletcomposition.h"
+    ../status_notifier_fake_item_test_support.h
+    ../status_notifier_private_bus_test_support.h
+)
+target_include_directories(
+    qindaqt_status_notifier_applet_composition_private_bus_tests
+    PRIVATE
+        "${PROJECT_SOURCE_DIR}/src/shell/runtime"
+        "${CMAKE_CURRENT_SOURCE_DIR}/.."
+)
+target_link_libraries(
+    qindaqt_status_notifier_applet_composition_private_bus_tests
+    PRIVATE
+        QindaQt::AppletRuntime
+        QindaQt::ShellStatusNotifierAppletRuntime
+        QindaQt::StatusNotifierWatcher
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Gui
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_status_notifier_applet_composition_private_bus_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_TEST_SCRATCH="${CMAKE_CURRENT_BINARY_DIR}/composition-scratch"
+)
+qindaqt_enable_warnings(
+    qindaqt_status_notifier_applet_composition_private_bus_tests
+)
+add_test(
+    NAME qindaqt.status-notifier-applet-composition-private-bus
+    COMMAND qindaqt_status_notifier_applet_composition_private_bus_tests
+)
+set_tests_properties(
+    qindaqt.status-notifier-applet-composition-private-bus
+    PROPERTIES
+        LABELS "shell;status-notifier;dbus;private-bus;negative-control"
+        TIMEOUT 60
+        ENVIRONMENT_MODIFICATION
+            "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:"
+)
+
 # AGENT-GUARD: every QML row runs through the compiled harness executable
 # whose build pulls these prerequisites, so a focused build of the declared
 # test targets can never leave QML plugins unbuilt (a bare qmltestrunner row
@@ -149,12 +199,54 @@ qindaqt_add_status_notifier_applet_qml_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_StatusNotifierAppletAccessibility.qml"
 )
 
+# Production dispatcher rows: the real source PanelAppletRow/AppletChip/
+# BuiltinAppletContent chain hosting the compiled module, under fatal warnings
+# with the host display and bus variables unset. The harness must link every
+# hosted applet runtime because BuiltinAppletContent.qml imports them all;
+# configurations without the production shell do not define these rows
+# (Clipboard harness precedent).
+if(TARGET qindaqt-shell)
+    target_link_libraries(
+        qindaqt_status_notifier_applet_qml_tests
+        PRIVATE
+            QindaQt::ShellAudioAppletRuntime
+            QindaQt::ShellBluetoothAppletRuntime
+            QindaQt::ShellClipboardAppletRuntime
+            QindaQt::ShellLauncherQml
+            QindaQt::ShellPowerAppletRuntime
+            QindaQt::GlobalMenuQml
+            qindaqt_shell_audio_applet_runtimeplugin
+            qindaqt_shell_bluetooth_applet_runtimeplugin
+            qindaqt_shell_clipboard_applet_runtimeplugin
+            qindaqt_shell_power_applet_runtimeplugin
+    )
+    add_dependencies(
+        qindaqt_status_notifier_applet_qml_tests
+        qindaqt_shell_launcher_qmlplugin
+        qindaqt_global_menu_qmlplugin
+    )
+
+    qindaqt_add_status_notifier_applet_qml_test(
+        qindaqt.status-notifier-applet-production-panel-keyboard-offscreen
+        "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_StatusNotifierProductionPanelKeyboard.qml"
+    )
+    set_tests_properties(
+        qindaqt.status-notifier-applet-production-panel-keyboard-offscreen
+        PROPERTIES
+            ENVIRONMENT
+                "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+    )
+endif()
+
 # 5. Boundary and source policy test
 add_test(
     NAME qindaqt.status-notifier-applet-boundary-policy
     COMMAND
         "${CMAKE_COMMAND}"
         "-DQINDAQT_STATUS_NOTIFIER_APPLET_SOURCE_DIR=${CMAKE_SOURCE_DIR}/src/shell/status_notifier/applet"
+        "-DQINDAQT_STATUS_NOTIFIER_COMPOSITION_SOURCE_DIR=${CMAKE_SOURCE_DIR}/src/shell/runtime"
         "-DQINDAQT_STATUS_NOTIFIER_APPLET_POISON_DIRECTORY=${CMAKE_BINARY_DIR}/tests/status_notifier_applet_poison_probe"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_status_notifier_applet_boundary.cmake"
 )
@@ -203,4 +295,27 @@ add_test(
 set_tests_properties(
     qindaqt.status-notifier-applet-installed-package
     PROPERTIES LABELS "package" RUN_SERIAL TRUE TIMEOUT 300
+)
+
+# 7. Shell-bearing component proof: the StatusNotifierAppletRuntime stage
+# carries the live shell, manifest/profile/theme/policy inputs, and the
+# complete generated StatusNotifier QML module; the staged shell must resolve
+# the applet under source poison with ambient loader/display/bus variables
+# cleared.
+add_test(
+    NAME qindaqt.status-notifier-applet-runtime-installed-package
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+        "-DQINDAQT_BUILD_ROOT=${CMAKE_BINARY_DIR}"
+        "-DQINDAQT_STAGE=${CMAKE_CURRENT_BINARY_DIR}/installed-status-notifier-runtime"
+        "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
+        "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+        "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+        "-DQINDAQT_INSTALL_QMLDIR=${QT6_INSTALL_QML}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_status_notifier_runtime.cmake"
+)
+set_tests_properties(
+    qindaqt.status-notifier-applet-runtime-installed-package
+    PROPERTIES LABELS "shell;status-notifier;installed;poison" RUN_SERIAL TRUE TIMEOUT 90
 )
