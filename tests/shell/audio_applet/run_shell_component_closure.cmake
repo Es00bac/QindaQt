@@ -37,8 +37,10 @@ set(shell_components
 # An added shell install rule must extend the executable cases below instead
 # of silently escaping component-isolation coverage.
 file(READ "${QINDAQT_SHELL_CMAKE}" shell_cmake)
-file(READ "${QINDAQT_SHELL_INSTALL_CMAKE}" shell_install_cmake)
-string(APPEND shell_cmake "\n${shell_install_cmake}")
+foreach(shell_install_module IN LISTS QINDAQT_SHELL_INSTALL_CMAKE)
+    file(READ "${shell_install_module}" shell_install_cmake)
+    string(APPEND shell_cmake "\n${shell_install_cmake}")
+endforeach()
 string(REGEX MATCHALL
     "install\\([ \t\r\n]*TARGETS[ \t\r\n]+qindaqt-shell[ \t\r\n][^\\)]*\\)"
     shell_install_rules "${shell_cmake}")

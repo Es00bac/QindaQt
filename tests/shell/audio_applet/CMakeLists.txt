@@ -138,7 +138,7 @@ if(TARGET qindaqt-shell)
             "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
             "-DQINDAQT_SHELL_BUILD_ROOT=${CMAKE_BINARY_DIR}/src/shell"
             "-DQINDAQT_SHELL_CMAKE=${PROJECT_SOURCE_DIR}/src/shell/CMakeLists.txt"
-            "-DQINDAQT_SHELL_INSTALL_CMAKE=${PROJECT_SOURCE_DIR}/src/shell/TaskListRuntimeInstall.cmake"
+            "-DQINDAQT_SHELL_INSTALL_CMAKE=${PROJECT_SOURCE_DIR}/src/shell/TaskListRuntimeInstall.cmake\;${PROJECT_SOURCE_DIR}/src/shell/StatusNotifierRuntimeInstall.cmake"
             "-DQINDAQT_STAGE_ROOT=${CMAKE_CURRENT_BINARY_DIR}/installed-shell-components"
             "-DQINDAQT_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}"
             "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
