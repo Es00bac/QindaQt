@@ -8,7 +8,7 @@ status: handoff
 feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-03T12:57:47-06:00
+updated_at: 2026-09-04T10:44:07-06:00
 ---
 
 # Claude Program Manager
@@ -60,3 +60,4 @@ updated_at: 2026-09-03T12:57:47-06:00
 - 2026-09-03T11:21:44-06:00 — Moved the compositor pin to the system KWin 6.6.6 (`a5c1c20`) after diagnosing that the sandbox exported the 6.6.5 prefix's libkwin globally; integrated menu export (`a8c171c`), stage closure guard (`0a59236`), secret agent (`287ba6d`), Clipboard Settings (`22d9f23`); verified on the system-KWin roots: focused 118/118 Debug/Release, static gates, broad 569/569, Release rows 88/88. Seven earlier failures were mid-merge build artifacts and are recorded as a process lesson (never merge during a verification build).
 - 2026-09-03T12:30:19-06:00 — Integrated clipboard hosting `fef9222` (`82e256d`, reconciliation `dfe08e4`) and Wi-Fi join `beef29e` (`c269830`); verified on the system-KWin roots: 66/66 focused Debug/Release, static gates, broad 579/579, nested boot.
 - 2026-09-03T12:47:31-06:00 — Integrated session actions `23d99f5` at `70763c7`; verified 61/61 focused rows Debug/Release, static gates, broad 582/582 on the system-KWin roots.
+- 2026-09-04T10:44:07-06:00 — Resumed as Program Manager (fresh windows). Funded one repair + one recheck for each shelved candidate and the task-list hosting lane. Integrated Bluetooth pairing `e473bbf` (`4b3f07d9`) and Tray S2 `544d1c3` (`f3abd4ab`, reconciliations `5157a1e0`/`cbaab4e0`); verified 105/105 focused Debug/Release, static gates, broad 601/601. Color route `85c8e8c` accepted; assistant merge `0f2bf167` landing next.
