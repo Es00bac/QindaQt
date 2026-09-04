@@ -15,6 +15,7 @@ Item {
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
+    property var statusNotifierAppletAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -47,6 +48,7 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletRow {
@@ -67,6 +69,7 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletRow {
@@ -88,6 +91,7 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -108,6 +112,7 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -128,6 +133,7 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 
     PanelAppletColumn {
@@ -148,5 +154,6 @@ Item {
         launcherAppletAccess: root.launcherAppletAccess
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
+        statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
 }

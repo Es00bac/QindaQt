@@ -51,6 +51,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
         TARGET qindaqt_shell_task_list_applet
+        TARGET qindaqt_shell_status_notifier_applet_runtime
 )
 
 target_link_libraries(
@@ -64,6 +65,7 @@ target_link_libraries(
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellTaskListApplet
+        QindaQt::ShellStatusNotifierAppletRuntime
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -171,6 +173,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/settingsroutelauncher.h
         runtime/tasklistappletcomposition.cpp
         runtime/tasklistappletcomposition.h
+        runtime/statusnotifierappletcomposition.cpp
+        runtime/statusnotifierappletcomposition.h
     )
 
     qt_add_qml_module(
@@ -199,6 +203,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_task_list_applet
+            TARGET qindaqt_shell_status_notifier_applet_runtime
     )
 
     target_link_libraries(
@@ -230,6 +235,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListApplet
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
+            QindaQt::ShellStatusNotifierAppletRuntime
+            QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
             qindaqt_themes
@@ -569,22 +576,17 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     qindaqt_install_task_list_shell_runtime()
     qindaqt_install_status_notifier_shell_runtime()
 
-    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet directly,
-    # so every component that stages qindaqt-shell must stage that module too.
+    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet, TaskList,
+    # and StatusNotifier directly, so every component that stages qindaqt-shell
+    # must stage all three modules.
     foreach(shell_component IN ITEMS
             QindaQt AudioAppletRuntime BluetoothAppletRuntime
             ClipboardAppletRuntime GlobalMenuAppletRuntime
-            LauncherAppletRuntime PowerAppletRuntime StatusNotifierAppletRuntime
-            TaskListAppletRuntime)
+            LauncherAppletRuntime PowerAppletRuntime TaskListAppletRuntime
+            StatusNotifierAppletRuntime)
         qindaqt_install_clipboard_applet_runtime("${shell_component}")
-    endforeach()
-    # BuiltinAppletContent also imports TaskList directly. The owning module's
-    # helper keeps every shell-carrying component independently loadable.
-    foreach(shell_component IN ITEMS
-            QindaQt AudioAppletRuntime BluetoothAppletRuntime
-            ClipboardAppletRuntime GlobalMenuAppletRuntime
-            LauncherAppletRuntime PowerAppletRuntime TaskListAppletRuntime)
         qindaqt_install_task_list_applet_runtime("${shell_component}")
+        qindaqt_install_status_notifier_applet_runtime("${shell_component}")
     endforeach()
 endif()
 

@@ -45,6 +45,7 @@
 #include <QGuiApplication>
 #include <QProcessEnvironment>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QTextStream>
 
 #include <utility>
@@ -223,6 +224,18 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote() << "QindaQt shell could not start Task List facts:" << taskListError;
     }
+    // The tray's icon-theme lookup roots are the freedesktop icon locations
+    // beneath every generic data root; the renderer canonicalizes and
+    // confines every candidate beneath these injected roots.
+    QStringList statusNotifierIconRoots;
+    const auto dataRoots =
+        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+    statusNotifierIconRoots.reserve(dataRoots.size());
+    for (const QString &base : dataRoots) {
+        statusNotifierIconRoots.append(base + QStringLiteral("/icons"));
+    }
+    m_statusNotifierApplet = std::make_unique<StatusNotifierAppletComposition>(
+        m_applets, m_appletPolicy, sessionBus, statusNotifierIconRoots);
     m_globalMenuApplet->start();
     connect(m_windowActionsClient.get(),
             &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
@@ -365,7 +378,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
             m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
-            m_taskListApplet->access());
+            m_taskListApplet->access(),
+            m_statusNotifierApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -466,6 +480,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_statusNotifierApplet.reset();
     m_taskListApplet.reset();
     m_globalMenuApplet.reset();
     if (m_windowActionsClient) {

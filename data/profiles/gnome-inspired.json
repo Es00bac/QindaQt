@@ -21,6 +21,7 @@
         {"id": "active-app", "plugin": "active-application"},
         {"id": "clock", "plugin": "clock"},
         {"id": "clipboard", "plugin": "clipboard"},
+        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
         {"id": "status", "plugin": "system-status"},
         {"id": "applications", "plugin": "launcher"}

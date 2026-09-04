@@ -9,6 +9,13 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_SHELL_BUILD_ROOT
     endif()
 endforeach()
 
+# AGENT-NOTE: the add_test registration escapes the module list as `\;`, which
+# reaches this script as a literal backslash-semicolon inside ONE list element.
+# Normalize it back to a real list separator here so every listed install
+# module is actually read; fixing the registration escaping would strand the
+# same defect on any future caller that copies it.
+string(REPLACE "\\;" ";" QINDAQT_SHELL_INSTALL_CMAKE "${QINDAQT_SHELL_INSTALL_CMAKE}")
+
 cmake_path(NORMAL_PATH QINDAQT_SHELL_BUILD_ROOT OUTPUT_VARIABLE shell_build_root)
 cmake_path(NORMAL_PATH QINDAQT_STAGE_ROOT OUTPUT_VARIABLE stage_root)
 cmake_path(GET shell_build_root PARENT_PATH build_src_root)
@@ -92,6 +99,8 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/ClipboardApplet")
     set(task_list_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/TaskList")
+    set(status_notifier_module
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/StatusNotifier")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
                                    "${clipboard_module}/qmldir"
@@ -100,7 +109,10 @@ foreach(component IN LISTS shell_components)
                                    "${clipboard_module}/qml/ClipboardPanelApplet.qml"
                                    "${task_list_module}/qmldir"
                                    "${task_list_module}/qml/TaskListApplet.qml"
-                                   "${task_list_module}/qml/TaskListEntryButton.qml")
+                                   "${task_list_module}/qml/TaskListEntryButton.qml"
+                                   "${status_notifier_module}/qmldir"
+                                   "${status_notifier_module}/qml/StatusNotifierApplet.qml"
+                                   "${status_notifier_module}/qml/StatusNotifierItemDelegate.qml")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")
@@ -208,4 +220,4 @@ foreach(component IN LISTS shell_components)
 endforeach()
 
 message(STATUS
-    "Every shell-carrying install component has runnable Clipboard/GlobalMenu/Launcher/Controls/Tokens closure")
+    "Every shell-carrying install component has runnable Clipboard/TaskList/StatusNotifier/GlobalMenu/Launcher/Controls/Tokens closure")

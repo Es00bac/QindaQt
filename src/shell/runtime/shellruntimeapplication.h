@@ -3,6 +3,7 @@
 
 #include "runtimeoptions.h"
 #include "clipboardappletcomposition.h"
+#include "statusnotifierappletcomposition.h"
 
 #include "qindaqt/applet_host/capability_policy.h"
 #include "qindaqt/applets/manifest_catalog.h"
@@ -176,6 +177,7 @@ private:
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
+    std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;
