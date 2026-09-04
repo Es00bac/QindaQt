@@ -120,10 +120,14 @@ public:
         m_dispatched.append(target);
         return {};
     }
+    // Never degraded in this fixture; the acknowledgement contract is covered
+    // by the controller and adapter rows. Records the call for completeness.
+    void acknowledgeDegraded() override { ++m_acknowledgeCalls; }
 
 private:
     TrayPresentation m_presentation;
     QList<ItemDescriptor> m_descriptors;
+    int m_acknowledgeCalls = 0;
 };
 
 bool publishStagedTheme(QQmlEngine &engine)

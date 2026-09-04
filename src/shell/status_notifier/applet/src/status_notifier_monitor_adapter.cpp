@@ -9,9 +9,12 @@ namespace QindaQt::StatusNotifierApplet {
 using namespace QindaQt::StatusNotifier;
 
 // Every override forwards verbatim to the registry and emits the adapter's
-// changed() only after an accepted mutation, so QML reprojects exactly when
-// presented state could have moved. A refused (stale/hostile) event never
-// notifies.
+// changed() exactly when registry presentation could have moved. That set is
+// larger than "accepted outcome": the registry sets its degradation marker
+// BEFORE returning a rejected outcome for a malformed live replacement or a
+// capacity overflow, so notification keys on outcome acceptance OR a degraded-
+// reason transition. A refused (stale/hostile) event that left presentation
+// untouched never notifies.
 class StatusNotifierMonitorAdapter::ForwardingSink final : public StatusNotifierEventSink {
 public:
     ForwardingSink(StatusNotifierRegistry &registry, StatusNotifierMonitorAdapter &adapter)
@@ -22,8 +25,9 @@ public:
 
     quint64 beginWatcherEpoch() override
     {
+        const QString degradedBefore = m_registry.degradedReason();
         const quint64 epoch = m_registry.beginWatcherEpoch();
-        if (epoch != 0) {
+        if (epoch != 0 || m_registry.degradedReason() != degradedBefore) {
             Q_EMIT m_adapter.changed();
         }
         return epoch;
@@ -31,17 +35,14 @@ public:
 
     RegistryOutcome markInitialPopulationComplete(quint64 epoch) override
     {
-        const RegistryOutcome outcome = m_registry.markInitialPopulationComplete(epoch);
-        if (outcome.accepted()) {
-            Q_EMIT m_adapter.changed();
-        }
-        return outcome;
+        return forward([this, epoch] { return m_registry.markInitialPopulationComplete(epoch); });
     }
 
     quint64 beginOwnerGeneration(quint64 epoch, const QString &uniqueName) override
     {
+        const QString degradedBefore = m_registry.degradedReason();
         const quint64 generation = m_registry.beginOwnerGeneration(epoch, uniqueName);
-        if (generation != 0) {
+        if (generation != 0 || m_registry.degradedReason() != degradedBefore) {
             Q_EMIT m_adapter.changed();
         }
         return generation;
@@ -51,32 +52,47 @@ public:
                               const QString &uniqueName,
                               quint64 expectedGeneration) override
     {
-        return forward(m_registry.ownerLost(epoch, uniqueName, expectedGeneration));
+        return forward(
+            [this, epoch, &uniqueName, expectedGeneration] {
+                return m_registry.ownerLost(epoch, uniqueName, expectedGeneration);
+            });
     }
 
     RegistryOutcome registerItem(quint64 epoch,
                                  const OwnerKey &key,
                                  const ItemDescriptor &descriptor) override
     {
-        return forward(m_registry.registerItem(epoch, key, descriptor));
+        return forward([this, epoch, &key, &descriptor] {
+            return m_registry.registerItem(epoch, key, descriptor);
+        });
     }
 
     RegistryOutcome removeItem(quint64 epoch, const OwnerKey &key) override
     {
-        return forward(m_registry.removeItem(epoch, key));
+        return forward([this, epoch, &key] { return m_registry.removeItem(epoch, key); });
     }
 
     RegistryOutcome removeAllForOwner(quint64 epoch,
                                       const QString &uniqueName,
                                       quint64 generation) override
     {
-        return forward(m_registry.removeAllForOwner(epoch, uniqueName, generation));
+        return forward([this, epoch, &uniqueName, generation] {
+            return m_registry.removeAllForOwner(epoch, uniqueName, generation);
+        });
     }
 
 private:
-    RegistryOutcome forward(const RegistryOutcome &outcome)
+    // AGENT-GUARD: Notification follows registry PRESENTATION truth, not
+    // outcome acceptance. Keying only on accepted() let a rejected live
+    // update (malformed replacement, capacity) degrade the registry while the
+    // controller kept projecting ready until an unrelated accepted event
+    // revealed it — the P1 defect this guard exists to prevent.
+    template <typename Call>
+    RegistryOutcome forward(Call &&call)
     {
-        if (outcome.accepted()) {
+        const QString degradedBefore = m_registry.degradedReason();
+        const RegistryOutcome outcome = call();
+        if (outcome.accepted() || m_registry.degradedReason() != degradedBefore) {
             Q_EMIT m_adapter.changed();
         }
         return outcome;
@@ -172,6 +188,19 @@ RegistryOutcome StatusNotifierMonitorAdapter::secondaryActivate(const OwnerKey &
 RegistryOutcome StatusNotifierMonitorAdapter::contextMenu(const OwnerKey &target, int x, int y)
 {
     return m_monitor.requestContextMenu(target, x, y);
+}
+
+void StatusNotifierMonitorAdapter::acknowledgeDegraded()
+{
+    // AGENT-GUARD: no notification without a real transition. Emitting
+    // changed() for an unchanged registry would reproject (and re-render
+    // every presented icon) for nothing; staying silent when not degraded
+    // keeps acknowledgement idempotent and cheap.
+    if (!m_registry.isDegraded()) {
+        return;
+    }
+    m_registry.acknowledgeDegraded();
+    Q_EMIT changed();
 }
 
 } // namespace QindaQt::StatusNotifierApplet

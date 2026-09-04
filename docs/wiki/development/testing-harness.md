@@ -946,8 +946,12 @@ Its eight rows cover the pure applet projection (phases including read-denied
 unavailable, the 24-row presentation cap with truthful overflow, descriptor
 matching, and depth-capped menu flattening), the controller over a scripted
 source seam (capability gates, exactly-once generation-fenced dispatch against
-hostile reentrancy, owner-loss fencing, data-URL icon truth), the real
-registry/monitor/watcher adapter composition over a private session bus, the
+hostile reentrancy, owner-loss fencing, data-URL icon truth, and the
+fail-closed degradation acknowledgement action), the real
+registry/monitor/watcher adapter composition over a private session bus
+(including immediate Degraded notification when a rejected live update —
+malformed replacement or capacity overflow — degrades the registry, and
+acknowledgement recovery with last-known-good retention), the
 compiled QML offscreen/keyboard/accessibility rows under fatal warnings, an
 eight-case boundary-poison gate (direct D-Bus wire authority, QProcess,
 Wayland/KWin/LayerShell, private headers), and a staged installed-package row

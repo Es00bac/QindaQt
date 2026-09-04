@@ -24,15 +24,37 @@ Two static targets mirror the Clipboard applet's split:
 
 `StatusNotifierSourceInterface` is the injected least-authority seam:
 presentation and descriptors in, never-null icon renders, current-generation
-reads, and activate/secondary-activate/context-menu dispatches out, with a
-single `changed()` signal after every registry-affecting event. The S1 monitor
+reads, and activate/secondary-activate/context-menu dispatches plus the
+degradation acknowledgement transition out, with a single `changed()` signal
+after every registry-affecting event. The S1 monitor
 deliberately emits only `watcherLiveChanged`, so the adapter interposes a
 private forwarding sink between monitor and registry: every
 `StatusNotifierEventSink` call is forwarded verbatim (including
 `beginWatcherEpoch`/`beginOwnerGeneration` return values) and `changed()` is
-emitted after each accepted mutation. The watcher *service* is owned by the
+emitted after each accepted mutation **and after any event — accepted or
+rejected — that moved the registry's degradation marker**. The registry sets
+that marker before returning a rejected outcome for a malformed live
+replacement or a membership-capacity overflow, so keying notification on
+outcome acceptance alone would leave the controller projecting `ready` until
+an unrelated accepted event revealed the degradation. A refused event that
+left presentation untouched never notifies. The watcher *service* is owned by the
 future shell-session composition, not the adapter. QML receives no registry
 pointers, wire payloads, or bus endpoints.
+
+### Degradation acknowledgement
+
+The presentation contract holds a degraded registry's last-known-good rows
+visible *until the degradation is acknowledged*; the composed boundary exposes
+that transition as an admitted controller action (chosen over an automatic
+recovery rule as the smallest fail-closed option — a later valid update must
+never silently clear a degradation the user was shown).
+`StatusNotifierAppletController::acknowledgeDegraded()` is QML-invokable,
+fails closed to a no-op when the read grant is denied or no source is
+composed, and otherwise forwards through the seam to
+`StatusNotifierRegistry::acknowledgeDegraded()`. The adapter clears the
+marker, emits `changed()`, and the phase recomputes from live state
+(`ready`/`empty`/`loading` with the retained rows); acknowledging a
+non-degraded registry notifies nothing.
 
 ## Capability gating
 
@@ -100,8 +122,8 @@ ctest --test-dir build/dev \
 | Test | Scope |
 | --- | --- |
 | `qindaqt.status-notifier-applet-model` | Pure projection: every phase including read-denied Unavailable with no rows, the 24-row cap with truthful overflow, descriptor matching and fail-closed misses, status flags, keyboard texts, menu flattening with the depth cap against hostile chains, determinism. |
-| `qindaqt.status-notifier-applet-controller` | Scripted seam: capability gates (read denial withholds all seam reads; activate denial refuses before dispatch), exactly-once dispatch including a seam that emits `changed()` re-entrantly, stale-generation and owner-loss fencing, overflow truth, data-URL icons with placeholder truth, iconSize re-render, bounded fenced menu preview. |
-| `qindaqt.status-notifier-applet-adapter` | Real registry + monitor + watcher composition over a private session bus: population through the seam, exactly one recorded wire `Activate` through the controller, owner disconnect, watcher-loss Degraded with last-known-good retention and replacement-watcher repopulation. |
+| `qindaqt.status-notifier-applet-controller` | Scripted seam: capability gates (read denial withholds all seam reads; activate denial refuses before dispatch), exactly-once dispatch including a seam that emits `changed()` re-entrantly, stale-generation and owner-loss fencing, overflow truth, data-URL icons with placeholder truth, iconSize re-render, bounded fenced menu preview, and the degradation acknowledgement action (seam forwarding with synchronous reprojection; fail-closed no-op under read denial or a missing source). |
+| `qindaqt.status-notifier-applet-adapter` | Real registry + monitor + watcher composition over a private session bus: population through the seam, exactly one recorded wire `Activate` through the controller, owner disconnect, watcher-loss Degraded with last-known-good retention and replacement-watcher repopulation, immediate Degraded notification on rejected live updates that degrade the registry (malformed replacement and membership-capacity overflow, both with last-known-good retention), and the acknowledgement recovery back to `ready`. |
 | `qindaqt.status-notifier-applet-qml-offscreen` | Compiled module surfaces: ready/empty/loading/degraded/unavailable, row and badge rendering, overflow chip, null-access disabled truth, feedback dismissal. |
 | `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
@@ -199,7 +221,9 @@ they are present, so a source cannot publish blank presentation text.
 member — menu included — is validated there before the registry can make any
 part of the descriptor visible. Malformed input fails closed: a malformed
 replacement of a live item is rejected, marks the registry degraded, and keeps
-the last-known-good descriptor presented until the degradation is acknowledged.
+the last-known-good descriptor presented until the degradation is acknowledged
+through the [acknowledgement transition](#degradation-acknowledgement) at the
+composed applet boundary.
 During watcher reconciliation the rejected payload still counts as observing
 that exact live key; admission failure cannot erase its last-known-good item.
 

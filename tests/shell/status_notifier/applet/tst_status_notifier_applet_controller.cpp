@@ -52,6 +52,8 @@ private slots:
     void iconsCrossAsDataUrlsWithPlaceholderTruth();
     void iconSizeChangeReRenders();
     void menuRowsPreviewIsBoundedAndFenced();
+    void degradedProjectionAndAcknowledgementFlowThroughTheSeam();
+    void acknowledgeDegradedFailsClosedWithoutObservation();
 };
 
 void StatusNotifierAppletControllerTests::readDeniedWithholdsObservation()
@@ -313,6 +315,65 @@ void StatusNotifierAppletControllerTests::menuRowsPreviewIsBoundedAndFenced()
     // Owner gone entirely: empty preview.
     source.m_generations.clear();
     QVERIFY(controller.menuRowsFor(key.uniqueName, key.objectPath, key.generation).isEmpty());
+}
+
+void StatusNotifierAppletControllerTests::degradedProjectionAndAcknowledgementFlowThroughTheSeam()
+{
+    FakeStatusNotifierSource source;
+    stageSingleItem(source);
+    StatusNotifierAppletController controller(&source, true, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.itemRows().size(), 1);
+
+    // The seam reports a registry degradation (e.g. a malformed live
+    // replacement): the controller projects degraded immediately and keeps
+    // the last-known-good row presented and actionable.
+    source.m_presentation.state = PresentationState::Degraded;
+    source.m_presentation.diagnostic = QStringLiteral("malformed-item-replacement");
+    source.emitChanged();
+    QCOMPARE(controller.phaseText(), QStringLiteral("degraded"));
+    QCOMPARE(controller.phaseReasonText(), QStringLiteral("malformed-item-replacement"));
+    QCOMPARE(controller.itemRows().size(), 1);
+    QCOMPARE(controller.watcherLive(), false);
+
+    // The admitted acknowledgement action reaches the seam exactly once; the
+    // seam's recovery notification reprojects back to ready with the retained
+    // row. No later valid update is needed to reveal or clear the state.
+    controller.acknowledgeDegraded();
+    QCOMPARE(source.m_acknowledgeCalls, 1);
+    QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
+    QCOMPARE(controller.phaseReasonText(), QString());
+    QCOMPARE(controller.itemRows().size(), 1);
+    QCOMPARE(controller.watcherLive(), true);
+
+    // With no degradation pending the seam's no-op contract holds: a second
+    // acknowledgement is recorded but nothing reprojects.
+    QSignalSpy reprojectSpy(&controller, &StatusNotifierAppletController::stateReprojected);
+    controller.acknowledgeDegraded();
+    QCOMPARE(source.m_acknowledgeCalls, 2);
+    QCOMPARE(reprojectSpy.size(), 0);
+}
+
+void StatusNotifierAppletControllerTests::acknowledgeDegradedFailsClosedWithoutObservation()
+{
+    FakeStatusNotifierSource source;
+    stageSingleItem(source);
+    source.m_presentation.state = PresentationState::Degraded;
+    source.m_presentation.diagnostic = QStringLiteral("malformed-item-replacement");
+    StatusNotifierAppletController controller(&source, false, true);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+
+    // Withheld observation means withheld: acknowledgement never touches the
+    // seam, and the scripted degradation stays unacknowledged.
+    controller.acknowledgeDegraded();
+    QCOMPARE(source.m_acknowledgeCalls, 0);
+    QCOMPARE(controller.phaseText(), QStringLiteral("unavailable"));
+    QCOMPARE(source.m_presentation.state, PresentationState::Degraded);
+
+    // No composed source: acknowledgement is a no-op, not a crash.
+    StatusNotifierAppletController sourceless(nullptr, true, true);
+    sourceless.acknowledgeDegraded();
+    QCOMPARE(sourceless.phaseText(), QStringLiteral("unavailable"));
 }
 
 QTEST_GUILESS_MAIN(StatusNotifierAppletControllerTests)
