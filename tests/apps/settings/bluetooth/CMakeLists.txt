@@ -94,11 +94,13 @@ target_link_libraries(
     qindaqt_settings_network_qml qindaqt_settings_customize_qml
     qindaqt_settings_customize_qmlplugin qindaqt_settings_bluetooth
     qindaqt_settings_bluetooth_qml
-    # AGENT-NOTE: Main.qml imports every route module; the Power backend and
-    # Clipboard modules are static, so any in-process Main.qml host must link them.
+    # AGENT-NOTE: Main.qml imports every route module; the Power, Clipboard,
+    # and Color modules are static, so any in-process Main.qml host must link them.
     qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin
     qindaqt_settings_clipboard_qml qindaqt_settings_clipboard_qmlplugin
+    qindaqt_settings_color_backend_qml
+    qindaqt_settings_color_backend_qmlplugin
     qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
     qindaqt_themes Qt6::Quick Qt6::Test
 )
@@ -109,6 +111,7 @@ add_dependencies(
     qindaqt_settings_bluetooth_qmlplugin qindaqt_settings_customize_qmlplugin
     qindaqt_settings_audio_qmlplugin qindaqt_settings_power_qmlplugin
     qindaqt_settings_clipboard_qmlplugin
+    qindaqt_settings_color_qmlplugin
     qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_window_close_tests)
@@ -118,7 +121,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-bluetooth-window-close PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "offscreen;settings;bluetooth;lifetime"
 )
 
