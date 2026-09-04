@@ -56,6 +56,7 @@ private slots:
     void stockProfilesPlaceOneResolvedLauncher();
     void stockProfilesPlaceOneResolvedClipboardInUtilitySlot();
     void stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks();
+    void stockProfilesPlaceOneResolvedStatusNotifierInUtilitySlot();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
@@ -387,6 +388,54 @@ void AppletInstanceResolverTests::stockProfilesPlaceHostedTaskListWhereWorkflowE
                 != QLatin1String("hidden")
             && profile.workflow.taskList != QLatin1String("overview-only");
         QCOMPARE(taskListCount, panelTasksExpected ? 1 : 0);
+    }
+}
+
+void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedStatusNotifierInUtilitySlot()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    for (const auto &profile : profiles.profiles()) {
+        int statusNotifierCount = 0;
+        for (const auto &panel : profile.panels) {
+            QString notificationZone;
+            QString statusNotifierZone;
+            for (const auto &applet : panel.applets) {
+                const QString zone = applet.settings
+                    .value(QStringLiteral("zone"), QStringLiteral("start"))
+                    .toString();
+                if (applet.plugin == QLatin1String("notification-center")) {
+                    notificationZone = zone;
+                }
+                if (applet.plugin != QLatin1String("status-notifier")) {
+                    continue;
+                }
+                ++statusNotifierCount;
+                statusNotifierZone = zone;
+                const auto resolved =
+                    AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy,
+                        fixture.registry);
+                QVERIFY2(resolved.ready(), qPrintable(profile.id + QStringLiteral(": ")
+                                                       + resolved.diagnostic));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.status-notifier"));
+                QCOMPARE(resolved.grantedCapabilities,
+                         QStringList({QStringLiteral("status-items.activate"),
+                                      QStringLiteral("status-items.read")}));
+            }
+            if (!statusNotifierZone.isEmpty()) {
+                QVERIFY2(!notificationZone.isEmpty(), qPrintable(profile.id));
+                QCOMPARE(statusNotifierZone, notificationZone);
+            }
+        }
+        QCOMPARE(statusNotifierCount, 1);
     }
 }
 

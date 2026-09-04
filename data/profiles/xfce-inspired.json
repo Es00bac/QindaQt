@@ -23,6 +23,7 @@
         {"id": "workspaces", "plugin": "workspace-switcher"},
         {"id": "tray", "plugin": "system-tray"},
         {"id": "clipboard", "plugin": "clipboard"},
+        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"},
         {"id": "applications", "plugin": "launcher"}

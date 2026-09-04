@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtTest
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierComponents
 import QindaQt.Shell.StatusNotifier.Tests 1.0 as Harness
@@ -168,9 +169,10 @@ Item {
             compare(fakeAccess.lastActivateArgs, [":1.43", "/StatusNotifierItem", 4])
         }
 
-        // Shift+F10 opens the context popup with the exact owner key; Escape
-        // dismisses it without any dispatch.
-        function test_shiftF10OpensContextPopupAndEscapeCloses() {
+        // Shift+F10 opens the context popup as an independent popup window
+        // with the exact owner key; the Open-menu control dispatches the
+        // generation-fenced contextMenu intent once and closes.
+        function test_shiftF10OpensContextPopupAndOpenMenuDispatches() {
             fakeAccess.itemRows = [makeRow(":1.42", 3)]
             fakeAccess.itemCount = 1
             fakeAccess.presentedCount = 1
@@ -188,10 +190,14 @@ Item {
             var delegate = delegatesOf(applet)[0]
             verify(delegate !== undefined && delegate !== null)
 
-            // Capture the popup BEFORE it opens: an open popup is reparented
-            // to the window overlay and leaves the applet's object subtree.
+            // Capture the popup BEFORE it opens: an open Popup.Window is
+            // reparented into its own window and leaves the applet's object
+            // subtree.
             var popup = findChild(delegate, "statusNotifierContextPopup")
             verify(popup !== null)
+            // AGENT-CONTRACT: RuntimePanel rejects focus by design; the tray
+            // context menu must stay an independently focusable popup window.
+            compare(popup.popupType, Popup.Window)
 
             delegate.forceActiveFocus(Qt.TabFocusReason)
             tryVerify(() => delegate.activeFocus)
@@ -208,14 +214,43 @@ Item {
             compare(fakeAccess.openContextMenuCalls, 1)
             compare(fakeAccess.lastOpenContextMenuArgs, [":1.42", "/StatusNotifierItem", 3])
             tryCompare(popup, "opened", false)
+        }
 
-            // Reopen and dismiss with Escape: no further dispatch.
+        // The Menu key opens the same popup window; Escape dismisses it
+        // without any dispatch. Kept single-open per test function: the
+        // offscreen backend cannot reactivate a parent window after
+        // destroying a transient native popup inside the same function.
+        function test_menuKeyOpensContextPopupAndEscapeCloses() {
+            fakeAccess.itemRows = [makeRow(":1.42", 3)]
+            fakeAccess.itemCount = 1
+            fakeAccess.presentedCount = 1
+            fakeAccess.scriptedMenuRows = [{
+                depth: 0,
+                kind: "item",
+                label: "Open",
+                enabled: true,
+                visible: true,
+                hasChildren: false
+            }]
+
+            var applet = createTemporaryObject(appletComponent, testRoot)
+            verify(applet !== null)
+            var delegate = delegatesOf(applet)[0]
+            verify(delegate !== undefined && delegate !== null)
+
+            var popup = findChild(delegate, "statusNotifierContextPopup")
+            verify(popup !== null)
+
+            delegate.forceActiveFocus(Qt.TabFocusReason)
+            tryVerify(() => delegate.activeFocus)
+
             keyClick(Qt.Key_Menu)
-            tryVerify(() => fakeAccess.menuRowsForCalls === 2)
+            tryVerify(() => fakeAccess.menuRowsForCalls === 1)
             tryCompare(popup, "opened", true)
             keyClick(Qt.Key_Escape)
             tryCompare(popup, "opened", false)
-            compare(fakeAccess.openContextMenuCalls, 1)
+            compare(fakeAccess.openContextMenuCalls, 0)
+            compare(fakeAccess.activateCalls, 0)
         }
     }
 }

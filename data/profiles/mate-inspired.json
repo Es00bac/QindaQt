@@ -21,6 +21,7 @@
         {"id": "places", "plugin": "places-menu"},
         {"id": "system", "plugin": "system-menu"},
         {"id": "clipboard", "plugin": "clipboard"},
+        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
         {"id": "clock", "plugin": "clock"},
         {"id": "applications", "plugin": "launcher"}
