@@ -95,6 +95,7 @@ target_sources(
     PRIVATE ui/terminal_widget_adapter.cpp
             ui/terminal_widget_adapter_appearance.cpp
             ui/terminal_widget_adapter_search.cpp
+            ui/terminal_widget_adapter_transport.cpp
     PUBLIC ui/terminal_widget_adapter.h
 )
 target_include_directories(

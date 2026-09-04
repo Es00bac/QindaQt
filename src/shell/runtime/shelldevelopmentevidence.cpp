@@ -3,12 +3,14 @@
 
 #include "notificationwindowcontroller.h"
 
+#include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 
 #include <QAbstractItemModel>
 #include <QCoreApplication>
+#include <QColor>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusReply>
@@ -65,12 +67,14 @@ ShellDevelopmentEvidence::ShellDevelopmentEvidence(
         presentation,
     Services::SettingsClient::DoNotDisturbController &quieting,
     Services::NotificationPresentationPolicy::NotificationPrivacyPolicy &privacy,
-    NotificationWindowController &windows, QObject *parent)
+    NotificationWindowController &windows,
+    const DesignTokens::TokenFacade &tokens, QObject *parent)
     : QObject(parent)
     , m_presentation(presentation)
     , m_quieting(quieting)
     , m_privacy(privacy)
     , m_windows(windows)
+    , m_tokens(tokens)
     , m_bus(QDBusConnection::sessionBus())
 {
     connect(&m_presentation,
@@ -258,10 +262,24 @@ QByteArray ShellDevelopmentEvidence::Snapshot() const
 QJsonObject ShellDevelopmentEvidence::snapshotObject() const
 {
     const QJsonObject windows = m_windows.evidence();
+    const QColor backgroundBase =
+        m_tokens.bg().value(QStringLiteral("base")).value<QColor>();
     return {
         {QStringLiteral("schemaVersion"), 1},
         {QStringLiteral("shellPid"),
          QString::number(QCoreApplication::applicationPid())},
+        {QStringLiteral("tokens"),
+         QJsonObject{
+             {QStringLiteral("ready"), m_tokens.ready()},
+             {QStringLiteral("qstRevision"), m_tokens.qstRevision()},
+             {QStringLiteral("generation"),
+              QString::number(m_tokens.generation())},
+             {QStringLiteral("sourceThemeId"), m_tokens.sourceThemeId()},
+             {QStringLiteral("backgroundBase"),
+              backgroundBase.isValid()
+                  ? backgroundBase.name(QColor::HexRgb)
+                  : QString()},
+         }},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"),

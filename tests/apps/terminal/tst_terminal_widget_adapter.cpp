@@ -79,7 +79,9 @@ void TerminalWidgetAdapterTest::
   QVERIFY(QTest::qWaitForWindowExposed(&host));
   QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 
-  const QImage rendered = host.grab().toImage();
+  // Inspect only qtermwidget's pixels. The host chrome contains menu/tab/status
+  // text and would let an empty terminal viewport satisfy this regression.
+  const QImage rendered = adapter.terminalWidget()->grab().toImage();
   QVERIFY(!rendered.isNull());
   const QColor center = QColor::fromRgba(
       rendered.pixel(rendered.width() / 2, rendered.height() / 2));
@@ -88,7 +90,20 @@ void TerminalWidgetAdapterTest::
 
 void TerminalWidgetAdapterTest::
     realPtyOutputSupportsBoundedSearchAndVisibleLinks() {
+  QWidget host;
+  auto *layout = new QVBoxLayout(&host);
+  layout->setContentsMargins(0, 0, 0, 0);
+  host.resize(720, 320);
+  host.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&host));
+  // Hostile production ordering: Settings1 resolves after the top-level is
+  // already exposed, so the adapter is constructed and attached late. On the
+  // unrepaired tree qtermwidget enters teletype mode while parentless; bytes
+  // become searchable but Wayland paints no glyphs after the live reparent.
+  QTest::qWait(75);
   TerminalWidgetAdapter adapter(darkAppearance(), builtinDefaultProfile());
+  layout->addWidget(adapter.terminalWidget());
+  QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
   const TerminalLaunchRequest request{
       .program = QStringLiteral("/bin/sh"),
       .arguments = {QStringLiteral("-c"),
@@ -103,6 +118,24 @@ void TerminalWidgetAdapterTest::
   QVERIFY2(started.ok, qPrintable(started.diagnostic));
   QTest::qWait(150);
   QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+  const QImage rendered = host.grab().toImage();
+  QVERIFY(!rendered.isNull());
+  qsizetype foregroundLikePixels = 0;
+  for (int y = 0; y < rendered.height(); ++y) {
+    // Exclude the first cell: qtermwidget's pristine block cursor alone is
+    // bright enough to make a blank renderer look nonempty.
+    for (int x = 40; x < rendered.width(); ++x) {
+      const QColor pixel = QColor::fromRgba(rendered.pixel(x, y));
+      if (pixel.lightness() > 120) {
+        ++foregroundLikePixels;
+      }
+    }
+  }
+  // Hostile regression control for the real symptom: searchable scrollback
+  // is insufficient if the production renderer paints an empty viewport.
+  QVERIFY2(foregroundLikePixels > 100,
+           "child output reached scrollback but painted no visible glyphs");
 
   const TerminalSearchQuery literal{.pattern = QStringLiteral("needle"),
                                     .caseSensitive = true,

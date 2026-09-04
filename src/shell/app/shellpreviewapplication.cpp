@@ -2,6 +2,7 @@
 #include "shellpreviewapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "../common/shelltokenpublisher.h"
 #include "screenshotcapture.h"
 
 #include <QCoreApplication>
@@ -40,6 +41,19 @@ int ShellPreviewApplication::run()
     if (options.listOnly) {
         printCatalog();
         return 0;
+    }
+    m_tokenPublisher =
+        std::make_unique<ShellTokenPublisher>(m_engine, m_themes, this);
+    connect(m_tokenPublisher.get(), &ShellTokenPublisher::publicationFailed,
+            &m_application, [](const QString &message) {
+                qCritical().noquote()
+                    << "QindaQt shell preview token publication failed:" << message;
+                QCoreApplication::exit(4);
+            });
+    if (!m_tokenPublisher->start(&error)) {
+        qCritical().noquote()
+            << "QindaQt shell preview token publication failed:" << error;
+        return 4;
     }
     if (!loadWindow(options)) {
         return 3;

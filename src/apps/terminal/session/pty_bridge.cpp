@@ -29,9 +29,10 @@ TerminalPtyBridge::OpenResult TerminalPtyBridge::open() {
             .diagnostic = QStringLiteral("Bridge is already open"),
             .slavePath = {}};
   }
-  // AGENT-GUARD: O_CLOEXEC keeps the master out of every child; the slave is
-  // deliberately NOT opened here. The child opens the slave path itself, so
-  // no descriptor sharing (and no shared O_NONBLOCK flag) can reach it.
+  // AGENT-GUARD: O_CLOEXEC keeps the master out of every child. The child
+  // opens the slave path itself, so no descriptor sharing (and no shared
+  // O_NONBLOCK flag) can reach it; the parent guard opened below is likewise
+  // close-on-exec and exists only to span the pre-child EIO gap.
   const int master = ::posix_openpt(O_RDWR | O_NOCTTY | O_CLOEXEC);
   if (master < 0) {
     return {.ok = false,
@@ -57,7 +58,24 @@ TerminalPtyBridge::OpenResult TerminalPtyBridge::open() {
             .slavePath = {}};
   }
 
+  // AGENT-GUARD: Linux reports EIO on a PTY master while no slave descriptor
+  // is open. The read notifier can observe that gap before the forked child
+  // opens its controlling tty and would then quiesce the entire generation.
+  // Keep a non-controlling, close-on-exec slave guard until teardown; process
+  // reaping, not PTY EOF, is the session's exit authority.
+  const int guardSlave =
+      ::open(slaveName, O_RDWR | O_NOCTTY | O_CLOEXEC);
+  if (guardSlave < 0) {
+    const int savedErrno = errno;
+    ::close(master);
+    errno = savedErrno;
+    return {.ok = false,
+            .diagnostic = QStringLiteral("Cannot guard the pseudo-terminal slave"),
+            .slavePath = {}};
+  }
+
   m_masterFd = master;
+  m_guardSlaveFd = guardSlave;
   m_childOutputClosed = false;
   const int flags = ::fcntl(m_masterFd, F_GETFL, 0);
   if (flags >= 0) {
@@ -107,6 +125,10 @@ void TerminalPtyBridge::closeChildChannel() {
   delete m_writeNotifier;
   m_writeNotifier = nullptr;
   m_inputBuffer.clear();
+  if (m_guardSlaveFd >= 0) {
+    ::close(m_guardSlaveFd);
+    m_guardSlaveFd = -1;
+  }
   if (m_masterFd >= 0) {
     // Closing the last master makes the kernel deliver SIGHUP to the child
     // session's foreground process group; bounded escalation stays with the

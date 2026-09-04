@@ -148,6 +148,12 @@ The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, global-menu, clipboard, task-list,
 status-notifier, audio, Bluetooth, or power state.
 
+Both shell executables publish the selected theme into their engine-owned
+`QindaQt.Tokens` facade before constructing the dispatcher. Hosted applets may
+therefore treat `Tokens.ready` and every QST-1 role as startup invariants. A
+publication or republish failure terminates the shell with an explicit error;
+continuing with undefined Controls bindings is not an available mode.
+
 ## Installed shell component closure
 
 Every install component that carries `qindaqt-shell` is independently

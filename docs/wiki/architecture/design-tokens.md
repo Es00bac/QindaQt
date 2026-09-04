@@ -44,6 +44,16 @@ Before the first publication, `ready` is false and role maps are empty;
 application composition must publish before constructing token-dependent
 controls rather than inventing presentation fallbacks.
 
+The production shell and `qindaqt-shell-preview` share one shell-owned
+publisher. After catalog selection it imports the engine singleton and
+publishes the selected `ThemeSpec` before any panel or hosted-applet QML is
+created. `ThemeCatalog::currentChanged` replaces the complete QST generation;
+an initial or later publication failure is a process-level error, because a
+shell with undefined semantic roles is not a usable fallback. The publisher
+does not choose themes or read settings, and its borrowed engine/catalog must
+outlive it. [ADR-0071](../adr/0071-publish-and-prove-shell-token-readiness.md)
+records the startup and live-evidence contract.
+
 ### Threading and errors
 
 Pure derivation is thread-neutral and has no ambient state. A loader-valid

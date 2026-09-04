@@ -12,13 +12,15 @@ dependency choice is recorded in
 
 1. load and select a validated profile, theme, applet-manifest catalog, and
    applet capability policy;
-2. inventory Qt Wayland outputs by non-empty, unique `QScreen::name()`;
-3. start the owner-bound compositor visibility client and select either one
+2. publish one complete QST-1 generation for the selected theme into the
+   shell QML engine, before any panel or hosted applet exists;
+3. inventory Qt Wayland outputs by non-empty, unique `QScreen::name()`;
+4. start the owner-bound compositor visibility client and select either one
    coherent live generation or the all-visible fallback;
-4. require exact compositor/Qt output identity, logical geometry, and scale;
-5. solve every profile panel and visibility decision through pure modules;
-6. plan a complete backend-neutral surface set; and
-7. create hidden QML/layer roles for structural changes, or update mapping and
+5. require exact compositor/Qt output identity, logical geometry, and scale;
+6. solve every profile panel and visibility decision through pure modules;
+7. plan a complete backend-neutral surface set; and
+8. create hidden QML/layer roles for structural changes, or update mapping and
    reservations in place when every static surface role is unchanged.
 
 An invalid catalog, output inventory, layout, window, or backend preparation

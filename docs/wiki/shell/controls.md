@@ -155,6 +155,13 @@ runs matched bare-Qt-Quick and token-plus-controls offscreen processes, reads
 five `smaps_rollup` PSS samples from each exact PID over three pairs, and records
 the median delta without inventing a machine-independent threshold.
 
+Controls never self-publish tokens. Every QML composition root must publish a
+complete engine-owned facade before constructing a Control; the production
+shell and preview now enforce this before their panel dispatchers and exit on
+publication failure. A warning-clean dispatcher row runs with
+`QT_FATAL_WARNINGS=1`, so an undefined token assignment is a startup regression
+rather than an accepted visual fallback.
+
 The focused selector currently discovers 34 tests: one behavior gate, 25
 process-isolated visual rows, the host-Noto-hidden canary row, font pinning,
 three font-fixture fail-closed controls, source policy, staged installed

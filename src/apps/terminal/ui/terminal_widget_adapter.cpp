@@ -8,8 +8,9 @@
 
 #include <QContextMenuEvent>
 #include <QEvent>
+#include <QCoreApplication>
 #include <QFile>
-#include <QSocketNotifier>
+#include <QResizeEvent>
 #include <QTimer>
 
 #include <cerrno>
@@ -17,7 +18,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/ioctl.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -26,11 +26,6 @@
 
 namespace QindaQt::Apps::Terminal {
 namespace {
-
-// AGENT-NOTE: Buffers toward the rendering widget are bounded (64 KiB,
-// drop-newest) so sustained backpressure cannot block the GUI thread or grow
-// without limit; the wiki records this degradation.
-constexpr qsizetype kMaxWidgetOutputBufferBytes = 64 * 1024;
 
 // Child descriptor sweep fallback bound when close_range(2) is unavailable.
 // The comment claims a bounded sweep, not "every descriptor", on purpose.
@@ -159,50 +154,19 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
     : TerminalSessionBackend(parent), m_appearance(appearance),
       m_profile(profile) {
   // AGENT-NOTE: startnow is deliberately 0 and setShellProgram/setArgs are
-  // never used: the widget must not spawn its own child (ADR-0040). The
-  // child runs on the adapter's own bridge PTY; the widget's teletype slave
-  // receives child output for rendering only.
+  // never used: the widget must not spawn its own child (ADR-0040). Teletype
+  // startup is deferred to start(), after TerminalSession has published and
+  // the window has attached this widget to its final layout. Initializing a
+  // parentless QTermWidget while a Wayland event loop is live leaves its
+  // ScreenWindow detached from the subsequently reparented display: bytes
+  // reach emulation and the cursor paints, but every glyph stays invisible.
   m_widget = new QTermWidget(0, nullptr);
   m_widget->setAttribute(Qt::WA_StyledBackground, false);
-  m_widget->startTerminalTeletype();
   m_widget->installEventFilter(this);
   if (m_widget->focusProxy() != nullptr) {
     m_widget->focusProxy()->installEventFilter(this);
   }
   initializeSearchSurface();
-
-  // Private output channel into the widget's teletype slave: slave write ->
-  // widget master read -> emulator. O_NONBLOCK here is safe because this
-  // descriptor is never inherited by the child (ADR-0040).
-  const int widgetSlaveFd = m_widget->getPtySlaveFd();
-  if (widgetSlaveFd >= 0) {
-    m_widgetSlaveFd = ::dup(widgetSlaveFd);
-    if (m_widgetSlaveFd >= 0) {
-      ::fcntl(m_widgetSlaveFd, F_SETFD, FD_CLOEXEC);
-      const int flags = ::fcntl(m_widgetSlaveFd, F_GETFL, 0);
-      if (flags >= 0) {
-        ::fcntl(m_widgetSlaveFd, F_SETFL, flags | O_NONBLOCK);
-      }
-      makeWidgetTransportByteTransparent();
-      m_widgetOutputNotifier =
-          new QSocketNotifier(m_widgetSlaveFd, QSocketNotifier::Write, this);
-      m_widgetOutputNotifier->setEnabled(false);
-      connect(m_widgetOutputNotifier, &QSocketNotifier::activated, this,
-              [this] { flushChildOutputToWidget(); });
-    }
-  }
-
-  // The child's own PTY: keyboard/paste master-writes reach the child as
-  // input; child output and echo are pumped from the bridge master into the
-  // widget channel above.
-  m_bridge = new TerminalPtyBridge(
-      [this](const char *data, int length) {
-        forwardChildOutput(data, length);
-      },
-      this);
-  const auto opened = m_bridge->open();
-  m_bridgeDiagnostic = opened.diagnostic;
-  m_slavePath = opened.slavePath;
 
   connect(m_widget, &QTermWidget::sendData, this,
           [this](const char *data, int length) {
@@ -223,37 +187,6 @@ TerminalWidgetAdapter::TerminalWidgetAdapter(
 }
 
 QWidget *TerminalWidgetAdapter::terminalWidget() { return m_widget; }
-
-void TerminalWidgetAdapter::makeWidgetTransportByteTransparent() {
-  // AGENT-CONTRACT (P2: double line discipline, ADR-0040): the bytes this
-  // adapter writes into the widget's teletype slave are already
-  // line-disciplined child output from the bridge PTY. qtermwidget opens its
-  // PTY with default termios, whose OPOST/ONLCR would transform that output
-  // a second time (LF -> CRLF), so the transport must be byte-transparent.
-  // Fail-closed: when the output processing cannot be cleared AND the
-  // clearing verified, the transport stays unusable and start() refuses with
-  // a typed diagnostic instead of silently rendering mutated bytes.
-  termios settings{};
-  if (::tcgetattr(m_widgetSlaveFd, &settings) != 0) {
-    m_transportDiagnostic =
-        QStringLiteral("Cannot read the rendering teletype settings");
-    return;
-  }
-  // OPOST off disables every output translation; the cast keeps the bitwise
-  // complement unsigned so -Wsign-conversion stays clean.
-  settings.c_oflag &= static_cast<tcflag_t>(~OPOST);
-  if (::tcsetattr(m_widgetSlaveFd, TCSANOW, &settings) != 0) {
-    m_transportDiagnostic =
-        QStringLiteral("Cannot clear rendering teletype output processing");
-    return;
-  }
-  termios verified{};
-  if (::tcgetattr(m_widgetSlaveFd, &verified) != 0 ||
-      (verified.c_oflag & OPOST) != 0) {
-    m_transportDiagnostic = QStringLiteral(
-        "Rendering teletype output processing could not be disabled");
-  }
-}
 
 TerminalWidgetAdapter::~TerminalWidgetAdapter() {
   closeChildChannel();
@@ -304,6 +237,12 @@ TerminalWidgetAdapter::start(const TerminalLaunchRequest &request) {
     return {.ok = false,
             .diagnostic = QStringLiteral("Session backend is single-use")};
   }
+  if (m_bridge == nullptr && !initializeChannels()) {
+    return {.ok = false,
+            .diagnostic = !m_transportDiagnostic.isEmpty()
+                              ? m_transportDiagnostic
+                              : m_bridgeDiagnostic};
+  }
   if (m_bridge == nullptr || !m_bridge->isOpen() || m_widgetSlaveFd < 0) {
     return {.ok = false,
             .diagnostic =
@@ -316,6 +255,14 @@ TerminalWidgetAdapter::start(const TerminalLaunchRequest &request) {
     // transforming transport would corrupt exact child output bytes.
     return {.ok = false, .diagnostic = m_transportDiagnostic};
   }
+
+  // The production collection attaches this widget immediately before
+  // start(). Deliver its actual attached geometry to qtermwidget's internal
+  // TerminalDisplay synchronously; otherwise a fast prompt is parsed on the
+  // constructor grid and disappears when the queued first resize arrives.
+  QCoreApplication::sendPostedEvents(m_widget, QEvent::Resize);
+  QResizeEvent attachedResize(m_widget->size(), m_widget->size());
+  QCoreApplication::sendEvent(m_widget, &attachedResize);
 
   // AGENT-NOTE: All byte conversion and pointer-array construction happens
   // before fork so the child's pre-exec path stays allocation-free (P2-2).
@@ -373,81 +320,6 @@ void TerminalWidgetAdapter::requestShutdown() {
   if (m_widget != nullptr) {
     delete m_widget;
     m_widget = nullptr;
-  }
-}
-
-void TerminalWidgetAdapter::closeChildChannel() {
-  if (m_bridge != nullptr) {
-    // Master close delivers SIGHUP to the child session; the session layer
-    // adds bounded process-group escalation on top of this.
-    m_bridge->closeChildChannel();
-  }
-  if (m_widgetOutputNotifier != nullptr) {
-    m_widgetOutputNotifier->setEnabled(false);
-    m_widgetOutputNotifier->deleteLater();
-    m_widgetOutputNotifier = nullptr;
-  }
-  m_widgetOutputBuffer.clear();
-  if (m_widgetSlaveFd >= 0) {
-    ::close(m_widgetSlaveFd);
-    m_widgetSlaveFd = -1;
-  }
-}
-
-void TerminalWidgetAdapter::forwardChildOutput(const char *data, int length) {
-  if (data == nullptr || length <= 0 || m_widgetSlaveFd < 0) {
-    return;
-  }
-  if (m_widgetOutputBuffer.size() >= kMaxWidgetOutputBufferBytes) {
-    return;
-  }
-  // Bell policy (S1 profiles): qtermwidget 2.4 exposes no bell-mode API, so
-  // a Silent profile drops BEL bytes from the child/echo stream before it
-  // reaches the emulator. Output bytes are otherwise forwarded verbatim
-  // (the double line-discipline guard above owns every other mutation).
-  QByteArray payload;
-  if (m_profile.bellPolicy == TerminalProfile::BellPolicy::Silent) {
-    payload.reserve(length);
-    for (int index = 0; index < length; ++index) {
-      if (data[index] != '\a') {
-        payload.append(data[index]);
-      }
-    }
-    if (payload.isEmpty()) {
-      return;
-    }
-    data = payload.constData();
-    length = static_cast<int>(payload.size());
-  }
-  const qsizetype room =
-      kMaxWidgetOutputBufferBytes - m_widgetOutputBuffer.size();
-  m_widgetOutputBuffer.append(data, qMin<qsizetype>(length, room));
-  flushChildOutputToWidget();
-}
-
-void TerminalWidgetAdapter::flushChildOutputToWidget() {
-  while (!m_widgetOutputBuffer.isEmpty() && m_widgetSlaveFd >= 0) {
-    const ssize_t written =
-        ::write(m_widgetSlaveFd, m_widgetOutputBuffer.constData(),
-                static_cast<size_t>(m_widgetOutputBuffer.size()));
-    if (written > 0) {
-      m_widgetOutputBuffer.remove(0, written);
-      continue;
-    }
-    if (written < 0 && errno == EINTR) {
-      continue;
-    }
-    if (written < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-      if (m_widgetOutputNotifier != nullptr) {
-        m_widgetOutputNotifier->setEnabled(true);
-      }
-      return;
-    }
-    m_widgetOutputBuffer.clear();
-    return;
-  }
-  if (m_widgetOutputNotifier != nullptr) {
-    m_widgetOutputNotifier->setEnabled(false);
   }
 }
 

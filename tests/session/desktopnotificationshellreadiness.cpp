@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktopnotificationshellreadiness.h"
 
-#include <QDBusConnection>
-#include <QDBusConnectionInterface>
-#include <QDBusInterface>
-#include <QDBusMessage>
-#include <QDBusReply>
+#include <QColor>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonValue>
@@ -15,9 +11,6 @@
 
 namespace QindaQt::Test {
 namespace {
-
-constexpr auto ServiceName = "org.qindaqt.ShellDevelopment";
-constexpr auto ObjectPath = "/org/qindaqt/ShellDevelopment", InterfaceName = "org.qindaqt.ShellDevelopment1";
 
 DesktopNotificationShellCheck check(
     DesktopNotificationShellDisposition disposition, QString code,
@@ -91,10 +84,29 @@ bool exactColdEnvelope(const QJsonObject &envelope)
         && !failure.value(QStringLiteral("message")).toString().isEmpty();
 }
 
+bool validReadyTokens(const QJsonObject &tokens)
+{
+    quint64 generation = 0;
+    const QString sourceTheme =
+        tokens.value(QStringLiteral("sourceThemeId")).toString();
+    const QString backgroundBase =
+        tokens.value(QStringLiteral("backgroundBase")).toString();
+    const QColor backgroundColor(backgroundBase);
+    return tokens.size() == 5
+        && tokens.value(QStringLiteral("ready")) == QJsonValue(true)
+        && tokens.value(QStringLiteral("qstRevision")).toInt(-1) == 1
+        && canonicalCounter(tokens.value(QStringLiteral("generation")),
+                            &generation)
+        && generation > 0 && !sourceTheme.isEmpty()
+        && backgroundColor.isValid()
+        && backgroundBase == backgroundColor.name(QColor::HexRgb);
+}
+
 QJsonObject normalizedEvidence(
     const DesktopNotificationShellObservation &observation,
     qint64 shellProcessId, bool privatePresentationAllowed, bool centerOpen,
-    quint64 centerOpenedCount, const QJsonObject &center)
+    quint64 centerOpenedCount, const QJsonObject &center,
+    const QJsonObject &tokens)
 {
     QJsonObject centerEvidence{{QStringLiteral("exists"),
                                 center.value(QStringLiteral("exists"))}};
@@ -106,6 +118,7 @@ QJsonObject normalizedEvidence(
         {QStringLiteral("owner"), observation.owner},
         {QStringLiteral("servicePid"), QString::number(observation.serviceProcessId)},
         {QStringLiteral("shellPid"), QString::number(shellProcessId)},
+        {QStringLiteral("tokens"), tokens},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"), privatePresentationAllowed},
@@ -221,13 +234,20 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     }
     const QJsonValue presentationValue =
         snapshot.value(QStringLiteral("presentation"));
+    const QJsonValue tokensValue = snapshot.value(QStringLiteral("tokens"));
     const QJsonValue windowsValue = snapshot.value(QStringLiteral("windows"));
     const QJsonValue observationsValue =
         snapshot.value(QStringLiteral("observations"));
-    if (!presentationValue.isObject() || !windowsValue.isObject()
+    if (!presentationValue.isObject() || !tokensValue.isObject()
+        || !windowsValue.isObject()
         || !observationsValue.isObject()) {
         return invalid(QStringLiteral("invalid-shape"),
                        QStringLiteral("ShellDevelopment snapshot shape is invalid"));
+    }
+    const QJsonObject tokens = tokensValue.toObject();
+    if (!validReadyTokens(tokens)) {
+        return invalid(QStringLiteral("tokens-not-ready"),
+                       QStringLiteral("ShellDevelopment tokens are not ready"));
     }
     const QJsonObject presentation = presentationValue.toObject();
     const QJsonValue privacyValue =
@@ -259,7 +279,7 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     }
     const QJsonObject evidence = normalizedEvidence(
         observation, shellProcessId, privatePresentationAllowed, centerOpen,
-        centerOpenedCount, center);
+        centerOpenedCount, center, tokens);
     if (expectation.phase == DesktopNotificationShellPhase::ClosedHidden
         && centerOpen) {
         return invalid(QStringLiteral("center-preopened"),
@@ -316,57 +336,6 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     return check(DesktopNotificationShellDisposition::Ready,
                  QStringLiteral("ready"), QString{},
                  evidence);
-}
-
-DesktopNotificationShellCheck sampleDesktopNotificationShell(
-    const QDBusConnection &connection, QDBusConnectionInterface &bus,
-    const DesktopNotificationShellExpectation &expectation)
-{
-    DesktopNotificationShellObservation observation;
-    const QDBusReply<QString> owner =
-        bus.serviceOwner(QString::fromLatin1(ServiceName));
-    if (!owner.isValid()) {
-        observation.serviceOwnerReplyValid = false;
-        observation.serviceOwnerReplyError = owner.error().message();
-        observation.serviceOwnerReplyErrorName = owner.error().name();
-        return validateDesktopNotificationShell(observation, expectation);
-    }
-    if (owner.value().isEmpty()) {
-        return validateDesktopNotificationShell(observation, expectation);
-    }
-    observation.owner = owner.value();
-    const QDBusReply<quint32> processId = bus.servicePid(observation.owner);
-    if (processId.isValid()) {
-        observation.serviceProcessId = static_cast<qint64>(processId.value());
-    }
-    // AGENT-GUARD: Call the sampled unique owner, then prove the well-known
-    // name still resolves to it. Calling the replaceable name would permit a
-    // restart between PID authentication and Snapshot to splice generations.
-    const QDBusMessage request = QDBusMessage::createMethodCall(
-        observation.owner, QString::fromLatin1(ObjectPath),
-        QString::fromLatin1(InterfaceName), QStringLiteral("Snapshot"));
-    // The supervisor gives each regular probe one second. Leave its process
-    // bookkeeping tail intact and never inherit QtDBus's much longer default.
-    const QDBusReply<QByteArray> reply(
-        connection.call(request, QDBus::Block, 250));
-    observation.snapshotReplyValid = reply.isValid();
-    if (!reply.isValid()) {
-        observation.replyError = reply.error().message();
-        observation.replyErrorName = reply.error().name();
-    } else {
-        QJsonParseError parseError;
-        const QJsonDocument document =
-            QJsonDocument::fromJson(reply.value(), &parseError);
-        if (parseError.error == QJsonParseError::NoError && document.isObject()) {
-            observation.snapshot = document.object();
-        }
-    }
-    const QDBusReply<QString> ownerAfter =
-        bus.serviceOwner(QString::fromLatin1(ServiceName));
-    if (ownerAfter.isValid()) {
-        observation.ownerAfterSnapshot = ownerAfter.value();
-    }
-    return validateDesktopNotificationShell(observation, expectation);
 }
 
 bool DesktopNotificationShellExpectationCheck::ready() const noexcept
