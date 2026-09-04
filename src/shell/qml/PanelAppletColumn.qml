@@ -17,6 +17,7 @@ Column {
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
+    property var statusNotifierAppletAccess: null
     spacing: 4
 
     function appletZone(applet) {

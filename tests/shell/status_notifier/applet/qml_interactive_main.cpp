@@ -60,6 +60,17 @@ public:
                 return new StatusNotifierAppletHarness(engine);
             });
     }
+
+public slots:
+    // AGENT-GUARD: themePath() fails closed without the pinned runtime theme
+    // copies; pinDeterministicFonts() must run before any harness singleton
+    // factory publishes qinda-light. (Clipboard harness precedent — without
+    // this, the rows only pass after an unrelated Controls test happened to
+    // write the pinned copies into the shared build directory first.)
+    void applicationAvailable()
+    {
+        QindaQt::Controls::TestSupport::pinDeterministicFonts();
+    }
 };
 
 QUICK_TEST_MAIN_WITH_SETUP(status_notifier_applet_interactive, StatusNotifierAppletQmlSetup)

@@ -7,6 +7,7 @@ import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.TaskList 1.0 as TaskListModule
+import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierModule
 
 Item {
     id: root
@@ -23,6 +24,7 @@ Item {
     property var launcherAppletAccess: null
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
+    property var statusNotifierAppletAccess: null
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -50,10 +52,14 @@ Item {
         !liveApplets && String(applet.plugin ?? "") === "task-list"
     readonly property bool taskListReady:
         (ready && entryPoint === "qindaqt.applets.task-list") || taskListPreview
+    readonly property bool statusNotifierPreview:
+        !liveApplets && String(applet.plugin ?? "") === "status-notifier"
+    readonly property bool statusNotifierReady:
+        (ready && entryPoint === "qindaqt.applets.status-notifier") || statusNotifierPreview
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
         || powerReady || clipboardReady || launcherReady || globalMenuReady
-        || taskListReady
+        || taskListReady || statusNotifierReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -127,6 +133,23 @@ Item {
         taskListAppletAccess !== null ? taskListAppletAccess
                                      : inheritedTaskListAccess()
 
+    function inheritedStatusNotifierAccess() {
+        let candidate = root.parent
+        // AppletChip intentionally remains presentation-only. The panel rows
+        // carry this one controller facade, and the bounded lookup crosses
+        // only the existing wrapper instead of exposing a shell service bag.
+        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
+            if (typeof candidate.statusNotifierAppletAccess !== "undefined")
+                return candidate.statusNotifierAppletAccess
+            candidate = candidate.parent
+        }
+        return null
+    }
+
+    readonly property var effectiveStatusNotifierAppletAccess:
+        statusNotifierAppletAccess !== null ? statusNotifierAppletAccess
+                                            : inheritedStatusNotifierAccess()
+
     // AGENT-CONTRACT: BuiltinAppletRegistry is the compiled trust root; this
     // dispatcher is only its presentation inventory. Focused tests must fail
     // if a registered entry point lacks a renderer here.
@@ -138,7 +161,8 @@ Item {
                    : clipboardReady ? clipboard.implicitWidth
                    : launcherReady ? launcher.implicitWidth
                    : globalMenuReady ? globalMenu.implicitWidth
-                   : taskListReady ? taskList.implicitWidth : 0
+                   : taskListReady ? taskList.implicitWidth
+                   : statusNotifierReady ? statusNotifier.implicitWidth : 0
     implicitHeight: clockReady ? clock.implicitHeight
                     : notificationCenterReady ? notifications.implicitHeight
                     : audioReady ? audio.implicitHeight
@@ -147,7 +171,8 @@ Item {
                     : clipboardReady ? clipboard.implicitHeight
                     : launcherReady ? launcher.implicitHeight
                     : globalMenuReady ? globalMenu.implicitHeight
-                    : taskListReady ? taskList.implicitHeight : 0
+                    : taskListReady ? taskList.implicitHeight
+                    : statusNotifierReady ? statusNotifier.implicitHeight : 0
 
     ClockApplet {
         id: clock
@@ -223,6 +248,15 @@ Item {
         anchors.fill: parent
         visible: root.taskListReady
         access: root.effectiveTaskListAppletAccess
+        vertical: root.vertical
+    }
+
+    StatusNotifierModule.StatusNotifierApplet {
+        id: statusNotifier
+        anchors.fill: parent
+        visible: root.statusNotifierReady
+        access: root.effectiveStatusNotifierAppletAccess
+        theme: root.theme
         vertical: root.vertical
     }
 }
