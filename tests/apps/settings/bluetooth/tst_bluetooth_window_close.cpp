@@ -57,6 +57,7 @@ private Q_SLOTS:
   void waitsForDiscoveryReleaseBeforeClosing();
   void unsuccessfulAcquireDuringCloseCompletesClose_data();
   void unsuccessfulAcquireDuringCloseCompletesClose();
+  void promptEscapeInRealHostSendsSingleRejection();
   void compactHostProvidesBluetoothFocusPath();
 };
 
@@ -215,6 +216,92 @@ void BluetoothWindowCloseTest::unsuccessfulAcquireDuringCloseCompletesClose() {
                              readySnapshot(epoch, 8, false));
   }
   QVERIFY(!window->isVisible());
+}
+
+void BluetoothWindowCloseTest::
+    promptEscapeInRealHostSendsSingleRejection() {
+  QQmlApplicationEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
+  engine.addImportPath(QStringLiteral(QINDAQT_SETTINGS_SOURCE_DIR));
+  QString facadeError;
+  auto *facade = QindaQt::Apps::SettingsAppearance::ensureTokenFacade(
+      engine, &facadeError);
+  QVERIFY2(facade != nullptr, qPrintable(facadeError));
+  const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+  QVERIFY2(loaded.ok, qPrintable(loaded.error));
+  QString publishError;
+  QVERIFY2(facade->publish(loaded.theme, {}, &publishError),
+           qPrintable(publishError));
+
+  SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
+  SettingsNavigationController navigation(registry,
+                                          QStringLiteral("bluetooth"));
+  QObject unusedRouteModel;
+  StubCustomizeSettings customize;
+  StubBluetoothSettingsModel bluetooth;
+  QQmlComponent component(&engine);
+  component.loadUrl(QUrl::fromLocalFile(
+      QStringLiteral(QINDAQT_SETTINGS_SOURCE_DIR "/Main.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  std::unique_ptr<QObject> root(component.createWithInitialProperties({
+      {QStringLiteral("navigation"), QVariant::fromValue(&navigation)},
+      {QStringLiteral("quietingSettings"),
+       QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("appearanceSettings"),
+       QVariant::fromValue(&unusedRouteModel)},
+      {QStringLiteral("customizeSettings"), QVariant::fromValue(&customize)},
+      {QStringLiteral("bluetoothSettings"), QVariant::fromValue(&bluetooth)},
+  }));
+  QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+  auto *window = qobject_cast<QQuickWindow *>(root.get());
+  QVERIFY(window != nullptr);
+  window->show();
+  QVERIFY(QTest::qWaitForWindowExposed(window));
+
+  auto *message = sceneItem(
+      window->contentItem(), QStringLiteral("bluetoothPairingMessage"));
+  auto *close = sceneItem(
+      window->contentItem(), QStringLiteral("bluetoothCloseButton"));
+  QVERIFY(message != nullptr);
+  QVERIFY(close != nullptr);
+  QVERIFY(!message->isVisible());
+
+  // AGENT-NOTE: focus deliberately stays outside the pairing section; the
+  // prompt's cancel reply must be delivered regardless of which route
+  // control holds focus when Escape arrives.
+  close->forceActiveFocus();
+  QTRY_COMPARE(window->activeFocusItem(), close);
+
+  bluetooth.pairingPrompt = {
+      {QStringLiteral("active"), true},
+      {QStringLiteral("kind"), QStringLiteral("confirm-passkey")},
+      {QStringLiteral("deviceLabel"), QStringLiteral("New phone")},
+      {QStringLiteral("detail"), QStringLiteral("123456")},
+      {QStringLiteral("serviceUuid"), QString{}},
+      {QStringLiteral("entered"), 0},
+      {QStringLiteral("confirmationAvailable"), true},
+      {QStringLiteral("passkeyInput"), false},
+      {QStringLiteral("pinInput"), false},
+  };
+  Q_EMIT bluetooth.viewChanged();
+  QTRY_VERIFY(message->isVisible());
+
+  QTest::keyClick(window, Qt::Key_Escape);
+  QTRY_COMPARE(bluetooth.promptReplies, 1);
+  QVERIFY(!bluetooth.lastBoolean);
+  QTest::qWait(50);
+  QCOMPARE(bluetooth.promptReplies, 1);
+
+  // A busy reply lane fences Escape back to the host's route-tab focus.
+  bluetooth.pairingReplyPending = true;
+  Q_EMIT bluetooth.viewChanged();
+  QTest::keyClick(window, Qt::Key_Escape);
+  auto *bluetoothTab = sceneItem(
+      window->contentItem(), QStringLiteral("settingsNavButton_bluetooth"));
+  QVERIFY(bluetoothTab != nullptr);
+  QTRY_COMPARE(window->activeFocusItem(), bluetoothTab);
+  QCOMPARE(bluetooth.promptReplies, 1);
 }
 
 void BluetoothWindowCloseTest::compactHostProvidesBluetoothFocusPath() {

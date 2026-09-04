@@ -100,9 +100,16 @@ The declared host-entry focus target is the Close action. It is always enabled
 and admitted, including empty, unavailable, degraded, and busy states, so Tab
 from the active route tab never lands on a disabled domain action. Escape
 rejects the exact active prompt when its reply lane is free; otherwise it
-returns focus to the active wide or compact Bluetooth tab. Ctrl+7 selects the
-route, while the platform Quit shortcut closes the window after requesting
-discovery release.
+returns focus to the active wide or compact Bluetooth tab. Exactly one enabled
+window-context Escape shortcut exists in the real Settings host: Settings
+Center's window shortcut yields — is disabled — while this route shows an
+active prompt with a free reply lane, so the route's own Escape shortcut is the
+sole enabled match and delivers one cancel reply regardless of which route
+control holds focus. Two enabled identical window-context shortcuts are
+ambiguous and Qt activates neither; both sides read the same prompt truth
+(`pairingPrompt.active` and `pairingReplyPending`) from the route model.
+Ctrl+7 selects the route, while the platform Quit shortcut closes the window
+after requesting discovery release.
 
 ## Composition and package boundary
 
@@ -139,7 +146,10 @@ DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
 - the warning-fatal page rows render wide and compact offscreen/software scenes
   and prove accessible controls, disabled truth, shortcut-independent route
   focus entry, Pair/Forget/Trust and prompt action wiring, accessible entry and
-  confirmation keyboard parity including Escape rejection, authority disclosure, compact-host Escape/Tab
+  confirmation keyboard parity including Escape rejection, full-host prompt
+  Escape delivery in the real `Main.qml` composition (exactly one false
+  confirmation while the reply lane is free, route-tab focus when it is busy),
+  authority disclosure, compact-host Escape/Tab
   entry, successful-release waiting, and real-model window close after rejected,
   uncertain, owner-lost, or owner-replaced acquisition;
 - boundary and negative-control rows enforce an allow-list-only include scan
