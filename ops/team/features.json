@@ -281,7 +281,7 @@
           "title": "Status-notifier tray",
           "weight": 2,
           "state": "EXECUTABLE",
-          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state. S1 adds the production StatusNotifierWatcher transport with truthful ownership, the item client/monitor with bounded facts and one owner generation per watcher epoch, the D-BusMenu adapter, and the icon renderer confined to injected roots.",
+          "summary": "The integrated StatusNotifier foundation validates bounded item payloads, keys ownership to exact D-Bus unique names, fences watcher generations and epochs, publishes replacement populations atomically, and projects deterministic presentation state. S1 adds the production StatusNotifierWatcher transport with truthful ownership, the item client/monitor with bounded facts and one owner generation per watcher epoch, the D-BusMenu adapter, and the icon renderer confined to injected roots. S2 adds the compiled QindaQt.Shell.StatusNotifier applet: a shell-private controller over the injected source seam with generation-fenced facts, exactly-once activate/secondary-activate/context-menu dispatch, immediate degraded projection with last-known-good retention and an acknowledgement path, bounded overflow, keyboard traversal, and accessibility; registered, staged in the DesktopVirtual component, not yet hosted.",
           "evidence": [
             {
               "kind": "commit",
@@ -302,9 +302,14 @@
               "kind": "source",
               "reference": "ops/team/messages/shell-system-tray/1788464051-rozsa-peter-review-verdict.md",
               "summary": "Tray S2 candidate b10692c is shelved after its only funded review rejected it at 0/1/0/0: malformed live replacement changes the private registry to degraded without notifying the controller, and no production acknowledgement path clears that state."
+            },
+            {
+              "kind": "commit",
+              "reference": "f3abd4ab",
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             }
           ],
-          "caveat": "Applet registration, shell composition, and installed nested interaction proof remain. Tray S2 is shelved after the final funded P1 rejection; no Task List + tray hosting lane was opened."
+          "caveat": "Production shell hosting (lane open) and installed nested interaction proof remain."
         },
         {
           "id": "QQ-004.12",
@@ -369,7 +374,7 @@
               "summary": "The owning page records the eight focused rows, the meta-object surface gate, the composition-chain presence contracts, and explicit production boundaries."
             }
           ],
-          "caveat": "B1 composes the B0 client whose resident service still runs the deterministic unavailable backend: the production BlueZ adapter, pairing/agent UX, nested panel interaction, physical adapters, and hardware qualification remain separate outcomes."
+          "caveat": "B1 composes the B0 client; the resident service defaults to the production BlueZ adapter and pairing prompts are proven only against fake org.bluez/Agent managers on private buses: nested panel interaction, physical adapters, and hardware qualification remain separate outcomes."
         },
         {
           "id": "QQ-004.15",
@@ -630,7 +635,7 @@
           "title": "Bluetooth devices",
           "weight": 9,
           "state": "EXECUTABLE",
-          "summary": "Bluetooth B0 plus the production BlueZ adapter: the bounded Bluetooth1 protocol, deterministic least-authority model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and a production AdapterBackend over an injected direct-QtDBus org.bluez connection that drives only adapter power, the reference-counted discovery lease, and paired-device connect/disconnect, retiring truth on BlueZ owner loss and bounding hostile properties, with the composition root defaulting to production and an explicit deterministic mode for tests.",
+          "summary": "Bluetooth B0 plus the production BlueZ adapter: the bounded Bluetooth1 protocol, deterministic least-authority model, exact-owner asynchronous client, resident private-bus service, activation and owner-loss lifecycle, and a production AdapterBackend over an injected direct-QtDBus org.bluez connection that drives only adapter power, the reference-counted discovery lease, and paired-device connect/disconnect, retiring truth on BlueZ owner loss and bounding hostile properties, with the composition root defaulting to production and an explicit deterministic mode for tests. Pairing adds Agent1 prompt handling with replies bound to the exact pending prompt, Pair/Remove/Trust over the versioned Bluetooth1 extension, agent registration/unregistration across adapter loss, and Escape-cancellable prompts in the Settings route and applet.",
           "evidence": [
             {
               "kind": "commit",
@@ -651,9 +656,14 @@
               "kind": "source",
               "reference": "ops/team/messages/platform-bluetooth/1788464050-kathrin-bringmann-final-recheck-verdict.md",
               "summary": "Bluetooth pairing candidate 7025a1c is shelved after its final funded review rejected it at 0/0/1/0: duplicate window-context Escape shortcuts in the real Settings composition are ambiguous, so an active prompt is not cancelled."
+            },
+            {
+              "kind": "commit",
+              "reference": "4b3f07d9",
+              "summary": "Bluetooth pairing is integrated: exact accepted product e473bbf74e9954ce064763a3daf49fcaa9eee552 (Rosalind Franklin, Z.AI GLM, Escape repair over Hee Oh's 7025a1c), rechecked ACCEPT 0/0/0/0 by Kathrin Bringmann (OpenAI Codex); the merged tree passes 105/105 focused Bluetooth/Settings/status-notifier/applet/shell-runtime rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601 on the system KWin 6.6.6 roots."
             }
           ],
-          "caveat": "The adapter is qualified only against a fake org.bluez on a private bus: physical adapters/rfkill, a host BlueZ build, Agent1 pairing UX, Bluetooth audio correlation, suspend/hotplug, Settings UI, and hardware/resource qualification remain. The pairing/Agent1 candidate is shelved after its final funded P2 rejection."
+          "caveat": "The adapter is qualified only against a fake org.bluez on a private bus: physical adapters/rfkill, a host BlueZ build, Bluetooth audio correlation, suspend/hotplug, Settings UI, and hardware/resource qualification remain. The pairing/Agent1 candidate is shelved after its final funded P2 rejection. Pairing is proven only against fake org.bluez and Agent manager services on private buses."
         },
         {
           "id": "QQ-005.06",
