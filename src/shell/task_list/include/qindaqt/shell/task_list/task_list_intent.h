@@ -12,6 +12,7 @@ enum class TaskIntentKind {
   Activate,
   Minimize,
   Close,
+  Raise,
 };
 
 struct TaskIntentRequest {
@@ -44,6 +45,10 @@ struct TaskIntentOutcome {
   TaskEntryKind entryKind = TaskEntryKind::Window;
   QString primaryWindowId;
   QStringList memberWindowIds;
+  // The displayed state selects MinimizeWindow versus UnminimizeWindow at
+  // the shell composition boundary. Carrying it in the accepted outcome
+  // keeps that decision fenced to the exact generation the user acted on.
+  bool minimized = false;
 
   [[nodiscard]] bool ok() const noexcept {
     return code == TaskIntentErrorCode::None;

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# AGENT-CONTRACT: BuiltinAppletContent.qml imports this complete module set.
+# AGENT-CONTRACT: BuiltinAppletContent.qml imports this module set staged through this inventory (Clipboard and Task List are staged by PanelVisibilityTests.cmake).
 # Keep staging data-driven so a DesktopVirtual install cannot repair one nested
 # row while leaving another row dependent on an ambient build-tree import.
 set(

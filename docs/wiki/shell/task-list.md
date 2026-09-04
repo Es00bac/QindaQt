@@ -49,14 +49,16 @@ batches always produce identical generations regardless of producer order.
 ## Request intents
 
 The source turns a user action into a typed `TaskIntentRequest`
-(`Activate`, `Minimize`, `Close`) evaluated against the exact generation the
+(`Activate`, `Minimize`, `Close`, `Raise`) evaluated against the exact generation the
 caller displayed. Stale-id rejection is checked in a fixed order: malformed
 request, no accepted generation, degraded source, revision mismatch
 (`StaleRevision`), then unknown task id. An accepted outcome reports the
-resolved entry kind, the primary window id, and the deterministic member list —
-activation targets the primary, while container close/minimize policy (Close
-All, Ungroup, Cancel) remains with the shell adapter, which is the only
-component allowed to touch real windows.
+resolved entry kind, the primary window id, deterministic member list, and
+displayed minimized state. Activation and raise target the primary. The shell
+composition maps Minimize to unminimize when that fenced state was minimized;
+container minimize/unminimize and Close All visit every member in canonical
+order. Ungroup remains an explicit `releaseContainer` action, while dismissing
+the context menu is Cancel. Only shell composition may touch real windows.
 
 ## Scope filtering
 
@@ -104,9 +106,11 @@ Each `Windows()` reply is bounded and fully decoded under the exact owner. The
 producer retains `(owner, epoch, revision, payload)` solely as window-inventory
 lineage. Under one owner, an epoch change, revision regression, or changed
 bytes at an equal revision is foreign truth and rejects fail-closed. Owner
-replacement starts a new lineage; late owner/token replies and reads raced by
-`WindowsChanged` are discarded. Transient transport failures use a bounded
-retry schedule, while the known protocol gap does not poll.
+replacement starts a new lineage, clears the old source generation, and
+publishes Degraded truth; late owner/token replies and reads raced by
+`WindowsChanged` are discarded. Transient same-owner transport failures retain
+the last generation and use a bounded retry schedule, while the known protocol
+gap does not poll.
 
 Compositor1 1.1 has no single payload carrying every T0 fact. `Windows()` lacks
 output/workspace scope, application display name, urgency, and an atomic
@@ -164,22 +168,31 @@ the adapter rejects them for `hybrid-process` containers
 process-local Hybrid topology remains the compositor's own authority
 ([hybrid topology](../architecture/hybrid-topology.md)).
 
-## Window operations and remaining protocol gaps
+## Window operations and remaining fact gaps
 
 Window-level `activate`, `minimize`, `unminimize`, `close`, and `raise` exist
 today on the authenticated `org.qindaqt.CompositorShell1` surface
 ([ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md)),
 not on Compositor1, and are consumed through the published exact-owner
-`src/shell_window_actions_client` with the displayed
-`ShellVisibilitySnapshot` generation `(epoch, revision)` as fence. The
-task-list adapter therefore finishes window-level T0 intents as `Unavailable`
-(codes `compositor-window-*-unavailable` /
-`compositor-container-*-unavailable`) only until the later shell composition
-lane routes accepted intents through that client; no new Compositor1 window
-operation is requested, and this module must not grow its own identity or
-action reader — the authenticated active-window identity
-([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md)) is a
-separate single-client concern.
+`src/shell_window_actions_client` with its action generation `(epoch,
+revision)` as fence. `src/shell/runtime/tasklistappletcomposition.*` routes
+accepted Task List window intents through that client. It borrows the exact
+instance already owned by `ShellRuntimeApplication` for authenticated identity
+and window actions, so Task List never creates a second bus connection or
+owner binding. The router requires the facts authority and action client to
+name the same unique owner, a Ready displayed revision, and a valid window
+generation. It serializes the whole task operation and maps each real reply to
+one terminal applet result. Timeout, transport loss, or owner change after
+dispatch is `Uncertain` and is never replayed; unbound or mismatched owners are
+`Unavailable` before bus traffic. The older Compositor1 operation adapter keeps
+its stable `compositor-window-*-unavailable` fallback codes for standalone
+consumers and owns only the container operations.
+
+No new Compositor1 window operation is requested, and the task-list modules
+must not grow their own identity or action reader. The authenticated
+active-window identity
+([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md))
+remains a separate concern served by that same shell-owned client.
 
 The existing authenticated client closes the ordinary window-action gap, but
 Compositor1 1.1 still lacks the following task-list facts; each is a candidate
@@ -196,19 +209,21 @@ compositor lane, not a shell workaround:
 3. Mutation authority for `hybrid-process` containers, if task-list page
    activation/detach should cover production groups.
 
-Container close policy (Close All / Ungroup / Cancel) stays with the later
-shell composition lane; its Ungroup arm maps to `releaseContainer`.
+The hosted policy selects Close All for the Close action, maps Ungroup to
+`releaseContainer`, and treats context-menu dismissal as Cancel. Close All and
+container minimize/unminimize send one authenticated request per canonical
+member but expose one outer pending operation and exactly one terminal result.
 
 ## Applet presentation
 
 `src/shell/task_list/applet/` owns the registered panel presentation slice: the
 pure bounded strip projection, the shell-private `TaskListAppletController`,
 its injected operation seam, and the compiled `QindaQt.Shell.TaskList` 1.0
-module. The slice is a **registered built-in, deliberately not hosted**: the
+module. The slice is a **registered and hosted built-in**: the
 manifest (`data/applets/task-list.json`), the audited registry entry
 (`qindaqt.applets.task-list`), and the policy decisions resolve a profile
-instance to `ready`, but production-shell dispatcher composition
-(`src/shell/runtime`, `src/shell/qml`) remains the later hosting lane.
+instance to `ready`, and the production shell/preview dispatchers render that
+entry on horizontal and vertical panels.
 
 The controller composes the accepted T0/T1 boundaries over injected seams and
 owns no bus connection of its own:
@@ -251,10 +266,9 @@ strip presents at most 64 rows in canonical order — also the Tab and arrow
 traversal order — and reports the exact hidden count as overflow truth. Every
 row carries its generation revision and echoes it into each intent, so the T0
 arbitration refuses actions against a generation the user no longer sees.
-Context actions per row are Activate, Minimize, Close, and — for container
-rows — Ungroup, which maps to the T1 `releaseContainer`; container close
-policy (Close All / Ungroup / Cancel) itself stays with the later shell
-composition lane. Rows show a typed one-letter icon placeholder derived from
+Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
+for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
+uses the hosted Close All policy. Rows show a typed one-letter icon placeholder derived from
 the application identity: no freedesktop/QIcon seam exists in the tree yet,
 and inventing one here would duplicate launcher's future authority.
 
@@ -269,10 +283,10 @@ context menu uses the QQC2 style palette because Controls ships no menu
 primitive yet. The composing shell publishes the theme through the same
 Tokens facade seam the offscreen rows exercise.
 
-Window-level activate/minimize/close still finish `Unavailable` through the T1
-adapter until the composition lane routes them through the published exact-owner
-`src/shell_window_actions_client` ([ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md));
-the applet presents that outcome truthfully as feedback instead of hiding it.
+Window-level activate, minimize/unminimize, close, and raise route through the
+published exact-owner `src/shell_window_actions_client`
+([ADR-0061](../adr/0061-authenticate-shell-window-actions-by-panel-owner.md));
+the applet presents refused or uncertain outcomes truthfully as feedback.
 The authenticated active-window identity
 ([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md))
 remains a separate single-client concern the applet never touches.
@@ -281,10 +295,12 @@ Focused rows are selected with `ctest -R '^qindaqt\.task-list-applet-'`:
 pure projection bounds/overflow, controller fencing over fake seams (cold
 start, capability gates, stale/foreign lineage, synchronous-completion
 attribution, owner loss), bridge dispatch over the real adapter with a fake
-transport, fatal-warning-clean offscreen QML state/keyboard rows, a static
-boundary poison probe, and a relocated installed-package proof of the
-`TaskListAppletRuntime` component. No row contacts a host bus, display, or
-compositor, and no nested session is claimed.
+transport, the production composition over a private bus (all five action
+methods, grouped sequencing, owner-loss uncertainty and stale-truth clearing),
+fatal-warning-clean offscreen QML state/keyboard and horizontal/vertical
+dispatcher rows, a static boundary poison probe, and a relocated
+installed-package/source-poison proof of the `TaskListAppletRuntime` component.
+No focused row contacts a host bus, display, or compositor.
 
 ## Current implementation
 
@@ -297,12 +313,13 @@ transport row in `tests/shell/task_list` (see the
 [testing harness](../development/testing-harness.md)). The T2 slice adds the
 registered applet controller, compiled `QindaQt.Shell.TaskList` presentation,
 manifest/policy/registry entry, and `TaskListAppletRuntime` install component
-described in the previous section. These slices are
-registered in the combined source/test build but are deliberately not
-instantiated by the production shell. The current reader intentionally cannot
-publish Ready from Compositor1 1.1; the coherent inventory is a compositor
-prerequisite. Composing the published exact-owner
-`src/shell_window_actions_client` behind accepted window intents, production
-dispatcher hosting of the registered applet, and installed nested
-keyboard/accessibility qualification remain later
-shell slices and are not claimed here.
+described in the previous section. T3 composes those slices into the production
+shell, hosts the ninth built-in in both dispatchers, places an exact Task List
+instance in task-oriented stock profiles, and packages its compiled module in
+every shell-carrying component. The current reader intentionally cannot publish
+Ready from Compositor1 1.1; the coherent inventory remains a compositor
+prerequisite, so an ordinary production session presents honest Degraded truth
+until that fact contract lands. Private-bus composition, offscreen keyboard and
+accessibility, install/source-poison, non-nested stage closure, and contained
+panel-session rows qualify the hosting boundary without claiming fabricated
+live window facts.

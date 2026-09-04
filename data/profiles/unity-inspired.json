@@ -30,6 +30,7 @@
       "alignment": "fill", "rows": 1, "thickness": 58, "length": 1.0,
       "applets": [
         {"id": "launcher", "plugin": "application-launcher"},
+        {"id": "hosted-task-list", "plugin": "task-list"},
         {"id": "tasks", "plugin": "grouped-task-list"},
         {"id": "workspaces", "plugin": "workspace-switcher"},
         {"id": "applications", "plugin": "launcher"}

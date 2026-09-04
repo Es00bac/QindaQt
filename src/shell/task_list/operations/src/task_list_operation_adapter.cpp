@@ -129,6 +129,13 @@ quint64 TaskListOperationAdapter::executeTaskIntent(
                   : QStringLiteral("Compositor1 1.1 exposes no window close "
                                    "operation");
     break;
+  case TaskIntentKind::Raise:
+    code = container
+               ? QStringLiteral("compositor-container-raise-unavailable")
+               : QStringLiteral("compositor-window-raise-unavailable");
+    message = QStringLiteral("Compositor1 1.1 exposes no window or group "
+                             "raise operation");
+    break;
   }
   Q_EMIT operationFinished(
       makeResult(token, TaskListOperationStatus::Unavailable, std::move(code),

@@ -75,6 +75,12 @@ bool TaskListAppletController::closeTask(const QString &taskId,
                             QStringLiteral("Close"));
 }
 
+bool TaskListAppletController::raiseTask(const QString &taskId,
+                                         quint64 revision) {
+  return dispatchTaskIntent(TaskIntentKind::Raise, taskId, revision,
+                            QStringLiteral("Raise"));
+}
+
 bool TaskListAppletController::activateContainerPage(const QString &taskId,
                                                      const QString &pageId,
                                                      quint64 revision) {

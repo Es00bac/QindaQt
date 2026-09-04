@@ -75,6 +75,20 @@ private slots:
                  QStringList{QStringLiteral("w-1")});
     }
 
+    void minimizedStateIsFencedIntoTheAcceptedIntent()
+    {
+        TaskListSource source;
+        auto fact = TaskListTest::standalone(QStringLiteral("w-1"), kAppId);
+        fact.minimized = true;
+        QVERIFY(TaskListTest::publish(source, {fact}).ok());
+
+        TaskIntentRequest request;
+        request.taskId = QStringLiteral("w-1");
+        request.kind = TaskIntentKind::Minimize;
+        request.expectedRevision = source.revision();
+        QCOMPARE(source.requestIntent(request).minimized, true);
+    }
+
     void containerIntentsExposeEveryMemberDeterministically()
     {
         TaskListSource source;

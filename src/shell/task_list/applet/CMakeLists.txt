@@ -139,3 +139,45 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
     COMPONENT TaskListAppletRuntime
 )
+
+# Install the compiled module into any component that carries qindaqt-shell.
+# Public headers remain owned by the primary TaskListAppletRuntime install
+# above; sibling shell components need only the runtime QML closure.
+function(qindaqt_install_task_list_applet_runtime component_name)
+    qt_query_qml_module(
+        qindaqt_shell_task_list_applet
+        QMLDIR runtime_qmldir
+        TYPEINFO runtime_typeinfo
+        QML_FILES runtime_qml_files
+        QML_FILES_DEPLOY_PATHS runtime_deploy_paths
+    )
+    install(
+        TARGETS qindaqt_shell_task_list_applet
+                qindaqt_shell_task_list_appletplugin
+        ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
+            COMPONENT "${component_name}"
+        LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
+            COMPONENT "${component_name}"
+        RUNTIME DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
+            COMPONENT "${component_name}"
+    )
+    install(
+        FILES
+            "${runtime_qmldir}"
+            "${runtime_typeinfo}"
+        DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
+        COMPONENT "${component_name}"
+    )
+    foreach(qml_file deploy_path IN ZIP_LISTS
+            runtime_qml_files runtime_deploy_paths)
+        cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+        cmake_path(GET deploy_path FILENAME deploy_name)
+        install(
+            FILES "${qml_file}"
+            DESTINATION
+                "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList/${deploy_directory}"
+            RENAME "${deploy_name}"
+            COMPONENT "${component_name}"
+        )
+    endforeach()
+endfunction()

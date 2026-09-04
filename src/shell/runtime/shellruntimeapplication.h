@@ -79,6 +79,7 @@ class PowerAppletComposition;
 class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
+class TaskListAppletComposition;
 
 class ShellRuntimeApplication final : public QObject {
     Q_OBJECT
@@ -174,6 +175,7 @@ private:
     std::unique_ptr<PowerAppletComposition> m_powerApplet;
     std::unique_ptr<LauncherAppletComposition> m_launcherApplet;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
+    std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;

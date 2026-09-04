@@ -336,4 +336,68 @@ if(TARGET qindaqt-shell)
         qindaqt.task-list-applet-installed-package
         PROPERTIES LABELS "shell;task-list;installed;poison" RUN_SERIAL TRUE TIMEOUT 300
     )
+
+    find_program(QINDAQT_TASK_LIST_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime")
+    qt_add_executable(
+        qindaqt_task_list_applet_composition_private_bus_tests
+        tst_task_list_applet_composition_private_bus.cpp
+        task_list_applet_test_fakes.h
+        task_list_operation_test_support.h
+        "${task_list_boundary_source_root}/src/shell/runtime/tasklistappletcomposition.cpp"
+        "${task_list_boundary_source_root}/src/shell/runtime/tasklistappletcomposition.h"
+    )
+    target_include_directories(
+        qindaqt_task_list_applet_composition_private_bus_tests
+        PRIVATE "${task_list_boundary_source_root}/src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_task_list_applet_composition_private_bus_tests
+        PRIVATE
+            QindaQt::AppletHost
+            QindaQt::AppletRuntime
+            QindaQt::ShellTaskListApplet
+            QindaQt::ShellTaskListProducer
+            QindaQt::ShellTaskListOperations
+            QindaQt::ShellWindowActionsClient
+            Qt6::DBus
+            Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_task_list_applet_composition_private_bus_tests
+        PRIVATE QINDAQT_SOURCE_DIR="${task_list_boundary_source_root}"
+    )
+    qindaqt_enable_warnings(
+        qindaqt_task_list_applet_composition_private_bus_tests)
+    add_test(
+        NAME qindaqt.task-list-applet-composition-private-bus
+        COMMAND "${QINDAQT_TASK_LIST_DBUS_RUN_SESSION}" --
+                $<TARGET_FILE:qindaqt_task_list_applet_composition_private_bus_tests>
+    )
+    set_tests_properties(
+        qindaqt.task-list-applet-composition-private-bus
+        PROPERTIES
+            LABELS "shell;task-list;runtime;private-bus;hostile"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+            TIMEOUT 30
+    )
+
+    add_test(
+        NAME qindaqt.task-list-applet-panel-dispatcher
+        COMMAND
+            $<TARGET_FILE:Qt6::qmltestrunner>
+            -import "${task_list_boundary_source_root}/tests/shell/qml/imports"
+            -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_task_list_dispatcher.qml"
+    )
+    set_tests_properties(
+        qindaqt.task-list-applet-panel-dispatcher
+        PROPERTIES
+            LABELS "shell;task-list;runtime;offscreen;accessibility"
+            ENVIRONMENT
+                "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+            ENVIRONMENT_MODIFICATION
+                "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:;XDG_RUNTIME_DIR=set:${CMAKE_CURRENT_BINARY_DIR}/isolated-runtime"
+            TIMEOUT 30
+    )
 endif()

@@ -14,4 +14,7 @@ Item {
     objectName: "taskListApplet"
     implicitWidth: 96
     implicitHeight: 32
+    enabled: access !== null
+    Accessible.role: Accessible.Grouping
+    Accessible.name: "Task list"
 }
