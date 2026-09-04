@@ -18,6 +18,7 @@
 #include "runtimepanelwindowfactory.h"
 #include "shelldevelopmentevidence.h"
 #include "settingsroutelauncher.h"
+#include "tasklistappletcomposition.h"
 
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/services/notification_presentation/presentation_token_channel.h"
@@ -205,10 +206,8 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
 
 void ShellRuntimeApplication::initializeServiceAppletCompositions()
 {
-    m_audioApplet =
-        std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
-    m_bluetoothApplet =
-        std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
+    m_audioApplet = std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
+    m_bluetoothApplet = std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
     m_powerApplet =
         std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
     const QDBusConnection sessionBus = QDBusConnection::sessionBus();
@@ -218,8 +217,12 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     m_windowActionsClient = std::make_unique<
         ShellWindowActionsClient::ShellWindowActionsClient>(
             *m_windowActionsTransport);
-    m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
-        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    m_taskListApplet = std::make_unique<TaskListAppletComposition>(m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+    QString taskListError;
+    if (!m_taskListApplet->start(&taskListError)) {
+        qWarning().noquote() << "QindaQt shell could not start Task List facts:" << taskListError;
+    }
     m_globalMenuApplet->start();
     connect(m_windowActionsClient.get(),
             &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
@@ -246,9 +249,8 @@ void ShellRuntimeApplication::restartWindowActionsIdentity()
         m_windowActionsRetry.start();
         return;
     }
-    // The compositor may not yet have observed the just-mapped dock surface.
-    // Retry the same client after its request deadline; never create a second
-    // binding or retain a failed snapshot.
+    // The compositor may not have observed the new dock yet. Retry the same
+    // client after its deadline; never add a binding or retain failed truth.
     if (!m_windowActionsClient->identitySnapshot()) {
         m_windowActionsRetry.start();
     }
@@ -286,9 +288,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
     initializeServiceAppletCompositions();
     if (m_presentationAccessToken) {
-        // Runtime option parsing treats these values as one trust bundle. Keep
-        // the assertion fail closed here too so future alternate callers cannot
-        // accidentally construct a presenter without a compositor identity.
+        // Options treat these values as one trust bundle. Fail closed here so
+        // alternate callers cannot present without compositor identity.
         if (!options.compositorProcessId.has_value()) {
             *error = QStringLiteral(
                 "notification presentation requires a compositor process id");
@@ -349,9 +350,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                 m_notificationCenterAccess.get(),
                 &NotificationCenterAppletAccess::
                     publishPrivatePresentationAllowed);
-        // The monitor's edge-triggered signal does not publish its initial
-        // Unknown state. Mirror both fail-closed defaults explicitly before
-        // any D-Bus work can complete.
+        // The edge signal omits initial Unknown. Mirror both fail-closed
+        // defaults before D-Bus work can complete.
         m_notificationPrivacyPolicy->setPrivatePresentationAllowed(
             m_sessionLockMonitor->contentMayBeShown());
         m_notificationCenterAccess->publishPrivatePresentationAllowed(
@@ -364,7 +364,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
-            m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access());
+            m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
+            m_taskListApplet->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -394,9 +395,8 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         startNotificationOutputAuthority();
         QString lockError;
         if (!m_sessionLockMonitor->start(&lockError)) {
-            // Lock observation is a privacy gate, not an essential panel
-            // process. A local/session-bus failure keeps the policy denied
-            // while the remainder of the shell stays available.
+            // Lock observation is a privacy gate, not essential panel work.
+            // Bus failure keeps policy denied while the shell stays available.
             qWarning().noquote()
                 << "QindaQt shell could not start authenticated lock-state"
                    " observation; notification presentation remains private:"
@@ -466,6 +466,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_taskListApplet.reset();
     m_globalMenuApplet.reset();
     if (m_windowActionsClient) {
         m_windowActionsClient->stop();
@@ -500,9 +501,8 @@ bool ShellRuntimeApplication::settlePanelVisibility(QString *error)
     const bool authorityAvailable = m_visibilityClient
         && !m_visibilityClient->safeVisibleRequired()
         && m_visibilityClient->snapshot().has_value();
-    // One hide transition may acquire an animation hold after the pure plan
-    // was applied. Reevaluate in the same event turn so the compositor never
-    // paints an intermediate unmapped frame before the animation starts.
+    // A hide may acquire an animation hold after planning. Reevaluate in the
+    // same turn so no intermediate unmapped frame is painted.
     for (int pass = 0; pass != 3; ++pass) {
         bool immediateReconcile = false;
         if (!m_panelVisibility->synchronize(

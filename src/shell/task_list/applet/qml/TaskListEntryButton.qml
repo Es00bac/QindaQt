@@ -154,7 +154,7 @@ T.ToolButton {
         }
         T.MenuItem {
             objectName: "taskListContextMinimize"
-            text: qsTr("Minimize")
+            text: button.entry.minimized ? qsTr("Restore") : qsTr("Minimize")
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
             onTriggered: button.access.minimizeTask(
@@ -166,6 +166,14 @@ T.ToolButton {
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
             onTriggered: button.access.closeTask(
+                             button.entry.taskId, button.entry.generationRevision)
+        }
+        T.MenuItem {
+            objectName: "taskListContextRaise"
+            text: qsTr("Raise")
+            enabled: button.access !== null && button.access.canManage
+                     && !button.entry.pending
+            onTriggered: button.access.raiseTask(
                              button.entry.taskId, button.entry.generationRevision)
         }
         T.MenuSeparator {

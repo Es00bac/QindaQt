@@ -451,9 +451,8 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   QCOMPARE(port.lastCall().revision, revision);
 
-  // AGENT-GUARD: every reprojection rebuilds the Repeater delegates, so rows
-  // must be re-fetched after each dispatch or completion — a held QQuickItem*
-  // dangles. The pending row is disabled and skips further dispatch.
+  // AGENT-GUARD: Reprojection rebuilds delegates; re-fetch rows after it or a
+  // held QQuickItem* dangles. The pending row skips further dispatch.
   QQuickItem *pendingRow = entryButtonFor(root, QStringLiteral("w2"));
   QVERIFY(pendingRow != nullptr);
   QVERIFY(!pendingRow->isEnabled());
@@ -480,8 +479,6 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   commitLast();
 
-  // The Menu key opens the row's context menu; its items dispatch with the
-  // exact taskId and generationRevision.
   const auto openMenuOn = [&root, &window](const QString &taskId) {
     QQuickItem *row = entryButtonFor(root, taskId);
     if (row == nullptr) {
@@ -533,6 +530,16 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QVERIFY(triggerItem(menu, QStringLiteral("taskListContextClose")));
   QTRY_COMPARE(port.calls.size(), 5);
   QCOMPARE(port.lastCall().request.kind, TaskIntentKind::Close);
+  QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
+  QCOMPARE(port.lastCall().request.expectedRevision, revision);
+  commitLast();
+
+  menu = openMenuOn(QStringLiteral("w1"));
+  QVERIFY(menu != nullptr);
+  QTRY_VERIFY(menu->property("visible").toBool());
+  QVERIFY(triggerItem(menu, QStringLiteral("taskListContextRaise")));
+  QTRY_COMPARE(port.calls.size(), 6);
+  QCOMPARE(port.lastCall().request.kind, TaskIntentKind::Raise);
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
 }

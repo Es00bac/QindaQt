@@ -51,7 +51,7 @@ allowing their static profile label to masquerade as live behavior.
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, and clipboard packages.
 The compiled first-party registry contains nine audited entry points. The
-production QML dispatcher renders all eight hosted entry points:
+production QML dispatcher renders all nine hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -116,9 +116,11 @@ production QML dispatcher renders all eight hosted entry points:
   the audited package by the trust default and explicitly denied to
   third-party packages), a compiled `QindaQt.Shell.TaskList` module, and a
   shell-private controller over the injected T0 source and T1
-  authority/operation seams. Production-shell dispatcher composition is the
-  later hosting lane, so the production dispatcher does not render it yet;
-  resolution to `ready` is covered by the applet-runtime resolver tests. See
+  authority/operation seams. Both production and preview dispatchers host the
+  compiled module on horizontal and vertical panels. Production borrows the
+  shell's sole exact-owner `CompositorShell1` client for generation-fenced
+  activate, minimize/unminimize, close, and raise requests; owner loss clears
+  prior task truth and no uncertain request is replayed. See
   [Task list source model](task-list.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
@@ -131,8 +133,8 @@ its Session buttons never enter the reusable applet API. Meta+L uses the
 existing audited global-shortcut registrar and dispatches the same typed Lock
 request as the popup.
 The preview keeps deterministic static applet fixtures rather than connecting
-to live clock, notification, global-menu, clipboard, audio, Bluetooth, or power
-state.
+to live clock, notification, global-menu, clipboard, task-list, audio,
+Bluetooth, or power state.
 
 ## Installed shell component closure
 
@@ -147,6 +149,11 @@ Each carries every directly linked applet backing library plus
 baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
 on another component to supply either library.
 
+Every shell-carrying component also installs the compiled Clipboard and Task
+List module directories (`qmldir`, typeinfo, QML, and backing/plugin artifacts)
+because `BuiltinAppletContent.qml` imports both unconditionally. The closure
+probe rejects either module missing from any isolated component stage.
+
 `qindaqt.shell-runtime-component-closure` installs each member of that
 inventory alone beneath the active build root, authenticates both resolved
 library paths, and launches the staged shell with ambient loader, display,
@@ -160,9 +167,8 @@ be added to the data-driven `DesktopVirtual` applet-module inventory in
 evidence; it rejects a missing linked library and a missing imported-module
 `qmldir` without waiting for shell readiness to time out.
 
-Task-list and status-tray manifests remain accepted contracts. Task list now
-resolves `ready` as a registered built-in (the hosting lane that renders it in
-the production dispatcher is still separate); status tray resolves as
+Task-list and status-tray manifests remain accepted contracts. Task List now
+resolves `ready` and is rendered as the ninth hosted built-in; status tray resolves as
 `implementation-unavailable`. Launcher and Global Menu resolve `ready` and are
 rendered by the production panel dispatcher; Clipboard joins them when its
 public clients expose consented ready truth. Profile plug-in IDs with

@@ -34,6 +34,7 @@
       "alignment": "center", "rows": 1, "thickness": 54, "length": 0.52,
       "applets": [
         {"id": "apps", "plugin": "application-launcher", "settings": {"zone": "center"}},
+        {"id": "hosted-task-list", "plugin": "task-list", "settings": {"zone": "center"}},
         {"id": "tasks", "plugin": "grouped-task-list", "settings": {"zone": "center"}}
       ]
     }

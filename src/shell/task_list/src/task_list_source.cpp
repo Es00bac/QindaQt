@@ -68,6 +68,7 @@ TaskListSource::requestIntent(const TaskIntentRequest &request) const {
   outcome.entryKind = match->kind;
   outcome.primaryWindowId = match->primaryWindowId;
   outcome.memberWindowIds = match->memberWindowIds;
+  outcome.minimized = match->minimized;
   return outcome;
 }
 
