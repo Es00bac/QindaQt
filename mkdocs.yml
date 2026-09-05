@@ -58,6 +58,7 @@ nav:
       - Notification presentation: shell/notification-presentation.md
       - Power applet presentation: shell/power-applet.md
       - Status notifier tray: shell/status-tray.md
+      - Shell iconography: shell/iconography.md
   - Reference:
       - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
@@ -165,3 +166,4 @@ nav:
       - "ADR-0069: Confined network credential entry": adr/0069-confine-network-credential-entry.md
       - "ADR-0070: Authenticated session actions": adr/0070-confine-session-actions-behind-authenticated-boundaries.md
       - "ADR-0071: Shell token readiness": adr/0071-publish-and-prove-shell-token-readiness.md
+      - "ADR-0072: Confined shell iconography": adr/0072-shell-iconography-confined-xdg-icon-themes.md
