@@ -81,6 +81,7 @@ private:
     void publishClientTree();
     void activate(const QString &actionId);
     void refreshHostedMenu();
+    void withdrawHostedMenu(const ProviderEndpoint &endpoint);
 
     QDBusConnection m_connection;
     const Ownership::ActiveWindowSource &m_activeWindowSource;
