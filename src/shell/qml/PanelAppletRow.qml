@@ -20,6 +20,7 @@ Flickable {
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
+    property var desktopControlsAccess: null
     property bool vertical: false
     readonly property int lanes: Math.max(1, Number(panel.rows ?? 1))
     readonly property var zoneApplets: (panel.applets ?? []).filter(
@@ -93,6 +94,7 @@ Flickable {
                 clipboardAppletAccess: root.clipboardAppletAccess
                 taskListAppletAccess: root.taskListAppletAccess
                 statusNotifierAppletAccess: root.statusNotifierAppletAccess
+                desktopControlsAccess: root.desktopControlsAccess
             }
         }
     }

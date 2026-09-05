@@ -70,6 +70,7 @@ namespace QindaQt::Shell {
 class RuntimePanelWindowFactory;
 class AudioAppletComposition;
 class ShellAppearanceBridge;
+class DesktopControlsComposition;
 class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
@@ -106,6 +107,7 @@ private:
     [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
+    void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
@@ -199,6 +201,7 @@ private:
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
+    std::unique_ptr<DesktopControlsComposition> m_desktopControls;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;

@@ -16,6 +16,7 @@ Window {
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
+    property var desktopControlsAccess: null
 
     visible: false
     color: "transparent"
@@ -36,5 +37,6 @@ Window {
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
+        desktopControlsAccess: root.desktopControlsAccess
     }
 }

@@ -16,6 +16,7 @@ Item {
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
+    property var desktopControlsAccess: null
     readonly property bool horizontal: panel.edge === "top" || panel.edge === "bottom"
     readonly property var colors: theme.colors ?? ({})
 
@@ -71,6 +72,7 @@ Item {
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
+        desktopControlsAccess: root.desktopControlsAccess
     }
     PanelAppletRow {
         id: centerZone
@@ -93,6 +95,7 @@ Item {
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
+        desktopControlsAccess: root.desktopControlsAccess
     }
     PanelAppletRow {
         id: endZone
@@ -115,5 +118,6 @@ Item {
         globalMenuAppletAccess: root.globalMenuAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
+        desktopControlsAccess: root.desktopControlsAccess
     }
 }

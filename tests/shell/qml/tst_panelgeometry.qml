@@ -43,6 +43,68 @@ Item {
             wait(20)
             compare(root.named(panel, "taskListApplet").length, 1)
         }
+        function test_desktopControlsHaveOnePurposeFacade_data() {
+            return [
+                { tag: "switcher", plugin: "workspace-switcher", kind: "workspaceSwitcher", facade: "workspaces" },
+                { tag: "workspaces", plugin: "workspace-tiles", kind: "workspaceTiles", facade: "workspaces" },
+                { tag: "desktop", plugin: "show-desktop", kind: "showDesktop", facade: "workspaces" },
+                { tag: "overview", plugin: "overview-trigger", kind: "overviewTrigger", facade: "overview" },
+                { tag: "active", plugin: "active-application", kind: "activeApplication", facade: "activeApplication" },
+                { tag: "system", plugin: "system-menu", kind: "systemMenu", facade: "systemMenu" },
+                { tag: "status", plugin: "system-status", kind: "systemStatus", facade: "systemStatus" },
+                { tag: "places", plugin: "places-menu", kind: "placesMenu", facade: "places" },
+                { tag: "quick", plugin: "quick-launch", kind: "quickLaunch", facade: "quickLaunch" },
+                { tag: "tiles", plugin: "application-tiles", kind: "applicationTiles", facade: "quickLaunch" },
+                { tag: "palette", plugin: "command-palette", kind: "commandPalette", facade: "commandPalette" },
+                { tag: "hud", plugin: "command-hud", kind: "commandHud", facade: "commandHud" },
+                { tag: "dashboard", plugin: "dashboard", kind: "dashboard", facade: "dashboard" }
+            ]
+        }
+        function test_desktopControlsHaveOnePurposeFacade(data) {
+            const facades = {}
+            facades[data.facade] = { marker: data.facade }
+            if (data.facade === "dashboard") {
+                facades.systemStatus = { marker: "dashboard-status" }
+                facades.workspaces = { marker: "dashboard-workspaces" }
+                facades.launcher = { marker: "dashboard-launcher" }
+            }
+            panel.desktopControlsAccess = facades
+            const applet = { id: "control", plugin: data.plugin, settings: { zone: "center" },
+                runtime: { ready: true, entryPoint: "qindaqt.applets." + data.plugin } }
+            panel.panel = { edge: "top", rows: 1, applets: [applet] }
+            wait(20)
+            let controls = root.named(panel, data.kind + "Applet")
+            compare(controls.length, 1)
+            if (data.facade === "dashboard") {
+                compare(controls[0].access.systemStatus.marker, "dashboard-status")
+                compare(controls[0].access.workspaces.marker, "dashboard-workspaces")
+                compare(controls[0].access.launcher.marker, "dashboard-launcher")
+            } else {
+                compare(controls[0].access.marker, data.facade)
+            }
+            compare(controls[0].vertical, false)
+            compare(root.named(panel, "launcherApplet").length, 0)
+            compare(root.named(panel, "taskListApplet").length, 0)
+            panel.desktopControlsAccess = null
+            wait(20)
+            controls = root.named(panel, data.kind + "Applet")
+            compare(controls.length, 1)
+            compare(controls[0].access, null)
+            verify(!controls[0].enabled)
+            panel.desktopControlsAccess = facades
+            panel.panel = { edge: "left", rows: 1, applets: [applet] }
+            wait(20)
+            controls = root.named(panel, data.kind + "Applet")
+            compare(controls.length, 1)
+            compare(controls[0].vertical, true)
+            // Swapping kind destroys the selected applet instead of retaining
+            // dormant controls with borrowed live service authority.
+            panel.panel = { edge: "left", rows: 1, applets: [root.spec("task", "center")] }
+            wait(20)
+            compare(root.named(panel, data.kind + "Applet").length, 0)
+            compare(root.named(panel, "taskListApplet").length, 1)
+            panel.desktopControlsAccess = null
+        }
         function test_disjointZonesWithScrollableOverflow() {
             panel.panel = { edge: "top", rows: 1, applets: [
                 root.spec("a", "start"), root.spec("b", "center"),

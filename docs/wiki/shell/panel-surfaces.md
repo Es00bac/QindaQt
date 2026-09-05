@@ -33,6 +33,25 @@ The production executable requires Qt's Wayland platform. The separate
 test surface. Its panel wrapper deliberately approximates a single canvas;
 runtime geometry never comes from that QML calculation.
 
+## Desktop control dispatch
+
+The runtime composes desktop controls after the existing applet facades, using
+the compositor identity supplied by its startup options to the workspace adapter. It passes one
+borrowed `desktopControlsAccess` through the window, panel, zone and chip. The
+inert `DesktopControlsAppletComponents` inventory supplies Component definitions
+to `BuiltinAppletContent`'s single Loader; it never creates hidden applets. Each
+selected control receives the public facade for its function; workspace and
+launcher projections are shared where their operations are the same. Dashboard
+receives a small view of the status, workspace and launcher facades.
+Missing access yields that control's unavailable presentation. Vertical columns
+inherit the same forwarding contract from the panel row implementation.
+
+Teardown destroys panel windows first, then desktop controls, then the original
+applet compositions whose controllers they borrow. Independent dispatcher tests
+cover all thirteen mappings, null access, both orientations, and replacement
+without retaining the old control. Controller functionality and capability
+checks remain in their owning desktop-controls tests.
+
 ## Ownership
 
 The pure `shell_layout` module owns panel expansion, collision rules, logical
