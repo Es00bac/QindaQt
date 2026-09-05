@@ -26,6 +26,7 @@ Item {
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
+    property var desktopControlsAccess: null
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -57,10 +58,13 @@ Item {
         !liveApplets && String(applet.plugin ?? "") === "status-notifier"
     readonly property bool statusNotifierReady:
         (ready && entryPoint === "qindaqt.applets.status-notifier") || statusNotifierPreview
+    readonly property Component desktopControlComponent:
+        ready ? desktopComponents.componentForEntryPoint(entryPoint) : null
+    readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
         || powerReady || clipboardReady || launcherReady || globalMenuReady
-        || taskListReady || statusNotifierReady
+        || taskListReady || statusNotifierReady || desktopControlReady
     readonly property bool selected:
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
@@ -70,6 +74,12 @@ Item {
     // if a registered entry point lacks a renderer here.
     implicitWidth: renderer.item ? renderer.item.implicitWidth : 0
     implicitHeight: renderer.item ? renderer.item.implicitHeight : 0
+
+    DesktopControlsAppletComponents {
+        id: desktopComponents
+        access: root.desktopControlsAccess
+        vertical: root.vertical
+    }
 
     Loader {
         id: renderer
@@ -83,7 +93,7 @@ Item {
             : root.launcherReady ? launcherComponent
             : root.globalMenuReady ? globalMenuComponent
             : root.taskListReady ? taskListComponent
-            : root.statusNotifierReady ? statusNotifierComponent : null
+            : root.statusNotifierReady ? statusNotifierComponent : root.desktopControlComponent
     }
 
     Component {

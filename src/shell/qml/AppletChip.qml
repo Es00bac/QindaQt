@@ -20,6 +20,7 @@ Rectangle {
     property var globalMenuAppletAccess: null
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
+    property var desktopControlsAccess: null
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
@@ -139,6 +140,7 @@ Rectangle {
         clipboardAppletAccess: root.clipboardAppletAccess
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
+        desktopControlsAccess: root.desktopControlsAccess
     }
 
     Rectangle {

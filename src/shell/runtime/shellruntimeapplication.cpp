@@ -5,6 +5,9 @@
 #include "../common/shelltokenpublisher.h"
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "desktopcontrolscomposition.h"
+#include "power_applet_controller.h"
+#include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
 #include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
 #include "launcherappletcomposition.h"
@@ -310,6 +313,26 @@ void ShellRuntimeApplication::initializePanelVisibility(
             this, &ShellRuntimeApplication::scheduleOutputReconcile);
 }
 
+void ShellRuntimeApplication::initializeDesktopControls(
+    std::optional<qint64> compositorProcessId)
+{
+    // AGENT-GUARD: desktop controls borrow these applet facades. Construct
+    // after them and destroy after panel windows, before any borrowed owner.
+    m_desktopControls = std::make_unique<DesktopControlsComposition>(
+        m_applets, m_appletPolicy, QDBusConnection::sessionBus(),
+        compositorProcessId,
+        DesktopControlsComposition::BorrowedFacades{
+            m_launcherApplet->access(), m_globalMenuApplet->access(),
+            m_taskListApplet->access(), m_audioApplet->access(),
+            m_bluetoothApplet->access(), m_powerApplet->access(),
+            m_powerApplet->access() ? m_powerApplet->access()->sessionActions() : nullptr});
+    QString desktopControlsError;
+    if (!m_desktopControls->start(&desktopControlsError)) {
+        qWarning().noquote() << "QindaQt shell could not start desktop controls:"
+                             << desktopControlsError;
+    }
+}
+
 bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                                                 QString *error)
 {
@@ -331,6 +354,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         return false;
     }
     initializeServiceAppletCompositions();
+    initializeDesktopControls(options.compositorProcessId);
     if (m_presentationAccessToken) {
         // Options treat these values as one trust bundle. Fail closed here so
         // alternate callers cannot present without compositor identity.
@@ -411,6 +435,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
             m_taskListApplet->access(),
             m_statusNotifierApplet->access());
+    m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
     m_backend =
         std::make_unique<ShellSurface::LayerShellSurfaceBackend>(*m_windowFactory);
     m_controller = std::make_unique<ShellSurface::PanelSurfaceController>(*m_backend);
@@ -517,6 +542,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_controller.reset();
     m_backend.reset();
     m_windowFactory.reset();
+    m_desktopControls.reset();
     m_statusNotifierApplet.reset();
     m_taskListApplet.reset();
     m_globalMenuApplet.reset();
