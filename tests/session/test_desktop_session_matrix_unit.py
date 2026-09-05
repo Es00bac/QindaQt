@@ -134,6 +134,38 @@ def _interaction_geometry(topology: MatrixBootTopology) -> tuple[Any, dict[str, 
     }
 
 
+def _panel_applets_for_profile(profile_id: str) -> list[dict[str, object]]:
+    if profile_id == "qindaqt":
+        return [
+            {"panelId": "smart-shelf", "appletId": "apps",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+            {"panelId": "smart-shelf", "appletId": "hosted-task-list",
+             "plugin": "task-list", "ready": True,
+             "entryPoint": "qindaqt.applets.task-list"},
+        ]
+    if profile_id == "gnome-inspired":
+        return [
+            {"panelId": "top-bar", "appletId": "activities",
+             "plugin": "overview-trigger", "ready": True,
+             "entryPoint": "qindaqt.applets.overview-trigger"},
+            {"panelId": "top-bar", "appletId": "applications",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+        ]
+    return [
+        {"panelId": "taskbar", "appletId": "start",
+         "plugin": "launcher", "ready": True,
+         "entryPoint": "qindaqt.applets.launcher"},
+        {"panelId": "taskbar", "appletId": "quick-launch",
+         "plugin": "quick-launch", "ready": True,
+         "entryPoint": "qindaqt.applets.quick-launch"},
+        {"panelId": "taskbar", "appletId": "tasks",
+         "plugin": "task-list", "ready": True,
+         "entryPoint": "qindaqt.applets.task-list"},
+    ]
+
+
 def _add_interaction_evidence(
     evidence: dict[str, object],
     scenario: DesktopMatrixScenario,
@@ -174,36 +206,7 @@ def _add_interaction_evidence(
         "enabled": False, "hasBaseline": True, "state": "ready",
         "canToggle": True, "statusText": "", "errorText": "",
     }
-    if scenario.profile_id == "qindaqt":
-        panel_applets = [
-            {"panelId": "smart-shelf", "appletId": "apps",
-             "plugin": "launcher", "ready": True,
-             "entryPoint": "qindaqt.applets.launcher"},
-            {"panelId": "smart-shelf", "appletId": "hosted-task-list",
-             "plugin": "task-list", "ready": True,
-             "entryPoint": "qindaqt.applets.task-list"},
-        ]
-    elif scenario.profile_id == "gnome-inspired":
-        panel_applets = [
-            {"panelId": "top-bar", "appletId": "activities",
-             "plugin": "overview-trigger", "ready": True,
-             "entryPoint": "qindaqt.applets.overview-trigger"},
-            {"panelId": "top-bar", "appletId": "applications",
-             "plugin": "launcher", "ready": True,
-             "entryPoint": "qindaqt.applets.launcher"},
-        ]
-    else:
-        panel_applets = [
-            {"panelId": "taskbar", "appletId": "start",
-             "plugin": "launcher", "ready": True,
-             "entryPoint": "qindaqt.applets.launcher"},
-            {"panelId": "taskbar", "appletId": "quick-launch",
-             "plugin": "quick-launch", "ready": True,
-             "entryPoint": "qindaqt.applets.quick-launch"},
-            {"panelId": "taskbar", "appletId": "tasks",
-             "plugin": "task-list", "ready": True,
-             "entryPoint": "qindaqt.applets.task-list"},
-        ]
+    panel_applets = _panel_applets_for_profile(scenario.profile_id)
     evidence["interaction"] = {
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",
