@@ -118,6 +118,36 @@ bool readRole(const QJsonValue &value, ShellTaskWindowRole *role)
     return true;
 }
 
+bool readWindowType(const QJsonValue &value, ShellTaskWindowType *type)
+{
+    if (!value.isString()) {
+        return false;
+    }
+    if (value.toString() == QLatin1StringView("normal")) {
+        *type = ShellTaskWindowType::Normal;
+    } else if (value.toString() == QLatin1StringView("non-normal")) {
+        *type = ShellTaskWindowType::NonNormal;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool readWindowOwner(const QJsonValue &value, ShellTaskWindowOwner *owner)
+{
+    if (!value.isString()) {
+        return false;
+    }
+    if (value.toString() == QLatin1StringView("application")) {
+        *owner = ShellTaskWindowOwner::Application;
+    } else if (value.toString() == QLatin1StringView("bound-shell")) {
+        *owner = ShellTaskWindowOwner::BoundShell;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
 {
     if (!value.isObject()) {
@@ -125,7 +155,7 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
     }
     const QJsonObject object = value.toObject();
     if (!exactKeys(object, {"id", "applicationId", "applicationName", "title",
-                            "role", "windowType", "active", "minimized",
+                            "role", "windowType", "ownerRole", "active", "minimized",
                             "maximized", "fullscreen", "demandsAttention",
                             "outputId", "workspaceIds", "onAllWorkspaces",
                             "containerId"})) {
@@ -147,13 +177,15 @@ bool readWindow(const QJsonValue &value, ShellTaskWindow *window)
         *destination = entry.toBool();
         return true;
     };
-    QString type;
     return string("id", &window->windowId)
         && string("applicationId", &window->applicationId)
         && string("applicationName", &window->applicationName)
         && string("title", &window->title)
         && readRole(object.value(QStringLiteral("role")), &window->role)
-        && string("windowType", &type) && type == QLatin1StringView("normal")
+        && readWindowType(object.value(QStringLiteral("windowType")),
+                          &window->type)
+        && readWindowOwner(object.value(QStringLiteral("ownerRole")),
+                           &window->owner)
         && boolean("active", &window->active)
         && boolean("minimized", &window->minimized)
         && boolean("maximized", &window->maximized)

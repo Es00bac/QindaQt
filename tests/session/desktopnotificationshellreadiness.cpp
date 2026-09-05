@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktopnotificationshellreadiness.h"
+#include "desktopnotificationshellpolish.h"
 
 #include <QColor>
 #include <QJsonArray>
@@ -102,61 +103,78 @@ bool validReadyTokens(const QJsonObject &tokens)
         && backgroundBase == backgroundColor.name(QColor::HexRgb);
 }
 
-enum class TaskListReadiness { Ready, Pending, Invalid };
-
-TaskListReadiness taskListReadiness(const QJsonObject &taskList)
-{
-    quint64 generation = 0;
-    const QJsonValue windowCount = taskList.value(QStringLiteral("windowCount"));
-    const QJsonValue phaseValue = taskList.value(QStringLiteral("phase"));
-    if (taskList.size() != 3 || !phaseValue.isString()
-        || !canonicalCounter(taskList.value(QStringLiteral("generation")),
-                             &generation)
-        || !windowCount.isDouble()
-        || windowCount.toDouble() != windowCount.toInt()
-        || windowCount.toInt() < 0) {
-        return TaskListReadiness::Invalid;
-    }
-    const QString phase = phaseValue.toString();
-    const bool knownPhase = phase == QStringLiteral("loading")
-        || phase == QStringLiteral("ready")
-        || phase == QStringLiteral("empty")
-        || phase == QStringLiteral("degraded")
-        || phase == QStringLiteral("unavailable");
-    if (!knownPhase) {
-        return TaskListReadiness::Invalid;
-    }
-    return phase == QStringLiteral("ready") && generation > 0
-            && windowCount.toInt() > 0
-        ? TaskListReadiness::Ready : TaskListReadiness::Pending;
-}
-
-QJsonObject normalizedEvidence(
+std::optional<DesktopNotificationShellCheck> validateObservationIdentity(
     const DesktopNotificationShellObservation &observation,
-    qint64 shellProcessId, bool privatePresentationAllowed, bool centerOpen,
-    quint64 centerOpenedCount, const QJsonObject &center,
-    const QJsonObject &tokens, const QJsonObject &taskList)
+    const DesktopNotificationShellExpectation &expectation)
 {
-    QJsonObject centerEvidence{{QStringLiteral("exists"),
-                                center.value(QStringLiteral("exists"))}};
-    if (center.value(QStringLiteral("exists")).toBool()) {
-        centerEvidence.insert(QStringLiteral("visible"), center.value(QStringLiteral("visible")));
-        centerEvidence.insert(QStringLiteral("outputName"), center.value(QStringLiteral("outputName")));
-    }
-    return {
-        {QStringLiteral("owner"), observation.owner},
-        {QStringLiteral("servicePid"), QString::number(observation.serviceProcessId)},
-        {QStringLiteral("shellPid"), QString::number(shellProcessId)},
-        {QStringLiteral("tokens"), tokens},
-        {QStringLiteral("taskList"), taskList},
-        {QStringLiteral("presentation"),
-         QJsonObject{
-             {QStringLiteral("privatePresentationAllowed"), privatePresentationAllowed},
-             {QStringLiteral("centerOpen"), centerOpen},
-         }},
-        {QStringLiteral("centerOpenedCount"), QString::number(centerOpenedCount)},
-        {QStringLiteral("centerWindow"), centerEvidence},
+    const auto failure = [](DesktopNotificationShellDisposition disposition,
+                            QString code, QString message) {
+        return std::optional<DesktopNotificationShellCheck>{
+            check(disposition, std::move(code), std::move(message))};
     };
+    if (!observation.serviceOwnerReplyValid) {
+        if (observation.serviceOwnerReplyErrorName
+            == QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
+            return failure(DesktopNotificationShellDisposition::Pending,
+                           QStringLiteral("service-missing"),
+                           QStringLiteral("ShellDevelopment is not owned yet"));
+        }
+        return failure(
+            DesktopNotificationShellDisposition::Invalid,
+            QStringLiteral("service-owner-query-failed"),
+            observation.serviceOwnerReplyError.isEmpty()
+                ? QStringLiteral("ShellDevelopment owner query failed")
+                : observation.serviceOwnerReplyError);
+    }
+    if (expectation.dockProcessId <= 1 || expectation.outputName.isEmpty()) {
+        return failure(DesktopNotificationShellDisposition::Invalid,
+                       QStringLiteral("invalid-expectation"),
+                       QStringLiteral("shell PID or selected output is invalid"));
+    }
+    if (observation.owner.isEmpty()) {
+        return failure(DesktopNotificationShellDisposition::Invalid,
+                       QStringLiteral("service-owner-empty"),
+                       QStringLiteral("ShellDevelopment owner query returned no owner"));
+    }
+    if (!observation.owner.startsWith(QLatin1Char(':'))
+        || observation.ownerAfterSnapshot != observation.owner
+        || observation.serviceProcessId <= 1) {
+        return failure(DesktopNotificationShellDisposition::Invalid,
+                       QStringLiteral("unstable-owner"),
+                       QStringLiteral("ShellDevelopment owner changed during Snapshot"));
+    }
+    if (observation.serviceProcessId != expectation.dockProcessId) {
+        return failure(DesktopNotificationShellDisposition::Invalid,
+                       QStringLiteral("owner-pid-mismatch"),
+                       QStringLiteral("ShellDevelopment PID does not own the dock"));
+    }
+    if (!expectation.requiredUniqueOwner.isEmpty()
+        && observation.owner != expectation.requiredUniqueOwner) {
+        return failure(DesktopNotificationShellDisposition::Invalid,
+                       QStringLiteral("owner-replaced"),
+                       QStringLiteral("ShellDevelopment owner changed across input"));
+    }
+    if (!observation.snapshotReplyValid) {
+        if (observation.replyErrorName
+            == QStringLiteral("org.freedesktop.DBus.Error.UnknownObject")) {
+            return failure(DesktopNotificationShellDisposition::Pending,
+                           QStringLiteral("snapshot-object-pending"),
+                           QStringLiteral("ShellDevelopment object is not registered yet"));
+        }
+        if (observation.replyErrorName
+            == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
+            return failure(DesktopNotificationShellDisposition::Pending,
+                           QStringLiteral("snapshot-reply-pending"),
+                           QStringLiteral("ShellDevelopment Snapshot has not replied yet"));
+        }
+        return failure(
+            DesktopNotificationShellDisposition::Invalid,
+            QStringLiteral("snapshot-call-failed"),
+            observation.replyError.isEmpty()
+                ? QStringLiteral("ShellDevelopment Snapshot failed")
+                : observation.replyError);
+    }
+    return std::nullopt;
 }
 
 } // namespace
@@ -203,56 +221,9 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
         return check(DesktopNotificationShellDisposition::Pending, std::move(code),
                      std::move(message), std::move(evidence));
     };
-    if (!observation.serviceOwnerReplyValid) {
-        if (observation.serviceOwnerReplyErrorName
-            == QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
-            return pending(QStringLiteral("service-missing"),
-                           QStringLiteral("ShellDevelopment is not owned yet"));
-        }
-        return invalid(QStringLiteral("service-owner-query-failed"),
-                       observation.serviceOwnerReplyError.isEmpty()
-                           ? QStringLiteral("ShellDevelopment owner query failed")
-                           : observation.serviceOwnerReplyError);
-    }
-    if (expectation.dockProcessId <= 1 || expectation.outputName.isEmpty()) {
-        return invalid(QStringLiteral("invalid-expectation"),
-                       QStringLiteral("shell PID or selected output is invalid"));
-    }
-    if (observation.owner.isEmpty()) {
-        return invalid(QStringLiteral("service-owner-empty"),
-                       QStringLiteral("ShellDevelopment owner query returned no owner"));
-    }
-    if (!observation.owner.startsWith(QLatin1Char(':'))
-        || observation.ownerAfterSnapshot != observation.owner
-        || observation.serviceProcessId <= 1) {
-        return invalid(QStringLiteral("unstable-owner"),
-                       QStringLiteral("ShellDevelopment owner changed during Snapshot"));
-    }
-    if (observation.serviceProcessId != expectation.dockProcessId) {
-        return invalid(QStringLiteral("owner-pid-mismatch"),
-                       QStringLiteral("ShellDevelopment PID does not own the dock"));
-    }
-    if (!expectation.requiredUniqueOwner.isEmpty()
-        && observation.owner != expectation.requiredUniqueOwner) {
-        return invalid(QStringLiteral("owner-replaced"),
-                       QStringLiteral("ShellDevelopment owner changed across input"));
-    }
-    if (!observation.snapshotReplyValid) {
-        if (observation.replyErrorName == QStringLiteral("org.freedesktop.DBus.Error.UnknownObject")) {
-            return pending(QStringLiteral("snapshot-object-pending"),
-                           QStringLiteral("ShellDevelopment object is not registered yet"));
-        }
-        if (observation.replyErrorName == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
-            // A stable owner may be busy completing panel composition inside
-            // the outer boot observer's strict deadline;
-            // retrying this read-only evidence call does not replay mutation.
-            return pending(QStringLiteral("snapshot-reply-pending"),
-                           QStringLiteral("ShellDevelopment Snapshot has not replied yet"));
-        }
-        return invalid(QStringLiteral("snapshot-call-failed"),
-                       observation.replyError.isEmpty()
-                           ? QStringLiteral("ShellDevelopment Snapshot failed")
-                           : observation.replyError);
+    if (const auto identityFailure =
+            validateObservationIdentity(observation, expectation)) {
+        return *identityFailure;
     }
     const QJsonObject &snapshot = observation.snapshot;
     if (snapshot.value(QStringLiteral("schemaVersion")).toInt(-1) != 1) {
@@ -268,10 +239,14 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     const QJsonValue presentationValue = snapshot.value(QStringLiteral("presentation"));
     const QJsonValue tokensValue = snapshot.value(QStringLiteral("tokens"));
     const QJsonValue taskListValue = snapshot.value(QStringLiteral("taskList"));
+    const QJsonValue quietingValue = snapshot.value(QStringLiteral("quieting"));
+    const QJsonValue panelAppletsValue =
+        snapshot.value(QStringLiteral("panelApplets"));
     const QJsonValue windowsValue = snapshot.value(QStringLiteral("windows"));
     const QJsonValue observationsValue = snapshot.value(QStringLiteral("observations"));
     if (!presentationValue.isObject() || !tokensValue.isObject()
-        || !taskListValue.isObject() || !windowsValue.isObject()
+        || !taskListValue.isObject() || !quietingValue.isObject()
+        || !panelAppletsValue.isArray() || !windowsValue.isObject()
         || !observationsValue.isObject()) {
         return invalid(QStringLiteral("invalid-shape"),
                        QStringLiteral("ShellDevelopment snapshot shape is invalid"));
@@ -282,14 +257,29 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
                        QStringLiteral("ShellDevelopment tokens are not ready"));
     }
     const QJsonObject taskList = taskListValue.toObject();
-    const TaskListReadiness taskReadiness = taskListReadiness(taskList);
-    if (taskReadiness == TaskListReadiness::Invalid) {
+    const QJsonObject quieting = quietingValue.toObject();
+    const QJsonArray panelApplets = panelAppletsValue.toArray();
+    const auto polishReadiness = desktopNotificationShellPolishReadiness(
+        taskList, quieting, panelApplets);
+    if (polishReadiness
+        == DesktopNotificationShellPolishReadiness::InvalidTaskList) {
         return invalid(QStringLiteral("task-list-invalid"),
                        QStringLiteral("ShellDevelopment task list is malformed"));
     }
-    if (taskReadiness == TaskListReadiness::Pending) {
+    if (polishReadiness
+        == DesktopNotificationShellPolishReadiness::TaskListPending) {
         return pending(QStringLiteral("task-list-not-ready"),
                        QStringLiteral("ShellDevelopment task list is not ready yet"));
+    }
+    if (polishReadiness
+        == DesktopNotificationShellPolishReadiness::QuietingPending) {
+        return pending(QStringLiteral("quieting-not-ready"),
+                       QStringLiteral("notification quieting is not ready and off"));
+    }
+    if (polishReadiness
+        == DesktopNotificationShellPolishReadiness::InvalidPanelApplets) {
+        return invalid(QStringLiteral("panel-applets-invalid"),
+                       QStringLiteral("panel applet compatibility is malformed"));
     }
     const QJsonObject presentation = presentationValue.toObject();
     const QJsonValue privacyValue = presentation.value(QStringLiteral("privatePresentationAllowed"));
@@ -315,9 +305,9 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
         return invalid(QStringLiteral("invalid-center-window"),
                        QStringLiteral("center window existence is invalid"));
     }
-    const QJsonObject evidence = normalizedEvidence(
+    const QJsonObject evidence = desktopNotificationShellNormalizedEvidence(
         observation, shellProcessId, privatePresentationAllowed, centerOpen,
-        centerOpenedCount, center, tokens, taskList);
+        centerOpenedCount, center, tokens, taskList, quieting, panelApplets);
     if (expectation.phase == DesktopNotificationShellPhase::ClosedHidden
         && centerOpen) {
         return invalid(QStringLiteral("center-preopened"),

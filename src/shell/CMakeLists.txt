@@ -172,6 +172,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/qtcompositoroutputauthority.h
         runtime/runtimeoptions.cpp
         runtime/runtimeoptions.h
+        runtime/runtimepanelappletcompatibility.cpp
+        runtime/runtimepanelappletcompatibility.h
         runtime/runtimepanelwindowfactory.cpp
         runtime/runtimepanelwindowfactory.h
         runtime/shelldevelopmentevidence.cpp

@@ -5,6 +5,7 @@
 #include "qindaqt/shell_surface/panel_window_factory.h"
 
 #include <QHash>
+#include <QJsonArray>
 #include <QVariantMap>
 
 #include <memory>
@@ -72,6 +73,7 @@ public:
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(
         const ShellSurface::PanelSurfaceConfiguration &configuration,
         QString *error = nullptr) override;
+    [[nodiscard]] QJsonArray appletEvidence() const;
 
 private:
     [[nodiscard]] bool ensureComponent(QString *error);

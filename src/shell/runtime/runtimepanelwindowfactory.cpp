@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtimepanelwindowfactory.h"
+#include "runtimepanelappletcompatibility.h"
 
 #include "audio_applet_controller.h"
 #include "bluetooth_applet_controller.h"
@@ -18,6 +19,7 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickWindow>
+#include <QJsonObject>
 #include <QStringList>
 
 #include <utility>
@@ -69,7 +71,8 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
         QVariantMap resolvedPanel = panel.toVariantMap();
         QVariantList resolvedApplets;
         resolvedApplets.reserve(panel.applets.size());
-        for (const auto &applet : panel.applets) {
+        for (const auto &applet :
+             RuntimePanelAppletCompatibility::normalize(panel.applets)) {
             resolvedApplets.append(
                 AppletRuntime::AppletInstanceResolver::resolveBuiltin(
                     applet, panel.edge, applets, policy, registry)
@@ -78,6 +81,33 @@ RuntimePanelWindowFactory::RuntimePanelWindowFactory(QQmlEngine &engine,
         resolvedPanel.insert(QStringLiteral("applets"), resolvedApplets);
         m_panels.insert(panel.id, std::move(resolvedPanel));
     }
+}
+
+QJsonArray RuntimePanelWindowFactory::appletEvidence() const
+{
+    QJsonArray evidence;
+    QStringList panelIds = m_panels.keys();
+    panelIds.sort();
+    for (const QString &panelId : std::as_const(panelIds)) {
+        const QVariantList applets =
+            m_panels.value(panelId).value(QStringLiteral("applets")).toList();
+        for (const QVariant &value : applets) {
+            const QVariantMap applet = value.toMap();
+            const QVariantMap runtime = applet.value(QStringLiteral("runtime")).toMap();
+            evidence.append(QJsonObject{
+                {QStringLiteral("panelId"), panelId},
+                {QStringLiteral("appletId"),
+                 applet.value(QStringLiteral("id")).toString()},
+                {QStringLiteral("plugin"),
+                 applet.value(QStringLiteral("plugin")).toString()},
+                {QStringLiteral("ready"),
+                 runtime.value(QStringLiteral("ready")).toBool()},
+                {QStringLiteral("entryPoint"),
+                 runtime.value(QStringLiteral("entryPoint")).toString()},
+            });
+        }
+    }
+    return evidence;
 }
 
 RuntimePanelWindowFactory::~RuntimePanelWindowFactory() = default;

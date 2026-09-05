@@ -20,12 +20,23 @@ TaskListAppletController::TaskListAppletController(
     ShellTaskList::Producer::TaskListOperationAuthority &authority,
     TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
     IconNameResolver iconNameResolver, QObject *parent)
+    : TaskListAppletController(source, authority, operations, grants,
+                               std::move(iconNameResolver),
+                               IconResolvedResolver{}, parent) {}
+
+TaskListAppletController::TaskListAppletController(
+    ShellTaskList::TaskListSource &source,
+    ShellTaskList::Producer::TaskListOperationAuthority &authority,
+    TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+    IconNameResolver iconNameResolver,
+    IconResolvedResolver iconResolvedResolver, QObject *parent)
     : QObject(parent),
       m_source(source),
       m_authority(authority),
       m_operations(operations),
       m_grants(grants),
-      m_iconNameResolver(std::move(iconNameResolver)) {
+      m_iconNameResolver(std::move(iconNameResolver)),
+      m_iconResolvedResolver(std::move(iconResolvedResolver)) {
   connect(&m_authority,
           &ShellTaskList::Producer::TaskListOperationAuthority::stateChanged,
           this, &TaskListAppletController::handleAuthorityStateChanged);
@@ -57,10 +68,12 @@ QVariantList TaskListAppletController::entryRows() const {
     map.insert(QStringLiteral("applicationId"), row.applicationId);
     map.insert(QStringLiteral("applicationName"), row.applicationName);
     map.insert(QStringLiteral("iconText"), row.iconText);
-    map.insert(QStringLiteral("iconName"),
-               m_iconNameResolver
-                   ? m_iconNameResolver(row.applicationId)
-                   : QString{});
+    const QString iconName = m_iconNameResolver
+        ? m_iconNameResolver(row.applicationId) : QString{};
+    map.insert(QStringLiteral("iconName"), iconName);
+    map.insert(QStringLiteral("iconResolved"),
+               !iconName.isEmpty() && m_iconResolvedResolver
+                   && m_iconResolvedResolver(iconName));
     map.insert(QStringLiteral("windowCount"), row.windowCount);
     map.insert(QStringLiteral("active"), row.active);
     map.insert(QStringLiteral("minimized"), row.minimized);
@@ -90,7 +103,9 @@ int TaskListAppletController::totalWindowCount() const noexcept {
   }
   int total = 0;
   for (const ShellTaskList::TaskEntry &entry : m_source.generation().entries) {
-    total += static_cast<int>(entry.windowCount);
+    if (ShellTaskList::TaskListFilter::isVisible(entry, m_scope)) {
+      total += static_cast<int>(entry.windowCount);
+    }
   }
   return total;
 }

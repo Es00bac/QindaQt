@@ -32,7 +32,9 @@ Column {
             required property var modelData
 
             visible: root.appletZone(modelData) === root.zone
-            width: root.width
+            // AGENT-GUARD: preserve the chip's quiet empty-state contract in
+            // vertical panels as well as the horizontal production layout.
+            width: emptyLiveContent ? 0 : root.width
             applet: modelData
             theme: root.theme
             vertical: true

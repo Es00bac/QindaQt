@@ -362,6 +362,7 @@ A successful payload is one complete immutable generation:
       "title": "Notes",
       "role": "container-primary",
       "windowType": "normal",
+      "ownerRole": "application",
       "active": true,
       "minimized": false,
       "maximized": false,
@@ -380,8 +381,13 @@ Every managed topology-admitted normal window appears exactly once. IDs are
 KWin internal UUIDs. Application ID is the desktop-file identity, falling back
 to resource class; application name is the bounded live resource-class label,
 falling back to that ID. `role` is exactly `standalone`, `container-primary`,
-or `container-member`; `windowType` is currently exactly `normal` because the
-managed-window admission excludes other types. A standalone has an empty
+or `container-member`; `windowType` is exactly `normal` or `non-normal`
+(dialogs, utility, splash, and other non-normal managed toplevels are
+published with their real type); `ownerRole` is exactly `application` or
+`bound-shell` (a window owned by the authenticated panel-owning shell client,
+such as its popups). Consumers must reject payloads missing either key. The
+shell's task list excludes every `non-normal` and every `bound-shell` window
+(see [Task list source model](../shell/task-list.md)). A standalone has an empty
 `containerId`. Each container has exactly one primary and at least one member,
 and its lineage authority is `control-bridge` or `hybrid-process`.
 

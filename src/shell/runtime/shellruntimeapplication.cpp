@@ -271,7 +271,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             NotificationPresentationPolicy::NotificationPrivacyPolicy>();
         m_quietingSettingsBridge =
             std::make_unique<NotificationQuietingSettingsBridge>(
-                *m_settingsClient, *m_notificationInterruptionPolicy);
+                *m_quietingSettingsClient, *m_notificationInterruptionPolicy);
         m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
@@ -343,13 +343,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         return false;
     }
 
-    QString settingsError;
-    if (!m_settingsClient->start(&settingsError)) {
-        qWarning().noquote()
-            << "QindaQt shell could not start Settings1; launcher persistence"
-               " and notification quieting remain unavailable:"
-            << settingsError;
-    }
+    startSettingsClients();
 
     if (m_notificationClient) {
         startNotificationOutputAuthority();
@@ -443,6 +437,11 @@ void ShellRuntimeApplication::resetRuntime()
     if (m_settingsClient) {
         m_settingsClient->stop();
     }
+    if (m_quietingSettingsClient) {
+        m_quietingSettingsClient->stop();
+    }
+    m_quietingSettingsClient.reset();
+    m_quietingSettingsTransport.reset();
     m_settingsClient.reset();
     m_settingsTransport.reset();
     m_notificationPresentation.reset();

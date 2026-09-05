@@ -125,6 +125,10 @@ TaskListFactsResult TaskListWireDecoder::decodeTaskFacts(
         .workspaceIds = window.workspaceIds,
         .onAllWorkspaces = window.onAllWorkspaces,
         .role = role,
+        .type = window.type == Compositor::ShellTaskWindowType::Normal
+            ? TaskWindowType::Normal : TaskWindowType::NonNormal,
+        .owner = window.owner == Compositor::ShellTaskWindowOwner::Application
+            ? TaskWindowOwner::Application : TaskWindowOwner::BoundShell,
         .containerId = window.containerId,
         .active = representative && window.active,
         .minimized = representative && window.minimized,

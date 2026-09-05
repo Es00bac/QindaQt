@@ -10,6 +10,8 @@ from pathlib import Path
 from desktop_session_package_contract import (
     NETWORK_QML_FILES,
     PackagePayloadError,
+    FIRST_PARTY_DESKTOP_ICONS,
+    authenticate_first_party_desktop_entries,
     authenticate_network_qml_package,
 )
 
@@ -39,6 +41,23 @@ def network_module(stage: Path, *, missing: str = "") -> Path:
 
 
 class PackageContractTests(unittest.TestCase):
+    def test_first_party_desktop_entries_are_exact_and_missing_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory) / "stage"
+            applications = stage / "share/applications"
+            applications.mkdir(parents=True)
+            for filename, icon in FIRST_PARTY_DESKTOP_ICONS.items():
+                (applications / filename).write_text(
+                    f"[Desktop Entry]\nType=Application\nName=Fixture\nIcon={icon}\n",
+                    encoding="utf-8",
+                )
+            self.assertEqual(
+                len(authenticate_first_party_desktop_entries(stage)), 4
+            )
+            (applications / "org.qindaqt.Settings.desktop").unlink()
+            with self.assertRaisesRegex(PackagePayloadError, "Settings.desktop"):
+                authenticate_first_party_desktop_entries(stage)
+
     def test_exact_network_qml_closure_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             stage = Path(directory) / "stage"

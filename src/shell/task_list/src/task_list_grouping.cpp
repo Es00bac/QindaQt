@@ -44,6 +44,8 @@ QVector<TaskEntry> canonicalEntries(const QVector<TaskWindowFact> &facts) {
     entry.outputId = fact.outputId;
     entry.workspaceIds = fact.workspaceIds;
     entry.onAllWorkspaces = fact.onAllWorkspaces;
+    entry.type = fact.type;
+    entry.owner = fact.owner;
     entry.active = fact.active;
     entry.minimized = fact.minimized;
     entry.urgent = fact.urgent;

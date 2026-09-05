@@ -166,6 +166,22 @@ Item {
             compare(fakeAccess.lastActivateArgs, [":1.42", "/StatusNotifierItem", 3])
         }
 
+        function test_a_emptyTrayIsQuietAndHasNoAttentionMarker() {
+            fakeAccess.phaseText = "empty"
+            fakeAccess.itemRows = []
+            fakeAccess.itemCount = 0
+            fakeAccess.presentedCount = 0
+
+            const chip = findChild(panelRow, "appletChip")
+            verify(chip !== null)
+            tryCompare(chip, "emptyLiveContent", true)
+            compare(chip.width, 0)
+            compare(chip.height, 0)
+            const marker = findChild(chip, "appletUnavailableMarker")
+            verify(marker !== null)
+            compare(marker.visible, false)
+        }
+
         // Shift+F10 opens the context menu as an independently focusable
         // popup WINDOW (the layer-shell panel itself rejects focus); Escape
         // closes it without dispatching anything. Runs last: the offscreen

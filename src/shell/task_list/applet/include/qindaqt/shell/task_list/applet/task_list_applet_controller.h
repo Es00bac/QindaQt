@@ -58,6 +58,7 @@ class TaskListAppletController : public QObject {
 
 public:
   using IconNameResolver = std::function<QString(const QString &applicationId)>;
+  using IconResolvedResolver = std::function<bool(const QString &iconName)>;
 
   TaskListAppletController(
       ShellTaskList::TaskListSource &source,
@@ -69,6 +70,12 @@ public:
       ShellTaskList::Producer::TaskListOperationAuthority &authority,
       TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
       IconNameResolver iconNameResolver, QObject *parent = nullptr);
+  TaskListAppletController(
+      ShellTaskList::TaskListSource &source,
+      ShellTaskList::Producer::TaskListOperationAuthority &authority,
+      TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+      IconNameResolver iconNameResolver,
+      IconResolvedResolver iconResolvedResolver, QObject *parent = nullptr);
   ~TaskListAppletController() override = default;
 
   [[nodiscard]] QString phaseText() const;
@@ -168,6 +175,7 @@ private:
   TaskListAppletOperationPort &m_operations;
   TaskListAppletGrants m_grants;
   IconNameResolver m_iconNameResolver;
+  IconResolvedResolver m_iconResolvedResolver;
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
 

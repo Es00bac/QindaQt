@@ -133,6 +133,12 @@ synchronously inside a dispatch cannot double it. The menu payload projects to
 a bounded, depth-capped read-only preview; dbusmenu entry activation is a
 later composition lane.
 
+An observed empty tray has zero panel extent: `AppletChip` suppresses both its
+surface fill and unavailable marker when the hosted applet's implicit extent
+is zero. The amber dot is reserved for an unresolved profile plug-in; it is
+not an idle-state or attention indicator. Item attention remains visible only
+on an actual item row and is also stated in accessibility text.
+
 ## Packaging and staging
 
 The `StatusNotifierAppletRuntime` install component packages the public
@@ -169,7 +175,7 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
 | `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |
 | `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, and the explicit `status-items.read` denial withholding all observation. |
-| `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: Tab reaches the item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without dispatch. |
+| `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: an empty tray has zero extent and no amber marker; Tab reaches a real item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without dispatch. |
 | `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
 | `qindaqt.status-notifier-applet-runtime-installed-package` | Source-poisoned `StatusNotifierAppletRuntime` stage containing the shell, manifest/profile/theme/policy, and the complete generated StatusNotifier QML module. |
 
@@ -188,7 +194,8 @@ This slice proves the shell's production StatusNotifier composition and the
 offscreen production dispatcher, not live host session items, a real
 watch-registered third-party item on the host bus, dbusmenu entry activation
 (the menu preview is read-only), or assistive-technology bridge behavior; those
-belong to later lanes and their own gates. The older `system-tray` manifest
+belong to later lanes and their own gates. The verified white/amber smart-shelf
+chip was a redundant legacy task-list alias, not the status tray. The older `system-tray` manifest
 (`data/applets/status-tray.json`) remains an accepted catalog contract
 resolving `implementation-unavailable` beside the hosted `status-notifier`
 applet.

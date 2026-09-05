@@ -104,6 +104,7 @@ private:
     [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
+    void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
     [[nodiscard]] bool startDevelopmentEvidence(const RuntimeOptions &options,
@@ -164,6 +165,10 @@ private:
     std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
         m_settingsTransport;
     std::unique_ptr<Services::SettingsClient::SettingsClient> m_settingsClient;
+    std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
+        m_quietingSettingsTransport;
+    std::unique_ptr<Services::SettingsClient::SettingsClient>
+        m_quietingSettingsClient;
     std::unique_ptr<NotificationQuietingSettingsBridge> m_quietingSettingsBridge;
     std::unique_ptr<SettingsRouteLauncher> m_settingsRouteLauncher;
     std::unique_ptr<Services::NotificationPresentationModel::

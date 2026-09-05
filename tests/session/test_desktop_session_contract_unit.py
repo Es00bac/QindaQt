@@ -189,6 +189,9 @@ class SandboxTests(unittest.TestCase):
         self.assertFalse(FORBIDDEN_ENVIRONMENT.intersection(environment))
         self.assertEqual(environment["DBUS_SESSION_BUS_ADDRESS"], "unix:path=/run/user/1000/bus")
         self.assertEqual(environment["PATH"], "/opt/qindaqt/bin:/usr/bin")
+        self.assertEqual(
+            environment["XDG_DATA_DIRS"], "/opt/qindaqt/share:/usr/share"
+        )
         self.assertEqual(environment["QT_NO_XDG_DESKTOP_PORTAL"], "1")
         self.assertEqual(environment["GTK_USE_PORTAL"], "0")
 
