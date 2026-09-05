@@ -37,6 +37,13 @@ public Q_SLOTS:
   Q_SCRIPTABLE void UnregisterWindow(quint32 id) {
     unregisterCalls.append(id);
   }
+
+  Q_SCRIPTABLE bool IsMenuHosted(const QString &provider,
+                                 const QDBusObjectPath &path) const {
+    (void)provider;
+    (void)path;
+    return false;
+  }
 };
 
 // Publishes 71 for the original surface and 72 for any recreated surface, so a
