@@ -8,6 +8,7 @@ SystemMenuApplet 1.0 SystemMenuApplet.qml
 SystemStatusApplet 1.0 SystemStatusApplet.qml
 PlacesMenuApplet 1.0 PlacesMenuApplet.qml
 QuickLaunchApplet 1.0 QuickLaunchApplet.qml
+ApplicationTilesApplet 1.0 ApplicationTilesApplet.qml
 CommandPaletteApplet 1.0 CommandPaletteApplet.qml
 CommandHudApplet 1.0 CommandHudApplet.qml
 DashboardApplet 1.0 DashboardApplet.qml
