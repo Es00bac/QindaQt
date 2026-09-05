@@ -123,8 +123,9 @@ QRectF expectedContentRect(const ChromeLayoutRequest &request)
     const auto inner = request.outerRect.adjusted(
         request.metrics.outerBorder, request.metrics.outerBorder,
         -request.metrics.outerBorder, -request.metrics.outerBorder);
-    const qreal chromeHeight = request.metrics.titleBarHeight
-        + (request.tabs.isEmpty() ? 0.0 : request.metrics.tabStripHeight);
+    // AGENT-CONTRACT: Tabs share the outer title row. The scene solver must
+    // reserve that row once or member content and the chrome hit plan diverge.
+    const qreal chromeHeight = request.metrics.titleBarHeight;
     return {inner.left(), inner.top() + chromeHeight,
             inner.width(), inner.height() - chromeHeight};
 }

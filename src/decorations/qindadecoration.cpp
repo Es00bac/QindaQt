@@ -131,7 +131,9 @@ void QindaDecoration::createButtons()
 void QindaDecoration::updateGeometry()
 {
     const bool maximized = window()->isMaximized();
-    const qreal titleHeight = 36.0;
+    // Grouped leaves retain a native title for ordinary detach and per-window
+    // controls, but it is intentionally a compact strip below shared chrome.
+    const qreal titleHeight = 24.0;
     setBorders(maximized ? QMarginsF(0.0, titleHeight, 0.0, 0.0)
                          : QMarginsF(1.0, titleHeight, 1.0, 1.0));
     setResizeOnlyBorders(maximized ? QMarginsF{} : QMarginsF(5.0, 5.0, 5.0, 5.0));
@@ -143,7 +145,7 @@ void QindaDecoration::updateGeometry()
         for (auto *button : m_leftButtons->buttons()) {
             button->setGeometry(QRectF(0.0, 0.0, 14.0, 14.0));
         }
-        m_leftButtons->setPos(QPointF(12.0, 11.0));
+        m_leftButtons->setPos(QPointF(12.0, 5.0));
     }
     update();
 }

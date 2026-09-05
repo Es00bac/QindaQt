@@ -171,15 +171,16 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     const auto &metrics = request.metrics;
     const auto inner = request.outerRect.adjusted(metrics.outerBorder, metrics.outerBorder,
                                                   -metrics.outerBorder, -metrics.outerBorder);
-    const qreal tabHeight = request.tabs.isEmpty() ? 0.0 : metrics.tabStripHeight;
-    if (inner.width() <= 0.0
-        || inner.height() <= metrics.titleBarHeight + tabHeight) {
+    if (inner.width() <= 0.0 || inner.height() <= metrics.titleBarHeight) {
         return reject(error, QStringLiteral("outer frame is too small for chrome metrics"));
     }
     plan.outerTitleBar = {inner.left(), inner.top(), inner.width(), metrics.titleBarHeight};
-    plan.tabStrip = {inner.left(), plan.outerTitleBar.bottom(), inner.width(), tabHeight};
-    plan.contentRect = {inner.left(), plan.tabStrip.bottom(), inner.width(),
-                        inner.bottom() - plan.tabStrip.bottom()};
+    // AGENT-CONTRACT: Tabs belong in the shared outer title row. Keep the
+    // strip's complete row geometry for hit testing, while each tab gets its
+    // own compact rect beside the traffic-light controls.
+    plan.tabStrip = request.tabs.isEmpty() ? QRectF{} : plan.outerTitleBar;
+    plan.contentRect = {inner.left(), plan.outerTitleBar.bottom(), inner.width(),
+                        inner.bottom() - plan.outerTitleBar.bottom()};
 
     const auto actions = actionOrder(request.style, request.maximized);
     const auto actionCount = static_cast<qreal>(actions.size());
@@ -197,27 +198,23 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
                              !request.style.hoverGlyphs});
         buttonX += metrics.buttonExtent + metrics.buttonSpacing;
     }
-    if (request.style.buttonSide == ButtonSide::Left) {
-        const qreal left = plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset;
-        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(),
-                                   plan.outerTitleBar.right() - metrics.titleHorizontalInset - left,
-                                   plan.outerTitleBar.height()};
-    } else {
-        const qreal left = plan.outerTitleBar.left() + metrics.titleHorizontalInset;
-        const qreal right = plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
-        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
-                                   plan.outerTitleBar.height()};
-    }
-    if (!plan.outerTitleDragRect.isValid()) {
-        return reject(error, QStringLiteral("outer frame is too narrow for window controls"));
-    }
-
     if (!request.tabs.isEmpty()) {
         const auto tabCount = static_cast<qreal>(request.tabs.size());
-        const qreal availableWidth = plan.tabStrip.width() - 2.0 * metrics.tabHorizontalInset
+        // Reserve a real outer-title drag region even when tabs overflow.
+        constexpr qreal minimumOuterDragWidth = 48.0;
+        const qreal controlBoundary = request.style.buttonSide == ButtonSide::Left
+            ? plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset
+            : plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
+        const qreal tabLeft = request.style.buttonSide == ButtonSide::Left
+            ? controlBoundary + minimumOuterDragWidth
+            : plan.tabStrip.left() + metrics.tabHorizontalInset;
+        const qreal tabRight = request.style.buttonSide == ButtonSide::Left
+            ? plan.tabStrip.right() - metrics.tabHorizontalInset
+            : controlBoundary - minimumOuterDragWidth;
+        const qreal availableWidth = tabRight - tabLeft
             - metrics.tabSpacing * (tabCount - 1.0);
         if (availableWidth <= 0.0) {
-            return reject(error, QStringLiteral("tab strip is too narrow for configured spacing"));
+            return reject(error, QStringLiteral("shared title row is too narrow for configured tabs"));
         }
         const qreal evenWidth = availableWidth / tabCount;
         plan.tabsOverflowed = evenWidth < metrics.tabMinimumWidth;
@@ -225,8 +222,8 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
             ? evenWidth
             : std::min(evenWidth, metrics.tabMaximumWidth);
         qreal tabX = request.style.tabDirection == TabVisualDirection::LeftToRight
-            ? plan.tabStrip.left() + metrics.tabHorizontalInset
-            : plan.tabStrip.right() - metrics.tabHorizontalInset - tabWidth;
+            ? tabLeft
+            : tabRight - tabWidth;
         for (qsizetype index = 0; index < request.tabs.size(); ++index) {
             const auto &tab = request.tabs[index];
             plan.tabs.append({tab.tabId, tab.title, index,
@@ -237,6 +234,25 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
                 ? advance
                 : -advance;
         }
+    }
+
+    if (request.style.buttonSide == ButtonSide::Left) {
+        const qreal left = plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset;
+        const qreal right = request.tabs.isEmpty()
+            ? plan.outerTitleBar.right() - metrics.titleHorizontalInset
+            : plan.tabs.constLast().rect.left() - metrics.titleHorizontalInset;
+        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
+                                   plan.outerTitleBar.height()};
+    } else {
+        const qreal left = request.tabs.isEmpty()
+            ? plan.outerTitleBar.left() + metrics.titleHorizontalInset
+            : plan.tabs.constLast().rect.right() + metrics.titleHorizontalInset;
+        const qreal right = plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
+        plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
+                                   plan.outerTitleBar.height()};
+    }
+    if (!plan.outerTitleDragRect.isValid()) {
+        return reject(error, QStringLiteral("outer frame is too narrow for window controls"));
     }
 
     for (const auto &member : request.members) {

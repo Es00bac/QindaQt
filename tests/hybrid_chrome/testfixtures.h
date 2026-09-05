@@ -14,13 +14,13 @@ inline ChromeLayoutRequest baseRequest()
     request.tabs = {{QStringLiteral("page-a"), QStringLiteral("Alpha"), true},
                     {QStringLiteral("page-b"), QStringLiteral("Beta"), false},
                     {QStringLiteral("page-c"), QStringLiteral("Gamma"), false}};
-    // With default metrics, content is exactly (1, 69) through (999, 699).
+    // With default metrics, the shared title/tab row ends at y=29.
     request.members = {{QStringLiteral("member-a"), QStringLiteral("Editor"),
-                        QRectF(1.0, 69.0, 499.0, 630.0)},
+                        QRectF(1.0, 29.0, 499.0, 670.0)},
                        {QStringLiteral("member-b"), QStringLiteral("Terminal"),
-                        QRectF(500.0, 69.0, 499.0, 630.0)}};
+                        QRectF(500.0, 29.0, 499.0, 670.0)}};
     request.dividers = {{QStringLiteral("divider-main"), DividerOrientation::Vertical,
-                         500.0, 69.0, 699.0}};
+                         500.0, 29.0, 699.0}};
     return request;
 }
 

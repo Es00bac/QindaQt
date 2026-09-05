@@ -10,7 +10,8 @@ The layout engine accepts one value request containing a shared outer frame,
 resolved visual style, logical metrics, stable tab order, member tile frames,
 and divider axes. It returns an owned render plan with:
 
-- one shared outer title bar and outer move/resize regions;
+- one compact shared row that combines outer title/tab presentation and outer
+  move/resize regions;
 - close, minimize, and maximize-or-restore controls for the whole container;
 - a tab strip whose stored vector remains logical order;
 - one preserved title-drag region per member tile; and
@@ -46,6 +47,13 @@ keyboard traversal, and persistence therefore remain unchanged even though
 tab zero is visually rightmost. Standard symbolic styles support either left
 or right control placement; the conventional right-side order is minimize,
 maximize-or-restore, close.
+
+The shared row reserves left traffic lights, right-to-left tabs, and a minimum
+outer drag region without stacking a separate tab strip below it. Native member
+decorations stay visible as compact 24-logical-pixel strips: they retain normal
+member title dragging and per-window controls, while the shared row owns group
+controls, tabs, and outer resize. The constraint solver reserves the shared row
+once; the chrome plan and scene content frame therefore keep identical bounds.
 
 The production Hybrid session currently selects this Qinda macOS style with
 the built-in Qinda palette. The pure factory accepts a resolved palette, but

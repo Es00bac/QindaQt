@@ -36,7 +36,7 @@ Core::WindowContainer sampleContainer()
 
 HybridConstraints::LayoutMetrics sceneMetrics()
 {
-    return {.contentInsets = QMargins(1, 69, 1, 1), .dividerThickness = 2};
+    return {.contentInsets = QMargins(1, 29, 1, 1), .dividerThickness = 2};
 }
 
 HybridChromePlanOptions chromeOptions()

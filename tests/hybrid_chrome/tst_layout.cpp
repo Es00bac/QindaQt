@@ -51,6 +51,9 @@ void ChromeLayoutTests::qindaMacUsesTrafficLightsAndVisualRtlTabs()
     QCOMPARE(plan->tabs[2].tabId, QStringLiteral("page-c"));
     QVERIFY(plan->tabs[0].rect.center().x() > plan->tabs[1].rect.center().x());
     QVERIFY(plan->tabs[1].rect.center().x() > plan->tabs[2].rect.center().x());
+    QCOMPARE(plan->tabStrip, plan->outerTitleBar);
+    QCOMPARE(plan->contentRect.top(), plan->outerTitleBar.bottom());
+    QVERIFY(plan->outerTitleDragRect.right() < plan->tabs.constLast().rect.left());
 }
 
 void ChromeLayoutTests::maximizedContainerOffersRestore()
