@@ -75,11 +75,16 @@ struct AppletHost {
             *error = component.errorString();
             return false;
         }
-        root.reset(component.createWithInitialProperties(
-            {{QStringLiteral("access"), QVariant::fromValue(access)},
-             {QStringLiteral("vertical"), vertical},
-             {QStringLiteral("dockMode"), dockMode},
-             {QStringLiteral("dockTileSize"), dockTileSize}}));
+        QVariantMap initialProperties{{QStringLiteral("access"), QVariant::fromValue(access)},
+                                      {QStringLiteral("vertical"), vertical}};
+        // Dock presentation is an opt-in Quick Launch API. Supplying it to
+        // every desktop-control component turns a harmless test harness into
+        // a fatal unknown-initial-property warning under QT_FATAL_WARNINGS.
+        if (typeName == QStringLiteral("QuickLaunchApplet")) {
+            initialProperties.insert(QStringLiteral("dockMode"), dockMode);
+            initialProperties.insert(QStringLiteral("dockTileSize"), dockTileSize);
+        }
+        root.reset(component.createWithInitialProperties(initialProperties));
         if (!root) {
             *error = component.errorString();
             return false;
