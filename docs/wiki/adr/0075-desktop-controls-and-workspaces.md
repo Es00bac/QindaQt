@@ -1,6 +1,6 @@
 # ADR-0075: Compose desktop controls over bounded shell facades
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-05
 - **Owners:** Shell workgroup
 - **Supersedes:** None
