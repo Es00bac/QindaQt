@@ -4,31 +4,27 @@ role: First-party menu-export implementer
 provider: Z.AI GLM
 model: zai-coding-plan/glm-5.3
 reasoning: high
-status: handoff
-feature: first-party global-menu export for Terminal and Text Editor (P1-01 bounded repair)
+status: working
+feature: first-party global-menu export for Terminal and Text Editor (P1-01 in-flight registration repair)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/first-party-menu-export
 started_at: 2026-09-04T17:13:00-06:00
-updated_at: 2026-09-04T19:33:00-06:00
+updated_at: 2026-09-04T19:54:52-06:00
 ---
 
 # Andrea Ghez
 
 - Role: first-party menu-export implementer (Shell delivery queue).
 - Provider/model: Z.AI GLM `zai-coding-plan/glm-5.3`, reasoning high.
-- Status: handoff — exact candidate
-  `ba88f0b153a762ff4ab604bc5c2157a44a3cc296`
-  (tree `53c06fc095ab74af157912df1c9e71902c47b98d`): bounded one-round repair
-  of the Blackburn P1-01 rejection — `ApplicationMenuExport::eventFilter()`
-  now handles the `QEvent::PlatformSurface` lifecycle (synchronous withdraw
-  on `SurfaceAboutToBeDestroyed`, queued republish of the freshly obtained
-  identity on `SurfaceCreated`, fail-closed `publishIdentity()` while the
-  surface is dead, close/quit teardown and dbusmenu revision behavior
-  unchanged); one new registered private-bus row with three recreation rows,
-  both defect detectors verified to fail on the unrepaired `e8e5170b`
-  exporter; 90/90 selector rows green in Debug and Release; static gates
-  green. Elizabeth Blackburn recheck requested, then manager integration.
-- Exact base: `23b549db` (product base is the reviewed candidate
-  `e8e5170beb9849752341d1fec1ad47ffa5e6ca1e`).
+- Status: working — second bounded repair round after the Blackburn r2 REJECT
+  (P1-01 in-flight registration leak: retirement compensates only the
+  reply-confirmed id, so an accepted-but-unanswered `RegisterWindow(71)`
+  stays live after surface destruction and republication of 72). Implementing
+  attempted-identity tracking (pending id + serial) with exactly-once
+  compensation on every withdrawal path, hostile delayed-reply and
+  rejecting-registrar test rows, and the same selector/static gates.
+- Exact base: `7867177d` (product base is the reviewed candidate
+  `e8e5170beb9849752341d1fec1ad47ffa5e6ca1e`; rejected candidate
+  `ba88f0b153a762ff4ab604bc5c2157a44a3cc296`).
 - Branch: `worker/first-party-menu-export`.
 - Worktree: `/home/cabewse/work_SPaC3/container-wm-workers/first-party-menu-export`.
 - Product authority: `src/apps/terminal/**`, `src/apps/text_editor/**`,
@@ -83,3 +79,7 @@ updated_at: 2026-09-04T19:33:00-06:00
   verified failing on the unrepaired exporter; selector 90/90 in Debug and
   Release; static gates green; requested Elizabeth Blackburn recheck then
   manager integration.
+- 2026-09-04T19:54:52-06:00 — claim: second bounded repair round after the
+  Blackburn r2 REJECT (P1-01 in-flight registration leak); read the verdict and
+  its delayed-reply reproduction, then repairing at the cause by tracking the
+  attempted registrar identity from the moment `RegisterWindow` is sent.
