@@ -9,6 +9,18 @@
 
 The wire schema version is independent of persisted settings schema v2.
 
+### Launcher scope
+
+The launcher uses schema-v2 `panels.launcherPinned` and
+`panels.launcherRecent`, each a string list with an empty default. Both keys
+must be included in its client's snapshot scope, which may also contain other
+shell settings. Desktop-entry identity validation, uniqueness and the bounds of
+16 pins and 8 recent entries remain launcher-owned. Schema-normalized string
+lists persist as JSON arrays and regain their string-list type when loaded.
+The old unregistered `shell.launcher.*` names never had a supported persisted
+value to migrate. See [ADR-0076](../adr/0076-register-launcher-persistence-in-panel-settings.md)
+and the [Launcher contract](../shell/launcher.md).
+
 ### Terminal application scope
 
 The Terminal S1 client uses three schema-v2 keys in the existing `services`

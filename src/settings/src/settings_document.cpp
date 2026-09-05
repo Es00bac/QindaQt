@@ -105,7 +105,15 @@ std::optional<QByteArray> SettingsDocumentCodec::toJson(const SettingsDocument &
         return std::nullopt;
     }
 
-    auto encodedValues = Internal::encodeCanonicalJsonValue(QVariant::fromValue(*normalized), error);
+    // AGENT-CONTRACT: Schema normalization retains QStringList for string-list
+    // settings. The JSON encoder accepts canonical QVariantList containers;
+    // normalize that representation here without changing the schema's types.
+    QVariant canonical;
+    if (!Internal::normalizeCanonicalJsonValue(QVariant::fromValue(*normalized),
+                                               &canonical, error)) {
+        return std::nullopt;
+    }
+    auto encodedValues = Internal::encodeCanonicalJsonValue(canonical, error);
     if (!encodedValues.has_value() || !encodedValues->isObject()) {
         if (error != nullptr && error->isEmpty()) {
             *error = QStringLiteral("normalized settings values are not a JSON object");

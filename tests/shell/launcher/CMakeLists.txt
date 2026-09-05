@@ -213,6 +213,19 @@ if(TARGET qindaqt_shell_launcher_runtime)
         tst_launcher_persistence.cpp
         qindaqt.launcher-persistence
     )
+    if(TARGET QindaQt::SettingsService)
+        find_program(LAUNCHER_DBUS_DAEMON dbus-daemon REQUIRED)
+        qindaqt_add_launcher_runtime_test(
+            qindaqt_launcher_settings_contract_tests
+            tst_launcher_settings_contract.cpp
+            qindaqt.launcher-settings-contract
+        )
+        target_link_libraries(qindaqt_launcher_settings_contract_tests
+            PRIVATE QindaQt::SettingsService Qt6::DBus)
+        target_compile_definitions(qindaqt_launcher_settings_contract_tests PRIVATE
+            QINDAQT_SOURCE_DIR="${launcher_source_root}"
+            QINDAQT_DBUS_DAEMON="${LAUNCHER_DBUS_DAEMON}")
+    endif()
     qindaqt_add_launcher_runtime_test(
         qindaqt_launcher_controller_tests
         tst_launcher_controller.cpp

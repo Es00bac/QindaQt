@@ -20,6 +20,7 @@ private slots:
     void initTestCase();
     void loadsBuiltInProfileDefaults();
     void roundTripsAUserDocument();
+    void roundTripsSchemaStringLists();
     void roundTripsCanonicalObjectValuesWithoutTypeDrift();
     void rejectsNonRoundTrippableJsonText();
     void rejectsVolatileAndInvalidDocuments();
@@ -69,6 +70,24 @@ void SettingsPersistenceTests::roundTripsAUserDocument()
     QCOMPARE(loaded.document.values.value(QStringLiteral("appearance.theme")).toString(),
              QStringLiteral("qinda-light"));
     QCOMPARE(loaded.document.values.value(QStringLiteral("fonts.pointSize")).toDouble(), 11.5);
+}
+
+void SettingsPersistenceTests::roundTripsSchemaStringLists()
+{
+    const QString key = QStringLiteral("panels.launcherPinned");
+    for (const auto &entries : {QStringList{},
+                               QStringList{QStringLiteral("one.desktop"),
+                                           QStringLiteral("two.desktop")}}) {
+        const SettingsDocument document{.schemaVersion = 2,
+            .layer = SettingLayer::UserOverrides, .values = {{key, entries}}};
+        QString error;
+        const auto json = SettingsDocumentCodec::toJson(document, *m_schema, nullptr, &error);
+        QVERIFY2(json.has_value(), qPrintable(error));
+        const auto loaded = SettingsDocumentCodec::fromJson(*json, QStringLiteral("roundtrip"), *m_schema);
+        QVERIFY2(loaded.ok, qPrintable(loaded.error));
+        QCOMPARE(loaded.document.values.value(key).metaType().id(), QMetaType::QStringList);
+        QCOMPARE(loaded.document.values.value(key).toStringList(), entries);
+    }
 }
 
 void SettingsPersistenceTests::roundTripsCanonicalObjectValuesWithoutTypeDrift()

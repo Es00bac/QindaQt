@@ -186,3 +186,4 @@ nav:
       - "ADR-0071: Shell token readiness": adr/0071-publish-and-prove-shell-token-readiness.md
       - "ADR-0072: Confined shell iconography": adr/0072-shell-iconography-confined-xdg-icon-themes.md
       - "ADR-0073: Atomic authenticated task facts": adr/0073-publish-atomic-authenticated-task-facts.md
+      - ADR-0076 Launcher persistence keys: adr/0076-register-launcher-persistence-in-panel-settings.md

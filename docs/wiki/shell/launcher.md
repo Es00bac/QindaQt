@@ -142,8 +142,8 @@ the documented key set:
 
 | Key | Value |
 | --- | --- |
-| `shell.launcher.pinned` | Ordered desktop-entry ids, at most 16 |
-| `shell.launcher.recent` | Most-recent-first desktop-entry ids, at most 8 |
+| `panels.launcherPinned` | Ordered desktop-entry ids, at most 16 |
+| `panels.launcherRecent` | Most-recent-first desktop-entry ids, at most 8 |
 
 Only desktop-entry ids are ever stored. Stored values are validated on every
 snapshot: a non-list, non-string element, an invalid id, a duplicate, or an
@@ -275,6 +275,7 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-execution` | Entry/action key scope, quoting, field-code expansion/refusal, no-shell-interpolation, output ceilings. |
 | `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, entry-policy inheritance by actions, hostile action-key inverse control, terminal policy routing/refusal, failure truth, inert fixture spawns, environment sanitization. |
 | `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
+| `qindaqt.launcher-settings-contract` | Shipped Settings1 schema and real private-bus transport, pinned/recent disk persistence, new service owner/epoch recovery, and fresh shell-client reload. |
 | `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, denied-ancestor degraded truth with bounded diagnostics, null-collaborator fail-closed. |
 | `qindaqt.launcher-composition` | Explicit XDG-root derivation, private-bus production policy composition, recording spawner/activator seams, denied-grant negative control, and no real application launch. |
 | `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
@@ -284,12 +285,19 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-installed-package` | `LauncherAppletRuntime` relocates the shell, manifest/profile/policy/theme, compiled Launcher/Controls/Tokens closure, and warning-clean null-controller probe under source/build poison. |
 | `qindaqt.shell-runtime-component-closure` | Independently installs the Launcher component and proves the staged shell resolves its Launcher/Controls/Tokens libraries without ambient loader state. |
 
+The shipped Settings schema defines both launcher lists in the `panels` domain.
+The former `shell.launcher.*` spellings were never admitted by the shipped
+schema and caused the entire scoped snapshot to fail with `UnknownKey`.
+[ADR-0076](../adr/0076-register-launcher-persistence-in-panel-settings.md)
+records the corrected persistence contract. The schema-backed regression above
+covers persisted pins and recents through real service-owner replacement and a
+fresh shell client; it does not substitute same-owner epoch replacement for a
+process restart.
+
 ## Non-claims
 
-This slice proves no startup-notification activation tokens, no Settings1 schema
-registration of the launcher keys (persistence against the production service
-reports `UnknownKey` until then), no real session-bus activation, and no
-physical or nested-session behavior. Headless rows use `QCoreApplication`; all
+This slice proves no startup-notification activation tokens, no real application
+session-bus activation, and no physical or nested-session behavior. Headless rows use `QCoreApplication`; all
 launcher rows remove inherited display and session-bus endpoints, while the
 two genuine GUI rows force offscreen software rendering. Tests use injected
 roots and fakes. `/bin/true` and `/bin/false` are inert process-start fixtures only.
