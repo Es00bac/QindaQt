@@ -470,6 +470,21 @@
             }
           ],
           "caveat": "S3 advances this step to EXECUTABLE without claiming portrait/rotation, heterogeneous mixed-output scales, hotplug/lid behavior, complete whole-shell keyboard/screen-reader coverage, physical input/display, GPU/DRM, or perceptual baseline qualification."
+        },
+        {
+          "id": "QQ-004.16",
+          "title": "Shell iconography",
+          "weight": 3,
+          "state": "WIRED",
+          "summary": "I1 delivers a confined XDG icon-theme locator over injected roots (index.theme directories, inherits chains, hicolor fallback, canonical containment), a desktop-entry icon resolver for application ids, a bounded image provider that renders and recolors symbolic icons from the design tokens with a deterministic placeholder, and a QML Icon element for the shell (ADR-0072).",
+          "evidence": [
+            {
+              "kind": "commit",
+              "reference": "1207bf39",
+              "summary": "Shell iconography I1 integrated: exact accepted product 288574a8fcc673859bbbf12e1f1c2b38c8c6ebdc (Gerty Cori, Moonshot Kimi; bounded provider-id repair over 54cda1fb, rejected 0/1/0/4), rechecked ACCEPT 0/0/0/2 by Carolyn Bertozzi (Z.AI GLM); merged tree passes the icons/shell-runtime/applet rows 14/14 in Debug and Release and the static gates; the broad suite runs with the I2 batch."
+            }
+          ],
+          "caveat": "Not yet consumed by the production shell: the icon-first applet pass (I2) wires it into every panel applet and the theme schema; installed-session visual proof follows."
         }
       ],
       "stoppingPoint": {
