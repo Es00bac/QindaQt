@@ -22,6 +22,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 
 ## Start here
 
+- [QindaQt handbook](handbook/index.md) organizes project philosophy, desktop
+  features, applications, architecture, configuration, and development, with
+  complete feature, package, source, and documentation catalogs.
+
 - [Architecture overview](architecture/overview.md) describes the runtime and
   its process boundaries.
 - [Module boundaries](architecture/module-boundaries.md) defines ownership and

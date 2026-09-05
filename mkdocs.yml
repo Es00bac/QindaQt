@@ -18,6 +18,24 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Handbook:
+      - Start here: handbook/index.md
+      - Project and philosophy: handbook/project.md
+      - Desktop experience: handbook/desktop.md
+      - Applications: handbook/applications.md
+      - Customization: handbook/customization.md
+      - Architecture: handbook/architecture.md
+      - Platform services: handbook/platform.md
+      - Privacy and persistence: handbook/privacy.md
+      - Development and operation: handbook/development.md
+      - Quality and contribution: handbook/quality.md
+      - Glossary: handbook/glossary.md
+      - Complete feature catalog: handbook/catalog/features.md
+      - Catalog overview: handbook/catalog/index.md
+      - Settings catalog: handbook/catalog/settings.md
+      - Packaged assets: handbook/catalog/assets.md
+      - Repository catalog: handbook/catalog/repository.md
+      - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md

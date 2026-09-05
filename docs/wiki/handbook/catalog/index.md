@@ -16,3 +16,5 @@ The inventories describe the source snapshot, not a release promise. A packaged 
 ## Maintaining this snapshot
 
 Run `python3 docs/wiki/handbook/catalog/verify.py` to check coverage against the recorded Git commit. The verifier checks every feature and weighted step, all 174 evidence references and summaries, every active settings key/default/constraint, canonical wiki link, packaged asset identity, and tool path. It does not run production tests. When intentionally refreshing the catalog, update the provenance and verifier base together and preserve state caveats; never relabel historical evidence as a fresh run. Integrated navigation still requires `tools/validate-docs` and `mkdocs build --strict`.
+
+Return to the [handbook](../index.md) for explanatory reading paths.
