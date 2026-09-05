@@ -10,6 +10,7 @@
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QEventLoop>
+#include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
@@ -101,12 +102,39 @@ struct AppletHost {
         return root->findChild<T *>(objectName);
     }
 
+    void focus(QQuickItem *target)
+    {
+        if (window != nullptr) {
+            window->requestActivate();
+            QTest::qWait(0);
+        }
+        target->forceActiveFocus(Qt::TabFocusReason);
+    }
+
     // Popup windows own their own QQuickWindow; visual children of a Popup
     // therefore live under the popup's contentItem, which findChild reaches
     // because Popup's QObject tree still parents them to the popup.
     QList<QQuickItem *> visualItemsNamed(const QString &name) const
     {
-        return root->findChildren<QQuickItem *>(name);
+        QList<QQuickItem *> matches;
+        const auto visit = [&matches, &name](auto &&self, QQuickItem *current) -> void {
+            if (current->objectName() == name && !matches.contains(current))
+                matches.append(current);
+            for (QQuickItem *child : current->childItems())
+                self(self, child);
+        };
+        if (item != nullptr)
+            visit(visit, item);
+        for (QWindow *candidateWindow : QGuiApplication::allWindows()) {
+            auto *quickWindow = qobject_cast<QQuickWindow *>(candidateWindow);
+            if (quickWindow != nullptr)
+                visit(visit, quickWindow->contentItem());
+        }
+        for (QQuickItem *candidate : root->findChildren<QQuickItem *>(name)) {
+            if (!matches.contains(candidate))
+                matches.append(candidate);
+        }
+        return matches;
     }
 };
 
@@ -127,7 +155,22 @@ inline void keyClicksFocused(AppletHost &host, const QString &text)
     if (target == nullptr) {
         target = host.window.get();
     }
-    QTest::keyClicks(target, text);
+    // Qt 6.11 removed keyClicks(QWindow*, QString); search tests use ASCII.
+    for (const QChar character : text) {
+        if (character >= QLatin1Char('a') && character <= QLatin1Char('z')) {
+            const auto key = static_cast<Qt::Key>(Qt::Key_A
+                                                  + character.toUpper().unicode()
+                                                  - QLatin1Char('A').unicode());
+            QTest::keyClick(target, key);
+        } else if (character >= QLatin1Char('A') && character <= QLatin1Char('Z')) {
+            const auto key = static_cast<Qt::Key>(Qt::Key_A
+                                                  + character.unicode()
+                                                  - QLatin1Char('A').unicode());
+            QTest::keyClick(target, key, Qt::ShiftModifier);
+        } else {
+            QTest::keyClick(target, Qt::Key_unknown);
+        }
+    }
 }
 
 // QQuickPopup::PopupType::Window; the enum is private API, so the literal is

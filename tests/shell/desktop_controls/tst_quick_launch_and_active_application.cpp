@@ -158,7 +158,7 @@ void QuickLaunchAndActiveApplicationTests::activeApplicationIntentsAreFencedByGr
   QVERIFY(active.close());
   QCOMPARE(tasks.port.calls.size(), 2);
   tasks.port.complete(tasks.port.lastCall(),
-                      QindaQt::ShellTaskList::Operations::TaskListOperationStatus::Failed,
+                      QindaQt::ShellTaskList::Operations::TaskListOperationStatus::Rejected,
                       QStringLiteral("refused"), QStringLiteral("compositor refused"));
   QTRY_VERIFY(active.feedbackPresent());
   active.clearFeedback();

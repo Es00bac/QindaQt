@@ -48,7 +48,7 @@ void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroug
     QCOMPARE(interface->role(), QAccessible::Button);
     QCOMPARE(interface->text(QAccessible::Name), QStringLiteral("System menu"));
 
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QObject *popup = host.child<QObject>(QStringLiteral("systemMenuPopup"));
     QVERIFY(popup != nullptr);
@@ -76,7 +76,7 @@ void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroug
     QCOMPARE(session.requests, QStringList{QStringLiteral("lock")});
     QTRY_VERIFY(!popup->property("opened").toBool());
 
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Return);
     QTRY_VERIFY(popup->property("opened").toBool());
     QTRY_VERIFY(about->hasActiveFocus());
@@ -88,7 +88,7 @@ void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroug
     QTRY_VERIFY(!popup->property("opened").toBool());
 
     // Destructive actions confirm first and never dispatch on open.
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QTRY_VERIFY(popup->property("opened").toBool());
     auto *powerOff = host.child<QQuickItem>(QStringLiteral("systemMenuPowerOff"));
@@ -129,7 +129,7 @@ void DesktopControlsQmlMenuTests::commandPaletteSearchesByKeyboardAndActivates()
     QVERIFY(button != nullptr);
     QCOMPARE(QAccessible::queryAccessibleInterface(button)->text(QAccessible::Name),
              QStringLiteral("Command palette"));
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QObject *popup = host.child<QObject>(QStringLiteral("commandPalettePopup"));
     QVERIFY(popup != nullptr);
@@ -161,7 +161,7 @@ void DesktopControlsQmlMenuTests::commandPaletteSearchesByKeyboardAndActivates()
 
     // Reopen: workspace switch from the browse list dispatches with the
     // displayed revision.
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QTRY_VERIFY(popup->property("opened").toBool());
     QTRY_VERIFY(field->hasActiveFocus());
@@ -190,7 +190,7 @@ void DesktopControlsQmlMenuTests::placesMenuOpensFoldersThroughTheSeam()
     QTRY_VERIFY(host.window->isExposed());
     auto *button = host.child<QQuickItem>(QStringLiteral("placesMenuButton"));
     QVERIFY(button != nullptr);
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QObject *popup = host.child<QObject>(QStringLiteral("placesMenuPopup"));
     QVERIFY(popup != nullptr);
@@ -208,7 +208,7 @@ void DesktopControlsQmlMenuTests::placesMenuOpensFoldersThroughTheSeam()
     QTRY_VERIFY(!popup->property("opened").toBool());
 
     opener.nextResult = {false, QStringLiteral("no file manager")};
-    button->forceActiveFocus();
+    host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);
     QTRY_VERIFY(popup->property("opened").toBool());
     QTRY_VERIFY(rows.at(0)->hasActiveFocus());
