@@ -70,6 +70,18 @@ QQuickItem *visualItemNamed(QQuickItem *root, const QString &name)
     return nullptr;
 }
 
+// Repeater delegates belong to the visual tree. Their sibling menu is a
+// QObject child of the section delegate, so a root QObject lookup skips it.
+QObject *sectionMenuFor(QQuickItem *row, const QString &name)
+{
+    for (QQuickItem *ancestor = row; ancestor != nullptr;
+         ancestor = ancestor->parentItem()) {
+        if (auto *menu = ancestor->findChild<QObject *>(name))
+            return menu;
+    }
+    return nullptr;
+}
+
 bool publishTokens(QQmlEngine &engine)
 {
     engine.addImportPath(importPath());
@@ -268,12 +280,12 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     const QPoint menuPoint = enabledRow->mapToScene(
         QPointF(enabledRow->width() / 2, enabledRow->height() / 2)).toPoint();
     QTest::mouseClick(popupContent(root)->window(), Qt::RightButton, {}, menuPoint);
-    auto *pinMenu = root->findChild<QObject *>(
-        QStringLiteral("launcherPinContextMenu"));
+    auto *pinMenu = sectionMenuFor(enabledRow,
+                                   QStringLiteral("launcherPinContextMenu"));
     QVERIFY(pinMenu != nullptr);
     QTRY_VERIFY(pinMenu->property("opened").toBool());
     QCOMPARE(pinMenu->property("popupType").toInt(), 1);
-    auto *togglePin = root->findChild<QQuickItem *>(
+    auto *togglePin = pinMenu->findChild<QQuickItem *>(
         QStringLiteral("launcherTogglePin"));
     QVERIFY(togglePin != nullptr);
     QCOMPARE(togglePin->property("text").toString(), QStringLiteral("Unpin"));
