@@ -2051,6 +2051,17 @@ no registrar owner exists to stay fail-closed (no publish, no crash) and to
 rebind when an owner returns, and the composed
 `composeFirstPartyMenuExport` entry — the exact path Terminal, Text Editor, and
 File Manager call — to withdraw and re-register through its fixed-id test seam.
+`qindaqt.app-shell-menu-export-inflight-registration-private-bus` races the
+same lifecycle against a registrar that records `RegisterWindow` immediately
+but delays its success reply: destroying the surface in that unanswered window
+must send `UnregisterWindow` for the attempted id exactly once, the registrar
+must observe that compensation strictly before the recreated surface's
+`RegisterWindow`, the delayed reply for the superseded attempt must change
+nothing (no state flip, no second compensation, no crash), and stop must
+compensate the reply-confirmed id once. Its control row uses a registrar that
+refuses every registration with an explicit D-Bus error and requires that
+answered refusal to owe no `UnregisterWindow` through destroy, recreate, and
+stop without crashing.
 `qindaqt.global-menu-dbusmenu-server` separately
 proves depth/property filtering, explicit grouped calls, the standard empty-ID
 all-items request, one activation, and atomic malformed-snapshot retention. It

@@ -187,36 +187,65 @@ public:
     message.setArguments({QVariant::fromValue(*identity->registrarWindowId),
                           QVariant::fromValue(QDBusObjectPath(
                               QString::fromLatin1(kMenuObjectPath)))});
+    // AGENT-GUARD: the registrar may have accepted this window id before its
+    // reply ever arrives, so the attempt is registrar state from this moment.
+    // Every withdrawal must compensate pendingRegistration (or the
+    // reply-confirmed registeredWindowId) exactly once; dropping this record
+    // leaks a live registration across surface recreation.
+    pendingRegistration =
+        PendingRegistration{*identity->registrarWindowId, requestSerial};
     auto *watcher =
         new QDBusPendingCallWatcher(sessionBus.asyncCall(message, 2'000), &q);
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, &q,
                      [this, watcher, requestSerial] {
                        const QDBusMessage reply = watcher->reply();
                        watcher->deleteLater();
-                       if (!started || requestSerial != serial) {
+                       if (!started || requestSerial != serial ||
+                           !pendingRegistration ||
+                           pendingRegistration->requestSerial !=
+                               requestSerial) {
+                         // AGENT-GUARD: a superseded attempt's reply is noise.
+                         // The withdrawal that advanced the serial already
+                         // compensated the attempted id; acting here would
+                         // either resurrect it or double the compensation.
                          return;
                        }
                        if (reply.type() == QDBusMessage::ReplyMessage) {
-                         registeredWindowId = identity->registrarWindowId;
+                         registeredWindowId = pendingRegistration->windowId;
                          setStatus(MenuExportStatus::Published);
                        } else {
+                         // An answered error is authoritative: the registrar
+                         // refused the attempt, so no compensation is owed.
                          setStatus(
                              MenuExportStatus::WaitingForRegistrar,
                              QStringLiteral("registrar-registration-failed"));
                        }
+                       pendingRegistration.reset();
                      });
   }
 
   void retirePublishedIdentity() {
-    if (registeredWindowId && !registrarOwner.isEmpty()) {
+    // AGENT-GUARD: compensate the id the registrar may already hold whether
+    // or not its RegisterWindow reply has arrived. Clearing both records in
+    // the same turn makes the compensation exactly-once per attempt: a second
+    // retirement (stop after surface destruction) finds neither and sends
+    // nothing.
+    const std::optional<quint32> attemptedId =
+        registeredWindowId
+            ? registeredWindowId
+            : (pendingRegistration
+                   ? std::optional<quint32>(pendingRegistration->windowId)
+                   : std::nullopt);
+    if (attemptedId && !registrarOwner.isEmpty()) {
       QDBusMessage message = QDBusMessage::createMethodCall(
           registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
           QString::fromLatin1(Registrar::kRegistrarInterface),
           QStringLiteral("UnregisterWindow"));
-      message.setArguments({QVariant::fromValue(*registeredWindowId)});
+      message.setArguments({QVariant::fromValue(*attemptedId)});
       sessionBus.asyncCall(message, 2'000);
     }
     registeredWindowId.reset();
+    pendingRegistration.reset();
     if (identity && !window.isNull()) {
       identityPublisher->withdraw(*window);
     }
@@ -273,6 +302,12 @@ public:
   QString failureCode;
   std::optional<WindowMenuIdentity> identity;
   std::optional<quint32> registeredWindowId;
+  // One outstanding RegisterWindow attempt from send time to its answer.
+  struct PendingRegistration {
+    quint32 windowId;
+    quint64 requestSerial;
+  };
+  std::optional<PendingRegistration> pendingRegistration;
   quint64 serial = 0;
   quint64 closeCheckSerial = 0;
   MenuExportStatus status = MenuExportStatus::Disabled;

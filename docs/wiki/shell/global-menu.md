@@ -303,6 +303,20 @@ exists stays withdrawn and fails closed, republishing once an owner returns.
 The republish runs on a queued turn because `SurfaceCreated` can itself be
 delivered synchronously inside identity publication.
 
+The withdrawal covers the registration attempt that has not been answered yet.
+The exporter records the attempted window id and request serial from the
+moment `RegisterWindow` is sent, because a registrar can accept the call and
+mutate its registry before the exporter ever sees the reply. Every withdrawal
+path — surface destruction, accepted close, stop/quit, and registrar owner
+replacement, each of which invalidates the outstanding serial — sends
+`UnregisterWindow` for the attempted id against the exact owner it was sent
+to, exactly once whether or not that reply has arrived, and a superseded
+attempt's late reply is ignored on arrival so it can neither publish the dead
+id nor double the compensation. An answered error is authoritative in the
+other direction: an attempt the registrar explicitly refused is owed no
+compensation. The reply-confirmed id remains the only value
+`registeredWindowId()` reports.
+
 File Manager, Text Editor, and Terminal are the first-party consumers. Each
 executable retains one composition object beside its coordinator and window
 through the shared fail-closed entry
