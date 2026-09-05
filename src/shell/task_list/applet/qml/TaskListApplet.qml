@@ -88,7 +88,7 @@ Item {
             objectName: "taskListPhaseIcon"
             visible: !root.stripVisible && root.phase !== "degraded"
             name: root.phase === "loading" ? "view-refresh-symbolic"
-                                             : "preferences-system-windows-symbolic"
+                                             : "preferences-system-windows"
             size: 20
             color: root.phase === "loading" ? Tokens.fg.muted
                                              : Tokens.fg.disabled
@@ -150,7 +150,7 @@ Item {
 
             ShellIcons.Icon {
                 anchors.fill: parent
-                name: "dialog-warning-symbolic"
+                name: "dialog-warning"
                 size: 18
                 color: Tokens.status.warning.foreground
                 symbolic: true

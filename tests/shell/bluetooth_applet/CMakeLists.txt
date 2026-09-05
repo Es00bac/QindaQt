@@ -18,6 +18,18 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                      "${CMAKE_BINARY_DIR}/src/services/bluetooth_protocol")
     add_subdirectory("../../../src/services/bluetooth_client"
                      "${CMAKE_BINARY_DIR}/src/services/bluetooth_client")
+    add_subdirectory("../../../src/themes"
+                     "${CMAKE_BINARY_DIR}/src/themes")
+    add_subdirectory("../../../src/design_tokens"
+                     "${CMAKE_BINARY_DIR}/src/design_tokens")
+    add_subdirectory("../../../src/controls"
+                     "${CMAKE_BINARY_DIR}/src/controls")
+    set(QINDAQT_LAUNCHER_PURE_ONLY ON)
+    add_subdirectory("../../../src/shell/launcher"
+                     "${CMAKE_BINARY_DIR}/src/shell/launcher")
+    unset(QINDAQT_LAUNCHER_PURE_ONLY)
+    add_subdirectory("../../../src/shell/icons"
+                     "${CMAKE_BINARY_DIR}/src/shell/icons")
     add_subdirectory("../../../src/shell/bluetooth_applet"
                      "${CMAKE_BINARY_DIR}/src/shell/bluetooth_applet")
     set(bluetooth_applet_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
@@ -97,6 +109,7 @@ target_compile_definitions(
     qindaqt_bluetooth_applet_qml_tests
     PRIVATE
         QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_bluetooth_applet_qml_tests)

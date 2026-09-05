@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "audio_applet_controller.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include "support/fake_audio_transport.h"
 
@@ -66,6 +67,8 @@ class AudioAppletQmlTests final : public QObject
 
 private Q_SLOTS:
     void compiledAppletSupportsKeyboardAndAccessibility();
+    void summaryIconTracksDefaultOutput_data();
+    void summaryIconTracksDefaultOutput();
 };
 
 void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
@@ -80,6 +83,11 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
 
     QQmlEngine engine;
     engine.addImportPath(QStringLiteral(QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH));
+    QString iconError;
+    QVERIFY2(Tests::installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("audio-volume-medium")}, &iconError),
+             qPrintable(iconError));
 
     // AGENT-NOTE: QindaQt.Controls resolves QST-1 roles from the read-only
     // Tokens singleton; without a published theme the state cards render
@@ -141,13 +149,11 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     auto *summaryIcon = summary->findChild<QQuickItem *>(
         QStringLiteral("audioAppletIcon"));
     QVERIFY(summaryIcon != nullptr);
-    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
-        QStringLiteral("placeholderTile"));
-    QVERIFY(summaryIcon->property("resolved").toBool()
-            || (placeholder != nullptr && placeholder->isVisible()));
+    QVERIFY(Tests::hasResolvedProviderSource(
+        summaryIcon, QStringLiteral("audio-volume-medium")));
 
     summary->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(&window, Qt::Key_Return);
     auto *popup = root->findChild<QObject *>(QStringLiteral("audioAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
@@ -197,6 +203,82 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
         QAccessible::queryAccessibleInterface(muteSwitches.constFirst());
     QVERIFY(muteInterface != nullptr);
     QVERIFY(!muteInterface->text(QAccessible::Description).isEmpty());
+}
+
+void AudioAppletQmlTests::summaryIconTracksDefaultOutput_data()
+{
+    QTest::addColumn<double>("volume");
+    QTest::addColumn<bool>("muted");
+    QTest::addColumn<QString>("expectedName");
+
+    QTest::newRow("muted") << 0.8 << true
+                            << QStringLiteral("audio-volume-muted");
+    QTest::newRow("low") << 0.2 << false
+                          << QStringLiteral("audio-volume-low");
+    QTest::newRow("medium") << 0.5 << false
+                             << QStringLiteral("audio-volume-medium");
+    QTest::newRow("high") << 0.8 << false
+                           << QStringLiteral("audio-volume-high");
+}
+
+void AudioAppletQmlTests::summaryIconTracksDefaultOutput()
+{
+    QFETCH(double, volume);
+    QFETCH(bool, muted);
+    QFETCH(QString, expectedName);
+
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    Audio::Snapshot snapshot = clientSnapshot();
+    snapshot.outputs[0].volume = volume;
+    snapshot.outputs[0].muted = muted;
+    transport.reply(transport.fetches.constLast(), snapshot);
+
+    QQmlEngine engine;
+    engine.addImportPath(QStringLiteral(QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH));
+    QString iconError;
+    QVERIFY2(Tests::installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("audio-volume-muted"),
+                  QStringLiteral("audio-volume-low"),
+                  QStringLiteral("audio-volume-medium"),
+                  QStringLiteral("audio-volume-high")},
+                 &iconError),
+             qPrintable(iconError));
+    QQmlComponent registration(&engine);
+    registration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml", QUrl(QStringLiteral("inline:audio-icon-token-registration.qml")));
+    QTRY_VERIFY2(registration.status() != QQmlComponent::Loading,
+                 "timed out loading the QindaQt.Tokens module");
+    QVERIFY2(registration.isReady(), qPrintable(registration.errorString()));
+    std::unique_ptr<QObject> registrationObject(registration.create());
+    QVERIFY(registrationObject != nullptr);
+    auto *facade = engine.singletonInstance<DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    QVERIFY(facade != nullptr);
+    const auto loaded = Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+    QVERIFY2(loaded.ok, qPrintable(loaded.error));
+    QString error;
+    QVERIFY2(facade->publish(loaded.theme, {}, &error), qPrintable(error));
+
+    QQmlComponent component(&engine);
+    component.loadFromModule(QStringLiteral("QindaQt.Shell.AudioApplet"),
+                             QStringLiteral("AudioApplet"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> owned(component.createWithInitialProperties(
+        {{QStringLiteral("controller"), QVariant::fromValue(&controller)}}));
+    QVERIFY2(owned != nullptr, qPrintable(component.errorString()));
+    QCOMPARE(owned->property("summaryIconName").toString(), expectedName);
+    auto *icon = owned->findChild<QQuickItem *>(QStringLiteral("audioAppletIcon"));
+    QVERIFY(icon != nullptr);
+    QVERIFY(Tests::hasResolvedProviderSource(icon, expectedName));
 }
 
 QTEST_MAIN(AudioAppletQmlTests)

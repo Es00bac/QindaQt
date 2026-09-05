@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "power_applet_controller.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include "support/fake_power_transport.h"
 
@@ -145,6 +146,11 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QQmlEngine engine;
     engine.addImportPath(
         QStringLiteral(QINDAQT_POWER_APPLET_QML_IMPORT_PATH));
+    QString iconError;
+    QVERIFY2(installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("battery-060")}, &iconError),
+             qPrintable(iconError));
     QVERIFY(publishTokens(engine));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.PowerApplet"),
@@ -167,14 +173,14 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     auto *summary = root->findChild<QQuickItem *>(
         QStringLiteral("powerAppletSummary"));
     QVERIFY(summary != nullptr);
-    QVERIFY(summary->width() <= root->height() + 48.0);
+    QCOMPARE(root->width(), 62.0);
+    QCOMPARE(root->height(), 28.0);
+    QCOMPARE(summary->width(), root->width());
     auto *summaryIcon = summary->findChild<QQuickItem *>(
         QStringLiteral("powerAppletIcon"));
     QVERIFY(summaryIcon != nullptr);
-    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
-        QStringLiteral("placeholderTile"));
-    QVERIFY(summaryIcon->property("resolved").toBool()
-            || (placeholder != nullptr && placeholder->isVisible()));
+    QVERIFY(hasResolvedProviderSource(summaryIcon,
+                                      QStringLiteral("battery-060")));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
     QTest::keyClick(&window, Qt::Key_Space);

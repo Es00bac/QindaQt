@@ -5,6 +5,7 @@ import QindaQt.Tokens 1.0
 
 Rectangle {
     id: root
+    objectName: "appletChip"
 
     required property var applet
     required property var theme
@@ -32,18 +33,23 @@ Rectangle {
     readonly property bool emptyLiveContent:
         usesLiveContent && builtinContent.implicitWidth <= 0
         && (pluginId !== "global-menu" || unavailableGlobalMenu)
+    readonly property int compactExtent: Tokens.space["6"] + Tokens.space["2"]
     readonly property int minimumLiveWidth:
-        pluginId === "global-menu" ? 64 : 32
+        pluginId === "global-menu" ? compactExtent * 2 : compactExtent
 
     width: emptyLiveContent ? 0
-         : vertical ? 32
+         : vertical ? compactExtent
          : Math.max(minimumLiveWidth,
-                    usesLiveContent ? builtinContent.implicitWidth : 32)
+                    usesLiveContent ? builtinContent.implicitWidth : compactExtent)
     height: emptyLiveContent ? 0 : vertical
-          ? Math.max(32, usesLiveContent ? builtinContent.implicitHeight : 32)
-          : 28
+          ? Math.max(compactExtent,
+                     usesLiveContent ? builtinContent.implicitHeight : compactExtent)
+          : compactExtent
     radius: Math.min(theme.cornerRadius ?? 8, 8)
-    clip: true
+    // AGENT-GUARD: live applets size themselves against the panel row. A
+    // second clip here cuts their token padding on the stock 26 px panel;
+    // PanelContent remains the sole surface-extent clip authority.
+    clip: !usesLiveContent
     color: builtinContent.selected || hoverHandler.hovered
           ? colors.accent ?? "#8fc8b7"
           : settings.bare ? "transparent"
@@ -77,7 +83,7 @@ Rectangle {
         if (plugin === "audio") return "audio-volume-muted"
         if (plugin === "clipboard") return "edit-paste"
         if (plugin === "notification-center") return "notifications"
-        if (plugin === "status-notifier") return "application-x-addon"
+        if (plugin === "status-notifier") return "preferences-plugin"
         if (["dock-task-list", "grouped-task-list", "centered-task-list"].includes(plugin))
             return "preferences-system-windows"
         if (plugin === "workspace-pager") return "virtual-desktops"
@@ -86,15 +92,15 @@ Rectangle {
         if (["command-palette", "hud"].includes(plugin)) return "system-search"
         if (plugin === "active-application") return "application-x-executable"
         if (plugin === "clock-tile" || plugin === "clock") return "clock"
-        return "application-x-addon"
+        return "applications-other"
     }
 
     function networkIconName() {
         if (root.liveApplets && root.runtime.ready !== true)
-            return "network-wireless-offline-symbolic"
+            return "network-wireless-off"
         const state = String(root.runtime.networkState
                              ?? root.settings.networkState ?? "disconnected")
-        if (state === "unavailable") return "network-wireless-offline-symbolic"
+        if (state === "unavailable") return "network-wireless-off"
         if (state !== "connected") return "network-wireless-disconnected"
         const strength = Number(root.runtime.strength
                                 ?? root.settings.strength ?? 0)

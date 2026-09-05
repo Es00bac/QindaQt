@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "bluetooth_applet_controller.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include "support/fake_bluetooth_transport.h"
 
@@ -98,6 +99,11 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
 
     QQmlEngine engine;
     engine.addImportPath(QStringLiteral(QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH));
+    QString iconError;
+    QVERIFY2(installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("network-bluetooth-activated")}, &iconError),
+             qPrintable(iconError));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.BluetoothApplet"),
                              QStringLiteral("BluetoothApplet"));
@@ -125,10 +131,8 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     auto *summaryIcon = summary->findChild<QQuickItem *>(
         QStringLiteral("bluetoothAppletIcon"));
     QVERIFY(summaryIcon != nullptr);
-    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
-        QStringLiteral("placeholderTile"));
-    QVERIFY(summaryIcon->property("resolved").toBool()
-            || (placeholder != nullptr && placeholder->isVisible()));
+    QVERIFY(hasResolvedProviderSource(
+        summaryIcon, QStringLiteral("network-bluetooth-activated")));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
     QTest::keyClick(&window, Qt::Key_Space);

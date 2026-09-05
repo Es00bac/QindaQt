@@ -119,24 +119,46 @@ Item {
     // Operation feedback is a popup, so it remains actionable without ever
     // expanding the panel strip into a text card.
     T.Popup {
+        id: feedbackPopup
         objectName: "statusNotifierFeedbackPopup"
         visible: root.hasAccess && access.feedbackPresent
+        popupType: T.Popup.Window
         modal: false
         focus: visible
-        closePolicy: T.Popup.CloseOnEscape
+        closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
+                     | T.Popup.CloseOnPressOutsideParent
         padding: Tokens.space["2"]
 
-        contentItem: C.StateCard {
-            id: feedbackCard
-            objectName: "statusNotifierFeedbackCard"
-            visible: true
-            status: C.StateCard.Error
-            title: qsTr("Status Tray Notice")
-            message: root.hasAccess ? access.feedback : ""
-            actionText: qsTr("Dismiss")
-            onActionTriggered: {
+        // AGENT-GUARD: RuntimePanel rejects focus. This popup window must seed
+        // focus itself or its Dismiss action is unreachable from the panel.
+        onOpened: Qt.callLater(function() {
+            feedbackDismissButton.forceActiveFocus(Qt.PopupFocusReason)
+        })
+
+        contentItem: ColumnLayout {
+            spacing: Tokens.space["2"]
+
+            C.StateCard {
+                id: feedbackCard
+                objectName: "statusNotifierFeedbackCard"
+                Layout.fillWidth: true
+                visible: true
+                status: C.StateCard.Error
+                title: qsTr("Status Tray Notice")
+                message: root.hasAccess ? access.feedback : ""
+            }
+
+            T.Button {
+                id: feedbackDismissButton
+                objectName: "statusNotifierFeedbackDismiss"
+                Layout.alignment: Qt.AlignRight
+                text: qsTr("Dismiss")
+                Accessible.role: Accessible.Button
+                Accessible.name: text
+                onClicked: {
                 if (root.hasAccess)
                     access.clearFeedback()
+                }
             }
         }
     }

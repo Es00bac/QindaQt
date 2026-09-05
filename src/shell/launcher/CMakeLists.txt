@@ -217,6 +217,11 @@ set_property(GLOBAL PROPERTY QINDAQT_LAUNCHER_MODULE_DIR
              "${CMAKE_CURRENT_SOURCE_DIR}")
 set_property(GLOBAL PROPERTY QINDAQT_LAUNCHER_REPO_ROOT
              "${QINDAQT_LAUNCHER_REPO_ROOT}")
+# Focused applet lanes need the pure parser because ShellIcons reuses it, but
+# must not synthesize the launcher's Settings/DBus runtime dependency graph.
+if(QINDAQT_LAUNCHER_PURE_ONLY)
+    return()
+endif()
 if(QINDAQT_LAUNCHER_DEPENDENCIES_READY)
     qindaqt_add_launcher_runtime()
 else()

@@ -20,17 +20,21 @@ QVariantMap ThemeSpec::toVariantMap() const
     for (auto iterator = colors.cbegin(); iterator != colors.cend(); ++iterator) {
         colorValues.insert(iterator.key(), iterator.value());
     }
-    return {{QStringLiteral("schemaVersion"), schemaVersion},
-            {QStringLiteral("id"), id},
-            {QStringLiteral("name"), name},
-            {QStringLiteral("variant"), variant},
-            {QStringLiteral("fontFamily"), fontFamily},
-            {QStringLiteral("monoFontFamily"), monoFontFamily},
-            {QStringLiteral("colors"), colorValues},
-            {QStringLiteral("cornerRadius"), cornerRadius},
-            {QStringLiteral("motionDuration"), motionDuration},
-            {QStringLiteral("blurEnabled"), blurEnabled},
-            {QStringLiteral("decoration"), decoration.toVariantMap()}};
+    QVariantMap values = {{QStringLiteral("schemaVersion"), schemaVersion},
+                          {QStringLiteral("id"), id},
+                          {QStringLiteral("name"), name},
+                          {QStringLiteral("variant"), variant},
+                          {QStringLiteral("fontFamily"), fontFamily},
+                          {QStringLiteral("monoFontFamily"), monoFontFamily},
+                          {QStringLiteral("colors"), colorValues},
+                          {QStringLiteral("cornerRadius"), cornerRadius},
+                          {QStringLiteral("motionDuration"), motionDuration},
+                          {QStringLiteral("blurEnabled"), blurEnabled},
+                          {QStringLiteral("decoration"), decoration.toVariantMap()}};
+    if (!iconTheme.isEmpty()) {
+        values.insert(QStringLiteral("iconTheme"), iconTheme);
+    }
+    return values;
 }
 
 } // namespace QindaQt::Themes

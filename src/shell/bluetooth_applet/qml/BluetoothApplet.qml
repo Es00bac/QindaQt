@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -64,7 +65,7 @@ Item {
                   ? "network-bluetooth-activated"
                   : "network-bluetooth-inactive-symbolic"
             size: Math.min(20, root.height - 8)
-            color: root.colors.text ?? "white"
+            color: Tokens.fg.default
             symbolic: true
             fallbackText: qsTr("Bluetooth")
             Accessible.ignored: true

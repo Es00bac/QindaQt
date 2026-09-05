@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -36,8 +37,7 @@ Item {
         Accessible.description: root.available
             ? qsTr("Open clipboard history; current state is %1").arg(root.phase)
             : qsTr("Clipboard history is unavailable")
-        Accessible.checkable: true
-        Accessible.checked: historyPopup.opened
+        Accessible.checkable: false
 
         function togglePopup() {
             if (!root.available)
@@ -63,7 +63,8 @@ Item {
             objectName: "clipboardPanelIcon"
             anchors.centerIn: parent
             name: "edit-paste"
-            size: Math.min(20, root.height - 8)
+            size: Math.min(20, root.height - Tokens.space["3"])
+            color: Tokens.fg.default
             symbolic: true
             fallbackText: qsTr("Clipboard")
             Accessible.ignored: true

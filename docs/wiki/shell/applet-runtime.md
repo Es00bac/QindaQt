@@ -177,10 +177,11 @@ baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
 on another component to supply either library.
 
 Every shell-carrying component also installs the compiled Clipboard, Task List,
-and Status Notifier module directories (`qmldir`, typeinfo, QML, and
-backing/plugin artifacts) because `BuiltinAppletContent.qml` imports all three
-unconditionally. The closure probe rejects any module missing from an isolated
-component stage.
+Status Notifier, and Icons module directories (`qmldir`, typeinfo, QML, and
+backing/plugin artifacts) because `BuiltinAppletContent.qml` imports the first
+three and `AppletChip.qml` imports Icons unconditionally. The closure probe
+rejects any module missing from an isolated component stage and inventories
+each literal shell-carrying component declaration.
 
 `qindaqt.shell-runtime-component-closure` installs each member of that
 inventory alone beneath the active build root, authenticates both resolved

@@ -5,18 +5,11 @@
 
 #include <QColor>
 #include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QProcessEnvironment>
-#include <QRegularExpression>
 #include <QVariantMap>
 
 namespace QindaQt::Shell {
 namespace {
-
-constexpr qint64 maxThemeBytes = 256 * 1024;
 
 QStringList splitDataDirectories(const QString &value)
 {
@@ -31,13 +24,6 @@ QStringList splitDataDirectories(const QString &value)
         }
     }
     return directories;
-}
-
-bool isValidIconThemeName(const QString &name)
-{
-    static const QRegularExpression allowed(
-        QStringLiteral("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"));
-    return allowed.match(name).hasMatch() && !name.contains(QStringLiteral(".."));
 }
 
 QString defaultIconTheme(const QVariantMap &theme)
@@ -59,11 +45,11 @@ ShellDataRoots ShellIconConfiguration::dataRoots(
     const QProcessEnvironment &environment, const QString &homeDirectory)
 {
     ShellDataRoots roots;
-    roots.dataHome = QDir::cleanPath(environment.value(
-        QStringLiteral("XDG_DATA_HOME"),
-        QDir(homeDirectory).filePath(QStringLiteral(".local/share"))));
-    if (!QDir::isAbsolutePath(roots.dataHome)) {
-        roots.dataHome.clear();
+    const QString configuredHome = environment.value(QStringLiteral("XDG_DATA_HOME"));
+    roots.dataHome = QDir::cleanPath(configuredHome);
+    if (configuredHome.isEmpty() || !QDir::isAbsolutePath(roots.dataHome)) {
+        roots.dataHome = QDir::cleanPath(
+            QDir(homeDirectory).filePath(QStringLiteral(".local/share")));
     }
     roots.dataDirectories = splitDataDirectories(
         environment.value(QStringLiteral("XDG_DATA_DIRS")));
@@ -71,8 +57,7 @@ ShellDataRoots ShellIconConfiguration::dataRoots(
 }
 
 bool ShellIconConfiguration::selectedThemeName(
-    const Themes::ThemeCatalog &themes, const QString &themeDirectory,
-    QString *themeName, QString *error)
+    const Themes::ThemeCatalog &themes, QString *themeName, QString *error)
 {
     if (themeName == nullptr) {
         return false;
@@ -86,46 +71,12 @@ bool ShellIconConfiguration::selectedThemeName(
         return false;
     }
 
-    QDir directory(themeDirectory);
-    const QStringList files = directory.entryList(
-        {QStringLiteral("*.json")}, QDir::Files | QDir::Readable, QDir::Name);
-    for (const QString &fileName : files) {
-        QFile file(directory.filePath(fileName));
-        const QFileInfo info(file);
-        if (info.size() > maxThemeBytes || !file.open(QIODevice::ReadOnly)) {
-            continue;
-        }
-        QJsonParseError parseError;
-        const QJsonDocument document = QJsonDocument::fromJson(
-            file.read(maxThemeBytes + 1), &parseError);
-        if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-            continue;
-        }
-        const QJsonObject object = document.object();
-        if (object.value(QStringLiteral("id")).toString() != selectedId) {
-            continue;
-        }
-        const QJsonValue configured = object.value(QStringLiteral("iconTheme"));
-        if (configured.isUndefined()) {
-            *themeName = defaultIconTheme(selected);
-            return true;
-        }
-        if (!configured.isString() ||
-            !isValidIconThemeName(configured.toString())) {
-            if (error != nullptr) {
-                *error = QStringLiteral(
-                    "theme %1 has an invalid iconTheme value").arg(selectedId);
-            }
-            return false;
-        }
-        *themeName = configured.toString();
-        return true;
-    }
-    if (error != nullptr) {
-        *error = QStringLiteral("selected theme %1 is missing from %2")
-                     .arg(selectedId, themeDirectory);
-    }
-    return false;
+    // AGENT-CONTRACT: ThemeLoader is the sole schema/parser authority. An
+    // icon hint reaching ThemeCatalog has already passed its bounded grammar;
+    // reopening the file here would create divergent validation and TOCTOU.
+    const QString configured = selected.value(QStringLiteral("iconTheme")).toString();
+    *themeName = configured.isEmpty() ? defaultIconTheme(selected) : configured;
+    return true;
 }
 
 } // namespace QindaQt::Shell

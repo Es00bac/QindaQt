@@ -69,10 +69,13 @@ Item {
             verify(summary.width <= panelRow.height)
             const icon = findChild(summary, "clipboardPanelIcon")
             verify(icon !== null)
-            const placeholder = findChild(icon, "placeholderTile")
-            verify(icon.resolved || (placeholder !== null && placeholder.visible))
-            verify(summary.Accessible.checkable)
-            verify(!summary.Accessible.checked)
+            compare(icon.name, "edit-paste")
+            verify(icon.resolved)
+            const iconImage = findChild(icon, "iconImage")
+            verify(iconImage !== null)
+            verify(iconImage.source.toString().indexOf("edit-paste") !== -1)
+            verify(icon.color.a > 0)
+            verify(!summary.Accessible.checkable)
 
             beforePanel.forceActiveFocus(Qt.TabFocusReason)
             keyClick(Qt.Key_Tab)
@@ -83,7 +86,6 @@ Item {
             verify(popup !== null)
             compare(popup.popupType, Popup.Window)
             tryCompare(popup, "opened", true)
-            tryVerify(function() { return summary.Accessible.checked })
 
             const search = findChild(popup.contentItem, "clipboardSearchField")
             verify(search !== null)
@@ -92,7 +94,6 @@ Item {
             tryVerify(function() { return !search.activeFocus })
             keyClick(Qt.Key_Escape)
             tryCompare(popup, "opened", false)
-            verify(!summary.Accessible.checked)
         }
 
     }

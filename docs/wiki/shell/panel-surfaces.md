@@ -109,9 +109,13 @@ Global menu keeps its provider-owned menu labels, clock remains textual, and
 notification center retains its existing compact glyph. Missing icon assets
 render typed placeholders without changing the applet's accessible identity.
 
-Panel rows clip at their assigned surface extent. Wide detail controls and
-operational notices live in focusable `Popup.Window` surfaces, so neither
-localization nor backend diagnostics can inflate the panel past its edge.
+Panel rows are the sole surface-extent clip authority; live `AppletChip`
+content is not clipped a second time, including the 18-pixel content row of the
+stock 26-pixel minimal panel. Audio and clipboard details and status-notifier
+operational notices live in focusable `Popup.Window` surfaces, so their text
+cannot inflate the panel and their controls remain reachable from a
+non-focusable layer-shell panel. Other applet detail popups retain their
+existing item-popup behavior and make no layer-shell keyboard claim.
 Edge reveal/hold producers, hide animation, applet process hosting, and
 settings preview subscription remain later acceptance work.
 

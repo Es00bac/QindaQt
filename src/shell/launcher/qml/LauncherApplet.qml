@@ -19,6 +19,8 @@ Item {
     required property var access
     property bool vertical: false
     readonly property bool available: access !== null && Tokens.ready
+    readonly property int summaryIconExtent:
+        Math.max(0, Math.min(20, height - Tokens.space["2"]))
 
     objectName: "launcherApplet"
     implicitWidth: 32
@@ -81,7 +83,7 @@ Item {
             objectName: "launcherAppletIcon"
             anchors.centerIn: parent
             name: "start-here-kde"
-            size: Math.min(20, root.height - Tokens.space["2"])
+            size: root.summaryIconExtent
             color: summary.enabled ? Tokens.fg.default : Tokens.fg.disabled
             fallbackText: qsTr("Applications")
             Accessible.ignored: true

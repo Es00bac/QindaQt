@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtTest
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierComponents
 import QindaQt.Shell.StatusNotifier.Tests 1.0 as Harness
@@ -266,10 +267,29 @@ Item {
             compare(card.visible, true)
             compare(card.message, "The status item refused the request (stale).")
 
-            var dismiss = findChild(card, "stateCardAction")
+            var popup = findChild(applet, "statusNotifierFeedbackPopup")
+            verify(popup !== null)
+            compare(popup.popupType, Popup.Window)
+            tryCompare(popup, "opened", true)
+            var dismiss = findChild(popup, "statusNotifierFeedbackDismiss")
             verify(dismiss !== null)
-            dismiss.clicked()
+            tryVerify(function() { return dismiss.activeFocus })
+            keyClick(Qt.Key_Space)
             compare(fakeAccess.clearFeedbackCalls, 1)
+        }
+
+        function test_feedbackWindowClosesOnEscape() {
+            fakeAccess.feedbackPresent = true
+            fakeAccess.feedback = "A bounded notice"
+            var applet = createTemporaryObject(appletComponent, testRoot)
+            verify(applet !== null)
+            var popup = findChild(applet, "statusNotifierFeedbackPopup")
+            verify(popup !== null)
+            compare(popup.popupType, Popup.Window)
+            tryCompare(popup, "opened", true)
+            keyClick(Qt.Key_Escape)
+            tryCompare(popup, "opened", false)
+            compare(fakeAccess.clearFeedbackCalls, 0)
         }
     }
 }

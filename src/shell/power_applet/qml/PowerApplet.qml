@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -66,7 +67,7 @@ Item {
                 objectName: "powerAppletIcon"
                 name: root.batteryIconName
                 size: Math.min(20, root.height - 8)
-                color: root.colors.text ?? "white"
+                color: Tokens.fg.default
                 symbolic: true
                 fallbackText: qsTr("Battery")
                 Accessible.ignored: true
@@ -76,7 +77,7 @@ Item {
                 objectName: "powerAppletPercentage"
                 visible: !root.vertical && root.percentageText !== ""
                 text: root.percentageText
-                color: root.colors.text ?? "white"
+                color: Tokens.fg.default
                 font.pixelSize: 11
                 textFormat: Text.PlainText
                 Accessible.ignored: true

@@ -1052,7 +1052,7 @@ and the LRU bound. The QML row instantiates the compiled `Icon` element
 through the real `IconRuntime::install` seam with a published QST-1 theme.
 No row contacts a host bus, display, compositor, network, or hardware. See
 [Shell iconography](../shell/iconography.md) and
-[ADR-0071](../adr/0072-shell-iconography-confined-xdg-icon-themes.md).
+[ADR-0072](../adr/0072-shell-iconography-confined-xdg-icon-themes.md).
 
 ## Current task-list proof
 
@@ -2517,12 +2517,26 @@ device claim. Those rows follow a successful repeatable boot/teardown boundary.
 ### Private interactive 1080p S2
 
 The shell icon-first slice adds two host-independent gates to the focused shell
-matrix: `qindaqt.shell-icon-runtime-configuration` validates selected-theme
-policy and hostile hints, while `qindaqt.shell-icon-coverage` requires every
-hosted entry and built-in theme to declare its icon contract. Individual
-offscreen applet rows assert icon-or-typed-placeholder truth, accessible names,
-empty in-panel labels, and 28-pixel geometry under fatal QML warnings. These
-gates use injected roots and the software renderer only.
+matrix: `qindaqt.shell-icon-runtime-configuration` consumes the catalog's
+already-parsed icon hint and validates hostile hints, oversized-theme parity,
+and XDG root fallback, while `qindaqt.shell-icon-coverage` requires every
+literal built-in summary icon to resolve against the pinned intersection of
+Breeze and Breeze-dark names. Individual offscreen applet rows require a real
+provider source from injected icon fixtures, plus exact icon names, accessible
+identities, empty in-panel labels, token recoloring, and the stock minimal
+panel's 18-pixel live-content row under fatal QML warnings. These gates use
+injected fixtures and the software renderer only.
+
+The launcher, Task List, Bluetooth applet, and Power applet focused lanes also
+retain standalone configure entry points. These are configure-only dependency
+closure gates and write only beneath the assigned build root:
+
+```sh
+cmake -S tests/shell/launcher -B build/standalone-launcher -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/task_list -B build/standalone-task-list -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/bluetooth_applet -B build/standalone-bluetooth -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/power_applet -B build/standalone-power -G Ninja -DCMAKE_BUILD_TYPE=Debug
+```
 
 Contained `desktop.virtual.interactive.1080p` and the two
 `desktop.virtual.panel-visibility.single-*` rows remain the live visual and
