@@ -76,9 +76,9 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0073](0073-publish-atomic-authenticated-task-facts.md) | Accepted | Publish atomic task facts only to the authenticated production shell |
 | [ADR-0074](0074-compose-shell-preferences-through-settings1.md) | Accepted | Compose shell layout and token preferences through Settings1 |
 | [ADR-0075](0075-desktop-controls-and-workspaces.md) | Proposed | Compose desktop controls over bounded shell facades |
+| [ADR-0076](0076-register-launcher-persistence-in-panel-settings.md) | Accepted | Register launcher persistence in panel settings |
+| [ADR-0077](0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md) | Accepted | Acknowledge global menu hosting before hiding local menus |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
 integration retains every accepted decision in numeric order.
-
-- [ADR-0076: Register launcher persistence in panel settings](0076-register-launcher-persistence-in-panel-settings.md)

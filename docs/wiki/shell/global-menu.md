@@ -7,6 +7,8 @@ the standard AppMenu registrar and dbusmenu transports without inheriting the
 registrar protocol's unauthenticated authority model. The durable choices are
 in [ADR-0033](../adr/0033-canonical-menu-model-and-authenticated-menu-ownership.md)
 and [ADR-0056](../adr/0056-adopt-standard-appmenu-dbusmenu-transports.md).
+The local/global visibility handoff is defined by
+[ADR-0077](../adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md).
 
 ## Milestone boundary
 

@@ -245,3 +245,6 @@ beside their primary window/coordinator and supply its local-menu visibility
 callback. The callback starts visible, hides only after the current QindaQt
 registrar confirms that a live renderer accepted the exact endpoint, and
 restores visibility when that proof is withdrawn or cannot be revalidated.
+The cross-process acknowledgment, focus-retention rule, and fallback behavior
+are defined by
+[ADR-0077](../adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md).
