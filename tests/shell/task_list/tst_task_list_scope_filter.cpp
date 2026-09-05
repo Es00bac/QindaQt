@@ -140,6 +140,26 @@ private slots:
         QCOMPARE(visible.last().taskId, QStringLiteral("w-b"));
     }
 
+    void shellOwnedAndNonNormalWindowsAreNeverTasks()
+    {
+        auto shellPopup =
+            TaskListTest::standalone(QStringLiteral("w-shell"),
+                                     QStringLiteral("qindaqt-shell"));
+        shellPopup.owner = TaskWindowOwner::BoundShell;
+        auto utility =
+            TaskListTest::standalone(QStringLiteral("w-utility"), kFilesId);
+        utility.type = TaskWindowType::NonNormal;
+        const auto entries = entriesFor({
+            TaskListTest::standalone(QStringLiteral("w-editor"), kEditorId),
+            shellPopup,
+            utility,
+        });
+
+        const auto visible = TaskListFilter::filter(entries, TaskListScope{});
+        QCOMPARE(visible.size(), 1);
+        QCOMPARE(visible.constFirst().taskId, QStringLiteral("w-editor"));
+    }
+
     void containerVisibilityFollowsItsPrimaryPlacement()
     {
         auto primaryFact = TaskListTest::primary(QStringLiteral("w-p"), kFilesId,

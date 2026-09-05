@@ -29,6 +29,9 @@ enum class TaskWindowRole {
   ContainerMember,
 };
 
+enum class TaskWindowType { Normal, NonNormal };
+enum class TaskWindowOwner { Application, BoundShell };
+
 enum class TaskEntryKind {
   Window,
   Container,
@@ -50,6 +53,8 @@ struct TaskWindowFact {
   QStringList workspaceIds;
   bool onAllWorkspaces = false;
   TaskWindowRole role = TaskWindowRole::Standalone;
+  TaskWindowType type = TaskWindowType::Normal;
+  TaskWindowOwner owner = TaskWindowOwner::Application;
   QString containerId;
   bool active = false;
   bool minimized = false;
@@ -78,6 +83,8 @@ struct TaskEntry {
   QString outputId;
   QStringList workspaceIds;
   bool onAllWorkspaces = false;
+  TaskWindowType type = TaskWindowType::Normal;
+  TaskWindowOwner owner = TaskWindowOwner::Application;
   bool active = false;
   bool minimized = false;
   bool urgent = false;

@@ -10,6 +10,45 @@ from desktop_session_topology import TopologyContractError, interactive_1080p_to
 from test_desktop_session_topology_unit import valid_evidence
 
 
+def valid_shell_phase(shell_pid: int, *, opened: bool) -> dict[str, object]:
+    return {
+        "owner": ":1.20", "servicePid": str(shell_pid),
+        "shellPid": str(shell_pid),
+        "tokens": {
+            "ready": True, "qstRevision": 1, "generation": "1",
+            "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
+        },
+        "taskList": {
+            "phase": "ready", "generation": "1", "windowCount": 2,
+            "buttons": [
+                {"applicationId": "org.qindaqt.Settings",
+                 "iconName": "preferences-system", "iconResolved": True},
+                {"applicationId": "org.qindaqt.TextEditor",
+                 "iconName": "accessories-text-editor", "iconResolved": True},
+            ],
+        },
+        "quieting": {
+            "enabled": False, "hasBaseline": True, "state": "ready",
+            "canToggle": True, "statusText": "", "errorText": "",
+        },
+        "panelApplets": [
+            {"panelId": "smart-shelf", "appletId": "apps",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+            {"panelId": "smart-shelf", "appletId": "hosted-task-list",
+             "plugin": "task-list", "ready": True,
+             "entryPoint": "qindaqt.applets.task-list"},
+        ],
+        "presentation": {
+            "privatePresentationAllowed": True, "centerOpen": opened,
+        },
+        "centerOpenedCount": "1" if opened else "0",
+        "centerWindow": {
+            "exists": True, "visible": opened, "outputName": "WL-0",
+        },
+    }
+
+
 def valid_interactive_evidence() -> dict[str, object]:
     evidence = valid_evidence("WL-0")
     topology = interactive_1080p_topology()
@@ -66,38 +105,8 @@ def valid_interactive_evidence() -> dict[str, object]:
         },
         "preInjectionActiveSurfaceCount": 0,
         "shellPresentation": {
-            "before": {
-                "owner": ":1.20", "servicePid": str(shell_pid),
-                "shellPid": str(shell_pid),
-                "tokens": {
-                    "ready": True, "qstRevision": 1, "generation": "1",
-                    "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
-                },
-                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
-                "presentation": {
-                    "privatePresentationAllowed": True, "centerOpen": False,
-                },
-                "centerOpenedCount": "0",
-                "centerWindow": {
-                    "exists": True, "visible": False, "outputName": "WL-0",
-                },
-            },
-            "after": {
-                "owner": ":1.20", "servicePid": str(shell_pid),
-                "shellPid": str(shell_pid),
-                "tokens": {
-                    "ready": True, "qstRevision": 1, "generation": "1",
-                    "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
-                },
-                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
-                "presentation": {
-                    "privatePresentationAllowed": True, "centerOpen": True,
-                },
-                "centerOpenedCount": "1",
-                "centerWindow": {
-                    "exists": True, "visible": True, "outputName": "WL-0",
-                },
-            },
+            "before": valid_shell_phase(shell_pid, opened=False),
+            "after": valid_shell_phase(shell_pid, opened=True),
         },
         "surface": {
             "scope": "notification-center", "processId": str(shell_pid),
@@ -173,6 +182,14 @@ class InteractiveEvidenceTests(unittest.TestCase):
             (("shellPresentation", "after", "centerWindow", "outputName"), "WL-9"),
             (("shellPresentation", "before", "centerOpenedCount"), "01"),
             (("shellPresentation", "after", "centerOpenedCount"), "0"),
+            (("shellPresentation", "before", "taskList", "buttons", 0,
+              "iconResolved"), False),
+            (("shellPresentation", "after", "taskList", "buttons", 1,
+              "applicationId"), "qindaqt-shell"),
+            (("shellPresentation", "before", "quieting", "state"),
+             "unavailable"),
+            (("shellPresentation", "after", "panelApplets", 0, "plugin"),
+             "application-launcher"),
         )
         for path, value in mutations:
             with self.subTest(path=path):

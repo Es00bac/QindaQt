@@ -5,6 +5,7 @@
 #include "kwinhybridsession.h"
 #include "kwinoutputinventory.h"
 #include "kwinshellvisibilitypublisher.h"
+#include "kwinshellwindowactions.h"
 #include "managedwindowregistry.h"
 #include "qindaqt/compositor/containercontrolbridge.h"
 
@@ -80,13 +81,15 @@ std::optional<ContainerProjection> hybridProjection(
 KWinShellTaskFactsPublisher::KWinShellTaskFactsPublisher(
     ManagedWindowRegistry &registry, KWinOutputInventory &outputs,
     KWinShellVisibilityPublisher &visibility, ContainerControlBridge &bridge,
-    KWinHybridSession &hybrid, QObject *parent)
+    KWinHybridSession &hybrid, KWinShellPanelOwnerSource &panelOwner,
+    QObject *parent)
     : QObject(parent)
     , m_registry(registry)
     , m_outputs(outputs)
     , m_visibility(visibility)
     , m_bridge(bridge)
     , m_hybrid(hybrid)
+    , m_panelOwner(panelOwner)
     , m_store(visibility.epoch())
 {
     auto *const compositorWorkspace = KWin::workspace();
@@ -100,6 +103,8 @@ KWinShellTaskFactsPublisher::KWinShellTaskFactsPublisher(
     connect(&m_bridge, &ContainerControlBridge::containerCommitted,
             this, &KWinShellTaskFactsPublisher::scheduleRefresh);
     connect(&m_hybrid, &KWinHybridSession::shellVisibilityStateChanged,
+            this, &KWinShellTaskFactsPublisher::scheduleRefresh);
+    connect(&m_panelOwner, &KWinShellPanelOwnerSource::shellPanelOwnerChanged,
             this, &KWinShellTaskFactsPublisher::scheduleRefresh);
     connect(compositorWorkspace, &KWin::Workspace::windowAdded,
             this, [this](KWin::Window *window) {
@@ -233,6 +238,8 @@ KWinShellTaskFactsPublisher::sample(QString *error)
     }
 
     QHash<QString, ShellTaskWindowRole> roles;
+    const std::optional<qint64> shellProcessId =
+        m_panelOwner.shellPanelProcessId();
     for (const QString &containerId : m_registry.containerIds()) {
         auto projection = m_bridge.contains(containerId)
             ? bridgeProjection(m_bridge, containerId, error)
@@ -276,7 +283,12 @@ KWinShellTaskFactsPublisher::sample(QString *error)
             .title = window->caption(),
             .role = containerId.isEmpty() ? ShellTaskWindowRole::Standalone
                                           : roles.value(windowId),
-            .type = ShellTaskWindowType::Normal,
+            .type = window->isNormalWindow() ? ShellTaskWindowType::Normal
+                                             : ShellTaskWindowType::NonNormal,
+            .owner = shellProcessId
+                    && static_cast<qint64>(window->pid()) == *shellProcessId
+                ? ShellTaskWindowOwner::BoundShell
+                : ShellTaskWindowOwner::Application,
             .active = window->isActive(),
             .minimized = window->isMinimized(),
             .maximized = window->maximizeMode() == KWin::MaximizeFull

@@ -7,6 +7,10 @@ qt_add_executable(
     qindaqt-desktop-notification-shell-readiness-tests
     "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellpolish.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellpolish.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellpolishfixtures.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellpolishfixtures.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellsample.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tst_desktopnotificationshellreadiness.cpp"
 )

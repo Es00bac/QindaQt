@@ -137,6 +137,26 @@ set_tests_properties(
 
 if(TARGET qindaqt-shell)
     qt_add_executable(
+        qindaqt_runtime_panel_applet_compatibility_tests
+        tst_runtimepanelappletcompatibility.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtimepanelappletcompatibility.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtimepanelappletcompatibility.h"
+    )
+    target_include_directories(
+        qindaqt_runtime_panel_applet_compatibility_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_runtime_panel_applet_compatibility_tests
+        PRIVATE qindaqt_profiles Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_runtime_panel_applet_compatibility_tests)
+    add_test(
+        NAME qindaqt.shell-runtime-panel-applet-compatibility
+        COMMAND qindaqt_runtime_panel_applet_compatibility_tests
+    )
+
+    qt_add_executable(
         qindaqt_shell_runtime_token_tests
         tst_shellruntime_tokens.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelltokenpublisher.cpp"

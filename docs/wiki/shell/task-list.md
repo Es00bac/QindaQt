@@ -18,6 +18,8 @@ copied from one coherent compositor/hybrid generation:
 - compositor-assigned output plus the window's virtual-desktop scope (an
   explicit all-workspaces flag, or a workspace id list);
 - the task-list role: `Standalone`, `ContainerPrimary`, or `ContainerMember`;
+- compositor window type (`Normal` or `NonNormal`) and client ownership
+  (`Application` or the authenticated `BoundShell` panel owner);
 - presentation state: `active`, `minimized`, and `urgent`.
 
 The producer classifies containers before publishing: exactly one primary
@@ -64,7 +66,11 @@ the context menu is Cancel. Only shell composition may touch real windows.
 
 `TaskListScope` restricts rows per output and workspace; an empty field means
 no restriction on that axis. Container rows follow their primary's placement,
-and all-workspaces entries participate in every workspace scope.
+and all-workspaces entries participate in every workspace scope. Before either
+axis is considered, T0 excludes every non-normal role and every window owned
+by the bound shell client. Panels, notification surfaces, and shell popups
+therefore cannot become tasks even if a compositor backend reports one as an
+otherwise normal managed window.
 
 ## Presentation
 
@@ -97,8 +103,9 @@ that is absent at cold start cannot leave the task list silently Loading.
 
 The adapter reads only schema-1 `TaskListSnapshot()` and observes only the
 directed `TaskListSnapshotChanged` hint. The payload atomically carries window,
-output, workspace, role/state, and container-lineage facts plus the action
-fence; T1 never joins `Windows`, `Outputs`, `ShellVisibilitySnapshot`, or
+output, workspace, task role, window type, bound-shell ownership, state, and
+container-lineage facts plus the action fence; T1 never joins `Windows`,
+`Outputs`, `ShellVisibilitySnapshot`, or
 `Containers`. Each reply is bounded and fully decoded before publication.
 
 The producer retains `(owner, epoch, revision, payload)` lineage. Under one
@@ -187,8 +194,9 @@ active-window identity
 remains a separate concern served by that same shell-owned client.
 
 The compositor now supplies the missing read contract on that same authenticated
-object. `TaskListSnapshot` includes every managed normal window's identity,
-application ID and label, title, task role, active/minimized/maximized/
+object. `TaskListSnapshot` includes every managed window's identity,
+application ID and label, title, task role, normal/non-normal type,
+application/bound-shell ownership, active/minimized/maximized/
 fullscreen/demands-attention flags, output and workspace scope, and container
 ID. Referenced outputs, workspaces, and container revision/authority entries
 travel in the same generation. The snapshot also carries the window-action
@@ -263,9 +271,10 @@ arbitration refuses actions against a generation the user no longer sees.
 Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
 for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
 uses the hosted Close All policy. Shell composition injects one
-`DesktopEntryIconResolver` built from explicit freedesktop application roots;
-each row resolves the compositor-provided application id to the desktop
-entry's `Icon=` name. Horizontal buttons show the icon plus an elided title
+`DesktopEntryIconResolver` built from explicit freedesktop application roots
+and one `IconThemeLocator` over the icon roots used by QML. Each row resolves
+the compositor-provided application id to the desktop entry's `Icon=` name and
+publishes whether theme lookup succeeded. Horizontal buttons show the icon plus an elided title
 inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
 icon. Missing and hostile mappings use the typed application placeholder.
 Degraded truth is an accessible warning glyph rather than a “Limited” badge,
@@ -323,7 +332,12 @@ Private-bus transport and composition rows, offscreen keyboard/accessibility
 rows, and contained boot jointly qualify the boundary.
 
 `ShellDevelopment1.taskList` reports the live hosted applet's phase,
-generation, and window count. `desktop.virtual.boot.1080p` requires `ready`, a
-positive generation, and at least one listed window. The independent
+generation, visible window count, and per-button application ID, icon name,
+and `iconResolved` truth. Its `panelApplets` array records normalized profile
+instances. The interactive 1080p row requires exactly Settings and Text Editor,
+resolved icons for both, no bound-shell task, one ready launcher, and one task
+list on the smart shelf. Legacy `application-launcher` aliases normalize to
+`launcher`; a legacy task-list alias normalizes only when no canonical task
+list exists and is otherwise dropped as redundant. The independent
 Compositor1 inventories remain diagnostic inputs and must not be substituted
 or joined by shell code.

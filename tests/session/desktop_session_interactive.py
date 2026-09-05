@@ -18,6 +18,11 @@ from desktop_session_topology import (
     validate_boot_evidence,
 )
 from desktop_session_matrix import physical_content_region
+from desktop_session_shell_polish import (
+    validate_panel_applets,
+    validate_quieting,
+    validate_task_list,
+)
 
 
 def _mapping(value: Any, location: str) -> Mapping[str, Any]:
@@ -69,8 +74,8 @@ def _validate_shell_presentation(
         for name in ("before", "after")
     }
     expected_fields = {
-        "owner", "servicePid", "shellPid", "tokens", "taskList", "presentation",
-        "centerOpenedCount", "centerWindow",
+        "owner", "servicePid", "shellPid", "tokens", "taskList", "quieting",
+        "panelApplets", "presentation", "centerOpenedCount", "centerWindow",
     }
     for name, phase in phases.items():
         owner = phase.get("owner")
@@ -98,23 +103,22 @@ def _validate_shell_presentation(
             or re.fullmatch(r"#[0-9a-f]{6}", tokens["backgroundBase"]) is None
         ):
             raise TopologyContractError(f"shell presentation {name} tokens are not ready")
-        task_list = _mapping(
-            phase.get("taskList"), f"shellPresentation.{name}.taskList"
-        )
-        if (
-            set(task_list) != {"phase", "generation", "windowCount"}
-            or task_list.get("phase") != "ready"
-            or _canonical_counter(
-                task_list.get("generation"),
-                f"shell presentation {name} task-list generation",
-            ) <= 0
-            or not isinstance(task_list.get("windowCount"), int)
-            or isinstance(task_list.get("windowCount"), bool)
-            or task_list["windowCount"] < 1
-        ):
-            raise TopologyContractError(
-                f"shell presentation {name} task list is not ready"
+        try:
+            validate_task_list(
+                phase.get("taskList"),
+                expected_applications={
+                    "org.qindaqt.Settings", "org.qindaqt.TextEditor",
+                },
+                expected_count=2,
             )
+            validate_quieting(phase.get("quieting"))
+            validate_panel_applets(
+                phase.get("panelApplets"), require_qindaqt_shelf=True
+            )
+        except ValueError as error:
+            raise TopologyContractError(
+                f"shell presentation {name} {error}"
+            ) from error
         state = _mapping(phase.get("presentation"), f"shellPresentation.{name}.presentation")
         window = _mapping(phase.get("centerWindow"), f"shellPresentation.{name}.centerWindow")
         expected_open = name == "after"
