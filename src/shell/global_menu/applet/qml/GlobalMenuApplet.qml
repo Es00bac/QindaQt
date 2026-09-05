@@ -27,6 +27,27 @@ Item {
     // is hidden rather than painted partially inside the clipped geometry.
     readonly property bool indicatorFits: vertical ? height >= (measuredIndicatorHeight() + 4) : width >= (measuredIndicatorWidth() + spacing)
     readonly property real spacing: 12
+    property var rendererLeaseAccess: null
+
+    function updateRendererLease() {
+        if (rendererLeaseAccess === access)
+            return
+        if (rendererLeaseAccess !== null
+                && typeof rendererLeaseAccess.detachRenderer === "function")
+            rendererLeaseAccess.detachRenderer()
+        rendererLeaseAccess = access
+        if (rendererLeaseAccess !== null
+                && typeof rendererLeaseAccess.attachRenderer === "function")
+            rendererLeaseAccess.attachRenderer()
+    }
+    onAccessChanged: updateRendererLease()
+    Component.onCompleted: updateRendererLease()
+    Component.onDestruction: {
+        if (rendererLeaseAccess !== null
+                && typeof rendererLeaseAccess.detachRenderer === "function")
+            rendererLeaseAccess.detachRenderer()
+        rendererLeaseAccess = null
+    }
 
     onAvailableChanged: {
         if (!available)

@@ -40,6 +40,9 @@ public:
     void stop();
     [[nodiscard]] bool isRunning() const noexcept;
     [[nodiscard]] RegistrarRegistry *registry() noexcept;
+    void setHostedMenu(const QString &providerUniqueName,
+                       const QString &objectPath, bool hosted);
+    void clearHostedMenus();
 
 private:
     QDBusConnection m_connection;

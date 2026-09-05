@@ -72,7 +72,27 @@ private Q_SLOTS:
     void activateOnNestedEnabledActionEmits();
     void activateOnSubmenuEmitsNothing();
     void activateOnHiddenActionEmitsNothing();
+    void rendererLeasesAreReferenceCounted();
 };
+
+void GlobalMenuAppletAccessTests::rendererLeasesAreReferenceCounted()
+{
+    GlobalMenuAppletAccess access;
+    QSignalSpy changed(&access, &GlobalMenuAppletAccess::rendererPresentChanged);
+    QVERIFY(!access.rendererPresent());
+    access.attachRenderer();
+    access.attachRenderer();
+    QVERIFY(access.rendererPresent());
+    QCOMPARE(changed.size(), 1);
+    access.detachRenderer();
+    QVERIFY(access.rendererPresent());
+    QCOMPARE(changed.size(), 1);
+    access.detachRenderer();
+    QVERIFY(!access.rendererPresent());
+    QCOMPARE(changed.size(), 2);
+    access.detachRenderer();
+    QCOMPARE(changed.size(), 2);
+}
 
 void GlobalMenuAppletAccessTests::staleRenderedGenerationCannotActivateReusedId()
 {

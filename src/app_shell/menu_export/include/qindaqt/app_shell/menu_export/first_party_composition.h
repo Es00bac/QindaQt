@@ -6,6 +6,7 @@
 #include <QDBusConnection>
 
 #include <memory>
+#include <functional>
 
 class QObject;
 class QWindow;
@@ -25,6 +26,7 @@ namespace QindaQt::AppShell::MenuExport {
 // session-bus connection.
 [[nodiscard]] std::unique_ptr<QObject> composeFirstPartyMenuExport(
     ApplicationCoordinator &coordinator, QWindow &window,
-    QDBusConnection sessionBus);
+    QDBusConnection sessionBus,
+    std::function<void(bool)> setLocalMenuVisible = {});
 
 } // namespace QindaQt::AppShell::MenuExport

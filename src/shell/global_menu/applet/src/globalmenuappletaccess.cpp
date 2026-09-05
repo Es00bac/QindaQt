@@ -7,6 +7,7 @@
 
 #include <QtCore/QVariantMap>
 
+#include <limits>
 #include <utility>
 
 namespace QindaQt::Shell::GlobalMenu
@@ -84,6 +85,33 @@ QString GlobalMenuAppletAccess::phase() const
 QString GlobalMenuAppletAccess::reasonCode() const
 {
     return m_reasonCode;
+}
+
+bool GlobalMenuAppletAccess::rendererPresent() const noexcept
+{
+    return m_rendererCount > 0;
+}
+
+void GlobalMenuAppletAccess::attachRenderer()
+{
+    const bool wasPresent = rendererPresent();
+    if (m_rendererCount != std::numeric_limits<quint32>::max()) {
+        ++m_rendererCount;
+    }
+    if (!wasPresent && rendererPresent()) {
+        Q_EMIT rendererPresentChanged();
+    }
+}
+
+void GlobalMenuAppletAccess::detachRenderer()
+{
+    if (m_rendererCount == 0) {
+        return;
+    }
+    --m_rendererCount;
+    if (m_rendererCount == 0) {
+        Q_EMIT rendererPresentChanged();
+    }
 }
 
 void GlobalMenuAppletAccess::activate(const QString &actionId, const QString &generation)

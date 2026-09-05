@@ -59,6 +59,8 @@ public:
 
 Q_SIGNALS:
     void activationRejected(QString reasonCode);
+    void hostedMenuChanged(QString providerUniqueName, QString objectPath,
+                           bool hosted);
 
 private:
     struct ProviderEndpoint final {
@@ -78,6 +80,7 @@ private:
                           const ProviderEndpoint &endpoint);
     void publishClientTree();
     void activate(const QString &actionId);
+    void refreshHostedMenu();
 
     QDBusConnection m_connection;
     const Ownership::ActiveWindowSource &m_activeWindowSource;
@@ -94,6 +97,7 @@ private:
     ProviderEndpoint m_boundEndpoint;
     QString m_watchedAnnouncedService;
     quint64 m_focusGeneration = 0;
+    bool m_hosted = false;
 };
 
 } // namespace QindaQt::Shell::GlobalMenu::Composition

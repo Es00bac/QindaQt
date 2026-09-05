@@ -10,6 +10,10 @@ target_sources(
     qindaqt_app_shell_menu_export
     PRIVATE
         src/application_menu_export.cpp
+        src/coordinator_menu_projection.cpp
+        src/coordinator_menu_projection_p.h
+        src/registration_completion.cpp
+        src/registration_completion_p.h
         src/first_party_composition.cpp
         src/qt_window_menu_identity.cpp
     PUBLIC

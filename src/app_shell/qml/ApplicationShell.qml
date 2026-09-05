@@ -11,6 +11,7 @@ ApplicationWindow {
     required property ApplicationCoordinator coordinator
     required property Item initialFocusItem
     property bool closeAuthorized: false
+    property bool inWindowMenuVisible: true
     default property alias pageContent: pageHost.data
 
     visible: true
@@ -58,6 +59,7 @@ ApplicationWindow {
     menuBar: MenuBar {
         id: exportedMenuBar
         objectName: "appShellMenuBar"
+        visible: root.inWindowMenuVisible
 
         Instantiator {
             id: menuFactory

@@ -282,9 +282,21 @@ PID/window or PID/announced-address authentication described above. Registrar
 owner loss/replacement withdraws the prior association and retries against the
 new owner. An accepted close withdraws after the surface retires; a rejected
 close retains the association, and composition/window destruction always
-withdraws it. None of these
-states proves that the shell currently renders the menu, so first-party local
-menu bars remain present.
+withdraws it. Publication alone does not prove that the shell renders the
+menu. The QindaQt registrar therefore adds a bounded
+`IsMenuHosted(service, path)` query and
+`MenuHostedChanged(service, path, hosted)` notification. The shell acknowledges
+an endpoint only after a live panel renderer exists and the exact active
+provider has passed focus/PID authentication, dbusmenu decoding, and canonical
+export. First-party applications hide their in-window menu only after that
+same-owner acknowledgment. Registrar loss or replacement, endpoint withdrawal,
+renderer destruction, and rejected or unavailable queries restore the local
+menu immediately. A foreign standard registrar without this additive contract
+never suppresses local actions.
+
+Acknowledgments are retained per endpoint while a renderer remains live, so
+ordinary focus changes do not resize inactive application content. Renderer
+teardown clears the complete bounded set.
 
 Native-surface recreation is part of the same exact-identity lifecycle. A
 Wayland window's surface can be destroyed and recreated without destroying the
