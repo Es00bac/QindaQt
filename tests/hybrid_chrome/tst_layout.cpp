@@ -20,6 +20,7 @@ private Q_SLOTS:
     void standardButtonsHonorRequestedSide_data();
     void standardButtonsHonorRequestedSide();
     void logicalGeometryIsStableAcrossDpi();
+    void reservesOuterDragBesideTabsForEveryVisualDirection();
     void derivesMemberTitleAndDividerRegions();
     void rejectsInvalidInput();
 };
@@ -111,6 +112,37 @@ void ChromeLayoutTests::logicalGeometryIsStableAcrossDpi()
     QCOMPARE(first->members[0].titleDragRect, second->members[0].titleDragRect);
     QCOMPARE(first->borderHairline, 1.0);
     QCOMPARE(second->borderHairline, 0.5);
+}
+
+void ChromeLayoutTests::reservesOuterDragBesideTabsForEveryVisualDirection()
+{
+    for (const auto side : {ButtonSide::Left, ButtonSide::Right}) {
+        for (const auto direction : {TabVisualDirection::LeftToRight,
+                                     TabVisualDirection::RightToLeft}) {
+            auto request = baseRequest();
+            request.style = ChromeStyle::standard(side);
+            request.style.tabDirection = direction;
+            const auto plan = ChromeLayoutEngine::build(request);
+            QVERIFY(plan);
+            QVERIFY2(plan->outerTitleDragRect.width() >= 48.0,
+                     "the title drag region must retain its compact minimum");
+            for (const auto &tab : plan->tabs) {
+                QVERIFY(!plan->outerTitleDragRect.intersects(tab.rect));
+            }
+
+            auto narrow = request;
+            narrow.outerRect.setWidth(240.0);
+            narrow.members.clear();
+            narrow.dividers.clear();
+            const auto compactPlan = ChromeLayoutEngine::build(narrow);
+            QVERIFY(compactPlan);
+            QVERIFY(compactPlan->tabsOverflowed);
+            QVERIFY(compactPlan->outerTitleDragRect.width() >= 48.0);
+            for (const auto &tab : compactPlan->tabs) {
+                QVERIFY(!compactPlan->outerTitleDragRect.intersects(tab.rect));
+            }
+        }
+    }
 }
 
 void ChromeLayoutTests::derivesMemberTitleAndDividerRegions()
