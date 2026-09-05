@@ -139,7 +139,7 @@
               "summary": "Production shell runtime repair integrated: exact accepted product 99de545aa521c4d5428b72ee491268e401a5b84c (Ada Yonath, OpenAI Codex), reviewed ACCEPT 0/0/0/4 by Tu Youyou (Moonshot Kimi). The shell and the preview now publish the QindaQt.Tokens facade before any panel QML exists (ShellTokenPublisher, fail-closed, republish on theme change); the authenticated ShellDevelopment1 snapshot carries a tokens fact the nested boot row validates; the terminal's PTY reader no longer stalls on the startup EIO gap and its widget attaches before the backend starts. Merged tree: focused 198/198 rows in Debug and Release, static gates, broad safe Debug 615/615, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots."
             }
           ],
-          "caveat": "Several catalog entries remain fixtures and are measured separately. The production shell's token publication was missing until 2026-09-04; the nested boot row now guards it."
+          "caveat": "Several catalog entries remain fixtures and are measured separately. The production shell's token publication was missing until 2026-09-04; the nested boot row now guards it. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.04",
@@ -214,7 +214,7 @@
               "summary": "First-party menu export for Terminal and Text Editor integrated: exact accepted product bfe6009950187901e4f42902aa211ab3378419aa (Jennifer Doudna, OpenAI Codex, over Andrea Ghez's e8e5170b/ba88f0b1/9becfb1e; Elizabeth Blackburn rejected three rounds 0/1/0/0 each), reviewed ACCEPT 0/0/0/0 by Nettie Stevens (Moonshot Kimi). Merged tree: focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots."
             }
           ],
-          "caveat": "Third-party (KDE platform exporter) applications and the nested global-menu interaction matrix remain."
+          "caveat": "Third-party (KDE platform exporter) applications and the nested global-menu interaction matrix remain. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.07",
@@ -244,7 +244,7 @@
               "summary": "Launcher L2 shell hosting is integrated after Annie Cannon (Z.AI GLM 5.3) accepted it at 0/0/0/2; the merged tree passes launcher 17/17, integrity/runtime/closure/installed rows in Debug and Release under host-unset isolation."
             }
           ],
-          "caveat": "Activation tokens, nested-session interaction proof, and installed keyboard/accessibility qualification remain."
+          "caveat": "Activation tokens, nested-session interaction proof, and installed keyboard/accessibility qualification remain. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.10",
@@ -294,7 +294,7 @@
               "summary": "Compositor atomic task-fact contract integrated: exact accepted product fa0e6d9cc522559ee17582c97816e58aaab10f42 (Donna Strickland, OpenAI Codex), reviewed ACCEPT 0/0/0/1 by Rita Levi-Montalcini (Moonshot Kimi); the ShellDevelopment1 snapshot carries a taskList fact and desktop.virtual.boot.1080p fails unless the task list is ready with at least one real window. Merged tree: Release focused 202/202 and Debug broad safe 620/620 (which contains the focused rows), static gates, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots; the boot row now requires the task list ready with real windows."
             }
           ],
-          "caveat": "Icon-first presentation of the task list (window icons, titles) lands with the iconography pass; installed nested interaction proof and physical input qualification remain release work."
+          "caveat": "Icon-first presentation of the task list (window icons, titles) lands with the iconography pass; installed nested interaction proof and physical input qualification remain release work. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.11",
@@ -334,7 +334,7 @@
               "summary": "Tray S3 production hosting integrated: exact accepted product a257d7334c281ba55608854b9c88de42077916e2 (Williamina Fleming, Moonshot Kimi), reviewed ACCEPT 0/0/0/1 by Jocelyn Bell Burnell (Z.AI GLM); integration assistant merge (Hedy Lamarr-Codex) reconciled it with the Task List hosting; on the system KWin 6.6.6 roots the merged tree `4cafc37c` passes 178/178 focused rows in Debug and Release, the static gates, the broad safe Debug suite 614/614, the serialized nested boot and panel-visibility rows 4/4, and the Release install boundary (installed rows 14/14, session.installpaths 1/1, broad safe Release 614/614, /usr/local prefix confirmed)."
             }
           ],
-          "caveat": "Installed nested tray interaction proof with real status-notifier items and a direct vertical-strip render row remain release work."
+          "caveat": "Installed nested tray interaction proof with real status-notifier items and a direct vertical-strip render row remain release work. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.12",
@@ -354,7 +354,7 @@
               "summary": "The owning page records the production composition rows, the boundary poisons, and explicit nonclaims."
             }
           ],
-          "caveat": "Audio truth still comes from the isolated Audio1 runtime: physical devices, nested panel interaction, and hardware qualification remain."
+          "caveat": "Audio truth still comes from the isolated Audio1 runtime: physical devices, nested panel interaction, and hardware qualification remain. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.13",
@@ -379,7 +379,7 @@
               "summary": "The exact session-actions candidate 23d99f5 (Wei Ho, OpenAI Codex, ACCEPT 0/0/0/0 after rejecting a name-only lock availability and stale-reply acceptance) is integrated; on the system KWin 6.6.6 the merged tree passes 61/61 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 582/582."
             }
           ],
-          "caveat": "Physical suspend/resume and lock-screen qualification on real hardware, nested panel interaction, and hotplug remain."
+          "caveat": "Physical suspend/resume and lock-screen qualification on real hardware, nested panel interaction, and hotplug remain. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.14",
@@ -399,7 +399,7 @@
               "summary": "The owning page records the eight focused rows, the meta-object surface gate, the composition-chain presence contracts, and explicit production boundaries."
             }
           ],
-          "caveat": "B1 composes the B0 client; the resident service defaults to the production BlueZ adapter and pairing prompts are proven only against fake org.bluez/Agent managers on private buses: nested panel interaction, physical adapters, and hardware qualification remain separate outcomes."
+          "caveat": "B1 composes the B0 client; the resident service defaults to the production BlueZ adapter and pairing prompts are proven only against fake org.bluez/Agent managers on private buses: nested panel interaction, physical adapters, and hardware qualification remain separate outcomes. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.15",
@@ -419,7 +419,7 @@
               "summary": "The exact clipboard hosting candidate fef9222 (Melanie Wood, Moonshot Kimi, ACCEPT 0/0/0/0 after one rejected round) is integrated; a manager reconciliation (dfe08e4) guards its QML rows behind the production shell target so the compositor plugin dependency contract configures again; the merged tree on the system KWin 6.6.6 passes 66/66 focused rows in Debug and Release, the static gates, the broad safe Debug suite 579/579, and the nested desktop boot row."
             }
           ],
-          "caveat": "Live nested capture proof and installed-session qualification remain."
+          "caveat": "Live nested capture proof and installed-session qualification remain. Panel presentation is icon-first since 6a2019aa."
         },
         {
           "id": "QQ-004.08",
@@ -485,16 +485,21 @@
           "id": "QQ-004.16",
           "title": "Shell iconography",
           "weight": 3,
-          "state": "WIRED",
-          "summary": "I1 delivers a confined XDG icon-theme locator over injected roots (index.theme directories, inherits chains, hicolor fallback, canonical containment), a desktop-entry icon resolver for application ids, a bounded image provider that renders and recolors symbolic icons from the design tokens with a deterministic placeholder, and a QML Icon element for the shell (ADR-0072).",
+          "state": "EXECUTABLE",
+          "summary": "I1 delivers a confined XDG icon-theme locator over injected roots (index.theme directories, inherits chains, hicolor fallback, canonical containment), a desktop-entry icon resolver for application ids, a bounded image provider that renders and recolors symbolic icons from the design tokens with a deterministic placeholder, and a QML Icon element for the shell (ADR-0072). I2 makes every panel applet icon-first over the module: launcher, network, power, Bluetooth, audio, clipboard and tray chips render Breeze icons recolored from the tokens with labels kept as accessible names, task-list buttons show window icon and title, chips fit the panel in both orientations, and the theme JSON carries an iconTheme key.",
           "evidence": [
             {
               "kind": "commit",
               "reference": "1207bf39",
               "summary": "Shell iconography I1 integrated: exact accepted product 288574a8fcc673859bbbf12e1f1c2b38c8c6ebdc (Gerty Cori, Moonshot Kimi; bounded provider-id repair over 54cda1fb, rejected 0/1/0/4), rechecked ACCEPT 0/0/0/2 by Carolyn Bertozzi (Z.AI GLM); merged tree passes the icons/shell-runtime/applet rows 14/14 in Debug and Release and the static gates; the broad suite runs with the I2 batch."
+            },
+            {
+              "kind": "commit",
+              "reference": "6a2019aa",
+              "summary": "Iconography I2 integrated: exact accepted product 7eb5372d8cc1a381dcf9fb4f1463032b1f018487 (May-Britt Moser, OpenAI Codex, repair over 0af5d685 rejected 0/3/6/10), rechecked ACCEPT 0/0/0/5 by Barbara McClintock (Moonshot Kimi); 68/68 declared icons resolve in Breeze and Breeze-dark. Merged tree: focused 325/325 in Debug and Release, static gates, broad safe Debug 633/633, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 633/633 with the /usr/local prefix confirmed."
             }
           ],
-          "caveat": "Not yet consumed by the production shell: the icon-first applet pass (I2) wires it into every panel applet and the theme schema; installed-session visual proof follows."
+          "caveat": "Installed-session visual review by the user and the nested screenshot matrix across themes remain."
         }
       ],
       "stoppingPoint": {

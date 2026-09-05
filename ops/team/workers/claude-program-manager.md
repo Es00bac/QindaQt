@@ -8,7 +8,7 @@ status: handoff
 feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-04T21:24:52-06:00
+updated_at: 2026-09-04T23:37:23-06:00
 ---
 
 # Claude Program Manager
@@ -67,3 +67,4 @@ updated_at: 2026-09-04T21:24:52-06:00
 - 2026-09-04T19:23:40-06:00 — Integrated shell iconography I1 `288574a8` at `1207bf39` (focused 14/14 Debug/Release, gates). I2 (icon-first applets), compositor task-facts, and menu-export repair remain in flight.
 - 2026-09-04T20:37:02-06:00 — Integrated the compositor atomic task-fact contract `fa0e6d9c` at `92d3348b`; Release focused 202/202 and Debug broad safe 620/620 (which contains the focused rows), static gates, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots; the boot row now requires the task list ready with real windows. Icon-first applets and the menu-export lifecycle repair remain.
 - 2026-09-04T21:24:52-06:00 — Integrated the first-party menu export lifecycle `bfe60099` at `42191636`; focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots. Icon-first applets remain in review.
+- 2026-09-04T23:37:23-06:00 — Integrated iconography I2 `7eb5372d` at `6a2019aa`; focused 325/325 in Debug and Release, static gates, broad safe Debug 633/633, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 633/633 with the /usr/local prefix confirmed. `6a2019aa` is verified and usable with three known polish defects (desktop-polish lane open); install allowed.
