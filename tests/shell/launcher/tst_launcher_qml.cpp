@@ -392,6 +392,12 @@ void LauncherQmlTests::directPinButtonMutatesWithoutLaunching()
         {{ LauncherPersistenceController::pinnedKey(), QVariantList {} },
          { LauncherPersistenceController::recentKey(),
            QVariantList { QStringLiteral("files") } }}));
+    QTRY_COMPARE(stack.transport.snapshots.size(), 2);
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("pin-epoch"), 1,
+        {{ LauncherPersistenceController::pinnedKey(), QVariantList {} },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
     QTRY_VERIFY(stack.persistence.persistenceReady());
 
     clickPinButton(QStringLiteral("Pin"));
@@ -399,6 +405,13 @@ void LauncherQmlTests::directPinButtonMutatesWithoutLaunching()
     stack.transport.replyLastCommit(FakeSettingsTransport::commitWire(
         QindaQt::Services::SettingsProtocol::SettingsWireStatus::Applied,
         QStringLiteral("pin-epoch"), 1, 2,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_COMPARE(stack.transport.snapshots.size(), 3);
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("pin-epoch"), 2,
         {{ LauncherPersistenceController::pinnedKey(),
            QVariantList { QStringLiteral("editor") } },
          { LauncherPersistenceController::recentKey(),
