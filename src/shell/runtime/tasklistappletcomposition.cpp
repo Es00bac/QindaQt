@@ -151,7 +151,12 @@ public:
                                  QStringLiteral("another task-list operation is in flight")));
             return token;
         }
-        const auto &identity = m_windowActions.identitySnapshot();
+        const auto actionGeneration = m_authority.actionGeneration();
+        const Compositor::ShellWindowGeneration compositorGeneration =
+            actionGeneration
+            ? Compositor::ShellWindowGeneration{actionGeneration->epoch,
+                                                actionGeneration->revision}
+            : Compositor::ShellWindowGeneration{};
         if (!outcome.ok() || m_authority.status()
                 != ShellTaskList::TaskListSourceStatus::Ready
             || request.expectedRevision != m_authority.publishedRevision()) {
@@ -162,7 +167,7 @@ public:
         }
         if (m_authority.uniqueOwner().isEmpty()
             || m_authority.uniqueOwner() != m_windowActions.uniqueOwner()
-            || !identity || !identity->actionGeneration.isValid()
+            || !compositorGeneration.isValid()
             || !m_windowActions.available()) {
             emitImmediate(result(token, TaskListOperationStatus::Unavailable,
                                  QStringLiteral("window-actions-unavailable"),
@@ -190,7 +195,7 @@ public:
         }
         m_pending = Pending{token, PendingKind::Window, 0, windowIds, 0,
                             actionFor(request, outcome),
-                            identity->actionGeneration};
+                            compositorGeneration};
         requestPendingWindow();
         return token;
     }

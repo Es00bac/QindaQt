@@ -17,6 +17,9 @@ class DoNotDisturbController;
 namespace QindaQt::DesignTokens {
 class TokenFacade;
 }
+namespace QindaQt::ShellTaskListApplet {
+class TaskListAppletController;
+}
 
 namespace QindaQt::Shell {
 
@@ -39,7 +42,9 @@ public:
         Services::SettingsClient::DoNotDisturbController &quieting,
         Services::NotificationPresentationPolicy::NotificationPrivacyPolicy &privacy,
         NotificationWindowController &windows,
-        const DesignTokens::TokenFacade &tokens, QObject *parent = nullptr);
+        const DesignTokens::TokenFacade &tokens,
+        const ShellTaskListApplet::TaskListAppletController &taskList,
+        QObject *parent = nullptr);
     ~ShellDevelopmentEvidence() override;
 
     // Registration requires both the launcher's development marker and an
@@ -67,6 +72,7 @@ private:
     Services::NotificationPresentationPolicy::NotificationPrivacyPolicy &m_privacy;
     NotificationWindowController &m_windows;
     const DesignTokens::TokenFacade &m_tokens;
+    const ShellTaskListApplet::TaskListAppletController &m_taskList;
     QDBusConnection m_bus;
     quint64 m_centerOpenedCount = 0;
     quint64 m_centerClosedCount = 0;

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-# AGENT-NOTE: The producer is deliberately not instantiated by the production
-# shell yet; shell composition (a later lane) injects the bus connection and
-# the TaskListSource. See docs/wiki/shell/task-list.md.
+# AGENT-CONTRACT: This public target owns the authenticated CompositorShell1
+# task-fact transport; production shell composition injects its private bus
+# connection and TaskListSource. See docs/wiki/shell/task-list.md.
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus)
 
@@ -29,7 +29,7 @@ target_sources(
 target_link_libraries(
     qindaqt_shell_task_list_producer
     PUBLIC QindaQt::ShellTaskList Qt6::Core Qt6::DBus
-    PRIVATE QindaQt::ShellVisibilityProtocol
+    PRIVATE QindaQt::CompositorShellActions QindaQt::ShellVisibilityProtocol
 )
 target_compile_features(qindaqt_shell_task_list_producer PUBLIC cxx_std_20)
 set_target_properties(

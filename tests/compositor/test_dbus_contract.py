@@ -192,6 +192,7 @@ def validate_shell_descriptor(path: Path) -> None:
         "CloseWindow",
         "RaiseWindow",
         "ActiveWindowIdentity",
+        "TaskListSnapshot",
     }
     methods = {element.get("name") for element in interface.findall("method")}
     if methods != expected_methods:
@@ -204,18 +205,22 @@ def validate_shell_descriptor(path: Path) -> None:
         ("revision", "s", "in"),
         ("resultJson", "ay", "out"),
     ]
-    for method_name in sorted(expected_methods - {"ActiveWindowIdentity"}):
+    for method_name in sorted(
+        expected_methods - {"ActiveWindowIdentity", "TaskListSnapshot"}
+    ):
         validate_method_signature(interface, method_name, expected_arguments)
-    validate_method_signature(
-        interface, "ActiveWindowIdentity", [("snapshotJson", "ay", "out")]
-    )
+    for method_name in ("ActiveWindowIdentity", "TaskListSnapshot"):
+        validate_method_signature(
+            interface, method_name, [("snapshotJson", "ay", "out")]
+        )
     signals = interface.findall("signal")
     if [signal.get("name") for signal in signals] != [
-        "ActiveWindowIdentityChanged"
+        "ActiveWindowIdentityChanged",
+        "TaskListSnapshotChanged",
     ]:
-        raise ValueError("shell interface must expose only identity invalidation")
-    if signals[0].findall("arg"):
-        raise ValueError("ActiveWindowIdentityChanged must carry no facts")
+        raise ValueError("shell interface invalidation signal set drifted")
+    if any(signal.findall("arg") for signal in signals):
+        raise ValueError("shell invalidation signals must carry no facts")
 
 
 def main() -> int:

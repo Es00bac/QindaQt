@@ -11,6 +11,7 @@ namespace QindaQt::Compositor {
 class ContainerControlBridge;
 class ShellWindowActionController;
 class ShellWindowIdentityController;
+class ShellTaskFactsController;
 }
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -24,6 +25,7 @@ class KWinHybridSession;
 class KWinSceneAdapter;
 class KWinShellVisibilityPublisher;
 class KWinShellWindowIdentityPublisher;
+class KWinShellTaskFactsPublisher;
 class KWinShellPanelOwnerSource;
 class KWinShellWindowRegistry;
 class KWinShellWindowActionExecutor;
@@ -51,15 +53,17 @@ private:
     std::unique_ptr<ManagedWindowRegistry> m_registry;
     std::unique_ptr<KWinOutputInventory> m_outputInventory;
     std::unique_ptr<KWinShellVisibilityPublisher> m_shellVisibility;
+    std::unique_ptr<KWinHybridSession> m_hybridSession;
     std::unique_ptr<KWinShellWindowIdentityPublisher> m_shellIdentity;
+    std::unique_ptr<KWinShellTaskFactsPublisher> m_shellTaskFacts;
     std::unique_ptr<QtBusShellCredentialSource> m_shellCredentials;
     std::unique_ptr<KWinShellPanelOwnerSource> m_shellPanelOwner;
     std::unique_ptr<KWinShellWindowRegistry> m_shellActionRegistry;
     std::unique_ptr<KWinShellWindowActionExecutor> m_shellActionExecutor;
     std::unique_ptr<ShellWindowActionController> m_shellActionController;
     std::unique_ptr<ShellWindowIdentityController> m_shellIdentityController;
+    std::unique_ptr<ShellTaskFactsController> m_shellTaskFactsController;
     std::unique_ptr<KWinShellWindowActionsEndpoint> m_shellActionEndpoint;
-    std::unique_ptr<KWinHybridSession> m_hybridSession;
     std::unique_ptr<KWinInputAdapter> m_inputAdapter;
     std::unique_ptr<KWinDevelopmentInputInjector> m_developmentInputInjector;
     std::unique_ptr<KWinDevelopmentOutputSeam> m_developmentOutputSeam;

@@ -8,6 +8,7 @@
 #include "task_list_producer_test_support.h"
 
 using namespace QindaQt::ShellTaskList::Producer;
+using namespace QindaQt::ShellTaskList;
 using namespace TaskListProducerTest;
 
 namespace {
@@ -22,6 +23,8 @@ class TaskListWireTests final : public QObject {
   Q_OBJECT
 
 private slots:
+  void decodesAtomicTaskFacts();
+  void rejectsHostileAtomicTaskFacts();
   void decodesValidInventories();
   void rejectsMalformedWindowsPayload();
   void rejectsHostileWindowEntries();
@@ -31,6 +34,44 @@ private slots:
   void rejectsMalformedContainersPayload();
   void rejectsHostileContainerEntries();
 };
+
+void TaskListWireTests::decodesAtomicTaskFacts() {
+  const auto decoded =
+      TaskListWireDecoder::decodeTaskFacts(standardScene().taskFacts);
+  QVERIFY2(decoded.ok(), qPrintable(decoded.message));
+  QCOMPARE(decoded.revision, quint64(1));
+  QCOMPARE(decoded.actionGeneration.revision, quint64(11));
+  QCOMPARE(decoded.facts.size(), 3);
+  QCOMPARE(decoded.containers.size(), 1);
+  QCOMPARE(decoded.facts.at(1).role, TaskWindowRole::ContainerPrimary);
+  QCOMPARE(decoded.facts.at(2).role, TaskWindowRole::ContainerMember);
+  QVERIFY(!decoded.facts.at(2).minimized);
+  QVERIFY(decoded.facts.at(2).urgent);
+}
+
+void TaskListWireTests::rejectsHostileAtomicTaskFacts() {
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts("{bad").error,
+           TaskListWireError::MalformedPayload);
+
+  QJsonObject root = QJsonDocument::fromJson(standardScene().taskFacts).object();
+  root.insert(QStringLiteral("foreign"), true);
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts(rawRoot(root)).error,
+           TaskListWireError::MalformedPayload);
+
+  root = QJsonDocument::fromJson(standardScene().taskFacts).object();
+  root.insert(QStringLiteral("revision"), QStringLiteral("01"));
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts(rawRoot(root)).error,
+           TaskListWireError::MalformedPayload);
+
+  root = QJsonDocument::fromJson(standardScene().taskFacts).object();
+  QJsonArray windows = root.value(QStringLiteral("windows")).toArray();
+  QJsonObject first = windows.first().toObject();
+  first.insert(QStringLiteral("outputId"), QStringLiteral("foreign-output"));
+  windows.replace(0, first);
+  root.insert(QStringLiteral("windows"), windows);
+  QCOMPARE(TaskListWireDecoder::decodeTaskFacts(rawRoot(root)).error,
+           TaskListWireError::MalformedPayload);
+}
 
 void TaskListWireTests::decodesValidInventories() {
   const StandardScene scene = standardScene();

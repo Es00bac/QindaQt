@@ -7,6 +7,7 @@
 #include "kwinchromemanager.h"
 #include "kwinhybridgroupstacking.h"
 #include "kwininteractionfilter.h"
+#include "kwintaskidentitymanager.h"
 
 namespace QindaQt::Compositor::KWinIntegration {
 
@@ -85,6 +86,12 @@ QJsonArray KWinHybridSession::publicContainers() const
                                    QStringLiteral("hybrid-process")}});
     }
     return result;
+}
+
+QVector<TaskContainerIdentity> KWinHybridSession::taskIdentityPlans() const
+{
+    return m_taskIdentity ? m_taskIdentity->plans()
+                          : QVector<TaskContainerIdentity>{};
 }
 
 std::optional<QJsonObject> KWinHybridSession::publicSnapshot(

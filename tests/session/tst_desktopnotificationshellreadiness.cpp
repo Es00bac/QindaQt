@@ -17,8 +17,7 @@ namespace {
 
 QJsonObject snapshot(bool privatePresentationAllowed = true,
                      bool centerOpen = false, bool exists = true,
-                     bool visible = false, QString outputName = QStringLiteral("WL-0"),
-                     QString centerOpenedCount = QStringLiteral("0"))
+                     bool visible = false, QString outputName = QStringLiteral("WL-0"), QString centerOpenedCount = QStringLiteral("0"))
 {
     QJsonObject center{{QStringLiteral("exists"), exists}};
     if (exists) {
@@ -39,6 +38,8 @@ QJsonObject snapshot(bool privatePresentationAllowed = true,
                      {QStringLiteral("generation"), QStringLiteral("1")},
                      {QStringLiteral("sourceThemeId"), QStringLiteral("qinda-dark")},
                      {QStringLiteral("backgroundBase"), QStringLiteral("#171a18")}}},
+        {QStringLiteral("taskList"),
+         QJsonObject{{QStringLiteral("phase"), QStringLiteral("ready")}, {QStringLiteral("generation"), QStringLiteral("1")}, {QStringLiteral("windowCount"), 2}}},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"),
@@ -169,6 +170,7 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
              DesktopNotificationShellDisposition::Invalid);
     for (const auto &mutation : {QStringLiteral("schema"), QStringLiteral("pid"),
                                  QStringLiteral("tokens"),
+                                 QStringLiteral("taskList"),
                                  QStringLiteral("presentation"),
                                  QStringLiteral("counter")}) {
         auto changed = observation();
@@ -181,6 +183,10 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
                 changed.snapshot.value(QStringLiteral("tokens")).toObject();
             tokens.insert(QStringLiteral("ready"), false);
             changed.snapshot.insert(QStringLiteral("tokens"), tokens);
+        } else if (mutation == QStringLiteral("taskList")) {
+            auto taskList = changed.snapshot.value(QStringLiteral("taskList")).toObject();
+            taskList.insert(QStringLiteral("phase"), QStringLiteral("foreign"));
+            changed.snapshot.insert(QStringLiteral("taskList"), taskList);
         } else if (mutation == QStringLiteral("presentation")) {
             changed.snapshot.insert(QStringLiteral("presentation"), QJsonArray{});
         } else {

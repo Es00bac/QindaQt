@@ -311,6 +311,7 @@ if(TARGET qindaqt-shell)
             "-DQINDAQT_TASK_LIST_LIBRARY=$<TARGET_FILE:qindaqt_shell_task_list>"
             "-DQINDAQT_TASK_LIST_PRODUCER_LIBRARY=$<TARGET_FILE:qindaqt_shell_task_list_producer>"
             "-DQINDAQT_TASK_LIST_OPERATIONS_LIBRARY=$<TARGET_FILE:qindaqt_shell_task_list_operations>"
+            "-DQINDAQT_COMPOSITOR_SHELL_ACTIONS_LIBRARY=$<TARGET_FILE:qindaqt_compositor_shell_actions>"
             "-DQINDAQT_TASK_LIST_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/include"
             "-DQINDAQT_TASK_LIST_PRODUCER_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/producer/include"
             "-DQINDAQT_TASK_LIST_OPERATIONS_INCLUDE_DIR=${task_list_boundary_source_root}/src/shell/task_list/operations/include"
