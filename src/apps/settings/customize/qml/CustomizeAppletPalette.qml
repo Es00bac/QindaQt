@@ -69,26 +69,10 @@ T.Control {
                     }
                 }
 
-                DragHandler {
-                    id: paletteDrag
-                    target: null
-                    enabled: paletteButton.available
-                    onActiveChanged: {
-                        if (active) {
-                            root.customizeSettings.startPaletteDrag(
-                                paletteButton.modelData.id)
-                        } else if (root.customizeSettings.visualDragActive) {
-                            root.customizeSettings.cancelDrag()
-                        }
-                    }
-                }
+                readonly property string dragPluginId: modelData.id
+                readonly property string dragPanelId: ""
+                readonly property string dragAppletId: ""
 
-                Drag.active: paletteDrag.active
-                Drag.source: paletteButton
-                Drag.mimeData: ({
-                    "application/x-qindaqt-customize-applet":
-                        paletteButton.modelData.id
-                })
             }
         }
     }

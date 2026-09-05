@@ -78,6 +78,7 @@ private slots:
     void profileProjectionKeepsSelectionInOneLiveProperty();
     void persistenceAndConflictRemainTruthful();
     void foreignLeaseFailsClosedThenRecoversOnRefresh();
+    void appliedContentSurvivesDiscardAndAuthorityRecovery();
 };
 
 void CustomizeSettingsModelTests::pointerGestureCommitsOneUndoStepAndCancelRollsBack()
@@ -183,6 +184,54 @@ void CustomizeSettingsModelTests::persistenceAndConflictRemainTruthful()
     QTRY_VERIFY(harness.model.conflict());
     QVERIFY(harness.model.dirty());
     QVERIFY(harness.model.errorText().contains(QStringLiteral("changed elsewhere")));
+}
+
+void CustomizeSettingsModelTests::appliedContentSurvivesDiscardAndAuthorityRecovery()
+{
+    ModelHarness harness;
+    QVERIFY(harness.establish());
+    QVERIFY(harness.model.keyboardInsert(QStringLiteral("clock"),
+                                         QStringLiteral("dock"), QStringLiteral("start")));
+    QVERIFY(harness.model.apply());
+    const auto applied = harness.model.panels();
+    QVERIFY(harness.model.keyboardInsert(QStringLiteral("clock"),
+                                         QStringLiteral("dock"), QStringLiteral("end")));
+    QVERIFY(harness.model.discard());
+    QCOMPARE(harness.model.panels(), applied);
+    QVERIFY(!harness.model.dirty());
+
+    Q_EMIT harness.transport.ownerChanged(QString{});
+    QTRY_VERIFY(harness.model.unavailable());
+    Q_EMIT harness.transport.ownerChanged(QStringLiteral(":1.91"));
+    QTRY_VERIFY(!harness.transport.snapshots.isEmpty());
+    const auto request = harness.transport.snapshots.takeFirst();
+    Q_EMIT harness.transport.snapshotReceived(request.token, request.owner,
+                                              snapshotWire(QStringLiteral("fixture")));
+    QTRY_VERIFY(harness.model.ready());
+    QCOMPARE(harness.model.panels(), applied);
+    QVERIFY(!harness.model.dirty());
+
+    // A failed selection commit cannot undo content already stored for a
+    // different profile. Re-selecting it must use its successfully saved bytes.
+    QVERIFY(harness.model.selectProfile(QStringLiteral("alternate")));
+    QVERIFY(harness.model.keyboardInsert(QStringLiteral("clock"),
+                                         QStringLiteral("dock"), QStringLiteral("start")));
+    QVERIFY(harness.model.apply());
+    const auto alternateApplied = harness.model.panels();
+    const auto commit = harness.transport.commits.constLast();
+    Q_EMIT harness.transport.commitReceived(commit.token, commit.owner,
+        commitWire(Services::SettingsProtocol::SettingsWireStatus::Conflict,
+                   QStringLiteral("fixture"), QStringLiteral("changed elsewhere")));
+    QTRY_VERIFY(harness.model.conflict());
+    QTRY_VERIFY(!harness.transport.snapshots.isEmpty());
+    const auto refresh = harness.transport.snapshots.takeLast();
+    Q_EMIT harness.transport.snapshotReceived(refresh.token, refresh.owner,
+        snapshotWire(QStringLiteral("fixture"), QStringLiteral("epoch-a"), 8));
+    QTRY_VERIFY(harness.model.canEdit());
+    QVERIFY(harness.model.discard());
+    QCOMPARE(harness.model.panels(), applied);
+    QVERIFY(harness.model.selectProfile(QStringLiteral("alternate")));
+    QCOMPARE(harness.model.panels(), alternateApplied);
 }
 
 void CustomizeSettingsModelTests::foreignLeaseFailsClosedThenRecoversOnRefresh()

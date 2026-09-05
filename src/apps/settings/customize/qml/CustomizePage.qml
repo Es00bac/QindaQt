@@ -80,6 +80,13 @@ T.Page {
         onActivated: root.customizeSettings.duplicateSelected()
     }
 
+    CustomizePointerGestures {
+        anchors.fill: parent
+        z: 1000
+        page: root
+        customizeSettings: root.customizeSettings
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Tokens.space["4"]

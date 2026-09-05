@@ -103,24 +103,9 @@ T.Control {
                                 border.color: Tokens.outline.strong
                             }
 
-                            DropArea {
-                                anchors.fill: parent
-                                keys: ["application/x-qindaqt-customize-applet"]
-                                onEntered: drag => {
-                                    root.customizeSettings.hoverDropTarget(
-                                        panelSurface.modelData.id,
-                                        zone.modelData, "")
-                                    drag.accepted = root.customizeSettings.dropAccepted
-                                }
-                                onDropped: drop => {
-                                    if (root.customizeSettings.dropAccepted) {
-                                        root.customizeSettings.commitDrag()
-                                        drop.acceptProposedAction()
-                                    } else {
-                                        root.customizeSettings.cancelDrag()
-                                    }
-                                }
-                            }
+                            readonly property string targetPanelId: panelSurface.modelData.id
+                            readonly property string targetZone: modelData
+                            objectName: "customizeDrop_" + targetPanelId + "_" + targetZone
 
                             Flow {
                                 anchors.fill: parent
@@ -162,26 +147,11 @@ T.Control {
                                                 panelSurface.modelData.id,
                                                 chip.modelData.id)
                                         }
-                                        DragHandler {
-                                            id: chipDrag
-                                            target: null
-                                            enabled: root.customizeSettings.canEdit
-                                            onActiveChanged: {
-                                                if (active) {
-                                                    root.customizeSettings.startAppletDrag(
-                                                        panelSurface.modelData.id,
-                                                        chip.modelData.id)
-                                                } else if (root.customizeSettings.visualDragActive) {
-                                                    root.customizeSettings.cancelDrag()
-                                                }
-                                            }
-                                        }
-                                        Drag.active: chipDrag.active
-                                        Drag.source: chip
-                                        Drag.mimeData: ({
-                                            "application/x-qindaqt-customize-applet":
-                                                chip.modelData.pluginId
-                                        })
+                                        readonly property string dragPluginId: modelData.pluginId
+                                        readonly property string dragPanelId: panelSurface.modelData.id
+                                        readonly property string dragAppletId: modelData.id
+                                        objectName: "customizeChip_" + dragAppletId
+
                                     }
                                 }
                             }

@@ -22,6 +22,12 @@ exactly one durable Undo step. Escape, leaving a drag without an accepted drop,
 or explicit cancellation restores the exact pre-gesture snapshot. Rejected
 targets keep their reason visible and cannot partially mutate the draft.
 
+Pointer capture belongs to the page, outside the replaceable canvas delegates.
+After the platform drag threshold, pointer positions resolve panel/zone identities
+in page coordinates and drive the public hover API. Release revalidates the
+current target before commit; outside release, Escape and grab cancellation
+roll back. This keeps a move alive when its preview reconstructs the source chip.
+
 The canvas uses repository-projected panel rectangles, not a second geometry
 solver. Drop targets are the three profile zones on each panel. The property
 panes issue complete panel configuration or move intents for edge, alignment,
@@ -70,7 +76,11 @@ uncertain result, owner loss, and failed profile storage retain dirty truth and
 surface an explicit diagnostic; none is reported as success.
 
 Undo/Redo cleanliness compares the full canonical profile with the applied
-baseline. Discard rebuilds from the last confirmed catalog profile. Only one
+baseline. Discard rebuilds the confirmed selection from the latest successfully stored
+content for that profile. Each successful content write refreshes the in-memory
+catalog before the separate selection commit, including when that commit fails.
+A subsequent authority snapshot or reconnect therefore cannot resurrect the
+startup layout and misreport it as clean. Only one
 editor coordinator lease exists: losing it makes the route read-only with an
 explicit unavailable notice. Retry obtains a new Settings1 snapshot and may
 rebuild after the foreign lease is released. Missing catalogs, invalid
@@ -96,8 +106,11 @@ ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
 
 The model row proves one-step pointer commit, exact cancellation, deterministic
 rejection rollback, pointer/keyboard insertion convergence, Undo/Redo,
-atomic profile persistence, Settings1 conflict truth, and foreign-lease
-recovery. The warning-fatal page row renders 720×720 compact and 1080×720
+atomic profile persistence, retained applied baselines across Discard and
+authority recovery, Settings1 conflict truth, and foreign-lease recovery. The
+warning-fatal pointer row drives real mouse events through the production page
+and editor in compact and wide modes: palette insertion, chip movement across
+preview reconstruction, one-step Undo, Escape and outside-release rollback. The warning-fatal page row renders 720×720 compact and 1080×720
 wide layouts with a software `QQuickView`, checks the canvas and contextual
 controls, validates accessible names for palette/panel/zone elements, exercises
 keyboard activation, and proves the discard dialog is centered in the window
