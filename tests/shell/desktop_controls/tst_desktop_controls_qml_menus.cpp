@@ -249,6 +249,8 @@ void DesktopControlsQmlMenuTests::quickLaunchDockUsesOnlyPersistedPins()
         QStringLiteral("quickLaunchEntryIcon"));
     QVERIFY(icon != nullptr);
     QCOMPARE(icon->property("size").toInt(), 40);
+    QCOMPARE(icon->width(), 40.0);
+    QCOMPARE(icon->height(), 40.0);
     auto *tooltip = entries.constFirst()->findChild<QObject *>(
         QStringLiteral("quickLaunchEntryTooltip"));
     QVERIFY(tooltip != nullptr);
