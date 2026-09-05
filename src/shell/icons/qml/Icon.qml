@@ -16,24 +16,41 @@ Item {
     // Logical pixel edge of the square icon; clamped to the module bounds.
     property int size: 24
     // Recolor target for symbolic SVGs. The default transparent value means
-    // "no recolor"; it is never painted.
+    // "no recolor"; it is never painted. Only fully opaque colors recolor:
+    // the provider accepts only the opaque #rrggbb form, so a
+    // semi-transparent color (serialized with an alpha channel) is not a
+    // recolor target and the symbolic icon keeps its own pixels.
     property color color: "transparent"
     property bool symbolic: false
     // Accessible and placeholder text for the unresolved case.
     property string fallbackText: ""
 
+    // AGENT-GUARD: `name` is bounded here as well as in the provider:
+    // over-long or out-of-grammar names never reach the URL layer and behave
+    // as unresolved. The grammar mirrors
+    // IconThemeLocator::isAcceptableIconName (bounded ASCII, no `..`).
+    readonly property string effectiveName: {
+        const candidate = root.name
+        if (candidate.length === 0 || candidate.length > 128
+                || candidate.indexOf("..") >= 0) {
+            return ""
+        }
+        return /^[A-Za-z0-9._-]+$/.test(candidate) ? candidate : ""
+    }
+
     readonly property int effectiveSize: Math.max(1, Math.min(512, root.size))
     readonly property real effectiveScale: root.Window.window !== null
         ? Math.max(1, Math.min(4, root.Window.window.devicePixelRatio))
         : 1
-    readonly property bool resolved: IconLookup.hasIcon(root.name, root.effectiveSize,
-                                                        root.effectiveScale, root.symbolic)
+    readonly property bool resolved: root.effectiveName.length > 0
+        && IconLookup.hasIcon(root.effectiveName, root.effectiveSize,
+                              root.effectiveScale, root.symbolic)
 
     implicitWidth: effectiveSize
     implicitHeight: effectiveSize
 
     Accessible.role: resolved ? Accessible.Graphic : Accessible.StaticText
-    Accessible.name: root.fallbackText.length > 0 ? root.fallbackText : root.name
+    Accessible.name: root.fallbackText.length > 0 ? root.fallbackText : root.effectiveName
 
     Image {
         id: iconImage
@@ -41,7 +58,7 @@ Item {
         anchors.fill: parent
         visible: root.resolved
         source: root.resolved
-            ? "image://qindaqt-icon/" + root.name
+            ? "image://qindaqt-icon/" + root.effectiveName
                 + "?size=" + root.effectiveSize
                 + "&scale=" + root.effectiveScale
                 + (root.symbolic ? "&symbolic=1" : "")

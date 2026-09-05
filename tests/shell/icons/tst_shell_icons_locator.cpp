@@ -29,6 +29,7 @@ private slots:
     void inheritanceDepthBounded();
     void hicolorIsLastResort();
     void hicolorOnlyFallback();
+    void hicolorStaysLastWhenChainCapFull();
     void rootOrderIsDeterministic();
     void symbolicVariantPreferred();
     void symbolicFallsBackToPlainName();
@@ -142,6 +143,21 @@ void ShellIconsLocatorTest::hicolorOnlyFallback()
     // hicolor works even when it is the only theme named by the caller.
     IconThemeLocator hicolorOnly(QStringList { m_icons1 }, QStringList {});
     QCOMPARE(hicolorOnly.locate(QStringLiteral("fallback"), 32),
+             m_icons1 + QStringLiteral("/hicolor/32/fallback.png"));
+}
+
+void ShellIconsLocatorTest::hicolorStaysLastWhenChainCapFull()
+{
+    // Injecting more distinct theme names than the chain cap must not push
+    // the specification-mandated hicolor fallback out of the chain: the cap
+    // holds and hicolor stays last. Fails on a tree that drops hicolor when
+    // the cap is reached.
+    QStringList themes;
+    for (int i = 0; i < kMaxThemeChainLength + 4; ++i) {
+        themes.append(QStringLiteral("flooded-%1").arg(i));
+    }
+    IconThemeLocator flooded(QStringList { m_icons1 }, themes);
+    QCOMPARE(flooded.locate(QStringLiteral("fallback"), 32),
              m_icons1 + QStringLiteral("/hicolor/32/fallback.png"));
 }
 

@@ -4,7 +4,10 @@
 #include <qindaqt/shell/icons/icon_theme_limits.h>
 
 #include <QBuffer>
+#include <QFile>
 #include <QtTest>
+
+#include <malloc.h>
 
 #include "shell_icons_test_fixtures.h"
 
@@ -33,6 +36,10 @@ private slots:
     void hostileIdsReturnPlaceholder();
     void hostileIdsReturnPlaceholder_data();
     void cacheBoundKeepsResults();
+    void overlongIdRefusedBeforeCache();
+    void canonicalIdsShareOneCacheEntry();
+    void hostileIdFloodKeepsCacheKeysBounded();
+    void hostileIdFloodKeepsRssBounded();
 
 private:
     static QByteArray fingerprint(const QImage &image)
@@ -42,6 +49,22 @@ private:
         buffer.open(QIODevice::WriteOnly);
         image.convertToFormat(QImage::Format_ARGB32_Premultiplied).save(&buffer, "png");
         return bytes;
+    }
+
+    static qint64 processRssKiB()
+    {
+        QFile file(QStringLiteral("/proc/self/status"));
+        if (!file.open(QIODevice::ReadOnly)) {
+            return -1;
+        }
+        const QByteArray contents = file.readAll();
+        const qsizetype pos = contents.indexOf("VmRSS:");
+        if (pos < 0) {
+            return -1;
+        }
+        const QByteArray line =
+            contents.mid(pos + 6, contents.indexOf('\n', pos) - pos - 6);
+        return line.simplified().split(' ').value(0).toLongLong();
     }
 
     QString m_icons1;
@@ -184,6 +207,90 @@ void ShellIconsProviderTest::cacheBoundKeepsResults()
         m_provider->requestImage(QStringLiteral("exact?size=16"), nullptr, QSize());
     QCOMPARE(fingerprint(after), reference);
     QCOMPARE(after.pixelColor(after.rect().center()), QColor(255, 0, 0));
+}
+
+void ShellIconsProviderTest::overlongIdRefusedBeforeCache()
+{
+    // An id beyond the request ceiling is refused before parsing and before
+    // any cache access: placeholder out, no cache entry, no retained key
+    // bytes. Fails on a tree that caches the raw id.
+    const int entriesBefore = m_provider->cacheEntryCount();
+    const qsizetype keyBytesBefore = m_provider->cacheKeyBytes();
+    const QString hostile = QStringLiteral("pad-")
+        + QString(kMaxRequestIdUtf8Bytes * 2, QLatin1Char('x'))
+        + QStringLiteral("?size=8");
+    const QImage image = m_provider->requestImage(hostile, nullptr, QSize());
+    QVERIFY(!image.isNull());
+    QVERIFY(image.width() > 0);
+    QCOMPARE(m_provider->cacheEntryCount(), entriesBefore);
+    QCOMPARE(m_provider->cacheKeyBytes(), keyBytesBefore);
+}
+
+void ShellIconsProviderTest::canonicalIdsShareOneCacheEntry()
+{
+    // Spellings that parse to the same bounded request tuple share one cache
+    // entry: the cache is keyed on the tuple, not the raw id. Asserted
+    // through both occupancy and retained key bytes so it holds regardless
+    // of how full the cache already is.
+    m_provider->requestImage(QStringLiteral("exact?size=17"), nullptr, QSize());
+    const int entriesAfterFirst = m_provider->cacheEntryCount();
+    const qsizetype keyBytesAfterFirst = m_provider->cacheKeyBytes();
+    const QImage image = m_provider->requestImage(
+        QStringLiteral("exact?scale=1&size=017"), nullptr, QSize());
+    QCOMPARE(image.width(), 17);
+    QCOMPARE(m_provider->cacheEntryCount(), entriesAfterFirst);
+    QCOMPARE(m_provider->cacheKeyBytes(), keyBytesAfterFirst);
+}
+
+void ShellIconsProviderTest::hostileIdFloodKeepsCacheKeysBounded()
+{
+    // The review reproduction: a flood of distinct hostile ids beyond the
+    // request ceiling must leave cache occupancy and retained key bytes
+    // untouched.
+    const qsizetype keyBytesBefore = m_provider->cacheKeyBytes();
+    const int entriesBefore = m_provider->cacheEntryCount();
+    for (int i = 0; i < kMaxCachedIconImages + 16; ++i) {
+        const QString hostile = QStringLiteral("flood-%1-").arg(i)
+            + QString(256 * 1024, QLatin1Char('x')) + QStringLiteral("?size=8");
+        const QImage image = m_provider->requestImage(hostile, nullptr, QSize());
+        QVERIFY(!image.isNull());
+    }
+    QCOMPARE(m_provider->cacheKeyBytes(), keyBytesBefore);
+    QCOMPARE(m_provider->cacheEntryCount(), entriesBefore);
+
+    // A churn of distinct in-ceiling names still cannot exceed the entry
+    // bound, and every retained key is a bounded canonical tuple.
+    for (int i = 0; i < kMaxCachedIconImages + 16; ++i) {
+        m_provider->requestImage(QStringLiteral("churn-%1?size=8").arg(i), nullptr,
+                                 QSize());
+    }
+    QVERIFY(m_provider->cacheEntryCount() <= kMaxCachedIconImages);
+    QVERIFY(m_provider->cacheKeyBytes() <= kMaxCachedIconImages * 256);
+}
+
+void ShellIconsProviderTest::hostileIdFloodKeepsRssBounded()
+{
+    const qint64 before = processRssKiB();
+    if (before < 0) {
+        QSKIP("/proc/self/status VmRSS unavailable");
+    }
+    // Distinct hostile ids of megabytes each must not be retained: 40 ids of
+    // 4 Mi chars would pin ~320 MiB of UTF-16 keys in a cache keyed on the
+    // raw id. This row fails at runtime on the unrepaired tree.
+    for (int i = 0; i < 40; ++i) {
+        const QString hostile = QStringLiteral("rss-%1-").arg(i)
+            + QString(4 * 1024 * 1024, QLatin1Char('x')) + QStringLiteral("?size=8");
+        const QImage image = m_provider->requestImage(hostile, nullptr, QSize());
+        QVERIFY(!image.isNull());
+    }
+    malloc_trim(0);
+    const qint64 after = processRssKiB();
+    QVERIFY(after > 0);
+    // Generous ceiling: transient allocations may linger in the allocator
+    // even after the trim, but retained memory must not scale with hostile
+    // id byte length.
+    QVERIFY2(after - before < qint64(64) * 1024,
+             qPrintable(QStringLiteral("RSS delta KiB: %1").arg(after - before)));
 }
 
 QTEST_MAIN(ShellIconsProviderTest)

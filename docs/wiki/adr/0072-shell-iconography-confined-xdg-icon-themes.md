@@ -1,4 +1,4 @@
-# ADR-0071: Shell iconography over confined XDG icon themes
+# ADR-0072: Shell iconography over confined XDG icon themes
 
 - **Status:** Accepted
 - **Date:** 2026-09-04
