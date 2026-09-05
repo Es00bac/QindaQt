@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+pragma ComponentBehavior: Bound
 import QtQuick
 import QindaQt.Shell.AudioApplet 1.0 as AudioAppletModule
 import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
@@ -64,200 +65,131 @@ Item {
         notificationCenterReady && notificationCenterAppletAccess !== null
         && Boolean(notificationCenterAppletAccess.centerOpen)
 
-    function inheritedLauncherAccess() {
-        let candidate = root.parent
-        // AGENT-CONTRACT: AppletChip is outside the launcher lane's ownership.
-        // The permitted panel rows carry this one purpose-specific facade;
-        // bounded ancestor lookup bridges that existing component without
-        // exposing a general shell object or transport to applet QML.
-        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
-            if (typeof candidate.launcherAppletAccess !== "undefined")
-                return candidate.launcherAppletAccess
-            candidate = candidate.parent
-        }
-        return null
-    }
-
-    readonly property var effectiveLauncherAppletAccess:
-        launcherAppletAccess !== null ? launcherAppletAccess
-                                      : inheritedLauncherAccess()
-
-    function inheritedGlobalMenuAccess() {
-        let candidate = root.parent
-        // AppletChip deliberately remains a presentation-only boundary. The
-        // permitted panel rows carry this purpose-specific facade, and this
-        // bounded lookup crosses only that existing wrapper.
-        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
-            if (typeof candidate.globalMenuAppletAccess !== "undefined")
-                return candidate.globalMenuAppletAccess
-            candidate = candidate.parent
-        }
-        return null
-    }
-
-    readonly property var effectiveGlobalMenuAppletAccess:
-        globalMenuAppletAccess !== null ? globalMenuAppletAccess
-                                       : inheritedGlobalMenuAccess()
-
-    function inheritedClipboardAccess() {
-        let candidate = root.parent
-        // AppletChip intentionally remains presentation-only. The panel rows
-        // carry this one controller facade, and the bounded lookup crosses
-        // only the existing wrapper instead of exposing a shell service bag.
-        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
-            if (typeof candidate.clipboardAppletAccess !== "undefined")
-                return candidate.clipboardAppletAccess
-            candidate = candidate.parent
-        }
-        return null
-    }
-
-    readonly property var effectiveClipboardAppletAccess:
-        clipboardAppletAccess !== null ? clipboardAppletAccess
-                                      : inheritedClipboardAccess()
-
-    function inheritedTaskListAccess() {
-        let candidate = root.parent
-        // The generic chip remains presentation-only. Panel rows expose only
-        // this purpose-specific controller and the bounded lookup crosses the
-        // existing wrapper without exposing a shell service bag.
-        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
-            if (typeof candidate.taskListAppletAccess !== "undefined")
-                return candidate.taskListAppletAccess
-            candidate = candidate.parent
-        }
-        return null
-    }
-
-    readonly property var effectiveTaskListAppletAccess:
-        taskListAppletAccess !== null ? taskListAppletAccess
-                                     : inheritedTaskListAccess()
-
-    function inheritedStatusNotifierAccess() {
-        let candidate = root.parent
-        // AppletChip intentionally remains presentation-only. The panel rows
-        // carry this one controller facade, and the bounded lookup crosses
-        // only the existing wrapper instead of exposing a shell service bag.
-        for (let depth = 0; candidate !== null && depth < 4; ++depth) {
-            if (typeof candidate.statusNotifierAppletAccess !== "undefined")
-                return candidate.statusNotifierAppletAccess
-            candidate = candidate.parent
-        }
-        return null
-    }
-
-    readonly property var effectiveStatusNotifierAppletAccess:
-        statusNotifierAppletAccess !== null ? statusNotifierAppletAccess
-                                            : inheritedStatusNotifierAccess()
-
     // AGENT-CONTRACT: BuiltinAppletRegistry is the compiled trust root; this
     // dispatcher is only its presentation inventory. Focused tests must fail
     // if a registered entry point lacks a renderer here.
-    implicitWidth: clockReady ? clock.implicitWidth
-                   : notificationCenterReady ? notifications.implicitWidth
-                   : audioReady ? audio.implicitWidth
-                   : bluetoothReady ? bluetooth.implicitWidth
-                   : powerReady ? power.implicitWidth
-                   : clipboardReady ? clipboard.implicitWidth
-                   : launcherReady ? launcher.implicitWidth
-                   : globalMenuReady ? globalMenu.implicitWidth
-                   : taskListReady ? taskList.implicitWidth
-                   : statusNotifierReady ? statusNotifier.implicitWidth : 0
-    implicitHeight: clockReady ? clock.implicitHeight
-                    : notificationCenterReady ? notifications.implicitHeight
-                    : audioReady ? audio.implicitHeight
-                    : bluetoothReady ? bluetooth.implicitHeight
-                    : powerReady ? power.implicitHeight
-                    : clipboardReady ? clipboard.implicitHeight
-                    : launcherReady ? launcher.implicitHeight
-                    : globalMenuReady ? globalMenu.implicitHeight
-                    : taskListReady ? taskList.implicitHeight
-                    : statusNotifierReady ? statusNotifier.implicitHeight : 0
+    implicitWidth: renderer.item ? renderer.item.implicitWidth : 0
+    implicitHeight: renderer.item ? renderer.item.implicitHeight : 0
 
-    ClockApplet {
-        id: clock
+    Loader {
+        id: renderer
         anchors.fill: parent
-        visible: root.clockReady
-        applet: root.applet
-        theme: root.theme
-        vertical: root.vertical
+        sourceComponent: root.clockReady ? clockComponent
+            : root.notificationCenterReady ? notificationsComponent
+            : root.audioReady ? audioComponent
+            : root.bluetoothReady ? bluetoothComponent
+            : root.powerReady ? powerComponent
+            : root.clipboardReady ? clipboardComponent
+            : root.launcherReady ? launcherComponent
+            : root.globalMenuReady ? globalMenuComponent
+            : root.taskListReady ? taskListComponent
+            : root.statusNotifierReady ? statusNotifierComponent : null
     }
 
-    NotificationCenterApplet {
-        id: notifications
-        anchors.fill: parent
-        visible: root.notificationCenterReady
-        access: root.notificationCenterAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: clockComponent
+        ClockApplet {
+            anchors.fill: parent
+            visible: root.clockReady
+            applet: root.applet
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    PowerAppletModule.PowerApplet {
-        id: power
-        anchors.fill: parent
-        visible: root.powerReady
-        access: root.powerAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: notificationsComponent
+        NotificationCenterApplet {
+            anchors.fill: parent
+            visible: root.notificationCenterReady
+            access: root.notificationCenterAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    AudioAppletModule.AudioApplet {
-        id: audio
-        anchors.fill: parent
-        visible: root.audioReady
-        controller: root.audioAppletAccess
-        vertical: root.vertical
+    Component {
+        id: powerComponent
+        PowerAppletModule.PowerApplet {
+            anchors.fill: parent
+            visible: root.powerReady
+            access: root.powerAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    BluetoothAppletModule.BluetoothApplet {
-        id: bluetooth
-        anchors.fill: parent
-        visible: root.bluetoothReady
-        access: root.bluetoothAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: audioComponent
+        AudioAppletModule.AudioApplet {
+            anchors.fill: parent
+            visible: root.audioReady
+            controller: root.audioAppletAccess
+            vertical: root.vertical
+        }
     }
 
-    ClipboardAppletModule.ClipboardPanelApplet {
-        id: clipboard
-        anchors.fill: parent
-        visible: root.clipboardReady
-        controller: root.effectiveClipboardAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: bluetoothComponent
+        BluetoothAppletModule.BluetoothApplet {
+            anchors.fill: parent
+            visible: root.bluetoothReady
+            access: root.bluetoothAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    LauncherModule.LauncherApplet {
-        id: launcher
-        anchors.fill: parent
-        visible: root.launcherReady
-        access: root.effectiveLauncherAppletAccess
-        vertical: root.vertical
+    Component {
+        id: clipboardComponent
+        ClipboardAppletModule.ClipboardPanelApplet {
+            anchors.fill: parent
+            visible: root.clipboardReady
+            controller: root.clipboardAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    GlobalMenuModule.GlobalMenuApplet {
-        id: globalMenu
-        anchors.fill: parent
-        visible: root.globalMenuReady
-        access: root.effectiveGlobalMenuAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: launcherComponent
+        LauncherModule.LauncherApplet {
+            anchors.fill: parent
+            visible: root.launcherReady
+            access: root.launcherAppletAccess
+            vertical: root.vertical
+        }
     }
 
-    TaskListModule.TaskListApplet {
-        id: taskList
-        anchors.fill: parent
-        visible: root.taskListReady
-        access: root.effectiveTaskListAppletAccess
-        vertical: root.vertical
+    Component {
+        id: globalMenuComponent
+        GlobalMenuModule.GlobalMenuApplet {
+            anchors.fill: parent
+            visible: root.globalMenuReady
+            access: root.globalMenuAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 
-    StatusNotifierModule.StatusNotifierApplet {
-        id: statusNotifier
-        anchors.fill: parent
-        visible: root.statusNotifierReady
-        access: root.effectiveStatusNotifierAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+    Component {
+        id: taskListComponent
+        TaskListModule.TaskListApplet {
+            anchors.fill: parent
+            visible: root.taskListReady
+            access: root.taskListAppletAccess
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: statusNotifierComponent
+        StatusNotifierModule.StatusNotifierApplet {
+            anchors.fill: parent
+            visible: root.statusNotifierReady
+            access: root.statusNotifierAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 }

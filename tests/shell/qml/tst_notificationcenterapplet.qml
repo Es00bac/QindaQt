@@ -169,8 +169,7 @@ Item {
                                             "notificationCenterApplet");
             verify(clock !== null);
             verify(clock.visible);
-            verify(notifications !== null);
-            verify(!notifications.visible);
+            compare(notifications, null);
 
             const powerDispatcher = createTemporaryObject(
                                       dispatcherComponent, testRoot,

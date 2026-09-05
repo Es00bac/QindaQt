@@ -6,7 +6,7 @@
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",
-    "value": "qindaqt.applets.status-tray"
+    "value": "qindaqt.applets.status-notifier"
   },
   "placements": {
     "zones": ["panel-start", "panel-center", "panel-end"],

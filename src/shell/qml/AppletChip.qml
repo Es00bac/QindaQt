@@ -37,11 +37,11 @@ Rectangle {
     readonly property int minimumLiveWidth:
         pluginId === "global-menu" ? compactExtent * 2 : compactExtent
 
-    width: emptyLiveContent ? 0
+    implicitWidth: emptyLiveContent ? 0
          : vertical ? compactExtent
          : Math.max(minimumLiveWidth,
                     usesLiveContent ? builtinContent.implicitWidth : compactExtent)
-    height: emptyLiveContent ? 0 : vertical
+    implicitHeight: emptyLiveContent ? 0 : vertical
           ? Math.max(compactExtent,
                      usesLiveContent ? builtinContent.implicitHeight : compactExtent)
           : compactExtent

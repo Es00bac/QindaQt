@@ -17,14 +17,12 @@
       "id": "menus", "edge": "top", "layer": "above", "hideMode": "never",
       "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
       "applets": [
-        {"id": "main-menu", "plugin": "classic-menu"},
+        {"id": "main-menu", "plugin": "launcher"},
         {"id": "places", "plugin": "places-menu"},
         {"id": "system", "plugin": "system-menu"},
         {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"},
-        {"id": "applications", "plugin": "launcher"}
+        {"id": "clock", "plugin": "clock"}
       ]
     },
     {
@@ -34,7 +32,7 @@
         {"id": "show-desktop", "plugin": "show-desktop"},
         {"id": "window-list", "plugin": "task-list"},
         {"id": "workspaces", "plugin": "workspace-switcher"},
-        {"id": "tray", "plugin": "system-tray"}
+        {"id": "tray", "plugin": "status-notifier"}
       ]
     }
   ]

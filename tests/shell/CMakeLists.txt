@@ -125,7 +125,15 @@ add_test(
         -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_notificationcenterapplet.qml"
 )
 
+add_test(
+    NAME qindaqt.panel-geometry-offscreen
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -import "${CMAKE_CURRENT_SOURCE_DIR}/qml/imports"
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_panelgeometry.qml"
+)
+
 set_tests_properties(
+    qindaqt.panel-geometry-offscreen
     qindaqt.decoration-hover
     qindaqt.notification-surfaces-offscreen
     qindaqt.notification-focus-offscreen

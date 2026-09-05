@@ -31,6 +31,18 @@ void ShellCaptureTest::capturesRequiredResolution_data()
     QTest::newRow("qinda-macos-wuxga") << QSize(1920, 1200)
                                        << QStringLiteral("macos-inspired")
                                        << QStringLiteral("qinda-macos");
+    // Dispatcher/layout changes affect every preset, including side panels
+    // and legacy controls migrated into compiled applets.
+    const QStringList otherProfiles{
+        QStringLiteral("gnome-inspired"), QStringLiteral("mate-inspired"),
+        QStringLiteral("minimal"), QStringLiteral("nextstep-inspired"),
+        QStringLiteral("unity-inspired"), QStringLiteral("windows-classic"),
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired")};
+    for (const auto &preset : otherProfiles) {
+        QTest::newRow(qPrintable(preset)) << QSize(1920, 1080) << preset
+                                        << QStringLiteral("qinda-dark");
+    }
+
 }
 
 void ShellCaptureTest::capturesRequiredResolution()
