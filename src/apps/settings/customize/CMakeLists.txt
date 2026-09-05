@@ -48,6 +48,7 @@ qt_add_qml_module(
         qml/CustomizeAppletProperties.qml
         qml/CustomizeActionBar.qml
         qml/CustomizeCanvas.qml
+        qml/CustomizePointerGestures.qml
         qml/CustomizeOutline.qml
         qml/CustomizePage.qml
         qml/CustomizePanelPositionProperties.qml
@@ -98,6 +99,7 @@ install(
         qml/CustomizeAppletProperties.qml
         qml/CustomizeActionBar.qml
         qml/CustomizeCanvas.qml
+        qml/CustomizePointerGestures.qml
         qml/CustomizeOutline.qml
         qml/CustomizePage.qml
         qml/CustomizePanelPositionProperties.qml

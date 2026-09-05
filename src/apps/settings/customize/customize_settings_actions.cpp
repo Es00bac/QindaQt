@@ -415,8 +415,23 @@ bool CustomizeSettingsModel::apply()
     if (!applyAvailable()) {
         return false;
     }
-    if (m_editor->dirty() && !settleEditorOutcome(m_editor->apply())) {
-        return false;
+    if (m_editor->dirty()) {
+        const auto outcome = m_editor->apply();
+        // AGENT-GUARD: Content persistence precedes Settings1 selection. Keep
+        // each successfully stored profile even if that later commit fails;
+        // Discard and reconnect must never reconstruct the startup copy.
+        const auto *applied = outcome.ok ? m_editor->profile() : nullptr;
+        if (applied != nullptr) {
+            for (auto &profile : m_profiles) {
+                if (profile.id == applied->id) {
+                    profile = *applied;
+                    break;
+                }
+            }
+        }
+        if (!settleEditorOutcome(outcome)) {
+            return false;
+        }
     }
     if (!m_selectionDirty) {
         setState(State::Ready);

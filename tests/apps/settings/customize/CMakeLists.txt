@@ -59,6 +59,42 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_settings_customize_pointer_tests
+    tst_customize_pointer.cpp
+    customize_test_support.h
+)
+target_include_directories(
+    qindaqt_settings_customize_pointer_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_compile_definitions(
+    qindaqt_settings_customize_pointer_tests PRIVATE
+    QINDAQT_CUSTOMIZE_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/customize/qml/CustomizePage.qml"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_pointer_tests
+    PRIVATE qindaqt_settings_customize qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+            qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
+            Qt6::Quick Qt6::QuickControls2 Qt6::Test
+)
+add_dependencies(
+    qindaqt_settings_customize_pointer_tests
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_pointer_tests)
+add_test(
+    NAME qindaqt.settings-customize-pointer
+    COMMAND qindaqt_settings_customize_pointer_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-pointer PROPERTIES
+    LABELS "offscreen;settings;customize;accessibility"
+    ENVIRONMENT
+        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
+)
+
+qt_add_executable(
     qindaqt_settings_customize_window_lifecycle_tests
     tst_customize_window_lifecycle.cpp
     stub_customize_settings_model.h
