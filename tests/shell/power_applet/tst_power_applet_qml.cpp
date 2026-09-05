@@ -4,17 +4,23 @@
 
 #include "support/fake_power_transport.h"
 
+#include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/themes/theme_loader.h"
+
 #include <QAccessible>
+#include <QEventLoop>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QTimer>
 #include <QtTest>
 
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_PowerAppletPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Shell::PowerApplet;
@@ -68,6 +74,36 @@ QVariantMap testTheme()
                          {QStringLiteral("warning"), QStringLiteral("#e5a84b")}}}};
 }
 
+bool publishTokens(QQmlEngine &engine)
+{
+    QQmlComponent registration(&engine);
+    registration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml", QUrl(QStringLiteral("inline:power-token-registration.qml")));
+    if (registration.status() == QQmlComponent::Loading) {
+        QEventLoop loop;
+        QTimer::singleShot(5000, &loop, &QEventLoop::quit);
+        QObject::connect(&registration, &QQmlComponent::statusChanged, &loop,
+                         [&loop](QQmlComponent::Status status) {
+            if (status != QQmlComponent::Loading)
+                loop.quit();
+        });
+        loop.exec();
+    }
+    if (!registration.isReady())
+        return false;
+    std::unique_ptr<QObject> registrationObject(registration.create());
+    auto *facade = engine.singletonInstance<DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    const auto loaded = Themes::ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
+    QString error;
+    return registrationObject != nullptr && facade != nullptr && loaded.ok
+        && facade->publish(loaded.theme, {}, &error);
+}
+
 void publishReady(Power::PowerClient &client, FakePowerTransport &transport)
 {
     client.start();
@@ -109,6 +145,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QQmlEngine engine;
     engine.addImportPath(
         QStringLiteral(QINDAQT_POWER_APPLET_QML_IMPORT_PATH));
+    QVERIFY(publishTokens(engine));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.PowerApplet"),
                              QStringLiteral("PowerApplet"));
@@ -130,6 +167,14 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     auto *summary = root->findChild<QQuickItem *>(
         QStringLiteral("powerAppletSummary"));
     QVERIFY(summary != nullptr);
+    QVERIFY(summary->width() <= root->height() + 48.0);
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
+        QStringLiteral("placeholderTile"));
+    QVERIFY(summaryIcon->property("resolved").toBool()
+            || (placeholder != nullptr && placeholder->isVisible()));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
     QTest::keyClick(&window, Qt::Key_Space);

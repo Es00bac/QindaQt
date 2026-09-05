@@ -89,6 +89,13 @@ snapshot's default handles by serial and stay correct even when that device
 falls outside the retained window; an unknown `(0,0)` handle yields no
 label.
 
+The panel surface is one 32-by-28 icon button. Its symbolic name follows the
+default output's mute and normalized-volume state (`muted`, `low`, `medium`,
+or `high`), and an unresolved asset becomes the typed Audio placeholder.
+All device, stream, state, and feedback text lives in the existing focusable
+details popup. This preserves keyboard and accessible control behavior while
+preventing the mixer layout from contributing to panel width or height.
+
 ## Request rules
 
 `requestVolume(serial, isStream, volume)` and

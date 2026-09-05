@@ -13,7 +13,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     # The applet subdirectory of src/shell/task_list and the offscreen QML
     # rows below need the GUI stack even in a standalone configure.
     find_package(Qt6 6.11 REQUIRED COMPONENTS
-                 Core DBus Gui Qml Quick QuickControls2 QuickTest Test)
+                 Core DBus Gui Qml Quick QuickControls2 QuickTest Svg Test)
     qt_standard_project_setup(REQUIRES 6.11)
 
     add_subdirectory(
@@ -39,6 +39,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         "../../../src/shell/task_list"
         "${CMAKE_BINARY_DIR}/src/shell/task_list"
     )
+else()
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
 endif()
 
 function(qindaqt_add_task_list_test target source test_name)
@@ -225,6 +227,8 @@ target_link_libraries(
         QindaQt::ShellTaskListApplet
         QindaQt::TokensQml
         qindaqt_shell_task_list_appletplugin
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         qindaqt_themes
         Qt6::Gui
         Qt6::Qml

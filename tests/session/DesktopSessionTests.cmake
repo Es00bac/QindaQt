@@ -337,6 +337,7 @@ if(
         # runs, not catalog validation or a claim to the complete release matrix.
         set(_qindaqt_desktop_matrix_rows
             single-wuxga
+            single-1080p-125
             single-1440p-125
             single-1080p-150
             dual-1080p-horizontal

@@ -14,12 +14,15 @@
 #include <QEventLoop>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QtTest>
 
 #include <memory>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Shell::Launcher;
@@ -205,6 +208,15 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(summaryInterface != nullptr);
     QCOMPARE(summaryInterface->role(), QAccessible::Button);
     QVERIFY(!summaryInterface->text(QAccessible::Name).isEmpty());
+    QCOMPARE(summary->property("text").toString(), QString());
+    QVERIFY(summary->width() <= root->height() + 4.0);
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("launcherAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
+        QStringLiteral("placeholderTile"));
+    QVERIFY(summaryIcon->property("resolved").toBool()
+            || (placeholder != nullptr && placeholder->isVisible()));
 
     summary->forceActiveFocus();
     QTest::keyClick(&window, Qt::Key_Space);
@@ -396,6 +408,7 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
 void LauncherQmlTests::nullAccessShowsDisabledFallback()
 {
     QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
     auto owned = createApplet(engine, nullptr);
     QVERIFY(owned != nullptr);
     auto *root = qobject_cast<QQuickItem *>(owned.get());

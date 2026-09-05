@@ -11,7 +11,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
     include(KDEInstallDirs6)
     find_package(Qt6 6.11 REQUIRED COMPONENTS
-                 Core DBus Gui Qml Quick QuickControls2 Test)
+                 Core DBus Gui Qml Quick QuickControls2 Svg Test)
     qt_standard_project_setup(REQUIRES 6.11)
 
     add_subdirectory("../../../src/services/bluetooth_protocol"
@@ -22,6 +22,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                      "${CMAKE_BINARY_DIR}/src/shell/bluetooth_applet")
     set(bluetooth_applet_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 else()
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
     set(bluetooth_applet_source_root "${CMAKE_SOURCE_DIR}")
 endif()
 
@@ -85,6 +86,8 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellBluetoothAppletRuntime
         qindaqt_shell_bluetooth_applet_runtimeplugin
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick
@@ -119,6 +122,8 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellBluetoothAppletRuntime
         qindaqt_shell_bluetooth_applet_runtimeplugin
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick

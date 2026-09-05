@@ -65,6 +65,12 @@ Item {
             verify(summary !== null)
             compare(summary.Accessible.role, Accessible.Button)
             compare(summary.Accessible.name, "Clipboard history")
+            compare(summary.text, "")
+            verify(summary.width <= panelRow.height)
+            const icon = findChild(summary, "clipboardPanelIcon")
+            verify(icon !== null)
+            const placeholder = findChild(icon, "placeholderTile")
+            verify(icon.resolved || (placeholder !== null && placeholder.visible))
             verify(summary.Accessible.checkable)
             verify(!summary.Accessible.checked)
 

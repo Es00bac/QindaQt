@@ -19,6 +19,7 @@
 #include "task_list_test_support.h"
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_TaskListPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
@@ -205,17 +206,14 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
     return item != nullptr && item->isVisible();
   };
 
-  // Cold start renders the loading row.
   QCOMPARE(controller.phaseText(), QStringLiteral("loading"));
-  QVERIFY(visibleNamed(QStringLiteral("taskListLoadingLabel")));
+  QVERIFY(!visibleNamed(QStringLiteral("taskListLoadingLabel"))); QVERIFY(visibleNamed(QStringLiteral("taskListPhaseIcon")));
 
-  // An accepted empty generation renders the empty row.
   QVERIFY(publishFacts(source, authority, {}) > 0);
   QCOMPARE(controller.phaseText(), QStringLiteral("empty"));
-  QVERIFY(visibleNamed(QStringLiteral("taskListEmptyLabel")));
+  QVERIFY(!visibleNamed(QStringLiteral("taskListEmptyLabel"))); QVERIFY(visibleNamed(QStringLiteral("taskListPhaseIcon")));
   QVERIFY(!visibleNamed(QStringLiteral("taskListLoadingLabel")));
 
-  // Ready renders one button per entry, with accessible names wired through.
   QVERIFY(publishFacts(source, authority, threeEntryFacts()) > 0);
   QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
   QCOMPARE(visualItemsNamed(root, QStringLiteral("taskListEntryButton")).size(),
@@ -224,13 +222,14 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
   QVERIFY(!visibleNamed(QStringLiteral("taskListEmptyLabel")));
   QQuickItem *containerButton = entryButtonFor(root, QStringLiteral("c1"));
   QVERIFY(containerButton != nullptr);
+  QVERIFY(containerButton->height() <= 28.0); auto *entryIcon = containerButton->findChild<QQuickItem *>(QStringLiteral("taskListEntryIcon"));
+  QVERIFY(entryIcon != nullptr); auto *entryPlaceholder = entryIcon->findChild<QQuickItem *>(QStringLiteral("placeholderTile")); QVERIFY(entryIcon->property("resolved").toBool() || (entryPlaceholder != nullptr && entryPlaceholder->isVisible()));
   auto *countBadge =
       containerButton->findChild<QQuickItem *>(
           QStringLiteral("taskListEntryCountBadge"));
   QVERIFY(countBadge != nullptr);
   QVERIFY(countBadge->isVisible());
-  QCOMPARE(countBadge->property("text").toString(),
-           QStringLiteral("2 windows"));
+  QCOMPARE(countBadge->property("text").toString(), QStringLiteral("×2"));
   QAccessibleInterface *rowInterface =
       QAccessible::queryAccessibleInterface(containerButton);
   QVERIFY(rowInterface != nullptr);
@@ -319,7 +318,8 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
       deniedRoot->findChild<QQuickItem *>(
           QStringLiteral("taskListUnavailableLabel"));
   QVERIFY(unavailableLabel != nullptr);
-  QVERIFY(unavailableLabel->isVisible());
+  QVERIFY(!unavailableLabel->isVisible());
+  auto *deniedPhaseIcon = deniedRoot->findChild<QQuickItem *>(QStringLiteral("taskListPhaseIcon")); QVERIFY(deniedPhaseIcon != nullptr); QVERIFY(deniedPhaseIcon->isVisible());
   deniedRoot->setParentItem(nullptr);
 }
 

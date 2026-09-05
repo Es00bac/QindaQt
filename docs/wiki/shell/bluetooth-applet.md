@@ -149,8 +149,11 @@ accessible names and descriptions. An inline prompt has complete accessible
 text and keyboard-operable Confirm/Cancel actions; an application-window Escape
 shortcut cancels the exact active prompt, when its reply lane is free, before
 closing the popup. Failure/uncertainty feedback is exposed as an
-accessible alert. Horizontal and vertical panels use the same controller;
-the vertical summary uses a compact text label without changing behavior.
+accessible alert. Horizontal and vertical panels use the same controller and
+the same 32-by-28 icon button. The symbolic icon distinguishes active and
+inactive/unavailable Bluetooth state; all labels stay in the popup and
+accessible name. A missing theme asset renders the typed Bluetooth placeholder
+without changing behavior.
 
 The preview injects no live Bluetooth facade and therefore renders a disabled
 deterministic fallback. Production composition starts observation only when

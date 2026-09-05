@@ -132,7 +132,7 @@ Item {
 
             var loading = findChild(applet, "statusNotifierLoadingState")
             verify(loading !== null)
-            compare(loading.visible, true)
+            compare(loading.visible, false)
 
             var strip = findChild(applet, "statusNotifierStripLoader")
             compare(strip.visible, false)
@@ -145,7 +145,7 @@ Item {
 
             var empty = findChild(applet, "statusNotifierEmptyState")
             verify(empty !== null)
-            compare(empty.visible, true)
+            compare(empty.visible, false)
         }
 
         function test_unavailableState() {
@@ -156,7 +156,7 @@ Item {
 
             var unavailable = findChild(applet, "statusNotifierUnavailableNotice")
             verify(unavailable !== null)
-            compare(unavailable.visible, true)
+            compare(unavailable.visible, false)
             compare(unavailable.reason, "status-items-read-not-granted")
 
             var strip = findChild(applet, "statusNotifierStripLoader")
@@ -176,7 +176,7 @@ Item {
 
             var degraded = findChild(applet, "statusNotifierDegradedNotice")
             verify(degraded !== null)
-            compare(degraded.visible, true)
+            compare(degraded.visible, false)
             compare(degraded.reason, "status-notifier-watcher-unavailable")
 
             // Last-known-good rows stay visible.
@@ -249,7 +249,7 @@ Item {
 
             var placeholder = findChild(applet, "statusNotifierNotConnectedState")
             verify(placeholder !== null)
-            compare(placeholder.visible, true)
+            compare(placeholder.visible, false)
 
             var strip = findChild(applet, "statusNotifierStripLoader")
             compare(strip.visible, false)

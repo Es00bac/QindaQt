@@ -358,6 +358,11 @@ Hosts below the documented minimum extent degrade to indicator-only (and
 the indicator hides itself when even it cannot fit) rather than painting
 partial content inside the clipped root. A clamped
 `maximumVisibleEntries` acts as the count cap on top of the measured fit.
+Provider-owned top-level names intentionally remain visible because they are
+the menu affordances. Loading, unavailable, and empty phases occupy no panel
+extent and paint no “unavailable” label; their exact truth remains in the
+applet's accessible description. This prevents a missing exporter from
+turning the global bar into diagnostic text.
 
 An enabled submenu opens one `GlobalMenuPopup`. The popup keeps a stack of at
 most six menu levels, skips disabled entries and separators during Up/Down

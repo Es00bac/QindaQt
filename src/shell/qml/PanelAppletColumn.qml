@@ -41,6 +41,11 @@ Column {
             audioAppletAccess: root.audioAppletAccess
             bluetoothAppletAccess: root.bluetoothAppletAccess
             powerAppletAccess: root.powerAppletAccess
+            launcherAppletAccess: root.launcherAppletAccess
+            globalMenuAppletAccess: root.globalMenuAppletAccess
+            clipboardAppletAccess: root.clipboardAppletAccess
+            taskListAppletAccess: root.taskListAppletAccess
+            statusNotifierAppletAccess: root.statusNotifierAppletAccess
         }
     }
 }

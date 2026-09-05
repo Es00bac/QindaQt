@@ -218,7 +218,7 @@ Item {
             verify(applet !== null)
             var placeholder = findChild(applet, "statusNotifierNotConnectedState")
             verify(placeholder !== null)
-            compare(placeholder.visible, true)
+            compare(placeholder.visible, false)
             compare(applet.Accessible.description, "Status tray controls are not connected")
         }
     }

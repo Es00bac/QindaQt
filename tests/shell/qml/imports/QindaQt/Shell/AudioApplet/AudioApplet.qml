@@ -6,6 +6,7 @@ import QtQuick
 // test independent of static-plugin registration in qmltestrunner.
 Item {
     required property var controller
+    property bool vertical: false
 
     objectName: "audioApplet"
     implicitWidth: 46

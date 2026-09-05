@@ -18,6 +18,7 @@
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_AudioAppletPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Shell::AudioApplet;
@@ -30,12 +31,12 @@ const QString kOwner = QStringLiteral(":1.42");
 QList<QQuickItem *> visualItemsNamed(QQuickItem *root, const QString &name)
 {
     QList<QQuickItem *> matches;
-    if (root->objectName() == name) {
+    if (root == nullptr)
+        return matches;
+    if (root->objectName() == name)
         matches.append(root);
-    }
-    for (QQuickItem *child : root->childItems()) {
+    for (QQuickItem *child : root->childItems())
         matches.append(visualItemsNamed(child, name));
-    }
     return matches;
 }
 
@@ -131,13 +132,35 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
              QStringLiteral("Audio"));
     QVERIFY(!rootInterface->text(QAccessible::Description).isEmpty());
 
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("audioAppletSummary"));
+    QVERIFY(summary != nullptr);
+    QCOMPARE(root->width(), 32.0);
+    QCOMPARE(root->height(), 28.0);
+    QCOMPARE(summary->property("text").toString(), QString());
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("audioAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
+        QStringLiteral("placeholderTile"));
+    QVERIFY(summaryIcon->property("resolved").toBool()
+            || (placeholder != nullptr && placeholder->isVisible()));
+
+    summary->forceActiveFocus();
+    QTest::keyClick(&window, Qt::Key_Space);
+    auto *popup = root->findChild<QObject *>(QStringLiteral("audioAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->property("opened").toBool());
+    auto *popupContent = popup->property("contentItem").value<QQuickItem *>();
+    QVERIFY(popupContent != nullptr);
+
     // One slider per device with known volume (output and input) plus one
     // stream slider; every control carries a complete accessible identity.
-    const auto deviceSliders =
-        visualItemsNamed(window.contentItem(), QStringLiteral("audioDeviceVolume"));
+    const auto deviceSliders = visualItemsNamed(
+        popupContent, QStringLiteral("audioDeviceVolume"));
     QCOMPARE(deviceSliders.size(), 2);
-    const auto streamSliders =
-        visualItemsNamed(window.contentItem(), QStringLiteral("audioStreamVolume"));
+    const auto streamSliders = visualItemsNamed(
+        popupContent, QStringLiteral("audioStreamVolume"));
     QCOMPARE(streamSliders.size(), 1);
 
     QQuickItem *slider = deviceSliders.constFirst();
@@ -167,8 +190,8 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QTRY_COMPARE(countPendingRows(controller), 0);
 
     // The mute switch exposes an accessible role and description as well.
-    const auto muteSwitches =
-        visualItemsNamed(window.contentItem(), QStringLiteral("audioDeviceMute"));
+    const auto muteSwitches = visualItemsNamed(
+        popupContent, QStringLiteral("audioDeviceMute"));
     QCOMPARE(muteSwitches.size(), 2);
     QAccessibleInterface *muteInterface =
         QAccessible::queryAccessibleInterface(muteSwitches.constFirst());

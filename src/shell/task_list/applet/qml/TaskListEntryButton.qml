@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // One task-list strip row: standalone window or collapsed container. The row
@@ -26,8 +27,8 @@ T.ToolButton {
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
     hoverEnabled: true
-    implicitWidth: vertical ? 40 : Math.max(96, Math.min(168, rowLayout.implicitWidth + 16))
-    implicitHeight: vertical ? 56 : 28
+    implicitWidth: vertical ? 32 : Math.max(84, Math.min(168, rowLayout.implicitWidth + 12))
+    implicitHeight: 28
 
     // AGENT-GUARD: the controller re-checks capability, generation, and
     // pending fences on every call; this enabled binding is presentation
@@ -65,30 +66,21 @@ T.ToolButton {
         id: rowLayout
         spacing: Tokens.space["2"]
 
-        // Typed icon placeholder: a deterministic one-letter badge. No icon
-        // seam exists in this tree yet; the badge keeps the row shape stable.
-        Rectangle {
+        ShellIcons.Icon {
             objectName: "taskListEntryIcon"
-            implicitWidth: 18
-            implicitHeight: 18
-            radius: Tokens.radius.s
-            color: Tokens.bg.highest
-            border.color: Tokens.outline.strong
-
-            Text {
-                anchors.centerIn: parent
-                text: button.entry.iconText
-                color: Tokens.fg.default
-                font.family: Tokens.type.fontFamily
-                font.pointSize: Tokens.type.caption
-                Accessible.ignored: true
-            }
+            name: String(button.entry.iconName ?? "")
+            size: 18
+            color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            symbolic: false
+            fallbackText: button.entry.applicationName
+            Accessible.ignored: true
         }
 
         Text {
             id: titleText
             objectName: "taskListEntryTitle"
             Layout.fillWidth: true
+            visible: !button.vertical
             text: button.entry.title.length > 0
                   ? button.entry.title : button.entry.applicationName
             color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
@@ -112,8 +104,8 @@ T.ToolButton {
 
         Text {
             objectName: "taskListEntryCountBadge"
-            visible: button.entry.kind === "container"
-            text: visible ? qsTr("%1 windows").arg(button.entry.windowCount) : ""
+            visible: !button.vertical && button.entry.kind === "container"
+            text: visible ? qsTr("×%1").arg(button.entry.windowCount) : ""
             color: Tokens.fg.muted
             font.family: Tokens.type.fontFamily
             font.pointSize: Tokens.type.caption

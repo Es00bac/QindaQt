@@ -167,6 +167,7 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
         *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
         return false;
     }
+    m_themeDirectory = themeDirectory;
     return true;
 }
 
@@ -238,6 +239,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         resetRuntime();
         return false;
     }
+    if (!initializeIcons(error)) { resetRuntime(); return false; }
     if (!initializeLauncherRuntime(error)) {
         resetRuntime();
         return false;

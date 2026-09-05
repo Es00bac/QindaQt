@@ -38,6 +38,7 @@
 #include <qindaqt/themes/theme_loader.h>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_TaskListPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Producer;

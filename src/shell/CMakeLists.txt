@@ -2,6 +2,10 @@
 
 include(TaskListRuntimeInstall.cmake)
 include(StatusNotifierRuntimeInstall.cmake)
+include(IconRuntimeInstall.cmake)
+include(ShellAppletRuntimeInstall.cmake)
+
+find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
 
 # Launcher declares its runtime after early source dependencies exist. At this
 # point the complete source graph is available, so materialize it before the
@@ -13,7 +17,7 @@ qt_add_executable(
     app/captureenvironment.cpp
     app/captureenvironment.h
     common/catalogpaths.cpp
-    common/catalogpaths.h
+    common/catalogpaths.h common/shelliconconfiguration.cpp common/shelliconconfiguration.h
     common/shelltokenpublisher.cpp
     common/shelltokenpublisher.h
     app/main.cpp
@@ -53,7 +57,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
         TARGET qindaqt_shell_task_list_applet
-        TARGET qindaqt_shell_status_notifier_applet_runtime
+        TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
 )
 
 target_link_libraries(
@@ -68,7 +72,7 @@ target_link_libraries(
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellTaskListApplet
-        QindaQt::ShellStatusNotifierAppletRuntime
+        QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -134,8 +138,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     qt_add_executable(
         qindaqt-shell
         common/catalogpaths.cpp
-        common/catalogpaths.h
-        common/shelltokenpublisher.cpp
+        common/catalogpaths.h common/shelliconconfiguration.cpp common/shelliconconfiguration.h common/shelltokenpublisher.cpp
         common/shelltokenpublisher.h
         runtime/main.cpp
         runtime/audioappletcomposition.cpp
@@ -213,7 +216,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_task_list_applet
-            TARGET qindaqt_shell_status_notifier_applet_runtime
+            TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
     )
 
     target_link_libraries(
@@ -246,7 +249,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListApplet
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
-            QindaQt::ShellStatusNotifierAppletRuntime
+            QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
@@ -309,295 +312,12 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         COMPONENT QindaQt
     )
-    # A narrow stage proves that the Bluetooth applet's production binary,
-    # compiled QML, manifest, selected profile, policy, and theme relocate as
-    # one package boundary.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applets/bluetooth.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT BluetoothAppletRuntime
-    )
-    # AGENT-CONTRACT: Every narrow component that stages qindaqt-shell must
-    # carry its directly linked Controls library and the Tokens library at
-    # Controls' baked $ORIGIN/../Tokens sibling path. Otherwise the staged
-    # shell fails before its applet catalog can be inspected.
-    install(
-        TARGETS qindaqt_controls_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_shell_launcher_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT BluetoothAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT BluetoothAppletRuntime
-    )
-    # A narrow stage lets the Audio applet prove that the production binary,
-    # compiled QML, manifest, selected profile, policy, and theme relocate
-    # together without requiring unrelated first-party applications.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applets/audio.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT AudioAppletRuntime
-    )
-    # The audio applet renders through the shared QindaQt.Controls and
-    # QindaQt.Tokens QML modules. Controls carries a baked
-    # $ORIGIN/../Tokens RUNPATH (the sibling-module layout built by
-    # src/controls), so this component must preserve that runtime closure.
-    install(
-        TARGETS qindaqt_controls_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_shell_launcher_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT AudioAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT AudioAppletRuntime
-    )
-    # A narrow stage lets the Power applet prove that the production binary,
-    # compiled QML, manifest, selected profile, policy, and theme relocate
-    # together without requiring unrelated first-party applications.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applets/power.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        FILES
-            "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_controls_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_shell_launcher_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT PowerAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT PowerAppletRuntime
-    )
-
-    # The launcher component proves the whole production boundary rather than
-    # only a standalone QML import: shell, manifest/profile/policy/theme,
-    # compiled launcher module, and the executable's loader closure.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applets/launcher.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT LauncherAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT LauncherAppletRuntime
-    )
-
-    # Global Menu's narrow component carries the live shell, compiled module,
-    # registrar policy inputs, and the complete direct loader closure.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applets/global-menu.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT GlobalMenuAppletRuntime
-    )
-    # Clipboard's narrow production component proves the live shell, audited
-    # manifest inputs, compiled applet module, and loader closure relocate as
-    # one runnable package boundary.
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applets/clipboard.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/profiles/qindaqt.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/profiles"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/themes/qinda-dark.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        FILES "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applet-policy"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_controls_qml qindaqt_shell_launcher_qml
-                qindaqt_global_menu_qml
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT ClipboardAppletRuntime
-    )
-    install(
-        TARGETS qindaqt_tokens_qml
-        LIBRARY DESTINATION "Tokens"
-        COMPONENT ClipboardAppletRuntime
-    )
+    qindaqt_install_shell_primary_applet_components()
 
     qindaqt_install_task_list_shell_runtime()
     qindaqt_install_status_notifier_shell_runtime()
 
-    # AGENT-CONTRACT: BuiltinAppletContent imports ClipboardApplet, TaskList,
-    # and StatusNotifier directly, so every component that stages qindaqt-shell
-    # must stage all three modules.
+    # AGENT-CONTRACT: stage BuiltinAppletContent's direct imports with qindaqt-shell.
     foreach(shell_component IN ITEMS
             QindaQt AudioAppletRuntime BluetoothAppletRuntime
             ClipboardAppletRuntime GlobalMenuAppletRuntime
@@ -606,6 +326,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt_install_clipboard_applet_runtime("${shell_component}")
         qindaqt_install_task_list_applet_runtime("${shell_component}")
         qindaqt_install_status_notifier_applet_runtime("${shell_component}")
+        qindaqt_install_shell_icons_runtime("${shell_component}")
     endforeach()
 endif()
 

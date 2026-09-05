@@ -100,6 +100,7 @@ private:
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
     [[nodiscard]] bool initializeTokens(QString *error);
+    [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
     void restartWindowActionsIdentity();
@@ -119,6 +120,7 @@ private:
     Applets::ManifestCatalog m_applets;
     AppletHost::CapabilityPolicy m_appletPolicy;
     QQmlEngine m_engine;
+    QString m_themeDirectory;
     std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;

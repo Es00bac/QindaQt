@@ -116,7 +116,11 @@ Phases, exposed as `phaseText` with `phaseReasonText`:
 
 Rows follow the S1 presentation's stable order and are capped at
 `kMaxPresentedItems` (24); overflow is truthful through `overflowCount` and a
-counted `overflowText`. Icons cross into QML only as bounded PNG data URLs
+counted `overflowText`. The panel renders only item icons plus an icon-only,
+accessibly counted overflow affordance. Loading, empty, unavailable, and
+degraded diagnostics remain in the root accessible description rather than
+expanding the strip into state cards; actionable operation feedback opens in
+a popup. Icons cross into QML only as bounded PNG data URLs
 rendered through the seam on the GUI thread for presented rows; a missing or
 hostile icon resolves to the deterministic S1 placeholder and the row says so
 (`iconIsPlaceholder`). Every intent enforces the owner generation locally

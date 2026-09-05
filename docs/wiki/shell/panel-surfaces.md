@@ -95,21 +95,25 @@ display.
 
 ## Current visible scope
 
-This slice makes panels and docks real compositor-managed surfaces and wires
-the compositor-driven [panel visibility policy](panel-visibility.md) into the
-production runtime. Safe-visible recovery is active, and visibility-only
-updates retain existing panel/QML objects. Production panels resolve instances
-through the validated manifest and capability policy. The clock and dedicated
-notification-center button are the two compiled live built-ins; unresolved
-instances remain visibly marked static representations. The button receives
-only a shell-owned center-toggle/open-state facade with read-only Do Not
-Disturb status and no policy mutation, notification records, or operation
-authority. Without authenticated notification presentation
-provisioning, the facade is absent and the otherwise valid button is disabled.
-Preview applet chips remain deterministic visual fixtures. Edge reveal/hold
-producers and hide animation also remain acceptance work. Global menu, live
-platform services, applet process hosting, and settings preview subscription
-remain in the Shell/customization milestone.
+Panels and docks are compositor-managed surfaces wired to the compositor-driven
+[panel visibility policy](panel-visibility.md). Safe-visible recovery is
+active, and visibility-only updates retain existing panel/QML objects.
+Production panels resolve instances through the validated manifest and
+capability policy, then dispatch every audited built-in through its compiled
+surface. Preview applet chips remain deterministic fixtures but use the same
+icon-first 28-pixel summaries. Launcher, network status, Bluetooth, audio,
+clipboard, status-notifier overflow, and unresolved static entries show
+icons; power shows an icon plus percentage; task rows show a desktop-entry
+icon plus an elided title. Vertical panels suppress those residual labels.
+Global menu keeps its provider-owned menu labels, clock remains textual, and
+notification center retains its existing compact glyph. Missing icon assets
+render typed placeholders without changing the applet's accessible identity.
+
+Panel rows clip at their assigned surface extent. Wide detail controls and
+operational notices live in focusable `Popup.Window` surfaces, so neither
+localization nor backend diagnostics can inflate the panel past its edge.
+Edge reveal/hold producers, hide animation, applet process hosting, and
+settings preview subscription remain later acceptance work.
 
 Notification windows are separate nonexclusive overlay layer surfaces, not
 profile panels or reservation carriers. Their pure planner clamps preferred

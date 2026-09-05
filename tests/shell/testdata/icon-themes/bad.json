@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "bad-icon-theme",
+  "name": "Bad icon theme",
+  "variant": "dark",
+  "iconTheme": "../escape",
+  "colors": {
+    "canvas": "#101010",
+    "surface": "#202020",
+    "surfaceRaised": "#303030",
+    "border": "#505050",
+    "text": "#ffffff",
+    "textMuted": "#cccccc",
+    "accent": "#80c0b0",
+    "accentText": "#101010",
+    "danger": "#ff8080"
+  }
+}

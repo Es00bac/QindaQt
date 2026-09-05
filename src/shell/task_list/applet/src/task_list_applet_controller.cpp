@@ -12,11 +12,20 @@ TaskListAppletController::TaskListAppletController(
     ShellTaskList::Producer::TaskListOperationAuthority &authority,
     TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
     QObject *parent)
+    : TaskListAppletController(source, authority, operations, grants,
+                               IconNameResolver{}, parent) {}
+
+TaskListAppletController::TaskListAppletController(
+    ShellTaskList::TaskListSource &source,
+    ShellTaskList::Producer::TaskListOperationAuthority &authority,
+    TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+    IconNameResolver iconNameResolver, QObject *parent)
     : QObject(parent),
       m_source(source),
       m_authority(authority),
       m_operations(operations),
-      m_grants(grants) {
+      m_grants(grants),
+      m_iconNameResolver(std::move(iconNameResolver)) {
   connect(&m_authority,
           &ShellTaskList::Producer::TaskListOperationAuthority::stateChanged,
           this, &TaskListAppletController::handleAuthorityStateChanged);
@@ -48,6 +57,10 @@ QVariantList TaskListAppletController::entryRows() const {
     map.insert(QStringLiteral("applicationId"), row.applicationId);
     map.insert(QStringLiteral("applicationName"), row.applicationName);
     map.insert(QStringLiteral("iconText"), row.iconText);
+    map.insert(QStringLiteral("iconName"),
+               m_iconNameResolver
+                   ? m_iconNameResolver(row.applicationId)
+                   : QString{});
     map.insert(QStringLiteral("windowCount"), row.windowCount);
     map.insert(QStringLiteral("active"), row.active);
     map.insert(QStringLiteral("minimized"), row.minimized);
