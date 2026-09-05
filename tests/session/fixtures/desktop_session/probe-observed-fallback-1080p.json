@@ -114,7 +114,14 @@
         "privatePresentationAllowed": true
       },
       "servicePid": "76",
-      "shellPid": "76"
+      "shellPid": "76",
+      "tokens": {
+        "backgroundBase": "#171a18",
+        "generation": "1",
+        "qstRevision": 1,
+        "ready": true,
+        "sourceThemeId": "qinda-dark"
+      }
     },
     "status": "ok"
   },

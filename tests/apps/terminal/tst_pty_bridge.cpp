@@ -48,7 +48,7 @@ private slots:
   void outputAndEchoFlowFromMasterToSink();
   void childWindowSizeIsApplied();
   void closeStopsForwarding();
-  void slaveCloseQuiescesReadNotifierAndKeepsMaster();
+  void childOpenGapDoesNotDiscardLaterOutput();
 };
 
 void TerminalPtyBridgeTest::openProvidesASlavePath() {
@@ -185,15 +185,10 @@ void TerminalPtyBridgeTest::closeStopsForwarding() {
   ::close(slave);
 }
 
-void TerminalPtyBridgeTest::slaveCloseQuiescesReadNotifierAndKeepsMaster() {
-  // P1 (Dijkstra P1-3 / Church P1-1): after the last slave descriptor
-  // closes, Linux keeps the master POLLHUP-readable forever and read()
-  // reports EIO on every call. The bridge must drain what was buffered,
-  // then disable its read notifier while retaining the master —
-  // closeChildChannel() is the only close and the teardown SIGHUP path, and
-  // this quiescence is not an exit publication (reap truth stays with the
-  // session). On the pre-fix parent this row dies at the activation count
-  // with a five-figure hot-loop count.
+void TerminalPtyBridgeTest::childOpenGapDoesNotDiscardLaterOutput() {
+  // Production creates the bridge before fork. Linux makes the master
+  // readable with EIO while no slave is open; on the unrepaired tree this
+  // event turn permanently disables forwarding before bash writes a prompt.
   std::vector<QByteArray> sink;
   TerminalPtyBridge bridge(
       [&sink](const char *data, int length) {
@@ -212,15 +207,24 @@ void TerminalPtyBridgeTest::slaveCloseQuiescesReadNotifierAndKeepsMaster() {
   QVERIFY(readNotifier->isEnabled());
   QVERIFY(!bridge.isChildOutputClosed());
 
+  // Force the kernel's hangup edge with a transient opener. On the unrepaired
+  // tree it is the last slave and the master notifier consumes EIO forever;
+  // on the fixed tree the parent guard keeps the generation readable.
+  const int transientSlave = openRawSlave(opened.slavePath);
+  QVERIFY(transientSlave >= 0);
+  ::close(transientSlave);
+  QTest::qWait(50);
+  QVERIFY(readNotifier->isEnabled());
+  QVERIFY(!bridge.isChildOutputClosed());
+
   const int slave = openRawSlave(opened.slavePath);
   QVERIFY(slave >= 0);
-  const QByteArray last = QByteArrayLiteral("bye");
+  const QByteArray last = QByteArrayLiteral("prompt-after-open-gap");
   const ssize_t written =
       ::write(slave, last.constData(), static_cast<size_t>(last.size()));
   QVERIFY(written == static_cast<ssize_t>(last.size()));
-  ::close(slave); // Last slave descriptor: the master is now hung up.
+  ::close(slave);
 
-  // Buffered output drains before the terminal condition is honoured.
   QVERIFY(QTest::qWaitFor(
       [&sink, last] {
         QByteArray all;
@@ -230,23 +234,8 @@ void TerminalPtyBridgeTest::slaveCloseQuiescesReadNotifierAndKeepsMaster() {
         return all.contains(last);
       },
       kSinkWaitMs));
-  QTRY_VERIFY_WITH_TIMEOUT(bridge.isChildOutputClosed(), kSinkWaitMs);
-  QVERIFY(!readNotifier->isEnabled());
-  QVERIFY(bridge.isOpen()); // Master retained: single-owner close contract.
-
-  // Bounded liveness: a hot notifier would activate thousands of times in
-  // this window on the pre-fix parent.
-  int activations = 0;
-  connect(readNotifier, &QSocketNotifier::activated, this,
-          [&activations] { ++activations; });
-  const auto sinkCallsBefore = sink.size();
-  QTest::qWait(100);
-  QCOMPARE(activations, 0);
-  QCOMPARE(sink.size(), sinkCallsBefore);
-
-  bridge.writeInput("x", 1); // Input after hangup must not re-arm reading.
-  QTest::qWait(20);
-  QCOMPARE(activations, 0);
+  QVERIFY(readNotifier->isEnabled());
+  QVERIFY(!bridge.isChildOutputClosed());
   QVERIFY(bridge.isOpen());
   bridge.closeChildChannel();
   QVERIFY(!bridge.isOpen());

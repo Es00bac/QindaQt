@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellruntimeapplication.h"
 
+#include "../common/shelltokenpublisher.h"
 #include "notificationquietingsettingsbridge.h"
 #include "notificationwindowcontroller.h"
 #include "shelldevelopmentevidence.h"
@@ -24,7 +25,8 @@ bool ShellRuntimeApplication::startDevelopmentEvidence(
     // are reconciled so PID authentication cannot race unfinished startup.
     m_shellDevelopmentEvidence = std::make_unique<ShellDevelopmentEvidence>(
         *m_notificationPresentation, m_quietingSettingsBridge->controller(),
-        *m_notificationPrivacyPolicy, *m_notificationWindows);
+        *m_notificationPrivacyPolicy, *m_notificationWindows,
+        *m_tokenPublisher->facade());
     return m_shellDevelopmentEvidence->start(
         *options.compositorProcessId,
         options.developmentEvidencePredecessorProcessId.value_or(0), error);

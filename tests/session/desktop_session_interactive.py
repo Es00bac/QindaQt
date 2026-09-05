@@ -69,7 +69,7 @@ def _validate_shell_presentation(
         for name in ("before", "after")
     }
     expected_fields = {
-        "owner", "servicePid", "shellPid", "presentation",
+        "owner", "servicePid", "shellPid", "tokens", "presentation",
         "centerOpenedCount", "centerWindow",
     }
     for name, phase in phases.items():
@@ -81,6 +81,23 @@ def _validate_shell_presentation(
             or _canonical_process_id(phase.get("shellPid")) != shell_pid
         ):
             raise TopologyContractError(f"shell presentation {name} PID is malformed")
+        tokens = _mapping(phase.get("tokens"), f"shellPresentation.{name}.tokens")
+        if (
+            set(tokens) != {
+                "ready", "qstRevision", "generation", "sourceThemeId",
+                "backgroundBase",
+            }
+            or tokens.get("ready") is not True
+            or tokens.get("qstRevision") != 1
+            or _canonical_counter(
+                tokens.get("generation"), f"shell presentation {name} token generation"
+            ) <= 0
+            or not isinstance(tokens.get("sourceThemeId"), str)
+            or not tokens.get("sourceThemeId")
+            or not isinstance(tokens.get("backgroundBase"), str)
+            or re.fullmatch(r"#[0-9a-f]{6}", tokens["backgroundBase"]) is None
+        ):
+            raise TopologyContractError(f"shell presentation {name} tokens are not ready")
         state = _mapping(phase.get("presentation"), f"shellPresentation.{name}.presentation")
         window = _mapping(phase.get("centerWindow"), f"shellPresentation.{name}.centerWindow")
         expected_open = name == "after"

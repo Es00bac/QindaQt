@@ -190,9 +190,16 @@ bool TerminalSession::spawnGeneration() {
     return false;
   }
 
+  // AGENT-GUARD (production viewport ordering): attach and size qtermwidget
+  // synchronously before the child can write its prompt. Starting first lets
+  // the emulator parse output against its constructor-sized grid; the later
+  // production reparent/resize can then leave a running session visibly
+  // blank even though scrollback received every byte.
+  emit terminalWidgetChanged(m_backend->terminalWidget());
   const auto started = m_backend->start(m_request);
   if (!started.ok) {
     const QString diagnostic = started.diagnostic;
+    emit viewDisposalRequested();
     m_backend.reset();
     publishExit({TerminalExitStatus::Kind::StartFailed, 0, diagnostic});
     setState(State::Exited);
@@ -209,7 +216,6 @@ bool TerminalSession::spawnGeneration() {
           &TerminalSession::linkContextRequested);
 
   setState(State::Running);
-  emit terminalWidgetChanged(m_backend->terminalWidget());
   // A fresh view carries no selection; publishing that keeps the
   // presentation's action state truthful across restarts (P2-4).
   emit selectionAvailable(false);

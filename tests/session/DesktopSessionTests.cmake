@@ -78,6 +78,7 @@ if(
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationbinding.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellsample.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/desktopsessionprobe.cpp"
     )
     target_link_libraries(

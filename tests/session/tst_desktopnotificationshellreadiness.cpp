@@ -33,6 +33,12 @@ QJsonObject snapshot(bool privatePresentationAllowed = true,
     return {
         {QStringLiteral("schemaVersion"), 1},
         {QStringLiteral("shellPid"), QStringLiteral("53")},
+        {QStringLiteral("tokens"),
+         QJsonObject{{QStringLiteral("ready"), true},
+                     {QStringLiteral("qstRevision"), 1},
+                     {QStringLiteral("generation"), QStringLiteral("1")},
+                     {QStringLiteral("sourceThemeId"), QStringLiteral("qinda-dark")},
+                     {QStringLiteral("backgroundBase"), QStringLiteral("#171a18")}}},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"),
@@ -162,6 +168,7 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
     QCOMPARE(validateDesktopNotificationShell(empty, beforeExpectation()).disposition,
              DesktopNotificationShellDisposition::Invalid);
     for (const auto &mutation : {QStringLiteral("schema"), QStringLiteral("pid"),
+                                 QStringLiteral("tokens"),
                                  QStringLiteral("presentation"),
                                  QStringLiteral("counter")}) {
         auto changed = observation();
@@ -169,6 +176,11 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
             changed.snapshot.insert(QStringLiteral("schemaVersion"), 2);
         } else if (mutation == QStringLiteral("pid")) {
             changed.snapshot.insert(QStringLiteral("shellPid"), 53);
+        } else if (mutation == QStringLiteral("tokens")) {
+            QJsonObject tokens =
+                changed.snapshot.value(QStringLiteral("tokens")).toObject();
+            tokens.insert(QStringLiteral("ready"), false);
+            changed.snapshot.insert(QStringLiteral("tokens"), tokens);
         } else if (mutation == QStringLiteral("presentation")) {
             changed.snapshot.insert(QStringLiteral("presentation"), QJsonArray{});
         } else {
@@ -178,6 +190,24 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
             changed.snapshot.insert(QStringLiteral("observations"), observations);
         }
         QCOMPARE(validateDesktopNotificationShell(changed, beforeExpectation()).disposition,
+                 DesktopNotificationShellDisposition::Invalid);
+    }
+
+    for (const auto &[field, value] : {
+             std::pair{QStringLiteral("qstRevision"), QJsonValue(2)},
+             std::pair{QStringLiteral("generation"),
+                       QJsonValue(QStringLiteral("0"))},
+             std::pair{QStringLiteral("sourceThemeId"),
+                       QJsonValue(QString{})},
+             std::pair{QStringLiteral("backgroundBase"),
+                       QJsonValue(QStringLiteral("#ABCDEF"))}}) {
+        auto changed = observation();
+        QJsonObject tokens =
+            changed.snapshot.value(QStringLiteral("tokens")).toObject();
+        tokens.insert(field, value);
+        changed.snapshot.insert(QStringLiteral("tokens"), tokens);
+        QCOMPARE(validateDesktopNotificationShell(changed,
+                                                   beforeExpectation()).disposition,
                  DesktopNotificationShellDisposition::Invalid);
     }
 }

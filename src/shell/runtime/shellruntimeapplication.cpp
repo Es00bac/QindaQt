@@ -2,6 +2,7 @@
 #include "shellruntimeapplication.h"
 
 #include "../common/catalogpaths.h"
+#include "../common/shelltokenpublisher.h"
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
 #include "globalmenuappletcomposition.h"
@@ -186,68 +187,6 @@ void ShellRuntimeApplication::printCatalog() const
     }
 }
 
-bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
-{
-    m_settingsTransport = std::make_unique<Services::SettingsClient::QtSettingsTransport>(
-        QDBusConnection::sessionBus());
-    m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
-        *m_settingsTransport,
-        QStringList{QStringLiteral("services.doNotDisturb"), QStringLiteral("accessibility.reducedMotion"),
-                    QStringLiteral("panels.autoHideDelayMs"),
-                    QStringLiteral("services.clipboardHistory"),
-                    Launcher::LauncherPersistenceController::pinnedKey(),
-                    Launcher::LauncherPersistenceController::recentKey()});
-    m_launcherApplet = std::make_unique<LauncherAppletComposition>(
-        m_applets, m_appletPolicy,
-        launcherDataRoots(QProcessEnvironment::systemEnvironment(),
-                          QDir::homePath()),
-        *m_settingsClient, QDBusConnection::sessionBus());
-    return m_launcherApplet->start(error);
-}
-
-void ShellRuntimeApplication::initializeServiceAppletCompositions()
-{
-    m_audioApplet = std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
-    m_bluetoothApplet = std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
-    m_powerApplet =
-        std::make_unique<PowerAppletComposition>(m_applets, m_appletPolicy);
-    const QDBusConnection sessionBus = QDBusConnection::sessionBus();
-    m_clipboardApplet = std::make_unique<ClipboardAppletComposition>(m_applets, m_appletPolicy, *m_settingsClient, sessionBus);
-    m_windowActionsTransport = std::make_unique<
-        ShellWindowActionsClient::QtShellWindowActionsTransport>(sessionBus);
-    m_windowActionsClient = std::make_unique<
-        ShellWindowActionsClient::ShellWindowActionsClient>(
-            *m_windowActionsTransport);
-    m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
-    m_taskListApplet = std::make_unique<TaskListAppletComposition>(m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
-    QString taskListError;
-    if (!m_taskListApplet->start(&taskListError)) {
-        qWarning().noquote() << "QindaQt shell could not start Task List facts:" << taskListError;
-    }
-    // The tray's icon-theme lookup roots are the freedesktop icon locations
-    // beneath every generic data root; the renderer canonicalizes and
-    // confines every candidate beneath these injected roots.
-    QStringList statusNotifierIconRoots;
-    const auto dataRoots =
-        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
-    statusNotifierIconRoots.reserve(dataRoots.size());
-    for (const QString &base : dataRoots) {
-        statusNotifierIconRoots.append(base + QStringLiteral("/icons"));
-    }
-    m_statusNotifierApplet = std::make_unique<StatusNotifierAppletComposition>(
-        m_applets, m_appletPolicy, sessionBus, statusNotifierIconRoots);
-    m_globalMenuApplet->start();
-    connect(m_windowActionsClient.get(),
-            &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
-            this, [this] {
-                if (m_windowActionsClient->identitySnapshot()) {
-                    m_windowActionsRetry.stop();
-                } else {
-                    m_windowActionsRetry.start();
-                }
-            });
-}
-
 void ShellRuntimeApplication::restartWindowActionsIdentity()
 {
     if (!m_windowActionsClient) {
@@ -295,6 +234,10 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
 
     const auto &profile = m_profiles.profiles().at(profileIndex);
+    if (!initializeTokens(error)) {
+        resetRuntime();
+        return false;
+    }
     if (!initializeLauncherRuntime(error)) {
         resetRuntime();
         return false;
@@ -506,6 +449,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_sessionLockTransport.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();
+    m_tokenPublisher.reset();
 }
 
 bool ShellRuntimeApplication::settlePanelVisibility(QString *error)

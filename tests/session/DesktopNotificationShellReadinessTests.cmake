@@ -7,11 +7,12 @@ qt_add_executable(
     qindaqt-desktop-notification-shell-readiness-tests
     "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellreadiness.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/desktopnotificationshellsample.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tst_desktopnotificationshellreadiness.cpp"
 )
 target_link_libraries(
     qindaqt-desktop-notification-shell-readiness-tests
-    PRIVATE Qt6::Core Qt6::DBus Qt6::Test
+    PRIVATE Qt6::Core Qt6::DBus Qt6::Gui Qt6::Test
 )
 set_target_properties(
     qindaqt-desktop-notification-shell-readiness-tests
