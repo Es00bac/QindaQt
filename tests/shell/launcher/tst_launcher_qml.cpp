@@ -291,6 +291,14 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QCOMPARE(togglePin->property("text").toString(), QStringLiteral("Unpin"));
     QTest::keyClick(popupContent(root)->window(), Qt::Key_Escape);
     QTRY_VERIFY(!pinMenu->property("opened").toBool());
+    // The secondary gesture leaves the native delegate hovered at the sample
+    // point. Restore the pre-existing theme-pixel fixture to its neutral
+    // state before checking the token-owned background below.
+    auto *field = root->findChild<QQuickItem *>(QStringLiteral("launcherSearchField"));
+    QVERIFY(field != nullptr);
+    field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
+    QTest::mouseMove(popupContent(root)->window(), QPoint(1, 1));
 
     // Native palettes must not override either side of the launch-row contrast
     // pair. Republish themes without recreating delegates to catch stale colors.
