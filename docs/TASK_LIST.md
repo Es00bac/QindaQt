@@ -62,6 +62,16 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
 
 ## Completed outcomes
 
+- 2026-09-05 — Added the separate [QindaQt handbook](wiki/handbook/index.md):
+  17 categorized pages covering project philosophy, desktop behavior, applications,
+  architecture, privacy, development, and complete snapshot catalogs of 7 features,
+  34 steps, 174 evidence records, 48 settings, 10 profiles, 5 themes, 11 applet
+  manifests, and 144 canonical wiki pages. Source snapshot `97286120`; documentation
+  candidate `519ca7a6`, independently reviewed with no blocking findings.
+  Strict MkDocs, repository links, catalog coverage, and all
+  17 rendered pages' local destinations/anchors pass. This documentation outcome
+  changes no product feature maturity or runtime qualification.
+
 - 2026-09-05T02:40:44-06:00 — **Install readiness restored on exact main `3e658510`** (product commit of the polish merge). Integrated the desktop polish `511ac862` at `3e658510` (task icons proven in the nested capture, shell-owned/non-normal windows excluded from tasks, quiet empty chips, Do Not Disturb default); focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed. The manager inspected the headless interactive capture: icon chips, real application icons on task buttons, quiet global menu, styled notification center. The install/SDDM smoke requires the user's sudo.
 - 2026-09-04T23:37:23-06:00 — **Exact main `6a2019aa` is verified and usable; install is allowed with three known visible polish defects** (task buttons show letter placeholders because the nested stage lacks desktop entries — the real prefix ships them; the shell's own popup is listed as a task; an empty chip renders as a white square) **that the open `desktop-polish` lane (Frances Arnold, OpenAI Codex) is fixing.** Integrated the icon-first panel applets `7eb5372d` at `6a2019aa` (Barbara McClintock ACCEPT `0/0/0/5` after one repair); focused 325/325 in Debug and Release, static gates, broad safe Debug 633/633, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 633/633 with the /usr/local prefix confirmed. Since the withdrawal: shell token publication (ADR-0071), iconography I1/I2 (ADR-0072), the atomic task-fact contract (ADR-0073), and the first-party menu export lifecycle are integrated; the manager inspected the headless interactive capture of this tree (icon chips, working task buttons, quiet global menu). The install/SDDM smoke requires the user's sudo.
 - 2026-09-04T21:24:52-06:00 — Integrated the first-party global-menu export for Terminal and Text Editor with the fail-closed exporter lifecycle `bfe60099` at `42191636` (Nettie Stevens ACCEPT `0/0/0/0` after three Codex rejections closed successive lifecycle races); focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots. `Menu unavailable` no longer appears for first-party windows.
