@@ -32,7 +32,7 @@ public:
   void requestRefresh(quint64 token, const QString &uniqueOwner) override;
 
 private Q_SLOTS:
-  void handleWindowsChanged();
+  void handleFactsChanged();
 
 private:
   void resolveInitialOwner();

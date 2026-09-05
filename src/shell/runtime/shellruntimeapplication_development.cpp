@@ -5,6 +5,7 @@
 #include "notificationquietingsettingsbridge.h"
 #include "notificationwindowcontroller.h"
 #include "shelldevelopmentevidence.h"
+#include "tasklistappletcomposition.h"
 
 namespace QindaQt::Shell {
 
@@ -20,13 +21,18 @@ bool ShellRuntimeApplication::startDevelopmentEvidence(
             "development evidence requires supervised notification authority");
         return false;
     }
+    if (!m_taskListApplet || !m_taskListApplet->access()) {
+        *error = QStringLiteral(
+            "development evidence requires the composed task list");
+        return false;
+    }
     // AGENT-CONTRACT: The evidence service is the nested harness's shell-ready
     // signal. Publish it only after production shortcuts and initial surfaces
     // are reconciled so PID authentication cannot race unfinished startup.
     m_shellDevelopmentEvidence = std::make_unique<ShellDevelopmentEvidence>(
         *m_notificationPresentation, m_quietingSettingsBridge->controller(),
         *m_notificationPrivacyPolicy, *m_notificationWindows,
-        *m_tokenPublisher->facade());
+        *m_tokenPublisher->facade(), *m_taskListApplet->access());
     return m_shellDevelopmentEvidence->start(
         *options.compositorProcessId,
         options.developmentEvidencePredecessorProcessId.value_or(0), error);

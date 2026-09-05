@@ -4,6 +4,7 @@
 #include "notificationwindowcontroller.h"
 
 #include "qindaqt/design_tokens/token_facade.h"
+#include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
@@ -68,13 +69,16 @@ ShellDevelopmentEvidence::ShellDevelopmentEvidence(
     Services::SettingsClient::DoNotDisturbController &quieting,
     Services::NotificationPresentationPolicy::NotificationPrivacyPolicy &privacy,
     NotificationWindowController &windows,
-    const DesignTokens::TokenFacade &tokens, QObject *parent)
+    const DesignTokens::TokenFacade &tokens,
+    const ShellTaskListApplet::TaskListAppletController &taskList,
+    QObject *parent)
     : QObject(parent)
     , m_presentation(presentation)
     , m_quieting(quieting)
     , m_privacy(privacy)
     , m_windows(windows)
     , m_tokens(tokens)
+    , m_taskList(taskList)
     , m_bus(QDBusConnection::sessionBus())
 {
     connect(&m_presentation,
@@ -262,6 +266,10 @@ QByteArray ShellDevelopmentEvidence::Snapshot() const
 QJsonObject ShellDevelopmentEvidence::snapshotObject() const
 {
     const QJsonObject windows = m_windows.evidence();
+    const QVariantList taskRows = m_taskList.entryRows();
+    const quint64 taskGeneration = taskRows.isEmpty()
+        ? 0 : taskRows.first().toMap()
+                  .value(QStringLiteral("generationRevision")).toULongLong();
     const QColor backgroundBase =
         m_tokens.bg().value(QStringLiteral("base")).value<QColor>();
     return {
@@ -279,6 +287,12 @@ QJsonObject ShellDevelopmentEvidence::snapshotObject() const
               backgroundBase.isValid()
                   ? backgroundBase.name(QColor::HexRgb)
                   : QString()},
+         }},
+        {QStringLiteral("taskList"),
+         QJsonObject{
+             {QStringLiteral("phase"), m_taskList.phaseText()},
+             {QStringLiteral("generation"), QString::number(taskGeneration)},
+             {QStringLiteral("windowCount"), m_taskList.totalEntryCount()},
          }},
         {QStringLiteral("presentation"),
          QJsonObject{

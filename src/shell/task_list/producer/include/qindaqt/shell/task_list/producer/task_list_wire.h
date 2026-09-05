@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/shell/task_list/producer/task_list_operation_authority.h"
+#include "qindaqt/shell/task_list/task_list_types.h"
 
 #include <QByteArrayView>
 #include <QString>
@@ -13,11 +14,11 @@
 
 namespace QindaQt::ShellTaskList::Producer {
 
-// AGENT-CONTRACT: These values are the shell-side decoding of the public
-// org.qindaqt.Compositor1 authority (compositor/dbus/org.qindaqt.Compositor1.xml,
-// docs/wiki/reference/compositor-control-v1.md). Only fields the task list
-// consumes are represented; every consumed field is validated before any
-// state changes. Payloads stay below the shared shell wire
+// AGENT-CONTRACT: TaskListFactsResult decodes the authenticated atomic
+// CompositorShell1 snapshot. The Windows/Containers values below remain only
+// for the legacy Compositor1 operation adapter and compatibility tests. Only
+// consumed fields are represented; every consumed field is validated before
+// any state changes. Payloads stay below the shared shell wire
 // ceiling (WireLimits::MaxPayloadBytes) and the T0 identity bound of 512
 // characters; identifiers never contain control, format, or malformed
 // surrogate characters.
@@ -31,9 +32,7 @@ struct TaskListWireWindow {
   QString containerId;
   bool active = false;
   bool minimized = false;
-  // The flag is decoded as inventory truth only. Classification cannot be
-  // published until one coherent task-list inventory also carries scope and
-  // container lineage.
+  // Legacy inventory truth only; T1 publication uses TaskListFactsResult.
   bool skipTaskbar = false;
   bool skipSwitcher = false;
 
@@ -42,9 +41,8 @@ struct TaskListWireWindow {
 };
 
 // One entry of the independent Compositor1 Containers() inventory. The decoder
-// validates its authoritative decimal-string revision, but the facts producer
-// never joins it to Windows(); a later coherent inventory must carry container
-// lineage atomically before the operation authority can publish it.
+// validates its authoritative decimal-string revision. The facts producer
+// never joins it to Windows(); TaskListFactsResult carries current lineage.
 struct TaskListWireContainer {
   QString containerId;
   quint64 revision = 0;
@@ -94,12 +92,28 @@ struct TaskListContainersResult {
   }
 };
 
+struct TaskListFactsResult {
+  QVector<TaskWindowFact> facts;
+  QVector<TaskListContainerLineage> containers;
+  QString epoch;
+  quint64 revision = 0;
+  TaskListActionGeneration actionGeneration;
+  TaskListWireError error = TaskListWireError::None;
+  QString message;
+
+  [[nodiscard]] bool ok() const noexcept {
+    return error == TaskListWireError::None;
+  }
+};
+
 // Stateless hostile-input decoders. Each rejects atomically.
 class TaskListWireDecoder final {
 public:
   [[nodiscard]] static TaskListWindowsResult decodeWindows(
       QByteArrayView payload);
   [[nodiscard]] static TaskListContainersResult decodeContainers(
+      QByteArrayView payload);
+  [[nodiscard]] static TaskListFactsResult decodeTaskFacts(
       QByteArrayView payload);
 };
 

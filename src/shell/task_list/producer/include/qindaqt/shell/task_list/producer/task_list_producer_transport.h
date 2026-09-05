@@ -8,15 +8,13 @@
 
 namespace QindaQt::ShellTaskList::Producer {
 
-// Asynchronous transport seam for the public org.qindaqt.Compositor1
+// Asynchronous transport seam for the authenticated CompositorShell1 task-fact
 // authority. Implementations must bind every signal subscription and method
 // call to the exact unique owner passed to requestRefresh(); replies carrying
 // a different token or owner are fencing input for the client.
 //
-// AGENT-CONTRACT: One refresh token covers exactly one Windows() read. The
-// Compositor1 reference forbids combining its independent panel-visibility
-// inventory with Windows(); widening this seam would reintroduce review
-// finding P1-1 from candidate 3a5ae17.
+// AGENT-CONTRACT: One refresh token covers exactly one TaskListSnapshot read;
+// implementations never issue any secondary inventory read or join.
 class TaskListProducerTransport : public QObject {
   Q_OBJECT
 
@@ -31,10 +29,10 @@ public:
 Q_SIGNALS:
   // Empty owner means the well-known name is currently unowned.
   void serviceOwnerChanged(const QString &uniqueOwner);
-  // WindowsChanged is an invalidation hint that triggers a complete re-read.
+  // TaskListSnapshotChanged is an invalidation hint for a complete re-read.
   void refreshInvalidated(const QString &uniqueOwner);
-  void windowsRead(quint64 token, const QString &uniqueOwner,
-                   const QByteArray &payload);
+  void factsRead(quint64 token, const QString &uniqueOwner,
+                 const QByteArray &payload);
   void refreshFailed(quint64 token, const QString &uniqueOwner,
                      const QString &message);
 };

@@ -83,7 +83,8 @@ state suffixes `active`, `minimized`, and `urgent` in that order.
 ## Public facts producer boundary
 
 `src/shell/task_list/producer/` is the shell-side facts producer over the
-public [Compositor1](../reference/compositor-control-v1.md) authority. It binds
+authenticated `CompositorShell1` task-fact authority documented in the
+[compositor protocol reference](../reference/compositor-control-v1.md). It binds
 the exact current unique owner of `org.qindaqt.Compositor` on an injected bus
 connection (the same owner-binding pattern as the integrated compositor output
 authority), never the replaceable well-known name and never the host
@@ -94,33 +95,24 @@ a resolved empty owner publishes one unavailable observation and becomes
 Degraded, and a resolved unique owner starts the first read. Thus a compositor
 that is absent at cold start cannot leave the task list silently Loading.
 
-The adapter reads only schema-2 `Windows()` and observes only
-`WindowsChanged`. It never reads or combines `ShellVisibilitySnapshot`: that
-method is an independent panel-visibility inventory, and its canonical
-contract explicitly says clients must not combine it with `Windows()`. An
-equal epoch/revision fence does not override that rule. `Containers()` is also
-not joined, because its per-container revisions do not form one atomic
-generation with `Windows()`.
+The adapter reads only schema-1 `TaskListSnapshot()` and observes only the
+directed `TaskListSnapshotChanged` hint. The payload atomically carries window,
+output, workspace, role/state, and container-lineage facts plus the action
+fence; T1 never joins `Windows`, `Outputs`, `ShellVisibilitySnapshot`, or
+`Containers`. Each reply is bounded and fully decoded before publication.
 
-Each `Windows()` reply is bounded and fully decoded under the exact owner. The
-producer retains `(owner, epoch, revision, payload)` solely as window-inventory
-lineage. Under one owner, an epoch change, revision regression, or changed
-bytes at an equal revision is foreign truth and rejects fail-closed. Owner
-replacement starts a new lineage, clears the old source generation, and
-publishes Degraded truth; late owner/token replies and reads raced by
-`WindowsChanged` are discarded. Transient same-owner transport failures retain
-the last generation and use a bounded retry schedule, while the known protocol
-gap does not poll.
-
-Compositor1 1.1 has no single payload carrying every T0 fact. `Windows()` lacks
-output/workspace scope, application display name, urgency, and an atomic
-container-revision/authority join. Consequently this adapter deliberately
-does not publish a generation and exposes no container lineage: it marks the
-source `Degraded`, retaining any previously injected generation, until a
-coherent public task-list inventory exists. Inventing placeholders or joining
-the panel snapshot would turn absence into false UI truth. Every failed read,
-owner loss/replacement, and `stop()` emits `stateChanged`; stop also clears the
-owner so mutation admission fails before bus traffic.
+The producer retains `(owner, epoch, revision, payload)` lineage. Under one
+owner, an epoch change, revision regression, or changed bytes at an equal
+revision is foreign truth and rejects fail-closed. A coherent snapshot
+publishes one T0 generation and makes the source Ready. Owner replacement
+starts a new lineage, clears the old source generation, and publishes Degraded
+truth; late owner/token replies and reads raced by invalidation are discarded.
+Transient same-owner transport failures retain the last generation as
+Degraded and consume the finite retry schedule once. After it is exhausted,
+only a new invalidation or owner edge can trigger another read; there is no
+polling loop. Every failed read, owner loss/replacement, and
+`stop()` emits `stateChanged`; stop also clears the owner so mutation admission
+fails before bus traffic.
 
 ## Operation adapter
 
@@ -168,7 +160,7 @@ the adapter rejects them for `hybrid-process` containers
 process-local Hybrid topology remains the compositor's own authority
 ([hybrid topology](../architecture/hybrid-topology.md)).
 
-## Window operations and remaining fact gaps
+## Window operations and atomic fact contract
 
 Window-level `activate`, `minimize`, `unminimize`, `close`, and `raise` exist
 today on the authenticated `org.qindaqt.CompositorShell1` surface
@@ -194,20 +186,22 @@ active-window identity
 ([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md))
 remains a separate concern served by that same shell-owned client.
 
-The existing authenticated client closes the ordinary window-action gap, but
-Compositor1 1.1 still lacks the following task-list facts; each is a candidate
-compositor lane, not a shell workaround:
+The compositor now supplies the missing read contract on that same authenticated
+object. `TaskListSnapshot` includes every managed normal window's identity,
+application ID and label, title, task role, active/minimized/maximized/
+fullscreen/demands-attention flags, output and workspace scope, and container
+ID. Referenced outputs, workspaces, and container revision/authority entries
+travel in the same generation. The snapshot also carries the window-action
+fence, so a listed UUID and its mutation generation are sampled together.
+Authentication precedes sampling, hostile values reject the complete
+candidate, and the no-argument change hint is coalesced and directed only to
+the bound shell owner
+([ADR-0072](../adr/0072-publish-atomic-authenticated-task-facts.md)).
 
-1. One atomic task-list inventory containing window identity/title/app ID,
-   output/workspace scope, collapsed container role plus revision/authority,
-   activation/minimized/urgent state, and its own owner/epoch/revision lineage.
-   Extending `Windows()` with those fields or adding a dedicated method are
-   both compositor-owned choices; the shell must not assemble the generation
-   from independent inventories.
-2. An application display name and `urgent`/demands-attention fact in that
-   coherent inventory.
-3. Mutation authority for `hybrid-process` containers, if task-list page
-   activation/detach should cover production groups.
+Container page activation/detach for `hybrid-process` groups remains outside
+the older Compositor1 transaction bridge. This does not prevent ordinary task
+activation, whole-container minimize/restore, Close All, or raise through the
+authenticated window-action policy.
 
 The hosted policy selects Close All for the Close action, maps Ungroup to
 `releaseContainer`, and treats context-menu dismissal as Cancel. Close All and
@@ -316,19 +310,14 @@ manifest/policy/registry entry, and `TaskListAppletRuntime` install component
 described in the previous section. T3 composes those slices into the production
 shell, hosts the ninth built-in in both dispatchers, places an exact Task List
 instance in task-oriented stock profiles, and packages its compiled module in
-every shell-carrying component. The current reader intentionally cannot publish
-Ready from Compositor1 1.1; the coherent inventory remains a compositor
-prerequisite, so an ordinary production session presents honest Degraded truth
-until that fact contract lands. Private-bus composition, offscreen keyboard and
-accessibility, install/source-poison, non-nested stage closure, and contained
-panel-session rows qualify the hosting boundary without claiming fabricated
-live window facts.
+every shell-carrying component. The current reader publishes Ready only from
+the authenticated atomic task-fact contract. It re-degrades on malformed or
+incoherent data or owner loss and clears old-owner truth on replacement.
+Private-bus transport and composition rows, offscreen keyboard/accessibility
+rows, and contained boot jointly qualify the boundary.
 
-The production reproduction is not an exact-owner credential failure:
-`DevelopmentShellSurfaces` reports every committed `dock` surface under one
-canonical shell PID, and the compositor publishes a schema-2 `Windows()`
-generation. **Limited** is therefore the intentional T1 result above, not a
-backend exception or a retry-timing fix. Removing it requires one new
-atomic compositor task-fact contract carrying output, workspace, role, and
-container lineage together; combining the current independent inventories or
-substituting single-output placeholders remains prohibited.
+`ShellDevelopment1.taskList` reports the live hosted applet's phase,
+generation, and window count. `desktop.virtual.boot.1080p` requires `ready`, a
+positive generation, and at least one listed window. The independent
+Compositor1 inventories remain diagnostic inputs and must not be substituted
+or joined by shell code.

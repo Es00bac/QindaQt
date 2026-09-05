@@ -36,7 +36,8 @@ set(surface_relative
 # Every QindaQt input is a staged file: the TaskListAppletRuntime component's
 # own archives and headers, plus the sibling artifacts the harness copied into
 # the stage because their install components belong to other owners (the T0/T1
-# task-list archives, the themes/design-tokens archives, and the
+# task-list archives, compositor task-fact values, the themes/design-tokens
+# archives, and the
 # Controls/Tokens QML modules — clipboard/AppShell precedent). Nothing here
 # references the build or source tree.
 add_executable(qindaqt_installed_task_list_applet_consumer "${QINDAQT_CONSUMER_SOURCE}")
@@ -77,6 +78,7 @@ target_link_libraries(
         "${applet_module_dir}/libqindaqt_shell_task_list_applet${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list_operations${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list_producer${static_suffix}"
+        "${applet_lib_dir}/libqindaqt_compositor_shell_actions${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list${static_suffix}"
         "${applet_lib_dir}/libqindaqt_themes${static_suffix}"
         "${applet_lib_dir}/libqindaqt_design_tokens${static_suffix}"

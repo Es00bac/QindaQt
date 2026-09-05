@@ -14,6 +14,16 @@ target_link_libraries(
 )
 add_test(NAME compositor.shell-window-identity COMMAND qindaqt_shell_window_identity_tests)
 
+qt_add_executable(qindaqt_shell_task_facts_tests tst_shelltaskfacts.cpp)
+target_link_libraries(
+    qindaqt_shell_task_facts_tests
+    PRIVATE QindaQt::CompositorShellActions Qt6::Test
+)
+add_test(NAME compositor.shell-task-facts COMMAND qindaqt_shell_task_facts_tests)
+set_tests_properties(
+    compositor.shell-task-facts PROPERTIES LABELS "unit;compositor;task-list"
+)
+
 if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
     find_package(LayerShellQt 6.6.6 REQUIRED)
     find_package(KWayland 6.6.6 EXACT REQUIRED)

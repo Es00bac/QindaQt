@@ -6,7 +6,8 @@
 # against only staged files. A component that installs nothing succeeds
 # silently, so every required artifact is asserted present afterwards.
 # Sibling artifacts the applet depends on but does not own (T0/T1 task-list
-# archives/headers, the themes/design-tokens archives and theme file, and the
+# archives/headers, compositor task-fact values, the themes/design-tokens
+# archives and theme file, and the
 # Controls/Tokens QML modules) are copied from the build/source tree into the
 # stage exactly like the clipboard/AppShell installed-consumer precedent:
 # their install components belong to their owners. After staging, no consumer
@@ -19,6 +20,7 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY QINDAQT_SOURCE_D
                           QINDAQT_QML_INSTALL_DIR QINDAQT_CONFIGURATION
                           QINDAQT_TASK_LIST_LIBRARY QINDAQT_TASK_LIST_PRODUCER_LIBRARY
                           QINDAQT_TASK_LIST_OPERATIONS_LIBRARY
+                          QINDAQT_COMPOSITOR_SHELL_ACTIONS_LIBRARY
                           QINDAQT_TASK_LIST_INCLUDE_DIR QINDAQT_TASK_LIST_PRODUCER_INCLUDE_DIR
                           QINDAQT_TASK_LIST_OPERATIONS_INCLUDE_DIR
                           QINDAQT_CONTROLS_MODULE_DIRECTORY QINDAQT_TOKENS_MODULE_DIRECTORY
@@ -114,7 +116,8 @@ endif()
 # components belong to the T0/T1 owners.
 foreach(archive_input IN ITEMS
         "${QINDAQT_TASK_LIST_LIBRARY}" "${QINDAQT_TASK_LIST_PRODUCER_LIBRARY}"
-        "${QINDAQT_TASK_LIST_OPERATIONS_LIBRARY}")
+        "${QINDAQT_TASK_LIST_OPERATIONS_LIBRARY}"
+        "${QINDAQT_COMPOSITOR_SHELL_ACTIONS_LIBRARY}")
     if(NOT EXISTS "${archive_input}")
         message(FATAL_ERROR "Focused task-list applet stage input is missing ${archive_input}")
     endif()

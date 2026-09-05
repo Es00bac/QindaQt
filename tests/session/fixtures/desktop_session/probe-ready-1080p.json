@@ -121,6 +121,11 @@
         "qstRevision": 1,
         "ready": true,
         "sourceThemeId": "qinda-dark"
+      },
+      "taskList": {
+        "phase": "ready",
+        "generation": "1",
+        "windowCount": 2
       }
     },
     "status": "ok"

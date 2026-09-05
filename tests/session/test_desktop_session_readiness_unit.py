@@ -178,7 +178,30 @@ class ReadinessProbeTests(unittest.TestCase):
                 "message": "object is not registered",
             },
         }
+
         self.assertEqual(_snapshot_pending(cold), "object is not registered")
+
+        task_pending = ready_probe()
+        task_pending["notificationShell"] = {
+            "status": "pending",
+            "failure": {
+                "code": "task-list-not-ready",
+                "message": "task list is not ready yet",
+            },
+        }
+        self.assertEqual(_snapshot_pending(task_pending),
+                         "task list is not ready yet")
+
+        reply_pending = ready_probe()
+        reply_pending["notificationShell"] = {
+            "status": "pending",
+            "failure": {
+                "code": "snapshot-reply-pending",
+                "message": "snapshot has not replied yet",
+            },
+        }
+        self.assertEqual(_snapshot_pending(reply_pending),
+                         "snapshot has not replied yet")
 
         for code in (
             "public-topology-pending", "output-pending",
@@ -192,6 +215,24 @@ class ReadinessProbeTests(unittest.TestCase):
                 }
                 with self.assertRaisesRegex(RuntimeError, "not retryable"):
                     _snapshot_pending(contradictory)
+
+    def test_task_list_evidence_mutations_fail_closed(self) -> None:
+        for mutation in ("phase", "generation", "count", "extra"):
+            with self.subTest(mutation=mutation):
+                snapshot = ready_probe()
+                task_list = snapshot["notificationShell"]["evidence"][  # type: ignore[index]
+                    "taskList"
+                ]
+                if mutation == "phase":
+                    task_list["phase"] = "foreign"
+                elif mutation == "generation":
+                    task_list["generation"] = "01"
+                elif mutation == "count":
+                    task_list["windowCount"] = True
+                else:
+                    task_list["foreign"] = 1
+                with self.assertRaises(RuntimeError):
+                    _snapshot_pending(snapshot)
 
     def test_readiness_polls_past_pending_shell_privacy(self) -> None:
         pending = ready_probe()
