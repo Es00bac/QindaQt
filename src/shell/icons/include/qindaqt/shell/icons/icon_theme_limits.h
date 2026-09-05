@@ -22,6 +22,17 @@ inline constexpr qsizetype kMaxIconNameUtf8Bytes = 128;
 inline constexpr qint64 kMaxThemeIndexBytes = qint64(256) * 1024;
 inline constexpr int kMaxThemeDirectories = 128;
 
+// SVG source payload ceiling: the image provider bounds QSvgRenderer input to
+// this many bytes; larger vectors fail closed to the placeholder. Same
+// magnitude as the index ceiling, named separately so every bound names its
+// consumer.
+inline constexpr qint64 kMaxSvgSourceBytes = kMaxThemeIndexBytes;
+
+// Provider request-id ceiling. A URL id longer than this is refused before
+// any parsing and before any cache access, so a hostile id contributes
+// nothing — not even a cache key.
+inline constexpr qsizetype kMaxRequestIdUtf8Bytes = 1024;
+
 // Theme chain bounds: Inherits recursion is cycle-guarded and depth-capped,
 // and the flattened search chain (injected themes plus parents plus hicolor)
 // never exceeds this length.

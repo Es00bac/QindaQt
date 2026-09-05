@@ -5,7 +5,7 @@ The shell's shared iconography lives in `src/shell/icons` (namespace
 `QindaQt.Shell.Icons 1.0`). It gives every shell surface one confined XDG
 icon-theme resolution path so applets render real icons instead of text
 placeholders. The durable decision is
-[ADR-0071](../adr/0071-shell-iconography-confined-xdg-icon-themes.md). The
+[ADR-0072](../adr/0072-shell-iconography-confined-xdg-icon-themes.md). The
 status-notifier tray keeps its own deliberately narrower locator/renderer in
 `src/shell/status_notifier/icon`; this module generalizes those confinement
 rules without modifying that module.
@@ -23,11 +23,16 @@ rules without modifying that module.
 - Icon names are a bounded ASCII grammar (`[A-Za-z0-9._-]`, no `..`, at most
   128 UTF-8 bytes). Hostile names (`../`, absolute paths, embedded NUL,
   spaces, oversized) resolve to "unresolved".
-- Bounded resources: 256 KiB index ceiling, 128 directories per index, 8
-  levels of `Inherits` recursion with a cycle guard, a 16-entry flattened
-  theme chain, a 64-entry parsed-index cache, a 64-entry provider image LRU,
-  a 64 KiB per-desktop-entry ceiling, and a 1,024-entry scan bound. Oversized
-  or hostile inputs contribute nothing instead of growing shell memory.
+- Bounded resources: a 1,024-byte provider request-id ceiling (longer ids
+  are refused before parsing and never reach the cache, whose keys are the
+  parsed, bounded request tuple — name, size, scale, color, symbolic — so
+  retained key bytes stay bounded regardless of the request's spelling), a
+  256 KiB index ceiling, 128 directories per index, 8 levels of `Inherits`
+  recursion with a cycle guard, a 16-entry flattened theme chain, a 64-entry
+  parsed-index cache, a 64-entry provider image LRU, a 256 KiB SVG source
+  payload ceiling (`kMaxSvgSourceBytes`), a 64 KiB per-desktop-entry ceiling,
+  and a 1,024-entry scan bound. Oversized or hostile inputs contribute
+  nothing instead of growing shell memory.
 - The module performs no network access and no filesystem writes, links no
   D-Bus, KWin, LayerShellQt, or shell-runtime targets, and reuses the
   launcher's public pure desktop-entry parser rather than reparsing
@@ -40,7 +45,9 @@ Specification lookup over the injected roots:
 
 1. The theme chain is the injected names in order, each expanded by its
    `Inherits=` parents (cycle-guarded, depth-capped), with `hicolor` always
-   last.
+   last — when the 16-entry chain cap is already full, the deepest entry
+   yields so the mandated fallback is never lost and the cap is never
+   exceeded.
 2. Within one theme, an exact `Size`/`Scale` match (Fixed), `Threshold`
    window, or `Scalable` MinSize/MaxSize match wins in root-then-declared
    order; otherwise the smallest specification distance wins with the same
@@ -84,13 +91,18 @@ image://qindaqt-icon/<name>?size=<px>&scale=<f>&color=<#rrggbb>&symbolic=1
 
 All query items are optional. `size` clamps to [1, 512] logical pixels
 (default: 32 or the QML `sourceSize`), `scale` to [1, 4]. SVG icons render
-through QSvgRenderer at the exact device size; raster sources are
-dimension-checked before and after decode (2,048-pixel ceiling) and smoothly
-scaled. `color` applies only with `symbolic=1` and only in the documented
-`#rrggbb` form: the symbolic SVG renders, then every painted pixel's RGB is
-replaced by the token color while its alpha shape is preserved. An
-unresolved, refused, or undecodable name returns a deterministic neutral
-placeholder image — never a null image and never a warning, so
+through QSvgRenderer at the exact device size with a 256 KiB source payload
+ceiling (`kMaxSvgSourceBytes`); raster sources are dimension-checked before
+and after decode (2,048-pixel ceiling) and smoothly scaled. `color` applies
+only with `symbolic=1` and only in the documented opaque `#rrggbb` form —
+an alpha-carrying color (serialized `#aarrggbb`) is refused and the symbolic
+icon keeps its own pixels: the symbolic SVG renders, then every painted
+pixel's RGB is replaced by the token color while its alpha shape is
+preserved. An id over 1,024 UTF-8 bytes is refused before parsing and before
+any cache access, and the 64-entry image LRU is keyed on the parsed, bounded
+request tuple rather than the raw id, so hostile spellings cannot grow shell
+memory. An unresolved, refused, or undecodable name returns a deterministic
+neutral placeholder image — never a null image and never a warning, so
 `QT_FATAL_WARNINGS=1` consumers stay clean on hostile input.
 
 ## QML `Icon` element
@@ -99,9 +111,9 @@ placeholder image — never a null image and never a warning, so
 
 | Property | Contract |
 | --- | --- |
-| `name` | XDG icon name |
+| `name` | XDG icon name; names outside the bounded grammar (over 128 bytes or outside `[A-Za-z0-9._-]`, or containing `..`) are treated as unresolved and never reach the URL layer |
 | `size` | Logical pixel edge, clamped to [1, 512] |
-| `color` | Recolor target for symbolic SVGs; default `transparent` means no recolor |
+| `color` | Recolor target for symbolic SVGs; default `transparent` means no recolor. Only fully opaque colors recolor — a semi-transparent color is not a recolor target and the symbolic icon keeps its own pixels |
 | `symbolic` | Prefer `<name>-symbolic` and permit recoloring |
 | `fallbackText` | Accessible name and placeholder glyph source |
 | `resolved` (readonly) | The confined lookup result, via the `IconLookup` singleton |
@@ -139,9 +151,9 @@ ctest --test-dir build/dev \
 
 | Test | Scope |
 | --- | --- |
-| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
+| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
-| `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, LRU cache bound. |
+| `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, over-long-id refusal before cache access, canonical cache-key sharing, hostile-id flood cache-key-byte and RSS bounds, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |
 
 All rows run offscreen or headless with the host display and bus variables

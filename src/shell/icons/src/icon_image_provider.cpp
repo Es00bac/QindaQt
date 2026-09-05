@@ -63,16 +63,28 @@ QImage IconImageProvider::requestImage(const QString &id, QSize *size,
                                        const QSize &requestedSize)
 {
     QMutexLocker locker(&m_mutex);
+    // AGENT-GUARD: Over-long ids are refused before parsing and before any
+    // cache access. The LRU bounds only the entry count; keying it on a
+    // caller-controlled id of arbitrary byte length would let hostile
+    // requests grow shell memory without bound.
+    if (id.toUtf8().size() > kMaxRequestIdUtf8Bytes) {
+        const QImage refused = placeholder(devicePixelsFor(kDefaultIconSize, 1.0));
+        if (size != nullptr) {
+            *size = refused.size();
+        }
+        return refused;
+    }
     const Request request = parseRequest(id, requestedSize);
     const int devicePixels = request.valid
         ? devicePixelsFor(request.size, request.scale)
         : devicePixelsFor(kDefaultIconSize, 1.0);
 
-    const auto cached = m_cache.constFind(id);
+    const QString cacheKey = cacheKeyFor(request);
+    const auto cached = m_cache.constFind(cacheKey);
     if (cached != m_cache.cend()) {
         // LRU refresh: a hit moves the key to the most-recent end.
-        m_cacheOrder.removeAll(id);
-        m_cacheOrder.append(id);
+        m_cacheOrder.removeAll(cacheKey);
+        m_cacheOrder.append(cacheKey);
         if (size != nullptr) {
             *size = cached->size();
         }
@@ -96,12 +108,46 @@ QImage IconImageProvider::requestImage(const QString &id, QSize *size,
     if (m_cacheOrder.size() >= kMaxCachedIconImages) {
         m_cache.remove(m_cacheOrder.takeFirst());
     }
-    m_cache.insert(id, image);
-    m_cacheOrder.append(id);
+    m_cache.insert(cacheKey, image);
+    m_cacheOrder.append(cacheKey);
     if (size != nullptr) {
         *size = image.size();
     }
     return image;
+}
+
+int IconImageProvider::cacheEntryCount() const
+{
+    QMutexLocker locker(&m_mutex);
+    return int(m_cache.size());
+}
+
+qsizetype IconImageProvider::cacheKeyBytes() const
+{
+    QMutexLocker locker(&m_mutex);
+    qsizetype total = 0;
+    for (const QString &key : m_cacheOrder) {
+        total += key.toUtf8().size();
+    }
+    return total;
+}
+
+QString IconImageProvider::cacheKeyFor(const Request &request)
+{
+    // AGENT-GUARD: The cache is keyed on the parsed, bounded request tuple —
+    // never the raw id — so retained key bytes stay bounded regardless of
+    // the request's spelling, and spellings that parse to the same tuple
+    // share one entry. Invalid requests share a single sentinel key: their
+    // placeholder output is identical. The sentinel cannot collide with a
+    // valid key, which always starts with a nonempty grammar name.
+    if (!request.valid) {
+        return QStringLiteral("\x1f");
+    }
+    return request.name + QLatin1Char('\x1f') + QString::number(request.size)
+        + QLatin1Char('\x1f') + QString::number(request.scale, 'g', 17)
+        + QLatin1Char('\x1f') + QLatin1Char(request.symbolic ? '1' : '0')
+        + QLatin1Char('\x1f')
+        + (request.color.isValid() ? request.color.name() : QString());
 }
 
 QImage IconImageProvider::placeholder(int devicePixels)
@@ -196,8 +242,8 @@ QImage IconImageProvider::renderSvg(const QString &path, int devicePixels,
     }
     // AGENT-GUARD: The SVG byte ceiling bounds QSvgRenderer input; hostile
     // multi-megabyte vectors fail closed to the placeholder.
-    const QByteArray raw = file.read(kMaxThemeIndexBytes + 1);
-    if (raw.size() > kMaxThemeIndexBytes || raw.isEmpty()) {
+    const QByteArray raw = file.read(kMaxSvgSourceBytes + 1);
+    if (raw.size() > kMaxSvgSourceBytes || raw.isEmpty()) {
         return {};
     }
     QSvgRenderer renderer(raw);

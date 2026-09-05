@@ -143,11 +143,14 @@ QStringList IconThemeLocator::themeChain() const
         expandTheme(theme, 0, chain);
     }
     // AGENT-GUARD: hicolor is the specification-mandated last resort. It must
-    // remain after every injected theme and every inherited parent.
+    // remain after every injected theme and every inherited parent even when
+    // the chain cap is full: the deepest entry then yields, so the cap is
+    // never exceeded and the mandated fallback is never lost.
     if (!chain.contains(QLatin1String("hicolor"))) {
-        if (chain.size() < kMaxThemeChainLength) {
-            chain.append(QStringLiteral("hicolor"));
+        if (chain.size() >= kMaxThemeChainLength) {
+            chain.removeLast();
         }
+        chain.append(QStringLiteral("hicolor"));
     }
     m_themeChainCache = chain;
     return chain;

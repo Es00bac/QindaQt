@@ -20,7 +20,8 @@ namespace QindaQt::Shell::Icons
 //
 // 1. The theme chain is the injected theme names in order, each expanded by
 //    its `Inherits=` parents (depth-capped, cycle-guarded), with `hicolor`
-//    always appended last per the specification's fallback rule.
+//    always last per the specification's fallback rule — when the 16-entry
+//    chain cap is full, the deepest entry yields so hicolor stays last.
 // 2. Within one theme, directories from every root carrying that theme are
 //    matched per the spec: an exact `Size`/`Scale` (Fixed), `Threshold`
 //    window, or `Scalable` MinSize/MaxSize match wins in root-then-declared

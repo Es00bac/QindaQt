@@ -14,9 +14,9 @@ namespace QindaQt::Shell::Icons::IconRuntime
 // provider (ownership passes to the engine) and the per-engine `IconLookup`
 // singleton locator. `themeNames` is the injected theme preference chain
 // (production default: `breeze`; `hicolor` is always appended last by the
-// locator). Calling install() twice on one engine replaces the lookup
-// locator; the first provider stays owned by the engine and must not be
-// re-added, so install() refuses a second call and returns false. With no
+// locator). Calling install() twice on one engine is refused: the second
+// call changes nothing and returns false, because the first provider stays
+// owned by the engine and must not be re-added. With no
 // installation, or with empty roots, every lookup fails closed to the
 // deterministic placeholder.
 //
