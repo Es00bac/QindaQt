@@ -292,7 +292,7 @@ QJsonObject ShellDevelopmentEvidence::snapshotObject() const
          QJsonObject{
              {QStringLiteral("phase"), m_taskList.phaseText()},
              {QStringLiteral("generation"), QString::number(taskGeneration)},
-             {QStringLiteral("windowCount"), m_taskList.totalEntryCount()},
+             {QStringLiteral("windowCount"), m_taskList.totalWindowCount()},
          }},
         {QStringLiteral("presentation"),
          QJsonObject{

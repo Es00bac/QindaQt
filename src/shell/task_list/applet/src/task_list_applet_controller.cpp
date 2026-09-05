@@ -70,6 +70,18 @@ int TaskListAppletController::totalEntryCount() const noexcept {
   return m_projection.totalCount;
 }
 
+int TaskListAppletController::totalWindowCount() const noexcept {
+  if (m_projection.phase != TaskListAppletPhase::Ready ||
+      !m_grants.windowsRead) {
+    return 0;
+  }
+  int total = 0;
+  for (const ShellTaskList::TaskEntry &entry : m_source.generation().entries) {
+    total += static_cast<int>(entry.windowCount);
+  }
+  return total;
+}
+
 int TaskListAppletController::overflowCount() const noexcept {
   return m_projection.overflowCount;
 }
