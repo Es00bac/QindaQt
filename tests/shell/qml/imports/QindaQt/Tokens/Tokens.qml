@@ -12,4 +12,27 @@ QtObject {
         "muted": "#aeb8b2",
         "disabled": "#748079"
     })
+    readonly property var bg: ({
+        "base": "#171a18",
+        "raised": "#2c312e",
+        "highest": "#3c433f"
+    })
+    readonly property var state: ({
+        "hover": "#31483f",
+        "pressed": "#26382f"
+    })
+    readonly property var radius: ({
+        "s": 4,
+        "m": 8,
+        "l": 12
+    })
+    readonly property var outline: ({
+        "divider": "#3c433f",
+        "strong": "#f0f4f1"
+    })
+    readonly property var accessibility: ({
+        "reducedMotion": false,
+        "reducedTransparency": false,
+        "highContrast": false
+    })
 }
