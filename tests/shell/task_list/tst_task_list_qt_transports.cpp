@@ -20,6 +20,7 @@ namespace {
 
 constexpr auto kServiceName = "org.qindaqt.Compositor";
 constexpr auto kObjectPath = "/org/qindaqt/Compositor";
+constexpr auto kShellObjectPath = "/org/qindaqt/CompositorShell";
 
 // Every bus in this file is a fresh private dbus-daemon; the host session bus
 // and any host compositor are never contacted.
@@ -62,29 +63,38 @@ private:
 
 class FakeCompositor final : public QObject {
   Q_OBJECT
-  Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Compositor1")
+  Q_CLASSINFO("D-Bus Interface", "org.qindaqt.CompositorShell1")
 
 public:
   explicit FakeCompositor(StandardScene scene, QObject *parent = nullptr)
       : QObject(parent), m_scene(std::move(scene)) {}
 
+public Q_SLOTS:
+  Q_SCRIPTABLE QByteArray TaskListSnapshot() const {
+    ++factsCalls;
+    return m_scene.taskFacts;
+  }
+
+Q_SIGNALS:
+  Q_SCRIPTABLE void TaskListSnapshotChanged();
+
+public:
+  mutable int factsCalls = 0;
+
+private:
+  StandardScene m_scene;
+};
+
+class FakeControlCompositor final : public QObject {
+  Q_OBJECT
+  Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Compositor1")
+
+public:
   QByteArray lastSubmit;
   QStringList lastRelease;
   QStringList lastDock;
 
 public Q_SLOTS:
-  Q_SCRIPTABLE QByteArray Windows() const {
-    ++windowsCalls;
-    return m_scene.windows;
-  }
-  Q_SCRIPTABLE QByteArray Containers() const {
-    ++containersCalls;
-    return m_scene.containers;
-  }
-  Q_SCRIPTABLE QByteArray ShellVisibilitySnapshot() const {
-    ++visibilityCalls;
-    return QByteArrayLiteral("{\"status\":\"forbidden-test-poison\"}");
-  }
   Q_SCRIPTABLE QByteArray Submit(const QByteArray &requestJson) {
     lastSubmit = requestJson;
     return QByteArrayLiteral("{\"status\":\"committed\",\"revision\":\"2\"}");
@@ -102,18 +112,6 @@ public Q_SLOTS:
     return QByteArrayLiteral("{\"status\":\"docked\"}");
   }
 
-Q_SIGNALS:
-  Q_SCRIPTABLE void WindowsChanged();
-  Q_SCRIPTABLE void ContainerCommitted(const QByteArray &eventJson);
-  Q_SCRIPTABLE void ShellVisibilityChanged();
-
-public:
-  mutable int windowsCalls = 0;
-  mutable int containersCalls = 0;
-  mutable int visibilityCalls = 0;
-
-private:
-  StandardScene m_scene;
 };
 
 QString connectionName(const QString &role) {
@@ -122,10 +120,17 @@ QString connectionName(const QString &role) {
 }
 
 bool registerCompositor(QDBusConnection &connection, FakeCompositor *object) {
-  return connection.registerObject(QString::fromLatin1(kObjectPath), object,
+  return connection.registerObject(QString::fromLatin1(kShellObjectPath), object,
                                    QDBusConnection::ExportScriptableSlots |
                                        QDBusConnection::ExportScriptableSignals) &&
          connection.registerService(QString::fromLatin1(kServiceName));
+}
+
+bool registerCompositor(QDBusConnection &connection,
+                        FakeControlCompositor *object) {
+  return connection.registerObject(QString::fromLatin1(kObjectPath), object,
+                                   QDBusConnection::ExportScriptableSlots)
+      && connection.registerService(QString::fromLatin1(kServiceName));
 }
 
 } // namespace
@@ -195,8 +200,8 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
                         &TaskListProducerTransport::serviceOwnerChanged);
     QSignalSpy invalidationSpy(&transport,
                                &TaskListProducerTransport::refreshInvalidated);
-    QSignalSpy windowsSpy(&transport,
-                          &TaskListProducerTransport::windowsRead);
+    QSignalSpy factsSpy(&transport,
+                        &TaskListProducerTransport::factsRead);
     QSignalSpy failureSpy(&transport,
                           &TaskListProducerTransport::refreshFailed);
     QString startError;
@@ -204,27 +209,19 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QTRY_COMPARE_WITH_TIMEOUT(ownerSpy.size(), 1, 5'000);
     QCOMPARE(ownerSpy.constFirst().constFirst().toString(), ownerA);
 
-    // AGENT-NOTE: P1-1 on rejected candidate 3a5ae17 combined three methods.
-    // One refresh now reaches Windows() only; the poisoned visibility method
-    // and independent Containers() inventory must remain untouched.
+    // One refresh reaches only the atomic authenticated snapshot.
     transport.requestRefresh(7, ownerA);
-    QTRY_COMPARE_WITH_TIMEOUT(windowsSpy.size(), 1, 5'000);
-    QCOMPARE(windowsSpy.constFirst().at(0).toULongLong(), quint64(7));
-    QCOMPARE(windowsSpy.constFirst().at(1).toString(), ownerA);
-    QCOMPARE(compositorA.windowsCalls, 1);
-    QCOMPARE(compositorA.containersCalls, 0);
-    QCOMPARE(compositorA.visibilityCalls, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(factsSpy.size(), 1, 5'000);
+    QCOMPARE(factsSpy.constFirst().at(0).toULongLong(), quint64(7));
+    QCOMPARE(factsSpy.constFirst().at(1).toString(), ownerA);
+    QCOMPARE(compositorA.factsCalls, 1);
     QCOMPARE(failureSpy.size(), 0);
 
     // A request for a stale owner fails instead of reaching the bus.
     transport.requestRefresh(8, QStringLiteral(":9.9"));
     QTRY_COMPARE_WITH_TIMEOUT(failureSpy.size(), 1, 5'000);
 
-    // Only the inventory's own invalidation forwards. Signals for independent
-    // inventories cannot trigger a cross-inventory read.
-    Q_EMIT compositorA.WindowsChanged();
-    Q_EMIT compositorA.ContainerCommitted(QByteArrayLiteral("{}"));
-    Q_EMIT compositorA.ShellVisibilityChanged();
+    Q_EMIT compositorA.TaskListSnapshotChanged();
     QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 1, 5'000);
     QCOMPARE(invalidationSpy.constFirst().constFirst().toString(), ownerA);
 
@@ -233,7 +230,7 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QVERIFY(serverA.unregisterService(QString::fromLatin1(kServiceName)));
     QTRY_COMPARE_WITH_TIMEOUT(ownerSpy.size(), 2, 5'000);
     QVERIFY(ownerSpy.at(1).constFirst().toString().isEmpty());
-    Q_EMIT compositorA.WindowsChanged();
+    Q_EMIT compositorA.TaskListSnapshotChanged();
     QTest::qWait(50);
     QCOMPARE(invalidationSpy.size(), 1);
 
@@ -244,11 +241,9 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QCOMPARE(ownerSpy.at(2).constFirst().toString(), ownerB);
 
     transport.requestRefresh(9, ownerB);
-    QTRY_COMPARE_WITH_TIMEOUT(windowsSpy.size(), 2, 5'000);
-    QCOMPARE(windowsSpy.at(1).at(1).toString(), ownerB);
-    QCOMPARE(compositorB.containersCalls, 0);
-    QCOMPARE(compositorB.visibilityCalls, 0);
-    Q_EMIT compositorB.WindowsChanged();
+    QTRY_COMPARE_WITH_TIMEOUT(factsSpy.size(), 2, 5'000);
+    QCOMPARE(factsSpy.at(1).at(1).toString(), ownerB);
+    Q_EMIT compositorB.TaskListSnapshotChanged();
     QTRY_COMPARE_WITH_TIMEOUT(invalidationSpy.size(), 2, 5'000);
     QCOMPARE(invalidationSpy.at(1).constFirst().toString(), ownerB);
 
@@ -256,8 +251,8 @@ void TaskListQtTransportsTests::producerTransportBindsReadsAndSignalsToTheExactO
     QVERIFY(serverB.unregisterService(QString::fromLatin1(kServiceName)));
   }
 
-  serverA.unregisterObject(QString::fromLatin1(kObjectPath));
-  serverB.unregisterObject(QString::fromLatin1(kObjectPath));
+  serverA.unregisterObject(QString::fromLatin1(kShellObjectPath));
+  serverB.unregisterObject(QString::fromLatin1(kShellObjectPath));
   QDBusConnection::disconnectFromBus(clientName);
   QDBusConnection::disconnectFromBus(serverBName);
   QDBusConnection::disconnectFromBus(serverAName);
@@ -275,7 +270,7 @@ void TaskListQtTransportsTests::operationTransportDeliversMutationsToTheExactOwn
   QVERIFY(server.isConnected());
   QVERIFY(client.isConnected());
 
-  FakeCompositor compositor(standardScene());
+  FakeControlCompositor compositor;
   QVERIFY(registerCompositor(server, &compositor));
   const QString owner = server.baseService();
 

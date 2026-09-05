@@ -102,11 +102,40 @@ bool validReadyTokens(const QJsonObject &tokens)
         && backgroundBase == backgroundColor.name(QColor::HexRgb);
 }
 
+enum class TaskListReadiness { Ready, Pending, Invalid };
+
+TaskListReadiness taskListReadiness(const QJsonObject &taskList)
+{
+    quint64 generation = 0;
+    const QJsonValue windowCount = taskList.value(QStringLiteral("windowCount"));
+    const QJsonValue phaseValue = taskList.value(QStringLiteral("phase"));
+    if (taskList.size() != 3 || !phaseValue.isString()
+        || !canonicalCounter(taskList.value(QStringLiteral("generation")),
+                             &generation)
+        || !windowCount.isDouble()
+        || windowCount.toDouble() != windowCount.toInt()
+        || windowCount.toInt() < 0) {
+        return TaskListReadiness::Invalid;
+    }
+    const QString phase = phaseValue.toString();
+    const bool knownPhase = phase == QStringLiteral("loading")
+        || phase == QStringLiteral("ready")
+        || phase == QStringLiteral("empty")
+        || phase == QStringLiteral("degraded")
+        || phase == QStringLiteral("unavailable");
+    if (!knownPhase) {
+        return TaskListReadiness::Invalid;
+    }
+    return phase == QStringLiteral("ready") && generation > 0
+            && windowCount.toInt() > 0
+        ? TaskListReadiness::Ready : TaskListReadiness::Pending;
+}
+
 QJsonObject normalizedEvidence(
     const DesktopNotificationShellObservation &observation,
     qint64 shellProcessId, bool privatePresentationAllowed, bool centerOpen,
     quint64 centerOpenedCount, const QJsonObject &center,
-    const QJsonObject &tokens)
+    const QJsonObject &tokens, const QJsonObject &taskList)
 {
     QJsonObject centerEvidence{{QStringLiteral("exists"),
                                 center.value(QStringLiteral("exists"))}};
@@ -119,6 +148,7 @@ QJsonObject normalizedEvidence(
         {QStringLiteral("servicePid"), QString::number(observation.serviceProcessId)},
         {QStringLiteral("shellPid"), QString::number(shellProcessId)},
         {QStringLiteral("tokens"), tokens},
+        {QStringLiteral("taskList"), taskList},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"), privatePresentationAllowed},
@@ -165,15 +195,13 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     const DesktopNotificationShellObservation &observation,
     const DesktopNotificationShellExpectation &expectation)
 {
-    const auto invalid = [](QString code, QString message,
-                            QJsonObject evidence = {}) {
-        return check(DesktopNotificationShellDisposition::Invalid,
-                     std::move(code), std::move(message), std::move(evidence));
+    const auto invalid = [](QString code, QString message, QJsonObject evidence = {}) {
+        return check(DesktopNotificationShellDisposition::Invalid, std::move(code),
+                     std::move(message), std::move(evidence));
     };
-    const auto pending = [](QString code, QString message,
-                            QJsonObject evidence = {}) {
-        return check(DesktopNotificationShellDisposition::Pending,
-                     std::move(code), std::move(message), std::move(evidence));
+    const auto pending = [](QString code, QString message, QJsonObject evidence = {}) {
+        return check(DesktopNotificationShellDisposition::Pending, std::move(code),
+                     std::move(message), std::move(evidence));
     };
     if (!observation.serviceOwnerReplyValid) {
         if (observation.serviceOwnerReplyErrorName
@@ -210,10 +238,16 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
                        QStringLiteral("ShellDevelopment owner changed across input"));
     }
     if (!observation.snapshotReplyValid) {
-        if (observation.replyErrorName
-            == QStringLiteral("org.freedesktop.DBus.Error.UnknownObject")) {
+        if (observation.replyErrorName == QStringLiteral("org.freedesktop.DBus.Error.UnknownObject")) {
             return pending(QStringLiteral("snapshot-object-pending"),
                            QStringLiteral("ShellDevelopment object is not registered yet"));
+        }
+        if (observation.replyErrorName == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
+            // A stable owner may be busy completing panel composition inside
+            // the outer boot observer's strict deadline;
+            // retrying this read-only evidence call does not replay mutation.
+            return pending(QStringLiteral("snapshot-reply-pending"),
+                           QStringLiteral("ShellDevelopment Snapshot has not replied yet"));
         }
         return invalid(QStringLiteral("snapshot-call-failed"),
                        observation.replyError.isEmpty()
@@ -226,20 +260,18 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
                        QStringLiteral("ShellDevelopment returned invalid schema"));
     }
     qint64 shellProcessId = 0;
-    if (!canonicalPositiveId(snapshot.value(QStringLiteral("shellPid")),
-                             &shellProcessId)
+    if (!canonicalPositiveId(snapshot.value(QStringLiteral("shellPid")), &shellProcessId)
         || shellProcessId != observation.serviceProcessId) {
         return invalid(QStringLiteral("snapshot-pid-mismatch"),
                        QStringLiteral("ShellDevelopment snapshot PID changed"));
     }
-    const QJsonValue presentationValue =
-        snapshot.value(QStringLiteral("presentation"));
+    const QJsonValue presentationValue = snapshot.value(QStringLiteral("presentation"));
     const QJsonValue tokensValue = snapshot.value(QStringLiteral("tokens"));
+    const QJsonValue taskListValue = snapshot.value(QStringLiteral("taskList"));
     const QJsonValue windowsValue = snapshot.value(QStringLiteral("windows"));
-    const QJsonValue observationsValue =
-        snapshot.value(QStringLiteral("observations"));
+    const QJsonValue observationsValue = snapshot.value(QStringLiteral("observations"));
     if (!presentationValue.isObject() || !tokensValue.isObject()
-        || !windowsValue.isObject()
+        || !taskListValue.isObject() || !windowsValue.isObject()
         || !observationsValue.isObject()) {
         return invalid(QStringLiteral("invalid-shape"),
                        QStringLiteral("ShellDevelopment snapshot shape is invalid"));
@@ -249,24 +281,30 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
         return invalid(QStringLiteral("tokens-not-ready"),
                        QStringLiteral("ShellDevelopment tokens are not ready"));
     }
+    const QJsonObject taskList = taskListValue.toObject();
+    const TaskListReadiness taskReadiness = taskListReadiness(taskList);
+    if (taskReadiness == TaskListReadiness::Invalid) {
+        return invalid(QStringLiteral("task-list-invalid"),
+                       QStringLiteral("ShellDevelopment task list is malformed"));
+    }
+    if (taskReadiness == TaskListReadiness::Pending) {
+        return pending(QStringLiteral("task-list-not-ready"),
+                       QStringLiteral("ShellDevelopment task list is not ready yet"));
+    }
     const QJsonObject presentation = presentationValue.toObject();
-    const QJsonValue privacyValue =
-        presentation.value(QStringLiteral("privatePresentationAllowed"));
-    const QJsonValue centerOpenValue =
-        presentation.value(QStringLiteral("centerOpen"));
+    const QJsonValue privacyValue = presentation.value(QStringLiteral("privatePresentationAllowed"));
+    const QJsonValue centerOpenValue = presentation.value(QStringLiteral("centerOpen"));
     quint64 centerOpenedCount = 0;
     if (!privacyValue.isBool() || !centerOpenValue.isBool()
-        || !canonicalCounter(
-            observationsValue.toObject().value(
-                QStringLiteral("centerOpenedCount")),
-            &centerOpenedCount)) {
+        || !canonicalCounter(observationsValue.toObject().value(
+                                 QStringLiteral("centerOpenedCount")),
+                             &centerOpenedCount)) {
         return invalid(QStringLiteral("invalid-presentation"),
                        QStringLiteral("ShellDevelopment presentation evidence is invalid"));
     }
     const bool privatePresentationAllowed = privacyValue.toBool();
     const bool centerOpen = centerOpenValue.toBool();
-    const QJsonValue centerValue =
-        windowsValue.toObject().value(QStringLiteral("center"));
+    const QJsonValue centerValue = windowsValue.toObject().value(QStringLiteral("center"));
     if (!centerValue.isObject()) {
         return invalid(QStringLiteral("invalid-center-window"),
                        QStringLiteral("center window evidence is invalid"));
@@ -279,7 +317,7 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     }
     const QJsonObject evidence = normalizedEvidence(
         observation, shellProcessId, privatePresentationAllowed, centerOpen,
-        centerOpenedCount, center, tokens);
+        centerOpenedCount, center, tokens, taskList);
     if (expectation.phase == DesktopNotificationShellPhase::ClosedHidden
         && centerOpen) {
         return invalid(QStringLiteral("center-preopened"),
@@ -334,8 +372,7 @@ DesktopNotificationShellCheck validateDesktopNotificationShell(
     }
 
     return check(DesktopNotificationShellDisposition::Ready,
-                 QStringLiteral("ready"), QString{},
-                 evidence);
+                 QStringLiteral("ready"), QString{}, evidence);
 }
 
 bool DesktopNotificationShellExpectationCheck::ready() const noexcept

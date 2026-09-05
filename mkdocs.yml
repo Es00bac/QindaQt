@@ -165,3 +165,4 @@ nav:
       - "ADR-0069: Confined network credential entry": adr/0069-confine-network-credential-entry.md
       - "ADR-0070: Authenticated session actions": adr/0070-confine-session-actions-behind-authenticated-boundaries.md
       - "ADR-0071: Shell token readiness": adr/0071-publish-and-prove-shell-token-readiness.md
+      - "ADR-0072: Atomic authenticated task facts": adr/0072-publish-atomic-authenticated-task-facts.md

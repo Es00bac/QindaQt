@@ -3,6 +3,7 @@
 
 #include "qindaqt/compositor/shellwindowactions.h"
 #include "qindaqt/compositor/shellwindowidentity.h"
+#include "qindaqt/compositor/shelltaskfacts.h"
 
 #include <QDBusConnection>
 #include <QDBusContext>
@@ -19,6 +20,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 class KWinHybridSession;
 class KWinShellVisibilityPublisher;
 class KWinShellWindowIdentityPublisher;
+class KWinShellTaskFactsPublisher;
 class ManagedWindowRegistry;
 
 class QtBusShellCredentialSource final : public ShellWindowCredentialSource
@@ -90,6 +92,8 @@ public:
         ShellWindowActionController &actionController,
         ShellWindowIdentityController &identityController,
         KWinShellWindowIdentityPublisher &identityPublisher,
+        ShellTaskFactsController &taskFactsController,
+        KWinShellTaskFactsPublisher &taskFactsPublisher,
         KWinShellPanelOwnerSource &panelOwner,
         QDBusConnection connection,
         QObject *parent = nullptr);
@@ -106,6 +110,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE [[nodiscard]] QByteArray RaiseWindow(
         const QString &windowId, const QString &epoch, const QString &revision);
     Q_SCRIPTABLE [[nodiscard]] QByteArray ActiveWindowIdentity();
+    Q_SCRIPTABLE [[nodiscard]] QByteArray TaskListSnapshot();
 
 Q_SIGNALS:
     // AGENT-CONTRACT: This signal is exported for descriptor/live-object
@@ -113,9 +118,13 @@ Q_SIGNALS:
     // timing. sendDirectedIdentityInvalidation() sends the same wire member
     // only to the authenticated shell owner.
     Q_SCRIPTABLE void ActiveWindowIdentityChanged();
+    // Like identity invalidation, this is declared for parity and delivered
+    // only as a targeted message to the authenticated task-list reader.
+    Q_SCRIPTABLE void TaskListSnapshotChanged();
 
 private Q_SLOTS:
     void sendDirectedIdentityInvalidation();
+    void sendDirectedTaskFactsInvalidation();
 
 private:
     [[nodiscard]] QByteArray submit(ShellWindowAction action,
@@ -124,8 +133,10 @@ private:
                                     const QString &revision);
     ShellWindowActionController &m_actionController;
     ShellWindowIdentityController &m_identityController;
+    ShellTaskFactsController &m_taskFactsController;
     QDBusConnection m_connection;
     QString m_boundIdentityOwner;
+    QString m_boundTaskFactsOwner;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

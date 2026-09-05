@@ -213,8 +213,9 @@ capability:
 `ActivateWindow`, `MinimizeWindow`, `UnminimizeWindow`, `CloseWindow`, and
 `RaiseWindow` each take `(windowId, epoch, revision)` as D-Bus strings and
 return compact UTF-8 JSON in `ay`. The UUID must come from `Windows`; the epoch
-and canonical nonzero decimal revision must be the displayed
-`ShellVisibilitySnapshot` generation (also exposed by `Windows` schema 2).
+and canonical nonzero decimal revision must be the displayed source's action
+generation: `ShellVisibilitySnapshot` (also exposed by `Windows` schema 2) for
+general clients, or the atomic `TaskListSnapshot` fence for Task List intents.
 Entry lengths are at most 64 UTF-16 code units for `windowId`, 128 for `epoch`,
 and 20 for `revision`. Authenticated, bounded requests receive replies that echo
 the request and use exactly `admitted`, `stale`, `unknown-window`,
@@ -323,6 +324,94 @@ object with no epoch, revisions, UUID, PID, menu id, or appmenu address. Field
 and payload limits are enforced before publication or acceptance. The complete
 trust decision and registrar limitation are [ADR-0063](../adr/0063-project-authenticated-active-window-identity.md).
 
+### Atomic task-list snapshot
+
+`CompositorShell1` also exposes `TaskListSnapshot() -> ay` and the no-argument
+`TaskListSnapshotChanged` invalidation. This is the production Task List's only
+fact source. It does not combine the independent `Compositor1.Windows`,
+`Outputs`, `ShellVisibilitySnapshot`, or `Containers` inventories.
+
+The panel-owner PID join runs before the producer samples any KWin object. An
+unauthenticated caller receives one fixed compact `unauthorized` schema-1
+object containing only `status`, `schemaVersion`, and a fixed failure; it has no
+epoch, revision, counts, UUIDs, titles, scope, or lineage. Once a caller has
+successfully read, KWin targets invalidations only to that exact unique owner.
+The declared scriptable Qt signal exists for descriptor/introspection parity
+but is never normally broadcast. A panel-owner edge revokes a caller that no
+longer authenticates before any further hint is sent.
+
+A successful payload is one complete immutable generation:
+
+```json
+{
+  "status": "ok",
+  "schemaVersion": 1,
+  "epoch": "compositor-service-epoch",
+  "revision": "23",
+  "actionRevision": "42",
+  "outputs": [{"id": "DP-1"}],
+  "workspaces": [{"id": "workspace-1"}],
+  "containers": [
+    {"id": "group-1", "revision": "9", "authority": "hybrid-process"}
+  ],
+  "windows": [
+    {
+      "id": "72bfa847-6e42-48d7-9303-334e6c6a8bd3",
+      "applicationId": "org.qindaqt.TextEditor",
+      "applicationName": "Text Editor",
+      "title": "Notes",
+      "role": "container-primary",
+      "windowType": "normal",
+      "active": true,
+      "minimized": false,
+      "maximized": false,
+      "fullscreen": false,
+      "demandsAttention": false,
+      "outputId": "DP-1",
+      "workspaceIds": ["workspace-1"],
+      "onAllWorkspaces": false,
+      "containerId": "group-1"
+    }
+  ]
+}
+```
+
+Every managed topology-admitted normal window appears exactly once. IDs are
+KWin internal UUIDs. Application ID is the desktop-file identity, falling back
+to resource class; application name is the bounded live resource-class label,
+falling back to that ID. `role` is exactly `standalone`, `container-primary`,
+or `container-member`; `windowType` is currently exactly `normal` because the
+managed-window admission excludes other types. A standalone has an empty
+`containerId`. Each container has exactly one primary and at least one member,
+and its lineage authority is `control-bridge` or `hybrid-process`.
+
+Output IDs and workspace IDs must occur in the same payload's referenced
+inventories. `onAllWorkspaces: true` requires an empty `workspaceIds`; false
+requires at least one known workspace. At most one window is active and an
+active window cannot be minimized. Maximize reflects native two-axis or whole-
+container maximize. Demand-attention and fullscreen are independent current
+KWin state.
+
+The payload is limited to 4 MiB, 4,096 windows, 2,048 containers, 64 outputs,
+64 workspaces, 64 workspace references per window, and 512 UTF-16 units for
+each text field. Empty required fields, control/format/null characters,
+malformed surrogate pairs, duplicates, unknown references, incomplete
+container membership, invalid flags, or an over-limit collection rejects the
+whole candidate. The previous accepted generation remains current; there is no
+selective pruning.
+
+The task-fact epoch is the compositor service epoch. `revision` is positive and
+advances once only when the canonical complete task generation changes.
+`(epoch, actionRevision)` is the shell-action generation sampled during the
+same synchronous pass. Before the first coherent sample or after a dependency
+failure the response is `unavailable` with retained epoch/revision and a typed
+failure. The shell binds `(unique owner, epoch, revision, bytes)`, accepts
+forward gaps, rejects epoch changes without an owner reset, regressions, and
+changed bytes at an equal revision, and re-degrades on unavailable/malformed
+data. `TaskListSnapshotChanged` is coalesced; clients reread rather than derive
+facts from signal order. See
+[ADR-0072](../adr/0072-publish-atomic-authenticated-task-facts.md).
+
 ## Development qualification-surface evidence
 
 `DevelopmentShellSurfaces` is a read-only qualification seam, not a supported
@@ -353,6 +442,11 @@ QST revision `1`, a canonical positive generation string, the non-empty source
 theme ID, and the concrete lowercase `backgroundBase` color. Desktop boot
 readiness rejects a missing, malformed, zero-generation, or unready value, so
 visual capture cannot conceal an unpublished shell token facade.
+The same document carries required `taskList` evidence with exact fields
+`phase`, `generation`, and `windowCount`. Contained boot accepts only phase
+`ready`, a canonical positive generation, and an integer count of at least one;
+missing, additional, zero, empty, or mistyped values fail readiness before
+capture.
 Both halves are admitted only on a private bus after the shell authenticates
 the exact compositor PID and verifies `controlMode: "development-test"` plus
 enabled mutations. [ADR-0020](../adr/0020-authenticate-private-live-evidence.md)

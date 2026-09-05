@@ -18,6 +18,11 @@ def closed_notification_shell(shell_pid: int, output_name: str) -> dict[str, obj
                 "sourceThemeId": "qinda-dark",
                 "backgroundBase": "#171a18",
             },
+            "taskList": {
+                "phase": "ready",
+                "generation": "1",
+                "windowCount": 2,
+            },
             "presentation": {
                 "privatePresentationAllowed": True, "centerOpen": False,
             },
