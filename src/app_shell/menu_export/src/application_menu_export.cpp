@@ -5,6 +5,7 @@
 #include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_server.h>
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
 
+#include <QDBusError>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -30,6 +31,45 @@ constexpr auto kMenuObjectPath = "/org/qindaqt/AppShell/Menu";
 constexpr auto kBusDaemonService = "org.freedesktop.DBus";
 constexpr auto kBusDaemonPath = "/org/freedesktop/DBus";
 constexpr auto kBusDaemonInterface = "org.freedesktop.DBus";
+
+enum class RegistrationCompletion {
+  Confirmed,
+  Refused,
+  Uncertain,
+};
+
+RegistrationCompletion classifyRegistrationCompletion(
+    const QDBusMessage &reply) {
+  if (reply.type() == QDBusMessage::ReplyMessage) {
+    return reply.signature().isEmpty() ? RegistrationCompletion::Confirmed
+                                       : RegistrationCompletion::Uncertain;
+  }
+  if (reply.type() != QDBusMessage::ErrorMessage) {
+    return RegistrationCompletion::Uncertain;
+  }
+
+  // AGENT-CONTRACT: Qt watcher-delivered error messages do not retain a
+  // sender. Only the bus's closed transport/lifecycle error set is therefore
+  // treated as locally uncertain; registrar method errors are refusals.
+  const QDBusError error(reply);
+  if (error.name() ==
+      QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
+    return RegistrationCompletion::Uncertain;
+  }
+  switch (error.type()) {
+  case QDBusError::ServiceUnknown:
+  case QDBusError::NoReply:
+  case QDBusError::BadAddress:
+  case QDBusError::NoServer:
+  case QDBusError::Timeout:
+  case QDBusError::NoNetwork:
+  case QDBusError::Disconnected:
+  case QDBusError::TimedOut:
+    return RegistrationCompletion::Uncertain;
+  default:
+    return RegistrationCompletion::Refused;
+  }
+}
 
 class CoordinatorMenuProjection final {
 public:
@@ -192,8 +232,8 @@ public:
     // Every withdrawal must compensate pendingRegistration (or the
     // reply-confirmed registeredWindowId) exactly once; dropping this record
     // leaks a live registration across surface recreation.
-    pendingRegistration =
-        PendingRegistration{*identity->registrarWindowId, requestSerial};
+    pendingRegistration = PendingRegistration{*identity->registrarWindowId,
+                                              requestSerial, registrarOwner};
     auto *watcher =
         new QDBusPendingCallWatcher(sessionBus.asyncCall(message, 2'000), &q);
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, &q,
@@ -210,17 +250,31 @@ public:
                          // either resurrect it or double the compensation.
                          return;
                        }
-                       if (reply.type() == QDBusMessage::ReplyMessage) {
+                       switch (classifyRegistrationCompletion(reply)) {
+                       case RegistrationCompletion::Confirmed:
                          registeredWindowId = pendingRegistration->windowId;
+                         pendingRegistration.reset();
                          setStatus(MenuExportStatus::Published);
-                       } else {
-                         // An answered error is authoritative: the registrar
-                         // refused the attempt, so no compensation is owed.
+                         break;
+                       case RegistrationCompletion::Refused:
+                         // Only a method-level error is authoritative refusal.
+                         // Local transport errors do not prove that the owner
+                         // failed to mutate state.
+                         pendingRegistration.reset();
                          setStatus(
                              MenuExportStatus::WaitingForRegistrar,
                              QStringLiteral("registrar-registration-failed"));
+                         break;
+                       case RegistrationCompletion::Uncertain:
+                         // AGENT-GUARD: timeout, disconnect, and malformed
+                         // success replies retain the attempted id. A later
+                         // withdrawal must compensate it exactly once because
+                         // none of those outcomes proves registrar refusal.
+                         setStatus(
+                             MenuExportStatus::WaitingForRegistrar,
+                             QStringLiteral("registrar-registration-uncertain"));
+                         break;
                        }
-                       pendingRegistration.reset();
                      });
   }
 
@@ -236,9 +290,12 @@ public:
             : (pendingRegistration
                    ? std::optional<quint32>(pendingRegistration->windowId)
                    : std::nullopt);
-    if (attemptedId && !registrarOwner.isEmpty()) {
+    const QString attemptedOwner =
+        pendingRegistration ? pendingRegistration->registrarOwner
+                            : registrarOwner;
+    if (attemptedId && !attemptedOwner.isEmpty()) {
       QDBusMessage message = QDBusMessage::createMethodCall(
-          registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
+          attemptedOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
           QString::fromLatin1(Registrar::kRegistrarInterface),
           QStringLiteral("UnregisterWindow"));
       message.setArguments({QVariant::fromValue(*attemptedId)});
@@ -302,10 +359,12 @@ public:
   QString failureCode;
   std::optional<WindowMenuIdentity> identity;
   std::optional<quint32> registeredWindowId;
-  // One outstanding RegisterWindow attempt from send time to its answer.
+  // One RegisterWindow attempt retained from send until confirmation,
+  // explicit registrar refusal, or exactly-once compensating withdrawal.
   struct PendingRegistration {
     quint32 windowId;
     quint64 requestSerial;
+    QString registrarOwner;
   };
   std::optional<PendingRegistration> pendingRegistration;
   quint64 serial = 0;
