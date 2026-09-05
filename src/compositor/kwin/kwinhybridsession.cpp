@@ -53,9 +53,7 @@ HybridConstraints::LayoutMetrics sceneMetrics()
     const auto chrome = chromeMetrics();
     return {
         .contentInsets = QMargins(qRound(chrome.outerBorder),
-                                  qRound(chrome.outerBorder
-                                         + chrome.titleBarHeight
-                                         + chrome.tabStripHeight),
+                                  qRound(chrome.outerBorder + chrome.titleBarHeight),
                                   qRound(chrome.outerBorder),
                                   qRound(chrome.outerBorder)),
         .dividerThickness = qRound(chrome.dividerVisualThickness),

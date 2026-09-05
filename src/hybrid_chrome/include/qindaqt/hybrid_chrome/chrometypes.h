@@ -99,7 +99,9 @@ struct ChromeMetrics final
     qreal outerBorder = 1.0;
     qreal outerResizeMargin = 6.0;
     qreal cornerRadius = 12.0;
-    qreal titleBarHeight = 36.0;
+    // A grouped container has one compact shared row: traffic lights, tabs,
+    // and the remaining outer drag region occupy this same vertical space.
+    qreal titleBarHeight = 28.0;
     qreal tabStripHeight = 32.0;
     qreal titleHorizontalInset = 10.0;
     qreal buttonExtent = 14.0;
@@ -109,9 +111,9 @@ struct ChromeMetrics final
     qreal tabSpacing = 4.0;
     qreal tabMinimumWidth = 72.0;
     qreal tabMaximumWidth = 220.0;
-    // Kept equal to QindaDecoration's native title bar until theme metrics
+    // Kept equal to QindaDecoration's compact native title bar until theme metrics
     // cross the compositor/decoration boundary as one resolved value.
-    qreal memberTitleHeight = 36.0;
+    qreal memberTitleHeight = 24.0;
     qreal dividerVisualThickness = 2.0;
     qreal dividerHitThickness = 10.0;
 
