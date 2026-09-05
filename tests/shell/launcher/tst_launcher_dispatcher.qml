@@ -49,6 +49,20 @@ Item {
     }
 
     Component {
+        id: thinStockRowComponent
+        ShellComponents.PanelAppletRow {
+            // minimal.json is 26 px with 4 px panel padding on each side.
+            width: 240
+            height: 18
+            panel: ({ "applets": [testRoot.launcherApplet(true)] })
+            theme: testRoot.theme
+            zone: "start"
+            liveApplets: true
+            launcherAppletAccess: fakeLauncherAccess
+        }
+    }
+
+    Component {
         id: previewChipComponent
         ShellComponents.AppletChip {
             width: 100
@@ -86,6 +100,24 @@ Item {
             verify(launcher.visible)
             compare(launcher.access, null)
             verify(!launcher.enabled)
+        }
+
+        function test_thinnestStockPanelDoesNotClipLiveIcon() {
+            const row = createTemporaryObject(thinStockRowComponent, testRoot)
+            verify(row !== null)
+            const chip = findChild(row, "appletChip")
+            const launcher = findChild(row, "launcherApplet")
+            const icon = findChild(row, "launcherAppletIcon")
+            verify(chip !== null)
+            verify(launcher !== null)
+            verify(icon !== null)
+            compare(chip.height, 18)
+            verify(!chip.clip)
+            compare(launcher.height, chip.height)
+            compare(launcher.summaryIconExtent, 14)
+            compare(icon.height, launcher.summaryIconExtent)
+            verify(icon.y >= 0)
+            verify(icon.y + icon.height <= launcher.height)
         }
     }
 }

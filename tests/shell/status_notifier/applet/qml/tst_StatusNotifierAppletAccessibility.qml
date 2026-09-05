@@ -180,15 +180,17 @@ Item {
             verify(applet !== null)
 
             // Error feedback is an alert: assertive announcement surface.
+            var popup = findChild(applet, "statusNotifierFeedbackPopup")
+            verify(popup !== null)
+            tryCompare(popup, "opened", true)
             var card = findChild(applet, "statusNotifierFeedbackCard")
             verify(card !== null)
-            compare(card.visible, true)
             compare(card.Accessible.role, Accessible.AlertMessage)
             compare(card.Accessible.name, "Status Tray Notice")
             compare(card.Accessible.description,
                     "This status item is no longer available.")
 
-            var dismiss = findChild(card, "stateCardAction")
+            var dismiss = findChild(applet, "statusNotifierFeedbackDismiss")
             verify(dismiss !== null)
             compare(dismiss.visible, true)
             compare(dismiss.Accessible.role, Accessible.Button)
@@ -218,7 +220,7 @@ Item {
             verify(applet !== null)
             var placeholder = findChild(applet, "statusNotifierNotConnectedState")
             verify(placeholder !== null)
-            compare(placeholder.visible, true)
+            compare(placeholder.visible, false)
             compare(applet.Accessible.description, "Status tray controls are not connected")
         }
     }

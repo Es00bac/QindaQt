@@ -5,6 +5,7 @@
 #include "bluetoothappletcomposition.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
+#include "../common/shelliconconfiguration.h"
 #include "launcher_persistence.h"
 #include "powerappletcomposition.h"
 #include "tasklistappletcomposition.h"
@@ -13,17 +14,27 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 
 #include <QDBusConnection>
 #include <QDebug>
-#include <QDir>
-#include <QProcessEnvironment>
 #include <QStandardPaths>
+
+#include <utility>
 
 namespace QindaQt::Shell {
 
 bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
 {
+    QStringList launcherRoots;
+    if (!m_dataRoots.dataHome.isEmpty()) {
+        launcherRoots.append(m_dataRoots.dataHome);
+    }
+    for (const QString &directory : m_dataRoots.dataDirectories) {
+        if (!launcherRoots.contains(directory)) {
+            launcherRoots.append(directory);
+        }
+    }
     m_settingsTransport =
         std::make_unique<Services::SettingsClient::QtSettingsTransport>(
             QDBusConnection::sessionBus());
@@ -36,9 +47,7 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
                     Launcher::LauncherPersistenceController::pinnedKey(),
                     Launcher::LauncherPersistenceController::recentKey()});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
-        m_applets, m_appletPolicy,
-        launcherDataRoots(QProcessEnvironment::systemEnvironment(),
-                          QDir::homePath()),
+        m_applets, m_appletPolicy, std::move(launcherRoots),
         *m_settingsClient, QDBusConnection::sessionBus());
     return m_launcherApplet->start(error);
 }
@@ -62,7 +71,9 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
     m_taskListApplet = std::make_unique<TaskListAppletComposition>(
-        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient,
+        Icons::IconRuntime::freedesktopApplicationRoots(
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories));
     QString taskListError;
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote()

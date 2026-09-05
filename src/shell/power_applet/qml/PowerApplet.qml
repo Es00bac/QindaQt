@@ -4,6 +4,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -18,8 +20,23 @@ Item {
     property string confirmationAction: ""
 
     objectName: "powerApplet"
-    implicitWidth: vertical ? 40 : Math.max(46, summary.implicitWidth + 12)
-    implicitHeight: vertical ? 40 : 28
+    readonly property string percentageText:
+        available && /[0-9]+%/.test(access.batteryLabel)
+        ? access.batteryLabel.match(/[0-9]+%/)[0] : ""
+    readonly property string batteryIconName: {
+        if (percentageText === "")
+            return "battery-missing"
+        const level = Number(percentageText.slice(0, -1))
+        if (level >= 90) return "battery-100"
+        if (level >= 70) return "battery-080"
+        if (level >= 50) return "battery-060"
+        if (level >= 30) return "battery-040"
+        if (level >= 10) return "battery-020"
+        return "battery-000"
+    }
+
+    implicitWidth: vertical ? 32 : (percentageText === "" ? 32 : 62)
+    implicitHeight: 28
 
     ToolButton {
         id: summary
@@ -27,7 +44,7 @@ Item {
         anchors.fill: parent
         enabled: root.available
         focusPolicy: Qt.TabFocus
-        text: root.access !== null ? root.access.batteryLabel : qsTr("Power")
+        text: ""
         Accessible.role: Accessible.Button
         Accessible.name: root.access !== null
                          ? root.access.accessibleName
@@ -43,13 +60,28 @@ Item {
         onClicked: openDetails()
         Accessible.onPressAction: openDetails()
 
-        contentItem: Text {
-            text: summary.text
-            color: root.colors.text ?? "white"
-            font.pixelSize: root.vertical ? 10 : 11
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
+        contentItem: RowLayout {
+            spacing: 4
+
+            ShellIcons.Icon {
+                objectName: "powerAppletIcon"
+                name: root.batteryIconName
+                size: Math.min(20, root.height - 8)
+                color: Tokens.fg.default
+                symbolic: true
+                fallbackText: qsTr("Battery")
+                Accessible.ignored: true
+            }
+
+            Text {
+                objectName: "powerAppletPercentage"
+                visible: !root.vertical && root.percentageText !== ""
+                text: root.percentageText
+                color: Tokens.fg.default
+                font.pixelSize: 11
+                textFormat: Text.PlainText
+                Accessible.ignored: true
+            }
         }
         background: Item {}
     }

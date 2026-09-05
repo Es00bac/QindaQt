@@ -140,6 +140,8 @@ add_custom_target(
     qindaqt_status_notifier_applet_qml_test_prerequisites
     DEPENDS
         qindaqt_shell_status_notifier_applet_runtimeplugin
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         qindaqt_controls_qmlplugin
         qindaqt_tokens_qmlplugin
 )

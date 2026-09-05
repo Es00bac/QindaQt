@@ -1,0 +1,5 @@
+# May-Britt Moser — icon-first applets repair midpoint
+
+- 2026-09-04T22:23:36-06:00 — Every P1/P2 cause is repaired in the worktree: real Audio gadget fields and 0–1 thresholds; literal shell component declarations plus staged Icons closure; Breeze-native names with a pinned intersection fixture; focus-seeded Status Notifier `Popup.Window`; token-colored Clipboard icon; no second live-chip clip on the stock 26-pixel panel; restored standalone lanes; and catalog-owned `iconTheme` parsing.
+- Debug focused build completed. `qindaqt.shell-runtime-component-closure`, `qindaqt.shell-icon-coverage`, `qindaqt.shell-icon-runtime-configuration`, Audio QML, Task List QML, and Status Notifier QML pass after one test-only correction from Return to the native Space activation path. Launcher, Task List, Bluetooth, and Power standalone Debug configures all pass.
+- Negative evidence against extracted `0af5d685`: the current icon-coverage probe fails on missing `applications-other`; the audio contract probe fails on missing `isOutput`; the closure probe fails at the non-literal `COMPONENT "${component}"` rule.

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Controls
 import QtTest
 import QindaQt.Shell.StatusNotifier 1.0 as StatusNotifierComponents
 import QindaQt.Shell.StatusNotifier.Tests 1.0 as Harness
@@ -132,7 +133,7 @@ Item {
 
             var loading = findChild(applet, "statusNotifierLoadingState")
             verify(loading !== null)
-            compare(loading.visible, true)
+            compare(loading.visible, false)
 
             var strip = findChild(applet, "statusNotifierStripLoader")
             compare(strip.visible, false)
@@ -145,7 +146,7 @@ Item {
 
             var empty = findChild(applet, "statusNotifierEmptyState")
             verify(empty !== null)
-            compare(empty.visible, true)
+            compare(empty.visible, false)
         }
 
         function test_unavailableState() {
@@ -156,7 +157,7 @@ Item {
 
             var unavailable = findChild(applet, "statusNotifierUnavailableNotice")
             verify(unavailable !== null)
-            compare(unavailable.visible, true)
+            compare(unavailable.visible, false)
             compare(unavailable.reason, "status-items-read-not-granted")
 
             var strip = findChild(applet, "statusNotifierStripLoader")
@@ -176,7 +177,7 @@ Item {
 
             var degraded = findChild(applet, "statusNotifierDegradedNotice")
             verify(degraded !== null)
-            compare(degraded.visible, true)
+            compare(degraded.visible, false)
             compare(degraded.reason, "status-notifier-watcher-unavailable")
 
             // Last-known-good rows stay visible.
@@ -249,7 +250,7 @@ Item {
 
             var placeholder = findChild(applet, "statusNotifierNotConnectedState")
             verify(placeholder !== null)
-            compare(placeholder.visible, true)
+            compare(placeholder.visible, false)
 
             var strip = findChild(applet, "statusNotifierStripLoader")
             compare(strip.visible, false)
@@ -266,10 +267,29 @@ Item {
             compare(card.visible, true)
             compare(card.message, "The status item refused the request (stale).")
 
-            var dismiss = findChild(card, "stateCardAction")
+            var popup = findChild(applet, "statusNotifierFeedbackPopup")
+            verify(popup !== null)
+            compare(popup.popupType, Popup.Window)
+            tryCompare(popup, "opened", true)
+            var dismiss = findChild(popup, "statusNotifierFeedbackDismiss")
             verify(dismiss !== null)
-            dismiss.clicked()
+            tryVerify(function() { return dismiss.activeFocus })
+            keyClick(Qt.Key_Space)
             compare(fakeAccess.clearFeedbackCalls, 1)
+        }
+
+        function test_feedbackWindowClosesOnEscape() {
+            fakeAccess.feedbackPresent = true
+            fakeAccess.feedback = "A bounded notice"
+            var applet = createTemporaryObject(appletComponent, testRoot)
+            verify(applet !== null)
+            var popup = findChild(applet, "statusNotifierFeedbackPopup")
+            verify(popup !== null)
+            compare(popup.popupType, Popup.Window)
+            tryCompare(popup, "opened", true)
+            keyClick(Qt.Key_Escape)
+            tryCompare(popup, "opened", false)
+            compare(fakeAccess.clearFeedbackCalls, 0)
         }
     }
 }

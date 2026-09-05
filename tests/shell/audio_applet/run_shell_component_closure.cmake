@@ -101,6 +101,8 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/TaskList")
     set(status_notifier_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/StatusNotifier")
+    set(icons_module
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/Icons")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
                                    "${clipboard_module}/qmldir"
@@ -112,7 +114,10 @@ foreach(component IN LISTS shell_components)
                                    "${task_list_module}/qml/TaskListEntryButton.qml"
                                    "${status_notifier_module}/qmldir"
                                    "${status_notifier_module}/qml/StatusNotifierApplet.qml"
-                                   "${status_notifier_module}/qml/StatusNotifierItemDelegate.qml")
+                                   "${status_notifier_module}/qml/StatusNotifierItemDelegate.qml"
+                                   "${icons_module}/qmldir"
+                                   "${icons_module}/qindaqt_shell_icons.qmltypes"
+                                   "${icons_module}/qml/Icon.qml")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")
@@ -220,4 +225,4 @@ foreach(component IN LISTS shell_components)
 endforeach()
 
 message(STATUS
-    "Every shell-carrying install component has runnable Clipboard/TaskList/StatusNotifier/GlobalMenu/Launcher/Controls/Tokens closure")
+    "Every shell-carrying install component has runnable Clipboard/TaskList/StatusNotifier/Icons/GlobalMenu/Launcher/Controls/Tokens closure")

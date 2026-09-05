@@ -11,7 +11,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
     include(KDEInstallDirs6)
     find_package(Qt6 6.11 REQUIRED COMPONENTS
-                 Core DBus Gui Qml Quick QuickControls2 Test)
+                 Core DBus Gui Qml Quick QuickControls2 Svg Test)
     qt_standard_project_setup(REQUIRES 6.11)
 
     add_subdirectory("../../../src/services/power_protocol"
@@ -20,10 +20,23 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                      "${CMAKE_BINARY_DIR}/src/services/brightness_model")
     add_subdirectory("../../../src/services/power_client"
                      "${CMAKE_BINARY_DIR}/src/services/power_client")
+    add_subdirectory("../../../src/themes"
+                     "${CMAKE_BINARY_DIR}/src/themes")
+    add_subdirectory("../../../src/design_tokens"
+                     "${CMAKE_BINARY_DIR}/src/design_tokens")
+    add_subdirectory("../../../src/controls"
+                     "${CMAKE_BINARY_DIR}/src/controls")
+    set(QINDAQT_LAUNCHER_PURE_ONLY ON)
+    add_subdirectory("../../../src/shell/launcher"
+                     "${CMAKE_BINARY_DIR}/src/shell/launcher")
+    unset(QINDAQT_LAUNCHER_PURE_ONLY)
+    add_subdirectory("../../../src/shell/icons"
+                     "${CMAKE_BINARY_DIR}/src/shell/icons")
     add_subdirectory("../../../src/shell/power_applet"
                      "${CMAKE_BINARY_DIR}/src/shell/power_applet")
     set(power_applet_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 else()
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
     set(power_applet_source_root "${CMAKE_SOURCE_DIR}")
 endif()
 
@@ -101,6 +114,9 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellPowerAppletRuntime
         qindaqt_shell_power_applet_runtimeplugin
+        QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick
@@ -110,7 +126,10 @@ target_compile_definitions(
     qindaqt_power_applet_qml_tests
     PRIVATE
         QINDAQT_POWER_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
+add_dependencies(qindaqt_power_applet_qml_tests qindaqt_tokens_qmlplugin)
 qindaqt_enable_warnings(qindaqt_power_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_power_applet_qml_tests)
 add_test(

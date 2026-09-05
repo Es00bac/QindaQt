@@ -2572,6 +2572,33 @@ device claim. Those rows follow a successful repeatable boot/teardown boundary.
 
 ### Private interactive 1080p S2
 
+The shell icon-first slice adds two host-independent gates to the focused shell
+matrix: `qindaqt.shell-icon-runtime-configuration` consumes the catalog's
+already-parsed icon hint and validates hostile hints, oversized-theme parity,
+and XDG root fallback, while `qindaqt.shell-icon-coverage` requires every
+literal built-in summary icon to resolve against the pinned intersection of
+Breeze and Breeze-dark names. Individual offscreen applet rows require a real
+provider source from injected icon fixtures, plus exact icon names, accessible
+identities, empty in-panel labels, token recoloring, and the stock minimal
+panel's 18-pixel live-content row under fatal QML warnings. These gates use
+injected fixtures and the software renderer only.
+
+The launcher, Task List, Bluetooth applet, and Power applet focused lanes also
+retain standalone configure entry points. These are configure-only dependency
+closure gates and write only beneath the assigned build root:
+
+```sh
+cmake -S tests/shell/launcher -B build/standalone-launcher -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/task_list -B build/standalone-task-list -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/bluetooth_applet -B build/standalone-bluetooth -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S tests/shell/power_applet -B build/standalone-power -G Ninja -DCMAKE_BUILD_TYPE=Debug
+```
+
+Contained `desktop.virtual.interactive.1080p` and the two
+`desktop.virtual.panel-visibility.single-*` rows remain the live visual and
+horizontal/vertical surface evidence. Their screenshots may be archived for
+review, but a screenshot does not replace the structural offscreen assertions.
+
 The additive S2 row keeps S1 unchanged and is selected under the same allocated
 private-runtime lane:
 
@@ -2684,12 +2711,13 @@ ctest --test-dir build/dev --parallel 1 --output-on-failure \
   -R '^desktop\.virtual\.interactive\.matrix\.'
 ```
 
-The four approved rows deliberately maximize representative breadth before the
+The five approved rows deliberately maximize representative breadth before the
 complete release matrix:
 
 | Row | Applied output | Profile/theme |
 | --- | --- | --- |
 | `single-wuxga` | 1920x1200 at 100% | `xfce-inspired` / `qinda-light` |
+| `single-1080p-125` | 1920x1080 at 125% (1536x864 logical) | `gnome-inspired` / `qinda-light` |
 | `single-1440p-125` | 2560x1440 at 125% (2048x1152 logical) | `unity-inspired` / `qinda-dusk` |
 | `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
 | `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |

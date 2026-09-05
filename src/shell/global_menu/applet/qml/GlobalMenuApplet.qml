@@ -117,11 +117,19 @@ Item {
     }
 
     objectName: "globalMenuApplet"
-    implicitWidth: vertical ? 40 : available ? row.implicitWidth + (overflowCount > 0 && indicatorFits ? overflowIndicator.implicitWidth + spacing : 0) : placeholder.implicitWidth + 16
+    implicitWidth: available
+                   ? (vertical ? 40 : row.implicitWidth
+                      + (overflowCount > 0 && indicatorFits
+                         ? overflowIndicator.implicitWidth + spacing : 0))
+                   : 0
     // AGENT-GUARD: the +N indicator is anchored below the vertical column, so
     // vertical implicit height must include it or the clipped root geometry
     // would hide the affordance the limit exists to surface.
-    implicitHeight: vertical ? (available ? verticalLayout.implicitHeight + (overflowCount > 0 && indicatorFits ? overflowIndicator.implicitHeight + 4 : 0) : 28) : 28
+    implicitHeight: available
+                    ? (vertical ? verticalLayout.implicitHeight
+                       + (overflowCount > 0 && indicatorFits
+                          ? overflowIndicator.implicitHeight + 4 : 0) : 28)
+                    : 0
     clip: true
     Accessible.role: Accessible.MenuBar
     Accessible.name: available ? qsTr("Application menu") : qsTr("Menu unavailable")
@@ -143,9 +151,8 @@ Item {
         id: placeholder
 
         anchors.centerIn: parent
-        visible: !root.available
-        text: access !== null && String(access.phase ?? "") === "degraded"
-              ? qsTr("Menu degraded") : qsTr("Menu unavailable")
+        visible: false
+        text: ""
         textFormat: Text.PlainText
         color: root.colors.textMuted ?? "#a9afa9"
         font.pixelSize: 12

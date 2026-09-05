@@ -3,6 +3,7 @@
   "id": "qinda-light",
   "name": "Qinda Light",
   "variant": "light",
+  "iconTheme": "breeze",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 10,

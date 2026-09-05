@@ -6,7 +6,8 @@
 # precedent): the applet is composed in-process by the audited shell and never
 # loaded as third-party code.
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../IconRuntimeInstall.cmake")
 
 set(QINDAQT_TASK_LIST_APPLET_QML_OUTPUT_DIRECTORY
     "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/TaskList")
@@ -40,6 +41,8 @@ qt_add_qml_module(
     QML_FILES
         qml/TaskListApplet.qml
         qml/TaskListEntryButton.qml
+    DEPENDENCIES
+        TARGET qindaqt_shell_icons
 )
 
 # AGENT-CONTRACT: the applet consumes the public task-list boundaries (T0
@@ -54,6 +57,7 @@ target_link_libraries(
         QindaQt::ShellTaskList
         QindaQt::ShellTaskListProducer
         QindaQt::ShellTaskListOperations
+        QindaQt::ShellIcons
         Qt6::Core
         Qt6::Qml
         Qt6::Quick
@@ -71,6 +75,9 @@ qindaqt_enable_warnings(qindaqt_shell_task_list_applet)
 function(qindaqt_task_list_applet_qml_dependencies)
     if(TARGET qindaqt_shell_task_list_applet AND TARGET qindaqt_controls_qmlplugin)
         add_dependencies(qindaqt_shell_task_list_applet qindaqt_controls_qmlplugin)
+    endif()
+    if(TARGET qindaqt_shell_task_list_applet AND TARGET qindaqt_shell_iconsplugin)
+        add_dependencies(qindaqt_shell_task_list_applet qindaqt_shell_iconsplugin)
     endif()
 endfunction()
 if(TARGET qindaqt_controls_qmlplugin)
@@ -139,6 +146,7 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/TaskList"
     COMPONENT TaskListAppletRuntime
 )
+qindaqt_install_shell_icons_runtime(TaskListAppletRuntime)
 
 # Install the compiled module into any component that carries qindaqt-shell.
 # Public headers remain owned by the primary TaskListAppletRuntime install

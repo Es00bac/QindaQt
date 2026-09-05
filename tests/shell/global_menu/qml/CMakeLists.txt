@@ -4,6 +4,16 @@
 # to Qt 5 on mixed-Qt distributions and cannot load this Qt 6 module.
 find_package(Qt6 REQUIRED COMPONENTS QuickTest)
 
+# The production-panel row imports every built-in applet eagerly. Give those
+# unrelated modules their shared doubles while deliberately leaving
+# GlobalMenu absent so this row resolves the real compiled implementation.
+set(global_menu_panel_imports "${CMAKE_CURRENT_BINARY_DIR}/panel-imports")
+file(REMOVE_RECURSE "${global_menu_panel_imports}/QindaQt")
+file(COPY "${PROJECT_SOURCE_DIR}/tests/shell/qml/imports/QindaQt"
+     DESTINATION "${global_menu_panel_imports}")
+file(REMOVE_RECURSE
+     "${global_menu_panel_imports}/QindaQt/Shell/GlobalMenu")
+
 add_test(
     NAME qindaqt.global-menu-applet-qml-offscreen
     COMMAND
@@ -70,6 +80,7 @@ add_test(
         $<TARGET_FILE:Qt6::qmltestrunner>
         -import "${PROJECT_SOURCE_DIR}/tests/shell/qml/imports"
         -import "${CMAKE_BINARY_DIR}/qml"
+        -import "${global_menu_panel_imports}"
         -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_GlobalMenuProductionPanelKeyboard.qml"
 )
 set_tests_properties(

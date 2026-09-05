@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test Quick QuickTest)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test Quick QuickTest Svg)
 
 # 1. Model unit tests
 qt_add_executable(qindaqt_clipboard_applet_model_tests tst_clipboard_applet_model.cpp)
@@ -194,18 +194,25 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellTaskListApplet
             QindaQt::GlobalMenuQml
             QindaQt::ShellStatusNotifierAppletRuntime
+            QindaQt::ShellIcons
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin
             qindaqt_shell_status_notifier_applet_runtimeplugin
             qindaqt_shell_task_list_appletplugin
+            qindaqt_shell_iconsplugin
             Qt6::Core
             Qt6::Quick
             Qt6::QuickTest
             Qt6::Test
     )
     target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
+    target_compile_definitions(
+        qindaqt_clipboard_applet_qml_tests
+        PRIVATE
+            QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+    )
     set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
     qt_import_qml_plugins(qindaqt_clipboard_applet_qml_tests)

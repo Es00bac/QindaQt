@@ -189,6 +189,11 @@ seconds or the next successful operation.
 
 ## Surfaces and entry points
 
+The notification-center panel entry remains the established compact bell/moon
+glyph with its full accessible toggle name and Do Not Disturb state. The
+icon-first applet pass does not change notification policy, popup/center
+content, focus behavior, or interruption authority.
+
 Both windows currently use the compositor's semantic-primary output, top-right
 anchors, overlay layer, a 16-logical-pixel top/right margin, zero exclusive
 zone, on-demand keyboard interactivity, and separate `notification-popup` and

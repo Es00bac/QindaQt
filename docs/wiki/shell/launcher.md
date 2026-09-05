@@ -199,7 +199,7 @@ children any test starts are the inert `/bin/true` and `/bin/false` fixtures.
 ### Compiled QML applet
 
 The compiled module `QindaQt.Shell.Launcher` (`LauncherApplet` +
-`LauncherSection`) renders a summary button and a non-modal browser popup —
+`LauncherSection`) renders one icon-only summary button and a non-modal browser popup —
 search field, category sections, pinned/recent rows, and search results —
 over the shell-private `LauncherAppletController`, using `QindaQt.Controls`
 primitives and QST-1 tokens. The controller projects the L0 presentation
@@ -212,7 +212,11 @@ never depends on color or position. Scanner, execution, and persistence
 diagnostics render as bounded three-line accessible alerts. Before QST tokens
 or a controller exist, the applet constructs only its disabled summary; it
 does not evaluate controller properties or construct token-dependent browser
-content.
+content. The panel requests `start-here-kde` with symbolic-class fallback and
+uses the typed icon placeholder when neither asset resolves. “Applications”
+remains the button's accessible name and the popup heading, but is never
+painted into the panel. The compact summary is 32 by 28 logical pixels in both
+orientations.
 
 The manifest (`data/applets/launcher.json`) requests `applications.launch`;
 the grant gates activation in the controller, and the entry point

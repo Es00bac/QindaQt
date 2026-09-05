@@ -23,6 +23,7 @@ class DesktopMatrixError(ValueError):
 # real two-output arrangement.
 EXECUTABLE_MATRIX_ROWS = (
     "single-wuxga",
+    "single-1080p-125",
     "single-1440p-125",
     "single-1080p-150",
     "dual-1080p-horizontal",

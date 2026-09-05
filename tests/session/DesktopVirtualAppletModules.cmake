@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# AGENT-CONTRACT: BuiltinAppletContent.qml imports this module set staged through this inventory (Clipboard and Task List are staged by PanelVisibilityTests.cmake).
+# AGENT-CONTRACT: BuiltinAppletContent.qml and AppletChip.qml import this
+# module set (Clipboard and Task List are staged by PanelVisibilityTests.cmake).
 # Keep staging data-driven so a DesktopVirtual install cannot repair one nested
 # row while leaving another row dependent on an ambient build-tree import.
 set(
@@ -11,6 +12,7 @@ set(
     "qindaqt_shell_launcher_qml|QindaQt/Shell/Launcher"
     "qindaqt_shell_power_applet_runtime|QindaQt/Shell/PowerApplet"
     "qindaqt_shell_status_notifier_applet_runtime|QindaQt/Shell/StatusNotifier"
+    "qindaqt_shell_icons|QindaQt/Shell/Icons"
 )
 
 function(_qindaqt_install_desktop_applet_module descriptor)

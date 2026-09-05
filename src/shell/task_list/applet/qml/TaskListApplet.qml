@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // Compiled task-list panel strip. The controller is the composed shell facade
@@ -58,7 +59,7 @@ Item {
         C.Label {
             id: loadingLabel
             objectName: "taskListLoadingLabel"
-            visible: root.phase === "loading"
+            visible: false
             text: qsTr("Loading…")
             muted: true
         }
@@ -66,7 +67,7 @@ Item {
         C.Label {
             id: unavailableLabel
             objectName: "taskListUnavailableLabel"
-            visible: root.phase === "unavailable"
+            visible: false
             text: qsTr("Task list unavailable")
             muted: true
             Accessible.name: root.access !== null
@@ -77,9 +78,23 @@ Item {
         C.Label {
             id: emptyLabel
             objectName: "taskListEmptyLabel"
-            visible: root.phase === "empty"
+            visible: false
             text: qsTr("No windows")
             muted: true
+        }
+
+        ShellIcons.Icon {
+            id: phaseIcon
+            objectName: "taskListPhaseIcon"
+            visible: !root.stripVisible && root.phase !== "degraded"
+            name: root.phase === "loading" ? "view-refresh-symbolic"
+                                             : "preferences-system-windows"
+            size: 20
+            color: root.phase === "loading" ? Tokens.fg.muted
+                                             : Tokens.fg.disabled
+            symbolic: true
+            fallbackText: qsTr("Task list")
+            Accessible.ignored: true
         }
 
         Repeater {
@@ -119,21 +134,29 @@ Item {
                 : ""
         }
 
-        // Degraded truth stays visible next to the retained rows. The warning
-        // status role, never color alone, marks the limitation.
-        Text {
+        Item {
             id: degradedBadge
             objectName: "taskListDegradedBadge"
             visible: root.phase === "degraded"
-            text: qsTr("Limited")
-            color: Tokens.status.warning.foreground
-            font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.caption
+            implicitWidth: 18
+            implicitHeight: 18
             Accessible.role: Accessible.StaticText
             Accessible.name: root.access !== null
                 ? qsTr("Task list source is limited: %1")
                       .arg(root.access.phaseReasonText)
                 : ""
+            Accessible.description: qsTr(
+                "Window buttons remain visible, but actions are paused")
+
+            ShellIcons.Icon {
+                anchors.fill: parent
+                name: "dialog-warning"
+                size: 18
+                color: Tokens.status.warning.foreground
+                symbolic: true
+                fallbackText: qsTr("Warning")
+                Accessible.ignored: true
+            }
         }
     }
 

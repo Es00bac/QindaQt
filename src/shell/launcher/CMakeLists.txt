@@ -53,6 +53,7 @@ install(
 function(qindaqt_add_launcher_runtime)
     get_property(module_dir GLOBAL PROPERTY QINDAQT_LAUNCHER_MODULE_DIR)
     get_property(repo_root GLOBAL PROPERTY QINDAQT_LAUNCHER_REPO_ROOT)
+    include("${repo_root}/src/shell/IconRuntimeInstall.cmake")
     if(TARGET qindaqt_shell_launcher_runtime)
         return()
     endif()
@@ -63,7 +64,7 @@ function(qindaqt_add_launcher_runtime)
         return()
     endif()
 
-    find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Qml Quick QuickControls2)
+    find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Qml Quick QuickControls2 Svg)
 
     qt_add_library(qindaqt_shell_launcher_runtime STATIC)
     add_library(QindaQt::ShellLauncherRuntime ALIAS qindaqt_shell_launcher_runtime)
@@ -121,10 +122,13 @@ function(qindaqt_add_launcher_runtime)
         QML_FILES
             "${module_dir}/qml/LauncherApplet.qml"
             "${module_dir}/qml/LauncherSection.qml"
+        DEPENDENCIES
+            TARGET qindaqt_shell_icons
     )
     target_link_libraries(
         qindaqt_shell_launcher_qml
-        PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
+        PRIVATE QindaQt::ShellIcons Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick
+                Qt6::QuickControls2
     )
     set_target_properties(qindaqt_shell_launcher_qml PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(qindaqt_shell_launcher_qml)
@@ -150,6 +154,7 @@ function(qindaqt_add_launcher_runtime)
         DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/Launcher"
         COMPONENT LauncherAppletRuntime
     )
+    qindaqt_install_shell_icons_runtime(LauncherAppletRuntime)
     install(
         FILES "${repo_root}/data/applets/launcher.json"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
@@ -212,6 +217,11 @@ set_property(GLOBAL PROPERTY QINDAQT_LAUNCHER_MODULE_DIR
              "${CMAKE_CURRENT_SOURCE_DIR}")
 set_property(GLOBAL PROPERTY QINDAQT_LAUNCHER_REPO_ROOT
              "${QINDAQT_LAUNCHER_REPO_ROOT}")
+# Focused applet lanes need the pure parser because ShellIcons reuses it, but
+# must not synthesize the launcher's Settings/DBus runtime dependency graph.
+if(QINDAQT_LAUNCHER_PURE_ONLY)
+    return()
+endif()
 if(QINDAQT_LAUNCHER_DEPENDENCIES_READY)
     qindaqt_add_launcher_runtime()
 else()

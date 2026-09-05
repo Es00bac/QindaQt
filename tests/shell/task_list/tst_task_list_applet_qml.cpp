@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
-
-#include "qindaqt/design_tokens/token_facade.h"
-#include "qindaqt/themes/theme_loader.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include <QAccessible>
 #include <QQmlComponent>
@@ -15,10 +13,12 @@
 #include <memory>
 
 #include "task_list_applet_test_fakes.h"
+#include "task_list_applet_qml_theme_fixture.h"
 #include "task_list_operation_test_support.h"
 #include "task_list_test_support.h"
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_TaskListPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::ShellTaskList;
 using namespace QindaQt::ShellTaskList::Operations;
@@ -27,48 +27,6 @@ using TaskListAppletTest::FakeTaskListOperationPort;
 using TaskListOperationTest::FakeOperationAuthority;
 
 namespace {
-
-// AGENT-NOTE: the applet QML resolves QST-1 roles from the read-only Tokens
-// singleton; without a published theme the strip renders undefined tokens and
-// the QT_FATAL_WARNINGS=1 rows would abort. Publication is the same seam
-// production composition uses, exercised through the generated plugin path
-// (audio applet precedent).
-bool publishTokens(QQmlEngine &engine, QString *error) {
-  QQmlComponent registration(&engine);
-  registration.setData(R"qml(
-      import QtQuick
-      import QindaQt.Tokens 1.0
-      QtObject { property int revision: Tokens.qstRevision }
-  )qml",
-                       QUrl(QStringLiteral("inline:token-registration.qml")));
-  for (int spin = 0; spin < 100 && registration.status() == QQmlComponent::Loading;
-       ++spin) {
-    QTest::qWait(10);
-  }
-  if (!registration.isReady()) {
-    *error = registration.errorString();
-    return false;
-  }
-  std::unique_ptr<QObject> registrationObject(registration.create());
-  if (registrationObject == nullptr) {
-    *error = registration.errorString();
-    return false;
-  }
-  auto *facade =
-      engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
-          "QindaQt.Tokens", "Tokens");
-  if (facade == nullptr) {
-    *error = QStringLiteral("QindaQt.Tokens singleton was not registered");
-    return false;
-  }
-  const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
-      QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-dark.json"));
-  if (!loaded.ok) {
-    *error = loaded.error;
-    return false;
-  }
-  return facade->publish(loaded.theme, {}, error);
-}
 
 QVector<TaskWindowFact> threeEntryFacts() {
   return {TaskListTest::standalone(QStringLiteral("w1"),
@@ -176,13 +134,20 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
   TaskListSource source;
   FakeOperationAuthority authority;
   FakeTaskListOperationPort port;
-  TaskListAppletController controller(source, authority, port,
-                                      {true, true, true});
+  TaskListAppletController controller(
+      source, authority, port, {true, true, true},
+      [](const QString &) { return QStringLiteral("application-x-executable"); });
 
   QQmlEngine engine;
   engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString iconError;
+  QVERIFY2(QindaQt::Tests::installResolvedIconFixture(
+               engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+               {QStringLiteral("application-x-executable")}, &iconError),
+           qPrintable(iconError));
   QString tokenError;
-  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
   auto owned = createApplet(engine, controller, false);
   QVERIFY2(owned != nullptr, qPrintable(g_appletError));
   auto *root = qobject_cast<QQuickItem *>(owned.get());
@@ -205,17 +170,14 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
     return item != nullptr && item->isVisible();
   };
 
-  // Cold start renders the loading row.
   QCOMPARE(controller.phaseText(), QStringLiteral("loading"));
-  QVERIFY(visibleNamed(QStringLiteral("taskListLoadingLabel")));
+  QVERIFY(!visibleNamed(QStringLiteral("taskListLoadingLabel"))); QVERIFY(visibleNamed(QStringLiteral("taskListPhaseIcon")));
 
-  // An accepted empty generation renders the empty row.
   QVERIFY(publishFacts(source, authority, {}) > 0);
   QCOMPARE(controller.phaseText(), QStringLiteral("empty"));
-  QVERIFY(visibleNamed(QStringLiteral("taskListEmptyLabel")));
+  QVERIFY(!visibleNamed(QStringLiteral("taskListEmptyLabel"))); QVERIFY(visibleNamed(QStringLiteral("taskListPhaseIcon")));
   QVERIFY(!visibleNamed(QStringLiteral("taskListLoadingLabel")));
 
-  // Ready renders one button per entry, with accessible names wired through.
   QVERIFY(publishFacts(source, authority, threeEntryFacts()) > 0);
   QCOMPARE(controller.phaseText(), QStringLiteral("ready"));
   QCOMPARE(visualItemsNamed(root, QStringLiteral("taskListEntryButton")).size(),
@@ -224,13 +186,18 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
   QVERIFY(!visibleNamed(QStringLiteral("taskListEmptyLabel")));
   QQuickItem *containerButton = entryButtonFor(root, QStringLiteral("c1"));
   QVERIFY(containerButton != nullptr);
+  QVERIFY(containerButton->height() <= 28.0);
+  auto *entryIcon = containerButton->findChild<QQuickItem *>(
+      QStringLiteral("taskListEntryIcon"));
+  QVERIFY(entryIcon != nullptr);
+  QVERIFY(QindaQt::Tests::hasResolvedProviderSource(
+      entryIcon, QStringLiteral("application-x-executable")));
   auto *countBadge =
       containerButton->findChild<QQuickItem *>(
           QStringLiteral("taskListEntryCountBadge"));
   QVERIFY(countBadge != nullptr);
   QVERIFY(countBadge->isVisible());
-  QCOMPARE(countBadge->property("text").toString(),
-           QStringLiteral("2 windows"));
+  QCOMPARE(countBadge->property("text").toString(), QStringLiteral("×2"));
   QAccessibleInterface *rowInterface =
       QAccessible::queryAccessibleInterface(containerButton);
   QVERIFY(rowInterface != nullptr);
@@ -319,7 +286,8 @@ void TaskListAppletQmlTests::phasesRenderWithTruthfulObjectNames() {
       deniedRoot->findChild<QQuickItem *>(
           QStringLiteral("taskListUnavailableLabel"));
   QVERIFY(unavailableLabel != nullptr);
-  QVERIFY(unavailableLabel->isVisible());
+  QVERIFY(!unavailableLabel->isVisible());
+  auto *deniedPhaseIcon = deniedRoot->findChild<QQuickItem *>(QStringLiteral("taskListPhaseIcon")); QVERIFY(deniedPhaseIcon != nullptr); QVERIFY(deniedPhaseIcon->isVisible());
   deniedRoot->setParentItem(nullptr);
 }
 
@@ -334,7 +302,8 @@ void TaskListAppletQmlTests::arrowTraversalStopsAtStripEndpoints() {
   QQmlEngine engine;
   engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
   QString tokenError;
-  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
   QQuickWindow window;
   window.setGeometry(0, 0, 900, 220);
   window.show();
@@ -414,7 +383,8 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QQmlEngine engine;
   engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
   QString tokenError;
-  QVERIFY2(publishTokens(engine, &tokenError), qPrintable(tokenError));
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
   auto owned = createApplet(engine, controller, false);
   QVERIFY2(owned != nullptr, qPrintable(g_appletError));
   auto *root = qobject_cast<QQuickItem *>(owned.get());

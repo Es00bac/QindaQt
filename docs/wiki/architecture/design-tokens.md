@@ -2,10 +2,10 @@
 
 QindaQt Semantic Tokens revision 1 (QST-1) is the single semantic style
 vocabulary for first-party QML. It derives a complete immutable value from a
-public schema-v1 `ThemeSpec` and explicit caller inputs. Theme JSON remains the
-nine-color, metric, font-family, blur, and decoration format documented in
-[Theme schema v1](../reference/theme-schema-v1.md); QST-1 adds no stored theme
-fields.
+public schema-v1 `ThemeSpec` and explicit caller inputs. Theme JSON includes
+the token fields plus the shell-only `iconTheme` presentation hint documented
+in [Theme schema v1](../reference/theme-schema-v1.md); QST-1 neither consumes
+that hint nor adds stored token fields.
 
 The durable ownership and framework decision is
 [ADR-0013](../adr/0013-own-qst1-semantic-tokens.md).
@@ -47,7 +47,9 @@ controls rather than inventing presentation fallbacks.
 The production shell and `qindaqt-shell-preview` share one shell-owned
 publisher. After catalog selection it imports the engine singleton and
 publishes the selected `ThemeSpec` before any panel or hosted-applet QML is
-created. `ThemeCatalog::currentChanged` replaces the complete QST generation;
+created. Icon-runtime installation follows token publication, so a typed icon
+placeholder can always resolve its semantic colors. `ThemeCatalog::currentChanged`
+replaces the complete QST generation;
 an initial or later publication failure is a process-level error, because a
 shell with undefined semantic roles is not a usable fallback. The publisher
 does not choose themes or read settings, and its borrowed engine/catalog must

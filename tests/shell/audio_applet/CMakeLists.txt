@@ -4,7 +4,7 @@
 # rows link only the pure projection target; the controller and QML rows link
 # the runtime target so fail-closed presentation behavior remains testable
 # without the resident Audio1 service.
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Test)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Svg Test)
 
 qt_add_executable(qindaqt_audio_applet_model_tests tst_audio_applet_model.cpp)
 target_link_libraries(
@@ -51,6 +51,8 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellAudioAppletRuntime
         QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_themes
         Qt6::Gui
@@ -62,6 +64,7 @@ target_compile_definitions(
     qindaqt_audio_applet_qml_tests
     PRIVATE
         QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
         QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 add_dependencies(
@@ -102,6 +105,17 @@ add_test(
         "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
         "-DPOISON_ROOT=${CMAKE_CURRENT_BINARY_DIR}/runtime-boundary-poison"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_runtime_boundary.cmake"
+)
+
+add_test(
+    NAME qindaqt.audio-applet-summary-icon-contract
+    COMMAND ${CMAKE_COMMAND}
+        -DQINDAQT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_summary_icon_contract.cmake
+)
+set_tests_properties(
+    qindaqt.audio-applet-summary-icon-contract
+    PROPERTIES LABELS "shell;audio;presentation;negative-control"
 )
 set_tests_properties(
     qindaqt.audio-applet-runtime-boundary

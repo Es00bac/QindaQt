@@ -15,6 +15,7 @@
 #include "qindaqt/shell/task_list/producer/qt_task_list_producer_transport.h"
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/task_list_source.h"
+#include "qindaqt/shell/icons/desktop_entry_icon_resolver.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QList>
@@ -417,7 +418,8 @@ TaskListAppletComposition::TaskListAppletComposition(
     const Applets::ManifestCatalog &catalog,
     const AppletHost::CapabilityPolicy &policy,
     const QDBusConnection &sessionBus,
-    ShellWindowActionsClient::ShellWindowActionsClient &windowActions)
+    ShellWindowActionsClient::ShellWindowActionsClient &windowActions,
+    QStringList applicationRoots)
     : m_ownedSource(std::make_unique<ShellTaskList::TaskListSource>())
     , m_ownedProducerTransport(std::make_unique<
           ShellTaskList::Producer::QtTaskListProducerTransport>(sessionBus))
@@ -432,6 +434,8 @@ TaskListAppletComposition::TaskListAppletComposition(
     , m_ownedContainerBridge(std::make_unique<
           ShellTaskListApplet::TaskListAppletOperationBridge>(
               *m_ownedOperationAdapter))
+    , m_iconResolver(std::make_unique<Icons::DesktopEntryIconResolver>(
+          std::move(applicationRoots)))
 {
     compose(catalog, policy, *m_ownedSource, *m_ownedProducer,
             *m_ownedContainerBridge, windowActions);
@@ -465,7 +469,11 @@ void TaskListAppletComposition::compose(
     m_router = std::make_unique<TaskListWindowOperationRouter>(
         source, authority, containerOperations, windowActions);
     m_access = std::make_unique<ShellTaskListApplet::TaskListAppletController>(
-        source, authority, *m_router, taskListGrants(catalog, policy));
+        source, authority, *m_router, taskListGrants(catalog, policy),
+        [this](const QString &applicationId) {
+            return m_iconResolver
+                ? m_iconResolver->iconNameForAppId(applicationId) : QString{};
+        });
 }
 
 bool TaskListAppletComposition::start(QString *error)
