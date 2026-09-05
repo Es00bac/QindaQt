@@ -10,6 +10,10 @@ import QtQuick
 Item {
     required property var access
     property bool vertical: false
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool dockHasLauncherGroup: false
+    property bool reducedMotion: false
 
     objectName: "taskListApplet"
     implicitWidth: 96
