@@ -63,6 +63,37 @@ set_tests_properties(
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
         ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )
+
+qt_add_executable(
+    qindaqt_app_shell_menu_export_surface_tests
+    tst_application_menu_export_surface.cpp
+)
+target_link_libraries(
+    qindaqt_app_shell_menu_export_surface_tests
+    PRIVATE
+        QindaQt::AppShellMenuExport
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        Qt6::Test
+)
+target_compile_features(qindaqt_app_shell_menu_export_surface_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_app_shell_menu_export_surface_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_app_shell_menu_export_surface_tests)
+add_test(
+    NAME qindaqt.app-shell-menu-export-surface-recreation-private-bus
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_app_shell_menu_export_surface_tests>
+)
+set_tests_properties(
+    qindaqt.app-shell-menu-export-surface-recreation-private-bus
+    PROPERTIES
+        LABELS "app-shell;global-menu;offscreen"
+        TIMEOUT 60
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
 set_tests_properties(
     qindaqt.app-shell-coordinator
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
