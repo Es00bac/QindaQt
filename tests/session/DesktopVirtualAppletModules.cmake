@@ -13,6 +13,7 @@ set(
     "qindaqt_shell_power_applet_runtime|QindaQt/Shell/PowerApplet"
     "qindaqt_shell_status_notifier_applet_runtime|QindaQt/Shell/StatusNotifier"
     "qindaqt_shell_icons|QindaQt/Shell/Icons"
+    "qindaqt_shell_desktop_controls_runtime|QindaQt/Shell/DesktopControls"
 )
 
 function(_qindaqt_install_desktop_applet_module descriptor)

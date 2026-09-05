@@ -47,6 +47,22 @@ require_declaration("src/shell/status_notifier/applet/qml/StatusNotifierItemDele
 require_declaration("src/shell/qml/NotificationCenterApplet.qml" "notificationCenterAppletGlyph")
 require_declaration("src/shell/qml/ClockApplet.qml" "clockApplet")
 require_declaration("src/shell/global_menu/applet/qml/GlobalMenuApplet.qml" "globalMenuTopLevelItem")
+# Desktop controls (docs/wiki/shell/desktop-controls.md): one icon-first
+# declaration per registered entry point.
+require_declaration("src/shell/desktop_controls/qml/WorkspaceSwitcherApplet.qml" "workspaceSwitcherStrip")
+require_declaration("src/shell/desktop_controls/qml/WorkspaceTilesApplet.qml" "workspaceTilesStrip")
+require_declaration("src/shell/desktop_controls/qml/WorkspaceStrip.qml" "workspaceStripPlaceholder")
+require_declaration("src/shell/desktop_controls/qml/ShowDesktopApplet.qml" "showDesktopButton")
+require_declaration("src/shell/desktop_controls/qml/OverviewTriggerApplet.qml" "overviewTriggerButton")
+require_declaration("src/shell/desktop_controls/qml/ActiveApplicationApplet.qml" "activeApplicationIcon")
+require_declaration("src/shell/desktop_controls/qml/SystemMenuApplet.qml" "systemMenuButton")
+require_declaration("src/shell/desktop_controls/qml/SystemStatusApplet.qml" "systemStatusLaneIcon")
+require_declaration("src/shell/desktop_controls/qml/PlacesMenuApplet.qml" "placesMenuButton")
+require_declaration("src/shell/desktop_controls/qml/QuickLaunchApplet.qml" "quickLaunchEntryIcon")
+require_declaration("src/shell/desktop_controls/qml/CommandPaletteApplet.qml" "commandPaletteButton")
+require_declaration("src/shell/desktop_controls/qml/CommandHudApplet.qml" "commandHudButton")
+require_declaration("src/shell/desktop_controls/qml/DashboardApplet.qml" "dashboardButton")
+require_declaration("src/shell/desktop_controls/qml/DesktopControlButton.qml" "desktopControlIcon")
 
 # AGENT-GUARD: this is the complete literal name set selected by built-in
 # summary policy. The fixture is the intersection of the Breeze and
@@ -81,6 +97,39 @@ require_icon("src/shell/status_notifier/applet/qml/StatusNotifierApplet.qml"
 foreach(icon_name IN ITEMS view-refresh-symbolic preferences-system-windows
                            dialog-warning)
     require_icon("src/shell/task_list/applet/qml/TaskListApplet.qml" "${icon_name}")
+endforeach()
+
+# Desktop controls: literal summary and menu icon names.
+require_icon("src/shell/desktop_controls/qml/WorkspaceStrip.qml" "virtual-desktops")
+require_icon("src/shell/desktop_controls/qml/ShowDesktopApplet.qml" "user-desktop")
+require_icon("src/shell/desktop_controls/qml/OverviewTriggerApplet.qml" "view-grid")
+require_icon("src/shell/desktop_controls/qml/CommandPaletteApplet.qml" "system-search")
+require_icon("src/shell/desktop_controls/qml/CommandHudApplet.qml" "edit-find")
+require_icon("src/shell/desktop_controls/qml/ActiveApplicationApplet.qml" "preferences-system-windows")
+foreach(icon_name IN ITEMS window-minimize window-close)
+    require_icon("src/shell/desktop_controls/qml/ActiveApplicationApplet.qml" "${icon_name}")
+endforeach()
+foreach(icon_name IN ITEMS preferences-system help-about system-lock-screen system-log-out
+                           system-suspend system-reboot system-shutdown)
+    require_icon("src/shell/desktop_controls/qml/SystemMenuApplet.qml" "${icon_name}")
+endforeach()
+require_icon("src/shell/desktop_controls/qml/SystemStatusApplet.qml" "preferences-plugin")
+foreach(icon_name IN ITEMS audio-volume-muted audio-volume-low audio-volume-medium
+                           audio-volume-high network-bluetooth-activated
+                           network-bluetooth-inactive-symbolic battery-missing
+                           battery-000 battery-020 battery-040 battery-060
+                           battery-080 battery-100)
+    require_icon("src/shell/desktop_controls/src/system_status_controller.cpp" "${icon_name}")
+endforeach()
+require_icon("src/shell/desktop_controls/qml/PlacesMenuApplet.qml" "folder")
+foreach(icon_name IN ITEMS user-home user-desktop folder-documents folder-download
+                           folder-music folder-pictures folder-videos drive-harddisk)
+    require_icon("src/shell/desktop_controls/src/places_controller.cpp" "${icon_name}")
+endforeach()
+require_icon("src/shell/desktop_controls/qml/QuickLaunchApplet.qml" "applications-other")
+require_icon("src/shell/desktop_controls/qml/DashboardApplet.qml" "dashboard-show")
+foreach(icon_name IN ITEMS virtual-desktops user-desktop)
+    require_icon("src/shell/desktop_controls/src/command_search_controller.cpp" "${icon_name}")
 endforeach()
 
 foreach(theme IN ITEMS qinda-dark qinda-dusk qinda-high-contrast qinda-light qinda-macos)

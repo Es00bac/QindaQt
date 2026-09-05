@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "active-application",
+  "name": "Active Application",
+  "description": "Shows the focused window's application name and icon and offers minimize and close through the task list facade.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.active-application"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-fill"
+    ],
+    "orientations": [
+      "horizontal"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 64,
+      "preferred": 200,
+      "maximum": 400,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "windows.read",
+    "windows.manage"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

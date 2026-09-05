@@ -69,6 +69,7 @@ class LauncherControllerTests final : public QObject
 private Q_SLOTS:
     void projectsCatalogPinnedAndRecent();
     void queryCollapsesToSearchResults();
+    void sectionsForQueryIsAPureProjection();
     void activationRequiresTheGrant();
     void activationLaunchesAndRecordsRecent();
     void individualEntryFailuresDoNotBlockUsableCatalog();
@@ -134,6 +135,38 @@ void LauncherControllerTests::queryCollapsesToSearchResults()
     const QString huge = QString(200, QLatin1Char('x'));
     controller.setQuery(huge);
     QCOMPARE(controller.query().size(), 128);
+}
+
+void LauncherControllerTests::sectionsForQueryIsAPureProjection()
+{
+    Stack stack;
+    QVERIFY(stack.root.isValid());
+    writeEntry(stack.root.path(), QStringLiteral("editor.desktop"),
+               QStringLiteral("Fixture Editor"), QStringLiteral("editor"));
+    writeEntry(stack.root.path(), QStringLiteral("terminal.desktop"),
+               QStringLiteral("Fixture Terminal"), QStringLiteral("terminal"));
+    QVERIFY(stack.scanner.start());
+
+    LauncherAppletController controller(&stack.scanner, &stack.persistence,
+                                        &stack.executor, true);
+    controller.setQuery(QStringLiteral("terminal"));
+    QCOMPARE(allItems(controller.sections()).size(), 1);
+
+    // AGENT-CONTRACT: other shell controls (quick launch, command search)
+    // read the launcher through this projection without disturbing the
+    // launcher popup's own query or sections.
+    const QVariantList browse = controller.sectionsForQuery(QString());
+    QCOMPARE(allItems(browse).size(), 2);
+    const QVariantList searched = controller.sectionsForQuery(QStringLiteral("editor"));
+    QCOMPARE(searched.size(), 1);
+    QCOMPARE(searched.constFirst().toMap().value(QStringLiteral("kind")).toString(),
+             QStringLiteral("searchResults"));
+    QCOMPARE(allItems(searched).constFirst().toMap().value(QStringLiteral("entryId")).toString(),
+             QStringLiteral("editor"));
+    QCOMPARE(controller.query(), QStringLiteral("terminal"));
+    QCOMPARE(allItems(controller.sections()).size(), 1);
+    QCOMPARE(controller.sectionsForQuery(QString(200, QLatin1Char('x'))).size(),
+             controller.sectionsForQuery(QString(128, QLatin1Char('x'))).size());
 }
 
 void LauncherControllerTests::activationRequiresTheGrant()

@@ -35,6 +35,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt.Controls 1.0](shell/controls.md) defines the compiled token-only
   primitives, accessible state behavior, preview integrity, and focused gates
   used by first-party interfaces.
+- [Desktop controls](shell/desktop-controls.md) defines the compiled panel
+  controls over bounded launcher, workspace, menu, status, and task facades.
 - [Launcher](shell/launcher.md) records the bounded installed-application
   model, deterministic categories/search/ranking, launch intents without
   execution, and the pinned/recent and presentation boundaries.

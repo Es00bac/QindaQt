@@ -184,7 +184,7 @@ void LauncherAppletController::setQuery(const QString &query)
   Q_EMIT queryChanged();
 }
 
-void LauncherAppletController::rebuild()
+QVariantList LauncherAppletController::sectionsForQuery(const QString &query) const
 {
   std::optional<QindaQt::ShellLauncher::ApplicationCatalog> catalog;
   if (m_scanner != nullptr && m_scanner->catalog())
@@ -193,9 +193,14 @@ void LauncherAppletController::rebuild()
       m_persistence != nullptr ? m_persistence->pinned() : m_fallbackPinned;
   const RecentApplications &recent =
       m_persistence != nullptr ? m_persistence->recent() : m_fallbackRecent;
+  return projectSections(LauncherPresentationModel::build(
+      catalog, pinned, recent,
+      query.left(QindaQt::ShellLauncher::Bounds::maxQueryLength)));
+}
 
-  m_sections = projectSections(
-      LauncherPresentationModel::build(catalog, pinned, recent, m_query));
+void LauncherAppletController::rebuild()
+{
+  m_sections = sectionsForQuery(m_query);
   Q_EMIT stateChanged();
 }
 

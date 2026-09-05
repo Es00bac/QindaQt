@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "overview-trigger",
+  "name": "Overview",
+  "description": "Opens an overview of open windows, workspaces, and application search built from the task list, workspace, and launcher facades.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.overview-trigger"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 32,
+      "preferred": 88,
+      "maximum": 160,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "windows.read",
+    "windows.activate",
+    "windows.manage",
+    "applications.launch"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "command-hud",
+  "name": "Command HUD",
+  "description": "Searches the active application's exported menu actions through the global menu facade.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.command-hud"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 32,
+      "preferred": 88,
+      "maximum": 200,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "global-menu.read"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

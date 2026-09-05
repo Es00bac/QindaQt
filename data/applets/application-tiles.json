@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "application-tiles",
+  "name": "Application Tiles",
+  "description": "Shows pinned applications as launchable tiles in a vertical dock.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.application-tiles"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end",
+      "panel-fill"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 64,
+      "preferred": 160,
+      "maximum": 640,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 64,
+      "preferred": 72,
+      "maximum": 96,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "applications.launch"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

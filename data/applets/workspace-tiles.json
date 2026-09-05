@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "workspace-tiles",
+  "name": "Workspace Tiles",
+  "description": "Presents virtual desktops as named tiles with the current workspace marked; activating a tile switches to it.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.workspace-tiles"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end",
+      "panel-fill"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 56,
+      "preferred": 160,
+      "maximum": 480,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 28,
+      "preferred": 48,
+      "maximum": 96,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "windows.read",
+    "windows.manage"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

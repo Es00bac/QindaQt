@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "command-palette",
+  "name": "Command Palette",
+  "description": "Searches applications, the active window's menu actions, open windows, and workspaces from one keyboard-driven popup.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.command-palette"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 32,
+      "preferred": 120,
+      "maximum": 320,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "applications.launch",
+    "global-menu.read",
+    "windows.read",
+    "windows.activate",
+    "windows.manage"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

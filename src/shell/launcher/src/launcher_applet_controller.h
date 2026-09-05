@@ -49,6 +49,11 @@ public:
   [[nodiscard]] QString query() const { return m_query; }
   void setQuery(const QString &query);
   [[nodiscard]] QVariantList sections() const { return m_sections; }
+  // Pure projection of the same catalog/pinned/recent truth for an arbitrary
+  // query, in the same section/item shape as `sections`. It never touches
+  // `query` or `sections`, so other shell controls (quick launch, command
+  // search) can read the launcher without disturbing the launcher popup.
+  Q_INVOKABLE [[nodiscard]] QVariantList sectionsForQuery(const QString &query) const;
   [[nodiscard]] bool launchGranted() const noexcept { return m_launchGranted; }
   [[nodiscard]] QString persistenceStatus() const;
   [[nodiscard]] QString feedback() const { return m_feedback; }
