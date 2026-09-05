@@ -283,7 +283,15 @@ void LaunchExecutorTests::sanitizedEnvironmentDropsUnlistedVariables()
     base.insert(QStringLiteral("LD_PRELOAD"), QStringLiteral("/tmp/evil.so"));
     base.insert(QStringLiteral("PROMPT_COMMAND"), QStringLiteral("id"));
 
+    const QStringList sessionPaths {QStringLiteral("XDG_CONFIG_HOME"),
+        QStringLiteral("XDG_DATA_HOME"), QStringLiteral("XDG_CACHE_HOME"),
+        QStringLiteral("XDG_STATE_HOME"), QStringLiteral("XAUTHORITY"),
+        QStringLiteral("SSH_AUTH_SOCK")};
+    for (const QString &name : sessionPaths)
+        base.insert(name, QStringLiteral("/fixture/") + name);
     const QProcessEnvironment sanitized = sanitizedChildEnvironment(base);
+    for (const QString &name : sessionPaths)
+        QCOMPARE(sanitized.value(name), base.value(name));
     QVERIFY(sanitized.contains(QStringLiteral("PATH")));
     QVERIFY(sanitized.contains(QStringLiteral("LC_MESSAGES")));
     QVERIFY(!sanitized.contains(QStringLiteral("QINDAQT_APPLET_DIR")));

@@ -132,6 +132,35 @@ Item {
             compare(fakeAccess.activateCalls, 0)
         }
 
+        function test_publicationClosesOldMenuAndRejectsQueuedGesture() {
+            const applet = createTemporaryObject(appletComponent, root)
+            const popup = findChild(applet, "globalMenuPopup")
+            popup.openMenu(fakeAccess.items[0], applet)
+            tryCompare(popup, "opened", true)
+            const stale = popup.currentItems[0]
+            const replacement = menuItems()
+            replacement[0].children[0].text = "Different operation"
+            fakeAccess.items = replacement
+            tryCompare(popup, "opened", false)
+            compare(popup.menuStack.length, 0)
+            popup.choose(stale)
+            compare(fakeAccess.activateCalls, 0)
+        }
+
+        function test_navigationWrapsAcrossDisabledTail() {
+            const applet = createTemporaryObject(appletComponent, root)
+            const popup = findChild(applet, "globalMenuPopup")
+            popup.openMenu(fakeAccess.items[0], applet)
+            tryCompare(popup, "opened", true)
+            const list = findChild(applet, "globalMenuPopupList")
+            tryCompare(list, "currentIndex", 0)
+            popup.moveCurrent(-1)
+            compare(list.currentIndex, 1)
+            popup.moveCurrent(1)
+            compare(list.currentIndex, 0)
+            popup.close()
+        }
+
         function test_depthCapAndAccessibleState() {
             const applet = createTemporaryObject(appletComponent, root)
             const popup = findChild(applet, "globalMenuPopup")

@@ -428,7 +428,12 @@ Return/Enter/Space, and closes on Escape, outside press, or focus loss. It
 exposes `PopupMenu`/`MenuItem` roles, names, descriptions, focusability, and
 provider-owned checked state. Reaching the depth cap fails closed. Popup
 activation calls the facade exactly once; the existing invocation guard and
-no-replay dbusmenu client remain the sole execution lineage.
+no-replay dbusmenu client remain the execution lineage. Every projected item
+also carries a facade publication generation. QML must pass that generation
+with activation; the facade rejects stale rendered actions before emitting a
+request. Every accepted publication, including unchanged labels with a new
+provider epoch, refreshes the generation and closes the open popup. Up/Down
+wrap around enabled entries, including disabled or separator tails.
 
 `GlobalMenuPopup` is a `Popup.Window`, not the default item-backed popup. The
 production layer-shell panel deliberately retains
@@ -517,3 +522,8 @@ registrations that keep their hostile variants and live child-PID boundary in
 the test graph. Live installed-session
 qualification remains unbuilt and unclaimed; see the
 [testing harness](../development/testing-harness.md).
+
+Natural menu size is measured from the bounded source entries independently
+of the assigned width or height. Hosts that size from the implicit extent
+therefore show complete menus; an explicitly smaller host still uses the
+existing measured overflow limits.

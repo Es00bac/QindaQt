@@ -37,7 +37,8 @@ Popup {
     function firstEnabledIndex(start, direction) {
         if (currentItems.length === 0)
             return -1
-        let candidate = Math.max(0, Math.min(currentItems.length - 1, start))
+        let candidate = ((start % currentItems.length) + currentItems.length)
+                % currentItems.length
         for (let visited = 0; visited < currentItems.length; ++visited) {
             const item = currentItems[candidate]
             if (String(item.kind ?? "") !== "separator" && Boolean(item.enabled))
@@ -55,7 +56,7 @@ Popup {
     }
 
     function choose(item) {
-        if (item === null || !Boolean(item.enabled))
+        if (!visible || item === null || !Boolean(item.enabled))
             return
         const kind = String(item.kind ?? "")
         if (kind === "submenu") {
@@ -70,7 +71,7 @@ Popup {
             // AGENT-GUARD: one accepted popup gesture becomes one facade call.
             // The facade/coordinator performs the lineage guard and D-Bus
             // client deliberately does not retry uncertain Event delivery.
-            access.activate(String(item.id ?? ""))
+            access.activate(String(item.id ?? ""), String(item.generation ?? ""))
             close()
         }
     }
@@ -127,6 +128,12 @@ Popup {
                     && !popup.popupWindow.active)
                 popup.closeAfterFocusLoss()
         }
+    }
+
+    Connections {
+        target: popup.access
+        function onItemsChanged() { popup.close(); popup.menuStack = [] }
+        function onAvailableChanged() { if (!popup.access.available) popup.close() }
     }
 
     background: Rectangle {

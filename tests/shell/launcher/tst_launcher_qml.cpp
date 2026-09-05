@@ -31,6 +31,12 @@ using namespace QindaQt::Tests::Launcher;
 
 namespace {
 
+QQuickItem *popupContent(QQuickItem *root)
+{
+    auto *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
+    return popup ? popup->property("contentItem").value<QQuickItem *>() : nullptr;
+}
+
 // The installed-package gate overrides the import path to prove the staged
 // module loads without the build tree.
 QString importPath()
@@ -201,7 +207,7 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(root != nullptr);
 
     QQuickWindow window;
-    window.setGeometry(0, 0, 420, 520);
+    window.setGeometry(0, 0, 420, 30);
     root->setParentItem(window.contentItem());
     window.show();
     QTRY_VERIFY(window.isExposed());
@@ -223,16 +229,19 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
         summaryIcon, QStringLiteral("start-here-kde")));
 
     summary->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     auto *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
+    QVERIFY(popup->property("height").toReal() > window.height());
 
     for (const QString &identity : { QStringLiteral("pinned"),
                                      QStringLiteral("recent"),
                                      QStringLiteral("development"),
                                      QStringLiteral("utilities") }) {
-        auto *header = visualItemNamed(window.contentItem(),
+        auto *header = visualItemNamed(popupContent(root),
             QStringLiteral("launcherSectionHeader-") + identity);
         QVERIFY2(header != nullptr, qPrintable(identity));
         QAccessibleInterface *headerInterface =
@@ -241,7 +250,7 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
         QVERIFY(!headerInterface->text(QAccessible::Name).isEmpty());
     }
 
-    auto *enabledRow = visualItemNamed(window.contentItem(),
+    auto *enabledRow = visualItemNamed(popupContent(root),
         QStringLiteral("launcherResultRow-editor-0"));
     QVERIFY(enabledRow != nullptr);
     QAccessibleInterface *enabledInterface =
@@ -263,7 +272,7 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
         QStringLiteral("qml-epoch"), 1,
         {{ LauncherPersistenceController::pinnedKey(), QVariantList { 42 } }}));
     QTRY_VERIFY(!stack.controller.persistenceStatus().isEmpty());
-    auto *status = visualItemNamed(window.contentItem(),
+    auto *status = visualItemNamed(popupContent(root),
         QStringLiteral("launcherAppletPersistenceStatus"));
     QVERIFY(status != nullptr);
     QTRY_VERIFY(status->isVisible());
@@ -303,9 +312,9 @@ void LauncherQmlTests::deniedRowsExposeAccessibleDisabledState()
     window.show();
     QTRY_VERIFY(window.isExposed());
     QVERIFY(QMetaObject::invokeMethod(root, "openBrowser"));
-    QTRY_VERIFY(visualItemNamed(window.contentItem(),
+    QTRY_VERIFY(visualItemNamed(popupContent(root),
         QStringLiteral("launcherResultRow-editor-0")) != nullptr);
-    auto *deniedRow = visualItemNamed(window.contentItem(),
+    auto *deniedRow = visualItemNamed(popupContent(root),
         QStringLiteral("launcherResultRow-editor-0"));
     QVERIFY(!deniedRow->isEnabled());
     QAccessibleInterface *deniedInterface =
@@ -347,11 +356,13 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
 
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
 
     QObject *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
 
     auto *field = root->findChild<QQuickItem *>(
         QStringLiteral("launcherSearchField"));
@@ -360,51 +371,56 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
 
     // Tab reaches the first row. Up/Down then traverse the flat model across
     // the Pinned and Recent section boundary and back to the search field.
-    QTest::keyClick(&window, Qt::Key_Tab);
-    QTRY_VERIFY(activeResultRow(window.contentItem()) != nullptr);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Tab);
+    QTRY_VERIFY(activeResultRow(popupContent(root)) != nullptr);
     QCOMPARE(QAccessible::queryAccessibleInterface(
-                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+                 activeResultRow(popupContent(root)))->text(QAccessible::Name),
              QStringLiteral("Fixture Editor"));
-    QTest::keyClick(&window, Qt::Key_Down);
-    QTRY_VERIFY(activeResultRow(window.contentItem()) != nullptr);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
+    QTRY_VERIFY(activeResultRow(popupContent(root)) != nullptr);
     QCOMPARE(QAccessible::queryAccessibleInterface(
-                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+                 activeResultRow(popupContent(root)))->text(QAccessible::Name),
              QStringLiteral("Fixture Files"));
-    QTest::keyClick(&window, Qt::Key_Up);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Up);
     QCOMPARE(QAccessible::queryAccessibleInterface(
-                 activeResultRow(window.contentItem()))->text(QAccessible::Name),
+                 activeResultRow(popupContent(root)))->text(QAccessible::Name),
              QStringLiteral("Fixture Editor"));
-    QTest::keyClick(&window, Qt::Key_Up);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Up);
     QTRY_VERIFY(field->hasActiveFocus());
 
     // Space and Return are pointer-equivalent activation paths.
-    QTest::keyClick(&window, Qt::Key_Down);
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_COMPARE(stack.spawner.requests.size(), 1);
     QCOMPARE(stack.spawner.requests.constFirst().program,
              QStringLiteral("qindaqt-editor"));
     field->forceActiveFocus();
     QTRY_VERIFY(field->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Down);
-    QTest::keyClick(&window, Qt::Key_Down);
-    QTest::keyClick(&window, Qt::Key_Return);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Down);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Return);
     QTRY_COMPARE(stack.spawner.requests.size(), 2);
     QCOMPARE(stack.spawner.requests.constLast().program,
              QStringLiteral("qindaqt-editor"));
 
-    QTest::keyClick(&window, Qt::Key_Escape);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
 
+    // The offscreen platform does not reactivate the transient parent.
+    window.requestActivate();
+    QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
     // Reopen and type to prove the search section replaces browse sections.
     summary->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Return);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Return);
     QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
     QTRY_VERIFY(field->hasActiveFocus());
     for (const QChar key : QStringLiteral("editor"))
-        QTest::keyClick(&window, key.toLatin1());
+        QTest::keyClick(QGuiApplication::focusWindow(), key.toLatin1());
     QTRY_COMPARE(stack.controller.query(), QStringLiteral("editor"));
     QTRY_COMPARE(stack.controller.sections().size(), 1);
-    QVERIFY(visualItemNamed(window.contentItem(),
+    QVERIFY(visualItemNamed(popupContent(root),
                             QStringLiteral("launcherSectionHeader-searchResults"))
             != nullptr);
 }

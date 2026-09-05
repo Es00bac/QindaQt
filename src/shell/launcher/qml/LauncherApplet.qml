@@ -94,6 +94,9 @@ Item {
     T.Popup {
         id: browser
 
+        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
+        // their surface. A separate popup window supplies both capabilities.
+        popupType: T.Popup.Window
         objectName: "launcherAppletPopup"
         width: 340
         height: Math.min(480, (browserContent.item

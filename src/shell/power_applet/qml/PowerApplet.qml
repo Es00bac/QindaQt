@@ -88,6 +88,9 @@ Item {
 
     Popup {
         id: details
+        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
+        // their surface. A separate popup window supplies both capabilities.
+        popupType: Popup.Window
         objectName: "powerAppletPopup"
         width: 300
         padding: 12
@@ -325,6 +328,7 @@ Item {
     }
 
     Dialog {
+        popupType: Popup.Window
         id: confirmation
         objectName: "powerAppletSessionConfirmation"
         width: 320

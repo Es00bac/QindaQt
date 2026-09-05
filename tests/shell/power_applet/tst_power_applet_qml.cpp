@@ -29,6 +29,12 @@ using namespace QindaQt::Tests;
 
 namespace {
 
+QQuickItem *popupContent(QQuickItem *root)
+{
+    auto *popup = root->findChild<QObject *>(QStringLiteral("powerAppletPopup"));
+    return popup ? popup->property("contentItem").value<QQuickItem *>() : nullptr;
+}
+
 const QString kOwner = QStringLiteral(":1.42");
 
 class StubSessionActions final : public QObject {
@@ -164,7 +170,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QVERIFY(root != nullptr);
 
     QQuickWindow window;
-    window.setGeometry(0, 0, 420, 520);
+    window.setGeometry(0, 0, 420, 30);
     root->setParentItem(window.contentItem());
     root->setPosition(QPointF(20, 20));
     window.show();
@@ -183,12 +189,15 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
                                       QStringLiteral("battery-060")));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
 
     QObject *popup = root->findChild<QObject *>(
         QStringLiteral("powerAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
+    QVERIFY(popup->property("height").toReal() > window.height());
 
     QAccessibleInterface *summaryInterface =
         QAccessible::queryAccessibleInterface(summary);
@@ -198,7 +207,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
         QStringLiteral("56%")));
 
     const auto profileButtons = visualItemsNamed(
-        window.contentItem(), QStringLiteral("powerAppletProfileButton"));
+        popupContent(root), QStringLiteral("powerAppletProfileButton"));
     QCOMPARE(profileButtons.size(), 2);
     QQuickItem *powerSaver = nullptr;
     for (QQuickItem *button : profileButtons) {
@@ -216,7 +225,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QVERIFY(!profileInterface->text(QAccessible::Description).isEmpty());
 
     const auto sliders = visualItemsNamed(
-        window.contentItem(), QStringLiteral("powerAppletKeyboardSlider"));
+        popupContent(root), QStringLiteral("powerAppletKeyboardSlider"));
     QCOMPARE(sliders.size(), 1);
     QQuickItem *slider = sliders.constFirst();
     QAccessibleInterface *sliderInterface =
@@ -228,7 +237,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
 
     slider->forceActiveFocus();
     QVERIFY(slider->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Right);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Right);
     QTRY_COMPARE(transport.operations.size(), 1);
     QCOMPARE(transport.operations.constFirst().request.kind,
              Power::OperationKind::SetKeyboardBrightness);
@@ -242,7 +251,7 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QTRY_VERIFY(!controller.operationPending());
 
     powerSaver->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_COMPARE(transport.operations.size(), 2);
     QCOMPARE(transport.operations.constLast().request.kind,
              Power::OperationKind::SetProfile);
@@ -266,22 +275,29 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
                 .contains(QStringLiteral("Lock")));
 
     lock->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QCOMPARE(sessionActions.requests,
              QStringList({QStringLiteral("lock")}));
     suspend->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QCOMPARE(sessionActions.requests.constLast(), QStringLiteral("suspend"));
     restart->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QCOMPARE(sessionActions.requests.size(), 2);
     QObject *confirmation = root->findChild<QObject *>(
         QStringLiteral("powerAppletSessionConfirmation"));
     QVERIFY(confirmation != nullptr);
     QTRY_VERIFY(confirmation->property("opened").toBool());
+    auto *confirmationContent = confirmation->property("contentItem").value<QQuickItem *>();
+    QVERIFY(confirmationContent != nullptr);
+    QVERIFY(confirmationContent->window() != &window);
     QVERIFY(QMetaObject::invokeMethod(confirmation, "accept"));
     QTRY_COMPARE(sessionActions.requests.size(), 3);
     QCOMPARE(sessionActions.requests.constLast(), QStringLiteral("reboot"));
+    popupContent(root)->window()->requestActivate();
+    QTRY_COMPARE(QGuiApplication::focusWindow(), popupContent(root)->window());
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
+    QTRY_VERIFY(!popup->property("opened").toBool());
 }
 
 QTEST_MAIN(PowerAppletQmlTests)

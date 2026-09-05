@@ -117,19 +117,25 @@ Item {
     }
 
     objectName: "globalMenuApplet"
-    implicitWidth: available
-                   ? (vertical ? 40 : row.implicitWidth
-                      + (overflowCount > 0 && indicatorFits
-                         ? overflowIndicator.implicitWidth + spacing : 0))
-                   : 0
-    // AGENT-GUARD: the +N indicator is anchored below the vertical column, so
-    // vertical implicit height must include it or the clipped root geometry
-    // would hide the affordance the limit exists to surface.
-    implicitHeight: available
-                    ? (vertical ? verticalLayout.implicitHeight
-                       + (overflowCount > 0 && indicatorFits
-                          ? overflowIndicator.implicitHeight + 4 : 0) : 28)
-                    : 0
+    // AGENT-GUARD: natural size must not depend on width-limited delegates.
+    // Otherwise a host using implicitWidth permanently collapses to +N.
+    implicitWidth: available ? (vertical ? 40 : naturalHorizontalExtent()) : 0
+    implicitHeight: available ? (vertical ? naturalVerticalExtent() : 28) : 0
+
+    function naturalHorizontalExtent() {
+        const count = Math.min(topLevelItems.length, clampedEntryLimit)
+        let extent = 0
+        for (let i = 0; i < count; ++i)
+            extent += measuredEntryWidth(topLevelItems[i]) + (i > 0 ? spacing : 0)
+        return extent + (topLevelItems.length > count
+                         ? measuredIndicatorWidth() + spacing : 0)
+    }
+
+    function naturalVerticalExtent() {
+        const count = Math.min(topLevelItems.length, clampedEntryLimit)
+        return count * 24 + Math.max(0, count - 1) * 4
+                + (topLevelItems.length > count ? measuredIndicatorHeight() + 4 : 0)
+    }
     clip: true
     Accessible.role: Accessible.MenuBar
     Accessible.name: available ? qsTr("Application menu") : qsTr("Menu unavailable")
@@ -243,7 +249,7 @@ Item {
             if (entry.isSubmenu)
                 submenuPopup.openMenu(entry.modelData, entry)
             else
-                root.access.activate(entry.modelData.id)
+                root.access.activate(entry.modelData.id, String(entry.modelData.generation ?? ""))
 
         }
 

@@ -57,6 +57,7 @@ class GlobalMenuAppletAccessTests final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    void staleRenderedGenerationCannotActivateReusedId();
     void startsUnavailableWithNoItems();
     void publishTreeMakesAvailableAndProjectsTopLevel();
     void projectionCarriesHonestKindsAndOmitsHiddenEntries();
@@ -72,6 +73,30 @@ private Q_SLOTS:
     void activateOnSubmenuEmitsNothing();
     void activateOnHiddenActionEmitsNothing();
 };
+
+void GlobalMenuAppletAccessTests::staleRenderedGenerationCannotActivateReusedId()
+{
+    GlobalMenuAppletAccess access;
+    MenuTree tree = fixtureTree();
+    access.publishTree(tree);
+    const QString first = access.items().first().toMap().value("generation").toString();
+    QSignalSpy activations(&access, &GlobalMenuAppletAccess::activationRequested);
+    QSignalSpy publications(&access, &GlobalMenuAppletAccess::itemsChanged);
+    tree.items[0].children[0].text = QStringLiteral("Different action");
+    ++tree.revision;
+    access.publishTree(tree);
+    access.activate(QStringLiteral("fileNewAction"), first);
+    QCOMPARE(activations.count(), 0);
+    const QString current = access.items().first().toMap().value("generation").toString();
+    access.activate(QStringLiteral("fileNewAction"), current);
+    QCOMPARE(activations.count(), 1);
+    // Identical labels with new provider lineage still invalidate old gestures.
+    tree.epoch = QUuid::createUuid();
+    access.publishTree(tree);
+    QCOMPARE(publications.count(), 2);
+    access.activate(QStringLiteral("fileNewAction"), current);
+    QCOMPARE(activations.count(), 1);
+}
 
 void GlobalMenuAppletAccessTests::startsUnavailableWithNoItems()
 {

@@ -146,7 +146,7 @@ and enum is the negative control for the shared comparison path.
 details popup. Adapter power/discovery and paired-device
 connect/disconnect are ordinary keyboard-operable buttons with complete
 accessible names and descriptions. An inline prompt has complete accessible
-text and keyboard-operable Confirm/Cancel actions; an application-window Escape
+text and keyboard-operable Confirm/Cancel actions; a popup-window Escape
 shortcut cancels the exact active prompt, when its reply lane is free, before
 closing the popup. Failure/uncertainty feedback is exposed as an
 accessible alert. Horizontal and vertical panels use the same controller and
@@ -220,3 +220,8 @@ AT-SPI bridge behavior, memory/CPU budget, or nested-compositor interaction.
 The installed test proves a relocatable composition boundary, not live radio
 behavior. Those remain platform, Agent1, audio, accessibility, hardware, and
 integrated-session outcomes.
+
+The details surface uses `Popup.Window`, so it extends beyond its originating
+panel and receives keyboard focus independently of the panel. Escape and
+outside presses dismiss it; closing Bluetooth details still releases the
+discovery lease through its existing controller contract.

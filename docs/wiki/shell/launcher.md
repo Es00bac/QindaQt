@@ -188,8 +188,10 @@ Dispatch then follows the entry's declared surface:
 
 The child-environment allowlist forwards session identity (`HOME`, `PATH`,
 `XDG_RUNTIME_DIR`, `XDG_DATA_DIRS`, `XDG_CONFIG_DIRS`, `XDG_SESSION_*`,
+`XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, `XDG_STATE_HOME`,
 `XDG_CURRENT_DESKTOP`), locale (`LANG`, `LC_ALL`, `LC_*`), display
-(`WAYLAND_DISPLAY`, `DISPLAY`), `DBUS_SESSION_BUS_ADDRESS`, and Qt platform
+(`WAYLAND_DISPLAY`, `DISPLAY`, `XAUTHORITY`), authentication-agent socket
+(`SSH_AUTH_SOCK`), `DBUS_SESSION_BUS_ADDRESS`, and Qt platform
 selection (`QT_QPA_PLATFORM`, `QT_SCALE_FACTOR`) — nothing else, including
 QindaQt's own development overrides. Activation (startup-notification)
 tokens are a later slice; the D-Bus platform-data map is empty today. Tests
@@ -291,3 +293,10 @@ physical or nested-session behavior. Headless rows use `QCoreApplication`; all
 launcher rows remove inherited display and session-bus endpoints, while the
 two genuine GUI rows force offscreen software rendering. Tests use injected
 roots and fakes. `/bin/true` and `/bin/false` are inert process-start fixtures only.
+
+The browser uses `Popup.Window`: its focusable transient can extend outside
+the layer-shell panel and Escape closes it. The compiled offscreen gate
+checks that content belongs to a separate window and drives keyboard input
+through that focused window. Configuration homes and authentication paths are
+preserved exactly; loader injection and QindaQt development overrides remain
+excluded from launched children.

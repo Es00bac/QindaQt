@@ -185,3 +185,8 @@ idle integration, physical hardware, or nested compositor interaction. It owns n
 aggregation, estimate, threshold, or platform policy: those remain Power1 and
 brightness-composition authority. Installed proof is relocation and source
 policy evidence, not a claim that unavailable PB-1 data has become live.
+
+The details and session-confirmation surfaces use `Popup.Window`, so each extends beyond its originating
+panel and receives keyboard focus independently of the panel. Escape and
+outside presses dismiss it. Compiled tests traverse the independent content
+window for the existing operation and accessibility checks.
