@@ -8,7 +8,7 @@ status: handoff
 feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-04T13:57:49-06:00
+updated_at: 2026-09-04T18:42:24-06:00
 ---
 
 # Claude Program Manager
@@ -63,3 +63,4 @@ updated_at: 2026-09-04T13:57:49-06:00
 - 2026-09-04T10:44:07-06:00 — Resumed as Program Manager (fresh windows). Funded one repair + one recheck for each shelved candidate and the task-list hosting lane. Integrated Bluetooth pairing `e473bbf` (`4b3f07d9`) and Tray S2 `544d1c3` (`f3abd4ab`, reconciliations `5157a1e0`/`cbaab4e0`); verified 105/105 focused Debug/Release, static gates, broad 601/601. Color route `85c8e8c` accepted; assistant merge `0f2bf167` landing next.
 - 2026-09-04T13:57:49-06:00 — Integrated the Color route (`32b1ef71`), Task List T3 hosting (`fdd07126`, `bdfef7da`), and Tray S3 hosting (`4cafc37c`); on the system KWin 6.6.6 roots the merged tree `4cafc37c` passes 178/178 focused rows in Debug and Release, the static gates, the broad safe Debug suite 614/614, the serialized nested boot and panel-visibility rows 4/4, and the Release install boundary (installed rows 14/14, session.installpaths 1/1, broad safe Release 614/614, /usr/local prefix confirmed). Exact main `4cafc37c` is the install boundary; the user runs the sudo install and SDDM smoke.
 - 2026-09-04T15:32:08-06:00 — Withdrew install readiness after the user's windowed run showed an unusable shell (tokens never published in the shell process; task list/global menu degraded; terminal blank); opened `shell-production-runtime-repair` (Codex). Lesson: a green suite plus nested geometry rows is not a usable desktop; a visible windowed run is now a mandatory pre-install gate.
+- 2026-09-04T18:42:24-06:00 — Integrated the production shell runtime repair `99de545a` at `cd760f4e`; focused 198/198 rows in Debug and Release, static gates, broad safe Debug 615/615, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots. Task-fact contract, menu export, and iconography lanes remain before install readiness.
