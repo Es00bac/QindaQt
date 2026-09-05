@@ -455,17 +455,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 
     startSettingsClients();
 
-    m_appearanceBridge = std::make_unique<ShellAppearanceBridge>(
-        *m_settingsClient, m_themes, *m_tokenPublisher,
-        !options.themeId.isEmpty());
-    // Confirmed theme/font preference changes reach both token publication
-    // (bridge/publisher) and the raw theme maps of existing and future panel
-    // and notification surfaces.
-    connect(&m_themes, &Themes::ThemeCatalog::currentChanged, this,
-            &ShellRuntimeApplication::propagateThemeToSurfaces);
-    connect(m_appearanceBridge.get(),
-            &ShellAppearanceBridge::confirmedPreferencesChanged, this,
-            &ShellRuntimeApplication::propagateThemeToSurfaces);
+    initializeAppearanceBridge(!options.themeId.isEmpty());
 
     if (m_notificationClient) {
         startNotificationOutputAuthority();
@@ -521,6 +511,21 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         return false;
     }
     return true;
+}
+
+void ShellRuntimeApplication::initializeAppearanceBridge(
+    bool explicitThemeSelection)
+{
+    m_appearanceBridge = std::make_unique<ShellAppearanceBridge>(
+        *m_settingsClient, m_themes, *m_tokenPublisher, explicitThemeSelection);
+    // Confirmed theme/font preference changes reach both token publication
+    // (bridge/publisher) and the raw theme maps of existing and future panel
+    // and notification surfaces.
+    connect(&m_themes, &Themes::ThemeCatalog::currentChanged, this,
+            &ShellRuntimeApplication::propagateThemeToSurfaces);
+    connect(m_appearanceBridge.get(),
+            &ShellAppearanceBridge::confirmedPreferencesChanged, this,
+            &ShellRuntimeApplication::propagateThemeToSurfaces);
 }
 
 void ShellRuntimeApplication::resetRuntime()
