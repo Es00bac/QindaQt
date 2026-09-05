@@ -122,10 +122,11 @@ complete QST-1 generation before creating `Icon` instances, exactly as for
 The production shell and `qindaqt-shell-preview` install `IconRuntime` after
 QST-1 publication and before constructing panel QML. Shell composition derives
 icon and application roots from one explicit freedesktop data-root snapshot.
-The selected theme document may name `iconTheme`; absent hints choose
-`breeze-dark` for dark canvases and `breeze` for light canvases, while the
-locator always appends `hicolor`. Invalid hints fail shell startup rather than
-opening a filesystem-shaped lookup surface.
+The theme loader validates and retains the selected document's optional
+`iconTheme`; shell composition consumes that catalog value without a second
+filesystem parse. Absent hints choose `breeze-dark` for dark canvases and
+`breeze` for light canvases, while the locator always appends `hicolor`.
+Invalid hints reject the catalog before icon installation.
 
 Panel summaries use the compiled `Icon` element and preserve their prior
 accessible names on the surrounding buttons. Task-list composition owns one
@@ -146,8 +147,8 @@ ctest --test-dir build/dev \
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |
-| `qindaqt.shell-icon-runtime-configuration` | Selected-theme hint, light/dark default, hostile-hint refusal, and explicit XDG root ordering. |
-| `qindaqt.shell-icon-coverage` | Complete-inventory guard requiring an icon declaration for every hosted panel entry and an `iconTheme` field for every built-in theme. |
+| `qindaqt.shell-icon-runtime-configuration` | Catalog-retained selected-theme hint, light/dark default, hostile-hint refusal, an oversized theme proving no second file-size/parser policy, schema-valid punctuation, and explicit XDG root ordering/fallback. |
+| `qindaqt.shell-icon-coverage` | Complete-inventory guard requiring every literal built-in summary name to resolve in the pinned Breeze/Breeze-dark intersection fixture, plus an `iconTheme` field for every built-in theme. |
 
 All rows run offscreen or headless with the host display and bus variables
 unset; fixtures are generated beneath the build directory. No row contacts a

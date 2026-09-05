@@ -28,6 +28,10 @@ public:
     QString variant;
     QString fontFamily = QStringLiteral("Inter");
     QString monoFontFamily = QStringLiteral("JetBrains Mono");
+    // Optional non-token metadata consumed by shell composition only. The
+    // loader validates the bounded XDG theme-name grammar before this value
+    // enters a catalog, so downstream consumers never re-parse theme files.
+    QString iconTheme;
     QHash<QString, QColor> colors;
     int cornerRadius = 10;
     int motionDuration = 160;

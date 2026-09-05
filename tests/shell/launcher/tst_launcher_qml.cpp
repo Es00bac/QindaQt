@@ -5,6 +5,7 @@
 #include "launcher_applet_controller.h"
 #include "launcher_persistence.h"
 #include "launcher_runtime_test_support.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/services/settings_client/settings_client.h>
@@ -188,6 +189,11 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QTRY_VERIFY(stack.persistence.persistenceReady());
 
     QQmlEngine engine;
+    QString iconError;
+    QVERIFY2(QindaQt::Tests::installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("start-here-kde")}, &iconError),
+             qPrintable(iconError));
     QVERIFY(publishTokens(engine));
     auto owned = createApplet(engine, &stack.controller);
     QVERIFY(owned != nullptr);
@@ -213,10 +219,8 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     auto *summaryIcon = summary->findChild<QQuickItem *>(
         QStringLiteral("launcherAppletIcon"));
     QVERIFY(summaryIcon != nullptr);
-    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
-        QStringLiteral("placeholderTile"));
-    QVERIFY(summaryIcon->property("resolved").toBool()
-            || (placeholder != nullptr && placeholder->isVisible()));
+    QVERIFY(QindaQt::Tests::hasResolvedProviderSource(
+        summaryIcon, QStringLiteral("start-here-kde")));
 
     summary->forceActiveFocus();
     QTest::keyClick(&window, Qt::Key_Space);

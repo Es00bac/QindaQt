@@ -208,6 +208,11 @@ if(TARGET qindaqt-shell)
             Qt6::Test
     )
     target_compile_features(qindaqt_clipboard_applet_qml_tests PRIVATE cxx_std_20)
+    target_compile_definitions(
+        qindaqt_clipboard_applet_qml_tests
+        PRIVATE
+            QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+    )
     set_target_properties(qindaqt_clipboard_applet_qml_tests PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(qindaqt_clipboard_applet_qml_tests)
     qt_import_qml_plugins(qindaqt_clipboard_applet_qml_tests)

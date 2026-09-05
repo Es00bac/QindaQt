@@ -41,10 +41,11 @@ These are semantic decoration preferences, not QML implementation details. The
 compositor decoration and shell preview must consume the same map so ordinary
 and grouped windows remain consistent.
 
-`iconTheme` is non-token metadata. The shell validates it independently after
-the selected theme has passed the theme loader, installs that theme before
-panel QML, and always retains `hicolor` as the final fallback. An invalid hint
-is a startup error; it never becomes a path.
+`iconTheme` is non-token metadata. `ThemeLoader` validates and retains it in
+the catalog's `ThemeSpec`; shell composition consumes that already-parsed
+value and never reopens the selected JSON document. It installs that theme
+before panel QML and always retains `hicolor` as the final fallback. An invalid
+hint rejects the catalog at startup and never becomes a path.
 
 The built-in catalog currently supplies Qinda Light, Qinda Dusk, Qinda Dark,
 Qinda High Contrast, and Qinda macOS. Qinda macOS uses a mist-and-sage QindaQt

@@ -36,10 +36,17 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory("../../../src/applet_runtime"
                      "${CMAKE_BINARY_DIR}/src/applet_runtime")
     set(QINDAQT_LAUNCHER_DEPENDENCIES_READY ON)
+    set(QINDAQT_LAUNCHER_PURE_ONLY ON)
     add_subdirectory(
         "../../../src/shell/launcher"
         "${CMAKE_BINARY_DIR}/src/shell/launcher"
     )
+    unset(QINDAQT_LAUNCHER_PURE_ONLY)
+    add_subdirectory(
+        "../../../src/shell/icons"
+        "${CMAKE_BINARY_DIR}/src/shell/icons"
+    )
+    qindaqt_add_launcher_runtime()
     set(launcher_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 else()
     find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
@@ -232,6 +239,7 @@ if(TARGET qindaqt_shell_launcher_runtime)
         qindaqt_launcher_qml_tests
         PRIVATE
             QINDAQT_LAUNCHER_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+            QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
             QINDAQT_SOURCE_DIR="${launcher_source_root}"
     )
     qindaqt_enable_warnings(qindaqt_launcher_qml_tests)

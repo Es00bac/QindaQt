@@ -8,8 +8,6 @@
 
 #include <QCoreApplication>
 #include <QDebug>
-#include <QDir>
-#include <QProcessEnvironment>
 
 namespace QindaQt::Shell {
 
@@ -36,14 +34,11 @@ bool ShellRuntimeApplication::initializeTokens(QString *error)
 bool ShellRuntimeApplication::initializeIcons(QString *error)
 {
     QString themeName;
-    if (!ShellIconConfiguration::selectedThemeName(
-            m_themes, m_themeDirectory, &themeName, error)) {
+    if (!ShellIconConfiguration::selectedThemeName(m_themes, &themeName, error)) {
         return false;
     }
-    const ShellDataRoots roots = ShellIconConfiguration::dataRoots(
-        QProcessEnvironment::systemEnvironment(), QDir::homePath());
     const QStringList iconRoots = Icons::IconRuntime::freedesktopIconRoots(
-        roots.dataHome, roots.dataDirectories);
+        m_dataRoots.dataHome, m_dataRoots.dataDirectories);
     if (!Icons::IconRuntime::install(m_engine, iconRoots, {themeName})) {
         if (error != nullptr) {
             *error = QStringLiteral("QindaQt shell icon runtime was already installed");

@@ -40,11 +40,11 @@ Item {
             return null
         const rows = controller.deviceRows ?? []
         for (let i = 0; i < rows.length; ++i) {
-            if (rows[i].direction === "output" && rows[i].isDefault)
+            if (rows[i].isOutput === true && rows[i].isDefault === true)
                 return rows[i]
         }
         for (let i = 0; i < rows.length; ++i) {
-            if (rows[i].direction === "output")
+            if (rows[i].isOutput === true)
                 return rows[i]
         }
         return null
@@ -54,10 +54,10 @@ Item {
     readonly property string summaryIconName: {
         if (!outputRow || outputRow.muted)
             return "audio-volume-muted"
-        const volume = Number(outputRow.normalizedVolume ?? 0)
-        if (volume < 1) return "audio-volume-muted"
-        if (volume < 34) return "audio-volume-low"
-        if (volume < 67) return "audio-volume-medium"
+        const volume = Number(outputRow.volume ?? 0)
+        if (volume <= 0) return "audio-volume-muted"
+        if (volume < 1 / 3) return "audio-volume-low"
+        if (volume < 2 / 3) return "audio-volume-medium"
         return "audio-volume-high"
     }
 
@@ -80,6 +80,14 @@ Item {
         }
         onClicked: toggleDetails()
         Accessible.onPressAction: toggleDetails()
+        Keys.onReturnPressed: event => {
+            toggleDetails()
+            event.accepted = true
+        }
+        Keys.onEnterPressed: event => {
+            toggleDetails()
+            event.accepted = true
+        }
 
         contentItem: ShellIcons.Icon {
             objectName: "audioAppletIcon"

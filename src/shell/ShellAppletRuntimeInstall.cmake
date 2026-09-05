@@ -1,11 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-function(qindaqt_install_shell_applet_component component applet_id)
-    install(
-        TARGETS qindaqt-shell
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT "${component}"
-    )
+function(qindaqt_install_shell_applet_payload component applet_id)
     install(
         FILES "${PROJECT_SOURCE_DIR}/data/applets/${applet_id}.json"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/applets"
@@ -42,10 +37,26 @@ function(qindaqt_install_shell_applet_component component applet_id)
 endfunction()
 
 function(qindaqt_install_shell_primary_applet_components)
-    qindaqt_install_shell_applet_component(AudioAppletRuntime audio)
-    qindaqt_install_shell_applet_component(BluetoothAppletRuntime bluetooth)
-    qindaqt_install_shell_applet_component(ClipboardAppletRuntime clipboard)
-    qindaqt_install_shell_applet_component(GlobalMenuAppletRuntime global-menu)
-    qindaqt_install_shell_applet_component(LauncherAppletRuntime launcher)
-    qindaqt_install_shell_applet_component(PowerAppletRuntime power)
+    # AGENT-GUARD: keep one literal component per qindaqt-shell install rule.
+    # The closure probe inventories these declarations without executing
+    # caller-dependent CMake code, so a parameter here would hide a stage.
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT AudioAppletRuntime)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT BluetoothAppletRuntime)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT ClipboardAppletRuntime)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT GlobalMenuAppletRuntime)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT LauncherAppletRuntime)
+    install(TARGETS qindaqt-shell RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT PowerAppletRuntime)
+
+    qindaqt_install_shell_applet_payload(AudioAppletRuntime audio)
+    qindaqt_install_shell_applet_payload(BluetoothAppletRuntime bluetooth)
+    qindaqt_install_shell_applet_payload(ClipboardAppletRuntime clipboard)
+    qindaqt_install_shell_applet_payload(GlobalMenuAppletRuntime global-menu)
+    qindaqt_install_shell_applet_payload(LauncherAppletRuntime launcher)
+    qindaqt_install_shell_applet_payload(PowerAppletRuntime power)
 endfunction()

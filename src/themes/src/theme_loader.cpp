@@ -51,6 +51,24 @@ bool readOptionalColor(const QJsonObject &object,
     return true;
 }
 
+bool isValidIconThemeName(const QString &name)
+{
+    if (name.isEmpty() || name.size() > 128 || name.contains(QStringLiteral(".."))) {
+        return false;
+    }
+    for (const QChar character : name) {
+        const ushort value = character.unicode();
+        const bool accepted = (value >= 'A' && value <= 'Z')
+            || (value >= 'a' && value <= 'z')
+            || (value >= '0' && value <= '9') || value == '.' || value == '_'
+            || value == '-';
+        if (!accepted) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 LoadResult ThemeLoader::fromFile(const QString &path)
@@ -78,6 +96,13 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
     theme.variant = root.value(QStringLiteral("variant")).toString();
     theme.fontFamily = root.value(QStringLiteral("fontFamily")).toString(theme.fontFamily);
     theme.monoFontFamily = root.value(QStringLiteral("monoFontFamily")).toString(theme.monoFontFamily);
+    const QJsonValue iconTheme = root.value(QStringLiteral("iconTheme"));
+    if (!iconTheme.isUndefined()) {
+        if (!iconTheme.isString() || !isValidIconThemeName(iconTheme.toString())) {
+            return failure(origin, QStringLiteral("invalid iconTheme"));
+        }
+        theme.iconTheme = iconTheme.toString();
+    }
     theme.cornerRadius = root.value(QStringLiteral("cornerRadius")).toInt(theme.cornerRadius);
     theme.motionDuration = root.value(QStringLiteral("motionDuration")).toInt(theme.motionDuration);
     theme.blurEnabled = root.value(QStringLiteral("blurEnabled")).toBool(theme.blurEnabled);

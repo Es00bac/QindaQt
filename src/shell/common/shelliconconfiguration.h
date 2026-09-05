@@ -25,8 +25,7 @@ public:
     [[nodiscard]] static ShellDataRoots dataRoots(
         const QProcessEnvironment &environment, const QString &homeDirectory);
     [[nodiscard]] static bool selectedThemeName(
-        const Themes::ThemeCatalog &themes, const QString &themeDirectory,
-        QString *themeName, QString *error);
+        const Themes::ThemeCatalog &themes, QString *themeName, QString *error);
 };
 
 } // namespace QindaQt::Shell

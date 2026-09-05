@@ -102,24 +102,29 @@ bool ShellPreviewApplication::loadCatalogs(const PreviewOptions &options, QStrin
         *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
         return false;
     }
-    m_themeDirectory = themeDirectory;
+    m_dataRoots = ShellIconConfiguration::dataRoots(
+        QProcessEnvironment::systemEnvironment(), QDir::homePath());
     return true;
 }
 
 bool ShellPreviewApplication::initializeIcons(QString *error)
 {
     QString themeName;
-    if (!ShellIconConfiguration::selectedThemeName(
-            m_themes, m_themeDirectory, &themeName, error)) {
+    if (!ShellIconConfiguration::selectedThemeName(m_themes, &themeName, error)) {
         return false;
     }
-    const ShellDataRoots roots = ShellIconConfiguration::dataRoots(
-        QProcessEnvironment::systemEnvironment(), QDir::homePath());
-    return Icons::IconRuntime::install(
+    if (Icons::IconRuntime::install(
         m_engine,
         Icons::IconRuntime::freedesktopIconRoots(
-            roots.dataHome, roots.dataDirectories),
-        {themeName});
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories),
+        {themeName})) {
+        return true;
+    }
+    if (error != nullptr) {
+        *error = QStringLiteral(
+            "QindaQt shell preview icon runtime was already installed");
+    }
+    return false;
 }
 
 void ShellPreviewApplication::printCatalog() const

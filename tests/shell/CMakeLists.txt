@@ -28,7 +28,9 @@ target_link_libraries(
 )
 target_compile_definitions(
     qindaqt_shell_icon_configuration_tests
-    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_TEST_SCRATCH="${CMAKE_CURRENT_BINARY_DIR}/icon-configuration-scratch"
 )
 qindaqt_enable_warnings(qindaqt_shell_icon_configuration_tests)
 add_test(
