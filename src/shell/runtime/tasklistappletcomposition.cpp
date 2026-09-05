@@ -16,6 +16,7 @@
 #include "qindaqt/shell/task_list/producer/task_list_facts_producer.h"
 #include "qindaqt/shell/task_list/task_list_source.h"
 #include "qindaqt/shell/icons/desktop_entry_icon_resolver.h"
+#include "qindaqt/shell/icons/icon_theme_locator.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QList>
@@ -419,7 +420,8 @@ TaskListAppletComposition::TaskListAppletComposition(
     const AppletHost::CapabilityPolicy &policy,
     const QDBusConnection &sessionBus,
     ShellWindowActionsClient::ShellWindowActionsClient &windowActions,
-    QStringList applicationRoots)
+    QStringList applicationRoots, QStringList iconRoots,
+    QStringList iconThemes)
     : m_ownedSource(std::make_unique<ShellTaskList::TaskListSource>())
     , m_ownedProducerTransport(std::make_unique<
           ShellTaskList::Producer::QtTaskListProducerTransport>(sessionBus))
@@ -436,6 +438,8 @@ TaskListAppletComposition::TaskListAppletComposition(
               *m_ownedOperationAdapter))
     , m_iconResolver(std::make_unique<Icons::DesktopEntryIconResolver>(
           std::move(applicationRoots)))
+    , m_iconThemeLocator(std::make_unique<Icons::IconThemeLocator>(
+          std::move(iconRoots), std::move(iconThemes)))
 {
     compose(catalog, policy, *m_ownedSource, *m_ownedProducer,
             *m_ownedContainerBridge, windowActions);
@@ -473,6 +477,10 @@ void TaskListAppletComposition::compose(
         [this](const QString &applicationId) {
             return m_iconResolver
                 ? m_iconResolver->iconNameForAppId(applicationId) : QString{};
+        },
+        [this](const QString &iconName) {
+            return m_iconThemeLocator
+                && m_iconThemeLocator->hasIcon(iconName, 18, 1.0, false);
         });
 }
 

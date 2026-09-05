@@ -161,6 +161,27 @@ def _add_interaction_evidence(
         "parentWaylandSocket": "qindaqt-parent-wayland",
         "childWaylandSocket": "qindaqt-0123456789ab",
     })
+    task_list = {
+        "phase": "ready", "generation": "1", "windowCount": 2,
+        "buttons": [
+            {"applicationId": "org.qindaqt.Settings",
+             "iconName": "preferences-system", "iconResolved": True},
+            {"applicationId": "org.qindaqt.TextEditor",
+             "iconName": "accessories-text-editor", "iconResolved": True},
+        ],
+    }
+    quieting = {
+        "enabled": False, "hasBaseline": True, "state": "ready",
+        "canToggle": True, "statusText": "", "errorText": "",
+    }
+    panel_applets = [
+        {"panelId": "smart-shelf", "appletId": "apps",
+         "plugin": "launcher", "ready": True,
+         "entryPoint": "qindaqt.applets.launcher"},
+        {"panelId": "smart-shelf", "appletId": "hosted-task-list",
+         "plugin": "task-list", "ready": True,
+         "entryPoint": "qindaqt.applets.task-list"},
+    ]
     evidence["interaction"] = {
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",
@@ -180,7 +201,9 @@ def _add_interaction_evidence(
                     "ready": True, "qstRevision": 1, "generation": "1",
                     "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
                 },
-                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
+                "taskList": task_list,
+                "quieting": quieting,
+                "panelApplets": panel_applets,
                 "presentation": {
                     "privatePresentationAllowed": True, "centerOpen": False,
                 },
@@ -197,7 +220,9 @@ def _add_interaction_evidence(
                     "ready": True, "qstRevision": 1, "generation": "1",
                     "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
                 },
-                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
+                "taskList": task_list,
+                "quieting": quieting,
+                "panelApplets": panel_applets,
                 "presentation": {
                     "privatePresentationAllowed": True, "centerOpen": True,
                 },

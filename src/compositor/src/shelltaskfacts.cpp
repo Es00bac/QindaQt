@@ -61,6 +61,18 @@ QString authorityName(ShellTaskContainerAuthority authority)
         ? QStringLiteral("control-bridge") : QStringLiteral("hybrid-process");
 }
 
+QString windowTypeName(ShellTaskWindowType type)
+{
+    return type == ShellTaskWindowType::Normal
+        ? QStringLiteral("normal") : QStringLiteral("non-normal");
+}
+
+QString windowOwnerName(ShellTaskWindowOwner owner)
+{
+    return owner == ShellTaskWindowOwner::Application
+        ? QStringLiteral("application") : QStringLiteral("bound-shell");
+}
+
 QJsonArray stringArray(const QStringList &values)
 {
     QJsonArray result;
@@ -110,7 +122,8 @@ QJsonObject stateJson(const ShellTaskFactsCandidate &candidate)
             {QStringLiteral("applicationName"), window.applicationName},
             {QStringLiteral("title"), window.title},
             {QStringLiteral("role"), roleName(window.role)},
-            {QStringLiteral("windowType"), QStringLiteral("normal")},
+            {QStringLiteral("windowType"), windowTypeName(window.type)},
+            {QStringLiteral("ownerRole"), windowOwnerName(window.owner)},
             {QStringLiteral("active"), window.active},
             {QStringLiteral("minimized"), window.minimized},
             {QStringLiteral("maximized"), window.maximized},
@@ -170,7 +183,6 @@ bool validateWindows(const ShellTaskFactsCandidate &candidate,
             || !cleanText(window.applicationName, true)
             || !cleanText(window.title, false)
             || !cleanText(window.outputId, true)
-            || window.type != ShellTaskWindowType::Normal
             || windowIds.contains(window.windowId)
             || !outputIds.contains(window.outputId)
             || grouped != !window.containerId.isEmpty()

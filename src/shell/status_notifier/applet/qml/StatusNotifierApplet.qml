@@ -27,8 +27,11 @@ Item {
     readonly property string phase: hasAccess ? String(access.phaseText) : "unavailable"
     readonly property bool showItems: hasAccess && (phase === "ready" || phase === "degraded")
 
-    implicitWidth: content.implicitWidth
-    implicitHeight: content.implicitHeight
+    // AGENT-GUARD: hidden diagnostic controls retain implicit size through
+    // ColumnLayout. Gate the applet boundary itself so an idle tray remains
+    // absent from panel geometry, not merely visually transparent.
+    implicitWidth: showItems ? content.implicitWidth : 0
+    implicitHeight: showItems ? content.implicitHeight : 0
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Status tray")
@@ -110,7 +113,11 @@ Item {
         Loader {
             id: stripLoader
             objectName: "statusNotifierStripLoader"
-            visible: root.showItems
+            // AGENT-GUARD: an invisible Loader still contributes its loaded
+            // item's implicit size. Unload the strip in empty/loading states
+            // so an idle tray cannot leave a blank panel chip behind.
+            active: root.showItems
+            visible: active
             sourceComponent: root.vertical ? verticalStrip : horizontalStrip
         }
 
@@ -215,6 +222,7 @@ Item {
             }
 
             Loader {
+                active: root.hasAccess && access.overflowCount > 0
                 sourceComponent: overflowChipComponent
             }
         }
@@ -241,6 +249,7 @@ Item {
             }
 
             Loader {
+                active: root.hasAccess && access.overflowCount > 0
                 sourceComponent: overflowChipComponent
             }
         }

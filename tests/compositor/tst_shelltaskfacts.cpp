@@ -85,6 +85,7 @@ class ShellTaskFactsTests final : public QObject {
 
 private Q_SLOTS:
     void publicationIsAtomicAndGenerationFenced();
+    void roleAndOwnerProvenanceRoundTripsAndRejectsHostileValues();
     void hostileBoundsAndReferencesRetainTheGeneration();
     void authenticationPrecedesSourceInspection();
 };
@@ -113,6 +114,29 @@ void ShellTaskFactsTests::publicationIsAtomicAndGenerationFenced()
     QCOMPARE(store.publish(changed, &error),
              ShellTaskFactsPublishResult::Published);
     QCOMPARE(store.revision(), quint64(2));
+}
+
+void ShellTaskFactsTests::roleAndOwnerProvenanceRoundTripsAndRejectsHostileValues()
+{
+    auto facts = candidate();
+    facts.windows[0].type = ShellTaskWindowType::NonNormal;
+    facts.windows[0].owner = ShellTaskWindowOwner::BoundShell;
+    ShellTaskFactsStore store(QString::fromLatin1(Epoch));
+    QString error;
+    QCOMPARE(store.publish(facts, &error), ShellTaskFactsPublishResult::Published);
+    const auto decoded = decodeShellTaskFactsSnapshot(store.snapshotJson(), &error);
+    QVERIFY2(decoded.has_value(), qPrintable(error));
+    QCOMPARE(decoded->facts.windows[0].type, ShellTaskWindowType::NonNormal);
+    QCOMPARE(decoded->facts.windows[0].owner, ShellTaskWindowOwner::BoundShell);
+
+    QJsonObject root = QJsonDocument::fromJson(store.snapshotJson()).object();
+    QJsonArray windows = root.value(QStringLiteral("windows")).toArray();
+    QJsonObject hostile = windows[0].toObject();
+    hostile.insert(QStringLiteral("ownerRole"), QStringLiteral("untrusted"));
+    windows[0] = hostile;
+    root.insert(QStringLiteral("windows"), windows);
+    QVERIFY(!decodeShellTaskFactsSnapshot(
+        QJsonDocument(root).toJson(QJsonDocument::Compact), &error));
 }
 
 void ShellTaskFactsTests::hostileBoundsAndReferencesRetainTheGeneration()

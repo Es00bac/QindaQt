@@ -84,6 +84,7 @@ inline QJsonObject taskWindowJson(
           {QStringLiteral("title"), QStringLiteral("Title %1").arg(id)},
           {QStringLiteral("role"), role},
           {QStringLiteral("windowType"), QStringLiteral("normal")},
+          {QStringLiteral("ownerRole"), QStringLiteral("application")},
           {QStringLiteral("active"), active},
           {QStringLiteral("minimized"), minimized},
           {QStringLiteral("maximized"), false},

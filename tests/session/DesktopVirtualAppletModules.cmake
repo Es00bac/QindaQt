@@ -78,4 +78,17 @@ install(
     COMPONENT DesktopVirtual
 )
 
+# AGENT-CONTRACT: first-party windows publish these exact desktop-file names.
+# The private stage must carry the same application metadata as a production
+# prefix so task buttons resolve Breeze icon names without ambient host apps.
+install(
+    FILES
+        "${CMAKE_SOURCE_DIR}/src/apps/settings_center/org.qindaqt.Settings.desktop"
+        "${CMAKE_SOURCE_DIR}/src/apps/text_editor/org.qindaqt.TextEditor.desktop"
+        "${CMAKE_SOURCE_DIR}/src/apps/terminal/org.qindaqt.Terminal.desktop"
+        "${CMAKE_SOURCE_DIR}/src/apps/file_manager/org.qindaqt.FileManager.desktop"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+    COMPONENT DesktopVirtual
+)
+
 unset(_qindaqt_desktop_applet_modules)

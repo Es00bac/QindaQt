@@ -6,10 +6,16 @@ from __future__ import annotations
 import re
 from typing import Any, Mapping
 
+from desktop_session_shell_polish import (
+    validate_panel_applets,
+    validate_quieting,
+    validate_task_list,
+)
+
 
 PENDING_WITHOUT_EVIDENCE = {
     "service-missing", "snapshot-object-pending", "snapshot-reply-pending",
-    "task-list-not-ready",
+    "task-list-not-ready", "quieting-not-ready",
 }
 PENDING_WITH_EVIDENCE = {
     "privacy-denied", "center-window-missing", "center-output-pending",
@@ -112,8 +118,8 @@ def _validate_evidence(
     output_names: set[str], pending_code: str | None,
 ) -> None:
     if not isinstance(evidence, Mapping) or set(evidence) != {
-        "owner", "servicePid", "shellPid", "tokens", "taskList", "presentation",
-        "centerOpenedCount", "centerWindow",
+        "owner", "servicePid", "shellPid", "tokens", "taskList", "quieting",
+        "panelApplets", "presentation", "centerOpenedCount", "centerWindow",
     }:
         raise RuntimeError("notification-shell evidence has an unexpected field set")
     owner = evidence.get("owner")
@@ -145,19 +151,14 @@ def _validate_evidence(
         or re.fullmatch(r"#[0-9a-f]{6}", tokens["backgroundBase"]) is None
     ):
         raise RuntimeError("notification-shell tokens are not ready")
-    task_list = evidence.get("taskList")
-    if (
-        not isinstance(task_list, Mapping)
-        or set(task_list) != {"phase", "generation", "windowCount"}
-        or task_list.get("phase") != "ready"
-        or _canonical_counter(
-            task_list.get("generation"), "notification-shell task-list generation"
-        ) <= 0
-        or not isinstance(task_list.get("windowCount"), int)
-        or isinstance(task_list.get("windowCount"), bool)
-        or task_list["windowCount"] < 1
-    ):
-        raise RuntimeError("notification-shell task list is not ready")
+    try:
+        validate_task_list(evidence.get("taskList"))
+        validate_quieting(evidence.get("quieting"))
+        validate_panel_applets(
+            evidence.get("panelApplets"), require_qindaqt_shelf=False
+        )
+    except ValueError as error:
+        raise RuntimeError(f"notification-shell {error}") from error
     _canonical_counter(
         evidence.get("centerOpenedCount"), "notification-shell opened count"
     )

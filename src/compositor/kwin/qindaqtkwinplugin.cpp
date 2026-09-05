@@ -82,7 +82,7 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
         *m_shellVisibility);
     m_shellTaskFacts = std::make_unique<KWinShellTaskFactsPublisher>(
         *m_registry, *m_outputInventory, *m_shellVisibility, *m_bridge,
-        *m_hybridSession);
+        *m_hybridSession, *m_shellPanelOwner);
     m_shellActionRegistry = std::make_unique<KWinShellWindowRegistry>(
         *m_registry, *m_shellVisibility);
     m_shellActionExecutor = std::make_unique<KWinShellWindowActionExecutor>(

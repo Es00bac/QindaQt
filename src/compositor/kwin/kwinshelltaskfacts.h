@@ -21,6 +21,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 class KWinHybridSession;
 class KWinOutputInventory;
 class KWinShellVisibilityPublisher;
+class KWinShellPanelOwnerSource;
 class ManagedWindowRegistry;
 
 // GUI-thread adapter that samples all facts, referenced inventories, and
@@ -37,6 +38,7 @@ public:
                                 KWinShellVisibilityPublisher &visibility,
                                 ContainerControlBridge &bridge,
                                 KWinHybridSession &hybrid,
+                                KWinShellPanelOwnerSource &panelOwner,
                                 QObject *parent = nullptr);
     ~KWinShellTaskFactsPublisher() override;
 
@@ -57,6 +59,7 @@ private:
     KWinShellVisibilityPublisher &m_visibility;
     ContainerControlBridge &m_bridge;
     KWinHybridSession &m_hybrid;
+    KWinShellPanelOwnerSource &m_panelOwner;
     ShellTaskFactsStore m_store;
     QHash<KWin::Window *, QVector<QMetaObject::Connection>> m_connections;
     bool m_refreshScheduled = false;

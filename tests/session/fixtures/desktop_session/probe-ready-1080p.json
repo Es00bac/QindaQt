@@ -123,10 +123,46 @@
         "sourceThemeId": "qinda-dark"
       },
       "taskList": {
-        "phase": "ready",
+        "buttons": [
+          {
+            "applicationId": "org.qindaqt.Settings",
+            "iconName": "preferences-system",
+            "iconResolved": true
+          },
+          {
+            "applicationId": "org.qindaqt.TextEditor",
+            "iconName": "accessories-text-editor",
+            "iconResolved": true
+          }
+        ],
         "generation": "1",
+        "phase": "ready",
         "windowCount": 2
-      }
+      },
+      "quieting": {
+        "canToggle": true,
+        "enabled": false,
+        "errorText": "",
+        "hasBaseline": true,
+        "state": "ready",
+        "statusText": ""
+      },
+      "panelApplets": [
+        {
+          "appletId": "apps",
+          "entryPoint": "qindaqt.applets.launcher",
+          "panelId": "smart-shelf",
+          "plugin": "launcher",
+          "ready": true
+        },
+        {
+          "appletId": "hosted-task-list",
+          "entryPoint": "qindaqt.applets.task-list",
+          "panelId": "smart-shelf",
+          "plugin": "task-list",
+          "ready": true
+        }
+      ]
     },
     "status": "ok"
   },

@@ -21,7 +21,8 @@ inline constexpr qsizetype ShellTaskFactsMaximumWorkspaces = 64;
 inline constexpr qsizetype ShellTaskFactsMaximumTextCharacters = 512;
 
 enum class ShellTaskWindowRole { Standalone, ContainerPrimary, ContainerMember };
-enum class ShellTaskWindowType { Normal };
+enum class ShellTaskWindowType { Normal, NonNormal };
+enum class ShellTaskWindowOwner { Application, BoundShell };
 enum class ShellTaskContainerAuthority { ControlBridge, HybridProcess };
 enum class ShellTaskFactsStatus { Ok, Unavailable, Unauthorized };
 
@@ -51,6 +52,7 @@ struct ShellTaskWindow final {
     QString title;
     ShellTaskWindowRole role = ShellTaskWindowRole::Standalone;
     ShellTaskWindowType type = ShellTaskWindowType::Normal;
+    ShellTaskWindowOwner owner = ShellTaskWindowOwner::Application;
     bool active = false;
     bool minimized = false;
     bool maximized = false;

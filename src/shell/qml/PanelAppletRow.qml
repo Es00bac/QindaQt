@@ -32,7 +32,9 @@ Row {
             required property var modelData
 
             visible: root.appletZone(modelData) === root.zone
-            height: root.height
+            // AGENT-GUARD: do not override AppletChip's zero extent for an
+            // empty live applet; doing so resurrects an invisible panel slot.
+            height: emptyLiveContent ? 0 : root.height
             applet: modelData
             theme: root.theme
             liveApplets: root.liveApplets

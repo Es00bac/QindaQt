@@ -9,6 +9,7 @@ from pathlib import Path
 
 from desktop_session_package_contract import (
     PackagePayloadError,
+    authenticate_first_party_desktop_entries,
     authenticate_network_qml_package,
 )
 from desktop_session_stage import (
@@ -60,6 +61,7 @@ def main() -> int:
             library_name=arguments.network_qml_library,
             plugin_name=arguments.network_qml_plugin,
         )
+        authenticate_first_party_desktop_entries(stage_root)
         write_stage_evidence(
             arguments.build_root
             / "tests/session/desktop-session-package-evidence.json",
