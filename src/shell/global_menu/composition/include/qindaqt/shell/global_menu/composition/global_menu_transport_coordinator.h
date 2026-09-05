@@ -96,8 +96,11 @@ private:
     std::unique_ptr<Exporter::MenuExporter> m_exporter;
     QDBusServiceWatcher *m_announcedServiceWatcher = nullptr;
     ProviderEndpoint m_boundEndpoint;
+    ProviderEndpoint m_lastHostedEndpoint;
+    QUuid m_lastHostedWindowId;
     QString m_watchedAnnouncedService;
     quint64 m_focusGeneration = 0;
+    quint64 m_clientGeneration = 0;
     bool m_hosted = false;
 };
 

@@ -30,8 +30,15 @@ GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
     m_announcedServiceWatcher = new QDBusServiceWatcher(
         {}, m_connection, QDBusServiceWatcher::WatchForOwnerChange, this);
     connect(m_announcedServiceWatcher, &QDBusServiceWatcher::serviceOwnerChanged,
-            this, [this](const QString &service, const QString &, const QString &) {
+            this, [this](const QString &service, const QString &oldOwner,
+                         const QString &newOwner) {
                 if (service == m_watchedAnnouncedService) {
+                    if (!m_boundEndpoint.announcedService.isEmpty()
+                        && m_boundEndpoint.announcedService == service
+                        && oldOwner == m_boundEndpoint.uniqueOwner
+                        && newOwner != oldOwner) {
+                        withdrawHostedMenu(m_boundEndpoint);
+                    }
                     refreshFocus();
                 }
             });
@@ -173,6 +180,10 @@ void GlobalMenuTransportCoordinator::bindRegistration(
         // moved away. Failed authentication revokes that exact cached proof;
         // it must not leave the application's local menu suppressed.
         withdrawHostedMenu(endpoint);
+        if (m_lastHostedWindowId == focus.window.windowId
+            && m_lastHostedEndpoint != endpoint) {
+            withdrawHostedMenu(m_lastHostedEndpoint);
+        }
         clearAuthority();
         return;
     }
@@ -191,13 +202,18 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     m_focusGeneration = focus.focusGeneration;
     m_client = std::make_unique<DbusMenu::DbusMenuClient>(
         m_connection, endpoint.uniqueOwner, QDBusObjectPath(endpoint.objectPath),
-        focus.window.windowId);
+        focus.window.windowId, 2'000, this);
     m_exporter = std::make_unique<Exporter::MenuExporter>(*m_client, *this);
+    const quint64 clientGeneration = ++m_clientGeneration;
     connect(m_client.get(), &DbusMenu::DbusMenuClient::treeChanged, this,
             &GlobalMenuTransportCoordinator::publishClientTree);
     connect(m_client.get(), &DbusMenu::DbusMenuClient::unavailable, this,
-            [this] {
-                withdrawHostedMenu(m_boundEndpoint);
+            [this, clientGeneration, endpoint] {
+                if (clientGeneration != m_clientGeneration || !m_client
+                    || m_boundEndpoint != endpoint) {
+                    return;
+                }
+                withdrawHostedMenu(endpoint);
                 clearAuthority();
                 refreshFocus();
             }, Qt::QueuedConnection);
@@ -286,6 +302,7 @@ void GlobalMenuTransportCoordinator::activate(const QString &actionId)
 void GlobalMenuTransportCoordinator::clearAuthority()
 {
     m_hosted = false;
+    ++m_clientGeneration;
     if (m_client) {
         m_client->stop();
     }
@@ -307,6 +324,13 @@ void GlobalMenuTransportCoordinator::refreshHostedMenu()
         return;
     }
     m_hosted = shouldHost;
+    if (m_hosted) {
+        const auto focus = m_activeWindowSource.activeWindow();
+        if (focus) {
+            m_lastHostedWindowId = focus->window.windowId;
+            m_lastHostedEndpoint = m_boundEndpoint;
+        }
+    }
     Q_EMIT hostedMenuChanged(m_boundEndpoint.uniqueOwner,
                              m_boundEndpoint.objectPath, m_hosted);
 }
@@ -320,6 +344,10 @@ void GlobalMenuTransportCoordinator::withdrawHostedMenu(
     Q_EMIT hostedMenuChanged(endpoint.uniqueOwner, endpoint.objectPath, false);
     if (endpoint == m_boundEndpoint) {
         m_hosted = false;
+    }
+    if (endpoint == m_lastHostedEndpoint) {
+        m_lastHostedEndpoint = {};
+        m_lastHostedWindowId = {};
     }
 }
 

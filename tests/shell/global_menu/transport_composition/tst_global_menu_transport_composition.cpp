@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/shell/global_menu/composition/global_menu_transport_coordinator.h>
+#include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_client.h>
 #include <qindaqt/shell/global_menu/registrar/appmenu_registrar.h>
 
 #include "fake_dbusmenu_exporter.h"
@@ -164,12 +165,18 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
         QStringLiteral("/ReplacementMenu"), &replacementExporter,
         QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
             | QDBusConnection::ExportScriptableProperties));
-    QCOMPARE(registrarCall(providerBus, QStringLiteral("RegisterWindow"),
-                           {QVariant::fromValue(quint32{77}),
-                            QVariant::fromValue(QDBusObjectPath(
-                                QStringLiteral("/ReplacementMenu")))})
-                 .type(),
-             QDBusMessage::ReplyMessage);
+    auto *retiredClient = coordinator.findChild<DbusMenu::DbusMenuClient *>();
+    QVERIFY(retiredClient != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(retiredClient, "unavailable",
+                                      Qt::QueuedConnection));
+    // Replace synchronously after queuing the old client's failure. The late
+    // callback must be fenced by its captured client generation and endpoint,
+    // leaving the replacement binding intact.
+    QCOMPARE(registrar.registry()
+                 ->registerWindow(77, providerBus.baseService(),
+                                  QDBusObjectPath(QStringLiteral("/ReplacementMenu")))
+                 .outcome,
+             Registrar::RegistrationOutcome::Updated);
     QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
     QCOMPARE(applet.items().first().toMap().value(QStringLiteral("text")).toString(),
              QStringLiteral("View"));
@@ -251,11 +258,16 @@ announcedNativeAddressUsesExactOwnerAndClearsOnLoss()
         .objectPath = QStringLiteral("/NativeMenu")};
     Registrar::RegistrarRegistry unusedRegistry;
     GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
     Composition::GlobalMenuTransportCoordinator coordinator(
         shellBus, active, registrarIds, announced, unusedRegistry, applet);
+    QSignalSpy hosted(&coordinator,
+                      &Composition::GlobalMenuTransportCoordinator::hostedMenuChanged);
     coordinator.refreshFocus();
 
     QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), 1, 5'000);
+    QCOMPARE(hosted.constFirst().at(2).toBool(), true);
     QCOMPARE(applet.items().constFirst().toMap().value(QStringLiteral("text")),
              QStringLiteral("Native"));
     QSignalSpy observed(&exporter, &Test::FakeDbusMenuExporter::eventObserved);
@@ -265,6 +277,11 @@ announcedNativeAddressUsesExactOwnerAndClearsOnLoss()
     QDBusConnection::disconnectFromBus(providerName);
     providerBus = QDBusConnection(QStringLiteral("qindaqt-retired-native-provider"));
     QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), 2, 5'000);
+    QCOMPARE(hosted.constLast().at(0).toString(),
+             hosted.constFirst().at(0).toString());
+    QCOMPARE(hosted.constLast().at(1).toString(), QStringLiteral("/NativeMenu"));
+    QCOMPARE(hosted.constLast().at(2).toBool(), false);
     QVERIFY(applet.items().isEmpty());
 
     coordinator.stop();
