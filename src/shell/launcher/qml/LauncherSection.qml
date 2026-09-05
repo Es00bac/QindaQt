@@ -142,7 +142,7 @@ ColumnLayout {
                     muted: true
                 }
 
-                C.ToolButton {
+                Button {
                     objectName: "launcherTogglePinButton"
                     text: row.modelData.pinned ? qsTr("Unpin") : qsTr("Pin")
                     focusPolicy: Qt.TabFocus

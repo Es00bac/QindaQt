@@ -276,6 +276,26 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QTRY_COMPARE(stack.transport.commits.size(), 1);
     QVERIFY(stack.spawner.requests.isEmpty());
     QVERIFY(stack.activator.activations.isEmpty());
+    stack.transport.replyLastCommit(FakeSettingsTransport::commitWire(
+        SettingsWireStatus::Applied, QStringLiteral("qml-epoch"), 0, 1,
+        {{ LauncherPersistenceController::pinnedKey(), QVariantList {} },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+    auto *unpinnedRow = visualItemNamed(popupContent(root),
+        QStringLiteral("launcherResultRow-editor-0"));
+    QVERIFY(unpinnedRow != nullptr);
+    auto *pinAgain = unpinnedRow->findChild<QQuickItem *>(
+        QStringLiteral("launcherTogglePinButton"));
+    QVERIFY(pinAgain != nullptr);
+    QTRY_COMPARE(pinAgain->property("text").toString(), QStringLiteral("Pin"));
+    const QPoint pinAgainPoint = pinAgain->mapToScene(
+        QPointF(pinAgain->width() / 2, pinAgain->height() / 2)).toPoint();
+    QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {},
+                      pinAgainPoint);
+    QTRY_COMPARE(stack.transport.commits.size(), 2);
+    QVERIFY(stack.spawner.requests.isEmpty());
+    QVERIFY(stack.activator.activations.isEmpty());
 
     // Restore the theme-pixel fixture to its neutral state before checking
     // the token-owned background below.
