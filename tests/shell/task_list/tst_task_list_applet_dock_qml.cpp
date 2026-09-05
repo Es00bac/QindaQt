@@ -101,8 +101,12 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   QTRY_VERIFY(window.isExposed());
 
   QCOMPARE(root->property("resolvedDockTileSize").toInt(), 64);
+  // Repeater delegates are incubated after the parent item enters an exposed
+  // window. Waiting for the actual row distinguishes that normal QML timing
+  // from a false empty-dock regression.
+  QTRY_VERIFY(root->property("stripVisible").toBool());
+  QTRY_VERIFY(dockEntry(root) != nullptr);
   QQuickItem *entry = dockEntry(root);
-  QVERIFY(entry != nullptr);
   QCOMPARE(entry->width(), 64.0);
   QCOMPARE(entry->height(), 64.0);
   auto *icon = entry->findChild<QQuickItem *>(QStringLiteral("taskListDockEntryIcon"));
