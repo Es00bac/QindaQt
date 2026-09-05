@@ -1,5 +1,60 @@
 # Integration handoff
 
+## Dock refinement and menu placement — 2026-09-05
+
+QindaQt and macOS-inspired shelves now use content-sized rounded translucent
+surfaces, 40-pixel real icons in 60-pixel tiles, running indicators, hover motion,
+and separate pin/task groups. The preserved 72-pixel shelf height leaves usable
+padding without restoring the larger panel. Reduced motion disables icon motion;
+reduced transparency and high contrast use an opaque surface. Transparent
+unused panel margins pass clicks through to underlying application windows.
+The QindaQt command bar uses a system menu, leaving one launcher in its shelf.
+
+First-party File Manager, Terminal, Text Editor, and AppShell QML hide their
+local menus only after a live global-menu renderer hosts their exact endpoint.
+The local fallback returns when hosting fails or disappears; ordinary focus
+changes preserve inactive window geometry. Foreign standard registrars retain
+local menus. [ADR-0077](wiki/adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md)
+records this additive contract. Launcher rows now expose compact, keyboard-focusable Pin/Unpin buttons using
+the existing saved pin state. Rows fill the results viewport and keep
+application names on one elided line.
+
+Verification on Gentoo system Qt/KWin: full Debug build; dock/panel focused
+28/29 followed by the corrected delegate-lookup test passing; broad 640/644
+followed by passing repairs/reruns of all four failures (one duplicate stock
+launcher, two dock test-fixture errors, and a too-long temporary socket path);
+integrated menu 33/35 followed by passing reruns of both repaired registrar
+fixtures; desktop-control offscreen 2/2 and launcher offscreen 1/1 after the
+new pin path exposed and repaired an icon transform binding and test focus
+state. The five profile/display matrix rows plus package fixture pass 6/6.
+A final affected-module sweep passes 46/46. Strict documentation and
+source-shape gates pass with 13 decomposition warnings. The newly flagged
+543-line launcher QML test received independent decomposition review: its
+shared fixture and separate behavior slots remain cohesive; revisit splitting
+before further growth toward 600 lines.
+
+Private run `ecb6c8693a8e3efe259cd86af2c2b663` passes with screenshots and
+asserted Settings-to-Editor focus transition through an unpainted dock margin.
+It also captures outward dock tooltips/context menus, task activation, and an
+active Editor global menu with no local duplicate. The GNOME-inspired 125%
+matrix screenshot retains the Editor's local menu with no global host.
+Private run `ff90df2d9b8e1a8a28a24d2fc1a14862` proves primary-click Pin adds
+a real Quick Launch tile and Unpin removes it, with full-width rows, readable
+names, and both tracked applications surviving clean session shutdown.
+Earlier secondary-click probes missed the unexpectedly narrow row hit region;
+they do not establish a compositor or TapHandler defect. The final UI uses
+direct buttons and the viewport-width repair. Final run
+`767246f24aba33ef7a7705ee4f45c223` passes with the corrected 40-pixel pinned
+icon and active Editor global menu, no duplicate local menu, and no surviving
+private session processes. The audit hook is restored byte-for-byte.
+
+Remaining refinement includes consistent styling of native/context-menu
+controls and notification settings, compositor chrome theme propagation, actual
+background blur, and richer application grouping/magnification. This slice
+implements translucency and modest hover motion, not complete macOS behavior.
+Physical-session and Release qualification remain separate; memory optimization
+is deferred.
+
 ## Usability audit acceptance — 2026-09-05
 
 The selected repair series covers outward Launcher/Bluetooth/Power popups and
@@ -10,7 +65,8 @@ panel zones and real rows, lazy applet creation, and all stock preset controls.
 Additional verified repairs correct launcher settings keys/string-list persistence,
 recovery messages, and selected Settings navigation contrast.
 
-The production resolver reports ten profiles, 90 effective instances, all ready.
+The production resolver reports ten profiles, 92 effective instances, all ready
+after the dock refinement adds explicit launcher/pin/task groups.
 The compact chrome uses one 28-logical-pixel shared title/tab/control row with
 right-to-left Mac tabs, plus functional 24-pixel member title strips. The product
 build uses Gentoo system Qt/KWin; private nested testing uses the existing

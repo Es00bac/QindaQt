@@ -7,6 +7,19 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Dock refinement and menu placement (2026-09-05)
+
+Refine the QindaQt and macOS-inspired docks with content-sized translucent
+surfaces, larger real icons, running indicators, spacing, and outward task
+menus. Hide first-party in-window menus while the global menu actually hosts
+their actions, restoring local menus when that host becomes unavailable.
+Dock, panel, menu placement, and launcher Pin/Unpin changes are integrated.
+Focused regression repairs and the profile/display matrix pass. The private
+desktop verifies outward menus, global/local menu placement, transparent-margin
+click-through, and real Pin/Unpin changes to Quick Launch. Launcher rows now
+fill their viewport with readable names and compact actions. Evidence and
+remaining refinement are recorded in [Handoff](HANDOFF.md).
+
 ### Audit repair acceptance (2026-09-05)
 
 Repair the ten user-selected audit groups: outward Launcher/Bluetooth/Power

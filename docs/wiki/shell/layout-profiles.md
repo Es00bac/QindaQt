@@ -218,7 +218,7 @@ does not alter task-list, launcher, or pin persistence. A copied or renamed
 center-bottom panel retains the treatment when its applets retain that setting;
 the `dock` and `smart-shelf` IDs remain legacy fallbacks only.
 
-Dock tiles receive a 60-logical-pixel presentation budget inside an 80-pixel
+Dock tiles receive a 60-logical-pixel presentation budget inside a 72-pixel
 surface with token spacing for a bottom gap and hover allowance. The painted
 rounded shelf hugs its occupied center content instead of filling the solved
 fractional window. If a customization places dock content in a start or end
