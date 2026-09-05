@@ -2722,10 +2722,11 @@ complete release matrix:
 | `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
 | `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |
 
-Every S3 row must report a ready normalized launcher and task-list applet. The
-validator requires the exact `smart-shelf` composition only for the `qindaqt`
-profile; the other layout profiles are qualified through their own panel
-composition, so a ready `windows-classic` taskbar is not mistaken for a shelf.
+Every S3 row must report a ready normalized launcher; every declared task-list
+must be ready and unique within its panel. The validator requires the exact
+`smart-shelf` composition only for the `qindaqt` profile. Other layouts are
+qualified through their own composition, including GNOME's overview-only top
+bar and the `windows-classic` taskbar.
 
 Window-aware panel interaction has two additive installed qualification rows:
 

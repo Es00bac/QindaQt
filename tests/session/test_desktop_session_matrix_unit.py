@@ -174,8 +174,8 @@ def _add_interaction_evidence(
         "enabled": False, "hasBaseline": True, "state": "ready",
         "canToggle": True, "statusText": "", "errorText": "",
     }
-    panel_applets = (
-        [
+    if scenario.profile_id == "qindaqt":
+        panel_applets = [
             {"panelId": "smart-shelf", "appletId": "apps",
              "plugin": "launcher", "ready": True,
              "entryPoint": "qindaqt.applets.launcher"},
@@ -183,7 +183,17 @@ def _add_interaction_evidence(
              "plugin": "task-list", "ready": True,
              "entryPoint": "qindaqt.applets.task-list"},
         ]
-        if scenario.profile_id == "qindaqt" else [
+    elif scenario.profile_id == "gnome-inspired":
+        panel_applets = [
+            {"panelId": "top-bar", "appletId": "activities",
+             "plugin": "overview-trigger", "ready": True,
+             "entryPoint": "qindaqt.applets.overview-trigger"},
+            {"panelId": "top-bar", "appletId": "applications",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+        ]
+    else:
+        panel_applets = [
             {"panelId": "taskbar", "appletId": "start",
              "plugin": "launcher", "ready": True,
              "entryPoint": "qindaqt.applets.launcher"},
@@ -194,7 +204,6 @@ def _add_interaction_evidence(
              "plugin": "task-list", "ready": True,
              "entryPoint": "qindaqt.applets.task-list"},
         ]
-    )
     evidence["interaction"] = {
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",

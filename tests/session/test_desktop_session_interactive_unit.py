@@ -138,21 +138,31 @@ def windows_classic_panel_applets() -> list[dict[str, object]]:
     ]
 
 
+def gnome_overview_panel_applets() -> list[dict[str, object]]:
+    return [
+        {"panelId": "top-bar", "appletId": "activities",
+         "plugin": "overview-trigger", "ready": True,
+         "entryPoint": "qindaqt.applets.overview-trigger"},
+        {"panelId": "top-bar", "appletId": "applications", "plugin": "launcher",
+         "ready": True, "entryPoint": "qindaqt.applets.launcher"},
+    ]
+
+
 class InteractiveEvidenceTests(unittest.TestCase):
     def test_exact_contract_passes(self) -> None:
         validate_interactive_evidence(valid_interactive_evidence())
 
-    def test_non_qindaqt_matrix_profile_accepts_ready_taskbar_controls(self) -> None:
+    def test_non_qindaqt_profiles_accept_ready_taskbar_or_overview_controls(self) -> None:
         from desktop_session_shell_polish import validate_panel_applets
         validate_panel_applets(
             windows_classic_panel_applets(), require_qindaqt_shelf=False
         )
+        validate_panel_applets(
+            gnome_overview_panel_applets(), require_qindaqt_shelf=False
+        )
 
-    def test_non_qindaqt_controls_still_reject_missing_or_invalid_task_list(self) -> None:
+    def test_non_qindaqt_controls_still_reject_invalid_task_list(self) -> None:
         from desktop_session_shell_polish import validate_panel_applets
-        missing = windows_classic_panel_applets()[:-1]
-        with self.assertRaisesRegex(ValueError, "panel controls are incomplete"):
-            validate_panel_applets(missing, require_qindaqt_shelf=False)
         invalid = copy.deepcopy(windows_classic_panel_applets())
         invalid[-1]["ready"] = False
         with self.assertRaisesRegex(ValueError, "task-list applet is unavailable"):

@@ -64,7 +64,6 @@ def validate_panel_applets(value: Any, *, require_qindaqt_shelf: bool) -> None:
         raise ValueError("panel applets are malformed")
     task_lists_by_panel: dict[str, int] = {}
     launcher_count = 0
-    task_list_count = 0
     for applet in value:
         if not isinstance(applet, Mapping) or set(applet) != {
             "panelId", "appletId", "plugin", "ready", "entryPoint",
@@ -95,8 +94,7 @@ def validate_panel_applets(value: Any, *, require_qindaqt_shelf: bool) -> None:
                 or applet.get("entryPoint") != "qindaqt.applets.task-list"
             ):
                 raise ValueError("task-list applet is unavailable")
-            task_list_count += 1
-    if launcher_count == 0 or task_list_count == 0:
+    if launcher_count == 0:
         raise ValueError("panel controls are incomplete")
     if not require_qindaqt_shelf:
         return
