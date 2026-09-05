@@ -41,7 +41,15 @@ quint64 publishDockFacts(TaskListSource &source, FakeOperationAuthority &authori
 
 QQuickItem *dockEntry(QQuickItem *root)
 {
-  return root->findChild<QQuickItem *>(QStringLiteral("taskListEntryButton"));
+  if (root->objectName() == QLatin1StringView("taskListEntryButton")) {
+    return root;
+  }
+  for (QQuickItem *child : root->childItems()) {
+    if (QQuickItem *entry = dockEntry(child); entry != nullptr) {
+      return entry;
+    }
+  }
+  return nullptr;
 }
 
 std::unique_ptr<QObject> createDockApplet(QQmlEngine &engine,
@@ -101,9 +109,8 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   QTRY_VERIFY(window.isExposed());
 
   QCOMPARE(root->property("resolvedDockTileSize").toInt(), 64);
-  // Repeater delegates are incubated after the parent item enters an exposed
-  // window. Waiting for the actual row distinguishes that normal QML timing
-  // from a false empty-dock regression.
+  // Repeater delegates are visual children rather than QObject children;
+  // inspect the QQuickItem tree, as the other task-list QML rows do.
   QTRY_VERIFY(root->property("stripVisible").toBool());
   QTRY_VERIFY(dockEntry(root) != nullptr);
   QQuickItem *entry = dockEntry(root);
