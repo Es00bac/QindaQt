@@ -206,11 +206,11 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
             ? plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset
             : plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
         const qreal tabLeft = request.style.buttonSide == ButtonSide::Left
-            ? controlBoundary + minimumOuterDragWidth
+            ? controlBoundary + metrics.titleHorizontalInset + minimumOuterDragWidth
             : plan.tabStrip.left() + metrics.tabHorizontalInset;
         const qreal tabRight = request.style.buttonSide == ButtonSide::Left
             ? plan.tabStrip.right() - metrics.tabHorizontalInset
-            : controlBoundary - minimumOuterDragWidth;
+            : controlBoundary - metrics.titleHorizontalInset - minimumOuterDragWidth;
         const qreal availableWidth = tabRight - tabLeft
             - metrics.tabSpacing * (tabCount - 1.0);
         if (availableWidth <= 0.0) {
@@ -238,15 +238,17 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
 
     if (request.style.buttonSide == ButtonSide::Left) {
         const qreal left = plan.buttons.constLast().rect.right() + metrics.titleHorizontalInset;
-        const qreal right = request.tabs.isEmpty()
-            ? plan.outerTitleBar.right() - metrics.titleHorizontalInset
-            : plan.tabs.constLast().rect.left() - metrics.titleHorizontalInset;
+        qreal right = plan.outerTitleBar.right() - metrics.titleHorizontalInset;
+        for (const auto &tab : plan.tabs) {
+            right = std::min(right, tab.rect.left() - metrics.titleHorizontalInset);
+        }
         plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
                                    plan.outerTitleBar.height()};
     } else {
-        const qreal left = request.tabs.isEmpty()
-            ? plan.outerTitleBar.left() + metrics.titleHorizontalInset
-            : plan.tabs.constLast().rect.right() + metrics.titleHorizontalInset;
+        qreal left = plan.outerTitleBar.left() + metrics.titleHorizontalInset;
+        for (const auto &tab : plan.tabs) {
+            left = std::max(left, tab.rect.right() + metrics.titleHorizontalInset);
+        }
         const qreal right = plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
         plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
                                    plan.outerTitleBar.height()};
