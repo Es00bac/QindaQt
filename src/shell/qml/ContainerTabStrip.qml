@@ -20,6 +20,7 @@ Item {
             model: [qsTr("Workspace"), qsTr("Research"), qsTr("Single window")]
 
             Rectangle {
+                required property int index
                 required property string modelData
 
                 width: tabLabel.implicitWidth + 22

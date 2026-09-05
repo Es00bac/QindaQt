@@ -80,6 +80,7 @@ class PowerAppletComposition;
 class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
+class ShellTokenPublisher;
 class TaskListAppletComposition;
 
 class ShellRuntimeApplication final : public QObject {
@@ -98,6 +99,7 @@ private:
     void printCatalog() const;
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
+    [[nodiscard]] bool initializeTokens(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
     void restartWindowActionsIdentity();
@@ -117,6 +119,7 @@ private:
     Applets::ManifestCatalog m_applets;
     AppletHost::CapabilityPolicy m_appletPolicy;
     QQmlEngine m_engine;
+    std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;
     std::unique_ptr<ShellSurface::PanelSurfaceController> m_controller;

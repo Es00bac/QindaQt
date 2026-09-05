@@ -16,6 +16,7 @@ class QGuiApplication;
 namespace QindaQt::Shell {
 
 class ScreenshotCapture;
+class ShellTokenPublisher;
 
 class ShellPreviewApplication final : public QObject {
     Q_OBJECT
@@ -36,6 +37,7 @@ private:
     QindaQt::Profiles::ProfileCatalog m_profiles;
     QindaQt::Themes::ThemeCatalog m_themes;
     QQmlApplicationEngine m_engine;
+    std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
     std::unique_ptr<ScreenshotCapture> m_capture;
 };
 

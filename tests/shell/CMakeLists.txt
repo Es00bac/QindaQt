@@ -104,6 +104,51 @@ set_tests_properties(
 
 if(TARGET qindaqt-shell)
     qt_add_executable(
+        qindaqt_shell_runtime_token_tests
+        tst_shellruntime_tokens.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelltokenpublisher.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelltokenpublisher.h"
+    )
+    target_include_directories(
+        qindaqt_shell_runtime_token_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common"
+    )
+    target_link_libraries(
+        qindaqt_shell_runtime_token_tests
+        PRIVATE
+            qindaqt_themes
+            QindaQt::TokensQml
+            QindaQt::ShellTaskListApplet
+            qindaqt_shell_task_list_appletplugin
+            Qt6::Gui
+            Qt6::Qml
+            Qt6::Quick
+            Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_shell_runtime_token_tests
+        PRIVATE
+            QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+            QINDAQT_QML_BUILD_DIR="${CMAKE_BINARY_DIR}/qml"
+    )
+    qindaqt_enable_warnings(qindaqt_shell_runtime_token_tests)
+    qt_import_qml_plugins(qindaqt_shell_runtime_token_tests)
+    add_dependencies(
+        qindaqt_shell_runtime_token_tests
+        qindaqt_tokens_qmlplugin
+        qindaqt_controls_qmlplugin
+    )
+    add_test(
+        NAME qindaqt.shell-runtime-token-publication
+        COMMAND qindaqt_shell_runtime_token_tests
+    )
+    set_tests_properties(
+        qindaqt.shell-runtime-token-publication
+        PROPERTIES ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    )
+
+    qt_add_executable(
         qindaqt_notification_output_selector_tests
         tst_notificationoutputselector.cpp
         notification_output_test_support.h

@@ -59,7 +59,11 @@ public:
               QSharedPointer<BackendStats> stats, QObject *parent = nullptr)
       : TerminalSessionBackend(parent), m_failStart(failStart),
         m_failureDiagnostic(std::move(failureDiagnostic)), m_pid(pid),
-        m_stats(std::move(stats)) {}
+        m_stats(std::move(stats)) {
+    m_widget = new QWidget();
+    m_widget->setObjectName(QStringLiteral("fakeTerminalView%1").arg(qlonglong(m_pid)));
+    m_stats->lastWidget = m_widget;
+  }
 
   ~FakeBackend() override { delete m_widget; }
 
@@ -70,10 +74,6 @@ public:
     if (m_failStart) {
       return {.ok = false, .diagnostic = m_failureDiagnostic};
     }
-    m_widget = new QWidget();
-    m_widget->setObjectName(
-        QStringLiteral("fakeTerminalView%1").arg(qlonglong(m_pid)));
-    m_stats->lastWidget = m_widget;
     return {.ok = true, .diagnostic = {}};
   }
 
@@ -237,6 +237,12 @@ void TerminalSessionTest::successfulStartPublishesWidgetAndRunningState() {
   auto session = harness.makeSession();
   QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
   QSignalSpy stateSpy(session.get(), &TerminalSession::stateChanged);
+  bool widgetPublishedBeforeStart = false;
+  connect(session.get(), &TerminalSession::terminalWidgetChanged, session.get(),
+          [&harness, &widgetPublishedBeforeStart](QWidget *widget) {
+            widgetPublishedBeforeStart =
+                widget != nullptr && harness.backendStats.at(0)->startCalls == 0;
+          });
 
   QVERIFY(session->start(validRequest()));
   QCOMPARE(session->state(), TerminalSession::State::Running);
@@ -244,8 +250,8 @@ void TerminalSessionTest::successfulStartPublishesWidgetAndRunningState() {
   QVERIFY(session->terminalWidget() != nullptr);
   QCOMPARE(harness.createdBackends, 1);
   QCOMPARE(harness.backendStats.at(0)->startCalls, 1);
+  QVERIFY2(widgetPublishedBeforeStart, "terminal viewport was not attached before child start");
   QVERIFY(stateSpy.count() >= 1);
-  // A running generation keeps polling; nothing exits underneath us.
   pump(50);
   QCOMPARE(session->state(), TerminalSession::State::Running);
 }
@@ -269,6 +275,7 @@ void TerminalSessionTest::
   auto session = harness.makeSession(/*failStart=*/true);
   QSignalSpy exitSpy(session.get(), &TerminalSession::sessionFinished);
   QSignalSpy widgetSpy(session.get(), &TerminalSession::terminalWidgetChanged);
+  QSignalSpy disposalSpy(session.get(), &TerminalSession::viewDisposalRequested);
 
   QVERIFY(!session->start(validRequest()));
   QCOMPARE(session->state(), TerminalSession::State::Exited);
@@ -276,7 +283,8 @@ void TerminalSessionTest::
   const auto status = exitSpy.first().first().value<TerminalExitStatus>();
   QCOMPARE(status.kind, TerminalExitStatus::Kind::StartFailed);
   QCOMPARE(status.diagnostic, QStringLiteral("cannot fork"));
-  QCOMPARE(widgetSpy.count(), 0);
+  QCOMPARE(widgetSpy.count(), 1);
+  QCOMPARE(disposalSpy.count(), 1);
   QVERIFY(session->terminalWidget() == nullptr);
 }
 

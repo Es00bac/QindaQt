@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <QCoreApplication>
+#include <QDir>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QProcess>
@@ -37,7 +39,9 @@ void ShellCaptureTest::capturesRequiredResolution()
     QFETCH(QString, profile);
     QFETCH(QString, theme);
 
-    QTemporaryDir outputDirectory;
+    QTemporaryDir outputDirectory(
+        QDir(QCoreApplication::applicationDirPath())
+            .filePath(QStringLiteral("shell-capture-XXXXXX")));
     QVERIFY2(outputDirectory.isValid(), "Could not create a temporary capture directory");
     const QString outputPath = outputDirectory.filePath(QStringLiteral("nested/preview.png"));
 
@@ -47,6 +51,10 @@ void ShellCaptureTest::capturesRequiredResolution()
     environment.insert(QStringLiteral("QT_QUICK_BACKEND"), QStringLiteral("software"));
     environment.insert(QStringLiteral("QSG_RENDER_LOOP"), QStringLiteral("basic"));
     environment.insert(QStringLiteral("QT_SCALE_FACTOR"), QStringLiteral("1"));
+    // Both the production dispatcher and hosted applet imports execute in
+    // this process. Undefined tokens and delegate binding errors must abort
+    // the row instead of being hidden behind a superficially valid PNG.
+    environment.insert(QStringLiteral("QT_FATAL_WARNINGS"), QStringLiteral("1"));
     process.setProcessEnvironment(environment);
     process.start(QStringLiteral(QINDAQT_SHELL_PREVIEW_EXECUTABLE),
                   {QStringLiteral("--profile"),

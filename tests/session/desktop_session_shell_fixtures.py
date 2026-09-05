@@ -11,6 +11,13 @@ def closed_notification_shell(shell_pid: int, output_name: str) -> dict[str, obj
             "owner": ":1.20",
             "servicePid": str(shell_pid),
             "shellPid": str(shell_pid),
+            "tokens": {
+                "ready": True,
+                "qstRevision": 1,
+                "generation": "1",
+                "sourceThemeId": "qinda-dark",
+                "backgroundBase": "#171a18",
+            },
             "presentation": {
                 "privatePresentationAllowed": True, "centerOpen": False,
             },
