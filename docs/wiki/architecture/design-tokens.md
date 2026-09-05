@@ -56,6 +56,21 @@ does not choose themes or read settings, and its borrowed engine/catalog must
 outlive it. [ADR-0071](../adr/0071-publish-and-prove-shell-token-readiness.md)
 records the startup and live-evidence contract.
 
+The production shell composes the caller inputs below from confirmed Settings1
+preferences (`fonts.family`, `fonts.pointSize` and the `accessibility.*` scope)
+at startup and on each later confirmed snapshot; owner loss retains the last
+confirmed values and malformed snapshots are dropped with a diagnostic
+([ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)). The
+`appearance.theme` preference selects the published theme unless an explicit
+`--theme` locks it, and `fonts.family` overlays the selected theme's family in
+the derived `type` map without touching the mono family. The publisher itself
+still has no settings dependency: the shell runtime projects validated values
+into `AccessibilityInputs` and the family overlay. The same confirmed change
+also reaches the raw panel and notification `theme` maps: the panel window
+factory and the notification window controller update their cached map for
+future windows and push the new map onto every live window's plain `theme`
+property in the same step.
+
 ### Threading and errors
 
 Pure derivation is thread-neutral and has no ambient state. A loader-valid
@@ -91,8 +106,9 @@ revision and migration; derived roles do not.
 | `highContrast` | Boolean | Uses theme text for focus and strong outlines; theme selection remains caller-owned |
 
 The later Settings Center/application composition layer may project validated
-settings values into this struct. That consumer does not authorize a settings
-dependency in the token module.
+settings values into this struct; the production shell does so from the
+confirmed Settings1 scope named above. That consumer does not authorize a
+settings dependency in the token module.
 
 ## QST-1 role table
 

@@ -41,6 +41,10 @@ public:
     [[nodiscard]] QJsonObject evidence() const;
     void reset() noexcept;
 
+    // Replaces the theme map for future windows and pushes it onto the live
+    // popup/center windows' theme properties.
+    void setTheme(const QVariantMap &theme);
+
 private:
     [[nodiscard]] bool ensureComponents(QString *error);
     [[nodiscard]] std::unique_ptr<QQuickWindow> createWindow(

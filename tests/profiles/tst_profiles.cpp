@@ -22,6 +22,8 @@ private slots:
     void reportsPostOpenReadFailure();
     void catalogSelectsByStableId();
     void catalogRejectsDuplicateIdsAtomically();
+    void catalogMergesDirectoriesWithLaterPrecedence();
+    void catalogMergeRejectsDuplicatesWithinOneDirectory();
     void macosProfileUsesQindaMacosTheme();
     void everyBuiltInProfileHasOneNotificationCenter();
 };
@@ -126,6 +128,73 @@ void ProfileTests::catalogRejectsDuplicateIdsAtomically()
     }
 
     QVERIFY(!catalog.loadDirectory(directory.path(), &error));
+    QVERIFY(error.contains(QStringLiteral("duplicate profile id")));
+    QCOMPARE(catalog.current(), previous);
+}
+
+void ProfileTests::catalogMergesDirectoriesWithLaterPrecedence()
+{
+    QTemporaryDir systemDirectory;
+    QTemporaryDir userDirectory;
+    QVERIFY(systemDirectory.isValid());
+    QVERIFY(userDirectory.isValid());
+
+    const auto writeProfile = [](QTemporaryDir &directory, const QString &fileName,
+                                 const QString &id, const QString &name) {
+        QFile file(directory.filePath(fileName));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QJsonObject profile = validProfileObject();
+        profile.insert(QStringLiteral("id"), id);
+        profile.insert(QStringLiteral("name"), name);
+        const QByteArray encoded = encode(profile);
+        QCOMPARE(file.write(encoded), static_cast<qint64>(encoded.size()));
+    };
+    writeProfile(systemDirectory, QStringLiteral("stock.json"),
+                 QStringLiteral("stock"), QStringLiteral("Stock"));
+    writeProfile(systemDirectory, QStringLiteral("shared.json"),
+                 QStringLiteral("shared"), QStringLiteral("System shared"));
+    // A partial user catalog must not shadow the remaining stock profiles.
+    writeProfile(userDirectory, QStringLiteral("shared.json"),
+                 QStringLiteral("shared"), QStringLiteral("User shared"));
+
+    ProfileCatalog catalog;
+    QString error;
+    QVERIFY2(catalog.loadDirectories({systemDirectory.path(), userDirectory.path()},
+                                     &error),
+             qPrintable(error));
+    QCOMPARE(catalog.profiles().size(), 2);
+    QVERIFY(catalog.selectById(QStringLiteral("shared")));
+    QCOMPARE(catalog.current().value(QStringLiteral("name")).toString(),
+             QStringLiteral("User shared"));
+    QVERIFY(catalog.selectById(QStringLiteral("stock")));
+    QCOMPARE(catalog.current().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Stock"));
+}
+
+void ProfileTests::catalogMergeRejectsDuplicatesWithinOneDirectory()
+{
+    ProfileCatalog catalog;
+    QString error;
+    QVERIFY2(catalog.loadDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+    const QVariantMap previous = catalog.current();
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    for (const QString &name : {QStringLiteral("one.json"), QStringLiteral("two.json")}) {
+        QFile file(directory.filePath(name));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QJsonObject profile = validProfileObject();
+        profile.insert(QStringLiteral("id"), QStringLiteral("repeated-profile"));
+        const QByteArray encoded = encode(profile);
+        QCOMPARE(file.write(encoded), static_cast<qint64>(encoded.size()));
+    }
+
+    // Duplicate ids inside one contributing directory fail the whole merge
+    // atomically even though cross-directory override is legal.
+    QVERIFY(!catalog.loadDirectories(
+        {QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), directory.path()},
+        &error));
     QVERIFY(error.contains(QStringLiteral("duplicate profile id")));
     QCOMPARE(catalog.current(), previous);
 }

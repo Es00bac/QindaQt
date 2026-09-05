@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "notificationwindowcontroller.h"
 #include "settingsroutelauncher.h"
+#include "thememappropagation.h"
 
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
@@ -219,6 +220,14 @@ void NotificationWindowController::reset() noexcept
     m_popupWindow.reset();
     m_centerWindow.reset();
     m_screen.clear();
+}
+
+void NotificationWindowController::setTheme(const QVariantMap &theme)
+{
+    m_theme = theme;
+    QList<QPointer<QQuickWindow>> windows{QPointer<QQuickWindow>(m_popupWindow.get()),
+                                          QPointer<QQuickWindow>(m_centerWindow.get())};
+    propagateThemeMapToWindows(m_theme, windows);
 }
 
 bool NotificationWindowController::ensureComponents(QString *error)

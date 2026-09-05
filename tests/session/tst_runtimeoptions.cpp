@@ -12,6 +12,8 @@ class RuntimeOptionsTests final : public QObject {
 
 private slots:
     void acceptsStandaloneShellModes();
+    void absentProfileAndThemeStayEmpty();
+    void explicitProfileAndThemeAreRetained();
     void acceptsTheCompleteNotificationAuthorityBundle();
     void rejectsPartialNotificationAuthority();
     void rejectsMissingTrustValues();
@@ -32,6 +34,28 @@ void RuntimeOptionsTests::acceptsStandaloneShellModes()
         QCOMPARE(parsed.options->presentationTokenDescriptor, -1);
         QVERIFY(!parsed.options->compositorProcessId.has_value());
     }
+}
+
+void RuntimeOptionsTests::absentProfileAndThemeStayEmpty()
+{
+    // AGENT-GUARD: An unset --profile/--theme must stay empty so the runtime
+    // can compose confirmed Settings1 preferences; injecting a parser default
+    // here silently outranked the saved layout selection (project audit A05).
+    const auto parsed = parseRuntimeOptions({QStringLiteral("qindaqt-shell")});
+    QVERIFY2(parsed.options.has_value(), qPrintable(parsed.error));
+    QVERIFY(parsed.options->profileId.isEmpty());
+    QVERIFY(parsed.options->themeId.isEmpty());
+}
+
+void RuntimeOptionsTests::explicitProfileAndThemeAreRetained()
+{
+    const auto parsed = parseRuntimeOptions(
+        {QStringLiteral("qindaqt-shell"), QStringLiteral("--profile"),
+         QStringLiteral("mate-inspired"), QStringLiteral("--theme"),
+         QStringLiteral("qinda-light")});
+    QVERIFY2(parsed.options.has_value(), qPrintable(parsed.error));
+    QCOMPARE(parsed.options->profileId, QStringLiteral("mate-inspired"));
+    QCOMPARE(parsed.options->themeId, QStringLiteral("qinda-light"));
 }
 
 void RuntimeOptionsTests::acceptsTheCompleteNotificationAuthorityBundle()

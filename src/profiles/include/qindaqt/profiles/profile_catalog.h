@@ -23,6 +23,10 @@ public:
     [[nodiscard]] const QVector<LayoutProfile> &profiles() const;
 
     bool loadDirectory(const QString &path, QString *error = nullptr);
+    // Paths are ordered low to high precedence; duplicate IDs within one
+    // directory are errors. Failure preserves the complete prior catalog.
+    // GUI-thread only; values are copied and no filesystem handles retained.
+    bool loadDirectories(const QStringList &paths, QString *error = nullptr);
     Q_INVOKABLE bool selectById(const QString &id);
     Q_INVOKABLE bool selectIndex(int index);
 

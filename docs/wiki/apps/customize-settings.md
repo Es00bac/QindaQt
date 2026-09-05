@@ -134,8 +134,11 @@ They do not contact a host session bus, compositor, hardware, or input device.
 
 ## Stopping point
 
-Apply makes the profile durable and changes the Settings1 selection, but the
-production shell reads that choice only on its next start. Provisional live
+Apply makes the profile durable and changes the Settings1 selection; the
+production shell adopts that choice at its next start through the bounded
+Settings1 startup read in
+[ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)
+(an explicit `--profile` still outranks it). Provisional live
 shell binding, the always-hidden reveal affordance, installed-session behavior,
 and the nested rendered matrix are separate later slices. This route therefore
 makes no claim that an open shell follows its previews or applied draft live.

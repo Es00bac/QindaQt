@@ -12,6 +12,9 @@ class QCoreApplication;
 namespace QindaQt::Shell {
 
 struct RuntimeOptions {
+    // Empty profileId/themeId mean "not explicit on the command line"; the
+    // runtime then composes confirmed Settings1 preferences before built-in
+    // defaults. The parser itself must not inject a default profile id.
     QString profileId;
     QString themeId;
     QString profileDirectory;

@@ -38,13 +38,20 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_settingsTransport =
         std::make_unique<Services::SettingsClient::QtSettingsTransport>(
             QDBusConnection::sessionBus());
+    QStringList shellScope{QStringLiteral("accessibility.reducedMotion"),
+                           QStringLiteral("panels.autoHideDelayMs"),
+                           QStringLiteral("services.clipboardHistory"),
+                           Launcher::LauncherPersistenceController::pinnedKey(),
+                           Launcher::LauncherPersistenceController::recentKey()};
+    // The appearance bridge and token publisher consume the confirmed
+    // preference scope; all keys are declared in settings schema v2.
+    for (const QString &key : ShellPreferenceValues::scopedKeys()) {
+        if (!shellScope.contains(key)) {
+            shellScope.append(key);
+        }
+    }
     m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
-        *m_settingsTransport,
-        QStringList{QStringLiteral("accessibility.reducedMotion"),
-                    QStringLiteral("panels.autoHideDelayMs"),
-                    QStringLiteral("services.clipboardHistory"),
-                    Launcher::LauncherPersistenceController::pinnedKey(),
-                    Launcher::LauncherPersistenceController::recentKey()});
+        *m_settingsTransport, shellScope);
     // AGENT-CONTRACT: Settings1 rejects an entire scoped snapshot when any
     // requested key is unknown. Notification quieting therefore owns a
     // purpose-scoped client so optional applet keys cannot turn a present,

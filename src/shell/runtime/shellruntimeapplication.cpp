@@ -17,7 +17,9 @@
 #include "powerappletcomposition.h"
 #include "qtcompositoroutputauthority.h"
 #include "runtimepanelwindowfactory.h"
+#include "shellappearancebridge.h"
 #include "shelldevelopmentevidence.h"
+#include "shellstartuppreferences.h"
 #include "settingsroutelauncher.h"
 #include "tasklistappletcomposition.h"
 
@@ -41,6 +43,7 @@
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QCoreApplication>
+#include <QDBusConnection>
 #include <QDebug>
 #include <QDir>
 #include <QGuiApplication>
@@ -52,6 +55,10 @@
 #include <utility>
 
 namespace QindaQt::Shell {
+
+// Bounded wait for the one confirmed Settings1 snapshot that precedes catalog
+// selection. Startup proceeds on built-in defaults when it expires.
+constexpr int StartupPreferenceTimeoutMilliseconds = 2'000;
 
 ShellRuntimeApplication::ShellRuntimeApplication(QGuiApplication &application)
     : m_application(application)
@@ -87,6 +94,23 @@ int ShellRuntimeApplication::run()
     if (!loadPresentationToken(*parsed.options, &error)) {
         qCritical().noquote() << error;
         return 2;
+    }
+    // AGENT-CONTRACT: The confirmed Settings1 layout/appearance selection is
+    // read before the initial surface plan so an ordinary restart adopts what
+    // the Customize route saved (project audit A05/A07). Explicit CLI options
+    // outrank these values. --list stays a deterministic inspection tool and
+    // never touches the service.
+    if (!parsed.options->listOnly) {
+        QString preferenceError;
+        m_startupPreferences = readConfirmedShellPreferences(
+            QDBusConnection::sessionBus(), StartupPreferenceTimeoutMilliseconds,
+            &preferenceError);
+        if (!m_startupPreferences.has_value()) {
+            qWarning().noquote()
+                << "QindaQt shell starts with built-in profile and theme"
+                   " defaults; no confirmed Settings1 preferences:"
+                << preferenceError;
+        }
     }
     if (!loadCatalogs(*parsed.options, &error)) {
         qCritical().noquote() << error;
@@ -128,10 +152,14 @@ bool ShellRuntimeApplication::loadPresentationToken(
 
 bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QString *error)
 {
-    const QString profileDirectory = resolveCatalogDataDirectory(options.profileDirectory,
-                                                                 "QINDAQT_PROFILE_DIR",
-                                                                 QINDAQT_SOURCE_PROFILE_DIR,
-                                                                 QStringLiteral("qindaqt/profiles"));
+    // AGENT-CONTRACT: Profile catalogs merge low-to-high precedence with the
+    // user store last, matching the Settings Customize route contract (project
+    // audit A06). The source tree participates only for the genuine
+    // build-tree executable so an installed shell never shadows user profiles.
+    const QString sourceProfileDirectory = buildTreeSourceDirectory(
+        QINDAQT_SOURCE_PROFILE_DIR, QINDAQT_SHELL_BUILD_EXECUTABLE_PATH);
+    const QStringList profileDirectories = resolveProfileCatalogDirectories(
+        options.profileDirectory, sourceProfileDirectory);
     const QString themeDirectory = resolveCatalogDataDirectory(options.themeDirectory,
                                                                "QINDAQT_THEME_DIR",
                                                                QINDAQT_SOURCE_THEME_DIR,
@@ -143,7 +171,7 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
         options.appletPolicyFile, "QINDAQT_APPLET_POLICY",
         QINDAQT_SOURCE_APPLET_POLICY,
         QStringLiteral("qindaqt/applet-policy/default.json"));
-    if (!m_profiles.loadDirectory(profileDirectory, error) ||
+    if (!m_profiles.loadDirectories(profileDirectories, error) ||
         !m_themes.loadDirectory(themeDirectory, error) ||
         !m_applets.loadDirectory(appletDirectory, error)) {
         return false;
@@ -155,17 +183,48 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
         return false;
     }
     m_appletPolicy = loadedPolicy.policy;
-    if (!m_profiles.selectById(options.profileId)) {
-        *error = QStringLiteral("Unknown profile: %1").arg(options.profileId);
-        return false;
+    const QString requestedProfile =
+        resolveStartupProfileId(options.profileId, m_startupPreferences);
+    if (!m_profiles.selectById(requestedProfile)) {
+        // AGENT-GUARD: Only an explicit --profile may fail startup. A saved
+        // selection whose profile was deleted or renamed must recover to the
+        // built-in default instead of stranding the session without a shell.
+        if (!options.profileId.isEmpty() || !m_startupPreferences.has_value()) {
+            *error = QStringLiteral("Unknown profile: %1").arg(requestedProfile);
+            return false;
+        }
+        qWarning().noquote()
+            << "QindaQt shell could not honor the saved profile selection;"
+               " falling back to the default profile:"
+            << requestedProfile;
+        if (!m_profiles.selectById(QStringLiteral("qindaqt"))) {
+            *error = QStringLiteral("Unknown profile: qindaqt");
+            return false;
+        }
     }
 
-    const QString requestedTheme = !options.themeId.isEmpty()
-        ? options.themeId
-        : m_profiles.current().value(QStringLiteral("defaultTheme")).toString();
+    const QString profileDefaultTheme =
+        m_profiles.current().value(QStringLiteral("defaultTheme")).toString();
+    QString requestedTheme = resolveStartupThemeId(
+        options.themeId, m_startupPreferences, profileDefaultTheme);
     if (!m_themes.selectById(requestedTheme)) {
-        *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
-        return false;
+        // AGENT-GUARD: Only an explicit --theme may fail startup. A saved
+        // preference naming an uninstalled theme fails closed to the selected
+        // profile's default rather than leaving the session without a shell.
+        if (!options.themeId.isEmpty() || !m_startupPreferences.has_value()
+            || requestedTheme == profileDefaultTheme) {
+            *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
+            return false;
+        }
+        qWarning().noquote()
+            << "QindaQt shell could not honor the saved theme preference;"
+               " falling back to the profile default:"
+            << requestedTheme;
+        requestedTheme = profileDefaultTheme;
+        if (!m_themes.selectById(requestedTheme)) {
+            *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
+            return false;
+        }
     }
     m_dataRoots = ShellIconConfiguration::dataRoots(
         QProcessEnvironment::systemEnvironment(), QDir::homePath());
@@ -186,6 +245,32 @@ void ShellRuntimeApplication::printCatalog() const
     output << "Applets:\n";
     for (const auto &applet : m_applets.manifests()) {
         output << "  " << applet.id << " - " << applet.name << '\n';
+    }
+}
+
+QVariantMap ShellRuntimeApplication::effectiveThemeMap() const
+{
+    QVariantMap theme = m_themes.current();
+    // The confirmed fonts.family preference overlays the theme's own family,
+    // mirroring the token publication overlay so raw maps and QST agree.
+    const std::optional<ShellPreferenceValues> &confirmed =
+        m_appearanceBridge && m_appearanceBridge->lastConfirmed().has_value()
+            ? m_appearanceBridge->lastConfirmed()
+            : m_startupPreferences;
+    if (confirmed.has_value() && !confirmed->fontFamily.isEmpty()) {
+        theme.insert(QStringLiteral("fontFamily"), confirmed->fontFamily);
+    }
+    return theme;
+}
+
+void ShellRuntimeApplication::propagateThemeToSurfaces()
+{
+    const QVariantMap theme = effectiveThemeMap();
+    if (m_windowFactory) {
+        m_windowFactory->setTheme(theme);
+    }
+    if (m_notificationWindows) {
+        m_notificationWindows->setTheme(theme);
     }
 }
 
@@ -320,7 +405,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
     m_windowFactory =
         std::make_unique<RuntimePanelWindowFactory>(
-            m_engine, profile, m_themes.current(), m_applets, m_appletPolicy,
+            m_engine, profile, effectiveThemeMap(), m_applets, m_appletPolicy,
             m_notificationCenterAccess.get(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
             m_launcherApplet->access(), m_globalMenuApplet->access(), m_clipboardApplet->access(),
@@ -345,6 +430,18 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 
     startSettingsClients();
 
+    m_appearanceBridge = std::make_unique<ShellAppearanceBridge>(
+        *m_settingsClient, m_themes, *m_tokenPublisher,
+        !options.themeId.isEmpty());
+    // Confirmed theme/font preference changes reach both token publication
+    // (bridge/publisher) and the raw theme maps of existing and future panel
+    // and notification surfaces.
+    connect(&m_themes, &Themes::ThemeCatalog::currentChanged, this,
+            &ShellRuntimeApplication::propagateThemeToSurfaces);
+    connect(m_appearanceBridge.get(),
+            &ShellAppearanceBridge::confirmedPreferencesChanged, this,
+            &ShellRuntimeApplication::propagateThemeToSurfaces);
+
     if (m_notificationClient) {
         startNotificationOutputAuthority();
         QString lockError;
@@ -363,7 +460,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         m_notificationWindows = std::make_unique<NotificationWindowController>(
             m_engine, *m_notificationPresentation,
             m_quietingSettingsBridge->controller(), *m_settingsRouteLauncher,
-            m_themes.current());
+            effectiveThemeMap());
         m_globalShortcutRegistrar =
             std::make_unique<KGlobalAccelShortcutRegistrar>();
         m_notificationCenterShortcut =
@@ -434,6 +531,9 @@ void ShellRuntimeApplication::resetRuntime()
     m_bluetoothApplet.reset();
     m_powerApplet.reset();
     m_notificationCenterAccess.reset();
+    // The bridge borrows the token publisher and theme catalog; release it
+    // before either can disappear.
+    m_appearanceBridge.reset();
     if (m_settingsClient) {
         m_settingsClient->stop();
     }

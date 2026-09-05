@@ -15,6 +15,13 @@ bool ShellRuntimeApplication::initializeTokens(QString *error)
 {
     m_tokenPublisher =
         std::make_unique<ShellTokenPublisher>(m_engine, m_themes, this);
+    // Confirmed startup accessibility preferences must be part of the very
+    // first publication, before any panel or hosted-applet QML exists.
+    if (m_startupPreferences.has_value()) {
+        m_tokenPublisher->setAccessibilityInputs(
+            m_startupPreferences->accessibility);
+        m_tokenPublisher->setFontFamilyOverride(m_startupPreferences->fontFamily);
+    }
     connect(m_tokenPublisher.get(), &ShellTokenPublisher::publicationFailed,
             this, [](const QString &message) {
                 qCritical().noquote()

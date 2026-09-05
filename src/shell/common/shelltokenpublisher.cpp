@@ -111,6 +111,39 @@ DesignTokens::TokenFacade *ShellTokenPublisher::facade() const
     return m_facade;
 }
 
+void ShellTokenPublisher::setAccessibilityInputs(
+    const DesignTokens::AccessibilityInputs &inputs)
+{
+    const auto normalized = inputs.normalized();
+    if (normalized == m_accessibilityInputs) {
+        return;
+    }
+    m_accessibilityInputs = normalized;
+    if (m_facade == nullptr) {
+        return;
+    }
+    QString republicationError;
+    if (!publishSelected(&republicationError)) {
+        emit publicationFailed(republicationError);
+    }
+}
+
+void ShellTokenPublisher::setFontFamilyOverride(const QString &fontFamily)
+{
+    const QString trimmed = fontFamily.trimmed();
+    if (trimmed == m_fontFamilyOverride) {
+        return;
+    }
+    m_fontFamilyOverride = trimmed;
+    if (m_facade == nullptr) {
+        return;
+    }
+    QString republicationError;
+    if (!publishSelected(&republicationError)) {
+        emit publicationFailed(republicationError);
+    }
+}
+
 bool ShellTokenPublisher::publishSelected(QString *error)
 {
     const int index = m_themes.currentIndex();
@@ -123,8 +156,14 @@ bool ShellTokenPublisher::publishSelected(QString *error)
     }
     // AGENT-CONTRACT: Every selected theme reaches QindaQt.Tokens as one
     // complete generation before Controls consumers observe currentChanged.
-    return m_facade->publish(m_themes.themes().at(index),
-                             DesignTokens::AccessibilityInputs{}, error);
+    // Accessibility inputs and the font family come from confirmed Settings1
+    // preferences composed by the shell runtime; they default to the neutral
+    // token baseline and the theme's own family.
+    Themes::ThemeSpec selected = m_themes.themes().at(index);
+    if (!m_fontFamilyOverride.isEmpty()) {
+        selected.fontFamily = m_fontFamilyOverride;
+    }
+    return m_facade->publish(selected, m_accessibilityInputs, error);
 }
 
 } // namespace QindaQt::Shell

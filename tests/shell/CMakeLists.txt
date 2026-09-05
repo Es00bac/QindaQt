@@ -145,6 +145,76 @@ set_tests_properties(
 
 if(TARGET qindaqt-shell)
     qt_add_executable(
+        qindaqt_catalog_paths_tests
+        tst_catalogpaths.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/catalogpaths.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/catalogpaths.h"
+    )
+    target_include_directories(
+        qindaqt_catalog_paths_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common"
+    )
+    target_link_libraries(
+        qindaqt_catalog_paths_tests
+        PRIVATE Qt6::Core Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_catalog_paths_tests)
+    add_test(NAME qindaqt.shell-catalog-paths COMMAND qindaqt_catalog_paths_tests)
+
+    qt_add_executable(
+        qindaqt_shell_preference_values_tests
+        tst_shellpreferencevalues.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
+    )
+    target_include_directories(
+        qindaqt_shell_preference_values_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_shell_preference_values_tests
+        PRIVATE QindaQt::DesignTokens Qt6::Core Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_shell_preference_values_tests)
+    add_test(
+        NAME qindaqt.shell-preference-values
+        COMMAND qindaqt_shell_preference_values_tests
+    )
+
+    qt_add_executable(
+        qindaqt_shell_startup_preferences_tests
+        tst_shellstartuppreferences.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellstartuppreferences.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellstartuppreferences.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
+    )
+    target_include_directories(
+        qindaqt_shell_startup_preferences_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_shell_startup_preferences_tests
+        PRIVATE
+            QindaQt::DesignTokens
+            QindaQt::SettingsClient
+            QindaQt::SettingsService
+            Qt6::DBus
+            Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_shell_startup_preferences_tests
+        PRIVATE
+            QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+            QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+    )
+    qindaqt_enable_warnings(qindaqt_shell_startup_preferences_tests)
+    add_test(
+        NAME qindaqt.shell-startup-preferences
+        COMMAND qindaqt_shell_startup_preferences_tests
+    )
+
+    qt_add_executable(
         qindaqt_runtime_panel_applet_compatibility_tests
         tst_runtimepanelappletcompatibility.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/runtimepanelappletcompatibility.cpp"
@@ -169,15 +239,22 @@ if(TARGET qindaqt-shell)
         tst_shellruntime_tokens.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelltokenpublisher.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelltokenpublisher.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellappearancebridge.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellappearancebridge.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
     )
     target_include_directories(
         qindaqt_shell_runtime_token_tests
-        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common"
+        PRIVATE
+            "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common"
+            "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
     )
     target_link_libraries(
         qindaqt_shell_runtime_token_tests
         PRIVATE
             qindaqt_themes
+            QindaQt::SettingsClient
             QindaQt::TokensQml
             QindaQt::ShellTaskListApplet
             qindaqt_shell_task_list_appletplugin
@@ -207,6 +284,58 @@ if(TARGET qindaqt-shell)
         qindaqt.shell-runtime-token-publication
         PROPERTIES ENVIRONMENT
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
+    )
+
+    qt_add_executable(qindaqt_theme_map_propagation_tests tst_thememappropagation.cpp)
+    target_include_directories(
+        qindaqt_theme_map_propagation_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_theme_map_propagation_tests
+        PRIVATE Qt6::Gui Qt6::Quick Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_theme_map_propagation_tests)
+    add_test(
+        NAME qindaqt.shell-theme-map-propagation
+        COMMAND qindaqt_theme_map_propagation_tests
+    )
+    set_tests_properties(
+        qindaqt.shell-theme-map-propagation
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+    )
+
+    qt_add_executable(
+        qindaqt_shell_runtime_startup_launch_tests
+        tst_shellruntime_startuplaunch.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
+    )
+    target_include_directories(
+        qindaqt_shell_runtime_startup_launch_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+    )
+    target_link_libraries(
+        qindaqt_shell_runtime_startup_launch_tests
+        PRIVATE
+            QindaQt::DesignTokens
+            QindaQt::SettingsClient
+            QindaQt::SettingsService
+            Qt6::DBus
+            Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_shell_runtime_startup_launch_tests
+        PRIVATE
+            QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+            QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+            QINDAQT_SHELL_EXECUTABLE="$<TARGET_FILE:qindaqt-shell>"
+    )
+    add_dependencies(qindaqt_shell_runtime_startup_launch_tests qindaqt-shell)
+    qindaqt_enable_warnings(qindaqt_shell_runtime_startup_launch_tests)
+    add_test(
+        NAME qindaqt.shell-runtime-startup-launch
+        COMMAND qindaqt_shell_runtime_startup_launch_tests
     )
 
     qt_add_executable(
