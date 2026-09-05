@@ -2516,6 +2516,19 @@ device claim. Those rows follow a successful repeatable boot/teardown boundary.
 
 ### Private interactive 1080p S2
 
+The shell icon-first slice adds two host-independent gates to the focused shell
+matrix: `qindaqt.shell-icon-runtime-configuration` validates selected-theme
+policy and hostile hints, while `qindaqt.shell-icon-coverage` requires every
+hosted entry and built-in theme to declare its icon contract. Individual
+offscreen applet rows assert icon-or-typed-placeholder truth, accessible names,
+empty in-panel labels, and 28-pixel geometry under fatal QML warnings. These
+gates use injected roots and the software renderer only.
+
+Contained `desktop.virtual.interactive.1080p` and the two
+`desktop.virtual.panel-visibility.single-*` rows remain the live visual and
+horizontal/vertical surface evidence. Their screenshots may be archived for
+review, but a screenshot does not replace the structural offscreen assertions.
+
 The additive S2 row keeps S1 unchanged and is selected under the same allocated
 private-runtime lane:
 
@@ -2628,12 +2641,13 @@ ctest --test-dir build/dev --parallel 1 --output-on-failure \
   -R '^desktop\.virtual\.interactive\.matrix\.'
 ```
 
-The four approved rows deliberately maximize representative breadth before the
+The five approved rows deliberately maximize representative breadth before the
 complete release matrix:
 
 | Row | Applied output | Profile/theme |
 | --- | --- | --- |
 | `single-wuxga` | 1920x1200 at 100% | `xfce-inspired` / `qinda-light` |
+| `single-1080p-125` | 1920x1080 at 125% (1536x864 logical) | `gnome-inspired` / `qinda-light` |
 | `single-1440p-125` | 2560x1440 at 125% (2048x1152 logical) | `unity-inspired` / `qinda-dusk` |
 | `single-1080p-150` | 1920x1080 at 150% (1280x720 logical) | `mate-inspired` / `qinda-dark` |
 | `dual-1080p-horizontal` | two 1920x1080 outputs at `(0,0)` and `(1920,0)` | `windows-classic` / `qinda-light` |

@@ -206,6 +206,7 @@ Item {
         anchors.fill: parent
         visible: root.audioReady
         controller: root.audioAppletAccess
+        vertical: root.vertical
     }
 
     BluetoothAppletModule.BluetoothApplet {

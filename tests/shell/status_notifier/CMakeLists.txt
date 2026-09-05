@@ -9,7 +9,7 @@ if(NOT TARGET QindaQt::StatusNotifier)
         " must run before tests/shell/status_notifier")
 endif()
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Test)
+find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Svg Test)
 
 qt_add_executable(qindaqt_status_notifier_values_tests tst_status_notifier_values.cpp)
 target_compile_definitions(qindaqt_status_notifier_values_tests

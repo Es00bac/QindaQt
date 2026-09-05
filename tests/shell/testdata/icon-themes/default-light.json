@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "default-light",
+  "name": "Default light icons",
+  "variant": "light",
+  "colors": {
+    "canvas": "#eeeeee",
+    "surface": "#ffffff",
+    "surfaceRaised": "#ffffff",
+    "border": "#aaaaaa",
+    "text": "#111111",
+    "textMuted": "#555555",
+    "accent": "#336666",
+    "accentText": "#ffffff",
+    "danger": "#bb3333"
+  }
+}

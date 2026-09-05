@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // Compiled launcher applet: a summary button on the panel plus a non-modal
@@ -20,8 +21,8 @@ Item {
     readonly property bool available: access !== null && Tokens.ready
 
     objectName: "launcherApplet"
-    implicitWidth: vertical ? 40 : Math.max(46, summary.implicitWidth + 12)
-    implicitHeight: vertical ? 40 : 28
+    implicitWidth: 32
+    implicitHeight: 28
 
     // Flat cross-section traversal: section order is the focus order; each
     // section resolves its own delegates, so no stale item registry exists.
@@ -62,7 +63,7 @@ Item {
         anchors.fill: parent
         enabled: root.available
         focusPolicy: Qt.TabFocus
-        text: qsTr("Applications")
+        text: ""
         Accessible.role: Accessible.Button
         Accessible.name: root.available
                          ? qsTr("Applications")
@@ -76,16 +77,14 @@ Item {
         Keys.onEnterPressed: root.openBrowser()
         Accessible.onPressAction: root.openBrowser()
 
-        contentItem: Text {
-            text: summary.text
-            color: Tokens.ready
-                   ? (summary.enabled ? Tokens.fg.default : Tokens.fg.disabled)
-                   : "transparent"
-            font.family: Tokens.ready ? Tokens.type.fontFamily : ""
-            font.pointSize: Tokens.ready ? Tokens.type.caption : 10
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
+        contentItem: ShellIcons.Icon {
+            objectName: "launcherAppletIcon"
+            anchors.centerIn: parent
+            name: "start-here-kde"
+            size: Math.min(20, root.height - Tokens.space["2"])
+            color: summary.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            fallbackText: qsTr("Applications")
+            Accessible.ignored: true
         }
         background: Item {}
     }
@@ -130,6 +129,13 @@ Item {
                     }
 
                     spacing: Tokens.space["2"]
+
+                    Label {
+                        objectName: "launcherAppletHeading"
+                        Layout.fillWidth: true
+                        text: qsTr("Applications")
+                        Accessible.role: Accessible.Heading
+                    }
 
                     TextField {
                         id: searchField

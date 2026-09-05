@@ -4,7 +4,7 @@
 # rows link only the pure projection target; the controller and QML rows link
 # the runtime target so fail-closed presentation behavior remains testable
 # without the resident Audio1 service.
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Test)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Svg Test)
 
 qt_add_executable(qindaqt_audio_applet_model_tests tst_audio_applet_model.cpp)
 target_link_libraries(
@@ -51,6 +51,8 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellAudioAppletRuntime
         QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_themes
         Qt6::Gui

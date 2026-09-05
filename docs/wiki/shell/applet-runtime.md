@@ -48,6 +48,14 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
+Shell composition publishes QST-1 and installs the selected freedesktop icon
+runtime before this inventory is instantiated. Every hosted entry has an
+explicit icon-first declaration guarded by `qindaqt.shell-icon-coverage`.
+Buttons retain their accessible name, role, enabled state, and keyboard path
+when visible labels are removed; unresolved icon names fail closed to the
+typed placeholder. Clock and provider-owned global-menu labels are the two
+intentional textual panel surfaces.
+
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, clipboard, and status
 notifier packages.

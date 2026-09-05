@@ -5,6 +5,7 @@
 #include "bluetoothappletcomposition.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
+#include "../common/shelliconconfiguration.h"
 #include "launcher_persistence.h"
 #include "powerappletcomposition.h"
 #include "tasklistappletcomposition.h"
@@ -13,6 +14,7 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
+#include "qindaqt/shell/icons/icon_runtime.h"
 
 #include <QDBusConnection>
 #include <QDebug>
@@ -62,7 +64,13 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     m_globalMenuApplet = std::make_unique<GlobalMenuAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
     m_taskListApplet = std::make_unique<TaskListAppletComposition>(
-        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient);
+        m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient,
+        [&] {
+            const ShellDataRoots roots = ShellIconConfiguration::dataRoots(
+                QProcessEnvironment::systemEnvironment(), QDir::homePath());
+            return Icons::IconRuntime::freedesktopApplicationRoots(
+                roots.dataHome, roots.dataDirectories);
+        }());
     QString taskListError;
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote()

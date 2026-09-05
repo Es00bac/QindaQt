@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(QindaQtInstalledTaskListAppletConsumer LANGUAGES CXX)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2 Svg)
 
 foreach(required IN ITEMS
         QINDAQT_STAGE_ROOT
@@ -18,6 +18,7 @@ foreach(required IN ITEMS
 endforeach()
 
 set(applet_module_dir "${QINDAQT_STAGE_QML_ROOT}/QindaQt/Shell/TaskList")
+set(icons_module_dir "${QINDAQT_STAGE_QML_ROOT}/QindaQt/Shell/Icons")
 set(applet_lib_dir "${QINDAQT_STAGE_ROOT}/${QINDAQT_STAGE_LIBDIR}")
 set(static_suffix "${QINDAQT_STATIC_LIBRARY_SUFFIX}")
 
@@ -73,8 +74,10 @@ target_link_libraries(
     PRIVATE
         "-Wl,--whole-archive"
         "${applet_module_dir}/libqindaqt_shell_task_list_appletplugin${static_suffix}"
+        "${icons_module_dir}/libqindaqt_shell_iconsplugin${static_suffix}"
         "-Wl,--no-whole-archive"
         "${applet_module_dir}/libqindaqt_shell_task_list_applet${static_suffix}"
+        "${icons_module_dir}/libqindaqt_shell_icons${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list_operations${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list_producer${static_suffix}"
         "${applet_lib_dir}/libqindaqt_shell_task_list${static_suffix}"
@@ -90,4 +93,5 @@ target_link_libraries(
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Svg
 )

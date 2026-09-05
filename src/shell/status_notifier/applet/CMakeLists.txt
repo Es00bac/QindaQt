@@ -7,6 +7,8 @@
 # module, so embedding them in a shared applet library is impossible without
 # editing that module.
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../IconRuntimeInstall.cmake")
+
 qt_add_library(qindaqt_shell_status_notifier_applet STATIC)
 add_library(QindaQt::ShellStatusNotifierApplet ALIAS qindaqt_shell_status_notifier_applet)
 
@@ -44,7 +46,7 @@ install(
         COMPONENT StatusNotifierAppletRuntime
 )
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Gui Qml Quick QuickControls2 Svg)
 
 set(QINDAQT_STATUS_NOTIFIER_APPLET_QML_OUTPUT_DIRECTORY
     "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/StatusNotifier")
@@ -74,6 +76,8 @@ qt_add_qml_module(
     QML_FILES
         qml/StatusNotifierApplet.qml
         qml/StatusNotifierItemDelegate.qml
+    DEPENDENCIES
+        TARGET qindaqt_shell_icons
 )
 
 # AGENT-CONTRACT: the runtime target composes the pure projection with the
@@ -87,6 +91,7 @@ target_link_libraries(
         QindaQt::StatusNotifier
         QindaQt::StatusNotifierItemClient
         QindaQt::StatusNotifierIcon
+        QindaQt::ShellIcons
         Qt6::Core
         Qt6::DBus
         Qt6::Gui
@@ -101,6 +106,7 @@ qindaqt_enable_warnings(qindaqt_shell_status_notifier_applet_runtime)
 add_dependencies(
     qindaqt_shell_status_notifier_applet_runtime
     qindaqt_controls_qmlplugin
+    qindaqt_shell_iconsplugin
 )
 
 # Qt owns the deploy-name calculation used by qmldir and QML tooling. Query it
@@ -156,3 +162,4 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/StatusNotifier"
     COMPONENT StatusNotifierAppletRuntime
 )
+qindaqt_install_shell_icons_runtime(StatusNotifierAppletRuntime)

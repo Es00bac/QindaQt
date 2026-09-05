@@ -117,18 +117,21 @@ resolved and StaticText for the placeholder. Composition must publish a
 complete QST-1 generation before creating `Icon` instances, exactly as for
 `QindaQt.Controls`.
 
-## Wiring plan (later lane)
+## Production wiring
 
-A concurrent lane owns the shell runtime and applets. The wiring lane will:
+The production shell and `qindaqt-shell-preview` install `IconRuntime` after
+QST-1 publication and before constructing panel QML. Shell composition derives
+icon and application roots from one explicit freedesktop data-root snapshot.
+The selected theme document may name `iconTheme`; absent hints choose
+`breeze-dark` for dark canvases and `breeze` for light canvases, while the
+locator always appends `hicolor`. Invalid hints fail shell startup rather than
+opening a filesystem-shaped lookup surface.
 
-1. Call `IconRuntime::install` from the shell composition root with roots
-   from `IconRuntime::freedesktopIconRoots(dataHome, dataDirs)` and the
-   application roots from `freedesktopApplicationRoots`.
-2. Take the theme name from the shell theme JSON's optional `iconTheme` key
-   (default `breeze`; `hicolor` is always appended last by the locator).
-   That schema addition belongs to the wiring lane.
-3. Replace applet label/letter placeholders with the `Icon` element and feed
-   the task list through `DesktopEntryIconResolver::iconNameForAppId`.
+Panel summaries use the compiled `Icon` element and preserve their prior
+accessible names on the surrounding buttons. Task-list composition owns one
+`DesktopEntryIconResolver` and projects its result from the compositor's
+application id into each row. Missing, hostile, or uninstalled icons render the
+typed QST placeholder; presentation never substitutes a text label in-panel.
 
 ## Focused tests
 
@@ -143,6 +146,8 @@ ctest --test-dir build/dev \
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |
+| `qindaqt.shell-icon-runtime-configuration` | Selected-theme hint, light/dark default, hostile-hint refusal, and explicit XDG root ordering. |
+| `qindaqt.shell-icon-coverage` | Complete-inventory guard requiring an icon declaration for every hosted panel entry and an `iconTheme` field for every built-in theme. |
 
 All rows run offscreen or headless with the host display and bus variables
 unset; fixtures are generated beneath the build directory. No row contacts a
@@ -150,8 +155,6 @@ host bus, display, compositor, network, or hardware.
 
 ## Non-claims
 
-This lane does not wire icons into any applet, the shell runtime, or the
-task list (a later lane owns those paths), does not add the theme JSON
-`iconTheme` key, does not render pixmap-payload icons (the status-notifier
+This module does not render pixmap-payload icons (the status-notifier
 renderer keeps that wire concern), and makes no nested-session or physical
 display claims.

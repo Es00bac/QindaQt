@@ -9,12 +9,17 @@
 #include <qindaqt/applet_runtime/applet_instance_resolver.h>
 #include <qindaqt/applet_runtime/builtin_applet_registry.h>
 #include <qindaqt/applets/manifest_catalog.h>
+#include <qindaqt/design_tokens/token_facade.h>
+#include <qindaqt/themes/theme_loader.h>
 
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 
@@ -31,7 +36,10 @@ int main(int argc, char **argv)
     const QCommandLineOption stagedQml(QStringLiteral("staged-qml"),
                                        QStringLiteral("staged QML import root"),
                                        QStringLiteral("path"));
-    parser.addOptions({ appletsDir, policyFile, stagedQml });
+    const QCommandLineOption themeFile(QStringLiteral("theme"),
+                                       QStringLiteral("staged theme file"),
+                                       QStringLiteral("path"));
+    parser.addOptions({ appletsDir, policyFile, stagedQml, themeFile });
     parser.process(app);
 
     Applets::ManifestCatalog catalog;
@@ -68,6 +76,26 @@ int main(int argc, char **argv)
     // Controls are siblings inside that prefix; no build-tree fallback can
     // conceal an absolute-path regression.
     engine.addImportPath(parser.value(stagedQml));
+    QQmlComponent tokenRegistration(&engine);
+    tokenRegistration.setData(R"qml(
+        import QtQuick
+        import QindaQt.Tokens 1.0
+        QtObject { property int revision: Tokens.qstRevision }
+    )qml", QUrl(QStringLiteral("inline:token-registration.qml")));
+    if (tokenRegistration.isError()) {
+        qWarning() << "staged Tokens module failed:"
+                   << tokenRegistration.errorString();
+        return 1;
+    }
+    auto *tokens = engine.singletonInstance<DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    const auto loadedTheme = Themes::ThemeLoader::fromFile(
+        parser.value(themeFile));
+    if (!tokens || !loadedTheme.ok
+        || !tokens->publish(loadedTheme.theme, {}, &error)) {
+        qWarning() << "staged token publication failed:" << error;
+        return 1;
+    }
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.Launcher"),
                              QStringLiteral("LauncherApplet"));

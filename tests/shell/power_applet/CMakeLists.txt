@@ -11,7 +11,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
     include(KDEInstallDirs6)
     find_package(Qt6 6.11 REQUIRED COMPONENTS
-                 Core DBus Gui Qml Quick QuickControls2 Test)
+                 Core DBus Gui Qml Quick QuickControls2 Svg Test)
     qt_standard_project_setup(REQUIRES 6.11)
 
     add_subdirectory("../../../src/services/power_protocol"
@@ -24,6 +24,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                      "${CMAKE_BINARY_DIR}/src/shell/power_applet")
     set(power_applet_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 else()
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
     set(power_applet_source_root "${CMAKE_SOURCE_DIR}")
 endif()
 
@@ -101,6 +102,9 @@ target_link_libraries(
     PRIVATE
         QindaQt::ShellPowerAppletRuntime
         qindaqt_shell_power_applet_runtimeplugin
+        QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick
@@ -110,7 +114,9 @@ target_compile_definitions(
     qindaqt_power_applet_qml_tests
     PRIVATE
         QINDAQT_POWER_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
+add_dependencies(qindaqt_power_applet_qml_tests qindaqt_tokens_qmlplugin)
 qindaqt_enable_warnings(qindaqt_power_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_power_applet_qml_tests)
 add_test(

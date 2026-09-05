@@ -12,6 +12,8 @@
 #include <QSet>
 #include <QVariantList>
 
+#include <functional>
+
 namespace QindaQt::ShellTaskList::Producer {
 class TaskListOperationAuthority;
 }
@@ -55,11 +57,18 @@ class TaskListAppletController : public QObject {
   Q_PROPERTY(QString feedbackStatus READ feedbackStatus NOTIFY feedbackChanged)
 
 public:
+  using IconNameResolver = std::function<QString(const QString &applicationId)>;
+
   TaskListAppletController(
       ShellTaskList::TaskListSource &source,
       ShellTaskList::Producer::TaskListOperationAuthority &authority,
       TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
       QObject *parent = nullptr);
+  TaskListAppletController(
+      ShellTaskList::TaskListSource &source,
+      ShellTaskList::Producer::TaskListOperationAuthority &authority,
+      TaskListAppletOperationPort &operations, TaskListAppletGrants grants,
+      IconNameResolver iconNameResolver, QObject *parent = nullptr);
   ~TaskListAppletController() override = default;
 
   [[nodiscard]] QString phaseText() const;
@@ -155,6 +164,7 @@ private:
   ShellTaskList::Producer::TaskListOperationAuthority &m_authority;
   TaskListAppletOperationPort &m_operations;
   TaskListAppletGrants m_grants;
+  IconNameResolver m_iconNameResolver;
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
 

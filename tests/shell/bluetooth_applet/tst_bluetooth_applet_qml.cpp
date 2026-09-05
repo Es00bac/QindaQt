@@ -15,6 +15,7 @@
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_BluetoothAppletPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Shell::BluetoothApplet;
@@ -118,6 +119,16 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     auto *summary = root->findChild<QQuickItem *>(
         QStringLiteral("bluetoothAppletSummary"));
     QVERIFY(summary != nullptr);
+    QCOMPARE(root->width(), 32.0);
+    QCOMPARE(root->height(), 28.0);
+    QCOMPARE(summary->property("text").toString(), QString());
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("bluetoothAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    auto *placeholder = summaryIcon->findChild<QQuickItem *>(
+        QStringLiteral("placeholderTile"));
+    QVERIFY(summaryIcon->property("resolved").toBool()
+            || (placeholder != nullptr && placeholder->isVisible()));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
     QTest::keyClick(&window, Qt::Key_Space);

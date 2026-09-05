@@ -34,6 +34,7 @@
 #include <qindaqt/themes/theme_loader.h>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_StatusNotifierPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::StatusNotifier;
 using namespace QindaQt::StatusNotifierApplet;

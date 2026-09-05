@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as T
 import QindaQt.Controls 1.0 as C
+import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 pragma ComponentBehavior: Bound
@@ -34,6 +35,8 @@ Item {
     Accessible.description: {
         if (!hasAccess)
             return qsTr("Status tray controls are not connected")
+        if (access.feedbackPresent)
+            return qsTr("Status tray notice: %1").arg(access.feedback)
         if (phase === "loading")
             return qsTr("Status items are loading")
         if (phase === "empty")
@@ -51,14 +54,16 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         spacing: Tokens.space["2"]
-        // A disconnected surface is visibly disabled, not dead-looking.
+        // Panel chrome contains status-item icons only. Phase truth remains
+        // available through the root accessible description; diagnostics do
+        // not expand the panel into a text card.
         enabled: root.hasAccess
 
         C.StateCard {
             id: notConnectedState
             objectName: "statusNotifierNotConnectedState"
             Layout.fillWidth: true
-            visible: !root.hasAccess
+            visible: false
             status: C.StateCard.Warning
             title: qsTr("Status tray")
             message: qsTr("Status tray controls are not connected.")
@@ -68,7 +73,7 @@ Item {
             id: loadingState
             objectName: "statusNotifierLoadingState"
             Layout.fillWidth: true
-            visible: root.hasAccess && root.phase === "loading"
+            visible: false
             status: C.StateCard.Busy
             title: qsTr("Status tray")
             message: qsTr("Status items are loading…")
@@ -78,7 +83,7 @@ Item {
             id: emptyState
             objectName: "statusNotifierEmptyState"
             Layout.fillWidth: true
-            visible: root.hasAccess && root.phase === "empty"
+            visible: false
             status: C.StateCard.Information
             title: qsTr("Status tray")
             message: qsTr("No status items.")
@@ -88,7 +93,7 @@ Item {
             id: unavailableNotice
             objectName: "statusNotifierUnavailableNotice"
             Layout.fillWidth: true
-            visible: root.hasAccess && root.phase === "unavailable"
+            visible: false
             title: qsTr("Status tray is unavailable")
             reason: root.hasAccess ? access.phaseReasonText : ""
         }
@@ -97,7 +102,7 @@ Item {
             id: degradedNotice
             objectName: "statusNotifierDegradedNotice"
             Layout.fillWidth: true
-            visible: root.hasAccess && root.phase === "degraded"
+            visible: false
             title: qsTr("Status tray is limited")
             reason: root.hasAccess ? access.phaseReasonText : ""
         }
@@ -109,19 +114,29 @@ Item {
             sourceComponent: root.vertical ? verticalStrip : horizontalStrip
         }
 
-        C.StateCard {
+    }
+
+    // Operation feedback is a popup, so it remains actionable without ever
+    // expanding the panel strip into a text card.
+    T.Popup {
+        objectName: "statusNotifierFeedbackPopup"
+        visible: root.hasAccess && access.feedbackPresent
+        modal: false
+        focus: visible
+        closePolicy: T.Popup.CloseOnEscape
+        padding: Tokens.space["2"]
+
+        contentItem: C.StateCard {
             id: feedbackCard
             objectName: "statusNotifierFeedbackCard"
-            Layout.fillWidth: true
-            visible: root.hasAccess && (access.feedbackPresent === true)
+            visible: true
             status: C.StateCard.Error
             title: qsTr("Status Tray Notice")
             message: root.hasAccess ? access.feedback : ""
             actionText: qsTr("Dismiss")
             onActionTriggered: {
-                if (root.hasAccess) {
+                if (root.hasAccess)
                     access.clearFeedback()
-                }
             }
         }
     }
@@ -139,19 +154,19 @@ Item {
             Accessible.role: Accessible.StaticText
             Accessible.name: root.hasAccess ? access.overflowText : ""
 
-            contentItem: Text {
-                text: root.hasAccess ? access.overflowText : ""
+            implicitWidth: 32
+            implicitHeight: 28
+
+            contentItem: ShellIcons.Icon {
+                name: "view-more-symbolic"
+                size: 18
                 color: Tokens.fg.muted
-                font.family: Tokens.type.fontFamily
-                font.pointSize: Tokens.type.caption
+                symbolic: true
+                fallbackText: qsTr("More")
+                Accessible.ignored: true
             }
 
-            background: Rectangle {
-                radius: Tokens.radius.m
-                color: Tokens.bg.raised
-                border.width: Tokens.space["1"] / 2
-                border.color: Tokens.outline.divider
-            }
+            background: Item {}
         }
     }
 

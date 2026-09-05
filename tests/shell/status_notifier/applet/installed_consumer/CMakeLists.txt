@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(QindaQtInstalledStatusNotifierAppletConsumer LANGUAGES CXX)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2 Svg)
 
 foreach(required IN ITEMS
         QINDAQT_STAGE_ROOT
@@ -18,6 +18,7 @@ endforeach()
 
 set(applet_module_dir
     "${QINDAQT_STAGE_QML_ROOT}/QindaQt/Shell/StatusNotifier")
+set(icons_module_dir "${QINDAQT_STAGE_QML_ROOT}/QindaQt/Shell/Icons")
 set(applet_lib_dir "${QINDAQT_STAGE_ROOT}/${QINDAQT_STAGE_LIBDIR}")
 
 # Stage-relative layout: the consumer binary lives in <stage>/consumer-build,
@@ -67,8 +68,10 @@ target_link_libraries(
     PRIVATE
         "-Wl,--whole-archive"
         "${applet_module_dir}/libqindaqt_shell_status_notifier_applet_runtimeplugin.a"
+        "${icons_module_dir}/libqindaqt_shell_iconsplugin.a"
         "-Wl,--no-whole-archive"
         "${applet_module_dir}/libqindaqt_shell_status_notifier_applet_runtime.a"
+        "${icons_module_dir}/libqindaqt_shell_icons.a"
         "${applet_lib_dir}/libqindaqt_shell_status_notifier_applet.a"
         "${applet_lib_dir}/libqindaqt_status_notifier.a"
         "${applet_lib_dir}/libqindaqt_status_notifier_item_client.a"
@@ -86,4 +89,5 @@ target_link_libraries(
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Svg
 )
