@@ -70,18 +70,6 @@ QQuickItem *visualItemNamed(QQuickItem *root, const QString &name)
     return nullptr;
 }
 
-// Repeater delegates belong to the visual tree. Their sibling menu is a
-// QObject child of the section delegate, so a root QObject lookup skips it.
-QObject *sectionMenuFor(QQuickItem *row, const QString &name)
-{
-    for (QQuickItem *ancestor = row; ancestor != nullptr;
-         ancestor = ancestor->parentItem()) {
-        if (auto *menu = ancestor->findChild<QObject *>(name))
-            return menu;
-    }
-    return nullptr;
-}
-
 bool publishTokens(QQmlEngine &engine)
 {
     engine.addImportPath(importPath());
@@ -274,26 +262,23 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(!enabledInterface->text(QAccessible::Description).isEmpty());
     QVERIFY(!enabledInterface->state().disabled);
 
-    // Pinning is deliberately a secondary action. Primary pointer and
-    // keyboard activation still launch, while a real context menu provides
-    // the persistence action for the dock's existing Quick Launch projection.
-    const QPoint menuPoint = enabledRow->mapToScene(
-        QPointF(enabledRow->width() / 2, enabledRow->height() / 2)).toPoint();
-    QTest::mouseClick(popupContent(root)->window(), Qt::RightButton, {}, menuPoint);
-    auto *pinMenu = sectionMenuFor(enabledRow,
-                                   QStringLiteral("launcherPinContextMenu"));
-    QVERIFY(pinMenu != nullptr);
-    QTRY_VERIFY(pinMenu->property("opened").toBool());
-    QCOMPARE(pinMenu->property("popupType").toInt(), 1);
-    auto *togglePin = pinMenu->findChild<QQuickItem *>(
-        QStringLiteral("launcherTogglePin"));
-    QVERIFY(togglePin != nullptr);
-    QCOMPARE(togglePin->property("text").toString(), QStringLiteral("Unpin"));
-    QTest::keyClick(popupContent(root)->window(), Qt::Key_Escape);
-    QTRY_VERIFY(!pinMenu->property("opened").toBool());
-    // The secondary gesture leaves the native delegate hovered at the sample
-    // point. Restore the pre-existing theme-pixel fixture to its neutral
-    // state before checking the token-owned background below.
+    // Pinning remains reachable through an ordinary primary click even when
+    // a compositor or input backend cannot deliver a secondary gesture.
+    auto *visiblePin = enabledRow->findChild<QQuickItem *>(
+        QStringLiteral("launcherTogglePinButton"));
+    QVERIFY(visiblePin != nullptr);
+    QVERIFY(visiblePin->property("visible").toBool());
+    QCOMPARE(visiblePin->property("text").toString(), QStringLiteral("Unpin"));
+
+    const QPoint pinPoint = visiblePin->mapToScene(
+        QPointF(visiblePin->width() / 2, visiblePin->height() / 2)).toPoint();
+    QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {}, pinPoint);
+    QTRY_COMPARE(stack.transport.commits.size(), 1);
+    QVERIFY(stack.spawner.requests.isEmpty());
+    QVERIFY(stack.activator.activations.isEmpty());
+
+    // Restore the theme-pixel fixture to its neutral state before checking
+    // the token-owned background below.
     auto *field = root->findChild<QQuickItem *>(QStringLiteral("launcherSearchField"));
     QVERIFY(field != nullptr);
     field->forceActiveFocus();

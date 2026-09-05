@@ -19,8 +19,6 @@ ColumnLayout {
     required property var controller
     property bool vertical: false
     property int flatBase: 0
-    property string contextEntryId: ""
-    property bool contextEntryPinned: false
     readonly property int rowCount: section && section.items
                                     ? section.items.length : 0
 
@@ -110,34 +108,6 @@ ColumnLayout {
             Keys.onDownPressed: root.flatFocusRequested(flatIndex + 1)
             Accessible.onPressAction: launch()
 
-            // Keep pinning on an explicit secondary action: primary click and
-            // Enter remain the launcher contract for activation.
-            // Use the same full-row secondary hit target as task entries and
-            // Quick Launch. The nested-session compositor delivers a real
-            // BTN_RIGHT click to MouseArea; a TapHandler nested in the native
-            // ItemDelegate did not receive that gesture even though the
-            // offscreen QTest path synthesized it successfully.
-            MouseArea {
-                acceptedButtons: Qt.RightButton
-                anchors.fill: parent
-                onClicked: {
-                    root.contextEntryId = row.modelData.entryId
-                    root.contextEntryPinned = row.modelData.pinned
-                    pinMenu.popup()
-                }
-            }
-
-            Keys.onPressed: function(event) {
-                if (event.key !== Qt.Key_Menu
-                        && !(event.key === Qt.Key_F10
-                             && (event.modifiers & Qt.ShiftModifier)))
-                    return
-                root.contextEntryId = row.modelData.entryId
-                root.contextEntryPinned = row.modelData.pinned
-                pinMenu.popup(row)
-                event.accepted = true
-            }
-
             // AGENT-GUARD: native delegate styles can paint a light surface
             // behind token-colored text. Own both sides of the contrast pair.
             background: Rectangle {
@@ -171,27 +141,24 @@ ColumnLayout {
                     text: qsTr("Pinned")
                     muted: true
                 }
+
+                C.ToolButton {
+                    objectName: "launcherTogglePinButton"
+                    text: row.modelData.pinned ? qsTr("Unpin") : qsTr("Pin")
+                    focusPolicy: Qt.TabFocus
+                    Accessible.name: text
+                    Accessible.description: row.modelData.pinned
+                                            ? qsTr("Remove this application from Quick Launch")
+                                            : qsTr("Add this application to Quick Launch")
+                    onClicked: {
+                        if (row.modelData.pinned)
+                            root.controller.unpin(row.modelData.entryId)
+                        else
+                            root.controller.pin(row.modelData.entryId)
+                    }
+                }
             }
         }
     }
 
-    // The controller is the only persistence authority. This menu carries an
-    // identity supplied by its row and never invents a pinned projection.
-    C.Menu {
-        id: pinMenu
-        objectName: "launcherPinContextMenu"
-        popupType: C.Popup.Window
-
-        C.MenuItem {
-            objectName: "launcherTogglePin"
-            text: root.contextEntryPinned ? qsTr("Unpin") : qsTr("Pin")
-            enabled: root.controller !== null && root.contextEntryId.length > 0
-            onTriggered: {
-                if (root.contextEntryPinned)
-                    root.controller.unpin(root.contextEntryId)
-                else
-                    root.controller.pin(root.contextEntryId)
-            }
-        }
-    }
 }

@@ -104,9 +104,9 @@ pinned/recent ids that are no longer visible entries silently disappear from
 the projection.
 
 The launcher keeps primary click, Space, and Enter as activation actions. A
-row's secondary click or Menu/Shift+F10 action opens a separate popup-window
-menu with Pin or Unpin; it calls the existing controller mutation and has no
-independent QML pin state. This makes the persisted pin projection available
+row exposes a keyboard-focusable Pin or Unpin button. It calls the existing
+controller mutation and has no independent QML pin state. This makes the
+persisted pin projection available
 to Quick Launch and dock composition without treating a launch as a pin.
 
 ## L1 production adapters
