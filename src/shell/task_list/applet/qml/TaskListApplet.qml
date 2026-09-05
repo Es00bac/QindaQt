@@ -33,12 +33,14 @@ Item {
 
     readonly property string phase: access !== null ? access.phaseText : "unavailable"
     readonly property bool stripVisible: access !== null && access.entryCount > 0
+    readonly property bool dockEmpty: dockMode && phase === "empty"
 
     objectName: "taskListApplet"
-    implicitWidth: dockMode
+    visible: !dockEmpty
+    implicitWidth: dockEmpty ? 0 : dockMode
         ? (vertical ? resolvedDockTileSize : strip.implicitWidth)
         : (vertical ? 44 : strip.implicitWidth)
-    implicitHeight: dockMode
+    implicitHeight: dockEmpty ? 0 : dockMode
         ? (vertical ? strip.implicitHeight : resolvedDockTileSize)
         : (vertical ? strip.implicitHeight : 32)
 
@@ -97,7 +99,7 @@ Item {
         ShellIcons.Icon {
             id: phaseIcon
             objectName: "taskListPhaseIcon"
-            visible: !root.stripVisible && root.phase !== "degraded"
+            visible: !root.dockEmpty && !root.stripVisible && root.phase !== "degraded"
             name: root.phase === "loading" ? "view-refresh-symbolic"
                                              : "preferences-system-windows"
             size: 20

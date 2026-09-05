@@ -71,7 +71,8 @@ class TaskListAppletDockQmlTests final : public QObject {
   Q_OBJECT
 
 private slots:
-  void dockModeReservesInteractiveTiles();
+    void dockModeReservesInteractiveTiles();
+    void emptyDockDoesNotReserveATile();
 };
 
 void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
@@ -129,6 +130,35 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   QTest::keyClick(&window, Qt::Key_Return);
   QCOMPARE(port.calls.size(), 1);
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
+}
+
+void TaskListAppletDockQmlTests::emptyDockDoesNotReserveATile()
+{
+  TaskListSource source;
+  FakeOperationAuthority authority;
+  FakeTaskListOperationPort port;
+  TaskListAppletController controller(source, authority, port, {true, true, true});
+  const auto evaluation = source.publishGeneration({});
+  QVERIFY(evaluation.ok());
+  authority.revision = source.revision();
+  authority.sourceStatus = TaskListSourceStatus::Ready;
+  authority.owner = QStringLiteral(":1.1");
+  Q_EMIT authority.stateChanged();
+
+  QQmlEngine engine;
+  engine.addImportPath(QStringLiteral(QINDAQT_TASK_LIST_APPLET_QML_IMPORT_PATH));
+  QString tokenError;
+  QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError),
+           qPrintable(tokenError));
+  QString error;
+  auto owned = createDockApplet(engine, controller, &error);
+  QVERIFY2(owned != nullptr, qPrintable(error));
+  auto *root = qobject_cast<QQuickItem *>(owned.get());
+  QVERIFY(root != nullptr);
+  QVERIFY(root->property("dockEmpty").toBool());
+  QVERIFY(!root->property("visible").toBool());
+  QCOMPARE(root->implicitWidth(), 0.0);
+  QCOMPARE(root->implicitHeight(), 0.0);
 }
 
 QTEST_MAIN(TaskListAppletDockQmlTests)
