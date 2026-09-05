@@ -28,11 +28,11 @@
     },
     {
       "id": "dock", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
-      "alignment": "center", "rows": 1, "thickness": 60, "length": 0.48,
+      "alignment": "center", "rows": 1, "thickness": 80, "length": 0.42,
       "applets": [
-        {"id": "dock-tasks", "plugin": "dock-task-list", "settings": {"zone": "center", "bare": true}},
-        {"id": "hosted-task-list", "plugin": "task-list", "settings": {"zone": "center", "bare": true}},
-        {"id": "applications", "plugin": "launcher", "settings": {"zone": "center", "bare": true}}
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "center", "bare": true, "dockMode": true}},
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "bare": true, "dockMode": true}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "bare": true, "dockMode": true}}
       ]
     }
   ]

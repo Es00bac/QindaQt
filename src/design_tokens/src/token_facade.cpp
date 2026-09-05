@@ -45,6 +45,10 @@ QVariantMap TokenFacade::space() const { return nestedMap(m_all, QStringLiteral(
 QVariantMap TokenFacade::type() const { return nestedMap(m_all, QStringLiteral("type")); }
 QVariantMap TokenFacade::motion() const { return nestedMap(m_all, QStringLiteral("motion")); }
 QVariantMap TokenFacade::elevation() const { return nestedMap(m_all, QStringLiteral("elevation")); }
+QVariantMap TokenFacade::accessibility() const
+{
+    return nestedMap(m_all, QStringLiteral("accessibility"));
+}
 
 bool TokenFacade::publish(const QindaQt::Themes::ThemeSpec &theme,
                           const AccessibilityInputs &inputs,
@@ -111,6 +115,12 @@ void TokenFacade::rebuildMaps()
     // AGENT-GUARD: Replace the complete cached map before one aggregate change
     // signal. Observers must never see roles from two token generations.
     m_all = m_tokens->toVariantMap();
+    const auto &inputs = m_tokens->inputs();
+    m_all.insert(QStringLiteral("accessibility"),
+                 QVariantMap{{QStringLiteral("reducedMotion"), inputs.reducedMotion},
+                             {QStringLiteral("reducedTransparency"),
+                              inputs.reducedTransparency},
+                             {QStringLiteral("highContrast"), inputs.highContrast}});
 }
 
 } // namespace QindaQt::DesignTokens

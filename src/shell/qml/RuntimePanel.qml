@@ -24,6 +24,7 @@ Window {
     flags: Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus
 
     PanelContent {
+        objectName: "runtimePanelContent"
         anchors.fill: parent
         panel: root.panel
         theme: root.theme

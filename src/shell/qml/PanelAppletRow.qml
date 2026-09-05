@@ -22,6 +22,9 @@ Flickable {
     property var statusNotifierAppletAccess: null
     property var desktopControlsAccess: null
     property bool vertical: false
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
     readonly property int lanes: Math.max(1, Number(panel.rows ?? 1))
     readonly property var zoneApplets: (panel.applets ?? []).filter(
         applet => appletZone(applet) === zone)
@@ -61,6 +64,24 @@ Flickable {
         return settings.zone ?? "start";
     }
 
+    function isDockLauncher(applet) {
+        const plugin = String(applet.plugin ?? "")
+        return plugin === "launcher" || plugin === "application-launcher"
+            || plugin === "quick-launch"
+    }
+
+    function dockHasVisibleLauncherBefore(applet) {
+        const targetIndex = zoneApplets.indexOf(applet)
+        for (let index = 0; index < targetIndex; ++index) {
+            if (!isDockLauncher(zoneApplets[index]))
+                continue
+            const chip = repeater.itemAt(index)
+            if (chip !== null && !chip.emptyLiveContent)
+                return true
+        }
+        return false
+    }
+
     Grid {
         id: grid
         rows: root.vertical ? -1 : root.lanes
@@ -70,6 +91,7 @@ Flickable {
 
         Repeater {
             model: root.zoneApplets
+            id: repeater
 
             AppletChip {
                 required property var modelData
@@ -95,6 +117,11 @@ Flickable {
                 taskListAppletAccess: root.taskListAppletAccess
                 statusNotifierAppletAccess: root.statusNotifierAppletAccess
                 desktopControlsAccess: root.desktopControlsAccess
+                dockMode: root.dockMode
+                dockTileSize: root.dockTileSize
+                reducedMotion: root.reducedMotion
+                dockHasLauncherGroup: root.dockMode
+                    && root.dockHasVisibleLauncherBefore(modelData)
             }
         }
     }

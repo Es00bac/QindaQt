@@ -130,6 +130,7 @@ the rendering/output boundary.
 | `type` | families plus five sizes | Theme families; base × 0.85, 1.0, 1.25, 1.5, and 2.0 after text scale |
 | `motion` | `instant`, `short`, `base`, `long` | 0; `max(80, base × 0.6)`; base; base × 1.75, in milliseconds |
 | `elevation` | `1`…`3` | Three bounded offset/opacity levels; reduced transparency removes shadow opacity and background blur |
+| `accessibility` | `reducedMotion`, `reducedTransparency`, `highContrast` | Read-only projection of the normalized caller inputs for presentation choices that cannot be expressed by a color role; it adds no settings authority to QML |
 
 Default alpha roles remain overlays so controls can apply them to their
 semantic surfaces.

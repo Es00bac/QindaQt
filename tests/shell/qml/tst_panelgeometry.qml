@@ -155,5 +155,39 @@ Item {
             verify(chips[0].x + chips[0].width < chips[1].x)
             compare(chips[0].width, 26)
         }
+        function test_centeredDockPaintAndInputBoundsHugContent() {
+            panel.width = 400
+            panel.height = 80
+            panel.panel = { id: "renamed-dock", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: [
+                    { id: "launcher", plugin: "launcher",
+                      settings: { zone: "center", dockMode: true } },
+                    root.spec("tasks", "center")] }
+            // The task-list setting is what survives profile duplication; the
+            // dock name itself is only a legacy presentation fallback.
+            panel.panel.applets[1].settings.dockMode = true
+            wait(20)
+            const material = findChild(panel, "panelMaterial")
+            verify(panel.dockMode)
+            verify(material.width < panel.width)
+            verify(panel.inputBounds.width < panel.width)
+            verify(panel.inputBounds.height <= panel.height)
+            verify(panel.inputBounds.width >= material.width)
+            const initialMaterialWidth = material.width
+            // More live task-list content grows the painted/input region; the
+            // mask bridge observes inputBounds rather than assuming the
+            // window's initial size is final.
+            panel.panel = { id: "renamed-dock", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: [
+                    { id: "launcher", plugin: "launcher",
+                      settings: { zone: "center", dockMode: true } },
+                    root.spec("task-a", "center"), root.spec("task-b", "center"),
+                    root.spec("task-c", "center")] }
+            for (const applet of panel.panel.applets)
+                applet.settings.dockMode = true
+            wait(20)
+            verify(material.width > initialMaterialWidth)
+            verify(panel.inputBounds.width >= material.width)
+        }
     }
 }

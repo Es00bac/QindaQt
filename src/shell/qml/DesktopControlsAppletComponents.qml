@@ -10,6 +10,9 @@ QtObject {
     id: root
     required property var access
     property bool vertical: false
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
 
     function facade(name) {
         if (access === null || access === undefined)
@@ -108,6 +111,9 @@ QtObject {
             anchors.fill: parent
             access: root.facade("quickLaunch")
             vertical: root.vertical
+            dockMode: root.dockMode
+            dockTileSize: root.dockTileSize
+            reducedMotion: root.reducedMotion
         }
     }
 
