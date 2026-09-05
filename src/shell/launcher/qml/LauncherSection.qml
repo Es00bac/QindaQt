@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Controls as C
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -18,6 +19,8 @@ ColumnLayout {
     required property var controller
     property bool vertical: false
     property int flatBase: 0
+    property string contextEntryId: ""
+    property bool contextEntryPinned: false
     readonly property int rowCount: section && section.items
                                     ? section.items.length : 0
 
@@ -107,6 +110,28 @@ ColumnLayout {
             Keys.onDownPressed: root.flatFocusRequested(flatIndex + 1)
             Accessible.onPressAction: launch()
 
+            // Keep pinning on an explicit secondary action: primary click and
+            // Enter remain the launcher contract for activation.
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: function(event) {
+                    root.contextEntryId = row.modelData.entryId
+                    root.contextEntryPinned = row.modelData.pinned
+                    pinMenu.popup(row)
+                }
+            }
+
+            Keys.onPressed: function(event) {
+                if (event.key !== Qt.Key_Menu
+                        && !(event.key === Qt.Key_F10
+                             && (event.modifiers & Qt.ShiftModifier)))
+                    return
+                root.contextEntryId = row.modelData.entryId
+                root.contextEntryPinned = row.modelData.pinned
+                pinMenu.popup(row)
+                event.accepted = true
+            }
+
             // AGENT-GUARD: native delegate styles can paint a light surface
             // behind token-colored text. Own both sides of the contrast pair.
             background: Rectangle {
@@ -140,6 +165,26 @@ ColumnLayout {
                     text: qsTr("Pinned")
                     muted: true
                 }
+            }
+        }
+    }
+
+    // The controller is the only persistence authority. This menu carries an
+    // identity supplied by its row and never invents a pinned projection.
+    C.Menu {
+        id: pinMenu
+        objectName: "launcherPinContextMenu"
+        popupType: C.Popup.Window
+
+        C.MenuItem {
+            objectName: "launcherTogglePin"
+            text: root.contextEntryPinned ? qsTr("Unpin") : qsTr("Pin")
+            enabled: root.controller !== null && root.contextEntryId.length > 0
+            onTriggered: {
+                if (root.contextEntryPinned)
+                    root.controller.unpin(root.contextEntryId)
+                else
+                    root.controller.pin(root.contextEntryId)
             }
         }
     }
