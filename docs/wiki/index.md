@@ -209,11 +209,12 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   class alongside grouped tabs and splits.
 - Appearance and workflow are independently configurable through themes and
   layout profiles.
-- The shell, compositor, and default resident services initially target no more
-  than 1,024 MiB aggregate idle PSS and less than 1% average idle CPU on the
-  reference machine. Functional nested-session qualification takes precedence;
-  the ceiling is a measured starting budget to refine after the complete desktop
-  boots, renders, and accepts isolated test input reliably.
+- The shell, compositor, and default resident services have a deferred
+  optimization target of 1,024 MiB aggregate idle PSS and less than 1% average
+  idle CPU on the reference machine. These are not current functional delivery
+  gates. Prioritize a desktop that boots, renders, accepts input, and behaves
+  intuitively; measure performance now and optimize it after those behaviors
+  work reliably.
 - Accessibility and keyboard equivalents are required for every pointer-only
   customization or window-management operation.
 

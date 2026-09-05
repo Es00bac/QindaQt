@@ -7,6 +7,19 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Audit repair acceptance (2026-09-05)
+
+Repair the ten user-selected audit groups: outward Launcher/Bluetooth/Power
+popups and Escape; real customization pointer drops; applied-content Discard
+baselines; saved startup layout and merged user catalogs; shell appearance and
+accessibility preferences; rendered global-menu action generations; child
+configuration/authentication environment; panel zone budgets and real rows;
+single-instance applet creation; and all 31 unresolved stock preset instances.
+Exact candidate review, integrated regression tests, and private nested visual
+interaction are required before this outcome is complete. Active ownership and
+bounded evidence are in the timestamped audit messages under `ops/team/messages`.
+
+
 ### Shell and customization delivery queue
 
 **User-stated acceptance (2026-09-04):** the deliverable is a full desktop environment that a person can use — styled panels, working applet
@@ -510,3 +523,26 @@ end-to-end boot, interaction, screenshot, teardown, and repeatability evidence.
   experiences.
 - Physical hardware, performance/memory, packaging, recovery, migration, and
   upgrade qualification.
+
+### Audit repair priority clarification (2026-09-05)
+
+The user explicitly prioritizes a working, intuitive desktop and coherent
+appearance over additional security architecture. Audit repairs must not add
+permission provisioning, sandbox infrastructure, or capability abstractions
+solely for hardening. Simplify gates that unnecessarily disable ordinary desktop
+controls; retain state correctness, persistence, recovery, and intentional
+confirmation of session-ending actions. Update normative architecture where a
+concrete simplification changes its contract. Show actual private desktop
+screenshots in the conversation as visual verification proceeds.
+
+The 1,024 MiB aggregate idle PSS target is explicitly deferred by the user.
+Memory measurements remain useful evidence, but this audit repair effort does
+not gate functional completion on that target or spend implementation time on
+optimization. Working desktop behavior and usability come first.
+
+### Compact container chrome follow-up
+
+The user requests space-efficient window chrome: tabs inside the main title
+bar, right-to-left placement in the macOS layout, and minimal tiled-member
+title strips that preserve pointer controls, dragging, resizing and detaching.
+This is a functional visual follow-up, not a memory optimization task.

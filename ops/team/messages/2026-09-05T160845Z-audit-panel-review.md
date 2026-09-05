@@ -1,0 +1,9 @@
+# Independent panel review — ACCEPT
+
+Reviewed exact candidate `06662cb5bcb8952dea7b6a9309a7cb8e0b8c4914` on `codex/audit-panel`, base `9728612046940b55d69f85c3811eb38a08a0963b`. Candidate worktree was clean before and after review; no panel paths edited.
+
+No blocking findings within the candidate scope. Zone allocation gives disjoint budgets, satisfies bounded small zones before sharing constrained space, and uses scrollable overflow. Focus tracking reveals offscreen controls. Grid flow creates genuine horizontal rows and vertical columns. Filtering precedes delegate creation and the dispatcher instantiates one selected component. Equivalent launcher, tray and clock migrations preserve applet instance identity and remove duplicate supplemental controls; non-equivalent semantic controls remain the separate assigned implementation lane.
+
+Independently reran six candidate CTests (exit 0, 6/6): profile formats, applet resolution, shell capture matrix, panel geometry, notification-center applet, launcher dispatcher. Reran production-source QML suite (exit 0, 30/30) and task-list dispatcher (exit 0, 5/5), both QT_FATAL_WARNINGS=1. Source-shape exit 0, ten existing review warnings; git diff --check exit 0. Inspected MATE preview screenshot; this is preview geometry evidence rather than a nested compositor qualification. Logs: /tmp/qindaqt-popup-review-panel.log, /tmp/qindaqt-popup-review-panel-qml.log, /tmp/qindaqt-popup-review-panel-task.log, /tmp/qindaqt-popup-review-panel-shape.log.
+
+Requested next action: integrate the exact candidate with the separately reviewed Popup.Window/menu changes, rerun affected integrated gates, and conduct the manager-owned private nested interaction/resolution checks. This review does not claim all 31 unsupported preset controls are resolved by this bounded candidate.
