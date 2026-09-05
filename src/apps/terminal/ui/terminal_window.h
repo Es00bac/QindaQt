@@ -20,6 +20,10 @@
 
 class QMenu;
 
+namespace QindaQt::AppShell {
+class ApplicationCoordinator;
+}
+
 namespace QindaQt::Apps::Terminal {
 
 class TerminalAppShellBridge;
@@ -73,6 +77,13 @@ public:
   }
   // The active session; null when no tab exists.
   [[nodiscard]] TerminalSession *session() const { return m_activeSession; }
+
+  // AGENT-CONTRACT: the application-side composition seam for the first-party
+  // global-menu export. main() reads this coordinator after show() and hands
+  // it to QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport; the
+  // window keeps every enablement/lifecycle decision itself.
+  [[nodiscard]] QindaQt::AppShell::ApplicationCoordinator &
+  appShellCoordinator();
 
   // Adds one session with the current default profile (used for the first
   // tab and the New Tab command).

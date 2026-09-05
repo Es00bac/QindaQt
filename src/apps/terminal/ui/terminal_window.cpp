@@ -84,6 +84,11 @@ TerminalWindow::TerminalWindow(
 
 TerminalWindow::~TerminalWindow() = default;
 
+QindaQt::AppShell::ApplicationCoordinator &
+TerminalWindow::appShellCoordinator() {
+  return m_appShellBridge->coordinator();
+}
+
 void TerminalWindow::prepareApplicationQuitFlow(QGuiApplication &application) {
   // AGENT-GUARD: Flipping this single Qt default is what keeps window close
   // from terminating the event loop during the bounded teardown escalation.

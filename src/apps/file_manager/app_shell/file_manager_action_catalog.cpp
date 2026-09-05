@@ -2,14 +2,11 @@
 #include "file_manager_action_catalog.h"
 
 #include <qindaqt/app_shell/application_coordinator.h>
-#include <qindaqt/app_shell/menu_export/application_menu_export.h>
-#include <qindaqt/app_shell/menu_export/window_menu_identity.h>
+#include <qindaqt/app_shell/menu_export/first_party_composition.h>
 
 #include <QDBusConnection>
 #include <QKeySequence>
 #include <QWindow>
-
-#include <cstdio>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -81,52 +78,11 @@ std::unique_ptr<QObject> composeFileManagerMenuExport(
   if (window == nullptr) {
     return {};
   }
-#if defined(QINDAQT_ENABLE_FILE_MANAGER_MENU_EXPORT_TEST_SEAM)
-  class TestIdentityPublisher final
-      : public QindaQt::AppShell::MenuExport::WindowMenuIdentityPublisher {
-  public:
-    explicit TestIdentityPublisher(quint32 id) : m_id(id) {}
-    std::optional<QindaQt::AppShell::MenuExport::WindowMenuIdentity>
-    publish(QWindow &, const QString &, const QString &) override {
-      return QindaQt::AppShell::MenuExport::WindowMenuIdentity{
-          .kind =
-              QindaQt::AppShell::MenuExport::WindowMenuIdentityKind::XWindow,
-          .registrarWindowId = m_id};
-    }
-    void withdraw(QWindow &) override {}
-
-  private:
-    quint32 m_id;
-  };
-  bool idOk = false;
-  const int testWindowIdValue =
-      qEnvironmentVariableIntValue("QINDAQT_TEST_APPMENU_WINDOW_ID", &idOk);
-  if (idOk && testWindowIdValue > 0) {
-    const auto testWindowId = static_cast<quint32>(testWindowIdValue);
-    if (qEnvironmentVariableIsSet("QINDAQT_TEST_APPMENU_TRACE_ACTIVATION")) {
-      QObject::connect(
-          &coordinator,
-          &QindaQt::AppShell::ApplicationCoordinator::actionRequested,
-          &coordinator, [](const QString &actionId) {
-            std::fprintf(stdout, "ACTIVATED %s\n", qPrintable(actionId));
-            std::fflush(stdout);
-          });
-    }
-    auto composition =
-        std::make_unique<QindaQt::AppShell::MenuExport::ApplicationMenuExport>(
-            coordinator, *window, QDBusConnection::sessionBus(),
-            std::make_unique<TestIdentityPublisher>(testWindowId));
-    (void)composition->start();
-    return std::unique_ptr<QObject>(std::move(composition));
-  }
-#endif
-  const QDBusConnection sessionBus = QDBusConnection::sessionBus();
-  if (!sessionBus.isConnected()) {
-    return {};
-  }
-  return std::unique_ptr<QObject>(
-      QindaQt::AppShell::MenuExport::ApplicationMenuExport::compose(
-          coordinator, *window, sessionBus));
+  // AGENT-CONTRACT: one shared first-party composition entry for File
+  // Manager, Terminal, and Text Editor; its fail-closed, lifecycle, and
+  // test-seam behavior is owned by src/app_shell/menu_export.
+  return QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+      coordinator, *window, QDBusConnection::sessionBus());
 }
 
 } // namespace QindaQt::Apps::FileManager
