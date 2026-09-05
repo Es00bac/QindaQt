@@ -15,16 +15,25 @@ Item {
 
     required property var access
     property bool vertical: false
+    // Panel composition elects this compact dock presentation. No pin is
+    // synthesized here: rows remain the launcher facade's persisted pins.
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
+    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
 
     readonly property bool ready: access !== null && Tokens.ready
     readonly property var rows: ready ? access.rows : []
     readonly property bool showRows: ready && rows.length > 0
-    readonly property int iconExtent: Math.max(0, Math.min(20, (vertical ? width : height) - Tokens.space["2"]))
+    readonly property int iconExtent: dockMode ? 40
+                                               : Math.max(0, Math.min(20, (vertical ? width : height) - Tokens.space["2"]))
     property string contextEntryId: ""
 
     objectName: "quickLaunchApplet"
-    implicitWidth: showRows ? strip.implicitWidth : placeholder.implicitWidth + Tokens.space["2"]
-    implicitHeight: showRows ? strip.implicitHeight : 28
+    visible: !dockMode || showRows
+    implicitWidth: showRows ? strip.implicitWidth
+                            : (dockMode ? 0 : placeholder.implicitWidth + Tokens.space["2"])
+    implicitHeight: showRows ? strip.implicitHeight : (dockMode ? 0 : 28)
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Quick launch")
@@ -43,7 +52,7 @@ Item {
     ShellIcons.Icon {
         id: placeholder
         objectName: "quickLaunchPlaceholder"
-        visible: !root.showRows
+        visible: !root.showRows && !root.dockMode
         anchors.centerIn: parent
         name: "applications-other"
         size: 18
@@ -74,9 +83,14 @@ Item {
                 required property int index
 
                 objectName: "quickLaunchEntry"
-                Layout.preferredWidth: root.iconExtent + Tokens.space["2"] * 2
-                Layout.preferredHeight: root.iconExtent + Tokens.space["2"] * 2
-                padding: Tokens.space["2"]
+                // The tile owns the entire hover envelope, so magnification
+                // stays inside its hit target and never asks GridLayout to
+                // grow after the pointer moves.
+                Layout.preferredWidth: root.dockMode ? root.resolvedDockTileSize
+                                                      : root.iconExtent + Tokens.space["2"] * 2
+                Layout.preferredHeight: root.dockMode ? root.resolvedDockTileSize
+                                                       : root.iconExtent + Tokens.space["2"] * 2
+                padding: root.dockMode ? 0 : Tokens.space["2"]
                 focusPolicy: Qt.TabFocus
                 hoverEnabled: true
                 enabled: root.ready && Boolean(root.access.launchGranted)
@@ -84,6 +98,15 @@ Item {
                 Accessible.role: Accessible.Button
                 Accessible.name: String(modelData.accessibleName)
                 Accessible.description: String(modelData.accessibleDescription)
+
+                T.ToolTip {
+                    id: quickLaunchTooltip
+                    objectName: "quickLaunchEntryTooltip"
+                    visible: root.dockMode && entryButton.hovered
+                    text: String(entryButton.modelData.accessibleName)
+                    delay: Tokens.motion.short
+                    popupType: T.Popup.Window
+                }
 
                 function activate() { root.access.activate(String(modelData.entryId)) }
                 function openContext() {
@@ -115,16 +138,30 @@ Item {
 
                 contentItem: ShellIcons.Icon {
                     objectName: "quickLaunchEntryIcon"
+                    anchors.centerIn: parent
                     name: String(entryButton.modelData.iconName)
                     size: root.iconExtent
                     color: entryButton.enabled ? Tokens.fg.default : Tokens.fg.disabled
                     symbolic: false
                     fallbackText: String(entryButton.modelData.displayText)
+                    scale: root.dockMode && entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0
+                    transformOrigin: Item.Center
+                    property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
+                    transform: Translate { y: hoverLift }
                     Accessible.ignored: true
+
+                    // Tokens clamp motion durations for reduced-motion
+                    // accessibility; the applet owns no parallel preference.
+                    Behavior on hoverLift {
+                        NumberAnimation { duration: Tokens.motion.short }
+                    }
+                    Behavior on scale {
+                        NumberAnimation { duration: Tokens.motion.short }
+                    }
                 }
 
                 background: Rectangle {
-                    radius: Tokens.radius.m
+                    radius: root.dockMode ? Tokens.radius.l : Tokens.radius.m
                     color: entryButton.down ? Tokens.state.pressed
                          : entryButton.hovered ? Tokens.state.hover : "transparent"
                     C.FocusRing { anchors.fill: parent; control: entryButton }
