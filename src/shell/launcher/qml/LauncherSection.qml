@@ -145,11 +145,18 @@ ColumnLayout {
                 Button {
                     objectName: "launcherTogglePinButton"
                     text: row.modelData.pinned ? qsTr("Unpin") : qsTr("Pin")
-                    focusPolicy: Qt.TabFocus
-                    Accessible.name: text
-                    Accessible.description: row.modelData.pinned
-                                            ? qsTr("Remove this application from Quick Launch")
-                                            : qsTr("Add this application to Quick Launch")
+                    emphasized: false
+                    implicitWidth: Math.max(56, implicitContentWidth
+                                            + Tokens.space["2"] * 2)
+                    implicitHeight: Math.max(28, implicitContentHeight
+                                             + Tokens.space["1"] * 2)
+                    leftPadding: Tokens.space["2"]
+                    rightPadding: Tokens.space["2"]
+                    topPadding: Tokens.space["1"]
+                    bottomPadding: Tokens.space["1"]
+                    accessibleDescription: row.modelData.pinned
+                        ? qsTr("Remove this application from Quick Launch")
+                        : qsTr("Add this application to Quick Launch")
                     onClicked: {
                         if (row.modelData.pinned)
                             root.controller.unpin(row.modelData.entryId)

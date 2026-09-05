@@ -269,6 +269,7 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(visiblePin != nullptr);
     QVERIFY(visiblePin->property("visible").toBool());
     QCOMPARE(visiblePin->property("text").toString(), QStringLiteral("Unpin"));
+    QCOMPARE(visiblePin->property("emphasized").toBool(), false);
 
     const QPoint pinPoint = visiblePin->mapToScene(
         QPointF(visiblePin->width() / 2, visiblePin->height() / 2)).toPoint();
