@@ -65,7 +65,7 @@ qindaqt_enable_warnings(qindaqt_editor_support)
 qt_add_executable(qindaqt-editor main.cpp)
 target_link_libraries(
     qindaqt-editor PRIVATE qindaqt_editor_support qindaqt_settings_client
-                           QindaQt::FontDiscovery
+                           QindaQt::AppShellMenuExport QindaQt::FontDiscovery
 )
 target_compile_features(qindaqt-editor PRIVATE cxx_std_20)
 

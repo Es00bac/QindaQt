@@ -187,3 +187,98 @@ add_test(
             "-DCONFIGURATION=$<CONFIG>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_terminal.cmake"
 )
+
+# First-party global-menu export rows. They mirror the accepted File Manager
+# row shape (tests/shell/global_menu/runtime_composition): the real Terminal
+# process runs offscreen against the production GlobalMenuAppletComposition on
+# one private bus, with the test seam providing the exact registrar window id.
+find_program(QINDAQT_TERMINAL_MENU_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+qt_add_executable(
+    qindaqt_terminal_menu_export_tests
+    tst_terminal_menu_export.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/globalmenuappletcomposition.h"
+)
+target_include_directories(
+    qindaqt_terminal_menu_export_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}/src/shell/runtime"
+)
+target_compile_definitions(
+    qindaqt_terminal_menu_export_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_TERMINAL="$<TARGET_FILE:qindaqt-terminal>"
+        QINDAQT_TEST_ISOLATION_ROOT="${CMAKE_CURRENT_BINARY_DIR}/menu-export-isolated"
+)
+add_dependencies(qindaqt_terminal_menu_export_tests qindaqt-terminal)
+target_link_libraries(
+    qindaqt_terminal_menu_export_tests
+    PRIVATE
+        QindaQt::AppletHost
+        QindaQt::AppletRuntime
+        QindaQt::GlobalMenuApplet
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        QindaQt::GlobalMenuTransportComposition
+        QindaQt::ShellWindowActionsClient
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_terminal_menu_export_tests)
+add_test(
+    NAME qindaqt.terminal-global-menu-shell-private-bus
+    COMMAND "${QINDAQT_TERMINAL_MENU_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_terminal_menu_export_tests>
+            shellFencesRealTerminalIdentity
+)
+set_tests_properties(
+    qindaqt.terminal-global-menu-shell-private-bus
+    PROPERTIES
+        TIMEOUT 60
+        LABELS "terminal;shell;global-menu;runtime;private-bus;offscreen;hostile"
+        ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+add_test(
+    NAME qindaqt.terminal-global-menu-registrar-absent-private-bus
+    COMMAND "${QINDAQT_TERMINAL_MENU_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_terminal_menu_export_tests>
+            staysFailClosedUntilRegistrarArrives
+)
+set_tests_properties(
+    qindaqt.terminal-global-menu-registrar-absent-private-bus
+    PROPERTIES
+        TIMEOUT 60
+        LABELS "terminal;shell;global-menu;runtime;private-bus;offscreen"
+        ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+add_test(
+    NAME qindaqt.terminal-global-menu-hostile-registrar-private-bus
+    COMMAND "${QINDAQT_TERMINAL_MENU_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_terminal_menu_export_tests>
+            failsClosedUnderHostileRegistrar
+)
+set_tests_properties(
+    qindaqt.terminal-global-menu-hostile-registrar-private-bus
+    PROPERTIES
+        TIMEOUT 60
+        LABELS "terminal;shell;global-menu;runtime;private-bus;offscreen;hostile"
+        ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION
+            "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+add_test(
+    NAME qindaqt.terminal-global-menu-identity-variants-source-policy
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tst_terminal_menu_export.cpp
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_menu_export_identity_variants.cmake
+)
+set_tests_properties(
+    qindaqt.terminal-global-menu-identity-variants-source-policy
+    PROPERTIES LABELS "terminal;shell;global-menu;policy"
+)
