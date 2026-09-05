@@ -2041,7 +2041,17 @@ three grouped/property methods through introspection. An injected identity publi
 proves exact numeric registration, native-Wayland no-numeric-id announcement,
 registrar owner loss/replacement, rejected-close retention, accepted-close
 teardown, disabled-action refusal, and exactly-once activation through
-`ApplicationCoordinator`. `qindaqt.global-menu-dbusmenu-server` separately
+`ApplicationCoordinator`.
+`qindaqt.app-shell-menu-export-surface-recreation-private-bus` destroys and
+recreates a real `QWindow` native surface without destroying the `QWindow` and
+requires the old registrar identity to be withdrawn exactly once, the freshly
+obtained identity to be published and registered exactly once, the recreated
+registration to serve the live tree with a coherent revision, recreation while
+no registrar owner exists to stay fail-closed (no publish, no crash) and to
+rebind when an owner returns, and the composed
+`composeFirstPartyMenuExport` entry — the exact path Terminal, Text Editor, and
+File Manager call — to withdraw and re-register through its fixed-id test seam.
+`qindaqt.global-menu-dbusmenu-server` separately
 proves depth/property filtering, explicit grouped calls, the standard empty-ID
 all-items request, one activation, and atomic malformed-snapshot retention. It
 runs offscreen with fatal Qt warnings and host display/bus variables removed.

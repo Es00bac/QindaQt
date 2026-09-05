@@ -286,6 +286,23 @@ withdraws it. None of these
 states proves that the shell currently renders the menu, so first-party local
 menu bars remain present.
 
+Native-surface recreation is part of the same exact-identity lifecycle. A
+Wayland window's surface can be destroyed and recreated without destroying the
+`QWindow`, so on `QEvent::PlatformSurface` `SurfaceAboutToBeDestroyed` the
+export withdraws synchronously — the registrar association is unregistered and
+the platform identity withdrawn while the surface still exists — and on
+`SurfaceCreated` it obtains a fresh identity from the publisher and republishes
+against the current registrar owner. Until the new surface exists the export
+reports `WaitingForRegistrar` with failure code `window-surface-destroyed`
+(the status enum deliberately gains no new member: the smallest public
+boundary keeps `WaitingForRegistrar` as the single "no live export" waiting
+state, with the failure code carrying the reason), and a registrar that
+appears or is replaced in that window republishes only the fresh identity —
+the dead one is never re-registered. Recreation while no registrar owner
+exists stays withdrawn and fails closed, republishing once an owner returns.
+The republish runs on a queued turn because `SurfaceCreated` can itself be
+delivered synchronously inside identity publication.
+
 File Manager, Text Editor, and Terminal are the first-party consumers. Each
 executable retains one composition object beside its coordinator and window
 through the shared fail-closed entry

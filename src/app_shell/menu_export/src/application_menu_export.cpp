@@ -10,6 +10,7 @@
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
 #include <QEvent>
+#include <QPlatformSurfaceEvent>
 #include <QPointer>
 #include <QTimer>
 #include <QWindow>
@@ -151,6 +152,14 @@ public:
       setStatus(MenuExportStatus::Disabled, QStringLiteral("window-destroyed"));
       return;
     }
+    if (surfaceDestroyed) {
+      // AGENT-GUARD: a registrar-owner change must never publish against the
+      // dead pre-recreation window identity; only SurfaceCreated may lift
+      // this by obtaining a fresh identity from the publisher.
+      setStatus(MenuExportStatus::WaitingForRegistrar,
+                QStringLiteral("window-surface-destroyed"));
+      return;
+    }
     identity = identityPublisher->publish(*window, sessionBus.baseService(),
                                           QString::fromLatin1(kMenuObjectPath));
     if (!identity) {
@@ -214,6 +223,41 @@ public:
     identity.reset();
   }
 
+  void handleSurfaceAboutToBeDestroyed() {
+    if (!started) {
+      return;
+    }
+    // AGENT-GUARD: the native window identity dies with its surface. Retire
+    // the registrar association synchronously here — the Wayland withdrawal
+    // needs the still-live surface — and never reuse the old identity after.
+    surfaceDestroyed = true;
+    ++serial;
+    retirePublishedIdentity();
+    setStatus(MenuExportStatus::WaitingForRegistrar,
+              QStringLiteral("window-surface-destroyed"));
+  }
+
+  void handleSurfaceCreated() {
+    if (!started) {
+      return;
+    }
+    surfaceDestroyed = false;
+    // AGENT-NOTE: SurfaceCreated can be delivered synchronously inside
+    // publishIdentity itself (reading an X11 winId creates the surface), so
+    // republishing is deferred to a stable turn and every guard is rechecked
+    // there instead of recursing.
+    QMetaObject::invokeMethod(
+        &q,
+        [this] {
+          if (!started || surfaceDestroyed || identity.has_value() ||
+              registrarOwner.isEmpty()) {
+            return;
+          }
+          publishIdentity();
+        },
+        Qt::QueuedConnection);
+  }
+
   ApplicationMenuExport &q;
   ApplicationCoordinator &coordinator;
   // AGENT-GUARD: QML test and shutdown paths can destroy the root window
@@ -234,6 +278,9 @@ public:
   MenuExportStatus status = MenuExportStatus::Disabled;
   bool started = false;
   bool objectRegistered = false;
+  // True only between SurfaceAboutToBeDestroyed and SurfaceCreated; an uncreated
+  // test window is never marked, so injected-identity rows keep publishing.
+  bool surfaceDestroyed = false;
 };
 
 ApplicationMenuExport::ApplicationMenuExport(
@@ -304,6 +351,7 @@ void ApplicationMenuExport::stop() {
   }
   d->started = false;
   ++d->serial;
+  d->surfaceDestroyed = false;
   if (!d->window.isNull()) {
     d->window->removeEventFilter(this);
   }
@@ -333,20 +381,36 @@ ApplicationMenuExport::registeredWindowId() const noexcept {
 QString ApplicationMenuExport::failureCode() const { return d->failureCode; }
 
 bool ApplicationMenuExport::eventFilter(QObject *watched, QEvent *event) {
-  if (watched == d->window && event->type() == QEvent::Close) {
-    const quint64 closeSerial = ++d->closeCheckSerial;
-    QTimer::singleShot(0, this, [this, closeSerial] {
-      if (!d->started || closeSerial != d->closeCheckSerial ||
-          d->window.isNull()) {
-        return;
+  if (watched == d->window) {
+    if (event->type() == QEvent::PlatformSurface) {
+      // AGENT-GUARD: Wayland windows routinely destroy and recreate their
+      // native surface without destroying the QWindow. Each recreation must
+      // swap the registrar identity exactly; keeping the old registration
+      // leaves the shell joined to a dead window.
+      const auto *surfaceEvent =
+          static_cast<const QPlatformSurfaceEvent *>(event);
+      if (surfaceEvent->surfaceEventType() ==
+          QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
+        d->handleSurfaceAboutToBeDestroyed();
+      } else if (surfaceEvent->surfaceEventType() ==
+                 QPlatformSurfaceEvent::SurfaceCreated) {
+        d->handleSurfaceCreated();
       }
-      // AGENT-GUARD: event filters run before ApplicationShell's consent
-      // handler. Withdraw only after the event turn proves the surface really
-      // closed; a rejected close leaves the live menu association intact.
-      if (!d->window->isVisible()) {
-        stop();
-      }
-    });
+    } else if (event->type() == QEvent::Close) {
+      const quint64 closeSerial = ++d->closeCheckSerial;
+      QTimer::singleShot(0, this, [this, closeSerial] {
+        if (!d->started || closeSerial != d->closeCheckSerial ||
+            d->window.isNull()) {
+          return;
+        }
+        // AGENT-GUARD: event filters run before ApplicationShell's consent
+        // handler. Withdraw only after the event turn proves the surface really
+        // closed; a rejected close leaves the live menu association intact.
+        if (!d->window->isVisible()) {
+          stop();
+        }
+      });
+    }
   }
   return QObject::eventFilter(watched, event);
 }
