@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Verify this historical catalog against its exact Git source snapshot.
 
 Run from any directory: python3 docs/wiki/handbook/catalog/verify.py.

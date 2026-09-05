@@ -43,6 +43,10 @@ activation tokens, multi-output placement, multi-seat and alternative-locker
 support, and live/nested surface, shortcut, focus, lock-transition, and Do Not
 Disturb interaction qualification are also unfinished.
 
+For a categorized guide to the entire project, start with the
+[QindaQt handbook](docs/wiki/handbook/index.md). It includes feature maturity,
+philosophy, applications, configuration inventories, and detailed reference links.
+
 ## Build
 
 The `dev` and `release` presets build both the binary KWin integration and the
