@@ -108,6 +108,7 @@ private:
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
+    void initializeAppearanceBridge(bool explicitThemeSelection);
     void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
