@@ -19,9 +19,12 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QWindow>
 
 #include <cstdio>
 #include <memory>
+
+#include <qindaqt/app_shell/menu_export/first_party_composition.h>
 
 namespace {
 
@@ -196,5 +199,17 @@ int main(int argc, char **argv) {
   }
   window.restoreIfEnabled();
   window.show();
+  // AGENT-CONTRACT: first-party global-menu export — the same shared
+  // composition the File Manager and Terminal use (docs/wiki/shell/
+  // global-menu.md). Composed after show() so the widget's platform QWindow
+  // exists; retained for the window lifetime and destroyed before it. A
+  // missing session bus or registrar leaves the export disabled/waiting and
+  // the local QMenuBar stays the only authority.
+  std::unique_ptr<QObject> menuExport;
+  if (QWindow *windowHandle = window.windowHandle()) {
+    menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+        window.appShellCoordinator(), *windowHandle,
+        QDBusConnection::sessionBus());
+  }
   return application.exec();
 }

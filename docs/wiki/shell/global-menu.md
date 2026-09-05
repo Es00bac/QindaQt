@@ -286,28 +286,34 @@ withdraws it. None of these
 states proves that the shell currently renders the menu, so first-party local
 menu bars remain present.
 
-File Manager is the first consumer. Its executable retains one composition
-object beside its coordinator and window. Text Editor and Terminal may repeat
-that line without importing File Manager or shell runtime code. The private-bus
-integration row runs the real File Manager process and production
-`GlobalMenuAppletComposition`, injects the exact child PID/window id as the
-compositor snapshot, activates `file.new-folder` once through dbusmenu, and
-requires provider exit to clear the applet. The same real-process row supplies
-a wrong PID and a wrong registrar window ID separately; both keep the facade
-unavailable/empty and produce zero application activations.
+File Manager, Text Editor, and Terminal are the first-party consumers. Each
+executable retains one composition object beside its coordinator and window
+through the shared fail-closed entry
+`QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport`, which takes the
+application's coordinator, primary `QWindow`, and an injected session-bus
+connection; no application imports another application's or shell runtime
+code. The private-bus integration rows run each real application process and
+production `GlobalMenuAppletComposition`, inject the exact child PID/window
+id as the compositor snapshot, activate one application action through
+dbusmenu, and require provider exit through the real close path to clear the
+applet. The same real-process rows supply a wrong PID and a wrong registrar
+window ID separately; both keep the facade unavailable/empty and produce zero
+application activations. Companion rows prove each application keeps running
+with its local menu while no registrar exists and binds when one appears, and
+fails closed — then rebinds — when a hostile registrar refuses `RegisterWindow`
+with a D-Bus error.
 
-Terminal has not yet repeated that opt-in composition. Its local `QMenuBar`
-alone is not a QindaQt AppShell export. A platform theme may independently
-announce a native Wayland appmenu address, but a production launch using a
-non-KDE platform theme (for example `QT_QPA_PLATFORMTHEME=lxqt`) has no such
-contract: the registrar can remain empty and the panel must say **Menu
-unavailable**. Qualification that claims a Terminal menu must either add the
-explicit `ApplicationMenuExport` composition in the Terminal lane or launch a
-proven KDE appmenu platform adapter and observe non-empty authenticated
+A platform theme may independently announce a native Wayland appmenu address,
+but a foreign-toolkit application launched under a non-KDE platform theme (for
+example `QT_QPA_PLATFORMTHEME=lxqt`) has no such contract: its registrar entry
+never appears and the panel must say **Menu unavailable**. Qualification that
+claims a menu for any application requires either the explicit first-party
+`composeFirstPartyMenuExport` composition in that application or a proven KDE
+appmenu platform adapter with non-empty authenticated
 `applicationMenuServiceName`/`applicationMenuObjectPath` facts. The presence
-of `com.canonical.AppMenu.Registrar`, a Terminal window, or a local menu bar is
-not that evidence. The result is independent of whether the compositor backend
-is virtual, DRM, or nested/windowed.
+of `com.canonical.AppMenu.Registrar`, an application window, or a local menu
+bar is not that evidence. The result is independent of whether the compositor
+backend is virtual, DRM, or nested/windowed.
 
 ## Qt Widgets adapter
 
@@ -408,7 +414,10 @@ dependency. The component-closure gate authenticates that relocation.
 - No private KWin/KDE ABI: the runtime consumes only the public exact-owner
   shell window-actions client and its authenticated identity snapshot.
 - No GTK/foreign-toolkit exporter, arbitrary exporter injection, or
-  payload-bearing canonical delta contract is part of G2.
+  payload-bearing canonical delta contract is part of G2. First-party export
+  composition covers File Manager, Text Editor, and Terminal through the one
+  shared AppShell entry; every other application still needs its own
+  opt-in composition.
 - The registrar/dbusmenu tests use private `dbus-run-session` connections only;
   the installed-package row uses offscreen source poison. Neither qualifies a
   real login session, foreign toolkit, or nested installed desktop.
@@ -435,11 +444,20 @@ overflow, vertical layout, and below-minimum host cases). Transport rows are
 `qindaqt.global-menu-transport-boundary-poison`. G2 adds
 `qindaqt.global-menu-runtime-composition-private-bus`,
 `qindaqt.file-manager-global-menu-shell-private-bus`,
+`qindaqt.terminal-global-menu-shell-private-bus`,
+`qindaqt.terminal-global-menu-registrar-absent-private-bus`,
+`qindaqt.terminal-global-menu-hostile-registrar-private-bus`,
+`qindaqt.editor-global-menu-shell-private-bus`,
+`qindaqt.editor-global-menu-registrar-absent-private-bus`,
+`qindaqt.editor-global-menu-hostile-registrar-private-bus`,
 `qindaqt.global-menu-runtime-boundary-poison`,
 `qindaqt.global-menu-applet-submenu-qml-offscreen` under
 `QT_FATAL_WARNINGS=1`,
 `qindaqt.global-menu-production-panel-keyboard-qml-offscreen` through the real
 panel dispatcher, `qindaqt.global-menu-installed-package`, and the shared
-`qindaqt.shell-runtime-component-closure`. Live installed-session
+`qindaqt.shell-runtime-component-closure`. The first-party application rows
+add the `qindaqt.(terminal|editor)-global-menu-identity-variants-source-policy`
+registrations that keep their hostile variants and live child-PID boundary in
+the test graph. Live installed-session
 qualification remains unbuilt and unclaimed; see the
 [testing harness](../development/testing-harness.md).

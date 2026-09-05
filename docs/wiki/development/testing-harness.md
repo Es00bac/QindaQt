@@ -2025,13 +2025,13 @@ gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
 ## AppShell global-menu export proof
 
-The AppShell and first-consumer transport rows are selected with:
+The AppShell and first-party consumer transport rows are selected with:
 
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
   DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   ctest --test-dir build/dev \
-  -R '^qindaqt\.(app-shell-|file-manager-global-menu-shell-)' \
+  -R '^qindaqt\.(app-shell-|(file-manager|terminal|editor)-global-menu-)' \
   --output-on-failure --no-tests=error
 ```
 
@@ -2061,6 +2061,26 @@ child remains alive. This is deterministic private-bus evidence, not a host sess
 nested compositor, or native Wayland protocol qualification.
 `qindaqt.file-manager-global-menu-identity-variants-source-policy` keeps both
 hostile variants and their real child-PID boundary registered in the test graph.
+
+The Terminal and Text Editor repeat the same real-process shape through the
+shared `composeFirstPartyMenuExport` entry:
+`qindaqt.(terminal|editor)-global-menu-shell-private-bus` launches the real
+application process (the Terminal under a hermetic `/bin/sh` profile) against
+production `GlobalMenuAppletComposition` on one private bus, supplies the
+child's exact PID and window id through the test-only identity adapter,
+requires the application's real menu tree, exactly one shell activation, and
+shell-driven `file.quit` provider exit that clears the applet; its
+PID-mismatch and window-ID-mismatch variants require unavailable/empty state
+and zero activation while the child stays alive.
+`qindaqt.(terminal|editor)-global-menu-registrar-absent-private-bus` proves
+the application keeps running quietly with no registrar on the bus and binds
+only when the production registrar later appears.
+`qindaqt.(terminal|editor)-global-menu-hostile-registrar-private-bus` runs a
+hostile registrar owner that answers `RegisterWindow` with a D-Bus error: the
+application must stay alive, and it must rebind once the real registrar owns
+the name. Each app's `-identity-variants-source-policy` row keeps its hostile
+variants registered. These are deterministic private-bus rows, not host
+session, nested compositor, or native Wayland protocol qualifications.
 
 ## File Manager S1 focused proof
 

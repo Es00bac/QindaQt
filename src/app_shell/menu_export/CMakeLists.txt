@@ -10,14 +10,25 @@ target_sources(
     qindaqt_app_shell_menu_export
     PRIVATE
         src/application_menu_export.cpp
+        src/first_party_composition.cpp
         src/qt_window_menu_identity.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/app_shell/menu_export/application_menu_export.h
+            include/qindaqt/app_shell/menu_export/first_party_composition.h
             include/qindaqt/app_shell/menu_export/window_menu_identity.h
 )
+# AGENT-CONTRACT: the first-party composition test seam (fixed registrar
+# window id + activation trace) exists only in test builds; production and
+# packaged consumers compile without any test-observable behavior.
+if(BUILD_TESTING)
+    target_compile_definitions(
+        qindaqt_app_shell_menu_export
+        PRIVATE QINDAQT_ENABLE_APP_MENU_EXPORT_TEST_SEAM=1
+    )
+endif()
 target_link_libraries(
     qindaqt_app_shell_menu_export
     PUBLIC QindaQt::AppShell Qt6::Core Qt6::DBus Qt6::Gui

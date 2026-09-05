@@ -24,9 +24,12 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QWindow>
 
 #include <cstdio>
 #include <memory>
+
+#include <qindaqt/app_shell/menu_export/first_party_composition.h>
 
 namespace QindaQt::Apps::Terminal {
 namespace {
@@ -119,6 +122,48 @@ void configureCommandLine(QCommandLineParser &parser) {
                     QStringLiteral("Argument passed verbatim to the shell "
                                    "(repeatable, never shell-interpreted)"),
                     QStringLiteral("value")});
+}
+
+// AGENT-CONTRACT: first-party global-menu export — the shared AppShell
+// composition entry (docs/wiki/shell/global-menu.md). Call exactly once, after
+// the window is shown so its platform QWindow exists. A null return is the
+// fail-closed outcome: the local QMenuBar stays the only authority.
+[[nodiscard]] std::unique_ptr<QObject>
+composeTerminalMenuExport(TerminalWindow &window) {
+  QWindow *windowHandle = window.windowHandle();
+  if (windowHandle == nullptr) {
+    return {};
+  }
+  return QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
+      window.appShellCoordinator(), *windowHandle,
+      QDBusConnection::sessionBus());
+}
+
+// The factory resolves the profile's color scheme to its own QST generation
+// per session; an unresolvable theme yields a null backend, which the session
+// reports as a typed StartFailed exit (fail-closed). Captured by value: the
+// factory outlives this call inside TerminalSessionCollection.
+[[nodiscard]] TerminalSession::BackendFactory
+makeBackendFactory(const QStringList &themeDirectories,
+                   const QString &launchThemeId) {
+  return [themeDirectories, launchThemeId](const TerminalProfile &profile) {
+    // Preserve the S0 --theme contract for the immutable built-in profile.
+    // User profiles carry their own Settings1-backed QST theme.
+    const QString themeId =
+        profile.id == builtinDefaultProfileId() ? launchThemeId
+                                                : profile.colorSchemeId;
+    const auto profileTheme = loadTheme(themeId, themeDirectories);
+    if (!profileTheme.ok) {
+      return std::unique_ptr<TerminalSessionBackend>(nullptr);
+    }
+    const auto profileAppearance =
+        TerminalAppearanceAdapter::fromTheme(profileTheme.theme);
+    if (!profileAppearance.ok()) {
+      return std::unique_ptr<TerminalSessionBackend>(nullptr);
+    }
+    return std::unique_ptr<TerminalSessionBackend>(
+        new TerminalWidgetAdapter(*profileAppearance.appearance, profile));
+  };
 }
 
 } // namespace
@@ -218,28 +263,7 @@ int main(int argc, char **argv) {
   TerminalProfileSettings profileSettings(settingsClient);
 
   PosixProcessMonitor monitor;
-  // The factory resolves the profile's color scheme to its own QST
-  // generation per session; an unresolvable theme yields a null backend,
-  // which the session reports as a typed StartFailed exit (fail-closed).
-  TerminalSession::BackendFactory factory =
-      [&themeDirectories, &launchThemeId](const TerminalProfile &profile) {
-        // Preserve the S0 --theme contract for the immutable built-in
-        // profile. User profiles carry their own Settings1-backed QST theme.
-        const QString themeId = profile.id == builtinDefaultProfileId()
-                                    ? launchThemeId
-                                    : profile.colorSchemeId;
-        const auto profileTheme = loadTheme(themeId, themeDirectories);
-        if (!profileTheme.ok) {
-          return std::unique_ptr<TerminalSessionBackend>(nullptr);
-        }
-        const auto profileAppearance =
-            TerminalAppearanceAdapter::fromTheme(profileTheme.theme);
-        if (!profileAppearance.ok()) {
-          return std::unique_ptr<TerminalSessionBackend>(nullptr);
-        }
-        return std::unique_ptr<TerminalSessionBackend>(
-            new TerminalWidgetAdapter(*profileAppearance.appearance, profile));
-      };
+  const auto factory = makeBackendFactory(themeDirectories, launchThemeId);
 
   TerminalSessionContext context;
   context.baseEnvironment = baseEnvironment;
@@ -301,6 +325,11 @@ int main(int argc, char **argv) {
   // a still-hidden top-level leaves qtermwidget at its constructor-sized grid
   // and that first screen can be discarded by the later real resize.
   window.show();
+  // AGENT-CONTRACT: first-party global-menu export — the shared composition
+  // also used by the File Manager and Text Editor. Composed after show() so
+  // the widget's platform QWindow exists; retained for the window lifetime
+  // and destroyed before it.
+  std::unique_ptr<QObject> menuExport = composeTerminalMenuExport(window);
   scheduleFirstSession();
   return application.exec();
 }

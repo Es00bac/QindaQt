@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 REQUIRED COMPONENTS QuickTest)
+# AGENT-GUARD: the private-bus row below needs dbus-run-session at generate
+# time. The only other definition lives in tests/session, which configures
+# after this directory, so a fresh build tree resolved the variable empty and
+# registered the row with a blank command until a second configure. Resolve
+# it here, exactly like tests/shell/global_menu/runtime_composition does.
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
 
 function(qindaqt_add_app_shell_test target source test_name)
     qt_add_executable(${target} ${source})

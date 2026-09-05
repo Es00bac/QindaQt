@@ -6,7 +6,9 @@ the complete S0 PTY/child/teletype lifecycle, may select a validated profile at
 creation, and participates in teardown-first close and quit. User profiles,
 the default profile, and the tab-restore policy are persisted through the
 public Settings1 client. S2 adds bounded per-session scrollback search and
-confirmed URL/local-path handling. GPU qualification, global-menu export, and
+confirmed URL/local-path handling. The window opts its AppShell catalog into
+the first-party global-menu export through the shared AppShell composition
+entry; GPU qualification and
 advanced VT behavior remain explicit deferrals, not hidden claims.
 
 Launch policy, session lifecycle, rendering adaptation, and presentation are
@@ -287,8 +289,14 @@ Deep screen-reader bridge qualification stays a cross-application milestone
 The same fixed commands are projected through `QindaQt.AppShell 1.0` as
 `session.*`, `edit.*`, `view.*`, `link.*`, and `file.quit` action identifiers.
 External activation is routed back to the corresponding local `QAction`, so a
-later global-menu exporter cannot bypass local enablement or lifecycle policy.
-The application publishes the catalog but does not implement that exporter.
+global-menu activation cannot bypass local enablement or lifecycle policy.
+After the window is shown, the executable composes the shared first-party
+exporter `QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport` with its
+coordinator, the window's platform `QWindow`, and its session-bus connection;
+the composition, lifecycle, and fail-closed rules are owned by
+[the global-menu page](../shell/global-menu.md). A missing session bus or
+registrar leaves the export disabled/waiting, and the local `QMenuBar` stays
+visible and authoritative.
 
 ## QST-1 theme and appearance
 
@@ -365,7 +373,12 @@ traversal/movement, and
 PageTab accessibility under `QT_FATAL_WARNINGS=1`; AppShell catalog and local
 activation routing; desktop metadata; positional-argument
 rejection, and staged installed metadata with installed-prefix theme
-resolution. S2 adds literal/case/regex policy, hostile-regex admission timing,
+resolution. The global-menu export slice adds real-process private-bus rows
+under the shared selector documented in
+[the global-menu page](../shell/global-menu.md): exact-identity export with
+one shell activation and provider-exit clearing, mismatched PID/window
+variants, registrar-absent late binding, and hostile-registrar fail-closed
+rebinding. S2 adds literal/case/regex policy, hostile-regex admission timing,
 match/no-match/wrap and focus return through a fake adapter, deterministic
 real-PTY search and current-selection highlighting through the production
 adapter, per-session volatile find state, link punctuation/quote/parenthesis/
@@ -394,7 +407,9 @@ host-compositor interaction remain outside S2.
   rendering-performance claim is made.
 - Advanced VT behavior beyond what the widget already provides (alternate
   screen integrations, sixel, reflow policies) is unqualified.
-- A QindaQt-branded icon and global-menu export wait for later branding and
-  shell-integration slices; S2 only publishes the AppShell action catalog.
+- A QindaQt-branded icon waits for a later branding slice. The global-menu
+  export is composed through the shared first-party AppShell entry and proven
+  by private-bus rows only; an installed nested-session qualification remains
+  unbuilt.
 - Whole-application assistive-technology proof, the nested screenshot matrix,
   and physical display/input qualification remain later integration gates.
