@@ -143,8 +143,15 @@ Invalid hints reject the catalog before icon installation.
 Panel summaries use the compiled `Icon` element and preserve their prior
 accessible names on the surrounding buttons. Task-list composition owns one
 `DesktopEntryIconResolver` and projects its result from the compositor's
-application id into each row. Missing, hostile, or uninstalled icons render the
-typed QST placeholder; presentation never substitutes a text label in-panel.
+application id into each row, then checks the name through an
+`IconThemeLocator` over the production roots. The `DesktopVirtual` component
+stages the four first-party desktop entries under `share/applications`; its
+sandbox exports `/opt/qindaqt/share:/usr/share` as `XDG_DATA_DIRS`, so staged
+metadata and system Breeze icon roots participate in the same confined lookup.
+Interactive evidence rejects a first-party task button whose `iconResolved`
+flag is false. Missing, hostile, or uninstalled icons still render the typed
+QST placeholder for non-qualified applications; presentation never substitutes
+a text label in-panel.
 
 ## Focused tests
 

@@ -1,60 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktopnotificationshellreadiness.h"
+#include "desktopnotificationshellpolishfixtures.h"
 
 #include <QJsonArray>
 #include <QTest>
-
-#include <utility>
 
 using QindaQt::Test::DesktopNotificationShellDisposition;
 using QindaQt::Test::DesktopNotificationShellExpectation;
 using QindaQt::Test::DesktopNotificationShellObservation;
 using QindaQt::Test::DesktopNotificationShellPhase;
 using QindaQt::Test::desktopNotificationShellExpectation;
+using QindaQt::Test::desktopNotificationShellSnapshotFixture;
+using QindaQt::Test::mutateDesktopNotificationShellPolishFixture;
 using QindaQt::Test::validateDesktopNotificationShell;
 
 namespace {
 
-QJsonObject snapshot(bool privatePresentationAllowed = true,
-                     bool centerOpen = false, bool exists = true,
-                     bool visible = false, QString outputName = QStringLiteral("WL-0"), QString centerOpenedCount = QStringLiteral("0"))
-{
-    QJsonObject center{{QStringLiteral("exists"), exists}};
-    if (exists) {
-        center.insert(QStringLiteral("visible"), visible);
-        center.insert(QStringLiteral("outputName"), std::move(outputName));
-        center.insert(QStringLiteral("geometry"),
-                      QJsonObject{{QStringLiteral("x"), 824},
-                                  {QStringLiteral("y"), 46},
-                                  {QStringLiteral("width"), 440},
-                                  {QStringLiteral("height"), 640}});
-    }
-    return {
-        {QStringLiteral("schemaVersion"), 1},
-        {QStringLiteral("shellPid"), QStringLiteral("53")},
-        {QStringLiteral("tokens"),
-         QJsonObject{{QStringLiteral("ready"), true},
-                     {QStringLiteral("qstRevision"), 1},
-                     {QStringLiteral("generation"), QStringLiteral("1")},
-                     {QStringLiteral("sourceThemeId"), QStringLiteral("qinda-dark")},
-                     {QStringLiteral("backgroundBase"), QStringLiteral("#171a18")}}},
-        {QStringLiteral("taskList"),
-         QJsonObject{{QStringLiteral("phase"), QStringLiteral("ready")}, {QStringLiteral("generation"), QStringLiteral("1")}, {QStringLiteral("windowCount"), 2}}},
-        {QStringLiteral("presentation"),
-         QJsonObject{
-             {QStringLiteral("privatePresentationAllowed"),
-              privatePresentationAllowed},
-             {QStringLiteral("centerOpen"), centerOpen},
-         }},
-        {QStringLiteral("windows"),
-         QJsonObject{{QStringLiteral("center"), center}}},
-        {QStringLiteral("observations"),
-         QJsonObject{{QStringLiteral("centerOpenedCount"),
-                      std::move(centerOpenedCount)}}},
-    };
-}
-
-DesktopNotificationShellObservation observation(QJsonObject value = snapshot())
+DesktopNotificationShellObservation observation(
+    QJsonObject value = desktopNotificationShellSnapshotFixture())
 {
     return {QStringLiteral(":1.20"), QStringLiteral(":1.20"), 53, true,
             std::move(value), {}, {}, true, {}, {}};
@@ -95,7 +58,7 @@ void DesktopNotificationShellReadinessTests::exactClosedAndOpenStatesPass()
         53, QStringLiteral("WL-0"), {},
         DesktopNotificationShellPhase::OpenVisible, 0};
     const auto after = validateDesktopNotificationShell(
-        observation(snapshot(true, true, true, true, QStringLiteral("WL-0"),
+        observation(desktopNotificationShellSnapshotFixture(true, true, true, true, QStringLiteral("WL-0"),
                              QStringLiteral("1"))),
         afterExpectation);
     QVERIFY(after.ready());
@@ -171,6 +134,8 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
     for (const auto &mutation : {QStringLiteral("schema"), QStringLiteral("pid"),
                                  QStringLiteral("tokens"),
                                  QStringLiteral("taskList"),
+                                 QStringLiteral("quieting"),
+                                 QStringLiteral("panelApplets"),
                                  QStringLiteral("presentation"),
                                  QStringLiteral("counter")}) {
         auto changed = observation();
@@ -187,6 +152,9 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
             auto taskList = changed.snapshot.value(QStringLiteral("taskList")).toObject();
             taskList.insert(QStringLiteral("phase"), QStringLiteral("foreign"));
             changed.snapshot.insert(QStringLiteral("taskList"), taskList);
+        } else if (mutation == QStringLiteral("quieting")
+                   || mutation == QStringLiteral("panelApplets")) {
+            mutateDesktopNotificationShellPolishFixture(changed.snapshot, mutation);
         } else if (mutation == QStringLiteral("presentation")) {
             changed.snapshot.insert(QStringLiteral("presentation"), QJsonArray{});
         } else {
@@ -196,7 +164,9 @@ void DesktopNotificationShellReadinessTests::schemaAndShapeMutationsFailClosed()
             changed.snapshot.insert(QStringLiteral("observations"), observations);
         }
         QCOMPARE(validateDesktopNotificationShell(changed, beforeExpectation()).disposition,
-                 DesktopNotificationShellDisposition::Invalid);
+                 mutation == QStringLiteral("quieting")
+                     ? DesktopNotificationShellDisposition::Pending
+                     : DesktopNotificationShellDisposition::Invalid);
     }
 
     for (const auto &[field, value] : {
@@ -269,7 +239,7 @@ void DesktopNotificationShellReadinessTests::
 void DesktopNotificationShellReadinessTests::coldPrivacyAndWindowStatesRemainPending()
 {
     const auto privacy = validateDesktopNotificationShell(
-        observation(snapshot(false)), beforeExpectation());
+        observation(desktopNotificationShellSnapshotFixture(false)), beforeExpectation());
     QCOMPARE(privacy.disposition, DesktopNotificationShellDisposition::Pending);
     QCOMPARE(privacy.document().value(QStringLiteral("evidence"))
                  .toObject()
@@ -278,24 +248,24 @@ void DesktopNotificationShellReadinessTests::coldPrivacyAndWindowStatesRemainPen
                  .value(QStringLiteral("privatePresentationAllowed")),
              QJsonValue(false));
     QCOMPARE(validateDesktopNotificationShell(
-                 observation(snapshot(true, false, false)), beforeExpectation()).disposition,
+                 observation(desktopNotificationShellSnapshotFixture(true, false, false)), beforeExpectation()).disposition,
              DesktopNotificationShellDisposition::Pending);
 }
 
 void DesktopNotificationShellReadinessTests::preopenedOrVisibleCenterFailsClosed()
 {
     QCOMPARE(validateDesktopNotificationShell(
-                 observation(snapshot(true, true, true, true)), beforeExpectation()).disposition,
+                 observation(desktopNotificationShellSnapshotFixture(true, true, true, true)), beforeExpectation()).disposition,
              DesktopNotificationShellDisposition::Invalid);
     QCOMPARE(validateDesktopNotificationShell(
-                 observation(snapshot(true, false, true, true)), beforeExpectation()).disposition,
+                 observation(desktopNotificationShellSnapshotFixture(true, false, true, true)), beforeExpectation()).disposition,
              DesktopNotificationShellDisposition::Invalid);
 }
 
 void DesktopNotificationShellReadinessTests::outputAndPostStateMustConverge()
 {
     QCOMPARE(validateDesktopNotificationShell(
-                 observation(snapshot(true, false, true, false,
+                 observation(desktopNotificationShellSnapshotFixture(true, false, true, false,
                                       QStringLiteral("WL-1"))),
                  beforeExpectation()).disposition,
              DesktopNotificationShellDisposition::Pending);
@@ -304,11 +274,11 @@ void DesktopNotificationShellReadinessTests::outputAndPostStateMustConverge()
         53, QStringLiteral("WL-0"), {},
         DesktopNotificationShellPhase::OpenVisible, 4};
     for (const auto &state : {
-             snapshot(true, false, true, true, QStringLiteral("WL-0"),
+             desktopNotificationShellSnapshotFixture(true, false, true, true, QStringLiteral("WL-0"),
                       QStringLiteral("5")),
-             snapshot(true, true, true, false, QStringLiteral("WL-0"),
+             desktopNotificationShellSnapshotFixture(true, true, true, false, QStringLiteral("WL-0"),
                       QStringLiteral("5")),
-             snapshot(true, true, true, true, QStringLiteral("WL-0"),
+             desktopNotificationShellSnapshotFixture(true, true, true, true, QStringLiteral("WL-0"),
                       QStringLiteral("4")),
          }) {
         QCOMPARE(validateDesktopNotificationShell(observation(state),

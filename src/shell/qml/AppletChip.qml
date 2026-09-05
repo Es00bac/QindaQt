@@ -142,6 +142,7 @@ Rectangle {
     }
 
     Rectangle {
+        objectName: "appletUnavailableMarker"
         // AGENT-NOTE: an unavailable plug-in stays visible as profile content,
         // but the amber marker prevents a static mock from claiming to be live.
         anchors.right: parent.right

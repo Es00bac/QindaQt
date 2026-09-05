@@ -27,11 +27,9 @@ struct ControllerFixture {
 
 TaskListAppletGrants allGrants() { return {true, true, true}; }
 
-QVector<TaskWindowFact> standardFacts() {
-  return {TaskListTest::standalone(QStringLiteral("w1"),
-                                   QStringLiteral("app.one")),
-          TaskListTest::primary(QStringLiteral("w2"),
-                                QStringLiteral("app.two"),
+QVector<TaskWindowFact> standardFacts() { return {
+          TaskListTest::standalone(QStringLiteral("w1"), QStringLiteral("app.one")),
+          TaskListTest::primary(QStringLiteral("w2"), QStringLiteral("app.two"),
                                 QStringLiteral("c1")),
           TaskListTest::member(QStringLiteral("w3"), QStringLiteral("c1"))};
 }
@@ -70,6 +68,7 @@ private slots:
   void containerOperationsFenceMembershipAndRevision();
   void dockWindowsResolvesPrimariesAndFences();
   void scopeSettersReprojectAndClearFeedbackDismisses();
+  void iconEvidenceRequiresBothMetadataAndThemeResolution();
 };
 
 void TaskListAppletControllerTests::coldStartTransitionsThroughBoundedPhases() {
@@ -536,6 +535,28 @@ void TaskListAppletControllerTests::scopeSettersReprojectAndClearFeedbackDismiss
   controller.clearFeedback();
   QCOMPARE(controller.feedbackPresent(), false);
   QCOMPARE(controller.feedback().isEmpty(), true);
+}
+
+void TaskListAppletControllerTests::iconEvidenceRequiresBothMetadataAndThemeResolution() {
+  ControllerFixture fixture;
+  TaskListAppletController controller(
+      fixture.source, fixture.authority, fixture.port, allGrants(),
+      [](const QString &applicationId) {
+        return applicationId == QLatin1StringView("app.one")
+            ? QStringLiteral("preferences-system")
+            : QStringLiteral("missing-icon");
+      },
+      [](const QString &iconName) {
+        return iconName == QLatin1StringView("preferences-system");
+      });
+  publishReady(fixture, standardFacts());
+
+  const QVariantList rows = controller.entryRows();
+  QCOMPARE(rows.size(), 2);
+  QCOMPARE(rows[0].toMap().value(QStringLiteral("iconName")),
+           QVariant(QStringLiteral("preferences-system")));
+  QCOMPARE(rows[0].toMap().value(QStringLiteral("iconResolved")), QVariant(true));
+  QCOMPARE(rows[1].toMap().value(QStringLiteral("iconResolved")), QVariant(false));
 }
 
 QTEST_GUILESS_MAIN(TaskListAppletControllerTests)

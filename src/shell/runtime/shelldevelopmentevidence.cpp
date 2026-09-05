@@ -2,6 +2,7 @@
 #include "shelldevelopmentevidence.h"
 
 #include "notificationwindowcontroller.h"
+#include "runtimepanelwindowfactory.h"
 
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
@@ -16,6 +17,7 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QEventLoop>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QTimer>
 
@@ -71,6 +73,7 @@ ShellDevelopmentEvidence::ShellDevelopmentEvidence(
     NotificationWindowController &windows,
     const DesignTokens::TokenFacade &tokens,
     const ShellTaskListApplet::TaskListAppletController &taskList,
+    const RuntimePanelWindowFactory &panels,
     QObject *parent)
     : QObject(parent)
     , m_presentation(presentation)
@@ -79,6 +82,7 @@ ShellDevelopmentEvidence::ShellDevelopmentEvidence(
     , m_windows(windows)
     , m_tokens(tokens)
     , m_taskList(taskList)
+    , m_panels(panels)
     , m_bus(QDBusConnection::sessionBus())
 {
     connect(&m_presentation,
@@ -272,6 +276,18 @@ QJsonObject ShellDevelopmentEvidence::snapshotObject() const
                   .value(QStringLiteral("generationRevision")).toULongLong();
     const QColor backgroundBase =
         m_tokens.bg().value(QStringLiteral("base")).value<QColor>();
+    QJsonArray taskButtons;
+    for (const QVariant &rowValue : taskRows) {
+        const QVariantMap row = rowValue.toMap();
+        taskButtons.append(QJsonObject{
+            {QStringLiteral("applicationId"),
+             row.value(QStringLiteral("applicationId")).toString()},
+            {QStringLiteral("iconName"),
+             row.value(QStringLiteral("iconName")).toString()},
+            {QStringLiteral("iconResolved"),
+             row.value(QStringLiteral("iconResolved")).toBool()},
+        });
+    }
     return {
         {QStringLiteral("schemaVersion"), 1},
         {QStringLiteral("shellPid"),
@@ -293,7 +309,9 @@ QJsonObject ShellDevelopmentEvidence::snapshotObject() const
              {QStringLiteral("phase"), m_taskList.phaseText()},
              {QStringLiteral("generation"), QString::number(taskGeneration)},
              {QStringLiteral("windowCount"), m_taskList.totalWindowCount()},
+             {QStringLiteral("buttons"), taskButtons},
          }},
+        {QStringLiteral("panelApplets"), m_panels.appletEvidence()},
         {QStringLiteral("presentation"),
          QJsonObject{
              {QStringLiteral("privatePresentationAllowed"),

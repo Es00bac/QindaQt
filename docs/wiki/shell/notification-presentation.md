@@ -87,6 +87,12 @@ exact-owner settings baseline, then applies the confirmed
 `services.doNotDisturb` Boolean. Service/owner/bus loss retains the last
 confirmed value. Enabling it immediately filters low/normal urgency; critical
 urgency (`2`) explicitly bypasses the filter and unknown urgency fails closed.
+The bridge owns a purpose-scoped Settings1 client requesting only
+`services.doNotDisturb`. Settings1 rejects a whole subscription containing an
+unknown key, so this isolation is required: unrelated optional applet keys
+must not make quieting unavailable. Under a fresh profile the schema default
+is available with `enabled=false`, a confirmed baseline, and an empty status;
+missing user overrides do not mean missing settings.
 
 The Active model continues to reflect the authenticated host snapshot, and
 disappearing non-transient items still enter Recent. The policy never dismisses,
@@ -291,7 +297,10 @@ active-binding state changes without touching the developer's shortcut
 registry. A second offscreen QML
 test proves the applet's disabled fallback, locked-state unavailability,
 accessibility label changes, narrow toggle call, read-only policy indicators,
-and compiled-entry-point dispatch without compositor or pointer input. The
+and compiled-entry-point dispatch without compositor or pointer input.
+Notification-shell readiness and interactive rows also require fresh-profile
+quieting to be `ready`, toggleable, baseline-confirmed, off, and free of status
+or error text before they accept the shell. The
 `qindaqt.notification-output-selector` row proves semantic-primary transfer,
 unchanged-primary reselection, output replacement/removal, missing authority,
 generation and ID mismatches, strict wire decoding, and a mutation-sensitive

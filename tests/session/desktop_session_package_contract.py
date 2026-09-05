@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import configparser
 import stat
 from pathlib import Path, PurePosixPath
 
@@ -18,6 +19,13 @@ NETWORK_QML_FILES = (
     "qml/NetworkRadioSection.qml",
     "qml/NetworkSavedSection.qml",
 )
+
+FIRST_PARTY_DESKTOP_ICONS = {
+    "org.qindaqt.Settings.desktop": "preferences-system",
+    "org.qindaqt.TextEditor.desktop": "accessories-text-editor",
+    "org.qindaqt.Terminal.desktop": "utilities-terminal",
+    "org.qindaqt.FileManager.desktop": "system-file-manager",
+}
 
 
 def _relative_path(value: str, label: str) -> Path:
@@ -80,3 +88,32 @@ def authenticate_network_qml_package(
     return tuple(
         _regular_file(module, relative, str(relative)) for relative in artifacts
     )
+
+
+def authenticate_first_party_desktop_entries(stage_root: Path) -> tuple[Path, ...]:
+    """Authenticate task-icon metadata staged for first-party window app IDs."""
+
+    stage = stage_root.resolve(strict=True)
+    applications = stage / "share/applications"
+    resolved: list[Path] = []
+    for filename, expected_icon in FIRST_PARTY_DESKTOP_ICONS.items():
+        entry = _regular_file(
+            stage, Path("share/applications") / filename,
+            f"first-party desktop entry {filename}",
+        )
+        parser = configparser.ConfigParser(interpolation=None, strict=True)
+        parser.optionxform = str
+        try:
+            with entry.open(encoding="utf-8") as stream:
+                parser.read_file(stream)
+            icon = parser.get("Desktop Entry", "Icon")
+        except (OSError, configparser.Error) as error:
+            raise PackagePayloadError(
+                f"first-party desktop entry {filename} is malformed"
+            ) from error
+        if icon != expected_icon or entry.parent != applications.resolve(strict=True):
+            raise PackagePayloadError(
+                f"first-party desktop entry {filename} has the wrong icon identity"
+            )
+        resolved.append(entry)
+    return tuple(resolved)

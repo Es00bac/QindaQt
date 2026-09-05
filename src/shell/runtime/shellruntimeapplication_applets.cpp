@@ -40,12 +40,22 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
             QDBusConnection::sessionBus());
     m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
         *m_settingsTransport,
-        QStringList{QStringLiteral("services.doNotDisturb"),
-                    QStringLiteral("accessibility.reducedMotion"),
+        QStringList{QStringLiteral("accessibility.reducedMotion"),
                     QStringLiteral("panels.autoHideDelayMs"),
                     QStringLiteral("services.clipboardHistory"),
                     Launcher::LauncherPersistenceController::pinnedKey(),
                     Launcher::LauncherPersistenceController::recentKey()});
+    // AGENT-CONTRACT: Settings1 rejects an entire scoped snapshot when any
+    // requested key is unknown. Notification quieting therefore owns a
+    // purpose-scoped client so optional applet keys cannot turn a present,
+    // defaulted services.doNotDisturb value into "unavailable".
+    m_quietingSettingsTransport =
+        std::make_unique<Services::SettingsClient::QtSettingsTransport>(
+            QDBusConnection::sessionBus());
+    m_quietingSettingsClient =
+        std::make_unique<Services::SettingsClient::SettingsClient>(
+            *m_quietingSettingsTransport,
+            QStringList{QStringLiteral("services.doNotDisturb")});
     m_launcherApplet = std::make_unique<LauncherAppletComposition>(
         m_applets, m_appletPolicy, std::move(launcherRoots),
         *m_settingsClient, QDBusConnection::sessionBus());
@@ -73,7 +83,19 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
     m_taskListApplet = std::make_unique<TaskListAppletComposition>(
         m_applets, m_appletPolicy, sessionBus, *m_windowActionsClient,
         Icons::IconRuntime::freedesktopApplicationRoots(
-            m_dataRoots.dataHome, m_dataRoots.dataDirectories));
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories),
+        Icons::IconRuntime::freedesktopIconRoots(
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories),
+        QStringList{[this] {
+            QString themeName;
+            QString ignoredError;
+            const bool themeSelected = ShellIconConfiguration::selectedThemeName(
+                m_themes, &themeName, &ignoredError);
+            if (!themeSelected) {
+                return QString{};
+            }
+            return themeName;
+        }()});
     QString taskListError;
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote()
@@ -102,6 +124,24 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions()
                     m_windowActionsRetry.start();
                 }
             });
+}
+
+void ShellRuntimeApplication::startSettingsClients()
+{
+    QString settingsError;
+    if (!m_settingsClient->start(&settingsError)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start Settings1; launcher persistence"
+               " and clipboard settings remain unavailable:"
+            << settingsError;
+    }
+    QString quietingError;
+    if (!m_quietingSettingsClient->start(&quietingError)) {
+        qWarning().noquote()
+            << "QindaQt shell could not start the Settings1 notification"
+               " quieting scope:"
+            << quietingError;
+    }
 }
 
 } // namespace QindaQt::Shell

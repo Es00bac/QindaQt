@@ -5,6 +5,13 @@ namespace QindaQt::ShellTaskList {
 
 bool TaskListFilter::isVisible(const TaskEntry &entry,
                                const TaskListScope &scope) {
+  // AGENT-CONTRACT: the compositor publishes role/owner provenance for every
+  // managed window. T0 is the final scope authority and must never project
+  // shell-owned surfaces or non-normal roles as user tasks.
+  if (entry.type != TaskWindowType::Normal ||
+      entry.owner != TaskWindowOwner::Application) {
+    return false;
+  }
   if (!scope.outputId.isEmpty() && entry.outputId != scope.outputId) {
     return false;
   }

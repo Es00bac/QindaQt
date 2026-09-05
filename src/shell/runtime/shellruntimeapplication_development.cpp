@@ -32,7 +32,8 @@ bool ShellRuntimeApplication::startDevelopmentEvidence(
     m_shellDevelopmentEvidence = std::make_unique<ShellDevelopmentEvidence>(
         *m_notificationPresentation, m_quietingSettingsBridge->controller(),
         *m_notificationPrivacyPolicy, *m_notificationWindows,
-        *m_tokenPublisher->facade(), *m_taskListApplet->access());
+        *m_tokenPublisher->facade(), *m_taskListApplet->access(),
+        *m_windowFactory);
     return m_shellDevelopmentEvidence->start(
         *options.compositorProcessId,
         options.developmentEvidencePredecessorProcessId.value_or(0), error);

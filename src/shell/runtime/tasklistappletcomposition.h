@@ -40,6 +40,7 @@ class ShellWindowActionsClient;
 
 namespace QindaQt::Shell::Icons {
 class DesktopEntryIconResolver;
+class IconThemeLocator;
 }
 
 namespace QindaQt::Shell {
@@ -58,7 +59,8 @@ public:
         const AppletHost::CapabilityPolicy &policy,
         const QDBusConnection &sessionBus,
         ShellWindowActionsClient::ShellWindowActionsClient &windowActions,
-        QStringList applicationRoots);
+        QStringList applicationRoots, QStringList iconRoots,
+        QStringList iconThemes);
     TaskListAppletComposition(
         const Applets::ManifestCatalog &catalog,
         const AppletHost::CapabilityPolicy &policy,
@@ -100,6 +102,7 @@ private:
         m_ownedContainerBridge;
     std::unique_ptr<TaskListWindowOperationRouter> m_router;
     std::unique_ptr<Icons::DesktopEntryIconResolver> m_iconResolver;
+    std::unique_ptr<Icons::IconThemeLocator> m_iconThemeLocator;
     std::unique_ptr<ShellTaskListApplet::TaskListAppletController> m_access;
 };
 

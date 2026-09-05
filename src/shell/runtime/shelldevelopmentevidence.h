@@ -24,6 +24,7 @@ class TaskListAppletController;
 namespace QindaQt::Shell {
 
 class NotificationWindowController;
+class RuntimePanelWindowFactory;
 
 // A development-session-only, read-only view of production notification state.
 // The endpoint intentionally has no mutation slots: input and user operations
@@ -44,6 +45,7 @@ public:
         NotificationWindowController &windows,
         const DesignTokens::TokenFacade &tokens,
         const ShellTaskListApplet::TaskListAppletController &taskList,
+        const RuntimePanelWindowFactory &panels,
         QObject *parent = nullptr);
     ~ShellDevelopmentEvidence() override;
 
@@ -73,6 +75,7 @@ private:
     NotificationWindowController &m_windows;
     const DesignTokens::TokenFacade &m_tokens;
     const ShellTaskListApplet::TaskListAppletController &m_taskList;
+    const RuntimePanelWindowFactory &m_panels;
     QDBusConnection m_bus;
     quint64 m_centerOpenedCount = 0;
     quint64 m_centerClosedCount = 0;
