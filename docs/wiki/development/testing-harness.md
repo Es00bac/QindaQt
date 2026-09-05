@@ -1028,6 +1028,35 @@ host bus, display server, or hardware.
 The exact matrix and non-claims are detailed in
 [Status notifier tray](../shell/status-tray.md).
 
+## Current shell iconography proof
+
+The confined XDG icon-theme module (`src/shell/icons`, compiled
+`QindaQt.Shell.Icons`) is selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.shell-icons-' --output-on-failure --no-tests=error
+```
+
+Four rows run in Debug and Release. The locator row builds hostile fixture
+theme roots under the build directory and proves exact/threshold/scalable
+matching, scale-aware directories, inherits chains with cycle guard and depth
+cap, hicolor-last ordering including the full-chain-cap boundary,
+`-symbolic` preference, deterministic root order, `../` and symlink-escape
+refusal, oversized-index refusal, and the bounded index cache. The resolver
+row covers desktop-entry id mapping, app-id normalizations, precedence, and
+hostile-document/entry refusal over injected application roots. The provider
+row runs offscreen under `QT_FATAL_WARNINGS=1` with host display and bus
+variables unset: SVG recolor pixel assertions, raster rendering at device
+size, placeholder determinism, the LRU bound, over-long-id refusal before
+cache access, canonical tuple cache-key sharing, and hostile-id flood rows
+asserting bounded cache key bytes and bounded process RSS. The QML row
+instantiates the compiled `Icon` element through the real
+`IconRuntime::install` seam with a published QST-1 theme.
+No row contacts a host bus, display, compositor, network, or hardware. See
+[Shell iconography](../shell/iconography.md) and
+[ADR-0072](../adr/0072-shell-iconography-confined-xdg-icon-themes.md).
+
 ## Current task-list proof
 
 The task list's complete source, producer, and operation boundary is selected
