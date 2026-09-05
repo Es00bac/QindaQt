@@ -148,13 +148,25 @@ Q_SIGNALS:
 };
 
 struct FakeCompositor {
+  QString connectionName;
   QDBusConnection connection;
   FakeDesktopManager desktops;
   FakeKWin kwin;
 
   explicit FakeCompositor(const QString &address)
-      : connection(QDBusConnection::connectToBus(address, QStringLiteral("fake-kwin")))
+      : connectionName(QStringLiteral("fake-kwin-%1")
+                           .arg(QUuid::createUuid().toString(QUuid::Id128)))
+      , connection(QDBusConnection::connectToBus(address, connectionName))
   {
+  }
+
+  ~FakeCompositor()
+  {
+    if (connection.isConnected()) {
+      (void)connection.unregisterService(QStringLiteral("org.qindaqt.Compositor"));
+      (void)connection.unregisterService(QStringLiteral("org.kde.KWin"));
+    }
+    QDBusConnection::disconnectFromBus(connectionName);
   }
 
   bool publish(bool registerPeer)

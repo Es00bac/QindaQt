@@ -102,7 +102,9 @@ endif()
 # windows, driven through real controllers over the fakes above.
 function(qindaqt_add_desktop_controls_qml_test target source test_name)
     qt_add_executable(${target} ${source}
-        desktop_controls_test_support.h desktop_controls_qml_test_support.h)
+        desktop_controls_test_support.h desktop_controls_qml_test_support.h
+        "${PROJECT_SOURCE_DIR}/tests/shell/task_list/task_list_operation_test_support.h"
+        "${PROJECT_SOURCE_DIR}/tests/shell/task_list/task_list_applet_test_fakes.h")
     target_include_directories(${target} PRIVATE ${desktop_controls_fixture_dirs})
     target_link_libraries(
         ${target}

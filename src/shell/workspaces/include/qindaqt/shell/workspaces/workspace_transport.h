@@ -9,7 +9,7 @@
 namespace QindaQt::Shell::Workspaces {
 
 // Injected compositor seam for workspace truth and intents. Production binds
-// the authenticated `org.kde.KWin` owner over Qt D-Bus; tests inject a fake.
+// the authenticated compositor owner over Qt D-Bus; tests inject a fake.
 //
 // AGENT-CONTRACT (owner lineage): every request names the exact unique owner
 // the caller observed. Implementations must answer with that same owner (or

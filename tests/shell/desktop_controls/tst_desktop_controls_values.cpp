@@ -162,7 +162,7 @@ void DesktopControlsValuesTests::auditedGrantsFollowTheFiveGates()
   const AuditedGrants hud = evaluateAuditedGrants(catalog, loaded.policy, registry,
                                                   QStringLiteral("command-hud"));
   QVERIFY(hud.resolved);
-  QCOMPARE(hud.granted, QVector<Applets::Capability>{Applets::Capability::GlobalMenuRead});
+  QVERIFY(hud.granted == QVector<Applets::Capability>{Applets::Capability::GlobalMenuRead});
 
   const AuditedGrants missing = evaluateAuditedGrants(catalog, loaded.policy, registry,
                                                       QStringLiteral("weather-forecast"));
