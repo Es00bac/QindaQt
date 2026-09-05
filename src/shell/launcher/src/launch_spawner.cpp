@@ -10,7 +10,7 @@ bool isForwardedVariable(const QString &name)
 {
   // AGENT-CONTRACT: This allowlist is the launcher's child-environment
   // authority (documented in docs/wiki/shell/launcher.md). Session identity,
-  // locale, display, and runtime discovery survive; everything else —
+  // locale, configuration, authentication paths, and runtime discovery survive; everything else —
   // including QindaQt's own development overrides and any caller-injected
   // variables — is stripped before the child starts.
   static const QStringList exact {
@@ -19,6 +19,12 @@ bool isForwardedVariable(const QString &name)
     QStringLiteral("LANG"),
     QStringLiteral("LC_ALL"),
     QStringLiteral("XDG_RUNTIME_DIR"),
+    QStringLiteral("XDG_CONFIG_HOME"),
+    QStringLiteral("XDG_DATA_HOME"),
+    QStringLiteral("XDG_CACHE_HOME"),
+    QStringLiteral("XDG_STATE_HOME"),
+    QStringLiteral("XAUTHORITY"),
+    QStringLiteral("SSH_AUTH_SOCK"),
     QStringLiteral("XDG_DATA_DIRS"),
     QStringLiteral("XDG_CONFIG_DIRS"),
     QStringLiteral("XDG_SESSION_TYPE"),

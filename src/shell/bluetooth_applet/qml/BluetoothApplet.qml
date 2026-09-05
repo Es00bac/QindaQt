@@ -27,15 +27,6 @@ Item {
         details.close()
     }
 
-    Shortcut {
-        // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
-        // an integer key code and silently fails in the offscreen Quick path.
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: details.opened
-        onActivated: root.closeDetailsFromEscape()
-    }
-
     ToolButton {
         id: summary
         objectName: "bluetoothAppletSummary"
@@ -75,12 +66,15 @@ Item {
 
     Popup {
         id: details
+        // AGENT-GUARD: panels reject keyboard focus and cannot paint outside
+        // their surface. A separate popup window supplies both capabilities.
+        popupType: Popup.Window
         objectName: "bluetoothAppletPopup"
         width: 340
         padding: 12
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         onOpened: {
             if (root.access !== null)
@@ -100,6 +94,17 @@ Item {
         contentItem: ScrollView {
             implicitHeight: Math.min(contentColumn.implicitHeight, 460)
             clip: true
+
+            // AGENT-GUARD: shortcut ownership follows the focusable popup
+            // content window, never the non-focusable panel.
+            Shortcut {
+                // AGENT-GUARD: sequence needs a QKeySequence string; Qt.Key_Escape is
+                // an integer key code and silently fails in the offscreen Quick path.
+                sequence: "Escape"
+                context: Qt.WindowShortcut
+                enabled: details.opened
+                onActivated: root.closeDetailsFromEscape()
+            }
 
             ColumnLayout {
                 id: contentColumn

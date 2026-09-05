@@ -114,6 +114,19 @@ Item {
             }
         }
 
+        function test_naturalWidthDoesNotDependOnConstrainedDelegates() {
+            fakeAccess.items = [createItem("file", "File"), createItem("edit", "Edit"),
+                                createItem("view", "View"), createItem("help", "Help")]
+            fakeAccess.available = true
+            const applet = createTemporaryObject(appletComponent, testRoot)
+            applet.width = 20
+            const natural = applet.implicitWidth
+            verify(natural > 100)
+            applet.width = Qt.binding(function() { return applet.implicitWidth })
+            tryCompare(applet, "overflowCount", 0)
+            compare(applet.implicitWidth, natural)
+        }
+
         function test_verticalLayoutStacksEntries() {
             fakeAccess.available = true;
             fakeAccess.items = [createItem("f", "File", "submenu"), createItem("e", "Edit", "submenu"), createItem("a", "About")];

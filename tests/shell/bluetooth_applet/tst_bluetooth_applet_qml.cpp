@@ -24,6 +24,12 @@ using namespace QindaQt::Tests;
 
 namespace
 {
+QQuickItem *popupContent(QQuickItem *root)
+{
+    auto *popup = root->findChild<QObject *>(QStringLiteral("bluetoothAppletPopup"));
+    return popup ? popup->property("contentItem").value<QQuickItem *>() : nullptr;
+}
+
 
 const QString kOwner = QStringLiteral(":1.42");
 
@@ -116,7 +122,7 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     QVERIFY(root != nullptr);
 
     QQuickWindow window;
-    window.setGeometry(0, 0, 480, 600);
+    window.setGeometry(0, 0, 480, 30);
     root->setParentItem(window.contentItem());
     root->setPosition(QPointF(20, 20));
     window.show();
@@ -135,12 +141,15 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
         summaryIcon, QStringLiteral("network-bluetooth-activated")));
     summary->forceActiveFocus();
     QVERIFY(summary->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
 
     QObject *popup = root->findChild<QObject *>(
         QStringLiteral("bluetoothAppletPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
+    QTRY_VERIFY(popup->property("height").toReal() > window.height());
 
     QAccessibleInterface *summaryInterface =
         QAccessible::queryAccessibleInterface(summary);
@@ -151,7 +160,7 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     QVERIFY(!summaryInterface->text(QAccessible::Description).isEmpty());
 
     const auto discoveryButtons = visualItemsNamed(
-        window.contentItem(), QStringLiteral("bluetoothAppletDiscoveryButton"));
+        popupContent(root), QStringLiteral("bluetoothAppletDiscoveryButton"));
     QCOMPARE(discoveryButtons.size(), 1);
     QQuickItem *discovery = discoveryButtons.constFirst();
     QAccessibleInterface *discoveryInterface =
@@ -163,12 +172,12 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
 
     discovery->forceActiveFocus();
     QVERIFY(discovery->hasActiveFocus());
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_COMPARE(transport.submissions.size(), 1);
     const auto acquire = transport.submissions.constFirst();
     QCOMPARE(acquire.request.kind, Bluetooth::OperationKind::AcquireDiscovery);
 
-    QTest::keyClick(&window, Qt::Key_Escape);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
     transport.emitOperationReply(
         kOwner, acquire.requestId, true,
@@ -235,7 +244,7 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
     auto *summary = root->findChild<QQuickItem *>(
         QStringLiteral("bluetoothAppletSummary"));
     summary->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_VERIFY(root->findChild<QObject *>(
         QStringLiteral("bluetoothAppletPopup"))->property("opened").toBool());
 
@@ -256,7 +265,7 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
     QVERIFY(!confirmInterface->text(QAccessible::Description).isEmpty());
     QVERIFY(!cancelInterface->text(QAccessible::Description).isEmpty());
     confirm->forceActiveFocus();
-    QTest::keyClick(&window, Qt::Key_Space);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
     QTRY_COMPARE(transport.submissions.size(), 1);
     QCOMPARE(transport.submissions.constFirst().request.kind,
              Bluetooth::OperationKind::ReplyConfirmation);
@@ -275,7 +284,7 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
                                 true, replacement);
     QTRY_VERIFY(!controller.pairingReplyPending());
 
-    QTest::keyClick(&window, Qt::Key_Escape);
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_COMPARE(transport.submissions.size(), 2);
     QCOMPARE(transport.submissions.constLast().request.kind,
              Bluetooth::OperationKind::ReplyConfirmation);

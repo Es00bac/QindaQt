@@ -15,7 +15,7 @@ namespace QindaQt::Shell::GlobalMenu
 namespace
 {
 
-QVariantMap projectItem(const Protocol::MenuItem &item)
+QVariantMap projectItem(const Protocol::MenuItem &item, const QString &generation)
 {
     QVariantList children;
     children.reserve(item.children.size());
@@ -23,7 +23,7 @@ QVariantMap projectItem(const Protocol::MenuItem &item)
         if (!child.visible) {
             continue;
         }
-        children.append(projectItem(child));
+        children.append(projectItem(child, generation));
     }
     QString kind = QStringLiteral("action");
     if (item.kind == Protocol::MenuItemKind::Submenu) {
@@ -31,7 +31,8 @@ QVariantMap projectItem(const Protocol::MenuItem &item)
     } else if (item.kind == Protocol::MenuItemKind::Separator) {
         kind = QStringLiteral("separator");
     }
-    return {{QStringLiteral("id"), item.id},
+    return {{QStringLiteral("generation"), generation},
+            {QStringLiteral("id"), item.id},
             {QStringLiteral("kind"), kind},
             {QStringLiteral("text"), item.text},
             {QStringLiteral("mnemonicIndex"), item.mnemonicIndex},
@@ -42,7 +43,7 @@ QVariantMap projectItem(const Protocol::MenuItem &item)
             {QStringLiteral("children"), children}};
 }
 
-QVariantList projectTopLevel(const Protocol::MenuTree &tree)
+QVariantList projectTopLevel(const Protocol::MenuTree &tree, const QString &generation)
 {
     QVariantList projection;
     projection.reserve(tree.items.size());
@@ -53,7 +54,7 @@ QVariantList projectTopLevel(const Protocol::MenuTree &tree)
         if (item.kind == Protocol::MenuItemKind::Separator || !item.visible) {
             continue;
         }
-        projection.append(projectItem(item));
+        projection.append(projectItem(item, generation));
     }
     return projection;
 }
@@ -85,6 +86,13 @@ QString GlobalMenuAppletAccess::reasonCode() const
     return m_reasonCode;
 }
 
+void GlobalMenuAppletAccess::activate(const QString &actionId, const QString &generation)
+{
+    if (generation != QString::number(m_generation))
+        return;
+    activate(actionId);
+}
+
 void GlobalMenuAppletAccess::activate(const QString &actionId)
 {
     // AGENT-GUARD: this authority check is the complete boundary offered to
@@ -112,7 +120,7 @@ void GlobalMenuAppletAccess::publishTree(const Protocol::MenuTree &tree)
         return;
     }
     m_tree = tree;
-    setTopLevelProjection(projectTopLevel(tree));
+    setTopLevelProjection(projectTopLevel(tree, QString::number(++m_generation)));
     setAvailable(true);
     setPhase(QStringLiteral("ready"), {});
 }

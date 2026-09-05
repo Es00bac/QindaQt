@@ -40,14 +40,17 @@ public:
 
     [[nodiscard]] bool available() const noexcept;
     // Top-level items plus recursively owned submenu children. Every map has
-    // {id, kind, text, mnemonicIndex, shortcutText, enabled, checkable,
+    // {id, generation, kind, text, mnemonicIndex, shortcutText, enabled, checkable,
     // checked, children}; hidden entries are omitted and separators exist only
     // in submenu children. `activate()` still admits actions only.
     [[nodiscard]] QVariantList items() const;
     [[nodiscard]] QString phase() const;
     [[nodiscard]] QString reasonCode() const;
 
-    Q_INVOKABLE void activate(const QString &actionId);
+    // C++ callers capture the current tree synchronously. QML must provide
+    // the generation embedded in its rendered item; stale generations fail closed.
+    void activate(const QString &actionId);
+    Q_INVOKABLE void activate(const QString &actionId, const QString &generation);
 
     // Shell composition mirrors authoritative export state. QML cannot call
     // either publisher through the meta-object boundary. publishTree() is
@@ -68,6 +71,7 @@ private:
     void setTopLevelProjection(QVariantList projection);
     void setPhase(QString phase, QString reasonCode);
 
+    quint64 m_generation = 0;
     bool m_available = false;
     Protocol::MenuTree m_tree;
     QVariantList m_topLevelProjection;
