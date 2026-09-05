@@ -134,6 +134,7 @@ ColumnLayout {
                     objectName: "launcherResultText"
                     Layout.fillWidth: true
                     text: row.modelData.displayText
+                    wrapMode: Text.NoWrap
                     elide: Text.ElideRight
                 }
                 Label {

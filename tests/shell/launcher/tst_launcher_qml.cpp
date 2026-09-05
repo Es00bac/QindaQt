@@ -273,6 +273,10 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(!enabledInterface->text(QAccessible::Name).isEmpty());
     QVERIFY(!enabledInterface->text(QAccessible::Description).isEmpty());
     QVERIFY(!enabledInterface->state().disabled);
+    auto *results = visualItemNamed(popupContent(root),
+        QStringLiteral("launcherAppletResults"));
+    QVERIFY(results != nullptr);
+    QTRY_VERIFY(enabledRow->width() >= results->width() - 2);
 
     // Pinning remains reachable through an ordinary primary click even when
     // a compositor or input backend cannot deliver a secondary gesture.
@@ -282,6 +286,8 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(visiblePin->property("visible").toBool());
     QCOMPARE(visiblePin->property("text").toString(), QStringLiteral("Unpin"));
     QCOMPARE(visiblePin->property("emphasized").toBool(), false);
+    QVERIFY(visiblePin->mapToItem(enabledRow, QPointF {}).x()
+            > enabledRow->width() / 2);
 
     // Restore the theme-pixel fixture to its neutral state before checking
     // the token-owned background below.
