@@ -137,6 +137,7 @@ Item {
                 }
 
                 contentItem: ShellIcons.Icon {
+                    id: entryIcon
                     objectName: "quickLaunchEntryIcon"
                     anchors.centerIn: parent
                     name: String(entryButton.modelData.iconName)
@@ -147,7 +148,7 @@ Item {
                     scale: root.dockMode && entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0
                     transformOrigin: Item.Center
                     property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
-                    transform: Translate { y: hoverLift }
+                    transform: Translate { y: entryIcon.hoverLift }
                     Accessible.ignored: true
 
                     // Tokens clamp motion durations for reduced-motion
