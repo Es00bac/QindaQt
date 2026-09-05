@@ -60,7 +60,8 @@ struct AppletHost {
 
     // Creates `typeName` from the compiled module with `access` injected and
     // shows it in a 640x480 offscreen window at (20, 20).
-    bool create(const QString &typeName, QObject *access, QString *error, bool vertical = false)
+    bool create(const QString &typeName, QObject *access, QString *error, bool vertical = false,
+                bool dockMode = false, int dockTileSize = 60)
     {
         engine = std::make_unique<QQmlEngine>();
         engine->addImportPath(QStringLiteral(QINDAQT_DESKTOP_CONTROLS_QML_IMPORT_PATH));
@@ -76,7 +77,9 @@ struct AppletHost {
         }
         root.reset(component.createWithInitialProperties(
             {{QStringLiteral("access"), QVariant::fromValue(access)},
-             {QStringLiteral("vertical"), vertical}}));
+             {QStringLiteral("vertical"), vertical},
+             {QStringLiteral("dockMode"), dockMode},
+             {QStringLiteral("dockTileSize"), dockTileSize}}));
         if (!root) {
             *error = component.errorString();
             return false;

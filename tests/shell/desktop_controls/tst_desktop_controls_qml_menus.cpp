@@ -4,6 +4,7 @@
 
 #include "qindaqt/shell/desktop_controls/command_search_controller.h"
 #include "qindaqt/shell/desktop_controls/places_controller.h"
+#include "qindaqt/shell/desktop_controls/quick_launch_controller.h"
 #include "qindaqt/shell/desktop_controls/system_menu_controller.h"
 
 #include <QAccessible>
@@ -24,6 +25,7 @@ private Q_SLOTS:
     void systemMenuOpensAWindowPopupAndDispatchesThroughFacades();
     void commandPaletteSearchesByKeyboardAndActivates();
     void placesMenuOpensFoldersThroughTheSeam();
+    void quickLaunchDockUsesOnlyPersistedPins();
 };
 
 void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroughFacades()
@@ -221,6 +223,40 @@ void DesktopControlsQmlMenuTests::placesMenuOpensFoldersThroughTheSeam()
     QVERIFY(feedback->property("text").toString().contains(QStringLiteral("no file manager")));
     keyClickFocused(host, Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
+}
+
+void DesktopControlsQmlMenuTests::quickLaunchDockUsesOnlyPersistedPins()
+{
+    LauncherStack stack;
+    QVERIFY(stack.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Fixture Editor"),
+                           QStringLiteral("/bin/true")));
+    QVERIFY(stack.scanner.start());
+    stack.publishPinned({QStringLiteral("editor")});
+    Shell::Launcher::LauncherAppletController launcher(&stack.scanner, &stack.persistence,
+                                                        &stack.executor, true);
+    QuickLaunchController quickLaunch(&launcher, true);
+
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("QuickLaunchApplet"), &quickLaunch, &error, false,
+                          true, 2), qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    QCOMPARE(host.item->implicitHeight(), 56.0);
+    const auto entries = host.visualItemsNamed(QStringLiteral("quickLaunchEntry"));
+    QCOMPARE(entries.size(), 1);
+    QCOMPARE(entries.constFirst()->width(), 56.0);
+    auto *icon = entries.constFirst()->findChild<QQuickItem *>(
+        QStringLiteral("quickLaunchEntryIcon"));
+    QVERIFY(icon != nullptr);
+    QCOMPARE(icon->property("size").toInt(), 40);
+    auto *tooltip = entries.constFirst()->findChild<QObject *>(
+        QStringLiteral("quickLaunchEntryTooltip"));
+    QVERIFY(tooltip != nullptr);
+    QCOMPARE(tooltip->property("text").toString(), QStringLiteral("Fixture Editor"));
+
+    entries.constFirst()->forceActiveFocus();
+    keyClickFocused(host, Qt::Key_Return);
+    QCOMPARE(stack.spawner.requests.size(), 1);
 }
 
 QTEST_MAIN(DesktopControlsQmlMenuTests)

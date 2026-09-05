@@ -23,13 +23,24 @@ Item {
 
     required property var access
     property bool vertical: false
+    // The panel/profile owner selects dock mode. Keeping it opt-in preserves
+    // the compact taskbar contract for every existing host.
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool dockHasLauncherGroup: false
+    property bool reducedMotion: false
+    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
 
     readonly property string phase: access !== null ? access.phaseText : "unavailable"
     readonly property bool stripVisible: access !== null && access.entryCount > 0
 
     objectName: "taskListApplet"
-    implicitWidth: vertical ? 44 : strip.implicitWidth
-    implicitHeight: vertical ? strip.implicitHeight : 32
+    implicitWidth: dockMode
+        ? (vertical ? resolvedDockTileSize : strip.implicitWidth)
+        : (vertical ? 44 : strip.implicitWidth)
+    implicitHeight: dockMode
+        ? (vertical ? strip.implicitHeight : resolvedDockTileSize)
+        : (vertical ? strip.implicitHeight : 32)
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Task list")
@@ -97,6 +108,16 @@ Item {
             Accessible.ignored: true
         }
 
+        Rectangle {
+            id: dockGroupSeparator
+            objectName: "taskListDockGroupSeparator"
+            visible: root.dockMode && root.dockHasLauncherGroup && root.stripVisible
+            implicitWidth: root.vertical ? root.resolvedDockTileSize : 1
+            implicitHeight: root.vertical ? 1 : root.resolvedDockTileSize
+            color: Tokens.outline.divider
+            Accessible.ignored: true
+        }
+
         Repeater {
             id: entryRepeater
             model: root.stripVisible ? root.access.entryRows : []
@@ -108,6 +129,9 @@ Item {
                 entry: modelData
                 access: root.access
                 vertical: root.vertical
+                dockMode: root.dockMode
+                dockTileSize: root.resolvedDockTileSize
+                reducedMotion: root.reducedMotion
 
                 KeyNavigation.left: root.vertical
                     ? null : entryRepeater.itemAt(index - 1)

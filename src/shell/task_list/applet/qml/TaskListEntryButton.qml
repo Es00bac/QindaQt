@@ -23,12 +23,20 @@ T.ToolButton {
     required property var entry
     required property var access
     property bool vertical: false
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
+    readonly property int resolvedDockTileSize: Math.max(56, Math.min(64, dockTileSize))
 
     objectName: "taskListEntryButton"
     focusPolicy: Qt.TabFocus
     hoverEnabled: true
-    implicitWidth: vertical ? 32 : Math.max(84, Math.min(168, rowLayout.implicitWidth + 12))
-    implicitHeight: 28
+    // AGENT-GUARD: dock tiles reserve their full hover envelope before the
+    // icon lifts. Do not scale the delegate itself: GridLayout would retain
+    // the old bounds and clip or overlap adjacent accessible hit targets.
+    implicitWidth: dockMode ? resolvedDockTileSize
+                            : (vertical ? 32 : Math.max(84, Math.min(168, rowLayout.implicitWidth + 12)))
+    implicitHeight: dockMode ? resolvedDockTileSize : 28
 
     // AGENT-GUARD: the controller re-checks capability, generation, and
     // pending fences on every call; this enabled binding is presentation
@@ -55,6 +63,15 @@ T.ToolButton {
         ? qsTr("Operation pending for this window")
         : qsTr("Press to activate. Press the Menu key for window actions.")
 
+    T.ToolTip {
+        id: dockTooltip
+        objectName: "taskListEntryTooltip"
+        visible: button.dockMode && button.hovered
+        text: button.entry.accessibleName
+        delay: Tokens.motion.short
+        popupType: T.Popup.Window
+    }
+
     // Right-click opens the same context actions the Menu key exposes.
     MouseArea {
         anchors.fill: parent
@@ -62,65 +79,112 @@ T.ToolButton {
         onClicked: contextMenu.popup()
     }
 
-    contentItem: RowLayout {
-        id: rowLayout
-        spacing: Tokens.space["2"]
+    contentItem: Item {
+        RowLayout {
+            id: rowLayout
+            anchors.fill: parent
+            visible: !button.dockMode
+            spacing: Tokens.space["2"]
+
+            ShellIcons.Icon {
+                objectName: "taskListEntryIcon"
+                name: String(button.entry.iconName ?? "")
+                size: 18
+                color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                symbolic: false
+                fallbackText: button.entry.applicationName
+                Accessible.ignored: true
+            }
+
+            Text {
+                id: titleText
+                objectName: "taskListEntryTitle"
+                Layout.fillWidth: true
+                visible: !button.vertical
+                text: button.entry.title.length > 0
+                      ? button.entry.title : button.entry.applicationName
+                color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                elide: Text.ElideRight
+                font.family: Tokens.type.fontFamily
+                font.pointSize: Tokens.type.caption
+                Accessible.ignored: true
+            }
+
+            // Demand-attention truth is text, never color-only.
+            Text {
+                objectName: "taskListEntryUrgentBadge"
+                visible: button.entry.urgent
+                text: "!"
+                color: Tokens.status.warning.foreground
+                font.family: Tokens.type.fontFamily
+                font.pointSize: Tokens.type.caption
+                font.bold: true
+                Accessible.ignored: true
+            }
+
+            Text {
+                objectName: "taskListEntryCountBadge"
+                visible: !button.vertical && button.entry.kind === "container"
+                text: visible ? qsTr("×%1").arg(button.entry.windowCount) : ""
+                color: Tokens.fg.muted
+                font.family: Tokens.type.fontFamily
+                font.pointSize: Tokens.type.caption
+                Accessible.ignored: true
+            }
+        }
 
         ShellIcons.Icon {
-            objectName: "taskListEntryIcon"
+            id: dockIcon
+            objectName: "taskListDockEntryIcon"
+            visible: button.dockMode
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
             name: String(button.entry.iconName ?? "")
-            size: 18
+            size: 40
             color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
             symbolic: false
             fallbackText: button.entry.applicationName
+            scale: button.hovered && !button.reducedMotion ? 1.08 : 1.0
+            transformOrigin: Item.Center
+            property real hoverLift: button.hovered && !button.reducedMotion ? -3 : 0
+            transform: Translate { y: dockIcon.hoverLift }
             Accessible.ignored: true
+
+            // QST reduces the published durations when accessibility reduced
+            // motion is enabled; this presentation owns no separate setting.
+            Behavior on hoverLift {
+                NumberAnimation { duration: Tokens.motion.short }
+            }
+            Behavior on scale {
+                NumberAnimation { duration: Tokens.motion.short }
+            }
         }
 
-        Text {
-            id: titleText
-            objectName: "taskListEntryTitle"
-            Layout.fillWidth: true
-            visible: !button.vertical
-            text: button.entry.title.length > 0
-                  ? button.entry.title : button.entry.applicationName
-            color: button.enabled ? Tokens.fg.default : Tokens.fg.disabled
-            elide: Text.ElideRight
-            font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.caption
-            Accessible.ignored: true
-        }
-
-        // Demand-attention truth is text, never color-only.
-        Text {
-            objectName: "taskListEntryUrgentBadge"
-            visible: button.entry.urgent
-            text: "!"
-            color: Tokens.status.warning.foreground
-            font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.caption
-            font.bold: true
-            Accessible.ignored: true
-        }
-
-        Text {
-            objectName: "taskListEntryCountBadge"
-            visible: !button.vertical && button.entry.kind === "container"
-            text: visible ? qsTr("×%1").arg(button.entry.windowCount) : ""
-            color: Tokens.fg.muted
-            font.family: Tokens.type.fontFamily
-            font.pointSize: Tokens.type.caption
+        // Every dock item represents an existing task row, never a synthetic
+        // pin. A dot therefore reports current running-task truth only.
+        Rectangle {
+            objectName: "taskListRunningIndicator"
+            visible: button.dockMode
+            width: 4
+            height: 4
+            radius: width / 2
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Tokens.space["1"]
+            color: button.entry.active ? Tokens.fg.default : Tokens.fg.muted
             Accessible.ignored: true
         }
     }
 
     background: Rectangle {
-        radius: Tokens.radius.m
+        radius: button.dockMode ? Tokens.radius.l : Tokens.radius.m
         color: button.down ? Tokens.state.pressed
              : button.hovered ? Tokens.state.hover
              : button.entry.active ? Tokens.bg.raised
              : "transparent"
         border.color: Tokens.outline.divider
-        border.width: Tokens.space["1"] / 2
+        border.width: button.dockMode && !button.down && !button.hovered && !button.entry.active
+                      ? 0 : Tokens.space["1"] / 2
         opacity: button.entry.minimized ? 0.7 : 1.0
 
         C.FocusRing {
@@ -135,6 +199,7 @@ T.ToolButton {
     T.Menu {
         id: contextMenu
         objectName: "taskListContextMenu"
+        popupType: T.Popup.Window
 
         T.MenuItem {
             objectName: "taskListContextActivate"
