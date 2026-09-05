@@ -11,12 +11,17 @@ Item {
 
     required property var access
     property bool vertical: false
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
+    property bool dockHasLauncherGroup: false
     readonly property int summaryIconExtent:
-        Math.max(0, Math.min(20, height - Tokens.space["2"]))
+        Math.max(0, Math.min(root.dockMode ? 40 : 20,
+                             height - Tokens.space["2"]))
 
     objectName: "launcherApplet"
-    implicitWidth: 64
-    implicitHeight: 28
+    implicitWidth: dockMode ? dockTileSize : 64
+    implicitHeight: dockMode ? dockTileSize : 28
     enabled: access !== null
 
     ShellIcons.Icon {

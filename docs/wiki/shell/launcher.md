@@ -218,7 +218,10 @@ content. The panel requests `start-here-kde` with symbolic-class fallback and
 uses the typed icon placeholder when neither asset resolves. “Applications”
 remains the button's accessible name and the popup heading, but is never
 painted into the panel. The compact summary is 32 by 28 logical pixels in both
-orientations.
+orientations. When the resolved applet requests the centered dock presentation,
+the same accessible summary becomes a 60 by 60 logical-pixel tile with a
+40-pixel symbolic icon; its browser popup and keyboard behavior remain
+unchanged.
 
 The manifest (`data/applets/launcher.json`) requests `applications.launch`;
 the grant gates activation in the controller, and the entry point
