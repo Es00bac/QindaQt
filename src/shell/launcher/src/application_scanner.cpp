@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "application_scanner.h"
 
+#include <QLoggingCategory>
+
 #include "qindaqt/shell_launcher/launcher_bounds.h"
 
 #include <QDir>
@@ -13,6 +15,9 @@
 #include <sys/stat.h>
 
 namespace QindaQt::Shell::Launcher {
+
+Q_LOGGING_CATEGORY(launcherScanLog, "qindaqt.launcher.scan", QtWarningMsg)
+
 namespace {
 
 using QindaQt::ShellLauncher::Bounds::maxDiagnostics;
@@ -319,6 +324,12 @@ void ApplicationScanner::rebuild()
   m_pendingDocuments = nullptr;
 
   m_catalog = ApplicationCatalog::build(documents);
+  // Per-file details are diagnostic data, not a global user-facing failure.
+  // Log once per scan when explicitly requested, never on every QML read.
+  for (const auto &diagnostic : std::as_const(m_scanDiagnostics))
+    qCDebug(launcherScanLog) << diagnostic.sourceId << diagnostic.message;
+  for (const auto &diagnostic : m_catalog->diagnostics())
+    qCDebug(launcherScanLog) << diagnostic.sourceId << diagnostic.message;
   // AGENT-GUARD: The generation increments on every completed rebuild, even
   // when the resulting catalog compares equal; consumers fence on it, so a
   // rebuild must never silently reuse a retired generation.

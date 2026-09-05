@@ -81,6 +81,12 @@ void LauncherPersistenceController::handleSnapshot()
   if (writeInFlight())
     return;
 
+  // A startup/owner-loss notice describes temporary connectivity, not a
+  // failed save. Retire it on confirmed recovery before validating the lists;
+  // malformed-list and operation errors retain their own useful explanation.
+  if (m_availabilityNotice && m_client.state() == ClientState::Ready)
+    setStatusText({});
+
   QStringList pinned;
   if (!normalizeStoredIdList(snapshot->values.value(pinnedKey()),
                              maxPinnedEntries, &pinned)) {
@@ -162,8 +168,9 @@ void LauncherPersistenceController::handleClientState()
     // replacement, or malformed resync preserve stale presentation state.
     clearAuthoritativeTruth();
   }
-  if (m_client.state() == ClientState::Unavailable && !writeInFlight()) {
-    setStatusText(QStringLiteral("Settings persistence is unavailable"));
+  if (m_client.state() == ClientState::Unavailable && !writeInFlight()
+      && (m_statusText.isEmpty() || m_availabilityNotice)) {
+    setStatusText(QStringLiteral("Settings persistence is unavailable"), true);
   }
   Q_EMIT stateChanged();
 }
@@ -200,11 +207,12 @@ void LauncherPersistenceController::revertToConfirmed(const QString &key)
   }
 }
 
-void LauncherPersistenceController::setStatusText(const QString &text)
+void LauncherPersistenceController::setStatusText(const QString &text, bool availabilityNotice)
 {
-  if (m_statusText == text)
+  if (m_statusText == text && m_availabilityNotice == availabilityNotice)
     return;
   m_statusText = text;
+  m_availabilityNotice = availabilityNotice;
   Q_EMIT stateChanged();
 }
 
@@ -220,7 +228,7 @@ PersistenceMutation LauncherPersistenceController::commitList(const QString &key
     revertToConfirmed(key);
     setStatusText(error.isEmpty()
                       ? QStringLiteral("Settings persistence is unavailable")
-                      : error);
+                      : error, error.isEmpty());
     Q_EMIT stateChanged();
     return PersistenceMutation::Unavailable;
   }

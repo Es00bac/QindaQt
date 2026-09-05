@@ -71,7 +71,8 @@ private Q_SLOTS:
     void queryCollapsesToSearchResults();
     void activationRequiresTheGrant();
     void activationLaunchesAndRecordsRecent();
-    void degradedTruthReachesTheProjection();
+    void individualEntryFailuresDoNotBlockUsableCatalog();
+    void whollyInvalidCatalogHasActionableMessage();
     void rootAccessFailuresReachTheProjection();
     void inaccessibleAncestorReachesTheProjection();
     void nullCollaboratorsFailClosed();
@@ -187,7 +188,7 @@ void LauncherControllerTests::activationLaunchesAndRecordsRecent()
              LauncherPersistenceController::recentKey());
 }
 
-void LauncherControllerTests::degradedTruthReachesTheProjection()
+void LauncherControllerTests::individualEntryFailuresDoNotBlockUsableCatalog()
 {
     Stack stack;
     QVERIFY(stack.root.isValid());
@@ -200,9 +201,29 @@ void LauncherControllerTests::degradedTruthReachesTheProjection()
     LauncherAppletController controller(&stack.scanner, &stack.persistence,
                                         &stack.executor, true);
     QCOMPARE(controller.phase(), QStringLiteral("degraded"));
-    QVERIFY(!controller.diagnostic().isEmpty());
+    QVERIFY(controller.diagnostic().isEmpty());
+    QVERIFY(!stack.scanner.catalog()->diagnostics().isEmpty());
+    QCOMPARE(stack.scanner.catalog()->diagnostics().constFirst().sourceId,
+             QStringLiteral("broken"));
     // The remaining valid entries still project.
     QCOMPARE(allItems(controller.sections()).size(), 1);
+}
+
+void LauncherControllerTests::whollyInvalidCatalogHasActionableMessage()
+{
+    Stack stack;
+    QVERIFY(stack.root.isValid());
+    QVERIFY(writeDesktopFile(stack.root.path(), QStringLiteral("broken.desktop"),
+                             QStringLiteral("[Desktop Entry]\nType=Application\nExec=broken\n")));
+    QVERIFY(stack.scanner.start());
+    LauncherAppletController controller(&stack.scanner, &stack.persistence,
+                                        &stack.executor, true);
+    QCOMPARE(controller.phase(), QStringLiteral("degraded"));
+    QVERIFY(controller.sections().isEmpty());
+    QVERIFY(controller.diagnostic().contains(QStringLiteral("No usable applications")));
+    QVERIFY(controller.diagnostic().contains(QStringLiteral("Check")));
+    QVERIFY(stack.scanner.catalog()->diagnostics().constFirst().message.contains(
+        QStringLiteral("Name")));
 }
 
 void LauncherControllerTests::rootAccessFailuresReachTheProjection()

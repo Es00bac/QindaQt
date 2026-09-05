@@ -154,10 +154,16 @@ QString LauncherAppletController::diagnostic() const
   const auto &catalog = m_scanner->catalog();
   if (!catalog)
     return {};
+  // One skipped desktop file must not read as a broken launcher when other
+  // applications are usable. Detailed per-source diagnostics remain in the
+  // scanner/catalog and the qindaqt.launcher.scan debug category.
+  if (!catalog->entries().isEmpty())
+    return {};
   if (!m_scanner->scanDiagnostics().isEmpty())
-    return m_scanner->scanDiagnostics().constFirst().message;
+    return QStringLiteral("Applications could not be loaded: %1")
+        .arg(m_scanner->scanDiagnostics().constFirst().message);
   if (!catalog->diagnostics().isEmpty())
-    return catalog->diagnostics().constFirst().message;
+    return QStringLiteral("No usable applications were found. Check the installed application shortcuts.");
   return {};
 }
 

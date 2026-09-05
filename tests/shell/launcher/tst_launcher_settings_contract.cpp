@@ -66,6 +66,7 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
     LauncherPersistenceController persistence(client);
     QVERIFY2(client.start(&error), qPrintable(error));
     QTRY_VERIFY2_WITH_TIMEOUT(persistence.persistenceReady(), qPrintable(client.lastError() + QStringLiteral(" / ") + persistence.statusText()), 3000);
+    QVERIFY2(persistence.statusText().isEmpty(), qPrintable(persistence.statusText()));
     QVERIFY(persistence.pinned().ids().isEmpty());
     const QString application = QStringLiteral("org.qindaqt.TextEditor.desktop");
     QCOMPARE(persistence.pin(application), PersistenceMutation::Applied);
@@ -94,6 +95,7 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
     QVERIFY2(restarted.ok(), qPrintable(restarted.message));
     QVERIFY(replacement.epoch() != originalEpoch);
     QTRY_VERIFY2_WITH_TIMEOUT(persistence.persistenceReady(), qPrintable(client.lastError() + QStringLiteral(" / ") + persistence.statusText()), 3000);
+    QVERIFY2(persistence.statusText().isEmpty(), qPrintable(persistence.statusText()));
     QCOMPARE(persistence.pinned().ids(), QStringList{application});
     QCOMPARE(persistence.recent().ids(), QStringList{application});
 
@@ -110,6 +112,7 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
     QVERIFY2(freshClient.start(&error), qPrintable(error));
     QTRY_VERIFY2_WITH_TIMEOUT(freshPersistence.persistenceReady(),
                              qPrintable(freshClient.lastError()), 3000);
+    QVERIFY2(freshPersistence.statusText().isEmpty(), qPrintable(freshPersistence.statusText()));
     QCOMPARE(freshPersistence.pinned().ids(), QStringList{application});
     QCOMPARE(freshPersistence.recent().ids(), QStringList{application});
 }
