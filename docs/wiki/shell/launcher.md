@@ -300,3 +300,9 @@ checks that content belongs to a separate window and drives keyboard input
 through that focused window. Configuration homes and authentication paths are
 preserved exactly; loader injection and QindaQt development overrides remain
 excluded from launched children.
+
+Launcher result rows use Qt Quick Templates with token-owned backgrounds,
+state overlays, focus rings and labels. Native application styles cannot
+combine a light result background with dark-theme foreground tokens. The
+compiled gate republishes dark, light and high-contrast themes on existing
+rows and verifies their text contrast and rendered background pixels.

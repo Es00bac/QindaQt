@@ -2,7 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
+import QtQuick.Templates as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -84,6 +84,12 @@ ColumnLayout {
             text: modelData.displayText
             enabled: root.controller !== null && root.controller.launchGranted
             focusPolicy: Qt.StrongFocus
+            hoverEnabled: true
+            leftPadding: Tokens.space["3"]
+            rightPadding: Tokens.space["3"]
+            topPadding: Tokens.space["2"]
+            bottomPadding: Tokens.space["2"]
+            implicitHeight: Math.max(32, implicitContentHeight + topPadding + bottomPadding)
             Accessible.role: Accessible.ListItem
             Accessible.name: modelData.displayText
             Accessible.description: modelData.accessibleDescription
@@ -101,10 +107,30 @@ ColumnLayout {
             Keys.onDownPressed: root.flatFocusRequested(flatIndex + 1)
             Accessible.onPressAction: launch()
 
+            // AGENT-GUARD: native delegate styles can paint a light surface
+            // behind token-colored text. Own both sides of the contrast pair.
+            background: Rectangle {
+                objectName: "launcherResultBackground"
+                color: Tokens.bg.raised
+                radius: Tokens.radius.m
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: row.down ? Tokens.state.pressed
+                         : row.hovered ? Tokens.state.hover : "transparent"
+                    Accessible.ignored: true
+                }
+                FocusRing {
+                    anchors.fill: parent
+                    control: row
+                }
+            }
+
             contentItem: RowLayout {
                 spacing: Tokens.space["2"]
 
                 Label {
+                    objectName: "launcherResultText"
                     Layout.fillWidth: true
                     text: row.modelData.displayText
                     elide: Text.ElideRight

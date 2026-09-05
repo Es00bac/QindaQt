@@ -8,6 +8,7 @@
 #include "../icon_resolution_test_fixture.h"
 
 #include <qindaqt/design_tokens/token_facade.h>
+#include <qindaqt/design_tokens/token_deriver.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/themes/theme_loader.h>
 
@@ -260,6 +261,35 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(!enabledInterface->text(QAccessible::Name).isEmpty());
     QVERIFY(!enabledInterface->text(QAccessible::Description).isEmpty());
     QVERIFY(!enabledInterface->state().disabled);
+
+    // Native palettes must not override either side of the launch-row contrast
+    // pair. Republish themes without recreating delegates to catch stale colors.
+    auto *background = enabledRow->property("background").value<QQuickItem *>();
+    auto *label = enabledRow->findChild<QQuickItem *>(QStringLiteral("launcherResultText"));
+    QVERIFY(background != nullptr);
+    QVERIFY(label != nullptr);
+    auto *tokens = engine.singletonInstance<QindaQt::DesignTokens::TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    for (const QString &themeId : {QStringLiteral("qinda-dark"),
+                                   QStringLiteral("qinda-light"),
+                                   QStringLiteral("qinda-high-contrast")}) {
+        const auto loaded = QindaQt::Themes::ThemeLoader::fromFile(
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + themeId + ".json");
+        QVERIFY(loaded.ok);
+        QVERIFY(tokens->publish(loaded.theme, {}));
+        const QColor surface = tokens->bg().value("raised").value<QColor>();
+        QTRY_COMPARE(background->property("color").value<QColor>(), surface);
+        const QColor foreground = label->property("color").value<QColor>();
+        QVERIFY(QindaQt::DesignTokens::DesignTokenDeriver::contrastRatio(
+                    foreground, surface) >= 4.5);
+        QQuickWindow *surfaceWindow = popupContent(root)->window();
+        const QPointF sample = enabledRow->mapToScene(
+            QPointF(enabledRow->width() / 2, enabledRow->height() - 2));
+        const QImage frame = surfaceWindow->grabWindow();
+        QVERIFY(!frame.isNull());
+        QCOMPARE(frame.pixelColor((sample * frame.devicePixelRatio()).toPoint()), surface);
+    }
+
 
     // A malformed authoritative value produces bounded, alert-role persistence
     // truth in the applet instead of disappearing inside the controller.
