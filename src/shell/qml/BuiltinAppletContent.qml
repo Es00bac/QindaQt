@@ -175,6 +175,10 @@ Item {
             visible: root.launcherReady
             access: root.launcherAppletAccess
             vertical: root.vertical
+            dockMode: root.dockMode
+            dockTileSize: root.dockTileSize
+            reducedMotion: root.reducedMotion
+            dockHasLauncherGroup: root.dockHasLauncherGroup
         }
     }
 
