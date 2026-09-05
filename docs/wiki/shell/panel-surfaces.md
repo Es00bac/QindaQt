@@ -109,13 +109,21 @@ Global menu keeps its provider-owned menu labels, clock remains textual, and
 notification center retains its existing compact glyph. Missing icon assets
 render typed placeholders without changing the applet's accessible identity.
 
-Panel rows are the sole surface-extent clip authority; live `AppletChip`
-content is not clipped a second time, including the 18-pixel content row of the
-stock 26-pixel minimal panel. Audio and clipboard details and status-notifier
+Each panel creates three disjoint zone viewports, with one configured applet
+instance in its selected zone and one lazily constructed implementation.
+Unselected orientations, zones, and built-in implementations are not instantiated.
+Zone budgets satisfy small natural demands first and share the remaining
+extent equally among overflowing zones. Long task strips cannot reduce small
+neighboring controls to unusable slivers. Overflow remains reachable by scrolling the zone;
+it cannot paint over neighboring controls. `rows` distributes consecutive
+applets across actual horizontal rows (vertical columns on side panels),
+sharing the panel cross-axis extent rather than stretching one row.
+Zone viewports are the content clip authority; live `AppletChip` content is
+not clipped a second time, including the 18-pixel content row of the stock
+26-pixel minimal panel. Launcher, Bluetooth, power, audio and clipboard details and status-notifier
 operational notices live in focusable `Popup.Window` surfaces, so their text
 cannot inflate the panel and their controls remain reachable from a
-non-focusable layer-shell panel. Other applet detail popups retain their
-existing item-popup behavior and make no layer-shell keyboard claim.
+non-focusable layer-shell panel. Escape closes these detail surfaces through the focused popup window.
 Edge reveal/hold producers, hide animation, applet process hosting, and
 settings preview subscription remain later acceptance work.
 
@@ -162,3 +170,9 @@ reduction and restoration are observed separately; screenshots alone are not
 evidence for protocol state. The existing matrix proves initial publication,
 not live automatic-hide transitions. Those transitions, partial panels, and
 heterogeneous multi-output publication remain later matrix rows.
+
+The `qindaqt.panel-geometry-offscreen` regression gate uses production panel
+QML with purpose-specific applet doubles. It proves per-instance construction,
+disjoint overflowing zones and two-row/two-column placement independently of
+compositor mapping. The nested resolution matrix remains the separate surface
+and visual qualification boundary.

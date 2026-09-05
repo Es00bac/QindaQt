@@ -17,15 +17,13 @@
       "id": "taskbar", "edge": "bottom", "layer": "above", "hideMode": "never",
       "alignment": "fill", "rows": 1, "thickness": 36, "length": 1.0,
       "applets": [
-        {"id": "start", "plugin": "start-menu"},
+        {"id": "start", "plugin": "launcher"},
         {"id": "quick-launch", "plugin": "quick-launch"},
         {"id": "tasks", "plugin": "task-list"},
-        {"id": "tray", "plugin": "system-tray"},
+        {"id": "tray", "plugin": "status-notifier"},
         {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"},
-        {"id": "applications", "plugin": "launcher"}
+        {"id": "clock", "plugin": "clock"}
       ]
     }
   ]

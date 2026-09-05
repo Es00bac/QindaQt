@@ -29,13 +29,35 @@ Item {
         border.width: 1
     }
 
+    // AGENT-GUARD: zones receive disjoint viewport budgets. Natural content
+    // may scroll within its zone, but cannot obscure another zone's controls.
+    readonly property real extent: Math.max(0, (horizontal ? width : height) - 8)
+    function zoneExtent(zone) {
+        const zones = [startZone, centerZone, endZone]
+            .filter(item => item.desiredExtent > 0)
+            .sort((a, b) => a.desiredExtent - b.desiredExtent)
+        let remaining = extent
+        for (let i = 0; i < zones.length; ++i) {
+            const budget = Math.min(zones[i].desiredExtent,
+                                    remaining / (zones.length - i))
+            if (zones[i] === zone)
+                return budget
+            remaining -= budget
+        }
+        return 0
+    }
+    readonly property real centerOffset: Math.max(4 + zoneExtent(startZone),
+        Math.min(4 + extent - zoneExtent(endZone) - zoneExtent(centerZone),
+                 (extent - zoneExtent(centerZone)) / 2 + 4))
+
     PanelAppletRow {
-        anchors.left: parent.left
-        anchors.leftMargin: 4
-        anchors.top: parent.top
-        anchors.topMargin: 4
-        height: parent.height - 8
-        visible: root.horizontal
+        id: startZone
+        objectName: "panelZoneStart"
+        vertical: !root.horizontal
+        x: root.horizontal ? 4 : 4
+        y: root.horizontal ? 4 : 4
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - 8)
+        height: root.horizontal ? Math.max(0, parent.height - 8) : root.zoneExtent(this)
         zone: "start"
         panel: root.panel
         theme: root.theme
@@ -50,13 +72,14 @@ Item {
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
-
     PanelAppletRow {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: 4
-        height: parent.height - 8
-        visible: root.horizontal
+        id: centerZone
+        objectName: "panelZoneCenter"
+        vertical: !root.horizontal
+        x: root.horizontal ? root.centerOffset : 4
+        y: root.horizontal ? 4 : root.centerOffset
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - 8)
+        height: root.horizontal ? Math.max(0, parent.height - 8) : root.zoneExtent(this)
         zone: "center"
         panel: root.panel
         theme: root.theme
@@ -71,77 +94,14 @@ Item {
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
     }
-
     PanelAppletRow {
-        anchors.right: parent.right
-        anchors.rightMargin: 4
-        anchors.top: parent.top
-        anchors.topMargin: 4
-        height: parent.height - 8
-        visible: root.horizontal
-        zone: "end"
-        panel: root.panel
-        theme: root.theme
-        liveApplets: root.liveApplets
-        notificationCenterAppletAccess: root.notificationCenterAppletAccess
-        audioAppletAccess: root.audioAppletAccess
-        bluetoothAppletAccess: root.bluetoothAppletAccess
-        clipboardAppletAccess: root.clipboardAppletAccess
-        powerAppletAccess: root.powerAppletAccess
-        launcherAppletAccess: root.launcherAppletAccess
-        globalMenuAppletAccess: root.globalMenuAppletAccess
-        taskListAppletAccess: root.taskListAppletAccess
-        statusNotifierAppletAccess: root.statusNotifierAppletAccess
-    }
-
-    PanelAppletColumn {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: 4
-        visible: !root.horizontal
-        zone: "start"
-        panel: root.panel
-        theme: root.theme
-        liveApplets: root.liveApplets
-        notificationCenterAppletAccess: root.notificationCenterAppletAccess
-        audioAppletAccess: root.audioAppletAccess
-        bluetoothAppletAccess: root.bluetoothAppletAccess
-        clipboardAppletAccess: root.clipboardAppletAccess
-        powerAppletAccess: root.powerAppletAccess
-        launcherAppletAccess: root.launcherAppletAccess
-        globalMenuAppletAccess: root.globalMenuAppletAccess
-        taskListAppletAccess: root.taskListAppletAccess
-        statusNotifierAppletAccess: root.statusNotifierAppletAccess
-    }
-
-    PanelAppletColumn {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.margins: 4
-        visible: !root.horizontal
-        zone: "center"
-        panel: root.panel
-        theme: root.theme
-        liveApplets: root.liveApplets
-        notificationCenterAppletAccess: root.notificationCenterAppletAccess
-        audioAppletAccess: root.audioAppletAccess
-        bluetoothAppletAccess: root.bluetoothAppletAccess
-        clipboardAppletAccess: root.clipboardAppletAccess
-        powerAppletAccess: root.powerAppletAccess
-        launcherAppletAccess: root.launcherAppletAccess
-        globalMenuAppletAccess: root.globalMenuAppletAccess
-        taskListAppletAccess: root.taskListAppletAccess
-        statusNotifierAppletAccess: root.statusNotifierAppletAccess
-    }
-
-    PanelAppletColumn {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 4
-        visible: !root.horizontal
+        id: endZone
+        objectName: "panelZoneEnd"
+        vertical: !root.horizontal
+        x: root.horizontal ? 4 + root.extent - root.zoneExtent(endZone) : 4
+        y: root.horizontal ? 4 : 4 + root.extent - root.zoneExtent(endZone)
+        width: root.horizontal ? root.zoneExtent(this) : Math.max(0, parent.width - 8)
+        height: root.horizontal ? Math.max(0, parent.height - 8) : root.zoneExtent(this)
         zone: "end"
         panel: root.panel
         theme: root.theme

@@ -199,7 +199,7 @@ evidence; it rejects a missing linked library and a missing imported-module
 Task-list and the older `system-tray` (status-tray.json) manifests remain
 accepted contracts. Task List and the newer `status-notifier` manifest resolve
 `ready` and are rendered by the production panel dispatcher; the older
-`system-tray` resolves as `implementation-unavailable`. Launcher, Global Menu,
+`system-tray` manifest now selects the same compiled status-notifier implementation. Launcher, Global Menu,
 and Clipboard also resolve `ready` and are rendered by the production panel
 dispatcher. Profile plug-in IDs with
 no catalog manifest resolve as `missing-manifest`. They may remain visible for

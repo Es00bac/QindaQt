@@ -40,9 +40,10 @@ controller (visibly disconnected). Context menus open as keyboard-capable
 itself rejects keyboard focus; item delegates keep Tab/Backtab traversal,
 Space/Return activation, Shift+F10/Menu context opening, and full accessible
 names/roles/states. Every stock profile family places exactly one
-`status-notifier` entry beside its notification-center utility slot; the older
-`system-tray` manifest remains an accepted catalog contract resolving
-`implementation-unavailable` in place.
+`status-notifier` entry. Classic presets retain their original tray position
+(including the MATE bottom task panel) rather than adding a second tray beside
+notifications. The older `system-tray` manifest selects the same compiled
+implementation for compatibility.
 
 ## Tray applet (`src/shell/status_notifier/applet`)
 

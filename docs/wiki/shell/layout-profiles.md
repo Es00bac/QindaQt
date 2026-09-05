@@ -202,3 +202,13 @@ Profile components communicate through the public boundaries in
 [Module boundaries](../architecture/module-boundaries.md). Each built-in profile
 is exercised by the resolution matrix in the
 [testing harness](../development/testing-harness.md).
+
+## Audited preset equivalences
+
+The MATE, XFCE and classic Windows presets use the compiled application launcher
+at their original menu positions and the compiled status notifier at their tray
+positions. Redundant supplemental launcher/tray entries are removed. The
+workspace-dock clock uses the compiled clock implementation. These substitutions
+provide the shared supported behavior; they do not claim separate classic-menu
+renderers or a tile-specific clock. Other unresolved semantic controls remain
+explicit capability gaps until their real implementations are integrated.

@@ -17,16 +17,14 @@
       "id": "main-panel", "edge": "top", "layer": "above", "hideMode": "never",
       "alignment": "fill", "rows": 1, "thickness": 28, "length": 1.0,
       "applets": [
-        {"id": "menu", "plugin": "application-menu"},
+        {"id": "menu", "plugin": "launcher"},
         {"id": "launchers", "plugin": "quick-launch"},
         {"id": "tasks", "plugin": "task-list"},
         {"id": "workspaces", "plugin": "workspace-switcher"},
-        {"id": "tray", "plugin": "system-tray"},
+        {"id": "tray", "plugin": "status-notifier"},
         {"id": "clipboard", "plugin": "clipboard"},
-        {"id": "status-notifier", "plugin": "status-notifier"},
         {"id": "notifications", "plugin": "notification-center"},
-        {"id": "clock", "plugin": "clock"},
-        {"id": "applications", "plugin": "launcher"}
+        {"id": "clock", "plugin": "clock"}
       ]
     },
     {

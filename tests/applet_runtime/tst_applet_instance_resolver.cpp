@@ -49,6 +49,7 @@ class AppletInstanceResolverTests final : public QObject {
 private slots:
     void resolvesAuditedBuiltinsAndCapabilities();
     void resolvesNotificationCenterForEveryPanelPlacement();
+    void resolvesLegacySystemTrayThroughCompiledRenderer();
     void rejectsMissingManifestsAndUnsupportedPlacements();
     void requiresTheCompiledImplementationRegistry();
     void exposesCapabilitiesOnlyForRegisteredImplementations();
@@ -56,7 +57,7 @@ private slots:
     void stockProfilesPlaceOneResolvedLauncher();
     void stockProfilesPlaceOneResolvedClipboardInUtilitySlot();
     void stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks();
-    void stockProfilesPlaceOneResolvedStatusNotifierInUtilitySlot();
+    void stockProfilesPlaceOneResolvedStatusNotifier();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
 };
 
@@ -142,6 +143,23 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
     QCOMPARE(statusNotifier.grantedCapabilities,
              QStringList({QStringLiteral("status-items.activate"),
                           QStringLiteral("status-items.read")}));
+}
+
+void AppletInstanceResolverTests::resolvesLegacySystemTrayThroughCompiledRenderer()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    const auto legacy = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("system-tray")), Profiles::Edge::Bottom,
+        fixture.catalog, fixture.policy, fixture.registry);
+    const auto current = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("status-notifier")), Profiles::Edge::Bottom,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(legacy.ready(), qPrintable(legacy.diagnostic));
+    QVERIFY(current.ready());
+    QCOMPARE(legacy.entryPoint, current.entryPoint);
+    QCOMPARE(legacy.grantedCapabilities, current.grantedCapabilities);
 }
 
 void AppletInstanceResolverTests::resolvesNotificationCenterForEveryPanelPlacement()
@@ -391,7 +409,7 @@ void AppletInstanceResolverTests::stockProfilesPlaceHostedTaskListWhereWorkflowE
     }
 }
 
-void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedStatusNotifierInUtilitySlot()
+void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedStatusNotifier()
 {
     Fixture fixture;
     QString error;
@@ -404,20 +422,11 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedStatusNotifierInU
     for (const auto &profile : profiles.profiles()) {
         int statusNotifierCount = 0;
         for (const auto &panel : profile.panels) {
-            QString notificationZone;
-            QString statusNotifierZone;
             for (const auto &applet : panel.applets) {
-                const QString zone = applet.settings
-                    .value(QStringLiteral("zone"), QStringLiteral("start"))
-                    .toString();
-                if (applet.plugin == QLatin1String("notification-center")) {
-                    notificationZone = zone;
-                }
                 if (applet.plugin != QLatin1String("status-notifier")) {
                     continue;
                 }
                 ++statusNotifierCount;
-                statusNotifierZone = zone;
                 const auto resolved =
                     AppletRuntime::AppletInstanceResolver::resolveBuiltin(
                         applet, panel.edge, fixture.catalog, fixture.policy,
@@ -429,10 +438,6 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedStatusNotifierInU
                 QCOMPARE(resolved.grantedCapabilities,
                          QStringList({QStringLiteral("status-items.activate"),
                                       QStringLiteral("status-items.read")}));
-            }
-            if (!statusNotifierZone.isEmpty()) {
-                QVERIFY2(!notificationZone.isEmpty(), qPrintable(profile.id));
-                QCOMPARE(statusNotifierZone, notificationZone);
             }
         }
         QCOMPARE(statusNotifierCount, 1);
