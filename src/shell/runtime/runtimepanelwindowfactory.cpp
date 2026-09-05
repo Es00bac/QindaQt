@@ -120,6 +120,11 @@ void RuntimePanelWindowFactory::setTheme(const QVariantMap &theme)
     propagateThemeMapToWindows(m_theme, m_liveWindows);
 }
 
+void RuntimePanelWindowFactory::setDesktopControlsAccess(QObject *access) noexcept
+{
+    m_desktopControlsAccess = access;
+}
+
 bool RuntimePanelWindowFactory::ensureComponent(QString *error)
 {
     if (m_component && m_component->isReady()) {
@@ -199,6 +204,12 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
     // showing it here can permanently turn it into an ordinary toplevel.
     if (window->isVisible()) {
         window->hide();
+    }
+    if (m_desktopControlsAccess != nullptr) {
+        // Not an initial property on purpose: RuntimePanel.qml may not declare
+        // it yet, and createWithInitialProperties fails hard on unknown names.
+        window->setProperty("desktopControlsAccess",
+                            QVariant::fromValue(m_desktopControlsAccess));
     }
     window->setObjectName(QStringLiteral("qindaqt-panel-%1").arg(surfaceId));
     m_liveWindows.append(QPointer<QQuickWindow>(window));

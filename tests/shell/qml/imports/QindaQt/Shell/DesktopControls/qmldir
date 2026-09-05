@@ -1,0 +1,13 @@
+module QindaQt.Shell.DesktopControls
+WorkspaceSwitcherApplet 1.0 WorkspaceSwitcherApplet.qml
+WorkspaceTilesApplet 1.0 WorkspaceTilesApplet.qml
+ShowDesktopApplet 1.0 ShowDesktopApplet.qml
+OverviewTriggerApplet 1.0 OverviewTriggerApplet.qml
+ActiveApplicationApplet 1.0 ActiveApplicationApplet.qml
+SystemMenuApplet 1.0 SystemMenuApplet.qml
+SystemStatusApplet 1.0 SystemStatusApplet.qml
+PlacesMenuApplet 1.0 PlacesMenuApplet.qml
+QuickLaunchApplet 1.0 QuickLaunchApplet.qml
+CommandPaletteApplet 1.0 CommandPaletteApplet.qml
+CommandHudApplet 1.0 CommandHudApplet.qml
+DashboardApplet 1.0 DashboardApplet.qml

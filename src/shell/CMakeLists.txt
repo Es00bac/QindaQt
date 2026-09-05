@@ -2,6 +2,7 @@
 
 include(TaskListRuntimeInstall.cmake)
 include(StatusNotifierRuntimeInstall.cmake)
+include(DesktopControlsRuntimeInstall.cmake)
 include(IconRuntimeInstall.cmake)
 include(ShellAppletRuntimeInstall.cmake)
 
@@ -36,6 +37,7 @@ qt_add_qml_module(
     QML_FILES
         qml/AppletChip.qml
         qml/BuiltinAppletContent.qml
+        qml/DesktopControlsAppletComponents.qml
         qml/ClockApplet.qml
         qml/NotificationCenterApplet.qml
         qml/ContainerTabStrip.qml
@@ -58,6 +60,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_power_applet_runtime
         TARGET qindaqt_shell_task_list_applet
         TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
+        TARGET qindaqt_shell_desktop_controls_runtime
 )
 
 target_link_libraries(
@@ -73,6 +76,7 @@ target_link_libraries(
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellTaskListApplet
         QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
+        QindaQt::ShellDesktopControlsRuntime
         QindaQt::GlobalMenuQml
         Qt6::Core
         Qt6::Gui
@@ -147,6 +151,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/bluetoothappletcomposition.h
         runtime/clipboardappletcomposition.cpp
         runtime/clipboardappletcomposition.h
+        runtime/desktopcontrolscomposition.cpp
+        runtime/desktopcontrolscomposition.h
         runtime/globalshortcutregistrar.h
         runtime/compositoroutputauthority.cpp
         runtime/compositoroutputauthority.h
@@ -205,6 +211,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         QML_FILES
             qml/AppletChip.qml
             qml/BuiltinAppletContent.qml
+            qml/DesktopControlsAppletComponents.qml
             qml/ClockApplet.qml
             qml/NotificationCenterApplet.qml
             qml/NotificationCard.qml
@@ -225,6 +232,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_task_list_applet
             TARGET qindaqt_shell_status_notifier_applet_runtime TARGET qindaqt_shell_icons
+            TARGET qindaqt_shell_desktop_controls_runtime
     )
 
     target_link_libraries(
@@ -258,6 +266,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
             QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
+            QindaQt::ShellDesktopControlsRuntime
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
@@ -336,6 +345,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt_install_task_list_applet_runtime("${shell_component}")
         qindaqt_install_status_notifier_applet_runtime("${shell_component}")
         qindaqt_install_shell_icons_runtime("${shell_component}")
+        qindaqt_install_desktop_controls_applet_runtime("${shell_component}")
     endforeach()
 endif()
 

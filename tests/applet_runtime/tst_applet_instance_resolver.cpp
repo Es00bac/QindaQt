@@ -59,6 +59,7 @@ private slots:
     void stockProfilesPlaceHostedTaskListWhereWorkflowExposesTasks();
     void stockProfilesPlaceOneResolvedStatusNotifier();
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
+    void desktopControlsResolveReadyInEveryStockPlacement();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -78,16 +79,29 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
              QStringLiteral("ready"));
 
     const QStringList expectedEntryPoints{
+        QStringLiteral("qindaqt.applets.active-application"),
+        QStringLiteral("qindaqt.applets.application-tiles"),
         QStringLiteral("qindaqt.applets.audio"),
         QStringLiteral("qindaqt.applets.bluetooth"),
         QStringLiteral("qindaqt.applets.clipboard"),
         QStringLiteral("qindaqt.applets.clock"),
+        QStringLiteral("qindaqt.applets.command-hud"),
+        QStringLiteral("qindaqt.applets.command-palette"),
+        QStringLiteral("qindaqt.applets.dashboard"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
         QStringLiteral("qindaqt.applets.notification-center"),
+        QStringLiteral("qindaqt.applets.overview-trigger"),
+        QStringLiteral("qindaqt.applets.places-menu"),
         QStringLiteral("qindaqt.applets.power"),
+        QStringLiteral("qindaqt.applets.quick-launch"),
+        QStringLiteral("qindaqt.applets.show-desktop"),
         QStringLiteral("qindaqt.applets.status-notifier"),
-        QStringLiteral("qindaqt.applets.task-list")};
+        QStringLiteral("qindaqt.applets.system-menu"),
+        QStringLiteral("qindaqt.applets.system-status"),
+        QStringLiteral("qindaqt.applets.task-list"),
+        QStringLiteral("qindaqt.applets.workspace-switcher"),
+        QStringLiteral("qindaqt.applets.workspace-tiles")};
     QCOMPARE(fixture.registry.entryPoints(), expectedEntryPoints);
 
     const auto audio = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
@@ -198,7 +212,7 @@ void AppletInstanceResolverTests::rejectsMissingManifestsAndUnsupportedPlacement
     QVERIFY2(fixture.load(&error), qPrintable(error));
 
     const auto missing = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
-        instance(QStringLiteral("workspace-switcher")), Profiles::Edge::Top,
+        instance(QStringLiteral("weather-forecast")), Profiles::Edge::Top,
         fixture.catalog, fixture.policy, fixture.registry);
     QCOMPARE(AppletRuntime::toString(missing.status),
              QStringLiteral("missing-manifest"));
@@ -482,6 +496,71 @@ void AppletInstanceResolverTests::globalMenuUsesLeastAuthorityAndStockTopPanels(
         }
     }
     QCOMPARE(enabledFamilies, 3);
+}
+
+void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlacement()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+
+    // AGENT-CONTRACT: these are the thirteen stock plugin ids the desktop
+    // controls lane owns (docs/wiki/shell/desktop-controls.md). Every stock
+    // instance of each must pass all five gates in its own panel placement.
+    const QStringList desktopControls{
+        QStringLiteral("active-application"), QStringLiteral("application-tiles"),
+        QStringLiteral("command-hud"),
+        QStringLiteral("command-palette"), QStringLiteral("dashboard"),
+        QStringLiteral("overview-trigger"), QStringLiteral("places-menu"),
+        QStringLiteral("quick-launch"), QStringLiteral("show-desktop"),
+        QStringLiteral("system-menu"), QStringLiteral("system-status"),
+        QStringLiteral("workspace-switcher"), QStringLiteral("workspace-tiles")};
+    QSet<QString> seen;
+    for (const auto &profile : profiles.profiles()) {
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (!desktopControls.contains(applet.plugin)) {
+                    continue;
+                }
+                const auto resolved = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                    applet, panel.edge, fixture.catalog, fixture.policy, fixture.registry);
+                QVERIFY2(resolved.ready(),
+                         qPrintable(QStringLiteral("%1/%2/%3: %4")
+                                        .arg(profile.id, panel.id, applet.plugin,
+                                             resolved.diagnostic)));
+                QCOMPARE(resolved.entryPoint,
+                         QStringLiteral("qindaqt.applets.") + applet.plugin);
+                seen.insert(applet.plugin);
+            }
+        }
+    }
+    for (const QString &plugin : desktopControls) {
+        QVERIFY2(seen.contains(plugin),
+                 qPrintable(QStringLiteral("no stock profile places %1").arg(plugin)));
+    }
+
+    // Least authority: the workspace controls never receive window activation
+    // and the HUD receives only menu observation.
+    const auto switcher = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("workspace-switcher")), Profiles::Edge::Left,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(switcher.ready(), qPrintable(switcher.diagnostic));
+    QCOMPARE(switcher.grantedCapabilities,
+             QStringList({QStringLiteral("windows.manage"), QStringLiteral("windows.read")}));
+    const auto hud = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("command-hud")), Profiles::Edge::Top,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(hud.ready(), qPrintable(hud.diagnostic));
+    QCOMPARE(hud.grantedCapabilities, QStringList{QStringLiteral("global-menu.read")});
+    const auto activeApplication = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("active-application")), Profiles::Edge::Left,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QCOMPARE(AppletRuntime::toString(activeApplication.status),
+             QStringLiteral("placement-rejected"));
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)

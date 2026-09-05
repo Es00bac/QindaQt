@@ -57,10 +57,10 @@ typed placeholder. Clock and provider-owned global-menu labels are the two
 intentional textual panel surfaces.
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
-power, launcher, task list, global menu, status tray, clipboard, and status
-notifier packages.
-The compiled first-party registry contains ten audited entry points. The
-production QML dispatcher renders all ten hosted entry points:
+power, launcher, task list, global menu, status tray, clipboard, status
+notifier, and the thirteen desktop-control packages. The compiled first-party
+registry contains twenty-three audited entry points. The production QML
+dispatcher renders all twenty-three hosted entry points:
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
   supports 12/24-hour overrides and optional seconds/date, and works on
@@ -142,6 +142,17 @@ production QML dispatcher renders all ten hosted entry points:
   context menus, and every stock family places one tray slot beside its
   notification-center utility slot. See
   [Status notifier tray](status-tray.md).
+- The desktop-control entries are registered built-ins with compiled
+  `QindaQt.Shell.DesktopControls` implementations: active application,
+  application tiles, command HUD, command palette, dashboard, overview,
+  Places, quick launch, show desktop, system menu, system status, workspace
+  switcher, and workspace tiles. Each presentation consumes only its borrowed
+  shell facade; application tiles activate the bounded pinned launcher
+  projection, while command-menu rows carry their rendered publication
+  generation through activation. Workspace operations re-read compositor
+  state after completion so property writes converge even when a change signal
+  is absent. See [Desktop controls](desktop-controls.md) and
+  [ADR-0075](../adr/0075-desktop-controls-and-workspaces.md).
 
 The notification-center, audio, Bluetooth, and power entries remain valid
 compiled applets when the shell starts without presentation-token

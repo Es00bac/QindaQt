@@ -27,6 +27,22 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.clipboard"),
         QStringLiteral("qindaqt.applets.task-list"),
         QStringLiteral("qindaqt.applets.status-notifier"),
+        // Desktop controls (docs/wiki/shell/desktop-controls.md): each entry
+        // is rendered by the compiled QindaQt.Shell.DesktopControls module
+        // over an existing shell facade or the authenticated workspace adapter.
+        QStringLiteral("qindaqt.applets.active-application"),
+        QStringLiteral("qindaqt.applets.application-tiles"),
+        QStringLiteral("qindaqt.applets.command-hud"),
+        QStringLiteral("qindaqt.applets.command-palette"),
+        QStringLiteral("qindaqt.applets.dashboard"),
+        QStringLiteral("qindaqt.applets.overview-trigger"),
+        QStringLiteral("qindaqt.applets.places-menu"),
+        QStringLiteral("qindaqt.applets.quick-launch"),
+        QStringLiteral("qindaqt.applets.show-desktop"),
+        QStringLiteral("qindaqt.applets.system-menu"),
+        QStringLiteral("qindaqt.applets.system-status"),
+        QStringLiteral("qindaqt.applets.workspace-switcher"),
+        QStringLiteral("qindaqt.applets.workspace-tiles"),
     });
 }
 

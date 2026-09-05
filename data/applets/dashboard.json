@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "dashboard",
+  "name": "Dashboard",
+  "description": "Opens a board with the date and time, system status lanes, workspaces, and pinned or recent applications.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.dashboard"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 28,
+      "preferred": 36,
+      "maximum": 96,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "applications.launch",
+    "windows.read",
+    "windows.manage",
+    "audio.read",
+    "bluetooth.read",
+    "power.read"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

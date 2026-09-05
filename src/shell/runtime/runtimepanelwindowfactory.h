@@ -82,6 +82,13 @@ public:
     // panel window's theme property. QML panel maps are plain (non-readonly)
     // properties precisely so this confirmed-preference update path works.
     void setTheme(const QVariantMap &theme);
+    // Desktop controls composite facade (docs/wiki/shell/desktop-controls.md).
+    // Set after construction so the existing runtime call site keeps
+    // compiling; a null value leaves panel QML untouched. The window receives
+    // it through QObject::setProperty after creation, which is a harmless
+    // no-op while RuntimePanel.qml has not yet declared the property, so the
+    // C++ and QML halves of this wiring may land in either order.
+    void setDesktopControlsAccess(QObject *access) noexcept;
 
 private:
     [[nodiscard]] bool ensureComponent(QString *error);
@@ -101,6 +108,7 @@ private:
     ShellClipboardApplet::ClipboardAppletController *m_clipboardAppletAccess = nullptr;
     ShellTaskListApplet::TaskListAppletController *m_taskListAppletAccess = nullptr;
     StatusNotifierApplet::StatusNotifierAppletController *m_statusNotifierAppletAccess = nullptr;
+    QObject *m_desktopControlsAccess = nullptr;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

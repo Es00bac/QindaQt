@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "workspace-switcher",
+  "name": "Workspace Switcher",
+  "description": "Shows the compositor's virtual desktops and switches between them through the authenticated workspace adapter.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.workspace-switcher"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 48,
+      "preferred": 120,
+      "maximum": 320,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "windows.read",
+    "windows.manage"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "showNames": {
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
+}

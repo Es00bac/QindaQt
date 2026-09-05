@@ -62,6 +62,7 @@ nav:
       - Window containers: architecture/window-containers.md
   - Shell:
       - QindaQt.Controls 1.0: shell/controls.md
+      - Desktop controls: shell/desktop-controls.md
       - Layout profiles: shell/layout-profiles.md
       - Launcher: shell/launcher.md
       - Customization editor domain: shell/customization-editor.md
@@ -188,3 +189,4 @@ nav:
       - "ADR-0073: Atomic authenticated task facts": adr/0073-publish-atomic-authenticated-task-facts.md
       - "ADR-0074: Shell preferences through Settings1": adr/0074-compose-shell-preferences-through-settings1.md
       - ADR-0076 Launcher persistence keys: adr/0076-register-launcher-persistence-in-panel-settings.md
+      - "ADR-0075: Desktop controls and workspaces": adr/0075-desktop-controls-and-workspaces.md

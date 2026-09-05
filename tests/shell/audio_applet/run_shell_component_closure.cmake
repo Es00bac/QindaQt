@@ -103,6 +103,8 @@ foreach(component IN LISTS shell_components)
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/StatusNotifier")
     set(icons_module
         "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/Icons")
+    set(desktop_controls_module
+        "${stage}/${QINDAQT_INSTALL_LIBDIR}/qt6/qml/QindaQt/Shell/DesktopControls")
     foreach(required_path IN ITEMS "${shell}" "${controls}" "${tokens}"
                                    "${launcher}" "${global_menu}"
                                    "${clipboard_module}/qmldir"
@@ -117,7 +119,12 @@ foreach(component IN LISTS shell_components)
                                    "${status_notifier_module}/qml/StatusNotifierItemDelegate.qml"
                                    "${icons_module}/qmldir"
                                    "${icons_module}/qindaqt_shell_icons.qmltypes"
-                                   "${icons_module}/qml/Icon.qml")
+                                   "${icons_module}/qml/Icon.qml"
+                                   "${desktop_controls_module}/qmldir"
+                                   "${desktop_controls_module}/qindaqt_shell_desktop_controls.qmltypes"
+                                   "${desktop_controls_module}/qml/WorkspaceSwitcherApplet.qml"
+                                   "${desktop_controls_module}/qml/SystemStatusApplet.qml"
+                                   "${desktop_controls_module}/qml/CommandSearchPopup.qml")
         if(NOT EXISTS "${required_path}")
             message(FATAL_ERROR
                 "${component} shell stage is missing ${required_path}")

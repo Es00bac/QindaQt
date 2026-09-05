@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "quick-launch",
+  "name": "Quick Launch",
+  "description": "Shows the launcher's pinned applications as icon buttons that start, unpin, and reorder them.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.quick-launch"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end",
+      "panel-fill"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 32,
+      "preferred": 128,
+      "maximum": 400,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "applications.launch"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
