@@ -126,10 +126,15 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
     resolver.expectedWindow = windowId;
     resolver.registrarId = 77;
     GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
     Composition::GlobalMenuTransportCoordinator coordinator(
         shellBus, active, resolver, *registrar.registry(), applet);
+    QSignalSpy hosted(&coordinator,
+                      &Composition::GlobalMenuTransportCoordinator::hostedMenuChanged);
     coordinator.refreshFocus();
     QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), 1, 5'000);
+    QCOMPARE(hosted.constFirst().at(2).toBool(), true);
     QCOMPARE(applet.items().first().toMap().value(QStringLiteral("text")).toString(),
              QStringLiteral("File"));
     QVERIFY(coordinator.publishedTree().has_value());
@@ -172,9 +177,13 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
     QCOMPARE(coordinator.publishedTree()->epoch, initialTree.epoch);
     QVERIFY(coordinator.publishedTree()->revision > initialTree.revision);
 
+    const qsizetype hostedBeforeFocusRetirement = hosted.size();
     active.observation.reset();
     coordinator.refreshFocus();
     QVERIFY(!applet.available());
+    // Ordinary focus retirement retains the proven endpoint so the inactive
+    // application's content height does not jump.
+    QCOMPARE(hosted.size(), hostedBeforeFocusRetirement);
     applet.activate(QStringLiteral("1"));
     QTest::qWait(100);
     QCOMPARE(exporter.eventCount(), 1);
@@ -186,9 +195,16 @@ void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivate
         .focusGeneration = 7};
     coordinator.refreshFocus();
     QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), hostedBeforeFocusRetirement + 1, 5'000);
     QDBusConnection::disconnectFromBus(providerName);
     providerBus = QDBusConnection(QStringLiteral("qindaqt-retired-global-menu-provider"));
     QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
+    QTRY_COMPARE_WITH_TIMEOUT(hosted.size(), hostedBeforeFocusRetirement + 2, 5'000);
+    QCOMPARE(hosted.constLast().at(0).toString(),
+             hosted.constFirst().at(0).toString());
+    QCOMPARE(hosted.constLast().at(1).toString(),
+             QStringLiteral("/ReplacementMenu"));
+    QCOMPARE(hosted.constLast().at(2).toBool(), false);
     QTRY_VERIFY_WITH_TIMEOUT(!registrar.registry()->registrationFor(77).has_value(), 5'000);
 
     coordinator.stop();

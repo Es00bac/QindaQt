@@ -36,9 +36,21 @@ GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
                 }
             });
     connect(&m_registry, &Registrar::RegistrarRegistry::windowRegistered, this,
-            [this](const Registrar::AppMenuRegistration &) { refreshFocus(); });
+            [this](const Registrar::AppMenuRegistration &registration) {
+                if (!m_boundEndpoint.uniqueOwner.isEmpty()
+                    && registration.ownerUniqueName == m_boundEndpoint.uniqueOwner
+                    && registration.menuObjectPath.path() != m_boundEndpoint.objectPath) {
+                    withdrawHostedMenu(m_boundEndpoint);
+                }
+                refreshFocus();
+            });
     connect(&m_registry, &Registrar::RegistrarRegistry::windowUnregistered, this,
-            [this](quint32, const QString &) { refreshFocus(); });
+            [this](quint32, const QString &owner) {
+                if (owner == m_boundEndpoint.uniqueOwner) {
+                    withdrawHostedMenu(m_boundEndpoint);
+                }
+                refreshFocus();
+            });
     connect(&m_applet, &GlobalMenuAppletAccess::activationRequested, this,
             &GlobalMenuTransportCoordinator::activate);
     connect(&m_applet, &GlobalMenuAppletAccess::rendererPresentChanged, this,
@@ -157,6 +169,10 @@ void GlobalMenuTransportCoordinator::bindRegistration(
         .claimedProcessId = focus.window.processId};
     const Ownership::AuthenticationResult authentication = m_authenticator.authenticate(claim);
     if (!authentication.accepted || !authentication.proof) {
+        // A previously acknowledged endpoint may be revisited after focus
+        // moved away. Failed authentication revokes that exact cached proof;
+        // it must not leave the application's local menu suppressed.
+        withdrawHostedMenu(endpoint);
         clearAuthority();
         return;
     }
@@ -181,11 +197,13 @@ void GlobalMenuTransportCoordinator::bindRegistration(
             &GlobalMenuTransportCoordinator::publishClientTree);
     connect(m_client.get(), &DbusMenu::DbusMenuClient::unavailable, this,
             [this] {
+                withdrawHostedMenu(m_boundEndpoint);
                 clearAuthority();
                 refreshFocus();
             }, Qt::QueuedConnection);
     QString error;
     if (!m_client->start(&error)) {
+        withdrawHostedMenu(m_boundEndpoint);
         clearAuthority();
     }
 }
@@ -209,6 +227,7 @@ void GlobalMenuTransportCoordinator::publishClientTree()
                                             .providerUniqueName = endpoint->uniqueOwner,
                                             .claimedProcessId = focus->window.processId});
     if (!authentication.accepted || !authentication.proof) {
+        withdrawHostedMenu(m_boundEndpoint);
         clearAuthority();
         return;
     }
@@ -224,6 +243,9 @@ void GlobalMenuTransportCoordinator::publishClientTree()
             m_applet.publishTree(*tree);
             refreshHostedMenu();
         }
+    } else {
+        withdrawHostedMenu(m_boundEndpoint);
+        clearAuthority();
     }
 }
 
@@ -287,6 +309,18 @@ void GlobalMenuTransportCoordinator::refreshHostedMenu()
     m_hosted = shouldHost;
     Q_EMIT hostedMenuChanged(m_boundEndpoint.uniqueOwner,
                              m_boundEndpoint.objectPath, m_hosted);
+}
+
+void GlobalMenuTransportCoordinator::withdrawHostedMenu(
+    const ProviderEndpoint &endpoint)
+{
+    if (endpoint.uniqueOwner.isEmpty() || endpoint.objectPath.isEmpty()) {
+        return;
+    }
+    Q_EMIT hostedMenuChanged(endpoint.uniqueOwner, endpoint.objectPath, false);
+    if (endpoint == m_boundEndpoint) {
+        m_hosted = false;
+    }
 }
 
 void GlobalMenuTransportCoordinator::stop()
