@@ -79,7 +79,7 @@
         {
           "id": "QQ-004.01",
           "title": "Production panel/dock publication and static work areas",
-          "weight": 15,
+          "weight": 14,
           "state": "QUALIFIED",
           "summary": "Real LayerShell panels and deterministic static work-area behavior are integrated and independently qualified at 1080p, WUXGA, and 1440p.",
           "evidence": [
@@ -144,7 +144,7 @@
         {
           "id": "QQ-004.04",
           "title": "Notification service and presentation foundation",
-          "weight": 14,
+          "weight": 13,
           "state": "EXECUTABLE",
           "summary": "The bounded host/presentation stack, active/recent center, popups, Settings1 DND, and fail-closed authenticated lock privacy are integrated.",
           "evidence": [
@@ -414,7 +414,7 @@
         {
           "id": "QQ-004.08",
           "title": "Direct WYSIWYG customization and reveal affordances",
-          "weight": 11,
+          "weight": 10,
           "state": "EXECUTABLE",
           "summary": "The customization-editor domain is composed into an installed qindaqt-settings customize route: a scaled WYSIWYG canvas of the selected profile's panels, zones, and applet chips with a manifest-sourced palette and properties pane; pointer drag with converging preview, commit/cancel, and one undo step per gesture; complete keyboard parity with accessible identities; Settings1 profile selection with draft/apply/conflict truth; atomic user-profile persistence through the profiles store; dirty-draft discard confirmation on route departure and on window close across responsive host switches; and an allow-list-only boundary scan.",
           "evidence": [
