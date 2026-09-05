@@ -112,12 +112,18 @@ ColumnLayout {
 
             // Keep pinning on an explicit secondary action: primary click and
             // Enter remain the launcher contract for activation.
-            TapHandler {
+            // Use the same full-row secondary hit target as task entries and
+            // Quick Launch. The nested-session compositor delivers a real
+            // BTN_RIGHT click to MouseArea; a TapHandler nested in the native
+            // ItemDelegate did not receive that gesture even though the
+            // offscreen QTest path synthesized it successfully.
+            MouseArea {
                 acceptedButtons: Qt.RightButton
-                onTapped: function(event) {
+                anchors.fill: parent
+                onClicked: {
                     root.contextEntryId = row.modelData.entryId
                     root.contextEntryPinned = row.modelData.pinned
-                    pinMenu.popup(row)
+                    pinMenu.popup()
                 }
             }
 
