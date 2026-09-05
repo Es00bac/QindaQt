@@ -17,7 +17,7 @@
       "id": "command-bar", "edge": "top", "layer": "above", "hideMode": "never",
       "alignment": "fill", "rows": 1, "thickness": 30, "length": 1.0,
       "applets": [
-        {"id": "brand", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "brand", "plugin": "system-menu", "settings": {"zone": "start"}},
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
         {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
