@@ -129,6 +129,7 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}/test_shell_surface_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_contract_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_capture_unit.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_interactive_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_nested.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_lifecycle_unit.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/test_desktop_session_matrix_unit.py"

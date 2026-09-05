@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import unittest
 
 from desktop_session_interactive import validate_interactive_evidence
@@ -126,9 +127,36 @@ def valid_interactive_evidence() -> dict[str, object]:
     return evidence
 
 
+def windows_classic_panel_applets() -> list[dict[str, object]]:
+    return [
+        {"panelId": "taskbar", "appletId": "start", "plugin": "launcher",
+         "ready": True, "entryPoint": "qindaqt.applets.launcher"},
+        {"panelId": "taskbar", "appletId": "quick-launch", "plugin": "quick-launch",
+         "ready": True, "entryPoint": "qindaqt.applets.quick-launch"},
+        {"panelId": "taskbar", "appletId": "tasks", "plugin": "task-list",
+         "ready": True, "entryPoint": "qindaqt.applets.task-list"},
+    ]
+
+
 class InteractiveEvidenceTests(unittest.TestCase):
     def test_exact_contract_passes(self) -> None:
         validate_interactive_evidence(valid_interactive_evidence())
+
+    def test_non_qindaqt_matrix_profile_accepts_ready_taskbar_controls(self) -> None:
+        from desktop_session_shell_polish import validate_panel_applets
+        validate_panel_applets(
+            windows_classic_panel_applets(), require_qindaqt_shelf=False
+        )
+
+    def test_non_qindaqt_controls_still_reject_missing_or_invalid_task_list(self) -> None:
+        from desktop_session_shell_polish import validate_panel_applets
+        missing = windows_classic_panel_applets()[:-1]
+        with self.assertRaisesRegex(ValueError, "panel controls are incomplete"):
+            validate_panel_applets(missing, require_qindaqt_shelf=False)
+        invalid = copy.deepcopy(windows_classic_panel_applets())
+        invalid[-1]["ready"] = False
+        with self.assertRaisesRegex(ValueError, "task-list applet is unavailable"):
+            validate_panel_applets(invalid, require_qindaqt_shelf=False)
 
     def test_s1_output_or_foreign_surface_fails(self) -> None:
         evidence = valid_interactive_evidence()

@@ -54,7 +54,8 @@ def _canonical_counter(value: Any, location: str) -> int:
 
 
 def _validate_shell_presentation(
-    interaction: Mapping[str, Any], shell_pid: Any, expected_output: str
+    interaction: Mapping[str, Any], shell_pid: Any, expected_output: str,
+    *, require_qindaqt_shelf: bool,
 ) -> None:
     activation = _mapping(interaction.get("activation"), "interaction.activation")
     if activation != {
@@ -113,7 +114,8 @@ def _validate_shell_presentation(
             )
             validate_quieting(phase.get("quieting"))
             validate_panel_applets(
-                phase.get("panelApplets"), require_qindaqt_shelf=True
+                phase.get("panelApplets"),
+                require_qindaqt_shelf=require_qindaqt_shelf,
             )
         except ValueError as error:
             raise TopologyContractError(
@@ -306,7 +308,15 @@ def validate_interactive_evidence(
     geometry = _mapping(surface.get("geometry"), "interaction.surface.geometry")
     expected_interaction_output = "WL-1" if secondary_output else "WL-0"
     expected_event_count = 5 if secondary_output else 4
-    _validate_shell_presentation(interaction, shell.get("pid"), expected_interaction_output)
+    profile_id = (
+        topology.presentation.profile_id
+        if isinstance(topology, MatrixBootTopology)
+        else "qindaqt"
+    )
+    _validate_shell_presentation(
+        interaction, shell.get("pid"), expected_interaction_output,
+        require_qindaqt_shelf=profile_id == "qindaqt",
+    )
     if (
         interaction.get("action") != "open-notification-center"
         or interaction.get("deviceId") != "qindaqt-development-input"
