@@ -4,24 +4,32 @@ role: First-party menu-export implementer
 provider: Z.AI GLM
 model: zai-coding-plan/glm-5.3
 reasoning: high
-status: working
+status: handoff
 feature: first-party global-menu export for Terminal and Text Editor (P1-01 in-flight registration repair)
 worktree: /home/cabewse/work_SPaC3/container-wm-workers/first-party-menu-export
 started_at: 2026-09-04T17:13:00-06:00
-updated_at: 2026-09-04T19:54:52-06:00
+updated_at: 2026-09-04T20:08:09-06:00
 ---
 
 # Andrea Ghez
 
 - Role: first-party menu-export implementer (Shell delivery queue).
 - Provider/model: Z.AI GLM `zai-coding-plan/glm-5.3`, reasoning high.
-- Status: working — second bounded repair round after the Blackburn r2 REJECT
-  (P1-01 in-flight registration leak: retirement compensates only the
-  reply-confirmed id, so an accepted-but-unanswered `RegisterWindow(71)`
-  stays live after surface destruction and republication of 72). Implementing
-  attempted-identity tracking (pending id + serial) with exactly-once
-  compensation on every withdrawal path, hostile delayed-reply and
-  rejecting-registrar test rows, and the same selector/static gates.
+- Status: handoff — exact candidate
+  `9becfb1e995ff5f250e8dcb1345be497a6a1fbaf`
+  (tree `72329f679d1bfa7948fb17c5e0d73e53853806e4`): bounded second repair
+  round of the Blackburn P1-01 rejection — the exporter now tracks every
+  `RegisterWindow` attempt (id + request serial) from send time, and each
+  withdrawal path (surface destruction, accepted close, stop/quit, owner
+  replacement) sends `UnregisterWindow` for the attempted id against its
+  exact owner exactly once whether or not the reply arrived, with superseded
+  late replies ignored and explicitly refused attempts owed no compensation.
+  New registered private-bus row `qindaqt.app-shell-menu-export-inflight-
+  registration-private-bus` (delayed-reply race + rejecting-registrar
+  control) fails on `ba88f0b1` at the in-flight unregister assertion and
+  passes here; Blackburn's exact reproduction reports NOT REPRODUCED with
+  `unregisterCalls=71`; selector 91/91 in Debug and Release; static gates
+  green. Independent exact review then manager integration requested.
 - Exact base: `7867177d` (product base is the reviewed candidate
   `e8e5170beb9849752341d1fec1ad47ffa5e6ca1e`; rejected candidate
   `ba88f0b153a762ff4ab604bc5c2157a44a3cc296`).
@@ -83,3 +91,16 @@ updated_at: 2026-09-04T19:54:52-06:00
   Blackburn r2 REJECT (P1-01 in-flight registration leak); read the verdict and
   its delayed-reply reproduction, then repairing at the cause by tracking the
   attempted registrar identity from the moment `RegisterWindow` is sent.
+- 2026-09-04T20:03:00-06:00 — material finding: compensating the pending
+  attempt must key on the attempted id, not the reply-confirmed
+  `registeredWindowId`, and every withdrawal path already advances the
+  request serial, so one shared `retirePublishedIdentity()` covers surface
+  destruction, close, stop, and owner replacement; an answered D-Bus error
+  is authoritative (refused attempt owes no unregister), which the
+  rejecting-registrar control pins down. The delayed-reply row fails on
+  `ba88f0b1` (unregisterCalls 0 vs {71}) and passes on the repair.
+- 2026-09-04T20:08:09-06:00 — handoff: candidate
+  `9becfb1e995ff5f250e8dcb1345be497a6a1fbaf`; new in-flight row verified
+  failing on `ba88f0b1` and Blackburn's exact reproduction now NOT REPRODUCED;
+  selector 91/91 in Debug and Release; static gates green; requested
+  independent exact review then manager integration.
