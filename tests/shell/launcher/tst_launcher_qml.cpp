@@ -70,6 +70,17 @@ QQuickItem *visualItemNamed(QQuickItem *root, const QString &name)
     return nullptr;
 }
 
+QQuickItem *resultRowForEntry(QQuickItem *root, const QString &entryId)
+{
+    if (root->objectName().startsWith(
+            QStringLiteral("launcherResultRow-") + entryId + QLatin1Char('-')))
+        return root;
+    for (QQuickItem *child : root->childItems())
+        if (auto *match = resultRowForEntry(child, entryId))
+            return match;
+    return nullptr;
+}
+
 bool publishTokens(QQmlEngine &engine)
 {
     engine.addImportPath(importPath());
@@ -176,6 +187,7 @@ class LauncherQmlTests final : public QObject
 
 private Q_SLOTS:
     void rendersSectionsPersistenceAndAccessibleStates();
+    void directPinButtonMutatesWithoutLaunching();
     void deniedRowsExposeAccessibleDisabledState();
     void supportsCompleteKeyboardTraversalAndActivation();
     void nullAccessShowsDisabledFallback();
@@ -271,33 +283,6 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QCOMPARE(visiblePin->property("text").toString(), QStringLiteral("Unpin"));
     QCOMPARE(visiblePin->property("emphasized").toBool(), false);
 
-    const QPoint pinPoint = visiblePin->mapToScene(
-        QPointF(visiblePin->width() / 2, visiblePin->height() / 2)).toPoint();
-    QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {}, pinPoint);
-    QTRY_COMPARE(stack.transport.commits.size(), 1);
-    QVERIFY(stack.spawner.requests.isEmpty());
-    QVERIFY(stack.activator.activations.isEmpty());
-    stack.transport.replyLastCommit(FakeSettingsTransport::commitWire(
-        SettingsWireStatus::Applied, QStringLiteral("qml-epoch"), 0, 1,
-        {{ LauncherPersistenceController::pinnedKey(), QVariantList {} },
-         { LauncherPersistenceController::recentKey(),
-           QVariantList { QStringLiteral("files") } }}));
-    QTRY_VERIFY(stack.persistence.persistenceReady());
-    auto *unpinnedRow = visualItemNamed(popupContent(root),
-        QStringLiteral("launcherResultRow-editor-0"));
-    QVERIFY(unpinnedRow != nullptr);
-    auto *pinAgain = unpinnedRow->findChild<QQuickItem *>(
-        QStringLiteral("launcherTogglePinButton"));
-    QVERIFY(pinAgain != nullptr);
-    QTRY_COMPARE(pinAgain->property("text").toString(), QStringLiteral("Pin"));
-    const QPoint pinAgainPoint = pinAgain->mapToScene(
-        QPointF(pinAgain->width() / 2, pinAgain->height() / 2)).toPoint();
-    QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {},
-                      pinAgainPoint);
-    QTRY_COMPARE(stack.transport.commits.size(), 2);
-    QVERIFY(stack.spawner.requests.isEmpty());
-    QVERIFY(stack.activator.activations.isEmpty());
-
     // Restore the theme-pixel fixture to its neutral state before checking
     // the token-owned background below.
     auto *field = root->findChild<QQuickItem *>(QStringLiteral("launcherSearchField"));
@@ -357,6 +342,68 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QCOMPARE(statusInterface->role(), QAccessible::AlertMessage);
     QVERIFY(!statusInterface->text(QAccessible::Name).isEmpty());
 
+}
+
+void LauncherQmlTests::directPinButtonMutatesWithoutLaunching()
+{
+    Stack stack;
+    QVERIFY(stack.client.start());
+    stack.transport.announceOwner();
+    QTRY_VERIFY(!stack.transport.snapshots.isEmpty());
+    stack.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("pin-epoch"), 0,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+
+    QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
+    auto owned = createApplet(engine, &stack.controller);
+    QVERIFY(owned != nullptr);
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+    QVERIFY(QMetaObject::invokeMethod(root, "openBrowser"));
+    QTRY_VERIFY(popupContent(root) != nullptr);
+
+    auto clickPinButton = [root](const QString &expectedText) {
+        auto *row = resultRowForEntry(popupContent(root), QStringLiteral("editor"));
+        QVERIFY(row != nullptr);
+        auto *button = row->findChild<QQuickItem *>(
+            QStringLiteral("launcherTogglePinButton"));
+        QVERIFY(button != nullptr);
+        QTRY_COMPARE(button->property("text").toString(), expectedText);
+        const QPoint point = button->mapToScene(
+            QPointF(button->width() / 2, button->height() / 2)).toPoint();
+        QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {}, point);
+    };
+
+    clickPinButton(QStringLiteral("Unpin"));
+    QTRY_COMPARE(stack.transport.commits.size(), 1);
+    stack.transport.replyLastCommit(FakeSettingsTransport::commitWire(
+        SettingsWireStatus::Applied, QStringLiteral("pin-epoch"), 0, 1,
+        {{ LauncherPersistenceController::pinnedKey(), QVariantList {} },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+
+    clickPinButton(QStringLiteral("Pin"));
+    QTRY_COMPARE(stack.transport.commits.size(), 2);
+    stack.transport.replyLastCommit(FakeSettingsTransport::commitWire(
+        SettingsWireStatus::Applied, QStringLiteral("pin-epoch"), 1, 2,
+        {{ LauncherPersistenceController::pinnedKey(),
+           QVariantList { QStringLiteral("editor") } },
+         { LauncherPersistenceController::recentKey(),
+           QVariantList { QStringLiteral("files") } }}));
+    QTRY_VERIFY(stack.persistence.persistenceReady());
+    QVERIFY(stack.spawner.requests.isEmpty());
+    QVERIFY(stack.activator.activations.isEmpty());
 }
 
 void LauncherQmlTests::deniedRowsExposeAccessibleDisabledState()
