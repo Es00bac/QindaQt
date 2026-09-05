@@ -132,9 +132,14 @@
               "kind": "source",
               "reference": "docs/wiki/shell/applet-runtime.md",
               "summary": "Production resolution and the two live built-ins are documented."
+            },
+            {
+              "kind": "commit",
+              "reference": "cd760f4e",
+              "summary": "Production shell runtime repair integrated: exact accepted product 99de545aa521c4d5428b72ee491268e401a5b84c (Ada Yonath, OpenAI Codex), reviewed ACCEPT 0/0/0/4 by Tu Youyou (Moonshot Kimi). The shell and the preview now publish the QindaQt.Tokens facade before any panel QML exists (ShellTokenPublisher, fail-closed, republish on theme change); the authenticated ShellDevelopment1 snapshot carries a tokens fact the nested boot row validates; the terminal's PTY reader no longer stalls on the startup EIO gap and its widget attaches before the backend starts. Merged tree: focused 198/198 rows in Debug and Release, static gates, broad safe Debug 615/615, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots."
             }
           ],
-          "caveat": "Several catalog entries remain fixtures and are measured separately."
+          "caveat": "Several catalog entries remain fixtures and are measured separately. The production shell's token publication was missing until 2026-09-04; the nested boot row now guards it."
         },
         {
           "id": "QQ-004.04",
