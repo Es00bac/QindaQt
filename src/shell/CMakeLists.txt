@@ -267,6 +267,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListOperations
             QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
             QindaQt::ShellDesktopControlsRuntime
+            QindaQt::ShellWorkspacesDBus
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions
             qindaqt_shell_panel_visibility_producers
