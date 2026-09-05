@@ -57,7 +57,12 @@ Controls.Button {
                 Layout.fillWidth: true
                 text: control.text
                 color: !control.routeAvailable ? Tokens.fg.disabled
-                     : control.active ? Tokens.accent.fg
+                     // AGENT-GUARD: The selected navigation background is the
+                     // raised surface, so its label must use the normal
+                     // foreground. accent.fg is paired only with
+                     // accent.default and becomes white on white in Qinda
+                     // Light when used here.
+                     : control.active ? Tokens.fg.default
                      : Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body

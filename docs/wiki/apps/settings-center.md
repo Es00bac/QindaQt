@@ -128,7 +128,11 @@ Unknown component keys and unavailable descriptors select one explicit
 At widths of 540 logical pixels or greater, a two-column view presents a
 200-pixel navigation sidebar and the active route. Below 540 pixels, a compact
 single-column PageTabList appears above the active route. Both variants use
-only QST-1 semantic roles and QindaQt.Controls presentation.
+only QST-1 semantic roles and QindaQt.Controls presentation. The selected
+route tab uses the default foreground on its raised-surface background; the
+accent foreground is reserved for text placed on the accent surface. This
+keeps selected navigation readable when the theme changes live between light,
+dark, and high-contrast palettes.
 
 The interaction contract is:
 
