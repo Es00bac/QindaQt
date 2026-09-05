@@ -262,6 +262,24 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(!enabledInterface->text(QAccessible::Description).isEmpty());
     QVERIFY(!enabledInterface->state().disabled);
 
+    // Pinning is deliberately a secondary action. Primary pointer and
+    // keyboard activation still launch, while a real context menu provides
+    // the persistence action for the dock's existing Quick Launch projection.
+    const QPoint menuPoint = enabledRow->mapToScene(
+        QPointF(enabledRow->width() / 2, enabledRow->height() / 2)).toPoint();
+    QTest::mouseClick(popupContent(root)->window(), Qt::RightButton, {}, menuPoint);
+    auto *pinMenu = root->findChild<QObject *>(
+        QStringLiteral("launcherPinContextMenu"));
+    QVERIFY(pinMenu != nullptr);
+    QTRY_VERIFY(pinMenu->property("opened").toBool());
+    QCOMPARE(pinMenu->property("popupType").toInt(), 1);
+    auto *togglePin = root->findChild<QQuickItem *>(
+        QStringLiteral("launcherTogglePin"));
+    QVERIFY(togglePin != nullptr);
+    QCOMPARE(togglePin->property("text").toString(), QStringLiteral("Unpin"));
+    QTest::keyClick(popupContent(root)->window(), Qt::Key_Escape);
+    QTRY_VERIFY(!pinMenu->property("opened").toBool());
+
     // Native palettes must not override either side of the launch-row contrast
     // pair. Republish themes without recreating delegates to catch stale colors.
     auto *background = enabledRow->property("background").value<QQuickItem *>();
