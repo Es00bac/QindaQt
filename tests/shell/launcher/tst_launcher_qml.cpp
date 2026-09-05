@@ -376,7 +376,11 @@ void LauncherQmlTests::directPinButtonMutatesWithoutLaunching()
     window.show();
     QTRY_VERIFY(window.isExposed());
     QVERIFY(QMetaObject::invokeMethod(root, "openBrowser"));
+    auto *popup = root->findChild<QObject *>(QStringLiteral("launcherAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->property("opened").toBool());
     QTRY_VERIFY(popupContent(root) != nullptr);
+    QTRY_VERIFY(popupContent(root)->window()->isExposed());
 
     auto clickPinButton = [root](const QString &expectedText) {
         auto *row = resultRowForEntry(popupContent(root), QStringLiteral("editor"));
@@ -385,6 +389,8 @@ void LauncherQmlTests::directPinButtonMutatesWithoutLaunching()
             QStringLiteral("launcherTogglePinButton"));
         QVERIFY(button != nullptr);
         QTRY_COMPARE(button->property("text").toString(), expectedText);
+        QTRY_VERIFY(button->isVisible());
+        QTRY_VERIFY(button->width() > 0 && button->height() > 0);
         const QPoint point = button->mapToScene(
             QPointF(button->width() / 2, button->height() / 2)).toPoint();
         QTest::mouseClick(popupContent(root)->window(), Qt::LeftButton, {}, point);
