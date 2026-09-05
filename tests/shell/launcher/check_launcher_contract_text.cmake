@@ -29,7 +29,7 @@ endfunction()
 
 require_text(
     "docs/wiki/shell/applet-runtime.md"
-    "production QML dispatcher renders all twenty-two")
+    "registry contains twenty-three audited entry points.")
 forbid_text(
     "docs/wiki/shell/applet-runtime.md"
     "hosting it in the production panel dispatcher is a later lane")
