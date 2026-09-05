@@ -253,7 +253,7 @@ compiled applet. Preview recognizes the launcher profile id without performing
 runtime resolution and deliberately supplies a null controller, producing the
 same disabled deterministic fallback as before.
 
-Each stock profile places exactly one launcher instance in its launcher slot.
+Each stock profile places exactly one launcher instance in its launcher slot; QindaQt keeps its command-bar brand as a system-menu trigger and reserves the launcher for the smart-shelf application group.
 The production terminal-command prefix remains deliberately unwired, so
 `Terminal=true` entries refuse rather than inventing a terminal policy.
 `LauncherAppletRuntime` ships the shell, launcher manifest/profile/policy/theme,
