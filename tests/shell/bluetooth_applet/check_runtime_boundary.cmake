@@ -203,13 +203,15 @@ if(DEFINED POISON_ROOT AND NOT BLUETOOTH_RUNTIME_POLICY_SKIP_POISON)
         file(READ "${qml_path}" qml_content)
         set(bluetooth_import
             "import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule\n")
-        set(bluetooth_delegate [=[    BluetoothAppletModule.BluetoothApplet {
-        id: bluetooth
-        anchors.fill: parent
-        visible: root.bluetoothReady
-        access: root.bluetoothAppletAccess
-        theme: root.theme
-        vertical: root.vertical
+        set(bluetooth_delegate [=[    Component {
+        id: bluetoothComponent
+        BluetoothAppletModule.BluetoothApplet {
+            anchors.fill: parent
+            visible: root.bluetoothReady
+            access: root.bluetoothAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
     }
 ]=])
         string(REPLACE "${bluetooth_import}" "" poisoned_qml "${qml_content}")
