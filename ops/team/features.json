@@ -186,7 +186,7 @@
           "title": "Global application menu",
           "weight": 10,
           "state": "EXECUTABLE",
-          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests. G2 composes the accepted transports into the production shell: the shell owns the AppMenu registrar, binds menu truth to the authenticated compositor identity snapshot (ADR-0063), hosts the compiled QindaQt.Shell.GlobalMenu applet with keyboard-reachable submenu popups in the panel dispatcher, and ships it as a closed GlobalMenuAppletRuntime install component.",
+          "summary": "The integrated G0 foundation plus the G1 production transports execute a bounded canonical menu model, proof-bound active-window ownership, fail-closed export lineage, an exact-owner com.canonical.AppMenu.Registrar service keyed to caller unique names, an asynchronous com.canonical.dbusmenu client with bounded atomic decoding and revision fencing, and a transport coordinator that binds them to the G0 lineage, all under private-bus hostile tests. G2 composes the accepted transports into the production shell: the shell owns the AppMenu registrar, binds menu truth to the authenticated compositor identity snapshot (ADR-0063), hosts the compiled QindaQt.Shell.GlobalMenu applet with keyboard-reachable submenu popups in the panel dispatcher, and ships it as a closed GlobalMenuAppletRuntime install component. The Terminal and the Text Editor now compose the first-party AppShell menu export like the File Manager, and the shared exporter's lifecycle is fail-closed: native-surface recreation withdraws and republishes the window identity, in-flight registrations are compensated on withdrawal, and registrar replies are classified as confirmed, refused, or uncertain.",
           "evidence": [
             {
               "kind": "commit",
@@ -207,9 +207,14 @@
               "kind": "commit",
               "reference": "7de332fa1c6d76a5dbe35a5ad57bd31c9a9d6a5e",
               "summary": "The exact Global Menu G2 candidate 24240e9 (Joan Ball, OpenAI Codex, ACCEPT 0/0/0/1 after the keyboard-path and two-process ownership rejections) is integrated; the merged tree passes global-menu, applet, shell-runtime, launcher, and adjacent applet rows 87/87 in Debug and Release, the static gates, and the broad safe Debug suite 485/485 after two manager reconciliations (the launcher documentation guard now expects seven dispatcher entries, and the omitted QindaQt.Shell.GlobalMenu test-import stub was added at 4609beb)."
+            },
+            {
+              "kind": "commit",
+              "reference": "42191636",
+              "summary": "First-party menu export for Terminal and Text Editor integrated: exact accepted product bfe6009950187901e4f42902aa211ab3378419aa (Jennifer Doudna, OpenAI Codex, over Andrea Ghez's e8e5170b/ba88f0b1/9becfb1e; Elizabeth Blackburn rejected three rounds 0/1/0/0 each), reviewed ACCEPT 0/0/0/0 by Nettie Stevens (Moonshot Kimi). Merged tree: focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots."
             }
           ],
-          "caveat": "G2 hosts the global menu in the production panel over injected registrar/exporter fakes and the compositor identity snapshot; first-party application menu export, foreign-toolkit (GTK) exporters, and installed nested-session qualification remain."
+          "caveat": "Third-party (KDE platform exporter) applications and the nested global-menu interaction matrix remain."
         },
         {
           "id": "QQ-004.07",
