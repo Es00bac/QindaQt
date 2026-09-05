@@ -136,28 +136,32 @@ Item {
                     onClicked: entryButton.openContext()
                 }
 
-                contentItem: ShellIcons.Icon {
-                    id: entryIcon
-                    objectName: "quickLaunchEntryIcon"
-                    anchors.centerIn: parent
-                    name: String(entryButton.modelData.iconName)
-                    size: root.iconExtent
-                    color: entryButton.enabled ? Tokens.fg.default : Tokens.fg.disabled
-                    symbolic: false
-                    fallbackText: String(entryButton.modelData.displayText)
-                    scale: root.dockMode && entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0
-                    transformOrigin: Item.Center
-                    property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
-                    transform: Translate { y: entryIcon.hoverLift }
-                    Accessible.ignored: true
+                contentItem: Item {
+                    ShellIcons.Icon {
+                        id: entryIcon
+                        objectName: "quickLaunchEntryIcon"
+                        width: size
+                        height: size
+                        anchors.centerIn: parent
+                        name: String(entryButton.modelData.iconName)
+                        size: root.iconExtent
+                        color: entryButton.enabled ? Tokens.fg.default : Tokens.fg.disabled
+                        symbolic: false
+                        fallbackText: String(entryButton.modelData.displayText)
+                        scale: root.dockMode && entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0
+                        transformOrigin: Item.Center
+                        property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
+                        transform: Translate { y: entryIcon.hoverLift }
+                        Accessible.ignored: true
 
-                    // Tokens clamp motion durations for reduced-motion
-                    // accessibility; the applet owns no parallel preference.
-                    Behavior on hoverLift {
-                        NumberAnimation { duration: Tokens.motion.short }
-                    }
-                    Behavior on scale {
-                        NumberAnimation { duration: Tokens.motion.short }
+                        // Tokens clamp motion durations for reduced-motion
+                        // accessibility; the applet owns no parallel preference.
+                        Behavior on hoverLift {
+                            NumberAnimation { duration: Tokens.motion.short }
+                        }
+                        Behavior on scale {
+                            NumberAnimation { duration: Tokens.motion.short }
+                        }
                     }
                 }
 
