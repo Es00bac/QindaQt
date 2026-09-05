@@ -240,7 +240,8 @@ through a fail-closed-by-default `PortalRequest` adapter. Its
 [AppShell participation](text-editor.md#appshell-participation) section
 records the consumer-side contract and focused test row; a real portal
 backend and Settings/session hook composition remain separate, still-unqualified
-outcomes. Text Editor and Terminal can opt in with the same one-line recipe as
-File Manager: retain `compose(..., QDBusConnection::sessionBus())` beside their
-primary-window/coordinator composition and keep their local menu visible unless
-a future authenticated shell-hosted signal says otherwise.
+outcomes. File Manager, Text Editor, and Terminal retain the shared composition
+beside their primary window/coordinator and supply its local-menu visibility
+callback. The callback starts visible, hides only after the current QindaQt
+registrar confirms that a live renderer accepted the exact endpoint, and
+restores visibility when that proof is withdrawn or cannot be revalidated.
