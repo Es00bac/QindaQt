@@ -82,7 +82,7 @@ private:
                                    const QString &entryId);
   PersistenceMutation commitList(const QString &key, const QStringList &ids);
   void revertToConfirmed(const QString &key);
-  void setStatusText(const QString &text);
+  void setStatusText(const QString &text, bool availabilityNotice = false);
 
   QindaQt::Services::SettingsClient::SettingsClient &m_client;
   PinnedApplications m_pinned;
@@ -91,6 +91,7 @@ private:
   QStringList m_confirmedRecent;
   QString m_pendingKey;
   QString m_statusText;
+  bool m_availabilityNotice = false;
   bool m_confirmedBaseline = false;
 };
 

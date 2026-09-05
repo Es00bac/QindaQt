@@ -314,3 +314,16 @@ state overlays, focus rings and labels. Native application styles cannot
 combine a light result background with dark-theme foreground tokens. The
 compiled gate republishes dark, light and high-contrast themes on existing
 rows and verifies their text contrast and rendered background pixels.
+
+Startup and owner-loss availability notices clear as soon as a confirmed
+Settings1 baseline restores persistence. Genuine save refusals and malformed
+stored-list explanations remain visible until a subsequent explicit save;
+connectivity recovery does not erase those outcomes.
+
+When usable applications remain, skipped malformed desktop files do not show
+an unqualified error above the browser. The catalog retains its degraded
+inventory state and per-source diagnostics; enable
+`QT_LOGGING_RULES="qindaqt.launcher.scan.debug=true"` to log those details once
+per scan. If no applications can be loaded, the browser instead shows an
+actionable catalog-level message. These presentation rules preserve valid
+application launch behavior and never hide the detailed diagnostic data.

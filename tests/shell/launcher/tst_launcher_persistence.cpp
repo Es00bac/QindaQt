@@ -93,6 +93,7 @@ class LauncherPersistenceTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void availabilityNoticeClearsAfterConfirmedRecovery();
     void pinRoundTripsThroughTheClient();
     void restoresConfirmedListsFromSnapshots();
     void hostileStoredValuesAreIgnored();
@@ -103,6 +104,26 @@ private Q_SLOTS:
     void writesAreSerialized();
     void recentListStaysBounded();
 };
+
+void LauncherPersistenceTests::availabilityNoticeClearsAfterConfirmedRecovery()
+{
+    WiredController wired;
+    QVERIFY(!wired.controller.persistenceReady());
+    QVERIFY(!wired.controller.statusText().isEmpty());
+    wired.publishBaseline();
+    QVERIFY(wired.controller.statusText().isEmpty());
+
+    wired.transport.announceOwner(QString{});
+    QVERIFY(!wired.controller.persistenceReady());
+    QVERIFY(!wired.controller.statusText().isEmpty());
+    const qsizetype before = wired.transport.snapshots.size();
+    wired.transport.announceOwner(QStringLiteral(":1.100"));
+    QTRY_COMPARE(wired.transport.snapshots.size(), before + 1);
+    wired.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("replacement-epoch"), 0, {}));
+    QTRY_VERIFY(wired.controller.persistenceReady());
+    QVERIFY(wired.controller.statusText().isEmpty());
+}
 
 void LauncherPersistenceTests::pinRoundTripsThroughTheClient()
 {
@@ -201,13 +222,23 @@ void LauncherPersistenceTests::conflictRevertsToTheConfirmedValue()
     QCOMPARE(wired.controller.pinned().ids(),
              QStringList({ QStringLiteral("confirmed.app") }));
     QVERIFY(!wired.controller.statusText().isEmpty());
+    const QString rejectedSave = wired.controller.statusText();
+    wired.transport.announceOwner(QString{});
+    QCOMPARE(wired.controller.statusText(), rejectedSave);
+    const qsizetype before = wired.transport.snapshots.size();
+    wired.transport.announceOwner(QStringLiteral(":1.100"));
+    QTRY_COMPARE(wired.transport.snapshots.size(), before + 1);
+    wired.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        QStringLiteral("replacement-epoch"), 0,
+        {{LauncherPersistenceController::pinnedKey(), idList({QStringLiteral("confirmed.app")})}}));
+    QTRY_VERIFY(wired.controller.persistenceReady());
+    QCOMPARE(wired.controller.statusText(), rejectedSave);
 }
 
 void LauncherPersistenceTests::unknownSchemaKeyFailsClosed()
 {
-    // The launcher key set is documented in ADR-0062; until the Settings1
-    // schema registers it, the production service answers UnknownKey. The
-    // controller must fail closed and say so, not pretend the save landed.
+    // An older or incompatible service may reject the registered launcher
+    // keys. The controller must report that refusal rather than claim a save.
     WiredController wired;
     wired.publishBaseline();
 
