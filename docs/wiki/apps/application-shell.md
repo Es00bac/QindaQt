@@ -98,9 +98,13 @@ numeric id: the confined Qt platform adapter announces the injected unique bus
 name and object path through Qt's KDE appmenu platform hook after a native
 Wayland surface exists. Those are exactly the facts G2 projects to the shell;
 the shell, not the application, proves their bus-owner PID matches the focused
-surface. `published` means only that the endpoint and association exist—it is
-not proof that the shell hosts the menu, so local `MenuBar` presentation stays
-visible and authoritative.
+surface. `published` means only that the endpoint and association exist. The
+optional first-party composition also observes the current registrar owner's
+bounded host acknowledgment. Its visibility callback starts visible and
+becomes hidden only when the QindaQt panel has accepted that exact endpoint;
+every absent, foreign, stale, failed, or withdrawn acknowledgment restores the
+local `MenuBar`. The shared callback drives the QML File Manager menu and the
+widget menus in Text Editor and Terminal through the same rule.
 
 ### Lifecycle and quit ownership
 

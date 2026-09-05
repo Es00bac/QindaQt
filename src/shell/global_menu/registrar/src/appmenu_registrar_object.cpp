@@ -27,7 +27,56 @@ AppMenuRegistrarObject::AppMenuRegistrarObject(RegistrarRegistry &registry, QObj
                                         registration.menuObjectPath);
             });
     connect(&m_registry, &RegistrarRegistry::windowUnregistered, this,
-            [this](quint32 windowId, const QString &) { Q_EMIT WindowUnregistered(windowId); });
+            [this](quint32 windowId, const QString &owner) {
+                const QSet<QString> retired = m_hostedMenus.take(owner);
+                for (const QString &path : retired) {
+                    Q_EMIT MenuHostedChanged(owner, QDBusObjectPath(path), false);
+                }
+                Q_EMIT WindowUnregistered(windowId);
+            });
+}
+
+void AppMenuRegistrarObject::setHostedMenu(const QString &providerUniqueName,
+                                           const QString &objectPath, bool hosted)
+{
+    if (!hosted) {
+        auto provider = m_hostedMenus.find(providerUniqueName);
+        if (provider == m_hostedMenus.end() || !provider->remove(objectPath)) {
+            return;
+        }
+        if (provider->isEmpty()) {
+            m_hostedMenus.erase(provider);
+        }
+        Q_EMIT MenuHostedChanged(providerUniqueName, QDBusObjectPath(objectPath), false);
+        return;
+    }
+    const QDBusObjectPath path(objectPath);
+    if (providerUniqueName.isEmpty() || path.path() != objectPath
+        || objectPath == QStringLiteral("/")) {
+        return;
+    }
+    if (m_hostedMenus.value(providerUniqueName).contains(objectPath)) {
+        return;
+    }
+    m_hostedMenus[providerUniqueName].insert(objectPath);
+    Q_EMIT MenuHostedChanged(providerUniqueName, path, true);
+}
+
+bool AppMenuRegistrarObject::IsMenuHosted(
+    const QString &providerUniqueName, const QDBusObjectPath &menuObjectPath) const
+{
+    return m_hostedMenus.value(providerUniqueName).contains(menuObjectPath.path());
+}
+
+void AppMenuRegistrarObject::clearHostedMenus()
+{
+    const auto hosted = m_hostedMenus;
+    m_hostedMenus.clear();
+    for (auto provider = hosted.cbegin(); provider != hosted.cend(); ++provider) {
+        for (const QString &path : provider.value()) {
+            Q_EMIT MenuHostedChanged(provider.key(), QDBusObjectPath(path), false);
+        }
+    }
 }
 
 void AppMenuRegistrarObject::RegisterWindow(quint32 windowId,

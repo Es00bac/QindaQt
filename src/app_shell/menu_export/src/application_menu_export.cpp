@@ -5,7 +5,9 @@
 #include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_server.h>
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
 
-#include <QDBusError>
+#include "coordinator_menu_projection_p.h"
+#include "registration_completion_p.h"
+
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -16,8 +18,6 @@
 #include <QTimer>
 #include <QWindow>
 
-#include <algorithm>
-#include <tuple>
 #include <utility>
 
 namespace QindaQt::AppShell::MenuExport {
@@ -31,88 +31,6 @@ constexpr auto kMenuObjectPath = "/org/qindaqt/AppShell/Menu";
 constexpr auto kBusDaemonService = "org.freedesktop.DBus";
 constexpr auto kBusDaemonPath = "/org/freedesktop/DBus";
 constexpr auto kBusDaemonInterface = "org.freedesktop.DBus";
-
-enum class RegistrationCompletion {
-  Confirmed,
-  Refused,
-  Uncertain,
-};
-
-RegistrationCompletion classifyRegistrationCompletion(
-    const QDBusMessage &reply) {
-  if (reply.type() == QDBusMessage::ReplyMessage) {
-    return reply.signature().isEmpty() ? RegistrationCompletion::Confirmed
-                                       : RegistrationCompletion::Uncertain;
-  }
-  if (reply.type() != QDBusMessage::ErrorMessage) {
-    return RegistrationCompletion::Uncertain;
-  }
-
-  // AGENT-CONTRACT: Qt watcher-delivered error messages do not retain a
-  // sender. Only the bus's closed transport/lifecycle error set is therefore
-  // treated as locally uncertain; registrar method errors are refusals.
-  const QDBusError error(reply);
-  if (error.name() ==
-      QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
-    return RegistrationCompletion::Uncertain;
-  }
-  switch (error.type()) {
-  case QDBusError::ServiceUnknown:
-  case QDBusError::NoReply:
-  case QDBusError::BadAddress:
-  case QDBusError::NoServer:
-  case QDBusError::Timeout:
-  case QDBusError::NoNetwork:
-  case QDBusError::Disconnected:
-  case QDBusError::TimedOut:
-    return RegistrationCompletion::Uncertain;
-  default:
-    return RegistrationCompletion::Refused;
-  }
-}
-
-class CoordinatorMenuProjection final {
-public:
-  explicit CoordinatorMenuProjection(const ApplicationCoordinator &coordinator)
-      : m_coordinator(coordinator) {}
-
-  [[nodiscard]] Protocol::MenuTree snapshot() const {
-    QList<ActionSpec> actions = m_coordinator.actionRegistry().actions();
-    std::sort(
-        actions.begin(), actions.end(),
-        [](const ActionSpec &left, const ActionSpec &right) {
-          return std::tie(left.menuOrder, left.menuId, left.order, left.id) <
-                 std::tie(right.menuOrder, right.menuId, right.order, right.id);
-        });
-    Protocol::MenuTree tree;
-    for (qsizetype index = 0; index < actions.size();) {
-      const QString menuId = actions.at(index).menuId;
-      Protocol::MenuItem menu{
-          .id = QStringLiteral("menu:") + menuId,
-          .kind = Protocol::MenuItemKind::Submenu,
-          .text = actions.at(index).menuLabel};
-      while (index < actions.size() && actions.at(index).menuId == menuId) {
-        const ActionSpec &action = actions.at(index++);
-        menu.children.append(Protocol::MenuItem{
-            .id = action.id,
-            .kind = Protocol::MenuItemKind::Action,
-            .text = action.label,
-            .mnemonicIndex = -1,
-            .shortcutText =
-                action.shortcut.toString(QKeySequence::PortableText),
-            .enabled = action.enabled,
-            .visible = true,
-            .checkable = action.checkable,
-            .checked = action.checked});
-      }
-      tree.items.append(std::move(menu));
-    }
-    return tree;
-  }
-
-private:
-  const ApplicationCoordinator &m_coordinator;
-};
 
 } // namespace
 
@@ -139,7 +57,49 @@ public:
     }
     status = next;
     failureCode = std::move(failure);
+    if (status != MenuExportStatus::Published) {
+      setHosted(false);
+    }
     Q_EMIT q.statusChanged();
+    if (status == MenuExportStatus::Published) {
+      queryHostedMenu();
+    }
+  }
+
+  void setHosted(bool next) {
+    if (hosted == next) {
+      return;
+    }
+    hosted = next;
+    Q_EMIT q.localMenuVisibleChanged();
+  }
+
+  void queryHostedMenu() {
+    if (!started || status != MenuExportStatus::Published
+        || registrarOwner.isEmpty()) {
+      setHosted(false);
+      return;
+    }
+    const quint64 requestSerial = ++hostSerial;
+    QDBusMessage message = QDBusMessage::createMethodCall(
+        registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
+        QString::fromLatin1(Registrar::kRegistrarInterface),
+        QStringLiteral("IsMenuHosted"));
+    message.setArguments(
+        {sessionBus.baseService(),
+         QVariant::fromValue(QDBusObjectPath(QString::fromLatin1(kMenuObjectPath)))});
+    auto *watcher =
+        new QDBusPendingCallWatcher(sessionBus.asyncCall(message, 2'000), &q);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, &q,
+                     [this, watcher, requestSerial] {
+                       const QDBusPendingReply<bool> reply = *watcher;
+                       watcher->deleteLater();
+                       if (!started || requestSerial != hostSerial
+                           || status != MenuExportStatus::Published) {
+                         return;
+                       }
+                       setHosted(reply.isValid() && reply.value());
+                     });
   }
 
   void refreshMenu() {
@@ -176,14 +136,28 @@ public:
     if (!started || newOwner == registrarOwner) {
       return;
     }
+    if (!registrarOwner.isEmpty()) {
+      sessionBus.disconnect(
+          registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
+          QString::fromLatin1(Registrar::kRegistrarInterface),
+          QStringLiteral("MenuHostedChanged"), &q,
+          SLOT(handleMenuHostedChanged(QString,QDBusObjectPath,bool)));
+    }
     retirePublishedIdentity();
     registrarOwner = newOwner;
+    ++hostSerial;
+    setHosted(false);
     ++serial;
     if (registrarOwner.isEmpty()) {
       setStatus(MenuExportStatus::WaitingForRegistrar,
                 QStringLiteral("registrar-unavailable"));
       return;
     }
+    sessionBus.connect(
+        registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
+        QString::fromLatin1(Registrar::kRegistrarInterface),
+        QStringLiteral("MenuHostedChanged"), &q,
+        SLOT(handleMenuHostedChanged(QString,QDBusObjectPath,bool)));
     publishIdentity();
   }
 
@@ -375,6 +349,8 @@ public:
   // True only between SurfaceAboutToBeDestroyed and SurfaceCreated; an uncreated
   // test window is never marked, so injected-identity rows keep publishing.
   bool surfaceDestroyed = false;
+  bool hosted = false;
+  quint64 hostSerial = 0;
 };
 
 ApplicationMenuExport::ApplicationMenuExport(
@@ -444,6 +420,8 @@ void ApplicationMenuExport::stop() {
     return;
   }
   d->started = false;
+  ++d->hostSerial;
+  d->setHosted(false);
   ++d->serial;
   d->surfaceDestroyed = false;
   if (!d->window.isNull()) {
@@ -451,6 +429,14 @@ void ApplicationMenuExport::stop() {
   }
   disconnect(d->menusConnection);
   d->retirePublishedIdentity();
+  if (!d->registrarOwner.isEmpty()) {
+    d->sessionBus.disconnect(
+        d->registrarOwner,
+        QString::fromLatin1(Registrar::kRegistrarObjectPath),
+        QString::fromLatin1(Registrar::kRegistrarInterface),
+        QStringLiteral("MenuHostedChanged"), this,
+        SLOT(handleMenuHostedChanged(QString,QDBusObjectPath,bool)));
+  }
   d->registrarOwner.clear();
   if (d->objectRegistered) {
     d->sessionBus.unregisterObject(QString::fromLatin1(kMenuObjectPath));
@@ -465,6 +451,28 @@ MenuExportStatus ApplicationMenuExport::status() const noexcept {
 
 bool ApplicationMenuExport::published() const noexcept {
   return d->status == MenuExportStatus::Published;
+}
+
+bool ApplicationMenuExport::localMenuVisible() const noexcept {
+  return !d->hosted;
+}
+
+void ApplicationMenuExport::handleMenuHostedChanged(
+    const QString &providerUniqueName, const QDBusObjectPath &menuObjectPath,
+    bool hosted) {
+  if (!d->started || d->status != MenuExportStatus::Published
+      || providerUniqueName != d->sessionBus.baseService()
+      || menuObjectPath.path() != QString::fromLatin1(kMenuObjectPath)) {
+    return;
+  }
+  ++d->hostSerial;
+  if (!hosted) {
+    d->setHosted(false);
+  }
+  // The signal carries endpoint identity but not registrar-owner lineage.
+  // Re-read through the current exact owner before settling; a queued signal
+  // from a replaced registrar must neither suppress nor expose the menu.
+  d->queryHostedMenu();
 }
 
 std::optional<quint32>

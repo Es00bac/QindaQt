@@ -41,6 +41,8 @@ GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
             [this](quint32, const QString &) { refreshFocus(); });
     connect(&m_applet, &GlobalMenuAppletAccess::activationRequested, this,
             &GlobalMenuTransportCoordinator::activate);
+    connect(&m_applet, &GlobalMenuAppletAccess::rendererPresentChanged, this,
+            &GlobalMenuTransportCoordinator::refreshHostedMenu);
 }
 
 GlobalMenuTransportCoordinator::GlobalMenuTransportCoordinator(
@@ -145,6 +147,10 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     const Ownership::ActiveWindowObservation &focus,
     const ProviderEndpoint &endpoint)
 {
+    // A focus switch does not revoke an endpoint that this live renderer has
+    // already proved it can serve. Keeping that acknowledgment prevents the
+    // inactive window's content geometry from jumping as focus moves.
+    m_hosted = false;
     const Ownership::MenuProviderRegistration claim{
         .windowId = focus.window.windowId,
         .providerUniqueName = endpoint.uniqueOwner,
@@ -216,6 +222,7 @@ void GlobalMenuTransportCoordinator::publishClientTree()
         const std::optional<Protocol::MenuTree> tree = m_exporter->lastAccepted();
         if (tree) {
             m_applet.publishTree(*tree);
+            refreshHostedMenu();
         }
     }
 }
@@ -256,6 +263,7 @@ void GlobalMenuTransportCoordinator::activate(const QString &actionId)
 
 void GlobalMenuTransportCoordinator::clearAuthority()
 {
+    m_hosted = false;
     if (m_client) {
         m_client->stop();
     }
@@ -265,6 +273,20 @@ void GlobalMenuTransportCoordinator::clearAuthority()
     m_boundEndpoint = {};
     m_focusGeneration = 0;
     m_applet.publishUnavailable();
+}
+
+void GlobalMenuTransportCoordinator::refreshHostedMenu()
+{
+    const bool shouldHost = m_applet.rendererPresent() && m_applet.available()
+        && m_exporter && m_exporter->lastAccepted().has_value()
+        && !m_boundEndpoint.uniqueOwner.isEmpty()
+        && !m_boundEndpoint.objectPath.isEmpty();
+    if (shouldHost == m_hosted) {
+        return;
+    }
+    m_hosted = shouldHost;
+    Q_EMIT hostedMenuChanged(m_boundEndpoint.uniqueOwner,
+                             m_boundEndpoint.objectPath, m_hosted);
 }
 
 void GlobalMenuTransportCoordinator::stop()

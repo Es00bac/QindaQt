@@ -86,4 +86,15 @@ RegistrarRegistry *AppMenuRegistrar::registry() noexcept
     return m_registry.get();
 }
 
+void AppMenuRegistrar::setHostedMenu(const QString &providerUniqueName,
+                                     const QString &objectPath, bool hosted)
+{
+    m_serviceObject->setHostedMenu(providerUniqueName, objectPath, hosted);
+}
+
+void AppMenuRegistrar::clearHostedMenus()
+{
+    m_serviceObject->clearHostedMenus();
+}
+
 } // namespace QindaQt::Shell::GlobalMenu::Registrar

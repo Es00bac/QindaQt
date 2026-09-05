@@ -37,7 +37,17 @@ private:
 
 std::unique_ptr<QObject> composeFirstPartyMenuExport(
     ApplicationCoordinator &coordinator, QWindow &window,
-    QDBusConnection sessionBus) {
+    QDBusConnection sessionBus,
+    std::function<void(bool)> setLocalMenuVisible) {
+  if (!setLocalMenuVisible) {
+    setLocalMenuVisible = [](bool) {};
+  }
+  auto bindVisibility = [&setLocalMenuVisible](ApplicationMenuExport &exporter) {
+    QObject::connect(&exporter, &ApplicationMenuExport::localMenuVisibleChanged,
+                     &exporter, [&exporter, callback = std::move(setLocalMenuVisible)] {
+                       callback(exporter.localMenuVisible());
+                     });
+  };
 #if defined(QINDAQT_ENABLE_APP_MENU_EXPORT_TEST_SEAM)
   bool idOk = false;
   const int testWindowIdValue =
@@ -58,6 +68,7 @@ std::unique_ptr<QObject> composeFirstPartyMenuExport(
                                                 std::make_unique<
                                                     FixedWindowIdentityPublisher>(
                                                     testWindowId));
+    bindVisibility(*composition);
     (void)composition->start();
     return std::unique_ptr<QObject>(std::move(composition));
   }
@@ -65,8 +76,9 @@ std::unique_ptr<QObject> composeFirstPartyMenuExport(
   if (!sessionBus.isConnected()) {
     return {};
   }
-  return std::unique_ptr<QObject>(
-      ApplicationMenuExport::compose(coordinator, window, sessionBus));
+  auto composition = ApplicationMenuExport::compose(coordinator, window, sessionBus);
+  bindVisibility(*composition);
+  return std::unique_ptr<QObject>(std::move(composition));
 }
 
 } // namespace QindaQt::AppShell::MenuExport

@@ -197,6 +197,20 @@ void GlobalMenuAppletComposition::start()
         GlobalMenu::Composition::GlobalMenuTransportCoordinator>(
             m_sessionBus, *m_identity, *m_identity, *m_identity,
             *m_registrar->registry(), *m_access);
+    QObject::connect(
+        m_coordinator.get(),
+        &GlobalMenu::Composition::GlobalMenuTransportCoordinator::hostedMenuChanged,
+        m_registrar.get(),
+        [this](const QString &provider, const QString &path, bool hosted) {
+            m_registrar->setHostedMenu(provider, path, hosted);
+        });
+    QObject::connect(m_access.get(),
+                     &GlobalMenu::GlobalMenuAppletAccess::rendererPresentChanged,
+                     m_registrar.get(), [this] {
+                         if (!m_access->rendererPresent()) {
+                             m_registrar->clearHostedMenus();
+                         }
+                     });
     QObject::connect(&m_windowActions,
                      &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
                      m_coordinator.get(),

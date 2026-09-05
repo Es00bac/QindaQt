@@ -7,6 +7,7 @@
 #include <QDBusConnection>
 #include <QKeySequence>
 #include <QWindow>
+#include <QPointer>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -82,7 +83,12 @@ std::unique_ptr<QObject> composeFileManagerMenuExport(
   // Manager, Terminal, and Text Editor; its fail-closed, lifecycle, and
   // test-seam behavior is owned by src/app_shell/menu_export.
   return QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
-      coordinator, *window, QDBusConnection::sessionBus());
+      coordinator, *window, QDBusConnection::sessionBus(),
+      [root = QPointer<QObject>(qmlRoot)](bool visible) {
+        if (root) {
+          root->setProperty("inWindowMenuVisible", visible);
+        }
+      });
 }
 
 } // namespace QindaQt::Apps::FileManager

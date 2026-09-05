@@ -17,6 +17,7 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
+#include <QMenuBar>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QWindow>
@@ -209,7 +210,9 @@ int main(int argc, char **argv) {
   if (QWindow *windowHandle = window.windowHandle()) {
     menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
         window.appShellCoordinator(), *windowHandle,
-        QDBusConnection::sessionBus());
+        QDBusConnection::sessionBus(), [&window](bool visible) {
+          window.menuBar()->setVisible(visible);
+        });
   }
   return application.exec();
 }

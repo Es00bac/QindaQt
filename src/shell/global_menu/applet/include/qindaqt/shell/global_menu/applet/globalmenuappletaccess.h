@@ -34,6 +34,7 @@ class GlobalMenuAppletAccess final : public QObject
     Q_PROPERTY(QVariantList items READ items NOTIFY itemsChanged)
     Q_PROPERTY(QString phase READ phase NOTIFY phaseChanged)
     Q_PROPERTY(QString reasonCode READ reasonCode NOTIFY phaseChanged)
+    Q_PROPERTY(bool rendererPresent READ rendererPresent NOTIFY rendererPresentChanged)
 
 public:
     explicit GlobalMenuAppletAccess(QObject *parent = nullptr);
@@ -46,6 +47,9 @@ public:
     [[nodiscard]] QVariantList items() const;
     [[nodiscard]] QString phase() const;
     [[nodiscard]] QString reasonCode() const;
+    [[nodiscard]] bool rendererPresent() const noexcept;
+    Q_INVOKABLE void attachRenderer();
+    Q_INVOKABLE void detachRenderer();
 
     // C++ callers capture the current tree synchronously. QML must provide
     // the generation embedded in its rendered item; stale generations fail closed.
@@ -65,6 +69,7 @@ Q_SIGNALS:
     void availableChanged();
     void itemsChanged();
     void phaseChanged();
+    void rendererPresentChanged();
 
 private:
     void setAvailable(bool available);
@@ -77,6 +82,7 @@ private:
     QVariantList m_topLevelProjection;
     QString m_phase = QStringLiteral("unavailable");
     QString m_reasonCode;
+    quint32 m_rendererCount = 0;
 };
 
 } // namespace QindaQt::Shell::GlobalMenu

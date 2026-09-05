@@ -26,6 +26,8 @@ public:
   int unregisterCount = 0;
   quint32 windowId = 0;
   QDBusObjectPath objectPath;
+  QString hostedProvider;
+  bool hosted = false;
 
 public Q_SLOTS:
   Q_SCRIPTABLE void RegisterWindow(quint32 id, const QDBusObjectPath &path) {
@@ -39,6 +41,14 @@ public Q_SLOTS:
       ++unregisterCount;
     }
   }
+  Q_SCRIPTABLE bool IsMenuHosted(const QString &provider,
+                                 const QDBusObjectPath &path) const {
+    return hosted && provider == hostedProvider && path == objectPath;
+  }
+
+Q_SIGNALS:
+  Q_SCRIPTABLE void MenuHostedChanged(QString provider,
+                                      QDBusObjectPath path, bool hosted);
 };
 
 class FakeIdentityPublisher final
@@ -109,7 +119,8 @@ struct RegistrarFixture final {
            connection.registerObject(
                QString::fromLatin1(
                    Shell::GlobalMenu::Registrar::kRegistrarObjectPath),
-               &registrar, QDBusConnection::ExportScriptableSlots) &&
+               &registrar, QDBusConnection::ExportScriptableSlots
+                               | QDBusConnection::ExportScriptableSignals) &&
            connection.registerService(QString::fromLatin1(
                Shell::GlobalMenu::Registrar::kRegistrarServiceName));
   }
@@ -144,7 +155,51 @@ private Q_SLOTS:
   void rejectedCloseKeepsLiveMenuPublished();
   void publishesNativeWaylandAddressWithoutInventingWindowId();
   void productionIdentityRejectsOffscreenWindow();
+  void localMenuTracksExactHostedExportAndRestoresOnLoss();
 };
+
+void ApplicationMenuExportTest::localMenuTracksExactHostedExportAndRestoresOnLoss() {
+  RegistrarFixture registrar(QStringLiteral("app-shell-hosted-registrar"));
+  QVERIFY(registrar.start());
+  auto providerBus = QDBusConnection::connectToBus(
+      QDBusConnection::SessionBus, QStringLiteral("app-shell-hosted-provider"));
+  QVERIFY(providerBus.isConnected());
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  QWindow window;
+  auto publisher = std::make_unique<FakeIdentityPublisher>(
+      AppShell::MenuExport::WindowMenuIdentity{
+          .kind = AppShell::MenuExport::WindowMenuIdentityKind::XWindow,
+          .registrarWindowId = 93});
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QVERIFY(composition.start());
+  QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
+  QVERIFY(composition.localMenuVisible());
+
+  registrar.registrar.hostedProvider = providerBus.baseService();
+  registrar.registrar.hosted = true;
+  QVERIFY(QMetaObject::invokeMethod(
+      &registrar.registrar, "MenuHostedChanged", Qt::DirectConnection,
+      Q_ARG(QString, providerBus.baseService()),
+      Q_ARG(QDBusObjectPath,
+            QDBusObjectPath(QStringLiteral("/org/qindaqt/AppShell/Menu"))),
+      Q_ARG(bool, true)));
+  QTRY_VERIFY_WITH_TIMEOUT(!composition.localMenuVisible(), 5'000);
+
+  registrar.registrar.hosted = false;
+  QVERIFY(QMetaObject::invokeMethod(
+      &registrar.registrar, "MenuHostedChanged", Qt::DirectConnection,
+      Q_ARG(QString, providerBus.baseService()),
+      Q_ARG(QDBusObjectPath,
+            QDBusObjectPath(QStringLiteral("/org/qindaqt/AppShell/Menu"))),
+      Q_ARG(bool, false)));
+  QTRY_VERIFY_WITH_TIMEOUT(composition.localMenuVisible(), 5'000);
+
+  registrar.stop();
+  QTRY_VERIFY_WITH_TIMEOUT(composition.localMenuVisible(), 5'000);
+  QDBusConnection::disconnectFromBus(QStringLiteral("app-shell-hosted-provider"));
+}
 
 void ApplicationMenuExportTest::
     exportsRealDbusMenuAndActivatesThroughCoordinatorOnce() {

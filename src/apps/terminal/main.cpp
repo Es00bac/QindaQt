@@ -20,6 +20,7 @@
 #include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
+#include <QMenuBar>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
 #include <QStandardPaths>
@@ -136,7 +137,9 @@ composeTerminalMenuExport(TerminalWindow &window) {
   }
   return QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
       window.appShellCoordinator(), *windowHandle,
-      QDBusConnection::sessionBus());
+      QDBusConnection::sessionBus(), [&window](bool visible) {
+        window.menuBar()->setVisible(visible);
+      });
 }
 
 // The factory resolves the profile's color scheme to its own QST generation

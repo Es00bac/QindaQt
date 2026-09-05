@@ -4,6 +4,7 @@
 #include <qindaqt/app_shell/menu_export/window_menu_identity.h>
 
 #include <QDBusConnection>
+#include <QDBusObjectPath>
 #include <QObject>
 
 #include <memory>
@@ -52,11 +53,18 @@ public:
   void stop();
   [[nodiscard]] MenuExportStatus status() const noexcept;
   [[nodiscard]] bool published() const noexcept;
+  [[nodiscard]] bool localMenuVisible() const noexcept;
   [[nodiscard]] std::optional<quint32> registeredWindowId() const noexcept;
   [[nodiscard]] QString failureCode() const;
 
 Q_SIGNALS:
   void statusChanged();
+  void localMenuVisibleChanged();
+
+private Q_SLOTS:
+  void handleMenuHostedChanged(const QString &providerUniqueName,
+                               const QDBusObjectPath &menuObjectPath,
+                               bool hosted);
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
