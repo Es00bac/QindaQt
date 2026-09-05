@@ -209,17 +209,19 @@ Item {
                     }
 
                     T.ScrollView {
+                        id: resultsView
                         objectName: "launcherAppletResults"
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         implicitHeight: Math.min(360, sectionColumn.implicitHeight)
+                        contentWidth: availableWidth
                         clip: true
                         focusPolicy: Qt.NoFocus
 
                         ColumnLayout {
                             id: sectionColumn
 
-                            width: parent.width
+                            width: resultsView.availableWidth
                             spacing: Tokens.space["1"]
 
                             Repeater {
