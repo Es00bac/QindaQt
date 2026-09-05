@@ -312,10 +312,30 @@ replacement, each of which invalidates the outstanding serial — sends
 `UnregisterWindow` for the attempted id against the exact owner it was sent
 to, exactly once whether or not that reply has arrived, and a superseded
 attempt's late reply is ignored on arrival so it can neither publish the dead
-id nor double the compensation. An answered error is authoritative in the
-other direction: an attempt the registrar explicitly refused is owed no
-compensation. The reply-confirmed id remains the only value
-`registeredWindowId()` reports.
+id nor double the compensation. Completion is classified fail-closed: only a
+`ReplyMessage` with the exact empty signature confirms the standard void call;
+an explicit registrar method error such as `AccessDenied` or `UnknownMethod`
+proves refusal and clears the debt; and local `NoReply`/timeout, connection or
+owner loss, and a success reply with any payload remain uncertain. An uncertain
+attempt stays owed until a withdrawal compensates it. The reply-confirmed id
+remains the only value `registeredWindowId()` reports.
+
+The exact X11 registrar lifecycle and its executable evidence are:
+
+| Transition | Export state and compensation rule | Focused row |
+| --- | --- | --- |
+| Send `RegisterWindow(id)` | Enter `Registering`; retain `id`, request serial, and exact owner as owed from send time. | `ApplicationMenuExportInFlightTest::surfaceDestructionCompensatesInFlightRegistrationExactlyOnce` |
+| Receive exact empty reply | Transfer the owed attempt to reply-confirmed `registeredWindowId`; enter `Published`. | `ApplicationMenuExportSurfaceTest::recreatedSurfaceSwapsExactRegistrarIdentity` |
+| Receive explicit registrar error | Enter `WaitingForRegistrar`; clear the refused attempt without `UnregisterWindow`. | `ApplicationMenuExportInFlightTest::rejectedInFlightRegistrationNeedsNoUnregisterAndDoesNotCrash` (`AccessDenied`) |
+| Reach local timeout/`NoReply` | Enter fail-closed `WaitingForRegistrar`; retain the uncertain attempted id until withdrawal. | `ApplicationMenuExportInFlightTest::acceptedButNeverRepliedTimeoutIsCompensatedExactlyOnce` |
+| Receive non-empty or unexpected success signature | Enter fail-closed `WaitingForRegistrar`; retain the uncertain attempted id until withdrawal. | `ApplicationMenuExportInFlightTest::malformedSuccessPayloadRemainsUncertainUntilWithdrawal` |
+| Destroy native surface | Invalidate the serial, compensate the attempted or confirmed id once, withdraw the platform identity, and wait without a live export. | `ApplicationMenuExportInFlightTest::surfaceDestructionCompensatesInFlightRegistrationExactlyOnce` |
+| Create native surface | On a queued turn obtain a fresh identity and start a fresh registration only when the current owner still exists. | `ApplicationMenuExportSurfaceTest::surfaceRecreationWithoutRegistrarStaysFailClosedThenRebinds` |
+| Reject close | Keep the live association and debt unchanged. | `ApplicationMenuExportTest::rejectedCloseKeepsLiveMenuPublished` |
+| Accept close | After visibility retires, invalidate the serial and compensate once before disabling. | `ApplicationMenuExportTest::retriesOnRegistrarReplacementAndTearsDownOnClose` |
+| Stop, quit, window destruction | Invalidate the serial, compensate once, withdraw identity, and unregister the endpoint; repeated teardown is inert. | `ApplicationMenuExportInFlightTest::acceptedButNeverRepliedTimeoutIsCompensatedExactlyOnce`; `TerminalMenuExportTest::shellFencesRealTerminalIdentity(matching-pid-and-window)` |
+| Registrar owner loss/change during an attempt | Compensate the old attempted id against its exact unique owner once; a late old reply is inert. | `ApplicationMenuExportInFlightTest::ownerChangeMidRegistrationCompensatesSupersededAttempt` |
+| Registrar owner restart | Remain withdrawn while absent, then publish a fresh identity and register only with the new exact owner. | `ApplicationMenuExportTest::retriesOnRegistrarReplacementAndTearsDownOnClose`; `ApplicationMenuExportSurfaceTest::surfaceRecreationWithoutRegistrarStaysFailClosedThenRebinds` |
 
 File Manager, Text Editor, and Terminal are the first-party consumers. Each
 executable retains one composition object beside its coordinator and window

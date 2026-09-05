@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // In-flight registration rows for the first-party menu export. A registrar
 // can accept RegisterWindow and mutate its registry before the exporter ever
-// sees the reply, so surface destruction in that window must compensate the
-// attempted id exactly once — the reply that arrives later is superseded and
-// must change nothing. These rows are the P1-01 negative controls for the
-// surface-recreation lifecycle proven in tst_application_menu_export_surface.
+// sees a valid empty reply. These rows classify explicit refusal separately
+// from timeout, malformed success, and owner-change uncertainty, while keeping
+// superseded replies and every compensating withdrawal exactly once.
 #include <qindaqt/app_shell/application_coordinator.h>
 #include <qindaqt/app_shell/menu_export/application_menu_export.h>
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
@@ -12,6 +11,7 @@
 #include <QDBusContext>
 #include <QDBusError>
 #include <QDBusMessage>
+#include <QSet>
 #include <QTimer>
 #include <QWindow>
 #include <QtTest>
@@ -32,18 +32,26 @@ class RacingRegistrar final : public QObject, protected QDBusContext {
   Q_CLASSINFO("D-Bus Interface", "com.canonical.AppMenu.Registrar")
 
 public:
+  enum class ReplyBehavior {
+    DelayedSuccess,
+    NeverReply,
+    AccessDenied,
+    MalformedSuccess,
+  };
+
   QList<quint32> registerCalls;
   QList<quint32> unregisterCalls;
   QStringList callLog;
+  QSet<quint32> heldRegistrations;
   int repliesSent = 0;
-  bool rejectRegistrations = false;
+  ReplyBehavior replyBehavior = ReplyBehavior::DelayedSuccess;
 
 public Q_SLOTS:
   Q_SCRIPTABLE void RegisterWindow(quint32 id, const QDBusObjectPath &path) {
     (void)path;
     registerCalls.append(id);
     callLog.append(QStringLiteral("register:%1").arg(id));
-    if (rejectRegistrations) {
+    if (replyBehavior == ReplyBehavior::AccessDenied) {
       sendErrorReply(QDBusError::AccessDenied,
                      QStringLiteral("rejected registration"));
       return;
@@ -51,6 +59,15 @@ public Q_SLOTS:
     setDelayedReply(true);
     const QDBusMessage call = message();
     const QDBusConnection bus = connection();
+    if (replyBehavior == ReplyBehavior::MalformedSuccess) {
+      bus.send(call.createReply(QVariant{QStringLiteral("unexpected")}));
+      ++repliesSent;
+      return;
+    }
+    heldRegistrations.insert(id);
+    if (replyBehavior == ReplyBehavior::NeverReply) {
+      return;
+    }
     QTimer::singleShot(750, this, [this, call, bus] {
       bus.send(call.createReply());
       ++repliesSent;
@@ -60,6 +77,7 @@ public Q_SLOTS:
   Q_SCRIPTABLE void UnregisterWindow(quint32 id) {
     unregisterCalls.append(id);
     callLog.append(QStringLiteral("unregister:%1").arg(id));
+    heldRegistrations.remove(id);
   }
 };
 
@@ -102,6 +120,11 @@ struct RegistrarFixture final {
                Shell::GlobalMenu::Registrar::kRegistrarServiceName));
   }
 
+  void releaseName() {
+    connection.unregisterService(QString::fromLatin1(
+        Shell::GlobalMenu::Registrar::kRegistrarServiceName));
+  }
+
   ~RegistrarFixture() {
     connection.unregisterService(QString::fromLatin1(
         Shell::GlobalMenu::Registrar::kRegistrarServiceName));
@@ -130,7 +153,10 @@ class ApplicationMenuExportInFlightTest final : public QObject {
 
 private Q_SLOTS:
   void surfaceDestructionCompensatesInFlightRegistrationExactlyOnce();
+  void acceptedButNeverRepliedTimeoutIsCompensatedExactlyOnce();
   void rejectedInFlightRegistrationNeedsNoUnregisterAndDoesNotCrash();
+  void malformedSuccessPayloadRemainsUncertainUntilWithdrawal();
+  void ownerChangeMidRegistrationCompensatesSupersededAttempt();
 };
 
 void ApplicationMenuExportInFlightTest::
@@ -209,10 +235,50 @@ void ApplicationMenuExportInFlightTest::
 }
 
 void ApplicationMenuExportInFlightTest::
+    acceptedButNeverRepliedTimeoutIsCompensatedExactlyOnce() {
+  RegistrarFixture registrar(QStringLiteral("menu-export-timeout-registrar"));
+  registrar.registrar.replyBehavior =
+      RacingRegistrar::ReplyBehavior::NeverReply;
+  QVERIFY(registrar.start());
+  const QString providerName = QStringLiteral("menu-export-timeout-provider");
+  auto providerBus =
+      QDBusConnection::connectToBus(QDBusConnection::SessionBus, providerName);
+  QVERIFY(providerBus.isConnected());
+
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  QWindow window;
+  window.create();
+  auto publisher = std::make_unique<RotatingIdentityPublisher>();
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QVERIFY(composition.start());
+  QTRY_COMPARE_WITH_TIMEOUT(registrar.registrar.registerCalls,
+                            QList<quint32>{71}, 5'000);
+  QTRY_COMPARE_WITH_TIMEOUT(
+      composition.failureCode(),
+      QStringLiteral("registrar-registration-uncertain"), 5'000);
+  QCOMPARE(composition.status(),
+           AppShell::MenuExport::MenuExportStatus::WaitingForRegistrar);
+  QCOMPARE(registrar.registrar.heldRegistrations, QSet<quint32>{71});
+  QVERIFY(!composition.registeredWindowId().has_value());
+
+  window.destroy();
+  QTRY_COMPARE_WITH_TIMEOUT(registrar.registrar.unregisterCalls,
+                            QList<quint32>{71}, 5'000);
+  QVERIFY(registrar.registrar.heldRegistrations.isEmpty());
+  composition.stop();
+  QTest::qWait(150);
+  QCOMPARE(registrar.registrar.unregisterCalls, QList<quint32>{71});
+  QDBusConnection::disconnectFromBus(providerName);
+}
+
+void ApplicationMenuExportInFlightTest::
     rejectedInFlightRegistrationNeedsNoUnregisterAndDoesNotCrash() {
   RegistrarFixture registrar(
       QStringLiteral("menu-export-inflight-rejected"));
-  registrar.registrar.rejectRegistrations = true;
+  registrar.registrar.replyBehavior =
+      RacingRegistrar::ReplyBehavior::AccessDenied;
   QVERIFY(registrar.start());
   const QString providerName =
       QStringLiteral("menu-export-inflight-rejected-provider");
@@ -263,6 +329,85 @@ void ApplicationMenuExportInFlightTest::
   composition.stop();
   QTest::qWait(200);
   QCOMPARE(registrar.registrar.unregisterCalls, QList<quint32>{});
+  QDBusConnection::disconnectFromBus(providerName);
+}
+
+void ApplicationMenuExportInFlightTest::
+    malformedSuccessPayloadRemainsUncertainUntilWithdrawal() {
+  RegistrarFixture registrar(
+      QStringLiteral("menu-export-malformed-reply-registrar"));
+  registrar.registrar.replyBehavior =
+      RacingRegistrar::ReplyBehavior::MalformedSuccess;
+  QVERIFY(registrar.start());
+  const QString providerName =
+      QStringLiteral("menu-export-malformed-reply-provider");
+  auto providerBus =
+      QDBusConnection::connectToBus(QDBusConnection::SessionBus, providerName);
+  QVERIFY(providerBus.isConnected());
+
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  QWindow window;
+  window.create();
+  auto publisher = std::make_unique<RotatingIdentityPublisher>();
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QVERIFY(composition.start());
+  QTRY_COMPARE_WITH_TIMEOUT(
+      composition.failureCode(),
+      QStringLiteral("registrar-registration-uncertain"), 5'000);
+  QCOMPARE(registrar.registrar.registerCalls, QList<quint32>{71});
+  QCOMPARE(registrar.registrar.repliesSent, 1);
+  QVERIFY(!composition.published());
+  QVERIFY(!composition.registeredWindowId().has_value());
+
+  composition.stop();
+  QTRY_COMPARE_WITH_TIMEOUT(registrar.registrar.unregisterCalls,
+                            QList<quint32>{71}, 5'000);
+  QTest::qWait(150);
+  QCOMPARE(registrar.registrar.unregisterCalls, QList<quint32>{71});
+  QDBusConnection::disconnectFromBus(providerName);
+}
+
+void ApplicationMenuExportInFlightTest::
+    ownerChangeMidRegistrationCompensatesSupersededAttempt() {
+  RegistrarFixture first(QStringLiteral("menu-export-owner-change-first"));
+  QVERIFY(first.start());
+  const QString providerName =
+      QStringLiteral("menu-export-owner-change-provider");
+  auto providerBus =
+      QDBusConnection::connectToBus(QDBusConnection::SessionBus, providerName);
+  QVERIFY(providerBus.isConnected());
+
+  AppShell::ApplicationCoordinator coordinator;
+  QVERIFY(coordinator.replaceActions({action()}).ok());
+  QWindow window;
+  window.create();
+  auto publisher = std::make_unique<RotatingIdentityPublisher>();
+  AppShell::MenuExport::ApplicationMenuExport composition(
+      coordinator, window, providerBus, std::move(publisher));
+  QVERIFY(composition.start());
+  QTRY_COMPARE_WITH_TIMEOUT(first.registrar.registerCalls,
+                            QList<quint32>{71}, 5'000);
+  QCOMPARE(first.registrar.repliesSent, 0);
+
+  first.releaseName();
+  RegistrarFixture second(QStringLiteral("menu-export-owner-change-second"));
+  QVERIFY(second.start());
+  QTRY_COMPARE_WITH_TIMEOUT(first.registrar.unregisterCalls,
+                            QList<quint32>{71}, 5'000);
+  QTRY_COMPARE_WITH_TIMEOUT(second.registrar.registerCalls,
+                            QList<quint32>{72}, 5'000);
+  QTRY_VERIFY_WITH_TIMEOUT(composition.published(), 5'000);
+  QCOMPARE(composition.registeredWindowId(), std::optional<quint32>{72});
+
+  QTRY_COMPARE_WITH_TIMEOUT(first.registrar.repliesSent, 1, 5'000);
+  QTest::qWait(150);
+  QCOMPARE(first.registrar.unregisterCalls, QList<quint32>{71});
+  QCOMPARE(composition.registeredWindowId(), std::optional<quint32>{72});
+  composition.stop();
+  QTRY_COMPARE_WITH_TIMEOUT(second.registrar.unregisterCalls,
+                            QList<quint32>{72}, 5'000);
   QDBusConnection::disconnectFromBus(providerName);
 }
 
