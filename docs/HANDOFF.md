@@ -1,8 +1,46 @@
 # Integration handoff
 
+## Usability audit acceptance — 2026-09-05
+
+The selected repair series covers outward Launcher/Bluetooth/Power popups and
+Escape, customization drop delivery and applied Discard baselines, saved startup
+layout/catalog merging, shell theme/font/accessibility publication, rendered
+menu generations, launcher configuration/authentication environment, separate
+panel zones and real rows, lazy applet creation, and all stock preset controls.
+Additional verified repairs correct launcher settings keys/string-list persistence,
+recovery messages, and selected Settings navigation contrast.
+
+The production resolver reports ten profiles, 90 effective instances, all ready.
+The compact chrome uses one 28-logical-pixel shared title/tab/control row with
+right-to-left Mac tabs, plus functional 24-pixel member title strips. The product
+build uses Gentoo system Qt/KWin; private nested testing uses the existing
+Weston test dependency. No new package installation was needed.
+
+Current verification: full Debug build and shell-runtime checks 6/6; broad sweep 640/643 followed by independent
+review and integrated passing rerun of all three repaired harness checks;
+installed-service checks 14/14; live shell theme and saved-layout restart;
+outward popup/Escape screenshots; compact Hybrid pointer grouping, member
+detachment, two-page tabs, visible-page switching, outer resizing and tab
+detachment, with state assertions and clean private-session shutdown. The final
+profile/display matrix passes 6/6 including its package fixture: WUXGA, 1080p
+at 125%, 1440p at 125%, 1080p at 150%, and dual 1080p. The harness unit/syntax
+selector passes 3/3. The matrix validator now respects each selected profile;
+GNOME overview-only handling is not required to invent a task-list panel.
+
+Remaining scope includes task-list preference delivery, global-menu arrow-key
+wrapping, notification control styling, the original audit's additional risks,
+and physical-session qualification. Shell preferences do not yet recolor the
+compositor-owned shared chrome or native decorations. This series does not claim
+Release qualification or complete emulation of the listed desktop environments.
+Memory optimization is explicitly deferred; functionality and usability take
+priority. Older entries below retain their historical evidence and are not
+blanket acceptance for the current tree.
+
 ## Current baseline
 
 Manager integration delta after the public baseline below:
+
+- 2026-09-05 — The usability audit repair series supersedes earlier blanket install-readiness claims. The ten selected repair groups are integrated, including compact shared/member chrome. Current acceptance is the system Qt/KWin Debug build on Gentoo with private nested interaction; this series does not inherit earlier Release or physical-session claims. The final audit acceptance record below is the current scope, and remaining audit findings remain open.
 
 - 2026-09-05T02:40:44-06:00 — **Install readiness restored on exact main `3e658510`** (product commit of the polish merge). Integrated the desktop polish `511ac862` at `3e658510` (task icons proven in the nested capture, shell-owned/non-normal windows excluded from tasks, quiet empty chips, Do Not Disturb default); focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed. The manager inspected the headless interactive capture: icon chips, real application icons on task buttons, quiet global menu, styled notification center. The install/SDDM smoke requires the user's sudo.
 - 2026-09-04T23:37:23-06:00 — **Exact main `6a2019aa` is verified and usable; install is allowed with three known visible polish defects** (task buttons show letter placeholders because the nested stage lacks desktop entries — the real prefix ships them; the shell's own popup is listed as a task; an empty chip renders as a white square) **that the open `desktop-polish` lane (Frances Arnold, OpenAI Codex) is fixing.** Integrated the icon-first panel applets `7eb5372d` at `6a2019aa` (Barbara McClintock ACCEPT `0/0/0/5` after one repair); focused 325/325 in Debug and Release, static gates, broad safe Debug 633/633, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 633/633 with the /usr/local prefix confirmed. Since the withdrawal: shell token publication (ADR-0071), iconography I1/I2 (ADR-0072), the atomic task-fact contract (ADR-0073), and the first-party menu export lifecycle are integrated; the manager inspected the headless interactive capture of this tree (icon chips, working task buttons, quiet global menu). The install/SDDM smoke requires the user's sudo.

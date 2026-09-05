@@ -15,9 +15,13 @@ baselines; saved startup layout and merged user catalogs; shell appearance and
 accessibility preferences; rendered global-menu action generations; child
 configuration/authentication environment; panel zone budgets and real rows;
 single-instance applet creation; and all 31 unresolved stock preset instances.
-Exact candidate review, integrated regression tests, and private nested visual
-interaction are required before this outcome is complete. Active ownership and
-bounded evidence are in the timestamped audit messages under `ops/team/messages`.
+The selected repairs are integrated. Final acceptance includes exact candidate
+review, integrated regression tests, and private nested visual interaction.
+The shared chrome now combines tabs and group controls in one 28-pixel row
+(right-to-left tabs in Mac style); native member title strips use 24 pixels.
+Current evidence and remaining scope are recorded in [Handoff](HANDOFF.md).
+This does not close the other audit findings or assert complete desktop-environment
+parity. Memory optimization remains deferred behind usability.
 
 
 ### Shell and customization delivery queue
