@@ -44,6 +44,7 @@ class TokenFacade final : public QObject {
     Q_PROPERTY(QVariantMap type READ type NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap motion READ motion NOTIFY tokensChanged FINAL)
     Q_PROPERTY(QVariantMap elevation READ elevation NOTIFY tokensChanged FINAL)
+    Q_PROPERTY(QVariantMap accessibility READ accessibility NOTIFY tokensChanged FINAL)
 
 public:
     explicit TokenFacade(QObject *parent = nullptr);
@@ -65,6 +66,7 @@ public:
     [[nodiscard]] QVariantMap type() const;
     [[nodiscard]] QVariantMap motion() const;
     [[nodiscard]] QVariantMap elevation() const;
+    [[nodiscard]] QVariantMap accessibility() const;
 
     // AGENT-CONTRACT: These are C++ composition APIs, intentionally not
     // Q_INVOKABLE. QML consumers can observe token generations but cannot

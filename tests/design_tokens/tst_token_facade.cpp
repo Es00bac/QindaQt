@@ -47,6 +47,9 @@ void TokenFacadeTests::qmlConsumesOneReadOnlyGeneration()
             property real bodySize: Tokens.type.body ?? 0
             property int tokenGeneration: Tokens.generation
             property string themeId: Tokens.sourceThemeId
+            property bool reducedMotion: Tokens.accessibility.reducedMotion ?? false
+            property bool reducedTransparency: Tokens.accessibility.reducedTransparency ?? false
+            property bool highContrast: Tokens.accessibility.highContrast ?? false
         }
     )qml",
                       QUrl(QStringLiteral("inline:qst-consumer.qml")));
@@ -73,6 +76,9 @@ void TokenFacadeTests::qmlConsumesOneReadOnlyGeneration()
     QCOMPARE(consumer->property("bodySize").toDouble(), 13.75);
     QCOMPARE(consumer->property("tokenGeneration").toULongLong(), 1ULL);
     QCOMPARE(consumer->property("themeId").toString(), dark.id);
+    QCOMPARE(consumer->property("reducedMotion").toBool(), false);
+    QCOMPARE(consumer->property("reducedTransparency").toBool(), false);
+    QCOMPARE(consumer->property("highContrast").toBool(), false);
 
     QVERIFY2(facade->publish(dark, {.basePointSize = 11.0, .textScale = 1.25}, &error),
              qPrintable(error));
@@ -80,12 +86,18 @@ void TokenFacadeTests::qmlConsumesOneReadOnlyGeneration()
     QCOMPARE(facade->generation(), 1ULL);
 
     const ThemeSpec light = builtIn(QStringLiteral("qinda-light.json"));
-    QVERIFY2(facade->publish(light, {}, &error), qPrintable(error));
+    QVERIFY2(facade->publish(light, {.reducedMotion = true,
+                                     .reducedTransparency = true,
+                                     .highContrast = true}, &error),
+             qPrintable(error));
     QCOMPARE(changed.size(), 2);
     QCOMPARE(facade->generation(), 2ULL);
     QCOMPARE(consumer->property("baseColor").value<QColor>(),
              light.colors.value(QStringLiteral("canvas")));
     QCOMPARE(consumer->property("themeId").toString(), light.id);
+    QCOMPARE(consumer->property("reducedMotion").toBool(), true);
+    QCOMPARE(consumer->property("reducedTransparency").toBool(), true);
+    QCOMPARE(consumer->property("highContrast").toBool(), true);
 }
 
 void TokenFacadeTests::refusesPublicationFromAnotherThread()

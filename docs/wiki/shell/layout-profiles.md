@@ -208,6 +208,25 @@ These profiles reproduce workflows with original QindaQt code and assets. They
 do not claim extension compatibility with those desktops or copy proprietary
 branding.
 
+## Centered dock presentation
+
+The QindaQt smart shelf and macOS-inspired dock use one canonical `task-list`
+instance, the launcher trigger, and the compiled `quick-launch` pins strip in
+their center zone. Their existing applet presentation setting `dockMode: true`
+selects dock treatment after profile resolution; it is not a schema field and
+does not alter task-list, launcher, or pin persistence. A copied or renamed
+center-bottom panel retains the treatment when its applets retain that setting;
+the `dock` and `smart-shelf` IDs remain legacy fallbacks only.
+
+Dock tiles receive a 60-logical-pixel presentation budget inside an 80-pixel
+surface with token spacing for a bottom gap and hover allowance. The painted
+rounded shelf hugs its occupied center content instead of filling the solved
+fractional window. If a customization places dock content in a start or end
+zone, the material expands to cover that real content rather than leaving a
+clickable unpainted control. Reduced motion disables dock lift in the owning
+applets; reduced transparency and high contrast select opaque material from
+the published QST accessibility projection.
+
 Every one of the ten shipped profiles contains exactly one
 `notification-center` applet instance. This is a stock default, not a schema
 requirement: customization may remove it, and imported or user-created profiles

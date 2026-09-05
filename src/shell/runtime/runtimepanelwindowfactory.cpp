@@ -18,6 +18,8 @@
 #include "qindaqt/applets/manifest_catalog.h"
 
 #include <QPointer>
+#include <QMetaProperty>
+#include <QRegion>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickWindow>
@@ -38,6 +40,13 @@ QString componentErrors(const QQmlComponent &component)
         messages.push_back(qmlError.toString());
     }
     return messages.join(QLatin1Char('\n'));
+}
+
+void applyInputBounds(QQuickWindow *window, const QVariant &value)
+{
+    const QRect bounds = value.toRectF().toAlignedRect()
+        .intersected(QRect(QPoint(), window->size()));
+    window->setMask(QRegion(bounds));
 }
 
 } // namespace
@@ -212,6 +221,23 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
                             QVariant::fromValue(m_desktopControlsAccess));
     }
     window->setObjectName(QStringLiteral("qindaqt-panel-%1").arg(surfaceId));
+    if (auto *content = window->findChild<QObject *>(QStringLiteral("runtimePanelContent"));
+        content != nullptr) {
+        // AGENT-GUARD: a centered dock has transparent solver-allocated
+        // margins. Its QWindow mask must track the painted shelf plus hover
+        // allowance, otherwise that invisible region blocks desktop input.
+        applyInputBounds(window, content->property("inputBounds"));
+        QObject::connect(content, &QObject::destroyed, window, [window] {
+            window->setMask(QRegion());
+        });
+        const int propertyIndex = content->metaObject()->indexOfProperty("inputBounds");
+        if (propertyIndex >= 0) {
+            const QMetaProperty property = content->metaObject()->property(propertyIndex);
+            QMetaObject::connect(content, property.notifySignal(), window, [window, content] {
+                applyInputBounds(window, content->property("inputBounds"));
+            });
+        }
+    }
     m_liveWindows.append(QPointer<QQuickWindow>(window));
     return std::unique_ptr<QQuickWindow>(window);
 }

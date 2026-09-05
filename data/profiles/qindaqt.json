@@ -32,11 +32,11 @@
     },
     {
       "id": "smart-shelf", "edge": "bottom", "layer": "above", "hideMode": "intelligent",
-      "alignment": "center", "rows": 1, "thickness": 54, "length": 0.52,
+      "alignment": "center", "rows": 1, "thickness": 80, "length": 0.42,
       "applets": [
-        {"id": "apps", "plugin": "application-launcher", "settings": {"zone": "center"}},
-        {"id": "hosted-task-list", "plugin": "task-list", "settings": {"zone": "center"}},
-        {"id": "tasks", "plugin": "grouped-task-list", "settings": {"zone": "center"}}
+        {"id": "apps", "plugin": "launcher", "settings": {"zone": "center", "dockMode": true}},
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}}
       ]
     }
   ]

@@ -21,6 +21,10 @@ Rectangle {
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
     property var desktopControlsAccess: null
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
+    property bool dockHasLauncherGroup: false
     readonly property var colors: theme.colors ?? ({})
     readonly property var settings: applet.settings ?? ({})
     readonly property var runtime: applet.runtime ?? ({})
@@ -46,15 +50,15 @@ Rectangle {
           ? Math.max(compactExtent,
                      usesLiveContent ? builtinContent.implicitHeight : compactExtent)
           : compactExtent
-    radius: Math.min(theme.cornerRadius ?? 8, 8)
+    radius: dockMode ? Tokens.radius.m : Math.min(theme.cornerRadius ?? 8, 8)
     // AGENT-GUARD: live applets size themselves against the panel row. A
     // second clip here cuts their token padding on the stock 26 px panel;
     // PanelContent remains the sole surface-extent clip authority.
     clip: !usesLiveContent
     color: builtinContent.selected || hoverHandler.hovered
-          ? colors.accent ?? "#8fc8b7"
+          ? (Tokens.ready ? Tokens.state.hover : colors.accent ?? "#8fc8b7")
           : settings.bare ? "transparent"
-          : colors.surfaceRaised ?? "#2c312e"
+          : (Tokens.ready ? Tokens.bg.raised : colors.surfaceRaised ?? "#2c312e")
 
     function displayLabel(plugin) {
         const labels = {
@@ -141,6 +145,10 @@ Rectangle {
         taskListAppletAccess: root.taskListAppletAccess
         statusNotifierAppletAccess: root.statusNotifierAppletAccess
         desktopControlsAccess: root.desktopControlsAccess
+        dockMode: root.dockMode
+        dockTileSize: root.dockTileSize
+        reducedMotion: root.reducedMotion
+        dockHasLauncherGroup: root.dockHasLauncherGroup
     }
 
     Rectangle {

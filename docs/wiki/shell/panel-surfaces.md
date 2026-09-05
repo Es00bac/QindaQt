@@ -143,6 +143,16 @@ not clipped a second time, including the 18-pixel content row of the stock
 operational notices live in focusable `Popup.Window` surfaces, so their text
 cannot inflate the panel and their controls remain reachable from a
 non-focusable layer-shell panel. Escape closes these detail surfaces through the focused popup window.
+
+Centered bottom panels whose resolved applets request `dockMode` paint a
+content-hugging rounded shelf inside their solver-owned surface. The runtime
+window factory tracks the QML-painted bounds and applies a `QWindow` input mask
+that includes the token hover allowance. This makes the transparent planned
+margins pass desktop input through while retaining hover magnification inside
+the bounded dock surface. The mask returns to the full surface for non-dock
+panels. QML uses only published QST colors and the read-only accessibility
+projection: reduced transparency or high contrast produces opaque material;
+there is no local blur effect.
 Edge reveal/hold producers, hide animation, applet process hosting, and
 settings preview subscription remain later acceptance work.
 

@@ -27,6 +27,10 @@ Item {
     property var taskListAppletAccess: null
     property var statusNotifierAppletAccess: null
     property var desktopControlsAccess: null
+    property bool dockMode: false
+    property int dockTileSize: 60
+    property bool reducedMotion: false
+    property bool dockHasLauncherGroup: false
     readonly property var runtime: applet.runtime ?? ({})
     readonly property string entryPoint: String(runtime.entryPoint ?? "")
     readonly property bool ready: liveApplets && runtime.ready === true
@@ -79,6 +83,9 @@ Item {
         id: desktopComponents
         access: root.desktopControlsAccess
         vertical: root.vertical
+        dockMode: root.dockMode
+        dockTileSize: root.dockTileSize
+        reducedMotion: root.reducedMotion
     }
 
     Loader {
@@ -189,6 +196,10 @@ Item {
             visible: root.taskListReady
             access: root.taskListAppletAccess
             vertical: root.vertical
+            dockMode: root.dockMode
+            dockTileSize: root.dockTileSize
+            dockHasLauncherGroup: root.dockHasLauncherGroup
+            reducedMotion: root.reducedMotion
         }
     }
 
