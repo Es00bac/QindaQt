@@ -67,6 +67,9 @@ public:
   [[nodiscard]] QVariantList entryRows() const;
   [[nodiscard]] int entryCount() const noexcept;
   [[nodiscard]] int totalEntryCount() const noexcept;
+  // AGENT-CONTRACT: Includes members represented by collapsed container rows;
+  // ShellDevelopment1 uses this count to prove compositor windows reached T1.
+  [[nodiscard]] int totalWindowCount() const noexcept;
   [[nodiscard]] int overflowCount() const noexcept;
   [[nodiscard]] bool windowsReadGranted() const noexcept;
   [[nodiscard]] bool windowsActivateGranted() const noexcept;

@@ -101,6 +101,7 @@ void TaskListAppletControllerTests::coldStartTransitionsThroughBoundedPhases() {
   QCOMPARE(controller.phaseReasonText().isEmpty(), true);
   QCOMPARE(controller.entryCount(), 2);
   QCOMPARE(controller.totalEntryCount(), 2);
+  QCOMPARE(controller.totalWindowCount(), 3);
   QCOMPARE(controller.overflowCount(), 0);
   QCOMPARE(controller.canActivate(), true);
   QCOMPARE(controller.canManage(), true);
@@ -119,6 +120,7 @@ void TaskListAppletControllerTests::readDenialWithholdsObservationAndDispatch() 
            QStringLiteral("windows-read-not-granted"));
   QCOMPARE(controller.entryCount(), 0);
   QCOMPARE(controller.totalEntryCount(), 0);
+  QCOMPARE(controller.totalWindowCount(), 0);
   QCOMPARE(controller.windowsReadGranted(), false);
   QCOMPARE(controller.canActivate(), false);
   QCOMPARE(controller.canManage(), false);

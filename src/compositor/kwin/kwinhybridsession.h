@@ -4,6 +4,7 @@
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactiontypes.h"
 #include "qindaqt/compositor/shellwindowactions.h"
+#include "hybridtaskidentitypolicy.h"
 
 #include <QObject>
 #include <QJsonArray>
@@ -71,6 +72,7 @@ public:
     [[nodiscard]] bool isContainerMaximized(const QString &containerId) const noexcept;
     [[nodiscard]] QJsonObject diagnostics() const;
     [[nodiscard]] QJsonArray publicContainers() const;
+    [[nodiscard]] QVector<TaskContainerIdentity> taskIdentityPlans() const;
     [[nodiscard]] std::optional<QJsonObject>
     publicSnapshot(const QString &containerId) const;
     [[nodiscard]] bool executeShellWindowAction(

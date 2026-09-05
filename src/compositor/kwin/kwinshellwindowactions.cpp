@@ -3,6 +3,7 @@
 
 #include "kwinhybridsession.h"
 #include "kwinshellwindowidentity.h"
+#include "kwinshelltaskfacts.h"
 #include "kwinshellvisibilitypublisher.h"
 #include "managedwindowregistry.h"
 
@@ -30,6 +31,7 @@ constexpr auto ProcessIdCredential = "ProcessID";
 constexpr auto ShellObjectPath = "/org/qindaqt/CompositorShell";
 constexpr auto ShellInterface = "org.qindaqt.CompositorShell1";
 constexpr auto IdentityChangedSignal = "ActiveWindowIdentityChanged";
+constexpr auto TaskFactsChangedSignal = "TaskListSnapshotChanged";
 
 } // namespace
 
@@ -197,18 +199,25 @@ KWinShellWindowActionsEndpoint::KWinShellWindowActionsEndpoint(
     ShellWindowActionController &actionController,
     ShellWindowIdentityController &identityController,
     KWinShellWindowIdentityPublisher &identityPublisher,
+    ShellTaskFactsController &taskFactsController,
+    KWinShellTaskFactsPublisher &taskFactsPublisher,
     KWinShellPanelOwnerSource &panelOwner,
     QDBusConnection connection,
     QObject *parent)
     : QObject(parent)
     , m_actionController(actionController)
     , m_identityController(identityController)
+    , m_taskFactsController(taskFactsController)
     , m_connection(std::move(connection))
 {
     connect(&identityPublisher, &KWinShellWindowIdentityPublisher::snapshotChanged,
             this, &KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation);
     connect(&panelOwner, &KWinShellPanelOwnerSource::shellPanelOwnerChanged,
             this, &KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation);
+    connect(&taskFactsPublisher, &KWinShellTaskFactsPublisher::snapshotChanged,
+            this, &KWinShellWindowActionsEndpoint::sendDirectedTaskFactsInvalidation);
+    connect(&panelOwner, &KWinShellPanelOwnerSource::shellPanelOwnerChanged,
+            this, &KWinShellWindowActionsEndpoint::sendDirectedTaskFactsInvalidation);
 }
 
 QByteArray KWinShellWindowActionsEndpoint::ActivateWindow(
@@ -252,6 +261,17 @@ QByteArray KWinShellWindowActionsEndpoint::ActiveWindowIdentity()
     return result;
 }
 
+QByteArray KWinShellWindowActionsEndpoint::TaskListSnapshot()
+{
+    const QString caller = calledFromDBus() ? message().service() : QString{};
+    const QByteArray result = m_taskFactsController.snapshot(caller);
+    const auto decoded = decodeShellTaskFactsSnapshot(result);
+    if (decoded && decoded->status != ShellTaskFactsStatus::Unauthorized) {
+        m_boundTaskFactsOwner = caller;
+    }
+    return result;
+}
+
 void KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation()
 {
     if (m_boundIdentityOwner.isEmpty() || !m_connection.isConnected()) {
@@ -268,6 +288,25 @@ void KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation()
     if (!m_identityController.authorized(m_boundIdentityOwner)) {
         m_boundIdentityOwner.clear();
     }
+}
+
+void KWinShellWindowActionsEndpoint::sendDirectedTaskFactsInvalidation()
+{
+    if (m_boundTaskFactsOwner.isEmpty() || !m_connection.isConnected()) {
+        return;
+    }
+    // AGENT-GUARD: Task titles, attention, workspace, and membership are
+    // authenticated facts. A normal emitted Qt signal would broadcast their
+    // timing even though the snapshot itself is protected.
+    if (!m_taskFactsController.authorized(m_boundTaskFactsOwner)) {
+        m_boundTaskFactsOwner.clear();
+        return;
+    }
+    QDBusMessage signal = QDBusMessage::createTargetedSignal(
+        m_boundTaskFactsOwner, QString::fromLatin1(ShellObjectPath),
+        QString::fromLatin1(ShellInterface),
+        QString::fromLatin1(TaskFactsChangedSignal));
+    m_connection.send(signal);
 }
 
 QByteArray KWinShellWindowActionsEndpoint::submit(

@@ -36,5 +36,9 @@
       <arg name="snapshotJson" type="ay" direction="out"/>
     </method>
     <signal name="ActiveWindowIdentityChanged"/>
+    <method name="TaskListSnapshot">
+      <arg name="snapshotJson" type="ay" direction="out"/>
+    </method>
+    <signal name="TaskListSnapshotChanged"/>
   </interface>
 </node>

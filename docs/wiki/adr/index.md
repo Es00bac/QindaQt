@@ -73,6 +73,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0070](0070-confine-session-actions-behind-authenticated-boundaries.md) | Accepted | Confine logout, lock, and machine power actions behind authenticated boundaries |
 | [ADR-0071](0071-publish-and-prove-shell-token-readiness.md) | Accepted | Publish QST-1 before shell QML and prove readiness at boot |
 | [ADR-0072](0072-shell-iconography-confined-xdg-icon-themes.md) | Accepted | Shell iconography over confined XDG icon themes |
+| [ADR-0073](0073-publish-atomic-authenticated-task-facts.md) | Accepted | Publish atomic task facts only to the authenticated production shell |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

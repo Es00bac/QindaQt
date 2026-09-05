@@ -3,7 +3,6 @@
 
 #include "qindaqt/shell/task_list/producer/task_list_producer_transport.h"
 
-#include <algorithm>
 #include <limits>
 #include <utility>
 
@@ -56,8 +55,8 @@ TaskListFactsProducer::TaskListFactsProducer(
           &TaskListFactsProducer::handleServiceOwnerChanged);
   connect(&m_transport, &TaskListProducerTransport::refreshInvalidated, this,
           &TaskListFactsProducer::handleInvalidation);
-  connect(&m_transport, &TaskListProducerTransport::windowsRead, this,
-          &TaskListFactsProducer::handleWindowsRead);
+  connect(&m_transport, &TaskListProducerTransport::factsRead, this,
+          &TaskListFactsProducer::handleFactsRead);
   connect(&m_transport, &TaskListProducerTransport::refreshFailed, this,
           &TaskListFactsProducer::handleRefreshFailed);
 }
@@ -106,10 +105,12 @@ void TaskListFactsProducer::stop() {
   m_retryIndex = 0;
   m_transport.stop();
   m_owner.clear();
-  m_windowEpoch.clear();
-  m_windowPayload.clear();
-  m_windowRevision = 0;
-  m_hasWindowLineage = false;
+  m_factsEpoch.clear();
+  m_factsPayload.clear();
+  m_factsRevision = 0;
+  m_actionGeneration.reset();
+  m_containers.clear();
+  m_hasFactsLineage = false;
   // AGENT-GUARD: Stop withdraws availability even before the first accepted
   // generation. Candidate 3a5ae17 retained Ready owner/lineage and admitted a
   // mutation after stop (review finding P1-2).
@@ -125,8 +126,18 @@ TaskListSourceStatus TaskListFactsProducer::status() const {
   return m_source.status();
 }
 
+std::optional<TaskListActionGeneration>
+TaskListFactsProducer::actionGeneration() const {
+  return m_actionGeneration;
+}
+
 std::optional<TaskListContainerLineage>
-TaskListFactsProducer::containerLineage(const QString &) const {
+TaskListFactsProducer::containerLineage(const QString &containerId) const {
+  for (const auto &container : m_containers) {
+    if (container.containerId == containerId) {
+      return container;
+    }
+  }
   return std::nullopt;
 }
 
@@ -144,10 +155,12 @@ void TaskListFactsProducer::handleServiceOwnerChanged(
   const bool clearSource = uniqueOwner.isEmpty()
       || (!m_owner.isEmpty() && m_owner != uniqueOwner);
   m_owner = uniqueOwner;
-  m_windowEpoch.clear();
-  m_windowPayload.clear();
-  m_windowRevision = 0;
-  m_hasWindowLineage = false;
+  m_factsEpoch.clear();
+  m_factsPayload.clear();
+  m_factsRevision = 0;
+  m_actionGeneration.reset();
+  m_containers.clear();
+  m_hasFactsLineage = false;
 
   // AGENT-GUARD: owner replacement invalidates every task id and action
   // fence. Clear the retained generation before degrading; showing the old
@@ -176,9 +189,9 @@ void TaskListFactsProducer::handleInvalidation(const QString &uniqueOwner) {
   scheduleDebounce(m_timing.debounceMilliseconds);
 }
 
-void TaskListFactsProducer::handleWindowsRead(quint64 token,
-                                              const QString &uniqueOwner,
-                                              const QByteArray &payload) {
+void TaskListFactsProducer::handleFactsRead(quint64 token,
+                                            const QString &uniqueOwner,
+                                            const QByteArray &payload) {
   if (!m_started || !m_inFlight || m_inFlight->token != token ||
       m_inFlight->owner != uniqueOwner) {
     return;
@@ -191,38 +204,37 @@ void TaskListFactsProducer::handleWindowsRead(quint64 token,
     return;
   }
 
-  const TaskListWindowsResult decoded =
-      TaskListWireDecoder::decodeWindows(payload);
+  const TaskListFactsResult decoded =
+      TaskListWireDecoder::decodeTaskFacts(payload);
   if (!decoded.ok()) {
     failRefresh(decoded.message, true);
     return;
   }
-  if (!decoded.generationAvailable) {
-    failRefresh(QStringLiteral("compositor window generation is unavailable"),
-                false);
-    return;
-  }
-  // AGENT-NOTE: P1-1 on 3a5ae17 proved that matching the visibility fence did
-  // not authorize combining two inventories. This lineage validates only the
-  // documented Windows() payload; no scope bytes enter this module.
-  if (!windowLineageAdmits(decoded, payload)) {
-    failRefresh(QStringLiteral("compositor window inventory lineage regressed "
+  if (!factsLineageAdmits(decoded, payload)) {
+    failRefresh(QStringLiteral("compositor task-fact lineage regressed "
                                "or collided"),
                 false);
     return;
   }
-  m_windowEpoch = decoded.epoch;
-  m_windowRevision = decoded.revision;
-  m_windowPayload = payload;
-  m_hasWindowLineage = true;
+  const bool unchanged = m_hasFactsLineage
+      && decoded.revision == m_factsRevision && payload == m_factsPayload;
+  if (!unchanged || m_source.status() != TaskListSourceStatus::Ready) {
+    const TaskListEvaluation publication =
+        m_source.publishGeneration(decoded.facts);
+    if (!publication.ok()) {
+      failRefresh(publication.error.message, false);
+      return;
+    }
+  }
+  m_factsEpoch = decoded.epoch;
+  m_factsRevision = decoded.revision;
+  m_factsPayload = payload;
+  m_actionGeneration = decoded.actionGeneration;
+  m_containers = decoded.containers;
+  m_hasFactsLineage = true;
   m_retryIndex = 0;
-
-  // Windows() lacks the required output/workspace and atomic container
-  // revision facts. Publishing placeholders would turn missing authority into
-  // UI truth, so the current public protocol is intentionally unavailable.
-  failRefresh(QStringLiteral("Compositor1 has no coherent task-list facts "
-                             "inventory"),
-              false);
+  m_lastError.clear();
+  emitStateIfChanged(true);
 }
 
 void TaskListFactsProducer::handleRefreshFailed(
@@ -262,12 +274,13 @@ void TaskListFactsProducer::scheduleRetry() {
   if (!m_started || m_inFlight || m_owner.isEmpty()) {
     return;
   }
-  const qsizetype last = m_timing.retryMilliseconds.size() - 1;
-  const qsizetype index = std::min(m_retryIndex, last);
-  const int delay = m_timing.retryMilliseconds.at(index);
-  if (m_retryIndex < last) {
-    ++m_retryIndex;
+  // AGENT-GUARD: Exhausting this finite schedule stops autonomous reads.
+  // Repeating the last interval would turn failure recovery into a polling
+  // loop and disclose needless task-fact traffic while the authority is down.
+  if (m_retryIndex >= m_timing.retryMilliseconds.size()) {
+    return;
   }
+  const int delay = m_timing.retryMilliseconds.at(m_retryIndex++);
   m_refreshTimer.stop();
   m_timerPurpose = TimerPurpose::Retry;
   m_refreshTimer.start(delay);
@@ -316,18 +329,18 @@ void TaskListFactsProducer::degrade(const QString &message) {
   m_source.markDegraded();
 }
 
-bool TaskListFactsProducer::windowLineageAdmits(
-    const TaskListWindowsResult &windows, const QByteArray &payload) const {
-  if (!m_hasWindowLineage) {
+bool TaskListFactsProducer::factsLineageAdmits(
+    const TaskListFactsResult &facts, const QByteArray &payload) const {
+  if (!m_hasFactsLineage) {
     return true;
   }
-  if (windows.epoch != m_windowEpoch) {
+  if (facts.epoch != m_factsEpoch) {
     return false;
   }
-  if (windows.revision > m_windowRevision) {
+  if (facts.revision > m_factsRevision) {
     return true;
   }
-  return windows.revision == m_windowRevision && payload == m_windowPayload;
+  return facts.revision == m_factsRevision && payload == m_factsPayload;
 }
 
 bool TaskListFactsProducer::currentOwnerIs(const QString &uniqueOwner) const {

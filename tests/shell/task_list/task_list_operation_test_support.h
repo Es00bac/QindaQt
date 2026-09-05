@@ -27,6 +27,8 @@ public:
   [[nodiscard]] TaskListSourceStatus status() const override {
     return sourceStatus;
   }
+  [[nodiscard]] std::optional<TaskListActionGeneration>
+  actionGeneration() const override { return generation; }
   [[nodiscard]] std::optional<TaskListContainerLineage>
   containerLineage(const QString &containerId) const override {
     for (const TaskListContainerLineage &lineage : containers) {
@@ -45,6 +47,8 @@ public:
 
   QString owner = QStringLiteral(":1.1");
   quint64 revision = 1;
+  std::optional<TaskListActionGeneration> generation{
+      TaskListActionGeneration{QStringLiteral("identity-epoch"), 7}};
   TaskListSourceStatus sourceStatus = TaskListSourceStatus::Ready;
   QVector<TaskListContainerLineage> containers{
       {QStringLiteral("c1"), 7, TaskListContainerAuthority::ControlBridge}};

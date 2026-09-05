@@ -10,6 +10,7 @@
 #include "kwinsceneadapter.h"
 #include "kwinshellvisibilitypublisher.h"
 #include "kwinshellwindowidentity.h"
+#include "kwinshelltaskfacts.h"
 #include "kwinshellwindowactions.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
@@ -17,6 +18,7 @@
 #include "qindaqt/compositor/containercontrolbridge.h"
 #include "qindaqt/compositor/shellwindowactions.h"
 #include "qindaqt/compositor/shellwindowidentity.h"
+#include "qindaqt/compositor/shelltaskfacts.h"
 
 #include "windowcontainer.h"
 
@@ -78,6 +80,9 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
     m_shellPanelOwner = std::make_unique<KWinShellPanelOwnerSource>();
     m_shellIdentity = std::make_unique<KWinShellWindowIdentityPublisher>(
         *m_shellVisibility);
+    m_shellTaskFacts = std::make_unique<KWinShellTaskFactsPublisher>(
+        *m_registry, *m_outputInventory, *m_shellVisibility, *m_bridge,
+        *m_hybridSession);
     m_shellActionRegistry = std::make_unique<KWinShellWindowRegistry>(
         *m_registry, *m_shellVisibility);
     m_shellActionExecutor = std::make_unique<KWinShellWindowActionExecutor>(
@@ -87,8 +92,11 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
         *m_shellActionExecutor);
     m_shellIdentityController = std::make_unique<ShellWindowIdentityController>(
         *m_shellCredentials, *m_shellPanelOwner, *m_shellIdentity);
+    m_shellTaskFactsController = std::make_unique<ShellTaskFactsController>(
+        *m_shellCredentials, *m_shellPanelOwner, *m_shellTaskFacts);
     m_shellActionEndpoint = std::make_unique<KWinShellWindowActionsEndpoint>(
         *m_shellActionController, *m_shellIdentityController, *m_shellIdentity,
+        *m_shellTaskFactsController, *m_shellTaskFacts,
         *m_shellPanelOwner, m_bus);
     m_shellVisibility->setHybridMaximizedProvider([this](const QString &containerId) {
         return m_hybridSession

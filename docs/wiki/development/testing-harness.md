@@ -285,8 +285,12 @@ to Qinda Light. `qindaqt.shell-capture-matrix` now treats every QML warning as
 fatal across the complete preview dispatcher and writes temporary captures
 only beneath its build executable directory. The nested
 `desktop.virtual.notification-shell-readiness-unit` requires the matching
-live `ShellDevelopment1.tokens` fact shape; boot rows consume that same
-validator.
+live `ShellDevelopment1.tokens` fact shape and the exact `taskList` object
+(`ready`, positive generation, at least one window); boot rows consume that
+same validator. Known not-ready task phases and a stable-owner D-Bus `NoReply`
+remain pending only inside the outer boot deadline; an unknown phase,
+non-canonical generation, boolean count, extra field, or owner instability
+fails closed.
 
 `qindaqt.terminal-pty-bridge` includes a real-kernel regression for the gap
 between master creation and the child opening its slave. A bridge-held
@@ -1068,12 +1072,12 @@ ctest --test-dir build/dev \
 ```
 
 The rows cover the pure T0 model (values, batch validation, grouping,
-intents, scope filtering, presentation), the T1 wire decoders (hostile payload
-shapes, duplicate/oversized/malformed inventories, exact 4,096/4,097-window
-bounds, UUID/schema/revision validation, and container lineage bounds), the
-facts producer's exact-owner lineage (signal-raced refresh fencing, explicit
-refusal to combine the panel visibility or container inventories with
-`Windows`, malformed-reply degradation with retained generation,
+intents, scope filtering, presentation), the T1 atomic task-fact decoder
+(hostile field sets and types, unknown references, duplicate/oversized/
+malformed inventories, exact 4,096/4,097-window bounds, schema/revision/action-
+generation validation, and container membership/lineage bounds), the facts
+producer's exact-owner lineage (coherent-to-Ready publication, signal-raced
+refresh fencing, malformed-reply degradation with retained generation,
 degradation/stop `stateChanged` notification, stop availability withdrawal,
 non-replying-authority timeout and bounded retry, owner loss/replacement,
 late-reply fencing, foreign epochs, revision regression/equal-revision
@@ -1086,11 +1090,13 @@ reply lineage (`protocol`, `transactionId`, `containerId`, `status`, and
 `revision`) with forged/recycled/cross-lifetime rejection, exactly-once
 Uncertain on timeout/owner change, protocol-fixed Dock revision rejection, and
 unsupported-authority pre-rejection).
-The Qt transport row runs a fake `org.qindaqt.Compositor1`
-service on a fresh private `dbus-daemon` and proves exact-unique-owner binding
-for reads, signals, and mutations, including cold-start known absence, owner
-loss, and replacement; it also poisons the forbidden independent inventories
-and proves the producer never calls them.
+The Qt transport row runs fake `CompositorShell1` task facts and the legacy
+`Compositor1` container-operation surface on a fresh private `dbus-daemon`.
+It proves exact-unique-owner binding for reads, directed invalidations, and
+mutations, including cold-start known absence, owner loss, and replacement.
+`compositor.shell-task-facts` independently proves publication fencing,
+bounds/reference rejection with prior-generation retention, constant-size
+pre-source unauthorized denial, and panel-owner credential changes.
 
 Every transport process is the QtTest executable itself on a private bus; the
 rows contact no host session bus, compositor, display, input, hardware, or
@@ -1666,8 +1672,9 @@ Release configurations. The focused commands above isolate its live session
 proofs; they do not replace the complete-suite gate.
 
 `compositor.kwin-shell-window-actions` runs serially under a private session
-bus, disposable build-root XDG directories, and the cache-pinned KWin 6.6.5
-virtual runtime. One fake shell process maps a committed `scope=dock` layer
+bus, disposable build-root XDG directories, and the cache-pinned release-
+matched KWin virtual runtime. One fake shell process maps a committed
+`scope=dock` layer
 surface while separate native Wayland and XWayland client processes map real
 buffered ordinary windows. From the bound shell PID it observes the current Windows/visibility
 fence and proves activate, minimize, unminimize, raise-order, and request-close
@@ -1682,7 +1689,8 @@ native X11 window id. A wrong-PID identity read must be bounded,
 input, D-Bus session,
 hardware, or `tests/session` desktop scenario.
 
-That row also introspects the live `CompositorShell1` object and compares its
+That row also introspects the live `CompositorShell1` object—including the
+atomic `TaskListSnapshot` method and directed change signal—and compares its
 complete method and signal name sets with the checked-in XML. The native
 Wayland client announces one valid KDE AppMenu service/path through KWayland on
 the same Qt Wayland connection; the row observes those exact values, then
@@ -1698,6 +1706,10 @@ lookup, unknown UUID, Hybrid routing, executor failure, and fixed rate bounds;
 `compositor.shell-window-identity` for fake credential/source ordering,
 revision and action-generation fencing, typed absence, paired appmenu
 announcements, malformed payload rejection, and echo-free authorization;
+`compositor.shell-task-facts` for atomic generation advancement, count and
+reference bounds, hostile-value rejection with last-good retention,
+authenticate-before-source ordering, constant-size unauthorized replies, and
+panel-owner changes;
 `compositor.dbus-contract` for exact XML parity; and
 `qindaqt.shell-window-actions-{client,private-bus}` for exact-owner async
 serialization, owner/timeout/malformed uncertainty with no replay, real
@@ -2501,7 +2513,7 @@ The immutable S1 evidence model requires:
 | Services | Unique owners and exact executable-bound PIDs for Compositor1, Settings1, Audio1, and freedesktop Notifications |
 | Display | One output at `(0,0)`, `1920x1080`, scale 1; derive its canonical KWin virtual-backend identity `Virtual-<zero-based decimal index>` from the exact Outputs inventory; require the ShellVisibility inventory to carry the same identity, geometry, and scale; require equal canonical nonzero generations |
 | Input | Exactly one enabled `QindaQt Development Input` whose production `capabilities` array contains exactly `keyboard` and `pointer`; no invented per-capability booleans and no host input node |
-| Shell | At least one compositor-observed `scope=dock` surface mapped and committed with current and desired output identities equal to the one derived from Outputs/ShellVisibility, with canonical client `processId` equal to the authenticated current production-shell PID |
+| Shell | At least one compositor-observed `scope=dock` surface mapped and committed with current and desired output identities equal to the one derived from Outputs/ShellVisibility, with canonical client `processId` equal to the authenticated current production-shell PID; authenticated `ShellDevelopment1.taskList` must be `ready` with a positive generation and at least one real window |
 | Applications | Mapped Settings and QindaQt Text Editor windows with exact observed application/window IDs, titles, and declared process roles |
 | Resource/exit | Exact `residentPssKiB` plus 1,048,576 KiB ceiling; authenticated role/PID/group/path/start-time terminal phase (`already-exited`, `term`, or `kill`); zero surviving PIDs and no private run root |
 

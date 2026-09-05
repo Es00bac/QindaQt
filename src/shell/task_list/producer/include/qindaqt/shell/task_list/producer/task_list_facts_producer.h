@@ -22,18 +22,13 @@ struct TaskListFactsProducerTiming {
   [[nodiscard]] bool isValid() const noexcept;
 };
 
-// Exact-owner reader for the only documented task-window inventory on
-// Compositor1. It validates and fences Windows() but deliberately cannot
-// publish T0 facts: that method lacks output/workspace scope and atomic
-// container lineage, while the separate panel-visibility inventory expressly
-// cannot be combined with it.
+// Exact-owner reader for the authenticated atomic CompositorShell1 task-fact
+// snapshot. It validates the complete wire value before publishing T0 facts.
 //
-// AGENT-CONTRACT: A valid read is retained only as (owner, epoch, revision,
-// bytes) lineage. Same-owner epoch changes, revision regressions, and changed
-// bytes at an equal revision fail closed. Until one public coherent task-list
-// inventory exists, every read leaves the TaskListSource Degraded and exposes
-// no container lineage. Every failure and stop changes observable error or
-// availability truth and emits stateChanged. Late replies are fenced by
+// AGENT-CONTRACT: A valid read is retained as (owner, epoch, revision, bytes)
+// lineage. Same-owner epoch changes, revision regressions, and changed bytes
+// at an equal revision fail closed. Every failure and stop changes observable
+// error or availability truth and emits stateChanged. Late replies are fenced by
 // (token, owner); transient transport failures use only the bounded retry
 // schedule.
 class TaskListFactsProducer final : public TaskListOperationAuthority {
@@ -51,6 +46,8 @@ public:
   [[nodiscard]] QString uniqueOwner() const override { return m_owner; }
   [[nodiscard]] quint64 publishedRevision() const override;
   [[nodiscard]] TaskListSourceStatus status() const override;
+  [[nodiscard]] std::optional<TaskListActionGeneration>
+  actionGeneration() const override;
   [[nodiscard]] std::optional<TaskListContainerLineage>
   containerLineage(const QString &containerId) const override;
   [[nodiscard]] bool refreshInFlight() const noexcept {
@@ -61,8 +58,8 @@ public:
 private Q_SLOTS:
   void handleServiceOwnerChanged(const QString &uniqueOwner);
   void handleInvalidation(const QString &uniqueOwner);
-  void handleWindowsRead(quint64 token, const QString &uniqueOwner,
-                         const QByteArray &payload);
+  void handleFactsRead(quint64 token, const QString &uniqueOwner,
+                       const QByteArray &payload);
   void handleRefreshFailed(quint64 token, const QString &uniqueOwner,
                            const QString &message);
   void handleRefreshTimer();
@@ -81,8 +78,8 @@ private:
   void requestNow();
   void failRefresh(const QString &message, bool permitRetry);
   void degrade(const QString &message);
-  [[nodiscard]] bool windowLineageAdmits(
-      const TaskListWindowsResult &windows, const QByteArray &payload) const;
+  [[nodiscard]] bool factsLineageAdmits(
+      const TaskListFactsResult &facts, const QByteArray &payload) const;
   [[nodiscard]] bool currentOwnerIs(const QString &uniqueOwner) const;
   void emitStateIfChanged(bool force = false);
 
@@ -97,10 +94,12 @@ private:
   quint64 m_nextToken = 1;
   QString m_owner;
   QString m_lastError;
-  QString m_windowEpoch;
-  QByteArray m_windowPayload;
-  quint64 m_windowRevision = 0;
-  bool m_hasWindowLineage = false;
+  QString m_factsEpoch;
+  QByteArray m_factsPayload;
+  quint64 m_factsRevision = 0;
+  std::optional<TaskListActionGeneration> m_actionGeneration;
+  QVector<TaskListContainerLineage> m_containers;
+  bool m_hasFactsLineage = false;
   bool m_dirty = false;
   bool m_started = false;
   QString m_signalledOwner;

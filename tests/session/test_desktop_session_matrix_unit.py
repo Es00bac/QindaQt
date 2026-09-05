@@ -180,6 +180,7 @@ def _add_interaction_evidence(
                     "ready": True, "qstRevision": 1, "generation": "1",
                     "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
                 },
+                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
                 "presentation": {
                     "privatePresentationAllowed": True, "centerOpen": False,
                 },
@@ -196,6 +197,7 @@ def _add_interaction_evidence(
                     "ready": True, "qstRevision": 1, "generation": "1",
                     "sourceThemeId": "qinda-dark", "backgroundBase": "#171a18",
                 },
+                "taskList": {"phase": "ready", "generation": "1", "windowCount": 2},
                 "presentation": {
                     "privatePresentationAllowed": True, "centerOpen": True,
                 },
