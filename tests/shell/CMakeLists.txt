@@ -2,8 +2,41 @@
 
 # AGENT-GUARD: Use Qt's imported runner target. A bare `qmltestrunner` resolves
 # to Qt 5 on mixed-Qt distributions and cannot load this Qt 6 module.
-find_package(Qt6 REQUIRED COMPONENTS QuickTest)
+find_package(Qt6 REQUIRED COMPONENTS QuickTest Svg)
 find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+
+add_test(
+    NAME qindaqt.shell-icon-coverage
+    COMMAND ${CMAKE_COMMAND}
+        -DQINDAQT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_shell_icon_coverage.cmake
+)
+
+qt_add_executable(
+    qindaqt_shell_icon_configuration_tests
+    tst_shelliconconfiguration.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelliconconfiguration.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common/shelliconconfiguration.h"
+)
+target_include_directories(
+    qindaqt_shell_icon_configuration_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/common"
+)
+target_link_libraries(
+    qindaqt_shell_icon_configuration_tests
+    PRIVATE qindaqt_themes Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_shell_icon_configuration_tests
+    PRIVATE
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_TEST_SCRATCH="${CMAKE_CURRENT_BINARY_DIR}/icon-configuration-scratch"
+)
+qindaqt_enable_warnings(qindaqt_shell_icon_configuration_tests)
+add_test(
+    NAME qindaqt.shell-icon-runtime-configuration
+    COMMAND qindaqt_shell_icon_configuration_tests
+)
 
 qt_add_executable(
     qindaqt_notification_quieting_bridge_tests

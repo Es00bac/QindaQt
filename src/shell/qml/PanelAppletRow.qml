@@ -40,8 +40,11 @@ Row {
             audioAppletAccess: root.audioAppletAccess
             bluetoothAppletAccess: root.bluetoothAppletAccess
             powerAppletAccess: root.powerAppletAccess
-            // AppletChip intentionally has no global-menu authority property;
-            // BuiltinAppletContent discovers this narrow facade from the row.
+            launcherAppletAccess: root.launcherAppletAccess
+            globalMenuAppletAccess: root.globalMenuAppletAccess
+            clipboardAppletAccess: root.clipboardAppletAccess
+            taskListAppletAccess: root.taskListAppletAccess
+            statusNotifierAppletAccess: root.statusNotifierAppletAccess
         }
     }
 }

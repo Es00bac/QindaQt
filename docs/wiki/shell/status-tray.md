@@ -116,7 +116,13 @@ Phases, exposed as `phaseText` with `phaseReasonText`:
 
 Rows follow the S1 presentation's stable order and are capped at
 `kMaxPresentedItems` (24); overflow is truthful through `overflowCount` and a
-counted `overflowText`. Icons cross into QML only as bounded PNG data URLs
+counted `overflowText`. The panel renders only item icons plus an icon-only,
+accessibly counted overflow affordance. Loading, empty, unavailable, and
+degraded diagnostics remain in the root accessible description rather than
+expanding the strip into state cards; actionable operation feedback opens in
+an independent `Popup.Window`, seeds focus on Dismiss, and closes on Escape or
+outside press even though the layer-shell panel rejects focus. Icons cross
+into QML only as bounded PNG data URLs
 rendered through the seam on the GUI thread for presented rows; a missing or
 hostile icon resolves to the deterministic S1 placeholder and the row says so
 (`iconIsPlaceholder`). Every intent enforces the owner generation locally
@@ -158,7 +164,7 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-model` | Pure projection: every phase including read-denied Unavailable with no rows, the 24-row cap with truthful overflow, descriptor matching and fail-closed misses, status flags, keyboard texts, menu flattening with the depth cap against hostile chains, determinism. |
 | `qindaqt.status-notifier-applet-controller` | Scripted seam: capability gates (read denial withholds all seam reads; activate denial refuses before dispatch), exactly-once dispatch including a seam that emits `changed()` re-entrantly, stale-generation and owner-loss fencing, overflow truth, data-URL icons with placeholder truth, iconSize re-render, bounded fenced menu preview, and the degradation acknowledgement action (seam forwarding with synchronous reprojection; fail-closed no-op under read denial or a missing source). |
 | `qindaqt.status-notifier-applet-adapter` | Real registry + monitor + watcher composition over a private session bus: population through the seam, exactly one recorded wire `Activate` through the controller, owner disconnect, watcher-loss Degraded with last-known-good retention and replacement-watcher repopulation, immediate Degraded notification on rejected live updates that degrade the registry (malformed replacement and membership-capacity overflow, both with last-known-good retention), and the acknowledgement recovery back to `ready`. |
-| `qindaqt.status-notifier-applet-qml-offscreen` | Compiled module surfaces: ready/empty/loading/degraded/unavailable, row and badge rendering, overflow chip, null-access disabled truth, feedback dismissal. |
+| `qindaqt.status-notifier-applet-qml-offscreen` | Compiled module surfaces: ready/empty/loading/degraded/unavailable, row and badge rendering, overflow chip, null-access disabled truth, focus-seeded feedback dismissal, `Popup.Window` identity, and Escape closure. |
 | `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
 | `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |

@@ -96,13 +96,15 @@ accessible name/description; pending mutations announce "operation pending".
 Metadata only: payload bytes never leave the C0 model except through an
 explicit promote, and the projection never holds them.
 
-`ClipboardPanelApplet.qml` is the panel host. Its accessible Button summary
+`ClipboardPanelApplet.qml` is the panel host. Its 32-by-28 icon-only accessible Button summary
 opens a non-modal `Popup.Window`, because the layer-shell panel itself does not
 accept keyboard focus. The popup transfers focus to search, keeps an
 always-present Close button in the Tab chain, accepts Space/Return activation,
 restores summary focus on close, and closes on Escape or outside press. The
 same compiled host renders in `qindaqt-shell` and the deterministic preview;
-only the injected controller differs.
+only the injected controller differs. The “Clipboard” label remains the
+accessible name and popup title; an unresolved `edit-paste-symbolic` asset
+renders the typed placeholder instead of restoring panel text.
 
 ## Snapshot admission gate
 

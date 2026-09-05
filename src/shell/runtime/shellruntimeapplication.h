@@ -4,6 +4,7 @@
 #include "runtimeoptions.h"
 #include "clipboardappletcomposition.h"
 #include "statusnotifierappletcomposition.h"
+#include "../common/shelliconconfiguration.h"
 
 #include "qindaqt/applet_host/capability_policy.h"
 #include "qindaqt/applets/manifest_catalog.h"
@@ -100,6 +101,7 @@ private:
     [[nodiscard]] bool initializeRuntime(const RuntimeOptions &options,
                                          QString *error);
     [[nodiscard]] bool initializeTokens(QString *error);
+    [[nodiscard]] bool initializeIcons(QString *error);
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     void initializeServiceAppletCompositions();
     void restartWindowActionsIdentity();
@@ -119,6 +121,7 @@ private:
     Applets::ManifestCatalog m_applets;
     AppletHost::CapabilityPolicy m_appletPolicy;
     QQmlEngine m_engine;
+    ShellDataRoots m_dataRoots;
     std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;

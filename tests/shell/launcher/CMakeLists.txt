@@ -15,7 +15,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     list(APPEND CMAKE_MODULE_PATH "${ECM_MODULE_PATH}")
     include(KDEInstallDirs6)
     find_package(Qt6 6.11 REQUIRED COMPONENTS
-                 Core DBus Gui Qml Quick QuickControls2 Test)
+                 Core DBus Gui Qml Quick QuickControls2 Svg Test)
     qt_standard_project_setup(REQUIRES 6.11)
 
     # The L1 runtime adapters consume these public boundaries; add them
@@ -36,12 +36,20 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory("../../../src/applet_runtime"
                      "${CMAKE_BINARY_DIR}/src/applet_runtime")
     set(QINDAQT_LAUNCHER_DEPENDENCIES_READY ON)
+    set(QINDAQT_LAUNCHER_PURE_ONLY ON)
     add_subdirectory(
         "../../../src/shell/launcher"
         "${CMAKE_BINARY_DIR}/src/shell/launcher"
     )
+    unset(QINDAQT_LAUNCHER_PURE_ONLY)
+    add_subdirectory(
+        "../../../src/shell/icons"
+        "${CMAKE_BINARY_DIR}/src/shell/icons"
+    )
+    qindaqt_add_launcher_runtime()
     set(launcher_source_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 else()
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Svg)
     set(launcher_source_root "${CMAKE_SOURCE_DIR}")
 endif()
 
@@ -219,6 +227,8 @@ if(TARGET qindaqt_shell_launcher_runtime)
         PRIVATE
             QindaQt::ShellLauncherRuntime
             QindaQt::TokensQml
+            QindaQt::ShellIcons
+            qindaqt_shell_iconsplugin
             qindaqt_themes
             Qt6::Gui
             Qt6::Qml
@@ -229,9 +239,11 @@ if(TARGET qindaqt_shell_launcher_runtime)
         qindaqt_launcher_qml_tests
         PRIVATE
             QINDAQT_LAUNCHER_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+            QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
             QINDAQT_SOURCE_DIR="${launcher_source_root}"
     )
     qindaqt_enable_warnings(qindaqt_launcher_qml_tests)
+    qt_import_qml_plugins(qindaqt_launcher_qml_tests)
     # AGENT-CONTRACT: The applet imports QindaQt.Tokens/Controls/Shell.Launcher
     # through the build-tree QML directories, so the module plugins must exist
     # before the offscreen scene loads.
@@ -288,8 +300,12 @@ if(TARGET qindaqt_shell_launcher_runtime)
                           tst_launcher_installed_probe.cpp)
         target_link_libraries(
             qindaqt_launcher_installed_probe
-            PRIVATE QindaQt::AppletRuntime Qt6::Gui Qt6::Qml Qt6::Quick
+            PRIVATE QindaQt::AppletRuntime QindaQt::DesignTokens
+                    QindaQt::ShellIcons qindaqt_themes QindaQt::TokensQml
+                    qindaqt_shell_iconsplugin
+                    Qt6::Gui Qt6::Qml Qt6::Quick
         )
+        qt_import_qml_plugins(qindaqt_launcher_installed_probe)
         qindaqt_enable_warnings(qindaqt_launcher_installed_probe)
 
         add_test(

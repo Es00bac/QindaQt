@@ -45,7 +45,8 @@ install(
         COMPONENT ClipboardApplet
 )
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Qml Quick QuickControls2)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Qml Quick QuickControls2 Svg)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../IconRuntimeInstall.cmake")
 
 set(QINDAQT_CLIPBOARD_APPLET_QML_OUTPUT_DIRECTORY
     "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/ClipboardApplet")
@@ -78,6 +79,8 @@ qt_add_qml_module(
         qml/ClipboardApplet.qml
         qml/ClipboardEntryRow.qml
         qml/ClipboardPanelApplet.qml
+    DEPENDENCIES
+        TARGET qindaqt_shell_icons
 )
 
 # AGENT-CONTRACT: the runtime target composes the pure projection with the
@@ -88,6 +91,7 @@ target_link_libraries(
     qindaqt_shell_clipboard_applet_runtime
     PUBLIC
         QindaQt::ShellClipboardApplet
+        QindaQt::ShellIcons
         Qt6::Core
         Qt6::Qml
         Qt6::Quick
@@ -100,6 +104,7 @@ qindaqt_enable_warnings(qindaqt_shell_clipboard_applet_runtime)
 add_dependencies(
     qindaqt_shell_clipboard_applet_runtime
     qindaqt_controls_qmlplugin
+    qindaqt_shell_iconsplugin
 )
 
 # Qt owns the deploy-name calculation used by qmldir and QML tooling. Query it
@@ -153,6 +158,7 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/ClipboardApplet"
     COMPONENT ClipboardApplet
 )
+qindaqt_install_shell_icons_runtime(ClipboardApplet)
 
 # Shell-bearing install components need the compiled module even though the
 # applet's development component remains independently consumable. This

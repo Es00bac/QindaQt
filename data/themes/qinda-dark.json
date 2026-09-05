@@ -3,6 +3,7 @@
   "id": "qinda-dark",
   "name": "Qinda Dark",
   "variant": "dark",
+  "iconTheme": "breeze-dark",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 10,

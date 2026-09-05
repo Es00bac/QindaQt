@@ -16,9 +16,12 @@
 #include <QtQuickTest/quicktest.h>
 
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QtGlobal>
 
 #include "../../../controls/control_test_support.h"
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 class StatusNotifierAppletHarness final : public QObject {
     Q_OBJECT

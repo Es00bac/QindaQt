@@ -16,6 +16,7 @@ only: they select semantic tokens and metrics but cannot load code.
 | `cornerRadius` | integer | `0` through `32` logical pixels |
 | `motionDuration` | integer | `0` through `1000` milliseconds |
 | `blurEnabled` | boolean | Optional; defaults to `false` |
+| `iconTheme` | string | Optional shell hint: 1–128 ASCII letters, digits, `.`, `_`, or `-`, without `..`; absent values choose `breeze-dark` for a dark canvas and `breeze` for a light canvas |
 | `colors` | object | All required semantic colors below |
 | `decoration` | object | Optional window-control and container-tab presentation contract |
 
@@ -40,11 +41,17 @@ These are semantic decoration preferences, not QML implementation details. The
 compositor decoration and shell preview must consume the same map so ordinary
 and grouped windows remain consistent.
 
+`iconTheme` is non-token metadata. `ThemeLoader` validates and retains it in
+the catalog's `ThemeSpec`; shell composition consumes that already-parsed
+value and never reopens the selected JSON document. It installs that theme
+before panel QML and always retains `hicolor` as the final fallback. An invalid
+hint rejects the catalog at startup and never becomes a path.
+
 The built-in catalog currently supplies Qinda Light, Qinda Dusk, Qinda Dark,
 Qinda High Contrast, and Qinda macOS. Qinda macOS uses a mist-and-sage QindaQt
 palette, left-side traffic lights whose `x`, `_`, and `[]` glyphs appear on
 hover, and right-to-left container tabs. Future state, elevation, focus,
-wallpaper, icon, and typography tokens must be added compatibly or through a
+wallpaper, and typography tokens must be added compatibly or through a
 new schema version with migration tests.
 
 [QST-1](../architecture/design-tokens.md) derives the richer state, focus,

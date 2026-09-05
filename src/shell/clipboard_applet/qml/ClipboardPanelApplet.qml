@@ -5,6 +5,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -17,8 +19,8 @@ Item {
         ? String(controller.phaseText ?? "unavailable") : "unavailable"
 
     objectName: "clipboardPanelApplet"
-    implicitWidth: vertical ? 40 : Math.max(58, summary.implicitWidth + 12)
-    implicitHeight: vertical ? 40 : 28
+    implicitWidth: 32
+    implicitHeight: 28
 
     ToolButton {
         id: summary
@@ -29,17 +31,13 @@ Item {
         focusPolicy: Qt.TabFocus
         checkable: false
         checked: historyPopup.opened
-        text: root.vertical ? qsTr("Clip")
-                            : root.phase === "ready"
-                              ? qsTr("Clipboard %1").arg(root.controller.entryCount)
-                              : qsTr("Clipboard")
+        text: ""
         Accessible.role: Accessible.Button
         Accessible.name: qsTr("Clipboard history")
         Accessible.description: root.available
             ? qsTr("Open clipboard history; current state is %1").arg(root.phase)
             : qsTr("Clipboard history is unavailable")
-        Accessible.checkable: true
-        Accessible.checked: historyPopup.opened
+        Accessible.checkable: false
 
         function togglePopup() {
             if (!root.available)
@@ -61,12 +59,15 @@ Item {
             event.accepted = true
         }
 
-        contentItem: Text {
-            text: summary.text
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+        contentItem: ShellIcons.Icon {
+            objectName: "clipboardPanelIcon"
+            anchors.centerIn: parent
+            name: "edit-paste"
+            size: Math.min(20, root.height - Tokens.space["3"])
+            color: Tokens.fg.default
+            symbolic: true
+            fallbackText: qsTr("Clipboard")
+            Accessible.ignored: true
         }
         background: Item {}
     }

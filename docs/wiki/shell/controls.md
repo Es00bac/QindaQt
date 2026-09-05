@@ -89,6 +89,13 @@ Reduced motion and transparency are already total QST-1 transforms. Controls
 read `motion.short` and the published opaque colors directly; they do not add
 local timing, alpha flattening, backdrop, or theme-specific branches.
 
+Panel applets keep their accessible identity on the interactive control while
+their compact content is icon-first. Icon-only controls use the shell icon
+module's typed placeholder when unresolved; they do not restore text inside
+the panel. Detail text and operational notices belong in focusable popups.
+The compact contract is 28 logical pixels high with token-derived spacing;
+vertical panels suppress task and percentage labels rather than clipping them.
+
 ## Qualification boundary
 
 The focused selector is:

@@ -48,6 +48,14 @@ allowing their static profile label to masquerade as live behavior.
 
 ## Current built-ins
 
+Shell composition publishes QST-1 and installs the selected freedesktop icon
+runtime before this inventory is instantiated. Every hosted entry has an
+explicit icon-first declaration guarded by `qindaqt.shell-icon-coverage`.
+Buttons retain their accessible name, role, enabled state, and keyboard path
+when visible labels are removed; unresolved icon names fail closed to the
+typed placeholder. Clock and provider-owned global-menu labels are the two
+intentional textual panel surfaces.
+
 The manifest catalog describes clock, notification center, audio, Bluetooth,
 power, launcher, task list, global menu, status tray, clipboard, and status
 notifier packages.
@@ -169,10 +177,11 @@ baked `$ORIGIN/../Tokens` RUNPATH. A component-filtered install must not rely
 on another component to supply either library.
 
 Every shell-carrying component also installs the compiled Clipboard, Task List,
-and Status Notifier module directories (`qmldir`, typeinfo, QML, and
-backing/plugin artifacts) because `BuiltinAppletContent.qml` imports all three
-unconditionally. The closure probe rejects any module missing from an isolated
-component stage.
+Status Notifier, and Icons module directories (`qmldir`, typeinfo, QML, and
+backing/plugin artifacts) because `BuiltinAppletContent.qml` imports the first
+three and `AppletChip.qml` imports Icons unconditionally. The closure probe
+rejects any module missing from an isolated component stage and inventories
+each literal shell-carrying component declaration.
 
 `qindaqt.shell-runtime-component-closure` installs each member of that
 inventory alone beneath the active build root, authenticates both resolved

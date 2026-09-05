@@ -17,6 +17,7 @@
 #include <span>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_BluetoothAppletPlugin)
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt;
 using namespace QindaQt::Shell::BluetoothApplet;

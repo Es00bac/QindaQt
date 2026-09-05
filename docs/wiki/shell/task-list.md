@@ -262,9 +262,15 @@ row carries its generation revision and echoes it into each intent, so the T0
 arbitration refuses actions against a generation the user no longer sees.
 Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
 for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
-uses the hosted Close All policy. Rows show a typed one-letter icon placeholder derived from
-the application identity: no freedesktop/QIcon seam exists in the tree yet,
-and inventing one here would duplicate launcher's future authority.
+uses the hosted Close All policy. Shell composition injects one
+`DesktopEntryIconResolver` built from explicit freedesktop application roots;
+each row resolves the compositor-provided application id to the desktop
+entry's `Icon=` name. Horizontal buttons show the icon plus an elided title
+inside an 84–168 by 28 logical-pixel bound; vertical buttons show only the
+icon. Missing and hostile mappings use the typed application placeholder.
+Degraded truth is an accessible warning glyph rather than a “Limited” badge,
+and loading/empty/unavailable phases use one compact phase icon without panel
+text.
 
 The compiled module follows the first-party presentation rule from
 [Module boundaries](../architecture/module-boundaries.md): both QML files

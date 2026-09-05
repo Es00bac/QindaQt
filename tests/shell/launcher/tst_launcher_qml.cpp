@@ -5,6 +5,7 @@
 #include "launcher_applet_controller.h"
 #include "launcher_persistence.h"
 #include "launcher_runtime_test_support.h"
+#include "../icon_resolution_test_fixture.h"
 
 #include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/services/settings_client/settings_client.h>
@@ -14,12 +15,15 @@
 #include <QEventLoop>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QtTest>
 
 #include <memory>
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Shell::Launcher;
@@ -185,6 +189,11 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QTRY_VERIFY(stack.persistence.persistenceReady());
 
     QQmlEngine engine;
+    QString iconError;
+    QVERIFY2(QindaQt::Tests::installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("start-here-kde")}, &iconError),
+             qPrintable(iconError));
     QVERIFY(publishTokens(engine));
     auto owned = createApplet(engine, &stack.controller);
     QVERIFY(owned != nullptr);
@@ -205,6 +214,13 @@ void LauncherQmlTests::rendersSectionsPersistenceAndAccessibleStates()
     QVERIFY(summaryInterface != nullptr);
     QCOMPARE(summaryInterface->role(), QAccessible::Button);
     QVERIFY(!summaryInterface->text(QAccessible::Name).isEmpty());
+    QCOMPARE(summary->property("text").toString(), QString());
+    QVERIFY(summary->width() <= root->height() + 4.0);
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("launcherAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    QVERIFY(QindaQt::Tests::hasResolvedProviderSource(
+        summaryIcon, QStringLiteral("start-here-kde")));
 
     summary->forceActiveFocus();
     QTest::keyClick(&window, Qt::Key_Space);
@@ -396,6 +412,7 @@ void LauncherQmlTests::supportsCompleteKeyboardTraversalAndActivation()
 void LauncherQmlTests::nullAccessShowsDisabledFallback()
 {
     QQmlEngine engine;
+    QVERIFY(publishTokens(engine));
     auto owned = createApplet(engine, nullptr);
     QVERIFY(owned != nullptr);
     auto *root = qobject_cast<QQuickItem *>(owned.get());

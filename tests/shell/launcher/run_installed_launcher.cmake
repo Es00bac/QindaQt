@@ -186,6 +186,7 @@ execute_process(
             "--applets-dir=${data}/applets"
             "--policy=${data}/applet-policy/default.json"
             "--staged-qml=${qml}"
+            "--theme=${data}/themes/qinda-dark.json"
     RESULT_VARIABLE probe_status
     OUTPUT_VARIABLE probe_output
     ERROR_VARIABLE probe_error)

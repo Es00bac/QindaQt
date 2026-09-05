@@ -3,11 +3,16 @@
 
 #include "../common/catalogpaths.h"
 #include "../common/shelltokenpublisher.h"
+#include "../common/shelliconconfiguration.h"
 #include "screenshotcapture.h"
+
+#include "qindaqt/shell/icons/icon_runtime.h"
 
 #include <QCoreApplication>
 #include <QDebug>
 #include <QGuiApplication>
+#include <QDir>
+#include <QProcessEnvironment>
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QTextStream>
@@ -55,6 +60,11 @@ int ShellPreviewApplication::run()
             << "QindaQt shell preview token publication failed:" << error;
         return 4;
     }
+    if (!initializeIcons(&error)) {
+        qCritical().noquote()
+            << "QindaQt shell preview icon installation failed:" << error;
+        return 4;
+    }
     if (!loadWindow(options)) {
         return 3;
     }
@@ -92,7 +102,29 @@ bool ShellPreviewApplication::loadCatalogs(const PreviewOptions &options, QStrin
         *error = QStringLiteral("Unknown theme: %1").arg(requestedTheme);
         return false;
     }
+    m_dataRoots = ShellIconConfiguration::dataRoots(
+        QProcessEnvironment::systemEnvironment(), QDir::homePath());
     return true;
+}
+
+bool ShellPreviewApplication::initializeIcons(QString *error)
+{
+    QString themeName;
+    if (!ShellIconConfiguration::selectedThemeName(m_themes, &themeName, error)) {
+        return false;
+    }
+    if (Icons::IconRuntime::install(
+        m_engine,
+        Icons::IconRuntime::freedesktopIconRoots(
+            m_dataRoots.dataHome, m_dataRoots.dataDirectories),
+        {themeName})) {
+        return true;
+    }
+    if (error != nullptr) {
+        *error = QStringLiteral(
+            "QindaQt shell preview icon runtime was already installed");
+    }
+    return false;
 }
 
 void ShellPreviewApplication::printCatalog() const

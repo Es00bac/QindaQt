@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QDBusConnection>
+#include <QStringList>
 
 #include <memory>
 
@@ -37,6 +38,10 @@ namespace QindaQt::ShellWindowActionsClient {
 class ShellWindowActionsClient;
 }
 
+namespace QindaQt::Shell::Icons {
+class DesktopEntryIconResolver;
+}
+
 namespace QindaQt::Shell {
 
 class TaskListWindowOperationRouter;
@@ -52,7 +57,8 @@ public:
         const Applets::ManifestCatalog &catalog,
         const AppletHost::CapabilityPolicy &policy,
         const QDBusConnection &sessionBus,
-        ShellWindowActionsClient::ShellWindowActionsClient &windowActions);
+        ShellWindowActionsClient::ShellWindowActionsClient &windowActions,
+        QStringList applicationRoots);
     TaskListAppletComposition(
         const Applets::ManifestCatalog &catalog,
         const AppletHost::CapabilityPolicy &policy,
@@ -93,6 +99,7 @@ private:
     std::unique_ptr<ShellTaskListApplet::TaskListAppletOperationBridge>
         m_ownedContainerBridge;
     std::unique_ptr<TaskListWindowOperationRouter> m_router;
+    std::unique_ptr<Icons::DesktopEntryIconResolver> m_iconResolver;
     std::unique_ptr<ShellTaskListApplet::TaskListAppletController> m_access;
 };
 

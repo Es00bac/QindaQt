@@ -4,7 +4,7 @@
 # exists. The pure target is the bounded projection over public Audio1
 # protocol values; the runtime target below is the only AudioClient/QML
 # composition boundary.
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Svg)
 
 qt_add_library(qindaqt_shell_audio_applet STATIC)
 add_library(QindaQt::ShellAudioApplet ALIAS qindaqt_shell_audio_applet)
@@ -56,6 +56,8 @@ qt_add_qml_module(
         qml/AudioApplet.qml
         qml/AudioDeviceRow.qml
         qml/AudioStreamRow.qml
+    DEPENDENCIES
+        TARGET qindaqt_shell_icons
 )
 target_include_directories(
     qindaqt_shell_audio_applet_runtime PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -70,6 +72,7 @@ target_link_libraries(
         QindaQt::AudioClient
         QindaQt::ControlsQml
         QindaQt::ShellAudioApplet
+        QindaQt::ShellIcons
         Qt6::Core
         Qt6::Quick
 )

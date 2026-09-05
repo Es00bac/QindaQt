@@ -4,6 +4,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Shell.Icons 1.0 as ShellIcons
+import QindaQt.Tokens 1.0
 
 Item {
     id: root
@@ -15,8 +17,8 @@ Item {
     readonly property bool available: access !== null
 
     objectName: "bluetoothApplet"
-    implicitWidth: vertical ? 40 : Math.max(52, summary.implicitWidth + 12)
-    implicitHeight: vertical ? 40 : 28
+    implicitWidth: 32
+    implicitHeight: 28
 
     function closeDetailsFromEscape() {
         if (root.access !== null && root.access.pairingPromptVisible
@@ -40,7 +42,7 @@ Item {
         anchors.fill: parent
         enabled: root.available
         focusPolicy: Qt.TabFocus
-        text: root.access !== null ? root.access.summaryLabel : qsTr("Bluetooth")
+        text: ""
         Accessible.role: Accessible.Button
         Accessible.name: root.access !== null
                          ? root.access.accessibleName
@@ -56,13 +58,17 @@ Item {
         onClicked: openDetails()
         Accessible.onPressAction: openDetails()
 
-        contentItem: Text {
-            text: root.vertical ? qsTr("BT") : summary.text
-            color: root.colors.text ?? "white"
-            font.pixelSize: root.vertical ? 10 : 11
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
+        contentItem: ShellIcons.Icon {
+            objectName: "bluetoothAppletIcon"
+            anchors.centerIn: parent
+            name: root.available && root.access.phase === "ready"
+                  ? "network-bluetooth-activated"
+                  : "network-bluetooth-inactive-symbolic"
+            size: Math.min(20, root.height - 8)
+            color: Tokens.fg.default
+            symbolic: true
+            fallbackText: qsTr("Bluetooth")
+            Accessible.ignored: true
         }
         background: Item {}
     }

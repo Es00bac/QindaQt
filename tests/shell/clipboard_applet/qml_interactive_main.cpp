@@ -16,9 +16,13 @@
 #include <QtQuickTest/quicktest.h>
 
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QtGlobal>
 
 #include "../../controls/control_test_support.h"
+#include "../icon_resolution_test_fixture.h"
+
+Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 class ClipboardAppletHarness final : public QObject {
     Q_OBJECT
@@ -38,6 +42,13 @@ public:
             &error);
         if (!m_ready) {
             qFatal("clipboard applet QML harness could not publish tokens: %s",
+                   qPrintable(error));
+        }
+        m_ready = QindaQt::Tests::installResolvedIconFixture(
+            *engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+            {QStringLiteral("edit-paste")}, &error);
+        if (!m_ready) {
+            qFatal("clipboard applet QML harness could not install icons: %s",
                    qPrintable(error));
         }
     }

@@ -113,8 +113,11 @@ capability, and dispatches once. Completion is fenced by request ID, operation
 kind, initiating epoch/revision, and observed lineage. Owner replacement ends
 the pending state with uncertain feedback; it never replays the request.
 
-Compiled `PowerApplet.qml` renders a summary button and non-modal details
-popup. Space/Enter activation, tab-focusable profile radio buttons, keyboard
+Compiled `PowerApplet.qml` renders a compact summary button and non-modal details
+popup. The horizontal summary contains a battery-state icon plus its bounded
+percentage; vertical panels show only the icon. Its accessible name still
+contains the exact percentage and state, and unresolved icon assets use the
+typed Power placeholder. Space/Enter activation, tab-focusable profile radio buttons, keyboard
 operable brightness sliders, complete accessible names/descriptions, and an
 accessible alert for failure/uncertainty feedback are part of the production
 contract. The preview injects no live access object and therefore shows a
