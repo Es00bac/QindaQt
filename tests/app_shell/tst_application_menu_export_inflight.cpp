@@ -79,6 +79,13 @@ public Q_SLOTS:
     callLog.append(QStringLiteral("unregister:%1").arg(id));
     heldRegistrations.remove(id);
   }
+
+  Q_SCRIPTABLE bool IsMenuHosted(const QString &provider,
+                                 const QDBusObjectPath &path) const {
+    (void)provider;
+    (void)path;
+    return false;
+  }
 };
 
 // Publishes 71 for the original surface and 72 for any recreated surface, so
