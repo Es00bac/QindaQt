@@ -146,7 +146,7 @@
           "title": "Notification service and presentation foundation",
           "weight": 13,
           "state": "EXECUTABLE",
-          "summary": "The bounded host/presentation stack, active/recent center, popups, Settings1 DND, and fail-closed authenticated lock privacy are integrated.",
+          "summary": "The bounded host/presentation stack, active/recent center, popups, Settings1 DND, and fail-closed authenticated lock privacy are integrated. Do Not Disturb defaults off on a fresh profile instead of presenting as unavailable.",
           "evidence": [
             {
               "kind": "source",
@@ -157,6 +157,11 @@
               "kind": "test",
               "reference": "docs/wiki/development/testing-harness.md",
               "summary": "Focused model, policy, surface, Settings1, and privacy selectors are recorded."
+            },
+            {
+              "kind": "commit",
+              "reference": "3e658510",
+              "summary": "Desktop polish integrated: exact product 511ac8623051b78adfb54634d9a5fce0c466005f (Frances Arnold, OpenAI Codex); Dorothy Hodgkin (Moonshot Kimi) found only a stale wire-reference paragraph (0/1/0/1), reconciled in the merge. Merged tree: focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed."
             }
           ],
           "caveat": "Installed end-to-end desktop interaction is measured in QQ-004.05."
@@ -251,7 +256,7 @@
           "title": "Task list",
           "weight": 2,
           "state": "EXECUTABLE",
-          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are integrated, and the compositor now exposes an authenticated CompositorShell1 window-action boundary (activate, minimize, unminimize, close, raise) admitted only for the D-Bus caller whose credentials match the bound panel-owning shell client, with authentication before parsing, bounded constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing, and an exact-owner asynchronous shell client; CompositorShell1 now also projects a revisioned, authenticated active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced app-menu service/path) with an exported change signal validated by the public generation rule on both sides and consumed through the exact-owner shell client. T1 adds the shell-side facts producer over the exact-owner Compositor1 window inventory (never combined with visibility scope truth) with fail-closed state on failure and stop, and a serialized exactly-once operation adapter matched on the full canonical reply lineage. T2 adds the registered compiled QST/Controls applet presentation, two-participant dock fencing, directional keyboard traversal, and a relocatable TaskListAppletRuntime package boundary; production panel hosting remains separate. T3 hosts the applet in the production panels: the shell composition feeds the T1 producer from the shell's exact-owner CompositorShell1 client and routes activate/minimize/unminimize/close/raise through it with generation-fenced, exactly-once replies. The compositor now publishes one atomic, authenticated task-fact generation (windows with app id, title, role, state flags, output, workspace and container lineage) on the exact-owner CompositorShell1 boundary; T1 consumes it and leaves the degraded state, so the task list lists and controls real windows (ADR-0073).",
+          "summary": "The injected-facts Task List T0 source, container collapse, deterministic scope/order, presentation projection, and generation-fenced intents are integrated, and the compositor now exposes an authenticated CompositorShell1 window-action boundary (activate, minimize, unminimize, close, raise) admitted only for the D-Bus caller whose credentials match the bound panel-owning shell client, with authentication before parsing, bounded constant-size unauthenticated replies, generation fencing, rate limits, Hybrid container policy routing, and an exact-owner asynchronous shell client; CompositorShell1 now also projects a revisioned, authenticated active-window identity (credentials-derived client PID or XWayland client id, AppMenu window id, announced app-menu service/path) with an exported change signal validated by the public generation rule on both sides and consumed through the exact-owner shell client. T1 adds the shell-side facts producer over the exact-owner Compositor1 window inventory (never combined with visibility scope truth) with fail-closed state on failure and stop, and a serialized exactly-once operation adapter matched on the full canonical reply lineage. T2 adds the registered compiled QST/Controls applet presentation, two-participant dock fencing, directional keyboard traversal, and a relocatable TaskListAppletRuntime package boundary; production panel hosting remains separate. T3 hosts the applet in the production panels: the shell composition feeds the T1 producer from the shell's exact-owner CompositorShell1 client and routes activate/minimize/unminimize/close/raise through it with generation-fenced, exactly-once replies. The compositor now publishes one atomic, authenticated task-fact generation (windows with app id, title, role, state flags, output, workspace and container lineage) on the exact-owner CompositorShell1 boundary; T1 consumes it and leaves the degraded state, so the task list lists and controls real windows (ADR-0073). Shell-owned and non-normal windows are excluded from tasks by contract (ownerRole/windowType on the compositor side, T0 filter on the shell side) and first-party task buttons show real application icons in the nested proof.",
           "evidence": [
             {
               "kind": "commit",
@@ -292,6 +297,11 @@
               "kind": "commit",
               "reference": "92d3348b",
               "summary": "Compositor atomic task-fact contract integrated: exact accepted product fa0e6d9cc522559ee17582c97816e58aaab10f42 (Donna Strickland, OpenAI Codex), reviewed ACCEPT 0/0/0/1 by Rita Levi-Montalcini (Moonshot Kimi); the ShellDevelopment1 snapshot carries a taskList fact and desktop.virtual.boot.1080p fails unless the task list is ready with at least one real window. Merged tree: Release focused 202/202 and Debug broad safe 620/620 (which contains the focused rows), static gates, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots; the boot row now requires the task list ready with real windows."
+            },
+            {
+              "kind": "commit",
+              "reference": "3e658510",
+              "summary": "Desktop polish integrated: exact product 511ac8623051b78adfb54634d9a5fce0c466005f (Frances Arnold, OpenAI Codex); Dorothy Hodgkin (Moonshot Kimi) found only a stale wire-reference paragraph (0/1/0/1), reconciled in the merge. Merged tree: focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed."
             }
           ],
           "caveat": "Icon-first presentation of the task list (window icons, titles) lands with the iconography pass; installed nested interaction proof and physical input qualification remain release work. Panel presentation is icon-first since 6a2019aa."
@@ -486,7 +496,7 @@
           "title": "Shell iconography",
           "weight": 3,
           "state": "EXECUTABLE",
-          "summary": "I1 delivers a confined XDG icon-theme locator over injected roots (index.theme directories, inherits chains, hicolor fallback, canonical containment), a desktop-entry icon resolver for application ids, a bounded image provider that renders and recolors symbolic icons from the design tokens with a deterministic placeholder, and a QML Icon element for the shell (ADR-0072). I2 makes every panel applet icon-first over the module: launcher, network, power, Bluetooth, audio, clipboard and tray chips render Breeze icons recolored from the tokens with labels kept as accessible names, task-list buttons show window icon and title, chips fit the panel in both orientations, and the theme JSON carries an iconTheme key.",
+          "summary": "I1 delivers a confined XDG icon-theme locator over injected roots (index.theme directories, inherits chains, hicolor fallback, canonical containment), a desktop-entry icon resolver for application ids, a bounded image provider that renders and recolors symbolic icons from the design tokens with a deterministic placeholder, and a QML Icon element for the shell (ADR-0072). I2 makes every panel applet icon-first over the module: launcher, network, power, Bluetooth, audio, clipboard and tray chips render Breeze icons recolored from the tokens with labels kept as accessible names, task-list buttons show window icon and title, chips fit the panel in both orientations, and the theme JSON carries an iconTheme key. The nested stage carries the first-party desktop entries so task icons resolve in captures; empty chips stay quiet.",
           "evidence": [
             {
               "kind": "commit",
@@ -497,6 +507,11 @@
               "kind": "commit",
               "reference": "6a2019aa",
               "summary": "Iconography I2 integrated: exact accepted product 7eb5372d8cc1a381dcf9fb4f1463032b1f018487 (May-Britt Moser, OpenAI Codex, repair over 0af5d685 rejected 0/3/6/10), rechecked ACCEPT 0/0/0/5 by Barbara McClintock (Moonshot Kimi); 68/68 declared icons resolve in Breeze and Breeze-dark. Merged tree: focused 325/325 in Debug and Release, static gates, broad safe Debug 633/633, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 633/633 with the /usr/local prefix confirmed."
+            },
+            {
+              "kind": "commit",
+              "reference": "3e658510",
+              "summary": "Desktop polish integrated: exact product 511ac8623051b78adfb54634d9a5fce0c466005f (Frances Arnold, OpenAI Codex); Dorothy Hodgkin (Moonshot Kimi) found only a stale wire-reference paragraph (0/1/0/1), reconciled in the merge. Merged tree: focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed."
             }
           ],
           "caveat": "Installed-session visual review by the user and the nested screenshot matrix across themes remain."
