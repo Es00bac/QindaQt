@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 REQUIRED COMPONENTS QuickTest)
+# AGENT-GUARD: the private-bus row below needs dbus-run-session at generate
+# time. The only other definition lives in tests/session, which configures
+# after this directory, so a fresh build tree resolved the variable empty and
+# registered the row with a blank command until a second configure. Resolve
+# it here, exactly like tests/shell/global_menu/runtime_composition does.
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
 
 function(qindaqt_add_app_shell_test target source test_name)
     qt_add_executable(${target} ${source})
@@ -54,6 +60,68 @@ set_tests_properties(
     PROPERTIES
         LABELS "app-shell;global-menu;offscreen"
         TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+qt_add_executable(
+    qindaqt_app_shell_menu_export_surface_tests
+    tst_application_menu_export_surface.cpp
+)
+target_link_libraries(
+    qindaqt_app_shell_menu_export_surface_tests
+    PRIVATE
+        QindaQt::AppShellMenuExport
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        Qt6::Test
+)
+target_compile_features(qindaqt_app_shell_menu_export_surface_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_app_shell_menu_export_surface_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_app_shell_menu_export_surface_tests)
+add_test(
+    NAME qindaqt.app-shell-menu-export-surface-recreation-private-bus
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_app_shell_menu_export_surface_tests>
+)
+set_tests_properties(
+    qindaqt.app-shell-menu-export-surface-recreation-private-bus
+    PROPERTIES
+        LABELS "app-shell;global-menu;offscreen"
+        TIMEOUT 60
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
+)
+
+qt_add_executable(
+    qindaqt_app_shell_menu_export_inflight_tests
+    tst_application_menu_export_inflight.cpp
+)
+target_link_libraries(
+    qindaqt_app_shell_menu_export_inflight_tests
+    PRIVATE
+        QindaQt::AppShellMenuExport
+        QindaQt::GlobalMenuDbusMenu
+        QindaQt::GlobalMenuRegistrar
+        Qt6::Test
+)
+target_compile_features(qindaqt_app_shell_menu_export_inflight_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_app_shell_menu_export_inflight_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_app_shell_menu_export_inflight_tests)
+add_test(
+    NAME qindaqt.app-shell-menu-export-inflight-registration-private-bus
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}" --
+            $<TARGET_FILE:qindaqt_app_shell_menu_export_inflight_tests>
+)
+set_tests_properties(
+    qindaqt.app-shell-menu-export-inflight-registration-private-bus
+    PROPERTIES
+        LABELS "app-shell;global-menu;offscreen"
+        TIMEOUT 60
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
         ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:"
 )

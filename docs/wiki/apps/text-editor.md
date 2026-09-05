@@ -73,6 +73,15 @@ routes close consent through AppShell's exact quit lineage. Open and Save As
 use the injected `FileSelectionAdapter`; production uses the native chooser,
 while missing test composition fails closed without touching a host chooser.
 
+After the window is shown, the executable composes the first-party global-menu
+export through the shared
+`QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport` entry with its
+coordinator, the window's platform `QWindow`, and its session-bus connection;
+the composition, lifecycle, and fail-closed rules are owned by
+[the global-menu page](../shell/global-menu.md). A missing session bus or
+registrar leaves the export disabled/waiting, and the local `QMenuBar` stays
+visible and authoritative.
+
 ## Find and replace
 
 Find and replace is an in-window bar, not a modal dialog. It offers literal or
@@ -192,7 +201,12 @@ hostile regex rejection, single-step Replace All, restore-state schema and
 final/ancestor-symlink and oversize rejection, Settings1
 baseline/conflict/uncertainty, multi-path and hostile CLI admission, desktop
 metadata, source-boundary poison, and a clean installed-prefix offscreen
-launch. Every row that launches offscreen Qt registers
+launch. The global-menu export slice adds real-process private-bus rows under
+the selector documented in [the global-menu page](../shell/global-menu.md):
+exact-identity export with one shell activation and provider-exit clearing,
+mismatched PID/window variants, registrar-absent late binding, and
+hostile-registrar fail-closed rebinding. Every row that launches offscreen Qt
+registers
 `QT_FATAL_WARNINGS=1`; a registry-policy row checks the three script-driven
 and package cases whose names do not express that requirement. All rows receive
 build-root HOME, XDG state/data, and TMPDIR values and disconnected display/bus

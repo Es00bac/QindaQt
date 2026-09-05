@@ -2066,13 +2066,13 @@ gates; a `wpctl`-based test or production fallback is not equivalent evidence.
 
 ## AppShell global-menu export proof
 
-The AppShell and first-consumer transport rows are selected with:
+The AppShell and first-party consumer transport rows are selected with:
 
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
   DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent \
   ctest --test-dir build/dev \
-  -R '^qindaqt\.(app-shell-|file-manager-global-menu-shell-)' \
+  -R '^qindaqt\.(app-shell-|(file-manager|terminal|editor)-global-menu-)' \
   --output-on-failure --no-tests=error
 ```
 
@@ -2082,7 +2082,28 @@ three grouped/property methods through introspection. An injected identity publi
 proves exact numeric registration, native-Wayland no-numeric-id announcement,
 registrar owner loss/replacement, rejected-close retention, accepted-close
 teardown, disabled-action refusal, and exactly-once activation through
-`ApplicationCoordinator`. `qindaqt.global-menu-dbusmenu-server` separately
+`ApplicationCoordinator`.
+`qindaqt.app-shell-menu-export-surface-recreation-private-bus` destroys and
+recreates a real `QWindow` native surface without destroying the `QWindow` and
+requires the old registrar identity to be withdrawn exactly once, the freshly
+obtained identity to be published and registered exactly once, the recreated
+registration to serve the live tree with a coherent revision, recreation while
+no registrar owner exists to stay fail-closed (no publish, no crash) and to
+rebind when an owner returns, and the composed
+`composeFirstPartyMenuExport` entry — the exact path Terminal, Text Editor, and
+File Manager call — to withdraw and re-register through its fixed-id test seam.
+`qindaqt.app-shell-menu-export-inflight-registration-private-bus` races the
+same lifecycle against a registrar that records `RegisterWindow` immediately
+but delays its success reply: destroying the surface in that unanswered window
+must send `UnregisterWindow` for the attempted id exactly once, the registrar
+must observe that compensation strictly before the recreated surface's
+`RegisterWindow`, the delayed reply for the superseded attempt must change
+nothing (no state flip, no second compensation, no crash), and stop must
+compensate the reply-confirmed id once. Its control row uses a registrar that
+refuses every registration with an explicit D-Bus error and requires that
+answered refusal to owe no `UnregisterWindow` through destroy, recreate, and
+stop without crashing.
+`qindaqt.global-menu-dbusmenu-server` separately
 proves depth/property filtering, explicit grouped calls, the standard empty-ID
 all-items request, one activation, and atomic malformed-snapshot retention. It
 runs offscreen with fatal Qt warnings and host display/bus variables removed.
@@ -2102,6 +2123,26 @@ child remains alive. This is deterministic private-bus evidence, not a host sess
 nested compositor, or native Wayland protocol qualification.
 `qindaqt.file-manager-global-menu-identity-variants-source-policy` keeps both
 hostile variants and their real child-PID boundary registered in the test graph.
+
+The Terminal and Text Editor repeat the same real-process shape through the
+shared `composeFirstPartyMenuExport` entry:
+`qindaqt.(terminal|editor)-global-menu-shell-private-bus` launches the real
+application process (the Terminal under a hermetic `/bin/sh` profile) against
+production `GlobalMenuAppletComposition` on one private bus, supplies the
+child's exact PID and window id through the test-only identity adapter,
+requires the application's real menu tree, exactly one shell activation, and
+shell-driven `file.quit` provider exit that clears the applet; its
+PID-mismatch and window-ID-mismatch variants require unavailable/empty state
+and zero activation while the child stays alive.
+`qindaqt.(terminal|editor)-global-menu-registrar-absent-private-bus` proves
+the application keeps running quietly with no registrar on the bus and binds
+only when the production registrar later appears.
+`qindaqt.(terminal|editor)-global-menu-hostile-registrar-private-bus` runs a
+hostile registrar owner that answers `RegisterWindow` with a D-Bus error: the
+application must stay alive, and it must rebind once the real registrar owns
+the name. Each app's `-identity-variants-source-policy` row keeps its hostile
+variants registered. These are deterministic private-bus rows, not host
+session, nested compositor, or native Wayland protocol qualifications.
 
 ## File Manager S1 focused proof
 

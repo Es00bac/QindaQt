@@ -5,11 +5,13 @@
 #include <qindaqt/shell/global_menu/dbusmenu/dbusmenu_server.h>
 #include <qindaqt/shell/global_menu/registrar/registrar_wire.h>
 
+#include <QDBusError>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
 #include <QEvent>
+#include <QPlatformSurfaceEvent>
 #include <QPointer>
 #include <QTimer>
 #include <QWindow>
@@ -29,6 +31,45 @@ constexpr auto kMenuObjectPath = "/org/qindaqt/AppShell/Menu";
 constexpr auto kBusDaemonService = "org.freedesktop.DBus";
 constexpr auto kBusDaemonPath = "/org/freedesktop/DBus";
 constexpr auto kBusDaemonInterface = "org.freedesktop.DBus";
+
+enum class RegistrationCompletion {
+  Confirmed,
+  Refused,
+  Uncertain,
+};
+
+RegistrationCompletion classifyRegistrationCompletion(
+    const QDBusMessage &reply) {
+  if (reply.type() == QDBusMessage::ReplyMessage) {
+    return reply.signature().isEmpty() ? RegistrationCompletion::Confirmed
+                                       : RegistrationCompletion::Uncertain;
+  }
+  if (reply.type() != QDBusMessage::ErrorMessage) {
+    return RegistrationCompletion::Uncertain;
+  }
+
+  // AGENT-CONTRACT: Qt watcher-delivered error messages do not retain a
+  // sender. Only the bus's closed transport/lifecycle error set is therefore
+  // treated as locally uncertain; registrar method errors are refusals.
+  const QDBusError error(reply);
+  if (error.name() ==
+      QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
+    return RegistrationCompletion::Uncertain;
+  }
+  switch (error.type()) {
+  case QDBusError::ServiceUnknown:
+  case QDBusError::NoReply:
+  case QDBusError::BadAddress:
+  case QDBusError::NoServer:
+  case QDBusError::Timeout:
+  case QDBusError::NoNetwork:
+  case QDBusError::Disconnected:
+  case QDBusError::TimedOut:
+    return RegistrationCompletion::Uncertain;
+  default:
+    return RegistrationCompletion::Refused;
+  }
+}
 
 class CoordinatorMenuProjection final {
 public:
@@ -151,6 +192,14 @@ public:
       setStatus(MenuExportStatus::Disabled, QStringLiteral("window-destroyed"));
       return;
     }
+    if (surfaceDestroyed) {
+      // AGENT-GUARD: a registrar-owner change must never publish against the
+      // dead pre-recreation window identity; only SurfaceCreated may lift
+      // this by obtaining a fresh identity from the publisher.
+      setStatus(MenuExportStatus::WaitingForRegistrar,
+                QStringLiteral("window-surface-destroyed"));
+      return;
+    }
     identity = identityPublisher->publish(*window, sessionBus.baseService(),
                                           QString::fromLatin1(kMenuObjectPath));
     if (!identity) {
@@ -178,40 +227,121 @@ public:
     message.setArguments({QVariant::fromValue(*identity->registrarWindowId),
                           QVariant::fromValue(QDBusObjectPath(
                               QString::fromLatin1(kMenuObjectPath)))});
+    // AGENT-GUARD: the registrar may have accepted this window id before its
+    // reply ever arrives, so the attempt is registrar state from this moment.
+    // Every withdrawal must compensate pendingRegistration (or the
+    // reply-confirmed registeredWindowId) exactly once; dropping this record
+    // leaks a live registration across surface recreation.
+    pendingRegistration = PendingRegistration{*identity->registrarWindowId,
+                                              requestSerial, registrarOwner};
     auto *watcher =
         new QDBusPendingCallWatcher(sessionBus.asyncCall(message, 2'000), &q);
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, &q,
                      [this, watcher, requestSerial] {
                        const QDBusMessage reply = watcher->reply();
                        watcher->deleteLater();
-                       if (!started || requestSerial != serial) {
+                       if (!started || requestSerial != serial ||
+                           !pendingRegistration ||
+                           pendingRegistration->requestSerial !=
+                               requestSerial) {
+                         // AGENT-GUARD: a superseded attempt's reply is noise.
+                         // The withdrawal that advanced the serial already
+                         // compensated the attempted id; acting here would
+                         // either resurrect it or double the compensation.
                          return;
                        }
-                       if (reply.type() == QDBusMessage::ReplyMessage) {
-                         registeredWindowId = identity->registrarWindowId;
+                       switch (classifyRegistrationCompletion(reply)) {
+                       case RegistrationCompletion::Confirmed:
+                         registeredWindowId = pendingRegistration->windowId;
+                         pendingRegistration.reset();
                          setStatus(MenuExportStatus::Published);
-                       } else {
+                         break;
+                       case RegistrationCompletion::Refused:
+                         // Only a method-level error is authoritative refusal.
+                         // Local transport errors do not prove that the owner
+                         // failed to mutate state.
+                         pendingRegistration.reset();
                          setStatus(
                              MenuExportStatus::WaitingForRegistrar,
                              QStringLiteral("registrar-registration-failed"));
+                         break;
+                       case RegistrationCompletion::Uncertain:
+                         // AGENT-GUARD: timeout, disconnect, and malformed
+                         // success replies retain the attempted id. A later
+                         // withdrawal must compensate it exactly once because
+                         // none of those outcomes proves registrar refusal.
+                         setStatus(
+                             MenuExportStatus::WaitingForRegistrar,
+                             QStringLiteral("registrar-registration-uncertain"));
+                         break;
                        }
                      });
   }
 
   void retirePublishedIdentity() {
-    if (registeredWindowId && !registrarOwner.isEmpty()) {
+    // AGENT-GUARD: compensate the id the registrar may already hold whether
+    // or not its RegisterWindow reply has arrived. Clearing both records in
+    // the same turn makes the compensation exactly-once per attempt: a second
+    // retirement (stop after surface destruction) finds neither and sends
+    // nothing.
+    const std::optional<quint32> attemptedId =
+        registeredWindowId
+            ? registeredWindowId
+            : (pendingRegistration
+                   ? std::optional<quint32>(pendingRegistration->windowId)
+                   : std::nullopt);
+    const QString attemptedOwner =
+        pendingRegistration ? pendingRegistration->registrarOwner
+                            : registrarOwner;
+    if (attemptedId && !attemptedOwner.isEmpty()) {
       QDBusMessage message = QDBusMessage::createMethodCall(
-          registrarOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
+          attemptedOwner, QString::fromLatin1(Registrar::kRegistrarObjectPath),
           QString::fromLatin1(Registrar::kRegistrarInterface),
           QStringLiteral("UnregisterWindow"));
-      message.setArguments({QVariant::fromValue(*registeredWindowId)});
+      message.setArguments({QVariant::fromValue(*attemptedId)});
       sessionBus.asyncCall(message, 2'000);
     }
     registeredWindowId.reset();
+    pendingRegistration.reset();
     if (identity && !window.isNull()) {
       identityPublisher->withdraw(*window);
     }
     identity.reset();
+  }
+
+  void handleSurfaceAboutToBeDestroyed() {
+    if (!started) {
+      return;
+    }
+    // AGENT-GUARD: the native window identity dies with its surface. Retire
+    // the registrar association synchronously here — the Wayland withdrawal
+    // needs the still-live surface — and never reuse the old identity after.
+    surfaceDestroyed = true;
+    ++serial;
+    retirePublishedIdentity();
+    setStatus(MenuExportStatus::WaitingForRegistrar,
+              QStringLiteral("window-surface-destroyed"));
+  }
+
+  void handleSurfaceCreated() {
+    if (!started) {
+      return;
+    }
+    surfaceDestroyed = false;
+    // AGENT-NOTE: SurfaceCreated can be delivered synchronously inside
+    // publishIdentity itself (reading an X11 winId creates the surface), so
+    // republishing is deferred to a stable turn and every guard is rechecked
+    // there instead of recursing.
+    QMetaObject::invokeMethod(
+        &q,
+        [this] {
+          if (!started || surfaceDestroyed || identity.has_value() ||
+              registrarOwner.isEmpty()) {
+            return;
+          }
+          publishIdentity();
+        },
+        Qt::QueuedConnection);
   }
 
   ApplicationMenuExport &q;
@@ -229,11 +359,22 @@ public:
   QString failureCode;
   std::optional<WindowMenuIdentity> identity;
   std::optional<quint32> registeredWindowId;
+  // One RegisterWindow attempt retained from send until confirmation,
+  // explicit registrar refusal, or exactly-once compensating withdrawal.
+  struct PendingRegistration {
+    quint32 windowId;
+    quint64 requestSerial;
+    QString registrarOwner;
+  };
+  std::optional<PendingRegistration> pendingRegistration;
   quint64 serial = 0;
   quint64 closeCheckSerial = 0;
   MenuExportStatus status = MenuExportStatus::Disabled;
   bool started = false;
   bool objectRegistered = false;
+  // True only between SurfaceAboutToBeDestroyed and SurfaceCreated; an uncreated
+  // test window is never marked, so injected-identity rows keep publishing.
+  bool surfaceDestroyed = false;
 };
 
 ApplicationMenuExport::ApplicationMenuExport(
@@ -304,6 +445,7 @@ void ApplicationMenuExport::stop() {
   }
   d->started = false;
   ++d->serial;
+  d->surfaceDestroyed = false;
   if (!d->window.isNull()) {
     d->window->removeEventFilter(this);
   }
@@ -333,20 +475,36 @@ ApplicationMenuExport::registeredWindowId() const noexcept {
 QString ApplicationMenuExport::failureCode() const { return d->failureCode; }
 
 bool ApplicationMenuExport::eventFilter(QObject *watched, QEvent *event) {
-  if (watched == d->window && event->type() == QEvent::Close) {
-    const quint64 closeSerial = ++d->closeCheckSerial;
-    QTimer::singleShot(0, this, [this, closeSerial] {
-      if (!d->started || closeSerial != d->closeCheckSerial ||
-          d->window.isNull()) {
-        return;
+  if (watched == d->window) {
+    if (event->type() == QEvent::PlatformSurface) {
+      // AGENT-GUARD: Wayland windows routinely destroy and recreate their
+      // native surface without destroying the QWindow. Each recreation must
+      // swap the registrar identity exactly; keeping the old registration
+      // leaves the shell joined to a dead window.
+      const auto *surfaceEvent =
+          static_cast<const QPlatformSurfaceEvent *>(event);
+      if (surfaceEvent->surfaceEventType() ==
+          QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
+        d->handleSurfaceAboutToBeDestroyed();
+      } else if (surfaceEvent->surfaceEventType() ==
+                 QPlatformSurfaceEvent::SurfaceCreated) {
+        d->handleSurfaceCreated();
       }
-      // AGENT-GUARD: event filters run before ApplicationShell's consent
-      // handler. Withdraw only after the event turn proves the surface really
-      // closed; a rejected close leaves the live menu association intact.
-      if (!d->window->isVisible()) {
-        stop();
-      }
-    });
+    } else if (event->type() == QEvent::Close) {
+      const quint64 closeSerial = ++d->closeCheckSerial;
+      QTimer::singleShot(0, this, [this, closeSerial] {
+        if (!d->started || closeSerial != d->closeCheckSerial ||
+            d->window.isNull()) {
+          return;
+        }
+        // AGENT-GUARD: event filters run before ApplicationShell's consent
+        // handler. Withdraw only after the event turn proves the surface really
+        // closed; a rejected close leaves the live menu association intact.
+        if (!d->window->isVisible()) {
+          stop();
+        }
+      });
+    }
   }
   return QObject::eventFilter(watched, event);
 }
