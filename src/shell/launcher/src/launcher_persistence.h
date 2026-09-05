@@ -26,11 +26,11 @@ enum class PersistenceMutation {
 };
 
 // Pinned/recent persistence behind the public Settings1 client, under the
-// documented key set shell.launcher.pinned / shell.launcher.recent. Values
+// documented key set panels.launcherPinned / panels.launcherRecent. Values
 // are bounded string lists of desktop-entry ids and nothing else.
 //
 // AGENT-CONTRACT: The borrowed client must outlive this controller, be scoped
-// to exactly the two launcher keys, and be started/stopped by the composition
+// to a scope containing both launcher keys, and be started/stopped by the composition
 // root. Semantics follow ADR-0012: a mutation applies to the live model and
 // commits immediately; a confirmed rejection reverts the model to the last
 // confirmed value and stays visible until the next explicit write; an
@@ -44,8 +44,8 @@ class LauncherPersistenceController final : public QObject
   Q_PROPERTY(QString statusText READ statusText NOTIFY stateChanged)
 
 public:
-  static QString pinnedKey() { return QStringLiteral("shell.launcher.pinned"); }
-  static QString recentKey() { return QStringLiteral("shell.launcher.recent"); }
+  static QString pinnedKey() { return QStringLiteral("panels.launcherPinned"); }
+  static QString recentKey() { return QStringLiteral("panels.launcherRecent"); }
 
   explicit LauncherPersistenceController(
       QindaQt::Services::SettingsClient::SettingsClient &client, QObject *parent = nullptr);

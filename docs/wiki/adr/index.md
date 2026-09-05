@@ -78,3 +78,5 @@ create or supersede one; start from the [ADR template](template.md).
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
 integration retains every accepted decision in numeric order.
+
+- [ADR-0076: Register launcher persistence in panel settings](0076-register-launcher-persistence-in-panel-settings.md)

@@ -167,6 +167,18 @@
       "default": true
     },
     {
+      "key": "panels.launcherPinned",
+      "domain": "panels",
+      "type": "string-list",
+      "default": []
+    },
+    {
+      "key": "panels.launcherRecent",
+      "domain": "panels",
+      "type": "string-list",
+      "default": []
+    },
+    {
       "key": "panels.layoutProfile",
       "domain": "panels",
       "type": "string",

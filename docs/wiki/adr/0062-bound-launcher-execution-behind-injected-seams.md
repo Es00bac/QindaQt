@@ -100,3 +100,9 @@ Startup-notification token support lands, a third-party launcher package
 needs the mediated launch interface, the Settings1 schema registers the
 launcher keys, or the panel hosting lane needs activation actions beyond
 `Activate`/`ActivateAction`.
+
+## Subsequent decisions
+
+[ADR-0076](0076-register-launcher-persistence-in-panel-settings.md) supersedes
+only the launcher persistence key names in this decision. The injected
+execution and Settings1 ownership boundaries remain in force.
