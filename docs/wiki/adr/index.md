@@ -74,6 +74,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0071](0071-publish-and-prove-shell-token-readiness.md) | Accepted | Publish QST-1 before shell QML and prove readiness at boot |
 | [ADR-0072](0072-shell-iconography-confined-xdg-icon-themes.md) | Accepted | Shell iconography over confined XDG icon themes |
 | [ADR-0073](0073-publish-atomic-authenticated-task-facts.md) | Accepted | Publish atomic task facts only to the authenticated production shell |
+| [ADR-0074](0074-compose-shell-preferences-through-settings1.md) | Accepted | Compose shell layout and token preferences through Settings1 |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;

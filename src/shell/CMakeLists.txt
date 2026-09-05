@@ -186,6 +186,12 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
+        runtime/shellappearancebridge.cpp
+        runtime/shellappearancebridge.h
+        runtime/shellpreferencevalues.cpp
+        runtime/shellpreferencevalues.h
+        runtime/shellstartuppreferences.cpp
+        runtime/shellstartuppreferences.h
         runtime/tasklistappletcomposition.cpp
         runtime/tasklistappletcomposition.h
         runtime/statusnotifierappletcomposition.cpp
@@ -273,6 +279,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QINDAQT_SOURCE_THEME_DIR="${PROJECT_SOURCE_DIR}/data/themes"
             QINDAQT_SOURCE_APPLET_DIR="${PROJECT_SOURCE_DIR}/data/applets"
             QINDAQT_SOURCE_APPLET_POLICY="${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"
+            QINDAQT_SHELL_BUILD_EXECUTABLE_PATH="${CMAKE_BINARY_DIR}/src/shell/qindaqt-shell${CMAKE_EXECUTABLE_SUFFIX}"
     )
 
     qindaqt_enable_warnings(qindaqt-shell)

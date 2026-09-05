@@ -2,6 +2,7 @@
 #pragma once
 
 #include "runtimeoptions.h"
+#include "shellpreferencevalues.h"
 #include "clipboardappletcomposition.h"
 #include "statusnotifierappletcomposition.h"
 #include "../common/shelliconconfiguration.h"
@@ -68,6 +69,7 @@ namespace QindaQt::Shell {
 
 class RuntimePanelWindowFactory;
 class AudioAppletComposition;
+class ShellAppearanceBridge;
 class BluetoothAppletComposition;
 class GlobalMenuAppletComposition;
 class KGlobalAccelShortcutRegistrar;
@@ -112,11 +114,18 @@ private:
     [[nodiscard]] bool reconcileSurfaces(QString *error);
     [[nodiscard]] bool settlePanelVisibility(QString *error);
     void startNotificationOutputAuthority();
+    // Selected theme map with the confirmed fonts.family preference overlaid;
+    // this is the one raw theme value given to panel and notification surfaces.
+    [[nodiscard]] QVariantMap effectiveThemeMap() const;
+    void propagateThemeToSurfaces();
     void attachOutputSignals(QScreen *screen);
     void scheduleOutputReconcile();
     void resetRuntime();
 
     QGuiApplication &m_application;
+    // Confirmed Settings1 preferences captured before the initial surface
+    // plan; empty when the service could not be reached at startup.
+    std::optional<ShellPreferenceValues> m_startupPreferences;
     Profiles::ProfileCatalog m_profiles;
     Themes::ThemeCatalog m_themes;
     Applets::ManifestCatalog m_applets;
@@ -175,6 +184,7 @@ private:
                         NotificationPresentationController>
         m_notificationPresentation;
     std::unique_ptr<NotificationCenterAppletAccess> m_notificationCenterAccess;
+    std::unique_ptr<ShellAppearanceBridge> m_appearanceBridge;
     // AGENT-GUARD: teardown safety comes from ~ShellRuntimeApplication()
     // unconditionally calling resetRuntime(), which tears the window factory
     // down before the applet compositions. Declaration order alone does NOT

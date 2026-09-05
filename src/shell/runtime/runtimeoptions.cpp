@@ -18,11 +18,14 @@ void configureParser(QCommandLineParser &parser)
     parser.addVersionOption();
     parser.addOptions({
         {{QStringLiteral("p"), QStringLiteral("profile")},
-         QStringLiteral("Select a validated layout profile by stable id."),
-         QStringLiteral("id"),
-         QStringLiteral("qindaqt")},
+         QStringLiteral("Select a validated layout profile by stable id. "
+                        "Defaults to the confirmed Settings1 panels.layoutProfile "
+                        "selection, then 'qindaqt'."),
+         QStringLiteral("id")},
         {{QStringLiteral("t"), QStringLiteral("theme")},
-         QStringLiteral("Select a validated theme by stable id. Defaults to the profile theme."),
+         QStringLiteral("Select a validated theme by stable id. Defaults to the "
+                        "confirmed Settings1 appearance.theme preference, then the "
+                        "profile theme."),
          QStringLiteral("id")},
         {QStringLiteral("profile-dir"),
          QStringLiteral("Read profiles from this directory."),

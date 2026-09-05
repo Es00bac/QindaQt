@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtimepanelwindowfactory.h"
 #include "runtimepanelappletcompatibility.h"
+#include "thememappropagation.h"
 
 #include "audio_applet_controller.h"
 #include "bluetooth_applet_controller.h"
@@ -16,6 +17,7 @@
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
 #include "qindaqt/applets/manifest_catalog.h"
 
+#include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickWindow>
@@ -112,6 +114,12 @@ QJsonArray RuntimePanelWindowFactory::appletEvidence() const
 
 RuntimePanelWindowFactory::~RuntimePanelWindowFactory() = default;
 
+void RuntimePanelWindowFactory::setTheme(const QVariantMap &theme)
+{
+    m_theme = theme;
+    propagateThemeMapToWindows(m_theme, m_liveWindows);
+}
+
 bool RuntimePanelWindowFactory::ensureComponent(QString *error)
 {
     if (m_component && m_component->isReady()) {
@@ -193,6 +201,7 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         window->hide();
     }
     window->setObjectName(QStringLiteral("qindaqt-panel-%1").arg(surfaceId));
+    m_liveWindows.append(QPointer<QQuickWindow>(window));
     return std::unique_ptr<QQuickWindow>(window);
 }
 

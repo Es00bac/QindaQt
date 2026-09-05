@@ -171,6 +171,25 @@ contract from its selected profile but does not yet subscribe to provisional
 editor snapshots; live Settings-to-shell publication and the reveal affordance
 remain outstanding parts of the Shell and customization milestone.
 
+## Shell startup selection and catalog precedence
+
+The production shell adopts the confirmed Settings1 `panels.layoutProfile`
+selection at startup ([ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)).
+Before the initial surface plan it performs one bounded read of the scoped
+Settings1 snapshot; an explicit `--profile` outranks the saved selection, and
+the `qindaqt` profile remains the fallback when the service is unavailable or
+the saved profile has been deleted or renamed (a diagnostic names the dropped
+selection). Only an explicit unknown `--profile` fails startup.
+Profile changes are deliberately not applied live: the Customize route's
+promise is adoption at the next shell start, which this read implements.
+
+Profile catalogs merge low-to-high precedence with the writable user store
+last, so user-saved profiles override — and partial user catalogs no longer
+shadow — the installed stock profiles. The source tree participates only for
+the genuine build-tree executable. Explicit `--profile-dir` and
+`QINDAQT_PROFILE_DIR` remain isolated single-directory overrides. The shell and
+the Settings Customize route share this precedence contract.
+
 ## Built-in workflow families
 
 QindaQt ships original layouts inspired by useful interaction patterns:

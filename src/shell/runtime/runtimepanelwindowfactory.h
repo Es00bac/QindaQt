@@ -6,6 +6,9 @@
 
 #include <QHash>
 #include <QJsonArray>
+#include <QList>
+#include <QPointer>
+#include <QQuickWindow>
 #include <QVariantMap>
 
 #include <memory>
@@ -75,12 +78,20 @@ public:
         QString *error = nullptr) override;
     [[nodiscard]] QJsonArray appletEvidence() const;
 
+    // Replaces the theme map for future windows and pushes it onto every live
+    // panel window's theme property. QML panel maps are plain (non-readonly)
+    // properties precisely so this confirmed-preference update path works.
+    void setTheme(const QVariantMap &theme);
+
 private:
     [[nodiscard]] bool ensureComponent(QString *error);
 
     QQmlEngine &m_engine;
     QHash<QString, QVariantMap> m_panels;
     QVariantMap m_theme;
+    // AGENT-NOTE: Live windows are tracked weakly only so setTheme can reach
+    // them; ownership stays with the surface backend that took the unique_ptr.
+    QList<QPointer<QQuickWindow>> m_liveWindows;
     NotificationCenterAppletAccess *m_notificationCenterAccess = nullptr;
     AudioApplet::AudioAppletController *m_audioAppletAccess = nullptr;
     BluetoothApplet::BluetoothAppletController *m_bluetoothAppletAccess = nullptr;

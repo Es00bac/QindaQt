@@ -4,6 +4,7 @@
 #include "qindaqt/profiles/profile_loader.h"
 
 #include <QSet>
+#include <algorithm>
 
 namespace QindaQt::Profiles {
 
@@ -35,28 +36,31 @@ const QVector<LayoutProfile> &ProfileCatalog::profiles() const { return m_profil
 
 bool ProfileCatalog::loadDirectory(const QString &path, QString *error)
 {
+    return loadDirectories({path}, error);
+}
+
+bool ProfileCatalog::loadDirectories(const QStringList &paths, QString *error)
+{
     QVector<LayoutProfile> loaded;
-    QSet<QString> ids;
-    for (const auto &result : ProfileLoader::fromDirectory(path)) {
-        if (!result.ok) {
-            if (error != nullptr) {
-                *error = result.error.diagnostic();
+    for (const QString &path : paths) {
+        QSet<QString> directoryIds;
+        for (const auto &result : ProfileLoader::fromDirectory(path)) {
+            if (!result.ok || directoryIds.contains(result.profile.id)) {
+                if (error) {
+                    *error = !result.ok ? result.error.diagnostic()
+                        : QStringLiteral("duplicate profile id: %1").arg(result.profile.id);
+                }
+                return false;
             }
-            return false;
+            directoryIds.insert(result.profile.id);
+            auto existing = std::find_if(loaded.begin(), loaded.end(),
+                [&result](const auto &profile) { return profile.id == result.profile.id; });
+            if (existing == loaded.end()) loaded.append(result.profile);
+            else *existing = result.profile;
         }
-        if (ids.contains(result.profile.id)) {
-            if (error != nullptr) {
-                *error = QStringLiteral("duplicate profile id: %1").arg(result.profile.id);
-            }
-            return false;
-        }
-        ids.insert(result.profile.id);
-        loaded.append(result.profile);
     }
     if (loaded.isEmpty()) {
-        if (error != nullptr) {
-            *error = QStringLiteral("no profile JSON files found in %1").arg(path);
-        }
+        if (error) *error = QStringLiteral("no profile JSON files found in catalog paths");
         return false;
     }
 
