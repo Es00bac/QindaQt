@@ -8,7 +8,7 @@ status: handoff
 feature: Program management handed to Codex after wave-1 integration
 worktree: /home/cabewse/work_SPaC3/container-wm
 started_at: 2026-09-02T20:42:51-06:00
-updated_at: 2026-09-04T19:23:40-06:00
+updated_at: 2026-09-04T20:37:02-06:00
 ---
 
 # Claude Program Manager
@@ -65,3 +65,4 @@ updated_at: 2026-09-04T19:23:40-06:00
 - 2026-09-04T15:32:08-06:00 — Withdrew install readiness after the user's windowed run showed an unusable shell (tokens never published in the shell process; task list/global menu degraded; terminal blank); opened `shell-production-runtime-repair` (Codex). Lesson: a green suite plus nested geometry rows is not a usable desktop; a visible windowed run is now a mandatory pre-install gate.
 - 2026-09-04T18:42:24-06:00 — Integrated the production shell runtime repair `99de545a` at `cd760f4e`; focused 198/198 rows in Debug and Release, static gates, broad safe Debug 615/615, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots. Task-fact contract, menu export, and iconography lanes remain before install readiness.
 - 2026-09-04T19:23:40-06:00 — Integrated shell iconography I1 `288574a8` at `1207bf39` (focused 14/14 Debug/Release, gates). I2 (icon-first applets), compositor task-facts, and menu-export repair remain in flight.
+- 2026-09-04T20:37:02-06:00 — Integrated the compositor atomic task-fact contract `fa0e6d9c` at `92d3348b`; Release focused 202/202 and Debug broad safe 620/620 (which contains the focused rows), static gates, serialized nested boot and panel-visibility rows 4/4 on the system KWin 6.6.6 roots; the boot row now requires the task list ready with real windows. Icon-first applets and the menu-export lifecycle repair remain.
