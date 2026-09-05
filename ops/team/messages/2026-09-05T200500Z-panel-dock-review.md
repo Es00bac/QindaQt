@@ -1,0 +1,5 @@
+# Panel dock candidate review: `e69c945c727e4cf0c83df2982b949c9958ec3480`
+
+- Review status: BLOCKED pending focused QML verification.
+- Static finding: `PanelContent.qml` changes the shared non-dock inset from a hard-coded 4px to `Tokens.space["2"]`. `tests/shell/qml/tst_panelgeometry.qml` creates `PanelContent` directly, imports no token test support, and never publishes `TokenFacade`; `TokenFacade` starts with an empty map. Unless the runner seeds the singleton externally, `contentInset` coerces to zero and the existing `test_disjointZonesWithScrollableOverflow` assertion (`end.x + end.width <= panel.width - 4`) can fail. Add a safe fallback (4) or explicitly seed tokens in this test harness, then run the focused panel geometry row.
+- Other static review: profile dock settings and `dockMode` forwarding are coherent; `TokenFacade::accessibility` is read-only and maps normalized inputs; `QMetaObject::connect` with `QMetaProperty::notifySignal()` is a Qt 6.11-supported overload. The input mask is clipped to window size and tracks `inputBounds` changes.
