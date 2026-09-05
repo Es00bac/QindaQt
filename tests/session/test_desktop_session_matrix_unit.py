@@ -174,14 +174,27 @@ def _add_interaction_evidence(
         "enabled": False, "hasBaseline": True, "state": "ready",
         "canToggle": True, "statusText": "", "errorText": "",
     }
-    panel_applets = [
-        {"panelId": "smart-shelf", "appletId": "apps",
-         "plugin": "launcher", "ready": True,
-         "entryPoint": "qindaqt.applets.launcher"},
-        {"panelId": "smart-shelf", "appletId": "hosted-task-list",
-         "plugin": "task-list", "ready": True,
-         "entryPoint": "qindaqt.applets.task-list"},
-    ]
+    panel_applets = (
+        [
+            {"panelId": "smart-shelf", "appletId": "apps",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+            {"panelId": "smart-shelf", "appletId": "hosted-task-list",
+             "plugin": "task-list", "ready": True,
+             "entryPoint": "qindaqt.applets.task-list"},
+        ]
+        if scenario.profile_id == "qindaqt" else [
+            {"panelId": "taskbar", "appletId": "start",
+             "plugin": "launcher", "ready": True,
+             "entryPoint": "qindaqt.applets.launcher"},
+            {"panelId": "taskbar", "appletId": "quick-launch",
+             "plugin": "quick-launch", "ready": True,
+             "entryPoint": "qindaqt.applets.quick-launch"},
+            {"panelId": "taskbar", "appletId": "tasks",
+             "plugin": "task-list", "ready": True,
+             "entryPoint": "qindaqt.applets.task-list"},
+        ]
+    )
     evidence["interaction"] = {
         "action": "open-notification-center",
         "deviceId": "qindaqt-development-input",
