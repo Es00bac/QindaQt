@@ -12,6 +12,7 @@ namespace {
 enum class CallKind {
     Detach,
     Enter,
+    Reject,
     Restore,
 };
 
@@ -60,6 +61,15 @@ public:
                     QString *error) override
     {
         calls.append({CallKind::Enter, baseline, windowId, mode, {}});
+        return accept(error);
+    }
+
+    bool restoreRejectedPresentation(const MemberGroupBaseline &baseline,
+                                     const QString &windowId,
+                                     MemberFocusMode mode,
+                                     QString *error) override
+    {
+        calls.append({CallKind::Reject, baseline, windowId, mode, {}});
         return accept(error);
     }
 
@@ -126,6 +136,7 @@ private Q_SLOTS:
     void focusedDetachOwnsSynchronousRefreshAndKeepsCallbackValuesAlive();
     void maximizeTogglesFocusAndRestoresExactBaseline();
     void fullscreenEntersAndExitsWithoutChangingLayout();
+    void rejectedCompetingPresentationRollsBackWithoutChangingFocus();
     void focusedMinimizeAndCloseRestoreCoherently();
     void pageSwitchRestoresFocusBeforeTopologySynchronization();
     void crossContainerMoveRestoresFocusBeforeTopologySynchronization();
@@ -269,7 +280,38 @@ void HybridMemberPolicyTest::fullscreenEntersAndExitsWithoutChangingLayout()
     QVERIFY(policy.fullscreenChanged(QStringLiteral("right"), false));
     QCOMPARE(platform.calls.constLast().kind, CallKind::Restore);
     QCOMPARE(platform.calls.constLast().baseline, original);
+    QCOMPARE(platform.calls.constLast().activation,
+             MemberRestoreActivation::PreserveCurrent);
     QVERIFY(!policy.focusState());
+}
+
+void HybridMemberPolicyTest::rejectedCompetingPresentationRollsBackWithoutChangingFocus()
+{
+    const auto original = group();
+
+    for (const auto mode : {MemberFocusMode::Maximized,
+                            MemberFocusMode::Fullscreen}) {
+        FakePlatform platform;
+        HybridMemberPolicy policy(platform);
+        QVERIFY(policy.synchronize({original}));
+
+        if (mode == MemberFocusMode::Maximized) {
+            QVERIFY(policy.maximizedChanged(QStringLiteral("left"), true));
+            QVERIFY(!policy.maximizedChanged(QStringLiteral("right"), true));
+        } else {
+            QVERIFY(policy.fullscreenChanged(QStringLiteral("left"), true));
+            QVERIFY(!policy.fullscreenChanged(QStringLiteral("right"), true));
+        }
+
+        QCOMPARE(platform.calls.size(), 2);
+        QCOMPARE(platform.calls.constLast().kind, CallKind::Reject);
+        QCOMPARE(platform.calls.constLast().baseline, original);
+        QCOMPARE(platform.calls.constLast().windowId, QStringLiteral("right"));
+        QCOMPARE(platform.calls.constLast().mode, std::optional(mode));
+        QCOMPARE(policy.focusState(),
+                 std::optional<MemberFocusState>({QStringLiteral("group"),
+                                                  QStringLiteral("left"), mode}));
+    }
 }
 
 void HybridMemberPolicyTest::focusedMinimizeAndCloseRestoreCoherently()
@@ -394,6 +436,11 @@ void HybridMemberPolicyTest::failedPlatformCallsDoNotPublishPolicyState()
     platform.failNext = true;
     QVERIFY(!policy.maximizedChanged(QStringLiteral("left"), true, &error));
     QVERIFY(policy.focusState());
+
+    platform.failNext = true;
+    QVERIFY(!policy.maximizedChanged(QStringLiteral("right"), true, &error));
+    QCOMPARE(error, QStringLiteral("injected platform failure"));
+    QCOMPARE(policy.focusState()->windowId, QStringLiteral("left"));
 
     platform.failNext = true;
     QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("right"), true, &error));

@@ -668,3 +668,9 @@ process-local Hybrid runtime owns a subset of group policies without expanding
 Compositor1; output configuration remains a Platform-services boundary. See
 [Compositor and session integration](../architecture/compositor-session.md)
 for exact runtime evidence and remaining limits.
+
+Wayland pointer locking, relative motion, and pointer confinement remain owned
+by the embedded KWin Wayland server's native pointer-constraints interfaces.
+QindaQt does not proxy or reimplement those protocols; qualification of a game
+client belongs in the nested Wayland client matrix and must observe KWin's
+native lock/unlock and confinement lifecycle.

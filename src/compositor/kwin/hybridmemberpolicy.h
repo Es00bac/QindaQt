@@ -57,8 +57,10 @@ struct MemberFocusState final
 };
 
 // Atomic platform seam. Implementations preflight all named live windows before
-// mutation; false leaves presentation and topology unchanged. The controller
-// serializes calls and ignores re-entrant state signals raised by an operation.
+// mutation; an ordinary false leaves presentation and topology unchanged, while
+// restoreRejectedPresentation may unwind a native request KWin already applied
+// without changing the accepted focus presentation. The controller serializes
+// calls and ignores re-entrant state signals raised by an operation.
 class HybridMemberPolicyPlatform
 {
 public:
@@ -72,6 +74,15 @@ public:
                                           const QString &windowId,
                                           MemberFocusMode mode,
                                           QString *error = nullptr) = 0;
+    // KWin emits maximize/fullscreen notifications after applying a native
+    // request. When another member already owns temporary focus presentation,
+    // the adapter must unwind only that rejected member's native state against
+    // this committed baseline. It must not activate a window or reveal peers.
+    [[nodiscard]] virtual bool restoreRejectedPresentation(
+        const MemberGroupBaseline &baseline,
+        const QString &windowId,
+        MemberFocusMode mode,
+        QString *error = nullptr) = 0;
     [[nodiscard]] virtual bool restoreGroup(const MemberGroupBaseline &baseline,
                                             const QString &minimizeWindowId,
                                             const QSet<QString> &missingWindowIds,
@@ -142,6 +153,9 @@ private:
     [[nodiscard]] bool enter(const MemberLocation &location,
                              MemberFocusMode mode,
                              QString *error);
+    [[nodiscard]] bool restoreRejectedPresentation(const QString &windowId,
+                                                   MemberFocusMode mode,
+                                                   QString *error);
     [[nodiscard]] bool restore(const QString &minimizeWindowId,
                                QSet<QString> missingWindowIds,
                                MemberRestoreActivation activation,
