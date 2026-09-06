@@ -83,3 +83,7 @@ service's private storage.
 - The shell adopts live profile switching (removing the restart contract), or
 - Settings1 offers a synchronous confirmed-read API, making the bounded wait
   unnecessary.
+
+## Follow-up
+
+[ADR-0078](0078-own-wallpaper-surfaces-in-the-shell.md) adds the production wallpaper consumer while retaining this decision’s Settings1 authority and snapshot rules.

@@ -44,10 +44,10 @@ ColumnLayout {
                 required property var modelData
                 objectName: "bundledWallpaperButton"
                 text: modelData.name
-                emphasized: root.draftValue("appearance.wallpaper") === modelData.path
+                emphasized: root.draftValue("appearance.wallpaper") === modelData.value
                 available: root.appearanceSettings.canEdit && !root.editorBusy
                 accessibleName: qsTr("Use %1 wallpaper").arg(modelData.name)
-                onClicked: root.setDraft("appearance.wallpaper", modelData.path)
+                onClicked: root.setDraft("appearance.wallpaper", modelData.value)
             }
         }
     }

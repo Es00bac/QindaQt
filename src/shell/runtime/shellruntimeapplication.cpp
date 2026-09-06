@@ -454,6 +454,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     }
 
     startSettingsClients();
+    initializeWallpaper();
 
     initializeAppearanceBridge(!options.themeId.isEmpty());
 
@@ -516,6 +517,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
 void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
+    m_wallpaper.reset();
     m_windowActionsRetry.stop();
     m_notificationCenterShortcut.reset();
     m_globalShortcutRegistrar.reset();

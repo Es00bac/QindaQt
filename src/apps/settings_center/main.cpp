@@ -6,22 +6,23 @@
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 #include "qindaqt/apps/settings_appearance/appearance_theme_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
-#include "qindaqt/apps/settings_display/display_settings_model.h"
-#include "qindaqt/apps/settings_network/network_settings_model.h"
+#include "qindaqt/apps/settings_appearance/wallpaper_catalog.h"
 #include "qindaqt/apps/settings_audio/audio_settings_model.h"
 #include "qindaqt/apps/settings_bluetooth/bluetooth_settings_model.h"
+#include "qindaqt/apps/settings_display/display_settings_model.h"
+#include "qindaqt/apps/settings_network/network_settings_model.h"
+#include "qindaqt/services/audio_client/audio_client.h"
+#include "qindaqt/services/audio_client/qt_audio_transport.h"
 #include "qindaqt/services/bluetooth_client/bluetooth_client.h"
 #include "qindaqt/services/bluetooth_client/qt_bluetooth_transport.h"
 #include "qindaqt/services/display_client/client.h"
 #include "qindaqt/services/display_client/display_coordinator.h"
 #include "qindaqt/services/display_client/qt_display_transport.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
+#include "qindaqt/services/network_qt_transport/qt_network_transport.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/services/network_qt_transport/qt_network_transport.h"
-#include "qindaqt/services/audio_client/audio_client.h"
-#include "qindaqt/services/audio_client/qt_audio_transport.h"
-#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -37,6 +38,17 @@ namespace {
 
 // AGENT-CONTRACT: Installed-theme discovery contract: standard data
 // locations first, then the layout beside the installed executable.
+[[nodiscard]] QStringList wallpaperSearchDirectories() {
+  QStringList directories = QStandardPaths::locateAll(
+      QStandardPaths::GenericDataLocation, QStringLiteral("qindaqt/wallpapers"),
+      QStandardPaths::LocateDirectory);
+  directories.append(QDir(QCoreApplication::applicationDirPath())
+                         .absoluteFilePath(QStringLiteral(
+                             QINDAQT_INSTALL_WALLPAPER_RELATIVE_PATH)));
+  directories.removeDuplicates();
+  return directories;
+}
+
 [[nodiscard]] QStringList themeSearchDirectories() {
   QStringList directories;
   directories.append(QStandardPaths::locateAll(
@@ -78,7 +90,8 @@ int main(int argc, char **argv) {
   // missing, unavailable, or unresolvable preference source leaves platform
   // defaults untouched (fail-closed). See
   // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
+      applyFromSessionSettings();
   QGuiApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-settings"));
   application.setOrganizationName(QStringLiteral("QindaQt"));
@@ -163,8 +176,10 @@ int main(int argc, char **argv) {
       appearanceTransport,
       QindaQt::Apps::SettingsAppearance::AppearanceKeys::scopedKeys());
   QindaQt::Apps::SettingsAppearance::AppearanceSettingsModel appearanceSettings(
-      appearanceClient, *themes, application.styleHints()->colorScheme(),
-      facade);
+      appearanceClient, *themes,
+      QindaQt::Apps::SettingsAppearance::discoverBundledWallpapers(
+          wallpaperSearchDirectories()),
+      application.styleHints()->colorScheme(), facade);
   QString appearanceClientError;
   if (!appearanceClient.start(&appearanceClientError)) {
     qWarning("qindaqt-settings: Settings1 client unavailable: %s",

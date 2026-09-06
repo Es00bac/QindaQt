@@ -67,6 +67,7 @@ target_compile_definitions(
     QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
     QINDAQT_INSTALL_QML_RELATIVE_PATH="../${QT6_INSTALL_QML}"
     QINDAQT_INSTALL_THEME_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/themes"
+    QINDAQT_INSTALL_WALLPAPER_RELATIVE_PATH="../${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers"
 )
 set_target_properties(
     qindaqt-settings PROPERTIES

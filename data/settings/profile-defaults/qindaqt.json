@@ -6,6 +6,8 @@
     "appearance.blurEnabled": true,
     "appearance.theme": "qinda-dark",
     "panels.layoutProfile": "qindaqt",
-    "windowManagement.dockingModifier": "super"
+    "windowManagement.dockingModifier": "super",
+    "appearance.wallpaper": "qindaqt:jade-fold",
+    "appearance.wallpaperMode": "scaled"
   }
 }

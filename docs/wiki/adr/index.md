@@ -78,6 +78,7 @@ create or supersede one; start from the [ADR template](template.md).
 | [ADR-0075](0075-desktop-controls-and-workspaces.md) | Proposed | Compose desktop controls over bounded shell facades |
 | [ADR-0076](0076-register-launcher-persistence-in-panel-settings.md) | Accepted | Register launcher persistence in panel settings |
 | [ADR-0077](0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md) | Accepted | Acknowledge global menu hosting before hiding local menus |
+| [ADR-0078](0078-own-wallpaper-surfaces-in-the-shell.md) | Accepted | Own wallpaper surfaces in the shell |
 
 Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
