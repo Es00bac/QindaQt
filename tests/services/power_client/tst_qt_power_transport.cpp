@@ -122,8 +122,24 @@ class QtPowerTransportTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void absentServiceLeavesStartingState();
     void successiveOwnersDelayedOperationAndEpochFencing();
 };
+
+void QtPowerTransportTests::absentServiceLeavesStartingState()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    QtPowerTransport transport(bus.connection, QStringLiteral("org.qindaqt.AbsentService"));
+    QSignalSpy owners(&transport, &PowerTransport::ownerChanged);
+    transport.start();
+    QTRY_COMPARE_WITH_TIMEOUT(owners.size(), 1, 2000);
+    QVERIFY(owners.constFirst().constFirst().toString().isEmpty());
+    transport.stop();
+    transport.start();
+    QTRY_COMPARE_WITH_TIMEOUT(owners.size(), 2, 2000);
+    QVERIFY(owners.constLast().constFirst().toString().isEmpty());
+}
 
 void QtPowerTransportTests::successiveOwnersDelayedOperationAndEpochFencing()
 {

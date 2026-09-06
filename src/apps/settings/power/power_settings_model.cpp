@@ -110,8 +110,8 @@ bool PowerSettingsModel::retryAvailable() const noexcept { return !busy(); }
 
 QString PowerSettingsModel::statusText() const {
   if (loading()) return tr("Connecting to the power service…");
-  if (ready()) return tr("Authoritative power state is shown.");
-  if (degraded()) return tr("Power information is limited; only currently admitted controls are enabled.");
+  if (ready()) return tr("Choose a power mode and check battery and brightness settings.");
+  if (degraded()) return tr("Some power features are unavailable on this computer. Available controls are shown below.");
   if (stale()) return tr("Power information is stale while the service recovers. Controls are unavailable.");
   return tr("The power service is unavailable.");
 }

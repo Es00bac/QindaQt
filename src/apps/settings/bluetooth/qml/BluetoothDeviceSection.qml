@@ -2,6 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -38,10 +39,14 @@ ColumnLayout {
                 rowSpacing: Tokens.space["3"]
                 columnSpacing: Tokens.space["3"]
 
-                Label {
+                T.ToolButton {
                     objectName: "bluetoothClassIcon_" + deviceRow.modelData.id
-                    text: deviceRow.modelData.iconText
-                    font.weight: Font.DemiBold
+                    readonly property string deviceIconName: deviceRow.modelData.iconName
+                    icon.name: deviceIconName
+                    display: T.AbstractButton.IconOnly
+                    enabled: false
+                    focusPolicy: Qt.NoFocus
+                    background: null
                     Accessible.ignored: true
                 }
 

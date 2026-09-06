@@ -58,6 +58,9 @@ public:
                                 QString *error = nullptr);
 
     [[nodiscard]] ClientState state() const noexcept { return m_state; }
+    // A valid limited inventory is current. False after a failed refresh,
+    // owner loss, or transport error even if last-known rows remain visible.
+    [[nodiscard]] bool snapshotCurrent() const noexcept { return m_snapshotCurrent; }
     [[nodiscard]] const QString &lastError() const noexcept { return m_lastError; }
     [[nodiscard]] bool operationInFlight() const noexcept {
         return m_operation.has_value();
@@ -114,7 +117,7 @@ private:
                         QString *error);
     void finishOperationAsUncertain(const QString &message);
     void scheduleRetry();
-    void publish(ClientState state, QString error = {});
+    void publish(ClientState state, QString error = {}, bool snapshotCurrent = false);
     void setError(QString *output, QString message) const;
     void abortInFlight(const QString &reason);
     void notifyOperationAdmissionChanged();
@@ -129,6 +132,7 @@ private:
     std::optional<Operation> m_operation;
     QString m_owner;
     QString m_lastError;
+    bool m_snapshotCurrent = false;
     ClientState m_state = ClientState::Unavailable;
     qsizetype m_retryIndex = 0;
     quint64 m_nextToken = 1;

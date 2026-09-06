@@ -134,3 +134,12 @@ login1, ScreenSaver, sysfs, Wayland, or hardware. This slice does not claim
 live host action success, internal-display mutation, hold acquisition/release,
 charge thresholds, persistence, live AT-SPI, physical brightness keys, or
 nested-session visuals.
+
+## Recovery presentation
+
+Opening Power activates its installed service through the public client. The
+page omits epoch/revision counters and uses power-mode and brightness language
+in place of protocol terms. Internal display brightness remains an explicitly
+read-only percentage and explanation, rather than a permanently disabled
+slider; the existing Power1 contract has no internal-display write operation.
+Keyboard brightness retains its supported control.

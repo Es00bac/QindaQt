@@ -5,6 +5,8 @@ add_library(QindaQt::SessionSupervisorSupport ALIAS qindaqt_session_supervisor_s
 target_sources(
     qindaqt_session_supervisor_support
     PRIVATE
+        src/activation_environment.cpp
+        src/activation_environment.h
         src/direct_parent_process.cpp
         src/first_launch_welcome.cpp
         src/first_launch_welcome.h

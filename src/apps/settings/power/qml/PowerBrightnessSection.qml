@@ -39,7 +39,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Internal display brightness")
-        description: qsTr("Exact observed values; Power1 version 1 has no display-brightness mutation")
+        description: qsTr("Current display brightness. Use your display’s controls to adjust it.")
     }
 
     Repeater {
@@ -62,25 +62,19 @@ ColumnLayout {
                     text: internalRow.modelData.name
                     font.weight: Font.DemiBold
                 }
-                Slider {
+                Label {
                     objectName: "powerInternalBrightness_" + internalRow.modelData.id
                     Layout.fillWidth: true
-                    from: 0
-                    to: 10000
-                    stepSize: 100
-                    value: internalRow.modelData.known
-                           ? internalRow.modelData.normalized : 0
-                    enabled: false
-                    accessibleName: qsTr("%1 brightness").arg(internalRow.modelData.name)
-                    accessibleDescription: internalRow.modelData.accessibleDescription
+                    text: internalRow.modelData.known
+                        ? qsTr("Brightness: %1%").arg(Math.round(internalRow.modelData.normalized / 100))
+                        : qsTr("Brightness is unavailable")
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
                 }
                 Label {
                     objectName: "powerInternalRaw_" + internalRow.modelData.id
                     Layout.fillWidth: true
-                    text: qsTr("Normalized %1 of 10000 · %2 · %3")
-                        .arg(internalRow.modelData.normalized)
-                        .arg(internalRow.modelData.rawText)
-                        .arg(internalRow.modelData.reason)
+                    text: internalRow.modelData.reason
                     wrapMode: Text.Wrap
                     muted: true
                     Accessible.name: text
@@ -100,7 +94,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Keyboard brightness")
-        description: qsTr("Normalized 0–10000 controls with exact raw values")
+        description: qsTr("Adjust the keyboard backlight.")
     }
 
     Repeater {
@@ -135,10 +129,9 @@ ColumnLayout {
                            ? keyboardRow.modelData.normalized : 0
                     enabled: keyboardRow.modelData.available
                     accessibleName: qsTr("%1 brightness").arg(keyboardRow.modelData.name)
-                    accessibleDescription: qsTr("%1. Current normalized value %2 of 10000. %3")
-                        .arg(keyboardRow.modelData.accessibleDescription)
-                        .arg(Math.round(value))
-                        .arg(keyboardRow.modelData.rawText)
+                    accessibleDescription: qsTr("%1. Brightness %2%")
+                        .arg(keyboardRow.modelData.name)
+                        .arg(Math.round(value / 100))
                     onEnabledChanged: root.updateAction(keyboardRow.index,
                                                         keyboardSlider)
                     Component.onCompleted: root.updateAction(keyboardRow.index,
@@ -150,9 +143,8 @@ ColumnLayout {
                 Label {
                     objectName: "powerKeyboardRaw_" + keyboardRow.modelData.id
                     Layout.fillWidth: true
-                    text: qsTr("Normalized %1 of 10000 · %2")
-                        .arg(keyboardRow.modelData.normalized)
-                        .arg(keyboardRow.modelData.rawText)
+                    text: qsTr("Brightness: %1%")
+                        .arg(Math.round(keyboardRow.modelData.normalized / 100))
                     muted: true
                     Accessible.role: Accessible.StaticText
                     Accessible.name: text

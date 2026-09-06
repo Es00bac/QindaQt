@@ -140,3 +140,9 @@ This slice does not claim stream movement, per-channel balance, profile or
 port selection, sample-rate configuration, an equalizer, persistence, a shell
 applet (owned separately), physical audio hardware qualification, or
 session-runtime integration.
+
+## Recovery presentation
+
+Opening Audio now activates a cold installed service through the public client.
+The footer shows only an active change, without service epoch/revision counters.
+Failure text explains refreshing devices rather than exposing raw reason codes.

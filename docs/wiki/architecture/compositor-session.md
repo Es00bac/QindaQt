@@ -500,3 +500,13 @@ These are explicit next boundaries, not unreported Compositor MVP failures.
 The complete behavioral contract remains in
 [Window containers](window-containers.md), and test details are maintained in
 the [development harness](../development/testing-harness.md).
+
+## Activation environment at session entry
+
+Before the supervisor starts shell consumers, it updates the D-Bus broker and
+systemd user manager with KWin’s current desktop connection variables. This
+prevents independently activated services from inheriting a retired Wayland
+socket. Calls are bounded and failure is diagnostic rather than fatal. See
+[ADR-0082](../adr/0082-publish-session-activation-environment.md). The private-bus
+`qindaqt.session-activation-environment` gate verifies the current socket and
+limited variable set without touching the host manager.

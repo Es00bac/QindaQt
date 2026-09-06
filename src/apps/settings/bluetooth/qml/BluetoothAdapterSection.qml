@@ -16,7 +16,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Adapters")
-        description: qsTr("Power and bounded discovery leases from Bluetooth1")
+        description: qsTr("Turn Bluetooth on and search for nearby devices.")
     }
 
     Repeater {
@@ -81,9 +81,9 @@ ColumnLayout {
                     text: adapterRow.modelData.discoveryLeaseOwned
                           ? qsTr("Stop discovery") : qsTr("Discover")
                     accessibleDescription: adapterRow.modelData.discoveryLeaseOwned
-                        ? qsTr("Release this page's discovery lease for %1")
+                        ? qsTr("Stop searching for devices using %1")
                               .arg(adapterRow.modelData.label)
-                        : qsTr("Acquire one bounded discovery lease for %1")
+                        : qsTr("Search for nearby devices using %1")
                               .arg(adapterRow.modelData.label)
                     onClicked: root.bluetoothSettings.requestDiscovery(
                                    adapterRow.modelData.id,

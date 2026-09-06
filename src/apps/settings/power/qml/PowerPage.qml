@@ -177,16 +177,13 @@ T.Page {
                 busy: root.powerSettings.loading
                 emphasized: false
                 text: qsTr("Retry")
-                accessibleDescription: qsTr("Reconnect to Power1 and reload authoritative state")
+                accessibleDescription: qsTr("Refresh power and battery information")
                 onClicked: root.powerSettings.retry()
             }
             Label {
                 Layout.fillWidth: true
                 text: root.powerSettings.busy ? qsTr("A power change is pending.")
-                      : root.powerSettings.serviceEpoch > 0
-                        ? qsTr("Epoch %1, revision %2")
-                          .arg(root.powerSettings.serviceEpoch)
-                          .arg(root.powerSettings.serviceRevision) : ""
+                       : ""
                 muted: true
                 Accessible.name: text
             }

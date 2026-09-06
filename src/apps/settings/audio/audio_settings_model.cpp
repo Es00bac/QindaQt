@@ -358,7 +358,7 @@ QString AudioSettingsModel::actionFailureText(const QString &reason) const {
   if (reason.isEmpty()) {
     return translateAudio("The audio request was rejected.");
   }
-  return translateAudio("The audio request failed (%1).").arg(reason);
+  return translateAudio("The audio change failed. Refresh the device list and try again.");
 }
 
 } // namespace QindaQt::Apps::SettingsAudio

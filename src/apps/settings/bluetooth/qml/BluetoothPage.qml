@@ -68,6 +68,9 @@ T.Page {
             title: root.bluetoothSettings.ready
                    ? qsTr("Bluetooth ready") : qsTr("Bluetooth unavailable")
             message: root.bluetoothSettings.statusText
+            actionText: !root.bluetoothSettings.ready && !root.bluetoothSettings.busy
+                        ? qsTr("Try again") : ""
+            onActionTriggered: root.bluetoothSettings.reload()
         }
 
         Label {
@@ -175,7 +178,7 @@ T.Page {
                 busy: false
                 emphasized: false
                 text: qsTr("Close")
-                accessibleDescription: qsTr("Close Settings and release any discovery lease")
+                accessibleDescription: qsTr("Close Settings and stop searching for devices")
                 onClicked: root.closeRequested()
             }
         }

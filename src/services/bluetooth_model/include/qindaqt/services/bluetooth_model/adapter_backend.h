@@ -79,6 +79,8 @@ struct BackendInventory {
     QList<BackendDevice> devices;
     QList<BackendLease> leases;
     BackendPairingPrompt pairingPrompt;
+    // Distinguish missing upstream service from a current empty adapter list.
+    bool upstreamAvailable = true;
 };
 
 // AGENT-CONTRACT: The model resolves public handles to canonical addresses

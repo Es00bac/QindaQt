@@ -76,7 +76,7 @@ QString supplyName(const Power::PowerSupply &supply, const qsizetype ordinal) {
 
 QString internalReason(const Power::InternalBacklight &device) {
   switch (device.reason) {
-  case Power::BacklightReason::None: return tr("Read-only in Power1 version 1");
+  case Power::BacklightReason::None: return tr("Adjustment is unavailable for this display");
   case Power::BacklightReason::NoBacklight: return tr("No backlight device");
   case Power::BacklightReason::AmbiguousBacklight: return tr("Backlight device is ambiguous");
   case Power::BacklightReason::NoInternalConnector: return tr("No internal display connector");

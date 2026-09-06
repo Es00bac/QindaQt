@@ -23,6 +23,7 @@ private Q_SLOTS:
   void reportsFailedConnectWithoutCredentialEntry();
   void disablesActionsWhenCapabilitiesDisappear();
   void preservesStaleReadOnlyTruthAfterHostileRefresh();
+  void limitedCurrentInventoryIsNotStale();
   void clearsOnOwnerLossAndAcceptsFreshReplacement();
 
 private:
@@ -34,7 +35,7 @@ private:
 
     Fixture()
         : client(transport, [this] { return now; }, fastTiming()),
-          model(client) {
+          model(client, QDBusConnection(QStringLiteral("no-host-presence"))) {
       transport.setSnapshot(readySnapshot());
       const bool started = client.start();
       Q_ASSERT(started);
@@ -269,10 +270,10 @@ void NetworkSettingsModelTest::reportsFailedConnectWithoutCredentialEntry() {
       OperationKind::ConnectKnownNetwork, OperationStatus::Failed, 20, 1,
       QStringLiteral("credentials-required")));
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
-  QVERIFY(fixture.model.errorText().contains(
-      QStringLiteral("external NetworkManager secret agent")));
-  QVERIFY(fixture.model.errorText().contains(
+  QVERIFY(!fixture.model.errorText().contains(
       QStringLiteral("credentials-required")));
+  QVERIFY(fixture.model.errorText().contains(
+      QStringLiteral("password")));
   QVERIFY(!fixture.model.credentialEntrySupported());
 
   const qsizetype before = fixture.transport.operations.size();
@@ -319,6 +320,21 @@ void NetworkSettingsModelTest::disablesActionsWhenCapabilitiesDisappear() {
   QVERIFY(!fixture.model.connectVisibleNetwork(accessPointId));
   QVERIFY(!fixture.model.disconnectDevice(QStringLiteral("wlan0")));
   QCOMPARE(fixture.transport.operations.size(), before);
+}
+
+void NetworkSettingsModelTest::limitedCurrentInventoryIsNotStale() {
+  Fixture fixture;
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.model.ready(), 1'000);
+  Snapshot limited = readySnapshot();
+  ++limited.revision;
+  limited.availability = Availability::Degraded;
+  limited.reasonCode = QStringLiteral("networkmanager-data-degraded");
+  fixture.transport.setSnapshot(limited);
+  QVERIFY(fixture.model.reload());
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.model.degraded(), 1'000);
+  QVERIFY(fixture.client.snapshotCurrent());
+  QVERIFY(!fixture.model.stale());
+  QVERIFY(!fixture.model.statusText().contains(QStringLiteral("stale")));
 }
 
 void NetworkSettingsModelTest::preservesStaleReadOnlyTruthAfterHostileRefresh() {

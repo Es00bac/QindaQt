@@ -15,6 +15,7 @@ class BluetoothSettingsModelTest final : public QObject {
 
 private Q_SLOTS:
   void projectsBoundedAddressFreeInventoryAndAdmission();
+  void retriesObservationWithoutInterruptingControls();
   void serializesDiscoveryAndReleasesOnDeparture();
   void rejectsUnpairedAndFencesPendingOperations();
   void ownerReplacementClearsTruthAndRetiresLease();
@@ -37,6 +38,20 @@ private:
     }
   };
 };
+
+void BluetoothSettingsModelTest::retriesObservationWithoutInterruptingControls() {
+  Fixture fixture;
+  const auto before = fixture.transport.fetches.size();
+  QVERIFY(fixture.model.reload());
+  QCOMPARE(fixture.transport.fetches.size(), before + 1);
+  fixture.transport.finishSnapshot(QStringLiteral(":1.42"),
+      fixture.transport.fetches.constLast().second, readySnapshot());
+  const QString adapterId = fixture.model.adapters().constFirst().toMap()
+      .value(QStringLiteral("id")).toString();
+  QVERIFY(fixture.model.requestAdapterPower(adapterId, false));
+  QVERIFY(!fixture.model.reload());
+  QCOMPARE(fixture.transport.fetches.size(), before + 1);
+}
 
 void BluetoothSettingsModelTest::projectsBoundedAddressFreeInventoryAndAdmission() {
   Fixture fixture;
@@ -116,7 +131,7 @@ void BluetoothSettingsModelTest::rejectsUnpairedAndFencesPendingOperations() {
   QVERIFY(!fixture.model.requestDeviceConnection(
       QStringLiteral("device-61-702"), true));
   QCOMPARE(fixture.transport.submissions.size(), 0);
-  QVERIFY(fixture.model.errorText().contains(QStringLiteral("not-paired")));
+  QVERIFY(fixture.model.errorText().contains(QStringLiteral("Pair this device")));
 
   QVERIFY(fixture.model.requestDeviceConnection(
       QStringLiteral("device-61-701"), true));

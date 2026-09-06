@@ -98,14 +98,14 @@ void PowerPageTest::rendersWideTruthAndAccessibleControls() {
   QVERIFY(internal != nullptr);
   QVERIFY(keyboard != nullptr);
   QVERIFY(raw != nullptr);
-  QVERIFY(!internal->isEnabled());
+  QVERIFY(internal->property("text").toString().contains(QStringLiteral("%")));
   QVERIFY(keyboard->isEnabled());
-  QVERIFY(raw->property("text").toString().contains(QStringLiteral("421 of 937")));
+  QVERIFY(!raw->property("text").toString().contains(QStringLiteral("10000")));
   auto *sliderAccessible = QAccessible::queryAccessibleInterface(keyboard);
   QVERIFY(sliderAccessible != nullptr);
   QCOMPARE(sliderAccessible->role(), QAccessible::Slider);
   QVERIFY(sliderAccessible->text(QAccessible::Description)
-              .contains(QStringLiteral("10000")));
+              .contains(QStringLiteral("%")));
   auto *lockAccessible = QAccessible::queryAccessibleInterface(lock);
   QVERIFY(lockAccessible != nullptr);
   QCOMPARE(lockAccessible->role(), QAccessible::Button);

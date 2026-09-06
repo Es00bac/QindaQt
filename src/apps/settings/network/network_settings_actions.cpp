@@ -105,7 +105,7 @@ void NetworkSettingsModel::handleOperationFinished(
       break;
     case OperationKind::ConnectKnownNetwork:
       m_operationStatusText =
-          tr("Connection requested; awaiting authoritative state.");
+          tr("Connecting…");
       break;
     case OperationKind::ConnectVisibleNetwork:
       m_operationStatusText =
@@ -113,7 +113,7 @@ void NetworkSettingsModel::handleOperationFinished(
       break;
     case OperationKind::DisconnectActive:
       m_operationStatusText =
-          tr("Disconnection requested; awaiting authoritative state.");
+          tr("Disconnecting…");
       break;
     case OperationKind::SetRadio:
       m_operationStatusText = tr("Network operation completed.");
@@ -122,12 +122,6 @@ void NetworkSettingsModel::handleOperationFinished(
   } else {
     m_operationStatusText.clear();
     m_localError = actionFailureText(result.reasonCode);
-    if (result.kind == OperationKind::ConnectKnownNetwork
-        || result.kind == OperationKind::ConnectVisibleNetwork) {
-      m_localError += tr(" This page cannot request credentials; a registered "
-                         "external NetworkManager secret agent must provide "
-                         "them when required.");
-    }
   }
   Q_EMIT viewChanged();
 }
@@ -176,7 +170,7 @@ QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
   if (reason == QStringLiteral("scan-busy")
       || reason == QStringLiteral("scan-lease-held")
       || reason == QStringLiteral("operation-in-flight")) {
-    return tr("Another network operation or current scan lease is active.");
+    return tr("A network change or search is already in progress.");
   }
   if (reason == QStringLiteral("known-network-control-unsupported")) {
     return tr("Connecting saved networks is not permitted by the network service.");
@@ -211,7 +205,10 @@ QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
   if (reason.isEmpty()) {
     return tr("The network request was rejected.");
   }
-  return tr("The network request failed (%1).").arg(reason);
+  if (reason == QStringLiteral("credentials-required")) {
+    return tr("A password is required to connect to this network.");
+  }
+  return tr("The connection could not be changed. Refresh the network list and try again.");
 }
 
 } // namespace QindaQt::Apps::SettingsNetwork

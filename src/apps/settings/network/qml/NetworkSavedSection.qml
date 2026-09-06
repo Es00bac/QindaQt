@@ -70,7 +70,7 @@ ColumnLayout {
                     busy: root.networkSettings.busy
                     text: qsTr("Connect")
                     accessibleDescription: savedRow.modelData.mayRequireExternalCredentials
-                        ? qsTr("Connect saved network. Credentials, if required, must come from an external secret agent.")
+                        ? qsTr("Connect to this saved network. A password prompt appears if needed.")
                         : qsTr("Connect saved network")
                     onClicked: root.networkSettings.connectKnownNetwork(
                                    savedRow.modelData.id)

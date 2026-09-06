@@ -120,6 +120,7 @@ void BluezAdapterBackend::publish()
         }
     }
     BackendInventory inventory;
+    inventory.upstreamAvailable = !d->transport.owner().isEmpty();
     inventory.adapters = d->store.projectAdapters();
     d->pairingAgent.setAdapterAvailable(!inventory.adapters.isEmpty());
     QSet<QString> adapterAddresses;
