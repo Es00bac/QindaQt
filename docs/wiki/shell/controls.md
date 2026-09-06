@@ -45,6 +45,7 @@ with the consuming view model.
 | `Button` | Primary, secondary, destructive, error, disabled, and busy actions. `available` is the caller-owned capability/enabled input; effective inherited `enabled` is `available && !busy`, so busy always suppresses pointer, keyboard, and accessible activation without losing caller intent. Disabled buttons use the muted foreground on the raised surface instead of retaining an accent or danger fill whose foreground pairing no longer applies. |
 | `Label` | Body text with normal/muted and enabled/disabled semantic foregrounds. |
 | `TextField` | Editable text with semantic selection, placeholder, focus, disabled, and error presentation. |
+| `ComboBox` | Closed-state selector with tokenized raised surface, text, indicator, focus, and disabled presentation. Qt Quick Controls retains popup, keyboard, and type-ahead behavior; the wrapper owns no model or selection policy. |
 | `CheckBox` | Native check behavior with token-rendered indicator and full Space-key semantics. |
 | `Switch` | Native check behavior whose knob position derives from `visualPosition`, so checked/unchecked truth mirrors in RTL. |
 | `Slider` | Native range/value behavior. The handle follows `visualPosition`; the progress extent uses the logical value while its origin follows the effective leading edge in RTL. |
@@ -153,7 +154,7 @@ reviewed baseline regeneration under
 A static gate rejects built-in theme IDs, `sourceThemeId`, palette hex literals,
 and every production QML import outside `QtQuick`, `QtQuick.Controls`,
 `QtQuick.Layouts`, and `QindaQt.Tokens`. A clean staged-install test requires
-the exact 14 Qt-generated QML deploy paths, runs a strict tooling consumer and
+the exact 15 Qt-generated QML deploy paths, runs a strict tooling consumer and
 the compiled runtime import from the staged QML root, and clears ambient source,
 build, and QML import paths. The Controls backing library resolves the sibling
 installed `QindaQt/Tokens` backing library through a relative runpath, so

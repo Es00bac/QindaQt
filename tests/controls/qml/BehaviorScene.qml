@@ -15,6 +15,7 @@ Item {
     property alias toggleSwitch: toggle
     property alias slider: level
     property alias textField: field
+    property alias comboBox: combo
     property alias formRow: row
     property alias stateCard: stateCard
     property alias busyStateCard: busyStateCard
@@ -94,6 +95,15 @@ Item {
                         accessibleDescription: qsTr("Standalone editor description")
                         error: row.errorMessage.length > 0
                     }
+                }
+
+                C.ComboBox {
+                    id: combo
+                    objectName: "comboBox"
+                    Layout.fillWidth: true
+                    model: [qsTr("Nightfall"), qsTr("Porcelain")]
+                    currentIndex: 0
+                    accessibleDescription: qsTr("Choose a semantic appearance")
                 }
 
                 C.CheckBox {
