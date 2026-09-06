@@ -6,8 +6,8 @@
 #include "ui/terminal_appearance.h"
 
 #include <QByteArray>
-#include <QList>
 #include <QEvent>
+#include <QList>
 #include <QSocketNotifier>
 #include <QString>
 
@@ -48,11 +48,10 @@ public:
                                  QObject *parent = nullptr);
   ~TerminalWidgetAdapter() override;
 
-  [[nodiscard]] StartOutcome start(const TerminalLaunchRequest &request) override;
+  [[nodiscard]] StartOutcome
+  start(const TerminalLaunchRequest &request) override;
   void requestShutdown() override;
-  [[nodiscard]] ProcessId shellProcessId() const override {
-    return m_childPid;
-  }
+  [[nodiscard]] ProcessId shellProcessId() const override { return m_childPid; }
   // Defined out of line in the .cpp: QTermWidget is only forward-declared
   // here (the private dependency must stay invisible to consumers), so the
   // derived-to-base conversion needs the complete type. AGENT-GUARD: never
@@ -68,6 +67,10 @@ public:
   void clearView() override;
   [[nodiscard]] bool hasSelectedText() const override;
   void sendTextToSession(const QString &text) override;
+  void setAppearance(const TerminalViewAppearance &appearance) override {
+    m_appearance = appearance;
+    applyAppearance();
+  }
   [[nodiscard]] TerminalSearchResult
   searchScrollback(const TerminalSearchQuery &query,
                    TerminalSearchDirection direction) override;

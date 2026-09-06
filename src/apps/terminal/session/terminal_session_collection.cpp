@@ -7,6 +7,13 @@
 
 namespace QindaQt::Apps::Terminal {
 
+void TerminalSessionCollection::setAppearance(
+    const TerminalViewAppearance &appearance) {
+  for (TerminalSession *session : std::as_const(m_sessions)) {
+    session->setAppearance(appearance);
+  }
+}
+
 ShellResolution resolveProfileLaunch(const TerminalProfile &profile,
                                      const QString &fallbackProgram,
                                      const QStringList &fallbackArguments,

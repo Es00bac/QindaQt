@@ -48,7 +48,7 @@ QString AppearanceSettingsModel::fallbackNotice() const
         return {};
     }
     return QStringLiteral(
-               "Configured theme '%1' is not installed; previewing '%2'")
+               "Configured theme '%1' does not match the selected color scheme; previewing '%2'")
         .arg(m_draft.themeId, resolvedThemeId());
 }
 

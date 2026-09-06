@@ -74,6 +74,7 @@ void ShellStartupPreferencesTests::savedPreferencesSurviveIntoAFreshStartupRead(
         const QList<QPair<QString, QVariant>> writes{
             {QStringLiteral("panels.layoutProfile"), QStringLiteral("mate-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
+            {QStringLiteral("appearance.colorScheme"), QStringLiteral("light")},
             {QStringLiteral("accessibility.highContrast"), true},
             {QStringLiteral("accessibility.reducedTransparency"), true},
             {QStringLiteral("accessibility.textScale"), 1.5},

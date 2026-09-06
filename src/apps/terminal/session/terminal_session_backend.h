@@ -5,11 +5,12 @@
 #include "search/terminal_search.h"
 #include "session/terminal_session_types.h"
 
-#include <QPoint>
 #include <QObject>
+#include <QPoint>
 #include <QWidget>
 
 namespace QindaQt::Apps::Terminal {
+struct TerminalViewAppearance;
 
 // AGENT-CONTRACT: TerminalSessionBackend is the boundary between the session
 // lifecycle (policy, state machine, teardown) and the rendering adapter that
@@ -37,7 +38,8 @@ public:
   // Starts the child described by the request on a fresh PTY. Returns a typed
   // failure when the PTY or child cannot be created; the diagnostic is
   // bounded, single-line, and user-presentable.
-  [[nodiscard]] virtual StartOutcome start(const TerminalLaunchRequest &request) = 0;
+  [[nodiscard]] virtual StartOutcome
+  start(const TerminalLaunchRequest &request) = 0;
 
   // Closes the PTY master (delivering SIGHUP to the child's session) and
   // disposes the terminal view. After this call terminalWidget() returns
@@ -62,6 +64,7 @@ public:
   virtual void clearView() = 0;
   [[nodiscard]] virtual bool hasSelectedText() const = 0;
   virtual void sendTextToSession(const QString &text) = 0;
+  virtual void setAppearance(const TerminalViewAppearance &) {}
 
   // Additive S2 view capabilities. Defaults fail closed so lifecycle fakes
   // and non-searching backends do not acquire qtermwidget knowledge.
@@ -74,8 +77,8 @@ public:
 
 signals:
   // Published exactly once per backend when the child's exit is first known.
-  void sessionFinished(
-      const QindaQt::Apps::Terminal::TerminalExitStatus &status);
+  void
+  sessionFinished(const QindaQt::Apps::Terminal::TerminalExitStatus &status);
   void selectionChanged(bool hasSelection);
   void titleChanged(const QString &title);
   void linkContextRequested(const QPoint &globalPosition);

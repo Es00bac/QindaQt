@@ -53,6 +53,7 @@ public:
   [[nodiscard]] bool openDocuments(const QStringList &paths,
                                    QString *diagnostic = nullptr);
   void restoreIfEnabled();
+  void applyAppearance(const EditorAppearance &appearance);
 
 signals:
   void firstFramePainted();

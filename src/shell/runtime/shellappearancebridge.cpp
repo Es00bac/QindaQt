@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellappearancebridge.h"
+#include "qindaqt/app_appearance/appearance_resolver.h"
 
 #include "../common/shelltokenpublisher.h"
 
@@ -7,6 +8,8 @@
 #include "qindaqt/themes/theme_catalog.h"
 
 #include <QDebug>
+#include <QGuiApplication>
+#include <QStyleHints>
 
 namespace QindaQt::Shell {
 
@@ -14,18 +17,14 @@ ShellAppearanceBridge::ShellAppearanceBridge(
     Services::SettingsClient::SettingsClient &settings,
     Themes::ThemeCatalog &themes, ShellTokenPublisher &tokens,
     bool themeLockedByCli, QObject *parent)
-    : QObject(parent)
-    , m_settings(settings)
-    , m_themes(themes)
-    , m_tokens(tokens)
-    , m_themeLockedByCli(themeLockedByCli)
-{
-    connect(&m_settings, &Services::SettingsClient::SettingsClient::snapshotChanged,
-            this, &ShellAppearanceBridge::applySnapshot);
+    : QObject(parent), m_settings(settings), m_themes(themes), m_tokens(tokens),
+      m_themeLockedByCli(themeLockedByCli) {
+  connect(&m_settings,
+          &Services::SettingsClient::SettingsClient::snapshotChanged, this,
+          &ShellAppearanceBridge::applySnapshot);
 }
 
-void ShellAppearanceBridge::applySnapshot()
-{
+void ShellAppearanceBridge::applySnapshot() {
     const auto &snapshot = m_settings.snapshot();
     if (!snapshot.has_value()) {
         return;
@@ -46,15 +45,23 @@ void ShellAppearanceBridge::applySnapshot()
     m_tokens.setAccessibilityInputs(values->accessibility);
 
     if (!m_themeLockedByCli) {
-        const QString currentId = m_themes.current()
-                                      .value(QStringLiteral("id"))
-                                      .toString();
-        if (values->themeId != currentId && !m_themes.selectById(values->themeId)) {
+    const QString currentId =
+        m_themes.current().value(QStringLiteral("id")).toString();
+    const auto scheme =
+        AppAppearance::colorSchemeFromToken(values->colorScheme);
+    const auto resolved =
+        scheme ? AppAppearance::resolveAppearanceTheme(
+                     m_themes.themes(),
+                     {.themeId = values->themeId, .colorScheme = *scheme},
+                     QGuiApplication::styleHints()->colorScheme())
+               : std::nullopt;
+    const QString resolvedId = resolved ? resolved->id : currentId;
+    if (resolvedId != currentId && !m_themes.selectById(resolvedId)) {
             // AGENT-GUARD: A saved theme that is not installed must fail closed
             // to the running theme, never to a missing-token surface set.
-            qWarning().noquote()
-                << "QindaQt shell kept theme" << currentId
-                << "; preferred theme is not installed:" << values->themeId;
+      qWarning().noquote() << "QindaQt shell kept theme" << currentId
+                           << "; appearance preference could not resolve:"
+                           << values->themeId;
         }
     }
     emit confirmedPreferencesChanged();

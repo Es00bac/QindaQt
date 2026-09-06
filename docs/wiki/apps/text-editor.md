@@ -181,8 +181,10 @@ names, and AppShell IDs are the compatibility surface.
 The Qt Widgets presentation derives its palette, fonts, focus ring, semantic
 surfaces, and text colors from public QST-1 values. It imports no shell or
 Controls internals and has no fallback brand palette. `qinda-dark` is the
-default; `--theme` plus an optional local `--theme-directory` select a validated
-schema-v1 theme. `--check-theme` verifies installed theme/QST identity and exits
+fallback. Without an explicit `--theme`, confirmed Settings1 theme and color
+scheme changes are resolved by [ADR-0079](../adr/0079-resolve-first-party-appearance-from-settings.md)
+and applied live to the window and document views. `--theme` locks a validated
+schema-v1 theme; `--theme-directory` extends discovery. `--check-theme` verifies installed theme/QST identity and exits
 before Settings1 or user-state composition. `--report-startup` reports only
 after the real top-level window's first paint.
 

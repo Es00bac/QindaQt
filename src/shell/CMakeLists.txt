@@ -129,6 +129,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         PUBLIC
             QindaQt::SettingsClient
             QindaQt::ShellOrchestration
+            QindaQt::AppAppearance
             QindaQt::ShellSurface
             Qt6::Core
             Qt6::Gui

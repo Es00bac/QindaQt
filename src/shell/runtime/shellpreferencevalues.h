@@ -19,6 +19,7 @@ namespace QindaQt::Shell {
 struct ShellPreferenceValues final {
     QString layoutProfileId;
     QString themeId;
+    QString colorScheme;
     QString fontFamily;
     QString wallpaper;
     QString wallpaperMode;

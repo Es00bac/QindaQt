@@ -94,6 +94,9 @@ QVariantMap preferenceValues(const QString &profile, const QString &theme,
 {
     return {{QStringLiteral("panels.layoutProfile"), profile},
             {QStringLiteral("appearance.theme"), theme},
+            {QStringLiteral("appearance.colorScheme"),
+             theme.contains(QStringLiteral("light")) ? QStringLiteral("light")
+                                                       : QStringLiteral("dark")},
             {QStringLiteral("appearance.wallpaper"), QStringLiteral("qindaqt:jade-fold")},
             {QStringLiteral("appearance.wallpaperMode"), QStringLiteral("scaled")},
             {QStringLiteral("fonts.family"), fontFamily},

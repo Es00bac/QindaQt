@@ -5,14 +5,15 @@
 #include "session/terminal_session_backend.h"
 #include "session/terminal_session_types.h"
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
-#include <QElapsedTimer>
 
 #include <functional>
 #include <memory>
 
 namespace QindaQt::Apps::Terminal {
+struct TerminalViewAppearance;
 
 class ProcessMonitor;
 
@@ -35,8 +36,7 @@ public:
     ShutdownFailed,   // Child survived SIGKILL; ownership retained (P1-2).
   };
 
-  using BackendFactory =
-      std::function<std::unique_ptr<TerminalSessionBackend>(
+  using BackendFactory = std::function<std::unique_ptr<TerminalSessionBackend>(
           const TerminalProfile &)>;
 
   // The monitor is injected, not owned; the factory must be callable at any
@@ -52,9 +52,9 @@ public:
   // The profile is stored for the Restart path. Returns true when a child
   // is running; a start failure still publishes a StartFailed
   // sessionFinished and leaves the object restartable.
-  [[nodiscard]] bool start(const TerminalLaunchRequest &request,
-                           const TerminalProfile &profile =
-                               builtinDefaultProfile());
+  [[nodiscard]] bool
+  start(const TerminalLaunchRequest &request,
+        const TerminalProfile &profile = builtinDefaultProfile());
 
   // Teardown-then-start with the last successful request. Rejected while a
   // shutdown is already in flight, while a SIGKILL survivor is owned
@@ -88,11 +88,12 @@ public:
   void clearScrollbackSearch();
   [[nodiscard]] TerminalLinkSelection selectVisibleLink(int delta);
   [[nodiscard]] TerminalLinkSelection currentVisibleLink();
+  void setAppearance(const TerminalViewAppearance &appearance);
 
 signals:
   void stateChanged(QindaQt::Apps::Terminal::TerminalSession::State state);
-  void sessionFinished(
-      const QindaQt::Apps::Terminal::TerminalExitStatus &status);
+  void
+  sessionFinished(const QindaQt::Apps::Terminal::TerminalExitStatus &status);
   void terminalWidgetChanged(QWidget *widget);
   // Emitted before the current backend destroys its view so the presentation
   // can detach it from layouts first. Direct connections only.

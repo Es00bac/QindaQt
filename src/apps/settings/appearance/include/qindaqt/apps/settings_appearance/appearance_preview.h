@@ -23,17 +23,16 @@ using ThemePreviewTokenMaps = std::vector<QVariantMap>;
 // Where a draft's configured theme resolves inside the installed catalog.
 struct AppearanceResolution final {
     int themeIndex = -1;
-    bool configuredInstalled = false;
-    // Non-empty when the configured theme id is missing and a scheme-based
-    // built-in fallback was chosen instead.
+    bool configuredInstalled = false; // Installed and scheme-compatible.
+    // Non-empty when a missing or scheme-incompatible configured theme was
+    // resolved through the shared appearance policy.
     QString fallbackThemeId;
 };
 
 // AGENT-CONTRACT: Pure projection between validated appearance values and
 // QST-1. It owns no settings client, no persistence, and no publication; the
-// settings model composes it. Resolution order: configured theme id when
-// installed; otherwise the built-in dark/light id matching the preference
-// (system follows the platform scheme); otherwise the first installed theme.
+// settings model composes it. Resolution uses the public AppAppearance policy
+// shared with the shell and first-party applications.
 class AppearancePreview final {
 public:
     // Installed themes must be loader-valid (catalog-provided) and non-empty;

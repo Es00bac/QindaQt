@@ -9,6 +9,7 @@ namespace {
 
 constexpr auto LayoutProfileKey = "panels.layoutProfile";
 constexpr auto ThemeKey = "appearance.theme";
+constexpr auto ColorSchemeKey = "appearance.colorScheme";
 constexpr auto FontFamilyKey = "fonts.family";
 constexpr auto WallpaperKey = "appearance.wallpaper";
 constexpr auto WallpaperModeKey = "appearance.wallpaperMode";
@@ -64,6 +65,7 @@ QStringList ShellPreferenceValues::scopedKeys()
 {
     return {QStringLiteral("panels.layoutProfile"),
             QStringLiteral("appearance.theme"),
+            QStringLiteral("appearance.colorScheme"),
             QStringLiteral("fonts.family"),
             QStringLiteral("appearance.wallpaper"),
             QStringLiteral("appearance.wallpaperMode"),
@@ -85,6 +87,7 @@ ShellPreferenceValues::fromVariantMap(const QVariantMap &values, QString *error)
     double textScale = DesignTokens::AccessibilityInputs::defaultTextScale;
     const bool ok = exactString(values, LayoutProfileKey, &result.layoutProfileId)
         && exactString(values, ThemeKey, &result.themeId)
+        && exactString(values, ColorSchemeKey, &result.colorScheme)
         && exactString(values, FontFamilyKey, &result.fontFamily)
         && values.value(QLatin1StringView(WallpaperKey)).metaType().id() == QMetaType::QString
         && exactString(values, WallpaperModeKey, &result.wallpaperMode)

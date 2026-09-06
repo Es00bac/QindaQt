@@ -5,10 +5,11 @@
 #include "ui/editor_appearance.h"
 #include "ui/editor_window.h"
 
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/design_tokens/design_tokens.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
@@ -88,7 +89,8 @@ int main(int argc, char **argv) {
   // defaults untouched (fail-closed). The theme baseline setFont below
   // remains the deliberate widgets baseline. See
   // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
+      applyFromSessionSettings();
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-editor"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Text Editor"));
@@ -181,6 +183,39 @@ int main(int argc, char **argv) {
   RestoreStateStore restoreStore(editorStateDirectory());
   EditorWindow window(factory, *appearance.appearance, nullptr, &restorePolicy,
                       &restoreStore);
+  QtSettingsTransport appearanceTransport(QDBusConnection::sessionBus());
+  SettingsClient appearanceClient(appearanceTransport,
+                                  {QStringLiteral("appearance.theme"),
+                                   QStringLiteral("appearance.colorScheme")});
+  QindaQt::AppAppearance::ApplicationAppearanceController appearanceController(
+      appearanceClient,
+      QindaQt::AppAppearance::standardThemeDirectories(
+          parser.value(QStringLiteral("theme-directory"))),
+      QStringLiteral("qinda-dark"),
+      parser.isSet(QStringLiteral("theme"))
+          ? parser.value(QStringLiteral("theme"))
+          : QString());
+  const auto applyLiveAppearance = [&application, &window,
+                                    &appearanceController] {
+    const auto adapted =
+        EditorAppearanceAdapter::fromTheme(appearanceController.theme());
+    if (!adapted.ok())
+      return;
+    application.setPalette(adapted.appearance->palette);
+    application.setFont(adapted.appearance->interfaceFont);
+    window.applyAppearance(*adapted.appearance);
+  };
+  QObject::connect(&appearanceController,
+                   &QindaQt::AppAppearance::ApplicationAppearanceController::
+                       appearanceChanged,
+                   &window, applyLiveAppearance);
+  applyLiveAppearance();
+  QString appearanceSettingsError;
+  if (!appearanceClient.start(&appearanceSettingsError)) {
+    std::fprintf(stderr,
+                 "qindaqt-editor: appearance settings unavailable (%s)\n",
+                 qPrintable(appearanceSettingsError));
+  }
   if (parser.isSet(QStringLiteral("report-startup"))) {
     QObject::connect(
         &window, &EditorWindow::firstFramePainted, &window,
@@ -210,9 +245,8 @@ int main(int argc, char **argv) {
   if (QWindow *windowHandle = window.windowHandle()) {
     menuExport = QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
         window.appShellCoordinator(), *windowHandle,
-        QDBusConnection::sessionBus(), [&window](bool visible) {
-          window.menuBar()->setVisible(visible);
-        });
+        QDBusConnection::sessionBus(),
+        [&window](bool visible) { window.menuBar()->setVisible(visible); });
   }
   return application.exec();
 }

@@ -23,8 +23,7 @@ TerminalWindow::TerminalWindow(
     QWidget *parent)
     : QMainWindow(parent), m_sessions(std::move(sessions)),
       m_profileSettings(profileSettings), m_linkOpener(linkOpener),
-      m_themeIds(themeIds),
-      m_appearance(appearance) {
+      m_themeIds(themeIds), m_appearance(appearance) {
   setObjectName(QStringLiteral("qindaqtTerminalWindow"));
   setAccessibleName(QStringLiteral("QindaQt Terminal"));
   setAccessibleDescription(
@@ -83,6 +82,20 @@ TerminalWindow::TerminalWindow(
 }
 
 TerminalWindow::~TerminalWindow() = default;
+
+void TerminalWindow::applyAppearance(const TerminalViewAppearance &appearance) {
+  m_appearance = appearance;
+  m_sessions->setAppearance(appearance);
+  setPalette(appearance.windowPalette);
+  setFont(appearance.interfaceFont);
+  const auto children = findChildren<QWidget *>();
+  for (QWidget *child : children) {
+    child->setPalette(appearance.windowPalette);
+    child->setFont(appearance.interfaceFont);
+  }
+  if (m_activeSession)
+    updateStatusForState(m_activeSession->state());
+}
 
 QindaQt::AppShell::ApplicationCoordinator &
 TerminalWindow::appShellCoordinator() {

@@ -224,8 +224,10 @@ form the compatibility surface.
 
 ## QST-1 theme and accessibility boundary
 
-`--theme` (default `qinda-dark`) and an optional `--theme-directory` select a
-validated schema-v1 theme exactly as the Text Editor does, using the same
+Confirmed Settings1 theme and color-scheme changes publish live QST generations
+through [ADR-0079](../adr/0079-resolve-first-party-appearance-from-settings.md).
+An explicit `--theme` locks the process theme; `--theme-directory` extends the
+validated schema-v1 theme search, using the same
 search order (explicit directory, then `XDG_DATA_DIRS`-discovered
 `qindaqt/themes`, then the install-relative theme directory). The resolved
 `ThemeSpec` is derived into one QST-1 generation and published into the QML

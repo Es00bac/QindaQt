@@ -12,6 +12,7 @@
 #include <QStringList>
 
 namespace QindaQt::Apps::Terminal {
+struct TerminalViewAppearance;
 
 // App-level launch inputs shared by every session the collection creates:
 // the inherited environment and the CLI-resolved shell fallback (already
@@ -85,6 +86,7 @@ public:
   void moveSession(TerminalSession *session, int newIndex);
 
   [[nodiscard]] int count() const;
+  void setAppearance(const TerminalViewAppearance &appearance);
   [[nodiscard]] TerminalSession *sessionAt(int index) const;
   [[nodiscard]] int indexOf(const TerminalSession *session) const;
   [[nodiscard]] const TerminalSessionContext &context() const {

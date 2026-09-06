@@ -11,6 +11,7 @@ QVariantMap validSnapshotValues()
 {
     return {{QStringLiteral("panels.layoutProfile"), QStringLiteral("mate-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
+            {QStringLiteral("appearance.colorScheme"), QStringLiteral("light")},
             {QStringLiteral("appearance.wallpaper"), QStringLiteral("qindaqt:jade-fold")},
             {QStringLiteral("appearance.wallpaperMode"), QStringLiteral("scaled")},
             {QStringLiteral("fonts.family"), QStringLiteral("Noto Serif")},
@@ -46,6 +47,7 @@ void ShellPreferenceValuesTests::decodesCompleteSnapshot()
     QVERIFY2(values.has_value(), qPrintable(error));
     QCOMPARE(values->layoutProfileId, QStringLiteral("mate-inspired"));
     QCOMPARE(values->themeId, QStringLiteral("qinda-light"));
+    QCOMPARE(values->colorScheme, QStringLiteral("light"));
     QCOMPARE(values->fontFamily, QStringLiteral("Noto Serif"));
     QCOMPARE(values->accessibility.basePointSize, 11.5);
     QCOMPARE(values->accessibility.textScale, 1.25);
@@ -106,7 +108,7 @@ void ShellPreferenceValuesTests::rejectsBlankStrings()
 void ShellPreferenceValuesTests::scopedKeysCoverEveryDecodedKey()
 {
     const QStringList keys = ShellPreferenceValues::scopedKeys();
-    QCOMPARE(keys.size(), 10);
+    QCOMPARE(keys.size(), 11);
     for (const QString &key : validSnapshotValues().keys()) {
         QVERIFY2(keys.contains(key), qPrintable(key));
     }
