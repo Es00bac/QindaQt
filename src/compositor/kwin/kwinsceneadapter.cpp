@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinsceneadapter.h"
 
+#include "hybridtaskidentitypolicy.h"
 #include "layoutgeometry.h"
 #include "managedwindowregistry.h"
 
@@ -25,6 +26,10 @@ struct WindowChange final
     bool originalMinimized = false;
     QRectF targetFrame;
     bool targetMinimized = false;
+    bool originalSkipTaskbar = false;
+    bool originalSkipSwitcher = false;
+    bool targetSkipTaskbar = false;
+    bool targetSkipSwitcher = false;
 };
 
 class KWinSceneTransaction final : public SceneTransaction
@@ -68,6 +73,8 @@ public:
                 change.window->setMinimized(false);
                 change.window->moveResize(change.targetFrame);
             }
+            change.window->setSkipTaskbar(change.targetSkipTaskbar);
+            change.window->setSkipSwitcher(change.targetSkipSwitcher);
             ++applied;
         }
         if (!m_finalize(error)) {
@@ -91,6 +98,8 @@ private:
             change.window->setMinimized(false);
             change.window->moveResize(change.originalFrame);
             change.window->setMinimized(change.originalMinimized);
+            change.window->setSkipTaskbar(change.originalSkipTaskbar);
+            change.window->setSkipSwitcher(change.originalSkipSwitcher);
         }
     }
 
@@ -164,30 +173,61 @@ std::unique_ptr<SceneTransaction> KWinSceneAdapter::prepareTransition(
     }
 
     const auto geometry = LayoutGeometryPlanner::plan(after, outerFrame(before, after));
+    QHash<QString, bool> targetSkipTaskbar;
+    QHash<QString, bool> targetSkipSwitcher;
+    if (!afterIds.isEmpty()) {
+        QString identityError;
+        const auto identity = HybridTaskIdentityPolicy::planContainer(
+            after, {}, &identityError);
+        if (!identity) {
+            fail(error, identityError);
+            return nullptr;
+        }
+        for (const auto &id : afterIds) {
+            const bool primary = id == identity->primaryWindowId;
+            targetSkipTaskbar.insert(id, !primary);
+            targetSkipSwitcher.insert(id, !primary);
+        }
+    }
     QVector<WindowChange> changes;
     changes.reserve(afterIds.size() + beforeIds.size());
     QHash<QString, QRectF> stagedRestoreFrames;
+    QHash<QString, RestoreTaskIdentity> stagedRestoreTaskIdentity;
     for (const auto &id : afterIds) {
         auto *window = m_registry.window(id);
         if (!m_restoreFrames.contains(id)) {
             stagedRestoreFrames.insert(id, window->frameGeometry());
+        }
+        if (!m_restoreTaskIdentity.contains(id)) {
+            stagedRestoreTaskIdentity.insert(
+                id, {window->skipTaskbar(), window->skipSwitcher()});
         }
         changes.append({id,
                         window,
                         window->frameGeometry(),
                         window->isMinimized(),
                         geometry.frames.value(id, window->frameGeometry()),
-                        !geometry.visibleWindows.contains(id)});
+                        !geometry.visibleWindows.contains(id),
+                        window->skipTaskbar(),
+                        window->skipSwitcher(),
+                        targetSkipTaskbar.value(id),
+                        targetSkipSwitcher.value(id)});
     }
     const auto removedIds = beforeIds - afterIds;
     for (const auto &id : removedIds) {
         if (auto *window = m_registry.window(id)) {
+            const auto restoreTaskIdentity = m_restoreTaskIdentity.value(
+                id, {window->skipTaskbar(), window->skipSwitcher()});
             changes.append({id,
                             window,
                             window->frameGeometry(),
                             window->isMinimized(),
                             m_restoreFrames.value(id, window->frameGeometry()),
-                            false});
+                            false,
+                            window->skipTaskbar(),
+                            window->skipSwitcher(),
+                            restoreTaskIdentity.skipTaskbar,
+                            restoreTaskIdentity.skipSwitcher});
         }
     }
 
@@ -196,7 +236,9 @@ std::unique_ptr<SceneTransaction> KWinSceneAdapter::prepareTransition(
     // publishes the matching model revision in the same event-loop turn.
     auto finalize = [this, containerId = after.id(), afterIds, removedIds,
                      targetFrames = geometry.frames,
-                     stagedRestoreFrames = std::move(stagedRestoreFrames)](QString *finalizeError) {
+                     stagedRestoreFrames = std::move(stagedRestoreFrames),
+                     stagedRestoreTaskIdentity = std::move(stagedRestoreTaskIdentity)](
+                        QString *finalizeError) {
         if (!m_registry.transitionOwners(containerId, afterIds, removedIds,
                                          targetFrames, finalizeError)) {
             return false;
@@ -205,8 +247,13 @@ std::unique_ptr<SceneTransaction> KWinSceneAdapter::prepareTransition(
              iterator != stagedRestoreFrames.cend(); ++iterator) {
             m_restoreFrames.insert(iterator.key(), iterator.value());
         }
+        for (auto iterator = stagedRestoreTaskIdentity.cbegin();
+             iterator != stagedRestoreTaskIdentity.cend(); ++iterator) {
+            m_restoreTaskIdentity.insert(iterator.key(), iterator.value());
+        }
         for (const auto &id : removedIds) {
             m_restoreFrames.remove(id);
+            m_restoreTaskIdentity.remove(id);
         }
         return true;
     };

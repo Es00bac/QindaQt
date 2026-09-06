@@ -105,7 +105,32 @@ bool tiledInFrame(const ObservedWindow &primary, const ObservedWindow &secondary
 bool independentlyRestored(const ObservedWindow &observed, const QRectF &restoreFrame)
 {
     return observed.containerId.isEmpty() && !observed.minimized &&
+           !observed.skipTaskbar && !observed.skipSwitcher &&
            sameGeometry(observed.frame, restoreFrame);
+}
+
+bool hasOneCollapsedTaskIdentity(const WindowInventory &inventory,
+                                 const QStringList &titles)
+{
+    qsizetype taskEntries = 0;
+    qsizetype switcherEntries = 0;
+    QString taskPrimary;
+    QString switcherPrimary;
+    for (const auto &title : titles) {
+        const auto match = inventory.constFind(title);
+        if (match == inventory.cend()) {
+            return false;
+        }
+        if (!match->skipTaskbar) {
+            ++taskEntries;
+            taskPrimary = title;
+        }
+        if (!match->skipSwitcher) {
+            ++switcherEntries;
+            switcherPrimary = title;
+        }
+    }
+    return taskEntries == 1 && switcherEntries == 1 && taskPrimary == switcherPrimary;
 }
 
 bool onlyContainer(const QJsonArray &containers, const QString &containerId,
@@ -139,6 +164,8 @@ bool redockAndRelease(CompositorProbeClient &client, const ProbeWindowTitles &ti
             const auto frame = primary.frame.united(secondary.frame);
             return primary.containerId == containerId && secondary.containerId == containerId &&
                    !primary.minimized && !secondary.minimized &&
+                   hasOneCollapsedTaskIdentity(inventory,
+                                               {titles.primary, titles.secondary}) &&
                    tiledInFrame(primary, secondary, frame) &&
                    independentlyRestored(page, pageRestoreFrame);
         },
@@ -184,6 +211,7 @@ std::optional<DevelopmentWorkflowState> establishInitialContainer(CompositorProb
         [](const WindowInventory &inventory) {
             return std::all_of(inventory.cbegin(), inventory.cend(), [](const auto &observed) {
                 return observed.containerId.isEmpty() && !observed.minimized &&
+                       !observed.skipTaskbar && !observed.skipSwitcher &&
                        observed.frame.isValid();
             });
         },
@@ -286,6 +314,8 @@ bool exercisePageLifecycle(CompositorProbeClient &client, const ProbeWindowTitle
                    secondary.containerId == state.containerId &&
                    page.containerId == state.containerId && !primary.minimized &&
                    !secondary.minimized && page.minimized &&
+                   hasOneCollapsedTaskIdentity(
+                       inventory, {titles.primary, titles.secondary, titles.page}) &&
                    tiledInFrame(primary, secondary, state.stableOuterFrame) &&
                    sameGeometry(page.targetFrame, state.stableOuterFrame);
         },
@@ -318,6 +348,8 @@ bool exercisePageLifecycle(CompositorProbeClient &client, const ProbeWindowTitle
                    secondary.containerId == state.containerId &&
                    page.containerId == state.containerId && primary.minimized &&
                    secondary.minimized && !page.minimized &&
+                   hasOneCollapsedTaskIdentity(
+                       inventory, {titles.primary, titles.secondary, titles.page}) &&
                    sameGeometry(page.frame, state.stableOuterFrame);
         },
         error);
@@ -347,6 +379,8 @@ bool exercisePageLifecycle(CompositorProbeClient &client, const ProbeWindowTitle
             const auto &secondary = window(inventory, titles.secondary);
             const auto &page = window(inventory, titles.page);
             return !primary.minimized && !secondary.minimized && page.minimized &&
+                   hasOneCollapsedTaskIdentity(
+                       inventory, {titles.primary, titles.secondary, titles.page}) &&
                    tiledInFrame(primary, secondary, state.stableOuterFrame) &&
                    sameGeometry(page.targetFrame, state.stableOuterFrame);
         },
