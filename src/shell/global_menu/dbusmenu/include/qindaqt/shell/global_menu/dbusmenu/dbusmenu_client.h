@@ -32,7 +32,9 @@ struct ClientMetadata final {
 // It owns all pending-call/watch objects and copied snapshots; the injected
 // connection handle, this QObject, and its public calls stay on one Qt thread.
 // start() reports configuration/subscription failure and wire failures retain
-// the last accepted snapshot while emitting a bounded reason code.
+// the last accepted snapshot while emitting a bounded reason code; a failed
+// first GetLayout additionally emits initialLayoutFailed() so the consumer can
+// distinguish never-delivered from temporarily-undeliverable.
 class DbusMenuClient final : public QObject, public Exporter::MenuSource
 {
     Q_OBJECT
@@ -61,6 +63,13 @@ Q_SIGNALS:
     void metadataChanged();
     void unavailable();
     void rejected(QString reasonCode);
+    // Emitted only when a GetLayout reply errors or fails to decode while this
+    // client has never accepted a snapshot: the endpoint has never delivered a
+    // menu. Unlike `rejected`, which also covers mid-session re-read failures
+    // that must retain the last accepted snapshot, this tells the consumer the
+    // binding can never produce content and should be torn down rather than
+    // left waiting.
+    void initialLayoutFailed(QString reasonCode);
     void eventCompleted(qint32 itemId, bool delivered, QString reasonCode);
 
 private Q_SLOTS:

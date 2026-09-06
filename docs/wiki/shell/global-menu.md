@@ -251,7 +251,14 @@ republished to the facade, so the publication generation, the open popup, and
 every rendered delegate survive. A bind to a new provider likewise never
 publishes unavailable ahead of the async tree; it opens a facade transition
 that keeps the previous projection visible but inert until the replacement's
-first tree lands.
+first tree lands. If that replacement's first `GetLayout` errors or fails to
+decode — the registrar proved an endpoint that never delivers a menu — the
+client's `initialLayoutFailed` signal clears the retained placeholder to the
+truthful unavailable state immediately (fenced by client generation and bound
+endpoint, with no grace window and no automatic rebind, so an unservable path
+cannot spin); only a fresh registrar or focus signal binds again. A rejected
+re-read after an accepted snapshot still retains the last complete menu, per
+the dbusmenu contract.
 
 An applet activation synchronously captures the published tree, runs the
 existing `InvocationGuard`, converts the canonical numeric action id back to
