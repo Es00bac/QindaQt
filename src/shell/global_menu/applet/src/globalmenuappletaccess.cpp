@@ -169,6 +169,27 @@ void GlobalMenuAppletAccess::publishDegraded(const QString &reasonCode)
     setPhase(QStringLiteral("degraded"), reasonCode);
 }
 
+void GlobalMenuAppletAccess::beginTransition()
+{
+    if (m_topLevelProjection.isEmpty()) {
+        // Nothing retained to hold the slot open: this is indistinguishable
+        // from unavailable for presentation purposes.
+        publishUnavailable();
+        return;
+    }
+    setAvailable(false);
+    setPhase(QStringLiteral("loading"), {});
+}
+
+void GlobalMenuAppletAccess::endTransition()
+{
+    if (m_topLevelProjection.isEmpty() || m_phase != QStringLiteral("loading")) {
+        return;
+    }
+    setAvailable(true);
+    setPhase(QStringLiteral("ready"), {});
+}
+
 void GlobalMenuAppletAccess::setAvailable(bool available)
 {
     if (m_available == available) {

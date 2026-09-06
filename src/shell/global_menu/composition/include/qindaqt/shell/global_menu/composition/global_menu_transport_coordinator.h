@@ -12,6 +12,7 @@
 #include <qindaqt/shell/global_menu/registrar/registrar_registry.h>
 
 #include <QtCore/QObject>
+#include <QtCore/QTimer>
 #include <QtDBus/QDBusConnection>
 
 #include <memory>
@@ -76,6 +77,19 @@ private:
         const Ownership::ActiveWindowObservation &focus);
     void watchAnnouncedService(const QString &serviceName);
     void clearAuthority();
+    // Revokes invocation authority synchronously (selector cleared, so neither
+    // the facade nor the invocation guard can admit an action) but retains the
+    // last published presentation as an inert placeholder for a bounded grace
+    // period. The compositor identity channel invalidates and republishes on
+    // every visibility-affecting change — including pure geometry changes that
+    // are not focus moves — so treating each transient withdrawal as a hard
+    // clear collapses and rebuilds the panel slot on every such event, the
+    // user-visible "global menu flashes" defect. When the grace expires without
+    // the same provider re-proving itself, the retained presentation is
+    // published unavailable.
+    void suspendAuthority();
+    void expirePresentationGrace();
+    void renewBoundProvider(const Ownership::ActiveWindowObservation &focus);
     void bindRegistration(const Ownership::ActiveWindowObservation &focus,
                           const ProviderEndpoint &endpoint);
     void publishClientTree();
@@ -98,10 +112,15 @@ private:
     ProviderEndpoint m_boundEndpoint;
     ProviderEndpoint m_lastHostedEndpoint;
     QUuid m_lastHostedWindowId;
+    // Window the current/last binding was authenticated for; retained through a
+    // presentation grace so a reread of the same window can resume in place.
+    Ownership::WindowIdentity m_boundWindow{};
     QString m_watchedAnnouncedService;
+    QTimer m_presentationGraceTimer;
     quint64 m_focusGeneration = 0;
     quint64 m_clientGeneration = 0;
     bool m_hosted = false;
+    bool m_authoritySuspended = false;
 };
 
 } // namespace QindaQt::Shell::GlobalMenu::Composition
