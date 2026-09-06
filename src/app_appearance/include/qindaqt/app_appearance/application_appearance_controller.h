@@ -19,7 +19,9 @@ namespace QindaQt::AppAppearance {
 // Projects the confirmed Settings1 appearance.theme value into one validated
 // theme. The SettingsClient is borrowed and must outlive this GUI-thread
 // controller. Owner loss retains the last validated theme; malformed or
-// missing theme identifiers never replace it.
+// missing theme identifiers never replace it. System follows live platform
+// color-scheme changes; resolving to the current id emits nothing, which also
+// prevents palette publication from feeding back into another update.
 class ApplicationAppearanceController final : public QObject {
   Q_OBJECT
 public:

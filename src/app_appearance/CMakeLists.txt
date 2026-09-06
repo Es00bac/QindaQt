@@ -1,4 +1,6 @@
 add_library(qindaqt_app_appearance STATIC
+    include/qindaqt/app_appearance/application_appearance_controller.h
+    include/qindaqt/app_appearance/appearance_resolver.h
     src/application_appearance_controller.cpp
     src/appearance_resolver.cpp
 )

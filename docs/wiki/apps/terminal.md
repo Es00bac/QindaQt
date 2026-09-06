@@ -304,7 +304,7 @@ The appearance adapter derives the complete window palette, interface font,
 monospace terminal font, focus ring, and status colors from the public QST-1
 boundary, exactly as the Text Editor does; `qinda-dark` is the launch default,
 with confirmed Settings1 theme and color-scheme changes updating the running
-window through [ADR-0079](../adr/0079-resolve-first-party-appearance-from-settings.md).
+window through [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md).
 An explicit `--theme` locks a validated schema-v1 theme and `--theme-directory` extends discovery,
 and `--check-theme` providing the packaging diagnostic that exits before any
 window exists. The adapter renders the sixteen ANSI slots from public token

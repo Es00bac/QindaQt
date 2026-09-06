@@ -84,4 +84,4 @@ Numbers are never reused, including for rejected or superseded records. A gap
 may be reserved by another coordinated outcome and is not available for reuse;
 integration retains every accepted decision in numeric order.
 
-- [ADR-0079: Resolve first-party appearance from confirmed Settings1 preferences](0079-resolve-first-party-appearance-from-settings.md)
+- [ADR-0080: Resolve first-party appearance from confirmed Settings1 preferences](0080-resolve-first-party-appearance-from-settings.md)

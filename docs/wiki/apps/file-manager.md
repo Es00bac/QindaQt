@@ -225,7 +225,7 @@ form the compatibility surface.
 ## QST-1 theme and accessibility boundary
 
 Confirmed Settings1 theme and color-scheme changes publish live QST generations
-through [ADR-0079](../adr/0079-resolve-first-party-appearance-from-settings.md).
+through [ADR-0080](../adr/0080-resolve-first-party-appearance-from-settings.md).
 An explicit `--theme` locks the process theme; `--theme-directory` extends the
 validated schema-v1 theme search, using the same
 search order (explicit directory, then `XDG_DATA_DIRS`-discovered
