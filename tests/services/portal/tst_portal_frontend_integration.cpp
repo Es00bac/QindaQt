@@ -124,8 +124,8 @@ bool verifyAccent(const QVariant &input, QString *error)
     argument.beginStructure();
     argument >> red >> green >> blue;
     argument.endStructure();
-    if (!near(red, 143.0 / 255.0) || !near(green, 200.0 / 255.0)
-        || !near(blue, 183.0 / 255.0)) {
+    if (!near(red, 217.0 / 255.0) || !near(green, 138.0 / 255.0)
+        || !near(blue, 50.0 / 255.0)) {
         *error = QStringLiteral("frontend accent-color differs from QindaQt QST projection");
         return false;
     }

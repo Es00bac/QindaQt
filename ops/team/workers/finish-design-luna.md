@@ -1,4 +1,4 @@
-- Status: working — repairing two integrated shell/theme gate regressions in runtime token and startup preference tests
+- Status: working — exact shell/theme gate repair handed off; awaiting independent review
 
 ## Updates
 
@@ -17,3 +17,6 @@
 - 2026-09-06T10:22:55-06:00 — Root/customize reproduced the remaining contract gap: the tokenized ComboBox still exposes a Text content item, so editable consumers cannot receive real key input. The bounded repair keeps the root delegate/popup fix and replaces only the content item with a tokenized TextField when editable, with a key-input/blur regression next.
 - 2026-09-06T10:34:32-06:00 — Claimed isolated `fix/finish-shell-theme-gates` at base `3de6ac9f`; scope is limited to `tests/shell/tst_shellruntime_tokens.cpp`, `tests/shell/tst_shellstartuppreferences.cpp`, and focused helper/docs only. The two integrated failures are stale theme swatches and ambient D-Bus activation defeating the absent-service fallback scenario.
 - 2026-09-06T10:42:36-06:00 — Material repair verified: runtime token expectations now match QindaPunk Nightfall `#111e2c` and Porcelain `#dde7e8`; absent-service startup uses an explicit no-activation private D-Bus config on a short socket path with scope-guard cleanup. The two repaired gates and four neighboring token/preference gates pass 6/6; preparing exact handoff.
+- 2026-09-06T10:43:09-06:00 — Exact candidate `bcf2fbc52337c0a80a620d3d68c4ffd964e98cfe` handed off with focused evidence and no product-logic changes. Requested next action is independent review and integration.
+- 2026-09-06T10:43:56-06:00 — Root assigned one additional stale theme fixture from the broad run: portal frontend dark startup projects the integrated QindaPunk Nightfall accent `#D98A32` (217/138/50), replacing the old jade RGB 143/200/183 expectation. Only `tests/services/portal/tst_portal_frontend_integration.cpp` is added to this candidate.
+- 2026-09-06T10:45:24-06:00 — Portal frontend selection and toolkit rows pass 2/2 after the fixture correction; the expected accent now matches `data/themes/qinda-dark.json` and the real QST projection path. Preparing the superseding exact candidate handoff.
