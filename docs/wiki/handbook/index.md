@@ -1,7 +1,7 @@
 # QindaQt handbook
 
 QindaQt is a desktop built on Qt and Wayland — the screen you see after
-logging in, the bars at the top and bottom, the apps that come with it, and
+logging in, the top panel and the dock, the apps that come with it, and
 the way windows group together. It is pronounced **“kinda cute.”**
 
 These guides explain what you can do with QindaQt and what happens when you
@@ -10,16 +10,16 @@ being rolled out or verified is called out where it applies.
 
 ## Your first ten minutes
 
-1. **Look around.** A slim bar runs across the top of the screen and a shelf
-   sits at the bottom. The top bar's left button opens the system menu
-   (settings, lock, log out, restart, shut down); next to it, the menu of the
-   app you're working in appears automatically.
-2. **Open an app.** Click the launcher in the bottom shelf, type a name or
-   browse the categories, and open something. Running apps appear in the
-   shelf as well.
+1. **Look around.** A slim **top panel** runs across the top of the screen
+   and a **dock** sits at the bottom. The top panel's left button opens the
+   system menu (settings, lock, log out, restart, shut down); next to it, the
+   menu of the app you're working in appears automatically.
+2. **Open an app.** Click the launcher in the dock, type a name or browse
+   the categories, and open something. Running apps appear in the dock as
+   well.
 3. **Try the signature move.** Hold **Meta+Shift** and drag one window onto
    another: drop it in the middle to stack the two as tabs, or near an edge
-   to place them side by side. One frame now holds both, and the shelf shows
+   to place them side by side. One frame now holds both, and the dock shows
    them as a single entry. Drag a window's own title strip back out to make
    it independent again.
 4. **Change how it looks.** Open **System Settings → Appearance** and try a

@@ -16,16 +16,16 @@ is **window container**.
 | Split / tile | A division between two members / the slot holding exactly one member. |
 | Shared bar (shared row) | The container's combined title and tab row, including its whole-group buttons. |
 | Outer frame | The visible frame around a whole window container; dragging it moves or resizes the entire group. |
-| Docking | Combining or rearranging windows — by `Meta+Shift` drag or `Meta+Shift+D`. |
+| Docking | Combining or rearranging windows — by `Meta+Shift` drag or `Meta+Shift+D`. It is about windows, not the dock at the bottom of the screen. |
 | Detach | Returning one member of a container to an independent window. |
 | Ungroup | Releasing every member of a container at once. |
-| Command bar | The top bar: system menu, application menu, workspaces, and status applets. |
-| Smart shelf | The bottom bar: launcher, pinned apps, and the task list; it steps aside for windows. |
+| Top panel | The panel across the top of the screen: system menu, application menu, workspaces, and status applets. |
+| Dock | The panel at the bottom of the screen: launcher, pinned apps, and the task list; it steps aside for windows. |
 | Launcher | The applet that finds and opens installed applications by name or category. |
-| Task list | The window list in the shelf; each window container appears there as one entry. |
-| System menu | The left command-bar button: about, settings, lock, log out, suspend, restart, shut down. |
-| Application menu (global menu) | The focused application's menu hosted in the command bar. |
-| Panel | One bar on a screen edge, described by a profile. |
+| Task list | The window list in the dock; each window container appears there as one entry. |
+| System menu | The left top-panel button: about, settings, lock, log out, suspend, restart, shut down. |
+| Application menu (global menu) | The focused application's menu hosted in the top panel. |
+| Panel | Any bar on a screen edge, described by a profile; the top panel and the dock are the two panels of the default layout. |
 | Applet | One component living on a panel (clock, launcher, volume, …), admitted by the host. |
 | Profile | A saved layout: which panels exist and which applets they carry. |
 | Theme | A saved look: colors, typography inputs, corner rounding, motion, and icons. |

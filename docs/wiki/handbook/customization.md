@@ -3,7 +3,7 @@
 Three things shape how QindaQt looks and behaves, and they are kept separate
 on purpose:
 
-- a **profile** describes the layout — which bars exist, where they sit, and
+- a **profile** describes the layout — which panels exist, where they sit, and
   which applets they carry;
 - a **theme** describes the look — colors, corner rounding, motion, icons;
 - your **saved choices** — theme, wallpaper, fonts, and other preferences —
@@ -23,16 +23,22 @@ Five themes ship with QindaQt:
 
 | Theme | Character |
 | --- | --- |
-| QindaPunk Nightfall | The dark default: ink and neon, calm surfaces |
+| QindaPunk Nightfall | The dark default: ink-blue night, graphite surfaces, pale text, and a warm amber accent |
 | QindaPunk Porcelain | The light counterpart: pale ceramic and apricot |
 | QindaPunk Dusk | Between the two, for late evenings |
 | Qinda High Contrast | Maximum separation for readability |
 | Qinda macOS | A mist-and-sage take on the familiar Mac look |
 
-Pick a card to preview it. A separate light/dark/follow-system choice decides
-how the theme colors respond to the time of day. When you **Apply**, the
-whole desktop follows — panels, controls, window frames, and container chrome
-— without a restart. **Revert** puts everything back to your saved choices.
+Pick a card to preview it. The **Preferred color scheme** control on the same
+tab offers **System**, **Light**, and **Dark**. Light and Dark fix the scheme.
+System follows the desktop's current light-or-dark appearance preference and
+changes whenever that preference changes — it is not a clock or a day-and-night
+schedule. If the theme you picked is the wrong kind for the scheme in force
+(Nightfall under a light preference, say), QindaQt shows the matching built-in
+QindaPunk theme instead until it fits again; Qinda High Contrast fits both.
+When you **Apply**, the whole desktop follows — panels, controls, window
+frames, and container chrome — without a restart. **Revert** puts everything
+back to your saved choices.
 
 ### Wallpaper
 
@@ -87,7 +93,7 @@ from this page is not part of the current version.
 
 ## What each part is
 
-- The bars at the top and bottom are **panels**; the things living on them
+- The top panel and the dock are both **panels**; the things living on them
   (clock, launcher, task list, volume, …) are **applets**.
 - The full inventory of shipped profiles, themes, and applets is in the
   [packaged assets catalog](catalog/assets.md).
