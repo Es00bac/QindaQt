@@ -271,6 +271,15 @@ directory under module ID `org.qindaqt`. On first run, `qindaqt-wm` writes
 `[org.kde.kdecoration2] library=org.qindaqt` only when that key is missing. A
 user-selected third-party decoration is never overwritten on a later launch.
 
+Every non-maximized window using the QindaQt server decoration paints the
+theme's `border` color into its reserved one-logical-pixel outer frame. It also
+publishes one reusable KDecoration nine-patch shadow derived from the theme's
+`surface` color, with a 12-logical-pixel extent. KWin composites that shadow
+outside the decoration rather than extending the decoration paint into client
+content. Maximized windows retain the flush screen-edge geometry and publish no
+outer frame or shadow. Palette, scale, activation, and maximize changes refresh
+the native material in place.
+
 The focused plugin test loads the factory and metadata, while the staged-install
 test proves that both compositor and decoration artifacts are installed and
 that a fresh isolated `kwinrc` receives the default. The nested Hybrid-unload
@@ -278,7 +287,8 @@ workflow also requires three mapped probe windows to be server-decorated and
 their live KDecoration meta-object class to contain `QindaDecoration`; a silent
 fallback to another selected decoration therefore fails the workflow.
 
-Focused QTests cover Qinda macOS placement and hover rendering, standard
+Focused QTests cover the native one-pixel frame, bounded nine-patch shadow,
+maximized no-outer-material rule, Qinda macOS placement and hover rendering, standard
 left/right controls, maximized restore behavior, logical-DPI invariance,
 right-to-left visual tabs with stable logical indices, member/divider regions,
 hit precedence, malformed geometry, typed widget activation, thresholded drag

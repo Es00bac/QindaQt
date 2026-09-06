@@ -7,6 +7,8 @@
 #include <QPalette>
 #include <QVariantList>
 
+class QEvent;
+
 namespace KDecoration3 {
 class DecorationButtonGroup;
 }
@@ -24,6 +26,7 @@ public:
 
     [[nodiscard]] bool init() override;
     void paint(QPainter *painter, const QRectF &repaintArea) override;
+    bool event(QEvent *event) override;
 
     [[nodiscard]] bool controlsHovered() const noexcept
     {
@@ -39,6 +42,7 @@ public Q_SLOTS:
 private:
     void createButtons();
     void updateGeometry();
+    void updateVisualStyle();
     [[nodiscard]] QColor titleColor() const;
     [[nodiscard]] QColor textColor() const;
     [[nodiscard]] QColor paletteColor(const char *key,
@@ -47,6 +51,7 @@ private:
 
     KDecoration3::DecorationButtonGroup *m_leftButtons = nullptr;
     bool m_controlsHovered = false;
+    bool m_initialized = false;
 };
 
 } // namespace QindaQt::Decoration
