@@ -154,6 +154,31 @@ same drop for an independent window cancels because there is no group to leave.
 Ordinary native member-title movement does not pass through the shared chrome
 router or infer a docking target.
 
+A second, narrower filter ([ADR-0085](../adr/0085-early-late-shift-takeover-filter.md))
+is installed at GlobalShortcut order - strictly before KWin's own
+`InteractiveMoveResize` filter, and therefore before the Decoration-order
+filter above too. It exists only for the plain-drag case above: once member
+policy detaches a member and its now-independent native move is under way,
+Shift can still be *added* mid-drag, and KWin applies its Shift-adds-custom-tile
+default keyed on whatever modifiers its own `MoveResizeFilter` last observed,
+regardless of whether Shift was held from the very start or added afterward.
+Cancelling that native move on its own does not avoid this: KWin's cancel path
+re-checks the same tracked modifiers unconditionally. This filter instead
+watches every event of an active *native move* (never a resize - KWin's
+custom-tile default only ever applies to a move) for the exact instant the
+docking chord's modifiers newly become fully held that were not a moment
+before, consumes that one event so KWin's own filter never updates its tracked
+modifiers past that point, cancels the native move with those now-frozen
+modifiers, and adopts the current pointer position directly into the same
+exact-modifier controller the Decoration-order filter already drives - skipping
+the drag-threshold state a fresh press would otherwise need, since the
+threshold was already exceeded by the native move it is taking over from. The
+adopted window visibly settles back to its pre-drag position for one frame
+before the dock preview resumes from the current cursor point; a plain drag
+that never has Shift added is untouched and stays fully native from start to
+drop, as does a fresh press that already holds the full chord (claimed by the
+Decoration-order filter above before any native move can begin).
+
 Both ordinary shared-chrome input and exact-modifier target discovery consult
 the live bottom-to-top KWin stack at the pointer position. A scene hit is valid
 only when its current member anchor is paintable and no eligible native input

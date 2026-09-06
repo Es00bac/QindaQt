@@ -20,6 +20,10 @@ private Q_SLOTS:
     void pointerGeometryKindsUseCumulativeDeltas();
     void externalCancelKeepsCumulativeDelta();
     void exactChordWithoutTargetOwnsTheWholeGestureSilently();
+    void adoptDragEntersActiveImmediatelyWithPreview();
+    void adoptDragWithNoTargetSwallowsSilently();
+    void adoptDragRefusesWhenAlreadyActive();
+    void pointerModifiersExposesConfiguredChord();
 };
 
 void InteractionControllerTest::unrelatedInputPassesThrough()
@@ -239,6 +243,84 @@ void InteractionControllerTest::exactChordWithoutTargetOwnsTheWholeGestureSilent
     QVERIFY(cancelled.consumed);
     QVERIFY(cancelled.intents.isEmpty());
     QVERIFY(!controller.active());
+}
+
+void InteractionControllerTest::adoptDragEntersActiveImmediatelyWithPreview()
+{
+    // Regression for the late-Shift-mid-drag takeover: a caller adopting an
+    // already-in-progress external drag never sees PointerPending (there is
+    // no earlier press position left to measure a threshold against), and a
+    // MemberDock target previews immediately from the adopted position
+    // rather than waiting for the next motion event.
+    RecordingResolver resolver;
+    resolver.hit = {HitKind::MemberTitle, {}, QStringLiteral("window-a"), {}};
+    resolver.pointerTarget = {QStringLiteral("container-b"),
+                              QStringLiteral("window-b"), DockZone::Right};
+    InteractionController controller(resolver, {.dragThreshold = 1000.0});
+
+    const auto adopted = controller.adoptDrag({40, 40});
+    QVERIFY(adopted.consumed);
+    QVERIFY(controller.active());
+    QCOMPARE(adopted.intents.size(), 2);
+    QCOMPARE(adopted.intents[0].phase, IntentPhase::Begin);
+    QCOMPARE(adopted.intents[0].position, QPointF(40, 40));
+    QCOMPARE(adopted.intents[1].phase, IntentPhase::Update);
+    QCOMPARE(adopted.intents[1].target.memberId, QStringLiteral("window-b"));
+    QCOMPARE(resolver.pointerQueries, QVector<QPointF>{QPointF(40, 40)});
+
+    // A huge configured drag threshold would swallow an ordinary press+move,
+    // but adoptDrag already skipped straight past PointerPending, so an
+    // immediately following move still previews and a release still commits.
+    const auto moved = controller.pointerMove({.position = {60, 40}});
+    QVERIFY(moved.consumed);
+    const auto released = controller.pointerRelease(releaseAt({60, 40}));
+    QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
+    QCOMPARE(released.intents.constFirst().target.memberId, QStringLiteral("window-b"));
+    QVERIFY(!controller.active());
+}
+
+void InteractionControllerTest::adoptDragWithNoTargetSwallowsSilently()
+{
+    RecordingResolver resolver;
+    InteractionController controller(resolver);
+
+    const auto adopted = controller.adoptDrag({5, 5});
+    QVERIFY(adopted.consumed);
+    QVERIFY(adopted.intents.isEmpty());
+    QVERIFY(controller.active());
+
+    const auto released = controller.pointerRelease(releaseAt({9, 9}));
+    QVERIFY(released.consumed);
+    QVERIFY(released.intents.isEmpty());
+    QVERIFY(!controller.active());
+}
+
+void InteractionControllerTest::adoptDragRefusesWhenAlreadyActive()
+{
+    RecordingResolver resolver;
+    resolver.hit = {HitKind::OuterTitle, QStringLiteral("group"), {}, {}};
+    InteractionController controller(resolver, {.dragThreshold = 0.0});
+
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.active());
+
+    const auto rejected = controller.adoptDrag({100, 100});
+    QVERIFY(!rejected.consumed);
+    QVERIFY(rejected.intents.isEmpty());
+}
+
+void InteractionControllerTest::pointerModifiersExposesConfiguredChord()
+{
+    RecordingResolver resolver;
+    InteractionController defaultController(resolver);
+    QCOMPARE(defaultController.pointerModifiers(),
+             Qt::MetaModifier | Qt::ShiftModifier);
+
+    InteractionController customController(
+        resolver, {.pointerModifiers = Qt::ControlModifier | Qt::AltModifier});
+    QCOMPARE(customController.pointerModifiers(),
+             Qt::ControlModifier | Qt::AltModifier);
 }
 
 QTEST_GUILESS_MAIN(InteractionControllerTest)

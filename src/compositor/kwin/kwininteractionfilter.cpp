@@ -6,6 +6,8 @@
 #include <core/inputdevice.h>
 #include <input.h>
 #include <input_event.h>
+#include <window.h>
+#include <workspace.h>
 
 #include <utility>
 
@@ -39,6 +41,40 @@ private:
     KWinInteractionFilter &m_owner;
 };
 
+// ADR-0085. Installed at GlobalShortcut order - strictly before
+// InteractiveMoveResize (KWin's own MoveResizeFilter) and therefore before
+// this class's own `Filter` above, which sits at Decoration order. Watches
+// only for the late-Shift-mid-native-move takeover; every other event it
+// sees passes through unconsumed so KWin's own move continues exactly as
+// today whenever the takeover chord never completes.
+class KWinInteractionFilter::EarlyTakeoverFilter final : public KWin::InputEventFilter
+{
+public:
+    explicit EarlyTakeoverFilter(KWinInteractionFilter &owner)
+        : KWin::InputEventFilter(KWin::InputFilterOrder::GlobalShortcut)
+        , m_owner(owner)
+    {
+    }
+
+    bool pointerMotion(KWin::PointerMotionEvent *event) override
+    {
+        return m_owner.earlyPointerMotion(event);
+    }
+
+    bool pointerButton(KWin::PointerButtonEvent *event) override
+    {
+        return m_owner.earlyPointerButton(event);
+    }
+
+    bool keyboardKey(KWin::KeyboardKeyEvent *event) override
+    {
+        return m_owner.earlyKeyboardKey(event);
+    }
+
+private:
+    KWinInteractionFilter &m_owner;
+};
+
 KWinInteractionFilter::KWinInteractionFilter(KWin::InputRedirection *input,
                                              HybridInput::InteractionController &controller,
                                              IntentSink sink,
@@ -49,6 +85,7 @@ KWinInteractionFilter::KWinInteractionFilter(KWin::InputRedirection *input,
     , m_sink(std::move(sink))
     , m_chromeRouter(chromeRouter)
     , m_chromeSink(std::move(chromeSink))
+    , m_lateShiftDetector(controller.pointerModifiers())
 {
     if (!m_input) {
         return;
@@ -60,19 +97,22 @@ KWinInteractionFilter::KWinInteractionFilter(KWin::InputRedirection *input,
     // activating/mutating Hybrid chrome, while shared/native decoration input
     // still reaches QindaQt before KWin begins its own titlebar operation.
     m_input->installInputEventFilter(m_filter.get());
+    m_earlyFilter = std::make_unique<EarlyTakeoverFilter>(*this);
+    m_input->installInputEventFilter(m_earlyFilter.get());
 }
 
 KWinInteractionFilter::~KWinInteractionFilter()
 {
     // InputEventFilter's destructor unregisters itself. Destroy it while KWin
     // input and the controller/sink collaborators are still valid.
+    m_earlyFilter.reset();
     m_filter.reset();
     m_input = nullptr;
 }
 
 bool KWinInteractionFilter::installed() const
 {
-    return m_filter != nullptr;
+    return m_filter != nullptr && m_earlyFilter != nullptr;
 }
 
 bool KWinInteractionFilter::beginKeyboardDock(const HybridInput::HitTarget &source)
@@ -186,6 +226,58 @@ bool KWinInteractionFilter::keyboardKey(KWin::KeyboardKeyEvent *event)
          .modifiers = event->modifiers,
          .pressed = event->state != KWin::KeyboardKeyState::Released,
          .autoRepeat = event->state == KWin::KeyboardKeyState::Repeated}));
+}
+
+bool KWinInteractionFilter::earlyKeyboardKey(KWin::KeyboardKeyEvent *event)
+{
+    if (!event || !m_input) {
+        return false;
+    }
+    return observeLateShiftTakeover(event->modifiers, m_input->globalPointer());
+}
+
+bool KWinInteractionFilter::earlyPointerMotion(KWin::PointerMotionEvent *event)
+{
+    if (!event) {
+        return false;
+    }
+    return observeLateShiftTakeover(event->modifiers, event->position);
+}
+
+bool KWinInteractionFilter::earlyPointerButton(KWin::PointerButtonEvent *event)
+{
+    if (!event) {
+        return false;
+    }
+    return observeLateShiftTakeover(event->modifiers, event->position);
+}
+
+bool KWinInteractionFilter::observeLateShiftTakeover(Qt::KeyboardModifiers modifiers,
+                                                     const QPointF &position)
+{
+    // AGENT-GUARD: `isInteractiveMove()` excludes resizes (gravity != None) -
+    // a resize's own finishInteractiveMoveResize path never applies
+    // Shift-adds-Custom-tile (that branch is guarded by `wasMove`, per
+    // window.cpp), so a resize is never a competing gesture here and must
+    // never be handed an identity, or the detector would arm against it.
+    auto *const activeWorkspace = KWin::workspace();
+    auto *const movingWindow = activeWorkspace ? activeWorkspace->moveResizeWindow() : nullptr;
+    auto *const competingMove = (movingWindow && movingWindow->isInteractiveMove())
+        ? movingWindow : nullptr;
+    if (!m_lateShiftDetector.observe(competingMove, modifiers)) {
+        return false;
+    }
+    // AGENT-CONTRACT: consuming this event here - strictly before
+    // InteractiveMoveResize - is what keeps KWin's own tracked
+    // `m_interactiveMoveResize.modifiers` frozen at whatever it was a moment
+    // ago: KWin::MoveResizeFilter (the only code that ever updates it) never
+    // gets to see this event at all once we return true. cancel() below runs
+    // finishInteractiveMoveResize(cancel=true) synchronously, whose second,
+    // unconditional `wasMove && Shift` check therefore reads the frozen
+    // (pre-takeover) value and never applies Custom-tile.
+    competingMove->cancelInteractiveMoveResize();
+    static_cast<void>(dispatch(m_controller.adoptDrag(position)));
+    return true;
 }
 
 bool KWinInteractionFilter::dispatchChrome(ChromePointerDecision decision)

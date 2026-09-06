@@ -7,6 +7,7 @@ target_sources(
     qindaqt_hybrid_input
     PRIVATE
         src/interactioncontroller.cpp
+        src/lateshifttakeoverdetector.cpp
     PUBLIC
         FILE_SET public_headers
         TYPE HEADERS
@@ -15,6 +16,7 @@ target_sources(
             include/qindaqt/hybrid_input/interactioncontroller.h
             include/qindaqt/hybrid_input/interactiontargetresolver.h
             include/qindaqt/hybrid_input/interactiontypes.h
+            include/qindaqt/hybrid_input/lateshifttakeoverdetector.h
 )
 
 target_compile_features(qindaqt_hybrid_input PUBLIC cxx_std_20)

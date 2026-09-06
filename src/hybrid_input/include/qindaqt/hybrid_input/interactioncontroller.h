@@ -19,6 +19,21 @@ public:
     [[nodiscard]] InteractionDecision pointerRelease(const PointerEvent &event);
     [[nodiscard]] InteractionDecision keyEvent(const KeyEvent &event);
 
+    // Adopts a drag already in progress at `position` - entering
+    // PointerActive directly rather than PointerPending, since a caller only
+    // ever calls this once a pointer button is already held down elsewhere
+    // (a competing native move it just cancelled). Idle only; a caller must
+    // never invoke this while the controller already owns an interaction.
+    // Emits Begin immediately (and, for MemberDock, an immediate preview
+    // Update) since there is no earlier press position to wait out a drag
+    // threshold against.
+    [[nodiscard]] InteractionDecision adoptDrag(const QPointF &position);
+
+    // The exact modifiers a pointer press/adopted drag must match. Exposed
+    // so a caller watching for a competing native gesture to intercept knows
+    // which chord to watch for without duplicating the bindings.
+    [[nodiscard]] Qt::KeyboardModifiers pointerModifiers() const;
+
     // A KGlobalAccel QAction calls this with the currently focused member. The
     // controller remains toolkit-neutral and never discovers focus itself.
     // Arrows choose edges, T chooses tabs/reordering, and D selects detach for
