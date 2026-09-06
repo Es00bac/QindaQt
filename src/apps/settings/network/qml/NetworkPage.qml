@@ -74,6 +74,28 @@ T.Page {
             message: root.networkSettings.statusText
         }
 
+        // Reload belongs with the connection state. In particular, its
+        // unavailable form is the immediate recovery action, not a detached
+        // footer button below a hidden inventory.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Tokens.space["2"]
+
+            Button {
+                id: reloadButton
+                objectName: "networkReloadButton"
+                available: root.networkSettings.reloadAvailable
+                busy: root.networkSettings.loading
+                emphasized: root.networkSettings.unavailable
+                text: root.networkSettings.unavailable ? qsTr("Try again")
+                                                         : qsTr("Reload")
+                accessibleDescription: root.networkSettings.unavailable
+                                       ? qsTr("Reconnect the network service")
+                                       : qsTr("Refresh network connections")
+                onClicked: root.networkSettings.reload()
+            }
+        }
+
         Label {
             objectName: "networkOperationStatus"
             Layout.fillWidth: true
@@ -110,7 +132,15 @@ T.Page {
             id: viewport
             objectName: "networkFormViewport"
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            // A hidden fill-height Flickable can still consume the spare
+            // ColumnLayout height. Collapse it while unavailable so the
+            // recovery notice and Try again action stay directly below the
+            // page heading instead of separating across the window.
+            Layout.fillHeight: !root.networkSettings.unavailable
+            Layout.minimumHeight: 0
+            Layout.preferredHeight: root.networkSettings.unavailable ? 0 : implicitHeight
+            Layout.maximumHeight: root.networkSettings.unavailable
+                                  ? 0 : Number.POSITIVE_INFINITY
             visible: !root.networkSettings.unavailable
             clip: true
             contentHeight: formSurface.implicitHeight
@@ -194,20 +224,6 @@ T.Page {
         RowLayout {
             Layout.fillWidth: true
             spacing: Tokens.space["2"]
-
-            Button {
-                id: reloadButton
-                objectName: "networkReloadButton"
-                available: root.networkSettings.reloadAvailable
-                busy: root.networkSettings.loading
-                emphasized: root.networkSettings.unavailable
-                text: root.networkSettings.unavailable ? qsTr("Try again")
-                                                         : qsTr("Reload")
-                accessibleDescription: root.networkSettings.unavailable
-                                       ? qsTr("Reconnect the network service")
-                                       : qsTr("Refresh network connections")
-                onClicked: root.networkSettings.reload()
-            }
 
             Button {
                 id: scanButton

@@ -232,6 +232,14 @@ void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {
   QCOMPARE(reload->property("text").toString(), QStringLiteral("Try again"));
   QCOMPARE(unavailableState->property("title").toString(),
            QStringLiteral("Network unavailable"));
+  // The unavailable recovery block is deliberately top-anchored. The hidden
+  // inventory must not retain fill height and push Try again to the window
+  // bottom where it is visually detached from the failure notice.
+  const qreal stateY = unavailableState->mapToItem(page, 0, 0).y();
+  const qreal reloadY = reload->mapToItem(page, 0, 0).y();
+  QVERIFY(stateY < page->height() / 3.0);
+  QVERIFY(reloadY < page->height() / 2.0);
+  QVERIFY(reloadY >= stateY + unavailableState->height());
   QVERIFY(findItem(page, QStringLiteral("networkConnect_") + QString(64, u'b'))
           == nullptr);
 }
