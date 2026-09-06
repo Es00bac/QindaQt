@@ -41,6 +41,8 @@ from gabbee_probe_support import (  # noqa: E402
     ResultDocument,
     SyntheticRecorder,
     readback_proves_insertion,
+    decode_compositor_reply,
+    valid_controller_mock_transcript,
     synthetic_transcript,
 )
 
@@ -101,7 +103,27 @@ class Probe:
 
         if not backend.activate_window(target):
             raise RuntimeError(f"Gabbee could not activate the {label} window")
-        service = desktop.AppContextService(backend, self._atspi_backend())
+        accessibility = self._atspi_backend()
+        # A newly mapped window may initially focus its tab strip. Establish
+        # the intended content target through public AT-SPI, without key input.
+        if accessibility.Atspi is not None:
+            atspi = accessibility.Atspi
+            root = atspi.get_desktop(0)
+            queue = [root]
+            while queue:
+                node = queue.pop(0)
+                try:
+                    if (node.get_process_id() == target.pid
+                            and node.get_role_name().lower() in {"text", "terminal"}
+                            and node.get_state_set().contains(atspi.StateType.SHOWING)):
+                        component = node.get_component_iface()
+                        if component is not None and component.grab_focus():
+                            break
+                    queue.extend(node.get_child_at_index(i)
+                                 for i in range(node.get_child_count()))
+                except Exception:
+                    continue
+        service = desktop.AppContextService(backend, accessibility)
         deadline = time.monotonic() + FOCUS_TIMEOUT_SECONDS
         captured = None
         while time.monotonic() < deadline:
@@ -174,9 +196,9 @@ class Probe:
             target_id, incoming_id, "horizontal", "second", dbus.Double(0.5),
             timeout=10,
         )
-        if isinstance(reply, (bytes, bytearray)):
-            reply = reply.decode("utf-8", "replace")
-        return json.loads(str(reply)) if reply else {}
+        # Compositor1 returns ay. dbus-python defaults to Array[Byte], not
+        # bytes; str(Array) is Python repr rather than the JSON wire payload.
+        return decode_compositor_reply(reply)
 
     # -- phases ----------------------------------------------------------
 
@@ -281,8 +303,14 @@ class Probe:
             if context_after
             else ""
         )
-        inserted_via_atspi = readback_proves_insertion(
-            str(focused["surrounding"] or ""), surrounding_after, TRANSCRIPT
+        # Gabbee derives its mock transcript from the recorder path and then
+        # applies its normal text formatting. Verify the actual delivered text
+        # after independently checking the bounded mock raw transcript shape.
+        raw = str(delivery.get("rawTranscript") or "")
+        mock_transcript_valid = valid_controller_mock_transcript(raw)
+        inserted_via_atspi = mock_transcript_valid and readback_proves_insertion(
+            str(focused["surrounding"] or ""), surrounding_after,
+            str(delivery.get("lastText") or "")
         )
         # AT-SPI surrounding text readback is the only acceptable proof of insertion
         # on Wayland — clipboard delivery is a fallback path that cannot confirm the
@@ -312,6 +340,7 @@ class Probe:
                 "clipboardAfter": clipboard,
                 "insertedViaAtSpi": inserted_via_atspi,
                 "atSpiDelivery": atspi_delivery,
+                "mockTranscriptValid": mock_transcript_valid,
                 "clipboardFallback": clipboard_fallback,
             },
         )

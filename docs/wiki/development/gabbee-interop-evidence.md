@@ -11,7 +11,10 @@ host-safe: no microphone capture (a fixed silent WAV replaces Gabbee's
 recorder), no typing tool (PATH is stripped of `dotool`/`xdotool`), no uinput
 device, and no synthetic input of any kind.  Gabbee's own mock STT provider
 produces one fixed harmless transcript,
-`[mock transcript from gabbee-synthetic.wav]`.
+`[mock transcript from recording-1.wav]` in the controller-driven runtime.
+The standalone recorder unit fixture uses `gabbee-synthetic.wav`; the runtime
+verifies the controller’s numbered recording filename and requires a new AT-SPI
+occurrence of Gabbee’s final formatted text.
 
 ## What is real Gabbee code and what is stubbed
 
@@ -74,14 +77,22 @@ Gabbee checkout and a privately installed `Terminal` component stage.  It
 then runs:
 
 1. the same GlobalShortcuts portal chain against the nested session bus;
-2. `gabbee_interop_probe.py`: Gabbee captures and activates the focused
-   Text Editor window, dictates the synthetic transcript, and the delivery
+2. `gabbee_interop_probe.py`: Gabbee activates the Text Editor window and
+   the probe focuses its visible content through public AT-SPI (a newly mapped
+   window may initially focus its tab strip), then Gabbee captures the target, dictates the synthetic transcript, and the delivery
    result plus pre/post AT-SPI and clipboard readback are recorded; the phase
    passes only when Gabbee reports `at-spi` delivery and the post snapshot has
    a new transcript occurrence. The same check runs for the Terminal window;
 3. the compositor's `DockWindows` development API groups editor + terminal
    into one window container; Gabbee must capture exactly the focused member
    (distinct `window_id`s) and deliver per member.
+
+The runner writes each child’s output directly to its log file. Gabbee’s
+clipboard fallback may fork `wl-copy`; that process must not keep a captured
+stdout pipe open after the probe exits. Each step has a 120-second deadline,
+and the private namespace owns clipboard-process teardown. `DockWindows`
+replies are decoded from the public `ay` payload, including dbus-python’s
+array-of-bytes representation.
 
 The inner session sets `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` and installs the
 standard `org.a11y.Bus` activation entry on its private session bus. A
