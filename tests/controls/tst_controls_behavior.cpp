@@ -18,6 +18,7 @@
 #include <QVariantMap>
 
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <memory>
 
@@ -76,6 +77,7 @@ private slots:
     void initTestCase();
     void exposesSemanticStatesAndAccessibleRoles();
     void exposesStaticComponentContractsAndFocusRing();
+    void opensAndSelectsTokenizedComboPopup();
     void activatesOrdinaryControlsFromKeyboard();
     void traversesOrdinaryControlsWithTab();
     void activatesCardActionsFromKeyboard();
@@ -186,6 +188,10 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
     QCOMPARE(objectColor(controlBackground(combo)),
              facade->bg().value(QStringLiteral("highest")).value<QColor>());
 
+    QObject *popup = combo->property("popup").value<QObject *>();
+    QVERIFY(popup != nullptr);
+    QVERIFY(!popup->property("visible").toBool());
+
     auto *primary = item(scene.root, "primaryButton");
     auto *focusRing = item(primary, "focusRing");
     item(scene.root, "textField")->forceActiveFocus();
@@ -197,6 +203,55 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
     QVERIFY(focusRing->property("focusVisible").toBool());
     QVERIFY(focusRing->isVisible());
     QCOMPARE(objectColor(focusRing), QColor(Qt::transparent));
+}
+
+void ControlsBehaviorTests::opensAndSelectsTokenizedComboPopup()
+{
+    auto scene = createScene(QStringLiteral("qinda-dark.json"));
+    auto *combo = item(scene.root, "comboBox");
+    QVERIFY(combo != nullptr);
+    combo->forceActiveFocus();
+    const QPointF center = combo->mapToItem(
+        nullptr, QPointF(combo->width() / 2.0, combo->height() / 2.0));
+    QTest::mouseClick(scene.view.get(), Qt::LeftButton, Qt::NoModifier,
+                      center.toPoint());
+
+    QObject *popup = combo->property("popup").value<QObject *>();
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->property("visible").toBool());
+    QObject *popupBackground = popup->property("background").value<QObject *>();
+    QVERIFY(popupBackground != nullptr);
+    auto *facade = scene.view->engine()->singletonInstance<TokenFacade *>(
+        "QindaQt.Tokens", "Tokens");
+    QVERIFY(facade != nullptr);
+    QCOMPARE(objectColor(popupBackground),
+             facade->bg().value(QStringLiteral("raised")).value<QColor>());
+
+    auto *popupItem = qobject_cast<QQuickItem *>(
+        popup->property("contentItem").value<QObject *>());
+    QVERIFY(popupItem != nullptr);
+    QQuickItem *secondDelegate = nullptr;
+    std::function<QQuickItem *(QQuickItem *)> findSecondDelegate =
+        [&findSecondDelegate](QQuickItem *parent) -> QQuickItem * {
+            for (QQuickItem *child : parent->childItems()) {
+                if (child->y() > 0.0 &&
+                    child->property("highlighted").isValid())
+                    return child;
+                if (QQuickItem *nested = findSecondDelegate(child))
+                    return nested;
+            }
+            return nullptr;
+        };
+    QTRY_VERIFY((secondDelegate = findSecondDelegate(popupItem)) != nullptr);
+    const QPointF secondItem = secondDelegate->mapToItem(
+        nullptr, QPointF(secondDelegate->width() / 2.0,
+                         secondDelegate->height() / 2.0));
+    QTest::mouseClick(scene.view.get(), Qt::LeftButton, Qt::NoModifier,
+                      secondItem.toPoint());
+    QTRY_COMPARE(combo->property("currentIndex").toInt(), 1);
+    QTRY_VERIFY(!popup->property("visible").toBool());
+    QCOMPARE(combo->property("displayText").toString(),
+             QStringLiteral("Porcelain"));
 }
 
 void ControlsBehaviorTests::activatesOrdinaryControlsFromKeyboard()
