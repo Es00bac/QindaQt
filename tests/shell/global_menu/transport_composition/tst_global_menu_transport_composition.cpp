@@ -7,6 +7,7 @@
 #include "fake_dbusmenu_exporter.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtDBus/QDBusContext>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtTest/QSignalSpy>
@@ -85,6 +86,7 @@ private Q_SLOTS:
     void transientIdentityWithdrawalRetainsPresentation();
     void unansweredWithdrawalClearsPresentationAfterGrace();
     void sameWindowGenerationMoveRenewsWithoutRepublish();
+    void replacementEndpointWithRejectedFirstLayoutClearsRetainedProjection();
 };
 
 void GlobalMenuTransportCompositionTest::focusedRegistrationPublishesAndActivatesExactlyOnce()
@@ -391,6 +393,37 @@ void teardownFixture(BoundFixture &fixture)
 
 } // namespace
 
+// Endpoint that errors every GetLayout while counting attempts: proves a
+// rejected first layout neither hangs the retained placeholder nor spins
+// rebinds against an unservable path. (File scope: moc cannot see Q_OBJECT
+// classes inside an anonymous namespace.)
+class FailingDbusMenuObject final : public QObject, protected QDBusContext
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "com.canonical.dbusmenu")
+    Q_PROPERTY(quint32 Version READ version SCRIPTABLE true)
+    Q_PROPERTY(QString Status READ status SCRIPTABLE true)
+    Q_PROPERTY(QString TextDirection READ textDirection SCRIPTABLE true)
+
+public:
+    [[nodiscard]] quint32 version() const noexcept { return 4; }
+    [[nodiscard]] QString status() const { return QStringLiteral("normal"); }
+    [[nodiscard]] QString textDirection() const { return QStringLiteral("ltr"); }
+    [[nodiscard]] int layoutCallCount() const noexcept { return m_layoutCallCount; }
+
+public Q_SLOTS:
+    Q_SCRIPTABLE void GetLayout(qint32, qint32, const QStringList &, quint32 &,
+                                DbusMenu::LayoutItem &)
+    {
+        ++m_layoutCallCount;
+        sendErrorReply(QStringLiteral("org.qindaqt.test.MissingMenu"),
+                       QStringLiteral("no menu exported at this path"));
+    }
+
+private:
+    int m_layoutCallCount = 0;
+};
+
 void GlobalMenuTransportCompositionTest::transientIdentityWithdrawalRetainsPresentation()
 {
     BoundFixture fixture;
@@ -496,6 +529,53 @@ void GlobalMenuTransportCompositionTest::sameWindowGenerationMoveRenewsWithoutRe
     QCOMPARE(coordinator.publishedTree()->epoch, initialEpoch);
     applet.activate(QStringLiteral("1"));
     QTRY_COMPARE_WITH_TIMEOUT(fixture.exporter->eventCount(), 1, 5'000);
+
+    coordinator.stop();
+    teardownFixture(fixture);
+}
+
+void GlobalMenuTransportCompositionTest::
+    replacementEndpointWithRejectedFirstLayoutClearsRetainedProjection()
+{
+    BoundFixture fixture;
+    QVERIFY(bindFixture(fixture, QStringLiteral("rejected")));
+    FailingDbusMenuObject failing;
+    QVERIFY(fixture.providerBus.registerObject(
+        QStringLiteral("/MissingMenu"), &failing,
+        QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableProperties));
+    GlobalMenuAppletAccess applet;
+    applet.attachRenderer();
+    Composition::GlobalMenuTransportCoordinator coordinator(
+        fixture.shellBus, fixture.active, fixture.resolver, *fixture.registrar->registry(),
+        applet);
+    coordinator.refreshFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(applet.available(), 5'000);
+
+    // The registrar proves a replacement endpoint for the same window at a
+    // path whose first GetLayout is rejected. The previous provider's
+    // projection is retained only as an inert transition placeholder...
+    QCOMPARE(registrarCall(fixture.providerBus, QStringLiteral("RegisterWindow"),
+                           {QVariant::fromValue(quint32{77}),
+                            QVariant::fromValue(
+                                QDBusObjectPath(QStringLiteral("/MissingMenu")))})
+                 .type(),
+             QDBusMessage::ReplyMessage);
+    QTRY_VERIFY_WITH_TIMEOUT(!applet.available(), 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(!applet.items().isEmpty(), 5'000);
+    // ...and once the replacement's first layout is rejected, the placeholder
+    // clears to the truthful unavailable state instead of hanging in loading.
+    QTRY_VERIFY_WITH_TIMEOUT(applet.items().isEmpty(), 5'000);
+    QVERIFY(!applet.available());
+    QCOMPARE(applet.phase(), QStringLiteral("unavailable"));
+    QTRY_COMPARE_WITH_TIMEOUT(failing.layoutCallCount(), 1, 5'000);
+    const int rejectedCalls = failing.layoutCallCount();
+
+    // The clear does not rebind on its own: GetLayout attempts stay flat
+    // instead of spinning against the unservable endpoint.
+    QTest::qWait(700);
+    QCOMPARE(failing.layoutCallCount(), rejectedCalls);
+    QVERIFY(!applet.available());
+    QVERIFY(applet.items().isEmpty());
 
     coordinator.stop();
     teardownFixture(fixture);

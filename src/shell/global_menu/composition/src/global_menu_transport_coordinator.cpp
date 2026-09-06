@@ -235,7 +235,9 @@ void GlobalMenuTransportCoordinator::bindRegistration(
     // unavailable here would collapse the panel slot to zero extent and
     // reflow the panel row on every focus switch — the visible flash. The
     // facade drops `available` during the transition, so retained entries are
-    // never actionable for the new focus.
+    // never actionable for the new focus. If the replacement's first layout
+    // fetch is rejected outright, the initialLayoutFailed handler below clears
+    // the placeholder instead of holding it open.
     m_applet.beginTransition();
     m_selector.adopt(*authentication.proof);
     m_boundEndpoint = endpoint;
@@ -257,6 +259,22 @@ void GlobalMenuTransportCoordinator::bindRegistration(
                 withdrawHostedMenu(endpoint);
                 clearAuthority();
                 refreshFocus();
+            }, Qt::QueuedConnection);
+    connect(m_client.get(), &DbusMenu::DbusMenuClient::initialLayoutFailed, this,
+            [this, clientGeneration, endpoint] {
+                if (clientGeneration != m_clientGeneration || !m_client
+                    || m_boundEndpoint != endpoint) {
+                    return;
+                }
+                // AGENT-GUARD: the replacement endpoint never delivered a menu
+                // (its first GetLayout errored or failed to decode), so the
+                // retained projection from the previous provider would
+                // otherwise hang in `loading` indefinitely. Clear fail-closed
+                // immediately — no grace window and no refreshFocus() rebind,
+                // so a registrar entry that names an unserved path cannot spin
+                // GetLayout; only a fresh registrar/focus signal rebinds.
+                withdrawHostedMenu(endpoint);
+                clearAuthority();
             }, Qt::QueuedConnection);
     QString error;
     if (!m_client->start(&error)) {

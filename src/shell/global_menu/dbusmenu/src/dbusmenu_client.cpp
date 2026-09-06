@@ -248,12 +248,18 @@ void DbusMenuClient::refreshLayout()
                     return;
                 }
                 if (reply.isError()) {
+                    if (!m_snapshot) {
+                        Q_EMIT initialLayoutFailed(QStringLiteral("get-layout-failed"));
+                    }
                     Q_EMIT rejected(QStringLiteral("get-layout-failed"));
                     return;
                 }
                 const quint32 revision = reply.argumentAt<0>();
                 DecodeResult decoded = decodeLayout(m_ownerWindowId, revision, reply.argumentAt<1>());
                 if (!decoded.accepted) {
+                    if (!m_snapshot) {
+                        Q_EMIT initialLayoutFailed(decoded.reasonCode);
+                    }
                     Q_EMIT rejected(decoded.reasonCode);
                     return;
                 }
