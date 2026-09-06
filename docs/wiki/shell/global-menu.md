@@ -466,8 +466,12 @@ accessible attributes and never toggle it locally: activation requests the
 action and the provider republishes new truth. The single layout maps the same
 entry sequence horizontally or vertically. Overflow follows a
 measured geometry contract: the fit loops consume strict upper bounds built
-from real `FontMetrics` measurements plus fixed control padding for the
-labels and the "+N" indicator, iterate against the assigned width
+from real `FontMetrics` measurements plus the same explicit seven-pixel left
+and eight-pixel right control padding used by the menu-bar label, plus one
+measurement safety pixel, for the labels and the "+N" indicator; both labels
+and indicator bind the exact same font used by the metrics. The safety pixel
+covers a fractional glyph advance that `Text` can retain after `FontMetrics`
+rounds its bound. Fit loops iterate against the assigned width
 (horizontal) or height (vertical), and reserve the indicator inside the
 extent — so no real label or affordance can ever be clipped by the limit.
 Hosts below the documented minimum extent degrade to indicator-only (and

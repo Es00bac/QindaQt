@@ -76,6 +76,15 @@ Item {
             return bar
         }
 
+        function test_menuBarLabelsFitActualContent() {
+            const bar = menuBar()
+            for (let index = 0; index < bar.count; ++index) {
+                const label = bar.itemAt(index).contentItem
+                compare(label.text, fakeAccess.items[index].text)
+                verify(!label.truncated)
+            }
+        }
+
         function test_pressOtherEntrySwitchesBeforeRelease() {
             const bar = menuBar()
             mouseClick(bar.itemAt(1))
@@ -88,8 +97,10 @@ Item {
             mousePress(bar.itemAt(0))
             tryCompare(bar.menuAt(0), "opened", true)
             compare(bar.menuAt(1).opened, false)
+            compare(fakeAccess.activateCalls, 0)
             mouseRelease(bar.itemAt(0))
             compare(bar.menuAt(0).opened, true)
+            compare(fakeAccess.activateCalls, 0)
         }
 
         function test_hoverSwitchesOnlyWhileMenuOpen() {
