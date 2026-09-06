@@ -547,3 +547,37 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
         endif()
     endif()
 endif()
+
+# Gabbee interoperability probe (see docs/wiki/development/gabbee-interop-evidence.md).
+# Deterministic, host-safe rows: synthetic recorder/portal-staging/evidence-schema
+# units plus the private-bus GlobalShortcuts registration/routing chain that runs
+# Gabbee's real portal client against the real xdg-desktop-portal frontend.
+add_test(
+    NAME session.gabbee-interop-unit
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PYTHONDONTWRITEBYTECODE=1"
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/test_gabbee_interop_unit.py"
+)
+add_test(
+    NAME session.gabbee-probe-syntax
+    COMMAND
+        "${CMAKE_COMMAND}" -E env
+        "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+        "${Python3_EXECUTABLE}" -m py_compile
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_probe_support.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_portal_fake.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_portal_driver.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/run_gabbee_portal_chain.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/gabbee_interop_probe.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/run_gabbee_interop_nested.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gabbee/test_gabbee_interop_unit.py"
+)
+set_tests_properties(
+    session.gabbee-interop-unit
+    session.gabbee-probe-syntax
+    PROPERTIES
+        ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+        LABELS "unit;portal;session"
+        SKIP_RETURN_CODE 77
+)
