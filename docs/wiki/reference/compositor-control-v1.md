@@ -508,13 +508,18 @@ relative-pointer path inside the isolated compositor; it uses the same delta
 for accelerated and unaccelerated device values.
 The complete key allowlist is left Meta, left Alt, left Shift, F1, F11, C,
 N, Tab, Escape, Space, Up, Down, Left, Right, Enter, and V. Left Alt plus Tab
-qualifies ordinary window switching, while Alt+F11 lets a real client make its
-native fullscreen request. F1/C/V cover the bounded shell and client probe
-paths that need those real keyboard events. The notification live-session rows
-need the remaining non-text keys to exercise the production global shortcut,
-focus traversal, activation, dismissal, and lock-screen user-activity paths
-without host input; the arrow keys additionally drive the Hybrid
-keyboard-geometry modes and the exact-modifier docking preview.
+qualifies ordinary window switching when that KWin action is registered. F11
+is likewise available to an isolated profile that registers a fullscreen
+shortcut, but the allowlist does not install or imply an Alt+F11 binding. A
+real native client can always make its own fullscreen request through the
+Wayland window protocol; the grouped-fullscreen qualifier uses that client
+boundary so it does not depend on a profile shortcut. F1/C/V cover the bounded
+shell and client probe paths that need those real keyboard events. The
+notification live-session rows need the remaining non-text keys to exercise
+the production global shortcut, focus traversal, activation, dismissal, and
+lock-screen user-activity paths without host input; the arrow keys additionally
+drive the Hybrid keyboard-geometry modes and the exact-modifier docking
+preview.
 No other key, button, pointer shape, text, delay, or device selector is accepted.
 Success returns `status: "injected"`, the event count, and the fixed device ID.
 Held keys and buttons are released before the device is removed.
