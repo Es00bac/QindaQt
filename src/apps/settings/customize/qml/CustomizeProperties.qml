@@ -9,6 +9,7 @@ import QindaQt.Tokens 1.0
 
 T.ScrollView {
     id: root
+    objectName: "customizeProperties"
     required property var customizeSettings
     clip: true
     Accessible.role: Accessible.Grouping

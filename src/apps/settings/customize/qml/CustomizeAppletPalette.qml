@@ -74,6 +74,20 @@ T.Control {
                 readonly property string dragAppletId: ""
 
             }
+
+            T.ScrollBar.horizontal: T.ScrollBar {
+                visible: root.compact
+                policy: T.ScrollBar.AsNeeded
+                activeFocusOnTab: false
+                Accessible.name: qsTr("Available applets scroll position")
+            }
+
+            T.ScrollBar.vertical: T.ScrollBar {
+                visible: !root.compact
+                policy: T.ScrollBar.AsNeeded
+                activeFocusOnTab: false
+                Accessible.name: qsTr("Available applets scroll position")
+            }
         }
     }
 }

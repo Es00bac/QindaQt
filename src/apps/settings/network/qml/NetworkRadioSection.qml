@@ -16,7 +16,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Radios")
-        description: qsTr("Observed hardware and software radio state; radio changes are outside this page")
+        description: qsTr("Current Wi-Fi and mobile-data switch status")
     }
 
     Repeater {

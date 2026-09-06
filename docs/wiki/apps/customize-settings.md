@@ -4,7 +4,9 @@ The installed `qindaqt-settings --page customize` route is QindaQt's direct
 layout editor. It presents a short workflow: select a layout profile, arrange
 applets on a scaled 1920×1080 representative output, then apply the named
 unsaved changes. An audited manifest palette, keyboard outline, and contextual
-property panes surround the canvas in both wide and compact layouts.
+property panes surround the canvas in wide layouts. Where the Settings Center
+sidebar leaves a medium-width work area, Arrange, Outline, and Details tabs
+keep the preview visible instead of squeezing three columns together.
 
 The route is a presentation and composition boundary. It depends only on the
 public `shell_customization_editor`, `shell_customization`, `profiles`, applet
@@ -46,6 +48,9 @@ directly. Duplicate and Remove remain available through public editor intents.
 
 All palette entries, panels, zones, and applets are represented in the focusable
 outline even when the scaled canvas is too small for useful pointer targets.
+The preview uses compact applet markers inside the scaled panel strips; the
+palette and outline retain their readable names, so no label can overflow a
+panel just because the representative output is scaled down.
 They expose list/list-item or radio-button roles, contextual names and counts,
 selected state, and visible QindaQt Controls focus treatment. Palette activation
 inserts into the first panel's start zone through the same gesture path as a

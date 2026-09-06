@@ -33,7 +33,8 @@ The page follows the editing sequence directly: choose a display, arrange it,
 choose its resolution and scale, then set orientation. The fixed bottom action
 bar keeps Apply and Revert available while the form scrolls. Service recovery
 is offered once in the status notice rather than duplicated beside these
-editing actions.
+editing actions; closing belongs to the Settings window chrome and is not
+repeated inside the page.
 
 The page is built strictly using QindaQt.Controls primitives and QST-1 semantic
 roles, with comprehensive accessibility descriptions and visible focus chains.

@@ -57,7 +57,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Application streams")
-        description: qsTr("Per-application playback and recording levels from Audio1")
+        description: qsTr("Playback and recording levels for open applications")
     }
 
     Repeater {

@@ -94,8 +94,7 @@ void DisplayPageTest::testPageRenderingAndControls() {
   QVERIFY(applyBtn != nullptr);
   QCOMPARE(applyBtn->property("available").toBool(), false);
 
-  auto *closeBtn = findItemByObjectName(pageItem, QStringLiteral("displayCloseButton"));
-  QVERIFY(closeBtn != nullptr);
+  QVERIFY(findItemByObjectName(pageItem, QStringLiteral("displayCloseButton")) == nullptr);
 }
 
 void DisplayPageTest::testScaleAndOrientationInteraction() {

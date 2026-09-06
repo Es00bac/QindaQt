@@ -29,10 +29,13 @@ second, stored-only scale control.
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
 semantics for the scheme and enum choices, an explicit initial focus on the
-first theme card, and a visible focus chain through the draft action row. The
-form has a visible vertical scrollbar, Page Up/Page Down and Ctrl+Home/Ctrl+End
-scrolling, and automatic focus reveal; every forward and reverse Tab stop stays
-inside the compact 420×320 viewport.
+first theme card, and a visible focus chain through the draft action row. A
+single horizontal tab bar above the form selects Themes, Wallpaper, or Fonts
+at every width, so Appearance does not introduce a second vertical navigator
+beside the Settings Center's route sidebar. The form has a visible vertical
+scrollbar, Page Up/Page Down and Ctrl+Home/Ctrl+End scrolling, and automatic
+focus reveal; every forward and reverse Tab stop stays inside the compact
+420×320 viewport.
 
 ## Truthful state surface
 

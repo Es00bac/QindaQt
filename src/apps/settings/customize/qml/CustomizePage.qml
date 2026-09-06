@@ -14,7 +14,11 @@ T.Page {
     signal closeRequested()
     signal closeCancelled()
 
-    readonly property bool compact: width < 960
+    // The Settings Center sidebar leaves about 760px to a route in its normal
+    // 960px window. Use a task switcher there instead of three narrow columns
+    // so the desktop preview remains the primary, usable work area.
+    readonly property bool compact: width < 1000
+    property int compactSection: 0
     readonly property Item firstFocusTarget: profileView.count > 0
                                                   ? profileView.itemAtIndex(0)
                                                   : actionBar.firstFocusTarget
@@ -226,37 +230,73 @@ T.Page {
             }
         }
 
-        T.ScrollView {
+        ColumnLayout {
             objectName: "customizeCompactLayout"
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.compact && !root.customizeSettings.unavailable
-            clip: true
+            spacing: Tokens.space["2"]
 
-            ColumnLayout {
-                width: parent.width
-                spacing: Tokens.space["2"]
-                CustomizeAppletPalette {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140
-                    compact: true
-                    customizeSettings: root.customizeSettings
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Tokens.space["1"]
+
+                Repeater {
+                    model: [qsTr("Arrange"), qsTr("Outline"), qsTr("Details")]
+
+                    delegate: Button {
+                        required property string modelData
+                        required property int index
+                        objectName: "customizeCompactTab_" + index
+                        Layout.fillWidth: true
+                        text: modelData
+                        checkable: true
+                        autoExclusive: true
+                        checked: root.compactSection === index
+                        emphasized: checked
+                        Accessible.role: Accessible.PageTab
+                        Accessible.selected: checked
+                        onClicked: root.compactSection = index
+                    }
                 }
-                CustomizeCanvas {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Math.max(300, width * 9 / 16)
-                    customizeSettings: root.customizeSettings
+            }
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: root.compactSection
+
+                ColumnLayout {
+                    spacing: Tokens.space["2"]
+
+                    CustomizeAppletPalette {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 118
+                        compact: true
+                        customizeSettings: root.customizeSettings
+                    }
+                    CustomizeCanvas {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 220
+                        customizeSettings: root.customizeSettings
+                    }
                 }
+
                 CustomizeOutline {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 320
+                    Layout.fillHeight: true
                     customizeSettings: root.customizeSettings
                 }
-                CustomizeProperties {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 420
-                    customizeSettings: root.customizeSettings
+
+                T.ScrollView {
+                    clip: true
+                    CustomizeProperties {
+                        width: parent.width
+                        customizeSettings: root.customizeSettings
+                    }
                 }
+
             }
         }
 

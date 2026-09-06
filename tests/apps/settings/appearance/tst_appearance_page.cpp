@@ -610,6 +610,8 @@ void AppearancePageTests::focusedDestinationNavigationKeepsDraftAndControlsReach
     auto *summary = item(scene.root, "appearanceDraftSummary");
     auto *apply = item(scene.root, "appearanceApplyButton");
     QVERIFY(summary != nullptr && apply != nullptr);
+    QVERIFY(item(scene.root, "appearanceCompactDestinationList") == nullptr);
+    QVERIFY(summary->property("wrapMode").isValid());
     QVERIFY(summary->property("text").toString().contains(
         QStringLiteral("Changes have not been applied")));
     QVERIFY(apply->isVisible());

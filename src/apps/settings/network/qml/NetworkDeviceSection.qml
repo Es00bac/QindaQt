@@ -16,7 +16,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Network devices")
-        description: qsTr("Authoritative device and active-connection state from Network1")
+        description: qsTr("Current device and connection status")
     }
 
     Repeater {

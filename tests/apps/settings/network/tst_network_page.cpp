@@ -216,6 +216,22 @@ void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {
   m_model->statusText = QStringLiteral("The network service is unavailable");
   Q_EMIT m_model->viewChanged();
   QCoreApplication::processEvents();
+  auto *viewport = findItem(page, QStringLiteral("networkFormViewport"));
+  auto *credential =
+      findItem(page, QStringLiteral("networkCredentialBoundary"));
+  auto *reload = findItem(page, QStringLiteral("networkReloadButton"));
+  auto *unavailableState =
+      findItem(page, QStringLiteral("networkServiceState"));
+  QVERIFY(viewport != nullptr);
+  QVERIFY(credential != nullptr);
+  QVERIFY(reload != nullptr);
+  QVERIFY(unavailableState != nullptr);
+  QVERIFY(!viewport->isVisible());
+  QVERIFY(!credential->isVisible());
+  QVERIFY(!scan->isVisible());
+  QCOMPARE(reload->property("text").toString(), QStringLiteral("Try again"));
+  QCOMPARE(unavailableState->property("title").toString(),
+           QStringLiteral("Network unavailable"));
   QVERIFY(findItem(page, QStringLiteral("networkConnect_") + QString(64, u'b'))
           == nullptr);
 }

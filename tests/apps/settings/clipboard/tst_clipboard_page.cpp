@@ -110,17 +110,17 @@ void ClipboardPageTest::rendersCompactWithAdmittedFocus()
     auto [guard, page] = createPage(QSize(420, 320));
     QVERIFY(page != nullptr);
     auto *grid = findItem(page, QStringLiteral("clipboardStateGrid"));
-    auto *close = findItem(page, QStringLiteral("clipboardCloseButton"));
+    auto *history = findItem(page, QStringLiteral("clipboardHistorySwitch"));
     QVERIFY(grid != nullptr);
     QCOMPARE(grid->property("columns").toInt(), 1);
-    QVERIFY(close != nullptr);
-    QVERIFY(close->isEnabled());
-    QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), close);
-    close->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_COMPARE(m_view->activeFocusItem(), close);
-    const auto *accessible = QAccessible::queryAccessibleInterface(close);
+    QVERIFY(history != nullptr);
+    QVERIFY(history->isEnabled());
+    QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), history);
+    history->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(m_view->activeFocusItem(), history);
+    const auto *accessible = QAccessible::queryAccessibleInterface(history);
     QVERIFY(accessible != nullptr);
-    QCOMPARE(accessible->role(), QAccessible::Button);
+    QCOMPARE(accessible->role(), QAccessible::CheckBox);
 }
 
 void ClipboardPageTest::wiresPreferenceAndConfirmationActions()

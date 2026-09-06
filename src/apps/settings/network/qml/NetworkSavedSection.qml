@@ -82,7 +82,7 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         visible: savedRepeater.count === 0
-        text: qsTr("No saved networks are available through Network1.")
+        text: qsTr("No saved networks are available.")
         muted: true
     }
 }

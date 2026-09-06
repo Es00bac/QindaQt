@@ -25,7 +25,6 @@ T.Page {
                                              && sectionLoader.item.firstFocusTarget !== undefined
                                              ? sectionLoader.item.firstFocusTarget
                                              : destinationList
-    readonly property bool compactDestinations: width < 720
     readonly property string draftSummary: appearanceSettings.draftDirty
         ? qsTr("Changes have not been applied")
         : qsTr("All appearance settings are applied")
@@ -160,17 +159,17 @@ T.Page {
             Accessible.name: text
         }
 
-        RowLayout {
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Tokens.space["4"]
+            spacing: Tokens.space["2"]
 
             ListView {
                 id: destinationList
                 objectName: "appearanceDestinationList"
-                Layout.preferredWidth: root.compactDestinations ? 0 : 176
-                Layout.fillHeight: true
-                visible: !root.compactDestinations
+                Layout.fillWidth: true
+                Layout.preferredHeight: 42
+                orientation: ListView.Horizontal
                 clip: true
                 spacing: Tokens.space["1"]
                 model: [
@@ -185,7 +184,7 @@ T.Page {
                     id: destinationButton
                     required property var modelData
                     objectName: "appearanceDestination_" + modelData.id
-                    width: destinationList.width
+                    width: Math.max(104, destinationList.width / destinationList.count)
                     text: modelData.title
                     emphasized: root.currentDestination === modelData.id
                     accessibleDescription: modelData.description
@@ -195,105 +194,74 @@ T.Page {
                 }
             }
 
-            ColumnLayout {
+            Flickable {
+                id: formViewport
+                objectName: "appearanceFormViewport"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: Tokens.space["2"]
+                clip: true
+                contentHeight: sectionLoader.implicitHeight
+                boundsBehavior: Flickable.StopAtBounds
+                activeFocusOnTab: false
 
-                ListView {
-                    id: compactDestinationList
-                    objectName: "appearanceCompactDestinationList"
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 40
-                    visible: root.compactDestinations
-                    orientation: ListView.Horizontal
-                    clip: true
-                    spacing: Tokens.space["1"]
-                    model: destinationList.model
-                    Accessible.role: Accessible.PageTabList
-                    Accessible.name: qsTr("Appearance settings")
-
-                    delegate: Button {
-                        required property var modelData
-                        objectName: "appearanceCompactDestination_" + modelData.id
-                        text: modelData.title
-                        emphasized: root.currentDestination === modelData.id
-                        accessibleDescription: modelData.description
-                        Accessible.role: Accessible.PageTab
-                        Accessible.selected: root.currentDestination === modelData.id
-                        onClicked: root.selectDestination(modelData.id)
-                    }
-                }
-
-                Flickable {
-                    id: formViewport
-                    objectName: "appearanceFormViewport"
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    contentHeight: sectionLoader.implicitHeight
-                    boundsBehavior: Flickable.StopAtBounds
+                T.ScrollBar.vertical: T.ScrollBar {
+                    policy: T.ScrollBar.AsNeeded
                     activeFocusOnTab: false
+                    Accessible.name: qsTr("Appearance settings scroll position")
+                }
 
-                    T.ScrollBar.vertical: T.ScrollBar {
-                        policy: T.ScrollBar.AsNeeded
-                        activeFocusOnTab: false
-                        Accessible.name: qsTr("Appearance settings scroll position")
+                function revealItem(focusedItem) {
+                    if (focusedItem === null || focusedItem === undefined
+                            || focusedItem === formViewport) {
+                        return
                     }
-
-                    function revealItem(focusedItem) {
-                        if (focusedItem === null || focusedItem === undefined
-                                || focusedItem === formViewport) {
-                            return
+                    let cursor = focusedItem
+                    let belongsToForm = false
+                    while (cursor !== null && cursor !== undefined) {
+                        if (cursor === sectionLoader.item) {
+                            belongsToForm = true
+                            break
                         }
-                        let cursor = focusedItem
-                        let belongsToForm = false
-                        while (cursor !== null && cursor !== undefined) {
-                            if (cursor === sectionLoader.item) {
-                                belongsToForm = true
-                                break
-                            }
-                            cursor = cursor.parent
-                        }
-                        if (!belongsToForm) {
-                            return
-                        }
-                        const position = focusedItem.mapToItem(sectionLoader.item, 0, 0)
-                        const margin = Tokens.space["2"]
-                        const top = position.y - margin
-                        const bottom = position.y + focusedItem.height + margin
-                        if (top < contentY) {
-                            contentY = Math.max(0, top)
-                        } else if (bottom > contentY + height) {
-                            contentY = Math.min(Math.max(0, contentHeight - height),
-                                                bottom - height)
-                        }
+                        cursor = cursor.parent
                     }
-
-                    function revealActiveFocus() {
-                        if (root.Window.window !== null) {
-                            revealItem(root.Window.window.activeFocusItem)
-                        }
+                    if (!belongsToForm) {
+                        return
                     }
-
-                    onHeightChanged: Qt.callLater(revealActiveFocus)
-
-                    Loader {
-                        id: sectionLoader
-                        objectName: "appearanceDestinationPage_" + root.currentDestination
-                        width: formViewport.width
-                        sourceComponent: root.currentDestination === "themes" ? themesPage
-                            : root.currentDestination === "wallpaper" ? wallpaperPage
-                            : fontsPage
+                    const position = focusedItem.mapToItem(sectionLoader.item, 0, 0)
+                    const margin = Tokens.space["2"]
+                    const top = position.y - margin
+                    const bottom = position.y + focusedItem.height + margin
+                    if (top < contentY) {
+                        contentY = Math.max(0, top)
+                    } else if (bottom > contentY + height) {
+                        contentY = Math.min(Math.max(0, contentHeight - height),
+                                            bottom - height)
                     }
                 }
 
-                Connections {
-                    target: root.Window.window
-                    enabled: root.Window.window !== null
-                    function onActiveFocusItemChanged() {
-                        formViewport.revealActiveFocus()
+                function revealActiveFocus() {
+                    if (root.Window.window !== null) {
+                        revealItem(root.Window.window.activeFocusItem)
                     }
+                }
+
+                onHeightChanged: Qt.callLater(revealActiveFocus)
+
+                Loader {
+                    id: sectionLoader
+                    objectName: "appearanceDestinationPage_" + root.currentDestination
+                    width: formViewport.width
+                    sourceComponent: root.currentDestination === "themes" ? themesPage
+                        : root.currentDestination === "wallpaper" ? wallpaperPage
+                        : fontsPage
+                }
+            }
+
+            Connections {
+                target: root.Window.window
+                enabled: root.Window.window !== null
+                function onActiveFocusItemChanged() {
+                    formViewport.revealActiveFocus()
                 }
             }
         }
@@ -302,19 +270,21 @@ T.Page {
             Layout.fillWidth: true
             spacing: Tokens.space["2"]
 
-            Item { Layout.fillWidth: true }
-
             Label {
                 objectName: "appearanceDraftSummary"
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 text: root.draftSummary
                 muted: !root.appearanceSettings.draftDirty
+                wrapMode: Text.Wrap
                 Accessible.name: text
             }
 
             Button {
                 id: displaySettingsButton
                 objectName: "appearanceOpenDisplaySettings"
-                visible: root.navigation !== null
+                visible: root.navigation !== null && root.width >= 560
+                emphasized: false
                 text: qsTr("Display settings")
                 accessibleDescription: qsTr("Change display scale and screen layout")
                 onClicked: root.navigation.selectRoute("display")

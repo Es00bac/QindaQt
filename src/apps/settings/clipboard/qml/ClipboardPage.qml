@@ -13,10 +13,11 @@ T.Page {
     required property var clipboardSettings
     signal closeRequested()
 
-    // AGENT-GUARD: Close stays enabled under every service, preference,
-    // confirmation, and mutation state. Settings navigation may therefore
-    // always enter this route through an admitted control.
-    readonly property Item firstFocusTarget: closeButton
+    // AGENT-GUARD: Focus entry must nominate an admitted domain control; the
+    // window chrome owns closing, so the page does not duplicate it.
+    readonly property Item firstFocusTarget: historySwitch.enabled ? historySwitch
+                                                                   : clearButton.enabled ? clearButton
+                                                                                        : root
     readonly property bool compact: width < 560
 
     title: qsTr("Clipboard")
@@ -217,26 +218,12 @@ T.Page {
             }
         }
 
-        RowLayout {
+        Label {
             Layout.fillWidth: true
-
-            Label {
-                Layout.fillWidth: true
-                muted: true
-                text: root.clipboardSettings.preferenceDirty
-                      ? qsTr("Saving clipboard history preference…") : ""
-                Accessible.name: text
-            }
-
-            Button {
-                id: closeButton
-                objectName: "clipboardCloseButton"
-                text: qsTr("Close")
-                emphasized: false
-                available: true
-                busy: false
-                onClicked: root.closeRequested()
-            }
+            muted: true
+            text: root.clipboardSettings.preferenceDirty
+                  ? qsTr("Saving clipboard history preference…") : ""
+            Accessible.name: text
         }
     }
 
