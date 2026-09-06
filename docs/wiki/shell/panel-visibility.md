@@ -57,7 +57,11 @@ Each decision includes both visibility and a typed reservation intent. A
 visible `reserve-when-visible` panel requests `Reserve`; hidden panels and
 `never-reserve` panels request `Release`. This keeps the policy explicit while
 leaving atomic mapping, animation, and layer-shell exclusive-zone changes to a
-shell controller.
+shell controller. KWin recomputes its maximize area after each committed strut
+change. Native maximized windows follow that area through KWin, and QindaQt's
+whole-container maximize re-resolves the same public area after rearrangement,
+so ordinary and grouped windows gain the released space while a panel is
+hidden and yield it again when the panel reserves it.
 
 ## Production integration
 

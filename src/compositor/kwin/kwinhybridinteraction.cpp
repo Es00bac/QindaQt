@@ -8,6 +8,11 @@
 #include "kwinchromemanager.h"
 #include "kwindockpreview.h"
 #include "kwinhybridgroupstacking.h"
+#include "managedwindowregistry.h"
+
+#include <core/output.h>
+#include <window.h>
+#include <workspace.h>
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -23,7 +28,53 @@ void warnRuntimeFailure(QLatin1StringView operation,
     }
 }
 
+QString firstWindowId(const Core::LayoutNode &root)
+{
+    const auto *node = &root;
+    while (node->isSplit()) {
+        node = node->firstChild();
+    }
+    return node->windowId();
+}
+
+QString activeRepresentative(const Core::WindowContainer &container)
+{
+    const auto *page = container.page(container.activePageId());
+    return page ? firstWindowId(page->root()) : QString{};
+}
+
 } // namespace
+
+qreal KWinHybridSession::containerScale(const QString &containerId) const
+{
+    const auto *container = m_runtime->topology().container(containerId);
+    auto *window = container
+        ? m_registry.window(activeRepresentative(*container)) : nullptr;
+    return window && window->output() ? window->output()->scale() : 1.0;
+}
+
+QRect KWinHybridSession::workArea(const QString &containerId) const
+{
+    const auto *container = m_runtime->topology().container(containerId);
+    auto *window = container
+        ? m_registry.window(activeRepresentative(*container)) : nullptr;
+    if (!window) {
+        return {};
+    }
+    return KWin::workspace()->clientArea(KWin::MaximizeArea, window)
+        .toAlignedRect();
+}
+
+void KWinHybridSession::refreshMaximizedContainers()
+{
+    if (m_shutdown || !m_placement) {
+        return;
+    }
+    for (const auto &failure : m_placement->refreshMaximizedAreas()) {
+        qWarning("QindaQt Hybrid maximize-area refresh failed: %s",
+                 qPrintable(failure));
+    }
+}
 
 void KWinHybridSession::dispatchIntent(const HybridInput::InteractionIntent &intent)
 {

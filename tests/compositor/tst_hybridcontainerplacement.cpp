@@ -126,13 +126,14 @@ public:
                   }
                   return Hybrid::SceneStepResult::ready();
               },
-              [](const QString &) { return QRect(0, 0, 1920, 1040); },
+              [this](const QString &) { return workArea; },
               [this] { ++changedCount; })
     {
     }
 
     Hybrid::WindowTopology topology;
     CommittedContainerLayout layout;
+    QRect workArea{0, 0, 1920, 1040};
     QVector<QRect> requestedFrames;
     int changedCount = 0;
     bool failNext = false;
@@ -152,6 +153,7 @@ private Q_SLOTS:
     void commitsKeyboardResizeWithoutReapplyingSameFrame();
     void resizesEdgesAndEnforcesMinimumFrame();
     void maximizesAndRestoresWholeContainer();
+    void tracksVisibleAndHiddenWorkAreasWhileMaximized();
     void reportsReflowFailureWithoutAdvancingAppliedFrame();
     void failedCommitReleasesPlacementBaseline();
     void rejectsUnavailableOrInconsistentResizeState();
@@ -266,6 +268,34 @@ void HybridContainerPlacementTest::maximizesAndRestoresWholeContainer()
     QCOMPARE(fixture.layout.outerFrame, QRect(0, 0, 1920, 1040));
     QVERIFY(fixture.controller.restore(QStringLiteral("group"), &error));
     QVERIFY(!fixture.controller.isMaximized(QStringLiteral("group")));
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+}
+
+void HybridContainerPlacementTest::tracksVisibleAndHiddenWorkAreasWhileMaximized()
+{
+    Fixture fixture;
+    QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
+    QVERIFY(fixture.requestedFrames.isEmpty());
+
+    QString error;
+    QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, QRect(0, 0, 1920, 1040));
+
+    fixture.workArea = QRect(0, 0, 1920, 1080);
+    QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
+    QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
+    QCOMPARE(fixture.requestedFrames.size(), qsizetype{2});
+    QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
+    QCOMPARE(fixture.requestedFrames.size(), qsizetype{2});
+
+    fixture.workArea = QRect(0, 0, 1920, 1040);
+    QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
+    QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
+
+    QVERIFY(fixture.controller.restore(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
+    fixture.workArea = QRect(0, 0, 1920, 1080);
+    QCOMPARE(fixture.controller.refreshMaximizedAreas(), QStringList{});
     QCOMPARE(fixture.layout.outerFrame, QRect(100, 100, 800, 600));
 }
 

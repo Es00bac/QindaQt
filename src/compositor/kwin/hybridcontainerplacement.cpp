@@ -360,6 +360,31 @@ bool HybridContainerPlacementController::restore(
     return true;
 }
 
+QStringList HybridContainerPlacementController::refreshMaximizedAreas()
+{
+    QStringList failures;
+    auto containerIds = m_maximizeRestoreFrames.keys();
+    containerIds.sort();
+    for (const auto &containerId : std::as_const(containerIds)) {
+        const auto current = m_layout ? m_layout(containerId) : std::nullopt;
+        const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
+        if (!current || !workArea.isValid()) {
+            failures.append(QStringLiteral("container '%1' has no valid maximize area")
+                                .arg(containerId));
+            continue;
+        }
+        if (current->outerFrame == workArea) {
+            continue;
+        }
+        QString error;
+        if (!reflow(containerId, workArea, &error)) {
+            failures.append(QStringLiteral("container '%1': %2")
+                                .arg(containerId, error));
+        }
+    }
+    return failures;
+}
+
 void HybridContainerPlacementController::forgetContainer(
     const QString &containerId) noexcept
 {
