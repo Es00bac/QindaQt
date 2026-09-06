@@ -12,3 +12,4 @@ target_link_libraries(qindaqt_app_appearance
     PRIVATE QindaQt::DesignTokens
 )
 target_compile_features(qindaqt_app_appearance PUBLIC cxx_std_20)
+set_target_properties(qindaqt_app_appearance PROPERTIES POSITION_INDEPENDENT_CODE ON)
