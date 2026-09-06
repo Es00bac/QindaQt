@@ -17,8 +17,9 @@ tutorial are integrated. The full build, eleven focused appearance/tutorial
 checks, and installed desktop startup pass. Actual first-launch, compact layout,
 live light/dark switching, tiling/tab interaction, and the display matrix are
 verified. Notification control contrast is repaired and visually rechecked.
-The next bounded outcome is host installation and first physical login; this
-nested acceptance does not claim full hardware daily-driver qualification.
+Host installation and QindaQt (Wayland) session registration are now complete.
+The next bounded outcome is the first physical login; nested acceptance does
+not claim full hardware daily-driver qualification.
 See [Handoff](HANDOFF.md) for exact evidence and the remaining visual follow-up.
 
 ### QindaQt visual identity (2026-09-05)

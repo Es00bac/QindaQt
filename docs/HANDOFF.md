@@ -1,5 +1,26 @@
 # Integration handoff
 
+## Host installation completed — 2026-09-05
+
+At the user's explicit request, the tested build was installed on the Gentoo
+host under `/usr`, including the **QindaQt (Wayland)** SDDM session entry.
+It starts `/usr/bin/qindaqt-wm --drm`, which owns the production session.
+The full staged payload contained 1,053 files, with no existing destination
+files to replace. Post-install verification found no missing files, byte or
+symlink mismatches, or files owned by a non-root user. The launcher, supervisor,
+shell, notification host, Welcome application, and compositor plugin resolve
+their shared-library dependencies. The installed launcher help runs, and the
+user service manager configuration was reloaded. Installation used the user's
+authorized sudo operation with a graphical askpass helper; no password was
+recorded in the project or chat.
+
+To enter the desktop, log out and select **QindaQt (Wayland)** in SDDM's session
+selector. Existing sessions remain available. The current desktop was not
+terminated. The first physical login remains the hardware qualification step;
+the preceding nested verification does not substitute for it. Bluetooth's
+system service was inactive during the pre-install audit. The installed-file
+manifest and local installation logs are kept in ignored `.cache/host-install`.
+
 ## First-launch tutorial and consistent appearance — 2026-09-05
 
 The installed session starts **Welcome to QindaQt**, a seven-chapter illustrated
