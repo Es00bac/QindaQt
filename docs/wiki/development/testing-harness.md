@@ -1871,8 +1871,9 @@ The focused suites cover:
   native state signals, outside-focus preservation on fullscreen exit,
   focus-safe minimize/close/native detach, and post-work-area reconciliation
   that repairs a constrained owned member to its stored target while ignoring
-  ordinary windows, already-correct peers, minimized groups, and members with
-  active maximize/fullscreen focus presentation,
+  ordinary windows, already-correct peers, whole-container maximize placement,
+  minimized groups, and members with active maximize/fullscreen focus
+  presentation,
   transient admission/following, atomic output/workspace/activity/layer
   propagation, collapsed task identity, and rollback/recovery of state, focus,
   target frames, and copied committed layout;

@@ -87,6 +87,8 @@ void KWinHybridSession::initializeGroupedGeometryReconciliation()
                                    .targetFrame = m_registry.targetFrame(windowId),
                                    .nativeFrameOverride =
                                        m_minimizedContainers.contains(owner)
+                                       || (m_placement
+                                           && m_placement->isMaximized(owner))
                                        || (focus && focus->windowId == windowId)});
                 }
                 return result;
