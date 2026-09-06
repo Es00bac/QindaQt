@@ -58,15 +58,15 @@ integrated through `daf86268`; explicit user choices remain intact. Native
 Alt-Tab visual and activation qualification is in progress. Live grouped
 windows already expose one task/switcher representative per container.
 
-Native client fullscreen entry works in run
-`94570123fbd24f96a57a83163d311ae2`: the grouped owner fills 1920 × 1080.
-A competing peer request then steals activation. Terra's repair `511ac79b`
-has passed independent source review and integrated policy/package gates (2/2);
-the production compositor builds successfully. Actual peer/outside-focus and
-restoration verification is running against the repaired stage. The earlier Alt+F11 probe was invalid because the private KWin
-configuration leaves that action unbound. Documentation now distinguishes
-accepted development input from configured shortcuts. Outside-window focus,
-peer rejection, and owner-exit restoration remain the strict closing gate.
+Native grouped fullscreen passes in run `0aca8a74926c44f98def9b87b2a83328`
+after independently reviewed repair `511ac79b`. The owner fills 1920 × 1080;
+a competing peer request restores peer geometry and preserves owner activation.
+Alt-Tab activates the standalone Settings window; native fullscreen exit restores
+both actual member frames to their committed targets and preserves that exact
+outside window's focus. All private processes clean up. The integrated production
+compositor builds and policy/package gates pass 2/2. This is a controlled native
+client scenario, not a claim that every video player or game is qualified.
+The earlier Alt+F11 probe was invalid because private KWin leaves it unbound.
 
 The user's separate Kimi K3 Max worker owns file-manager work, including SMB
 browsing and filesystem mounting. Shared coordination is in
