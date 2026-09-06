@@ -160,8 +160,9 @@ capabilities, and enables the available filesystem, kernel, namespace,
 personality, privilege, and syscall hardening. It carries no ordering
 dependency on BlueZ: a user-manager unit cannot order against the
 system-manager BlueZ unit, so the service instead tolerates BlueZ absence by
-design (a truthful `Unavailable/bluez-unavailable` snapshot) and never starts,
-reconfigures, or supervises BlueZ. The executable binds
+design (a truthful `Unavailable/bluez-unavailable` snapshot). The adapter asks
+the system bus to activate BlueZ when needed; it does not reconfigure or
+supervise the system daemon. The executable binds
 `org.freedesktop.DBus.Local.Disconnected` on the exact constructing session
 connection to process exit; a replacement bus must activate a fresh process
 and epoch. A staged-install test gate verifies the deployed payload and a

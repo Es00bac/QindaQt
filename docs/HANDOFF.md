@@ -1,5 +1,38 @@
 # Integration handoff
 
+## Installed-session completion in progress — 2026-09-06
+
+The user's first physical session exposed unfinished service recovery,
+Settings usability, menu stability, and container-docking behavior. These
+reports reopen the earlier deferred polish work; the full concurrent scope is
+in [Task list](TASK_LIST.md). No full completion is claimed at this boundary.
+
+Integrated commits `19effa51`, `579332c3`, and `97745214` restore Display cold
+activation/retry while preserving its existing recovery journal, Clipboard
+session-bus access, Audio/Power cold activation, current Network connectivity
+with dense access-point inventories, and more accurate Bluetooth availability.
+The complete Debug build passes. Display/Clipboard focused gates pass 4/4;
+the broader service selection passes 100/100 after Bluetooth fixture repair
+`df090f0f`. The manager independently reviewed that exact fixture candidate and
+reran the integrated suite. Strict documentation and link checks pass.
+
+Live user-owned unit overrides now run the verified Display and Network
+binaries and the corrected Clipboard unit property without replacing `/usr`.
+Audio and Power installed units were started. Typed snapshots verify Display
+with one output, readable Clipboard state, Audio and Power Ready, and Network
+Ready with Full connectivity after the Network service replacement. These are
+observations of the installed session, separate from private test results.
+Bluetooth's system daemon still lacks an active service/activation alias on
+this host; noninteractive system-service startup was denied. No working
+physical Bluetooth adapter is claimed.
+
+Settings navigation/presentation, QindaPunk themes and controls, actual ICC
+application, global-menu stability, and deterministic Meta+Shift docking are
+still candidate work. Their final boundary requires exact independent review,
+integrated regression gates, and real nested desktop screenshots/interactions.
+Generated design concepts and shell-preview demos are not production visual
+acceptance evidence.
+
 ## Host installation completed — 2026-09-05
 
 At the user's explicit request, the tested build was installed on the Gentoo
