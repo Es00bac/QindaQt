@@ -22,7 +22,10 @@ derivation and is not a general-purpose accent. UI foregrounds, state colors,
 high contrast, motion preferences, and semantic contrast rules remain owned by
 [design tokens](../architecture/design-tokens.md).
 
-Application icons use rounded silhouettes and a few clear layers. Action and
+Application icons use rounded silhouettes and a few clear layers. First-party
+application icons draw a blue body with at most one amber accent; jade appears
+only for success or positive status, never as a brand color (see
+[Icon theme](icon-theme.md)). Action and
 status icons must communicate their meaning at small sizes without relying on
 color. Different battery levels, navigation directions, and destructive actions
 must remain distinguishable. The same rounded vocabulary connects the icons

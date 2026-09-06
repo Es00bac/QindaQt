@@ -15,7 +15,7 @@ resolver's mandatory `hicolor` fallback.
   ships or installs its own `hicolor` index; the inherited theme is always the
   system's, so `hicolor` fallback stays whatever the host provides.
 - Every asset is SVG with a `64 × 64` view box and is suitable for the
-  resolver's scalable size range. Plain names supply the mineral-color app
+  resolver's scalable size range. Plain names supply the color app
   treatment; matching `-symbolic` names supply real silhouettes (stroked
   outlines or `evenodd` cutouts, never a same-alpha shape painted over another
   to fake a hole) for the runtime's token recolor path, which replaces every
@@ -32,12 +32,25 @@ resolver's mandatory `hicolor` fallback.
 
 ## Visual language
 
-The theme uses ink (`#172528`) and porcelain (`#F3EFE5`) with jade
-(`#70BFA5`), blue (`#739EBB`), violet (`#A69AC5`), and apricot (`#E8AE84`).
-Application and category icons use rounded mineral forms with restrained
-layering. Actions, status, devices, and places retain clear silhouettes so
-they remain recognizable after symbolic recoloring on both light and dark
-surfaces.
+The palette is the icon-side spelling of the accepted QindaPunk identity in
+[Visual identity](visual-identity.md): ink night (`#111E2C`), porcelain
+(`#F5F7F3`), and amber (`#D98A32`), joined by blue (`#739EBB`), violet
+(`#A69AC5`), jade (`#70BFA5`), and apricot (`#E8AE84`).
+
+| Color | Icon role |
+| --- | --- |
+| Blue | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings dial, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
+| Amber | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings dial ticks, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
+| Porcelain | Light bodies (Text Editor page) and marks painted on a blue or ink body |
+| Jade | Semantic success or positive state only: battery charge, `emblem-ok`/`dialog-ok`, `security-high`, upload/update arrows, media glyphs; never a brand or application color |
+| Apricot | Warning, off, and destructive overlays (`dialog-warning`, `dialog-error`, offline slashes, muted audio), place folders, and small status badges |
+| Violet | Audio, input, and storage devices, sleep, and media MIME types |
+
+Amber and blue have nearly equal luminance, so an amber mark on a blue body
+would survive only by hue; keep on-body marks porcelain or ink. Application and
+category icons use rounded forms with restrained layering. Actions, status,
+devices, and places retain clear silhouettes so they remain recognizable after
+symbolic recoloring on both light and dark surfaces.
 
 ## Maintenance and validation
 
@@ -76,9 +89,12 @@ find data/icons/QindaQt -name '*.svg' -print0 | xargs -0 -n1 xmllint --noout
 per-directory `Context=`), that every catalog name has both SVG forms on disk
 and nothing stray is left over, that every SVG is well-formed with the
 `64 × 64` view box, that the literal built-in names the shell icon-coverage
-audit pinned are still present, and that no two *canonical* (non-alias) icons
+audit pinned are still present, that no two *canonical* (non-alias) icons
 render identical artwork -- the check that would have caught the withdrawn
-candidate's generic per-group fallback shapes.
+candidate's generic per-group fallback shapes -- and that the palette still
+matches the packaged identity: ink, porcelain, and amber equal the
+`qinda-dark` canvas and accent and `qinda-light` surface roles in
+`data/themes`, and no `apps` color artwork uses jade.
 
 Render representative SVGs with `rsvg-convert` for visual review. Generated
 contact sheets are local review artifacts and are not committed.

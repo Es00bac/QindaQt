@@ -7,13 +7,14 @@ rule -- it fails if two distinct canonical (non-alias) names render identical
 geometry, since that is exactly what a group-level or index-based fallback
 would produce. Aliases are expected to match their target byte-for-byte.
 """
+import json
 import re
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from qinda_icon_catalog import ALIASES, CANON, GROUP_CONTEXT, GROUPS
-from qinda_icon_shapes import render
+from qinda_icon_shapes import AMBER, INK, JADE, PORCELAIN, render
 
 ROOT = Path(__file__).resolve().parents[1] / "data/icons/QindaQt"
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +85,7 @@ def main() -> None:
         _check_no_stray_text(path, root)
 
     _check_semantic_uniqueness()
+    _check_identity_palette()
     _check_wifi_alpha_masks()
     print(f"validated {len(expected)} QindaQt SVG assets: {len(CANON)} canonical icons, "
           f"{len(ALIASES)} aliases, {len(GROUPS)} semantic groups")
@@ -182,6 +184,30 @@ def _check_semantic_uniqueness() -> None:
                 "give one its own semantic glyph or declare it as an alias instead"
             )
         seen[key] = name
+
+
+def _check_identity_palette() -> None:
+    """Pin the icon palette to the packaged QindaPunk theme roles.
+
+    The first-party dock shipped with retired Mineral Light jade discs after
+    the themes moved to Nightfall/Porcelain because nothing tied
+    qinda_icon_shapes.py to data/themes. INK, PORCELAIN, and AMBER must equal
+    the dark canvas, light surface, and dark accent roles, and JADE (a status
+    color) must not appear in any first-party `apps` color artwork.
+    """
+    dark = json.loads((REPO_ROOT / "data/themes/qinda-dark.json").read_text(encoding="utf-8"))["colors"]
+    light = json.loads((REPO_ROOT / "data/themes/qinda-light.json").read_text(encoding="utf-8"))["colors"]
+    for label, actual, expected in (
+        ("INK", INK, dark["canvas"]), ("AMBER", AMBER, dark["accent"]), ("PORCELAIN", PORCELAIN, light["surface"]),
+    ):
+        if actual.lower() != expected.lower():
+            raise SystemExit(
+                f"qinda_icon_shapes.{label} is {actual} but the packaged theme role is {expected}; "
+                "update the icon palette and regenerate, or supersede the identity deliberately"
+            )
+    jade_apps = sorted(name for name, icon in CANON.items() if icon.group == "apps" and JADE.lower() in icon.color.lower())
+    if jade_apps:
+        raise SystemExit(f"first-party apps artwork must not use JADE as a brand color: {jade_apps}")
 
 
 if __name__ == "__main__":

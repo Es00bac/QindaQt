@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Canonical action glyphs: edits, navigation, windows, dialogs, session."""
 from qinda_icon_shapes import (
-    APRICOT, BLUE, DOC_D, DOC_FOLD_D, FOLDER_D, INK, JADE, MOON_D, PORCELAIN, VIOLET,
+    AMBER, APRICOT, BLUE, DOC_D, DOC_FOLD_D, FOLDER_D, INK, JADE, MOON_D, PORCELAIN, VIOLET,
     Icon, dot, filled, ring, rect, stroke, strokes,
 )
 
@@ -146,7 +146,10 @@ CANON = {
     "help-about": Icon(
         GROUP,
         ring(32, 32, 20) + stroke("M25 24a8 8 0 1 1 10 7c-3 2-3 4-3 7", width=5) + dot(32, 46, 2.5),
-        ring(32, 32, 20, width=7, color=JADE) + stroke("M25 24a8 8 0 1 1 10 7c-3 2-3 4-3 7", width=5) + dot(32, 46, 2.5),
+        # Welcome (org.qindaqt.Welcome) is docked under this name: the ring is
+        # the first-party BLUE body and the "?" sits on the bare surface, so
+        # it is AMBER rather than INK to stay legible on the Nightfall dock.
+        ring(32, 32, 20, width=7, color=BLUE) + stroke("M25 24a8 8 0 1 1 10 7c-3 2-3 4-3 7", color=AMBER, width=5) + dot(32, 46, 2.5, AMBER),
     ),
     "dialog-information": Icon(
         GROUP,
