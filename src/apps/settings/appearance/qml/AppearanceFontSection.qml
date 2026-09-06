@@ -2,7 +2,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
@@ -29,39 +28,6 @@ ColumnLayout {
         root.appearanceSettings.setDraftValue(key, value)
     }
 
-    // Qt's platform ComboBox can render a bright native field inside this
-    // token-driven page. Keep the closed selector on the Settings surface;
-    // the shared control palette still determines every visual color.
-    component SettingsChoiceSelector: T.ComboBox {
-        id: control
-        leftPadding: Tokens.space["2"]
-        rightPadding: Tokens.space["5"]
-
-        contentItem: Text {
-            leftPadding: control.leftPadding
-            rightPadding: control.rightPadding
-            text: control.displayText
-            color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
-            font: control.font
-            verticalAlignment: Text.AlignVCenter
-            elide: Text.ElideRight
-        }
-        indicator: Text {
-            x: control.width - width - Tokens.space["2"]
-            anchors.verticalCenter: parent.verticalCenter
-            text: "⌄"
-            color: control.enabled ? Tokens.fg.muted : Tokens.fg.disabled
-            font.pointSize: Tokens.type.body
-        }
-        background: Rectangle {
-            radius: Tokens.radius.s
-            color: control.enabled ? Tokens.bg.raised : Tokens.bg.base
-            border.width: 1
-            border.color: control.activeFocus ? Tokens.accent.default
-                                              : Tokens.outline.strong
-        }
-    }
-
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Fonts")
@@ -75,7 +41,7 @@ ColumnLayout {
         errorMessage: root.appearanceSettings.fieldErrors["fonts.family"] ?? ""
         editor: fontFamilyField
 
-        SettingsChoiceSelector {
+        ComboBox {
             id: fontFamilyField
             objectName: "appearanceFontFamilyField"
             width: 260
@@ -183,7 +149,7 @@ ColumnLayout {
 
         // A selector keeps five technical values readable in a narrow form;
         // an equal-width button row overflows before the value is understood.
-        SettingsChoiceSelector {
+        ComboBox {
             id: subpixelSelector
             objectName: "appearanceSubpixelSelector"
             width: 220
