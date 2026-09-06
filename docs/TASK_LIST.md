@@ -7,6 +7,25 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## Active outcomes
 
+### Consistent appearance and first-launch tutorial (2026-09-05)
+
+Correct light/dark and contrast across shell, popups, Settings, and first-party
+applications. Add a detailed, attractive, human-readable startup tutorial with
+a persistent **Show at next launch** checkbox and a launcher entry for reopening.
+The contrast repair is integrated; shared live appearance and the tutorial are
+under implementation. Actual startup, preference persistence, theme changes,
+and readable tutorial screenshots are required before acceptance.
+
+### QindaQt visual identity (2026-09-05)
+
+Create a complete native icon theme and a coordinated original wallpaper set.
+Mineral Light uses soft geometry, jade, ink, porcelain, and apricot. The icon
+theme and five wallpapers are integrated, including the QindaPunk cyborg
+penguin and Compile Club. Appearance selection changes the actual desktop
+without restarting; existing user preferences remain authoritative. Exact
+review, asset validation, runtime checks, and real desktop screenshots are
+recorded in [Handoff](HANDOFF.md).
+
 ### Dock refinement and menu placement (2026-09-05)
 
 Refine the QindaQt and macOS-inspired docks with content-sized translucent

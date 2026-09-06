@@ -2817,6 +2817,13 @@ collaborators to infer runtime state from paths, process names, or catalog data.
 Focused runtime-boundary tests are separate from the generic stage, sandbox,
 and archive tests so failures identify the owning contract.
 
+The `DesktopVirtual` component also installs the QindaQt icon theme and all five
+bundled wallpapers. Its stage closure requires the theme index and each named
+PNG, so a source-tree-only artwork installation cannot qualify the desktop.
+Production Shell and Appearance component installs require the same artwork
+payload. Actual desktop captures separately verify rendering and selection;
+the presence check alone does not establish visual correctness.
+
 The `DesktopVirtual` install component must carry the complete import closure
 of every Settings route compiled into `Main.qml`. Its external route inventory
 currently includes Appearance, Display, Network, Audio, Bluetooth, Power,
