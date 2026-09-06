@@ -6,7 +6,7 @@
 
 namespace QindaQt::Apps::SettingsAppearance {
 
-// Returns presentation maps ({name, path}) for readable PNG files in the
+// Returns presentation maps ({name, path, value}) for readable PNG files in the
 // ordered roots. Earlier roots win duplicate file names.
 [[nodiscard]] QVariantList discoverBundledWallpapers(const QStringList &roots);
 

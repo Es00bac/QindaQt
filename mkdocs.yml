@@ -191,3 +191,4 @@ nav:
       - "ADR-0075: Desktop controls and workspaces": adr/0075-desktop-controls-and-workspaces.md
       - ADR-0076 Launcher persistence keys: adr/0076-register-launcher-persistence-in-panel-settings.md
       - "ADR-0077: Global menu hosting acknowledgment": adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md
+      - "ADR-0078: Shell-owned wallpaper surfaces": adr/0078-own-wallpaper-surfaces-in-the-shell.md

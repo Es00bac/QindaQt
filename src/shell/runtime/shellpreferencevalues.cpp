@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellpreferencevalues.h"
 
+#include <QFileInfo>
 #include <QMetaType>
 
 namespace QindaQt::Shell {
@@ -9,6 +10,8 @@ namespace {
 constexpr auto LayoutProfileKey = "panels.layoutProfile";
 constexpr auto ThemeKey = "appearance.theme";
 constexpr auto FontFamilyKey = "fonts.family";
+constexpr auto WallpaperKey = "appearance.wallpaper";
+constexpr auto WallpaperModeKey = "appearance.wallpaperMode";
 constexpr auto FontPointSizeKey = "fonts.pointSize";
 constexpr auto HighContrastKey = "accessibility.highContrast";
 constexpr auto ReducedMotionKey = "accessibility.reducedMotion";
@@ -62,6 +65,8 @@ QStringList ShellPreferenceValues::scopedKeys()
     return {QStringLiteral("panels.layoutProfile"),
             QStringLiteral("appearance.theme"),
             QStringLiteral("fonts.family"),
+            QStringLiteral("appearance.wallpaper"),
+            QStringLiteral("appearance.wallpaperMode"),
             QStringLiteral("fonts.pointSize"),
             QStringLiteral("accessibility.highContrast"),
             QStringLiteral("accessibility.reducedMotion"),
@@ -81,11 +86,14 @@ ShellPreferenceValues::fromVariantMap(const QVariantMap &values, QString *error)
     const bool ok = exactString(values, LayoutProfileKey, &result.layoutProfileId)
         && exactString(values, ThemeKey, &result.themeId)
         && exactString(values, FontFamilyKey, &result.fontFamily)
+        && values.value(QLatin1StringView(WallpaperKey)).metaType().id() == QMetaType::QString
+        && exactString(values, WallpaperModeKey, &result.wallpaperMode)
         && exactNumber(values, FontPointSizeKey, &basePointSize)
         && exactBool(values, HighContrastKey, &highContrast)
         && exactBool(values, ReducedMotionKey, &reducedMotion)
         && exactBool(values, ReducedTransparencyKey, &reducedTransparency)
         && exactNumber(values, TextScaleKey, &textScale);
+    result.wallpaper = values.value(QLatin1StringView(WallpaperKey)).toString();
     if (!ok) {
         if (error != nullptr) {
             *error = QStringLiteral(
@@ -100,6 +108,28 @@ ShellPreferenceValues::fromVariantMap(const QVariantMap &values, QString *error)
     result.accessibility.highContrast = highContrast;
     result.accessibility = result.accessibility.normalized();
     return result;
+}
+
+QString resolveWallpaperSource(const QString &preference,
+                               const QStringList &dataRoots)
+{
+    if (preference.startsWith(QStringLiteral("qindaqt:"))) {
+        const QString name = preference.sliced(8);
+        if (name.isEmpty() || name.contains(QLatin1Char('/'))) {
+            return {};
+        }
+        for (const QString &root : dataRoots) {
+            const QFileInfo file(root + QStringLiteral("/qindaqt/wallpapers/")
+                                 + name + QStringLiteral(".png"));
+            if (file.isFile() && file.isReadable()) {
+                return file.absoluteFilePath();
+            }
+        }
+        return {};
+    }
+    const QFileInfo file(preference);
+    return file.isAbsolute() && file.isFile() && file.isReadable()
+        ? file.absoluteFilePath() : QString{};
 }
 
 QString resolveStartupProfileId(

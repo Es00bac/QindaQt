@@ -85,6 +85,7 @@ class QtCompositorOutputAuthority;
 class ShellDevelopmentEvidence;
 class SettingsRouteLauncher;
 class ShellTokenPublisher;
+class WallpaperController;
 class TaskListAppletComposition;
 
 class ShellRuntimeApplication final : public QObject {
@@ -109,6 +110,7 @@ private:
     void initializeServiceAppletCompositions();
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);
+    void initializeWallpaper();
     void startSettingsClients();
     void restartWindowActionsIdentity();
     void initializePanelVisibility(const Profiles::LayoutProfile &profile);
@@ -136,6 +138,7 @@ private:
     QQmlEngine m_engine;
     ShellDataRoots m_dataRoots;
     std::unique_ptr<ShellTokenPublisher> m_tokenPublisher;
+    std::unique_ptr<WallpaperController> m_wallpaper;
     std::unique_ptr<RuntimePanelWindowFactory> m_windowFactory;
     std::unique_ptr<ShellSurface::LayerShellSurfaceBackend> m_backend;
     std::unique_ptr<ShellSurface::PanelSurfaceController> m_controller;

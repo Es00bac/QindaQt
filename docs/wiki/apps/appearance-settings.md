@@ -109,7 +109,7 @@ page receives only its own model even though both models share the process.
 
 ## Deliberate non-goals for this slice
 
-- No compositor, display, session, font, or wallpaper mutation. The picker stores an installed or custom wallpaper intent; a future production background-surface consumer must apply it through the public Settings boundary. UI scale application likewise remains with the Display1/Settings consumers.
+- The Settings window never mutates compositor or shell surfaces directly. After Apply publishes a confirmed Settings1 snapshot, the production shell background controller adopts the installed or custom wallpaper on every output. UI scale application remains with the Display1/Settings consumers.
 - No font discovery: the family field is validated text, not a host font
   catalog.
 - No multi-key atomic transactions: the public client exposes single-key
@@ -144,6 +144,8 @@ ctest --test-dir build/dev \
   click selection/gating, zero-argument toggle and real text-entry wiring,
   action-row and per-key result wiring, status/error/fallback truth and
   accessible roles, plus full visible forward/reverse compact traversal.
+
+Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
 
 The route also inherits the settings-app offscreen and unknown-route gates.
 `qindaqt.settings-app-desktop-identity` proves the built executable embeds the

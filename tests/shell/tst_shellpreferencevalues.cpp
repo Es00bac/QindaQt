@@ -11,6 +11,8 @@ QVariantMap validSnapshotValues()
 {
     return {{QStringLiteral("panels.layoutProfile"), QStringLiteral("mate-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
+            {QStringLiteral("appearance.wallpaper"), QStringLiteral("qindaqt:jade-fold")},
+            {QStringLiteral("appearance.wallpaperMode"), QStringLiteral("scaled")},
             {QStringLiteral("fonts.family"), QStringLiteral("Noto Serif")},
             {QStringLiteral("fonts.pointSize"), 11.5},
             {QStringLiteral("accessibility.highContrast"), true},
@@ -33,6 +35,7 @@ private slots:
     void rejectsBlankStrings();
     void scopedKeysCoverEveryDecodedKey();
     void startupSelectionPrecedence();
+    void resolvesBundledAndCustomWallpapers();
 };
 
 void ShellPreferenceValuesTests::decodesCompleteSnapshot()
@@ -130,6 +133,25 @@ void ShellPreferenceValuesTests::startupSelectionPrecedence()
              QStringLiteral("qinda-light"));
     QCOMPARE(resolveStartupThemeId({}, std::nullopt, QStringLiteral("profile-default")),
              QStringLiteral("profile-default"));
+}
+
+
+void ShellPreferenceValuesTests::resolvesBundledAndCustomWallpapers()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    QVERIFY(QDir().mkpath(root.filePath(QStringLiteral("qindaqt/wallpapers"))));
+    const QString bundled = root.filePath(QStringLiteral("qindaqt/wallpapers/jade-fold.png"));
+    QFile file(bundled);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("png");
+    file.close();
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:jade-fold"), {root.path()}), bundled);
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:../escape"), {root.path()}), QString{});
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("qindaqt:missing"), {root.path()}), QString{});
+    QCOMPARE(resolveWallpaperSource(QString{}, {root.path()}), QString{});
+    QCOMPARE(resolveWallpaperSource(bundled, {}), bundled);
+    QCOMPARE(resolveWallpaperSource(QStringLiteral("relative.png"), {}), QString{});
 }
 
 QTEST_GUILESS_MAIN(ShellPreferenceValuesTests)

@@ -26,7 +26,9 @@ QVariantList discoverBundledWallpapers(const QStringList &roots) {
         label[0] = label.at(0).toUpper();
       result.append(
           QVariantMap{{QStringLiteral("name"), label},
-                      {QStringLiteral("path"), file.absoluteFilePath()}});
+                      {QStringLiteral("path"), file.absoluteFilePath()},
+                      {QStringLiteral("value"),
+                       QStringLiteral("qindaqt:") + file.completeBaseName()}});
     }
   }
   return result;

@@ -104,6 +104,7 @@ install(TARGETS qindaqt-shell-preview RUNTIME DESTINATION "${CMAKE_INSTALL_BINDI
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
+    find_package(LayerShellQt 6.6.6 REQUIRED)
 
     add_library(
         qindaqt_shell_panel_visibility_producers STATIC
@@ -189,6 +190,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication_development.cpp
         runtime/shellruntimeapplication_surfaces.cpp
         runtime/shellruntimeapplication_tokens.cpp
+        runtime/shellruntimeapplication_wallpaper.cpp
         runtime/shellruntimeapplication.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
@@ -198,6 +200,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellpreferencevalues.h
         runtime/shellstartuppreferences.cpp
         runtime/shellstartuppreferences.h
+        runtime/wallpapercontroller.cpp
+        runtime/wallpapercontroller.h
         runtime/tasklistappletcomposition.cpp
         runtime/tasklistappletcomposition.h
         runtime/statusnotifierappletcomposition.cpp
@@ -279,6 +283,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             Qt6::Qml
             Qt6::Quick
             Qt6::QuickControls2
+            LayerShellQt::Interface
     )
 
     target_compile_definitions(
@@ -307,6 +312,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         COMPONENT QindaQt
     )
+    install(DIRECTORY "${PROJECT_SOURCE_DIR}/data/wallpapers/"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/wallpapers" COMPONENT QindaQt)
+    install(DIRECTORY "${PROJECT_SOURCE_DIR}/data/icons/QindaQt"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons" COMPONENT QindaQt OPTIONAL)
     # AGENT-CONTRACT: The default component is a runnable shell package, just
     # like each narrow applet component below. Keep the shell's directly linked
     # Controls library and Controls' Tokens dependency in their relative

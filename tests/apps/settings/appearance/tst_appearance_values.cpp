@@ -235,6 +235,8 @@ void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
              QStringLiteral("Jade fold"));
     QCOMPARE(entries.at(0).toMap().value(QStringLiteral("path")).toString(),
              first.filePath(QStringLiteral("jade-fold.png")));
+    QCOMPARE(entries.at(0).toMap().value(QStringLiteral("value")).toString(),
+             QStringLiteral("qindaqt:jade-fold"));
     QCOMPARE(entries.at(1).toMap().value(QStringLiteral("name")).toString(),
              QStringLiteral("Ink tide"));
 }

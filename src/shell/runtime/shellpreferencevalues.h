@@ -20,6 +20,8 @@ struct ShellPreferenceValues final {
     QString layoutProfileId;
     QString themeId;
     QString fontFamily;
+    QString wallpaper;
+    QString wallpaperMode;
     DesignTokens::AccessibilityInputs accessibility;
 
     [[nodiscard]] bool operator==(const ShellPreferenceValues &) const = default;
@@ -34,6 +36,10 @@ struct ShellPreferenceValues final {
     [[nodiscard]] static std::optional<ShellPreferenceValues>
     fromVariantMap(const QVariantMap &values, QString *error = nullptr);
 };
+
+// Resolves a bundled identity beneath ordered generic-data roots or an explicit readable absolute path.
+[[nodiscard]] QString resolveWallpaperSource(const QString &preference,
+                                             const QStringList &dataRoots);
 
 // Startup selection precedence, in order: explicit CLI value, confirmed
 // Settings1 preference, built-in fallback. Pure so the rule is testable
