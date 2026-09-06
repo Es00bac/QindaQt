@@ -17,12 +17,14 @@ class PowerRouteComposition final : public QObject {
   QML_ELEMENT
   QML_SINGLETON
   Q_PROPERTY(QObject *model READ model CONSTANT)
+  Q_PROPERTY(QObject *screenLockSettings READ screenLockSettings CONSTANT)
 
 public:
   explicit PowerRouteComposition(QObject *parent = nullptr);
   ~PowerRouteComposition() override;
 
   [[nodiscard]] QObject *model() const;
+  [[nodiscard]] QObject *screenLockSettings() const;
 
 private:
   class Private;

@@ -28,6 +28,7 @@ T.ApplicationWindow {
     property var audioSettings: null
     property var bluetoothSettings: null
     property var powerSettings: PowerRouteComposition.model
+    property var screenLockSettings: PowerRouteComposition.screenLockSettings
     property var clipboardSettings: ClipboardRouteComposition.model
     property var colorSettings: ColorRouteComposition.model
     property bool applicationClosePending: false
@@ -214,6 +215,7 @@ T.ApplicationWindow {
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
+            screenLockSettings: root.screenLockSettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
@@ -260,6 +262,7 @@ T.ApplicationWindow {
             audioSettings: root.audioSettings
             bluetoothSettings: root.bluetoothSettings
             powerSettings: root.powerSettings
+            screenLockSettings: root.screenLockSettings
             clipboardSettings: root.clipboardSettings
             colorSettings: root.colorSettings
             notificationsComponent: notificationsRouteComponent
@@ -335,6 +338,7 @@ T.ApplicationWindow {
         PowerPage {
             objectName: "powerPage"
             powerSettings: root.powerSettings
+            screenLockSettings: root.screenLockSettings
             onCloseRequested: root.close()
         }
     }

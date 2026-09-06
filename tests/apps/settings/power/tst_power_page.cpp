@@ -14,6 +14,7 @@
 #include <memory>
 
 using QindaQt::Apps::SettingsPower::TestSupport::StubPowerSettingsModel;
+using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
 
 namespace {
 QQuickItem *findItem(QQuickItem *root, const QString &name) {
@@ -34,10 +35,12 @@ private Q_SLOTS:
   void routesKeyboardAndProfileActions();
   void sessionActionsHaveKeyboardParityAndDestructiveConfirmation();
   void compactAndUnavailableFocusRemainAdmitted();
+  void screenLockControlsRespectAutomaticLock();
 
 private:
   std::unique_ptr<QQuickView> m_view;
   std::unique_ptr<StubPowerSettingsModel> m_model;
+  StubScreenLockSettings *m_screenLock = nullptr;
   std::pair<std::unique_ptr<QObject>, QQuickItem *> createPage(QSize size);
 };
 
@@ -64,9 +67,13 @@ PowerPageTest::createPage(const QSize size) {
     qWarning().noquote() << component.errorString();
     return {};
   }
+  auto *screenLock = new StubScreenLockSettings(m_model.get());
+  m_screenLock = screenLock;
   QObject *object = component.createWithInitialProperties({
       {QStringLiteral("powerSettings"),
        QVariant::fromValue(static_cast<QObject *>(m_model.get()))},
+      {QStringLiteral("screenLockSettings"),
+       QVariant::fromValue(static_cast<QObject *>(screenLock))},
   });
   if (object == nullptr) {
     qWarning().noquote() << component.errorString();
@@ -169,10 +176,10 @@ void PowerPageTest::routesKeyboardAndProfileActions() {
 void PowerPageTest::compactAndUnavailableFocusRemainAdmitted() {
   auto [guard, page] = createPage(QSize(420, 320));
   QVERIFY(page != nullptr);
-  auto *profile = findItem(page, QStringLiteral("powerProfile_balanced"));
-  QVERIFY(profile != nullptr);
-  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), profile);
-  QVERIFY(profile->isEnabled());
+  auto *screenLockToggle = findItem(page, QStringLiteral("powerAutomaticScreenLock"));
+  QVERIFY(screenLockToggle != nullptr);
+  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), screenLockToggle);
+  QVERIFY(screenLockToggle->isEnabled());
 
   m_model->ready = false;
   m_model->unavailable = true;
@@ -188,6 +195,25 @@ void PowerPageTest::compactAndUnavailableFocusRemainAdmitted() {
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), retry);
   retry->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), retry);
+}
+
+
+void PowerPageTest::screenLockControlsRespectAutomaticLock() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *toggle = findItem(page, QStringLiteral("powerAutomaticScreenLock"));
+  auto *increase = findItem(page, QStringLiteral("powerScreenLockTimeoutIncrease"));
+  QVERIFY(toggle != nullptr);
+  QVERIFY(increase != nullptr);
+  QVERIFY(!increase->isEnabled());
+  // Qt 6 emits toggled() only for interactive toggles, so drive the Switch
+  // with a real click instead of the programmatic toggle() method.
+  const QPoint toggleCenter = toggle->mapToScene(
+      QPointF(toggle->width() / 2.0, toggle->height() / 2.0)).toPoint();
+  QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, toggleCenter);
+  QTRY_COMPARE(m_screenLock->automaticLockCalls, 1);
+  QVERIFY(m_screenLock->automaticLock);
+  QTRY_VERIFY(increase->isEnabled());
 }
 
 QTEST_MAIN(PowerPageTest)

@@ -27,11 +27,11 @@ foreach(source IN LISTS route_files)
         message(FATAL_ERROR "Power Settings crossed its public-client-only boundary in ${source}")
     endif()
     if(contents MATCHES "services/session_actions/" AND
-       NOT source MATCHES "/power_route_composition.cpp$")
+       NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")
         message(FATAL_ERROR "Power Settings imported session actions outside its composition root in ${source}")
     endif()
     if((contents MATCHES "QtDBus|QDBus") AND
-       NOT source MATCHES "/power_route_composition.cpp$")
+       NOT source MATCHES "/(power_route_composition|qt_screen_lock_configurator)\.cpp$")
         message(FATAL_ERROR "Power Settings model or page imported direct D-Bus in ${source}")
     endif()
     string(REGEX MATCHALL "#[ \t]*include[ \t]*[<\"][^>\"\r\n]+[>\"]"
@@ -91,7 +91,7 @@ if(DEFINED SOURCE_ROOT)
     file(READ "${route_root}/CMakeLists.txt" cmake_contents)
     foreach(required IN ITEMS "QindaQt::PowerClient" "QindaQt::BrightnessModel"
             "QindaQt::SessionActions" "qindaqt_settings_power_qml"
-            "PowerPage.qml" "PowerSessionSection.qml"
+            "PowerPage.qml" "PowerSessionSection.qml" "PowerScreenLockSection.qml"
             "COMPONENT SettingsAppearanceRuntime")
         if(NOT cmake_contents MATCHES "${required}")
             message(FATAL_ERROR "Power Settings package registry is incomplete: ${required}")
