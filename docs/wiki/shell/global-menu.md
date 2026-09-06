@@ -498,7 +498,10 @@ rebuilds them from the new snapshot. A queued gesture against a retired item is
 therefore inert, while the facade generation check remains the cross-boundary
 fallback against stale invocation.
 
-Each projected `Menu` uses `Popup.Window`. The production layer-shell panel
+Each projected `Menu` uses `Popup.Window`. The customized native controls
+explicitly derive from `QtQuick.Controls.Basic`, so an inherited desktop
+platform theme cannot inject different hover/focus policy or popup transitions
+into QindaQt's keyboard behavior. The production layer-shell panel
 retains `Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the
 native transient is the independently focusable keyboard surface. Qt Quick
 Controls owns popup placement, focus, open/close state, parent/submenu

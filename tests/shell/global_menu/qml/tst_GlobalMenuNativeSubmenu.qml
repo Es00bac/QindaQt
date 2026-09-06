@@ -135,9 +135,16 @@ Item {
             const tree = nativeTree(applet)
             mouseClick(tree.bar.itemAt(0))
             tryCompare(tree.file, "opened", true)
-            tree.file.currentIndex = 1
+            // Popup.Window activation is asynchronous even after opened;
+            // deliver keys only when the native recipient owns focus.
+            tryCompare(tree.file, "activeFocus", true)
+            keyClick(Qt.Key_Down)
+            tryCompare(tree.file, "currentIndex", 0)
+            keyClick(Qt.Key_Down)
+            tryCompare(tree.file, "currentIndex", 1)
             keyClick(Qt.Key_Right)
             tryCompare(tree.recent, "opened", true)
+            tryCompare(tree.recent, "activeFocus", true)
             keyClick(Qt.Key_Left)
             tryCompare(tree.recent, "opened", false)
             verify(tree.file.opened)

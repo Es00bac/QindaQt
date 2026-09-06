@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic as Basic
 
-MenuItem {
+Basic.MenuItem {
     id: control
 
     required property var entryData

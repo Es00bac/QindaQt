@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic as Basic
 
 // AGENT-NOTE: consumes only GlobalMenuAppletAccess's public Q_PROPERTY/
 // Q_INVOKABLE surface (see applet/include/.../globalmenuappletaccess.h).
@@ -205,7 +206,7 @@ Item {
         // popup lifetime, and keyboard traversal. MenuBarItem switches on the
         // pointer press, before an existing popup grab can consume the later
         // release. Do not layer a second open/close controller on this MenuBar.
-        MenuBar {
+        Basic.MenuBar {
             id: nativeMenuBar
             objectName: "globalMenuNativeMenuBar"
             anchors.fill: parent
@@ -222,7 +223,7 @@ Item {
                 }
             }
 
-            delegate: MenuBarItem {
+            delegate: Basic.MenuBarItem {
                 id: menuEntry
                 objectName: "globalMenuTopLevelItem"
                 readonly property var entryData: menu !== null ? menu.menuData : ({})
