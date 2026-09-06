@@ -57,10 +57,12 @@ set(portal_metadata
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/xdg-desktop-portal/portals/qindaqt.portal")
 set(portal_selection
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/xdg-desktop-portal/qindaqt-portals.conf")
+set(kde_portal_dropin
+    "${install_prefix}/${QINDAQT_INSTALL_SYSTEMDUSERUNITDIR}/plasma-xdg-desktop-portal-kde.service.d/20-qindaqt-remotedesktop.conf")
 set(theme_directory
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
 foreach(required_artifact IN ITEMS portal_executable dbus_descriptor systemd_unit
-        portal_metadata portal_selection)
+        portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
     endif()
@@ -90,11 +92,27 @@ file(READ "${dbus_descriptor}" dbus_content)
 file(READ "${systemd_unit}" unit_content)
 file(READ "${portal_metadata}" portal_content)
 file(READ "${portal_selection}" selection_content)
+file(READ "${kde_portal_dropin}" kde_portal_dropin_content)
 foreach(content IN ITEMS dbus_content unit_content portal_content selection_content)
     if("${${content}}" MATCHES "@[A-Za-z0-9_]+@|${QINDAQT_BUILD_DIRECTORY}|${SOURCE_PORTAL_ROOT}")
         message(FATAL_ERROR "Staged portal metadata contains a template or build/source path")
     endif()
 endforeach()
+if(NOT kde_portal_dropin_content MATCHES "\\[Service\\]"
+   OR NOT kde_portal_dropin_content MATCHES "Environment=XDG_CURRENT_DESKTOP=KDE"
+   OR kde_portal_dropin_content MATCHES "XDG_CURRENT_DESKTOP=QindaQt")
+    message(FATAL_ERROR "Staged KDE portal compatibility drop-in is not exact")
+endif()
+if(DEFINED QINDAQT_KDE_PORTAL_DBUS_SERVICE
+   AND NOT QINDAQT_KDE_PORTAL_DBUS_SERVICE STREQUAL ""
+   AND EXISTS "${QINDAQT_KDE_PORTAL_DBUS_SERVICE}")
+    file(READ "${QINDAQT_KDE_PORTAL_DBUS_SERVICE}" kde_dbus_content)
+    if(NOT kde_dbus_content MATCHES
+           "SystemdService=plasma-xdg-desktop-portal-kde\\.service")
+        message(FATAL_ERROR
+            "Host KDE D-Bus activation does not target the drop-in-covered systemd unit")
+    endif()
+endif()
 if(NOT dbus_content MATCHES "Name=org.freedesktop.impl.portal.desktop.qindaqt"
    OR NOT dbus_content MATCHES "SystemdService=xdg-desktop-portal-qindaqt.service"
    OR NOT dbus_content MATCHES "Exec=${QINDAQT_EXPECTED_PORTAL_EXECUTABLE}")

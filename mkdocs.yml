@@ -205,3 +205,4 @@ nav:
       - "ADR-0085: Early late-Shift takeover filter": adr/0085-early-late-shift-takeover-filter.md
       - "ADR-0086: GlobalShortcuts verified-backend routing": adr/0086-route-globalshortcuts-only-to-a-verified-backend.md
       - "ADR-0087: Agent input via RemoteDesktop portal": adr/0087-agent-input-via-remotedesktop-portal.md
+      - "ADR-0088: KDE portal compatibility identity": adr/0088-enable-kde-remote-desktop-for-qindaqt.md
