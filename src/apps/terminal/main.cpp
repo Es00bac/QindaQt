@@ -9,15 +9,17 @@
 #include "ui/terminal_widget_adapter.h"
 #include "ui/terminal_window.h"
 
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/design_tokens/design_tokens.h"
+#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
-#include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDBusConnection>
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QMenuBar>
@@ -137,9 +139,8 @@ composeTerminalMenuExport(TerminalWindow &window) {
   }
   return QindaQt::AppShell::MenuExport::composeFirstPartyMenuExport(
       window.appShellCoordinator(), *windowHandle,
-      QDBusConnection::sessionBus(), [&window](bool visible) {
-        window.menuBar()->setVisible(visible);
-      });
+      QDBusConnection::sessionBus(),
+      [&window](bool visible) { window.menuBar()->setVisible(visible); });
 }
 
 // The factory resolves the profile's color scheme to its own QST generation
@@ -152,8 +153,8 @@ makeBackendFactory(const QStringList &themeDirectories,
   return [themeDirectories, launchThemeId](const TerminalProfile &profile) {
     // Preserve the S0 --theme contract for the immutable built-in profile.
     // User profiles carry their own Settings1-backed QST theme.
-    const QString themeId =
-        profile.id == builtinDefaultProfileId() ? launchThemeId
+    const QString themeId = profile.id == builtinDefaultProfileId()
+                                ? launchThemeId
                                                 : profile.colorSchemeId;
     const auto profileTheme = loadTheme(themeId, themeDirectories);
     if (!profileTheme.ok) {
@@ -169,6 +170,45 @@ makeBackendFactory(const QStringList &themeDirectories,
   };
 }
 
+class TerminalAppearanceBinding final {
+public:
+  TerminalAppearanceBinding(QApplication &application, TerminalWindow &window,
+                            const QStringList &directories,
+                            const QString &explicitTheme)
+      : transport(QDBusConnection::sessionBus()),
+        client(transport, {QStringLiteral("appearance.theme"),
+                           QStringLiteral("appearance.colorScheme")}),
+        controller(client, directories, QStringLiteral("qinda-dark"),
+                   explicitTheme),
+        application(application), window(window) {
+    QObject::connect(&controller,
+                     &QindaQt::AppAppearance::ApplicationAppearanceController::
+                         appearanceChanged,
+                     &window, [this] { apply(); });
+    apply();
+    QString error;
+    if (!client.start(&error))
+      qWarning().noquote()
+          << "QindaQt Terminal appearance settings unavailable:" << error;
+  }
+
+private:
+  void apply() {
+    const auto adapted =
+        TerminalAppearanceAdapter::fromTheme(controller.theme());
+    if (!adapted.ok())
+      return;
+    application.setPalette(adapted.appearance->windowPalette);
+    application.setFont(adapted.appearance->interfaceFont);
+    window.applyAppearance(*adapted.appearance);
+  }
+  QindaQt::Services::SettingsClient::QtSettingsTransport transport;
+  QindaQt::Services::SettingsClient::SettingsClient client;
+  QindaQt::AppAppearance::ApplicationAppearanceController controller;
+  QApplication &application;
+  TerminalWindow &window;
+};
+
 } // namespace
 } // namespace QindaQt::Apps::Terminal
 
@@ -179,7 +219,8 @@ int main(int argc, char **argv) {
   // Missing or unresolvable preference truth leaves platform defaults intact;
   // the later theme setFont remains the deliberate widgets baseline. See
   // docs/wiki/architecture/font-preferences.md.
-  QindaQt::Services::FontDiscovery::FontSessionBootstrap::applyFromSessionSettings();
+  QindaQt::Services::FontDiscovery::FontSessionBootstrap::
+      applyFromSessionSettings();
   QApplication application(argc, argv);
   application.setApplicationName(QStringLiteral("qindaqt-terminal"));
   application.setApplicationDisplayName(QStringLiteral("QindaQt Terminal"));
@@ -285,6 +326,12 @@ int main(int argc, char **argv) {
   TerminalWindow window(std::move(collection), *appearance.appearance,
                         availableThemeIds(themeDirectories), &profileSettings,
                         &linkOpener);
+  TerminalAppearanceBinding appearanceBinding(
+      application, window, themeDirectories,
+      parser.isSet(QStringLiteral("theme"))
+          ? parser.value(QStringLiteral("theme"))
+          : QString());
+
   window.resize(800, 500);
   bool firstSessionStarted = false;
   const auto startFirstSession = [&window, &profileSettings, &settingsClient,

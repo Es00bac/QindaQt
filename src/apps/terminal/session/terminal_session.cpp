@@ -52,6 +52,11 @@ QWidget *TerminalSession::terminalWidget() const {
   return m_backend != nullptr ? m_backend->terminalWidget() : nullptr;
 }
 
+void TerminalSession::setAppearance(const TerminalViewAppearance &appearance) {
+  if (m_backend)
+    m_backend->setAppearance(appearance);
+}
+
 void TerminalSession::copySelectionToClipboard() {
   if (m_backend != nullptr) {
     m_backend->copySelectionToClipboard();
@@ -82,8 +87,9 @@ void TerminalSession::clearView() {
   }
 }
 
-TerminalSearchResult TerminalSession::searchScrollback(
-    const TerminalSearchQuery &query, TerminalSearchDirection direction) {
+TerminalSearchResult
+TerminalSession::searchScrollback(const TerminalSearchQuery &query,
+                                  TerminalSearchDirection direction) {
   return m_backend != nullptr
              ? m_backend->searchScrollback(query, direction)
              : TerminalSearchResult{

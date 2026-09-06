@@ -8,13 +8,18 @@
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 #include "qindaqt/app_shell/application_coordinator.h"
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/services/font_discovery/font_session_bootstrap.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QCommandLineParser>
+#include <QDBusConnection>
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QFile>
@@ -104,6 +109,36 @@ registerAndPublishTokens(QQmlApplicationEngine &engine,
   }
   return facade;
 }
+
+class FileManagerAppearanceBinding final {
+public:
+  FileManagerAppearanceBinding(QQmlApplicationEngine &engine,
+                               QindaQt::DesignTokens::TokenFacade &facade,
+                               const QString &themeDirectory,
+                               const QString &explicitTheme)
+      : transport(QDBusConnection::sessionBus()),
+        client(transport, {QStringLiteral("appearance.theme"),
+                           QStringLiteral("appearance.colorScheme")}),
+        controller(client,
+                   QindaQt::AppAppearance::standardThemeDirectories(themeDirectory),
+                   QStringLiteral("qinda-dark"), explicitTheme) {
+    QObject::connect(
+        &controller,
+        &QindaQt::AppAppearance::ApplicationAppearanceController::appearanceChanged,
+        &engine, [&facade, this] {
+          QString error;
+          if (!controller.publishTokens(facade, &error))
+            qWarning().noquote() << "QindaQt File Manager kept its theme:" << error;
+        });
+    QString error;
+    if (!client.start(&error))
+      qWarning().noquote() << "QindaQt File Manager appearance settings unavailable:" << error;
+  }
+private:
+  QindaQt::Services::SettingsClient::QtSettingsTransport transport;
+  QindaQt::Services::SettingsClient::SettingsClient client;
+  QindaQt::AppAppearance::ApplicationAppearanceController controller;
+};
 
 [[nodiscard]] QString configureAppShell(
     QindaQt::AppShell::ApplicationCoordinator &coordinator,
@@ -271,10 +306,15 @@ int main(int argc, char **argv) {
       QDir(QCoreApplication::applicationDirPath())
           .absoluteFilePath(QStringLiteral(QINDAQT_INSTALL_QML_RELATIVE_PATH)));
   QString tokenError;
-  if (!registerAndPublishTokens(engine, theme.theme, &tokenError)) {
+  auto *tokenFacade = registerAndPublishTokens(engine, theme.theme, &tokenError);
+  if (!tokenFacade) {
     std::fprintf(stderr, "qindaqt-file-manager: %s\n", qPrintable(tokenError));
     return 3;
   }
+  FileManagerAppearanceBinding appearanceBinding(
+      engine, *tokenFacade, parser.value(QStringLiteral("theme-directory")),
+      parser.isSet(QStringLiteral("theme"))
+          ? parser.value(QStringLiteral("theme")) : QString());
 
   auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
       std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),

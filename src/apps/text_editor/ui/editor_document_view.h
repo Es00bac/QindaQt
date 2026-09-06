@@ -27,6 +27,7 @@ public:
   [[nodiscard]] DocumentController *controller() const { return m_controller; }
   [[nodiscard]] QPlainTextEdit *editor() const { return m_editor; }
   [[nodiscard]] QString statusText() const;
+  void applyAppearance(const EditorAppearance &appearance);
 
 signals:
   void presentationChanged();

@@ -76,6 +76,11 @@ ColumnLayout {
                 onToggled: {
                     if (themeCard.checked) {
                         root.setDraft("appearance.theme", themeCard.modelData.id)
+                        if (themeCard.modelData.variant === "light")
+                            root.setDraft("appearance.colorScheme", "light")
+                        else if (themeCard.modelData.variant === "dark"
+                                 || themeCard.modelData.variant === "dusk")
+                            root.setDraft("appearance.colorScheme", "dark")
                     }
                 }
             }
@@ -86,7 +91,7 @@ ColumnLayout {
         Layout.fillWidth: true
         label: qsTr("Preferred color scheme")
         description: qsTr(
-            "Used when the configured theme is unavailable; System follows the platform")
+            "Selects a compatible theme; System follows the platform")
         editor: schemeButtons
 
         SegmentedChoiceRow {

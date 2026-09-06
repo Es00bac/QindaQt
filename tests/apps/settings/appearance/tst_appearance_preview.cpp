@@ -82,10 +82,10 @@ void AppearancePreviewTests::configuredThemeWinsOverSchemePreference()
     values.colorScheme = ColorSchemePreference::Light;
 
     const auto resolution = preview.resolve(values, Qt::ColorScheme::Light);
-    QVERIFY(resolution.configuredInstalled);
-    QVERIFY(resolution.fallbackThemeId.isEmpty());
+    QVERIFY(!resolution.configuredInstalled);
+    QCOMPARE(resolution.fallbackThemeId, QStringLiteral("qinda-light"));
     QCOMPARE(preview.themes().at(resolution.themeIndex).id,
-             QStringLiteral("qinda-dusk"));
+             QStringLiteral("qinda-light"));
 }
 
 void AppearancePreviewTests::schemePreferenceResolvesMissingTheme()

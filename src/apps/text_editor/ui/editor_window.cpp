@@ -67,6 +67,15 @@ EditorWindow::EditorWindow(
   }
 }
 
+void EditorWindow::applyAppearance(const EditorAppearance &appearance) {
+  m_appearance = appearance;
+  setPalette(appearance.palette);
+  setFont(appearance.interfaceFont);
+  for (EditorDocumentView *view : std::as_const(m_views)) {
+    view->applyAppearance(appearance);
+  }
+}
+
 DocumentController *EditorWindow::controller() const {
   return m_documents->at(m_tabs->currentIndex());
 }

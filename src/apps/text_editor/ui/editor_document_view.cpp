@@ -74,6 +74,14 @@ EditorDocumentView::EditorDocumentView(DocumentController *controller,
   updateExternalBanner(m_controller->state().externalState());
 }
 
+void EditorDocumentView::applyAppearance(const EditorAppearance &appearance) {
+  m_appearance = appearance;
+  setPalette(appearance.palette);
+  setFont(appearance.interfaceFont);
+  m_editor->setFont(appearance.editorFont);
+  updateExternalBanner(m_renderedExternalState);
+}
+
 void EditorDocumentView::connectState() {
   connect(m_editor->document(), &QTextDocument::contentsChange, this,
           [this](int position, int charsRemoved, int charsAdded) {

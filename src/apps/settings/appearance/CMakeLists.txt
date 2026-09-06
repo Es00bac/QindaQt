@@ -32,7 +32,7 @@ target_link_libraries(
     qindaqt_settings_appearance
     # TokenFacade's implementation lives in the shared QindaQt.Tokens QML
     # module library; the static DesignTokens value library does not carry it.
-    PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml
+    PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml QindaQt::AppAppearance
            qindaqt_themes Qt6::Core Qt6::Gui Qt6::Qml
 )
 target_compile_features(qindaqt_settings_appearance PUBLIC cxx_std_20)

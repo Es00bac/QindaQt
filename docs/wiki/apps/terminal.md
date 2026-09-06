@@ -303,15 +303,17 @@ visible and authoritative.
 The appearance adapter derives the complete window palette, interface font,
 monospace terminal font, focus ring, and status colors from the public QST-1
 boundary, exactly as the Text Editor does; `qinda-dark` is the launch default,
-with `--theme` and `--theme-directory` selecting a validated schema-v1 theme
+with confirmed Settings1 theme and color-scheme changes updating the running
+window through [ADR-0079](../adr/0079-resolve-first-party-appearance-from-settings.md).
+An explicit `--theme` locks a validated schema-v1 theme and `--theme-directory` extends discovery,
 and `--check-theme` providing the packaging diagnostic that exits before any
 window exists. The adapter renders the sixteen ANSI slots from public token
 roles into a Konsole-format scheme document: red/green/yellow/blue map to
 QST danger/success/warning/accent foregrounds, magenta maps to the accent's
 subtle role (QST publishes no magenta hue), and the eight bright slots use one
 mechanical lighten step because QST has no distinct intense roles. This is
-bounded presentation adaptation; a full, settings-backed color-profile system
-is a later slice and is not invented here.
+bounded presentation adaptation; terminal profiles remain the persistence
+authority for their explicit per-profile choices.
 
 The production adapter installs that document under a unique atomic
 `.colorscheme` cache path, the suffix required by qtermwidget 2.4's custom-file

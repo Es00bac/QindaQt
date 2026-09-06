@@ -96,11 +96,13 @@ target_link_libraries(
     PRIVATE
         qindaqt_file_manager_support
         QindaQt::DesignTokens
+        QindaQt::AppAppearance
         QindaQt::AppShell
         QindaQt::FontDiscovery
         QindaQt::TokensQml
         qindaqt_themes
         Qt6::Core
+        Qt6::DBus
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick

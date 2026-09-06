@@ -2,8 +2,8 @@
 #pragma once
 
 #include "links/terminal_link.h"
-#include "search/terminal_search.h"
 #include "profiles/terminal_profile.h"
+#include "search/terminal_search.h"
 #include "session/terminal_session_collection.h"
 #include "session/terminal_session_types.h"
 #include "ui/terminal_appearance.h"
@@ -88,6 +88,7 @@ public:
   // Adds one session with the current default profile (used for the first
   // tab and the New Tab command).
   void newSessionWithDefaultProfile();
+  void applyAppearance(const TerminalViewAppearance &appearance);
 
 signals:
   // Emitted when the close path requested shutdown of every session and all
