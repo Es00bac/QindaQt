@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "panelvisibilitycontrolchannel.h"
+#include "panelvisibilityprobearguments.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -41,6 +42,7 @@ private Q_SLOTS:
     void readsEachAtomicFullscreenCommandOnce();
     void rejectsMalformedOrNonMonotonicCommands();
     void recordsReadyAppliedAndTimeoutAcknowledgements();
+    void parsesOptionalUniqueProbeTitle();
 };
 
 void PanelVisibilityControlChannelTest::rejectsRelativeControlPath()
@@ -49,6 +51,24 @@ void PanelVisibilityControlChannelTest::rejectsRelativeControlPath()
     QString error;
     QVERIFY(!channel.isValid(&error));
     QCOMPARE(error, QStringLiteral("control file path is not absolute"));
+}
+
+void PanelVisibilityControlChannelTest::parsesOptionalUniqueProbeTitle()
+{
+    using QindaQt::Test::PanelVisibilityProbe::Arguments;
+    using QindaQt::Test::PanelVisibilityProbe::parseArguments;
+    Arguments parsed;
+    QString error;
+    QVERIFY(parseArguments({QStringLiteral("probe"), QStringLiteral("capture"),
+                            QStringLiteral("loader"), QStringLiteral("--control-file"),
+                            QStringLiteral("/tmp/control"), QStringLiteral("--title"),
+                            QStringLiteral("Fullscreen peer")}, &parsed, &error));
+    QCOMPARE(parsed.title, QStringLiteral("Fullscreen peer"));
+    QCOMPARE(parsed.controlFile, QStringLiteral("/tmp/control"));
+    QVERIFY(!parseArguments({QStringLiteral("probe"), QStringLiteral("capture"),
+                             QStringLiteral("loader"), QStringLiteral("--control-file"),
+                             QStringLiteral("/tmp/control"), QStringLiteral("--title"),
+                             QString{}}, &parsed, &error));
 }
 
 void PanelVisibilityControlChannelTest::readsEachAtomicFullscreenCommandOnce()
