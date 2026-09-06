@@ -100,6 +100,7 @@ nav:
       - Implementation roadmap: development/implementation-roadmap.md
       - Coding practices: development/coding-practices.md
       - Testing harness: development/testing-harness.md
+      - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
       - QindaQt.AppShell 1.0: apps/application-shell.md
       - Welcome to QindaQt: apps/welcome.md
