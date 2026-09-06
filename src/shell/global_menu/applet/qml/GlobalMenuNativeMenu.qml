@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic as Basic
 
-Menu {
+// AGENT-GUARD: QindaQt owns the presentation over the Basic controls. An
+// ambient desktop style can add hover/focus policy and opening transitions
+// that break our keyboard contract even after the visual delegates are replaced.
+Basic.Menu {
     id: menu
 
     required property var menuData
@@ -28,9 +32,8 @@ Menu {
                  | Popup.CloseOnReleaseOutsideParent
 
     // The menu tree is an immutable facade publication. Re-publication
-    // destroys and recreates its top-level Menu, so dynamically created
-    // descendants cannot retain an obsolete generation. Qt owns all popup
-    // state after this one-time projection.
+    // may reuse its top-level Menu, so menuData changes rebuild descendants
+    // before an obsolete generation can be invoked. Qt owns popup state.
     function populate() {
         const children = menuData.children ?? []
         for (let index = 0; index < children.length; ++index) {
@@ -126,7 +129,7 @@ Menu {
 
     Component {
         id: separatorComponent
-        MenuSeparator {
+        Basic.MenuSeparator {
             objectName: "globalMenuNativeSeparator"
             implicitHeight: 9
             contentItem: Rectangle {
