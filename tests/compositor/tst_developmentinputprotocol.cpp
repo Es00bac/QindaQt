@@ -68,6 +68,7 @@ class DevelopmentInputProtocolTest final : public QObject
 
 private Q_SLOTS:
     void parsesAndDispatchesAllowlistedEvents();
+    void parsesBoundedRelativePointerMotion();
     void parsesFullscreenAndShellProbeKeys();
     void rejectsMalformedAndLimitFailures();
     void checksProductionGateBeforePayloadInspection();
@@ -159,6 +160,36 @@ void DevelopmentInputProtocolTest::parsesAndDispatchesAllowlistedEvents()
              QStringLiteral("qindaqt-development-input"));
     QCOMPARE(sink.injections, 1);
     QCOMPARE(sink.lastBatch.events.size(), 14);
+}
+
+void DevelopmentInputProtocolTest::parsesBoundedRelativePointerMotion()
+{
+    DevelopmentInputFailure failure;
+    const auto payload = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-relative")},
+                     {QStringLiteral("dx"), -18.5},
+                     {QStringLiteral("dy"), 9.25}}});
+    const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
+    QVERIFY2(parsed.has_value(), qPrintable(failure.message));
+    QCOMPARE(parsed->events.size(), 1);
+    QCOMPARE(parsed->events.constFirst().type,
+             DevelopmentInputEventType::PointerRelative);
+    QCOMPARE(parsed->events.constFirst().position, QPointF(-18.5, 9.25));
+
+    const auto unbounded = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-relative")},
+                     {QStringLiteral("dx"),
+                      DevelopmentInputCodec::MaxRelativeDeltaMagnitude + 1.0},
+                     {QStringLiteral("dy"), 0.0}}});
+    QVERIFY(!DevelopmentInputCodec::parse(unbounded, &failure));
+    QCOMPARE(failure.code, QStringLiteral("malformed-input-request"));
+
+    const auto wrongShape = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("pointer-relative")},
+                     {QStringLiteral("x"), 1.0},
+                     {QStringLiteral("y"), 2.0}}});
+    QVERIFY(!DevelopmentInputCodec::parse(wrongShape, &failure));
+    QCOMPARE(failure.code, QStringLiteral("malformed-input-request"));
 }
 
 void DevelopmentInputProtocolTest::parsesFullscreenAndShellProbeKeys()
@@ -296,10 +327,13 @@ void DevelopmentInputProtocolTest::reportsUnavailableSinkAndCapabilities()
     QVERIFY(capabilities.value(QStringLiteral("available")).toBool());
     QCOMPARE(capabilities.value(QStringLiteral("schemaVersion")).toInteger(), 1);
     QCOMPARE(capabilities.value(QStringLiteral("maxEvents")).toInteger(), 64);
+    QCOMPARE(capabilities.value(QStringLiteral("maxRelativeDeltaMagnitude")).toDouble(),
+             DevelopmentInputCodec::MaxRelativeDeltaMagnitude);
     QCOMPARE(capabilities.value(QStringLiteral("deviceId")).toString(),
              QStringLiteral("qindaqt-development-input"));
     QCOMPARE(capabilities.value(QStringLiteral("eventTypes")).toArray(),
-             QJsonArray({QStringLiteral("pointer-absolute"), QStringLiteral("key"),
+             QJsonArray({QStringLiteral("pointer-absolute"),
+                         QStringLiteral("pointer-relative"), QStringLiteral("key"),
                          QStringLiteral("button")}));
 
     sink.succeeds = false;

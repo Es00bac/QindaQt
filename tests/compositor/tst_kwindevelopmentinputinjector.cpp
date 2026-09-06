@@ -24,6 +24,8 @@ struct RegistrarState final
     QPointer<KWin::InputDevice> device;
     QStringList eventOrder;
     QList<QPointF> positions;
+    QList<QPointF> relativeDeltas;
+    QList<QPointF> unacceleratedDeltas;
     QList<quint32> keys;
     QList<KWin::KeyboardKeyState> keyStates;
     QList<quint32> buttons;
@@ -54,6 +56,15 @@ public:
                     KWin::InputDevice *) {
                 state->eventOrder.append(QStringLiteral("pointer-absolute"));
                 state->positions.append(position);
+                state->timestamps.append(timestamp);
+            });
+        QObject::connect(
+            device, &KWin::InputDevice::pointerMotion, device,
+            [state](const QPointF &delta, const QPointF &unacceleratedDelta,
+                    std::chrono::microseconds timestamp, KWin::InputDevice *) {
+                state->eventOrder.append(QStringLiteral("pointer-relative"));
+                state->relativeDeltas.append(delta);
+                state->unacceleratedDeltas.append(unacceleratedDelta);
                 state->timestamps.append(timestamp);
             });
         QObject::connect(device, &KWin::InputDevice::keyChanged, device,
@@ -100,6 +111,7 @@ class KWinDevelopmentInputInjectorTest final : public QObject
 
 private Q_SLOTS:
     void emitsThroughTheRegisteredCombinationDevice();
+    void emitsRelativePointerThroughTheRegisteredDevice();
     void translatesFullscreenAndShellProbeKeys();
     void removesDeviceBeforeOwnedLifetimeEnds();
     void remainsUnavailableWithoutARegistrarBackend();
@@ -251,6 +263,26 @@ void KWinDevelopmentInputInjectorTest::emitsThroughTheRegisteredCombinationDevic
     for (qsizetype index = 1; index < state->timestamps.size(); ++index) {
         QVERIFY(state->timestamps.at(index) >= state->timestamps.at(index - 1));
     }
+}
+
+void KWinDevelopmentInputInjectorTest::emitsRelativePointerThroughTheRegisteredDevice()
+{
+    const auto state = std::make_shared<RegistrarState>();
+    KWinDevelopmentInputInjector injector(
+        std::make_unique<RecordingRegistrar>(state));
+    DevelopmentInputBatch batch;
+    batch.events = {
+        {.type = DevelopmentInputEventType::PointerRelative,
+         .position = QPointF(18.5, -9.25)},
+    };
+
+    QVERIFY(injector.inject(batch));
+    QCOMPARE(state->eventOrder,
+             QStringList({QStringLiteral("pointer-relative"), QStringLiteral("frame")}));
+    QCOMPARE(state->relativeDeltas, QList<QPointF>({QPointF(18.5, -9.25)}));
+    QCOMPARE(state->unacceleratedDeltas,
+             QList<QPointF>({QPointF(18.5, -9.25)}));
+    QCOMPARE(state->timestamps.size(), 1);
 }
 
 void KWinDevelopmentInputInjectorTest::translatesFullscreenAndShellProbeKeys()

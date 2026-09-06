@@ -126,6 +126,13 @@ public:
             // Omitting this signal strands the event before input filters.
             Q_EMIT pointerFrame(this);
             break;
+        case DevelopmentInputEventType::PointerRelative:
+            // The development protocol supplies an exact synthetic delta, so
+            // accelerated and unaccelerated values are intentionally equal.
+            // KWin then routes this through its native pointer-lock pipeline.
+            Q_EMIT pointerMotion(event.position, event.position, timestamp, this);
+            Q_EMIT pointerFrame(this);
+            break;
         case DevelopmentInputEventType::Key:
             Q_EMIT keyChanged(linuxKeyCode(event.key),
                               event.pressed ? KWin::KeyboardKeyState::Pressed

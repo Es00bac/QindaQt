@@ -115,11 +115,15 @@ bool inspectEndpoint(CompositorProbeClient &client, CompositorWorkflowMode mode,
             || mode == CompositorWorkflowMode::HybridPointer;
         const auto &developmentInput = result->developmentInputCapabilities;
         const QSet<QString> expectedEventTypes{QStringLiteral("pointer-absolute"),
+                                               QStringLiteral("pointer-relative"),
                                                QStringLiteral("key"),
                                                QStringLiteral("button")};
         const bool commonSchemaValid =
             developmentInput.value(QStringLiteral("schemaVersion")).toInt(-1) == 1
             && developmentInput.value(QStringLiteral("maxEvents")).toInt(-1) == 64
+            && developmentInput.value(QStringLiteral("maxRelativeDeltaMagnitude"))
+                    .toDouble(-1.0)
+                == 10'000.0
             && developmentInput.value(QStringLiteral("deviceId"))
                 == QStringLiteral("qindaqt-development-input")
             && stringSet(developmentInput.value(QStringLiteral("eventTypes")))

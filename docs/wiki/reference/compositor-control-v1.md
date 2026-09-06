@@ -469,11 +469,11 @@ production-dock qualification consumer.
 
 `Capabilities.developmentInput` always describes the fixed input schema with
 `enabled`, `available`, `schemaVersion`, `maxEvents`,
-`maxLogicalCoordinateMagnitude`, `deviceId`, and `eventTypes`. Only an explicit
-isolated development scenario can make `enabled` true. That session constructs
-the `qindaqt-development-input` keyboard/pointer device and adds it to KWin's
-normal input redirection; events pass through the same observer, consuming
-filter, and Hybrid controller as admitted seat input.
+`maxLogicalCoordinateMagnitude`, `maxRelativeDeltaMagnitude`, `deviceId`, and
+`eventTypes`. Only an explicit isolated development scenario can make `enabled`
+true. That session constructs the `qindaqt-development-input` keyboard/pointer
+device and adds it to KWin's normal input redirection; events pass through the
+same observer, consuming filter, and Hybrid controller as admitted seat input.
 
 The input request contains exactly `schemaVersion` and a nonempty `events`
 array. It is limited to 256 KiB and 64 events. Each event must have exactly one
@@ -481,6 +481,7 @@ of these shapes:
 
 ```json
 {"type":"pointer-absolute","x":640.0,"y":350.0}
+{"type":"pointer-relative","dx":18.0,"dy":0.0}
 {"type":"key","key":"left-meta","pressed":true}
 {"type":"key","key":"left-alt","pressed":true}
 {"type":"key","key":"left-shift","pressed":true}
@@ -500,7 +501,11 @@ of these shapes:
 {"type":"button","button":"left","pressed":true}
 ```
 
-Coordinates must be finite logical values between -1,000,000 and 1,000,000.
+Absolute coordinates must be finite logical values between -1,000,000 and
+1,000,000. Relative deltas must be finite logical values between -10,000 and
+10,000. Relative input exists to qualify KWin's native pointer-lock and
+relative-pointer path inside the isolated compositor; it uses the same delta
+for accelerated and unaccelerated device values.
 The complete key allowlist is left Meta, left Alt, left Shift, F1, F11, C,
 N, Tab, Escape, Space, Up, Down, Left, Right, Enter, and V. Left Alt plus Tab
 qualifies ordinary window switching, while Alt+F11 lets a real client make its
@@ -510,9 +515,9 @@ need the remaining non-text keys to exercise the production global shortcut,
 focus traversal, activation, dismissal, and lock-screen user-activity paths
 without host input; the arrow keys additionally drive the Hybrid
 keyboard-geometry modes and the exact-modifier docking preview.
-No other key, button, relative movement, text, delay, or device selector is
-accepted. Success returns `status: "injected"`, the event count, and the fixed
-device ID. Held keys and buttons are released before the device is removed.
+No other key, button, pointer shape, text, delay, or device selector is accepted.
+Success returns `status: "injected"`, the event count, and the fixed device ID.
+Held keys and buttons are released before the device is removed.
 
 In production, the injector object does not exist and `InjectTestInput` returns
 `control-disabled` before inspecting payload size, JSON syntax, or schema. The
