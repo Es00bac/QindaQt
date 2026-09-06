@@ -254,6 +254,7 @@ if(TARGET qindaqt-shell)
         qindaqt_shell_runtime_token_tests
         PRIVATE
             qindaqt_themes
+            QindaQt::AppAppearance
             QindaQt::SettingsClient
             QindaQt::TokensQml
             QindaQt::ShellTaskListApplet
