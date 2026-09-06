@@ -2,7 +2,8 @@
 """RemoteDesktop portal session: create, approve, and deliver input events.
 
 AGENT-CONTRACT: Call start(), wait for on_ready, then call notify_* methods.
-close() is always safe to call. No input is delivered before on_ready fires.
+close() is always safe to call. No input is delivered before on_ready fires;
+the _approved flag is the exclusive gate.
 """
 from __future__ import annotations
 
@@ -20,7 +21,9 @@ _REQ_IFACE = "org.freedesktop.portal.Request"
 _SESS_IFACE = "org.freedesktop.portal.Session"
 
 # Linux input button codes (include/uapi/linux/input-event-codes.h)
-_BUTTON = {"left": 272, "right": 273, "middle": 274, "side": 275, "extra": 276}
+_BUTTON: dict[str, int] = {
+    "left": 272, "right": 273, "middle": 274, "side": 275, "extra": 276,
+}
 
 DEVICE_KEYBOARD: int = 1
 DEVICE_POINTER: int = 2
@@ -29,10 +32,14 @@ DEVICE_POINTER: int = 2
 class ApprovedInputSession:
     """One user-approved RemoteDesktop portal session.
 
-    AGENT-GUARD: The three-step handshake (CreateSession → SelectDevices →
-    Start) must complete before any Notify* method is called. Skipping Start
-    or ignoring a non-zero response code delivers input without user consent,
-    violating the portal contract.
+    AGENT-GUARD: Three invariants must hold:
+    1. _approved becomes True only after a zero Start response whose granted
+       devices satisfy the requested set. No Notify* call reaches the portal
+       before that point; _call() enforces this.
+    2. _send_close() is idempotent: it clears _session before the D-Bus call
+       so a second invocation is a no-op.
+    3. _fail() always calls _send_close() before any callback so the portal
+       session is never left open after an error.
     """
 
     def __init__(
@@ -52,6 +59,7 @@ class ApprovedInputSession:
         self._on_error = on_error
         self._session: str | None = None
         self._portal_obj = None
+        self._approved = False
         self._create_done = False
         self._select_done = False
         self._start_done = False
@@ -61,14 +69,8 @@ class ApprovedInputSession:
         GLib.idle_add(self._do_create)
 
     def close(self) -> None:
-        if self._session:
-            try:
-                obj = self._bus.get_object(PORTAL_SERVICE, self._session)
-                dbus.Interface(obj, _SESS_IFACE).Close()
-            except dbus.DBusException:
-                pass
-            finally:
-                self._session = None
+        """User-initiated close. Safe to call before or after on_ready."""
+        self._send_close()
         if self._on_closed:
             self._on_closed()
 
@@ -78,15 +80,13 @@ class ApprovedInputSession:
         self._call("NotifyPointerMotion",
                    dbus.ObjectPath(self._session), {}, dx, dy)
 
-    def notify_pointer_motion_absolute(
-        self, stream: int, x: float, y: float
-    ) -> None:
-        self._call("NotifyPointerMotionAbsolute",
-                   dbus.ObjectPath(self._session), {},
-                   dbus.UInt32(stream), x, y)
-
     def notify_pointer_button(self, button: str, pressed: bool) -> None:
-        code = _BUTTON.get(button.lower(), _BUTTON["left"])
+        """Raise ValueError for unknown button names instead of silently falling back."""
+        code = _BUTTON.get(button.lower())
+        if code is None:
+            raise ValueError(
+                f"unknown pointer button {button!r}; valid: {', '.join(_BUTTON)}"
+            )
         self._call("NotifyPointerButton",
                    dbus.ObjectPath(self._session), {},
                    dbus.Int32(code), dbus.UInt32(1 if pressed else 0))
@@ -158,6 +158,13 @@ class ApprovedInputSession:
             self._fail("CreateSession: missing session_handle")
             return
         self._session = str(handle)
+        # Subscribe to external session revocation before any further calls.
+        self._bus.add_signal_receiver(
+            self._on_session_closed_signal,
+            signal_name="Closed",
+            dbus_interface=_SESS_IFACE,
+            path=self._session,
+        )
         GLib.idle_add(self._do_select)
 
     def _do_select(self) -> bool:
@@ -209,11 +216,40 @@ class ApprovedInputSession:
         if response != 0:
             self._fail("Start not approved by user")
             return
+        granted = int(results.get("devices", 0))
+        if (granted & self._devices) != self._devices:
+            self._fail(
+                f"Start: requested devices {self._devices:#x} not granted "
+                f"(got {granted:#x})"
+            )
+            return
+        # AGENT-GUARD: Set _approved only here. _call() checks this flag;
+        # nothing writes it before a zero Start response with full device grant.
+        self._approved = True
         if self._on_ready:
             self._on_ready()
 
+    def _on_session_closed_signal(self, details: dict) -> None:
+        """Portal revoked the session externally (e.g. user revoked in KDE settings)."""
+        self._session = None
+        if self._on_closed:
+            self._on_closed()
+        self._loop.quit()
+
+    def _send_close(self) -> None:
+        """Send Close to the portal. Idempotent: clears _session first."""
+        session = self._session
+        self._session = None
+        self._approved = False
+        if session:
+            try:
+                obj = self._bus.get_object(PORTAL_SERVICE, session)
+                dbus.Interface(obj, _SESS_IFACE).Close()
+            except dbus.DBusException:
+                pass
+
     def _call(self, method: str, *args) -> None:
-        if not self._session:
+        if not self._approved:
             return
         try:
             iface = dbus.Interface(self._portal_obj, _RD_IFACE)
@@ -222,6 +258,7 @@ class ApprovedInputSession:
             self._fail(f"{method}: {exc}")
 
     def _fail(self, msg: str) -> None:
+        self._send_close()
         if self._on_error:
             self._on_error(msg)
         self._loop.quit()

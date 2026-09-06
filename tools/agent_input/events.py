@@ -2,6 +2,11 @@
 """JSON event parser for the agent-input RemoteDesktop session.
 
 Each input event is one JSON object on a single line. Unknown keys are ignored.
+
+AGENT-NOTE: move_abs (absolute pointer motion) is intentionally absent.
+The portal's NotifyPointerMotionAbsolute requires a PipeWire screencast stream
+node ID; this tool opens no ScreenCast stream (ADR-0087). Use move (relative
+motion) instead.
 """
 from __future__ import annotations
 
@@ -36,6 +41,8 @@ def parse_event(line: str) -> dict[str, Any]:
 def dispatch_event(event: dict[str, Any], session) -> bool:
     """Apply one parsed event to session. Returns False on 'close'.
 
+    Raises EventError for rejected inputs (e.g. unknown button name).
+
     AGENT-CONTRACT: session must be an ApprovedInputSession that has fired
     on_ready before this function is called.
     """
@@ -43,15 +50,12 @@ def dispatch_event(event: dict[str, Any], session) -> bool:
     if action == "move":
         session.notify_pointer_motion(float(event.get("dx", 0)),
                                       float(event.get("dy", 0)))
-    elif action == "move_abs":
-        session.notify_pointer_motion_absolute(
-            int(event.get("stream", 0)),
-            float(event.get("x", 0)),
-            float(event.get("y", 0)),
-        )
     elif action in ("press", "release"):
-        session.notify_pointer_button(event.get("button", "left"),
-                                      action == "press")
+        try:
+            session.notify_pointer_button(event.get("button", ""),
+                                          action == "press")
+        except ValueError as exc:
+            raise EventError(str(exc)) from exc
     elif action == "scroll":
         session.notify_pointer_axis(float(event.get("dx", 0)),
                                     float(event.get("dy", 0)))

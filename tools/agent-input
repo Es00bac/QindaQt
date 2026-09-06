@@ -11,7 +11,6 @@ closes or a {"action":"close"} event is received.
 
 Supported actions:
   {"action":"move","dx":5.0,"dy":0.0}
-  {"action":"move_abs","stream":0,"x":100.0,"y":200.0}
   {"action":"press","button":"left"}   -- also "right","middle","side","extra"
   {"action":"release","button":"left"}
   {"action":"scroll","dx":0.0,"dy":3.0}
@@ -19,6 +18,8 @@ Supported actions:
   {"action":"key_release","keysym":65}
   {"action":"text","text":"hello"}
   {"action":"close"}
+
+Exits 0 on normal close, 1 on portal denial or transport error.
 """
 from __future__ import annotations
 
@@ -40,6 +41,7 @@ from agent_input.portal_session import (
     DEVICE_POINTER,
     ApprovedInputSession,
 )
+from agent_input.stdin_reader import StdinReader
 
 
 def _parse_devices(spec: str) -> int:
@@ -54,58 +56,89 @@ def _parse_devices(spec: str) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--devices", default="pointer,keyboard",
-                        help="comma-separated device types (default: pointer,keyboard)")
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--devices", default="pointer,keyboard",
+        help="comma-separated device types (default: pointer,keyboard)",
+    )
     args = parser.parse_args()
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
     loop = GLib.MainLoop()
 
-    session = ApprovedInputSession(
-        bus=bus,
-        loop=loop,
-        devices=_parse_devices(args.devices),
-        on_ready=lambda: _ready(loop),
-        on_closed=lambda: loop.quit(),
-        on_error=lambda msg: _error_quit(msg, loop),
-    )
+    state: dict = {"error": None}
+    reader = StdinReader()
 
     def _on_stdin(fd: int, condition: GLib.IOCondition) -> bool:
-        if condition & GLib.IOCondition.HUP:
-            session.close()
-            return False
-        line = os.read(fd, 4096).decode("utf-8", errors="replace")
-        for raw_line in line.splitlines():
+        # AGENT-GUARD: Read available bytes before checking HUP. A closed pipe
+        # can deliver both IN and HUP simultaneously; checking HUP first would
+        # discard the final data chunk. Read, process, then honour EOF.
+        try:
+            data = os.read(fd, 65536)
+        except OSError:
+            data = b""
+
+        lines: list[str] = []
+        if data:
+            lines.extend(reader.feed(data))
+        if not data or (condition & GLib.IOCondition.HUP):
+            lines.extend(reader.flush())
+
+        for raw in lines:
             try:
-                event = parse_event(raw_line)
+                event = parse_event(raw)
             except EventError as exc:
                 print(f"WARN: {exc}", file=sys.stderr)
                 continue
             if not event:
                 continue
-            if not dispatch_event(event, session):
+            try:
+                keep = dispatch_event(event, session)
+            except EventError as exc:
+                print(f"WARN: {exc}", file=sys.stderr)
+                continue
+            if not keep:
                 session.close()
                 return False
+
+        if not data or (condition & GLib.IOCondition.HUP):
+            session.close()
+            return False
         return True
 
+    def _on_ready() -> None:
+        print("READY", file=sys.stderr, flush=True)
+        # Install stdin watch only after approval so no events reach the portal
+        # before the Start handshake succeeds.
+        GLib.io_add_watch(
+            sys.stdin.fileno(),
+            GLib.IOCondition.IN | GLib.IOCondition.HUP,
+            _on_stdin,
+        )
+
+    def _on_closed() -> None:
+        loop.quit()
+
+    def _on_error(msg: str) -> None:
+        state["error"] = msg
+        print(f"ERROR: {msg}", file=sys.stderr, flush=True)
+        loop.quit()
+
+    session = ApprovedInputSession(
+        bus=bus,
+        loop=loop,
+        devices=_parse_devices(args.devices),
+        on_ready=_on_ready,
+        on_closed=_on_closed,
+        on_error=_on_error,
+    )
     session.start()
-    GLib.io_add_watch(sys.stdin.fileno(),
-                      GLib.IOCondition.IN | GLib.IOCondition.HUP,
-                      _on_stdin)
     loop.run()
-    return 0
-
-
-def _ready(loop: GLib.MainLoop) -> None:  # noqa: ARG001
-    print("READY", file=sys.stderr, flush=True)
-
-
-def _error_quit(msg: str, loop: GLib.MainLoop) -> None:
-    print(f"ERROR: {msg}", file=sys.stderr, flush=True)
-    loop.quit()
+    return 1 if state["error"] else 0
 
 
 if __name__ == "__main__":
