@@ -223,8 +223,11 @@ tree dispatches those same requests rather than maintaining a second policy.
 
 Pointer target selection examines the topmost eligible KWin input owner on the
 current desktop/activity and returns no native target unless that owner is a
-manageable normal window. For a valid window, the center 40% of each axis is
-the tab target; otherwise the nearest edge wins. Keyboard edge selection ranks
+manageable normal window. KWin layer-shell windows are explicitly ineligible
+even when their window type is reported as normal: panels, notifications, and
+other shell overlays retain protocol-owned placement and can never become
+container members. For a valid window, the center 40% of each axis is the tab
+target; otherwise the nearest edge wins. Keyboard edge selection ranks
 directional manageable windows by forward distance and perpendicular distance.
 Stale source ownership or a target that vanished before commit rejects without
 advancing the topology revision.
@@ -401,8 +404,9 @@ alone keeps associated transient subtrees above the complete contiguous member
 block, preventing KWin's ancestor-raising behavior from splitting the group or
 moving it above an unrelated active client. Window map/removal and owner
 geometry/context changes refresh the association. Admission rejects every
-popup, transient, and dialog even when KWin also reports a normal window type,
-and scene focus capture/rollback accepts opaque UUIDs for non-topology windows.
+layer-shell surface, popup, transient, and dialog even when KWin also reports a
+normal window type, and scene focus capture/rollback accepts opaque UUIDs for
+non-topology windows.
 
 KWin compositor reinitialization destroys and recreates the entire scene while
 topology and client windows remain live. Direct pre-teardown handlers for
