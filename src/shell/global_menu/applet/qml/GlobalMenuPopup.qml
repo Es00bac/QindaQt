@@ -11,6 +11,16 @@ Popup {
     property int maximumDepth: 6
     property var menuStack: []
     property Item anchorItem: null
+    // Incremented on every openMenu; a deferred close scheduled before a menu
+    // switch (panel press deactivates the popup window before the switched
+    // menu opens) must not close the freshly switched popup.
+    property int openSerial: 0
+    // Which entry's menu the latest close ended, and when. The menu bar uses
+    // this to tell "the press that produced this click already closed my
+    // menu" (toggle stays closed) from a fresh click (opens); the timestamp
+    // bounds the suppression to the same click gesture.
+    property Item closedAnchorItem: null
+    property real closedAt: 0
     readonly property var colors: theme.colors ?? ({})
     readonly property var currentMenu:
         menuStack.length > 0 ? menuStack[menuStack.length - 1] : ({})
@@ -24,11 +34,38 @@ Popup {
         if (menu === null || String(menu.kind ?? "") !== "submenu"
                 || !Boolean(menu.enabled) || (menu.children ?? []).length === 0)
             return
+        // AGENT-NOTE: switching anchors while open must re-anchor the LIVE
+        // popup window. On Wayland the compositor owns the position and only
+        // re-reads the "_q_waylandPopupAnchor*" contract on
+        // xdg_popup.reposition, which QtWayland sends when the popup window's
+        // geometry changes (QWaylandXdgSurface::setWindowGeometry); popup.x/y
+        // never reach it (repositionPopupWindow returns early).
+        const switching = opened && anchorItem !== null && anchorItem !== anchor
+        ++openSerial
         anchorItem = anchor
         menuStack = [menu]
         configureNativePlacement()
         open()
+        if (switching)
+            requestNativeReposition()
         Qt.callLater(focusFirstItem)
+    }
+
+    // Pokes the popup window's screen position so QtWayland rebuilds the
+    // xdg_popup positioner from the just-written anchor contract. The values
+    // are a fallback hint only; the compositor computes the final placement.
+    function requestNativeReposition() {
+        const win = popupWindow
+        if (win === null || parent === null || anchorItem === null)
+            return
+        const panelWin = parent.Window.window
+        if (panelWin === null)
+            return
+        const scene = placementOriginFor(
+            anchorItem.mapToItem(null, 0, 0), anchorItem.height, width, height,
+            panelWin.width, Screen.height - panelWin.y)
+        win.x = panelWin.x + scene.x
+        win.y = panelWin.y + scene.y
     }
 
     // AGENT-CONTRACT: On Wayland the popup window position is server-side —
@@ -122,7 +159,10 @@ Popup {
     }
 
     function closeAfterFocusLoss() {
+        const scheduledSerial = openSerial
         Qt.callLater(function() {
+            if (scheduledSerial !== popup.openSerial)
+                return
             if (popup.opened
                     && (!popup.activeFocus
                         || (popup.popupWindow !== null
@@ -189,6 +229,8 @@ Popup {
                  | Popup.CloseOnPressOutsideParent
 
     onClosed: {
+        closedAnchorItem = anchorItem
+        closedAt = Date.now()
         menuStack = []
         anchorItem = null
     }
@@ -268,85 +310,11 @@ Popup {
             event.accepted = true
         }
 
-        delegate: Item {
-            id: row
-            required property var modelData
-            required property int index
-            readonly property string kind: String(modelData.kind ?? "action")
-            readonly property bool separator: kind === "separator"
-
-            objectName: separator ? "globalMenuPopupSeparator"
-                                  : "globalMenuPopupItem"
-            width: popupList.width
-            height: separator ? 9 : 28
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.margins: 6
-                height: 1
-                visible: row.separator
-                color: popup.colors.border ?? "#3c433f"
-            }
-
-            AbstractButton {
-                id: button
-                objectName: "globalMenuPopupButton"
-                anchors.fill: parent
-                visible: !row.separator
-                enabled: Boolean(row.modelData.enabled)
-                checkable: false
-                checked: Boolean(row.modelData.checked ?? false)
-                hoverEnabled: true
-                Accessible.role: Accessible.MenuItem
-                Accessible.focusable: enabled
-                Accessible.name: String(row.modelData.text ?? "")
-                Accessible.description: row.kind === "submenu"
-                    ? qsTr("Opens submenu")
-                    : String(row.modelData.shortcutText ?? "")
-                Accessible.checkable: Boolean(row.modelData.checkable ?? false)
-                Accessible.checked: Boolean(row.modelData.checked ?? false)
-                onClicked: popup.choose(row.modelData)
-                Accessible.onPressAction: popup.choose(row.modelData)
-
-                background: Rectangle {
-                    color: button.hovered || popupList.currentIndex === row.index
-                           ? popup.colors.accent ?? "#8fc8b7" : "transparent"
-                    radius: 4
-                }
-
-                contentItem: Row {
-                    spacing: 8
-                    Text {
-                        width: 18
-                        text: Boolean(row.modelData.checkable)
-                              ? (Boolean(row.modelData.checked) ? "✓" : "") : ""
-                        color: button.hovered || popupList.currentIndex === row.index
-                               ? popup.colors.accentText ?? "#10201b"
-                               : popup.colors.text ?? "white"
-                    }
-                    Text {
-                        width: Math.max(90, popupList.width - 92)
-                        text: String(row.modelData.text ?? "")
-                        textFormat: Text.PlainText
-                        elide: Text.ElideRight
-                        color: button.enabled
-                               ? (button.hovered || popupList.currentIndex === row.index
-                                  ? popup.colors.accentText ?? "#10201b"
-                                  : popup.colors.text ?? "white")
-                               : popup.colors.textMuted ?? "#a9afa9"
-                    }
-                    Text {
-                        width: 42
-                        horizontalAlignment: Text.AlignRight
-                        text: row.kind === "submenu" ? "›"
-                              : String(row.modelData.shortcutText ?? "")
-                        textFormat: Text.PlainText
-                        color: popup.colors.textMuted ?? "#a9afa9"
-                    }
-                }
-            }
+        delegate: GlobalMenuPopupRow {
+            currentIndex: popupList.currentIndex
+            listWidth: popupList.width
+            colors: popup.colors
+            onActivated: item => popup.choose(item)
         }
     }
 }

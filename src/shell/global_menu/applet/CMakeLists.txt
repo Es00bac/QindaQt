@@ -49,6 +49,7 @@ qt_add_qml_module(
     QML_FILES
         qml/GlobalMenuApplet.qml
         qml/GlobalMenuPopup.qml
+        qml/GlobalMenuPopupRow.qml
 )
 target_link_libraries(
     qindaqt_global_menu_qml
@@ -82,6 +83,7 @@ install(
         "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}/qindaqt_global_menu.qmltypes"
         qml/GlobalMenuApplet.qml
         qml/GlobalMenuPopup.qml
+        qml/GlobalMenuPopupRow.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"
     COMPONENT GlobalMenuAppletRuntime
 )
