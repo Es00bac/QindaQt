@@ -113,7 +113,7 @@ Default theme: `qinda-dusk`. Workflow: `{"overview":"optional","workspacePolicy"
 
 ## Themes (5)
 
-### qinda-dark — Qinda Dark
+### qinda-dark — QindaPunk Nightfall
 
 Source: `data/themes/qinda-dark.json`. 
 
@@ -127,9 +127,9 @@ Source: `data/themes/qinda-dark.json`.
 | cornerRadius | `10` |
 | motionDuration | `160` |
 | blurEnabled | `false` |
-| colors | `{"canvas":"#171a18","surface":"#222624","surfaceRaised":"#2c312e","border":"#3c433f","text":"#f2f1eb","textMuted":"#a9afa9","accent":"#8fc8b7","accentText":"#10201b","danger":"#f07c76"}` |
+| colors | `{"canvas":"#111E2C","surface":"#192939","surfaceRaised":"#273746","border":"#526170","text":"#F2EFE8","textMuted":"#B0B6B7","accent":"#D98A32","accentText":"#1B1309","danger":"#E86F62"}` |
 
-### qinda-dusk — Qinda Dusk
+### qinda-dusk — QindaPunk Dusk
 
 Source: `data/themes/qinda-dusk.json`. 
 
@@ -143,7 +143,7 @@ Source: `data/themes/qinda-dusk.json`.
 | cornerRadius | `10` |
 | motionDuration | `160` |
 | blurEnabled | `true` |
-| colors | `{"canvas":"#303331","surface":"#3b3f3c","surfaceRaised":"#484c48","border":"#5c625d","text":"#f0efe9","textMuted":"#b8b9b2","accent":"#83b9aa","accentText":"#16221f","danger":"#ef7771"}` |
+| colors | `{"canvas":"#192634","surface":"#243443","surfaceRaised":"#304355","border":"#5B6B7C","text":"#F4F0E8","textMuted":"#B9C0C3","accent":"#E19A3C","accentText":"#1B1309","danger":"#EC786B"}` |
 
 ### qinda-high-contrast — Qinda High Contrast
 
@@ -161,7 +161,7 @@ Source: `data/themes/qinda-high-contrast.json`.
 | blurEnabled | `false` |
 | colors | `{"canvas":"#000000","surface":"#000000","surfaceRaised":"#101010","border":"#ffffff","text":"#ffffff","textMuted":"#e6e6e6","accent":"#ffdd00","accentText":"#000000","danger":"#ff5c5c"}` |
 
-### qinda-light — Qinda Light
+### qinda-light — QindaPunk Porcelain
 
 Source: `data/themes/qinda-light.json`. 
 
@@ -175,7 +175,7 @@ Source: `data/themes/qinda-light.json`.
 | cornerRadius | `10` |
 | motionDuration | `150` |
 | blurEnabled | `false` |
-| colors | `{"canvas":"#e9e8e4","surface":"#f7f6f2","surfaceRaised":"#ffffff","border":"#c9c7c0","text":"#20211f","textMuted":"#666963","accent":"#386a64","accentText":"#ffffff","danger":"#b23a3a"}` |
+| colors | `{"canvas":"#DDE7E8","surface":"#F5F7F3","surfaceRaised":"#FFFFFF","border":"#AAB7B7","text":"#17242A","textMuted":"#526066","accent":"#9B4D12","accentText":"#FFFFFF","danger":"#A63D35"}` |
 
 ### qinda-macos — Qinda macOS
 
@@ -446,4 +446,3 @@ Source: `data/applet-policy/default.json`. The policy is interpreted by the host
 ## Session entry
 
 `data/session/qindaqt.desktop.in` supplies the display-manager session template. Session boot, residency, and teardown contracts are in [Compositor and session integration](../../architecture/compositor-session.md).
-

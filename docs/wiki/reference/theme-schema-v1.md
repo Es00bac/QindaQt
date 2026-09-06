@@ -47,8 +47,13 @@ value and never reopens the selected JSON document. It installs that theme
 before panel QML and always retains `hicolor` as the final fallback. An invalid
 hint rejects the catalog at startup and never becomes a path.
 
-The built-in catalog currently supplies Qinda Light, Qinda Dusk, Qinda Dark,
-Qinda High Contrast, and Qinda macOS. Qinda macOS uses a mist-and-sage QindaQt
+The built-in catalog currently supplies QindaPunk Porcelain, QindaPunk Dusk,
+QindaPunk Nightfall, Qinda High Contrast, and Qinda macOS. The default
+Nightfall/Porcelain pair draws its dark surfaces from graphite and ink-blue
+night tones and its action role from restrained amber; the light counterpart
+uses cool porcelain surfaces with a dark burnt-amber action. The wallpaper
+catalog's QindaPunk artwork keeps its green visor as an image detail rather
+than a UI palette authority. Qinda macOS uses a mist-and-sage QindaQt
 palette, left-side traffic lights whose `x`, `_`, and `[]` glyphs appear on
 hover, and right-to-left container tabs. Future state, elevation, focus,
 wallpaper, and typography tokens must be added compatibly or through a

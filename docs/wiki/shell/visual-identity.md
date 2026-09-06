@@ -1,23 +1,26 @@
 # QindaQt visual identity
 
-QindaQt's **Mineral Light** identity combines soft geometry, mineral colors,
-and warm light. It should feel calm, friendly, and precise. Artwork supports
-readable controls and an uncluttered workspace.
+QindaQt's **QindaPunk** identity combines a cinematic ink-blue night, graphite
+surfaces, pale porcelain text and a restrained amber action color. It should
+feel precise and characterful while leaving the wallpaper's quiet areas usable
+for work. Artwork supports readable controls and an uncluttered workspace.
 
 ## Palette and form
 
 | Color | Reference | Role |
 | --- | --- | --- |
-| Ink | `#172528` | Dark grounding and strong silhouettes |
-| Jade | `#70BFA5` | Signature color and gentle emphasis |
-| Porcelain | `#F3EFE5` | Warm light surfaces |
-| Apricot | `#E8AE84` | Warm contrast and small accents |
-| Blue | `#739EBB` | Cool secondary accent |
-| Violet | `#A69AC5` | Restrained complementary accent |
+| Ink night | `#111E2C` | Dark grounding and strong silhouettes |
+| Graphite | `#192939` | Nightfall application surfaces |
+| Porcelain | `#F5F7F3` | Light counterpart surfaces |
+| Amber | `#D98A32` | Action and selected-state emphasis |
+| Burnt amber | `#9B4D12` | Light-theme action color with readable text |
+| Ice blue | `#83BDF2` | Status/info and focus fallback only |
 
-These are artwork colors, not a replacement for semantic QST contrast rules.
-UI foregrounds, state colors, high contrast, and motion preferences remain
-owned by [design tokens](../architecture/design-tokens.md).
+The Nightfall and Porcelain values above are the packaged `qinda-dark` and
+`qinda-light` semantic theme roles. Ice blue is supplied by QST status/info
+derivation and is not a general-purpose accent. UI foregrounds, state colors,
+high contrast, motion preferences, and semantic contrast rules remain owned by
+[design tokens](../architecture/design-tokens.md).
 
 Application icons use rounded silhouettes and a few clear layers. Action and
 status icons must communicate their meaning at small sizes without relying on
@@ -29,9 +32,9 @@ to the dock; detailed texture belongs in the wallpaper rather than tiny controls
 
 | Wallpaper | Character |
 | --- | --- |
-| Jade Fold | Sea-glass folds, a warm horizon, and the signature jade palette |
+| Jade Fold | Sea-glass folds, a warm horizon, and the former Mineral Light palette |
 | Porcelain Dawn | Pale ceramic curves and diffuse apricot daylight |
-| Ink Tide | Smoked glass, deep teal, and restrained violet edge light |
+| Ink Tide | Smoked glass, deep ink-blue, and restrained violet edge light |
 | Qinda Punk | A chibi cyborg penguin, rooftop neon, coffee, and a rubber-duck drone |
 | Compile Club | The same mascot in a warm hacker workshop; the duck cools a compiling machine |
 
@@ -40,8 +43,10 @@ shape vocabulary rather than merely recoloring one image. The original PNGs
 are 1672 × 941 pixels. Generation provenance and full prompts are preserved
 with the assets in `data/wallpapers/ARTWORK.md`.
 
-Use [Appearance Settings](../apps/appearance-settings.md) to select artwork.
-The desktop should preserve an explicit user choice, including no wallpaper.
+The packaged QindaPunk theme pair uses `qinda-punk.png` as its companion
+wallpaper when the default appearance has no explicit wallpaper choice. Use
+[Appearance Settings](../apps/appearance-settings.md) to select artwork. The
+desktop preserves an explicit user choice, including no wallpaper.
 Do not make this visual identity a reason to restrict custom themes, images,
 or alternative layout profiles.
 
