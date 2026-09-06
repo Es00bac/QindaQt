@@ -24,6 +24,10 @@ replace earlier work:
 - Make Settings and the wider desktop human-friendly: focused Appearance
   destinations, clear selection and apply behavior, usable customization,
   consistent controls, compact navigation, and real visual verification.
+- Rewrite the main user guides in clear, practical language: explain what
+  people can do and what happens next, use consistent window-container terms,
+  and keep contributor implementation details in contributor references. Start
+  with getting started, desktop/window management, Settings, and applications.
 - Develop the QindaPunk-inspired theme with original, reference-informed art
   direction. Use image generation across the design process where useful;
   preserve explicit wallpaper/theme choices. Palettes, shared editable controls,
@@ -57,6 +61,10 @@ replace earlier work:
   Meta+Arrow and other native KWin move/resize/maximize/tile paths must also
   respect grouped-member ownership: no member may move relative to the desktop
   while still bound to the container layout.
+- Show each window container as one dock/task-list entry, suppress its member
+  entries, and route activation/minimize/restoration through the container.
+  Detaching restores a standalone task; verify transfers, member exit, and
+  normalization against the existing task-list contract.
 - Add a keyboard toggle for grouped-member title chrome, keeping container
   ownership and a visible focus cue in both clean-tile and title-visible modes.
 - Provide a dismissible desktop shortcut note with an obvious way to reopen it;
