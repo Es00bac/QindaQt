@@ -13,6 +13,8 @@ The production shell owns one noninteractive layer-shell Background window per `
 
 Bundled values use `qindaqt:<name>` identities and resolve only beneath standard generic-data roots at `qindaqt/wallpapers/<name>.png`; absolute paths remain supported for explicit user choices. The default layer selects `qindaqt:jade-fold`. User-layer values continue to outrank it, including the empty string, so startup never rewrites a saved choice.
 
+The private `WallpaperController` is the sole shell-runtime exception for direct LayerShellQt use. It owns only background windows and their image presentation; it must not take over panel or notification surface planning from `shell_surface`. Reusing the existing dependency for this small background adapter avoids expanding the panel-planning public API with unrelated image policy. Settings UI and QML continue to have no platform-surface access.
+
 ## Consequences
 
 Output and Settings changes update backgrounds without restarting the shell. The controller owns no persistence and reserves no work area or input. Desktop scope keeps these surfaces outside ordinary window, task-list, and visibility facts. Packaging must install wallpapers in both the shell and Appearance Settings runtime components.

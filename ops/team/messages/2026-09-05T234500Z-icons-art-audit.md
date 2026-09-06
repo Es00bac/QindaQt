@@ -1,0 +1,8 @@
+# Icon and art integration bounded audit
+
+Read-only audit at `8b118917` and current source.
+
+- Built-in QML summary icon names include `start-here-kde`, `applications-other`, `network-wireless-{off,disconnected,signal-*}`, `network-bluetooth-inactive-symbolic`, `battery-missing`, `audio-volume-muted`, `edit-paste`, `notifications`, `preferences-plugin`, `preferences-system-windows`, `virtual-desktops`, `user-desktop`, `view-grid`, `system-search`, `application-x-executable`, and `clock`; dynamic launcher/task/status names come from desktop entries or upstream models. Preserve these exact names and ensure any added artwork is present in the pinned Breeze/Breeze-dark intersection fixture required by `qindaqt.shell-icon-coverage`.
+- SVG behavior is explicit: symbolic lookup tries `<name>-symbolic`, and recoloring occurs only for `symbolic=1` with an opaque `#rrggbb` target. Regular full-color SVGs retain their own pixels; do not assume QSvgRenderer will apply token colors automatically. Validate at least symbolic recolor, alpha preservation, and unresolved-name placeholder behavior at 1x/2x.
+- Wallpaper settings currently remain stored intent only. `ADR-0074` and `apps/appearance-settings.md` state the shell does not consume/apply `appearance.wallpaper`; no runtime wallpaper asset lookup exists under `src/shell`. Generated wallpapers can support visual captures/theme presentation, but should not be described as integrated wallpaper application without a compositor/settings consumer and packaging test.
+- Themes are JSON token data and do not embed image assets. Any art candidate needs an explicit asset root/package path and a visual-harness fixture reference; otherwise it is orphaned artwork.

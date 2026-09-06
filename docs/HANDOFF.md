@@ -1,5 +1,49 @@
 # Integration handoff
 
+## Visual identity and live wallpaper selection — 2026-09-05
+
+QindaQt now ships its own Mineral Light icon theme: 131 canonical designs and
+12 explicit aliases, each with colored and symbolic variants (286 SVGs).
+Application, action, device, place, MIME, category, and status icons carry
+distinct meanings; Wi-Fi signal and battery levels remain distinguishable.
+The freedesktop theme inherits hicolor for third-party coverage. Existing
+user theme preferences remain authoritative.
+
+Five original wallpapers accompany the theme: Jade Fold, Porcelain Dawn,
+Ink Tide, Qinda Punk, and Compile Club. The last two introduce the user's
+QindaHumor direction: a chibi cyborg Linux penguin, jade visor, amber boots,
+coffee, and a rubber-duck sidekick. The PNG originals are 1672 × 941, with
+full generation prompts in `data/wallpapers/ARTWORK.md`. The visual language is
+specified in [Visual identity](wiki/shell/visual-identity.md) and
+[Icon theme](wiki/shell/icon-theme.md).
+
+Appearance now exposes thumbnails, a readable No wallpaper card, a custom path,
+and scale/center/tile choices. Apply updates the actual background through the
+existing Settings client. A small wallpaper controller owns one noninteractive
+background per output; the exact `desktop` layer-shell scope keeps backgrounds
+out of ordinary windows and task lists. Fresh profiles select Jade Fold;
+saved choices, including none, outrank that default. Shell, Appearance, and
+DesktopVirtual packages include the artwork. [ADR-0078](wiki/adr/0078-own-wallpaper-surfaces-in-the-shell.md)
+records ownership and the narrow private LayerShellQt adapter exception.
+
+Verification on Gentoo: full Debug build passes; affected Appearance/shell
+preferences 10/10, icon checks 6/6, artwork validation 286 SVGs, and stage-closure
+unit checks 5/5 pass. The broad suite initially passed 645/647; both failures
+were repaired and their rerun passed 2/2 (a source-format check and an obsolete
+icon-theme expectation). DesktopVirtual package and real 1080p checks pass 2/2.
+
+Private run `dc816c3f936bd8357ecb86fbdc5e4c06` succeeds: Settings displays all
+five artwork thumbnails, pointer selection and Apply change Jade Fold to
+Qinda Punk, and the settings ledger reports `appearance.wallpaper — Applied`.
+Captured pixels show the actual penguin background and new dock icons. Both
+tracked applications survive and minimize through their title controls;
+cleanup leaves zero private survivors and restores the audit hook byte-for-byte.
+Screenshots and logs remain in ignored build evidence, not production sources.
+
+This qualifies nested rendering and live selection, not physical output hotplug
+or new Release qualification. Third-party application artwork continues to use
+its own installed icons and hicolor fallback. Memory optimization stays deferred.
+
 ## Dock refinement and menu placement — 2026-09-05
 
 QindaQt and macOS-inspired shelves now use content-sized rounded translucent
