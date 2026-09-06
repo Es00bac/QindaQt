@@ -33,7 +33,18 @@ replace earlier work:
   are integrated through `90bca1c6`; 43 focused menu/AppShell gates pass. After the
   live shell refresh the user confirms flicker stopped, but clicking menu items
   is nonfunctional. This is the immediate active regression; stable painting
-  alone is not completion.
+  alone is not completion. The action repair is integrated at `ce63d1bb`, with
+  35/35 focused checks and a real nested File → New action creating a second
+  editor tab. Physical-session deployment and popup placement remain open.
+- Support Sloom Studio by default through its existing Electron/custom-KDE
+  global-menu integration. Its standard dbusmenu twin is exported at
+  `/org/signalloom/menus/active` by `org.signalloom.PanelMenu`; preserve that
+  existing contract and qualify real menu actions.
+- Diagnose the reported ChatGPT launch segmentation fault and repair any
+  established desktop/runtime integration defect without resetting user data.
+- Maintain the project on the user’s GitHub with reviewed integration commits,
+  working CI dependencies, isolated worker branches, and ignored build/session
+  output. `origin/main` was pushed and independently read back at `ce63d1bb`.
 - Make Meta+Shift left-drag consistently combine windows into QindaQt
   containers without competing KWin custom/thirds tiling. The input-order and
   modifier-timing conflict is being repaired and needs nested interaction proof.
