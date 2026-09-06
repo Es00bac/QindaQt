@@ -34,26 +34,33 @@ Popup {
     // AGENT-CONTRACT: On Wayland the popup window position is server-side —
     // QQuickPopupPositioner::repositionPopupWindow() returns early and
     // popup.x/y never reach the compositor. QtWayland's createPositioner()
-    // instead builds the xdg_popup from the popup window's dynamic
-    // "_q_waylandPopupAnchor*" properties, read when the platform surface is
-    // created (QQuickPopupWindow emits the Window attachment change that
-    // re-evaluates popup.popupWindow before the window is shown, so setting
+    // instead builds the xdg_popup from the popup window's REAL QObject
+    // dynamic "_q_waylandPopupAnchor*" properties, read when the platform
+    // surface is created (QQuickPopupWindow reparents the popup item and
+    // re-evaluates popup.popupWindow before the window is shown, so writing
     // them in openMenu/onPopupWindowChanged precedes xdg_popup creation).
-    // The anchor/gravity pair mirrors Qt's Menu dropdown behavior: below the
-    // anchor rect, left-aligned; slide_x|slide_y|flip_y (11) keeps it on
-    // screen and flips it above the anchor at the screen's bottom edge.
+    // AGENT-GUARD: do NOT assign these names from QML — an unknown property
+    // on a C++-created QObject wrapper becomes a JavaScript-only expando
+    // (QV4::QObjectWrapper::virtualPut falls through to Object::virtualPut),
+    // invisible to QtWayland; that was the ef0941e4 failure. Only the
+    // NativePopupPlacement singleton's QObject::setProperty bridge is seen by
+    // createPositioner().
+    // The anchor rectangle handed to the native bridge: the clicked entry in
+    // the panel window's coordinate system. Invalid when there is no anchor,
+    // which makes NativePopupPlacement fail closed.
+    function nativeAnchorRect() {
+        if (anchorItem === null)
+            return Qt.rect(0, 0, -1, -1)
+        const topLeft = anchorItem.mapToItem(null, 0, 0)
+        return Qt.rect(topLeft.x, topLeft.y, anchorItem.width,
+                       anchorItem.height)
+    }
+
     function configureNativePlacement() {
         const win = popupWindow
         if (win === null || anchorItem === null)
             return
-        const topLeft = anchorItem.mapToItem(null, 0, 0)
-        win._q_waylandPopupAnchorRect =
-                Qt.rect(Math.round(topLeft.x), Math.round(topLeft.y),
-                        Math.round(anchorItem.width),
-                        Math.round(anchorItem.height))
-        win._q_waylandPopupAnchor = Qt.BottomEdge | Qt.LeftEdge
-        win._q_waylandPopupGravity = Qt.BottomEdge | Qt.RightEdge
-        win._q_waylandPopupConstraintAdjustment = 11
+        NativePopupPlacement.configurePopupWindow(win, nativeAnchorRect())
     }
 
     onPopupWindowChanged: configureNativePlacement()

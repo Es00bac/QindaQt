@@ -530,21 +530,28 @@ offscreen and on X11.
 On Wayland the popup window position is server-side: Qt's popup positioner
 returns early on the `wayland` platform and the compositor places the
 `xdg_popup` from the popup window's `_q_waylandPopupAnchor*` properties,
-which QtWayland reads when creating the positioner. `GlobalMenuPopup` sets
-`_q_waylandPopupAnchorRect` to the clicked entry's rectangle in panel window
-coordinates with Menu-style dropdown edges (`anchor_bottom_left`,
-`gravity_bottom_right`) and `slide_x|slide_y|flip_y` constraint adjustment,
-so the compositor slides the menu on screen horizontally and flips it above
-the anchor at the screen's bottom edge. The properties are written in
-`openMenu()` and again from `onPopupWindowChanged`; the Window attachment
-change fires while the popup item is reparented into the popup window,
-before the platform surface (and its positioner) is created.
+which QtWayland reads when creating the positioner. Those must be real
+QObject dynamic properties — assigning an unknown property name on a
+C++-created `QObject` from QML only creates a JavaScript expando on the
+wrapper, invisible to QtWayland. The module's `NativePopupPlacement`
+singleton is the bridge: `configurePopupWindow()` performs
+`QObject::setProperty` for `_q_waylandPopupAnchorRect` (the clicked entry's
+rectangle in panel window coordinates), Menu-style dropdown edges
+(`anchor_bottom_left`, `gravity_bottom_right`), and
+`slide_x|slide_y|flip_y` constraint adjustment, so the compositor slides the
+menu on screen horizontally and flips it above the anchor at the screen's
+bottom edge. `GlobalMenuPopup` invokes the bridge in `openMenu()` and again
+from `onPopupWindowChanged`; the Window attachment change fires while the
+popup item is reparented into the popup window, before the platform surface
+(and its positioner) is created.
 
 The `global-menu-popup-placement-qml-offscreen` row
 asserts the popup window lands on the anchor's mapped bottom-left under
 nested offsets, anchors each entry under itself, pins the clamp/flip
-boundary decisions, and pins the exact `_q_waylandPopupAnchor*` contract
-values the native compositor consumes.
+boundary decisions, and pins the anchor rectangle handed to the native
+bridge. The `global-menu-native-popup-placement` row pins the exact
+`_q_waylandPopupAnchor*` values as real QObject dynamic properties, read
+back through `QObject::property()` the way QtWayland reads them.
 
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows

@@ -138,27 +138,29 @@ Item {
 
         function test_nativeWaylandAnchorContract() {
             // On Wayland the compositor positions the popup server-side from
-            // the popup window's "_q_waylandPopupAnchor*" properties; popup
-            // x/y never reach it. Pin the exact contract QtWayland reads in
-            // createPositioner(): the clicked entry's rect in panel window
-            // coordinates, Menu-style dropdown edges (below, left-aligned),
-            // and slide_x|slide_y|flip_y constraint adjustment.
+            // the popup window's REAL QObject dynamic "_q_waylandPopupAnchor*"
+            // properties, written by the NativePopupPlacement bridge — a QML
+            // assignment to those names would only create a JavaScript
+            // wrapper expando (the ef0941e4 failure). This row pins the value
+            // flowing into the bridge (the clicked entry's rect in panel
+            // window coordinates) and smokes the invocation on the real
+            // popup window; under QT_FATAL_WARNINGS any signature, null, or
+            // rect-conversion error aborts. The exact property values
+            // QtWayland's createPositioner() consumes are pinned natively by
+            // qindaqt.global-menu-native-popup-placement.
             const entries = topLevelEntries()
             const popup = findChild(applet, "globalMenuPopup")
             popup.openMenu(fakeAccess.items[0], entries[0])
             tryCompare(popup, "opened", true)
-            const win = popup.popupWindow
-            verify(win !== null)
+            verify(popup.popupWindow !== null)
             const sceneTopLeft = entries[0].mapToItem(null, 0, 0)
-            const anchorRect = win._q_waylandPopupAnchorRect
-            compare(anchorRect.x, Math.round(sceneTopLeft.x))
-            compare(anchorRect.y, Math.round(sceneTopLeft.y))
-            compare(anchorRect.width, Math.round(entries[0].width))
-            compare(anchorRect.height, Math.round(entries[0].height))
-            compare(win._q_waylandPopupAnchor, Qt.BottomEdge | Qt.LeftEdge)
-            compare(win._q_waylandPopupGravity, Qt.BottomEdge | Qt.RightEdge)
-            compare(win._q_waylandPopupConstraintAdjustment, 11)
+            const rect = popup.nativeAnchorRect()
+            compare(Math.round(rect.x), Math.round(sceneTopLeft.x))
+            compare(Math.round(rect.y), Math.round(sceneTopLeft.y))
+            compare(Math.round(rect.width), Math.round(entries[0].width))
+            compare(Math.round(rect.height), Math.round(entries[0].height))
             popup.close()
+            compare(Math.round(popup.nativeAnchorRect().width), -1)
         }
 
         function test_placementOriginForBoundaryDecisions() {
