@@ -69,7 +69,7 @@ Rectangle {
             color: Tokens.bg.highest; border.width: 2; border.color: Tokens.accent.default
             Text { anchors.centerIn: parent; text: qsTr("CENTER\nPage"); horizontalAlignment: Text.AlignHCenter; color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.caption }
         }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; text: qsTr("Meta + Shift + left drag"); color: Tokens.accent.default; font.family: Tokens.type.monoFontFamily; font.pointSize: Tokens.type.caption; font.weight: Font.DemiBold }
+        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; text: qsTr("Meta + Shift + left drag"); color: Tokens.fg.default; font.family: Tokens.type.monoFontFamily; font.pointSize: Tokens.type.caption; font.weight: Font.DemiBold }
     }
 
     Item {
@@ -115,7 +115,7 @@ Rectangle {
                         border.width: index === 1 ? 2 : 1; border.color: index === 1 ? Tokens.accent.default : Tokens.outline.strong
                         Text { anchors.centerIn: parent; text: customizeStep.modelData; horizontalAlignment: Text.AlignHCenter; color: customizeStep.index === 2 ? Tokens.accent.fg : Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.body; font.weight: Font.DemiBold }
                     }
-                    Text { visible: index < 2; text: "→"; color: Tokens.accent.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.headline }
+                    Text { visible: index < 2; text: "→"; color: Tokens.fg.default; font.family: Tokens.type.fontFamily; font.pointSize: Tokens.type.headline }
                 }
             }
         }

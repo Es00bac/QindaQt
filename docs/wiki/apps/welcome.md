@@ -43,14 +43,17 @@ The seven chapters cover:
 1. a short orientation to familiar independent windows and optional groups;
 2. the launcher, dock, global application menu, and ordinary floating
    controls;
-3. exact `Meta+Shift` left-drag arrangement, with an edge creating a split and
-   the center or tab strip creating a desktop page;
+3. exact `Meta+Shift` left-drag arrangement, with an edge creating a split,
+   the center or tab strip creating a desktop page, and divider dragging
+   resizing the two sides; dropping outside all targets leaves an independent
+   window independent and detaches a grouped member;
 4. the difference between a top-level desktop page and document tabs inside an
    application, plus recursive splits and page keyboard navigation;
 5. whole-group movement through the outer title, member detach through the
    preserved member title, page reorder/move/detach, and the group menu;
-6. preset selection and reversible Customize drafts, including apply, discard,
-   undo, pointer, and keyboard paths; and
+6. preset selection and reversible Customize drafts, distinguishing a cancelled
+   move from whole-draft Discard and covering apply, undo, pointer, and keyboard
+   paths; and
 7. wallpaper, light/dark/system appearance, accessibility choices, and manual
    reopening.
 
