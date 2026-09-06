@@ -29,9 +29,10 @@ physical Bluetooth adapter is claimed.
 QindaPunk palettes, shared editable controls, selected-only segmented actions,
 and the default companion wallpaper are integrated through `3de6ac9f`. The full
 Debug build passes, the 26 reviewed Controls visual comparisons pass, and the
-integrated theme/control selection passes 42/44. The remaining two failures are
-a stale shell palette expectation and an absent-service fixture that discovers
-the installed Settings service; isolated fixture repairs are in progress.
+integrated theme/control/portal selection passes 46/46 after independently
+reviewed fixture repairs `fd739656` and `bc87c7c9`. These update stale palette
+expectations and isolate the absent-service D-Bus scenario from installed
+activation directories. No theme-related failures remain in that selection.
 
 Settings navigation/presentation, actual ICC application, global-menu stability,
 and deterministic Meta+Shift docking remain candidate work. Meta+Arrow and all
@@ -39,7 +40,9 @@ other native geometry actions must respect container ownership; the directional
 redirect candidate has not yet passed independent review or nested interaction. Their final boundary requires exact independent review,
 integrated regression gates, and real nested desktop screenshots/interactions.
 Generated design concepts and shell-preview demos are not production visual
-acceptance evidence.
+acceptance evidence. The additional user-requested member-title shortcut,
+parent-frame management controls, dismissible desktop shortcut note, and
+stronger active-frame cues are assigned isolated work; none is yet integrated.
 
 ## Host installation completed — 2026-09-05
 
