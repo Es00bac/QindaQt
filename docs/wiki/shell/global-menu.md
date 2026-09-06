@@ -545,13 +545,32 @@ from `onPopupWindowChanged`; the Window attachment change fires while the
 popup item is reparented into the popup window, before the platform surface
 (and its positioner) is created.
 
+Top-level menu switching follows menu-bar convention: with one entry's menu
+open, hovering another enabled submenu entry switches the popup to it, and
+clicking another entry switches too; clicking the entry whose menu is open
+closes it (toggle). The toggle is judged at `clicked()` time against the
+popup's record of which anchor its latest close ended (bounded to the same
+click gesture by timestamp), because delivery order between the press-outside
+close and the button's `pressed()` varies across platforms, and natively the
+`xdg_popup` grab may swallow the switching press entirely — hover is the
+reliable native switching path. A deferred focus-loss close scheduled before
+a switch is disarmed by an open-generation counter, so it cannot close the
+freshly switched menu. Switching anchors while open re-anchors the LIVE popup
+window: after the anchor contract is rewritten, a popup window geometry poke
+makes QtWayland rebuild the positioner from the new anchor rect and send
+`xdg_popup.reposition` (`QWaylandXdgSurface::setWindowGeometry`), since popup
+`x`/`y` never reach the compositor on Wayland.
+
 The `global-menu-popup-placement-qml-offscreen` row
 asserts the popup window lands on the anchor's mapped bottom-left under
 nested offsets, anchors each entry under itself, pins the clamp/flip
 boundary decisions, and pins the anchor rectangle handed to the native
 bridge. The `global-menu-native-popup-placement` row pins the exact
 `_q_waylandPopupAnchor*` values as real QObject dynamic properties, read
-back through `QObject::property()` the way QtWayland reads them.
+back through `QObject::property()` the way QtWayland reads them. The
+`global-menu-applet-switch-qml-offscreen` row pins the switch contract:
+click-switch, toggle-close, bounded reopen, hover-switch while open, and no
+hover-open while closed.
 
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows
