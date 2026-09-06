@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "panelvisibilitycaptureprocess.h"
+#include "panelvisibilitycontrolchannel.h"
 #include "panelvisibilityphasewaiter.h"
 #include "panelvisibilitysessionwindowproof.h"
 
@@ -253,6 +254,75 @@ bool requirePhase(QDBusInterface &endpoint, QJsonArray *items,
     return true;
 }
 
+
+bool waitForFullscreenState(PaintedWindow &client, bool fullscreen)
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < 5'000) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+        if (client.windowState() == (fullscreen ? Qt::WindowFullScreen : Qt::WindowNoState)) {
+            return true;
+        }
+        QThread::msleep(20);
+    }
+    return false;
+}
+
+bool runFullscreenControl(PaintedWindow &client, const QString &controlFile)
+{
+    using namespace QindaQt::Test::PanelVisibilityControl;
+
+    Channel channel(controlFile);
+    QString failure;
+    if (!channel.isValid(&failure) || !channel.publishReady(client.title(), &failure)) {
+        QTextStream(stderr) << "panel control setup failed: " << failure << '\n';
+        return false;
+    }
+
+    QElapsedTimer deadline;
+    deadline.start();
+    while (deadline.elapsed() < 45'000) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+        const std::optional<Command> command = channel.readNext(&failure);
+        if (!failure.isEmpty()) {
+            QTextStream(stderr) << "panel control command failed: " << failure << '\n';
+            return false;
+        }
+        if (!command.has_value()) {
+            QThread::msleep(20);
+            continue;
+        }
+        if (command->action == Action::Close) {
+            client.close();
+            if (!channel.acknowledge(*command, false, &failure)) {
+                QTextStream(stderr) << "panel control acknowledgement failed: " << failure << '\n';
+                return false;
+            }
+            return true;
+        }
+
+        // AGENT-GUARD: Do not call requestActivate here. The runtime owner uses
+        // its own real drag and focus transitions around this client; commands
+        // may change fullscreen state but must not steal focus from that flow.
+        if (command->fullscreen) {
+            client.showFullScreen();
+        } else {
+            client.showNormal();
+        }
+        if (!waitForFullscreenState(client, command->fullscreen)
+            || !channel.acknowledge(*command, client.windowState() == Qt::WindowFullScreen, &failure)) {
+            QTextStream(stderr) << "panel fullscreen control failed: " << failure << '\n';
+            return false;
+        }
+    }
+    if (!channel.acknowledgeTimeout(&failure)) {
+        QTextStream(stderr) << "panel control timeout acknowledgement failed: " << failure << '\n';
+    }
+    QTextStream(stderr) << "panel control timed out waiting for close" << '\n';
+    return false;
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -261,7 +331,10 @@ int main(int argc, char **argv)
 
     QGuiApplication application(argc, argv);
     application.setQuitOnLastWindowClosed(false);
-    if (application.arguments().size() != 3 || application.screens().size() != 1) {
+    const QStringList arguments = application.arguments();
+    const bool hasControlFile = arguments.size() == 5
+        && arguments.at(3) == QStringLiteral("--control-file");
+    if ((!hasControlFile && arguments.size() != 3) || application.screens().size() != 1) {
         return 2;
     }
     auto *const bus = QDBusConnection::sessionBus().interface();
@@ -293,8 +366,9 @@ int main(int argc, char **argv)
         return topVisible(items)
             && !mappedPanel(items, QStringLiteral("left"), 40, outputSize);
     };
-    const QString captureTool = application.arguments().at(1);
-    const QString captureLibraryPath = application.arguments().at(2);
+    const QString captureTool = arguments.at(1);
+    const QString captureLibraryPath = arguments.at(2);
+    const QString controlFile = hasControlFile ? arguments.at(4) : QString{};
     if (!requirePhase(endpoint, &observed, overlapHidden, outputSize, captureTool,
                       captureLibraryPath,
                       QStringLiteral("window-overlap-hidden"), &phases)) {
@@ -330,6 +404,9 @@ int main(int argc, char **argv)
                       captureLibraryPath,
                       QStringLiteral("window-moved-away"), &phases)) {
         return 6;
+    }
+    if (hasControlFile) {
+        return runFullscreenControl(client, controlFile) ? 0 : 18;
     }
     client.showFullScreen();
     client.requestActivate();

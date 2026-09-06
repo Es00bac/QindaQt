@@ -339,6 +339,11 @@ def _install_custom_spec() -> None:
             "--visibility-probe",
             "/opt/qindaqt-tools/qindaqt-panel-visibility-session-probe",
         ))
+        if arguments.visibility_control_file is not None:
+            command.extend((
+                "--visibility-control-file",
+                str(arguments.visibility_control_file),
+            ))
         return dataclasses.replace(
             spec,
             probe=ReadOnlyMount(
@@ -365,6 +370,11 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--audio-service-directory", required=True)
     parser.add_argument("--probe", type=Path, required=True)
     parser.add_argument("--visibility-probe", type=Path)
+    parser.add_argument(
+        "--visibility-control-file", type=Path,
+        help=("optional in-sandbox command file for the private fullscreen "
+              "qualification; use /var/lib/qindaqt-evidence/<name>"),
+    )
     parser.add_argument("--bwrap", type=Path)
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--dbus-daemon", type=Path, required=True)

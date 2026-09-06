@@ -27,8 +27,15 @@ def visibility_probe_command(
     # environment. Its screenshot child alone receives the private parent's
     # loader path, preventing either side of the mixed-ABI proof from borrowing
     # the other's libweston/libkwin closure.
-    return [
+    command = [
         str(arguments.visibility_probe),
         str(arguments.weston_screenshooter),
         library_path,
     ]
+    control_file = getattr(arguments, "visibility_control_file", None)
+    if control_file is not None:
+        control_path = Path(control_file)
+        if not control_path.is_absolute():
+            raise SandboxContractError("panel control file path must be absolute")
+        command.extend(("--control-file", str(control_path)))
+    return command

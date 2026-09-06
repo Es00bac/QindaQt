@@ -2,6 +2,26 @@
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/panel-visibility-tmp")
 qt_add_executable(
+    qindaqt-panel-visibility-control-channel-tests
+    "${CMAKE_CURRENT_SOURCE_DIR}/tst_panelvisibilitycontrolchannel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycontrolchannel.cpp"
+)
+target_link_libraries(
+    qindaqt-panel-visibility-control-channel-tests PRIVATE Qt6::Core Qt6::Test
+)
+set_target_properties(
+    qindaqt-panel-visibility-control-channel-tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt-panel-visibility-control-channel-tests)
+add_test(
+    NAME desktop.virtual.panel-visibility.control-channel-unit
+    COMMAND qindaqt-panel-visibility-control-channel-tests
+)
+set_tests_properties(
+    desktop.virtual.panel-visibility.control-channel-unit
+    PROPERTIES LABELS "unit;session;wayland;visibility;fullscreen"
+)
+qt_add_executable(
     qindaqt-panel-visibility-phase-settlement-tests
     "${CMAKE_CURRENT_SOURCE_DIR}/tst_panelvisibilityphasewaiter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
@@ -73,6 +93,7 @@ if(
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycaptureprocess.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilityphasewaiter.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitysessionwindowproof.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/panelvisibilitycontrolchannel.cpp"
     )
     target_link_libraries(
         qindaqt-panel-visibility-session-probe
