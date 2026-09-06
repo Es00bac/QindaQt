@@ -51,6 +51,16 @@ bool isBoundedCoordinate(const QJsonValue &value)
         && std::abs(coordinate) <= DevelopmentInputCodec::MaxLogicalCoordinateMagnitude;
 }
 
+bool isBoundedRelativeDelta(const QJsonValue &value)
+{
+    if (!value.isDouble()) {
+        return false;
+    }
+    const auto delta = value.toDouble();
+    return std::isfinite(delta)
+        && std::abs(delta) <= DevelopmentInputCodec::MaxRelativeDeltaMagnitude;
+}
+
 std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
 {
     if (!value.isObject()) {
@@ -73,6 +83,20 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
         event.type = DevelopmentInputEventType::PointerAbsolute;
         event.position = QPointF(object.value(QStringLiteral("x")).toDouble(),
                                  object.value(QStringLiteral("y")).toDouble());
+        return event;
+    }
+
+    if (type.toString() == QStringLiteral("pointer-relative")) {
+        if (!hasExactlyFields(object, {QStringLiteral("type"), QStringLiteral("dx"),
+                                       QStringLiteral("dy")})
+            || !isBoundedRelativeDelta(object.value(QStringLiteral("dx")))
+            || !isBoundedRelativeDelta(object.value(QStringLiteral("dy")))) {
+            return std::nullopt;
+        }
+        DevelopmentInputEvent event;
+        event.type = DevelopmentInputEventType::PointerRelative;
+        event.position = QPointF(object.value(QStringLiteral("dx")).toDouble(),
+                                 object.value(QStringLiteral("dy")).toDouble());
         return event;
     }
 
@@ -268,9 +292,12 @@ QJsonObject DevelopmentInputController::capabilities() const
              static_cast<qint64>(DevelopmentInputCodec::MaxEvents)},
             {QStringLiteral("maxLogicalCoordinateMagnitude"),
              DevelopmentInputCodec::MaxLogicalCoordinateMagnitude},
+            {QStringLiteral("maxRelativeDeltaMagnitude"),
+             DevelopmentInputCodec::MaxRelativeDeltaMagnitude},
             {QStringLiteral("deviceId"), developmentInputDeviceId()},
             {QStringLiteral("eventTypes"),
-             QJsonArray{QStringLiteral("pointer-absolute"), QStringLiteral("key"),
+             QJsonArray{QStringLiteral("pointer-absolute"),
+                        QStringLiteral("pointer-relative"), QStringLiteral("key"),
                         QStringLiteral("button")}}};
 }
 

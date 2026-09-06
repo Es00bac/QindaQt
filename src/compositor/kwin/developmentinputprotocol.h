@@ -13,6 +13,7 @@ namespace QindaQt::Compositor::KWinIntegration {
 
 enum class DevelopmentInputEventType {
     PointerAbsolute,
+    PointerRelative,
     Key,
     Button,
 };
@@ -69,6 +70,10 @@ public:
     // This accommodates negative-coordinate monitor layouts while rejecting
     // coordinates whose magnitude cannot represent a plausible desktop.
     static constexpr qreal MaxLogicalCoordinateMagnitude = 1'000'000.0;
+    // Relative motion is a bounded qualification primitive. A generous
+    // 10k-logical-pixel delta covers nested pointer-lock probes without
+    // accepting unbounded values into KWin's input pipeline.
+    static constexpr qreal MaxRelativeDeltaMagnitude = 10'000.0;
 
     [[nodiscard]] static std::optional<DevelopmentInputBatch>
     parse(const QByteArray &requestJson, DevelopmentInputFailure *failure = nullptr);
