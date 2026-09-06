@@ -161,8 +161,9 @@ correction or a token revision.
 
 ## WCAG pair scope
 
-The built-in-data gate covers exactly Qinda Light, High Contrast, Dark, Dusk,
-and macOS. QST-1 uses the WCAG 2.2 contrast algorithm and requires:
+The built-in-data gate covers exactly QindaPunk Porcelain, QindaPunk Dusk,
+QindaPunk Nightfall, Qinda High Contrast, and Qinda macOS. QST-1 uses the
+WCAG 2.2 contrast algorithm and requires:
 
 | Foreground/background pair | Minimum |
 | --- | --- |
