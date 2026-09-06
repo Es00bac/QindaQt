@@ -199,6 +199,63 @@ Item {
             compare(fakeAccess.lastId, "open")
         }
 
+        function test_keyboardOpeningSkipsLeadingInertRows_data() {
+            return [{"tag": "disabled", "kind": "action"},
+                    {"tag": "separator", "kind": "separator"}]
+        }
+
+        function test_keyboardOpeningSkipsLeadingInertRows(data) {
+            const items = menuItems()
+            items[0].children.unshift({
+                "id": "inert", "kind": data.kind, "text": "Unavailable",
+                "enabled": false
+            })
+            fakeAccess.items = items
+            const applet = createTemporaryObject(appletComponent, root)
+            const bar = applet.menuBar
+            const file = bar.menuAt(0)
+            bar.itemAt(0).forceActiveFocus(Qt.TabFocusReason)
+            keyClick(Qt.Key_Down)
+            tryCompare(file, "opened", true)
+            tryCompare(file, "currentIndex", 1)
+            keyClick(Qt.Key_Space)
+            compare(fakeAccess.activateCalls, 1)
+            compare(fakeAccess.lastId, "open")
+        }
+
+        function test_liveThemeReplacementUpdatesOpenTree() {
+            const applet = createTemporaryObject(appletComponent, root)
+            const tree = nativeTree(applet)
+            tree.bar.itemAt(0).forceActiveFocus(Qt.TabFocusReason)
+            keyClick(Qt.Key_Down)
+            tryCompare(tree.file, "opened", true)
+            tryCompare(tree.file, "currentIndex", 0)
+            keyClick(Qt.Key_Down)
+            keyClick(Qt.Key_Right)
+            tryCompare(tree.recent, "opened", true)
+            const originalTheme = root.theme
+            try {
+                root.theme = {
+                    "colors": {
+                        "text": "#111111", "textMuted": "#444444",
+                        "surfaceRaised": "#eeeeee", "border": "#888888",
+                        "accent": "#224466", "accentText": "#ffffff"
+                    },
+                    "cornerRadius": 12
+                }
+                compare(tree.file.colors.text, "#111111")
+                compare(tree.file.itemAt(0).colors.text, "#111111")
+                compare(tree.recent.colors.text, "#111111")
+                compare(tree.recent.itemAt(0).colors.text, "#111111")
+                compare(tree.recent.theme.cornerRadius, 12)
+                verify(tree.file.opened)
+                verify(tree.recent.opened)
+                compare(fakeAccess.activateCalls, 0)
+            } finally {
+                root.theme = originalTheme
+            }
+        }
+
         function test_depthCapLeavesExcessSubmenuInert() {
             let leaf = {"id": "leaf", "kind": "action", "text": "Leaf",
                         "enabled": true}

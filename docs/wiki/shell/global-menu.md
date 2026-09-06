@@ -501,7 +501,9 @@ fallback against stale invocation.
 Each projected `Menu` uses `Popup.Window`. The customized native controls
 explicitly derive from `QtQuick.Controls.Basic`, so an inherited desktop
 platform theme cannot inject different hover/focus policy or popup transitions
-into QindaQt's keyboard behavior. The production layer-shell panel
+into QindaQt's keyboard behavior. Dynamic descendants bind their theme and
+colors to the owning menu, so replacing appearance tokens updates an open
+tree without rebuilding it or changing its invocation generation. The production layer-shell panel
 retains `Qt.WindowDoesNotAcceptFocus`/`KeyboardInteractivityNone`, while the
 native transient is the independently focusable keyboard surface. Qt Quick
 Controls owns popup placement, focus, open/close state, parent/submenu
@@ -526,7 +528,8 @@ The offscreen production-composition path hosts the real `PanelAppletRow` →
 bar, **Down** opens the first popup and selects its first item, **Down** selects
 the nested submenu, **Right** enters it, and **Space** activates exactly once
 and closes; **Escape** closes without activation. The small Down-key adapter
-selects the first public `Menu.itemAt(0)` after opening because a panel menu bar
+selects the first enabled, non-separator public `Menu.itemAt(index)` after
+opening because a panel menu bar
 is part of Tab traversal, while all popup state remains native. That row runs
 with `QT_FATAL_WARNINGS=1` and requires `Popup.Window`.
 

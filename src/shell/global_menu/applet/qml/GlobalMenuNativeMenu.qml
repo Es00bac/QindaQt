@@ -51,7 +51,7 @@ Basic.Menu {
                 const submenu = component.createObject(menu, {
                     "menuData": entry,
                     "access": access,
-                    "theme": theme,
+                    "theme": Qt.binding(function() { return menu.theme }),
                     "depth": depth + 1,
                     "maximumDepth": maximumDepth,
                     "interactive": Qt.binding(function() {
@@ -71,7 +71,7 @@ Basic.Menu {
             const item = actionComponent.createObject(menu.contentItem, {
                 "entryData": entry,
                 "access": access,
-                "colors": colors,
+                "colors": Qt.binding(function() { return menu.colors }),
                 "interactive": kind !== "submenu"
                     ? Qt.binding(function() { return menu.interactive }) : false
             })
