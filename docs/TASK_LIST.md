@@ -44,13 +44,19 @@ replace earlier work:
   preserve explicit wallpaper/theme choices. Palettes, shared editable controls,
   and reviewed Controls baselines are integrated through `3de6ac9f`; final
   Settings consumer review and real desktop visual acceptance remain open.
-- Eliminate global-menu flashing and inconsistent presentation. Reviewed fixes
-  are integrated through `90bca1c6`; 43 focused menu/AppShell gates pass. After the
-  live shell refresh the user confirms flicker stopped, but clicking menu items
-  is nonfunctional. This is the immediate active regression; stable painting
-  alone is not completion. The action repair is integrated at `ce63d1bb`, with
-  35/35 focused checks and a real nested File → New action creating a second
-  editor tab. Physical-session deployment and popup placement remain open.
+- Eliminate global-menu flashing and make pointer and keyboard actions reliable.
+  Native-menu fixes are integrated through `71f3b49b`. In isolated run
+  `de9f130640494649993e7001d75810a7`, inspected screenshots show a correctly
+  anchored File popup staying open after release and a one-second wait, with
+  exactly one new tab per pointer/keyboard New action. The semantic observer
+  was unavailable, so the automated gate remains false. The clipped Tabs label
+  and physical-session deployment still need completion.
+- Offer automatic screen-lock configuration in Settings and respect the user's
+  choice to disable idle locking. Integrated through `94b302ea`: Power settings
+  has an automatic-lock switch and duration selector, preserving custom values
+  and unrelated locker preferences; independent focused tests pass 7/7. The
+  host automatic idle-lock preference is off. Installing the updated Settings
+  UI remains part of the desktop refresh.
 - Support Sloom Studio by default through its existing Electron/custom-KDE
   global-menu integration. Its standard dbusmenu twin is exported at
   `/org/signalloom/menus/active` by `org.signalloom.PanelMenu`; preserve that

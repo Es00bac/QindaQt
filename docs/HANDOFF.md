@@ -1,27 +1,41 @@
 # Integration handoff
 
-## Current integration and runtime ownership — 2026-09-06 17:34 MDT
+## Current integration and runtime ownership — 2026-09-06 17:56 MDT
 
-The original goal thread is the sole integration, shared-stage, runtime, and
-host-deployment manager again. The parallel completion thread retains its
-existing isolated implementers; no overlapping worker may edit their paths.
+The original goal task is the sole integration, shared-stage, runtime, and
+host-deployment manager. The parallel completion task has stopped its workers;
+its preserved candidates remain available. The independent file-manager worker
+retains its paths.
 
-Gabbee harness candidates `6a402810` and `444b4829` were independently reviewed
-and integrated as `e5b3e342` and `bff5f3fd`; the integrated unit suite passes
-26/26. Actual approved Unicode insertion and complete Gabbee app/terminal/group
-qualification remain open. The latest approved-input failure was a GI text
-readback call error, despite helper READY and exit 0; those are not insertion proof.
+Screen-lock candidates `5653b576` and `795198e3` are integrated through
+`94b302ea`. The manager independently reran all seven focused tests successfully.
+Power settings now exposes automatic idle locking and a duration selector that
+retains custom values. The host Autolock preference is already false; the new
+Settings UI still awaits the desktop installation.
 
-Menu runtime `3177910e6a73461c8c58af2cd5ccd030` is **not accepted**. Its hook
-reported success from injection replies, but inspected held-menu screenshots
-show no popup and clipped panel labels. The existing native-menu owner is
-repairing that concrete behavior and strengthening semantic runtime assertions.
+Native-menu run `de9f130640494649993e7001d75810a7` uses the rebuilt library in
+both staged library locations. Manual screenshot review shows File anchored
+under its label and remaining open after release and a one-second wait. Pointer
+New adds exactly one tab (one to two); keyboard New adds exactly one more (two
+to three), without modifying its content. The automated semantic check cannot
+see accessibility nodes and remains false; this is scoped manual evidence,
+not an automated pass. The Tabs label still clips and is being repaired.
+Earlier run `3177910e6a73461c8c58af2cd5ccd030` remains rejected.
 
-Display writer repair `976ae25d` is integrated. The original DesktopVirtual
-stage omitted the Display service and activation entry, so it could activate
-the older host executable. The current private attempt stages the rebuilt
-service plus an explicit `/opt/qindaqt/bin` activation entry. Actual Apply/Revert
-must pass against that binary before Display acceptance is recorded.
+Display writer `976ae25d` is integrated. Run
+`518c44670d5f4ab3b3613924c978fcea` uses the rebuilt Display service and proves
+actual arrangement Apply/Revert plus whole-container minimize/restore. Its scale
+interaction did not complete, so overall Display qualification remains open.
+
+Approved Unicode insertion was read back exactly in run
+`2a2db7b6777e487b8694c5275d51443e`; the outer run failed on a process-sampling
+race. Gabbee app/terminal/group direct insertion remains under qualification.
+A minimal GI Text call correction was applied to the existing dirty external
+Gabbee checkout with a complete pre-edit backup; unrelated changes were retained.
+
+There has not yet been a complete host desktop install or session restart.
+A closing build is running; accepted palette/menu candidates and remaining
+runtime checks must be recorded accurately at deployment.
 
 ## Completion restart after connectivity report — 2026-09-06
 
