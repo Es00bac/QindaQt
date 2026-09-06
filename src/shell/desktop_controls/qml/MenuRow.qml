@@ -60,7 +60,7 @@ T.Button {
                 Layout.fillWidth: true
                 text: row.text
                 color: !row.enabled ? Tokens.fg.disabled
-                     : row.destructive ? Tokens.danger.default : Tokens.fg.default
+                     : Tokens.fg.default
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.body
                 font.weight: row.current ? Font.DemiBold : Font.Normal
