@@ -166,6 +166,9 @@ void CustomizeSettingsModelTests::persistenceAndConflictRemainTruthful()
                                          QStringLiteral("start")));
     QVERIFY(harness.model.apply());
     QVERIFY(!harness.model.dirty());
+    QCOMPARE(harness.model.statusText(),
+             QStringLiteral(
+                 "Your applied layout will be used the next time you start your desktop"));
     const QString saved = QDir(harness.store->path()).filePath(
         ShellCustomizationEditor::UserProfileStore::fileNameForId(
             QStringLiteral("fixture")));

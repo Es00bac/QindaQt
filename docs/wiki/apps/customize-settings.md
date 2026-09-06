@@ -140,7 +140,7 @@ They do not contact a host session bus, compositor, hardware, or input device.
 ## Stopping point
 
 Apply makes the profile durable and changes the Settings1 selection; the
-production shell adopts that choice at its next start through the bounded
+desktop uses that choice the next time it starts through the bounded
 Settings1 startup read in
 [ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md)
 (an explicit `--profile` still outranks it). Provisional live

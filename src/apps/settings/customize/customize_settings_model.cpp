@@ -132,7 +132,7 @@ QString CustomizeSettingsModel::statusText() const
         return QStringLiteral("Unapplied layout changes");
     }
     return QStringLiteral(
-        "Applied profiles are adopted by qindaqt-shell at its next start");
+        "Your applied layout will be used the next time you start your desktop");
 }
 
 QString CustomizeSettingsModel::errorText() const

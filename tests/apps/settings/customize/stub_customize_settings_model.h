@@ -45,7 +45,8 @@ public:
     [[nodiscard]] QString emptyString() const { return {}; }
     [[nodiscard]] QString statusText() const
     {
-        return QStringLiteral("Applied profiles are adopted at next shell start");
+        return QStringLiteral(
+            "Your applied layout will be used the next time you start your desktop");
     }
     [[nodiscard]] QString selectedProfileId() const
     {
