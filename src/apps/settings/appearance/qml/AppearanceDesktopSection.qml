@@ -37,6 +37,17 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Tokens.space["2"]
 
+        Button {
+            objectName: "noWallpaperButton"
+            width: 88
+            height: 94
+            text: qsTr("None")
+            emphasized: root.draftValue("appearance.wallpaper") === ""
+            available: root.appearanceSettings.canEdit && !root.editorBusy
+            accessibleName: qsTr("Use no wallpaper")
+            onClicked: root.setDraft("appearance.wallpaper", "")
+        }
+
         Repeater {
             model: root.appearanceSettings.bundledWallpapers ?? []
 
@@ -56,7 +67,7 @@ ColumnLayout {
                     Image {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        source: modelData.path
+                        source: modelData.previewUrl
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         Accessible.ignored: true

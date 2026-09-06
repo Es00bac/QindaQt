@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSet>
+#include <QUrl>
 
 namespace QindaQt::Apps::SettingsAppearance {
 
@@ -27,6 +28,8 @@ QVariantList discoverBundledWallpapers(const QStringList &roots) {
       result.append(
           QVariantMap{{QStringLiteral("name"), label},
                       {QStringLiteral("path"), file.absoluteFilePath()},
+                      {QStringLiteral("previewUrl"),
+                       QUrl::fromLocalFile(file.absoluteFilePath())},
                       {QStringLiteral("value"),
                        QStringLiteral("qindaqt:") + file.completeBaseName()}});
     }
