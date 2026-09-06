@@ -17,6 +17,11 @@ replace earlier work:
   service states, including cold startup and recovery. Display/Clipboard
   activation and Audio/Power/Network/Bluetooth recovery code are integrated;
   the repaired Bluetooth fixtures and the full 100-test service selection pass.
+- Detect connected displays, including disabled projectors, and offer usable
+  enable/layout controls in Settings. The physical DP-1 projector is enabled
+  beside HDMI-A-1; the disabled-output inventory repair is under review.
+- Make maximized containers follow the available work area when the dock hides
+  or changes its reservation, preserving their normal restore size.
 - Finish existing Color profile application and explain actual hardware
   capabilities without protocol jargon or nonfunctional controls. ICC application
   is integrated through `deb48cd3`; 13 focused checks pass. Physical color-profile

@@ -2,19 +2,35 @@
 
 ## Installed-session completion in progress — 2026-09-06
 
-Runtime update: normal Meta+Shift grouping now passes in private run
-`7bf2271d708648ee99e1afd80493ef40`: Editor and Settings become a real hybrid
-container, both frames converge, four Meta+Arrow checks keep the outer frame
-unchanged, and standalone Welcome still quick-tiles independently. Cleanup
-leaves no private processes. The delayed-Shift variant is the next runtime gate.
+Runtime update: both normal Meta+Shift grouping and late Shift now pass in
+private runs `7bf2271d708648ee99e1afd80493ef40` and
+`d90a2e7ddd8747a38dea9e06dc106bb9`. Editor and Settings form a real hybrid
+container, their actual frames converge, Meta+Arrow stays container-local, and
+standalone Welcome still quick-tiles independently. Both runs clean up fully.
 
-Popup placement remains open despite offscreen acceptance of `24ae2c3d`.
-Integrated native run `371c0483edd9477ea1a408d65790d1d3` still places the File
-popup at the end of the menu bar. The menu action repair itself has prior real
-File → New evidence; the placement repair is back with its implementer/reviewer.
-The pointer probe maps and activates, and native lock/confinement both activate;
-relative motion is unqualified because the development injector currently sends
-only absolute motion. Its narrowly scoped relative-motion support is in repair.
+Native pointer lock, confinement, and relative motion pass in private run
+`d8f380054b0c44fe8b176692063e6e11` after integrated relative input support
+`aadd1497`. The native client received relative motion while locked and
+completed its lock/confinement lifecycle; no private processes survived.
+This qualifies the representative protocol client, not every game.
+
+Popup placement remains open despite offscreen acceptance of `ef0941e4`.
+Integrated native run `3166df7426ea4945aa321ab22712e46f` still places File at
+the end of the menu bar. The real New action has prior evidence at that
+misplaced location; the expected correctly anchored click does not activate it.
+Kimi is repairing the exact native reproduction.
+
+The input helper is installed by the normal package as `qindaqt-agent-input`
+(`80ec2818`), with installed import/help smoke passing. Actual approved input
+remains a runtime gate. Gabbee's integrated unit fixture needs updating for
+already-present KDE portal routing, and the documented nested runner exposed
+an invalid run ID before boot; these are being repaired by Claude Sonnet.
+
+The connected DP-1 projector was disabled in KWin. Root enabled it beside the
+unchanged HDMI-A-1 main display. Terra is repairing the inventory that hid its
+disabled state from Settings. Dock work-area reflow is integrated at `0788ae86`:
+focused tests pass and preserve the normal restore frame; actual dock hide/reveal
+qualification remains open.
 
 Reviewed layer-shell exclusion and development keys are integrated through
 `57b01211`; focused admission/parser/note checks pass 3/3, and the input-device
