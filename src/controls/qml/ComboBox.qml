@@ -24,6 +24,27 @@ T.ComboBox {
     Accessible.name: control.displayText
     Accessible.description: accessibleDescription
 
+    // ComboBox owns the delegate model consumed by the popup ListView. The
+    // popup must not declare a second delegate: Qt would keep rendering the
+    // unstyled root delegateModel in that case.
+    delegate: T.ItemDelegate {
+        required property int index
+        width: ListView.view ? ListView.view.width : control.width
+        highlighted: control.highlightedIndex === index
+        contentItem: Text {
+            text: control.textAt(index)
+            color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
+            font.family: Tokens.type.fontFamily
+            font.pointSize: Tokens.type.body
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+        background: Rectangle {
+            radius: Tokens.radius.s
+            color: parent.highlighted ? Tokens.state.hover : "transparent"
+        }
+    }
+
     contentItem: Text {
         text: control.displayText
         color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
@@ -65,27 +86,14 @@ T.ComboBox {
         implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 320)
 
         contentItem: ListView {
+            objectName: "comboPopupList"
             clip: true
             implicitHeight: contentHeight
             model: control.popup.visible ? control.delegateModel : null
             currentIndex: control.highlightedIndex
-
-            delegate: T.ItemDelegate {
-                required property int index
-                width: ListView.view.width
-                highlighted: control.highlightedIndex === index
-                contentItem: Text {
-                    text: control.textAt(index)
-                    color: control.enabled ? Tokens.fg.default : Tokens.fg.disabled
-                    font.family: Tokens.type.fontFamily
-                    font.pointSize: Tokens.type.body
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-                background: Rectangle {
-                    radius: Tokens.radius.s
-                    color: parent.highlighted ? Tokens.state.hover : "transparent"
-                }
+            T.ScrollBar.vertical: T.ScrollBar {
+                objectName: "comboPopupScrollBar"
+                policy: T.ScrollBar.AsNeeded
             }
         }
 
