@@ -100,6 +100,7 @@ class KWinDevelopmentInputInjectorTest final : public QObject
 
 private Q_SLOTS:
     void emitsThroughTheRegisteredCombinationDevice();
+    void translatesFullscreenAndShellProbeKeys();
     void removesDeviceBeforeOwnedLifetimeEnds();
     void remainsUnavailableWithoutARegistrarBackend();
 };
@@ -252,6 +253,39 @@ void KWinDevelopmentInputInjectorTest::emitsThroughTheRegisteredCombinationDevic
     }
 }
 
+void KWinDevelopmentInputInjectorTest::translatesFullscreenAndShellProbeKeys()
+{
+    const auto state = std::make_shared<RegistrarState>();
+    KWinDevelopmentInputInjector injector(
+        std::make_unique<RecordingRegistrar>(state));
+    DevelopmentInputBatch batch;
+    batch.events = {
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::LeftAlt, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::F11, false,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::F1, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::C, false,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::V, true,
+         DevelopmentInputButton::Left},
+    };
+    QVERIFY(injector.inject(batch));
+    QCOMPARE(state->keys,
+             QList<quint32>({static_cast<quint32>(KEY_LEFTALT),
+                             static_cast<quint32>(KEY_F11),
+                             static_cast<quint32>(KEY_F1),
+                             static_cast<quint32>(KEY_C),
+                             static_cast<quint32>(KEY_V)}));
+    QCOMPARE(state->keyStates,
+             QList<KWin::KeyboardKeyState>({KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Pressed}));
+}
+
 void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()
 {
     const auto state = std::make_shared<RegistrarState>();
@@ -264,6 +298,14 @@ void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()
         held.events = {
             {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::LeftMeta, true,
              DevelopmentInputButton::Left},
+            {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::LeftAlt, true,
+             DevelopmentInputButton::Left},
+            {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::F1, true,
+             DevelopmentInputButton::Left},
+            {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::F11, true,
+             DevelopmentInputButton::Left},
+            {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::C, true,
+             DevelopmentInputButton::Left},
             {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::Enter, true,
              DevelopmentInputButton::Left},
             {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::N, true,
@@ -273,6 +315,8 @@ void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()
             {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::Escape, true,
              DevelopmentInputButton::Left},
             {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::Space, true,
+             DevelopmentInputButton::Left},
+            {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::V, true,
              DevelopmentInputButton::Left},
             {DevelopmentInputEventType::Button, {}, DevelopmentInputKey::LeftMeta, true,
              DevelopmentInputButton::Left},
@@ -291,8 +335,13 @@ void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()
              QStringList({QStringLiteral("key"), QStringLiteral("key"),
                           QStringLiteral("key"), QStringLiteral("key"),
                           QStringLiteral("key"), QStringLiteral("key"),
-                          QStringLiteral("button"), QStringLiteral("frame"),
-                          QStringLiteral("button"), QStringLiteral("frame"),
+                          QStringLiteral("key"), QStringLiteral("key"),
+                          QStringLiteral("key"), QStringLiteral("key"),
+                          QStringLiteral("key"), QStringLiteral("button"),
+                          QStringLiteral("frame"), QStringLiteral("button"),
+                          QStringLiteral("frame"), QStringLiteral("key"),
+                          QStringLiteral("key"), QStringLiteral("key"),
+                          QStringLiteral("key"), QStringLiteral("key"),
                           QStringLiteral("key"), QStringLiteral("key"),
                           QStringLiteral("key"), QStringLiteral("key"),
                           QStringLiteral("key"), QStringLiteral("key"),
@@ -306,6 +355,16 @@ void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()
                                             KWin::KeyboardKeyState::Pressed,
                                             KWin::KeyboardKeyState::Pressed,
                                             KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Pressed,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Released,
+                                            KWin::KeyboardKeyState::Released,
                                             KWin::KeyboardKeyState::Released,
                                             KWin::KeyboardKeyState::Released,
                                             KWin::KeyboardKeyState::Released,

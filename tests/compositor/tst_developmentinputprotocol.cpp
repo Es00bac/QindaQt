@@ -68,6 +68,7 @@ class DevelopmentInputProtocolTest final : public QObject
 
 private Q_SLOTS:
     void parsesAndDispatchesAllowlistedEvents();
+    void parsesFullscreenAndShellProbeKeys();
     void rejectsMalformedAndLimitFailures();
     void checksProductionGateBeforePayloadInspection();
     void reportsUnavailableSinkAndCapabilities();
@@ -158,6 +159,43 @@ void DevelopmentInputProtocolTest::parsesAndDispatchesAllowlistedEvents()
              QStringLiteral("qindaqt-development-input"));
     QCOMPARE(sink.injections, 1);
     QCOMPARE(sink.lastBatch.events.size(), 14);
+}
+
+void DevelopmentInputProtocolTest::parsesFullscreenAndShellProbeKeys()
+{
+    const auto payload = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("left-alt")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("f11")},
+                     {QStringLiteral("pressed"), false}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("f1")},
+                     {QStringLiteral("pressed"), true}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("c")},
+                     {QStringLiteral("pressed"), false}},
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("v")},
+                     {QStringLiteral("pressed"), true}}});
+
+    DevelopmentInputFailure failure;
+    const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
+    QVERIFY2(parsed.has_value(), qPrintable(failure.message));
+    QCOMPARE(parsed->events.size(), 5);
+    QCOMPARE(parsed->events.at(0).key, DevelopmentInputKey::LeftAlt);
+    QCOMPARE(parsed->events.at(1).key, DevelopmentInputKey::F11);
+    QCOMPARE(parsed->events.at(2).key, DevelopmentInputKey::F1);
+    QCOMPARE(parsed->events.at(3).key, DevelopmentInputKey::C);
+    QCOMPARE(parsed->events.at(4).key, DevelopmentInputKey::V);
+
+    const auto unknown = request(
+        {QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                     {QStringLiteral("key"), QStringLiteral("f12")},
+                     {QStringLiteral("pressed"), true}}});
+    QVERIFY(!DevelopmentInputCodec::parse(unknown, &failure));
+    QCOMPARE(failure.code, QStringLiteral("malformed-input-request"));
 }
 
 void DevelopmentInputProtocolTest::rejectsMalformedAndLimitFailures()
