@@ -69,6 +69,31 @@ option. Its CTest matrix decodes captures at 1920x1080, 1920x1200, and
 dump, panel geometry inspection, frame timing, and individual shell-service
 restart remain required harness capabilities as their components land.
 
+### Native pointer-constraint qualification
+
+The `qindaqt-wayland-pointer-constraints-probe` executable is a private nested
+Wayland client qualification for video and game clients. It binds
+`zwp_pointer_constraints_v1` and `zwp_relative_pointer_manager_v1`, maps a
+shm-backed `xdg_toplevel`, creates a relative-pointer object, then exercises a
+one-shot lock followed by a one-shot confinement. The probe prints one
+`QINDAQT_POINTER_PROBE=` JSON record with the advertised globals, mapped
+surface, lock/confine activation and release events, and the count of relative
+motion events. A zero exit status requires both native activation lifecycles,
+explicit protocol release requests, and at least one relative-motion event. If
+focus withdrawal makes KWin deactivate a constraint first, its `unlocked` or
+`unconfined` event is recorded too.
+
+This probe is a client-only qualification. The embedded KWin server owns the
+protocol globals and state; QindaQt does not provide a second protocol adapter.
+Run it only from the private nested-session lane, with the runner moving its
+synthetic pointer onto the mapped probe surface, injecting a second motion
+while the lock is active, and withdrawing focus to allow the compositor to
+report unlock/unconfine. A host `WAYLAND_DISPLAY`, host pointer, or host input
+device is not an acceptable substitute. The target is built with
+`qindaqt-wayland-pointer-constraints-probe`; the runtime invocation belongs to
+the nested-session owner because only that owner can provide the isolated
+synthetic pointer and focus transitions.
+
 ## Continuous integration lanes
 
 The GitHub workflow keeps dependency policy, the portable value layer, and the

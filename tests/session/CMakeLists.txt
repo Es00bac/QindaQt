@@ -1,6 +1,69 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(Wayland REQUIRED COMPONENTS Client)
+find_program(QINDAQT_WAYLAND_SCANNER wayland-scanner REQUIRED)
+enable_language(C)
+
+# AGENT-CONTRACT: This qualification client speaks the protocol directly so
+# the nested-session gate can prove KWin's native pointer-constraints and
+# relative-pointer lifecycle. It must remain a client probe; QindaQt must not
+# grow a second compositor-side implementation of either protocol.
+find_path(
+    QINDAQT_WAYLAND_PROTOCOLS_DIR
+    NAMES unstable/pointer-constraints/pointer-constraints-unstable-v1.xml
+    PATHS /usr/share/wayland-protocols /usr/local/share/wayland-protocols
+    REQUIRED
+)
+
+set(_qindaqt_pointer_probe_protocol_dir
+    "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-wayland-pointer-probe-protocol")
+file(MAKE_DIRECTORY "${_qindaqt_pointer_probe_protocol_dir}")
+set(_qindaqt_pointer_probe_protocols
+    pointer-constraints-unstable-v1
+    relative-pointer-unstable-v1
+    xdg-shell
+)
+set(_qindaqt_pointer_probe_xmls
+    "${QINDAQT_WAYLAND_PROTOCOLS_DIR}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml"
+    "${QINDAQT_WAYLAND_PROTOCOLS_DIR}/unstable/relative-pointer/relative-pointer-unstable-v1.xml"
+    "${QINDAQT_WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
+)
+set(_qindaqt_pointer_probe_generated)
+foreach(_protocol_name _protocol_xml IN ZIP_LISTS
+        _qindaqt_pointer_probe_protocols _qindaqt_pointer_probe_xmls)
+    set(_protocol_header
+        "${_qindaqt_pointer_probe_protocol_dir}/${_protocol_name}-client-protocol.h")
+    set(_protocol_code
+        "${_qindaqt_pointer_probe_protocol_dir}/${_protocol_name}-protocol.c")
+    add_custom_command(
+        OUTPUT "${_protocol_header}" "${_protocol_code}"
+        COMMAND "${QINDAQT_WAYLAND_SCANNER}" client-header
+                "${_protocol_xml}" "${_protocol_header}"
+        COMMAND "${QINDAQT_WAYLAND_SCANNER}" private-code
+                "${_protocol_xml}" "${_protocol_code}"
+        DEPENDS "${_protocol_xml}"
+        VERBATIM
+    )
+    list(APPEND _qindaqt_pointer_probe_generated "${_protocol_header}" "${_protocol_code}")
+endforeach()
+
+add_executable(
+    qindaqt-wayland-pointer-constraints-probe
+    wayland_pointer_constraints_probe.cpp
+    ${_qindaqt_pointer_probe_generated}
+)
+target_include_directories(
+    qindaqt-wayland-pointer-constraints-probe
+    PRIVATE "${_qindaqt_pointer_probe_protocol_dir}"
+)
+target_link_libraries(qindaqt-wayland-pointer-constraints-probe PRIVATE Wayland::Client)
+target_compile_features(qindaqt-wayland-pointer-constraints-probe PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt-wayland-pointer-constraints-probe
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt-wayland-pointer-constraints-probe)
 
 # AGENT-CONTRACT: KDecoration3 publishes the relative plugin directory used by
 # both the production install rule and this staged-install contract check.
