@@ -103,9 +103,10 @@ public policy/source headers and libraries, five built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
 and `qindaqt-portals.conf`. The selector binds
 `org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders
-`kde;gtk;lxqt` for the supported non-Settings fallback families, disables
-Background, and uses `default=none` so an unreviewed family cannot silently
-escape the table. OpenURI is implemented by the frontend itself and therefore
+`kde;gtk;lxqt` for the supported non-Settings fallback families, orders
+GlobalShortcuts to `kde` alone because it is the only installed provider whose
+`.portal` metadata advertises that interface, disables Background, and uses
+`default=none` so an unreviewed family cannot silently escape the table. OpenURI is implemented by the frontend itself and therefore
 has no backend selector. The exact table is part of the
 [Settings backend v1 reference](../reference/portal-settings-backend-v1.md),
 following upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
@@ -134,8 +135,9 @@ poison, and read-only startup. Two P1 rows run the real installed
 `xdg-desktop-portal` on a private `dbus-run-session` bus with only staged portal
 metadata. They prove QindaQt selection for the `qindaqt` desktop, exact
 frontend `ReadAll`/`Read` values and live forwarding, rejection under another
-desktop, injected KDE FileChooser fallback routing, and the closed Background
-escape. The Qt row runs an offscreen Qt 6 process with
+desktop, injected KDE FileChooser and GlobalShortcuts fallback routing (after
+confirming the installed KDE backend's own `.portal` metadata still advertises
+`GlobalShortcuts`), and the closed Background escape. The Qt row runs an offscreen Qt 6 process with
 `QT_QPA_PLATFORMTHEME=xdgdesktopportal`, observes Dark then a live Light
 `QStyleHints::colorScheme()` change, and applies a palette derived from that
 hint. It does not claim that Qt replaces an application's explicit palette.

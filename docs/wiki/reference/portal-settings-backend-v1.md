@@ -39,6 +39,7 @@ family.
 | Screenshot | `kde;gtk;lxqt` | None |
 | ScreenCast | `kde;gtk;lxqt` | None |
 | RemoteDesktop | `kde;gtk;lxqt` | None |
+| GlobalShortcuts | `kde` | None |
 | Background | `none` | Deliberately unavailable |
 | OpenURI | Frontend-owned; no backend selector | None |
 | Any unlisted family | `default=none` | Deliberately unavailable |
@@ -47,6 +48,16 @@ The frontend filters the ordered names by the staged providers that advertise
 the requested implementation interface. The first available match wins.
 QindaQt's `.portal` declaration continues to advertise only Settings, so no
 fallback family can resolve to the QindaQt process.
+
+GlobalShortcuts lists only `kde` rather than the uniform `kde;gtk;lxqt` order
+used for the other reviewed families: the installed `xdg-desktop-portal-gtk`
+and `xdg-desktop-portal-lxqt` backends do not advertise
+`org.freedesktop.impl.portal.GlobalShortcuts` in their `.portal` metadata, so
+listing them would document an unsupported fallback rather than an inert one.
+The boundary test compares the exact selector string, so a future edit that
+widens this entry back to `kde;gtk;lxqt` fails closed until the listed
+backends are re-verified. See
+[ADR-0086](../adr/0086-route-globalshortcuts-only-to-a-verified-backend.md).
 
 ## Methods and signal
 

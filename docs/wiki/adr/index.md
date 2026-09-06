@@ -94,3 +94,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0084: Own the desktop shortcut note on wallpaper surfaces](0084-own-the-desktop-shortcut-note-on-wallpaper-surfaces.md)
 
 - [ADR-0085: Pre-empt KWin's native custom-tile from an early, narrow input filter](0085-early-late-shift-takeover-filter.md)
+- [ADR-0086: Route GlobalShortcuts only to a verified backend](0086-route-globalshortcuts-only-to-a-verified-backend.md)
