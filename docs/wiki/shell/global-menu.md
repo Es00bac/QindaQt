@@ -524,10 +524,27 @@ the layout offset whenever the entries layout does not sit at the applet
 origin. The popup prefers the anchor's bottom-left, clamps horizontally into
 the panel window width, and flips above the anchor when the menu would cross
 the screen's bottom edge (a thin panel surface is deliberately crossed; the
-screen edge is not). The `global-menu-popup-placement-qml-offscreen` row
+screen edge is not). That `x`/`y` path is the client-side placement used
+offscreen and on X11.
+
+On Wayland the popup window position is server-side: Qt's popup positioner
+returns early on the `wayland` platform and the compositor places the
+`xdg_popup` from the popup window's `_q_waylandPopupAnchor*` properties,
+which QtWayland reads when creating the positioner. `GlobalMenuPopup` sets
+`_q_waylandPopupAnchorRect` to the clicked entry's rectangle in panel window
+coordinates with Menu-style dropdown edges (`anchor_bottom_left`,
+`gravity_bottom_right`) and `slide_x|slide_y|flip_y` constraint adjustment,
+so the compositor slides the menu on screen horizontally and flips it above
+the anchor at the screen's bottom edge. The properties are written in
+`openMenu()` and again from `onPopupWindowChanged`; the Window attachment
+change fires while the popup item is reparented into the popup window,
+before the platform surface (and its positioner) is created.
+
+The `global-menu-popup-placement-qml-offscreen` row
 asserts the popup window lands on the anchor's mapped bottom-left under
-nested offsets, anchors each entry under itself, and pins the clamp/flip
-boundary decisions.
+nested offsets, anchors each entry under itself, pins the clamp/flip
+boundary decisions, and pins the exact `_q_waylandPopupAnchor*` contract
+values the native compositor consumes.
 
 `BuiltinAppletContent.qml` hosts this compiled module like Launcher, Audio,
 Bluetooth, and Power. The panel factory injects only the facade; panel rows

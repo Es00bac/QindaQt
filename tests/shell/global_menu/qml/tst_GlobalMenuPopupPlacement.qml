@@ -136,6 +136,31 @@ Item {
             popup.close()
         }
 
+        function test_nativeWaylandAnchorContract() {
+            // On Wayland the compositor positions the popup server-side from
+            // the popup window's "_q_waylandPopupAnchor*" properties; popup
+            // x/y never reach it. Pin the exact contract QtWayland reads in
+            // createPositioner(): the clicked entry's rect in panel window
+            // coordinates, Menu-style dropdown edges (below, left-aligned),
+            // and slide_x|slide_y|flip_y constraint adjustment.
+            const entries = topLevelEntries()
+            const popup = findChild(applet, "globalMenuPopup")
+            popup.openMenu(fakeAccess.items[0], entries[0])
+            tryCompare(popup, "opened", true)
+            const win = popup.popupWindow
+            verify(win !== null)
+            const sceneTopLeft = entries[0].mapToItem(null, 0, 0)
+            const anchorRect = win._q_waylandPopupAnchorRect
+            compare(anchorRect.x, Math.round(sceneTopLeft.x))
+            compare(anchorRect.y, Math.round(sceneTopLeft.y))
+            compare(anchorRect.width, Math.round(entries[0].width))
+            compare(anchorRect.height, Math.round(entries[0].height))
+            compare(win._q_waylandPopupAnchor, Qt.BottomEdge | Qt.LeftEdge)
+            compare(win._q_waylandPopupGravity, Qt.BottomEdge | Qt.RightEdge)
+            compare(win._q_waylandPopupConstraintAdjustment, 11)
+            popup.close()
+        }
+
         function test_placementOriginForBoundaryDecisions() {
             const popup = findChild(applet, "globalMenuPopup")
             let p = popup.placementOriginFor(Qt.point(10, 20), 24, 240, 150,

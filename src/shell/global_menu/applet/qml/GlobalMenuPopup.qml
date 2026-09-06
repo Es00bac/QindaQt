@@ -26,9 +26,37 @@ Popup {
             return
         anchorItem = anchor
         menuStack = [menu]
+        configureNativePlacement()
         open()
         Qt.callLater(focusFirstItem)
     }
+
+    // AGENT-CONTRACT: On Wayland the popup window position is server-side —
+    // QQuickPopupPositioner::repositionPopupWindow() returns early and
+    // popup.x/y never reach the compositor. QtWayland's createPositioner()
+    // instead builds the xdg_popup from the popup window's dynamic
+    // "_q_waylandPopupAnchor*" properties, read when the platform surface is
+    // created (QQuickPopupWindow emits the Window attachment change that
+    // re-evaluates popup.popupWindow before the window is shown, so setting
+    // them in openMenu/onPopupWindowChanged precedes xdg_popup creation).
+    // The anchor/gravity pair mirrors Qt's Menu dropdown behavior: below the
+    // anchor rect, left-aligned; slide_x|slide_y|flip_y (11) keeps it on
+    // screen and flips it above the anchor at the screen's bottom edge.
+    function configureNativePlacement() {
+        const win = popupWindow
+        if (win === null || anchorItem === null)
+            return
+        const topLeft = anchorItem.mapToItem(null, 0, 0)
+        win._q_waylandPopupAnchorRect =
+                Qt.rect(Math.round(topLeft.x), Math.round(topLeft.y),
+                        Math.round(anchorItem.width),
+                        Math.round(anchorItem.height))
+        win._q_waylandPopupAnchor = Qt.BottomEdge | Qt.LeftEdge
+        win._q_waylandPopupGravity = Qt.BottomEdge | Qt.RightEdge
+        win._q_waylandPopupConstraintAdjustment = 11
+    }
+
+    onPopupWindowChanged: configureNativePlacement()
 
     function focusFirstItem() {
         popupList.currentIndex = firstEnabledIndex(0, 1)
@@ -106,6 +134,10 @@ Popup {
     // horizontally into the containing width, flip above the anchor when the
     // popup would cross availableBelow (screen bottom in window coordinates —
     // a thin panel surface is deliberately crossed, the screen edge is not).
+    // This x/y path is the client-side placement used offscreen and on X11;
+    // on Wayland the compositor positions the popup from the
+    // "_q_waylandPopupAnchor*" contract in configureNativePlacement() and
+    // never reads popup.x/y.
     function placementOriginFor(topLeft, anchorHeight, popupWidth, popupHeight,
                                 boundsWidth, availableBelow) {
         let px = topLeft.x
