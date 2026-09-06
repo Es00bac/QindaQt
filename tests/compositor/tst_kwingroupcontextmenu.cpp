@@ -26,6 +26,7 @@ QAction *actionNamed(QMenu &menu, const QString &name)
 GroupContextMenuState populatedState()
 {
     return {
+        .activeMemberId = QStringLiteral("member-active"),
         .keepAbove = true,
         .keepBelow = false,
         .pinnedToAllWorkspaces = false,
@@ -78,18 +79,30 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
              qPrintable(error));
     auto *const above = actionNamed(
         menu, QStringLiteral("qindaqt-context-keep-above"));
+    auto *const arrange = actionNamed(
+        menu, QStringLiteral("qindaqt-context-arrange"));
+    auto *const detach = actionNamed(
+        menu, QStringLiteral("qindaqt-context-detach-active"));
+    auto *const ungroup = actionNamed(
+        menu, QStringLiteral("qindaqt-context-ungroup"));
     auto *const workspace = actionNamed(
         menu, QStringLiteral("qindaqt-context-workspace-two"));
     auto *const activity = actionNamed(
         menu, QStringLiteral("qindaqt-context-activity-play"));
     auto *const output = actionNamed(
         menu, QStringLiteral("qindaqt-context-output-right"));
-    QVERIFY(above && workspace && activity && output);
+    QVERIFY(arrange && detach && ungroup && above && workspace && activity && output);
+    QCOMPARE(arrange->text(), QStringLiteral("Arrange windows"));
+    QCOMPARE(detach->text(), QStringLiteral("Detach active window"));
+    QCOMPARE(ungroup->text(), QStringLiteral("Ungroup"));
     QVERIFY(above->isChecked());
     QVERIFY(!workspace->isChecked());
 
     menu.show();
     QVERIFY(menu.isVisible());
+    arrange->trigger();
+    detach->trigger();
+    ungroup->trigger();
     above->trigger();
     workspace->trigger();
     activity->trigger();
@@ -97,7 +110,15 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     QVERIFY(commands.isEmpty());
     menu.hide();
     QVERIFY(!menu.isVisible());
-    QTRY_COMPARE(commands.size(), 4);
+    QTRY_COMPARE(commands.size(), 7);
+    const GroupContextMenuCommand expectedArrange{
+        GroupContextMenuCommandKind::ArrangeWindows,
+        QStringLiteral("member-active"), true};
+    const GroupContextMenuCommand expectedDetach{
+        GroupContextMenuCommandKind::DetachActiveWindow,
+        QStringLiteral("member-active"), true};
+    const GroupContextMenuCommand expectedUngroup{
+        GroupContextMenuCommandKind::Ungroup, {}, true};
     const std::pair<QString, GroupContextMenuCommand> expectedAbove{
         QStringLiteral("group-a"),
         {GroupContextMenuCommandKind::SetKeepAbove, {}, false}};
@@ -110,13 +131,16 @@ void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
     const GroupContextMenuCommand expectedOutput{
         GroupContextMenuCommandKind::MoveToOutput,
         QStringLiteral("right"), true};
-    QCOMPARE(commands[0], expectedAbove);
-    QCOMPARE(commands[1].second, expectedWorkspace);
-    QCOMPARE(commands[2].second, expectedActivity);
-    QCOMPARE(commands[3].second, expectedOutput);
+    QCOMPARE(commands[0].second, expectedArrange);
+    QCOMPARE(commands[1].second, expectedDetach);
+    QCOMPARE(commands[2].second, expectedUngroup);
+    QCOMPARE(commands[3], expectedAbove);
+    QCOMPARE(commands[4].second, expectedWorkspace);
+    QCOMPARE(commands[5].second, expectedActivity);
+    QCOMPARE(commands[6].second, expectedOutput);
 
     QCoreApplication::processEvents();
-    QCOMPARE(commands.size(), 4);
+    QCOMPARE(commands.size(), 7);
 }
 
 void KWinGroupContextMenuTest::defersDispatchWithStableContainerIdentity()

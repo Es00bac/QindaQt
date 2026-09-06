@@ -24,6 +24,7 @@
 #include "kwintaskidentitymanager.h"
 #include "kwintransientmanager.h"
 #include "managedwindowregistry.h"
+#include "memberchromevisibilitycontroller.h"
 #include "hybridstackingorder.h"
 
 #include "qindaqt/hybrid_chrome/chromelayoutengine.h"
@@ -117,7 +118,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
                           QStringLiteral("container placement is not initialized"));
             },
         });
-    m_chromeManager = std::make_unique<KWinChromeManager>(registry);
+    initializeMemberChromeSupport();
     m_groupStacking = std::make_unique<KWinHybridGroupStacking>(
         registry, *m_chromeManager);
     m_groupContext = std::make_unique<KWinGroupContextManager>(
@@ -267,12 +268,6 @@ KWinHybridSession::~KWinHybridSession()
     shutdown();
 }
 
-void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &palette)
-{
-    m_chromePalette = palette;
-    synchronizeChrome();
-}
-
 void KWinHybridSession::shutdown() noexcept
 {
     if (m_shutdown) {
@@ -309,6 +304,7 @@ void KWinHybridSession::shutdown() noexcept
         // observer through bounded release recovery.
         m_memberPolicy->restorePresentationForShutdown();
     }
+    restoreMemberChromeVisibilityForShutdown();
 
     if (m_runtime && m_sceneFactory) {
         const auto recovered = recoverKWinHybridShutdown(
@@ -435,12 +431,17 @@ void KWinHybridSession::invalidateChromePublication()
 
 void KWinHybridSession::synchronizeChrome()
 {
-    if (!ready()
-        || (m_chromeSceneLifecycle && !m_chromeSceneLifecycle->sceneAvailable())
-        || m_synchronizingChrome) {
+    if (!ready() || m_synchronizingChrome) {
         return;
     }
     QScopedValueRollback<bool> synchronizing(m_synchronizingChrome, true);
+    QString error;
+    // Native title restoration belongs to topology lifetime, not scene image
+    // lifetime. It must still run while compositing is temporarily unavailable.
+    synchronizeMemberChromeVisibility();
+    if (m_chromeSceneLifecycle && !m_chromeSceneLifecycle->sceneAvailable()) {
+        return;
+    }
     const auto publishedRevision = m_chromeManager->topologyRevision();
     if (publishedRevision && *publishedRevision != m_runtime->topology().revision()
         && m_chromePointerRouter && m_inputFilter) {
@@ -451,7 +452,10 @@ void KWinHybridSession::synchronizeChrome()
     }
     KWinChromeManager::ChromePlanMap plans;
     const auto optionsTemplate = chromePlanOptions(m_chromePalette);
-    QString error;
+    const QString activeWindowId = m_registry.windowId(
+        KWin::workspace()->activeWindow());
+    const auto activeOwner = m_runtime->topology().ownerOf(activeWindowId);
+    error.clear();
     for (const auto &containerId : m_runtime->topology().containerIds()) {
         const auto *container = m_runtime->topology().container(containerId);
         const auto layout = m_sceneFactory->committedLayout(containerId);
@@ -464,6 +468,9 @@ void KWinHybridSession::synchronizeChrome()
         auto options = optionsTemplate;
         options.devicePixelRatio = containerScale(containerId);
         options.maximized = m_placement && m_placement->isMaximized(containerId);
+        options.containerFocused = activeOwner && *activeOwner == containerId;
+        options.focusedMemberId = options.containerFocused ? activeWindowId : QString{};
+        options.memberTitlesVisible = memberTitlesVisible(containerId);
         const auto plan = HybridChromePlanBuilder::build(
             *container, layout->activePage, options,
             [this](const QString &windowId) {

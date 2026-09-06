@@ -209,6 +209,12 @@ void HybridSemanticCommandTest::dispatcherRoutesTypedRequestsAndReportsMissingHa
                              .arg(containerId).arg(static_cast<int>(action)));
             return true;
         },
+        .containerControl = [&](const QString &containerId,
+                                HybridChrome::ContainerControl control, QString *) {
+            calls.append(QStringLiteral("control:%1:%2")
+                             .arg(containerId).arg(static_cast<int>(control)));
+            return true;
+        },
     });
 
     QString error;
@@ -229,10 +235,26 @@ void HybridSemanticCommandTest::dispatcherRoutesTypedRequestsAndReportsMissingHa
     QVERIFY2(dispatcher.dispatch(*page, &error), qPrintable(error));
     QVERIFY2(dispatcher.dispatch(*reorder, &error), qPrintable(error));
     QVERIFY2(dispatcher.dispatch(*action, &error), qPrintable(error));
+    const HybridSemanticRequest control{
+        .kind = HybridSemanticRequestKind::ContainerControl,
+        .containerId = QStringLiteral("group"),
+        .pageId = {},
+        .destinationPageIndex = -1,
+        .dockSource = {},
+        .windowAction = std::nullopt,
+        .containerControl = HybridChrome::ContainerControl::ManagementMenu,
+    };
+    QVERIFY2(dispatcher.dispatch(control, &error), qPrintable(error));
     QCOMPARE(calls, QStringList({QStringLiteral("dock:page-a"),
                                  QStringLiteral("page:group:page-c"),
                                  QStringLiteral("reorder:group:page-a:1"),
-                                 QStringLiteral("action:group:1")}));
+                                 QStringLiteral("action:group:1"),
+                                 QStringLiteral("control:group:1")}));
+
+    auto malformedControl = control;
+    malformedControl.windowAction = HybridChrome::WindowAction::Close;
+    QVERIFY(!dispatcher.dispatch(malformedControl, &error));
+    QVERIFY(error.contains(QStringLiteral("inconsistent")));
 
     HybridSemanticCommandDispatcher unavailable({});
     QVERIFY(!unavailable.dispatch(*dock, &error));

@@ -80,6 +80,11 @@ item, not a native overlay window.
 - Theme decoration tokens may place the outer controls on either side and lay
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.
+- The shared title row keeps a visible native-title toggle and group-management
+  menu opposite the normal window buttons. `Meta+Shift+C` toggles the same
+  active-group choice. Server-drawn member titles restore their exact prior
+  border state on detach, release, and compositor shutdown; client-drawn title
+  bars remain controlled by their applications.
 
 ## Persistence
 

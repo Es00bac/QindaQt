@@ -161,10 +161,10 @@ only its dragged source so that source can target chrome beneath itself.
 An ordinary right-button press and matching release on `OuterTitleDrag` emits
 one stable-ID context-menu request. Member-title right clicks remain native.
 The nonblocking group menu offers layer, workspace, activity, pin, and output
-commands and revalidates the active representative when each command is
-dispatched.
+commands plus Arrange windows, Detach active window, and Ungroup. It revalidates
+the active representative when each command is dispatched.
 
-Thirteen autoloading KGlobalAccel actions cover interactive grabs and
+Fourteen autoloading KGlobalAccel actions cover interactive grabs and
 coordinate-free semantic commands for KWin's active managed window:
 
 | Default | Interaction after entry |
@@ -179,6 +179,7 @@ coordinate-free semantic commands for KWin's active managed window:
 | `Meta+Ctrl+Shift+Q` | Open the active group's Close All/Ungroup/Cancel policy. |
 | `Meta+Ctrl+Shift+N` | Minimize the complete active group. |
 | `Meta+Ctrl+Shift+X` / `Meta+Ctrl+Shift+U` | Maximize/restore the complete active group. |
+| `Meta+Shift+C` | Show or hide server-drawn member title bars in the active group for this compositor session. |
 
 `Enter` commits and `Escape` cancels each interactive grab. Displacement is
 cumulative from one stable baseline, matching pointer placement and divider
@@ -187,7 +188,8 @@ KWin member, group, committed layout, maximized state, and selected split before
 acquiring a grab. Direct page and window-action shortcuts dispatch immediately.
 All actions use autoloading so saved reassignment or disabled shortcuts remain
 user policy. Page activation/reorder, page docking, and group window actions
-resolve to stable-ID `HybridSemanticRequest` values. The virtual accessibility
+resolve to stable-ID `HybridSemanticRequest` values. The title toggle and its
+visible shared-row button use the same typed container-control request. The virtual accessibility
 tree dispatches those same requests rather than maintaining a second policy.
 
 Pointer target selection examines the topmost eligible KWin input owner on the
@@ -443,7 +445,7 @@ rejects `InjectTestInput` before parsing. This proves compositor input routing,
 not a physical input device. The exact distinction is maintained in the
 [testing harness](../development/testing-harness.md).
 
-Focused tests cover keyboard grabs, all 13 shortcut dispatches, page/tree
+Focused tests cover keyboard grabs, all 14 shortcut dispatches, page/tree
 transfers, scene-resident chrome and ordinary router ownership, virtual
 accessibility trees, collapsed native task identity, native-member focus
 actions, transient following, bounded shutdown recovery, lifecycle focus

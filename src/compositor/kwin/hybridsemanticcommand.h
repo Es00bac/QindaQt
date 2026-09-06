@@ -29,6 +29,7 @@ enum class HybridSemanticRequestKind {
     ActivatePage,
     ReorderPage,
     GroupWindowAction,
+    ContainerControl,
 };
 
 // A resolved request contains stable topology IDs and no pointer coordinates or
@@ -42,6 +43,7 @@ struct HybridSemanticRequest final
     qsizetype destinationPageIndex = -1;
     HybridInput::HitTarget dockSource;
     std::optional<HybridChrome::WindowAction> windowAction;
+    std::optional<HybridChrome::ContainerControl> containerControl;
 
     [[nodiscard]] bool isValid(QString *error = nullptr) const;
     friend bool operator==(const HybridSemanticRequest &,
@@ -86,6 +88,8 @@ struct HybridSemanticCommandHandlers final
         reorderPage;
     std::function<bool(const QString &, HybridChrome::WindowAction, QString *)>
         groupWindowAction;
+    std::function<bool(const QString &, HybridChrome::ContainerControl, QString *)>
+        containerControl;
 };
 
 // Handlers are borrowed callable values and run synchronously on the caller's

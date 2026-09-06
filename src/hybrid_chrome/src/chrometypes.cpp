@@ -69,7 +69,7 @@ ChromeStyle ChromeStyle::standard(ButtonSide side, ChromePalette palette)
 
 bool ChromeMetrics::isValid(QString *error) const
 {
-    const std::array<std::pair<const char *, qreal>, 16> values{{
+    const std::array<std::pair<const char *, qreal>, 19> values{{
         {"outerBorder", outerBorder},
         {"outerResizeMargin", outerResizeMargin},
         {"cornerRadius", cornerRadius},
@@ -79,6 +79,9 @@ bool ChromeMetrics::isValid(QString *error) const
         {"buttonExtent", buttonExtent},
         {"buttonSpacing", buttonSpacing},
         {"buttonClusterInset", buttonClusterInset},
+        {"containerControlExtent", containerControlExtent},
+        {"containerControlSpacing", containerControlSpacing},
+        {"containerControlClusterInset", containerControlClusterInset},
         {"tabHorizontalInset", tabHorizontalInset},
         {"tabSpacing", tabSpacing},
         {"tabMinimumWidth", tabMinimumWidth},
@@ -93,7 +96,8 @@ bool ChromeMetrics::isValid(QString *error) const
                                      .arg(QString::fromLatin1(name)));
         }
     }
-    if (titleBarHeight <= 0.0 || buttonExtent <= 0.0 || tabMaximumWidth <= 0.0
+    if (titleBarHeight <= 0.0 || buttonExtent <= 0.0
+        || containerControlExtent <= 0.0 || tabMaximumWidth <= 0.0
         || memberTitleHeight <= 0.0 || dividerVisualThickness <= 0.0) {
         return reject(error, QStringLiteral("chrome extents must be positive"));
     }

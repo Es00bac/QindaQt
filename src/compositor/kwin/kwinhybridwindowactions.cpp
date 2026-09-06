@@ -19,17 +19,6 @@
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
 
-void warnActionFailure(QLatin1StringView operation,
-                       const HybridRuntimeResult &result)
-{
-    if (result.status == HybridRuntimeStatus::Rejected
-        || result.status == HybridRuntimeStatus::Unsupported
-        || result.status == HybridRuntimeStatus::NeedsGeometry) {
-        qWarning("QindaQt Hybrid %s failed: %s",
-                 qPrintable(QString(operation)), qPrintable(result.message));
-    }
-}
-
 HybridInput::DockZone dockZoneForQuickTileEdge(NativeQuickTileEdge edge)
 {
     switch (edge) {
@@ -417,17 +406,8 @@ void KWinHybridSession::handleCloseDecision(
     }
     if (decision == ContainerCloseDecision::Ungroup) {
         QString error;
-        if (!restoreMemberFocusForInteraction(&error)) {
-            qWarning("QindaQt container ungroup could not leave member focus: %s",
-                     qPrintable(error));
-            return;
-        }
-        const auto result = m_runtime->releaseContainer(containerId);
-        warnActionFailure(QLatin1StringView("container ungroup"), result);
-        if (result.topologyChanged()) {
-            m_placement->forgetContainer(containerId);
-            m_minimizedContainers.remove(containerId);
-            synchronizeChrome();
+        if (!ungroupContainer(containerId, &error)) {
+            qWarning("QindaQt container ungroup failed: %s", qPrintable(error));
         }
         return;
     }

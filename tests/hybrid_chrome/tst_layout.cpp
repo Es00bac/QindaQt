@@ -21,7 +21,9 @@ private Q_SLOTS:
     void standardButtonsHonorRequestedSide();
     void logicalGeometryIsStableAcrossDpi();
     void reservesOuterDragBesideTabsForEveryVisualDirection();
+    void reservesSeparateGroupControlsOnTheOppositeSide();
     void derivesMemberTitleAndDividerRegions();
+    void hidesOnlySyntheticMemberTitleRegions();
     void rejectsInvalidInput();
 };
 
@@ -141,6 +143,44 @@ void ChromeLayoutTests::reservesOuterDragBesideTabsForEveryVisualDirection()
             for (const auto &tab : compactPlan->tabs) {
                 QVERIFY(!compactPlan->outerTitleDragRect.intersects(tab.rect));
             }
+            for (const auto &control : compactPlan->controls) {
+                QVERIFY(compactPlan->outerTitleBar.contains(control.rect));
+                QVERIFY(!compactPlan->outerTitleDragRect.intersects(control.rect));
+                for (const auto &tab : compactPlan->tabs) {
+                    QVERIFY(!control.rect.intersects(tab.rect));
+                }
+            }
+        }
+    }
+}
+
+void ChromeLayoutTests::reservesSeparateGroupControlsOnTheOppositeSide()
+{
+    for (const auto side : {ButtonSide::Left, ButtonSide::Right}) {
+        auto request = baseRequest();
+        request.style = ChromeStyle::standard(side);
+        const auto plan = ChromeLayoutEngine::build(request);
+        QVERIFY(plan);
+        QCOMPARE(plan->controls.size(), 2);
+        QCOMPARE(plan->controls[0].control, ContainerControl::ToggleMemberTitles);
+        QCOMPARE(plan->controls[1].control, ContainerControl::ManagementMenu);
+        QVERIFY(plan->controls[0].checked);
+        for (const auto &control : plan->controls) {
+            QVERIFY(plan->outerTitleBar.contains(control.rect));
+            QVERIFY(!plan->outerTitleDragRect.intersects(control.rect));
+            for (const auto &button : plan->buttons) {
+                QVERIFY(!control.rect.intersects(button.rect));
+            }
+            for (const auto &tab : plan->tabs) {
+                QVERIFY(!control.rect.intersects(tab.rect));
+            }
+        }
+        if (side == ButtonSide::Left) {
+            QVERIFY(plan->buttons.constLast().rect.right()
+                    < plan->controls.constFirst().rect.left());
+        } else {
+            QVERIFY(plan->controls.constLast().rect.right()
+                    < plan->buttons.constFirst().rect.left());
         }
     }
 }
@@ -156,6 +196,24 @@ void ChromeLayoutTests::derivesMemberTitleAndDividerRegions()
     QCOMPARE(plan->dividers[0].visualRect.width(), plan->metrics.dividerVisualThickness);
     QCOMPARE(plan->dividers[0].hitRect.width(), plan->metrics.dividerHitThickness);
     QVERIFY(plan->dividers[0].hitRect.contains(plan->dividers[0].visualRect));
+}
+
+void ChromeLayoutTests::hidesOnlySyntheticMemberTitleRegions()
+{
+    auto request = baseRequest();
+    request.memberTitlesVisible = false;
+    const auto plan = ChromeLayoutEngine::build(request);
+    QVERIFY(plan);
+    QVERIFY(!plan->memberTitlesVisible);
+    QVERIFY(!plan->controls.constFirst().checked);
+    QCOMPARE(plan->members.size(), request.members.size());
+    for (qsizetype index = 0; index < plan->members.size(); ++index) {
+        QVERIFY(plan->members[index].titleDragRect.isEmpty());
+        QCOMPARE(plan->members[index].windowRect,
+                 request.members[index].windowRect);
+    }
+    QVERIFY(plan->outerTitleDragRect.isValid());
+    QVERIFY(plan->contentRect.isValid());
 }
 
 void ChromeLayoutTests::rejectsInvalidInput()

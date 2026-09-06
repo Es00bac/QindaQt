@@ -234,6 +234,20 @@ if(TARGET qindaqt_kwin_input_adapter)
     )
 
     qt_add_executable(
+        qindaqt_member_chrome_visibility_tests
+        tst_memberchromevisibilitycontroller.cpp
+    )
+    target_compile_features(qindaqt_member_chrome_visibility_tests PRIVATE cxx_std_20)
+    target_link_libraries(
+        qindaqt_member_chrome_visibility_tests
+        PRIVATE qindaqt_member_chrome_visibility Qt6::Test
+    )
+    add_test(
+        NAME compositor.member-chrome-visibility
+        COMMAND qindaqt_member_chrome_visibility_tests
+    )
+
+    qt_add_executable(
         qindaqt_kwin_chrome_manager_tests
         tst_kwinchromemanager.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridstackingorder.cpp"

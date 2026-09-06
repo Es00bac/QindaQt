@@ -3,8 +3,12 @@
 
 #include "kwingroupcontextmenu.h"
 #include "hybridinteractionruntime.h"
+#include "hybridcontainerplacement.h"
+#include "kwininteractionfilter.h"
+#include "kwinchromemanager.h"
 #include "kwintaskidentitymanager.h"
 #include "managedwindowregistry.h"
+#include "memberchromevisibilitycontroller.h"
 
 #include <activities.h>
 #include <config-kwin.h>
@@ -13,6 +17,7 @@
 #include <window.h>
 #include <workspace.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Compositor::KWinIntegration {
@@ -51,6 +56,7 @@ std::optional<GroupContextMenuState> contextState(
     }
 
     GroupContextMenuState state{
+        .activeMemberId = {},
         .keepAbove = window.keepAbove(),
         .keepBelow = window.keepBelow(),
         .pinnedToAllWorkspaces = window.isOnAllDesktops(),
@@ -105,6 +111,10 @@ bool applyContextCommand(
     }
 
     switch (command.kind) {
+    case GroupContextMenuCommandKind::ArrangeWindows:
+    case GroupContextMenuCommandKind::DetachActiveWindow:
+    case GroupContextMenuCommandKind::Ungroup:
+        return fail(error, QStringLiteral("group action requires session policy"));
     case GroupContextMenuCommandKind::SetKeepAbove:
         window.setKeepAbove(command.enabled);
         return true;
@@ -179,11 +189,33 @@ void KWinHybridSession::initializeGroupContextMenu()
                 fail(error, QStringLiteral("group context representative is stale"));
                 return std::nullopt;
             }
-            return contextState(*representative, error);
+            auto state = contextState(*representative, error);
+            if (!state) {
+                return std::nullopt;
+            }
+            const QString activeId = m_registry.windowId(
+                KWin::workspace()->activeWindow());
+            state->activeMemberId =
+                m_registry.owner(activeId) == containerId ? activeId
+                                                          : representativeId;
+            return state;
         },
         [this](const QString &containerId,
                const GroupContextMenuCommand &command,
                QString *error) {
+            switch (command.kind) {
+            case GroupContextMenuCommandKind::ArrangeWindows:
+                return beginArrangeWindows(containerId, command.destinationId, error);
+            case GroupContextMenuCommandKind::DetachActiveWindow:
+                if (!restoreMemberFocusForInteraction(error)) {
+                    return false;
+                }
+                return detachNativeMember(containerId, command.destinationId, error);
+            case GroupContextMenuCommandKind::Ungroup:
+                return ungroupContainer(containerId, error);
+            default:
+                break;
+            }
             const QString representativeId = m_taskIdentity
                 ? m_taskIdentity->primaryWindowId(containerId) : QString{};
             auto *const representative = m_registry.window(representativeId);
@@ -212,6 +244,124 @@ void KWinHybridSession::showGroupContextMenu(
         qWarning("QindaQt could not open group context menu: %s",
                  qPrintable(error));
     }
+}
+
+void KWinHybridSession::handleContainerControl(
+    const QString &containerId,
+    HybridChrome::ContainerControl control)
+{
+    QString error;
+    if (!dispatchContainerControl(containerId, control, &error)) {
+        qWarning("QindaQt window group control failed: %s", qPrintable(error));
+    }
+}
+
+bool KWinHybridSession::dispatchContainerControl(
+    const QString &containerId,
+    HybridChrome::ContainerControl control,
+    QString *error)
+{
+    if (!ready() || !m_runtime->topology().container(containerId)) {
+        return fail(error, QStringLiteral("the selected window group is stale"));
+    }
+    switch (control) {
+    case HybridChrome::ContainerControl::ToggleMemberTitles: {
+        if (!m_memberChromeVisibility) {
+            return fail(error, QStringLiteral("native title controls are unavailable"));
+        }
+        MemberChromeVisibilitySummary summary;
+        if (!m_memberChromeVisibility->toggle(containerId, &summary, error)) {
+            return false;
+        }
+        if (summary.unchangedClientDecoratedMembers > 0) {
+            qInfo("QindaQt left %lld client-drawn title bar(s) unchanged",
+                  static_cast<long long>(
+                      summary.unchangedClientDecoratedMembers));
+        }
+        synchronizeChrome();
+        return true;
+    }
+    case HybridChrome::ContainerControl::ManagementMenu: {
+        if (!m_groupContextMenu || !m_chromeManager) {
+            return fail(error, QStringLiteral("window group actions are unavailable"));
+        }
+        const auto plan = m_chromeManager->plan(containerId);
+        if (!plan) {
+            return fail(error, QStringLiteral("window group controls are stale"));
+        }
+        const auto match = std::find_if(
+            plan->controls.cbegin(), plan->controls.cend(),
+            [control](const auto &candidate) {
+                return candidate.control == control;
+            });
+        if (match == plan->controls.cend()) {
+            return fail(error, QStringLiteral("window group menu control is absent"));
+        }
+        return m_groupContextMenu->popupForContainer(
+            containerId, match->rect.bottomLeft(), error);
+    }
+    }
+    return fail(error, QStringLiteral("unknown window group control"));
+}
+
+
+bool KWinHybridSession::beginArrangeWindows(const QString &containerId,
+                                            const QString &windowId,
+                                            QString *error)
+{
+    if (!ready() || !m_inputFilter || !m_inputFilter->installed()) {
+        if (error) {
+            *error = QStringLiteral("window arrangement input is unavailable");
+        }
+        return false;
+    }
+    const auto *container = m_runtime->topology().container(containerId);
+    if (!container || !container->findWindow(windowId)
+        || m_registry.owner(windowId) != containerId) {
+        if (error) {
+            *error = QStringLiteral("the selected group member is stale");
+        }
+        return false;
+    }
+    if (!restoreMemberFocusForInteraction(error)) {
+        return false;
+    }
+    const HybridInput::HitTarget source{
+        HybridInput::HitKind::MemberTitle, containerId, windowId, {}};
+    if (m_inputFilter->beginKeyboardDock(source)) {
+        return true;
+    }
+    if (error) {
+        *error = QStringLiteral("window arrangement could not acquire input");
+    }
+    return false;
+}
+
+bool KWinHybridSession::ungroupContainer(const QString &containerId,
+                                         QString *error)
+{
+    if (!ready() || !m_runtime->topology().container(containerId)) {
+        if (error) {
+            *error = QStringLiteral("the selected window group is stale");
+        }
+        return false;
+    }
+    if (!restoreMemberFocusForInteraction(error)) {
+        return false;
+    }
+    const auto result = m_runtime->releaseContainer(containerId);
+    if (!result.topologyChanged()) {
+        if (error) {
+            *error = result.message.isEmpty()
+                ? QStringLiteral("the window group could not be released")
+                : result.message;
+        }
+        return false;
+    }
+    m_placement->forgetContainer(containerId);
+    m_minimizedContainers.remove(containerId);
+    synchronizeChrome();
+    return true;
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

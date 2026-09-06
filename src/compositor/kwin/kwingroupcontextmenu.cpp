@@ -127,6 +127,32 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
 
     clear();
     m_containerId = containerId;
+    auto addGroupAction = [this, &state](const char *text,
+                                         const QString &objectName,
+                                         GroupContextMenuCommandKind kind,
+                                         bool needsMember) {
+        auto *const action = addAction(menuText(text));
+        action->setObjectName(objectName);
+        action->setEnabled(!needsMember || !state->activeMemberId.isEmpty());
+        connect(action, &QAction::triggered, this,
+                [this, command = GroupContextMenuCommand{
+                           .kind = kind,
+                           .destinationId = needsMember ? state->activeMemberId
+                                                        : QString{},
+                           .enabled = true,
+                       }] {
+                    queueDispatch(command);
+                });
+        return action;
+    };
+    addGroupAction("Arrange windows", QStringLiteral("qindaqt-context-arrange"),
+                   GroupContextMenuCommandKind::ArrangeWindows, true);
+    addGroupAction("Detach active window",
+                   QStringLiteral("qindaqt-context-detach-active"),
+                   GroupContextMenuCommandKind::DetachActiveWindow, true);
+    addGroupAction("Ungroup", QStringLiteral("qindaqt-context-ungroup"),
+                   GroupContextMenuCommandKind::Ungroup, false);
+    addSeparator();
     auto *const keepAbove = addToggleAction(
         this, menuText("Keep Above"),
         QStringLiteral("qindaqt-context-keep-above"), state->keepAbove,

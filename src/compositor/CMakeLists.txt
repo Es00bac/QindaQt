@@ -148,6 +148,27 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_enable_warnings(qindaqt_group_context_menu)
     endif()
 
+    add_library(qindaqt_member_chrome_visibility STATIC
+        kwin/memberchromevisibilitycontroller.cpp
+        kwin/memberchromevisibilitycontroller.h
+    )
+    target_compile_features(qindaqt_member_chrome_visibility PUBLIC cxx_std_20)
+    target_include_directories(
+        qindaqt_member_chrome_visibility
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/kwin"
+    )
+    target_link_libraries(
+        qindaqt_member_chrome_visibility
+        PUBLIC QindaQt::Hybrid Qt6::Core
+    )
+    set_target_properties(
+        qindaqt_member_chrome_visibility
+        PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON
+    )
+    if(COMMAND qindaqt_enable_warnings)
+        qindaqt_enable_warnings(qindaqt_member_chrome_visibility)
+    endif()
+
     add_library(qindaqt_kwin_input_adapter STATIC)
     target_sources(
         qindaqt_kwin_input_adapter
@@ -305,6 +326,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridcontext.cpp
             kwin/kwinhybridcontextmenu.cpp
             kwin/kwinhybridinteraction.cpp
+            kwin/kwinhybridmemberchrome.cpp
             kwin/kwinhybridsession.cpp
             kwin/kwinhybridsession.h
             kwin/chromeappearancepalette.cpp
@@ -354,6 +376,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::AppAppearance
             qindaqt_container_close_prompt
             qindaqt_group_context_menu
+            qindaqt_member_chrome_visibility
             qindaqt_kwin_development_input
             qindaqt_kwin_input_adapter
             qindaqt_kwin_output_support

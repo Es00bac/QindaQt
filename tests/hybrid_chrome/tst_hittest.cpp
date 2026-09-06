@@ -15,8 +15,10 @@ class ChromeHitTestTests final : public QObject
 
 private Q_SLOTS:
     void resolvesEveryStandardAction();
+    void resolvesContainerControls();
     void rtlTabHitPreservesLogicalIndex();
     void resolvesDragDividerResizeAndClientRegions();
+    void hiddenMemberTitlesReturnClientInput();
     void maximizedFrameHasNoResizeTarget();
 };
 
@@ -42,6 +44,21 @@ void ChromeHitTestTests::resolvesEveryStandardAction()
                                                      restoreButton.rect.center());
     QVERIFY(restoreHit.action);
     QCOMPARE(*restoreHit.action, WindowAction::Restore);
+}
+
+void ChromeHitTestTests::resolvesContainerControls()
+{
+    const auto plan = ChromeLayoutEngine::build(qindaMacRequest());
+    QVERIFY(plan);
+    for (const auto &control : plan->controls) {
+        const auto hit = ChromeHitTester::hitTest(*plan, control.rect.center());
+        QCOMPARE(hit.kind, HitKind::ContainerControl);
+        QCOMPARE(hit.stableId, plan->containerId);
+        QCOMPARE(hit.containerControl,
+                 std::optional<ContainerControl>(control.control));
+        QVERIFY(!hit.action);
+        QCOMPARE(hit.resizeEdges, Qt::Edges{});
+    }
 }
 
 void ChromeHitTestTests::rtlTabHitPreservesLogicalIndex()
@@ -96,6 +113,18 @@ void ChromeHitTestTests::maximizedFrameHasNoResizeTarget()
     QVERIFY(plan);
     const auto hit = ChromeHitTester::hitTest(*plan, plan->outerFrame.topLeft());
     QVERIFY(hit.kind != HitKind::OuterResize);
+}
+
+void ChromeHitTestTests::hiddenMemberTitlesReturnClientInput()
+{
+    auto request = qindaMacRequest();
+    request.memberTitlesVisible = false;
+    const auto plan = ChromeLayoutEngine::build(request);
+    QVERIFY(plan);
+    const QPointF formerTitlePoint(request.members[0].windowRect.left() + 40.0,
+                                   request.members[0].windowRect.top() + 10.0);
+    QCOMPARE(ChromeHitTester::hitTest(*plan, formerTitlePoint).kind,
+             HitKind::Client);
 }
 
 QTEST_GUILESS_MAIN(ChromeHitTestTests)

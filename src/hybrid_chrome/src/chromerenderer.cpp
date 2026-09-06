@@ -16,6 +16,41 @@ bool targetMatchesButton(const ChromeHitTarget &target, WindowAction action)
     return target.kind == HitKind::WindowButton && target.action && *target.action == action;
 }
 
+bool targetMatchesControl(const ChromeHitTarget &target, ContainerControl control)
+{
+    return target.kind == HitKind::ContainerControl
+        && target.containerControl && *target.containerControl == control;
+}
+
+void paintContainerControlGlyph(QPainter &painter,
+                                const ContainerControlGeometry &control,
+                                const ChromeRenderPlan &plan)
+{
+    const auto center = control.rect.center();
+    const qreal radius = control.rect.width() * 0.28;
+    QPen pen(control.checked ? plan.style.palette.accent
+                             : plan.style.palette.textMuted);
+    pen.setWidthF(std::max(plan.borderHairline, 1.2));
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    if (control.control == ContainerControl::ToggleMemberTitles) {
+        const QRectF frame(center.x() - radius, center.y() - radius,
+                           radius * 2.0, radius * 2.0);
+        painter.drawRect(frame);
+        painter.drawLine(frame.topLeft(), frame.topRight());
+        return;
+    }
+    const qreal dotRadius = std::max(1.0, plan.borderHairline);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(plan.style.palette.text);
+    for (const qreal offset : {-radius, 0.0, radius}) {
+        painter.drawEllipse(QPointF(center.x() + offset, center.y()),
+                            dotRadius, dotRadius);
+    }
+}
+
 void paintActionGlyph(QPainter &painter,
                       const WindowButtonGeometry &button,
                       const ChromeRenderPlan &plan)
@@ -141,6 +176,18 @@ void ChromeRenderer::paint(QPainter &painter,
         if (glyphVisible) {
             paintActionGlyph(painter, button, plan);
         }
+    }
+    for (const auto &control : plan.controls) {
+        const bool highlighted = targetMatchesControl(state.hoveredTarget,
+                                                       control.control)
+            || targetMatchesControl(state.pressedTarget, control.control);
+        painter.setPen(QPen(highlighted ? plan.style.palette.accent
+                                       : plan.style.palette.border,
+                            plan.borderHairline));
+        painter.setBrush(highlighted ? plan.style.palette.surfaceRaised
+                                     : plan.style.palette.surface);
+        painter.drawRoundedRect(control.rect, 4.0, 4.0);
+        paintContainerControlGlyph(painter, control, plan);
     }
 
     painter.setClipping(false);

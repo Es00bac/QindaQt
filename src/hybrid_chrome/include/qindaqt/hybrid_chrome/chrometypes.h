@@ -39,6 +39,12 @@ enum class WindowAction {
 };
 Q_ENUM_NS(WindowAction)
 
+enum class ContainerControl {
+    ToggleMemberTitles,
+    ManagementMenu,
+};
+Q_ENUM_NS(ContainerControl)
+
 enum class DividerOrientation {
     Vertical,
     Horizontal,
@@ -48,6 +54,7 @@ Q_ENUM_NS(DividerOrientation)
 enum class HitKind {
     None,
     WindowButton,
+    ContainerControl,
     Tab,
     Divider,
     MemberTitleDrag,
@@ -107,6 +114,9 @@ struct ChromeMetrics final
     qreal buttonExtent = 14.0;
     qreal buttonSpacing = 8.0;
     qreal buttonClusterInset = 12.0;
+    qreal containerControlExtent = 16.0;
+    qreal containerControlSpacing = 6.0;
+    qreal containerControlClusterInset = 10.0;
     qreal tabHorizontalInset = 8.0;
     qreal tabSpacing = 4.0;
     qreal tabMinimumWidth = 72.0;
@@ -162,7 +172,7 @@ struct ChromeLayoutRequest final
     // AGENT-CONTRACT: These values are a snapshot of KWin focus ownership.
     // A container can retain an active page while another window owns focus.
     bool containerFocused = false;
-    QString focusedMemberId;
+    bool memberTitlesVisible = true;
     ChromeMetrics metrics;
     ChromeStyle style;
     QVector<ChromeTabSpec> tabs;
@@ -177,6 +187,13 @@ struct WindowButtonGeometry final
     QColor fillColor;
     QString hoverGlyph;
     bool glyphVisibleWhenIdle = true;
+};
+
+struct ContainerControlGeometry final
+{
+    ContainerControl control = ContainerControl::ToggleMemberTitles;
+    QRectF rect;
+    bool checked = false;
 };
 
 struct TabGeometry final
@@ -215,6 +232,7 @@ struct ChromeRenderPlan final
     qreal borderHairline = 1.0;
     bool maximized = false;
     bool containerFocused = false;
+    bool memberTitlesVisible = true;
     ChromeMetrics metrics;
     ChromeStyle style;
     QRectF outerFrame;
@@ -223,6 +241,7 @@ struct ChromeRenderPlan final
     QRectF tabStrip;
     QRectF contentRect;
     QVector<WindowButtonGeometry> buttons;
+    QVector<ContainerControlGeometry> controls;
     // AGENT-GUARD: Keep stable logical order. RTL changes rect assignment only;
     // reversing this vector corrupts keyboard traversal and persisted indices.
     QVector<TabGeometry> tabs;
@@ -238,6 +257,7 @@ struct ChromeHitTarget final
     qsizetype logicalIndex = -1;
     std::optional<WindowAction> action;
     Qt::Edges resizeEdges;
+    std::optional<ContainerControl> containerControl;
 
     [[nodiscard]] bool isInteractive() const { return kind != HitKind::None; }
     friend bool operator==(const ChromeHitTarget &, const ChromeHitTarget &) = default;
@@ -267,3 +287,4 @@ struct ChromePaintState final
 Q_DECLARE_METATYPE(QindaQt::HybridChrome::ChromeHitTarget)
 Q_DECLARE_METATYPE(QindaQt::HybridChrome::ChromeDragEvent)
 Q_DECLARE_METATYPE(QindaQt::HybridChrome::WindowAction)
+Q_DECLARE_METATYPE(QindaQt::HybridChrome::ContainerControl)

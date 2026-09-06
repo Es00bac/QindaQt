@@ -1819,13 +1819,16 @@ The focused suites cover:
   unrelated input;
 - Qinda macOS and conventional chrome plans, logical-DPI invariance, left
   traffic lights with cluster-hover glyphs, stable logical/right-to-left visual
-  tabs, pure hit precedence, thresholded natural drags, and grab cancellation;
+  tabs, separated parent-control geometry in narrow and bidirectional layouts,
+  typed title-toggle/menu hits, palette-derived control painting, hidden-title
+  client pass-through, thresholded natural drags, and grab cancellation;
 - scene/chrome plan agreement, scene-image teardown/rebuild, ordinary
   compositor router ownership and native member/client pass-through, hover
   forwarding, anchor-relative exposure and occlusion, popup-before-decoration
   ordering, topmost-member stack ranking, coalesced
   stack/activation/output/window republish, dock-preview geometry, semantic
-  chrome-drag translation, and shortcut action dispatch;
+  chrome-drag translation, accessible parent-control dispatch, and shortcut
+  action dispatch including the active-group `Meta+Shift+C` title toggle;
 - fake-platform KWin transactions for full-state restore, focus, inactive-page
   minimization, dead members, overflow, cross-container one-step ownership,
   direct reflow, maximize/restore, independent-focus preservation, member
@@ -1833,8 +1836,10 @@ The focused suites cover:
   transient admission/following, atomic output/workspace/activity/layer
   propagation, collapsed task identity, and rollback/recovery of state, focus,
   target frames, and copied committed layout;
-- nonblocking Close All/Ungroup/Cancel policy, the outer-title group context
-  menu, normal-chain development input parsing/injection, compositor scene
+- exact native-title baseline restoration across detach, group moves, rejected
+  writes, new membership, and shutdown; nonblocking Close All/Ungroup/Cancel
+  policy; the outer-title group context menu with Arrange, Detach active, and
+  Ungroup entry actions; normal-chain development input parsing/injection, compositor scene
   lifecycle, and production pre-parse input rejection; and
 - KDecoration factory/metadata loading plus first-run default seeding that
   preserves an existing user choice.

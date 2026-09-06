@@ -52,6 +52,11 @@ QVector<WindowAction> actionOrder(const ChromeStyle &style, bool maximized)
     return {WindowAction::Close, WindowAction::Minimize, sizeAction};
 }
 
+constexpr std::array<ContainerControl, 2> containerControlOrder{
+    ContainerControl::ToggleMemberTitles,
+    ContainerControl::ManagementMenu,
+};
+
 QString glyph(WindowAction action)
 {
     switch (action) {
@@ -161,6 +166,32 @@ bool validateRequest(const ChromeLayoutRequest &request, QString *error)
     return true;
 }
 
+void appendContainerControls(const ChromeLayoutRequest &request,
+                             ChromeRenderPlan *plan)
+{
+    const auto &metrics = request.metrics;
+    const qreal controlCount = static_cast<qreal>(containerControlOrder.size());
+    const qreal clusterWidth = controlCount * metrics.containerControlExtent
+        + (controlCount - 1.0) * metrics.containerControlSpacing;
+    qreal controlX = request.style.buttonSide == ButtonSide::Left
+        ? plan->outerTitleBar.right() - metrics.containerControlClusterInset
+            - clusterWidth
+        : plan->outerTitleBar.left() + metrics.containerControlClusterInset;
+    const qreal controlY = plan->outerTitleBar.center().y()
+        - metrics.containerControlExtent / 2.0;
+    for (const auto control : containerControlOrder) {
+        plan->controls.append({
+            control,
+            {controlX, controlY, metrics.containerControlExtent,
+             metrics.containerControlExtent},
+            control == ContainerControl::ToggleMemberTitles
+                && request.memberTitlesVisible,
+        });
+        controlX += metrics.containerControlExtent
+            + metrics.containerControlSpacing;
+    }
+}
+
 } // namespace
 
 std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequest &request,
@@ -179,6 +210,7 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
     plan.borderHairline = request.metrics.physicalHairline(request.devicePixelRatio);
     plan.maximized = request.maximized;
     plan.containerFocused = request.containerFocused;
+    plan.memberTitlesVisible = request.memberTitlesVisible;
     plan.metrics = request.metrics;
     plan.style = request.style;
     plan.outerFrame = request.outerRect;
@@ -213,6 +245,7 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
                              !request.style.hoverGlyphs});
         buttonX += metrics.buttonExtent + metrics.buttonSpacing;
     }
+    appendContainerControls(request, &plan);
     if (!request.tabs.isEmpty()) {
         const auto tabCount = static_cast<qreal>(request.tabs.size());
         // Reserve a real outer-title drag region even when tabs overflow.
@@ -224,9 +257,14 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
             ? controlBoundary + metrics.titleHorizontalInset + minimumOuterDragWidth
             : plan.tabStrip.left() + metrics.tabHorizontalInset;
         const qreal tabRight = request.style.buttonSide == ButtonSide::Left
-            ? plan.tabStrip.right() - metrics.tabHorizontalInset
+            ? plan.controls.constFirst().rect.left() - metrics.tabHorizontalInset
             : controlBoundary - metrics.titleHorizontalInset - minimumOuterDragWidth;
-        const qreal availableWidth = tabRight - tabLeft
+        const qreal boundedTabLeft = request.style.buttonSide == ButtonSide::Left
+            ? tabLeft
+            : std::max(tabLeft,
+                       plan.controls.constLast().rect.right()
+                           + metrics.tabHorizontalInset);
+        const qreal availableWidth = tabRight - boundedTabLeft
             - metrics.tabSpacing * (tabCount - 1.0);
         if (availableWidth <= 0.0) {
             return reject(error, QStringLiteral("shared title row is too narrow for configured tabs"));
@@ -237,7 +275,7 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
             ? evenWidth
             : std::min(evenWidth, metrics.tabMaximumWidth);
         qreal tabX = request.style.tabDirection == TabVisualDirection::LeftToRight
-            ? tabLeft
+            ? boundedTabLeft
             : tabRight - tabWidth;
         for (qsizetype index = 0; index < request.tabs.size(); ++index) {
             const auto &tab = request.tabs[index];
@@ -257,6 +295,9 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
         for (const auto &tab : plan.tabs) {
             right = std::min(right, tab.rect.left() - metrics.titleHorizontalInset);
         }
+        right = std::min(right,
+                         plan.controls.constFirst().rect.left()
+                             - metrics.titleHorizontalInset);
         plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
                                    plan.outerTitleBar.height()};
     } else {
@@ -264,6 +305,9 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
         for (const auto &tab : plan.tabs) {
             left = std::max(left, tab.rect.right() + metrics.titleHorizontalInset);
         }
+        left = std::max(left,
+                        plan.controls.constLast().rect.right()
+                            + metrics.titleHorizontalInset);
         const qreal right = plan.buttons.constFirst().rect.left() - metrics.titleHorizontalInset;
         plan.outerTitleDragRect = {left, plan.outerTitleBar.top(), right - left,
                                    plan.outerTitleBar.height()};
@@ -279,8 +323,10 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
         }
         const qreal titleHeight = std::min(member.windowRect.height(), metrics.memberTitleHeight);
         plan.members.append({member.memberId, member.title, member.windowRect,
-                             {member.windowRect.left(), member.windowRect.top(),
-                              member.windowRect.width(), titleHeight},
+                             request.memberTitlesVisible
+                                 ? QRectF(member.windowRect.left(), member.windowRect.top(),
+                                          member.windowRect.width(), titleHeight)
+                                 : QRectF{},
                              member.focused});
     }
 

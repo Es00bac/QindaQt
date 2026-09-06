@@ -51,7 +51,7 @@ std::optional<ChromePointerHit> KWinChromeManager::pointerTargetAt(
             // additional platform rule: native KDecoration owns every member
             // title pixel, including an overlapping divider or outer edge.
             hit->target = {HybridChrome::HitKind::MemberTitleDrag,
-                           member.memberId, -1, std::nullopt, {}};
+                           member.memberId, -1, std::nullopt, {}, std::nullopt};
             break;
         }
     }
@@ -90,6 +90,7 @@ HybridInput::HitTarget KWinChromeManager::hitTestChrome(
                 hit->target.stableId};
     case HybridChrome::HitKind::None:
     case HybridChrome::HitKind::WindowButton:
+    case HybridChrome::HitKind::ContainerControl:
     case HybridChrome::HitKind::OuterResize:
     case HybridChrome::HitKind::Client:
         return {};
@@ -138,6 +139,19 @@ bool KWinChromeManager::dispatchPointerActivation(const ChromePointerHit &hit)
             return false;
         }
         Q_EMIT windowActionRequested(hit.containerId, action);
+        return true;
+    }
+    if (hit.target.kind == HybridChrome::HitKind::ContainerControl
+        && hit.target.containerControl) {
+        const auto control = *hit.target.containerControl;
+        const auto &controls = found->second.plan.controls;
+        if (std::none_of(controls.cbegin(), controls.cend(),
+                         [control](const auto &candidate) {
+                             return candidate.control == control;
+                         })) {
+            return false;
+        }
+        Q_EMIT containerControlRequested(hit.containerId, control);
         return true;
     }
     if (hit.target.kind == HybridChrome::HitKind::Tab

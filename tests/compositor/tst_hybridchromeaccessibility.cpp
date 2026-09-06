@@ -150,7 +150,22 @@ void HybridChromeAccessibilityTest::exposesNavigableRolesNamesAndCurrentState()
     QVERIFY(root);
     QCOMPARE(root->role(), QAccessible::Grouping);
     QVERIFY(root->text(QAccessible::Name).contains(QStringLiteral("Editor")));
-    QCOMPARE(root->childCount(), 4); // three traffic lights plus the tab list
+    QCOMPARE(root->childCount(), 6); // three traffic lights, two group controls, tabs
+
+    auto *titleControl = adapter.interfaceForNode(
+        HybridChromeAccessibilityAdapter::controlNodeId(
+            QStringLiteral("group"),
+            HybridChrome::ContainerControl::ToggleMemberTitles));
+    auto *managementControl = adapter.interfaceForNode(
+        HybridChromeAccessibilityAdapter::controlNodeId(
+            QStringLiteral("group"),
+            HybridChrome::ContainerControl::ManagementMenu));
+    QVERIFY(titleControl && managementControl);
+    QCOMPARE(titleControl->role(), QAccessible::Button);
+    QVERIFY(titleControl->text(QAccessible::Name).contains(QStringLiteral("Hide")));
+    QCOMPARE(titleControl->text(QAccessible::Value), QStringLiteral("current"));
+    QVERIFY(managementControl->text(QAccessible::Name).contains(
+        QStringLiteral("Manage")));
 
     auto *tabList = adapter.interfaceForNode(
         HybridChromeAccessibilityAdapter::tabListNodeId(QStringLiteral("group")));
@@ -257,6 +272,30 @@ void HybridChromeAccessibilityTest::invokesTabsAndGroupControlsWithoutCoordinate
              HybridSemanticRequestKind::GroupWindowAction);
     QCOMPARE(requests.constLast().windowAction,
              std::optional(HybridChrome::WindowAction::Close));
+
+    const auto titleControlId = HybridChromeAccessibilityAdapter::controlNodeId(
+        QStringLiteral("group"),
+        HybridChrome::ContainerControl::ToggleMemberTitles);
+    auto *titleControl = adapter.interfaceForNode(titleControlId);
+    QVERIFY(titleControl);
+    titleControl->actionInterface()->doAction(
+        QAccessibleActionInterface::pressAction());
+    QCOMPARE(requests.size(), 6);
+    QCOMPARE(requests.constLast().kind,
+             HybridSemanticRequestKind::ContainerControl);
+    QCOMPARE(requests.constLast().containerControl,
+             std::optional(HybridChrome::ContainerControl::ToggleMemberTitles));
+
+    const auto managementControlId = HybridChromeAccessibilityAdapter::controlNodeId(
+        QStringLiteral("group"),
+        HybridChrome::ContainerControl::ManagementMenu);
+    auto *managementControl = adapter.interfaceForNode(managementControlId);
+    QVERIFY(managementControl);
+    managementControl->actionInterface()->doAction(
+        QAccessibleActionInterface::pressAction());
+    QCOMPARE(requests.size(), 7);
+    QCOMPARE(requests.constLast().containerControl,
+             std::optional(HybridChrome::ContainerControl::ManagementMenu));
 }
 
 void HybridChromeAccessibilityTest::preservesSemanticFocusAcrossPlanUpdates()

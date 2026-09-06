@@ -81,5 +81,6 @@ void releaseAccessibleFactory();
     bool visible,
     QString *error = nullptr);
 [[nodiscard]] QString actionToken(HybridChrome::WindowAction action);
+[[nodiscard]] QString controlToken(HybridChrome::ContainerControl control);
 
 } // namespace QindaQt::Compositor::KWinIntegration::AccessibilityInternal

@@ -12,10 +12,11 @@ ChromePointerHit hit(HybridChrome::HitKind kind,
                      QString stableId = {},
                      qsizetype logicalIndex = -1,
                      std::optional<HybridChrome::WindowAction> action = std::nullopt,
-                     Qt::Edges edges = {})
+                     Qt::Edges edges = {},
+                     std::optional<HybridChrome::ContainerControl> control = std::nullopt)
 {
     return {QStringLiteral("container-a"),
-            {kind, std::move(stableId), logicalIndex, action, edges}};
+            {kind, std::move(stableId), logicalIndex, action, edges, control}};
 }
 
 HybridInput::PointerEvent pointer(
@@ -183,6 +184,20 @@ void HybridChromePointerRouterTests::activatesClicksWithoutAlsoCommittingDrags()
     QCOMPARE(buttonClick.activations.size(), 1);
     QCOMPARE(buttonClick.activations.constFirst().target.action,
              std::optional(HybridChrome::WindowAction::Close));
+
+    resolved = hit(HybridChrome::HitKind::ContainerControl,
+                   QStringLiteral("container-a"), -1, std::nullopt, {},
+                   HybridChrome::ContainerControl::ManagementMenu);
+    QVERIFY(router.pointerPress(
+        pointer({12.0, 0.0}, Qt::LeftButton, Qt::LeftButton)).consumed);
+    const auto controlMotion = router.pointerMove(
+        pointer({100.0, 0.0}, Qt::NoButton, Qt::LeftButton));
+    QVERIFY(controlMotion.drags.isEmpty());
+    const auto controlClick = router.pointerRelease(
+        pointer({100.0, 0.0}, Qt::LeftButton, {}));
+    QCOMPARE(controlClick.activations.size(), 1);
+    QCOMPARE(controlClick.activations.constFirst().target.containerControl,
+             std::optional(HybridChrome::ContainerControl::ManagementMenu));
 
     resolved = hit(HybridChrome::HitKind::OuterTitleDrag,
                    QStringLiteral("container-a"));
