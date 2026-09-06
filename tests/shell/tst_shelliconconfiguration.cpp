@@ -34,7 +34,7 @@ void ShellIconConfigurationTests::configuredThemeIsSelected()
     QString name;
     QVERIFY2(ShellIconConfiguration::selectedThemeName(themes, &name, &error),
              qPrintable(error));
-    QCOMPARE(name, QStringLiteral("breeze-dark"));
+    QCOMPARE(name, QStringLiteral("QindaQt"));
 }
 
 void ShellIconConfigurationTests::missingHintUsesThemeDarkness()
