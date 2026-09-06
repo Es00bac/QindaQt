@@ -72,6 +72,11 @@ replace earlier work:
   controls, exposing the same completed actions as the parent frame.
 - Add whole-group roll-up/shade or iconify behavior appropriate to the selected
   interface, with parent controls and reliable member/focus restoration.
+- Provide an easy user-approved production mouse/keyboard path for agents and
+  Gabbee, also usable for realistic testing and debugging. Reuse the standard
+  RemoteDesktop portal and its approval/session lifetime instead of exposing
+  the development-only injector. Verify pointer, keys, and text delivery into
+  an explicitly chosen test application.
 - Qualify Gabbee dictation, its global shortcuts, and text insertion into
   ordinary applications and terminals, including correct grouped-window focus.
 - Qualify fullscreen video and games: fullscreen entry/exit and restoration,
