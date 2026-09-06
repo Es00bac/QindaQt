@@ -14,20 +14,18 @@ T.Page {
     signal closeRequested()
 
     // AGENT-GUARD: Host entry must never nominate a disabled action. Domain
-    // controls come from admission truth; Import, Retry, and Close are the
-    // safe fallbacks and Close is always admitted.
+    // controls come from admission truth; Retry and Import are the safe
+    // fallbacks. Window closing remains the Settings shell's responsibility.
     readonly property Item firstFocusTarget:
         root.colorSettings.loading || root.colorSettings.unavailable
             || root.colorSettings.stale
-        ? (retryButton.visible && retryButton.enabled ? retryButton : closeButton)
+        ? (retryButton.visible && retryButton.enabled
+           ? retryButton : importSection.importTarget)
         : profileSection.firstActionTarget !== null
         ? profileSection.firstActionTarget
         : outputSection.firstActionTarget !== null
-          ? outputSection.firstActionTarget
-          : importSection.importTarget
-        ? importSection.importTarget
-        : retryButton.visible && retryButton.enabled ? retryButton
-        : closeButton
+        ? outputSection.firstActionTarget
+        : importSection.importTarget
 
     title: qsTr("Color")
     background: Rectangle { color: Tokens.bg.base }
@@ -195,16 +193,6 @@ T.Page {
                       ? qsTr("Applying the color change…") : ""
                 muted: true
                 Accessible.name: text
-            }
-            Button {
-                id: closeButton
-                objectName: "colorCloseButton"
-                available: true
-                busy: false
-                emphasized: false
-                text: qsTr("Close")
-                KeyNavigation.tab: root.firstFocusTarget
-                onClicked: root.closeRequested()
             }
         }
     }
