@@ -24,7 +24,10 @@ enum class DevelopmentInputKey {
     Tab,
     Escape,
     Space,
+    Up,
     Down,
+    Left,
+    Right,
     Enter,
 };
 

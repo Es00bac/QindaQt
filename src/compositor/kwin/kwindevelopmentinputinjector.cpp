@@ -63,8 +63,14 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_ESC;
     case DevelopmentInputKey::Space:
         return KEY_SPACE;
+    case DevelopmentInputKey::Up:
+        return KEY_UP;
     case DevelopmentInputKey::Down:
         return KEY_DOWN;
+    case DevelopmentInputKey::Left:
+        return KEY_LEFT;
+    case DevelopmentInputKey::Right:
+        return KEY_RIGHT;
     case DevelopmentInputKey::Enter:
         return KEY_ENTER;
     }
@@ -148,7 +154,10 @@ public:
                                DevelopmentInputKey::Tab,
                                DevelopmentInputKey::Escape,
                                DevelopmentInputKey::Space,
+                               DevelopmentInputKey::Up,
                                DevelopmentInputKey::Down,
+                               DevelopmentInputKey::Left,
+                               DevelopmentInputKey::Right,
                                DevelopmentInputKey::Enter}) {
             if (m_pressedKeys.contains(key)) {
                 dispatch({.type = DevelopmentInputEventType::Key,
