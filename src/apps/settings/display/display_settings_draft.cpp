@@ -56,11 +56,11 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
     return false;
   }
 
-  const bool baselineWasDisabled = std::any_of(
-      m_snapshot->outputs.cbegin(), m_snapshot->outputs.cend(),
-      [&stableId](const Display::Output &baseline) {
-        return baseline.stableId == stableId && !baseline.enabled;
-      });
+  const bool baselineWasDisabled = m_snapshot.has_value()
+      && std::any_of(m_snapshot->outputs.cbegin(), m_snapshot->outputs.cend(),
+                     [&stableId](const Display::Output &baseline) {
+                       return baseline.stableId == stableId && !baseline.enabled;
+                     });
   out->enabled = enabled;
   if (!enabled && out->primary) {
     out->primary = false;
@@ -71,7 +71,7 @@ bool DisplaySettingsModel::setOutputEnabled(const QString &stableId, bool enable
       }
     }
   } else if (enabled) {
-    if (baselineWasDisabled) {
+    if (baselineWasDisabled && out->position.isNull()) {
       out->position = positionForNewlyEnabledOutput(m_draftOutputs, stableId);
     }
     bool hasPrimary = false;

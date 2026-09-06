@@ -312,7 +312,7 @@ void KWinOutputInventory::rebuildOutputConnections()
     }
     m_outputConnections.clear();
     for (auto *backendOutput : KWin::kwinApp()->outputBackend()->outputs()) {
-        if (!backendOutput) {
+        if (!backendOutput || backendOutput->isNonDesktop()) {
             continue;
         }
         const auto changed = [this] { scheduleRefresh(); };
@@ -373,6 +373,12 @@ QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
             fail(error, QStringLiteral("KWin output inventory contains a null output"));
             return {};
         }
+        // OutputBackend includes connected VR and other non-desktop sinks. They
+        // have no Workspace logical output and are intentionally outside the
+        // Display1 desktop configuration contract.
+        if (backendOutput->isNonDesktop()) {
+            continue;
+        }
         const auto *output = KWin::workspace()->findOutput(backendOutput);
         QSize physicalSize = backendOutput->physicalSize();
         if (!physicalSize.isValid() || physicalSize.isEmpty()) {
@@ -385,12 +391,18 @@ QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
                            / backendOutput->scale()),
                     qRound(backendOutput->orientateSize(backendOutput->modeSize()).height()
                            / backendOutput->scale()));
-        const QRect geometry = output ? output->geometry()
-                                      : QRect(backendOutput->position(), logicalSize);
+        QRect visibilityGeometry;
+        if (output) {
+            const KWin::Rect logicalGeometry = output->geometry();
+            visibilityGeometry = QRect(logicalGeometry.x(), logicalGeometry.y(),
+                                       logicalGeometry.width(), logicalGeometry.height());
+        } else {
+            visibilityGeometry = QRect(backendOutput->position(), logicalSize);
+        }
         result.append({
             .name = backendOutput->name(),
-            .geometry = geometry,
-            .visibilityGeometry = geometry,
+            .geometry = QRectF(visibilityGeometry),
+            .visibilityGeometry = visibilityGeometry,
             .scale = backendOutput->scale(),
             .refreshRateMilliHz = backendOutput->refreshRate(),
             .transform = transformName(backendOutput->transform().kind()),
