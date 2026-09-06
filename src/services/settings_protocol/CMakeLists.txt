@@ -26,7 +26,10 @@ target_link_libraries(
     qindaqt_settings_protocol PUBLIC Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_settings_protocol PUBLIC cxx_std_20)
-set_target_properties(qindaqt_settings_protocol PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_settings_protocol PROPERTIES
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+)
 qindaqt_enable_warnings(qindaqt_settings_protocol)
 
 install(
