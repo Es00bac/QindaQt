@@ -1808,10 +1808,14 @@ The focused suites cover:
 - recursive minimum/maximum/fixed constraints, deterministic rounding,
   overflow reporting, and schema-v2 round trips of every independent-window
   restore field;
-- exact-modifier gesture ownership and drag threshold; keyboard docking,
-  explicit detach, complete-group movement, active-divider adjustment,
-  complete-group edge/corner resize, preview/commit/cancel, cumulative baseline
-  displacement, and pass-through for unrelated input;
+- exact-modifier gesture ownership and drag threshold; silent no-mutation
+  ownership of the whole gesture (press, move, Escape, and explicit cancel)
+  when the pressed point never resolves a Hybrid target, so KWin's own
+  Decoration/WindowAction fallthrough and Shift-drag custom-tile default never
+  engage for the exact chord; keyboard docking, explicit detach, complete-group
+  movement, active-divider adjustment, complete-group edge/corner resize,
+  preview/commit/cancel, cumulative baseline displacement, and pass-through for
+  unrelated input;
 - Qinda macOS and conventional chrome plans, logical-DPI invariance, left
   traffic lights with cluster-hover glyphs, stable logical/right-to-left visual
   tabs, pure hit precedence, thresholded natural drags, and grab cancellation;

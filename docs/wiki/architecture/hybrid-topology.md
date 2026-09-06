@@ -127,6 +127,15 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
   as grouped member or shared chrome and supplies the explicit docking and
   rearrangement path. Merely containing those modifiers is insufficient, so
   unrelated chords and ordinary client input pass through.
+  The grab is claimed on the initial press even when the pressed point does
+  not yet resolve to a valid Hybrid target: KWin's own Decoration and
+  WindowAction filters sit immediately after this one in the input chain, and
+  KWin treats Shift held through *any* of its own native interactive moves as
+  the trigger for its built-in custom-tile ("thirds") placement on release.
+  Letting an unrecognized start point fall through would hand the press to
+  that native move and reintroduce the competing default. A press that never
+  resolves a target therefore still consumes every event of the gesture and
+  releases with no topology mutation, rather than passing through.
 
 The consuming KWin filter is installed at Decoration order, after lock-screen,
 global-shortcut, effect, and Popup policy but before native KDecoration handles

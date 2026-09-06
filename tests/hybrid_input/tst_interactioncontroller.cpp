@@ -19,6 +19,7 @@ private Q_SLOTS:
     void independentDragOutsideCancels();
     void pointerGeometryKindsUseCumulativeDeltas();
     void externalCancelKeepsCumulativeDelta();
+    void exactChordWithoutTargetOwnsTheWholeGestureSilently();
 };
 
 void InteractionControllerTest::unrelatedInputPassesThrough()
@@ -35,9 +36,20 @@ void InteractionControllerTest::unrelatedInputPassesThrough()
         pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier
                                   | Qt::AltModifier)).consumed);
     QVERIFY(!controller.active());
+
+    // AGENT-GUARD companion: an exact-chord press with no resolvable Hybrid
+    // target must still be swallowed (never fall through to KWin's own
+    // decoration move / Shift-drag custom-tile default), then release quietly
+    // with no intents so the runtime is never asked to act on a missing kind.
     resolver.hit = {};
-    QVERIFY(!controller.pointerPress(
-        pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    const auto noTargetPress = controller.pointerPress(
+        pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier));
+    QVERIFY(noTargetPress.consumed);
+    QVERIFY(controller.active());
+    const auto noTargetRelease = controller.pointerRelease(releaseAt({10, 10}));
+    QVERIFY(noTargetRelease.consumed);
+    QVERIFY(noTargetRelease.intents.isEmpty());
+    QVERIFY(!controller.active());
 
     resolver.hit = {HitKind::OuterTitle, QStringLiteral("group"), {}, {}};
     QVERIFY(controller.pointerPress(
@@ -187,6 +199,46 @@ void InteractionControllerTest::externalCancelKeepsCumulativeDelta()
     QCOMPARE(cancelled.intents.constFirst().delta, QPointF(15, 15));
     QVERIFY(!controller.active());
     QVERIFY(!controller.cancel().consumed);
+}
+
+void InteractionControllerTest::exactChordWithoutTargetOwnsTheWholeGestureSilently()
+{
+    // Regression for the exact chord losing the input grab to KWin's own
+    // decoration move / Shift-drag custom-tile ("thirds") default whenever no
+    // Hybrid target resolved yet: the controller must keep consuming every
+    // event of the gesture and never emit an intent with InteractionKind::None.
+    RecordingResolver resolver;
+    InteractionController controller(resolver, {.dragThreshold = 5.0});
+
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.active());
+    const auto pastThreshold = controller.pointerMove({.position = {50, 50}});
+    QVERIFY(pastThreshold.consumed);
+    QVERIFY(pastThreshold.intents.isEmpty());
+    const auto stillMoving = controller.pointerMove({.position = {80, 80}});
+    QVERIFY(stillMoving.consumed);
+    QVERIFY(stillMoving.intents.isEmpty());
+    const auto released = controller.pointerRelease(releaseAt({80, 80}));
+    QVERIFY(released.consumed);
+    QVERIFY(released.intents.isEmpty());
+    QVERIFY(!controller.active());
+
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.pointerMove({.position = {50, 50}}).consumed);
+    const auto escaped = controller.keyEvent({.key = Qt::Key_Escape});
+    QVERIFY(escaped.consumed);
+    QVERIFY(escaped.intents.isEmpty());
+    QVERIFY(!controller.active());
+
+    QVERIFY(controller.pointerPress(
+        pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
+    QVERIFY(controller.pointerMove({.position = {50, 50}}).consumed);
+    const auto cancelled = controller.cancel();
+    QVERIFY(cancelled.consumed);
+    QVERIFY(cancelled.intents.isEmpty());
+    QVERIFY(!controller.active());
 }
 
 QTEST_GUILESS_MAIN(InteractionControllerTest)

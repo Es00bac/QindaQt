@@ -48,6 +48,11 @@ private:
         const HitTarget &source, InteractionKind expectedKind);
     [[nodiscard]] InteractionIntent intent(IntentPhase phase,
                                            const QPointF &position = {}) const;
+    // Cancels whatever the controller currently owns. Emits a Cancel intent
+    // only when a real target kind was ever resolved; a swallowed no-target
+    // grab (see pointerPress) resets silently instead of reaching the runtime
+    // with InteractionKind::None.
+    [[nodiscard]] InteractionDecision cancelActive(const QPointF &position);
     [[nodiscard]] bool pointerBindingMatches(const PointerEvent &event) const;
     [[nodiscard]] DockZone zoneForKey(Qt::Key key) const;
     [[nodiscard]] QPointF displacementForKey(Qt::Key key) const;

@@ -82,12 +82,15 @@ InteractionDecision InteractionController::pointerPress(const PointerEvent &even
 
     const auto source = m_resolver.hitTest(event.position);
     const auto kind = kindForHit(source.kind);
-    if (!source.isValid() || kind == InteractionKind::None) {
-        return {};
-    }
-
+    // AGENT-GUARD: KWin's own Decoration/WindowAction filters sit immediately
+    // after this one in the input chain, and Shift held through *any* KWin
+    // native interactive move triggers its built-in custom-tile ("thirds")
+    // placement on release. The exact chord must therefore claim the press
+    // even when no Hybrid target resolves yet, or an unrecognized start point
+    // falls through to KWin and the competing default fires. An unresolved
+    // press degrades to a silent no-op release instead of falling through.
     m_state = State::PointerPending;
-    m_kind = kind;
+    m_kind = source.isValid() ? kind : InteractionKind::None;
     m_source = source;
     m_pressPosition = event.position;
     m_lastPosition = event.position;
@@ -105,6 +108,11 @@ InteractionDecision InteractionController::pointerMove(const PointerEvent &event
     const auto distance = QLineF(m_pressPosition, event.position).length();
     m_lastPosition = event.position;
     m_displacement = event.position - m_pressPosition;
+    if (m_kind == InteractionKind::None) {
+        // Swallowed no-target grab: stay consumed so KWin never resumes
+        // ownership mid-drag, but there is no source to preview or move.
+        return decision;
+    }
     if (m_state == State::PointerPending && distance < m_bindings.dragThreshold) {
         return decision;
     }
@@ -138,7 +146,10 @@ InteractionDecision InteractionController::pointerRelease(const PointerEvent &ev
     InteractionDecision decision{.consumed = true, .intents = {}};
     m_lastPosition = event.position;
     m_displacement = event.position - m_pressPosition;
-    if (m_state == State::PointerActive) {
+    if (m_kind == InteractionKind::None) {
+        // Swallowed no-target grab releases quietly: nothing was ever begun,
+        // so there is nothing to cancel through the runtime.
+    } else if (m_state == State::PointerActive) {
         auto commit = intent(IntentPhase::Commit, event.position);
         if (m_kind == InteractionKind::MemberDock) {
             commit.target = m_resolver.pointerDockTarget(m_source, event.position);
@@ -163,10 +174,7 @@ InteractionDecision InteractionController::keyEvent(const KeyEvent &event)
     }
 
     if (event.key == Qt::Key_Escape) {
-        InteractionDecision decision{.consumed = true, .intents = {}};
-        decision.intents.append(intent(IntentPhase::Cancel, m_lastPosition));
-        reset();
-        return decision;
+        return cancelActive(m_lastPosition);
     }
 
     if (m_state != State::KeyboardActive) {
@@ -255,8 +263,15 @@ InteractionDecision InteractionController::cancel()
     if (m_state == State::Idle) {
         return {};
     }
+    return cancelActive(m_lastPosition);
+}
+
+InteractionDecision InteractionController::cancelActive(const QPointF &position)
+{
     InteractionDecision decision{.consumed = true, .intents = {}};
-    decision.intents.append(intent(IntentPhase::Cancel, m_lastPosition));
+    if (m_kind != InteractionKind::None) {
+        decision.intents.append(intent(IntentPhase::Cancel, position));
+    }
     reset();
     return decision;
 }
